@@ -3,13 +3,13 @@
     <div v-if="pending" class="text-sm text-gray-400">Загрузка...</div>
     <template v-else>
       <div class="flex justify-end mb-4">
-        <UButton size="sm" @click="save" :loading="saving">Сохранить</UButton>
+        <button class="a-btn-save" @click="save" :disabled="saving">{{ saving ? "..." : "сохранить" }}</button>
       </div>
       <div class="grid gap-2">
         <div
           v-for="(stage, idx) in stages"
           :key="idx"
-          class="border border-gray-100 p-4"
+          class="border border-gray-200 p-4 bg-white"
         >
           <div class="grid grid-cols-3 gap-3 mb-2">
             <div class="col-span-2">

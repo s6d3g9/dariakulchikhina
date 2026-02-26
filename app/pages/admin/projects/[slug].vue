@@ -1,42 +1,28 @@
 <template>
   <div>
-    <div v-if="projectPending" class="text-sm text-gray-400">Загрузка...</div>
-    <div v-else-if="!project" class="text-sm text-gray-400">Проект не найден</div>
+    <div v-if="projectPending" style="font-size:.88rem;color:#999">Загрузка...</div>
+    <div v-else-if="!project" style="font-size:.88rem;color:#999">Проект не найден</div>
     <template v-else>
       <!-- Хлебные крошки -->
-      <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
-        <NuxtLink to="/admin" class="hover:text-gray-700">Проекты</NuxtLink>
-        <span>/</span>
-        <span class="text-gray-700">{{ project.title }}</span>
+      <div style="font-size:.78rem;color:#aaa;margin-bottom:16px">
+        <NuxtLink to="/admin" style="color:#888;text-decoration:none">проекты</NuxtLink>
+        <span style="margin:0 6px">/</span>
+        <span>{{ project.title }}</span>
       </div>
 
-      <!-- Заголовок -->
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-lg font-light">{{ project.title }}</h1>
-          <p class="text-xs text-gray-400">{{ project.slug }}</p>
-        </div>
-        <div class="flex gap-2">
-          <UButton variant="outline" size="sm" @click="showEdit = true">Редактировать</UButton>
-          <a :href="`/client/${project.slug}`" target="_blank">
-            <UButton variant="ghost" size="sm">Страница клиента ↗</UButton>
-          </a>
-        </div>
-      </div>
-
-      <!-- Вкладки страниц -->
-      <div class="flex gap-1 border-b border-gray-200 mb-6 text-sm overflow-x-auto">
+      <!-- Вкладки страниц проекта -->
+      <div class="proj-tabs">
         <button
           v-for="pg in availablePages"
           :key="pg.slug"
-          class="px-4 py-2 whitespace-nowrap border-b-2 transition-colors"
-          :class="activePage === pg.slug
-            ? 'border-gray-900 text-gray-900 font-medium'
-            : 'border-transparent text-gray-400 hover:text-gray-700'"
+          class="proj-tab"
+          :class="{ 'proj-tab--active': activePage === pg.slug }"
           @click="activePage = pg.slug"
-        >
-          {{ pg.title }}
-        </button>
+        >{{ pg.title }}</button>
+        <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <a :href="`/client/${project.slug}`" target="_blank" style="font-size:.78rem;color:#888;text-decoration:none">страница клиента ↗</a>
+          <button class="proj-tab proj-tab--settings" @click="showEdit = true">⚙ проект</button>
+        </span>
       </div>
 
       <!-- Содержимое страницы -->
@@ -51,29 +37,27 @@
       </div>
     </template>
 
-    <!-- Модальное окно редактирования -->
-    <UModal v-model:open="showEdit">
-      <template #content>
-        <div class="p-6 max-w-md">
-          <h3 class="text-sm font-medium mb-4 tracking-widest uppercase">Редактировать проект</h3>
-          <form @submit.prevent="saveProject">
-            <div class="mb-3">
-              <label class="text-xs text-gray-500 block mb-1">Название</label>
-              <UInput v-model="editForm.title" required />
-            </div>
-            <div class="mb-3">
-              <label class="text-xs text-gray-500 block mb-1">PIN клиента</label>
-              <UInput v-model="editForm.clientPin" placeholder="пусто = недоступен" />
-            </div>
-            <p v-if="editError" class="text-red-500 text-xs mb-3">{{ editError }}</p>
-            <div class="flex gap-2 justify-end">
-              <UButton variant="ghost" @click="showEdit = false">Отмена</UButton>
-              <UButton type="submit" :loading="saving">Сохранить</UButton>
-            </div>
-          </form>
-        </div>
-      </template>
-    </UModal>
+    <!-- Модальное окно редактирования проекта -->
+    <div v-if="showEdit" class="a-modal-backdrop" @click.self="showEdit = false">
+      <div class="a-modal">
+        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">редактировать проект</h3>
+        <form @submit.prevent="saveProject">
+          <div class="a-field">
+            <label>Название</label>
+            <input v-model="editForm.title" class="a-input" required>
+          </div>
+          <div class="a-field">
+            <label>PIN клиента (пусто = недоступен)</label>
+            <input v-model="editForm.clientPin" class="a-input" placeholder="1234">
+          </div>
+          <p v-if="editError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ editError }}</p>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button type="button" class="a-btn-sm" @click="showEdit = false">отмена</button>
+            <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -84,7 +68,6 @@ const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
 const { data: project, pending: projectPending, refresh } = await useFetch<any>(`/api/projects/${slug.value}`)
-const { data: pageConfigs } = await useFetch<any[]>('/api/projects')
 
 const activePage = ref('materials')
 const showEdit = ref(false)
@@ -103,7 +86,6 @@ watch(project, (p) => {
   }
 })
 
-// Доступные страницы = pages из проекта с конфигом
 const allPageSlugs = [
   { slug: 'materials', title: 'материалы' },
   { slug: 'tz', title: 'тех. задание' },
@@ -135,3 +117,51 @@ async function saveProject() {
   }
 }
 </script>
+
+<style scoped>
+.proj-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.proj-tab {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: transparent;
+  text-decoration: none;
+  color: #666;
+  font-size: .82rem;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.proj-tab:hover { border-color: #1a1a1a; color: #1a1a1a; }
+.proj-tab--active { border-color: #1a1a1a; color: #1a1a1a; font-weight: 500; }
+.proj-tab--settings { border-style: dashed; font-size: .78rem; }
+.a-btn-sm {
+  border: 1px solid #ddd; background: transparent; padding: 4px 10px;
+  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
+}
+.a-btn-sm:hover { border-color: #1a1a1a; }
+.a-btn-save {
+  border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff;
+  padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
+}
+.a-btn-save:hover { background: #333; }
+.a-field { margin-bottom: 14px; }
+.a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
+.a-input {
+  display: block; width: 100%; border: none; border-bottom: 1px solid #ddd;
+  padding: 8px 0; font-size: .88rem; outline: none; font-family: inherit;
+}
+.a-input:focus { border-bottom-color: #1a1a1a; }
+.a-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.a-modal {
+  background: #fff; border: 1px solid #e0e0e0; padding: 32px; width: 380px; max-width: 90vw;
+}
+</style>

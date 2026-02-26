@@ -1,2 +1,15 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* Admin panel global button styles */
+.a-btn-save {
+  border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff;
+  padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
+}
+.a-btn-save:hover { background: #333; }
+.a-btn-save:disabled { opacity: 0.6; cursor: default; }
+.a-btn-sm {
+  border: 1px solid #ddd; background: transparent; padding: 4px 10px;
+  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
+}
+.a-btn-sm:hover { border-color: #1a1a1a; }

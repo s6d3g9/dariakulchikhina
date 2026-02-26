@@ -3,7 +3,7 @@
     <div v-if="pending" class="text-sm text-gray-400">Загрузка...</div>
     <template v-else>
       <div class="flex justify-end mb-4">
-        <UButton size="sm" @click="save" :loading="saving">Сохранить</UButton>
+        <button class="a-btn-save" @click="save" :disabled="saving">{{ saving ? "..." : "сохранить" }}</button>
       </div>
       <textarea
         v-model="rawJson"

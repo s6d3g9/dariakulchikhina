@@ -3,8 +3,8 @@
     <div class="flex items-center justify-between mb-4">
       <span class="text-sm text-gray-500">{{ items?.length || 0 }} задач</span>
       <div class="flex gap-2">
-        <UButton variant="ghost" size="sm" @click="addItem">+ Добавить</UButton>
-        <UButton size="sm" @click="save" :loading="saving">Сохранить</UButton>
+        <button class="a-btn-sm" @click="addItem">+ добавить</button>
+        <button class="a-btn-save" @click="save" :disabled="saving">{{ saving ? "..." : "сохранить" }}</button>
       </div>
     </div>
     <div v-if="pending" class="text-sm text-gray-400">Загрузка...</div>
@@ -12,7 +12,7 @@
       <div
         v-for="(item, idx) in items"
         :key="idx"
-        class="border border-gray-100 p-4"
+        class="border border-gray-200 p-4 bg-white"
       >
         <div class="grid grid-cols-3 gap-3 mb-2">
           <div class="col-span-2">

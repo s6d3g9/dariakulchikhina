@@ -1,76 +1,80 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-sm font-medium tracking-widest uppercase text-gray-700">Подрядчики</h1>
-      <UButton size="sm" @click="showCreate = true">+ Добавить</UButton>
+    <div class="a-card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;margin-bottom:16px">
+      <span style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.5px">подрядчики</span>
+      <button class="a-btn-save" @click="openCreate" style="padding:7px 18px;font-size:.82rem">+ добавить</button>
     </div>
 
-    <div v-if="pending" class="text-sm text-gray-400">Загрузка...</div>
-    <div v-else class="grid gap-2">
+    <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
+    <div v-else>
       <div
         v-for="c in contractors"
         :key="c.id"
-        class="flex items-center justify-between border border-gray-100 p-4"
+        class="a-card"
+        style="padding:16px 20px;margin-bottom:8px"
       >
-        <div>
-          <p class="text-sm font-medium">{{ c.name }}</p>
-          <p v-if="c.companyName" class="text-xs text-gray-400">{{ c.companyName }}</p>
-          <p class="text-xs text-gray-400">PIN: {{ c.pin || '—' }}</p>
-        </div>
-        <div class="flex gap-2">
-          <UButton variant="ghost" size="xs" @click="openEdit(c)">Изменить</UButton>
-          <UButton variant="ghost" size="xs" color="error" @click="del(c.id)">Удалить</UButton>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
+            <div style="font-size:.9rem;font-weight:500;color:#1a1a1a;margin-bottom:3px">{{ c.name }}</div>
+            <div v-if="c.companyName" style="font-size:.78rem;color:#888">{{ c.companyName }}</div>
+            <div style="font-size:.76rem;color:#aaa;margin-top:2px">
+              <span v-if="c.phone">{{ c.phone }}&nbsp;&nbsp;</span>
+              <span>PIN: {{ c.pin || '—' }}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="a-btn-sm" @click="openEdit(c)">изменить</button>
+            <button class="a-btn-sm a-btn-danger" @click="del(c.id)">удалить</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Модальное окно создания/редактирования -->
-    <UModal v-model:open="showCreate">
-      <template #content>
-        <div class="p-6 max-w-md">
-          <h3 class="text-sm font-medium mb-4 tracking-widest uppercase">
-            {{ editingId ? 'Редактировать' : 'Добавить' }} подрядчика
-          </h3>
-          <form @submit.prevent="save">
-            <div class="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label class="text-xs text-gray-500 block mb-1">Название *</label>
-                <UInput v-model="form.name" required />
-              </div>
-              <div>
-                <label class="text-xs text-gray-500 block mb-1">Slug *</label>
-                <UInput v-model="form.slug" required :disabled="!!editingId" />
-              </div>
+    <!-- Форма создания/редактирования -->
+    <div v-if="showModal" class="a-modal-backdrop" @click.self="closeModal">
+      <div class="a-modal" style="width:460px">
+        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">
+          {{ editingId ? 'редактировать' : 'добавить' }} подрядчика
+        </h3>
+        <form @submit.prevent="save">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="a-field">
+              <label>Название *</label>
+              <input v-model="form.name" class="a-input" required>
             </div>
-            <div class="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label class="text-xs text-gray-500 block mb-1">Компания</label>
-                <UInput v-model="form.companyName" />
-              </div>
-              <div>
-                <label class="text-xs text-gray-500 block mb-1">PIN</label>
-                <UInput v-model="form.pin" />
-              </div>
+            <div class="a-field">
+              <label>Slug *</label>
+              <input v-model="form.slug" class="a-input" required :disabled="!!editingId">
             </div>
-            <div class="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label class="text-xs text-gray-500 block mb-1">Телефон</label>
-                <UInput v-model="form.phone" />
-              </div>
-              <div>
-                <label class="text-xs text-gray-500 block mb-1">Email</label>
-                <UInput v-model="form.email" />
-              </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="a-field">
+              <label>Компания</label>
+              <input v-model="form.companyName" class="a-input">
             </div>
-            <p v-if="formError" class="text-red-500 text-xs mb-3">{{ formError }}</p>
-            <div class="flex gap-2 justify-end">
-              <UButton variant="ghost" @click="closeModal">Отмена</UButton>
-              <UButton type="submit" :loading="saving">Сохранить</UButton>
+            <div class="a-field">
+              <label>PIN</label>
+              <input v-model="form.pin" class="a-input">
             </div>
-          </form>
-        </div>
-      </template>
-    </UModal>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="a-field">
+              <label>Телефон</label>
+              <input v-model="form.phone" class="a-input">
+            </div>
+            <div class="a-field">
+              <label>Email</label>
+              <input v-model="form.email" class="a-input">
+            </div>
+          </div>
+          <p v-if="formError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ formError }}</p>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button type="button" class="a-btn-sm" @click="closeModal">отмена</button>
+            <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -79,14 +83,17 @@ definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const { data: contractors, pending, refresh } = await useFetch<any[]>('/api/contractors')
 
-const showCreate = ref(false)
+const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
 const editingId = ref<number | null>(null)
+const form = reactive({ name: '', slug: '', companyName: '', pin: '', phone: '', email: '' })
 
-const form = reactive({
-  name: '', slug: '', companyName: '', pin: '', phone: '', email: ''
-})
+function openCreate() {
+  editingId.value = null
+  Object.assign(form, { name: '', slug: '', companyName: '', pin: '', phone: '', email: '' })
+  showModal.value = true
+}
 
 function openEdit(c: any) {
   editingId.value = c.id
@@ -96,13 +103,12 @@ function openEdit(c: any) {
   form.pin = c.pin || ''
   form.phone = c.phone || ''
   form.email = c.email || ''
-  showCreate.value = true
+  showModal.value = true
 }
 
 function closeModal() {
-  showCreate.value = false
+  showModal.value = false
   editingId.value = null
-  Object.assign(form, { name: '', slug: '', companyName: '', pin: '', phone: '', email: '' })
 }
 
 async function save() {
@@ -129,3 +135,32 @@ async function del(id: number) {
   refresh()
 }
 </script>
+
+<style scoped>
+.a-card { background: #fff; border: 1px solid #e0e0e0; }
+.a-btn-sm {
+  border: 1px solid #ddd; background: transparent; padding: 4px 10px;
+  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
+}
+.a-btn-sm:hover { border-color: #1a1a1a; }
+.a-btn-danger { color: #c00; border-color: #c00; }
+.a-btn-danger:hover { background: #c00; color: #fff; }
+.a-btn-save {
+  border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff;
+  padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
+}
+.a-btn-save:hover { background: #333; }
+.a-field { margin-bottom: 14px; }
+.a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
+.a-input {
+  display: block; width: 100%; border: none; border-bottom: 1px solid #ddd;
+  padding: 8px 0; font-size: .88rem; outline: none; font-family: inherit;
+}
+.a-input:focus { border-bottom-color: #1a1a1a; }
+.a-input:disabled { color: #aaa; }
+.a-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.a-modal { background: #fff; border: 1px solid #e0e0e0; padding: 32px; max-width: 90vw; }
+</style>

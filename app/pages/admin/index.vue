@@ -1,62 +1,57 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-sm font-medium tracking-widest uppercase text-gray-700">Проекты</h1>
-      <UButton size="sm" @click="showCreate = true">+ Новый проект</UButton>
+    <div class="a-card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;padding:12px 20px">
+      <span style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.5px">проекты</span>
+      <button class="a-btn-save" @click="showCreate = true" style="padding:7px 18px;font-size:.82rem">+ новый проект</button>
     </div>
 
-    <div v-if="pending" class="text-sm text-gray-400">Загрузка...</div>
-    <div v-else-if="projects?.length === 0" class="text-sm text-gray-400">Нет проектов</div>
-    <div v-else class="grid gap-2">
+    <div v-if="pending" style="font-size:.88rem;color:#999;padding:12px 0">Загрузка...</div>
+    <div v-else-if="projects?.length === 0" style="font-size:.88rem;color:#999;padding:12px 0">Нет проектов</div>
+    <div v-else>
       <div
         v-for="p in projects"
         :key="p.id"
-        class="flex items-center justify-between border border-gray-100 p-4 hover:border-gray-300 transition-colors"
+        class="a-card"
+        style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;margin-bottom:8px"
       >
         <div>
-          <NuxtLink :to="`/admin/projects/${p.slug}`" class="text-sm font-medium hover:underline">
-            {{ p.title }}
-          </NuxtLink>
-          <p class="text-xs text-gray-400 mt-0.5">{{ p.slug }}</p>
+          <NuxtLink :to="`/admin/projects/${p.slug}`" class="a-project-link">{{ p.title }}</NuxtLink>
+          <div style="font-size:.76rem;color:#aaa;margin-top:2px">{{ p.slug }}</div>
         </div>
-        <div class="flex gap-2">
+        <div style="display:flex;gap:8px">
           <NuxtLink :to="`/admin/projects/${p.slug}`">
-            <UButton variant="ghost" size="xs">Открыть</UButton>
+            <button class="a-btn-sm">открыть</button>
           </NuxtLink>
-          <UButton variant="ghost" size="xs" color="error" @click="deleteProject(p.slug)">
-            Удалить
-          </UButton>
+          <button class="a-btn-sm a-btn-danger" @click="deleteProject(p.slug)">удалить</button>
         </div>
       </div>
     </div>
 
-    <!-- Модальное окно создания проекта -->
-    <UModal v-model:open="showCreate">
-      <template #content>
-        <div class="p-6">
-          <h3 class="text-sm font-medium mb-4 tracking-widest uppercase">Новый проект</h3>
-          <form @submit.prevent="createProject">
-            <div class="mb-3">
-              <label class="text-xs text-gray-500 block mb-1">Название</label>
-              <UInput v-model="newProject.title" placeholder="название проекта" required />
-            </div>
-            <div class="mb-3">
-              <label class="text-xs text-gray-500 block mb-1">Slug (URL)</label>
-              <UInput v-model="newProject.slug" placeholder="project_slug" required />
-            </div>
-            <div class="mb-4">
-              <label class="text-xs text-gray-500 block mb-1">PIN клиента</label>
-              <UInput v-model="newProject.clientPin" placeholder="1234" />
-            </div>
-            <p v-if="createError" class="text-red-500 text-xs mb-3">{{ createError }}</p>
-            <div class="flex gap-2 justify-end">
-              <UButton variant="ghost" @click="showCreate = false">Отмена</UButton>
-              <UButton type="submit" :loading="creating">Создать</UButton>
-            </div>
-          </form>
-        </div>
-      </template>
-    </UModal>
+    <!-- Форма создания проекта -->
+    <div v-if="showCreate" class="a-modal-backdrop" @click.self="showCreate = false">
+      <div class="a-modal">
+        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">новый проект</h3>
+        <form @submit.prevent="createProject">
+          <div class="a-field">
+            <label>Название</label>
+            <input v-model="newProject.title" class="a-input" required placeholder="Название проекта">
+          </div>
+          <div class="a-field">
+            <label>Slug (URL)</label>
+            <input v-model="newProject.slug" class="a-input" required placeholder="project_slug">
+          </div>
+          <div class="a-field">
+            <label>PIN клиента</label>
+            <input v-model="newProject.clientPin" class="a-input" placeholder="1234">
+          </div>
+          <p v-if="createError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ createError }}</p>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button type="button" class="a-btn-sm" @click="showCreate = false">отмена</button>
+            <button type="submit" class="a-btn-save" :disabled="creating">{{ creating ? '...' : 'создать' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -105,3 +100,35 @@ async function deleteProject(slug: string) {
   }
 }
 </script>
+
+<style scoped>
+.a-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 0; }
+.a-project-link { font-size: .9rem; color: #1a1a1a; text-decoration: none; font-weight: 500; }
+.a-project-link:hover { text-decoration: underline; }
+.a-btn-sm {
+  border: 1px solid #ddd; background: transparent; padding: 4px 10px;
+  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
+}
+.a-btn-sm:hover { border-color: #1a1a1a; }
+.a-btn-danger { color: #c00; border-color: #c00; }
+.a-btn-danger:hover { background: #c00; color: #fff; }
+.a-btn-save {
+  border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff;
+  padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
+}
+.a-btn-save:hover { background: #333; }
+.a-field { margin-bottom: 14px; }
+.a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
+.a-input {
+  display: block; width: 100%; border: none; border-bottom: 1px solid #ddd;
+  padding: 8px 0; font-size: .88rem; outline: none; font-family: inherit;
+}
+.a-input:focus { border-bottom-color: #1a1a1a; }
+.a-modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.a-modal {
+  background: #fff; border: 1px solid #e0e0e0; padding: 32px; width: 360px; max-width: 90vw;
+}
+</style>
