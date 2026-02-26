@@ -73,7 +73,7 @@ interface Group { label: string; items: Item[] }
 interface Tab { id: string; title: string; heading: string; image: string; groups: Group[] }
 
 const { data: raw, pending, refresh } = await useFetch<any>(
-  () => `/api/projects/${props.slug}/page-content?page=${props.page}`
+  () => `/api/projects/${props.slug}/page-content?page=${props.page}`, { server: false }
 )
 
 const tabs = ref<Tab[]>([])

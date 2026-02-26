@@ -76,7 +76,7 @@ interface Question { label: string; type: string; image?: string }
 interface Section { id: string; title: string; heading: string; image?: string; questions: Question[] }
 
 const { data: raw, pending, refresh } = await useFetch<any>(
-  () => `/api/projects/${props.slug}/page-content?page=${props.page}`
+  () => `/api/projects/${props.slug}/page-content?page=${props.page}`, { server: false }
 )
 
 const sections = ref<Section[]>([])

@@ -26,7 +26,7 @@
 const props = defineProps<{ slug: string; page: string }>()
 
 const { data: content, pending, refresh } = await useFetch<any>(
-  () => `/api/projects/${props.slug}/page-content?page=${props.page}`
+  () => `/api/projects/${props.slug}/page-content?page=${props.page}`, { server: false }
 )
 
 const rawJson = ref('')
