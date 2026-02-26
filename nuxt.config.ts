@@ -7,7 +7,7 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/ui', '@pinia/nuxt'],
 
-  css: [],
+  css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
     // Server-only (private)
