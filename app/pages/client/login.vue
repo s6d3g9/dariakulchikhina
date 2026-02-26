@@ -29,7 +29,6 @@ definePageMeta({ layout: 'default' })
 
 type PublicProject = { slug: string; title: string }
 
-const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 
@@ -45,10 +44,9 @@ async function openProject(projectSlug: string) {
       method: 'POST',
       body: { projectSlug },
     })
-    router.push(`/client/${res.slug}`)
+    window.location.href = `/client/${res.slug}`
   } catch (e: any) {
     error.value = e.data?.message || 'Не удалось открыть проект'
-  } finally {
     loading.value = false
   }
 }
