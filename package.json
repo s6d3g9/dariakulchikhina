@@ -1,0 +1,42 @@
+{
+  "name": "daria-kulchikhina",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3000",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "migrate:json": "node --experimental-vm-modules scripts/migrate-json-to-pg.mjs"
+  },
+  "dependencies": {
+    "nuxt": "^3.17.0",
+    "@nuxt/ui": "^3.1.0",
+    "@pinia/nuxt": "^0.10.1",
+    "pinia": "^3.0.1",
+    "drizzle-orm": "^0.41.0",
+    "postgres": "^3.4.5",
+    "zod": "^3.24.2",
+    "ioredis": "^5.4.2",
+    "bcryptjs": "^3.0.2",
+    "h3": "latest"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "latest",
+    "drizzle-kit": "^0.30.4",
+    "typescript": "^5.8.2",
+    "@types/node": "^22.13.10",
+    "@types/bcryptjs": "^2.4.6"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "vue-demi"
+    ]
+  }
+}

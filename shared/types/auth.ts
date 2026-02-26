@@ -1,0 +1,12 @@
+import { z } from 'zod'
+
+export const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+})
+export const PinLoginSchema = z.object({
+  pin: z.string().min(1),
+  projectSlug: z.string().optional(),
+})
+export type LoginInput = z.infer<typeof LoginSchema>
+export type PinLoginInput = z.infer<typeof PinLoginSchema>

@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: daria_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: daria_admin
+      POSTGRES_USER: daria
+      POSTGRES_PASSWORD: daria_secret_2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: daria_redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
