@@ -30,6 +30,11 @@ function _readCookie(event: H3Event, name: string): string | undefined {
   return _parseCookies(event)[name]
 }
 
+function _isSecure(event: H3Event): boolean {
+  const req = (event as any).node?.req ?? (event as any).req
+  return req.headers["x-forwarded-proto"] === "https" || process.env.FORCE_HTTPS === "true"
+}
+
 function _writeCookie(event: H3Event, name: string, value: string, opts: {
   httpOnly?: boolean; sameSite?: string; secure?: boolean; maxAge?: number; path?: string; expires?: Date
 }) {
@@ -56,7 +61,7 @@ export function setAdminSession(event: H3Event, userId: number) {
   const v = Buffer.from(JSON.stringify({ userId, ts: Date.now() })).toString('base64')
   _writeCookie(event, ADMIN_COOKIE, v, {
     httpOnly: true, sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: _isSecure(event),
     maxAge: 60 * 60 * 24 * 30, path: '/'
   })
 }
@@ -82,7 +87,7 @@ export function requireAdmin(event: H3Event) {
 export function setClientSession(event: H3Event, projectSlug: string) {
   _writeCookie(event, CLIENT_COOKIE, projectSlug, {
     httpOnly: true, sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: _isSecure(event),
     maxAge: 60 * 60 * 24 * 30, path: '/'
   })
 }
@@ -107,7 +112,7 @@ export function requireClient(event: H3Event, projectSlug?: string) {
 export function setContractorSession(event: H3Event, contractorId: number) {
   _writeCookie(event, CONTRACTOR_COOKIE, String(contractorId), {
     httpOnly: true, sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: _isSecure(event),
     maxAge: 60 * 60 * 24 * 30, path: '/'
   })
 }
