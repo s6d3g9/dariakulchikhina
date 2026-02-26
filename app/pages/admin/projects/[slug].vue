@@ -42,10 +42,6 @@
             <label>Название</label>
             <input v-model="editForm.title" class="a-input" required>
           </div>
-          <div class="a-field">
-            <label>PIN клиента (пусто = недоступен)</label>
-            <input v-model="editForm.clientPin" class="a-input" placeholder="1234">
-          </div>
           <p v-if="editError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ editError }}</p>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
             <button type="button" class="a-btn-sm" @click="showEdit = false">отмена</button>
@@ -70,14 +66,12 @@ const saving = ref(false)
 const editError = ref('')
 
 const editForm = reactive({
-  title: project.value?.title || '',
-  clientPin: project.value?.clientPin || ''
+  title: project.value?.title || ''
 })
 
 watch(project, (p) => {
   if (p) {
     editForm.title = p.title
-    editForm.clientPin = p.clientPin || ''
   }
 })
 
@@ -101,7 +95,7 @@ async function saveProject() {
   try {
     await $fetch(`/api/projects/${slug.value}`, {
       method: 'PUT',
-      body: { title: editForm.title, clientPin: editForm.clientPin || null }
+      body: { title: editForm.title }
     })
     showEdit.value = false
     refresh()

@@ -42,10 +42,6 @@
             <label>Slug (URL)</label>
             <input v-model="newProject.slug" class="a-input" required placeholder="project_slug">
           </div>
-          <div class="a-field">
-            <label>PIN клиента</label>
-            <input v-model="newProject.clientPin" class="a-input" placeholder="1234">
-          </div>
           <p v-if="createError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ createError }}</p>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
             <button type="button" class="a-btn-sm" @click="showCreate = false">отмена</button>
@@ -64,7 +60,7 @@ const { data: projects, pending, refresh } = await useFetch<any[]>('/api/project
 const showCreate = ref(false)
 const creating = ref(false)
 const createError = ref('')
-const newProject = reactive({ title: '', slug: '', clientPin: '' })
+const newProject = reactive({ title: '', slug: '' })
 
 async function createProject() {
   creating.value = true
@@ -75,14 +71,12 @@ async function createProject() {
       body: {
         title: newProject.title,
         slug: newProject.slug,
-        clientPin: newProject.clientPin || undefined,
         pages: ['materials', 'tz', 'profile_customer', 'profile_contractors', 'work_status', 'project_roadmap']
       }
     })
     showCreate.value = false
     newProject.title = ''
     newProject.slug = ''
-    newProject.clientPin = ''
     refresh()
   } catch (e: any) {
     createError.value = e.data?.message || 'Ошибка'
