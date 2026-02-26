@@ -18,7 +18,10 @@
           <NuxtLink :to="`/admin/projects/${p.slug}`" class="a-project-link">{{ p.title }}</NuxtLink>
           <div style="font-size:.76rem;color:#aaa;margin-top:2px">{{ p.slug }}</div>
         </div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <a :href="`/client/${p.slug}`" target="_blank" rel="noopener noreferrer">
+            <button class="a-btn-sm">готовые страницы ↗</button>
+          </a>
           <NuxtLink :to="`/admin/projects/${p.slug}`">
             <button class="a-btn-sm">открыть</button>
           </NuxtLink>
@@ -27,7 +30,6 @@
       </div>
     </div>
 
-    <!-- Форма создания проекта -->
     <div v-if="showCreate" class="a-modal-backdrop" @click.self="showCreate = false">
       <div class="a-modal">
         <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">новый проект</h3>
@@ -59,7 +61,6 @@
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects')
-
 const showCreate = ref(false)
 const creating = ref(false)
 const createError = ref('')

@@ -3,14 +3,12 @@
     <div v-if="projectPending" style="font-size:.88rem;color:#999">Загрузка...</div>
     <div v-else-if="!project" style="font-size:.88rem;color:#999">Проект не найден</div>
     <template v-else>
-      <!-- Хлебные крошки -->
       <div style="font-size:.78rem;color:#aaa;margin-bottom:16px">
         <NuxtLink to="/admin" style="color:#888;text-decoration:none">проекты</NuxtLink>
         <span style="margin:0 6px">/</span>
         <span>{{ project.title }}</span>
       </div>
 
-      <!-- Вкладки страниц проекта -->
       <div class="proj-tabs">
         <button
           v-for="pg in availablePages"
@@ -20,12 +18,11 @@
           @click="activePage = pg.slug"
         >{{ pg.title }}</button>
         <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <a :href="`/client/${project.slug}`" target="_blank" style="font-size:.78rem;color:#888;text-decoration:none">страница клиента ↗</a>
+          <a :href="`/client/${project.slug}`" target="_blank" rel="noopener noreferrer" class="proj-ready-link">готовые страницы ↗</a>
           <button class="proj-tab proj-tab--settings" @click="showEdit = true">⚙ проект</button>
         </span>
       </div>
 
-      <!-- Содержимое страницы -->
       <div v-if="activePage === 'project_roadmap'">
         <AdminRoadmap :slug="route.params.slug as string" />
       </div>
@@ -37,7 +34,6 @@
       </div>
     </template>
 
-    <!-- Модальное окно редактирования проекта -->
     <div v-if="showEdit" class="a-modal-backdrop" @click.self="showEdit = false">
       <div class="a-modal">
         <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">редактировать проект</h3>
@@ -68,7 +64,6 @@ const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
 const { data: project, pending: projectPending, refresh } = await useFetch<any>(`/api/projects/${slug.value}`)
-
 const activePage = ref('materials')
 const showEdit = ref(false)
 const saving = ref(false)
@@ -140,6 +135,8 @@ async function saveProject() {
 .proj-tab:hover { border-color: #1a1a1a; color: #1a1a1a; }
 .proj-tab--active { border-color: #1a1a1a; color: #1a1a1a; font-weight: 500; }
 .proj-tab--settings { border-style: dashed; font-size: .78rem; }
+.proj-ready-link { font-size: .78rem; color: #555; text-decoration: none; border: 1px solid #ddd; padding: 6px 10px; border-radius: 2px; }
+.proj-ready-link:hover { border-color: #1a1a1a; color: #1a1a1a; }
 .a-btn-sm {
   border: 1px solid #ddd; background: transparent; padding: 4px 10px;
   font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
