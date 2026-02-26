@@ -2,6 +2,7 @@ import {
   pgTable,
   serial,
   text,
+  varchar,
   integer,
   timestamp,
   jsonb,
@@ -12,6 +13,7 @@ import { relations } from 'drizzle-orm'
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
+  login: varchar('login', { length: 100 }).unique(),
   passwordHash: text('password_hash').notNull(),
   name: text('name'),
   createdAt: timestamp('created_at').defaultNow().notNull(),

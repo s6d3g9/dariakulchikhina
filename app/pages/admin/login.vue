@@ -5,11 +5,12 @@
       <form @submit.prevent="submit">
         <div class="mb-4">
           <input
-            v-model="form.email"
-            type="email"
-            placeholder="email"
+            v-model="form.login"
+            type="text"
+            placeholder="логин"
+            autocomplete="username"
             required
-            class="w-full border-b border-gray-200 pb-2 text-sm outline-none font-inherit focus:border-gray-600"
+            class="w-full border-b border-gray-200 pb-2 text-sm outline-none focus:border-gray-600"
           />
         </div>
         <div class="mb-6">
@@ -17,8 +18,9 @@
             v-model="form.password"
             type="password"
             placeholder="пароль"
+            autocomplete="current-password"
             required
-            class="w-full border-b border-gray-200 pb-2 text-sm outline-none font-inherit focus:border-gray-600"
+            class="w-full border-b border-gray-200 pb-2 text-sm outline-none focus:border-gray-600"
           />
         </div>
         <p v-if="error" class="text-red-500 text-xs mb-4">{{ error }}</p>
@@ -38,7 +40,7 @@
 definePageMeta({ layout: 'default' })
 
 const router = useRouter()
-const form = reactive({ email: '', password: '' })
+const form = reactive({ login: '', password: '' })
 const error = ref('')
 const loading = ref(false)
 
@@ -49,7 +51,7 @@ async function submit() {
     await $fetch('/api/auth/login', { method: 'POST', body: form })
     router.push('/admin')
   } catch (e: any) {
-    error.value = e.data?.message || 'Неверные данные'
+    error.value = e.data?.statusMessage || 'Неверный логин или пароль'
   } finally {
     loading.value = false
   }

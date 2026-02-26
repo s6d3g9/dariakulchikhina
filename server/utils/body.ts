@@ -23,5 +23,13 @@ export async function readValidatedNodeBody<T>(
   schema: { parse: (d: unknown) => T },
 ): Promise<T> {
   const body = await readNodeBody(event)
-  return schema.parse(body)
+  try {
+    return schema.parse(body)
+  } catch (e: any) {
+    // ZodError → 400
+    throw createError({
+      statusCode: 400,
+      statusMessage: e?.errors?.[0]?.message ?? 'Invalid request body',
+    })
+  }
 }
