@@ -1,27 +1,25 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <div class="bg-white border border-gray-200 p-10 w-80">
+    <div class="bg-white border border-gray-200 p-10 w-[420px] max-w-[92vw]">
       <h2 class="text-xs font-medium tracking-widest uppercase text-gray-400 mb-2">Личный кабинет</h2>
-      <p class="text-xs text-gray-400 mb-6">Введите slug проекта</p>
-      <form @submit.prevent="submit">
-        <div class="mb-4">
-          <input
-            v-model="projectSlug"
-            type="text"
-            placeholder="project_1"
-            required
-            class="w-full border-b border-gray-200 pb-2 text-sm outline-none font-inherit focus:border-gray-600"
-          />
-        </div>
-        <p v-if="error" class="text-red-500 text-xs mb-4">{{ error }}</p>
+      <p class="text-xs text-gray-400 mb-6">Выберите проект</p>
+
+      <div v-if="pending" class="text-sm text-gray-400 py-6">Загрузка проектов...</div>
+      <div v-else-if="!projects?.length" class="text-sm text-gray-400 py-6">Нет доступных проектов</div>
+      <div v-else class="flex flex-col gap-2">
         <button
-          type="submit"
+          v-for="p in projects"
+          :key="p.slug"
+          @click="openProject(p.slug)"
           :disabled="loading"
-          class="w-full border border-gray-900 bg-transparent py-2 text-sm cursor-pointer hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-50"
+          class="w-full text-left border border-gray-300 px-4 py-3 text-sm hover:border-gray-700 hover:text-gray-900 transition-colors disabled:opacity-50"
         >
-          {{ loading ? '...' : 'Открыть' }}
+          <span class="text-gray-800">{{ p.title }}</span>
+          <span class="text-gray-400 text-xs ml-2">{{ p.slug }}</span>
         </button>
-      </form>
+      </div>
+
+      <p v-if="error" class="text-red-500 text-xs mt-4">{{ error }}</p>
     </div>
   </div>
 </template>
@@ -29,22 +27,27 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'default' })
 
-const router = useRouter()
-const projectSlug = ref('project_1')
-const error = ref('')
-const loading = ref(false)
+type PublicProject = { slug: string; title: string }
 
-async function submit() {
+const router = useRouter()
+const loading = ref(false)
+const error = ref('')
+
+const { data: projects, pending } = await useFetch<PublicProject[]>('/api/public/projects', {
+  server: false,
+})
+
+async function openProject(projectSlug: string) {
   error.value = ''
   loading.value = true
   try {
     const res = await $fetch<{ slug: string }>('/api/auth/client-login', {
       method: 'POST',
-      body: { projectSlug: projectSlug.value.trim() }
+      body: { projectSlug },
     })
     router.push(`/client/${res.slug}`)
   } catch (e: any) {
-    error.value = e.data?.message || 'Проект не найден'
+    error.value = e.data?.message || 'Не удалось открыть проект'
   } finally {
     loading.value = false
   }
