@@ -108,12 +108,15 @@ import { ROADMAP_TEMPLATES } from '~~/shared/types/roadmap-templates'
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects')
-const { data: customTemplates } = await useFetch<any[]>('/api/roadmap-templates')
+const { data: customTemplates } = useFetch<any[]>('/api/roadmap-templates', { server: false, default: () => [] })
 
-const allTemplates = computed(() => [
-  ...ROADMAP_TEMPLATES.map(t => ({ ...t, isBuiltIn: true })),
-  ...(customTemplates.value ?? []).map((t: any) => ({ ...t, isBuiltIn: false })),
-])
+// API returns all templates (built-in + custom). Use as primary source.
+// Fall back to local ROADMAP_TEMPLATES before the client-side fetch completes.
+const allTemplates = computed(() =>
+  (customTemplates.value && customTemplates.value.length > 0)
+    ? customTemplates.value
+    : ROADMAP_TEMPLATES.map(t => ({ ...t, isBuiltIn: true }))
+)
 
 const CORE_PAGE_LABELS: Record<string, string> = {
   materials: 'материалы',
