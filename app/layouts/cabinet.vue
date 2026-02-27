@@ -1,6 +1,6 @@
 <template>
-  <div class="cab-root" :class="{ 'cab-dark': isDark }">
-    <header class="cab-header">
+  <div class="cab-root glass-page" :class="{ 'cab-dark': isDark }">
+    <header class="cab-header glass-surface">
       <div class="cab-header-inner">
         <NuxtLink :to="`/client/${projectSlug}`" class="cab-logo">
           <span class="cab-logo-mark">DK</span>
@@ -51,34 +51,11 @@ async function logout() {
 </script>
 
 <style scoped>
-/* ── Base ─────────────────────────────────────────────────────── */
+/* ── Root ─────────────────────────────────────────────────────── */
 .cab-root {
-  --c-bg:       #ffffff;
-  --c-bg2:      #f8f8f7;
-  --c-text:     #1a1a1a;
-  --c-muted:    #888;
-  --c-border:   #e8e8e4;
-  --c-accent:   #1a1a1a;
-  --c-ok:       #2d7a4a;
-  --c-warn:     #c87400;
-  --c-err:      #ba2626;
-
   min-height: 100vh;
-  background: var(--c-bg);
-  color: var(--c-text);
-  font-family: inherit;
   display: flex;
   flex-direction: column;
-}
-
-/* Dark */
-.cab-dark {
-  --c-bg:     #0f0f0f;
-  --c-bg2:    #1a1a1a;
-  --c-text:   #e8e8e4;
-  --c-muted:  #666;
-  --c-border: #2a2a2a;
-  --c-accent: #e8e8e4;
 }
 
 /* ── Header ────────────────────────────────────────────────────── */
@@ -86,8 +63,10 @@ async function logout() {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: var(--c-bg);
-  border-bottom: 1px solid var(--c-border);
+  border-radius: 0 0 16px 16px;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
 }
 .cab-header-inner {
   max-width: 1040px;
@@ -104,24 +83,24 @@ async function logout() {
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--c-text);
+  color: var(--glass-text);
 }
 .cab-logo-mark {
   font-size: .72rem;
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--c-accent);
 }
 .cab-logo-sep {
   width: 1px;
   height: 14px;
-  background: var(--c-border);
+  background: var(--glass-border);
 }
 .cab-project-name {
   font-size: .74rem;
   letter-spacing: .8px;
-  color: var(--c-muted);
+  color: var(--glass-text);
+  opacity: .5;
   max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -132,18 +111,22 @@ async function logout() {
 
 .cab-btn-icon {
   border: none; background: none; cursor: pointer; padding: 6px;
-  color: var(--c-muted); font-size: .9rem; line-height: 1;
+  color: var(--glass-text); opacity: .45; font-size: .9rem; line-height: 1;
+  transition: opacity .15s;
 }
-.cab-btn-icon:hover { color: var(--c-text); }
+.cab-btn-icon:hover { opacity: 1; }
 .cab-theme-icon { display: block; }
 
 .cab-btn-text {
-  border: 1px solid var(--c-border); background: none;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   cursor: pointer; padding: 5px 12px;
   font-size: .72rem; letter-spacing: .6px; text-transform: uppercase;
-  color: var(--c-muted); font-family: inherit;
+  color: var(--glass-text); opacity: .65; font-family: inherit;
+  border-radius: 7px; transition: opacity .15s;
 }
-.cab-btn-text:hover { border-color: var(--c-text); color: var(--c-text); }
+.cab-btn-text:hover { opacity: 1; }
 
 /* ── Main ────────────────────────────────────────────────────── */
 .cab-main { flex: 1; }
@@ -155,8 +138,7 @@ async function logout() {
 
 /* ── Footer ─────────────────────────────────────────────────── */
 .cab-footer {
-  border-top: 1px solid var(--c-border);
-  background: var(--c-bg);
+  border-top: 1px solid var(--glass-border);
 }
 .cab-footer-inner {
   max-width: 1040px;
@@ -166,7 +148,8 @@ async function logout() {
 .cab-footer-copy {
   font-size: .68rem;
   letter-spacing: .5px;
-  color: var(--c-muted);
+  color: var(--glass-text);
+  opacity: .4;
   text-transform: uppercase;
 }
 
@@ -175,112 +158,4 @@ async function logout() {
   .cab-inner { padding: 20px 16px 36px; }
   .cab-project-name { max-width: 120px; }
 }
-</style>
-
-
-<style scoped>
-.cabinet-root {
-  --bg: #ffffff;
-  --border: #e6e6e6;
-  --text: #1a1a1a;
-  --muted: #888888;
-  --btn-border: #d8d8d8;
-  --btn-text: #555555;
-
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-}
-
-
-.cabinet-header {
-  border-bottom: 1px solid transparent;
-  background: var(--bg);
-  border-radius: 0 0 16px 16px;
-}
-
-.cabinet-header-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.cabinet-title {
-  font-size: .74rem;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.cabinet-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.cabinet-logout {
-  border: 1px solid var(--btn-border);
-  background: color-mix(in srgb, var(--bg) 74%, #ffffff 26%);
-  color: var(--btn-text);
-  font-size: .74rem;
-  letter-spacing: .6px;
-  text-transform: uppercase;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.theme-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: 1px solid var(--btn-border);
-  background: color-mix(in srgb, var(--bg) 72%, #f7f7f7 28%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
-  cursor: pointer;
-  padding: 0;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-
-.cabinet-logout:hover {
-  border-color: var(--text);
-  color: var(--text);
-}
-
-.cabinet-main-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 20px 32px;
-}
-
-@media (max-width: 768px) {
-  .cabinet-header-inner {
-    padding: 10px 12px;
-  }
-
-  .cabinet-title {
-    font-size: .68rem;
-    letter-spacing: 1.1px;
-  }
-
-  .cabinet-actions {
-    gap: 8px;
-  }
-
-  .cabinet-logout {
-    padding: 5px 8px;
-    font-size: .7rem;
-  }
-
-  .cabinet-main-inner {
-    padding: 0 12px 20px;
-  }
-}
-
-/* ── dark theme: fix logout button ── */
 </style>

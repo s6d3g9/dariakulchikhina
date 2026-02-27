@@ -5,7 +5,7 @@
         v-for="item in availablePages"
         :key="item.slug"
         :to="`/client/${route.params.slug}/${item.slug}`"
-        class="menu-item"
+        class="menu-item glass-chip"
         :class="{ 'menu-item--active': item.slug === page }"
       >
         {{ item.title }}
@@ -65,32 +65,38 @@ const availablePages = computed(() => {
 .menu-ribbon {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 18px;
-  padding: 14px 0 10px;
-  border-bottom: 1px solid var(--border, #ececec);
+  gap: 6px;
+  padding: 16px 0 14px;
+  margin-bottom: 8px;
 }
 
 .menu-item {
   text-decoration: none;
-  color: var(--secondary, #8f8f8f);
-  font-size: .8rem;
-  letter-spacing: .7px;
-  text-transform: uppercase;
-  padding: 4px 0;
-  cursor: pointer;
-  user-select: none;
-  flex: 0 0 auto;
+  font-size: .75rem;
+  letter-spacing: .6px;
+  text-transform: lowercase;
+  padding: 5px 14px;
+  border-radius: 999px;
   white-space: nowrap;
+  flex: 0 0 auto;
+  color: var(--glass-text);
+  opacity: .55;
+  border: 1px solid transparent;
+  transition: opacity .15s, border-color .15s, background .15s;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
-
 .menu-item:hover {
-  color: var(--text, #1a1a1a);
-  padding-left: 5px;
+  opacity: .85;
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
 }
-
 .menu-item--active {
-  color: var(--text, #1a1a1a);
-  padding-left: 5px;
+  opacity: 1;
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  font-weight: 500;
 }
 
 .client-page-body {
@@ -100,31 +106,14 @@ const availablePages = computed(() => {
 @media (max-width: 768px) {
   .menu-ribbon {
     flex-wrap: nowrap;
-    gap: 22px;
+    gap: 6px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding: 10px 0 8px;
+    padding: 12px 0 10px;
   }
-
-  .menu-ribbon::-webkit-scrollbar {
-    display: none;
-  }
-
-  .menu-item {
-    font-size: .78rem;
-    padding: 2px 0;
-  }
-
-  .menu-item:hover,
-  .menu-item--active {
-    padding-left: 0;
-    color: var(--text, #1a1a1a);
-  }
-
-  .client-page-body {
-    padding: 14px 0 20px;
-  }
+  .menu-ribbon::-webkit-scrollbar { display: none; }
+  .client-page-body { padding: 14px 0 20px; }
 }
 </style>

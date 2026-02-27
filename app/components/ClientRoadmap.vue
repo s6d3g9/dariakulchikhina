@@ -63,61 +63,58 @@ function statusTextClass(s: string) {
 </script>
 
 <style scoped>
-.rm-wrap {
-  --r-title: #666;
-  --r-muted: #9a9a9a;
-  --r-line: #e3e3e3;
-  --r-dot-border: #cfcfcf;
-  --r-dot-bg: #fff;
-  --r-text: #1f1f1f;
-  --r-soft: #7f7f7f;
-  --r-progress-dot-border: #dfbf84;
-  --r-progress-dot-bg: #fff7ea;
-  --r-done-dot-border: #b8d8c1;
-  --r-done-dot-bg: #f2faf4;
-  --r-status-pending: #999;
-  --r-status-progress: #8a5b00;
-  --r-status-done: #2e6a3f;
-  padding: 14px;
-}
-
+.rm-wrap { padding: 14px; }
 
 .rm-title {
-  margin: 0 0 10px;
+  margin: 0 0 14px;
   font-size: .78rem;
   letter-spacing: .9px;
   text-transform: uppercase;
-  color: var(--r-title);
+  color: var(--glass-text);
+  opacity: .45;
 }
-.rm-empty { color: var(--r-muted); font-size: .86rem; }
+.rm-empty { color: var(--glass-text); opacity: .35; font-size: .86rem; }
+
 .rm-timeline { position: relative; }
 .rm-line {
   position: absolute; left: 8px; top: 2px; bottom: 4px;
-  width: 1px; background: var(--r-line);
+  width: 1px; background: var(--glass-border);
 }
 .rm-list { display: grid; gap: 10px; }
 .rm-row { position: relative; display: flex; gap: 10px; }
+
 .rm-dot {
   width: 16px; height: 16px; border-radius: 50%;
-  border: 2px solid var(--r-dot-border);
-  background: var(--r-dot-bg);
+  border: 2px solid var(--glass-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   z-index: 1; flex-shrink: 0; margin-top: 3px;
+  transition: border-color .2s, background .2s;
 }
-.rm-dot--pending { border-color: var(--r-dot-border); background: var(--r-dot-bg); }
-.rm-dot--progress { border-color: var(--r-progress-dot-border); background: var(--r-progress-dot-bg); }
-.rm-dot--done { border-color: var(--r-done-dot-border); background: var(--r-done-dot-bg); }
-.rm-dot--skipped { border-color: var(--r-dot-border); background: var(--r-dot-bg); }
+.rm-dot--pending  { border-color: var(--glass-border); }
+.rm-dot--progress { border-color: rgba(220,160,60,.6); background: rgba(255,200,80,.12); }
+.rm-dot--done     { border-color: rgba(60,160,100,.6); background: rgba(60,160,100,.1); }
+.rm-dot--skipped  { border-color: var(--glass-border); opacity: .4; }
+
 .rm-content {
-  border-radius: 12px; border: 1px solid var(--r-line);
-  padding: 8px 10px; padding-bottom: 2px;
+  flex: 1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 0;
 }
-.rm-stage-title { margin: 0; font-size: .88rem; color: var(--r-text); font-weight: 500; }
-.rm-desc { margin: 4px 0 0; color: var(--r-soft); font-size: .8rem; line-height: 1.4; }
-.rm-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
-.rm-date { color: var(--r-muted); font-size: .74rem; }
-.rm-status { font-size: .68rem; letter-spacing: .5px; text-transform: uppercase; }
-.rm-status--pending, .rm-status--skipped { color: var(--r-status-pending); }
-.rm-status--progress { color: var(--r-status-progress); }
-.rm-status--done { color: var(--r-status-done); }
-.rm-notes { margin: 4px 0 0; color: var(--r-soft); font-size: .76rem; line-height: 1.42; }
+.rm-stage-title { margin: 0; font-size: .88rem; color: var(--glass-text); font-weight: 500; }
+.rm-desc { margin: 4px 0 0; color: var(--glass-text); opacity: .5; font-size: .8rem; line-height: 1.4; }
+.rm-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.rm-date { color: var(--glass-text); opacity: .4; font-size: .74rem; }
+.rm-status {
+  font-size: .65rem; letter-spacing: .5px; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.rm-status--pending, .rm-status--skipped { color: var(--glass-text); opacity: .4; }
+.rm-status--progress { color: rgba(180,120,0,1); border-color: rgba(220,160,60,.4); background: rgba(255,200,80,.08); opacity: 1; }
+.rm-status--done     { color: rgba(40,140,80,1); border-color: rgba(60,160,100,.4); background: rgba(60,160,100,.07); opacity: 1; }
+.rm-notes { margin: 6px 0 2px; color: var(--glass-text); opacity: .45; font-size: .76rem; line-height: 1.42; }
 </style>

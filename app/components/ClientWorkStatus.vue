@@ -50,75 +50,56 @@ function statusClass(s: string) {
 </script>
 
 <style scoped>
-.ws-wrap {
-  --w-title: #666;
-  --w-muted: #9a9a9a;
-  --w-card-bg: #fff;
-  --w-card-border: #e4e4e4;
-  --w-text: #1f1f1f;
-  --w-text-soft: #8a8a8a;
-  --w-badge-border: #d8d8d8;
-  --b-pending-color: #777;
-  --b-pending-border: #d8d8d8;
-  --b-pending-bg: #fafafa;
-  --b-progress-color: #8a5b00;
-  --b-progress-border: #e0c694;
-  --b-progress-bg: #fff8ed;
-  --b-done-color: #2e6a3f;
-  --b-done-border: #b8d8c1;
-  --b-done-bg: #f2faf4;
-  --b-cancel-color: #a04949;
-  --b-cancel-border: #e4c4c4;
-  --b-cancel-bg: #fff7f7;
-  padding: 14px;
-}
-
+.ws-wrap { padding: 14px; }
 
 .ws-title {
-  margin: 0 0 10px;
+  margin: 0 0 14px;
   font-size: .78rem;
   letter-spacing: .9px;
   text-transform: uppercase;
-  color: var(--w-title);
+  color: var(--glass-text);
+  opacity: .45;
 }
-.ws-empty { color: var(--w-muted); font-size: .86rem; }
+.ws-empty { color: var(--glass-text); opacity: .35; font-size: .86rem; }
 .ws-list { display: grid; gap: 8px; }
+
 .ws-card {
-  border: 1px solid var(--w-card-border);
-  background: var(--w-card-bg);
-  padding: 12px;
+  border-radius: 10px;
+  padding: 12px 14px;
 }
 .ws-head {
   display: flex; align-items: flex-start;
-  justify-content: space-between; gap: 8px;
+  justify-content: space-between; gap: 10px;
 }
-.ws-item-title { font-size: .88rem; font-weight: 500; color: var(--w-text); }
-.ws-meta { margin-top: 6px; font-size: .78rem; color: var(--w-text-soft); }
+.ws-item-title { font-size: .88rem; font-weight: 500; color: var(--glass-text); }
+.ws-meta { margin-top: 6px; font-size: .78rem; color: var(--glass-text); opacity: .5; }
 .ws-notes { font-style: italic; white-space: pre-line; }
+
+/* Badges */
 .ws-badge {
-  font-size: .68rem; letter-spacing: .5px; text-transform: uppercase;
-  border: 1px solid var(--w-badge-border); padding: 2px 6px; white-space: nowrap;
+  font-size: .65rem; letter-spacing: .4px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-text); opacity: .5;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.ws-badge--progress {
+  color: rgba(160,100,0,1); opacity: 1;
+  border-color: rgba(220,160,60,.4);
+  background: rgba(255,200,80,.1);
+}
+.ws-badge--done {
+  color: rgba(40,130,75,1); opacity: 1;
+  border-color: rgba(60,160,100,.4);
+  background: rgba(60,160,100,.08);
+}
+.ws-badge--cancelled {
+  color: rgba(180,60,60,1); opacity: 1;
+  border-color: rgba(220,80,80,.3);
+  background: rgba(220,80,80,.07);
 }
 .ws-badge--pending,
 .ws-badge--planned,
-.ws-badge--paused {
-  color: var(--b-pending-color);
-  border-color: var(--b-pending-border);
-  background: var(--b-pending-bg);
-}
-.ws-badge--progress {
-  color: var(--b-progress-color);
-  border-color: var(--b-progress-border);
-  background: var(--b-progress-bg);
-}
-.ws-badge--done {
-  color: var(--b-done-color);
-  border-color: var(--b-done-border);
-  background: var(--b-done-bg);
-}
-.ws-badge--cancelled {
-  color: var(--b-cancel-color);
-  border-color: var(--b-cancel-border);
-  background: var(--b-cancel-bg);
-}
+.ws-badge--paused { /* inherits base opacity */ }
 </style>
