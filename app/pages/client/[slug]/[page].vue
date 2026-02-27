@@ -13,8 +13,16 @@
     </div>
 
     <div class="client-page-body">
-      <!-- Роадмап -->
-      <ClientRoadmap v-if="page === 'project_roadmap'" :slug="route.params.slug as string" />
+      <!-- Анкета клиента -->
+      <ClientSelfProfile v-if="page === 'self_profile'" :slug="route.params.slug as string" />
+      <!-- Ход проекта (таймлайн + команда) -->
+      <ClientTimeline v-else-if="page === 'design_timeline'" :slug="route.params.slug as string" />
+      <!-- Альбом проекта -->
+      <ClientDesignAlbum v-else-if="page === 'design_album'" :slug="route.params.slug as string" />
+      <!-- Документы / договоры -->
+      <ClientContracts v-else-if="page === 'contracts'" :slug="route.params.slug as string" />
+      <!-- Роадмап (legacy) -->
+      <ClientRoadmap v-else-if="page === 'project_roadmap'" :slug="route.params.slug as string" />
       <!-- Статусы работ -->
       <ClientWorkStatus v-else-if="page === 'work_status'" :slug="route.params.slug as string" />
       <!-- Подрядчики проекта -->
@@ -33,12 +41,16 @@ const page = computed(() => route.params.page as string)
 const { data: project } = await useFetch<any>(`/api/projects/${route.params.slug}`)
 
 const allPages = [
-  { slug: 'materials', title: 'материалы' },
-  { slug: 'tz', title: 'техническое задание' },
-  { slug: 'profile_customer', title: 'профиль клиента' },
+  { slug: 'self_profile',        title: 'мои данные' },
+  { slug: 'design_timeline',     title: 'ход проекта' },
+  { slug: 'design_album',        title: 'альбом проекта' },
+  { slug: 'contracts',           title: 'документы' },
+  { slug: 'materials',           title: 'материалы' },
+  { slug: 'tz',                  title: 'техническое задание' },
+  { slug: 'profile_customer',    title: 'профиль клиента' },
   { slug: 'profile_contractors', title: 'профиль подрядчиков' },
-  { slug: 'work_status', title: 'статусы работ' },
-  { slug: 'project_roadmap', title: 'дорожная карта' },
+  { slug: 'work_status',         title: 'статусы работ' },
+  { slug: 'project_roadmap',     title: 'дорожная карта' },
 ]
 const availablePages = computed(() => {
   const pages = project.value?.pages || []

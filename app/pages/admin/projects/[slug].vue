@@ -136,6 +136,11 @@ const allPageSlugs = [
   { slug: 'brief',             title: 'брифинг' },
   { slug: 'site_survey',       title: 'обмеры / аудит' },
   { slug: 'tor_contract',      title: 'ТЗ и договор' },
+  // ── Кабинет клиента ─────────────────────────────────
+  { slug: 'self_profile',      title: 'анкета клиента' },
+  { slug: 'design_timeline',   title: 'ход проекта' },
+  { slug: 'design_album',      title: 'альбом проекта' },
+  { slug: 'contracts',         title: 'документы / договоры' },
   // ── Общие разделы ───────────────────────────────────
   { slug: 'profile_customer',  title: 'профиль клиента' },
   { slug: 'profile_contractors', title: 'подрядчики' },
