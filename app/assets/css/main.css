@@ -403,3 +403,55 @@ html.dark .ac-option.active {
 html.dark .ac-option b {
   color: #a78bfa;
 }
+
+/* ── dark mode: modal windows (a-modal pattern used across admin) ── */
+html.dark .a-modal-backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+html.dark .a-modal {
+  background: #151517;
+  border-color: #2d2d2d;
+  color: #f2f2f2;
+}
+html.dark .a-modal h3,
+html.dark .a-modal h4 {
+  color: #bbb;
+}
+html.dark .a-modal .a-input,
+html.dark .a-modal input,
+html.dark .a-modal textarea {
+  color: #f2f2f2;
+  border-color: #3a3a3a;
+  background: transparent;
+}
+html.dark .a-modal .a-input:focus,
+html.dark .a-modal input:focus,
+html.dark .a-modal textarea:focus {
+  border-color: #888;
+  outline: none;
+}
+html.dark .a-modal select {
+  background: #1e1e20;
+  border-color: #3a3a3a !important;
+  color: #f2f2f2;
+}
+html.dark .a-modal .a-field label,
+html.dark .a-modal label {
+  color: #a8a8a8;
+}
+html.dark .a-modal .a-btn-sm {
+  border-color: #3a3a3a;
+  color: #bbb;
+}
+html.dark .a-modal .a-btn-sm:hover {
+  border-color: #888;
+  color: #f2f2f2;
+}
+html.dark .a-modal .a-btn-save {
+  background: #e8e8e8;
+  border-color: #e8e8e8;
+  color: #111;
+}
+html.dark .a-modal .a-btn-save:hover {
+  background: #ccc;
+}

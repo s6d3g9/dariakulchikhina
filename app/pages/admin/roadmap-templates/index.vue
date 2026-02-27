@@ -72,7 +72,7 @@
               <button type="button" class="a-btn-sm" @click="addStage">+ этап</button>
             </div>
             <div style="display:grid;gap:8px;max-height:300px;overflow:auto;padding-right:4px">
-              <div v-for="(stage, idx) in form.stages" :key="idx" style="border:1px solid #eee;padding:10px">
+              <div v-for="(stage, idx) in form.stages" :key="idx" class="a-stage-item">
                 <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
                   <div>
                     <label style="font-size:.72rem;color:#888">Название этапа</label>
@@ -278,4 +278,6 @@ async function removeTemplate(tpl: any) {
   display: flex; align-items: center; justify-content: center; z-index: 100;
 }
 .a-modal { background: #fff; border: 1px solid #e0e0e0; padding: 24px; max-height: 90vh; overflow: auto; }
+.a-stage-item { border: 1px solid #eee; padding: 10px; }
+html.dark .a-stage-item { border-color: #2d2d2d; background: #1e1e20; }
 </style>

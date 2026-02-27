@@ -242,7 +242,7 @@ async function save() {
   z-index: 200;
 }
 .rm-modal {
-  background: var(--color-surface, #fff);
+  background: #fff;
   border: 1px solid rgba(0,0,0,0.12);
   border-radius: 12px;
   width: 480px;
@@ -254,8 +254,18 @@ async function save() {
   box-shadow: 0 8px 40px rgba(0,0,0,0.18);
 }
 .dark .rm-modal {
-  background: #1a1a2e;
-  border-color: rgba(255,255,255,0.1);
+  background: #151517;
+  border-color: #2d2d2d;
+}
+.dark .rm-header {
+  border-color: #2d2d2d;
+  color: #f2f2f2;
+}
+.dark .rm-footer {
+  border-color: #2d2d2d;
+}
+.dark .rm-stage-row {
+  background: rgba(255,255,255,0.05);
 }
 .rm-header {
   display: flex;
