@@ -137,6 +137,20 @@
               <option value="cafe">кафе</option>
             </select>
           </div>
+
+          <!-- Yandex Map -->
+          <div class="afc-row afc-row--full">
+            <label class="afc-lbl">
+              карта
+              <span v-if="form.meeting_map_address" style="font-weight:400;color:#444;font-size:.8rem;margin-left:6px">{{ form.meeting_map_address }}</span>
+            </label>
+            <div ref="mapEl" class="afc-map"></div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+              <input v-model="mapSearch" class="afc-inp" placeholder="поиск адреса..." style="flex:1" @keydown.enter.prevent="searchAddress">
+              <button type="button" class="afc-map-btn" @click="searchAddress">найти</button>
+              <button v-if="form.meeting_map_lat" type="button" class="afc-map-btn afc-map-btn--clear" @click="clearPin">✕ сбросить</button>
+            </div>
+          </div>
           <div class="afc-row afc-row--full">
             <label class="afc-lbl">заметки о встрече / первое впечатление</label>
             <textarea v-model="form.lead_meeting_notes" class="afc-inp afc-ta" rows="3" @blur="save" />
@@ -182,6 +196,9 @@ const form = reactive<any>({
   lead_source:           '',
   lead_meeting_date:     '',
   lead_meeting_place:    '',
+  meeting_map_lat:        null as number | null,
+  meeting_map_lng:        null as number | null,
+  meeting_map_address:    '',
   lead_meeting_notes:    '',
   lead_first_wishes:     '',
   lead_object_condition: '',
@@ -227,6 +244,88 @@ async function save() {
   savedAt.value = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
 }
 
+// ── Yandex Maps ──────────────────────────────────────
+const mapEl = ref<HTMLElement | null>(null)
+const mapSearch = ref('')
+let ymap: any = null
+let placemark: any = null
+
+async function initMap() {
+  if (!mapEl.value || typeof window === 'undefined') return
+  if (!(window as any).ymaps) {
+    await new Promise<void>((resolve) => {
+      const s = document.createElement('script')
+      s.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
+      s.onload = () => (window as any).ymaps.ready(resolve)
+      document.head.appendChild(s)
+    })
+  } else {
+    await new Promise<void>(r => (window as any).ymaps.ready(r))
+  }
+  const ymaps = (window as any).ymaps
+  const center = form.meeting_map_lat
+    ? [form.meeting_map_lat, form.meeting_map_lng]
+    : [55.751574, 37.573856]
+  ymap = new ymaps.Map(mapEl.value, {
+    center,
+    zoom: form.meeting_map_lat ? 15 : 10,
+    controls: ['zoomControl', 'geolocationControl'],
+  })
+  if (form.meeting_map_lat) {
+    placemark = new ymaps.Placemark([form.meeting_map_lat, form.meeting_map_lng], {}, { preset: 'islands#violetDotIcon' })
+    ymap.geoObjects.add(placemark)
+  }
+  ymap.events.add('click', async (e: any) => {
+    const coords = e.get('coords')
+    setPin(coords)
+    const res = await ymaps.geocode(coords, { results: 1 })
+    const obj = res.geoObjects.get(0)
+    form.meeting_map_address = obj ? obj.getAddressLine() : `${coords[0].toFixed(5)}, ${coords[1].toFixed(5)}`
+    save()
+  })
+}
+
+function setPin(coords: [number, number]) {
+  const ymaps = (window as any).ymaps
+  if (placemark) ymap.geoObjects.remove(placemark)
+  placemark = new ymaps.Placemark(coords, {}, { preset: 'islands#violetDotIcon', draggable: true })
+  placemark.events.add('dragend', async () => {
+    const c = placemark.geometry.getCoordinates()
+    form.meeting_map_lat = c[0]
+    form.meeting_map_lng = c[1]
+    const res = await ymaps.geocode(c, { results: 1 })
+    const obj = res.geoObjects.get(0)
+    form.meeting_map_address = obj ? obj.getAddressLine() : `${c[0].toFixed(5)}, ${c[1].toFixed(5)}`
+    save()
+  })
+  ymap.geoObjects.add(placemark)
+  form.meeting_map_lat = coords[0]
+  form.meeting_map_lng = coords[1]
+  ymap.setCenter(coords, 15, { duration: 300 })
+}
+
+async function searchAddress() {
+  if (!mapSearch.value.trim() || !ymap) return
+  const ymaps = (window as any).ymaps
+  const res = await ymaps.geocode(mapSearch.value, { results: 1 })
+  const obj = res.geoObjects.get(0)
+  if (!obj) return
+  const coords = obj.geometry.getCoordinates()
+  form.meeting_map_address = obj.getAddressLine()
+  setPin(coords)
+  save()
+}
+
+function clearPin() {
+  if (placemark) { ymap.geoObjects.remove(placemark); placemark = null }
+  form.meeting_map_lat = null
+  form.meeting_map_lng = null
+  form.meeting_map_address = ''
+  save()
+}
+
+onMounted(() => { nextTick(initMap) })
+
 function toggleStepDone() {
   form.lead_step_done = !form.lead_step_done
   if (form.lead_step_done && !form.lead_status) {
@@ -261,6 +360,13 @@ function toggleStepDone() {
 .afc-inp:focus { border-color: #aaa; }
 .afc-sel { cursor: pointer; }
 .afc-ta  { resize: vertical; }
+
+/* Map */
+.afc-map { width: 100%; height: 300px; border: 1px solid var(--border, #e0e0e0); border-radius: 2px; }
+.afc-map-btn { padding: 7px 14px; border: 1px solid var(--border, #e0e0e0); background: transparent; font-size: .8rem; cursor: pointer; font-family: inherit; color: #555; white-space: nowrap; }
+.afc-map-btn:hover { border-color: #aaa; color: #1a1a1a; }
+.afc-map-btn--clear { border-color: #f5c0c0; color: #c00; }
+.afc-map-btn--clear:hover { border-color: #c00; }
 
 .afc-complete-card {
   display: flex; align-items: flex-start; gap: 16px;
