@@ -16,7 +16,10 @@
       >
         <div>
           <NuxtLink :to="`/admin/projects/${p.slug}`" class="a-project-link">{{ p.title }}</NuxtLink>
-          <div style="font-size:.76rem;color:#aaa;margin-top:2px">{{ p.slug }}</div>
+          <div style="font-size:.76rem;color:#aaa;margin-top:2px;display:flex;align-items:center;gap:8px">
+            <span>{{ p.slug }}</span>
+            <span v-if="p.status" :class="`pi-badge pi-badge--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
+          </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
           <a
@@ -104,6 +107,7 @@
 
 <script setup lang="ts">
 import { ROADMAP_TEMPLATES } from '~~/shared/types/roadmap-templates'
+import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
@@ -189,6 +193,14 @@ async function deleteProject(slug: string) {
     alert(e.data?.message || 'Ошибка')
   }
 }
+
+function phaseLabel(status: string) {
+  return PROJECT_PHASES.find(p => p.key === status)?.label || status
+}
+
+function phaseColor(status: string) {
+  return PROJECT_PHASES.find(p => p.key === status)?.color || 'gray'
+}
 </script>
 
 <style scoped>
@@ -221,6 +233,21 @@ async function deleteProject(slug: string) {
 }
 .a-project-link { font-size: .9rem; color: var(--link-color); text-decoration: none; font-weight: 500; }
 .a-project-link:hover { text-decoration: underline; }
+.pi-badge {
+  display: inline-block;
+  font-size: .66rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.pi-badge--gray      { background: #f3f4f6; color: #6b7280; }
+.pi-badge--violet    { background: #ede9fe; color: #7c3aed; }
+.pi-badge--blue      { background: #dbeafe; color: #1d4ed8; }
+.pi-badge--amber     { background: #fef3c7; color: #b45309; }
+.pi-badge--orange    { background: #ffedd5; color: #c2410c; }
+.pi-badge--green     { background: #dcfce7; color: #15803d; }
+.pi-badge--teal      { background: #ccfbf1; color: #0f766e; }
 .a-btn-sm {
   border: 1px solid var(--btn-border); background: transparent; padding: 4px 10px;
   font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;

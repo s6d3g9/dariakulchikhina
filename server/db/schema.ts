@@ -23,6 +23,7 @@ export const projects = pgTable('projects', {
   id: serial('id').primaryKey(),
   slug: text('slug').notNull().unique(),
   title: text('title').notNull(),
+  status: text('status').default('lead').notNull(),
   userId: integer('user_id').references(() => users.id),
   clientPin: text('client_pin'),
   pages: text('pages').array().default([]).notNull(),

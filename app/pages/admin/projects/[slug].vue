@@ -3,11 +3,18 @@
     <div v-if="projectPending" style="font-size:.88rem;color:#999">Загрузка...</div>
     <div v-else-if="!project" style="font-size:.88rem;color:#999">Проект не найден</div>
     <template v-else>
-      <div style="font-size:.78rem;color:#aaa;margin-bottom:16px">
+      <div style="font-size:.78rem;color:#aaa;margin-bottom:12px">
         <NuxtLink to="/admin" style="color:#888;text-decoration:none">проекты</NuxtLink>
         <span style="margin:0 6px">/</span>
         <span>{{ project.title }}</span>
       </div>
+
+      <!-- Phase tracker -->
+      <AdminProjectPhase
+        :slug="route.params.slug as string"
+        :status="projectStatus"
+        @update:status="projectStatus = $event"
+      />
 
       <div class="proj-tabs">
         <button
@@ -70,15 +77,17 @@ const activePage = ref('materials')
 const showEdit = ref(false)
 const saving = ref(false)
 const editError = ref('')
-
-const editForm = reactive({
-  title: project.value?.title || ''
-})
+const projectStatus = ref(project.value?.status || 'lead')
 
 watch(project, (p) => {
   if (p) {
     editForm.title = p.title
+    projectStatus.value = p.status || 'lead'
   }
+})
+
+const editForm = reactive({
+  title: project.value?.title || ''
 })
 
 const allPageSlugs = [

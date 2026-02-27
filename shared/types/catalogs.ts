@@ -9,6 +9,39 @@ export const ROADMAP_STAGE_TYPES = [
   'handover',
 ] as const
 
+// ── Project lifecycle phases (BPMN v3.0) ──────────────────────────
+export const PROJECT_STATUSES = [
+  'lead',
+  'concept',
+  'working_project',
+  'procurement',
+  'construction',
+  'commissioning',
+  'completed',
+] as const
+
+export type ProjectStatus = typeof PROJECT_STATUSES[number]
+
+export const PROJECT_PHASES: {
+  key: ProjectStatus
+  label: string
+  short: string
+  description: string
+  color: 'gray' | 'violet' | 'blue' | 'amber' | 'orange' | 'green' | 'teal'
+}[] = [
+  { key: 'lead',            label: 'Инициация',       short: '0', description: 'Бриф, замеры, договор',          color: 'gray'   },
+  { key: 'concept',         label: 'Эскиз',           short: '1', description: 'Концепция, планировка, 3D вайтбокс', color: 'violet' },
+  { key: 'working_project', label: 'Рабочий проект',  short: '2', description: 'Рендеры, инженерия, согласование', color: 'blue'   },
+  { key: 'procurement',     label: 'Закупки',         short: '3', description: 'Смета, тендер, фиксация бюджета',  color: 'amber'  },
+  { key: 'construction',    label: 'Стройка',         short: '4', description: 'Авторский надзор, актирование',    color: 'orange' },
+  { key: 'commissioning',   label: 'Сдача',           short: '5', description: 'ПНР, дефектовка, цифровая сдача', color: 'green'  },
+  { key: 'completed',       label: 'Завершён',        short: '✓', description: 'Проект закрыт',                   color: 'teal'   },
+]
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = Object.fromEntries(
+  PROJECT_PHASES.map(p => [p.key, p.label])
+) as Record<ProjectStatus, string>
+
 export const CLIENT_TYPES = [
   'physical_person',
   'legal_entity',
