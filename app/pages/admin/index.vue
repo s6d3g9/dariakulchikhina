@@ -26,7 +26,7 @@
             :href="`https://dariakulchikhina.com/api/auth/client-open?projectSlug=${encodeURIComponent(p.slug)}`"
             class="a-btn-sm"
             style="text-decoration:none;display:inline-block"
-          >готовые страницы ↗</a>
+          >кабинет клиента ↗</a>
           <NuxtLink :to="`/admin/projects/${p.slug}`">
             <button class="a-btn-sm">открыть</button>
           </NuxtLink>

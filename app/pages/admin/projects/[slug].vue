@@ -38,7 +38,7 @@
         <!-- Right content -->
         <div class="proj-main">
           <div class="proj-topbar">
-            <a :href="`https://dariakulchikhina.com/api/auth/client-open?projectSlug=${encodeURIComponent(project.slug)}`" class="proj-ready-link">готовые страницы ↗</a>
+            <a :href="`https://dariakulchikhina.com/api/auth/client-open?projectSlug=${encodeURIComponent(project.slug)}`" class="proj-ready-link">кабинет клиента ↗</a>
             <button class="proj-settings-btn" @click="showEdit = true">⚙ проект</button>
           </div>
 
