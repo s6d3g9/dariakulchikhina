@@ -1,10 +1,11 @@
-import { db } from '~/server/db'
+import { useDb } from '~/server/db'
 import { galleryItems } from '~/server/db/schema'
 import { eq, asc } from 'drizzle-orm'
 import { requireAdmin } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
+  const db = useDb()
   const category = getQuery(event).category as string | undefined
 
   if (category) {
