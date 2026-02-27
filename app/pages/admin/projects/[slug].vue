@@ -14,6 +14,7 @@
         :slug="route.params.slug as string"
         :status="projectStatus"
         @update:status="projectStatus = $event"
+        @navigate="activePage = $event"
       />
 
       <div class="proj-tabs">

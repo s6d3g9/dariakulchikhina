@@ -55,7 +55,12 @@
               :class="{ 'phase-popup-step--critical': step.critical }"
             >
               <div class="phase-popup-step-head">
-                <span class="phase-popup-step-num">{{ step.num }}</span>
+                <button
+                  class="phase-popup-step-num"
+                  :class="{ 'phase-popup-step-num--link': stepToSlug[step.num] }"
+                  @click="stepToSlug[step.num] ? navigateToStep(step.num) : null"
+                  :title="stepToSlug[step.num] ? 'Открыть раздел ' + step.num : ''"
+                >{{ step.num }}</button>
                 <span class="phase-popup-step-title">{{ step.title }}</span>
                 <span v-if="step.critical" class="phase-popup-critical">⚠ критический</span>
               </div>
@@ -121,7 +126,26 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:status', value: string): void
+  (e: 'navigate', page: string): void
 }>()
+
+// Маппинг номера шага → slug вкладки
+const stepToSlug: Record<string, string> = {
+  '0.1': 'first_contact',
+  '0.2': 'brief',
+  '0.3': 'site_survey',
+  '0.4': 'tor_contract',
+  '1.1': 'space_planning',
+  '1.2': 'moodboard',
+  '1.3': 'concept_approval',
+}
+
+function navigateToStep(num: string) {
+  const slug = stepToSlug[num]
+  if (!slug) return
+  emit('navigate', slug)
+  closePopup()
+}
 
 const phases = PROJECT_PHASES
 const draft = ref<ProjectStatus>(props.status as ProjectStatus || 'lead')
@@ -446,6 +470,18 @@ function handleOutsideClick(e: MouseEvent) {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border: none;
+  cursor: default;
+  font-family: inherit;
+  padding: 0;
+  transition: transform .15s, box-shadow .15s;
+}
+.phase-popup-step-num--link {
+  cursor: pointer;
+}
+.phase-popup-step-num--link:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.3);
 }
 .phase-popup-step--critical .phase-popup-step-num { background: #ef4444; }
 .phase-popup-step-title {
