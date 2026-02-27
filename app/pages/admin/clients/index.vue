@@ -68,6 +68,16 @@
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             привязать к проекту
           </button>
+          <NuxtLink
+            v-for="p in c.linkedProjects"
+            :key="p.slug"
+            :to="`/client/${p.slug}`"
+            class="cl-cabinet-btn"
+            target="_blank"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            кабинет{{ c.linkedProjects.length > 1 ? ` (${p.title})` : '' }}
+          </NuxtLink>
         </div>
       </div>
     </div>
@@ -295,13 +305,21 @@ async function doLink() {
 }
 .cl-linked-chip:hover { opacity: 1; }
 
-.cl-card-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--glass-border); }
+.cl-card-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--glass-border); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .cl-link-btn {
   display: flex; align-items: center; gap: 5px;
   font-size: .74rem; cursor: pointer; background: none; border: none;
   color: var(--glass-text); opacity: .5; font-family: inherit; padding: 0; transition: opacity .15s;
 }
 .cl-link-btn:hover { opacity: 1; }
+.cl-cabinet-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .74rem; text-decoration: none; font-family: inherit;
+  color: var(--glass-page-bg); background: var(--glass-text);
+  padding: 5px 10px; border-radius: 7px; border: none;
+  opacity: .75; transition: opacity .15s; white-space: nowrap;
+}
+.cl-cabinet-btn:hover { opacity: 1; }
 
 .cl-backdrop {
   position: fixed; inset: 0; z-index: 1000;
