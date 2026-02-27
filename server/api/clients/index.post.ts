@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
     messengerNick: body.messengerNick?.trim() || null,
     address: body.address?.trim() || null,
     notes: body.notes?.trim() || null,
+    pin: body.pin?.trim() || null,
   }).returning()
   return c
 })

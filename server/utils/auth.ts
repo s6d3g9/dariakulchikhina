@@ -132,6 +132,33 @@ export function requireContractor(event: H3Event) {
   return id
 }
 
+// --- Client-Identity session (independent of project) ---
+
+const CLIENT_ID_COOKIE = 'daria_client_id_session'
+
+export function setClientIdSession(event: H3Event, clientId: number) {
+  _writeCookie(event, CLIENT_ID_COOKIE, String(clientId), {
+    httpOnly: true, sameSite: 'lax',
+    secure: _isSecure(event),
+    maxAge: 60 * 60 * 24 * 30, path: '/'
+  })
+}
+
+export function getClientIdSession(event: H3Event): number | null {
+  const raw = _readCookie(event, CLIENT_ID_COOKIE)
+  return raw ? Number(raw) : null
+}
+
+export function clearClientIdSession(event: H3Event) {
+  _deleteCookie(event, CLIENT_ID_COOKIE)
+}
+
+export function requireClientId(event: H3Event): number {
+  const id = getClientIdSession(event)
+  if (!id) throw createError({ statusCode: 401, statusMessage: 'Not authenticated' })
+  return id
+}
+
 // --- Password helpers ---
 
 export async function hashPassword(plain: string) {

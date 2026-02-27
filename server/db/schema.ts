@@ -143,6 +143,8 @@ export const clients = pgTable('clients', {
   messengerNick: text('messenger_nick'),
   address: text('address'),
   notes: text('notes'),
+  pin: text('pin'),
+  brief: jsonb('brief'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

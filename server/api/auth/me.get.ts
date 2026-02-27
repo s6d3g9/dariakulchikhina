@@ -12,6 +12,8 @@ export default defineEventHandler(async (event) => {
   }
   const clientSlug = getClientSession(event)
   if (clientSlug) return { role: 'client', projectSlug: clientSlug }
+  const clientIdSession = getClientIdSession(event)
+  if (clientIdSession) return { role: 'client', clientId: clientIdSession }
   const contractorId = getContractorSession(event)
   if (contractorId) return { role: 'contractor', contractorId }
   return { role: null }

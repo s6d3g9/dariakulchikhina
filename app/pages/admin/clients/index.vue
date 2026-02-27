@@ -63,28 +63,26 @@
           >{{ p.title }}</NuxtLink>
         </div>
 
+        <!-- Login credentials (ID + PIN) -->
+        <div v-if="c.pin" class="cl-credentials">
+          <span class="cl-cred-item">ID: <b>{{ c.id }}</b></span>
+          <span class="cl-cred-sep">·</span>
+          <span class="cl-cred-item">PIN: <b>{{ c.pin }}</b></span>
+        </div>
+
         <div class="cl-card-foot">
           <button class="cl-link-btn" @click="openLink(c)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             {{ c.linkedProjects?.length ? 'сменить проект' : 'привязать к проекту' }}
           </button>
-          <!-- Cabinet: navigate to first linked project, or open link modal if not yet linked -->
-          <template v-if="c.linkedProjects?.length">
-            <NuxtLink
-              v-for="p in c.linkedProjects"
-              :key="p.slug"
-              :to="`/client/${p.slug}`"
-              class="cl-cabinet-btn"
-              target="_blank"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              кабинет{{ c.linkedProjects.length > 1 ? ` · ${p.title}` : '' }}
-            </NuxtLink>
-          </template>
-          <button v-else class="cl-cabinet-btn" @click="openLink(c)">
+          <NuxtLink
+            :to="`/client/brief/${c.id}`"
+            class="cl-cabinet-btn"
+            target="_blank"
+          >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             кабинет
-          </button>
+          </NuxtLink>
         </div>
       </div>
     </div>
@@ -133,6 +131,11 @@
           <div class="cl-field">
             <label>Заметки</label>
             <textarea v-model="form.notes" class="cl-input cl-ta glass-input" rows="3" placeholder="Любые пометки"></textarea>
+          </div>
+          <div class="cl-field">
+            <label>PIN-код для входа в кабинет</label>
+            <input v-model="form.pin" class="cl-input glass-input" placeholder="Например: 1234" maxlength="12">
+            <span class="cl-field-hint">Клиент войдёт по ID + PIN на /client/brief-login</span>
           </div>
           <p v-if="saveError" class="cl-error">{{ saveError }}</p>
           <div class="cl-modal-foot">
@@ -197,13 +200,13 @@ const editingId = ref<number | null>(null)
 const saving = ref(false)
 const saveError = ref('')
 
-const defaultForm = () => ({ name: '', phone: '', email: '', messenger: '', messengerNick: '', address: '', notes: '' })
+const defaultForm = () => ({ name: '', phone: '', email: '', messenger: '', messengerNick: '', address: '', notes: '', pin: '' })
 const form = ref(defaultForm())
 
 function openAdd() { editingId.value = null; form.value = defaultForm(); saveError.value = ''; showModal.value = true }
 function openEdit(c: any) {
   editingId.value = c.id
-  form.value = { name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', messenger: c.messenger ?? '', messengerNick: c.messengerNick ?? '', address: c.address ?? '', notes: c.notes ?? '' }
+  form.value = { name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', messenger: c.messenger ?? '', messengerNick: c.messengerNick ?? '', address: c.address ?? '', notes: c.notes ?? '', pin: c.pin ?? '' }
   saveError.value = ''; showModal.value = true
 }
 function closeModal() { showModal.value = false }
@@ -300,6 +303,13 @@ async function doLink() {
 .cl-contact svg { flex-shrink: 0; opacity: .7; }
 
 .cl-notes { font-size: .76rem; color: var(--glass-text); opacity: .45; line-height: 1.45; margin: 0 0 8px; font-style: italic; }
+
+.cl-credentials { display: flex; align-items: center; gap: 6px; margin: 4px 0 8px; padding: 7px 10px; border-radius: 7px; background: rgba(0,0,0,.04); }
+.cl-cred-item { font-size: .72rem; color: var(--glass-text); opacity: .6; }
+.cl-cred-item b { font-weight: 600; opacity: 1; font-family: monospace; letter-spacing: .5px; }
+.cl-cred-sep { color: var(--glass-text); opacity: .25; }
+
+.cl-field-hint { font-size: .65rem; color: var(--glass-text); opacity: .35; margin-top: 2px; }
 
 .cl-linked { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 4px; margin-bottom: 8px; }
 .cl-linked-label { font-size: .65rem; text-transform: uppercase; letter-spacing: .5px; color: var(--glass-text); opacity: .35; flex-shrink: 0; }
