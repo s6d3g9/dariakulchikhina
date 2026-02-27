@@ -19,6 +19,7 @@
           {{ item.dateStart }} — {{ item.dateEnd }}
         </div>
         <div v-if="item.budget" class="ws-meta">{{ item.budget }}</div>
+        <div v-if="item.notes" class="ws-meta ws-notes">{{ item.notes }}</div>
       </div>
     </div>
   </div>
@@ -93,6 +94,7 @@ function statusClass(s: string) {
 }
 .ws-item-title { font-size: .88rem; font-weight: 500; color: var(--w-text); }
 .ws-meta { margin-top: 6px; font-size: .78rem; color: var(--w-text-soft); }
+.ws-notes { font-style: italic; white-space: pre-line; }
 .ws-badge {
   font-size: .68rem; letter-spacing: .5px; text-transform: uppercase;
   border: 1px solid var(--w-badge-border); padding: 2px 6px; white-space: nowrap;

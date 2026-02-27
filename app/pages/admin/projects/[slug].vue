@@ -40,7 +40,7 @@
         <AdminClientProfile :slug="route.params.slug as string" />
       </div>
       <div v-else-if="activePage === 'profile_contractors'">
-        <AdminContractorsProfile />
+        <AdminContractorsProfile :slug="route.params.slug as string" />
       </div>
       <div v-else>
         <AdminPageContent :slug="route.params.slug as string" :page="activePage" />

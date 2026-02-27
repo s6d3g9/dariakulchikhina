@@ -1,322 +1,230 @@
 <template>
-  <div>
-    <div class="a-card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;margin-bottom:16px">
-      <span style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.5px">подрядчики</span>
-      <button class="a-btn-save" @click="openCreate" style="padding:7px 18px;font-size:.82rem">+ добавить</button>
-    </div>
+  <div class="acp-wrap">
+    <div v-if="pendingLinked" class="acp-loading">Загрузка...</div>
+    <template v-else>
+      <!-- Linked contractors -->
+      <div class="acp-section-title">подрядчики проекта</div>
 
-    <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
-    <div v-else>
-      <div
-        v-for="c in contractors"
-        :key="c.id"
-        class="a-card"
-        style="padding:16px 20px;margin-bottom:8px"
-      >
-        <div style="display:flex;align-items:flex-start;justify-content:space-between">
-          <div>
-            <div style="font-size:.9rem;font-weight:500;color:#1a1a1a;margin-bottom:3px">{{ c.name }}</div>
-            <div v-if="c.companyName" style="font-size:.78rem;color:#888">{{ c.companyName }}</div>
-            <div style="font-size:.76rem;color:#aaa;margin-top:2px">
-              <span v-if="c.phone">{{ c.phone }}&nbsp;&nbsp;</span>
-              <span v-if="c.email">{{ c.email }}&nbsp;&nbsp;</span>
-              <span>PIN: {{ c.pin || '—' }}</span>
+      <div v-if="!linked.length" class="acp-empty">Подрядчики не привязаны. Добавьте из списка ниже.</div>
+      <div v-for="c in linked" :key="c.id" class="acp-card">
+        <div class="acp-card-top">
+          <div class="acp-card-info">
+            <div class="acp-name">{{ c.name }}</div>
+            <div v-if="c.companyName" class="acp-sub">{{ c.companyName }}</div>
+            <div class="acp-meta-row">
+              <span v-if="c.phone">{{ c.phone }}</span>
+              <span v-if="c.email">{{ c.email }}</span>
+              <span v-if="c.messenger">{{ c.messenger }}: {{ c.messengerNick }}</span>
+              <span v-if="c.pin" class="acp-pin">PIN: {{ c.pin }}</span>
             </div>
-            <div v-if="c.workTypes?.length" style="font-size:.72rem;color:#999;margin-top:3px">
-              {{ c.workTypes.join(', ') }}
+            <div v-if="c.workTypes?.length" class="acp-chips">
+              <span v-for="wt in c.workTypes" :key="wt" class="acp-chip">{{ workTypeLabel(wt) }}</span>
             </div>
+            <div v-if="c.notes" class="acp-notes">{{ c.notes }}</div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="a-btn-sm" @click="openEdit(c)">изменить</button>
-            <button class="a-btn-sm a-btn-danger" @click="del(c.id)">удалить</button>
+          <div class="acp-card-actions">
+            <a v-if="c.website" :href="c.website" target="_blank" class="acp-link">↗ сайт</a>
+            <button class="acp-btn-unlink" @click="unlink(c.id)" :disabled="linking">× открепить</button>
           </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="showModal" class="a-modal-backdrop" @click.self="closeModal">
-      <div class="a-modal" style="width:600px;max-height:90vh;overflow-y:auto">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">
-          {{ editingId ? 'редактировать' : 'добавить' }} подрядчика
-        </h3>
-        <form @submit.prevent="save">
-          <div class="a-section-title">основное</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>Название *</label>
-              <input v-model="form.name" class="a-input" required>
+      <!-- Add contractor section -->
+      <div class="acp-section-title" style="margin-top: 28px">добавить подрядчика к проекту</div>
+      <div v-if="pendingAll" class="acp-loading">Загрузка...</div>
+      <template v-else>
+        <div v-if="!allContractors.length" class="acp-empty">
+          Нет подрядчиков в системе.
+          <NuxtLink to="/admin/contractors" class="acp-link">Добавить →</NuxtLink>
+        </div>
+        <template v-else>
+          <div v-if="available.length === 0" class="acp-empty">Все подрядчики уже привязаны</div>
+          <template v-else>
+            <div class="acp-search-row">
+              <input v-model="search" class="acp-search" placeholder="поиск по имени или компании..." />
             </div>
-            <div class="a-field">
-              <label>Slug *</label>
-              <input v-model="form.slug" class="a-input" required :disabled="!!editingId">
+            <div v-for="c in filteredAvailable" :key="c.id" class="acp-card acp-card--avail">
+              <div class="acp-card-top">
+                <div class="acp-card-info">
+                  <div class="acp-name">{{ c.name }}</div>
+                  <div v-if="c.companyName" class="acp-sub">{{ c.companyName }}</div>
+                  <div class="acp-meta-row">
+                    <span v-if="c.phone">{{ c.phone }}</span>
+                    <span v-if="c.pin" class="acp-pin">PIN: {{ c.pin }}</span>
+                  </div>
+                  <div v-if="c.workTypes?.length" class="acp-chips">
+                    <span v-for="wt in c.workTypes" :key="wt" class="acp-chip acp-chip--muted">{{ workTypeLabel(wt) }}</span>
+                  </div>
+                </div>
+                <button class="acp-btn-link" @click="link(c.id)" :disabled="linking">+ привязать</button>
+              </div>
             </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>Компания</label>
-              <input v-model="form.companyName" class="a-input">
-            </div>
-            <div class="a-field">
-              <label>Контактное лицо</label>
-              <input v-model="form.contactPerson" class="a-input">
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>PIN</label>
-              <input v-model="form.pin" class="a-input">
-            </div>
-            <div class="a-field">
-              <label>Виды работ</label>
-              <input v-model="workTypesStr" class="a-input" placeholder="через запятую">
-            </div>
-          </div>
+            <div v-if="filteredAvailable.length === 0 && search" class="acp-empty">Ничего не найдено</div>
+          </template>
+        </template>
+      </template>
 
-          <div class="a-section-title">контакты</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>Телефон</label>
-              <input v-model="form.phone" class="a-input">
-            </div>
-            <div class="a-field">
-              <label>Email</label>
-              <input v-model="form.email" class="a-input">
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>Мессенджер</label>
-              <select v-model="form.messenger" class="a-input a-select">
-                <option value="">—</option>
-                <option value="telegram">telegram</option>
-                <option value="whatsapp">whatsapp</option>
-                <option value="viber">viber</option>
-              </select>
-            </div>
-            <div class="a-field">
-              <label>Ник / номер мессенджера</label>
-              <input v-model="form.messengerNick" class="a-input">
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>Сайт / портфолио</label>
-              <input v-model="form.website" class="a-input" placeholder="https://">
-            </div>
-            <div class="a-field">&nbsp;</div>
-          </div>
-
-          <div class="a-section-title">адреса</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>Юридический адрес</label>
-              <input v-model="form.legalAddress" class="a-input">
-            </div>
-            <div class="a-field">
-              <label>Фактический адрес</label>
-              <input v-model="form.factAddress" class="a-input">
-            </div>
-          </div>
-
-          <div class="a-section-title">реквизиты</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>ИНН</label>
-              <input v-model="form.inn" class="a-input">
-            </div>
-            <div class="a-field">
-              <label>КПП</label>
-              <input v-model="form.kpp" class="a-input">
-            </div>
-            <div class="a-field">
-              <label>ОГРН / ОГРНИП</label>
-              <input v-model="form.ogrn" class="a-input">
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>Банк</label>
-              <input v-model="form.bankName" class="a-input">
-            </div>
-            <div class="a-field">
-              <label>БИК</label>
-              <input v-model="form.bik" class="a-input">
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="a-field">
-              <label>Расчётный счёт</label>
-              <input v-model="form.settlementAccount" class="a-input">
-            </div>
-            <div class="a-field">
-              <label>Корр. счёт</label>
-              <input v-model="form.correspondentAccount" class="a-input">
-            </div>
-          </div>
-
-          <div class="a-section-title">примечания</div>
-          <div class="a-field">
-            <textarea v-model="form.notes" class="a-input a-textarea" rows="3" placeholder="заметки о подрядчике"></textarea>
-          </div>
-
-          <p v-if="formError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ formError }}</p>
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-            <button type="button" class="a-btn-sm" @click="closeModal">отмена</button>
-            <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
-          </div>
-        </form>
-      </div>
-    </div>
+      <div v-if="error" class="acp-error">{{ error }}</div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-const { data: contractors, pending, refresh } = await useFetch<any[]>('/api/contractors')
-const showModal = ref(false)
-const saving = ref(false)
-const formError = ref('')
-const editingId = ref<number | null>(null)
+import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
 
-const emptyForm = () => ({
-  name: '', slug: '', companyName: '', contactPerson: '',
-  pin: '', phone: '', email: '',
-  messenger: '', messengerNick: '', website: '',
-  legalAddress: '', factAddress: '',
-  inn: '', kpp: '', ogrn: '',
-  bankName: '', bik: '', settlementAccount: '', correspondentAccount: '',
-  notes: '',
-  workTypes: [] as string[],
+const props = defineProps<{ slug: string }>()
+
+const { data: linked, pending: pendingLinked, refresh: refreshLinked } = await useFetch<any[]>(
+  () => `/api/projects/${props.slug}/contractors`, { server: false, default: () => [] }
+)
+const { data: allContractors, pending: pendingAll } = await useFetch<any[]>(
+  '/api/contractors', { server: false, default: () => [] }
+)
+
+const linking = ref(false)
+const error = ref('')
+const search = ref('')
+
+const linkedIds = computed(() => new Set((linked.value || []).map((c: any) => c.id)))
+
+const available = computed(() =>
+  (allContractors.value || []).filter((c: any) => !linkedIds.value.has(c.id))
+)
+
+const filteredAvailable = computed(() => {
+  if (!search.value.trim()) return available.value
+  const q = search.value.toLowerCase()
+  return available.value.filter((c: any) =>
+    c.name?.toLowerCase().includes(q) || c.companyName?.toLowerCase().includes(q)
+  )
 })
 
-const form = reactive(emptyForm())
-const workTypesStr = computed({
-  get: () => form.workTypes.join(', '),
-  set: (value: string) => { form.workTypes = value.split(',').map(s => s.trim()).filter(Boolean) },
-})
-
-function openCreate() {
-  editingId.value = null
-  Object.assign(form, emptyForm())
-  showModal.value = true
+function workTypeLabel(wt: string) {
+  return CONTRACTOR_WORK_TYPE_OPTIONS.find(o => o.value === wt)?.label ?? wt
 }
 
-function openEdit(contractor: any) {
-  editingId.value = contractor.id
-  const base = emptyForm()
-  for (const key of Object.keys(base) as (keyof typeof base)[]) {
-    ;(form as any)[key] = contractor[key] ?? (base as any)[key]
-  }
-  showModal.value = true
-}
-
-function closeModal() {
-  showModal.value = false
-  editingId.value = null
-}
-
-async function save() {
-  saving.value = true
-  formError.value = ''
+async function link(contractorId: number) {
+  linking.value = true
+  error.value = ''
   try {
-    if (editingId.value) {
-      await $fetch(`/api/contractors/${editingId.value}`, { method: 'PUT', body: { ...form } })
-    } else {
-      await $fetch('/api/contractors', { method: 'POST', body: { ...form } })
-    }
-    closeModal()
-    refresh()
-  } catch (error: any) {
-    formError.value = error.data?.message || 'Ошибка'
+    await $fetch(`/api/projects/${props.slug}/contractors`, {
+      method: 'POST', body: { contractorId }
+    })
+    await refreshLinked()
+  } catch (e: any) {
+    error.value = e.data?.message || 'Ошибка'
   } finally {
-    saving.value = false
+    linking.value = false
   }
 }
 
-async function del(id: number) {
-  if (!confirm('Удалить подрядчика?')) return
-  await $fetch(`/api/contractors/${id}`, { method: 'DELETE' })
-  refresh()
+async function unlink(contractorId: number) {
+  if (!confirm('Открепить подрядчика от проекта?')) return
+  linking.value = true
+  error.value = ''
+  try {
+    await $fetch(`/api/projects/${props.slug}/contractors/${contractorId}`, { method: 'DELETE' })
+    await refreshLinked()
+  } catch (e: any) {
+    error.value = e.data?.message || 'Ошибка'
+  } finally {
+    linking.value = false
+  }
 }
 </script>
 
 <style scoped>
-.a-card {
-  --card-bg: #fff;
-  --card-border: #e0e0e0;
-  --btn-border: #ddd;
-  --btn-color: #666;
-  --btn-hover-border: #1a1a1a;
-  --btn-hover-color: #1a1a1a;
-  --danger-color: #c00;
-  --save-bg: #1a1a1a;
-  --save-color: #fff;
-  --save-hover-bg: #333;
-  --input-border: #ddd;
-  --input-focus: #1a1a1a;
-  --input-color: inherit;
-  --input-disabled: #aaa;
-  --label-color: #888;
-  --modal-bg: #fff;
-  --modal-border: #e0e0e0;
-  --backdrop-bg: rgba(0,0,0,0.3);
+.acp-wrap { padding: 4px 0; }
+.acp-loading { font-size: .86rem; color: #999; padding: 12px 0; }
+.acp-empty  { font-size: .84rem; color: #bbb; padding: 10px 0; }
+.acp-error  { font-size: .8rem; color: #c00; margin-top: 12px; }
 
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-}
-.a-section-title {
-  font-size: .7rem;
+.acp-section-title {
+  font-size: .68rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #aaa;
-  margin: 16px 0 8px;
-  padding-bottom: 4px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
   border-bottom: 1px solid #e8e8e8;
 }
-.a-btn-sm {
-  border: 1px solid var(--btn-border); background: transparent; padding: 4px 10px;
-  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
-  color: var(--btn-color);
+.dark .acp-section-title { border-color: #2e2e2e; }
+
+.acp-card {
+  border: 1px solid #e4e4e4;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  background: #fff;
 }
-.a-btn-sm:hover { border-color: var(--btn-hover-border); color: var(--btn-hover-color); }
-.a-btn-danger { color: var(--danger-color); border-color: var(--danger-color); }
-.a-btn-danger:hover { background: #c00; color: #fff; }
-.a-btn-save {
-  border: 1px solid var(--save-bg); background: var(--save-bg); color: var(--save-color);
-  padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
+.dark .acp-card { border-color: #2a2a2a; background: #1c1c1e; }
+.acp-card--avail { border-style: dashed; background: transparent; }
+.dark .acp-card--avail { border-color: #333; }
+
+.acp-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.acp-card-info { flex: 1; min-width: 0; }
+.acp-card-actions { flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+
+.acp-name { font-size: .9rem; font-weight: 500; color: #1a1a1a; }
+.dark .acp-name { color: #e8e8e8; }
+.acp-sub  { font-size: .78rem; color: #999; margin-top: 1px; }
+.acp-meta-row {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  font-size: .76rem; color: #aaa; margin-top: 4px;
 }
-.a-btn-save:hover { background: var(--save-hover-bg); }
-.a-field { margin-bottom: 14px; }
-.a-field label { display: block; font-size: .76rem; color: var(--label-color); margin-bottom: 5px; }
-.a-input {
-  display: block; width: 100%; border: none; border-bottom: 1px solid var(--input-border);
-  padding: 8px 0; font-size: .88rem; outline: none; font-family: inherit;
-  color: var(--input-color); background: transparent;
+.acp-pin { font-variant-numeric: tabular-nums; }
+.acp-notes { font-size: .78rem; color: #888; margin-top: 6px; font-style: italic; }
+.acp-link {
+  font-size: .76rem; color: #6366f1; text-decoration: none;
 }
-.a-input:focus { border-bottom-color: var(--input-focus); }
-.a-input:disabled { color: var(--input-disabled); }
-.a-select {
+.acp-link:hover { text-decoration: underline; }
+
+.acp-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.acp-chip {
+  font-size: .68rem; padding: 2px 7px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  color: #666;
+  background: #fafafa;
+}
+.dark .acp-chip { border-color: #3a3a3a; color: #aaa; background: #222; }
+.acp-chip--muted { opacity: 0.65; }
+
+.acp-btn-link, .acp-btn-unlink {
+  font-size: .76rem;
+  padding: 4px 10px;
+  border-radius: 4px;
   cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-  border-radius: 0;
-  padding-right: 18px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0 center;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
 }
-.a-textarea {
-  resize: vertical;
-  border: 1px solid var(--input-border);
-  padding: 8px;
-  border-radius: 2px;
-  line-height: 1.5;
+.acp-btn-link {
+  border: 1px solid #6366f1;
+  background: transparent;
+  color: #6366f1;
 }
-.a-modal-backdrop {
-  position: fixed; inset: 0; background: var(--backdrop-bg);
-  display: flex; align-items: center; justify-content: center; z-index: 100;
+.acp-btn-link:hover:not(:disabled) { background: #6366f1; color: #fff; }
+.acp-btn-unlink {
+  border: 1px solid #e0e0e0;
+  background: transparent;
+  color: #c00;
 }
-.a-modal {
-  background: var(--modal-bg); border: 1px solid var(--modal-border);
-  padding: 32px; max-width: 90vw;
+.acp-btn-unlink:hover:not(:disabled) { border-color: #c00; background: #fff0f0; }
+.dark .acp-btn-unlink:hover:not(:disabled) { background: #2a0000; }
+.acp-btn-link:disabled, .acp-btn-unlink:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.acp-search-row { margin-bottom: 10px; }
+.acp-search {
+  width: 100%; max-width: 400px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 7px 12px;
+  font-size: .84rem;
+  font-family: inherit;
+  outline: none;
+  background: transparent;
+  color: inherit;
 }
+.acp-search:focus { border-color: #6366f1; }
+.dark .acp-search { border-color: #333; }
 </style>
