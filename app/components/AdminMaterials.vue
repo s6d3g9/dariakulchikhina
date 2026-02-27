@@ -17,6 +17,13 @@
           <label class="am-lbl">заголовок:</label>
           <input v-model="tab.heading" class="am-inp" type="text" @input="markDirty">
         </div>
+        <div class="am-row">
+          <label class="am-lbl">тип:</label>
+          <select v-model="tab.materialType" class="am-select" @change="markDirty">
+            <option value="">—</option>
+            <option v-for="opt in MATERIAL_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
 
         <!-- image upload -->
         <div class="am-upload-row">
@@ -66,11 +73,13 @@
 </template>
 
 <script setup lang="ts">
+import { MATERIAL_TYPE_OPTIONS } from '~~/shared/types/catalogs'
+
 const props = defineProps<{ slug: string; page: string }>()
 
 interface Item { text: string; type: string }
 interface Group { label: string; items: Item[] }
-interface Tab { id: string; title: string; heading: string; image: string; groups: Group[] }
+interface Tab { id: string; title: string; heading: string; image: string; materialType?: string; groups: Group[] }
 
 const { data: raw, pending, refresh } = await useFetch<any>(
   () => `/api/projects/${props.slug}/page-content?page=${props.page}`, { server: false }
@@ -95,7 +104,7 @@ watch(raw, (v) => {
 watch(() => props.page, () => { refresh() })
 
 function addTab() {
-  tabs.value.push({ id: `tab_${Date.now()}`, title: 'новая вкладка', heading: '', image: '', groups: [] })
+  tabs.value.push({ id: `tab_${Date.now()}`, title: 'новая вкладка', heading: '', image: '', materialType: '', groups: [] })
   markDirty()
 }
 function delTab(ti: number) {

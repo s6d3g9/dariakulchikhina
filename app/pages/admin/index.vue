@@ -2,7 +2,7 @@
   <div>
     <div class="a-card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;padding:12px 20px">
       <span style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.5px">проекты</span>
-      <button class="a-btn-save" @click="showCreate = true" style="padding:7px 18px;font-size:.82rem">+ новый проект</button>
+      <button class="a-btn-save" @click="openCreate" style="padding:7px 18px;font-size:.82rem">+ новый проект</button>
     </div>
 
     <div v-if="pending" style="font-size:.88rem;color:#999;padding:12px 0">Загрузка...</div>
@@ -30,22 +30,64 @@
       </div>
     </div>
 
-    <div v-if="showCreate" class="a-modal-backdrop" @click.self="showCreate = false">
-      <div class="a-modal">
+    <div v-if="showCreate" class="a-modal-backdrop" @click.self="closeCreate">
+      <div class="a-modal" style="width:520px;max-width:94vw">
         <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">новый проект</h3>
-        <form @submit.prevent="createProject">
-          <div class="a-field">
-            <label>Название</label>
-            <input v-model="newProject.title" class="a-input" required placeholder="Название проекта">
-          </div>
-          <div class="a-field">
-            <label>Slug (URL)</label>
-            <input v-model="newProject.slug" class="a-input" required placeholder="project_slug">
-          </div>
+        <form @submit.prevent="onSubmitWizard">
+          <div style="font-size:.75rem;color:#888;margin-bottom:12px">шаг {{ createStep }} из 2</div>
+
+          <template v-if="createStep === 1">
+            <div class="a-field">
+              <label>Название</label>
+              <input v-model="newProject.title" class="a-input" required placeholder="Название проекта">
+            </div>
+            <div class="a-field">
+              <label>Slug (URL)</label>
+              <input v-model="newProject.slug" class="a-input" required placeholder="project_slug">
+            </div>
+            <div class="a-field">
+              <label>Шаблон проекта (сценарий)</label>
+              <select v-model="newProject.roadmapTemplateKey" class="a-input" style="border:1px solid #ddd;padding:8px">
+                <option v-for="tpl in templates || []" :key="tpl.key" :value="tpl.key">
+                  {{ tpl.title }}{{ tpl.isBuiltIn ? ' · встроенный' : ' · пользовательский' }}
+                </option>
+              </select>
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="a-field" style="margin-bottom:8px">
+              <label>Проект</label>
+              <div style="font-size:.86rem">{{ newProject.title || '—' }} · {{ newProject.slug || '—' }}</div>
+            </div>
+            <div class="a-field" style="margin-bottom:8px">
+              <label>Выбранный сценарий</label>
+              <div style="font-size:.86rem">{{ selectedTemplate?.title || '—' }}</div>
+              <div v-if="selectedTemplate" style="font-size:.74rem;color:#999;margin-top:3px">{{ selectedTemplate.description }}</div>
+            </div>
+            <div class="a-field" style="margin-bottom:8px">
+              <label>Будут добавлены страницы</label>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+                <span v-for="pg in corePageLabels" :key="pg" style="font-size:.72rem;border:1px solid #ddd;padding:2px 6px;color:#666">{{ pg }}</span>
+              </div>
+            </div>
+            <div class="a-field" style="margin-bottom:8px">
+              <label>Этапы дорожной карты</label>
+              <ul style="margin:6px 0 0 0;padding-left:16px;max-height:180px;overflow:auto">
+                <li v-for="(s, idx) in (selectedTemplate?.stages || [])" :key="`${s.title}-${idx}`" style="font-size:.78rem;color:#666;margin-bottom:2px">
+                  {{ idx + 1 }}. {{ s.title }}
+                </li>
+              </ul>
+            </div>
+          </template>
+
           <p v-if="createError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ createError }}</p>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-            <button type="button" class="a-btn-sm" @click="showCreate = false">отмена</button>
-            <button type="submit" class="a-btn-save" :disabled="creating">{{ creating ? '...' : 'создать' }}</button>
+            <button type="button" class="a-btn-sm" @click="closeCreate">отмена</button>
+            <button v-if="createStep === 2" type="button" class="a-btn-sm" @click="createStep = 1">назад</button>
+            <button type="submit" class="a-btn-save" :disabled="creating">
+              {{ createStep === 1 ? 'дальше' : (creating ? '...' : 'создать проект') }}
+            </button>
           </div>
         </form>
       </div>
@@ -57,10 +99,31 @@
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects')
+const { data: templates } = await useFetch<any[]>('/api/roadmap-templates')
 const showCreate = ref(false)
+const createStep = ref(1)
 const creating = ref(false)
 const createError = ref('')
-const newProject = reactive({ title: '', slug: '' })
+const newProject = reactive({ title: '', slug: '', roadmapTemplateKey: '' })
+
+const corePageLabels = [
+  'материалы',
+  'тех. задание',
+  'профиль клиента',
+  'профиль подрядчиков',
+  'статусы работ',
+  'дорожная карта',
+]
+
+const selectedTemplate = computed(() =>
+  (templates.value || []).find((tpl: any) => tpl.key === newProject.roadmapTemplateKey)
+)
+
+watch(templates, (list) => {
+  if (!newProject.roadmapTemplateKey && Array.isArray(list) && list.length > 0) {
+    newProject.roadmapTemplateKey = list[0].key
+  }
+}, { immediate: true })
 
 async function createProject() {
   creating.value = true
@@ -71,18 +134,44 @@ async function createProject() {
       body: {
         title: newProject.title,
         slug: newProject.slug,
-        pages: ['materials', 'tz', 'profile_customer', 'profile_contractors', 'work_status', 'project_roadmap']
+        roadmapTemplateKey: newProject.roadmapTemplateKey || undefined,
       }
     })
-    showCreate.value = false
-    newProject.title = ''
-    newProject.slug = ''
+    closeCreate()
     refresh()
   } catch (e: any) {
     createError.value = e.data?.message || 'Ошибка'
   } finally {
     creating.value = false
   }
+}
+
+function openCreate() {
+  showCreate.value = true
+  createStep.value = 1
+  createError.value = ''
+  newProject.title = ''
+  newProject.slug = ''
+  newProject.roadmapTemplateKey = templates.value?.[0]?.key || ''
+}
+
+function closeCreate() {
+  showCreate.value = false
+  createStep.value = 1
+  createError.value = ''
+}
+
+function onSubmitWizard() {
+  if (createStep.value === 1) {
+    if (!newProject.title.trim() || !newProject.slug.trim()) {
+      createError.value = 'Заполните название и slug'
+      return
+    }
+    createError.value = ''
+    createStep.value = 2
+    return
+  }
+  createProject()
 }
 
 async function deleteProject(slug: string) {

@@ -67,6 +67,12 @@
               <input v-model="form.email" class="a-input">
             </div>
           </div>
+          <div class="a-field">
+            <label>Типы работ подрядчика</label>
+            <select v-model="form.workTypes" class="a-input" multiple size="6" style="border:1px solid #ddd;padding:8px">
+              <option v-for="opt in CONTRACTOR_WORK_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
           <p v-if="formError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ formError }}</p>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
             <button type="button" class="a-btn-sm" @click="closeModal">отмена</button>
@@ -79,6 +85,8 @@
 </template>
 
 <script setup lang="ts">
+import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
+
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const { data: contractors, pending, refresh } = await useFetch<any[]>('/api/contractors')
@@ -87,11 +95,11 @@ const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
 const editingId = ref<number | null>(null)
-const form = reactive({ name: '', slug: '', companyName: '', pin: '', phone: '', email: '' })
+const form = reactive({ name: '', slug: '', companyName: '', pin: '', phone: '', email: '', workTypes: [] as string[] })
 
 function openCreate() {
   editingId.value = null
-  Object.assign(form, { name: '', slug: '', companyName: '', pin: '', phone: '', email: '' })
+  Object.assign(form, { name: '', slug: '', companyName: '', pin: '', phone: '', email: '', workTypes: [] })
   showModal.value = true
 }
 
@@ -103,6 +111,7 @@ function openEdit(c: any) {
   form.pin = c.pin || ''
   form.phone = c.phone || ''
   form.email = c.email || ''
+  form.workTypes = Array.isArray(c.workTypes) ? [...c.workTypes] : []
   showModal.value = true
 }
 

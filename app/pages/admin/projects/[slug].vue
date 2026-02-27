@@ -18,6 +18,7 @@
           @click="activePage = pg.slug"
         >{{ pg.title }}</button>
         <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <NuxtLink to="/admin/roadmap-templates" class="proj-ready-link">шаблоны roadmap</NuxtLink>
           <a :href="`/client/${project.slug}`" target="_blank" rel="noopener noreferrer" class="proj-ready-link">готовые страницы ↗</a>
           <button class="proj-tab proj-tab--settings" @click="showEdit = true">⚙ проект</button>
         </span>
@@ -85,8 +86,11 @@ const allPageSlugs = [
 ]
 
 const availablePages = computed(() => {
-  const pages = project.value?.pages || []
-  return allPageSlugs.filter(p => pages.includes(p.slug))
+  const pages = Array.isArray(project.value?.pages) ? project.value.pages : []
+  if (!pages.length) return allPageSlugs
+  const required = ['work_status', 'project_roadmap']
+  const merged = Array.from(new Set([...pages, ...required]))
+  return allPageSlugs.filter(p => merged.includes(p.slug))
 })
 
 async function saveProject() {

@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     slug: body.slug,
     name: body.name,
     pin: body.pin,
-    workTypes: [],
+    workTypes: body.workTypes || [],
   }).returning()
   return contractor
 })

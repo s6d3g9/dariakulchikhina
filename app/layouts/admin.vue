@@ -24,6 +24,11 @@
           class="admin-tab admin-tab--settings"
           :class="{ 'admin-tab--active': route.path.startsWith('/admin/pages') }"
         >⚙ страницы</NuxtLink>
+        <NuxtLink
+          to="/admin/roadmap-templates"
+          class="admin-tab admin-tab--settings"
+          :class="{ 'admin-tab--active': route.path.startsWith('/admin/roadmap-templates') }"
+        >⚙ шаблоны и сценарии</NuxtLink>
       </div>
       <slot />
     </div>

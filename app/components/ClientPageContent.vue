@@ -25,7 +25,7 @@
               <ul class="space-y-1">
                 <li v-for="(item, idx) in group.items" :key="idx" class="text-sm text-gray-700 flex items-center gap-2">
                   <span class="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0"></span>
-                  {{ item.text || item.label || item }}
+                  {{ renderItem(item) }}
                 </li>
               </ul>
             </div>
@@ -58,10 +58,25 @@
 </template>
 
 <script setup lang="ts">
+import {
+  CLIENT_TYPE_OPTIONS,
+  CONTRACT_TYPE_OPTIONS,
+  CONTRACTOR_ROLE_TYPE_OPTIONS,
+  CONTRACTOR_TYPE_OPTIONS,
+  CONTRACTOR_WORK_TYPE_OPTIONS,
+  DESIGNER_SERVICE_TYPE_OPTIONS,
+  MATERIAL_TYPE_OPTIONS,
+  OBJECT_TYPE_OPTIONS,
+  PAYMENT_TYPE_OPTIONS,
+  PROJECT_PRIORITY_OPTIONS,
+  ROADMAP_COMPLEXITY_OPTIONS,
+  ROADMAP_STAGE_TYPE_OPTIONS,
+} from '~~/shared/types/catalogs'
+
 const props = defineProps<{ slug: string; page: string }>()
 
 const { data: content, pending, refresh } = await useFetch<any>(
-  () => `/api/projects/${props.slug}/page-content?pageSlug=${props.page}`
+  () => `/api/projects/${props.slug}/page-content?page=${props.page}`
 )
 
 watch(() => props.page, () => refresh())
@@ -70,4 +85,30 @@ const activeTab = ref('')
 watch(content, (v) => {
   if (v?.tabs?.length) activeTab.value = v.tabs[0].id
 }, { immediate: true })
+
+const optionMap = new Map<string, string>([
+  ...CLIENT_TYPE_OPTIONS,
+  ...ROADMAP_STAGE_TYPE_OPTIONS,
+  ...MATERIAL_TYPE_OPTIONS,
+  ...CONTRACTOR_TYPE_OPTIONS,
+  ...CONTRACT_TYPE_OPTIONS,
+  ...PAYMENT_TYPE_OPTIONS,
+  ...DESIGNER_SERVICE_TYPE_OPTIONS,
+  ...CONTRACTOR_ROLE_TYPE_OPTIONS,
+  ...CONTRACTOR_WORK_TYPE_OPTIONS,
+  ...OBJECT_TYPE_OPTIONS,
+  ...PROJECT_PRIORITY_OPTIONS,
+  ...ROADMAP_COMPLEXITY_OPTIONS,
+].map(o => [o.value, o.label]))
+
+function toLabel(raw: unknown) {
+  if (typeof raw === 'string') return optionMap.get(raw) || raw
+  if (Array.isArray(raw)) return raw.map(v => toLabel(v)).join(', ')
+  return String(raw ?? '')
+}
+
+function renderItem(item: any) {
+  const value = item?.text ?? item?.label ?? item
+  return toLabel(value)
+}
 </script>
