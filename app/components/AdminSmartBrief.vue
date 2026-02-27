@@ -162,7 +162,8 @@ watch(project, (p) => {
 }, { immediate: true })
 
 // ── Requirements by object type ─────────────────────────────────
-const ALL_REQUIREMENTS: Record<string, { key: string; label: string; tag: string }[]> = {
+type Req = { key: string; label: string; tag: string }
+const ALL_REQUIREMENTS: Record<string, Req[]> = {
   // ── универсальные (любой тип) ───────────────────────────────────
   _common: [
     { key: 'brief_smart_home',       label: 'Умный дом',                  tag: '#smart_home'          },
