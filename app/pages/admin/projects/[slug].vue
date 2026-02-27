@@ -135,20 +135,37 @@ watch(project, (p) => {
 
 const allPageSlugs = [
   // ── Phase 0: Инициация ──────────────────────────────
-  { slug: 'first_contact',     title: '0.1 первичный контакт' },
-  { slug: 'brief',             title: '0.2 брифинг' },
-  { slug: 'site_survey',       title: '0.3 обмеры / аудит' },
-  { slug: 'tor_contract',      title: '0.4 ТЗ и договор' },
+  { slug: 'first_contact',       title: '0.1 первичный контакт' },
+  { slug: 'brief',               title: '0.2 брифинг' },
+  { slug: 'site_survey',         title: '0.3 обмеры / аудит' },
+  { slug: 'tor_contract',        title: '0.4 ТЗ и договор' },
   // ── Phase 1: Эскиз ──────────────────────────────────
-  { slug: 'space_planning',    title: 'планировки' },
-  { slug: 'moodboard',         title: 'мудборд' },
-  { slug: 'concept_approval',  title: 'согласование эскиза' },
+  { slug: 'space_planning',      title: '1.1 планировки' },
+  { slug: 'moodboard',           title: '1.2 мудборд' },
+  { slug: 'concept_approval',    title: '1.3 согласование' },
+  // ── Phase 2: Рабочий проект ─────────────────────────
+  { slug: 'working_drawings',    title: '2.1 рабочие чертежи' },
+  { slug: 'specifications',      title: '2.2 спецификации' },
+  { slug: 'mep_integration',     title: '2.3 инженерия' },
+  { slug: 'design_album_final',  title: '2.4 финальный альбом' },
+  // ── Phase 3: Комплектация ────────────────────────────
+  { slug: 'procurement_list',    title: '3.1 список закупок' },
+  { slug: 'suppliers',           title: '3.2 поставщики' },
+  { slug: 'procurement_status',  title: '3.3 статус закупок' },
+  // ── Phase 4: Строительство ───────────────────────────
+  { slug: 'construction_plan',   title: '4.1 план работ' },
+  { slug: 'work_log',            title: '4.2 журнал работ' },
+  { slug: 'site_photos',         title: '4.3 фото объекта' },
+  // ── Phase 5: Сдача ──────────────────────────────────
+  { slug: 'punch_list',          title: '5.1 дефектная ведомость' },
+  { slug: 'commissioning_act',   title: '5.2 акт приёмки' },
+  { slug: 'client_sign_off',     title: '5.3 подпись клиента' },
   // ── Кабинет клиента ─────────────────────────────────
-  { slug: 'phase_init',        title: 'инициация (трекер фазы 0)' },
-  { slug: 'self_profile',      title: 'анкета клиента' },
-  { slug: 'design_timeline',   title: 'ход проекта' },
-  { slug: 'design_album',      title: 'альбом проекта' },
-  { slug: 'contracts',         title: 'документы / договоры' },
+  { slug: 'phase_init',          title: 'инициация (трекер)' },
+  { slug: 'self_profile',        title: 'анкета клиента' },
+  { slug: 'design_timeline',     title: 'ход проекта' },
+  { slug: 'design_album',        title: 'альбом проекта' },
+  { slug: 'contracts',           title: 'документы / договоры' },
 ]
 
 const availablePages = computed(() => {
@@ -156,27 +173,39 @@ const availablePages = computed(() => {
   return allPageSlugs.filter(p => pages.includes(p.slug))
 })
 
-const navGroups = computed(() => {
-  const pages = project.value?.pages || []
-  const groups = [
-    {
-      label: 'Фаза 0 · Инициация',
-      slugs: ['first_contact', 'brief', 'site_survey', 'tor_contract'],
-    },
-    {
-      label: 'Фаза 1 · Эскиз',
-      slugs: ['space_planning', 'moodboard', 'concept_approval'],
-    },
-    {
-      label: 'Кабинет клиента',
-      slugs: ['phase_init', 'self_profile', 'design_timeline', 'design_album', 'contracts'],
-    },
-  ]
-  return groups.map(g => ({
-    label: g.label,
-    pages: allPageSlugs.filter(p => g.slugs.includes(p.slug) && pages.includes(p.slug)),
-  }))
-})
+const navGroups = [
+  {
+    label: 'Фаза 0 · Инициация',
+    slugs: ['first_contact', 'brief', 'site_survey', 'tor_contract'],
+  },
+  {
+    label: 'Фаза 1 · Эскиз',
+    slugs: ['space_planning', 'moodboard', 'concept_approval'],
+  },
+  {
+    label: 'Фаза 2 · Рабочий проект',
+    slugs: ['working_drawings', 'specifications', 'mep_integration', 'design_album_final'],
+  },
+  {
+    label: 'Фаза 3 · Комплектация',
+    slugs: ['procurement_list', 'suppliers', 'procurement_status'],
+  },
+  {
+    label: 'Фаза 4 · Строительство',
+    slugs: ['construction_plan', 'work_log', 'site_photos'],
+  },
+  {
+    label: 'Фаза 5 · Сдача',
+    slugs: ['punch_list', 'commissioning_act', 'client_sign_off'],
+  },
+  {
+    label: 'Кабинет клиента',
+    slugs: ['phase_init', 'self_profile', 'design_timeline', 'design_album', 'contracts'],
+  },
+].map(g => ({
+  label: g.label,
+  pages: allPageSlugs.filter(p => g.slugs.includes(p.slug)),
+}))
 
 async function saveProject() {
   saving.value = true
