@@ -3,32 +3,6 @@
     <div v-if="pending" class="asb-loading">Загрузка...</div>
     <template v-else>
 
-      <!-- Generated tags banner -->
-      <div class="asb-tags-banner" v-if="autoTags.length">
-        <span class="asb-tags-label">теги проекта:</span>
-        <span v-for="tag in autoTags" :key="tag" class="asb-tag">{{ tag }}</span>
-      </div>
-      <div class="asb-tags-banner asb-tags-banner--empty" v-else>
-        <span class="asb-tags-label">теги сформируются автоматически по ответам анкеты</span>
-      </div>
-
-      <!-- Section: Requirements -->
-      <div class="asb-section">
-        <div class="asb-section-title">требования к проекту</div>
-        <div class="asb-checks-grid">
-          <label v-for="req in requirements" :key="req.key" class="asb-check-item">
-            <input
-              type="checkbox"
-              :checked="!!(form as any)[req.key]"
-              @change="toggle(req.key)"
-              class="asb-checkbox"
-            >
-            <span class="asb-check-label">{{ req.label }}</span>
-            <span class="asb-check-tag">{{ req.tag }}</span>
-          </label>
-        </div>
-      </div>
-
       <!-- Section: Family -->
       <div class="asb-section">
         <div class="asb-section-title">состав семьи и образ жизни</div>
@@ -130,6 +104,32 @@
             />
           </div>
         </div>
+      </div>
+
+      <!-- Section: Requirements -->
+      <div class="asb-section">
+        <div class="asb-section-title">требования к проекту</div>
+        <div class="asb-checks-grid">
+          <label v-for="req in requirements" :key="req.key" class="asb-check-item">
+            <input
+              type="checkbox"
+              :checked="!!(form as any)[req.key]"
+              @change="toggle(req.key)"
+              class="asb-checkbox"
+            >
+            <span class="asb-check-label">{{ req.label }}</span>
+            <span class="asb-check-tag">{{ req.tag }}</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Generated tags banner -->
+      <div class="asb-tags-banner" v-if="autoTags.length">
+        <span class="asb-tags-label">теги проекта:</span>
+        <span v-for="tag in autoTags" :key="tag" class="asb-tag">{{ tag }}</span>
+      </div>
+      <div class="asb-tags-banner asb-tags-banner--empty" v-else>
+        <span class="asb-tags-label">теги сформируются автоматически по ответам анкеты</span>
       </div>
 
       <!-- Footer -->
