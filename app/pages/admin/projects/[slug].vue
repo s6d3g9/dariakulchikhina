@@ -51,6 +51,15 @@
       <div v-else-if="activePage === 'tor_contract'">
         <AdminToRContract :slug="route.params.slug as string" />
       </div>
+      <div v-else-if="activePage === 'space_planning'">
+        <AdminSpacePlanning :slug="route.params.slug as string" />
+      </div>
+      <div v-else-if="activePage === 'moodboard'">
+        <AdminMoodboard :slug="route.params.slug as string" />
+      </div>
+      <div v-else-if="activePage === 'concept_approval'">
+        <AdminConceptApproval :slug="route.params.slug as string" />
+      </div>
       <div v-else>
         <AdminPageContent :slug="route.params.slug as string" :page="activePage" />
       </div>
@@ -136,6 +145,10 @@ const allPageSlugs = [
   { slug: 'brief',             title: 'брифинг' },
   { slug: 'site_survey',       title: 'обмеры / аудит' },
   { slug: 'tor_contract',      title: 'ТЗ и договор' },
+  // ── Phase 1: Эскиз ──────────────────────────────────
+  { slug: 'space_planning',    title: 'планировки' },
+  { slug: 'moodboard',         title: 'мудборд' },
+  { slug: 'concept_approval',  title: 'согласование эскиза' },
   // ── Кабинет клиента ─────────────────────────────────
   { slug: 'self_profile',      title: 'анкета клиента' },
   { slug: 'design_timeline',   title: 'ход проекта' },
