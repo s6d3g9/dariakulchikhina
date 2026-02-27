@@ -13,7 +13,7 @@ const Body = z.object({
     dateStart: z.string().optional().nullable(),
     dateEnd: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
-    sortOrder: z.number(),
+    sortOrder: z.number().optional(),
   }))
 })
 
@@ -22,22 +22,29 @@ export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
   const body = await readValidatedNodeBody(event, Body)
   const db = useDb()
+
   const [project] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, slug)).limit(1)
   if (!project) throw createError({ statusCode: 404 })
-  // Delete existing and re-insert (simple approach)
+
   await db.delete(roadmapStages).where(eq(roadmapStages.projectId, project.id))
+
   if (body.stages.length > 0) {
-    await db.insert(roadmapStages).values(body.stages.map(s => ({
+    await db.insert(roadmapStages).values(body.stages.map((stage, index) => ({
       projectId: project.id,
-      stageKey: s.stageKey || null,
-      title: s.title,
-      description: s.description || null,
-      status: s.status,
-      dateStart: s.dateStart || null,
-      dateEnd: s.dateEnd || null,
-      notes: s.notes || null,
-      sortOrder: s.sortOrder,
+      stageKey: stage.stageKey || null,
+      title: stage.title,
+      description: stage.description || null,
+      status: stage.status,
+      dateStart: stage.dateStart || null,
+      dateEnd: stage.dateEnd || null,
+      notes: stage.notes || null,
+      sortOrder: stage.sortOrder ?? index,
     })))
   }
-  return db.select().from(roadmapStages).where(eq(roadmapStages.projectId, project.id)).orderBy(roadmapStages.sortOrder)
+
+  return db
+    .select()
+    .from(roadmapStages)
+    .where(eq(roadmapStages.projectId, project.id))
+    .orderBy(roadmapStages.sortOrder)
 })

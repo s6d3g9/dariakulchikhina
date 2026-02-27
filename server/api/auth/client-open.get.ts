@@ -8,16 +8,25 @@ export default defineEventHandler(async (event) => {
   const projectSlug = new URLSearchParams(queryString).get('projectSlug') || ''
 
   if (!projectSlug) {
-    return sendRedirect(event, '/client/login', 302)
+    event.node.res.statusCode = 302
+    event.node.res.setHeader('Location', '/client/login')
+    event.node.res.end('')
+    return
   }
 
   const db = useDb()
   const [project] = await db.select({ slug: projects.slug }).from(projects).where(eq(projects.slug, projectSlug)).limit(1)
 
   if (!project) {
-    return sendRedirect(event, '/client/login', 302)
+    event.node.res.statusCode = 302
+    event.node.res.setHeader('Location', '/client/login')
+    event.node.res.end('')
+    return
   }
 
   setClientSession(event, project.slug)
-  return sendRedirect(event, `/client/${project.slug}`, 302)
+  event.node.res.statusCode = 302
+  event.node.res.setHeader('Location', `/client/${project.slug}`)
+  event.node.res.end('')
+  return
 })

@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <div class="bg-white border border-gray-200 p-10 w-80">
-      <h2 class="text-xs font-medium tracking-widest uppercase text-gray-400 mb-2">Подрядчик</h2>
-      <p class="text-xs text-gray-400 mb-6">Введите ваш PIN-код</p>
+  <div class="min-h-screen flex items-center justify-center glass-page px-4">
+    <div class="glass-card border border-white/60 dark:border-white/10 p-10 w-80">
+      <h2 class="text-xs font-medium tracking-widest uppercase text-gray-500 dark:text-gray-300 mb-2">Подрядчик</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-300 mb-6">Введите ваш PIN-код</p>
       <form @submit.prevent="submit">
         <div class="mb-4">
           <input
@@ -10,14 +10,14 @@
             type="text"
             placeholder="PIN-код"
             required
-            class="w-full border-b border-gray-200 pb-2 text-sm outline-none font-inherit focus:border-gray-600 tracking-widest"
+            class="w-full glass-input rounded-md px-3 py-2 text-sm outline-none font-inherit tracking-widest"
           />
         </div>
         <p v-if="error" class="text-red-500 text-xs mb-4">{{ error }}</p>
         <button
           type="submit"
           :disabled="loading"
-          class="w-full border border-gray-900 bg-transparent py-2 text-sm cursor-pointer hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-50"
+          class="w-full glass-chip py-2 text-sm cursor-pointer transition-colors disabled:opacity-50 hover:opacity-90"
         >
           {{ loading ? '...' : 'Войти' }}
         </button>

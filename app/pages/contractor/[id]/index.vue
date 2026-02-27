@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="pending" class="text-sm text-gray-400">Загрузка...</div>
+    <div v-if="pending" class="text-sm text-gray-400 dark:text-gray-500">Загрузка...</div>
     <template v-else-if="contractor">
       <div class="mb-6">
         <h1 class="text-lg font-light">{{ contractor.name }}</h1>
@@ -14,7 +14,7 @@
         <div
           v-for="item in workItems"
           :key="item.id"
-          class="border border-gray-100 p-4"
+          class="border border-gray-100 dark:border-gray-700 p-4"
         >
           <div class="flex items-start justify-between">
             <span class="text-sm font-medium">{{ item.title }}</span>
@@ -54,13 +54,19 @@ function statusLabel(s: string) {
 }
 function statusClass(s: string) {
   const map: Record<string, string> = {
-    pending: 'bg-gray-100 text-gray-500',
-    planned: 'bg-blue-50 text-blue-600',
-    in_progress: 'bg-yellow-50 text-yellow-700',
-    done: 'bg-green-50 text-green-700',
-    paused: 'bg-orange-50 text-orange-600',
-    cancelled: 'bg-red-50 text-red-500',
+    pending: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
+    planned: 'bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
+    in_progress: 'bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-400',
+    done: 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400',
+    paused: 'bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400',
+    cancelled: 'bg-red-50 dark:bg-red-950 text-red-500 dark:text-red-400',
   }
-  return map[s] || 'bg-gray-100 text-gray-500'
+  return map[s] || 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
 }
 </script>
+
+<style scoped>
+.contractor-name {
+  color: #1a1a1a;
+}
+</style>

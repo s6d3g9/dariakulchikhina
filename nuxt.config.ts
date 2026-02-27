@@ -7,6 +7,11 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/ui', '@pinia/nuxt'],
 
+  colorMode: {
+    preference: 'dark',
+    fallback: 'dark',
+  },
+
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {

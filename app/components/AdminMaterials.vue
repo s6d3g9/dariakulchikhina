@@ -1,35 +1,27 @@
 <template>
-  <div>
-    <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
+  <div class="am-wrap">
+    <div v-if="pending" class="am-pending">Загрузка...</div>
     <template v-else>
-      <div v-for="(tab, ti) in tabs" :key="ti" class="am-card">
+      <div v-for="(tab, ti) in tabs" :key="ti" class="am-card glass-card">
         <div class="am-card-label">вкладка: {{ tab.title || '(без названия)' }}</div>
-
         <div class="am-row">
           <label class="am-lbl">id:</label>
-          <input v-model="tab.id" class="am-inp" type="text" @input="markDirty">
+          <input v-model="tab.id" class="am-inp glass-input" type="text" @input="markDirty">
         </div>
         <div class="am-row">
           <label class="am-lbl">название:</label>
-          <input v-model="tab.title" class="am-inp" type="text" @input="markDirty">
+          <input v-model="tab.title" class="am-inp glass-input" type="text" @input="markDirty">
         </div>
         <div class="am-row">
           <label class="am-lbl">заголовок:</label>
-          <input v-model="tab.heading" class="am-inp" type="text" @input="markDirty">
-        </div>
-        <div class="am-row">
-          <label class="am-lbl">тип:</label>
-          <select v-model="tab.materialType" class="am-select" @change="markDirty">
-            <option value="">—</option>
-            <option v-for="opt in MATERIAL_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-          </select>
+          <input v-model="tab.heading" class="am-inp glass-input" type="text" @input="markDirty">
         </div>
 
         <!-- image upload -->
         <div class="am-upload-row">
           <label class="am-lbl">изображение:</label>
-          <input v-model="tab.image" class="am-inp" type="text" placeholder="имя файла" @input="markDirty">
-          <label class="am-btn-upload">
+          <input v-model="tab.image" class="am-inp glass-input" type="text" placeholder="имя файла" @input="markDirty">
+          <label class="am-btn-upload glass-chip">
             загрузить
             <input type="file" accept="image/*" style="display:none" @change="(e) => uploadTabImg(e, ti)">
           </label>
@@ -40,30 +32,38 @@
         <div v-for="(grp, gi) in tab.groups" :key="gi" class="am-group">
           <div class="am-row" style="margin-bottom:6px">
             <label class="am-lbl" style="width:60px">группа:</label>
-            <input v-model="grp.label" class="am-inp" type="text" @input="markDirty">
-            <button class="am-btn-sm danger" @click="delGroup(ti, gi)">×</button>
+            <AppAutocomplete
+              v-model="grp.label"
+              input-class="am-inp glass-input"
+              categories="materials,fabrics,furniture_types,kitchen,lighting,sanitary,flooring"
+              @change="markDirty"
+            />
+            <button class="am-btn-sm glass-chip danger" @click="delGroup(ti, gi)">×</button>
           </div>
           <div v-for="(item, ii) in grp.items" :key="ii" class="am-row" style="padding-left:20px">
-            <input v-model="item.text" class="am-inp" type="text" @input="markDirty">
-            <select v-model="item.type" class="am-select" @change="markDirty">
+            <AppAutocomplete
+              v-model="item.text"
+              input-class="am-inp glass-input"
+              @change="markDirty"
+            />
+            <select v-model="item.type" class="am-select glass-input" @change="markDirty">
               <option value="select">выбор</option>
               <option value="number">число</option>
               <option value="yesno">да/нет</option>
               <option value="text">текст</option>
             </select>
-            <button class="am-btn-sm danger" @click="delItem(ti, gi, ii)">×</button>
+            <button class="am-btn-sm glass-chip danger" @click="delItem(ti, gi, ii)">×</button>
           </div>
-          <button class="am-btn-add" @click="addItem(ti, gi)">+ пункт</button>
+          <button class="am-btn-add glass-chip" @click="addItem(ti, gi)">+ пункт</button>
         </div>
 
-        <button class="am-btn-add" @click="addGroup(ti)">+ группа</button>
+        <button class="am-btn-add glass-chip" @click="addGroup(ti)">+ группа</button>
         <div style="text-align:right;margin-top:8px">
-          <button class="am-btn-sm danger" @click="delTab(ti)">удалить вкладку</button>
+          <button class="am-btn-sm glass-chip danger" @click="delTab(ti)">удалить вкладку</button>
         </div>
       </div>
 
-      <button class="am-btn-add" style="margin-bottom:12px" @click="addTab">+ новая вкладка</button>
-
+      <button class="am-btn-add glass-chip" style="margin-bottom:12px" @click="addTab">+ новая вкладка</button>
       <div class="am-actions">
         <p v-if="error" style="color:#c00;font-size:.8rem;margin-right:auto">{{ error }}</p>
         <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</button>
@@ -73,13 +73,11 @@
 </template>
 
 <script setup lang="ts">
-import { MATERIAL_TYPE_OPTIONS } from '~~/shared/types/catalogs'
-
 const props = defineProps<{ slug: string; page: string }>()
 
 interface Item { text: string; type: string }
 interface Group { label: string; items: Item[] }
-interface Tab { id: string; title: string; heading: string; image: string; materialType?: string; groups: Group[] }
+interface Tab { id: string; title: string; heading: string; image: string; groups: Group[] }
 
 const { data: raw, pending, refresh } = await useFetch<any>(
   () => `/api/projects/${props.slug}/page-content?page=${props.page}`, { server: false }
@@ -104,7 +102,7 @@ watch(raw, (v) => {
 watch(() => props.page, () => { refresh() })
 
 function addTab() {
-  tabs.value.push({ id: `tab_${Date.now()}`, title: 'новая вкладка', heading: '', image: '', materialType: '', groups: [] })
+  tabs.value.push({ id: `tab_${Date.now()}`, title: 'новая вкладка', heading: '', image: '', groups: [] })
   markDirty()
 }
 function delTab(ti: number) {
@@ -159,16 +157,18 @@ async function save() {
 
 <style scoped>
 .am-card {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-left: 3px solid #1a1a1a;
+  --am-border: #e0e0e0;
+  --am-text: #1f1f1f;
+  --am-muted: #888;
+  border: 1px solid var(--am-border);
+  border-left: 3px solid color-mix(in srgb, var(--glass-text) 60%, #1a1a1a 40%);
   padding: 20px;
   margin-bottom: 16px;
 }
 .am-card-label {
   font-size: .9rem;
   font-weight: 400;
-  color: #888;
+  color: var(--am-muted);
   text-transform: uppercase;
   letter-spacing: .5px;
   margin-bottom: 12px;
@@ -181,28 +181,29 @@ async function save() {
 }
 .am-lbl {
   font-size: .78rem;
-  color: #888;
+  color: var(--am-muted);
   width: 80px;
   flex-shrink: 0;
 }
 .am-inp {
   flex: 1;
-  border: none;
-  border-bottom: 1px solid #ddd;
+  border: 1px solid transparent;
   padding: 6px 0;
   font-size: .88rem;
   outline: none;
   font-family: inherit;
+  color: var(--am-text);
   background: transparent;
 }
-.am-inp:focus { border-bottom-color: #1a1a1a; }
+.am-inp:focus { border-color: color-mix(in srgb, var(--glass-text) 28%, var(--glass-border) 72%); }
 .am-select {
-  border: 1px solid #ddd;
+  border: 1px solid transparent;
   padding: 4px 8px;
   font-size: .82rem;
   font-family: inherit;
   outline: none;
-  background: #fff;
+  color: var(--am-text);
+  background: transparent;
 }
 .am-upload-row {
   display: flex;
@@ -212,8 +213,8 @@ async function save() {
   flex-wrap: wrap;
 }
 .am-btn-upload {
-  border: 1px solid #1a1a1a;
-  background: transparent;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
   padding: 4px 10px;
   font-size: .78rem;
   cursor: pointer;
@@ -221,44 +222,49 @@ async function save() {
   border-radius: 2px;
   white-space: nowrap;
 }
-.am-btn-upload:hover { background: #1a1a1a; color: #fff; }
+.am-btn-upload:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
 .am-img-prev {
   max-width: 120px;
   max-height: 90px;
   object-fit: cover;
-  border: 1px solid #ddd;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 70%, #d7d7d7 30%);
   border-radius: 2px;
+}
+.am-pending {
+  font-size: .88rem;
+  color: color-mix(in srgb, var(--glass-text) 58%, #9a9a9a 42%);
 }
 .am-group {
   margin: 12px 0 8px;
   padding: 10px;
-  border: 1px solid #eee;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 62%, #d7d7d7 38%);
+  border-radius: 10px;
 }
 .am-btn-sm {
-  border: 1px solid #ddd;
-  background: transparent;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
   padding: 4px 10px;
   font-size: .78rem;
   cursor: pointer;
   font-family: inherit;
   border-radius: 2px;
 }
-.am-btn-sm:hover { border-color: #1a1a1a; }
+.am-btn-sm:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
 .am-btn-sm.danger { color: #c00; border-color: #c00; }
 .am-btn-sm.danger:hover { background: #c00; color: #fff; }
 .am-btn-add {
-  border: 1px dashed #ccc;
-  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--glass-border) 60%, #cfcfcf 40%);
+  background: var(--glass-bg);
   padding: 8px 16px;
   font-size: .82rem;
   cursor: pointer;
   font-family: inherit;
-  color: #888;
+  color: var(--am-muted);
   width: 100%;
   margin-top: 8px;
   display: block;
 }
-.am-btn-add:hover { border-color: #1a1a1a; color: #1a1a1a; }
+.am-btn-add:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); color: var(--am-text); }
 .am-actions {
   display: flex;
   gap: 10px;

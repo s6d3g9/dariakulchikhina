@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { CONTRACTOR_WORK_TYPES } from './catalogs'
 
 export const ContractorSchema = z.object({
   id: z.number(),
@@ -18,15 +17,17 @@ export const ContractorSchema = z.object({
   correspondentAccount: z.string().optional().nullable(),
   legalAddress: z.string().optional().nullable(),
   factAddress: z.string().optional().nullable(),
-  workTypes: z.array(z.enum(CONTRACTOR_WORK_TYPES)),
+  workTypes: z.array(z.string()),
   pin: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  messenger: z.string().optional().nullable(),
+  messengerNick: z.string().optional().nullable(),
+  website: z.string().optional().nullable(),
 })
 export const CreateContractorSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9_-]+$/),
   name: z.string().min(1),
   pin: z.string().optional(),
-  workTypes: z.array(z.enum(CONTRACTOR_WORK_TYPES)).optional(),
 })
 export const UpdateContractorSchema = ContractorSchema.omit({ id: true }).partial()
 export type Contractor = z.infer<typeof ContractorSchema>

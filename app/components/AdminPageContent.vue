@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
+  <div class="glass-card p-3 apc-wrap">
+    <div v-if="pending" class="apc-pending">Загрузка...</div>
     <template v-else>
       <!-- материалы/референсы (tabs) -->
       <AdminMaterials v-if="contentType === 'materials'" :slug="slug" :page="page" />
@@ -13,7 +13,7 @@
         </div>
         <textarea
           v-model="rawJson"
-          class="w-full h-[500px] font-mono text-xs border border-gray-200 p-4 outline-none focus:border-gray-400 resize-y"
+          class="w-full h-[500px] font-mono text-xs border border-gray-200 p-4 outline-none focus:border-gray-400 resize-y glass-input"
           spellcheck="false"
         />
         <p v-if="error" class="text-red-500 text-xs mt-2">{{ error }}</p>
@@ -68,3 +68,14 @@ async function save() {
   }
 }
 </script>
+
+<style scoped>
+.apc-wrap {
+  color: var(--glass-text);
+}
+
+.apc-pending {
+  font-size: .88rem;
+  color: color-mix(in srgb, var(--glass-text) 58%, #9a9a9a 42%);
+}
+</style>

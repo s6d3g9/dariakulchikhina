@@ -18,8 +18,7 @@
           @click="activePage = pg.slug"
         >{{ pg.title }}</button>
         <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <NuxtLink to="/admin/roadmap-templates" class="proj-ready-link">шаблоны roadmap</NuxtLink>
-          <a :href="`/client/${project.slug}`" target="_blank" rel="noopener noreferrer" class="proj-ready-link">готовые страницы ↗</a>
+          <a :href="`https://dariakulchikhina.com/api/auth/client-open?projectSlug=${encodeURIComponent(project.slug)}`" class="proj-ready-link">готовые страницы ↗</a>
           <button class="proj-tab proj-tab--settings" @click="showEdit = true">⚙ проект</button>
         </span>
       </div>
@@ -29,6 +28,12 @@
       </div>
       <div v-else-if="activePage === 'work_status'">
         <AdminWorkStatus :slug="route.params.slug as string" />
+      </div>
+      <div v-else-if="activePage === 'profile_customer'">
+        <AdminClientProfile :slug="route.params.slug as string" />
+      </div>
+      <div v-else-if="activePage === 'profile_contractors'">
+        <AdminContractorsProfile />
       </div>
       <div v-else>
         <AdminPageContent :slug="route.params.slug as string" :page="activePage" />
@@ -86,11 +91,8 @@ const allPageSlugs = [
 ]
 
 const availablePages = computed(() => {
-  const pages = Array.isArray(project.value?.pages) ? project.value.pages : []
-  if (!pages.length) return allPageSlugs
-  const required = ['work_status', 'project_roadmap']
-  const merged = Array.from(new Set([...pages, ...required]))
-  return allPageSlugs.filter(p => merged.includes(p.slug))
+  const pages = project.value?.pages || []
+  return allPageSlugs.filter(p => pages.includes(p.slug))
 })
 
 async function saveProject() {
@@ -113,6 +115,27 @@ async function saveProject() {
 
 <style scoped>
 .proj-tabs {
+  --tab-border: #ddd;
+  --tab-color: #666;
+  --tab-hover-border: #1a1a1a;
+  --tab-hover-color: #1a1a1a;
+  --tab-active-border: #1a1a1a;
+  --tab-active-color: #1a1a1a;
+  --link-color: #555;
+  --link-border: #ddd;
+  --btn-border: #ddd;
+  --btn-color: #666;
+  --save-bg: #1a1a1a;
+  --save-color: #fff;
+  --save-hover-bg: #333;
+  --input-border: #ddd;
+  --input-focus: #1a1a1a;
+  --input-color: inherit;
+  --label-color: #888;
+  --modal-bg: #fff;
+  --modal-border: #e0e0e0;
+  --backdrop-bg: rgba(0,0,0,0.3);
+
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
@@ -121,42 +144,48 @@ async function saveProject() {
 }
 .proj-tab {
   padding: 8px 16px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--tab-border);
   background: transparent;
   text-decoration: none;
-  color: #666;
+  color: var(--tab-color);
   font-size: .82rem;
   border-radius: 2px;
   cursor: pointer;
   font-family: inherit;
 }
-.proj-tab:hover { border-color: #1a1a1a; color: #1a1a1a; }
-.proj-tab--active { border-color: #1a1a1a; color: #1a1a1a; font-weight: 500; }
+.proj-tab:hover { border-color: var(--tab-hover-border); color: var(--tab-hover-color); }
+.proj-tab--active { border-color: var(--tab-active-border); color: var(--tab-active-color); font-weight: 500; }
 .proj-tab--settings { border-style: dashed; font-size: .78rem; }
-.proj-ready-link { font-size: .78rem; color: #555; text-decoration: none; border: 1px solid #ddd; padding: 6px 10px; border-radius: 2px; }
-.proj-ready-link:hover { border-color: #1a1a1a; color: #1a1a1a; }
-.a-btn-sm {
-  border: 1px solid #ddd; background: transparent; padding: 4px 10px;
-  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
+.proj-ready-link {
+  font-size: .78rem; color: var(--link-color); text-decoration: none;
+  border: 1px solid var(--link-border); padding: 6px 10px; border-radius: 2px;
 }
-.a-btn-sm:hover { border-color: #1a1a1a; }
+.proj-ready-link:hover { border-color: var(--tab-hover-border); color: var(--tab-hover-color); }
+.a-btn-sm {
+  border: 1px solid var(--btn-border); background: transparent; padding: 4px 10px;
+  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
+  color: var(--btn-color);
+}
+.a-btn-sm:hover { border-color: var(--tab-hover-border); color: var(--tab-hover-color); }
 .a-btn-save {
-  border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff;
+  border: 1px solid var(--save-bg); background: var(--save-bg); color: var(--save-color);
   padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
 }
-.a-btn-save:hover { background: #333; }
+.a-btn-save:hover { background: var(--save-hover-bg); }
 .a-field { margin-bottom: 14px; }
-.a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
+.a-field label { display: block; font-size: .76rem; color: var(--label-color); margin-bottom: 5px; }
 .a-input {
-  display: block; width: 100%; border: none; border-bottom: 1px solid #ddd;
+  display: block; width: 100%; border: none; border-bottom: 1px solid var(--input-border);
   padding: 8px 0; font-size: .88rem; outline: none; font-family: inherit;
+  color: var(--input-color); background: transparent;
 }
-.a-input:focus { border-bottom-color: #1a1a1a; }
+.a-input:focus { border-bottom-color: var(--input-focus); }
 .a-modal-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+  position: fixed; inset: 0; background: var(--backdrop-bg);
   display: flex; align-items: center; justify-content: center; z-index: 100;
 }
 .a-modal {
-  background: #fff; border: 1px solid #e0e0e0; padding: 32px; width: 380px; max-width: 90vw;
+  background: var(--modal-bg); border: 1px solid var(--modal-border);
+  padding: 32px; width: 380px; max-width: 90vw;
 }
 </style>

@@ -1,6 +1,8 @@
 export default defineNuxtRouteMiddleware(async () => {
-  const { data } = await useFetch('/api/auth/me')
-  if (data.value?.role !== 'client') {
+  const headers = process.server ? useRequestHeaders(['cookie']) : undefined
+  const { data } = await useFetch('/api/auth/me', { headers })
+
+  if (data.value?.role !== 'client' && data.value?.role !== 'designer') {
     return navigateTo('/client/login')
   }
 })

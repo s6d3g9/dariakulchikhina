@@ -1,27 +1,27 @@
 <template>
-  <div>
+  <div class="glass-card p-3">
     <div class="flex items-center justify-between mb-4">
-      <span class="text-sm text-gray-500">{{ items?.length || 0 }} задач</span>
+      <span class="text-sm text-gray-600 dark:text-gray-300">{{ items?.length || 0 }} задач</span>
       <div class="flex gap-2">
         <button class="a-btn-sm" @click="addItem">+ добавить</button>
         <button class="a-btn-save" @click="save" :disabled="saving">{{ saving ? "..." : "сохранить" }}</button>
       </div>
     </div>
-    <div v-if="pending" class="text-sm text-gray-400">Загрузка...</div>
-    <div v-else class="grid gap-2">
+    <div v-if="pending" class="text-sm text-gray-500 dark:text-gray-300">Загрузка...</div>
+    <div v-else class="grid gap-3">
       <div
         v-for="(item, idx) in items"
         :key="idx"
-        class="border border-gray-200 p-4 bg-white"
+        class="glass-surface rounded-xl border border-white/50 dark:border-white/10 p-4"
       >
         <div class="grid grid-cols-3 gap-3 mb-2">
           <div class="col-span-2">
-            <label class="text-xs text-gray-400 block mb-1">Название задачи</label>
-            <input v-model="item.title" class="w-full border-b border-gray-200 pb-1 text-sm outline-none focus:border-gray-500" />
+            <label class="text-xs text-gray-500 dark:text-gray-300 block mb-1">Название задачи</label>
+            <input v-model="item.title" class="w-full glass-input rounded-md px-2 py-2 text-sm outline-none" />
           </div>
           <div>
-            <label class="text-xs text-gray-400 block mb-1">Статус</label>
-            <select v-model="item.status" class="w-full border border-gray-200 px-2 py-1 text-sm outline-none">
+            <label class="text-xs text-gray-500 dark:text-gray-300 block mb-1">Статус</label>
+            <select v-model="item.status" class="w-full glass-input rounded-md px-2 py-2 text-sm outline-none">
               <option value="pending">ожидание</option>
               <option value="planned">запланировано</option>
               <option value="in_progress">в работе</option>
@@ -33,32 +33,27 @@
         </div>
         <div class="grid grid-cols-3 gap-3 mb-1">
           <div>
-            <label class="text-xs text-gray-400 block mb-1">Начало</label>
-            <input v-model="item.dateStart" placeholder="дд.мм.гггг"
-              class="w-full border-b border-gray-200 pb-1 text-xs outline-none focus:border-gray-500" />
+            <label class="text-xs text-gray-500 dark:text-gray-300 block mb-1">Начало</label>
+            <AppDatePicker
+              v-model="item.dateStart"
+              input-class="w-full glass-input rounded-md px-2 py-2 text-xs outline-none"
+            />
           </div>
           <div>
-            <label class="text-xs text-gray-400 block mb-1">Конец</label>
-            <input v-model="item.dateEnd" placeholder="дд.мм.гггг"
-              class="w-full border-b border-gray-200 pb-1 text-xs outline-none focus:border-gray-500" />
+            <label class="text-xs text-gray-500 dark:text-gray-300 block mb-1">Конец</label>
+            <AppDatePicker
+              v-model="item.dateEnd"
+              input-class="w-full glass-input rounded-md px-2 py-2 text-xs outline-none"
+            />
           </div>
           <div>
-            <label class="text-xs text-gray-400 block mb-1">Бюджет</label>
+            <label class="text-xs text-gray-500 dark:text-gray-300 block mb-1">Бюджет</label>
             <input v-model="item.budget" placeholder="0 руб."
-              class="w-full border-b border-gray-200 pb-1 text-xs outline-none focus:border-gray-500" />
-          </div>
-        </div>
-        <div class="grid grid-cols-1 mb-1">
-          <div>
-            <label class="text-xs text-gray-400 block mb-1">Подрядчик</label>
-            <select v-model.number="item.contractorId" class="w-full border border-gray-200 px-2 py-1 text-xs outline-none">
-              <option :value="null">—</option>
-              <option v-for="c in contractors || []" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
+              class="w-full glass-input rounded-md px-2 py-2 text-xs outline-none" />
           </div>
         </div>
         <div class="flex justify-end mt-1">
-          <button @click="items.splice(idx, 1)" class="text-xs text-red-400 hover:text-red-600">удалить</button>
+          <button @click="items.splice(idx, 1)" class="text-xs text-red-400 hover:text-red-500">удалить</button>
         </div>
       </div>
     </div>
@@ -72,7 +67,6 @@ const props = defineProps<{ slug: string }>()
 const { data: rawItems, pending } = await useFetch<any[]>(
   () => `/api/projects/${props.slug}/work-status`
 )
-const { data: contractors } = await useFetch<any[]>('/api/contractors')
 
 const items = ref<any[]>([])
 const saving = ref(false)
@@ -83,7 +77,7 @@ watch(rawItems, (v) => {
 }, { immediate: true })
 
 function addItem() {
-  items.value.push({ title: '', status: 'pending', dateStart: '', dateEnd: '', budget: '', notes: '', contractorId: null })
+  items.value.push({ title: '', status: 'pending', dateStart: '', dateEnd: '', budget: '', notes: '' })
 }
 
 async function save() {

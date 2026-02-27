@@ -1,15 +1,405 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.48);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-shadow: 0 10px 28px rgba(18, 18, 18, 0.08);
+  --glass-text: #1f1f1f;
+  --glass-page-bg: #f3f4f6;
+}
+
+html.dark {
+  --glass-bg: rgba(11, 12, 14, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 18px 36px rgba(0, 0, 0, 0.58);
+  --glass-text: #f5f5f6;
+  --glass-page-bg: #060709;
+}
+
+body {
+  background: var(--glass-page-bg);
+  color: var(--glass-text);
+}
+
+html,
+body,
+#__nuxt {
+  background: var(--glass-page-bg);
+}
+
+html.dark,
+html.dark #__nuxt {
+  background: #060709 !important;
+}
+
+.glass-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.glass-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 55% at 0% 0%, rgba(255, 255, 255, 0.32), transparent 62%),
+    radial-gradient(70% 50% at 100% 100%, rgba(255, 255, 255, 0.2), transparent 65%);
+}
+
+html.dark .glass-page::before {
+  background:
+    radial-gradient(70% 55% at 0% 0%, rgba(72, 84, 120, 0.16), transparent 62%),
+    radial-gradient(70% 50% at 100% 100%, rgba(28, 34, 54, 0.2), transparent 65%);
+}
+
+.glass-surface,
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+.glass-card {
+  border-radius: 14px;
+}
+
+html.dark .glass-surface,
+html.dark .glass-card {
+  background: linear-gradient(180deg, rgba(17, 18, 22, 0.96) 0%, rgba(9, 10, 12, 0.94) 100%);
+  border-color: rgba(255, 255, 255, 0.11);
+}
+
+.glass-chip {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+.glass-input {
+  border: 1px solid var(--glass-border);
+  background: color-mix(in srgb, var(--glass-bg) 86%, transparent);
+  color: var(--glass-text);
+  -webkit-backdrop-filter: blur(10px) saturate(130%);
+  backdrop-filter: blur(10px) saturate(130%);
+}
+
+.glass-input::placeholder {
+  color: color-mix(in srgb, var(--glass-text) 52%, #8f8f8f 48%);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--glass-border) 75%, var(--glass-text) 25%);
+}
+
+html.dark .glass-chip {
+  background: rgba(18, 19, 24, 0.9);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+html.dark .glass-input {
+  background: rgba(13, 14, 18, 0.94);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+html.dark .glass-input::placeholder {
+  color: rgba(198, 202, 214, 0.74);
+}
+
 /* Admin panel global button styles */
 .a-btn-save {
-  border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
   padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
 }
-.a-btn-save:hover { background: #333; }
+.a-btn-save:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
 .a-btn-save:disabled { opacity: 0.6; cursor: default; }
 .a-btn-sm {
-  border: 1px solid #ddd; background: transparent; padding: 4px 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(12px) saturate(140%);
+  padding: 4px 10px;
   font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
 }
-.a-btn-sm:hover { border-color: #1a1a1a; }
+.a-btn-sm:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
+
+/* ── Global dark-mode safety net ── */
+html.dark {
+  color-scheme: dark;
+}
+
+/* Force dark on any element with explicit white background */
+html.dark [style*="background:#fff"],
+html.dark [style*="background: #fff"],
+html.dark [style*="background-color:#fff"],
+html.dark [style*="background-color: #fff"] {
+  background: #151517 !important;
+}
+
+/* Inline text colors */
+html.dark [style*="color:#888"],
+html.dark [style*="color: #888"] { color: #a8a8a8 !important; }
+html.dark [style*="color:#999"],
+html.dark [style*="color: #999"] { color: #777 !important; }
+html.dark [style*="color:#aaa"],
+html.dark [style*="color: #aaa"] { color: #888 !important; }
+html.dark [style*="color:#1a1a1a"],
+html.dark [style*="color: #1a1a1a"] { color: #f2f2f2 !important; }
+html.dark [style*="color:#666"],
+html.dark [style*="color: #666"] { color: #bbb !important; }
+html.dark [style*="color:#555"],
+html.dark [style*="color: #555"] { color: #ccc !important; }
+html.dark [style*="color:#c00"],
+html.dark [style*="color: #c00"] { color: #ff6b6b !important; }
+
+/* Inline border overrides */
+html.dark [style*="border-bottom: 1px solid #f5f5f5"],
+html.dark [style*="border-bottom:1px solid #f5f5f5"] { border-bottom-color: #222 !important; }
+
+/* ── Component dark overrides (extracted from scoped styles) ── */
+
+/* from: layouts/default.vue */
+html.dark .default-root {
+  --bg: #0f0f0f;
+  --header-bg: #121212;
+  --border: #2d2d2d;
+  --title: #a8a8a8;
+}
+
+/* from: layouts/admin.vue, layouts/cabinet.vue, layouts/contractor.vue, layouts/default.vue */
+html.dark .theme-dot {
+  background: color-mix(in srgb, var(--header-bg) 72%, #2a2a2a 28%);
+  border-color: #3d3d3d;
+  background: color-mix(in srgb, var(--bg) 72%, #2a2a2a 28%);
+}
+
+/* from: layouts/cabinet.vue */
+html.dark .cabinet-root {
+  --bg: #121212;
+  --border: #2d2d2d;
+  --text: #f2f2f2;
+  --muted: #a0a0a0;
+  --btn-border: #3d3d3d;
+  --btn-text: #d3d3d3;
+}
+
+/* from: layouts/cabinet.vue */
+html.dark .cabinet-logout {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* from: layouts/contractor.vue */
+html.dark .contractor-root {
+  --bg: #121212;
+  --border: #2d2d2d;
+  --title: #a8a8a8;
+}
+
+/* from: layouts/admin.vue */
+html.dark .admin-bg {
+  --bg: #0f0f0f;
+  --header-bg: #121212;
+  --border: #2d2d2d;
+  --text: #f2f2f2;
+  --muted: #a8a8a8;
+  --tab-border: #3a3a3a;
+  --tab-text: #c7c7c7;
+}
+
+/* from: components/AdminClientProfile.vue */
+html.dark .acp-card {
+  --acp-bg: #151517;
+  --acp-border: #2d2d2d;
+  --acp-row-border: #222;
+  --acp-lbl: #a8a8a8;
+  --acp-inp-border: #3a3a3a;
+  --acp-inp-focus: #888;
+  --acp-inp-color: #f2f2f2;
+  --acp-ta-border: #3a3a3a;
+  --acp-btn-border: #f2f2f2;
+  --acp-btn-color: #f2f2f2;
+  --acp-btn-hover-bg: #f2f2f2;
+  --acp-btn-hover-color: #111;
+  --acp-img-border: #3a3a3a;
+}
+
+/* from: components/ClientPageContent.vue */
+html.dark .content-wrap {
+  --c-muted: #a8a8a8;
+  --c-border: #2f2f2f;
+  --c-border-strong: #3a3a3a;
+  --c-text: #f2f2f2;
+  --c-text-soft: #b1b1b1;
+  --c-text-body: #d5d5d5;
+  --c-bg-soft: #1d1d1d;
+  --c-input-bg: #181818;
+}
+
+/* from: components/ClientRoadmap.vue */
+html.dark .rm-wrap {
+  --r-title: #b1b1b1;
+  --r-muted: #a8a8a8;
+  --r-line: #333;
+  --r-dot-border: #4a4a4a;
+  --r-dot-bg: #1a1a1a;
+  --r-text: #f2f2f2;
+  --r-soft: #b8b8b8;
+  --r-progress-dot-border: #8a6e3a;
+  --r-progress-dot-bg: #2a2216;
+  --r-done-dot-border: #4a7a55;
+  --r-done-dot-bg: #182018;
+  --r-status-pending: #777;
+  --r-status-progress: #d4a64a;
+  --r-status-done: #5dba72;
+}
+
+/* from: components/ClientWorkStatus.vue */
+html.dark .ws-wrap {
+  --w-title: #b1b1b1;
+  --w-muted: #a8a8a8;
+  --w-card-bg: #181818;
+  --w-card-border: #303030;
+  --w-text: #f2f2f2;
+  --w-text-soft: #b9b9b9;
+  --w-badge-border: #3a3a3a;
+  --b-pending-color: #999;
+  --b-pending-border: #3a3a3a;
+  --b-pending-bg: #1a1a1a;
+  --b-progress-color: #d4a64a;
+  --b-progress-border: #5a4a28;
+  --b-progress-bg: #1e1a10;
+  --b-done-color: #5dba72;
+  --b-done-border: #2e5a3a;
+  --b-done-bg: #111e14;
+  --b-cancel-color: #e06060;
+  --b-cancel-border: #5a2e2e;
+  --b-cancel-bg: #1e1111;
+}
+
+/* from: components/AdminTZ.vue */
+html.dark .atz-card {
+  --atz-border: #3a3a3a;
+  --atz-text: #f1f1f1;
+  --atz-muted: #a8a8a8;
+}
+
+/* from: components/AdminMaterials.vue */
+html.dark .am-card {
+  --am-border: #3a3a3a;
+  --am-text: #f1f1f1;
+  --am-muted: #a8a8a8;
+}
+
+/* from: pages/admin/contractors/index.vue, pages/admin/index.vue */
+html.dark .a-card {
+  --card-bg: #151517;
+  --card-border: #2d2d2d;
+  --card-text: #f2f2f2;
+  --card-muted: #777;
+  --link-color: #f2f2f2;
+  --btn-border: #3a3a3a;
+  --btn-color: #bbb;
+  --btn-hover-border: #888;
+  --btn-hover-color: #f2f2f2;
+  --danger-color: #ff6b6b;
+  --save-bg: #e8e8e8;
+  --save-color: #111;
+  --save-hover-bg: #ccc;
+  --input-border: #3a3a3a;
+  --input-focus: #888;
+  --input-color: #f2f2f2;
+  --label-color: #a8a8a8;
+  --modal-bg: #151517;
+  --modal-border: #2d2d2d;
+  --backdrop-bg: rgba(0,0,0,0.6);
+  --input-disabled: #555;
+}
+
+/* from: pages/contractor/[id]/index.vue */
+html.dark .contractor-name {
+  color: #f2f2f2;
+}
+
+/* from: pages/admin/pages/index.vue */
+html.dark .pg-root {
+  --pg-bg: #151517;
+  --pg-border: #2d2d2d;
+  --pg-lbl: #a8a8a8;
+  --pg-inp-border: #3a3a3a;
+  --pg-inp-focus: #888;
+  --pg-inp-color: #f2f2f2;
+  --pg-add-border: #3a3a3a;
+  --pg-add-color: #a8a8a8;
+  --pg-add-hover-border: #888;
+  --pg-add-hover-color: #f2f2f2;
+  --danger-color: #ff6b6b;
+  --pg-h1-color: #bbb;
+}
+
+/* from: pages/admin/pages/index.vue */
+html.dark .pg-card {
+  --pg-bg: #151517;
+  --pg-border: #2d2d2d;
+  --pg-lbl: #a8a8a8;
+  --pg-inp-border: #3a3a3a;
+  --pg-inp-focus: #888;
+  --pg-inp-color: #f2f2f2;
+  --pg-add-border: #3a3a3a;
+  --pg-add-color: #a8a8a8;
+  --pg-add-hover-border: #888;
+  --pg-add-hover-color: #f2f2f2;
+  --danger-color: #ff6b6b;
+}
+
+/* from: pages/admin/projects/[slug].vue */
+html.dark .proj-tabs {
+  --tab-border: #3a3a3a;
+  --tab-color: #bbb;
+  --tab-hover-border: #888;
+  --tab-hover-color: #f2f2f2;
+  --tab-active-border: #f2f2f2;
+  --tab-active-color: #f2f2f2;
+  --link-color: #bbb;
+  --link-border: #3a3a3a;
+  --btn-border: #3a3a3a;
+  --btn-color: #bbb;
+  --save-bg: #e8e8e8;
+  --save-color: #111;
+  --save-hover-bg: #ccc;
+  --input-border: #3a3a3a;
+  --input-focus: #888;
+  --input-color: #f2f2f2;
+  --label-color: #a8a8a8;
+  --modal-bg: #151517;
+  --modal-border: #2d2d2d;
+  --backdrop-bg: rgba(0,0,0,0.6);
+}
+
+/* ── autocomplete dark ── */
+html.dark .ac-dropdown {
+  background: rgba(30,30,50,.82);
+  border-color: rgba(255,255,255,.10);
+  box-shadow: 0 8px 32px rgba(0,0,0,.32);
+}
+html.dark .ac-option {
+  color: #e0dfe6;
+}
+html.dark .ac-option:hover,
+html.dark .ac-option.active {
+  background: rgba(110,90,220,.22);
+}
+html.dark .ac-option b {
+  color: #a78bfa;
+}

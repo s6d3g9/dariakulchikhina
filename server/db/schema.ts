@@ -68,6 +68,9 @@ export const contractors = pgTable('contractors', {
   workTypes: text('work_types').array().default([]).notNull(),
   pin: text('pin'),
   notes: text('notes'),
+  messenger: text('messenger'),
+  messengerNick: text('messenger_nick'),
+  website: text('website'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -87,6 +90,9 @@ export const workStatusItems = pgTable('work_status_items', {
   dateEnd: text('date_end'),
   budget: text('budget'),
   notes: text('notes'),
+  messenger: text('messenger'),
+  messengerNick: text('messenger_nick'),
+  website: text('website'),
   sortOrder: integer('sort_order').default(0).notNull(),
 })
 
@@ -100,6 +106,9 @@ export const roadmapStages = pgTable('roadmap_stages', {
   dateStart: text('date_start'),
   dateEnd: text('date_end'),
   notes: text('notes'),
+  messenger: text('messenger'),
+  messengerNick: text('messenger_nick'),
+  website: text('website'),
   sortOrder: integer('sort_order').default(0).notNull(),
 })
 

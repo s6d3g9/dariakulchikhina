@@ -1,25 +1,25 @@
 <template>
-  <div>
-    <div v-if="pending" class="flex items-center justify-center h-64 text-sm text-gray-400">
-      Загрузка...
-    </div>
+  <div class="client-home">
+    <div v-if="pending" class="client-empty">Загрузка...</div>
+
     <template v-else-if="project">
-      <!-- Шапка -->
-      <div class="border-b border-gray-100 px-6 py-8 text-center">
-        <h1 class="text-xl font-light tracking-widest uppercase text-gray-800">{{ project.title }}</h1>
+      <div class="client-home-head">
+        <h1 class="client-home-title">{{ project.title }}</h1>
       </div>
-      <!-- Список страниц -->
-      <div class="px-6 pt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+      <div class="menu-ribbon">
         <NuxtLink
           v-for="pg in availablePages"
           :key="pg.slug"
           :to="`/client/${project.slug}/${pg.slug}`"
-          class="border border-gray-200 p-5 hover:border-gray-400 transition-colors group"
+          class="menu-item"
         >
-          <p class="text-sm text-gray-700 group-hover:text-gray-900">{{ pg.title }}</p>
+          {{ pg.title }}
         </NuxtLink>
       </div>
     </template>
+
+    <div v-else class="client-empty">Проект не найден</div>
   </div>
 </template>
 
@@ -43,3 +43,88 @@ const availablePages = computed(() => {
   return allPageSlugs.filter(p => pages.includes(p.slug))
 })
 </script>
+
+<style scoped>
+.client-home-head {
+  border-bottom: 1px solid var(--border, #ececec);
+  padding: 28px 0 22px;
+}
+
+.client-home-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 400;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--text, #1f1f1f);
+}
+
+.menu-ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding-top: 18px;
+}
+
+.menu-item {
+  display: block;
+  text-decoration: none;
+  color: var(--secondary, #8f8f8f);
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  padding: 6px 0;
+  user-select: none;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible,
+.menu-item:active {
+  color: var(--text, #1a1a1a);
+  padding-left: 5px;
+}
+
+.client-empty {
+  padding: 28px 0;
+  color: var(--secondary, #999);
+  font-size: .86rem;
+}
+
+@media (max-width: 768px) {
+  .client-home-head {
+    padding: 18px 0 14px;
+  }
+
+  .client-home-title {
+    font-size: .86rem;
+    letter-spacing: 1px;
+  }
+
+  .menu-ribbon {
+    flex-wrap: nowrap;
+    gap: 22px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-top: 12px;
+  }
+
+  .menu-ribbon::-webkit-scrollbar {
+    display: none;
+  }
+
+  .menu-item {
+    font-size: .78rem;
+    padding: 2px 0;
+  }
+
+  .menu-item:hover,
+  .menu-item:focus-visible,
+  .menu-item:active {
+    padding-left: 0;
+  }
+}
+</style>

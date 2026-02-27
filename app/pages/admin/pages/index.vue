@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <h1 style="font-size:.82rem;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:#666;margin-bottom:14px">страницы</h1>
+  <div class="pg-root">
+    <h1 style="font-size:.82rem;font-weight:500;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px" :style="{color: 'var(--pg-h1-color)'}">страницы</h1>
 
     <div v-for="(p, i) in pages" :key="i" class="pg-card">
       <div class="pg-row">
@@ -106,9 +106,35 @@ async function save() {
 </script>
 
 <style scoped>
+.pg-root {
+  --pg-bg: #fff;
+  --pg-border: #e0e0e0;
+  --pg-lbl: #888;
+  --pg-inp-border: #ddd;
+  --pg-inp-focus: #1a1a1a;
+  --pg-inp-color: inherit;
+  --pg-add-border: #ccc;
+  --pg-add-color: #888;
+  --pg-add-hover-border: #1a1a1a;
+  --pg-add-hover-color: #1a1a1a;
+  --danger-color: #c00;
+  --pg-h1-color: #666;
+}
 .pg-card {
-  background: #fff;
-  border: 1px solid #e0e0e0;
+  --pg-bg: #fff;
+  --pg-border: #e0e0e0;
+  --pg-lbl: #888;
+  --pg-inp-border: #ddd;
+  --pg-inp-focus: #1a1a1a;
+  --pg-inp-color: inherit;
+  --pg-add-border: #ccc;
+  --pg-add-color: #888;
+  --pg-add-hover-border: #1a1a1a;
+  --pg-add-hover-color: #1a1a1a;
+  --danger-color: #c00;
+
+  background: var(--pg-bg);
+  border: 1px solid var(--pg-border);
   padding: 20px;
   margin-bottom: 16px;
 }
@@ -121,32 +147,33 @@ async function save() {
 .pg-lbl {
   width: 90px;
   font-size: .78rem;
-  color: #888;
+  color: var(--pg-lbl);
   flex-shrink: 0;
 }
 .pg-inp {
   flex: 1;
   border: none;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--pg-inp-border);
   padding: 6px 0;
   font-size: .88rem;
   outline: none;
   background: transparent;
   font-family: inherit;
+  color: var(--pg-inp-color);
 }
-.pg-inp:focus { border-bottom-color: #1a1a1a; }
+.pg-inp:focus { border-bottom-color: var(--pg-inp-focus); }
 .pg-btn-add {
-  border: 1px dashed #ccc;
+  border: 1px dashed var(--pg-add-border);
   background: transparent;
   padding: 8px 16px;
   font-size: .82rem;
   cursor: pointer;
   font-family: inherit;
-  color: #888;
+  color: var(--pg-add-color);
   width: 100%;
   margin-top: 8px;
 }
-.pg-btn-add:hover { border-color: #1a1a1a; color: #1a1a1a; }
+.pg-btn-add:hover { border-color: var(--pg-add-hover-border); color: var(--pg-add-hover-color); }
 .pg-actions {
   display: flex;
   justify-content: flex-end;
@@ -154,12 +181,6 @@ async function save() {
   gap: 12px;
   margin-top: 16px;
 }
-.a-btn-danger {
-  color: #c00;
-  border-color: #c00;
-}
-.a-btn-danger:hover {
-  background: #c00;
-  color: #fff;
-}
+.a-btn-danger { color: var(--danger-color); border-color: var(--danger-color); }
+.a-btn-danger:hover { background: #c00; color: #fff; }
 </style>

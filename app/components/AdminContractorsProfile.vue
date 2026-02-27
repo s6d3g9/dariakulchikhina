@@ -20,7 +20,7 @@
             <div style="font-size:.76rem;color:#aaa;margin-top:2px">
               <span v-if="c.phone">{{ c.phone }}&nbsp;&nbsp;</span>
               <span v-if="c.email">{{ c.email }}&nbsp;&nbsp;</span>
-              <span>PIN: {{ c.pin || '\u2014' }}</span>
+              <span>PIN: {{ c.pin || '—' }}</span>
             </div>
             <div v-if="c.workTypes?.length" style="font-size:.72rem;color:#999;margin-top:3px">
               {{ c.workTypes.join(', ') }}
@@ -34,14 +34,12 @@
       </div>
     </div>
 
-    <!-- modal -->
     <div v-if="showModal" class="a-modal-backdrop" @click.self="closeModal">
       <div class="a-modal" style="width:600px;max-height:90vh;overflow-y:auto">
         <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">
           {{ editingId ? 'редактировать' : 'добавить' }} подрядчика
         </h3>
         <form @submit.prevent="save">
-          <!-- section: main -->
           <div class="a-section-title">основное</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div class="a-field">
@@ -74,7 +72,6 @@
             </div>
           </div>
 
-          <!-- section: contacts -->
           <div class="a-section-title">контакты</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div class="a-field">
@@ -90,7 +87,7 @@
             <div class="a-field">
               <label>Мессенджер</label>
               <select v-model="form.messenger" class="a-input a-select">
-                <option value="">\u2014</option>
+                <option value="">—</option>
                 <option value="telegram">telegram</option>
                 <option value="whatsapp">whatsapp</option>
                 <option value="viber">viber</option>
@@ -109,7 +106,6 @@
             <div class="a-field">&nbsp;</div>
           </div>
 
-          <!-- section: addresses -->
           <div class="a-section-title">адреса</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div class="a-field">
@@ -122,7 +118,6 @@
             </div>
           </div>
 
-          <!-- section: requisites -->
           <div class="a-section-title">реквизиты</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
             <div class="a-field">
@@ -159,7 +154,6 @@
             </div>
           </div>
 
-          <!-- section: notes -->
           <div class="a-section-title">примечания</div>
           <div class="a-field">
             <textarea v-model="form.notes" class="a-input a-textarea" rows="3" placeholder="заметки о подрядчике"></textarea>
@@ -177,10 +171,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
-
 const { data: contractors, pending, refresh } = await useFetch<any[]>('/api/contractors')
-
 const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
@@ -198,10 +189,9 @@ const emptyForm = () => ({
 })
 
 const form = reactive(emptyForm())
-
 const workTypesStr = computed({
   get: () => form.workTypes.join(', '),
-  set: (v: string) => { form.workTypes = v.split(',').map(s => s.trim()).filter(Boolean) },
+  set: (value: string) => { form.workTypes = value.split(',').map(s => s.trim()).filter(Boolean) },
 })
 
 function openCreate() {
@@ -210,11 +200,11 @@ function openCreate() {
   showModal.value = true
 }
 
-function openEdit(c: any) {
-  editingId.value = c.id
-  const empty = emptyForm()
-  for (const key of Object.keys(empty) as (keyof typeof empty)[]) {
-    ;(form as any)[key] = c[key] ?? (empty as any)[key]
+function openEdit(contractor: any) {
+  editingId.value = contractor.id
+  const base = emptyForm()
+  for (const key of Object.keys(base) as (keyof typeof base)[]) {
+    ;(form as any)[key] = contractor[key] ?? (base as any)[key]
   }
   showModal.value = true
 }
@@ -235,15 +225,15 @@ async function save() {
     }
     closeModal()
     refresh()
-  } catch (e: any) {
-    formError.value = e.data?.message || '\u041e\u0448\u0438\u0431\u043a\u0430'
+  } catch (error: any) {
+    formError.value = error.data?.message || 'Ошибка'
   } finally {
     saving.value = false
   }
 }
 
 async function del(id: number) {
-  if (!confirm('\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u043f\u043e\u0434\u0440\u044f\u0434\u0447\u0438\u043a\u0430?')) return
+  if (!confirm('Удалить подрядчика?')) return
   await $fetch(`/api/contractors/${id}`, { method: 'DELETE' })
   refresh()
 }
@@ -269,6 +259,7 @@ async function del(id: number) {
   --modal-bg: #fff;
   --modal-border: #e0e0e0;
   --backdrop-bg: rgba(0,0,0,0.3);
+
   background: var(--card-bg);
   border: 1px solid var(--card-border);
 }

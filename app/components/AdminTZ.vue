@@ -1,28 +1,27 @@
 <template>
-  <div>
-    <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
+  <div class="atz-wrap">
+    <div v-if="pending" class="atz-pending">Загрузка...</div>
     <template v-else>
-      <div v-for="(sec, si) in sections" :key="si" class="atz-card">
+      <div v-for="(sec, si) in sections" :key="si" class="atz-card glass-card">
         <div class="atz-card-label">раздел: {{ sec.title || '(без названия)' }}</div>
-
         <div class="atz-row">
           <label class="atz-lbl">id:</label>
-          <input v-model="sec.id" class="atz-inp" type="text" @input="markDirty">
+          <input v-model="sec.id" class="atz-inp glass-input" type="text" @input="markDirty">
         </div>
         <div class="atz-row">
           <label class="atz-lbl">название:</label>
-          <input v-model="sec.title" class="atz-inp" type="text" @input="markDirty">
+          <input v-model="sec.title" class="atz-inp glass-input" type="text" @input="markDirty">
         </div>
         <div class="atz-row">
           <label class="atz-lbl">заголовок:</label>
-          <input v-model="sec.heading" class="atz-inp" type="text" @input="markDirty">
+          <input v-model="sec.heading" class="atz-inp glass-input" type="text" @input="markDirty">
         </div>
 
         <!-- section image -->
         <div class="atz-upload-row">
           <label class="atz-lbl">изображение:</label>
-          <input v-model="sec.image" class="atz-inp" type="text" placeholder="имя файла" @input="markDirty">
-          <label class="atz-btn-upload">
+          <input v-model="sec.image" class="atz-inp glass-input" type="text" placeholder="имя файла" @input="markDirty">
+          <label class="atz-btn-upload glass-chip">
             загрузить
             <input type="file" accept="image/*" style="display:none" @change="(e) => uploadSecImg(e, si)">
           </label>
@@ -32,35 +31,40 @@
         <!-- questions -->
         <div v-for="(q, qi) in sec.questions" :key="qi" class="atz-question">
           <div class="atz-row">
-            <input v-model="q.label" class="atz-inp" type="text" placeholder="вопрос" @input="markDirty">
-            <select v-model="q.type" class="atz-select" @change="markDirty">
+            <AppAutocomplete
+              v-model="q.label"
+              input-class="atz-inp glass-input"
+              placeholder="вопрос"
+              categories="materials,fabrics,furniture_types,kitchen,lighting,sanitary,flooring,rooms,styles,colors"
+              @change="markDirty"
+            />
+            <select v-model="q.type" class="atz-select glass-input" @change="markDirty">
               <option value="text">текст</option>
               <option value="select">выбор</option>
               <option value="number">число</option>
               <option value="yesno">да/нет</option>
             </select>
-            <button class="atz-btn-sm danger" @click="delQ(si, qi)">×</button>
+            <button class="atz-btn-sm glass-chip danger" @click="delQ(si, qi)">×</button>
           </div>
           <!-- question image -->
           <div class="atz-upload-row" style="margin-top:4px">
             <label class="atz-lbl" style="width:60px;font-size:.72rem">фото:</label>
-            <input v-model="q.image" class="atz-inp" type="text" placeholder="имя файла" @input="markDirty">
-            <label class="atz-btn-upload">
+            <input v-model="q.image" class="atz-inp glass-input" type="text" placeholder="имя файла" @input="markDirty">
+            <label class="atz-btn-upload glass-chip">
               загрузить
               <input type="file" accept="image/*" style="display:none" @change="(e) => uploadQImg(e, si, qi)">
             </label>
             <img v-if="q.image" :src="`/uploads/${q.image}`" class="atz-img-prev">
           </div>
         </div>
-        <button class="atz-btn-add" @click="addQ(si)">+ вопрос</button>
+        <button class="atz-btn-add glass-chip" @click="addQ(si)">+ вопрос</button>
 
         <div style="text-align:right;margin-top:8px">
-          <button class="atz-btn-sm danger" @click="delSec(si)">удалить раздел</button>
+          <button class="atz-btn-sm glass-chip danger" @click="delSec(si)">удалить раздел</button>
         </div>
       </div>
 
-      <button class="atz-btn-add" style="margin-bottom:12px" @click="addSec">+ новый раздел</button>
-
+      <button class="atz-btn-add glass-chip" style="margin-bottom:12px" @click="addSec">+ новый раздел</button>
       <div class="atz-actions">
         <p v-if="error" style="color:#c00;font-size:.8rem;margin-right:auto">{{ error }}</p>
         <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</button>
@@ -145,16 +149,18 @@ async function save() {
 
 <style scoped>
 .atz-card {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-left: 3px solid #1a1a1a;
+  --atz-border: #e0e0e0;
+  --atz-text: #1f1f1f;
+  --atz-muted: #888;
+  border: 1px solid var(--atz-border);
+  border-left: 3px solid color-mix(in srgb, var(--glass-text) 60%, #1a1a1a 40%);
   padding: 20px;
   margin-bottom: 16px;
 }
 .atz-card-label {
   font-size: .9rem;
   font-weight: 400;
-  color: #888;
+  color: var(--atz-muted);
   text-transform: uppercase;
   letter-spacing: .5px;
   margin-bottom: 12px;
@@ -167,28 +173,29 @@ async function save() {
 }
 .atz-lbl {
   font-size: .78rem;
-  color: #888;
+  color: var(--atz-muted);
   width: 80px;
   flex-shrink: 0;
 }
 .atz-inp {
   flex: 1;
-  border: none;
-  border-bottom: 1px solid #ddd;
+  border: 1px solid transparent;
   padding: 6px 0;
   font-size: .88rem;
   outline: none;
   font-family: inherit;
+  color: var(--atz-text);
   background: transparent;
 }
-.atz-inp:focus { border-bottom-color: #1a1a1a; }
+.atz-inp:focus { border-color: color-mix(in srgb, var(--glass-text) 28%, var(--glass-border) 72%); }
 .atz-select {
-  border: 1px solid #ddd;
+  border: 1px solid transparent;
   padding: 4px 8px;
   font-size: .82rem;
   font-family: inherit;
   outline: none;
-  background: #fff;
+  color: var(--atz-text);
+  background: transparent;
 }
 .atz-upload-row {
   display: flex;
@@ -198,8 +205,8 @@ async function save() {
   flex-wrap: wrap;
 }
 .atz-btn-upload {
-  border: 1px solid #1a1a1a;
-  background: transparent;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
   padding: 4px 10px;
   font-size: .78rem;
   cursor: pointer;
@@ -207,45 +214,49 @@ async function save() {
   border-radius: 2px;
   white-space: nowrap;
 }
-.atz-btn-upload:hover { background: #1a1a1a; color: #fff; }
+.atz-btn-upload:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
 .atz-img-prev {
   max-width: 120px;
   max-height: 90px;
   object-fit: cover;
-  border: 1px solid #ddd;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 70%, #d7d7d7 30%);
   border-radius: 2px;
+}
+.atz-pending {
+  font-size: .88rem;
+  color: color-mix(in srgb, var(--glass-text) 58%, #9a9a9a 42%);
 }
 .atz-question {
   padding: 10px 10px 6px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-border) 62%, #d7d7d7 38%);
   margin: 6px 0;
   padding-left: 20px;
 }
 .atz-btn-sm {
-  border: 1px solid #ddd;
-  background: transparent;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
   padding: 4px 10px;
   font-size: .78rem;
   cursor: pointer;
   font-family: inherit;
   border-radius: 2px;
 }
-.atz-btn-sm:hover { border-color: #1a1a1a; }
+.atz-btn-sm:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
 .atz-btn-sm.danger { color: #c00; border-color: #c00; }
 .atz-btn-sm.danger:hover { background: #c00; color: #fff; }
 .atz-btn-add {
-  border: 1px dashed #ccc;
-  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--glass-border) 60%, #cfcfcf 40%);
+  background: var(--glass-bg);
   padding: 8px 16px;
   font-size: .82rem;
   cursor: pointer;
   font-family: inherit;
-  color: #888;
+  color: var(--atz-muted);
   width: 100%;
   margin-top: 8px;
   display: block;
 }
-.atz-btn-add:hover { border-color: #1a1a1a; color: #1a1a1a; }
+.atz-btn-add:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); color: var(--atz-text); }
 .atz-actions {
   display: flex;
   gap: 10px;
