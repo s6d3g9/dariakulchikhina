@@ -42,6 +42,15 @@
       <div v-else-if="activePage === 'profile_contractors'">
         <AdminContractorsProfile :slug="route.params.slug as string" />
       </div>
+      <div v-else-if="activePage === 'brief'">
+        <AdminSmartBrief :slug="route.params.slug as string" />
+      </div>
+      <div v-else-if="activePage === 'site_survey'">
+        <AdminSiteSurvey :slug="route.params.slug as string" />
+      </div>
+      <div v-else-if="activePage === 'tor_contract'">
+        <AdminToRContract :slug="route.params.slug as string" />
+      </div>
       <div v-else>
         <AdminPageContent :slug="route.params.slug as string" :page="activePage" />
       </div>
@@ -123,12 +132,17 @@ watch(project, (p) => {
 })
 
 const allPageSlugs = [
-  { slug: 'materials', title: 'материалы' },
-  { slug: 'tz', title: 'тех. задание' },
-  { slug: 'profile_customer', title: 'профиль клиента' },
-  { slug: 'profile_contractors', title: 'профиль подрядчиков' },
-  { slug: 'work_status', title: 'статусы работ' },
-  { slug: 'project_roadmap', title: 'дорожная карта' },
+  // ── Phase 0: Инициация ──────────────────────────────
+  { slug: 'brief',             title: 'брифинг' },
+  { slug: 'site_survey',       title: 'обмеры / аудит' },
+  { slug: 'tor_contract',      title: 'ТЗ и договор' },
+  // ── Общие разделы ───────────────────────────────────
+  { slug: 'profile_customer',  title: 'профиль клиента' },
+  { slug: 'profile_contractors', title: 'подрядчики' },
+  { slug: 'materials',         title: 'материалы' },
+  { slug: 'tz',                title: 'тех. задание' },
+  { slug: 'work_status',       title: 'статусы работ' },
+  { slug: 'project_roadmap',   title: 'дорожная карта' },
 ]
 
 const availablePages = computed(() => {
