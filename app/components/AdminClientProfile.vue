@@ -80,6 +80,33 @@
           <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="acp-inp acp-ta" rows="2" />
           <input v-else v-model="(form as any)[field.key]" class="acp-inp" type="text">
         </div>
+
+        <!-- section: project params catalog -->
+        <div class="acp-section-title">параметры проекта</div>
+
+        <div v-for="field in catalogSelectFields" :key="field.key" class="acp-row">
+          <label class="acp-lbl">{{ field.label }}:</label>
+          <select v-model="(form as any)[field.key]" class="acp-inp acp-select">
+            <option value="">—</option>
+            <option v-for="opt in field.opts" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+
+        <!-- section: multi-select chips -->
+        <div class="acp-section-title">услуги и виды работ</div>
+
+        <div v-for="cf in chipsFields" :key="cf.key" class="acp-row acp-chips-row">
+          <label class="acp-lbl">{{ cf.label }}:</label>
+          <div class="acp-chips">
+            <label
+              v-for="opt in cf.opts"
+              :key="opt.value"
+              class="acp-chip"
+              :class="{ 'acp-chip--on': getChips(cf.key).includes(opt.value) }"
+              @click.prevent="toggleChip(cf.key, opt.value)"
+            >{{ opt.label }}</label>
+          </div>
+        </div>
       </div>
 
       <div class="acp-actions">
@@ -91,12 +118,36 @@
 </template>
 
 <script setup lang="ts">
+import {
+  CLIENT_TYPE_OPTIONS,
+  OBJECT_TYPE_OPTIONS,
+  PROJECT_PRIORITY_OPTIONS,
+  ROADMAP_COMPLEXITY_OPTIONS,
+  PAYMENT_TYPE_OPTIONS,
+  CONTRACT_TYPE_OPTIONS,
+  DESIGNER_SERVICE_TYPE_OPTIONS,
+  CONTRACTOR_WORK_TYPE_OPTIONS,
+  ROADMAP_STAGE_TYPE_OPTIONS,
+} from '~~/shared/types/catalogs'
+
 interface FieldDef {
   key: string
   label: string
   multi?: boolean
   date?: boolean
   options?: string[]
+}
+
+interface CatalogFieldDef {
+  key: string
+  label: string
+  opts: { value: string; label: string }[]
+}
+
+interface ChipsFieldDef {
+  key: string
+  label: string
+  opts: { value: string; label: string }[]
 }
 
 const props = defineProps<{ slug: string }>()
@@ -156,15 +207,52 @@ const lifestyleFields: FieldDef[] = [
   { key: 'notes', label: 'дополнительно', multi: true },
 ]
 
+const catalogSelectFields: CatalogFieldDef[] = [
+  { key: 'clientType',        label: 'тип клиента',          opts: CLIENT_TYPE_OPTIONS },
+  { key: 'objectTypeCode',    label: 'тип объекта (код)',     opts: OBJECT_TYPE_OPTIONS },
+  { key: 'projectPriority',   label: 'приоритет проекта',    opts: PROJECT_PRIORITY_OPTIONS },
+  { key: 'roadmapComplexity', label: 'сложность дорожной карты', opts: ROADMAP_COMPLEXITY_OPTIONS },
+  { key: 'paymentType',       label: 'тип оплаты',           opts: PAYMENT_TYPE_OPTIONS },
+  { key: 'contractType',      label: 'тип договора',         opts: CONTRACT_TYPE_OPTIONS },
+  { key: 'roadmapStageType',  label: 'тип этапов (шаблон)',  opts: ROADMAP_STAGE_TYPE_OPTIONS },
+]
+
+const chipsFields: ChipsFieldDef[] = [
+  { key: 'designerServiceTypes', label: 'услуги дизайнера',   opts: DESIGNER_SERVICE_TYPE_OPTIONS },
+  { key: 'contractorWorkTypes',  label: 'виды работ (план)',  opts: CONTRACTOR_WORK_TYPE_OPTIONS },
+]
+
 const allFields = [...personalFields, ...contactFields, ...objectFields, ...projectFields, ...lifestyleFields]
 
-const formInit: Record<string, string> = { photo: '' }
+const formInit: Record<string, string | string[]> = { photo: '' }
 for (const f of allFields) formInit[f.key] = ''
-const form = reactive<Record<string, string>>(formInit)
+for (const f of catalogSelectFields) formInit[f.key] = ''
+for (const f of chipsFields) formInit[f.key] = []
+const form = reactive<Record<string, string | string[]>>(formInit)
+
+function getChips(key: string): string[] {
+  const v = form[key]
+  return Array.isArray(v) ? v : []
+}
+
+function toggleChip(key: string, value: string) {
+  const arr = getChips(key)
+  const idx = arr.indexOf(value)
+  if (idx === -1) form[key] = [...arr, value]
+  else form[key] = arr.filter(v => v !== value)
+}
 
 watch(project, (p) => {
   if (p?.profile) {
-    Object.assign(form, p.profile)
+    for (const [k, v] of Object.entries(p.profile)) {
+      // preserve array type for chips fields
+      const isChips = chipsFields.some(f => f.key === k)
+      if (isChips) {
+        form[k] = Array.isArray(v) ? v : (v ? [v] : [])
+      } else {
+        form[k] = (v as string) ?? ''
+      }
+    }
   }
 }, { immediate: true })
 
@@ -297,6 +385,36 @@ async function save() {
   border: 1px solid var(--acp-img-border);
   border-radius: 2px;
 }
+/* chips */
+.acp-chips-row { align-items: flex-start; }
+.acp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+  padding-top: 4px;
+}
+.acp-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: .78rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s, border-color 0.12s;
+  color: #555;
+}
+.acp-chip:hover { border-color: #999; }
+.acp-chip--on {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #fff;
+}
+.dark .acp-chip { border-color: #444; color: #bbb; }
+.dark .acp-chip:hover { border-color: #888; }
+.dark .acp-chip--on { background: #6366f1; border-color: #6366f1; color: #fff; }
+
 .acp-actions {
   display: flex;
   gap: 10px;
