@@ -66,18 +66,25 @@
         <div class="cl-card-foot">
           <button class="cl-link-btn" @click="openLink(c)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            привязать к проекту
+            {{ c.linkedProjects?.length ? 'сменить проект' : 'привязать к проекту' }}
           </button>
-          <NuxtLink
-            v-for="p in c.linkedProjects"
-            :key="p.slug"
-            :to="`/client/${p.slug}`"
-            class="cl-cabinet-btn"
-            target="_blank"
-          >
+          <!-- Cabinet buttons — one per linked project -->
+          <template v-if="c.linkedProjects?.length">
+            <NuxtLink
+              v-for="p in c.linkedProjects"
+              :key="p.slug"
+              :to="`/client/${p.slug}`"
+              class="cl-cabinet-btn"
+              target="_blank"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              кабинет{{ c.linkedProjects.length > 1 ? ` · ${p.title}` : '' }}
+            </NuxtLink>
+          </template>
+          <span v-else class="cl-cabinet-btn cl-cabinet-btn--empty" @click="openLink(c)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            кабинет{{ c.linkedProjects.length > 1 ? ` (${p.title})` : '' }}
-          </NuxtLink>
+            кабинет
+          </span>
         </div>
       </div>
     </div>
@@ -316,10 +323,17 @@ async function doLink() {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: .74rem; text-decoration: none; font-family: inherit;
   color: var(--glass-page-bg); background: var(--glass-text);
-  padding: 5px 10px; border-radius: 7px; border: none;
+  padding: 5px 10px; border-radius: 7px; border: none; cursor: pointer;
   opacity: .75; transition: opacity .15s; white-space: nowrap;
 }
 .cl-cabinet-btn:hover { opacity: 1; }
+.cl-cabinet-btn--empty {
+  background: transparent;
+  color: var(--glass-text);
+  border: 1px solid var(--glass-border);
+  opacity: .35;
+}
+.cl-cabinet-btn--empty:hover { opacity: .65; }
 
 .cl-backdrop {
   position: fixed; inset: 0; z-index: 1000;
