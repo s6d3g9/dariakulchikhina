@@ -10,8 +10,9 @@
           'phase-step--done':    phaseIndex(phase.key) < currentIndex,
           'phase-step--active':  phase.key === current,
           'phase-step--future':  phaseIndex(phase.key) > currentIndex,
+          'phase-step--open':    detailKey === phase.key,
         }"
-        @click="selectPhase(phase.key)"
+        @click="toggleDetail(phase.key)"
         :title="phase.description"
       >
         <!-- connector line -->
@@ -32,17 +33,21 @@
         <span class="phase-meta-desc">{{ currentPhase?.description }}</span>
       </div>
       <div class="phase-meta-right" v-if="!readOnly">
+        <button class="phase-detail-btn" @click="toggleDetail(current)">{{ detailKey === current ? '▲ скрыть' : '▼ шаги' }}</button>
         <select
           v-model="draft"
           class="phase-select"
           @change="save"
           :disabled="saving"
         >
-          <option v-for="p in phases" :key="p.key" :value="p.key">{{ p.short }} · {{ p.label }}</option>
+          <option v-for="p in phases" :key="p.key" :value="p.key">• {{ p.label }}</option>
         </select>
         <span v-if="saved" class="phase-saved">✓ сохранено</span>
       </div>
     </div>
+
+    <!-- Detail panel -->
+    <AdminPhaseDetail :phaseKey="detailKey" @close="detailKey = null" />
   </div>
 </template>
 
@@ -63,6 +68,7 @@ const phases = PROJECT_PHASES
 const draft = ref<ProjectStatus>(props.status as ProjectStatus || 'lead')
 const saving = ref(false)
 const saved = ref(false)
+const detailKey = ref<string | null>(null)
 
 watch(() => props.status, (v) => {
   if (v) draft.value = v as ProjectStatus
@@ -74,6 +80,10 @@ const currentPhase = computed(() => phases.find(p => p.key === draft.value))
 
 function phaseIndex(key: string) {
   return phases.findIndex(p => p.key === key)
+}
+
+function toggleDetail(key: string) {
+  detailKey.value = detailKey.value === key ? null : key
 }
 
 function selectPhase(key: string) {
@@ -107,7 +117,11 @@ async function save() {
   margin-bottom: 18px;
 }
 
-/* track */
+/* phase open state */
+.phase-step--open .phase-dot {
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.25);
+  border-color: #6366f1;
+}
 .phase-track {
   display: flex;
   align-items: flex-start;
@@ -212,6 +226,20 @@ async function save() {
 }
 .phase-meta-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .phase-meta-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.phase-detail-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid #6366f1;
+  background: transparent;
+  color: #6366f1;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.phase-detail-btn:hover { background: rgba(99,102,241,0.1); }
+.dark .phase-detail-btn { color: #a5b4fc; border-color: #a5b4fc; }
+.dark .phase-detail-btn:hover { background: rgba(165,180,252,0.1); }
 
 .phase-badge {
   font-size: .72rem;
