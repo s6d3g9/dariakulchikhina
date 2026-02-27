@@ -22,19 +22,39 @@
         >проекты</NuxtLink>
         <NuxtLink
           to="/admin/contractors"
-          class="admin-tab admin-tab--settings glass-chip"
+          class="admin-tab glass-chip"
           :class="{ 'admin-tab--active': route.path.startsWith('/admin/contractors') }"
         >подрядчики</NuxtLink>
         <NuxtLink
-          to="/admin/pages"
-          class="admin-tab admin-tab--settings glass-chip"
-          :class="{ 'admin-tab--active': route.path.startsWith('/admin/pages') }"
-        >⚙ страницы</NuxtLink>
+          to="/admin/clients"
+          class="admin-tab glass-chip"
+          :class="{ 'admin-tab--active': route.path.startsWith('/admin/clients') }"
+        >клиенты</NuxtLink>
         <NuxtLink
-          to="/admin/roadmap-templates"
-          class="admin-tab admin-tab--settings glass-chip"
-          :class="{ 'admin-tab--active': route.path.startsWith('/admin/roadmap-templates') }"
-        >⚙ шаблоны и сценарии</NuxtLink>
+          to="/admin/gallery/interiors"
+          class="admin-tab glass-chip"
+          :class="{ 'admin-tab--active': route.path === '/admin/gallery/interiors' }"
+        >галерея интерьеров</NuxtLink>
+        <NuxtLink
+          to="/admin/gallery/furniture"
+          class="admin-tab glass-chip"
+          :class="{ 'admin-tab--active': route.path === '/admin/gallery/furniture' }"
+        >галерея мебели</NuxtLink>
+        <NuxtLink
+          to="/admin/gallery/materials"
+          class="admin-tab glass-chip"
+          :class="{ 'admin-tab--active': route.path === '/admin/gallery/materials' }"
+        >галерея материалов</NuxtLink>
+        <NuxtLink
+          to="/admin/gallery/art"
+          class="admin-tab glass-chip"
+          :class="{ 'admin-tab--active': route.path === '/admin/gallery/art' }"
+        >галерея арт-объектов</NuxtLink>
+        <NuxtLink
+          to="/admin/gallery/moodboards"
+          class="admin-tab glass-chip"
+          :class="{ 'admin-tab--active': route.path === '/admin/gallery/moodboards' }"
+        >галерея мудбордов</NuxtLink>
       </div>
       <slot />
     </div>
@@ -105,17 +125,16 @@ async function logout() {
   appearance: none;
   -webkit-appearance: none;
 }
-.admin-container { max-width: 900px; margin: 24px auto; padding: 0 16px; }
-.admin-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.admin-container { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+.admin-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
 .admin-tab {
-  padding: 8px 16px;
+  padding: 7px 14px;
   text-decoration: none;
   color: var(--tab-text);
-  font-size: .82rem;
+  font-size: .79rem;
   border-radius: 999px;
+  white-space: nowrap;
 }
 .admin-tab:hover { border-color: var(--text); color: var(--text); }
 .admin-tab--active { border-color: var(--text); color: var(--text); font-weight: 500; }
-.admin-tab--settings { border-style: dashed; font-size: .78rem; }
-.admin-tab--settings:first-of-type { margin-left: auto; }
 </style>

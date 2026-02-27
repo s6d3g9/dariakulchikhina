@@ -123,6 +123,17 @@ export const uploads = pgTable('uploads', {
   uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
 })
 
+export const galleryItems = pgTable('gallery_items', {
+  id: serial('id').primaryKey(),
+  category: text('category').notNull(),
+  title: text('title').notNull(),
+  image: text('image'),
+  tags: text('tags').array().default([]).notNull(),
+  description: text('description'),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 export const projectsRelations = relations(projects, ({ many, one }) => ({
   user: one(users, { fields: [projects.userId], references: [users.id] }),
   pageContents: many(pageContent),
