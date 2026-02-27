@@ -21,7 +21,12 @@
           :class="{ 'pd-step--critical': step.critical }"
         >
           <div class="pd-step-side">
-            <div class="pd-step-num">{{ step.num }}</div>
+            <button
+              class="pd-step-num"
+              :class="{ 'pd-step-num--link': stepToSlug[step.num] }"
+              @click="stepToSlug[step.num] && $emit('navigate', stepToSlug[step.num])"
+              :title="stepToSlug[step.num] ? 'Открыть раздел ' + step.num : step.num"
+            >{{ step.num }}</button>
             <div class="pd-step-vline" />
           </div>
           <div class="pd-step-body">
@@ -73,7 +78,17 @@ import { PHASE_STEPS } from '~~/shared/types/phase-steps'
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 
 const props = defineProps<{ phaseKey: string | null }>()
-defineEmits<{ (e: 'close'): void }>()
+defineEmits<{ (e: 'close'): void; (e: 'navigate', page: string): void }>()
+
+const stepToSlug: Record<string, string> = {
+  '0.1': 'first_contact',
+  '0.2': 'brief',
+  '0.3': 'site_survey',
+  '0.4': 'tor_contract',
+  '1.1': 'space_planning',
+  '1.2': 'moodboard',
+  '1.3': 'concept_approval',
+}
 
 const phase = computed(() =>
   props.phaseKey ? PHASE_STEPS.find(p => p.key === props.phaseKey) ?? null : null
@@ -200,6 +215,26 @@ const phaseMeta = computed(() =>
   font-weight: 700;
   color: #6b7280;
   flex-shrink: 0;
+  font-family: inherit;
+  padding: 0;
+  cursor: default;
+  transition: transform .15s, box-shadow .15s;
+}
+.pd-step-num--link {
+  cursor: pointer;
+}
+.pd-step-num--link:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.22);
+  border-color: #6366f1;
+  color: #6366f1;
+  background: #eef2ff;
+}
+.dark .pd-step-num--link:hover {
+  background: #1e1b4b;
+  border-color: #818cf8;
+  color: #a5b4fc;
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.3);
 }
 .dark .pd-step-num {
   background: #1e1e20;
