@@ -1,46 +1,56 @@
 <template>
-  <div class="phase-wrap">
-    <!-- Phase stepper -->
+  <div class="phase-wrap" ref="wrapRef">
+    <!-- Vertical circles -->
     <div class="phase-track">
       <div
         v-for="(phase, idx) in phases"
         :key="phase.key"
         class="phase-step"
         :class="{
-          'phase-step--done':    phaseIndex(phase.key) < currentIndex,
-          'phase-step--active':  phase.key === current,
-          'phase-step--future':  phaseIndex(phase.key) > currentIndex,
-          'phase-step--open':    detailKey === phase.key,
+          'phase-step--done':   phaseIndex(phase.key) < currentIndex,
+          'phase-step--active': phase.key === current,
+          'phase-step--future': phaseIndex(phase.key) > currentIndex,
+          'phase-step--open':   detailKey === phase.key,
         }"
         @click="toggleDetail(phase.key)"
         :title="phase.description"
       >
+        <!-- vertical connector line -->
         <div v-if="idx > 0" class="phase-line" :class="{ 'phase-line--done': phaseIndex(phase.key) <= currentIndex }" />
-        <div class="phase-dot">
-          <template v-if="phaseIndex(phase.key) < currentIndex">✓</template>
-          <template v-else>{{ phase.short }}</template>
+        <div class="phase-row">
+          <div class="phase-dot">
+            <template v-if="phaseIndex(phase.key) < currentIndex">✓</template>
+            <template v-else>{{ phase.short }}</template>
+          </div>
+          <div class="phase-label">
+            <span class="phase-label-text">{{ phase.label }}</span>
+            <span v-if="phase.key === current" class="phase-label-cur">текущая</span>
+          </div>
         </div>
-        <div class="phase-label">{{ phase.label }}</div>
       </div>
     </div>
 
-    <!-- Current phase description + change control -->
-    <div class="phase-meta">
-      <div class="phase-meta-left">
-        <span class="phase-badge" :class="`phase-badge--${currentPhase?.color}`">{{ currentPhase?.label }}</span>
-        <span class="phase-meta-desc">{{ currentPhase?.description }}</span>
-      </div>
-      <div class="phase-meta-right" v-if="!readOnly">
-        <button class="phase-detail-btn" @click="toggleDetail(current)">{{ detailKey === current ? '▲ скрыть' : '▼ шаги' }}</button>
-        <select v-model="draft" class="phase-select" @change="save" :disabled="saving">
-          <option v-for="p in phases" :key="p.key" :value="p.key">• {{ p.label }}</option>
-        </select>
-        <span v-if="saved" class="phase-saved">✓ сохранено</span>
-      </div>
+    <!-- Change phase select -->
+    <div class="phase-footer" v-if="!readOnly">
+      <select v-model="draft" class="phase-select" @change="save" :disabled="saving" title="Сменить фазу">
+        <option v-for="p in phases" :key="p.key" :value="p.key">{{ p.label }}</option>
+      </select>
+      <span v-if="saved" class="phase-saved">✓</span>
     </div>
 
-    <!-- Detail panel -->
-    <AdminPhaseDetail :phaseKey="detailKey" @close="detailKey = null" @navigate="onNavigate" />
+    <!-- Floating detail panel -->
+    <Teleport to="body">
+      <Transition name="phase-detail-slide">
+        <div
+          v-if="detailKey && detailPos"
+          class="phase-detail-float"
+          :style="detailPos"
+          @click.stop
+        >
+          <AdminPhaseDetail :phaseKey="detailKey" @close="closeDetail" @navigate="onNavigate" />
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -63,26 +73,57 @@ const draft = ref<ProjectStatus>(props.status as ProjectStatus || 'lead')
 const saving = ref(false)
 const saved = ref(false)
 const detailKey = ref<string | null>(null)
+const detailPos = ref<Record<string, string> | null>(null)
+const wrapRef = ref<HTMLElement | null>(null)
 
-watch(() => props.status, (v) => {
-  if (v) draft.value = v as ProjectStatus
-})
+watch(() => props.status, (v) => { if (v) draft.value = v as ProjectStatus })
 
 const currentIndex = computed(() => phases.findIndex(p => p.key === draft.value))
 const current = computed(() => draft.value)
-const currentPhase = computed(() => phases.find(p => p.key === draft.value))
 
 function phaseIndex(key: string) {
   return phases.findIndex(p => p.key === key)
 }
 
 function toggleDetail(key: string) {
-  detailKey.value = detailKey.value === key ? null : key
+  if (detailKey.value === key) { closeDetail(); return }
+  detailKey.value = key
+  nextTick(() => {
+    const wrap = wrapRef.value
+    if (!wrap) return
+    const rect = wrap.getBoundingClientRect()
+    detailPos.value = {
+      position: 'fixed',
+      left: (rect.right + 12) + 'px',
+      top: Math.max(8, rect.top) + 'px',
+      maxHeight: (window.innerHeight - Math.max(8, rect.top) - 16) + 'px',
+      width: '420px',
+      overflowY: 'auto',
+      zIndex: '200',
+      borderRadius: '12px',
+      boxShadow: '0 12px 40px rgba(0,0,0,.18)',
+    }
+  })
+}
+
+function closeDetail() {
+  detailKey.value = null
+  detailPos.value = null
 }
 
 function onNavigate(page: string) {
   emit('navigate', page)
-  detailKey.value = null
+  closeDetail()
+}
+
+onMounted(() => document.addEventListener('click', onOutside))
+onUnmounted(() => document.removeEventListener('click', onOutside))
+function onOutside(e: MouseEvent) {
+  const wrap = wrapRef.value
+  if (wrap && wrap.contains(e.target as Node)) return
+  const float = document.querySelector('.phase-detail-float')
+  if (float && float.contains(e.target as Node)) return
+  closeDetail()
 }
 
 async function save() {
@@ -97,166 +138,83 @@ async function save() {
     emit('update:status', draft.value)
     saved.value = true
     setTimeout(() => { saved.value = false }, 2000)
-  } catch (e) {
-    console.error(e)
-  } finally {
-    saving.value = false
-  }
+  } catch (e) { console.error(e) }
+  finally { saving.value = false }
 }
 </script>
 
 <style scoped>
-.phase-wrap {
-  margin-bottom: 18px;
-}
+.phase-wrap { width: 130px; flex-shrink: 0; }
 
-.phase-track {
-  display: flex;
-  align-items: flex-start;
-  gap: 0;
-  margin-bottom: 10px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
+/* ── Vertical track ── */
+.phase-track { display: flex; flex-direction: column; }
 
 .phase-step {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  flex: 1;
-  min-width: 64px;
   position: relative;
   cursor: pointer;
   user-select: none;
   transition: opacity .15s;
 }
-.phase-step--future { opacity: .45; }
-.phase-step:not(.phase-step--future):hover { opacity: .8; }
+.phase-step--future { opacity: .4; }
+.phase-step:hover:not(.phase-step--future) { opacity: .75; }
 
-/* connector */
+/* vertical connector */
 .phase-line {
-  position: absolute;
-  top: 14px;
-  right: 50%;
-  width: 100%;
-  height: 2px;
+  width: 2px;
+  height: 14px;
   background: #ddd;
-  z-index: 0;
+  margin-left: 13px;
   transition: background .2s;
 }
 .dark .phase-line { background: #333; }
 .phase-line--done { background: #22c55e; }
-.dark .phase-line--done { background: #22c55e; }
+
+/* row: dot + label */
+.phase-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
 
 /* dot */
 .phase-dot {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid #ddd;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .7rem;
-  font-weight: 600;
-  color: #aaa;
-  position: relative;
-  z-index: 1;
-  transition: all .2s;
-  flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid #ddd; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .68rem; font-weight: 700; color: #aaa;
+  flex-shrink: 0; transition: all .2s;
 }
 .dark .phase-dot { border-color: #333; background: #151517; color: #666; }
-.phase-step--done .phase-dot { background: #22c55e; border-color: #22c55e; color: #fff; }
-.phase-step--active .phase-dot {
-  border-color: #6366f1; background: #6366f1; color: #fff;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.22);
-}
-.phase-step--open .phase-dot {
-  box-shadow: 0 0 0 4px rgba(99,102,241,0.25);
-  border-color: #6366f1;
-}
+.phase-step--done .phase-dot   { background: #22c55e; border-color: #22c55e; color: #fff; }
+.phase-step--active .phase-dot { background: #6366f1; border-color: #6366f1; color: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,.22); }
+.phase-step--open .phase-dot   { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,.28); }
 
 /* label */
-.phase-label {
-  font-size: .65rem;
-  color: #aaa;
-  margin-top: 4px;
-  text-align: center;
-  line-height: 1.2;
-  max-width: 72px;
-  word-break: break-word;
+.phase-label { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.phase-label-text {
+  font-size: .7rem; color: #999; line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.phase-step--active .phase-label { color: #6366f1; font-weight: 600; }
-.phase-step--done .phase-label { color: #22c55e; }
-.dark .phase-step--active .phase-label { color: #818cf8; }
+.phase-step--active .phase-label-text { color: #6366f1; font-weight: 600; }
+.phase-step--done   .phase-label-text { color: #22c55e; }
+.phase-step--open   .phase-label-text { color: #6366f1; }
+.dark .phase-step--active .phase-label-text { color: #818cf8; }
 
-/* meta bar */
-.phase-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(99,102,241,0.05);
-  border: 1px solid rgba(99,102,241,0.12);
-}
-.dark .phase-meta { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.18); }
-.phase-meta-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.phase-meta-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.phase-label-cur { font-size: .58rem; color: #6366f1; font-weight: 500; }
+.dark .phase-label-cur { color: #a5b4fc; }
 
-.phase-detail-btn {
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1px solid #6366f1;
-  background: transparent;
-  color: #6366f1;
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-.phase-detail-btn:hover { background: rgba(99,102,241,0.1); }
-.dark .phase-detail-btn { color: #a5b4fc; border-color: #a5b4fc; }
-.dark .phase-detail-btn:hover { background: rgba(165,180,252,0.1); }
-
-.phase-badge {
-  font-size: .72rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-.phase-badge--gray      { background: #f3f4f6; color: #6b7280; }
-.phase-badge--violet    { background: #ede9fe; color: #7c3aed; }
-.phase-badge--blue      { background: #dbeafe; color: #1d4ed8; }
-.phase-badge--amber     { background: #fef3c7; color: #b45309; }
-.phase-badge--orange    { background: #ffedd5; color: #c2410c; }
-.phase-badge--green     { background: #dcfce7; color: #15803d; }
-.phase-badge--teal      { background: #ccfbf1; color: #0f766e; }
-.dark .phase-badge--gray   { background: #27272a; color: #9ca3af; }
-.dark .phase-badge--violet { background: #2e1065; color: #c4b5fd; }
-.dark .phase-badge--blue   { background: #1e3a5f; color: #93c5fd; }
-.dark .phase-badge--amber  { background: #3d2700; color: #fcd34d; }
-.dark .phase-badge--orange { background: #3d1500; color: #fdba74; }
-.dark .phase-badge--green  { background: #052e16; color: #86efac; }
-.dark .phase-badge--teal   { background: #042f2e; color: #5eead4; }
-
-.phase-meta-desc { font-size: .75rem; color: #888; }
-
+/* Footer */
+.phase-footer { margin-top: 12px; display: flex; align-items: center; gap: 5px; }
 .phase-select {
-  font-size: .75rem;
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-family: inherit;
+  font-size: .67rem; padding: 3px 5px; border-radius: 5px;
+  border: 1px solid #ddd; background: transparent; color: inherit;
+  cursor: pointer; font-family: inherit; max-width: 118px;
 }
 .dark .phase-select { border-color: #333; background: #1e1e20; }
 .phase-select:disabled { opacity: .5; }
+.phase-saved { font-size: .68rem; color: #22c55e; font-weight: 600; }
 
-.phase-saved { font-size: .72rem; color: #22c55e; }
+/* slide animation */
+.phase-detail-slide-enter-active,
+.phase-detail-slide-leave-active { transition: opacity .15s, transform .15s; }
+.phase-detail-slide-enter-from,
+.phase-detail-slide-leave-to { opacity: 0; transform: translateX(-10px); }
 </style>

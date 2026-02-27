@@ -9,63 +9,70 @@
         <span>{{ project.title }}</span>
       </div>
 
-      <!-- Phase tracker -->
-      <AdminProjectPhase
-        :slug="route.params.slug as string"
-        :status="projectStatus"
-        @update:status="projectStatus = $event"
-        @navigate="activePage = $event"
-      />
+      <div class="proj-layout">
+        <!-- ── Sticky left sidebar: phase tracker ── -->
+        <aside class="proj-sidebar">
+          <AdminProjectPhase
+            :slug="route.params.slug as string"
+            :status="projectStatus"
+            @update:status="projectStatus = $event"
+            @navigate="activePage = $event"
+          />
+        </aside>
 
-      <div class="proj-tabs">
-        <button
-          v-for="pg in availablePages"
-          :key="pg.slug"
-          class="proj-tab"
-          :class="{ 'proj-tab--active': activePage === pg.slug }"
-          @click="activePage = pg.slug"
-        >{{ pg.title }}</button>
-        <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <a :href="`https://dariakulchikhina.com/api/auth/client-open?projectSlug=${encodeURIComponent(project.slug)}`" class="proj-ready-link">готовые страницы ↗</a>
-          <button class="proj-tab proj-tab--settings" @click="showEdit = true">⚙ проект</button>
-        </span>
-      </div>
+        <!-- ── Main content ── -->
+        <div class="proj-main">
+          <div class="proj-tabs">
+            <button
+              v-for="pg in availablePages"
+              :key="pg.slug"
+              class="proj-tab"
+              :class="{ 'proj-tab--active': activePage === pg.slug }"
+              @click="activePage = pg.slug"
+            >{{ pg.title }}</button>
+            <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
+              <a :href="`https://dariakulchikhina.com/api/auth/client-open?projectSlug=${encodeURIComponent(project.slug)}`" class="proj-ready-link">готовые страницы ↗</a>
+              <button class="proj-tab proj-tab--settings" @click="showEdit = true">⚙ проект</button>
+            </span>
+          </div>
 
-      <div v-if="activePage === 'project_roadmap'">
-        <AdminRoadmap :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'work_status'">
-        <AdminWorkStatus :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'profile_customer'">
-        <AdminClientProfile :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'profile_contractors'">
-        <AdminContractorsProfile :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'first_contact'">
-        <AdminFirstContact :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'brief'">
-        <AdminSmartBrief :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'site_survey'">
-        <AdminSiteSurvey :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'tor_contract'">
-        <AdminToRContract :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'space_planning'">
-        <AdminSpacePlanning :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'moodboard'">
-        <AdminMoodboard :slug="route.params.slug as string" />
-      </div>
-      <div v-else-if="activePage === 'concept_approval'">
-        <AdminConceptApproval :slug="route.params.slug as string" />
-      </div>
-      <div v-else>
-        <AdminPageContent :slug="route.params.slug as string" :page="activePage" />
+          <div v-if="activePage === 'project_roadmap'">
+            <AdminRoadmap :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'work_status'">
+            <AdminWorkStatus :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'profile_customer'">
+            <AdminClientProfile :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'profile_contractors'">
+            <AdminContractorsProfile :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'first_contact'">
+            <AdminFirstContact :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'brief'">
+            <AdminSmartBrief :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'site_survey'">
+            <AdminSiteSurvey :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'tor_contract'">
+            <AdminToRContract :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'space_planning'">
+            <AdminSpacePlanning :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'moodboard'">
+            <AdminMoodboard :slug="route.params.slug as string" />
+          </div>
+          <div v-else-if="activePage === 'concept_approval'">
+            <AdminConceptApproval :slug="route.params.slug as string" />
+          </div>
+          <div v-else>
+            <AdminPageContent :slug="route.params.slug as string" :page="activePage" />
+          </div>
+        </div>
       </div>
     </template>
 
@@ -197,6 +204,25 @@ async function saveProject() {
 </script>
 
 <style scoped>
+/* ── Two-column layout ── */
+.proj-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.proj-sidebar {
+  position: sticky;
+  top: 100px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.proj-main {
+  flex: 1;
+  min-width: 0;
+}
+
 .proj-tabs {
   --tab-border: #ddd;
   --tab-color: #666;
