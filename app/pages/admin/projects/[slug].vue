@@ -55,6 +55,28 @@
             <label>Название</label>
             <input v-model="editForm.title" class="a-input" required>
           </div>
+          <div class="a-field">
+            <label>PIN клиента</label>
+            <input v-model="editForm.clientPin" class="a-input" placeholder="оставьте пустым для автогенерации">
+          </div>
+          <div class="a-field">
+            <label style="margin-bottom:10px;display:block">Видимые страницы</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
+              <label
+                v-for="pg in allPageSlugs"
+                :key="pg.slug"
+                style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:inherit;cursor:pointer"
+              >
+                <input
+                  type="checkbox"
+                  :checked="editForm.pages.includes(pg.slug)"
+                  @change="togglePage(pg.slug)"
+                  style="cursor:pointer"
+                >
+                {{ pg.title }}
+              </label>
+            </div>
+          </div>
           <p v-if="editError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ editError }}</p>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
             <button type="button" class="a-btn-sm" @click="showEdit = false">отмена</button>
@@ -79,15 +101,25 @@ const saving = ref(false)
 const editError = ref('')
 const projectStatus = ref(project.value?.status || 'lead')
 
+const editForm = reactive({
+  title: project.value?.title || '',
+  clientPin: project.value?.clientPin || '',
+  pages: [...(project.value?.pages || [])],
+})
+
+function togglePage(pageSlug: string) {
+  const idx = editForm.pages.indexOf(pageSlug)
+  if (idx === -1) editForm.pages.push(pageSlug)
+  else editForm.pages.splice(idx, 1)
+}
+
 watch(project, (p) => {
   if (p) {
     editForm.title = p.title
+    editForm.clientPin = p.clientPin || ''
+    editForm.pages = [...(p.pages || [])]
     projectStatus.value = p.status || 'lead'
   }
-})
-
-const editForm = reactive({
-  title: project.value?.title || ''
 })
 
 const allPageSlugs = [
@@ -110,7 +142,11 @@ async function saveProject() {
   try {
     await $fetch(`/api/projects/${slug.value}`, {
       method: 'PUT',
-      body: { title: editForm.title }
+      body: {
+        title: editForm.title,
+        clientPin: editForm.clientPin || undefined,
+        pages: editForm.pages,
+      }
     })
     showEdit.value = false
     refresh()
@@ -195,6 +231,6 @@ async function saveProject() {
 }
 .a-modal {
   background: var(--modal-bg); border: 1px solid var(--modal-border);
-  padding: 32px; width: 380px; max-width: 90vw;
+  padding: 32px; width: 480px; max-width: 90vw; max-height: 90vh; overflow-y: auto;
 }
 </style>

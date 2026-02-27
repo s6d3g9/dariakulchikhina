@@ -17,6 +17,8 @@
       <ClientRoadmap v-if="page === 'project_roadmap'" :slug="route.params.slug as string" />
       <!-- Статусы работ -->
       <ClientWorkStatus v-else-if="page === 'work_status'" :slug="route.params.slug as string" />
+      <!-- Подрядчики проекта -->
+      <ClientContractorsProfile v-else-if="page === 'profile_contractors'" :slug="route.params.slug as string" />
       <!-- Обычный JSON-контент -->
       <ClientPageContent v-else :slug="route.params.slug as string" :page="page" />
     </div>
