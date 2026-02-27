@@ -108,9 +108,13 @@
 
       <!-- Section: Requirements -->
       <div class="asb-section">
-        <div class="asb-section-title">требования к проекту</div>
+        <div class="asb-section-title">
+          требования к проекту
+          <span v-if="form.objectType" class="asb-type-hint">{{ objectTypeLabel }}</span>
+          <span v-else class="asb-type-hint asb-type-hint--warn">⚠ укажите тип объекта в параметрах (0.1) для точных тегов</span>
+        </div>
         <div class="asb-checks-grid">
-          <label v-for="req in requirements" :key="req.key" class="asb-check-item">
+          <label v-for="req in filteredRequirements" :key="req.key" class="asb-check-item">
             <input
               type="checkbox"
               :checked="!!(form as any)[req.key]"
@@ -157,24 +161,145 @@ watch(project, (p) => {
   }
 }, { immediate: true })
 
-// ── Requirements checkboxes ───────────────────────────────────────
-const requirements = [
-  { key: 'brief_smart_home',      label: 'Умный дом',             tag: '#smart_home'      },
-  { key: 'brief_kids_room',       label: 'Детская / зоны для детей', tag: '#kids_room'    },
-  { key: 'brief_work_from_home',  label: 'Работа из дома',        tag: '#home_office'     },
-  { key: 'brief_soundproofing',   label: 'Шумоизоляция',          tag: '#soundproofing'   },
-  { key: 'brief_pets',            label: 'Питомцы',               tag: '#pets_friendly'   },
-  { key: 'brief_storage',         label: 'Много хранения',        tag: '#storage_wall'    },
-  { key: 'brief_home_gym',        label: 'Тренажёрный зал',       tag: '#home_gym'        },
-  { key: 'brief_home_cinema',     label: 'Домашний кинотеатр',    tag: '#home_cinema'     },
-  { key: 'brief_chef_kitchen',    label: 'Профессиональная кухня', tag: '#chef_kitchen'   },
-  { key: 'brief_sauna',           label: 'Баня / хаммам',         tag: '#sauna_hammam'    },
-  { key: 'brief_gallery',         label: 'Коллекция / галерея',   tag: '#art_gallery'     },
-  { key: 'brief_wine_cellar',     label: 'Винный погреб',         tag: '#wine_cellar'     },
-]
+// ── Requirements by object type ─────────────────────────────────
+const ALL_REQUIREMENTS: Record<string, { key: string; label: string; tag: string }[]> = {
+  // ── универсальные (любой тип) ───────────────────────────────────
+  _common: [
+    { key: 'brief_smart_home',      label: 'Умный дом',              tag: '#smart_home'       },
+    { key: 'brief_work_from_home',  label: 'Кабинет / работа дома',  tag: '#home_office'      },
+    { key: 'brief_soundproofing',   label: 'Шумоизоляция',           tag: '#soundproofing'    },
+    { key: 'brief_pets',            label: 'Питомцы',                tag: '#pets_friendly'    },
+    { key: 'brief_storage',         label: 'Много хранения',         tag: '#storage_plus'     },
+    { key: 'brief_accessibility',   label: 'Доступная среда (МГН)',  tag: '#accessibility'    },
+    { key: 'brief_climate',         label: 'Система климат-контроля',tag: '#climate_control'  },
+  ],
+  // ── квартира ────────────────────────────────────────────────────
+  apartment: [
+    { key: 'brief_kids_room',        label: 'Детская / зоны детей',  tag: '#kids_room'        },
+    { key: 'brief_home_gym',         label: 'Фитнес-зона',           tag: '#home_gym'         },
+    { key: 'brief_home_cinema',      label: 'Домашний кинотеатр',    tag: '#home_cinema'      },
+    { key: 'brief_chef_kitchen',     label: 'Проф. кухня',           tag: '#chef_kitchen'     },
+    { key: 'brief_sauna',            label: 'Хаммам / сауна',        tag: '#sauna_hammam'     },
+    { key: 'brief_gallery',          label: 'Коллекция / галерея',   tag: '#art_gallery'      },
+    { key: 'brief_walk_in_closet',   label: 'Гардеробная',           tag: '#walk_in_closet'   },
+    { key: 'brief_balcony',          label: 'Балкон / лоджия',       tag: '#balcony'          },
+    { key: 'brief_open_plan',        label: 'Открытая планировка',   tag: '#open_plan'        },
+    { key: 'brief_master_bedroom',   label: 'Мастер-спальня',        tag: '#master_bedroom'   },
+    { key: 'brief_library',          label: 'Библиотека / кабинет',  tag: '#home_library'     },
+  ],
+  // ── пентхаус ────────────────────────────────────────────────────
+  penthouse: [
+    { key: 'brief_kids_room',        label: 'Детская',               tag: '#kids_room'        },
+    { key: 'brief_home_gym',         label: 'Тренажёрный зал',       tag: '#home_gym'         },
+    { key: 'brief_home_cinema',      label: 'Домашний кинотеатр',    tag: '#home_cinema'      },
+    { key: 'brief_chef_kitchen',     label: 'Проф. кухня',           tag: '#chef_kitchen'     },
+    { key: 'brief_sauna',            label: 'Хаммам / сауна',        tag: '#sauna_hammam'     },
+    { key: 'brief_gallery',          label: 'Коллекция / галерея',   tag: '#art_gallery'      },
+    { key: 'brief_wine_cellar',      label: 'Винный погреб / бар',   tag: '#wine_cellar'      },
+    { key: 'brief_walk_in_closet',   label: 'Гардеробная',           tag: '#walk_in_closet'   },
+    { key: 'brief_master_bedroom',   label: 'Мастер-спальня',        tag: '#master_bedroom'   },
+    { key: 'brief_rooftop_terrace',  label: 'Терраса на крыше',      tag: '#rooftop_terrace'  },
+    { key: 'brief_pool',             label: 'Бассейн / джакузи',     tag: '#pool_jacuzzi'     },
+    { key: 'brief_library',          label: 'Библиотека / кабинет',  tag: '#home_library'     },
+    { key: 'brief_open_plan',        label: 'Открытая планировка',   tag: '#open_plan'        },
+  ],
+  // ── частный дом / коттедж ───────────────────────────────────────
+  house: [
+    { key: 'brief_kids_room',        label: 'Детская',               tag: '#kids_room'        },
+    { key: 'brief_home_gym',         label: 'Тренажёрный зал',       tag: '#home_gym'         },
+    { key: 'brief_home_cinema',      label: 'Кинозал',               tag: '#home_cinema'      },
+    { key: 'brief_chef_kitchen',     label: 'Проф. кухня',           tag: '#chef_kitchen'     },
+    { key: 'brief_sauna',            label: 'Баня / сауна',          tag: '#sauna_house'      },
+    { key: 'brief_wine_cellar',      label: 'Винный погреб',         tag: '#wine_cellar'      },
+    { key: 'brief_fireplace',        label: 'Камин',                 tag: '#fireplace'        },
+    { key: 'brief_pool',             label: 'Бассейн / хот-таб',     tag: '#pool_hottub'      },
+    { key: 'brief_garage',           label: 'Гараж / мастерская',    tag: '#garage_workshop'  },
+    { key: 'brief_guest_house',      label: 'Гостевой дом',          tag: '#guest_house'      },
+    { key: 'brief_garden',           label: 'Ландшафт / сад',        tag: '#garden'           },
+    { key: 'brief_greenhouse',       label: 'Теплица / оранжерея',   tag: '#greenhouse'       },
+    { key: 'brief_kids_playground',  label: 'Детская площадка',      tag: '#kids_playground'  },
+    { key: 'brief_bbq',              label: 'Барбекю / летняя кухня',tag: '#bbq_summer'       },
+    { key: 'brief_walk_in_closet',   label: 'Гардеробная',           tag: '#walk_in_closet'   },
+    { key: 'brief_gallery',          label: 'Коллекция / галерея',   tag: '#art_gallery'      },
+    { key: 'brief_library',          label: 'Библиотека / кабинет',  tag: '#home_library'     },
+    { key: 'brief_home_automation',  label: 'Система безопасности',  tag: '#home_security'    },
+  ],
+  // ── таунхаус ────────────────────────────────────────────────────
+  townhouse: [
+    { key: 'brief_kids_room',        label: 'Детская',               tag: '#kids_room'        },
+    { key: 'brief_home_gym',         label: 'Фитнес-зона',           tag: '#home_gym'         },
+    { key: 'brief_home_cinema',      label: 'Домашний кинотеатр',    tag: '#home_cinema'      },
+    { key: 'brief_chef_kitchen',     label: 'Проф. кухня',           tag: '#chef_kitchen'     },
+    { key: 'brief_sauna',            label: 'Хаммам / сауна',        tag: '#sauna_hammam'     },
+    { key: 'brief_wine_cellar',      label: 'Винный погреб',         tag: '#wine_cellar'      },
+    { key: 'brief_fireplace',        label: 'Камин',                 tag: '#fireplace'        },
+    { key: 'brief_terrace',          label: 'Патио / терраса',       tag: '#terrace_patio'    },
+    { key: 'brief_garage',           label: 'Гараж',                 tag: '#garage'           },
+    { key: 'brief_walk_in_closet',   label: 'Гардеробная',           tag: '#walk_in_closet'   },
+    { key: 'brief_bbq',              label: 'Барбекю / зона отдыха', tag: '#bbq_zone'         },
+    { key: 'brief_library',          label: 'Кабинет',               tag: '#home_library'     },
+  ],
+  // ── студия ──────────────────────────────────────────────────────
+  studio: [
+    { key: 'brief_transform_furn',   label: 'Трансформируемая мебель', tag: '#transform_furniture' },
+    { key: 'brief_max_storage',      label: 'Максимальное хранение', tag: '#max_storage'      },
+    { key: 'brief_sleeping_nook',    label: 'Отдельная зона сна',    tag: '#sleeping_nook'    },
+    { key: 'brief_open_plan',        label: 'Умное зонирование',     tag: '#smart_zoning'     },
+    { key: 'brief_home_cinema',      label: 'Мини-кинозона',         tag: '#home_cinema'      },
+    { key: 'brief_work_from_home',   label: 'Рабочее место',         tag: '#work_nook'        },
+  ],
+  // ── офис ────────────────────────────────────────────────────────
+  office: [
+    { key: 'brief_meeting_rooms',    label: 'Переговорные',          tag: '#meeting_rooms'    },
+    { key: 'brief_reception',        label: 'Зона ресепшн',          tag: '#reception'        },
+    { key: 'brief_open_space',       label: 'Open space',            tag: '#open_space'       },
+    { key: 'brief_quiet_offices',    label: 'Тихие кабинеты',        tag: '#quiet_offices'    },
+    { key: 'brief_kitchen_area',     label: 'Кухня / обед-зона',     tag: '#kitchen_area'     },
+    { key: 'brief_server_room',      label: 'Серверная',             tag: '#server_room'      },
+    { key: 'brief_rest_area',        label: 'Зона отдыха',           tag: '#rest_area'        },
+    { key: 'brief_acoustics',        label: 'Акустика',              tag: '#acoustics'        },
+    { key: 'brief_branding',         label: 'Фирменный стиль в дизайне', tag: '#branded_interior' },
+    { key: 'brief_client_wc',        label: 'Санузел для клиентов',  tag: '#client_wc'        },
+    { key: 'brief_security',         label: 'Контроль доступа',      tag: '#access_control'   },
+  ],
+  // ── коммерческое ────────────────────────────────────────────────
+  commercial: [
+    { key: 'brief_retail_floor',     label: 'Торговый зал',          tag: '#retail_floor'     },
+    { key: 'brief_showcase',         label: 'Витрина / экспозиция',  tag: '#showcase'         },
+    { key: 'brief_storage_room',     label: 'Склад / подсобка',      tag: '#storage_back'     },
+    { key: 'brief_checkout',         label: 'Касса / ресепшн',       tag: '#checkout_desk'    },
+    { key: 'brief_client_wc',        label: 'Санузел для клиентов',  tag: '#client_wc'        },
+    { key: 'brief_branding',         label: 'Фирменный стиль',       tag: '#branded_interior' },
+    { key: 'brief_security',         label: 'Видеонаблюдение',       tag: '#cctv'             },
+    { key: 'brief_acoustics',        label: 'Акустика',              tag: '#acoustics'        },
+    { key: 'brief_lounge',           label: 'Зона ожидания',         tag: '#lounge_area'      },
+  ],
+}
+
+// объединяем universal + тип объекта
+const OBJECT_TYPE_LABELS: Record<string, string> = {
+  apartment:  'квартира',
+  penthouse:  'пентхаус',
+  house:      'частный дом',
+  townhouse:  'таунхаус',
+  studio:     'студия',
+  office:     'офис',
+  commercial: 'коммерческое',
+}
+const objectTypeLabel = computed(() => OBJECT_TYPE_LABELS[form.objectType] || form.objectType)
+
+// объединяем universal + тип объекта
+const filteredRequirements = computed(() => {
+  const objType = form.objectType || ''
+  const specific = ALL_REQUIREMENTS[objType] || ALL_REQUIREMENTS.apartment
+  const common = ALL_REQUIREMENTS._common
+  // дедупликация по key
+  const seen = new Set(specific.map(r => r.key))
+  return [...specific, ...common.filter(r => !seen.has(r.key))]
+})
 
 const autoTags = computed(() =>
-  requirements.filter(r => form[r.key]).map(r => r.tag)
+  filteredRequirements.value.filter(r => form[r.key]).map(r => r.tag)
 )
 
 function toggle(key: string) {
@@ -258,7 +383,13 @@ async function save() {
   font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: #999;
   margin-bottom: 14px; padding-bottom: 8px;
   border-bottom: 1px solid var(--border, #ececec);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
+.asb-type-hint {
+  font-size: .7rem; text-transform: none; letter-spacing: 0;
+  background: #eef2ff; color: #4f46e5; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+}
+.asb-type-hint--warn { background: #fff7ed; color: #b45309; }
 
 /* Checkboxes grid */
 .asb-checks-grid {
