@@ -1,9 +1,8 @@
 import { useDb } from '~/server/db/index'
-import { clients } from '~/server/db/schema'
+import { clients, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
-  // Accessible by the client themselves or admin
   const clientIdSession = getClientIdSession(event)
   const adminSession = getAdminSession(event)
   if (!clientIdSession && !adminSession)
@@ -23,5 +22,18 @@ export default defineEventHandler(async (event) => {
   }).from(clients).where(eq(clients.id, id)).limit(1)
 
   if (!client) throw createError({ statusCode: 404, statusMessage: 'Not found' })
-  return client
+
+  // Find linked project (where profile.client_id === id)
+  const allProjects = await db.select({
+    slug: projects.slug,
+    title: projects.title,
+    status: projects.status,
+    profile: projects.profile,
+  }).from(projects)
+
+  const linkedProject = allProjects.find(p =>
+    String((p.profile as any)?.client_id) === String(id)
+  ) || null
+
+  return { ...client, linkedProject }
 })
