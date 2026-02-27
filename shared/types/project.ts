@@ -30,6 +30,7 @@ export const CreateProjectSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9_-]+$/),
   title: z.string().min(1),
   clientPin: z.string().optional(),
+  roadmapTemplateKey: z.string().optional(),
 })
 export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
   pages: z.array(z.string()).optional(),

@@ -1,17 +1,43 @@
 import { useDb } from '~/server/db/index'
-import { projects } from '~/server/db/schema'
+import { projects, roadmapStages } from '~/server/db/schema'
 import { CreateProjectSchema } from '~/shared/types/project'
+import { readCustomRoadmapTemplates } from '~/server/utils/roadmap-templates'
+import { ROADMAP_TEMPLATES } from '~/shared/types/roadmap-templates'
+
+const CORE_PAGES = ['materials', 'tz', 'profile_customer', 'profile_contractors', 'work_status', 'project_roadmap']
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const body = await readValidatedNodeBody(event, CreateProjectSchema)
   const db = useDb()
+
   const [project] = await db.insert(projects).values({
     slug: body.slug,
     title: body.title,
     clientPin: body.clientPin,
-    pages: [],
+    pages: CORE_PAGES,
     profile: {},
   }).returning()
+
+  // Create roadmap stages from selected template
+  if (body.roadmapTemplateKey) {
+    const customTemplates = await readCustomRoadmapTemplates()
+    const allTemplates = [...ROADMAP_TEMPLATES, ...customTemplates]
+    const template = allTemplates.find(t => t.key === body.roadmapTemplateKey)
+    if (template && template.stages.length > 0) {
+      await db.insert(roadmapStages).values(
+        template.stages.map((stage, idx) => ({
+          projectId: project.id,
+          stageKey: stage.stageKey,
+          title: stage.title,
+          description: stage.description ?? null,
+          notes: stage.notes ?? null,
+          status: 'pending',
+          sortOrder: idx,
+        }))
+      )
+    }
+  }
+
   return project
 })
