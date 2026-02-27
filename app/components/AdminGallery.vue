@@ -26,21 +26,28 @@
       <div
         v-for="item in filtered"
         :key="item.id"
-        class="agal-card a-card"
+        class="agal-card"
       >
+        <!-- image -->
         <div class="agal-img-wrap">
-          <img v-if="item.image" :src="`/uploads/${item.image}`" class="agal-img" :alt="item.title">
-          <div v-else class="agal-img-placeholder">нет фото</div>
+          <img v-if="item.image" :src="`/uploads/${item.image}`" class="agal-img" :alt="item.title" loading="lazy">
+          <div v-else class="agal-img-placeholder">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            <span>нет фото</span>
+          </div>
+          <!-- hover overlay -->
+          <div class="agal-overlay">
+            <button class="agal-ov-btn" @click.stop="openEdit(item)">редактировать</button>
+            <button class="agal-ov-btn agal-ov-btn--del" @click.stop="del(item.id)">удалить</button>
+          </div>
         </div>
+        <!-- info -->
         <div class="agal-info">
           <div class="agal-name">{{ item.title }}</div>
+          <div v-if="item.description" class="agal-desc">{{ item.description }}</div>
           <div v-if="item.tags?.length" class="agal-tags">
             <span v-for="t in item.tags" :key="t" class="agal-tag">{{ t }}</span>
           </div>
-        </div>
-        <div class="agal-actions">
-          <button class="a-btn-sm" @click="openEdit(item)">изм.</button>
-          <button class="a-btn-sm a-btn-danger" @click="del(item.id)">×</button>
         </div>
       </div>
     </div>
@@ -180,53 +187,133 @@ async function del(id: number) {
 </script>
 
 <style scoped>
-.agal-wrap { padding: 0 0 48px; }
+.agal-wrap { padding: 0 0 64px; }
+
+/* Header */
 .agal-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 20px; margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+  padding: 12px 20px; margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
 }
-.agal-title { font-size: .78rem; color: #888; text-transform: uppercase; letter-spacing: .5px; }
+.agal-title {
+  font-size: .72rem; color: #888;
+  text-transform: uppercase; letter-spacing: 1px;
+}
 .agal-count {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; border-radius: 999px;
+  width: 18px; height: 18px; border-radius: 999px;
   background: var(--text, #1a1a1a); color: var(--bg, #fff);
-  font-size: .68rem; margin-left: 8px;
+  font-size: .62rem; margin-left: 8px; vertical-align: middle;
 }
-.agal-search { max-width: 200px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border, #ddd); }
+.agal-search {
+  width: 180px; padding: 6px 12px; border-radius: 6px;
+  border: 1px solid var(--border, #ddd); font-size: .82rem;
+  background: transparent; color: inherit; outline: none;
+}
+.agal-search:focus { border-color: var(--text, #1a1a1a); }
+
+/* Empty */
 .agal-empty {
-  padding: 48px 0; text-align: center;
-  font-size: .85rem; color: #bbb; letter-spacing: .5px;
+  padding: 64px 24px; text-align: center;
+  font-size: .82rem; color: #ccc; letter-spacing: .5px;
 }
+
+/* Grid */
 .agal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
 }
+
+/* Card */
 .agal-card {
-  padding: 0; overflow: hidden; display: flex; flex-direction: column;
-  transition: box-shadow .2s;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e8e8e8);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform .18s ease, box-shadow .18s ease;
 }
-.agal-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
-.agal-img-wrap { aspect-ratio: 4/3; overflow: hidden; background: var(--border, #f0f0f0); }
-.agal-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.agal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0,0,0,.09);
+}
+
+/* Image area */
+.agal-img-wrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--border, #f2f2f2);
+  flex-shrink: 0;
+}
+.agal-img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  transition: transform .3s ease;
+}
+.agal-card:hover .agal-img { transform: scale(1.03); }
 .agal-img-placeholder {
   width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .72rem; color: #ccc;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 6px; color: #ccc;
 }
-.agal-info { padding: 10px 12px 6px; flex: 1; }
-.agal-name { font-size: .85rem; font-weight: 500; color: var(--text, #1a1a1a); margin-bottom: 4px; }
-.agal-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.agal-img-placeholder span { font-size: .72rem; }
+
+/* Hover overlay */
+.agal-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.42);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  opacity: 0; transition: opacity .18s ease;
+}
+.agal-card:hover .agal-overlay { opacity: 1; }
+.agal-ov-btn {
+  padding: 7px 16px;
+  background: rgba(255,255,255,.92);
+  border: none; border-radius: 6px;
+  font-size: .76rem; font-family: inherit;
+  cursor: pointer; font-weight: 500;
+  transition: background .15s;
+}
+.agal-ov-btn:hover { background: #fff; }
+.agal-ov-btn--del {
+  background: rgba(220,38,38,.88); color: #fff;
+}
+.agal-ov-btn--del:hover { background: rgba(220,38,38,1); }
+
+/* Info */
+.agal-info {
+  padding: 12px 14px 14px;
+  flex: 1; display: flex; flex-direction: column; gap: 5px;
+}
+.agal-name {
+  font-size: .88rem; font-weight: 500;
+  color: var(--text, #1a1a1a);
+  line-height: 1.35;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.agal-desc {
+  font-size: .76rem; color: #999;
+  line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.agal-tags {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px;
+}
 .agal-tag {
-  font-size: .68rem; padding: 2px 7px;
-  background: var(--border, #eee); border-radius: 3px; color: #888;
+  font-size: .66rem; padding: 2px 8px;
+  background: var(--border, #f0f0f0);
+  border-radius: 4px; color: #888;
+  letter-spacing: .2px;
 }
-.agal-actions {
-  padding: 6px 10px 10px;
-  display: flex; gap: 6px; justify-content: flex-end;
-}
+
+/* Modal */
 .agal-modal-title {
-  font-size: .85rem; font-weight: 400; text-transform: uppercase;
-  letter-spacing: 1px; color: #888; margin-bottom: 20px;
+  font-size: .82rem; font-weight: 400;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #888; margin-bottom: 20px;
 }
 </style>
