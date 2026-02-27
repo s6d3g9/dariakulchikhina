@@ -13,8 +13,10 @@
     </div>
 
     <div class="client-page-body">
+      <!-- Фаза 0: Инициация -->
+      <ClientInitiation v-if="page === 'phase_init'" :slug="route.params.slug as string" />
       <!-- Анкета клиента -->
-      <ClientSelfProfile v-if="page === 'self_profile'" :slug="route.params.slug as string" />
+      <ClientSelfProfile v-else-if="page === 'self_profile'" :slug="route.params.slug as string" />
       <!-- Ход проекта (таймлайн + команда) -->
       <ClientTimeline v-else-if="page === 'design_timeline'" :slug="route.params.slug as string" />
       <!-- Альбом проекта -->
@@ -41,6 +43,7 @@ const page = computed(() => route.params.page as string)
 const { data: project } = await useFetch<any>(`/api/projects/${route.params.slug}`)
 
 const allPages = [
+  { slug: 'phase_init',          title: 'инициация' },
   { slug: 'self_profile',        title: 'мои данные' },
   { slug: 'design_timeline',     title: 'ход проекта' },
   { slug: 'design_album',        title: 'альбом проекта' },

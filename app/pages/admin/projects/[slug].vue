@@ -42,6 +42,9 @@
       <div v-else-if="activePage === 'profile_contractors'">
         <AdminContractorsProfile :slug="route.params.slug as string" />
       </div>
+      <div v-else-if="activePage === 'first_contact'">
+        <AdminFirstContact :slug="route.params.slug as string" />
+      </div>
       <div v-else-if="activePage === 'brief'">
         <AdminSmartBrief :slug="route.params.slug as string" />
       </div>
@@ -142,14 +145,16 @@ watch(project, (p) => {
 
 const allPageSlugs = [
   // ── Phase 0: Инициация ──────────────────────────────
-  { slug: 'brief',             title: 'брифинг' },
-  { slug: 'site_survey',       title: 'обмеры / аудит' },
-  { slug: 'tor_contract',      title: 'ТЗ и договор' },
+  { slug: 'first_contact',     title: '0.1 первичный контакт' },
+  { slug: 'brief',             title: '0.2 брифинг' },
+  { slug: 'site_survey',       title: '0.3 обмеры / аудит' },
+  { slug: 'tor_contract',      title: '0.4 ТЗ и договор' },
   // ── Phase 1: Эскиз ──────────────────────────────────
   { slug: 'space_planning',    title: 'планировки' },
   { slug: 'moodboard',         title: 'мудборд' },
   { slug: 'concept_approval',  title: 'согласование эскиза' },
   // ── Кабинет клиента ─────────────────────────────────
+  { slug: 'phase_init',        title: 'инициация (трекер фазы 0)' },
   { slug: 'self_profile',      title: 'анкета клиента' },
   { slug: 'design_timeline',   title: 'ход проекта' },
   { slug: 'design_album',      title: 'альбом проекта' },

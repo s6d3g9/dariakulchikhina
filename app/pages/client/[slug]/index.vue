@@ -97,6 +97,7 @@ function phaseIndex(key: string) {
 }
 
 const ALL_PAGES = [
+  { slug: 'phase_init',      title: 'Старт проекта',    desc: 'Знакомство, бриф, обмеры, договор', icon: '◉' },
   { slug: 'self_profile',    title: 'Мои данные',       desc: 'Анкета и личная информация',      icon: '◎' },
   { slug: 'design_timeline', title: 'Ход проекта',      desc: 'Этапы, команда и контакты',       icon: '◈' },
   { slug: 'design_album',    title: 'Альбом проекта',   desc: 'Дизайн-проект и визуализации',    icon: '▣' },
