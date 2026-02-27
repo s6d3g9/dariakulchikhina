@@ -163,6 +163,32 @@ const availablePages = computed(() => {
   return allPageSlugs.filter(p => pages.includes(p.slug))
 })
 
+const navGroups = computed(() => {
+  const pages = project.value?.pages || []
+  const groups = [
+    {
+      label: 'Фаза 0 · Инициация',
+      slugs: ['first_contact', 'brief', 'site_survey', 'tor_contract'],
+    },
+    {
+      label: 'Фаза 1 · Эскиз',
+      slugs: ['space_planning', 'moodboard', 'concept_approval'],
+    },
+    {
+      label: 'Кабинет клиента',
+      slugs: ['phase_init', 'self_profile', 'design_timeline', 'design_album', 'contracts'],
+    },
+    {
+      label: 'Общее',
+      slugs: ['profile_customer', 'profile_contractors', 'materials', 'tz', 'work_status', 'project_roadmap'],
+    },
+  ]
+  return groups.map(g => ({
+    label: g.label,
+    pages: allPageSlugs.filter(p => g.slugs.includes(p.slug) && pages.includes(p.slug)),
+  }))
+})
+
 async function saveProject() {
   saving.value = true
   editError.value = ''
