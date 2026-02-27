@@ -134,6 +134,18 @@ export const galleryItems = pgTable('gallery_items', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+export const clients = pgTable('clients', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  phone: text('phone'),
+  email: text('email'),
+  messenger: text('messenger'),
+  messengerNick: text('messenger_nick'),
+  address: text('address'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
 export const projectsRelations = relations(projects, ({ many, one }) => ({
   user: one(users, { fields: [projects.userId], references: [users.id] }),
   pageContents: many(pageContent),
