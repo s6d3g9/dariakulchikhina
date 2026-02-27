@@ -149,13 +149,6 @@ const allPageSlugs = [
   { slug: 'design_timeline',   title: 'ход проекта' },
   { slug: 'design_album',      title: 'альбом проекта' },
   { slug: 'contracts',         title: 'документы / договоры' },
-  // ── Общие разделы ───────────────────────────────────
-  { slug: 'profile_customer',  title: 'профиль клиента' },
-  { slug: 'profile_contractors', title: 'подрядчики' },
-  { slug: 'materials',         title: 'материалы' },
-  { slug: 'tz',                title: 'тех. задание' },
-  { slug: 'work_status',       title: 'статусы работ' },
-  { slug: 'project_roadmap',   title: 'дорожная карта' },
 ]
 
 const availablePages = computed(() => {
@@ -177,10 +170,6 @@ const navGroups = computed(() => {
     {
       label: 'Кабинет клиента',
       slugs: ['phase_init', 'self_profile', 'design_timeline', 'design_album', 'contracts'],
-    },
-    {
-      label: 'Общее',
-      slugs: ['profile_customer', 'profile_contractors', 'materials', 'tz', 'work_status', 'project_roadmap'],
     },
   ]
   return groups.map(g => ({
