@@ -99,6 +99,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
 .tog-btn.on{background:#f0f0f0}
 .tog-btn:hover{background:#eee}
 
+.preset-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.preset-btn{padding:3px 7px;font:inherit;font-size:8px;letter-spacing:.05em;text-transform:uppercase;
+  border:1.5px solid #000;background:#fff;cursor:pointer;transition:all .12s;line-height:1.2}
+.preset-btn:hover{background:#eee}
+.preset-btn.active{background:#000;color:#fff}
+
 #left::-webkit-scrollbar{width:4px}
 #left::-webkit-scrollbar{width:4px}
 #left::-webkit-scrollbar-thumb{background:#000}
@@ -112,6 +118,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
     <button class="cat-btn" data-cat="shoes">Обувной шкаф</button>
     <button class="cat-btn" data-cat="hallway">Прихожая</button>
     <button class="cat-btn" data-cat="shelving">Стеллаж</button>
+    <button class="cat-btn" data-cat="kitchen">Кухня</button>
   </div>
 
   <div id="left">
@@ -123,6 +130,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
           <span class="sw" style="background:#fff"></span>Ластик
         </button>
       </div>
+      <h3 class="sec-head" style="margin-top:8px">Пресеты</h3>
+      <div class="preset-row" id="preset-row"></div>
     </div>
 
     <div class="sec grid-area" style="flex:1">
@@ -205,6 +214,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
         <div class="dim-row subdiv-for" data-for="7">
           <label>Книги <input type="number" id="bookH" value="30" min="10" max="80" step="5"/> см</label>
         </div>
+        <div class="dim-row subdiv-for" data-for="9">
+          <label>Мойка (выс.) <input type="number" id="sinkH" value="85" min="40" max="120" step="5" disabled/> см</label>
+        </div>
+        <div class="dim-row subdiv-for" data-for="10">
+          <label>Варочная (выс.) <input type="number" id="cooktopH" value="85" min="40" max="120" step="5" disabled/> см</label>
+        </div>
+        <div class="dim-row subdiv-for" data-for="11">
+          <label>Духовка (выс.) <input type="number" id="ovenH" value="60" min="30" max="90" step="5" disabled/> см</label>
+        </div>
+        <div class="dim-row subdiv-for" data-for="12">
+          <label>Посудомойка (выс.) <input type="number" id="dishwH" value="85" min="40" max="120" step="5" disabled/> см</label>
+        </div>
       </div>
     </div>
   </div>
@@ -243,6 +264,10 @@ const TYPES={
   shoeHi: {id:6,label:'Сапоги',color:'#d5b0f0'},
   books:  {id:7,label:'Книги',color:'#b0d0f0'},
   top:    {id:8,label:'Антресоль',color:'#d0d0d0'},
+  sink:   {id:9,label:'Мойка',color:'#8ecae6'},
+  cooktop:{id:10,label:'Варочная панель',color:'#e07a5f'},
+  oven:   {id:11,label:'Духовка',color:'#c97b3d'},
+  dishw:  {id:12,label:'Посудомойка',color:'#81b29a'},
 };
 const TYPE_BY_ID={};
 for(const[k,v]of Object.entries(TYPES)) TYPE_BY_ID[v.id]={...v,key:k};
@@ -252,6 +277,7 @@ const CAT_TYPES={
   shoes:['shoeLow','shoeHi','drawer','shelf'],
   hallway:['hanging','shoeLow','shoeHi','drawer','shelf','open'],
   shelving:['shelf','open','books','drawer'],
+  kitchen:['shelf','drawer','open','top','sink','cooktop','oven','dishw'],
 };
 
 const GS=20;
@@ -280,18 +306,174 @@ function fHallE(){const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);fillR(g,3,0,12
 function fShelfN(){const g=emptyG();for(let i=0;i<5;i++)
   fillR(g,i*4,0,i*4+3,19,i%2===0?TYPES.open.id:TYPES.shelf.id);return g}
 
+/* kitchen presets */
+function fKitchenN(){const g=emptyG();
+  /* верхние шкафы */
+  fillR(g,0,0,7,4,TYPES.shelf.id);fillR(g,0,5,7,14,TYPES.shelf.id);fillR(g,0,15,7,19,TYPES.shelf.id);
+  /* нижние: мойка + варочная + ящики + посудомойка */
+  fillR(g,10,0,19,4,TYPES.sink.id);fillR(g,10,5,19,9,TYPES.drawer.id);
+  fillR(g,10,10,14,14,TYPES.cooktop.id);fillR(g,15,10,19,14,TYPES.oven.id);
+  fillR(g,10,15,19,19,TYPES.dishw.id);
+  return g}
+function fKitchenS(){const g=emptyG();
+  fillR(g,0,0,7,19,TYPES.shelf.id);
+  fillR(g,10,0,19,19,TYPES.drawer.id);return g}
+function topKitchenL(){const g=emptyG();fillR(g,0,0,3,19,1);fillR(g,0,0,8,3,1);return g}
+
 const PRESETS_F={
   wardrobe:()=>mkF(fWardN,fWardS,fE,fE),
   bookcase:()=>mkF(fBookN,fE,fE,fE),
   shoes:   ()=>mkF(fShoesN,fE,fE,fE),
   hallway: ()=>mkF(fHallN,fE,fE,fHallE),
   shelving:()=>mkF(fShelfN,fE,fE,fE),
+  kitchen: ()=>mkF(fKitchenN,fKitchenS,fE,fE),
 };
 function topStraight(){const g=emptyG();fillR(g,0,0,4,19,1);return g}
 function topNarrow(){const g=emptyG();fillR(g,0,0,2,19,1);return g}
 function topCorner(){const g=emptyG();fillR(g,0,0,3,9,1);return g}
 function topL(){const g=emptyG();fillR(g,0,0,3,19,1);fillR(g,4,15,12,19,1);return g}
-const PRESETS_T={wardrobe:topStraight,bookcase:topNarrow,shoes:topCorner,hallway:topL,shelving:topCorner};
+function topU(){const g=emptyG();fillR(g,0,0,3,19,1);fillR(g,0,0,12,3,1);fillR(g,0,16,12,19,1);return g}
+const PRESETS_T={wardrobe:topStraight,bookcase:topNarrow,shoes:topCorner,hallway:topL,shelving:topCorner,kitchen:topKitchenL};
+
+/* ═══════════════════════  NAMED PRESETS PER CATEGORY  ═══════════════════════ */
+const CATEGORY_PRESETS={
+  wardrobe:[
+    {name:'Классика',
+      f:()=>mkF(fWardN,fWardS,fE,fE),
+      t:topStraight},
+    {name:'Компакт',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);
+        fillR(g,3,0,12,19,TYPES.hanging.id);fillR(g,13,0,17,19,TYPES.drawer.id);
+        fillR(g,18,0,19,19,TYPES.shelf.id);return g};return mkF(n,fE,fE,fE)},
+      t:topNarrow},
+    {name:'Органайзер',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);
+        fillR(g,2,0,7,4,TYPES.shelf.id);fillR(g,2,5,7,14,TYPES.hanging.id);fillR(g,2,15,7,19,TYPES.shelf.id);
+        fillR(g,8,0,13,4,TYPES.drawer.id);fillR(g,8,5,13,14,TYPES.shelf.id);fillR(g,8,15,13,19,TYPES.drawer.id);
+        fillR(g,14,0,17,9,TYPES.open.id);fillR(g,14,10,17,19,TYPES.drawer.id);
+        fillR(g,18,0,19,19,TYPES.shelf.id);return g};return mkF(n,fE,fE,fE)},
+      t:topStraight},
+    {name:'Гардеробная',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);
+        fillR(g,2,0,12,9,TYPES.hanging.id);fillR(g,2,10,12,19,TYPES.hanging.id);
+        fillR(g,13,0,17,19,TYPES.drawer.id);fillR(g,18,0,19,19,TYPES.shelf.id);return g};
+        const s=()=>{const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);
+        fillR(g,2,0,12,19,TYPES.shelf.id);fillR(g,13,0,19,19,TYPES.shelf.id);return g};
+        return mkF(n,s,fE,fE)},
+      t:()=>{const g=emptyG();fillR(g,0,0,5,19,1);return g}},
+  ],
+  bookcase:[
+    {name:'Классика',
+      f:()=>mkF(fBookN,fE,fE,fE),
+      t:topNarrow},
+    {name:'С ящиками',
+      f:()=>{const n=()=>{const g=emptyG();for(let i=0;i<4;i++)fillR(g,i*4,0,i*4+3,19,TYPES.books.id);
+        fillR(g,16,0,19,19,TYPES.drawer.id);return g};return mkF(n,fE,fE,fE)},
+      t:topNarrow},
+    {name:'Смешанный',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,5,9,TYPES.books.id);fillR(g,0,10,5,19,TYPES.open.id);
+        fillR(g,6,0,11,9,TYPES.books.id);fillR(g,6,10,11,19,TYPES.shelf.id);
+        fillR(g,12,0,15,19,TYPES.books.id);fillR(g,16,0,19,19,TYPES.drawer.id);return g};return mkF(n,fE,fE,fE)},
+      t:topNarrow},
+  ],
+  shoes:[
+    {name:'Классика',
+      f:()=>mkF(fShoesN,fE,fE,fE),
+      t:topCorner},
+    {name:'Высокая',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,3,19,TYPES.shoeHi.id);
+        fillR(g,4,0,7,19,TYPES.shoeHi.id);fillR(g,8,0,13,19,TYPES.shoeLow.id);
+        fillR(g,14,0,17,19,TYPES.shoeLow.id);fillR(g,18,0,19,19,TYPES.drawer.id);return g};return mkF(n,fE,fE,fE)},
+      t:topCorner},
+    {name:'Компакт',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,9,19,TYPES.shoeLow.id);
+        fillR(g,10,0,15,19,TYPES.shoeLow.id);fillR(g,16,0,19,19,TYPES.drawer.id);return g};return mkF(n,fE,fE,fE)},
+      t:topNarrow},
+  ],
+  hallway:[
+    {name:'Классика',
+      f:()=>mkF(fHallN,fE,fE,fHallE),
+      t:topL},
+    {name:'Открытая',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);
+        fillR(g,3,0,12,19,TYPES.open.id);
+        fillR(g,13,0,16,19,TYPES.shoeLow.id);fillR(g,17,0,19,19,TYPES.shelf.id);return g};return mkF(n,fE,fE,fE)},
+      t:topNarrow},
+    {name:'Со штангой',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);
+        fillR(g,3,0,14,9,TYPES.hanging.id);fillR(g,3,10,8,19,TYPES.shelf.id);
+        fillR(g,9,10,14,19,TYPES.drawer.id);
+        fillR(g,15,0,17,19,TYPES.shoeLow.id);fillR(g,18,0,19,19,TYPES.shelf.id);return g};return mkF(n,fE,fE,fE)},
+      t:topStraight},
+    {name:'Угловая',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);
+        fillR(g,3,0,12,19,TYPES.hanging.id);fillR(g,13,0,19,19,TYPES.shoeLow.id);return g};
+        const e=()=>{const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);
+        fillR(g,3,0,12,19,TYPES.shelf.id);fillR(g,13,0,19,19,TYPES.drawer.id);return g};
+        return mkF(n,fE,fE,e)},
+      t:topL},
+  ],
+  shelving:[
+    {name:'Классика',
+      f:()=>mkF(fShelfN,fE,fE,fE),
+      t:topCorner},
+    {name:'Симметрия',
+      f:()=>{const n=()=>{const g=emptyG();for(let i=0;i<5;i++)fillR(g,i*4,0,i*4+3,19,TYPES.shelf.id);return g};return mkF(n,fE,fE,fE)},
+      t:topNarrow},
+    {name:'С открытыми',
+      f:()=>{const n=()=>{const g=emptyG();fillR(g,0,0,5,9,TYPES.open.id);fillR(g,0,10,5,19,TYPES.shelf.id);
+        fillR(g,6,0,11,9,TYPES.shelf.id);fillR(g,6,10,11,19,TYPES.open.id);
+        fillR(g,12,0,17,9,TYPES.open.id);fillR(g,12,10,17,19,TYPES.shelf.id);
+        fillR(g,18,0,19,19,TYPES.drawer.id);return g};return mkF(n,fE,fE,fE)},
+      t:topCorner},
+  ],
+  kitchen:[
+    {name:'Классика',
+      f:()=>mkF(fKitchenN,fKitchenS,fE,fE),
+      t:topKitchenL},
+    {name:'Линейная',
+      f:()=>{const n=()=>{const g=emptyG();
+        fillR(g,0,0,7,19,TYPES.shelf.id);
+        fillR(g,10,0,19,3,TYPES.sink.id);fillR(g,10,4,19,9,TYPES.drawer.id);
+        fillR(g,10,10,14,14,TYPES.cooktop.id);fillR(g,15,10,19,14,TYPES.oven.id);
+        fillR(g,10,15,19,19,TYPES.drawer.id);return g};return mkF(n,fE,fE,fE)},
+      t:topNarrow},
+    {name:'Угловая',
+      f:()=>{const n=()=>{const g=emptyG();
+        fillR(g,0,0,7,19,TYPES.shelf.id);
+        fillR(g,10,0,19,4,TYPES.sink.id);fillR(g,10,5,19,9,TYPES.drawer.id);
+        fillR(g,10,10,14,14,TYPES.cooktop.id);fillR(g,15,10,19,14,TYPES.oven.id);
+        fillR(g,10,15,19,19,TYPES.dishw.id);return g};
+        const w=()=>{const g=emptyG();
+        fillR(g,0,0,7,19,TYPES.shelf.id);
+        fillR(g,10,0,19,19,TYPES.drawer.id);return g};
+        return mkF(n,fE,w,fE)},
+      t:topL},
+    {name:'П-образная',
+      f:()=>{const n=()=>{const g=emptyG();
+        fillR(g,0,0,7,19,TYPES.shelf.id);
+        fillR(g,10,0,19,4,TYPES.sink.id);fillR(g,10,5,14,14,TYPES.cooktop.id);
+        fillR(g,15,5,19,14,TYPES.oven.id);fillR(g,10,15,19,19,TYPES.drawer.id);return g};
+        const w=()=>{const g=emptyG();fillR(g,0,0,7,19,TYPES.shelf.id);
+        fillR(g,10,0,19,19,TYPES.drawer.id);return g};
+        const e=()=>{const g=emptyG();fillR(g,0,0,7,19,TYPES.shelf.id);
+        fillR(g,10,0,19,9,TYPES.dishw.id);fillR(g,10,10,19,19,TYPES.drawer.id);return g};
+        return mkF(n,fE,w,e)},
+      t:topU},
+    {name:'С островом',
+      f:()=>{const n=()=>{const g=emptyG();
+        fillR(g,0,0,7,19,TYPES.shelf.id);
+        fillR(g,10,0,19,4,TYPES.sink.id);fillR(g,10,5,19,9,TYPES.drawer.id);
+        fillR(g,10,10,14,14,TYPES.cooktop.id);fillR(g,15,10,19,14,TYPES.oven.id);
+        fillR(g,10,15,19,19,TYPES.dishw.id);return g};
+        /* остров на южном фасаде (стоит отдельно по центру комнаты) */
+        const s=()=>{const g=emptyG();
+        fillR(g,10,4,19,15,TYPES.drawer.id);
+        fillR(g,0,4,7,15,TYPES.open.id);return g};
+        return mkF(n,s,fE,fE)},
+      t:()=>{const g=emptyG();fillR(g,0,0,3,19,1);fillR(g,10,4,13,15,1);return g}},
+  ],
+};
 
 /* ═══════════════════════  STATE  ═══════════════════════ */
 let facades=PRESETS_F.wardrobe();
@@ -306,6 +488,23 @@ let activeFace='north';
 /* ═══════════════════════  PALETTE  ═══════════════════════ */
 const palRow=document.getElementById('pal-row');
 const eraserBtn=document.getElementById('eraser-btn');
+const presetRow=document.getElementById('preset-row');
+let activePresetIdx=0;
+
+function buildPresets(){
+  presetRow.innerHTML='';
+  const presets=CATEGORY_PRESETS[currentCat]||[];
+  presets.forEach((p,i)=>{
+    const b=document.createElement('button');b.className='preset-btn'+(i===activePresetIdx?' active':'');
+    b.textContent=p.name;
+    b.addEventListener('click',()=>{activePresetIdx=i;applyPreset(p);
+      presetRow.querySelectorAll('.preset-btn').forEach((bb,j)=>bb.classList.toggle('active',j===i))});
+    presetRow.appendChild(b)});
+}
+function applyPreset(p){
+  facades=p.f();topGrid=p.t();syncFacade();syncTop();rebuild();
+}
+
 function buildPalette(){
   palRow.innerHTML='';
   CAT_TYPES[currentCat].forEach(k=>{const t=TYPES[k];
@@ -446,8 +645,11 @@ topGridEl.addEventListener('contextmenu',e=>e.preventDefault());
 /* ═══════════════════════  CATEGORIES  ═══════════════════════ */
 document.querySelectorAll('.cat-btn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelector('.cat-btn.active').classList.remove('active');b.classList.add('active');
-  currentCat=b.dataset.cat;facades=PRESETS_F[currentCat]();
-  topGrid=PRESETS_T[currentCat]();buildPalette();syncFacade();syncTop();rebuild()}));
+  currentCat=b.dataset.cat;activePresetIdx=0;
+  const p=CATEGORY_PRESETS[currentCat]?.[0];
+  if(p){facades=p.f();topGrid=p.t()}
+  else{facades=PRESETS_F[currentCat]();topGrid=PRESETS_T[currentCat]()}
+  buildPalette();buildPresets();syncFacade();syncTop();rebuild()}));
 
 /* ═══════════════════════  DIMENSIONS  ═══════════════════════ */
 const roomWEl=document.getElementById('roomW'),roomDEl=document.getElementById('roomD'),
@@ -821,6 +1023,55 @@ function rebuild(){
             case 'top':{if(splitH)wb(grp,inW,WALL,inD,bcx,fcy,bcz,TM);
               if(splitW&&bw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);
               if(splitD&&bd>cRD*4)wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,bcz,TM);break}
+            case 'sink':{
+              /* basin: recessed box on top */
+              const basinH=fh*.25,basinW=inW*.7,basinD=inD*.7;
+              wbC(grp,basinW,basinH,basinD,bcx,fy2-basinH/2-WALL,bcz,'#8ecae6',TM);
+              /* faucet */
+              const fH=fh*.35;
+              const faucG=new THREE.CylinderGeometry(.008,.008,fH,6);
+              const faucE=new THREE.EdgesGeometry(faucG),faucL=new THREE.LineSegments(faucE,LM);
+              faucL.position.set(bcx,fy2+fH/2-WALL*2,bcz-inD*.25);grp.add(faucL);
+              /* cabinet door below */
+              if(splitH){const n=Math.max(1,Math.round(fh/(.85)));for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM)}
+              break}
+            case 'cooktop':{
+              /* flat surface on top */
+              wb(grp,inW*.9,WALL*2,inD*.9,bcx,fy2-WALL*2,bcz,LM);
+              /* 4 burners as circles */
+              const bR=Math.min(inW,inD)*.18;
+              const offX=inW*.22,offZ=inD*.22;
+              for(const[dx,dz]of [[-1,-1],[-1,1],[1,-1],[1,1]]){
+                const cg=new THREE.RingGeometry(bR*.5,bR,16);
+                cg.rotateX(-Math.PI/2);
+                const ce=new THREE.EdgesGeometry(cg),cl=new THREE.LineSegments(ce,TM);
+                cl.position.set(bcx+dx*offX,fy2-WALL,bcz+dz*offZ);grp.add(cl)}
+              /* cabinet below */
+              if(splitH){wb(grp,inW,WALL,inD,bcx,fy1+fh*.5,bcz,TM)}
+              break}
+            case 'oven':{
+              /* oven door (front face) */
+              const doorInset=WALL*3;
+              wbC(grp,inW-doorInset*2,fh-doorInset*2,WALL,bcx,fcy,
+                fc.name==='north'?bz2-WALL:fc.name==='south'?bz1+WALL:bcz,'#c97b3d',TM);
+              /* handle */
+              const handleW=inW*.5;
+              wb(grp,handleW,WALL,WALL,bcx,fy2-fh*.15,
+                fc.name==='north'?bz2:fc.name==='south'?bz1:bcz,LM);
+              /* inner shelf */
+              wb(grp,inW*.85,WALL,inD*.85,bcx,fcy,bcz,TM);
+              break}
+            case 'dishw':{
+              /* dishwasher door */
+              wbC(grp,inW-WALL*4,fh-WALL*4,WALL,bcx,fcy,
+                fc.name==='north'?bz2-WALL:fc.name==='south'?bz1+WALL:bcz,'#81b29a',TM);
+              /* handle */
+              wb(grp,inW*.4,WALL,WALL,bcx,fy2-fh*.12,
+                fc.name==='north'?bz2:fc.name==='south'?bz1:bcz,LM);
+              /* inner racks */
+              if(splitH){wb(grp,inW*.85,WALL,inD*.85,bcx,fy1+fh*.35,bcz,TM);
+                wb(grp,inW*.85,WALL,inD*.85,bcx,fy1+fh*.65,bcz,TM)}
+              break}
           }
         }
         fCol=fColEnd+1;
@@ -930,7 +1181,7 @@ new ResizeObserver(()=>{renderer.setSize(viewEl.clientWidth,viewEl.clientHeight)
 (function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)})();
 
 /* ═══════════════════════  INIT  ═══════════════════════ */
-buildPalette();buildFacadeGrid();buildTopGrid();updateFaceLabels();syncFacade();rebuild();
+buildPalette();buildPresets();buildFacadeGrid();buildTopGrid();updateFaceLabels();syncFacade();rebuild();
 </script>
 </body>
 </html>

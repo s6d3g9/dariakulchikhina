@@ -34,6 +34,64 @@
       <main class="cab-main">
         <div class="cab-inner">
 
+          <!-- ── Обзор (Dashboard) ──────────────────────────────── -->
+          <template v-if="section === 'dashboard'">
+            <div class="dash-stats">
+              <div class="dash-stat glass-surface">
+                <div class="dash-stat-val">{{ dashStats.total }}</div>
+                <div class="dash-stat-label">Всего задач</div>
+              </div>
+              <div class="dash-stat glass-surface dash-stat--blue">
+                <div class="dash-stat-val">{{ dashStats.inProgress }}</div>
+                <div class="dash-stat-label">В работе</div>
+              </div>
+              <div class="dash-stat glass-surface dash-stat--green">
+                <div class="dash-stat-val">{{ dashStats.done }}</div>
+                <div class="dash-stat-label">Выполнено</div>
+              </div>
+              <div class="dash-stat glass-surface" :class="dashStats.overdue ? 'dash-stat--red' : ''">
+                <div class="dash-stat-val">{{ dashStats.overdue }}</div>
+                <div class="dash-stat-label">Просрочено</div>
+              </div>
+            </div>
+
+            <!-- Прогресс выполнения -->
+            <div class="dash-progress glass-surface">
+              <div class="dash-progress-head">
+                <span>Общий прогресс</span>
+                <span class="dash-progress-pct">{{ dashStats.total ? Math.round(dashStats.done / dashStats.total * 100) : 0 }}%</span>
+              </div>
+              <div class="dash-progress-bar-wrap">
+                <div class="dash-progress-bar" :style="{ width: dashStats.total ? (dashStats.done / dashStats.total * 100) + '%' : '0%' }" />
+              </div>
+            </div>
+
+            <!-- Ближайшие дедлайны -->
+            <div v-if="dashDeadlines.length" class="dash-deadlines glass-surface">
+              <div class="dash-section-title">Ближайшие дедлайны</div>
+              <div
+                v-for="item in dashDeadlines" :key="item.id"
+                class="dash-deadline-row"
+                :class="{ overdue: isDue(item.dateEnd) }"
+              >
+                <span class="dash-deadline-dot" :class="isDue(item.dateEnd) ? 'red' : 'amber'" />
+                <span class="dash-deadline-title">{{ item.title }}</span>
+                <span class="dash-deadline-proj">{{ item.projectTitle }}</span>
+                <span class="dash-deadline-date">до {{ item.dateEnd }}</span>
+              </div>
+            </div>
+
+            <!-- Задачи без дедлайна -->
+            <div v-if="dashNoDue.length" class="dash-nodue glass-surface">
+              <div class="dash-section-title">Без срока ({{ dashNoDue.length }})</div>
+              <div v-for="item in dashNoDue" :key="item.id" class="dash-nodue-row">
+                <span class="dash-nodue-dot" />
+                <span class="dash-nodue-title">{{ item.title }}</span>
+                <span class="dash-nodue-proj">{{ item.projectTitle }}</span>
+              </div>
+            </div>
+          </template>
+
           <!-- ── Задачи ──────────────────────────────────────────── -->
           <template v-if="section === 'tasks'">
 
@@ -111,8 +169,12 @@
                         <template v-if="expandedId !== item.id">
                           <div v-if="item.dateStart || item.dateEnd || item.budget" class="cab-task-meta">
                             <span v-if="item.dateStart">с {{ item.dateStart }}</span>
-                            <span v-if="item.dateEnd">по {{ item.dateEnd }}</span>
+                            <span v-if="item.dateEnd" :class="{ 'cab-task-overdue': isDue(item.dateEnd) && item.status !== 'done' }">по {{ item.dateEnd }}</span>
                             <span v-if="item.budget" class="cab-task-budget">{{ item.budget }}</span>
+                          </div>
+                          <div class="cab-task-counters">
+                            <span v-if="item.photoCount" class="cab-task-counter">📷 {{ item.photoCount }}</span>
+                            <span v-if="item.commentCount" class="cab-task-counter">💬 {{ item.commentCount }}</span>
                           </div>
                           <div v-if="item.notes" class="cab-task-notes cab-task-notes--preview">{{ item.notes }}</div>
                         </template>
@@ -143,6 +205,57 @@
                                 {{ savingItem === item.id ? 'Сохранение…' : 'Сохранить' }}
                               </button>
                               <button type="button" class="cab-task-cancel" @click.stop="expandedId = null">Отмена</button>
+                            </div>
+
+                            <!-- ── Фото выполнения ── -->
+                            <div class="cab-task-photos">
+                              <div class="cab-task-photos-head">
+                                <span class="cab-task-photos-title">Фото выполнения</span>
+                                <label class="cab-photo-upload-btn">
+                                  <input type="file" accept="image/*" multiple style="display:none" @change="uploadPhotos(item, $event)" />
+                                  {{ uploadingFor === item.id ? 'Загрузка…' : '＋ Добавить фото' }}
+                                </label>
+                              </div>
+                              <div v-if="(photosByItem[item.id] || []).length" class="cab-photos-grid">
+                                <div
+                                  v-for="ph in photosByItem[item.id]" :key="ph.id"
+                                  class="cab-photo-thumb"
+                                >
+                                  <img :src="ph.url" @click.stop="lightboxUrl = ph.url" />
+                                  <button class="cab-photo-del" @click.stop="deletePhoto(item.id, ph.id)">✕</button>
+                                </div>
+                              </div>
+                              <div v-else class="cab-photos-empty">Нет фотографий</div>
+                            </div>
+
+                            <!-- ── Комментарии ── -->
+                            <div class="cab-task-comments">
+                              <div class="cab-task-comments-title">Комментарии</div>
+                              <div class="cab-comments-list">
+                                <div
+                                  v-for="c in (commentsByItem[item.id] || [])" :key="c.id"
+                                  class="cab-comment"
+                                  :class="'cab-comment--' + c.authorType"
+                                >
+                                  <span class="cab-comment-author">{{ c.authorName }}</span>
+                                  <span class="cab-comment-time">{{ fmtTime(c.createdAt) }}</span>
+                                  <div class="cab-comment-text">{{ c.text }}</div>
+                                </div>
+                                <div v-if="!(commentsByItem[item.id] || []).length" class="cab-comments-empty">Нет комментариев</div>
+                              </div>
+                              <div class="cab-comment-form" @click.stop>
+                                <textarea
+                                  v-model="commentText[item.id]"
+                                  class="glass-input cab-comment-input"
+                                  rows="2"
+                                  placeholder="Напишите комментарий…"
+                                />
+                                <button
+                                  class="cab-task-save cab-comment-send"
+                                  :disabled="sendingComment === item.id || !commentText[item.id]?.trim()"
+                                  @click.stop="sendComment(item)"
+                                >{{ sendingComment === item.id ? '…' : 'Отправить' }}</button>
+                              </div>
                             </div>
                           </div>
                         </template>
@@ -305,6 +418,14 @@
 
     <footer class="cab-footer">DK Studio · {{ contractor?.contractorType === 'company' ? 'Кабинет подрядчика' : 'Кабинет мастера' }}</footer>
 
+    <!-- Lightbox -->
+    <Teleport to="body">
+      <div v-if="lightboxUrl" class="cab-lightbox" @click="lightboxUrl = null">
+        <button class="cab-lightbox-close" @click.stop="lightboxUrl = null">✕</button>
+        <img :src="lightboxUrl" class="cab-lightbox-img" @click.stop />
+      </div>
+    </Teleport>
+
     <!-- Модальное окно: новая задача мастеру -->
     <Teleport to="body">
       <div v-if="showNewTaskModal" class="cab-modal-overlay" @click.self="showNewTaskModal = false">
@@ -427,11 +548,12 @@ if (meData.value?.contractorId && meData.value.contractorId !== contractorId) {
 const section = ref('tasks')
 const nav = computed(() => {
   const items: { key: string; icon: string; label: string }[] = [
+    { key: 'dashboard', icon: '◈', label: 'Обзор' },
     { key: 'tasks',   icon: '◎', label: 'Мои задачи' },
     { key: 'profile', icon: '◑', label: 'Мой профиль' },
   ]
   if (contractor.value?.contractorType === 'company') {
-    items.splice(1, 0, { key: 'staff', icon: '◔', label: 'Бригада' })
+    items.splice(2, 0, { key: 'staff', icon: '◔', label: 'Бригада' })
   }
   return items
 })
@@ -627,6 +749,124 @@ async function updateStatus(item: any, status: string) {
   })
   refreshItems()
 }
+
+// ── Dashboard ─────────────────────────────────────────────────────
+function isDue(dateStr: string | null | undefined): boolean {
+  if (!dateStr) return false
+  const [d, m, y] = dateStr.split('.')
+  if (!d || !m || !y) return false
+  const due = new Date(Number(y), Number(m) - 1, Number(d))
+  return due < new Date()
+}
+
+const dashStats = computed(() => {
+  const all = workItems.value || []
+  const today = new Date()
+  return {
+    total: all.length,
+    inProgress: all.filter((i: any) => i.status === 'in_progress').length,
+    done: all.filter((i: any) => i.status === 'done').length,
+    overdue: all.filter((i: any) => {
+      if (i.status === 'done' || i.status === 'cancelled') return false
+      return isDue(i.dateEnd)
+    }).length,
+  }
+})
+
+const dashDeadlines = computed(() =>
+  (workItems.value || [])
+    .filter((i: any) => i.dateEnd && i.status !== 'done' && i.status !== 'cancelled')
+    .sort((a: any, b: any) => {
+      const parse = (s: string) => { const [d,m,y] = s.split('.'); return new Date(Number(y), Number(m)-1, Number(d)).getTime() }
+      return parse(a.dateEnd) - parse(b.dateEnd)
+    })
+    .slice(0, 8)
+)
+
+const dashNoDue = computed(() =>
+  (workItems.value || []).filter((i: any) => !i.dateEnd && i.status !== 'done' && i.status !== 'cancelled')
+)
+
+// ── Photos ────────────────────────────────────────────────────────
+const photosByItem = reactive<Record<number, any[]>>({})
+const uploadingFor = ref<number | null>(null)
+const lightboxUrl = ref<string | null>(null)
+
+async function loadPhotos(itemId: number) {
+  const photos = await $fetch<any[]>(`/api/contractors/${contractorId}/work-items/${itemId}/photos`)
+  photosByItem[itemId] = photos
+}
+
+async function uploadPhotos(item: any, event: Event) {
+  const files = (event.target as HTMLInputElement).files
+  if (!files?.length) return
+  uploadingFor.value = item.id
+  try {
+    for (const file of Array.from(files)) {
+      const fd = new FormData()
+      fd.append('file', file)
+      const photo = await $fetch<any>(`/api/contractors/${contractorId}/work-items/${item.id}/photos`, {
+        method: 'POST', body: fd,
+      })
+      if (!photosByItem[item.id]) photosByItem[item.id] = []
+      photosByItem[item.id].push(photo)
+    }
+    item.photoCount = (item.photoCount || 0) + files.length
+  } finally {
+    uploadingFor.value = null
+    ;(event.target as HTMLInputElement).value = ''
+  }
+}
+
+async function deletePhoto(itemId: number, photoId: number) {
+  await $fetch(`/api/contractors/${contractorId}/work-items/${itemId}/photos/${photoId}`, { method: 'DELETE' })
+  photosByItem[itemId] = (photosByItem[itemId] || []).filter((p: any) => p.id !== photoId)
+  const item = (workItems.value || []).find((i: any) => i.id === itemId)
+  if (item) item.photoCount = Math.max(0, (item.photoCount || 1) - 1)
+}
+
+// ── Comments ──────────────────────────────────────────────────────
+const commentsByItem = reactive<Record<number, any[]>>({})
+const commentText = reactive<Record<number, string>>({})
+const sendingComment = ref<number | null>(null)
+
+async function loadComments(itemId: number) {
+  const comments = await $fetch<any[]>(`/api/contractors/${contractorId}/work-items/${itemId}/comments`)
+  commentsByItem[itemId] = comments
+}
+
+async function sendComment(item: any) {
+  const text = (commentText[item.id] || '').trim()
+  if (!text) return
+  sendingComment.value = item.id
+  try {
+    const c = await $fetch<any>(`/api/contractors/${contractorId}/work-items/${item.id}/comments`, {
+      method: 'POST', body: { text },
+    })
+    if (!commentsByItem[item.id]) commentsByItem[item.id] = []
+    commentsByItem[item.id].push(c)
+    item.commentCount = (item.commentCount || 0) + 1
+    commentText[item.id] = ''
+  } finally {
+    sendingComment.value = null
+  }
+}
+
+function fmtTime(isoStr: string): string {
+  try {
+    const d = new Date(isoStr)
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
+      + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  } catch { return '' }
+}
+
+// Загружаем фото и комментарии при открытии задачи
+watch(expandedId, (id) => {
+  if (id !== null) {
+    loadPhotos(id)
+    loadComments(id)
+  }
+})
 
 async function saveTaskDetails(item: any) {
   savingItem.value = item.id
@@ -1399,4 +1639,184 @@ async function logout() {
   gap: 10px;
   border-top: 1px solid var(--glass-border, rgba(255,255,255,0.2));
 }
+
+/* ── Dashboard ───────────────────────────────────────────────── */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 640px) { .dash-stats { grid-template-columns: repeat(2, 1fr); } }
+.dash-stat {
+  padding: 20px 16px 16px;
+  border-radius: 16px;
+  text-align: center;
+}
+.dash-stat-val {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--glass-text, #1a1a2e);
+}
+.dash-stat-label {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  margin-top: 6px;
+}
+.dash-stat--blue .dash-stat-val { color: #4a80f0; }
+.dash-stat--green .dash-stat-val { color: #2ea86a; }
+.dash-stat--red .dash-stat-val { color: #e05252; }
+.dash-progress {
+  padding: 16px 20px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+.dash-progress-head { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; font-weight: 600; }
+.dash-progress-pct { opacity: 0.7; }
+.dash-progress-bar-wrap { height: 8px; background: rgba(0,0,0,0.07); border-radius: 99px; overflow: hidden; }
+.dash-progress-bar { height: 100%; background: linear-gradient(90deg, #4a80f0, #6c47ff); border-radius: 99px; transition: width 0.5s; }
+.dash-section-title { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.5; margin-bottom: 10px; }
+.dash-deadlines, .dash-nodue {
+  padding: 16px 20px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+}
+.dash-deadline-row, .dash-nodue-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--glass-border, rgba(0,0,0,0.06));
+  font-size: 0.88rem;
+}
+.dash-deadline-row:last-child, .dash-nodue-row:last-child { border-bottom: none; }
+.dash-deadline-row.overdue .dash-deadline-title { color: #e05252; }
+.dash-deadline-dot, .dash-nodue-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(0,0,0,0.15);
+}
+.dash-deadline-dot.red { background: #e05252; }
+.dash-deadline-dot.amber { background: #f0a030; }
+.dash-deadline-title { flex: 1; font-weight: 500; }
+.dash-deadline-proj { font-size: 0.78rem; opacity: 0.5; }
+.dash-deadline-date { font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+.dash-nodue-title { flex: 1; opacity: 0.8; }
+.dash-nodue-proj { font-size: 0.78rem; opacity: 0.45; }
+
+/* Overdue date highlight */
+.cab-task-overdue { color: #e05252; font-weight: 700; }
+.cab-task-counters { display: flex; gap: 8px; margin-top: 4px; }
+.cab-task-counter { font-size: 0.75rem; opacity: 0.65; }
+
+/* ── Photos ──────────────────────────────────────────────────── */
+.cab-task-photos {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border, rgba(0,0,0,0.07));
+}
+.cab-task-photos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cab-task-photos-title { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.55; }
+.cab-photo-upload-btn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: rgba(74,128,240,0.1);
+  border: 1px solid rgba(74,128,240,0.25);
+  color: #4a80f0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.cab-photo-upload-btn:hover { background: rgba(74,128,240,0.18); }
+.cab-photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.cab-photo-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.cab-photo-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+.cab-photo-thumb:hover img { transform: scale(1.05); }
+.cab-photo-del {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 0.6rem;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.cab-photo-thumb:hover .cab-photo-del { opacity: 1; }
+.cab-photos-empty { font-size: 0.82rem; opacity: 0.4; padding: 6px 0; }
+
+/* Lightbox */
+.cab-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0,0,0,0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cab-lightbox-img {
+  max-width: 92vw;
+  max-height: 90vh;
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.cab-lightbox-close {
+  position: absolute;
+  top: 20px; right: 24px;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  color: #fff;
+  font-size: 1.4rem;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.cab-lightbox-close:hover { background: rgba(255,255,255,0.22); }
+
+/* ── Comments ────────────────────────────────────────────────── */
+.cab-task-comments {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border, rgba(0,0,0,0.07));
+}
+.cab-task-comments-title { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.55; margin-bottom: 12px; }
+.cab-comments-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; max-height: 240px; overflow-y: auto; }
+.cab-comment {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.04);
+}
+.cab-comment--admin { background: rgba(74,128,240,0.07); border-left: 2px solid #4a80f0; }
+.dark .cab-comment { background: rgba(255,255,255,0.05); }
+.dark .cab-comment--admin { background: rgba(74,128,240,0.1); }
+.cab-comment-author { font-size: 0.78rem; font-weight: 700; opacity: 0.7; }
+.cab-comment-time { font-size: 0.72rem; opacity: 0.4; margin-left: 8px; }
+.cab-comment-text { font-size: 0.88rem; margin-top: 4px; line-height: 1.45; white-space: pre-wrap; }
+.cab-comments-empty { font-size: 0.82rem; opacity: 0.4; }
+.cab-comment-form { display: flex; gap: 8px; align-items: flex-end; }
+.cab-comment-input { flex: 1; resize: vertical; min-height: 56px; }
+.cab-comment-send { white-space: nowrap; align-self: flex-end; }
 </style>

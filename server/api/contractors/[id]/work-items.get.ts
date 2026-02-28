@@ -1,6 +1,6 @@
 import { useDb } from '~/server/db/index'
-import { workStatusItems, projects, roadmapStages, contractors } from '~/server/db/schema'
-import { eq, inArray } from 'drizzle-orm'
+import { workStatusItems, projects, roadmapStages, contractors, workStatusItemPhotos, workStatusItemComments } from '~/server/db/schema'
+import { eq, inArray, sql } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
@@ -38,8 +38,36 @@ export default defineEventHandler(async (event) => {
     .where(inArray(workStatusItems.contractorId, allIds))
     .orderBy(workStatusItems.sortOrder)
 
+  if (!items.length) return []
+
+  const itemIds = items.map((i: any) => i.id)
+
+  // Счётчики фото и комментариев одним запросом
+  const photoCounts = await db
+    .select({
+      itemId: workStatusItemPhotos.itemId,
+      count: sql<number>`cast(count(*) as int)`,
+    })
+    .from(workStatusItemPhotos)
+    .where(inArray(workStatusItemPhotos.itemId, itemIds))
+    .groupBy(workStatusItemPhotos.itemId)
+
+  const commentCounts = await db
+    .select({
+      itemId: workStatusItemComments.itemId,
+      count: sql<number>`cast(count(*) as int)`,
+    })
+    .from(workStatusItemComments)
+    .where(inArray(workStatusItemComments.itemId, itemIds))
+    .groupBy(workStatusItemComments.itemId)
+
+  const photoCountMap = Object.fromEntries(photoCounts.map((r: any) => [r.itemId, r.count]))
+  const commentCountMap = Object.fromEntries(commentCounts.map((r: any) => [r.itemId, r.count]))
+
   return items.map((item: any) => ({
     ...item,
     assignedToName: item.contractorId !== id ? (staffMap[item.contractorId] ?? null) : null,
+    photoCount: photoCountMap[item.id] ?? 0,
+    commentCount: commentCountMap[item.id] ?? 0,
   }))
 })
