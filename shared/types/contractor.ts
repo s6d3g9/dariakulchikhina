@@ -18,6 +18,7 @@ export const ContractorSchema = z.object({
   legalAddress: z.string().optional().nullable(),
   factAddress: z.string().optional().nullable(),
   workTypes: z.array(z.string()),
+  roleTypes: z.array(z.string()).optional().default([]),
   pin: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   messenger: z.string().optional().nullable(),

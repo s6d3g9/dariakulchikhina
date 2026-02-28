@@ -67,6 +67,7 @@ export const contractors = pgTable('contractors', {
   legalAddress: text('legal_address'),
   factAddress: text('fact_address'),
   workTypes: text('work_types').array().default([]).notNull(),
+  roleTypes: text('role_types').array().default([]).notNull(),
   pin: text('pin'),
   notes: text('notes'),
   messenger: text('messenger'),
