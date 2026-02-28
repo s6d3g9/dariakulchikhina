@@ -1,14 +1,15 @@
 import { useDb } from '~/server/db/index'
 import { contractors } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { PinLoginSchema } from '~/shared/types/auth'
+import { z } from 'zod'
+
+const Schema = z.object({ id: z.number().int().positive() })
 
 export default defineEventHandler(async (event) => {
-  const body = await readValidatedNodeBody(event, PinLoginSchema)
+  const { id } = await readValidatedNodeBody(event, Schema)
   const db = useDb()
-  const all = await db.select().from(contractors)
-  const contractor = all.find(c => c.pin && c.pin === body.pin)
-  if (!contractor) throw createError({ statusCode: 401, statusMessage: 'Wrong PIN' })
+  const [contractor] = await db.select().from(contractors).where(eq(contractors.id, id)).limit(1)
+  if (!contractor) throw createError({ statusCode: 404, statusMessage: 'Not found' })
   setContractorSession(event, contractor.id)
   return { ok: true, id: contractor.id, name: contractor.name }
 })
