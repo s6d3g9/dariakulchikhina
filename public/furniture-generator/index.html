@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parametric Furniture Generator</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #fdfdfd;
+      font-family: "SF Mono", "Fira Code", "Courier New", Courier, monospace;
+      color: #000;
+    }
+
+    canvas { display: block; }
+
+    /* ── Bottom Control Panel ─────────────────────────── */
+    #controls {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 10;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 0;
+      background: #fff;
+      border-top: 2px solid #000;
+    }
+
+    .ctrl-group {
+      flex: 1 1 0;
+      max-width: 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      border-right: 2px solid #000;
+      padding: 12px 16px;
+    }
+    .ctrl-group:last-child { border-right: none; }
+
+    .ctrl-group label {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1.3;
+      margin-bottom: 6px;
+      user-select: none;
+    }
+
+    .ctrl-group input[type="number"] {
+      width: 100%;
+      font-family: inherit;
+      font-size: 22px;
+      text-align: center;
+      border: 2px solid #000;
+      background: #fdfdfd;
+      padding: 6px 4px;
+      outline: none;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .ctrl-group input[type="number"]::-webkit-inner-spin-button,
+    .ctrl-group input[type="number"]::-webkit-outer-spin-button {
+      opacity: 1;
+      height: 28px;
+    }
+    .ctrl-group input[type="number"]:focus {
+      border-color: #555;
+    }
+
+    /* ── Dimensions readout ────────────────────────────── */
+    #dims {
+      position: fixed;
+      top: 16px; left: 16px;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.6;
+      pointer-events: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="dims"></div>
+
+  <div id="controls">
+    <div class="ctrl-group">
+      <label>Полки под сковородки</label>
+      <input type="number" id="panShelves" value="0" min="0" max="20" />
+    </div>
+    <div class="ctrl-group">
+      <label>Высокая обувь / Сапоги</label>
+      <input type="number" id="highShoes" value="0" min="0" max="20" />
+    </div>
+    <div class="ctrl-group">
+      <label>Низкая обувь (пар)</label>
+      <input type="number" id="lowShoes" value="2" min="0" max="40" />
+    </div>
+    <div class="ctrl-group">
+      <label>Выдвижные ящики (мелочь)</label>
+      <input type="number" id="smallDrawers" value="1" min="0" max="20" />
+    </div>
+  </div>
+
+  <!-- Three.js + OrbitControls from CDN (importmap) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    /* ─── Constants ──────────────────────────────────── */
+    const BASE_W    = 4;
+    const BASE_D    = 2;
+    const WALL      = 0.08;          // thickness of side/back panels
+    const LINE_CLR  = 0x000000;
+
+    const MODULE_DEFS = [
+      { id: 'panShelves',  unitH: 1.5, label: 'Полки' },
+      { id: 'highShoes',   unitH: 1.2, label: 'Сапоги' },
+      { id: 'lowShoes',    unitH: 0.6, label: 'Низкая обувь' },
+      { id: 'smallDrawers', unitH: 0.4, label: 'Ящики' },
+    ];
+
+    /* ─── Scene ──────────────────────────────────────── */
+    const scene    = new THREE.Scene();
+    scene.background = new THREE.Color(0xfdfdfd);
+
+    /* ─── Orthographic Camera ────────────────────────── */
+    let frustumSize = 10;
+    const aspect = window.innerWidth / window.innerHeight;
+    const camera = new THREE.OrthographicCamera(
+      -frustumSize * aspect / 2,
+       frustumSize * aspect / 2,
+       frustumSize / 2,
+      -frustumSize / 2,
+      0.1, 1000
+    );
+    // Strict isometric
+    camera.position.set(10, 10, 10);
+    camera.lookAt(scene.position);
+
+    /* ─── Renderer ───────────────────────────────────── */
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.prepend(renderer.domElement);
+
+    /* ─── Controls ───────────────────────────────────── */
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.12;
+    controls.enableZoom    = true;
+    controls.enablePan     = true;
+
+    /* ─── Furniture Group ────────────────────────────── */
+    let furnitureGroup = new THREE.Group();
+    scene.add(furnitureGroup);
+
+    /* ─── Helpers ────────────────────────────────────── */
+    /**
+     * Create a wireframe (edges-only) box and add it to a parent.
+     */
+    function addWireBox(parent, w, h, d, x, y, z) {
+      const geo   = new THREE.BoxGeometry(w, h, d);
+      const edges = new THREE.EdgesGeometry(geo);
+      const mat   = new THREE.LineBasicMaterial({ color: LINE_CLR, linewidth: 2 });
+      const line  = new THREE.LineSegments(edges, mat);
+      line.position.set(x, y, z);
+      parent.add(line);
+      return line;
+    }
+
+    /**
+     * Build a single module (compartment).
+     *  - Two side panels
+     *  - Back panel
+     *  - Bottom shelf
+     *  - Top shelf (only on the very last module at the top)
+     *  - For drawers: inner horizontal divider lines
+     *  - For shoe shelves: tilted shelf hint
+     */
+    function buildModule(type, w, h, d, isLast) {
+      const g = new THREE.Group();
+
+      // Outer shell box (the compartment boundary)
+      addWireBox(g, w, h, d, 0, h / 2, 0);
+
+      // Inner shelving detail — differs per type
+      const innerW = w - WALL * 2;
+      const innerD = d - WALL;
+
+      if (type === 'panShelves') {
+        // Horizontal divider in the middle
+        addWireBox(g, innerW, WALL, innerD, 0, h * 0.5, WALL / 2);
+      }
+
+      if (type === 'smallDrawers') {
+        // Draw a smaller inset box to represent the drawer face
+        const drawerH = h - WALL * 2;
+        const drawerInset = 0.12;
+        addWireBox(g, innerW - drawerInset * 2, drawerH, WALL,
+                   0, h / 2, d / 2 - WALL / 2);
+        // Drawer handle — small horizontal line
+        const handleW = innerW * 0.35;
+        addWireBox(g, handleW, WALL, WALL,
+                   0, h / 2, d / 2 + WALL / 2);
+      }
+
+      if (type === 'lowShoes' || type === 'highShoes') {
+        // Tilted shelf inside  (simple inclined plane hint)
+        const shelfGeo = new THREE.PlaneGeometry(innerW, innerD);
+        const shelfEdges = new THREE.EdgesGeometry(shelfGeo);
+        const shelfLine = new THREE.LineSegments(
+          shelfEdges,
+          new THREE.LineBasicMaterial({ color: LINE_CLR, linewidth: 2 })
+        );
+        shelfLine.rotation.x = -Math.PI / 2 + 0.25;   // slight tilt
+        shelfLine.position.set(0, h * 0.35, WALL / 2);
+        g.add(shelfLine);
+      }
+
+      return g;
+    }
+
+    /* ─── Main Rebuild ───────────────────────────────── */
+    function rebuild() {
+      // Remove previous
+      scene.remove(furnitureGroup);
+      furnitureGroup.traverse(obj => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) obj.material.dispose();
+      });
+      furnitureGroup = new THREE.Group();
+      scene.add(furnitureGroup);
+
+      let currentY = 0;
+      let totalModules = 0;
+
+      // Bottom-up: Pan shelves → High shoes → Low shoes → Drawers
+      for (const def of MODULE_DEFS) {
+        const count = parseInt(document.getElementById(def.id).value, 10) || 0;
+        for (let i = 0; i < count; i++) {
+          const isLast = false; // we add a cap later
+          const mod = buildModule(def.id, BASE_W, def.unitH, BASE_D, isLast);
+          mod.position.y = currentY;
+          furnitureGroup.add(mod);
+          currentY += def.unitH;
+          totalModules++;
+        }
+      }
+
+      // If nothing to show, bail out
+      if (totalModules === 0) {
+        document.getElementById('dims').textContent = '';
+        return;
+      }
+
+      // Top cap (closing shelf)
+      addWireBox(furnitureGroup, BASE_W, WALL, BASE_D, 0, currentY + WALL / 2, 0);
+
+      // Bottom base plinth
+      const plinthH = 0.15;
+      addWireBox(furnitureGroup, BASE_W - 0.1, plinthH, BASE_D - 0.1, 0, -plinthH / 2, 0);
+
+      // ── Center the group in view ────────────────────
+      const box = new THREE.Box3().setFromObject(furnitureGroup);
+      const center = box.getCenter(new THREE.Vector3());
+      const size   = box.getSize(new THREE.Vector3());
+
+      furnitureGroup.position.sub(center);          // center at origin
+
+      // Fit orthographic frustum
+      const maxDim = Math.max(size.x, size.y, size.z) * 1.35;
+      frustumSize = maxDim;
+      updateCameraFrustum();
+
+      controls.target.set(0, 0, 0);
+      controls.update();
+
+      // ── Dimensions readout ──────────────────────────
+      const dims = document.getElementById('dims');
+      const totalH = currentY.toFixed(2);
+      dims.innerHTML =
+        `Ш ${BASE_W} &times; Г ${BASE_D} &times; В ${totalH}<br>` +
+        `Модулей: ${totalModules}`;
+    }
+
+    /* ─── Camera frustum helper ──────────────────────── */
+    function updateCameraFrustum() {
+      const asp = window.innerWidth / window.innerHeight;
+      camera.left   = -frustumSize * asp / 2;
+      camera.right  =  frustumSize * asp / 2;
+      camera.top    =  frustumSize / 2;
+      camera.bottom = -frustumSize / 2;
+      camera.updateProjectionMatrix();
+    }
+
+    /* ─── Resize ─────────────────────────────────────── */
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      updateCameraFrustum();
+    });
+
+    /* ─── Input listeners ────────────────────────────── */
+    for (const def of MODULE_DEFS) {
+      const el = document.getElementById(def.id);
+      el.addEventListener('input', rebuild);
+      // Clamp to >= 0
+      el.addEventListener('change', () => {
+        if (parseInt(el.value, 10) < 0) el.value = 0;
+        rebuild();
+      });
+    }
+
+    /* ─── Animation Loop ─────────────────────────────── */
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    /* ─── Initial build ──────────────────────────────── */
+    rebuild();
+  </script>
+</body>
+</html>

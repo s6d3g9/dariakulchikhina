@@ -35,32 +35,96 @@
 
           <!-- ── Задачи ──────────────────────────────────────────── -->
           <template v-if="section === 'tasks'">
+
+            <!-- Фильтр -->
+            <div v-if="workItems?.length" class="cab-filters">
+              <button
+                v-for="f in FILTERS" :key="f.value"
+                class="cab-filter-btn"
+                :class="{ active: statusFilter === f.value }"
+                @click="statusFilter = f.value"
+              >{{ f.label }}<span v-if="f.count" class="cab-filter-count">{{ f.count }}</span></button>
+            </div>
+
             <div v-if="!workItems?.length" class="cab-empty">
               <div class="cab-empty-icon">◎</div>
               <p>Задач пока нет.<br>Они появятся когда дизайнер добавит вас к проекту.</p>
             </div>
+            <div v-else-if="!byProject.length" class="cab-empty">
+              <div class="cab-empty-icon">◉</div>
+              <p>Нет задач с выбранным фильтром.</p>
+            </div>
             <template v-else>
               <div v-for="proj in byProject" :key="proj.slug" class="cab-project-group">
-                <div class="cab-proj-title">{{ proj.title }}</div>
+                <!-- Заголовок проекта с прогрессом -->
+                <div class="cab-proj-header">
+                  <span class="cab-proj-title">{{ proj.title }}</span>
+                  <span class="cab-proj-stats">{{ proj.doneCount }} / {{ proj.totalCount }}</span>
+                </div>
+                <div class="cab-proj-progress">
+                  <div class="cab-proj-progress-bar" :style="{ width: proj.totalCount ? (proj.doneCount / proj.totalCount * 100) + '%' : '0%' }" />
+                </div>
+
                 <div class="cab-tasks">
-                  <div v-for="item in proj.items" :key="item.id" class="cab-task glass-surface">
-                    <div class="cab-task-top">
+                  <div
+                    v-for="item in proj.items" :key="item.id"
+                    class="cab-task glass-surface"
+                    :class="{ expanded: expandedId === item.id }"
+                  >
+                    <!-- Верхняя строка -->
+                    <div class="cab-task-top" @click="toggleExpand(item.id)">
+                      <span class="cab-task-expand-icon">{{ expandedId === item.id ? '▾' : '▸' }}</span>
                       <span class="cab-task-name">{{ item.title }}</span>
                       <select
                         :value="item.status"
                         class="cab-status-select"
                         :class="`cab-status--${item.status}`"
+                        @click.stop
                         @change="updateStatus(item, ($event.target as HTMLSelectElement).value)"
                       >
                         <option v-for="s in STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
                       </select>
                     </div>
-                    <div v-if="item.dateStart || item.dateEnd" class="cab-task-dates">
-                      <span v-if="item.dateStart">с {{ item.dateStart }}</span>
-                      <span v-if="item.dateEnd">по {{ item.dateEnd }}</span>
-                    </div>
-                    <div v-if="item.budget" class="cab-task-budget">{{ item.budget }}</div>
-                    <div v-if="item.notes" class="cab-task-notes">{{ item.notes }}</div>
+
+                    <!-- Collapsed: краткая инфо -->
+                    <template v-if="expandedId !== item.id">
+                      <div v-if="item.dateStart || item.dateEnd || item.budget" class="cab-task-meta">
+                        <span v-if="item.dateStart">с {{ item.dateStart }}</span>
+                        <span v-if="item.dateEnd">по {{ item.dateEnd }}</span>
+                        <span v-if="item.budget" class="cab-task-budget">{{ item.budget }}</span>
+                      </div>
+                      <div v-if="item.notes" class="cab-task-notes cab-task-notes--preview">{{ item.notes }}</div>
+                    </template>
+
+                    <!-- Expanded: редактирование -->
+                    <template v-else>
+                      <div class="cab-task-edit">
+                        <div class="cab-task-edit-row">
+                          <div class="cab-task-edit-field">
+                            <label>Дата начала</label>
+                            <input v-model="editMap[item.id].dateStart" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
+                          </div>
+                          <div class="cab-task-edit-field">
+                            <label>Дата окончания</label>
+                            <input v-model="editMap[item.id].dateEnd" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
+                          </div>
+                          <div v-if="item.budget" class="cab-task-edit-field">
+                            <label>Бюджет</label>
+                            <span class="cab-task-budget cab-task-budget--lg">{{ item.budget }}</span>
+                          </div>
+                        </div>
+                        <div class="cab-task-edit-field">
+                          <label>Заметка для дизайнера</label>
+                          <textarea v-model="editMap[item.id].notes" class="glass-input" rows="3" placeholder="Статус работ, вопросы, уточнения…" />
+                        </div>
+                        <div class="cab-task-edit-actions">
+                          <button type="button" class="cab-task-save" :disabled="savingItem === item.id" @click.stop="saveTaskDetails(item)">
+                            {{ savingItem === item.id ? 'Сохранение…' : 'Сохранить' }}
+                          </button>
+                          <button type="button" class="cab-task-cancel" @click.stop="expandedId = null">Отмена</button>
+                        </div>
+                      </div>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -206,6 +270,12 @@ watch(contractor, (c) => {
   form.workTypes     = Array.isArray(c.workTypes) ? [...c.workTypes] : []
 }, { immediate: true })
 
+// ── Auth guard ───────────────────────────────────────────────────
+const { data: meData } = await useFetch<any>('/api/auth/me')
+if (meData.value?.contractorId && meData.value.contractorId !== contractorId) {
+  await navigateTo(`/contractor/${meData.value.contractorId}`)
+}
+
 // ── Nav ──────────────────────────────────────────────────────────
 const section = ref('tasks')
 const nav = [
@@ -223,19 +293,61 @@ const STATUSES = [
   { value: 'cancelled',   label: 'Отменено' },
 ]
 
+const statusFilter = ref('all')
+const expandedId = ref<number | null>(null)
+const savingItem = ref<number | null>(null)
+
+// map id → { notes, dateStart, dateEnd } для редактирования
+const editMap = reactive<Record<number, { notes: string; dateStart: string; dateEnd: string }>>({})
+
+watch(workItems, (items) => {
+  for (const item of items || []) {
+    if (!editMap[item.id]) {
+      editMap[item.id] = { notes: item.notes || '', dateStart: item.dateStart || '', dateEnd: item.dateEnd || '' }
+    }
+  }
+}, { immediate: true })
+
+function toggleExpand(id: number) {
+  expandedId.value = expandedId.value === id ? null : id
+}
+
 const activeCount = computed(() =>
   (workItems.value || []).filter((i: any) => ['planned', 'in_progress'].includes(i.status)).length
 )
 
+const FILTERS = computed(() => {
+  const all = workItems.value || []
+  return [
+    { value: 'all',       label: 'Все',       count: all.length },
+    { value: 'active',    label: 'Активные',  count: all.filter((i: any) => ['planned','in_progress'].includes(i.status)).length },
+    { value: 'done',      label: 'Выполнено', count: all.filter((i: any) => i.status === 'done').length },
+    { value: 'cancelled', label: 'Отменено',  count: all.filter((i: any) => i.status === 'cancelled').length },
+  ]
+})
+
 const byProject = computed(() => {
-  const map = new Map<string, { slug: string; title: string; items: any[] }>()
-  for (const item of workItems.value || []) {
+  const all = workItems.value || []
+  const map = new Map<string, { slug: string; title: string; items: any[]; doneCount: number; totalCount: number }>()
+  for (const item of all) {
     if (!map.has(item.projectSlug)) {
-      map.set(item.projectSlug, { slug: item.projectSlug, title: item.projectTitle, items: [] })
+      map.set(item.projectSlug, { slug: item.projectSlug, title: item.projectTitle, items: [], doneCount: 0, totalCount: 0 })
     }
-    map.get(item.projectSlug)!.items.push(item)
+    const proj = map.get(item.projectSlug)!
+    proj.totalCount++
+    if (item.status === 'done') proj.doneCount++
+    // фильтруем для показа
+    const f = statusFilter.value
+    if (
+      f === 'all' ||
+      (f === 'active' && ['planned','in_progress'].includes(item.status)) ||
+      (f === 'done' && item.status === 'done') ||
+      (f === 'cancelled' && item.status === 'cancelled')
+    ) {
+      proj.items.push(item)
+    }
   }
-  return [...map.values()]
+  return [...map.values()].filter(p => p.items.length > 0)
 })
 
 async function updateStatus(item: any, status: string) {
@@ -245,6 +357,23 @@ async function updateStatus(item: any, status: string) {
     body: { status },
   })
   refreshItems()
+}
+
+async function saveTaskDetails(item: any) {
+  savingItem.value = item.id
+  const edit = editMap[item.id]
+  try {
+    const updated = await $fetch<any>(`/api/contractors/${contractorId}/work-items/${item.id}`, {
+      method: 'PUT',
+      body: { notes: edit.notes, dateStart: edit.dateStart || null, dateEnd: edit.dateEnd || null },
+    })
+    item.notes = updated.notes
+    item.dateStart = updated.dateStart
+    item.dateEnd = updated.dateEnd
+    expandedId.value = null
+  } finally {
+    savingItem.value = null
+  }
 }
 
 // ── Profile ───────────────────────────────────────────────────────
@@ -473,16 +602,66 @@ async function logout() {
 .cab-empty-icon { font-size: 2.5rem; margin-bottom: 14px; }
 .cab-empty p { font-size: 0.95rem; line-height: 1.6; margin: 0; }
 
+/* Filters */
+.cab-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.cab-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.3));
+  background: var(--glass-bg, rgba(255,255,255,0.2));
+  backdrop-filter: blur(8px);
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--glass-text, #1a1a2e);
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.15s, background 0.15s;
+}
+.cab-filter-btn:hover { opacity: 1; }
+.cab-filter-btn.active {
+  opacity: 1;
+  background: rgba(100,110,200,0.18);
+  border-color: rgba(100,110,200,0.5);
+  font-weight: 600;
+}
+.cab-filter-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: rgba(100,110,200,0.15);
+}
+
 /* Project groups */
 .cab-project-group { margin-bottom: 28px; }
+.cab-proj-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
 .cab-proj-title {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 1.2px;
   opacity: 0.5;
+}
+.cab-proj-stats { font-size: 0.7rem; opacity: 0.4; }
+.cab-proj-progress {
+  height: 3px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 3px;
+  overflow: hidden;
   margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.cab-proj-progress-bar {
+  height: 100%;
+  background: rgba(40,160,100,0.6);
+  border-radius: 3px;
+  transition: width 0.4s ease;
 }
 .cab-tasks { display: flex; flex-direction: column; gap: 10px; }
 
@@ -493,18 +672,72 @@ async function logout() {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  transition: box-shadow 0.2s;
+}
+.cab-task.expanded {
+  box-shadow: 0 8px 32px rgba(80,90,180,0.12);
 }
 .cab-task-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+  cursor: pointer;
+  user-select: none;
+}
+.cab-task-expand-icon {
+  font-size: 0.7rem;
+  opacity: 0.45;
+  flex-shrink: 0;
+  width: 12px;
 }
 .cab-task-name { font-size: 0.9rem; font-weight: 600; flex: 1; min-width: 0; }
-.cab-task-dates { font-size: 0.78rem; opacity: 0.6; display: flex; gap: 8px; }
+.cab-task-meta { font-size: 0.78rem; opacity: 0.6; display: flex; gap: 8px; flex-wrap: wrap; }
 .cab-task-budget { font-size: 0.78rem; opacity: 0.7; }
+.cab-task-budget--lg { font-size: 0.88rem; font-weight: 600; opacity: 0.8; }
 .cab-task-notes { font-size: 0.82rem; opacity: 0.65; line-height: 1.5; }
+.cab-task-notes--preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Task inline edit */
+.cab-task-edit { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.15); margin-top: 6px; }
+.cab-task-edit-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.cab-task-edit-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+.cab-task-edit-field label { font-size: 0.72rem; opacity: 0.5; }
+.cab-task-edit-inp { width: 100%; }
+.cab-task-edit-actions { display: flex; gap: 10px; align-items: center; }
+.cab-task-save {
+  cursor: pointer;
+  padding: 5px 18px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--glass-text, #1a1a2e);
+  background: rgba(255,255,255,0.35);
+  border: 1px solid rgba(180,180,220,0.45);
+  backdrop-filter: blur(8px);
+  transition: background 0.15s;
+}
+.cab-task-save:hover { background: rgba(255,255,255,0.5); }
+.cab-task-save:disabled { opacity: 0.5; cursor: default; }
+.cab-task-cancel {
+  cursor: pointer;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-family: inherit;
+  background: none;
+  border: none;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+.cab-task-cancel:hover { opacity: 0.9; }
 
 /* Status select */
 .cab-status-select {
