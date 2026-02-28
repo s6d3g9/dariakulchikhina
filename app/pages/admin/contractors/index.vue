@@ -22,6 +22,9 @@
                 <span v-if="company.email">{{ company.email }}&nbsp;&nbsp;</span>
                 <span style="color:#888">ID: <b>{{ company.id }}</b></span>
               </div>
+              <div v-if="company.linkedProjectTitles?.length" class="a-linked-projects">
+                <span v-for="t in company.linkedProjectTitles" :key="t" class="a-linked-proj-chip">{{ t }}</span>
+              </div>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <button class="a-btn-sm a-btn-add-master" @click="openCreateMaster(company.id)">+ мастер</button>
@@ -47,10 +50,13 @@
                 <span class="a-type-badge a-type-master">мастер</span>
                 <span style="font-size:.88rem;font-weight:500">{{ m.name }}</span>
               </div>
-              <div style="font-size:.76rem;color:#aaa;margin-top:1px">
+              <div style="font-size:.76rem;color:#aaa;margin-top:2px">
                 <span v-if="m.phone">{{ m.phone }}&nbsp;&nbsp;</span>
                 <span v-if="m.email">{{ m.email }}&nbsp;&nbsp;</span>
                 <span style="color:#888">ID: <b>{{ m.id }}</b></span>
+              </div>
+              <div v-if="m.linkedProjectTitles?.length" class="a-linked-projects">
+                <span v-for="t in m.linkedProjectTitles" :key="t" class="a-linked-proj-chip">{{ t }}</span>
               </div>
               <div v-if="m.workTypes?.length" style="font-size:.72rem;color:#999;margin-top:2px">{{ m.workTypes.join(', ') }}</div>
             </div>
@@ -87,7 +93,9 @@
                 <span v-if="m.email">{{ m.email }}&nbsp;&nbsp;</span>
                 <span style="color:#888">ID: <b>{{ m.id }}</b></span>
               </div>
-              <div v-if="m.workTypes?.length" style="font-size:.72rem;color:#999;margin-top:2px">{{ m.workTypes.join(', ') }}</div>
+              <div v-if="m.linkedProjectTitles?.length" class="a-linked-projects">
+                <span v-for="t in m.linkedProjectTitles" :key="t" class="a-linked-proj-chip">{{ t }}</span>
+              </div>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <NuxtLink :to="`/contractor/${m.id}`" target="_blank" class="a-btn-sm a-btn-cabinet">
@@ -245,6 +253,29 @@
             </div>
           </div>
 
+          <!-- section: projects (edit only) -->
+          <template v-if="editingId">
+            <div class="a-section-title">проекты</div>
+            <div v-if="projectsLoading" style="font-size:.8rem;color:#aaa;margin-bottom:12px">Загрузка проектов...</div>
+            <div v-else-if="!allProjects.length" style="font-size:.8rem;color:#aaa;margin-bottom:12px">Нет проектов</div>
+            <div v-else class="a-projects-grid">
+              <label
+                v-for="p in allProjects" :key="p.id"
+                class="a-project-check"
+                :class="{ 'a-project-check--on': selectedProjectIds.has(p.id) }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="selectedProjectIds.has(p.id)"
+                  @change="toggleProject(p.id)"
+                  style="display:none"
+                />
+                <span class="a-project-check-dot" />
+                <span>{{ p.title }}</span>
+              </label>
+            </div>
+          </template>
+
           <!-- section: notes -->
           <div class="a-section-title">примечания</div>
           <div class="a-field">
@@ -266,11 +297,21 @@
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const { data: contractors, pending, refresh } = await useFetch<any[]>('/api/contractors')
+const { data: allProjects, pending: projectsLoading } = await useFetch<any[]>('/api/projects', { server: false, default: () => [] })
 
 const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
 const editingId = ref<number | null>(null)
+const selectedProjectIds = ref<Set<number>>(new Set())
+const originalProjectIds = ref<Set<number>>(new Set())
+
+function toggleProject(id: number) {
+  const s = new Set(selectedProjectIds.value)
+  if (s.has(id)) s.delete(id)
+  else s.add(id)
+  selectedProjectIds.value = s
+}
 
 const emptyForm = () => ({
   name: '', slug: '', companyName: '', contactPerson: '',
@@ -325,18 +366,29 @@ function openCreateMaster(companyId: number) {
   showModal.value = true
 }
 
-function openEdit(c: any) {
+async function openEdit(c: any) {
   editingId.value = c.id
   const empty = emptyForm()
   for (const key of Object.keys(empty) as (keyof typeof empty)[]) {
     ;(form as any)[key] = c[key] ?? (empty as any)[key]
   }
+  // load linked projects
+  selectedProjectIds.value = new Set()
+  originalProjectIds.value = new Set()
+  try {
+    const linked = await $fetch<any[]>(`/api/contractors/${c.id}/projects`)
+    const ids = new Set(linked.map((p: any) => p.id))
+    selectedProjectIds.value = ids
+    originalProjectIds.value = new Set(ids)
+  } catch {}
   showModal.value = true
 }
 
 function closeModal() {
   showModal.value = false
   editingId.value = null
+  selectedProjectIds.value = new Set()
+  originalProjectIds.value = new Set()
 }
 
 async function save() {
@@ -344,8 +396,14 @@ async function save() {
   formError.value = ''
   try {
     if (editingId.value) {
-      await $fetch(`/api/contractors/${editingId.value}`, { method: 'PUT', body: { ...form } })
-    } else {
+      await $fetch(`/api/contractors/${editingId.value}`, { method: 'PUT', body: { ...form } })      // sync project links
+      const toAdd = [...selectedProjectIds.value].filter(id => !originalProjectIds.value.has(id))
+      const toRemove = [...originalProjectIds.value].filter(id => !selectedProjectIds.value.has(id))
+      const projectMap = Object.fromEntries((allProjects.value || []).map((p: any) => [p.id, p.slug]))
+      await Promise.all([
+        ...toAdd.map(id => $fetch(`/api/projects/${projectMap[id]}/contractors`, { method: 'POST', body: { contractorId: editingId.value } })),
+        ...toRemove.map(id => $fetch(`/api/projects/${projectMap[id]}/contractors/${editingId.value}`, { method: 'DELETE' })),
+      ])    } else {
       await $fetch('/api/contractors', { method: 'POST', body: { ...form } })
     }
     closeModal()
@@ -551,4 +609,54 @@ async function del(id: number) {
   border-radius: 0 10px 10px 0 !important;
   margin-left: 16px;
 }
+
+/* ── Project checkboxes ─────────────────────────────────── */
+.a-projects-grid {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 4px;
+}
+.a-project-check {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: .8rem;
+  color: var(--glass-text);
+  opacity: .6;
+  transition: all .12s;
+  user-select: none;
+}
+.a-project-check:hover { opacity: .9; }
+.a-project-check--on {
+  border-color: #6366f1;
+  background: rgba(99,102,241,.08);
+  color: #6366f1;
+  opacity: 1;
+}
+.dark .a-project-check--on { background: rgba(99,102,241,.15); color: #818cf8; }
+.a-project-check-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  flex-shrink: 0;
+  transition: background .12s;
+}
+.a-project-check--on .a-project-check-dot {
+  background: #6366f1;
+  border-color: #6366f1;
+}
+.dark .a-project-check--on { background: rgba(99,102,241,.15); color: #818cf8; }
+.dark .a-project-check--on .a-project-check-dot { background: #818cf8; border-color: #818cf8; }
+
+/* ── Linked project chips on cards ─────────────────────── */
+.a-linked-projects { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.a-linked-proj-chip {
+  font-size: .68rem; padding: 2px 7px;
+  border: 1px solid rgba(99,102,241,.25);
+  border-radius: 10px;
+  color: #6366f1;
+  background: rgba(99,102,241,.07);
+}
+.dark .a-linked-proj-chip { background: rgba(99,102,241,.13); }
 </style>
