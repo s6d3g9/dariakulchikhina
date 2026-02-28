@@ -51,7 +51,13 @@
 
           <!-- Brief -->
           <template v-if="section === 'brief'">
-            <h2 class="bcab-section-title">Бриф</h2>
+            <div class="bcab-section-head">
+              <h2 class="bcab-section-title">Бриф</h2>
+              <div v-if="client.linkedProject" class="bcab-sync-row">
+                <button type="button" class="glass-chip bcab-sync-btn" @click="pullFromProject" title="Перенести бюджет / срок / стиль из проекта">← из проекта</button>
+                <button type="button" class="glass-chip bcab-sync-btn" @click="pushToProject" title="Перенести бюджет / срок / стиль в проект">→ в проект</button>
+              </div>
+            </div>
             <form @submit.prevent="saveBrief" class="bcab-form">
               <div class="bcab-form-section">
                 <h3>О вас</h3>
@@ -124,14 +130,71 @@
 
           <!-- Object params -->
           <template v-else-if="section === 'object'">
-            <h2 class="bcab-section-title">Параметры объекта</h2>
-            <div v-if="client.linkedProject" class="bcab-object-params">
-              <div class="bcab-params-grid">
-                <div v-for="(val, key) in objectParams" :key="key" class="bcab-param-card glass-card">
-                  <div class="bcab-param-label">{{ paramLabels[key] || key }}</div>
-                  <div class="bcab-param-val">{{ val || '—' }}</div>
-                </div>
+            <div class="bcab-section-head">
+              <h2 class="bcab-section-title">Параметры объекта</h2>
+              <div v-if="client.linkedProject" class="bcab-sync-row">
+                <button type="button" class="glass-chip bcab-sync-btn" @click="pullFromBrief" title="Перенести бюджет / срок / стиль из брифа">← из брифа</button>
               </div>
+            </div>
+            <div v-if="client.linkedProject">
+              <form @submit.prevent="saveObject" class="bcab-form">
+                <div class="bcab-form-section">
+                  <h3>Адрес и тип</h3>
+                  <div class="bcab-grid-2">
+                    <div class="bcab-field">
+                      <label>Адрес объекта</label>
+                      <input v-model="objectForm.objectAddress" class="glass-input" placeholder="ЖК Crystal, корп 2, кв 45" />
+                    </div>
+                    <div class="bcab-field">
+                      <label>Тип объекта</label>
+                      <input v-model="objectForm.objectType" class="glass-input" placeholder="Квартира / дом / офис…" />
+                    </div>
+                  </div>
+                </div>
+                <div class="bcab-form-section">
+                  <h3>Характеристики</h3>
+                  <div class="bcab-grid-2">
+                    <div class="bcab-field">
+                      <label>Площадь, м²</label>
+                      <input v-model="objectForm.objectArea" class="glass-input" placeholder="87" />
+                    </div>
+                    <div class="bcab-field">
+                      <label>Количество комнат</label>
+                      <input v-model="objectForm.roomCount" class="glass-input" placeholder="3" />
+                    </div>
+                    <div class="bcab-field">
+                      <label>Этаж</label>
+                      <input v-model="objectForm.floor" class="glass-input" placeholder="12 из 25" />
+                    </div>
+                    <div class="bcab-field">
+                      <label>Высота потолков</label>
+                      <input v-model="objectForm.ceilingHeight" class="glass-input" placeholder="2.8 м" />
+                    </div>
+                  </div>
+                </div>
+                <div class="bcab-form-section">
+                  <h3>Стиль и бюджет</h3>
+                  <div class="bcab-grid-2">
+                    <div class="bcab-field">
+                      <label>Стиль</label>
+                      <input v-model="objectForm.stylePreferences" class="glass-input" placeholder="Скандинавский, лофт…" />
+                    </div>
+                    <div class="bcab-field">
+                      <label>Бюджет</label>
+                      <input v-model="objectForm.budget" class="glass-input" placeholder="₽ 3 000 000" />
+                    </div>
+                    <div class="bcab-field">
+                      <label>Срок</label>
+                      <input v-model="objectForm.deadline" class="glass-input" placeholder="до декабря 2026" />
+                    </div>
+                  </div>
+                </div>
+                <div class="bcab-foot">
+                  <button type="submit" class="glass-chip bcab-save">Сохранить</button>
+                  <button type="button" class="glass-chip bcab-sync-btn" @click="pushToBrief">→ в бриф</button>
+                  <span v-if="objectSaveMsg" class="bcab-save-msg">{{ objectSaveMsg }}</span>
+                </div>
+              </form>
             </div>
             <div v-else class="bcab-placeholder">
               <div class="bcab-placeholder-icon">◻</div>
@@ -213,15 +276,30 @@ const brief = reactive({
   references: '',
 })
 
+const objectForm = reactive({
+  objectAddress: '',
+  objectType: '',
+  objectArea: '',
+  roomCount: '',
+  floor: '',
+  ceilingHeight: '',
+  stylePreferences: '',
+  budget: '',
+  deadline: '',
+})
+
 watch(client, (val) => {
-  if (val?.brief) {
-    Object.assign(brief, val.brief)
-  }
+  if (val?.brief) Object.assign(brief, val.brief)
+  const p = (val?.selfProfile as Record<string, unknown>) || {}
+  Object.keys(objectForm).forEach(k => {
+    ;(objectForm as any)[k] = (p[k] as string) ?? ''
+  })
 }, { immediate: true })
 
 const section = ref('brief')
 const galleryOpen = ref(false)
 const saveMsg = ref('')
+const objectSaveMsg = ref('')
 
 const topNav = [
   { key: 'brief', icon: '◎', label: 'Бриф' },
@@ -244,25 +322,6 @@ const currentGalleryLabel = computed(() => {
   return g ? `Галерея: ${g.label}` : 'Галерея'
 })
 
-const paramLabels: Record<string, string> = {
-  objectAddress: 'Адрес объекта',
-  objectType: 'Тип объекта',
-  objectArea: 'Площадь, м²',
-  roomCount: 'Количество комнат',
-  floor: 'Этаж',
-  ceilingHeight: 'Высота потолков',
-  stylePreferences: 'Стиль',
-  budget: 'Бюджет',
-  deadline: 'Срок',
-}
-
-const objectParams = computed(() => {
-  const p = (client.value?.selfProfile as Record<string, unknown>) || {}
-  return Object.fromEntries(
-    Object.entries(paramLabels).map(([k]) => [k, p[k] ?? ''])
-  )
-})
-
 async function saveBrief() {
   saveMsg.value = ''
   await $fetch(`/api/clients/${clientId}/brief`, {
@@ -271,6 +330,48 @@ async function saveBrief() {
   })
   saveMsg.value = 'Сохранено!'
   setTimeout(() => (saveMsg.value = ''), 3000)
+}
+
+async function saveObject() {
+  objectSaveMsg.value = ''
+  await $fetch(`/api/clients/${clientId}/self-profile`, {
+    method: 'PUT',
+    body: { content: { ...objectForm } },
+  })
+  objectSaveMsg.value = 'Сохранено!'
+  setTimeout(() => (objectSaveMsg.value = ''), 3000)
+}
+
+// Бриф ← проект: перенести бюджет/срок/стиль из self_profile в бриф
+function pullFromProject() {
+  const p = (client.value?.selfProfile as any) || {}
+  if (p.budget) brief.budget = p.budget
+  if (p.deadline) brief.deadline_wish = p.deadline
+  if (p.stylePreferences) brief.style_preference = p.stylePreferences
+  if (p.brief_like_refs) brief.references = p.brief_like_refs
+  if (p.dislikes) brief.avoid = p.dislikes
+}
+
+// Бриф → проект: перенести поля брифа в objectForm и сохранить
+async function pushToProject() {
+  if (brief.budget) objectForm.budget = brief.budget
+  if (brief.deadline_wish) objectForm.deadline = brief.deadline_wish
+  if (brief.style_preference) objectForm.stylePreferences = brief.style_preference
+  await saveObject()
+}
+
+// Параметры ← бриф: перенести из брифа в форму объекта
+function pullFromBrief() {
+  if (brief.budget) objectForm.budget = brief.budget
+  if (brief.deadline_wish) objectForm.deadline = brief.deadline_wish
+  if (brief.style_preference) objectForm.stylePreferences = brief.style_preference
+}
+
+// Параметры → бриф: перенести из объекта в бриф
+function pushToBrief() {
+  if (objectForm.budget) brief.budget = objectForm.budget
+  if (objectForm.deadline) brief.deadline_wish = objectForm.deadline
+  if (objectForm.stylePreferences) brief.style_preference = objectForm.stylePreferences
 }
 
 async function logout() {
@@ -447,11 +548,39 @@ async function logout() {
   max-width: 900px;
 }
 
+.bcab-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.bcab-section-head .bcab-section-title {
+  margin-bottom: 0;
+}
 .bcab-section-title {
   font-size: 1.4rem;
   font-weight: 700;
   margin-bottom: 22px;
   color: var(--glass-text, #1a1a2e);
+}
+.bcab-sync-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.bcab-sync-btn {
+  cursor: pointer;
+  background: rgba(100,120,200,0.12);
+  border: 1px solid rgba(100,120,200,0.28);
+  font-size: 0.8rem;
+  padding: 5px 14px;
+  opacity: 0.85;
+}
+.bcab-sync-btn:hover {
+  background: rgba(100,120,200,0.22);
+  opacity: 1;
 }
 
 /* Brief form */
@@ -508,28 +637,6 @@ async function logout() {
 .bcab-save-msg {
   font-size: 0.88rem;
   color: #4a7c59;
-  font-weight: 600;
-}
-
-/* Object params */
-.bcab-params-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 14px;
-}
-.bcab-param-card {
-  padding: 14px 18px;
-  border-radius: 12px;
-}
-.bcab-param-label {
-  font-size: 0.75rem;
-  opacity: 0.55;
-  margin-bottom: 5px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.bcab-param-val {
-  font-size: 1rem;
   font-weight: 600;
 }
 
