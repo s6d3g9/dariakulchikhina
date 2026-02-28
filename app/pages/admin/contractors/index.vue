@@ -20,13 +20,22 @@
             <div style="font-size:.76rem;color:#aaa;margin-top:2px">
               <span v-if="c.phone">{{ c.phone }}&nbsp;&nbsp;</span>
               <span v-if="c.email">{{ c.email }}&nbsp;&nbsp;</span>
-              <span>PIN: {{ c.pin || '\u2014' }}</span>
+              <span v-if="c.pin" style="color:#888">ID: <b style="color:var(--glass-text)">{{ c.id }}</b>&nbsp;·&nbsp;PIN: <b style="color:var(--glass-text)">{{ c.pin }}</b></span>
+              <span v-else style="opacity:.5">PIN не задан</span>
             </div>
             <div v-if="c.workTypes?.length" style="font-size:.72rem;color:#999;margin-top:3px">
               {{ c.workTypes.join(', ') }}
             </div>
           </div>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center">
+            <NuxtLink
+              :to="`/contractor/${c.id}`"
+              target="_blank"
+              class="a-btn-sm a-btn-cabinet"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              кабинет
+            </NuxtLink>
             <button class="a-btn-sm" @click="openEdit(c)">изменить</button>
             <button class="a-btn-sm a-btn-danger" @click="del(c.id)">удалить</button>
           </div>
@@ -299,6 +308,17 @@ async function del(id: number) {
   opacity: 1;
 }
 .a-btn-danger:hover { background: rgba(200,40,40,.85); color: #fff; border-color: transparent; box-shadow: none; }
+.a-btn-cabinet {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  color: rgba(60,100,200,1);
+  border-color: rgba(60,100,200,.3);
+  background: rgba(60,100,200,.07);
+  opacity: 1;
+}
+.a-btn-cabinet:hover { background: rgba(60,100,200,.15); border-color: rgba(60,100,200,.55); box-shadow: none; }
 
 .a-btn-save {
   border: 1px solid var(--glass-border);
