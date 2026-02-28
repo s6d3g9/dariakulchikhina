@@ -651,7 +651,7 @@ function hitToVoxel(e){
       else if(f==='left'){gx=0;gy=Math.floor(p.y/CELL);gz=Math.floor((p.z+rd/2)/CELL);nAxis='x';nDir=-1}
       else{gx=GX-1;gy=Math.floor(p.y/CELL);gz=Math.floor((p.z+rd/2)/CELL);nAxis='x';nDir=1}}
     gx=Math.max(0,Math.min(GX-1,gx));gy=Math.max(0,Math.min(GY-1,gy));gz=Math.max(0,Math.min(GZ-1,gz));
-    if(isEraser||!vGet(gx,gy,gz)) return{gx,gy,gz,nAxis,nDir};
+    if(currentTool==='eraser'||!vGet(gx,gy,gz)) return{gx,gy,gz,nAxis,nDir};
   }
   return null;
 }
@@ -681,17 +681,56 @@ function updateStretchGhost(){
   dragHint.textContent=`${w}×${h2}×${dd} см  (скролл = глубина)`;dragHint.style.display='block';
 }
 
+/* ═══════════════  CURSOR HELPERS  ═══════════════ */
+function hitHandleAt(e){
+  const rect=eRenderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,eCam);
+  const vis=handles.filter(h=>h.mesh.visible).map(h=>h.mesh);
+  const hh=raycaster.intersectObjects(vis,false);
+  if(!hh.length)return null;
+  return handles.find(h=>h.mesh===hh[0].object)||null;
+}
+function hitBlockAt(e){
+  const rect=eRenderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,eCam);
+  const hits=raycaster.intersectObjects(eBlockG.children.filter(ch=>ch.isMesh),false);
+  if(!hits.length)return null;
+  return hits[0].object.userData._reg||null;
+}
+
+function updateCursor(e){
+  const c=eRenderer.domElement;
+  if(handleDrag){c.style.cursor='grabbing';return}
+  if(drag){c.style.cursor='move';return}
+  if(currentTool==='cursor'){
+    if(!e){c.style.cursor='default';return}
+    if(selectedReg){const hh=hitHandleAt(e);
+      if(hh){c.style.cursor=hh.axis==='y'?'ns-resize':'ew-resize';return}}
+    c.style.cursor=hitBlockAt(e)?'pointer':'default';return}
+  if(currentTool==='eraser'){
+    if(!e){c.style.cursor='crosshair';return}
+    c.style.cursor=hitBlockAt(e)?'pointer':'crosshair';return}
+  c.style.cursor='crosshair';
+}
+
+/* ═══════════════  GHOST + EVENTS  ═══════════════ */
 function updateGhost(e){
+  if(currentTool==='cursor'||handleDrag){ghost.visible=false;ghostEdge.visible=false;ghostVoxel=null;updateCursor(e);return}
   if(drag){const hv=hitToVoxel(e);
     if(hv){drag.curX=hv.gx;drag.curY=hv.gy;drag.curZ=hv.gz;updateStretchGhost()}
     ghost.visible=false;ghostEdge.visible=false;return}
   const hv=hitToVoxel(e);
   ghostVoxel=null;ghost.visible=false;ghostEdge.visible=false;
-  if(!hv)return;
-  if(isEraser){
+  if(!hv){updateCursor(e);return}
+  if(currentTool==='eraser'){
     if(vGet(hv.gx,hv.gy,hv.gz)){ghostVoxel={x:hv.gx,y:hv.gy,z:hv.gz};
       const pos=v2w(hv.gx,hv.gy,hv.gz);ghost.position.copy(pos);ghost.scale.set(CELL,CELL,CELL);ghost.material=ghostEraseMat;ghost.visible=true;
-      ghostEdge.position.copy(pos);ghostEdge.scale.set(CELL,CELL,CELL);ghostEdge.visible=true}return}
+      ghostEdge.position.copy(pos);ghostEdge.scale.set(CELL,CELL,CELL);ghostEdge.visible=true}
+    updateCursor(e);return}
   if(!vGet(hv.gx,hv.gy,hv.gz)){ghostVoxel={x:hv.gx,y:hv.gy,z:hv.gz};
     const pos=v2w(hv.gx,hv.gy,hv.gz);ghost.position.copy(pos);ghost.scale.set(CELL,CELL,CELL);ghost.material=ghostPlaceMat;ghost.visible=true;
     ghostEdge.position.copy(pos);ghostEdge.scale.set(CELL,CELL,CELL);ghostEdge.visible=true}
@@ -699,18 +738,40 @@ function updateGhost(e){
 }
 
 eRenderer.domElement.addEventListener('pointermove',updateGhost);
+
 eRenderer.domElement.addEventListener('pointerdown',e=>{
   if(e.button!==0)return;pointerDownPos={x:e.clientX,y:e.clientY};
-  if(!isEraser&&ghostVoxel){const hv=hitToVoxel(e);
+  if(currentTool==='cursor'){
+    if(selectedReg){const hh=hitHandleAt(e);if(hh){
+      handleDrag={origReg:{...selectedReg,cells:selectedReg.cells.slice()},handle:hh,
+        startWorld:hh.mesh.position.clone(),
+        startMin:{x:selectedReg.minX,y:selectedReg.minY,z:selectedReg.minZ},
+        startMax:{x:selectedReg.maxX,y:selectedReg.maxY,z:selectedReg.maxZ},newBox:null};
+      const rect=eRenderer.domElement.getBoundingClientRect();
+      mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+      mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+      raycaster.setFromCamera(mouse,eCam);
+      const camDir=new THREE.Vector3();eCam.getWorldDirection(camDir);
+      const pl=new THREE.Plane().setFromNormalAndCoplanarPoint(camDir,handleDrag.startWorld);
+      const pt=new THREE.Vector3();
+      if(raycaster.ray.intersectPlane(pl,pt))handleDrag.startWorld.copy(pt);
+      eControls.enabled=false;eRenderer.domElement.style.cursor='grabbing';return}}
+    return}
+  if(currentTool==='brush'&&ghostVoxel){const hv=hitToVoxel(e);
     if(hv){drag={sx:hv.gx,sy:hv.gy,sz:hv.gz,normalAxis:hv.nAxis,normalDir:hv.nDir,depth:0,curX:hv.gx,curY:hv.gy,curZ:hv.gz};
       eControls.enabled=false;eRenderer.domElement.style.cursor='move';updateStretchGhost()}}});
+
 eRenderer.domElement.addEventListener('pointermove',e=>{
+  if(handleDrag){updateHandleDrag(e);eRenderer.domElement.style.cursor='grabbing';return}
   if(drag){const hv=hitToVoxel(e);if(hv){drag.curX=hv.gx;drag.curY=hv.gy;drag.curZ=hv.gz;updateStretchGhost()}eRenderer.domElement.style.cursor='move'}});
+
 eRenderer.domElement.addEventListener('wheel',e=>{
   if(!drag)return;e.preventDefault();e.stopPropagation();
   drag.depth+=e.deltaY>0?1:-1;drag.depth=Math.max(0,Math.min(GX-1,drag.depth));
   updateStretchGhost();},{passive:false});
+
 eRenderer.domElement.addEventListener('pointerup',e=>{
+  if(handleDrag){commitHandleDrag();pointerDownPos=null;return}
   if(drag){
     const movedPx=pointerDownPos?Math.abs(e.clientX-pointerDownPos.x)+Math.abs(e.clientY-pointerDownPos.y):0;
     const box=getDragBox();
@@ -719,38 +780,17 @@ eRenderer.domElement.addEventListener('pointerup',e=>{
     }else if(box&&movedPx<=5){const{sx,sy,sz}=drag;
       if(!vGet(sx,sy,sz)){pushUndo();vSet(sx,sy,sz,currentBrush);addHitMesh(sx,sy,sz);rebuildEditorMeshes();rebuildPreview();updateInfo()}}
     drag=null;stretchMesh.visible=false;stretchWire.visible=false;dragHint.style.display='none';
-    eControls.enabled=true;pointerDownPos=null;eRenderer.domElement.style.cursor='crosshair';updateGhost(e);return}
+    eControls.enabled=true;pointerDownPos=null;updateGhost(e);return}
   if(!pointerDownPos)return;
   const dx2=e.clientX-pointerDownPos.x,dy2=e.clientY-pointerDownPos.y;pointerDownPos=null;
   if(Math.abs(dx2)>5||Math.abs(dy2)>5)return;
+  if(currentTool==='cursor'){const blk=hitBlockAt(e);selectRegion(blk);return}
   if(ghostVoxel){
     const{x,y,z}=ghostVoxel;
-    if(isEraser){pushUndo();vSet(x,y,z,0);removeHitMesh(x,y,z);rebuildEditorMeshes();rebuildPreview();updateInfo();updateGhost(e)}
-  }else{
-    /* no ghost = hovering existing block → try select */
-    trySelectBlockAt(e);
+    if(currentTool==='eraser'){pushUndo();vSet(x,y,z,0);removeHitMesh(x,y,z);rebuildEditorMeshes();rebuildPreview();updateInfo();updateGhost(e)}
   }
 });
 eRenderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
-
-/* ═══════════════  CURSOR MANAGEMENT  ═══════════════ */
-function updateCursor(e){
-  const c=eRenderer.domElement;
-  if(drag){c.style.cursor='move';return}
-  if(!e){c.style.cursor='crosshair';return}
-  /* check if hovering over an existing block (for selection hint) */
-  const rect=c.getBoundingClientRect();
-  const mx=((e.clientX-rect.left)/rect.width)*2-1;
-  const my=-((e.clientY-rect.top)/rect.height)*2+1;
-  raycaster.setFromCamera(new THREE.Vector2(mx,my),eCam);
-  const blockHits=raycaster.intersectObjects(eBlockG.children.filter(ch=>ch.isMesh),false);
-  if(isEraser){
-    c.style.cursor=blockHits.length?'pointer':'crosshair';
-  }else{
-    /* if over existing block → pointer (can select); over empty → crosshair (can place) */
-    c.style.cursor=ghostVoxel?'crosshair':(blockHits.length?'pointer':'crosshair');
-  }
-}
 
 /* ═══════════════  SELECTION  ═══════════════ */
 function findRegionAt(x,y,z){
@@ -762,7 +802,7 @@ function findRegionAt(x,y,z){
 
 function selectRegion(reg){
   selectedReg=reg;
-  if(!reg){selPanel.classList.remove('open');selHighlightMesh.visible=false;if(selHighlightP)selHighlightP.visible=false;return}
+  if(!reg){selPanel.classList.remove('open');selHighlightMesh.visible=false;if(selHighlightP)selHighlightP.visible=false;positionHandles();return}
   const info=TYPE_BY_ID[reg.typeId];
   selColor.style.background=info?info.color:'#ccc';
   selName.textContent=info?info.label:'—';
@@ -774,9 +814,8 @@ function selectRegion(reg){
 }
 
 function updateSelHighlight(){
-  if(!selectedReg){selHighlightMesh.visible=false;if(selHighlightP)selHighlightP.visible=false;return}
+  if(!selectedReg){selHighlightMesh.visible=false;if(selHighlightP)selHighlightP.visible=false;positionHandles();return}
   const r=selectedReg,{rw,rd}=getDims();
-  /* verify region still exists */
   if(!vGet(r.minX,r.minY,r.minZ)||voxels[vIdx(r.minX,r.minY,r.minZ)]!==r.typeId){
     selectRegion(null);return}
   const bx1=r.minX*CELL-rw/2,bx2=(r.maxX+1)*CELL-rw/2;
@@ -792,18 +831,7 @@ function updateSelHighlight(){
     selHighlightP.geometry.dispose();selHighlightP.geometry=gP;
     selHighlightP.position.set(bcx,bcy,bcz);selHighlightP.visible=true;
   }
-}
-
-function trySelectBlockAt(e){
-  const rect=eRenderer.domElement.getBoundingClientRect();
-  const mx=((e.clientX-rect.left)/rect.width)*2-1;
-  const my=-((e.clientY-rect.top)/rect.height)*2+1;
-  raycaster.setFromCamera(new THREE.Vector2(mx,my),eCam);
-  const hits=raycaster.intersectObjects(eBlockG.children.filter(ch=>ch.isMesh),false);
-  if(!hits.length){selectRegion(null);return false}
-  const reg=hits[0].object.userData._reg;
-  if(reg){selectRegion(reg);return true}
-  return false;
+  positionHandles();
 }
 
 /* selection panel events */
@@ -816,14 +844,11 @@ $('sel-apply').addEventListener('click',()=>{
   const oldCellsW=r.maxX-r.minX+1,oldCellsH=r.maxY-r.minY+1,oldCellsD=r.maxZ-r.minZ+1;
   if(newCellsW===oldCellsW&&newCellsH===oldCellsH&&newCellsD===oldCellsD)return;
   pushUndo();
-  /* erase old region */
   for(const[cx,cy,cz]of r.cells)vSet(cx,cy,cz,0);
-  /* fill new box from min corner */
   const nx2=Math.min(r.minX+newCellsW-1,GX-1);
   const ny2=Math.min(r.minY+newCellsH-1,GY-1);
   const nz2=Math.min(r.minZ+newCellsD-1,GZ-1);
   fillBox(r.minX,r.minY,r.minZ,nx2,ny2,nz2,r.typeId);
-  /* re-select the new region */
   const newReg=findRegionAt(r.minX,r.minY,r.minZ);
   selectRegion(newReg);
   rebuildEditorMeshes();rebuildPreview();updateInfo();
@@ -835,6 +860,14 @@ $('sel-delete').addEventListener('click',()=>{
   rebuildEditorMeshes();rebuildPreview();updateInfo();
 });
 $('sel-deselect').addEventListener('click',()=>selectRegion(null));
+
+/* Del / Backspace to delete selected block in cursor mode */
+document.addEventListener('keydown',e=>{
+  if((e.key==='Delete'||e.key==='Backspace')&&selectedReg&&currentTool==='cursor'&&!e.target.matches('input')){
+    e.preventDefault();pushUndo();
+    for(const[cx,cy,cz]of selectedReg.cells)vSet(cx,cy,cz,0);
+    selectRegion(null);rebuildEditorMeshes();rebuildPreview();updateInfo()}
+});
 
 /* ══════════════════════════════════════════════
    PREVIEW VIEWPORT
