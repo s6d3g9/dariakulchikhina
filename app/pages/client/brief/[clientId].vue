@@ -141,14 +141,37 @@
                 <div class="bcab-form-section">
                   <h3>Адрес и тип</h3>
                   <div class="bcab-grid-2">
-                    <div class="bcab-field">
+                    <div class="bcab-field bcab-field-suggest">
                       <label>Адрес объекта</label>
-                      <input v-model="objectForm.objectAddress" class="glass-input" placeholder="ЖК Crystal, корп 2, кв 45" />
+                      <div class="bcab-suggest-wrap">
+                        <input
+                          v-model="objectForm.objectAddress"
+                          class="glass-input"
+                          autocomplete="off"
+                          @input="onAddressInput"
+                          @focus="onAddressInput"
+                          @blur="hideSuggest"
+                          @keydown.down.prevent="suggestDown"
+                          @keydown.up.prevent="suggestUp"
+                          @keydown.enter.prevent="suggestSelect"
+                        />
+                        <ul v-if="suggestions.length" class="bcab-suggest-list">
+                          <li
+                            v-for="(s, i) in suggestions"
+                            :key="i"
+                            class="bcab-suggest-item"
+                            :class="{ active: suggestIndex === i }"
+                            @mousedown.prevent="pickSuggest(s)"
+                          >
+                            <span class="bcab-suggest-title">{{ s.title }}</span>
+                            <span v-if="s.subtitle" class="bcab-suggest-sub">{{ s.subtitle }}</span>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                     <div class="bcab-field">
                       <label>Тип объекта</label>
-                      <input v-model="objectForm.objectType" class="glass-input" placeholder="Квартира / дом / офис…" />
-                    </div>
+                      <input v-model="objectForm.objectType" class="glass-input" /></div>
                   </div>
                 </div>
                 <div class="bcab-form-section">
@@ -156,19 +179,19 @@
                   <div class="bcab-grid-2">
                     <div class="bcab-field">
                       <label>Площадь, м²</label>
-                      <input v-model="objectForm.objectArea" class="glass-input" placeholder="87" />
+                      <input v-model="objectForm.objectArea" class="glass-input" />
                     </div>
                     <div class="bcab-field">
                       <label>Количество комнат</label>
-                      <input v-model="objectForm.roomCount" class="glass-input" placeholder="3" />
+                      <input v-model="objectForm.roomCount" class="glass-input" />
                     </div>
                     <div class="bcab-field">
                       <label>Этаж</label>
-                      <input v-model="objectForm.floor" class="glass-input" placeholder="12 из 25" />
+                      <input v-model="objectForm.floor" class="glass-input" />
                     </div>
                     <div class="bcab-field">
                       <label>Высота потолков</label>
-                      <input v-model="objectForm.ceilingHeight" class="glass-input" placeholder="2.8 м" />
+                      <input v-model="objectForm.ceilingHeight" class="glass-input" />
                     </div>
                   </div>
                 </div>
@@ -177,15 +200,15 @@
                   <div class="bcab-grid-2">
                     <div class="bcab-field">
                       <label>Стиль</label>
-                      <input v-model="objectForm.stylePreferences" class="glass-input" placeholder="Скандинавский, лофт…" />
+                      <input v-model="objectForm.stylePreferences" class="glass-input" />
                     </div>
                     <div class="bcab-field">
                       <label>Бюджет</label>
-                      <input v-model="objectForm.budget" class="glass-input" placeholder="₽ 3 000 000" />
+                      <input v-model="objectForm.budget" class="glass-input" />
                     </div>
                     <div class="bcab-field">
                       <label>Срок</label>
-                      <input v-model="objectForm.deadline" class="glass-input" placeholder="до декабря 2026" />
+                      <input v-model="objectForm.deadline" class="glass-input" />
                     </div>
                   </div>
                 </div>
@@ -302,6 +325,43 @@ const section = ref('brief')
 const galleryOpen = ref(false)
 const saveMsg = ref('')
 const objectSaveMsg = ref('')
+
+// Address suggest
+const suggestions = ref<{ title: string; subtitle: string; full: string }[]>([])
+const suggestIndex = ref(-1)
+let suggestTimer: ReturnType<typeof setTimeout> | null = null
+
+async function onAddressInput() {
+  const q = objectForm.objectAddress.trim()
+  if (suggestTimer) clearTimeout(suggestTimer)
+  if (q.length < 2) { suggestions.value = []; return }
+  suggestTimer = setTimeout(async () => {
+    try {
+      const data = await $fetch<any>('/api/suggest/address', { query: { q } })
+      suggestions.value = data.results || []
+      suggestIndex.value = -1
+    } catch { suggestions.value = [] }
+  }, 250)
+}
+
+function hideSuggest() {
+  setTimeout(() => { suggestions.value = [] }, 150)
+}
+
+function suggestDown() {
+  if (suggestIndex.value < suggestions.value.length - 1) suggestIndex.value++
+}
+function suggestUp() {
+  if (suggestIndex.value > 0) suggestIndex.value--
+}
+function suggestSelect() {
+  if (suggestIndex.value >= 0) pickSuggest(suggestions.value[suggestIndex.value])
+}
+function pickSuggest(s: { title: string; subtitle: string; full: string }) {
+  objectForm.objectAddress = s.full
+  suggestions.value = []
+  suggestIndex.value = -1
+}
 
 const topNav = [
   { key: 'brief', icon: '◎', label: 'Бриф' },
@@ -653,6 +713,51 @@ async function logout() {
   font-size: 0.88rem;
   color: #4a7c59;
   font-weight: 600;
+}
+
+.bcab-field-suggest {
+  position: relative;
+}
+.bcab-suggest-wrap {
+  position: relative;
+}
+.bcab-suggest-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border, rgba(200,200,220,0.4));
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  z-index: 500;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.bcab-suggest-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.12s;
+  gap: 2px;
+}
+.bcab-suggest-item:hover,
+.bcab-suggest-item.active {
+  background: rgba(100,120,200,0.08);
+}
+.bcab-suggest-title {
+  font-size: 0.88rem;
+  color: #1a1a2e;
+  font-weight: 500;
+}
+.bcab-suggest-sub {
+  font-size: 0.76rem;
+  color: #888;
 }
 
 /* Placeholder */
