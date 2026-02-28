@@ -254,22 +254,18 @@
           </div>
 
           <!-- section: projects (edit only) -->
-          <template v-if="editingId">
+          <template v-if="isEditMode">
             <div class="a-section-title">проекты</div>
             <div v-if="projectsLoading" style="font-size:.8rem;color:#aaa;margin-bottom:12px">Загрузка проектов...</div>
+            <div v-else-if="projectsError" style="font-size:.8rem;color:#c00;margin-bottom:12px">{{ projectsError }}</div>
             <div v-else-if="!allProjects.length" style="font-size:.8rem;color:#aaa;margin-bottom:12px">Нет проектов</div>
             <div v-else class="a-projects-grid">
               <label
                 v-for="p in allProjects" :key="p.id"
                 class="a-project-check"
-                :class="{ 'a-project-check--on': selectedProjectIds.has(p.id) }"
+                :class="{ 'a-project-check--on': selectedProjectIds.includes(p.id) }"
+                @click.prevent="toggleProject(p.id)"
               >
-                <input
-                  type="checkbox"
-                  :checked="selectedProjectIds.has(p.id)"
-                  @change="toggleProject(p.id)"
-                  style="display:none"
-                />
                 <span class="a-project-check-dot" />
                 <span>{{ p.title }}</span>
               </label>
@@ -302,16 +298,17 @@ const showModal = ref(false)
 const saving = ref(false)
 const formError = ref('')
 const editingId = ref<number | null>(null)
-const selectedProjectIds = ref<Set<number>>(new Set())
-const originalProjectIds = ref<Set<number>>(new Set())
+const isEditMode = ref(false)
+const selectedProjectIds = ref<number[]>([])
+const originalProjectIds = ref<number[]>([])
 const allProjects = ref<any[]>([])
 const projectsLoading = ref(false)
+const projectsError = ref('')
 
 function toggleProject(id: number) {
-  const s = new Set(selectedProjectIds.value)
-  if (s.has(id)) s.delete(id)
-  else s.add(id)
-  selectedProjectIds.value = s
+  const idx = selectedProjectIds.value.indexOf(id)
+  if (idx === -1) selectedProjectIds.value = [...selectedProjectIds.value, id]
+  else selectedProjectIds.value = selectedProjectIds.value.filter(x => x !== id)
 }
 
 const emptyForm = () => ({
@@ -355,12 +352,14 @@ const workTypesStr = computed({
 
 function openCreate() {
   editingId.value = null
+  isEditMode.value = false
   Object.assign(form, emptyForm())
   showModal.value = true
 }
 
 function openCreateMaster(companyId: number) {
   editingId.value = null
+  isEditMode.value = false
   Object.assign(form, emptyForm())
   form.contractorType = 'master'
   form.parentId = companyId
@@ -369,13 +368,16 @@ function openCreateMaster(companyId: number) {
 
 async function openEdit(c: any) {
   editingId.value = c.id
+  isEditMode.value = true
   const empty = emptyForm()
   for (const key of Object.keys(empty) as (keyof typeof empty)[]) {
     ;(form as any)[key] = c[key] ?? (empty as any)[key]
   }
-  selectedProjectIds.value = new Set()
-  originalProjectIds.value = new Set()
+  selectedProjectIds.value = []
+  originalProjectIds.value = []
+  allProjects.value = []
   projectsLoading.value = true
+  projectsError.value = ''
   showModal.value = true
   try {
     const [projs, linked] = await Promise.all([
@@ -383,18 +385,22 @@ async function openEdit(c: any) {
       $fetch<any[]>(`/api/contractors/${c.id}/projects`),
     ])
     allProjects.value = projs
-    const ids = new Set(linked.map((p: any) => p.id))
+    const ids = linked.map((p: any) => Number(p.id))
     selectedProjectIds.value = ids
-    originalProjectIds.value = new Set(ids)
-  } catch {}
-  projectsLoading.value = false
+    originalProjectIds.value = [...ids]
+  } catch (e: any) {
+    projectsError.value = e?.data?.message || 'Ошибка загрузки проектов'
+  } finally {
+    projectsLoading.value = false
+  }
 }
 
 function closeModal() {
   showModal.value = false
   editingId.value = null
-  selectedProjectIds.value = new Set()
-  originalProjectIds.value = new Set()
+  isEditMode.value = false
+  selectedProjectIds.value = []
+  originalProjectIds.value = []
 }
 
 async function save() {
@@ -403,8 +409,8 @@ async function save() {
   try {
     if (editingId.value) {
       await $fetch(`/api/contractors/${editingId.value}`, { method: 'PUT', body: { ...form } })      // sync project links
-      const toAdd = [...selectedProjectIds.value].filter(id => !originalProjectIds.value.has(id))
-      const toRemove = [...originalProjectIds.value].filter(id => !selectedProjectIds.value.has(id))
+      const toAdd = [...selectedProjectIds.value].filter(id => !originalProjectIds.value.includes(id))
+      const toRemove = [...originalProjectIds.value].filter(id => !selectedProjectIds.value.includes(id))
       const projectMap = Object.fromEntries((allProjects.value || []).map((p: any) => [p.id, p.slug]))
       await Promise.all([
         ...toAdd.map(id => $fetch(`/api/projects/${projectMap[id]}/contractors`, { method: 'POST', body: { contractorId: editingId.value } })),
