@@ -29,8 +29,13 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (existing.length > 0) {
+    // Merge: keep existing fields, overlay with new values
+    const [current] = await db.select({ content: pageContent.content }).from(pageContent)
+      .where(and(eq(pageContent.projectId, linkedProject.id), eq(pageContent.pageSlug, 'self_profile')))
+      .limit(1)
+    const merged = { ...(current?.content as Record<string, unknown> || {}), ...body.content }
     const [updated] = await db.update(pageContent)
-      .set({ content: body.content, updatedAt: new Date() })
+      .set({ content: merged, updatedAt: new Date() })
       .where(and(eq(pageContent.projectId, linkedProject.id), eq(pageContent.pageSlug, 'self_profile')))
       .returning()
     return updated

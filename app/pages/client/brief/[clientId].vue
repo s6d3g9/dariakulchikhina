@@ -261,7 +261,7 @@ const router = useRouter()
 const rRoute = useRoute()
 const clientId = Number(rRoute.params.clientId)
 
-const { data: client, pending } = await useFetch<any>(`/api/clients/${clientId}/brief`)
+const { data: client, pending, refresh } = await useFetch<any>(`/api/clients/${clientId}/brief`)
 
 const brief = reactive({
   about_me: '',
@@ -328,6 +328,7 @@ async function saveBrief() {
     method: 'PUT',
     body: { brief },
   })
+  await refresh()
   saveMsg.value = 'Сохранено!'
   setTimeout(() => (saveMsg.value = ''), 3000)
 }
@@ -338,6 +339,7 @@ async function saveObject() {
     method: 'PUT',
     body: { content: { ...objectForm } },
   })
+  await refresh()
   objectSaveMsg.value = 'Сохранено!'
   setTimeout(() => (objectSaveMsg.value = ''), 3000)
 }
