@@ -8,8 +8,18 @@
     <div v-if="pending" style="font-size:.88rem;color:#999;padding:12px 0">Загрузка...</div>
     <div v-else-if="projects?.length === 0" style="font-size:.88rem;color:#999;padding:12px 0">Нет проектов</div>
     <div v-else>
+      <!-- Search -->
+      <div style="margin-bottom:12px">
+        <input
+          v-model="searchQuery"
+          class="a-input"
+          placeholder="поиск проекта..."
+          style="max-width:360px"
+        />
+      </div>
+      <div v-if="filteredProjects.length === 0" style="font-size:.84rem;color:#bbb;padding:10px 0">Ничего не найдено</div>
       <div
-        v-for="p in projects"
+        v-for="p in filteredProjects"
         :key="p.id"
         class="a-card"
         style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;margin-bottom:8px"
@@ -132,6 +142,15 @@ const wizardStep = ref(1)
 const creating = ref(false)
 const createError = ref('')
 const newProject = reactive({ title: '', slug: '', roadmapTemplateKey: '' })
+const searchQuery = ref('')
+
+const filteredProjects = computed(() => {
+  if (!searchQuery.value.trim()) return projects.value || []
+  const q = searchQuery.value.toLowerCase()
+  return (projects.value || []).filter((p: any) =>
+    p.title?.toLowerCase().includes(q) || p.slug?.toLowerCase().includes(q)
+  )
+})
 
 const selectedTemplate = computed(() =>
   newProject.roadmapTemplateKey

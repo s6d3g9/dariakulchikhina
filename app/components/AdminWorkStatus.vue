@@ -7,9 +7,20 @@
         <button class="ws-btn ws-btn--save" @click="save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
       </div>
     </div>
+    <!-- Stats bar -->
+    <div v-if="!pending && items.length" class="ws-stats-bar">
+      <button class="ws-filter-btn" :class="{ active: statusFilter === 'all' }" @click="statusFilter = 'all'">Все <span class="ws-filter-n">{{ items.length }}</span></button>
+      <button class="ws-filter-btn ws-filter-btn--blue" :class="{ active: statusFilter === 'in_progress' }" @click="statusFilter = 'in_progress'">В работе <span class="ws-filter-n">{{ statCounts.in_progress }}</span></button>
+      <button class="ws-filter-btn ws-filter-btn--red" :class="{ active: statusFilter === 'overdue' }" @click="statusFilter = 'overdue'">Просрочено <span class="ws-filter-n">{{ statCounts.overdue }}</span></button>
+      <button class="ws-filter-btn ws-filter-btn--green" :class="{ active: statusFilter === 'done' }" @click="statusFilter = 'done'">Выполнено <span class="ws-filter-n">{{ statCounts.done }}</span></button>
+      <div class="ws-stats-spacer"></div>
+      <div v-if="totalBudget" class="ws-total-budget">Итого: <strong>{{ totalBudget }}</strong></div>
+    </div>
+
     <div v-if="pending" class="ws-loading">Загрузка...</div>
     <div v-else class="ws-list">
-      <div v-for="(item, idx) in items" :key="idx" class="ws-card" :class="{ 'ws-card--done': item.status === 'done', 'ws-card--active': detailItem?.idx === idx }">
+      <div v-if="filteredItems.length === 0" class="ws-empty">Нет задач с выбранным фильтром</div>
+      <div v-for="(item, idx) in filteredItems" :key="item.__origIdx" class="ws-card" :class="{ 'ws-card--done': item.status === 'done', 'ws-card--active': detailItem?.idx === item.__origIdx, 'ws-card--overdue': isOverdue(item) }">
         <!-- row 1: title + status + detail btn -->
         <div class="ws-row">
           <div class="ws-field ws-field--wide">
@@ -32,8 +43,8 @@
             <button
               v-if="item.id"
               class="ws-detail-btn"
-              :class="{ active: detailItem?.idx === idx }"
-              @click="openDetail(item, idx)"
+              :class="{ active: detailItem?.idx === item.__origIdx }"
+              @click="openDetail(item, item.__origIdx)"
             >
               <span v-if="item.photoCount || item.commentCount" class="ws-detail-counts">
                 <span v-if="item.photoCount">📷{{ item.photoCount }}</span>
@@ -90,7 +101,7 @@
           </div>
         </div>
         <div class="ws-del-row">
-          <button class="ws-del" @click="items.splice(idx, 1)">удалить задачу</button>
+          <button class="ws-del" @click="items.splice(item.__origIdx, 1)">удалить задачу</button>
         </div>
       </div>
     </div>
@@ -191,6 +202,7 @@ const { data: roadmapStages } = await useFetch<any[]>(
 const items = ref<any[]>([])
 const saving = ref(false)
 const error = ref('')
+const statusFilter = ref('all')
 
 watch(rawItems, (v) => {
   items.value = (v || []).map((i: any) => ({
@@ -199,6 +211,34 @@ watch(rawItems, (v) => {
     roadmapStageId: i.roadmapStageId ?? null,
   }))
 }, { immediate: true })
+
+function isOverdue(item: any): boolean {
+  if (!item.dateEnd || item.status === 'done' || item.status === 'cancelled') return false
+  return new Date(item.dateEnd) < new Date(new Date().toDateString())
+}
+
+const statCounts = computed(() => ({
+  in_progress: items.value.filter(i => i.status === 'in_progress').length,
+  done: items.value.filter(i => i.status === 'done').length,
+  overdue: items.value.filter(i => isOverdue(i)).length,
+}))
+
+const filteredItems = computed(() => {
+  const withIdx = items.value.map((item, idx) => ({ ...item, __origIdx: idx }))
+  if (statusFilter.value === 'all') return withIdx
+  if (statusFilter.value === 'overdue') return withIdx.filter(i => isOverdue(i))
+  return withIdx.filter(i => i.status === statusFilter.value)
+})
+
+const totalBudget = computed(() => {
+  const nums = items.value
+    .filter(i => statusFilter.value === 'all' || i.status === statusFilter.value || (statusFilter.value === 'overdue' && isOverdue(i)))
+    .map(i => parseFloat(String(i.budget || '').replace(/[^\d.]/g, '')))
+    .filter(n => !isNaN(n) && n > 0)
+  if (!nums.length) return ''
+  const sum = nums.reduce((a, b) => a + b, 0)
+  return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(sum)
+})
 
 function addItem() {
   items.value.push({
@@ -312,7 +352,37 @@ function fmtTime(isoStr: string): string {
 .dark .ws-btn { border-color: #3a3a3a; color: #bbb; }
 .dark .ws-btn--save { background: #6366f1; border-color: #6366f1; color: #fff; }
 
+/* Stats / filter bar */
+.ws-stats-bar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-bottom: 14px; padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+.dark .ws-stats-bar { border-color: #2a2a2a; }
+.ws-stats-spacer { flex: 1; }
+.ws-total-budget { font-size: .8rem; color: #666; }
+.dark .ws-total-budget { color: #aaa; }
+.ws-total-budget strong { color: #1a1a1a; }
+.dark .ws-total-budget strong { color: #e0e0e0; }
+
+.ws-filter-btn {
+  padding: 4px 10px; border: 1px solid #e0e0e0; border-radius: 20px;
+  font-size: .76rem; font-family: inherit; cursor: pointer;
+  background: transparent; color: #777; transition: all .12s;
+}
+.ws-filter-btn:hover { border-color: #999; color: #1a1a1a; }
+.ws-filter-btn.active { border-color: #1a1a1a; background: #1a1a1a; color: #fff; }
+.ws-filter-btn--blue.active { border-color: #4a80f0; background: rgba(74,128,240,.1); color: #4a80f0; }
+.ws-filter-btn--red.active { border-color: #c00; background: rgba(200,0,0,.07); color: #c00; }
+.ws-filter-btn--green.active { border-color: #2ea86a; background: rgba(46,168,106,.08); color: #2ea86a; }
+.dark .ws-filter-btn { border-color: #3a3a3a; color: #888; }
+.dark .ws-filter-btn.active { border-color: #888; background: #333; color: #e0e0e0; }
+.ws-filter-n { opacity: .65; margin-left: 3px; }
+
+.ws-empty { font-size: .84rem; color: #bbb; padding: 12px 0; }
+
 .ws-list { display: grid; gap: 10px; }
+.ws-card--overdue { border-left: 3px solid #e53e3e !important; }
 .ws-card {
   border: 1px solid #e4e4e4; padding: 16px; background: #fff;
   border-radius: 2px; transition: border-color .15s;

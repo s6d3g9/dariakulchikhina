@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>3D Furniture — Voxel Editor + Preview</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
+  font-family:"SF Mono","Fira Code","Courier New",Courier,monospace;color:#000}
+#app{display:grid;width:100%;height:100%;
+  grid-template-columns:300px 1fr 1fr;grid-template-rows:auto 1fr auto}
+
+/* ── categories bar ── */
+#cats{grid-column:1/4;display:flex;border-bottom:2px solid #000;background:#fff}
+.cat-btn{flex:1;padding:9px 4px;font:inherit;font-size:10px;letter-spacing:.07em;
+  text-transform:uppercase;background:#fff;border:none;border-right:2px solid #000;cursor:pointer;transition:background .15s}
+.cat-btn:last-child{border-right:none}
+.cat-btn.active{background:#000;color:#fff}
+.cat-btn:hover:not(.active){background:#eee}
+
+/* ── left panel ── */
+#left{grid-column:1;grid-row:2;border-right:2px solid #000;overflow-y:auto;display:flex;flex-direction:column}
+.sec{padding:7px 10px;border-bottom:2px solid #000}
+.sec-head{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.pal-row{display:flex;flex-wrap:wrap;gap:3px}
+.pal-btn{display:flex;align-items:center;gap:4px;padding:3px 7px;font:inherit;font-size:8.5px;
+  letter-spacing:.04em;text-transform:uppercase;border:2px solid #000;background:#fff;
+  cursor:pointer;transition:all .12s;line-height:1.2}
+.pal-btn .sw{width:10px;height:10px;border:1px solid #000;flex-shrink:0}
+.pal-btn.active{background:#000;color:#fff}
+.pal-btn.active .sw{border-color:#fff}
+.pal-btn:hover:not(.active){background:#f0f0f0}
+.preset-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.preset-btn{padding:3px 7px;font:inherit;font-size:8px;letter-spacing:.05em;text-transform:uppercase;
+  border:1.5px solid #000;background:#fff;cursor:pointer;transition:all .12s;line-height:1.2}
+.preset-btn:hover{background:#eee}
+.preset-btn.active{background:#000;color:#fff}
+.dim-row{display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap;align-items:center}
+.dim-row label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:4px}
+.dim-row input{width:52px;font:inherit;font-size:13px;text-align:center;border:2px solid #000;padding:2px}
+.dim-auto{display:flex;gap:12px;margin-top:2px;padding:5px 0;border-top:1px solid #ccc;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.dim-auto .val{font-weight:700;font-size:12px}
+.tog-row{display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+.tog-btn{display:flex;align-items:center;gap:5px;padding:4px 8px;font:inherit;font-size:8.5px;
+  letter-spacing:.06em;text-transform:uppercase;border:2px solid #000;background:#fff;
+  cursor:pointer;transition:all .12s;line-height:1.2}
+.tog-btn .indicator{width:10px;height:10px;border:1.5px solid #000;background:#fff;flex-shrink:0}
+.tog-btn.on .indicator{background:#000}
+.tog-btn.on{background:#f0f0f0}
+.tog-btn:hover{background:#eee}
+
+/* ── two viewports ── */
+.viewport-wrap{position:relative;overflow:hidden}
+.viewport-wrap canvas{display:block;width:100%;height:100%}
+.vp-label{position:absolute;top:6px;left:50%;transform:translateX(-50%);
+  font:inherit;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:#999;pointer-events:none;background:rgba(253,253,253,.8);padding:1px 8px}
+#editor-vp{grid-column:2;grid-row:2;border-right:2px solid #000}
+#preview-vp{grid-column:3;grid-row:2}
+#click-hint{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
+  font:inherit;font-size:8px;letter-spacing:.06em;text-transform:uppercase;
+  color:#aaa;pointer-events:none}
+#drag-hint{position:absolute;top:30px;left:50%;transform:translateX(-50%);
+  font:inherit;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+  color:#e07a5f;pointer-events:none;background:rgba(253,253,253,.9);padding:2px 10px;
+  border:1px solid #e07a5f;display:none}
+
+/* ── bottom bar ── */
+#bar{grid-column:1/4;border-top:2px solid #000;background:#fff;
+  display:flex;align-items:center;padding:5px 14px;gap:14px;flex-wrap:wrap}
+#bar .info{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+#bar .info span{font-weight:700}
+#bar .spacer{flex:1}
+.bar-btn{font:inherit;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:5px 12px;border:2px solid #000;background:#fff;cursor:pointer;transition:all .12s}
+.bar-btn:hover{background:#000;color:#fff}
+
+#left::-webkit-scrollbar{width:4px}
+#left::-webkit-scrollbar-thumb{background:#000}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="cats">
+    <button class="cat-btn active" data-cat="wardrobe">Шкаф-купе</button>
+    <button class="cat-btn" data-cat="bookcase">Книжный шкаф</button>
+    <button class="cat-btn" data-cat="shoes">Обувной шкаф</button>
+    <button class="cat-btn" data-cat="hallway">Прихожая</button>
+    <button class="cat-btn" data-cat="shelving">Стеллаж</button>
+    <button class="cat-btn" data-cat="kitchen">Кухня</button>
+  </div>
+
+  <div id="left">
+    <div class="sec" id="palette">
+      <h3 class="sec-head">Тип отделения</h3>
+      <div class="pal-row" id="pal-row"></div>
+      <div style="margin-top:4px;display:flex;gap:4px">
+        <button class="pal-btn" id="eraser-btn" style="border-style:dashed">
+          <span class="sw" style="background:#fff"></span>Ластик
+        </button>
+      </div>
+      <h3 class="sec-head" style="margin-top:8px">Пресеты</h3>
+      <div class="preset-row" id="preset-row"></div>
+    </div>
+    <div class="sec">
+      <h3 class="sec-head">Размеры (см)</h3>
+      <div class="dim-row">
+        <label>Ш <input type="number" id="roomW" value="400" min="100" max="1200" step="10"/></label>
+        <label>Г <input type="number" id="roomD" value="400" min="100" max="1200" step="10"/></label>
+      </div>
+      <div class="dim-row">
+        <label>В <input type="number" id="dimH" value="240" min="30" max="350" step="5"/></label>
+      </div>
+      <div class="dim-auto">
+        <div>Мебель Ш: <span class="val" id="auto-w">—</span></div>
+        <div>Г: <span class="val" id="auto-d">—</span></div>
+        <div>В: <span class="val" id="auto-h">—</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <h3 class="sec-head">Деление секций</h3>
+      <div class="tog-row">
+        <button class="tog-btn on" id="tog-h"><span class="indicator"></span>По высоте</button>
+        <button class="tog-btn on" id="tog-w"><span class="indicator"></span>По ширине</button>
+        <button class="tog-btn on" id="tog-d"><span class="indicator"></span>По глубине</button>
+      </div>
+      <div id="subdiv-inputs">
+        <div class="dim-row subdiv-for" data-for="1"><label>Полка <input type="number" id="shelfH" value="30" min="10" max="120" step="5"/> см</label></div>
+        <div class="dim-row subdiv-for" data-for="3"><label>Ящик <input type="number" id="drawerH" value="20" min="8" max="80" step="2"/> см</label></div>
+        <div class="dim-row subdiv-for" data-for="4"><label>Открытая <input type="number" id="openH" value="35" min="10" max="120" step="5"/> см</label></div>
+        <div class="dim-row subdiv-for" data-for="5"><label>Обувь <input type="number" id="shoeH" value="18" min="8" max="60" step="2"/> см</label></div>
+        <div class="dim-row subdiv-for" data-for="6"><label>Сапоги <input type="number" id="bootH" value="35" min="15" max="80" step="5"/> см</label></div>
+        <div class="dim-row subdiv-for" data-for="7"><label>Книги <input type="number" id="bookH" value="30" min="10" max="80" step="5"/> см</label></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="editor-vp" class="viewport-wrap">
+    <div class="vp-label">Редактор кубиков</div>
+    <div id="click-hint">ЛКМ клик — 1 кубик · ЛКМ тянуть — растянуть · Скролл при растяжке — глубина · Ластик — удалить</div>
+    <div id="drag-hint"></div>
+  </div>
+
+  <div id="preview-vp" class="viewport-wrap">
+    <div class="vp-label">3D модель</div>
+  </div>
+
+  <div id="bar">
+    <div class="info">Секций: <span id="info-regions">0</span></div>
+    <div class="info">Размер: <span id="info-size">—</span></div>
+    <div class="spacer"></div>
+    <button class="bar-btn" id="btn-clear">Очистить</button>
+    <button class="bar-btn" id="btn-reset-cam">Сброс камеры</button>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+/* ═══════════════  TYPES  ═══════════════ */
+const TYPES={
+  shelf:{id:1,label:'Полка',color:'#a8d8ea'},
+  hanging:{id:2,label:'Штанга',color:'#b5eaaa'},
+  drawer:{id:3,label:'Ящик',color:'#f5c385'},
+  open:{id:4,label:'Открытая',color:'#fff3b0'},
+  shoeLow:{id:5,label:'Обувь низкая',color:'#f0b0c0'},
+  shoeHi:{id:6,label:'Сапоги',color:'#d5b0f0'},
+  books:{id:7,label:'Книги',color:'#b0d0f0'},
+  top:{id:8,label:'Антресоль',color:'#d0d0d0'},
+  sink:{id:9,label:'Мойка',color:'#8ecae6'},
+  cooktop:{id:10,label:'Варочная',color:'#e07a5f'},
+  oven:{id:11,label:'Духовка',color:'#c97b3d'},
+  dishw:{id:12,label:'Посудомойка',color:'#81b29a'},
+};
+const TYPE_BY_ID={};
+for(const[k,v]of Object.entries(TYPES)) TYPE_BY_ID[v.id]={...v,key:k};
+const CAT_TYPES={
+  wardrobe:['shelf','hanging','drawer','open','top'],
+  bookcase:['books','shelf','drawer','open'],
+  shoes:['shoeLow','shoeHi','drawer','shelf'],
+  hallway:['hanging','shoeLow','shoeHi','drawer','shelf','open'],
+  shelving:['shelf','open','books','drawer'],
+  kitchen:['shelf','drawer','open','top','sink','cooktop','oven','dishw'],
+};
+
+/* ═══════════════  VOXEL GRID  ═══════════════ */
+const GX=20,GY=20,GZ=20;
+let voxels=new Uint8Array(GX*GY*GZ);
+const vIdx=(x,y,z)=>x+y*GX+z*GX*GY;
+const vGet=(x,y,z)=>(x<0||x>=GX||y<0||y>=GY||z<0||z>=GZ)?0:voxels[vIdx(x,y,z)];
+const vSet=(x,y,z,v)=>{voxels[vIdx(x,y,z)]=v};
+const vClear=()=>voxels.fill(0);
+function fillBox(x1,y1,z1,x2,y2,z2,v){
+  for(let z=Math.max(0,z1);z<=Math.min(GZ-1,z2);z++)
+    for(let y=Math.max(0,y1);y<=Math.min(GY-1,y2);y++)
+      for(let x=Math.max(0,x1);x<=Math.min(GX-1,x2);x++) vSet(x,y,z,v)}
+
+/* ═══════════════  PRESETS  ═══════════════ */
+const T=TYPES;
+const CATEGORY_PRESETS={
+  wardrobe:[
+    {name:'Классика',fill:()=>{
+      fillBox(0,18,0,19,19,2,T.top.id);
+      fillBox(0,6,0,9,17,2,T.hanging.id);fillBox(10,11,0,19,17,2,T.shelf.id);
+      fillBox(10,6,0,19,10,2,T.shelf.id);
+      fillBox(0,3,0,9,5,2,T.drawer.id);fillBox(10,3,0,19,5,2,T.drawer.id);
+      fillBox(0,0,0,19,2,2,T.shelf.id)}},
+    {name:'Компакт',fill:()=>{
+      fillBox(0,18,0,19,19,2,T.top.id);
+      fillBox(0,5,0,19,17,2,T.hanging.id);
+      fillBox(0,2,0,19,4,2,T.drawer.id);fillBox(0,0,0,19,1,2,T.shelf.id)}},
+    {name:'Органайзер',fill:()=>{
+      fillBox(0,18,0,19,19,2,T.top.id);
+      fillBox(0,10,0,4,17,2,T.shelf.id);fillBox(5,10,0,14,17,2,T.hanging.id);fillBox(15,10,0,19,17,2,T.shelf.id);
+      fillBox(0,5,0,4,9,2,T.drawer.id);fillBox(5,5,0,14,9,2,T.shelf.id);fillBox(15,5,0,19,9,2,T.drawer.id);
+      fillBox(0,0,0,19,4,2,T.shelf.id)}},
+  ],
+  bookcase:[
+    {name:'Классика',fill:()=>{for(let i=0;i<5;i++)fillBox(0,i*4,0,19,i*4+3,1,T.books.id)}},
+    {name:'С ящиками',fill:()=>{for(let i=0;i<4;i++)fillBox(0,i*4+4,0,19,i*4+7,1,T.books.id);fillBox(0,0,0,19,3,1,T.drawer.id)}},
+    {name:'Смешанный',fill:()=>{fillBox(0,12,0,9,19,1,T.books.id);fillBox(10,12,0,19,19,1,T.open.id);
+      fillBox(0,6,0,9,11,1,T.books.id);fillBox(10,6,0,19,11,1,T.shelf.id);fillBox(0,0,0,19,5,1,T.drawer.id)}},
+  ],
+  shoes:[
+    {name:'Классика',fill:()=>{fillBox(0,14,0,19,19,2,T.shoeHi.id);fillBox(0,6,0,19,13,2,T.shoeLow.id);fillBox(0,0,0,19,5,2,T.drawer.id)}},
+    {name:'Компакт',fill:()=>{fillBox(0,10,0,19,19,1,T.shoeLow.id);fillBox(0,0,0,19,9,1,T.drawer.id)}},
+  ],
+  hallway:[
+    {name:'Классика',fill:()=>{fillBox(0,18,0,19,19,2,T.top.id);fillBox(0,8,0,11,17,2,T.hanging.id);fillBox(12,8,0,19,17,2,T.shelf.id);
+      fillBox(0,4,0,19,7,2,T.shoeLow.id);fillBox(0,0,0,19,3,2,T.drawer.id)}},
+    {name:'Открытая',fill:()=>{fillBox(0,18,0,19,19,2,T.top.id);fillBox(0,6,0,19,17,2,T.open.id);fillBox(0,0,0,19,5,2,T.shoeLow.id)}},
+    {name:'Угловая',fill:()=>{fillBox(0,18,0,19,19,2,T.top.id);fillBox(0,18,0,2,19,12,T.top.id);
+      fillBox(0,6,0,19,17,2,T.hanging.id);fillBox(0,6,0,2,17,12,T.shelf.id);
+      fillBox(0,0,0,19,5,2,T.shoeLow.id);fillBox(0,0,0,2,5,12,T.drawer.id)}},
+  ],
+  shelving:[
+    {name:'Классика',fill:()=>{for(let i=0;i<5;i++)fillBox(0,i*4,0,19,i*4+3,1,i%2===0?T.open.id:T.shelf.id)}},
+    {name:'Симметрия',fill:()=>{for(let i=0;i<5;i++)fillBox(0,i*4,0,19,i*4+3,1,T.shelf.id)}},
+    {name:'С ящиками',fill:()=>{fillBox(0,8,0,19,19,1,T.shelf.id);fillBox(0,4,0,19,7,1,T.open.id);fillBox(0,0,0,19,3,1,T.drawer.id)}},
+  ],
+  kitchen:[
+    {name:'Линейная',fill:()=>{fillBox(0,14,0,19,19,2,T.shelf.id);
+      fillBox(0,0,0,4,7,2,T.sink.id);fillBox(5,0,0,9,7,2,T.drawer.id);
+      fillBox(10,4,0,14,7,2,T.cooktop.id);fillBox(10,0,0,14,3,2,T.oven.id);fillBox(15,0,0,19,7,2,T.dishw.id)}},
+    {name:'Угловая',fill:()=>{fillBox(0,14,0,19,19,2,T.shelf.id);fillBox(0,14,0,2,19,10,T.shelf.id);
+      fillBox(0,0,0,4,7,2,T.sink.id);fillBox(5,0,0,9,7,2,T.drawer.id);
+      fillBox(10,4,0,14,7,2,T.cooktop.id);fillBox(10,0,0,14,3,2,T.oven.id);
+      fillBox(15,0,0,19,7,2,T.drawer.id);fillBox(0,0,0,2,7,10,T.drawer.id)}},
+    {name:'С островом',fill:()=>{fillBox(0,14,0,19,19,2,T.shelf.id);
+      fillBox(0,0,0,4,7,2,T.sink.id);fillBox(5,0,0,9,7,2,T.drawer.id);
+      fillBox(10,4,0,14,7,2,T.cooktop.id);fillBox(10,0,0,14,3,2,T.oven.id);fillBox(15,0,0,19,7,2,T.dishw.id);
+      fillBox(5,0,8,14,7,11,T.drawer.id)}},
+  ],
+};
+
+/* ═══════════════  STATE  ═══════════════ */
+let currentBrush=TYPES.shelf.id, isEraser=false, currentCat='wardrobe', activePresetIdx=0;
+let splitH=true, splitW=true, splitD=true;
+
+/* ═══════════════  DOM  ═══════════════ */
+const $=id=>document.getElementById(id);
+const palRow=$('pal-row'),eraserBtn=$('eraser-btn'),presetRow=$('preset-row');
+const roomWEl=$('roomW'),roomDEl=$('roomD'),dimHEl=$('dimH');
+const shelfHEl=$('shelfH'),drawerHEl=$('drawerH'),shoeHEl=$('shoeH'),
+  bootHEl=$('bootH'),bookHEl=$('bookH'),openHEl=$('openH');
+const togH=$('tog-h'),togW=$('tog-w'),togD=$('tog-d');
+const editorVP=$('editor-vp'),previewVP=$('preview-vp');
+
+/* ═══════════════  PALETTE  ═══════════════ */
+function buildPalette(){
+  palRow.innerHTML='';
+  CAT_TYPES[currentCat].forEach(k=>{const t=TYPES[k];
+    const b=document.createElement('button');b.className='pal-btn';b.dataset.typeId=t.id;
+    b.innerHTML=`<span class="sw" style="background:${t.color}"></span>${t.label}`;
+    b.addEventListener('click',()=>{isEraser=false;currentBrush=t.id;refreshPal()});
+    palRow.appendChild(b)});
+  if(!CAT_TYPES[currentCat].some(k=>TYPES[k].id===currentBrush)){
+    currentBrush=TYPES[CAT_TYPES[currentCat][0]].id;isEraser=false}
+  refreshPal()}
+function refreshPal(){
+  palRow.querySelectorAll('.pal-btn').forEach(b=>
+    b.classList.toggle('active',+b.dataset.typeId===currentBrush&&!isEraser));
+  eraserBtn.classList.toggle('active',isEraser);
+  document.querySelectorAll('.subdiv-for').forEach(el=>
+    el.style.display=el.dataset.for==String(currentBrush)?'':'none')}
+eraserBtn.addEventListener('click',()=>{isEraser=true;refreshPal()});
+
+function buildPresets(){
+  presetRow.innerHTML='';
+  (CATEGORY_PRESETS[currentCat]||[]).forEach((p,i)=>{
+    const b=document.createElement('button');b.className='preset-btn'+(i===activePresetIdx?' active':'');
+    b.textContent=p.name;
+    b.addEventListener('click',()=>{activePresetIdx=i;
+      presetRow.querySelectorAll('.preset-btn').forEach((bb,j)=>bb.classList.toggle('active',j===i));
+      vClear();p.fill();fullRebuild()});
+    presetRow.appendChild(b)})}
+
+document.querySelectorAll('.cat-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelector('.cat-btn.active').classList.remove('active');b.classList.add('active');
+  currentCat=b.dataset.cat;activePresetIdx=0;
+  vClear();const p=CATEGORY_PRESETS[currentCat]?.[0];if(p)p.fill();
+  buildPalette();buildPresets();fullRebuild()}));
+
+togH.addEventListener('click',()=>{splitH=!splitH;togH.classList.toggle('on',splitH);scheduleRebuild()});
+togW.addEventListener('click',()=>{splitW=!splitW;togW.classList.toggle('on',splitW);scheduleRebuild()});
+togD.addEventListener('click',()=>{splitD=!splitD;togD.classList.toggle('on',splitD);scheduleRebuild()});
+[roomWEl,roomDEl,dimHEl,shelfHEl,drawerHEl,shoeHEl,bootHEl,bookHEl,openHEl].forEach(
+  el=>el.addEventListener('input',()=>scheduleRebuild()));
+$('btn-clear').addEventListener('click',()=>{vClear();fullRebuild()});
+
+/* ═══════════════  HELPERS  ═══════════════ */
+function getDims(){
+  const rw=(+roomWEl.value||400)/100,rd=(+roomDEl.value||400)/100,h=(+dimHEl.value||240)/100;
+  return{rw,rd,h,cw:rw/GX,ch:h/GY,cd:rd/GZ}}
+
+/* ═══════════════  SHARED  ═══════════════ */
+const _matC={};
+function getColorMat(hex){if(_matC[hex])return _matC[hex];
+  const m=new THREE.MeshBasicMaterial({color:new THREE.Color(hex),transparent:true,opacity:.45,depthWrite:false,side:THREE.DoubleSide});
+  _matC[hex]=m;return m}
+const TM=new THREE.LineBasicMaterial({color:0x000000,linewidth:1});
+const LM=new THREE.LineBasicMaterial({color:0x000000,linewidth:2});
+const RM=new THREE.LineBasicMaterial({color:0xdddddd,linewidth:1});
+const unitBox=new THREE.BoxGeometry(1,1,1);
+const unitEdges=new THREE.EdgesGeometry(unitBox);
+
+function v2w(x,y,z){const{rw,rd,cw,ch,cd}=getDims();
+  return new THREE.Vector3((x+.5)*cw-rw/2,(y+.5)*ch,(z+.5)*cd-rd/2)}
+
+function wb(parent,w,h,d,x,y,z,mat){mat=mat||TM;
+  const g=new THREE.BoxGeometry(w,h,d),e=new THREE.EdgesGeometry(g),s=new THREE.LineSegments(e,mat);
+  s.position.set(x,y,z);parent.add(s);return s}
+
+/* ══════════════════════════════════════════════
+   EDITOR VIEWPORT — abstract colored cubes
+   ══════════════════════════════════════════════ */
+const eScene=new THREE.Scene();eScene.background=new THREE.Color(0xf8f8f8);
+let eFrust=12;
+const eAspect=()=>editorVP.clientWidth/(editorVP.clientHeight||1);
+const eCam=new THREE.OrthographicCamera(-eFrust*eAspect()/2,eFrust*eAspect()/2,eFrust/2,-eFrust/2,.1,1000);
+eCam.position.set(10,10,10);eCam.lookAt(0,0,0);
+const eRenderer=new THREE.WebGLRenderer({antialias:true});
+eRenderer.setPixelRatio(window.devicePixelRatio);
+eRenderer.setSize(editorVP.clientWidth,editorVP.clientHeight);
+editorVP.appendChild(eRenderer.domElement);
+const eControls=new OrbitControls(eCam,eRenderer.domElement);
+eControls.enableDamping=true;eControls.dampingFactor=.12;
+
+const eFloor=new THREE.Group();eScene.add(eFloor);
+const eVoxG=new THREE.Group();eScene.add(eVoxG);
+const eBounds=new THREE.Group();eScene.add(eBounds);
+
+/* ghost */
+const ghostPlaceMat=new THREE.MeshBasicMaterial({color:0x666666,transparent:true,opacity:.2,depthWrite:false});
+const ghostEraseMat=new THREE.MeshBasicMaterial({color:0xff4444,transparent:true,opacity:.3,depthWrite:false});
+const ghost=new THREE.Mesh(unitBox.clone(),ghostPlaceMat);ghost.visible=false;eScene.add(ghost);
+const ghostEdge=new THREE.LineSegments(new THREE.EdgesGeometry(unitBox),
+  new THREE.LineBasicMaterial({color:0x000000,transparent:true,opacity:.5}));ghostEdge.visible=false;eScene.add(ghostEdge);
+let ghostVoxel=null;
+
+const voxMeshMap={};
+function addVoxMesh(x,y,z,typeId){
+  const key=`${x},${y},${z}`;removeVoxMesh(x,y,z);if(!typeId)return;
+  const info=TYPE_BY_ID[typeId];if(!info)return;
+  const{cw,ch,cd}=getDims();const pos=v2w(x,y,z);
+  const mesh=new THREE.Mesh(unitBox,getColorMat(info.color));
+  mesh.position.copy(pos);mesh.scale.set(cw*.96,ch*.96,cd*.96);mesh.userData={vx:x,vy:y,vz:z};eVoxG.add(mesh);
+  const wire=new THREE.LineSegments(unitEdges,TM);wire.position.copy(pos);wire.scale.set(cw*.96,ch*.96,cd*.96);eVoxG.add(wire);
+  voxMeshMap[key]={mesh,wire}}
+function removeVoxMesh(x,y,z){
+  const key=`${x},${y},${z}`,e=voxMeshMap[key];if(!e)return;
+  eVoxG.remove(e.mesh);eVoxG.remove(e.wire);delete voxMeshMap[key]}
+function rebuildEditorMeshes(){
+  for(const e of Object.values(voxMeshMap)){eVoxG.remove(e.mesh);eVoxG.remove(e.wire)}
+  for(const k in voxMeshMap)delete voxMeshMap[k];
+  for(let z=0;z<GZ;z++)for(let y=0;y<GY;y++)for(let x=0;x<GX;x++){
+    const v=vGet(x,y,z);if(v)addVoxMesh(x,y,z,v)}}
+
+function buildEditorFloor(){
+  eFloor.clear();eBounds.clear();
+  const{rw,rd,h,cw,cd}=getDims();
+  const pts=[];
+  for(let i=0;i<=GX;i++){const x=i*cw-rw/2;pts.push(new THREE.Vector3(x,0,-rd/2),new THREE.Vector3(x,0,rd/2))}
+  for(let j=0;j<=GZ;j++){const z=j*cd-rd/2;pts.push(new THREE.Vector3(-rw/2,0,z),new THREE.Vector3(rw/2,0,z))}
+  eFloor.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),RM));
+  const be=new THREE.EdgesGeometry(new THREE.BoxGeometry(rw,h,rd));
+  const bs=new THREE.LineSegments(be,new THREE.LineBasicMaterial({color:0xaaaaaa}));
+  bs.position.set(0,h/2,0);eFloor.add(bs);
+  /* invisible planes for raycasting */
+  const im=new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide});
+  const fp=new THREE.Mesh(new THREE.PlaneGeometry(rw,rd),im.clone());fp.rotation.x=-Math.PI/2;fp.position.y=-0.001;fp.userData={face:'floor'};eBounds.add(fp);
+  const bw=new THREE.Mesh(new THREE.PlaneGeometry(rw,h),im.clone());bw.position.set(0,h/2,-rd/2-.001);bw.userData={face:'back'};eBounds.add(bw);
+  const fw=new THREE.Mesh(new THREE.PlaneGeometry(rw,h),im.clone());fw.rotation.y=Math.PI;fw.position.set(0,h/2,rd/2+.001);fw.userData={face:'front'};eBounds.add(fw);
+  const lw=new THREE.Mesh(new THREE.PlaneGeometry(rd,h),im.clone());lw.rotation.y=Math.PI/2;lw.position.set(-rw/2-.001,h/2,0);lw.userData={face:'left'};eBounds.add(lw);
+  const rww=new THREE.Mesh(new THREE.PlaneGeometry(rd,h),im.clone());rww.rotation.y=-Math.PI/2;rww.position.set(rw/2+.001,h/2,0);rww.userData={face:'right'};eBounds.add(rww)}
+
+/* pointer interaction + box drag */
+const raycaster=new THREE.Raycaster();const mouse=new THREE.Vector2();
+let pointerDownPos=null;
+function getVoxMeshes(){return Object.values(voxMeshMap).map(e=>e.mesh)}
+
+/* ── stretch ghost (box preview during drag) ── */
+const stretchMat=new THREE.MeshBasicMaterial({color:0x4488ff,transparent:true,opacity:.18,depthWrite:false,side:THREE.DoubleSide});
+const stretchWireMat=new THREE.LineBasicMaterial({color:0x2266cc,transparent:true,opacity:.7});
+const stretchMesh=new THREE.Mesh(unitBox.clone(),stretchMat);stretchMesh.visible=false;eScene.add(stretchMesh);
+const stretchWire=new THREE.LineSegments(new THREE.EdgesGeometry(unitBox),stretchWireMat);stretchWire.visible=false;eScene.add(stretchWire);
+const dragHint=$('drag-hint');
+
+/* drag state */
+let drag=null; // null | {sx,sy,sz, normalAxis:'x'|'y'|'z', normalDir:1|-1, depth:0, curX,curY,curZ}
+
+function hitToVoxel(e){
+  const rect=eRenderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,eCam);
+  const{rw,rd,h,cw,ch,cd}=getDims();
+  const voxHits=raycaster.intersectObjects(getVoxMeshes(),false);
+  const boundHits=raycaster.intersectObjects(eBounds.children,false);
+  const allHits=[...voxHits.map(h=>({hit:h,src:'vox'})),...boundHits.map(h=>({hit:h,src:'bound'}))];
+  allHits.sort((a,b)=>a.hit.distance-b.hit.distance);
+  for(const{hit,src}of allHits){
+    let gx,gy,gz,nAxis,nDir;
+    if(src==='vox'){
+      const n=hit.face.normal;
+      gx=hit.object.userData.vx+Math.round(n.x);gy=hit.object.userData.vy+Math.round(n.y);gz=hit.object.userData.vz+Math.round(n.z);
+      if(Math.abs(n.x)>.5){nAxis='x';nDir=Math.sign(n.x)}else if(Math.abs(n.y)>.5){nAxis='y';nDir=Math.sign(n.y)}else{nAxis='z';nDir=Math.sign(n.z)}
+    }else{
+      const f=hit.object.userData.face,p=hit.point;
+      if(f==='floor'){gx=Math.floor((p.x+rw/2)/cw);gy=0;gz=Math.floor((p.z+rd/2)/cd);nAxis='y';nDir=-1}
+      else if(f==='back'){gx=Math.floor((p.x+rw/2)/cw);gy=Math.floor(p.y/ch);gz=0;nAxis='z';nDir=-1}
+      else if(f==='front'){gx=Math.floor((p.x+rw/2)/cw);gy=Math.floor(p.y/ch);gz=GZ-1;nAxis='z';nDir=1}
+      else if(f==='left'){gx=0;gy=Math.floor(p.y/ch);gz=Math.floor((p.z+rd/2)/cd);nAxis='x';nDir=-1}
+      else{gx=GX-1;gy=Math.floor(p.y/ch);gz=Math.floor((p.z+rd/2)/cd);nAxis='x';nDir=1}}
+    gx=Math.max(0,Math.min(GX-1,gx));gy=Math.max(0,Math.min(GY-1,gy));gz=Math.max(0,Math.min(GZ-1,gz));
+    if(isEraser||!vGet(gx,gy,gz)) return{gx,gy,gz,nAxis,nDir};
+  }
+  return null;
+}
+
+function getDragBox(){
+  if(!drag)return null;
+  const d=drag.depth, na=drag.normalAxis, nd=drag.normalDir;
+  let x1=Math.min(drag.sx,drag.curX),x2=Math.max(drag.sx,drag.curX);
+  let y1=Math.min(drag.sy,drag.curY),y2=Math.max(drag.sy,drag.curY);
+  let z1=Math.min(drag.sz,drag.curZ),z2=Math.max(drag.sz,drag.curZ);
+  /* extend along normal axis by depth */
+  if(d!==0){
+    if(na==='x'){if(nd>0){x2+=d}else{x1-=d}}
+    else if(na==='y'){if(nd>0){y2+=d}else{y1-=d}}
+    else{if(nd>0){z2+=d}else{z1-=d}}}
+  x1=Math.max(0,x1);y1=Math.max(0,y1);z1=Math.max(0,z1);
+  x2=Math.min(GX-1,x2);y2=Math.min(GY-1,y2);z2=Math.min(GZ-1,z2);
+  return{x1,y1,z1,x2,y2,z2};
+}
+
+function updateStretchGhost(){
+  const box=getDragBox();
+  if(!box){stretchMesh.visible=false;stretchWire.visible=false;dragHint.style.display='none';return}
+  const{rw,rd,cw,ch,cd}=getDims();
+  const sx=(box.x2-box.x1+1)*cw, sy=(box.y2-box.y1+1)*ch, sz=(box.z2-box.z1+1)*cd;
+  const cx=(box.x1+box.x2+1)/2*cw-rw/2, cy=(box.y1+box.y2+1)/2*ch, cz=(box.z1+box.z2+1)/2*cd-rd/2;
+  stretchMesh.position.set(cx,cy,cz);stretchMesh.scale.set(sx,sy,sz);stretchMesh.visible=true;
+  stretchWire.position.set(cx,cy,cz);stretchWire.scale.set(sx,sy,sz);stretchWire.visible=true;
+  const w=((box.x2-box.x1+1)*cw*100).toFixed(0),h2=((box.y2-box.y1+1)*ch*100).toFixed(0),d=((box.z2-box.z1+1)*cd*100).toFixed(0);
+  dragHint.textContent=`${w}×${h2}×${d} см  (скролл = глубина)`;dragHint.style.display='block';
+}
+
+function updateGhost(e){
+  if(drag){/* during drag — only update stretch ghost */
+    const hv=hitToVoxel(e);
+    if(hv){drag.curX=hv.gx;drag.curY=hv.gy;drag.curZ=hv.gz;updateStretchGhost()}
+    ghost.visible=false;ghostEdge.visible=false;return}
+  const hv=hitToVoxel(e);
+  ghostVoxel=null;ghost.visible=false;ghostEdge.visible=false;
+  if(!hv)return;
+  const{cw,ch,cd}=getDims();
+  if(isEraser){
+    if(vGet(hv.gx,hv.gy,hv.gz)){ghostVoxel={x:hv.gx,y:hv.gy,z:hv.gz};
+      const pos=v2w(hv.gx,hv.gy,hv.gz);ghost.position.copy(pos);ghost.scale.set(cw,ch,cd);ghost.material=ghostEraseMat;ghost.visible=true;
+      ghostEdge.position.copy(pos);ghostEdge.scale.set(cw,ch,cd);ghostEdge.visible=true}return}
+  if(!vGet(hv.gx,hv.gy,hv.gz)){ghostVoxel={x:hv.gx,y:hv.gy,z:hv.gz};
+    const pos=v2w(hv.gx,hv.gy,hv.gz);ghost.position.copy(pos);ghost.scale.set(cw,ch,cd);ghost.material=ghostPlaceMat;ghost.visible=true;
+    ghostEdge.position.copy(pos);ghostEdge.scale.set(cw,ch,cd);ghostEdge.visible=true}}
+
+eRenderer.domElement.addEventListener('pointermove',updateGhost);
+
+eRenderer.domElement.addEventListener('pointerdown',e=>{
+  if(e.button!==0)return;
+  pointerDownPos={x:e.clientX,y:e.clientY};
+  if(!isEraser&&ghostVoxel){
+    const hv=hitToVoxel(e);
+    if(hv){drag={sx:hv.gx,sy:hv.gy,sz:hv.gz,normalAxis:hv.nAxis,normalDir:hv.nDir,depth:0,curX:hv.gx,curY:hv.gy,curZ:hv.gz};
+      eControls.enabled=false;updateStretchGhost()}}
+});
+
+eRenderer.domElement.addEventListener('pointermove',e=>{
+  if(drag){const hv=hitToVoxel(e);
+    if(hv){drag.curX=hv.gx;drag.curY=hv.gy;drag.curZ=hv.gz;updateStretchGhost()}}});
+
+eRenderer.domElement.addEventListener('wheel',e=>{
+  if(!drag)return;e.preventDefault();e.stopPropagation();
+  drag.depth+=e.deltaY>0?1:-1;
+  drag.depth=Math.max(0,Math.min(GX-1,drag.depth));
+  updateStretchGhost();
+},{passive:false});
+
+eRenderer.domElement.addEventListener('pointerup',e=>{
+  if(drag){
+    const movedPx=pointerDownPos?Math.abs(e.clientX-pointerDownPos.x)+Math.abs(e.clientY-pointerDownPos.y):0;
+    const box=getDragBox();
+    if(box&&(movedPx>5||drag.depth>0)){
+      /* fill the stretched box */
+      fillBox(box.x1,box.y1,box.z1,box.x2,box.y2,box.z2,currentBrush);
+      rebuildEditorMeshes();rebuildPreview();updateInfo();
+    }else if(box&&movedPx<=5){
+      /* just a click — place single cube */
+      const{sx,sy,sz}=drag;
+      if(!vGet(sx,sy,sz)){vSet(sx,sy,sz,currentBrush);addVoxMesh(sx,sy,sz,currentBrush);rebuildPreview();updateInfo()}
+    }
+    drag=null;stretchMesh.visible=false;stretchWire.visible=false;dragHint.style.display='none';
+    eControls.enabled=true;pointerDownPos=null;
+    updateGhost(e);return}
+  /* eraser click */
+  if(!pointerDownPos)return;
+  const dx2=e.clientX-pointerDownPos.x,dy2=e.clientY-pointerDownPos.y;pointerDownPos=null;
+  if(Math.abs(dx2)>5||Math.abs(dy2)>5)return;
+  if(!ghostVoxel)return;const{x,y,z}=ghostVoxel;
+  if(isEraser){vSet(x,y,z,0);removeVoxMesh(x,y,z);rebuildPreview();updateInfo();updateGhost(e)}});
+
+eRenderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ══════════════════════════════════════════════
+   PREVIEW VIEWPORT — detailed furniture model
+   ══════════════════════════════════════════════ */
+const pScene=new THREE.Scene();pScene.background=new THREE.Color(0xfdfdfd);
+let pFrust=12;
+const pAspect=()=>previewVP.clientWidth/(previewVP.clientHeight||1);
+const pCam=new THREE.OrthographicCamera(-pFrust*pAspect()/2,pFrust*pAspect()/2,pFrust/2,-pFrust/2,.1,1000);
+pCam.position.set(12,12,12);pCam.lookAt(0,0,0);
+const pRenderer=new THREE.WebGLRenderer({antialias:true});
+pRenderer.setPixelRatio(window.devicePixelRatio);
+pRenderer.setSize(previewVP.clientWidth,previewVP.clientHeight);
+previewVP.appendChild(pRenderer.domElement);
+const pControls=new OrbitControls(pCam,pRenderer.domElement);
+pControls.enableDamping=true;pControls.dampingFactor=.12;
+
+const pFloor=new THREE.Group();pScene.add(pFloor);
+const pVoxG=new THREE.Group();pScene.add(pVoxG);
+const pDetailG=new THREE.Group();pScene.add(pDetailG);
+
+function buildPreviewFloor(){
+  pFloor.clear();const{rw,rd,h}=getDims();
+  const pts=[];
+  for(let i=0;i<=GX;i++){const x=i*(rw/GX)-rw/2;pts.push(new THREE.Vector3(x,0,-rd/2),new THREE.Vector3(x,0,rd/2))}
+  for(let j=0;j<=GZ;j++){const z=j*(rd/GZ)-rd/2;pts.push(new THREE.Vector3(-rw/2,0,z),new THREE.Vector3(rw/2,0,z))}
+  pFloor.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),RM))}
+
+/* ═══════════════  3D FLOOD FILL  ═══════════════ */
+function findRegions3D(){
+  const vis=new Uint8Array(GX*GY*GZ),regs=[];
+  for(let z=0;z<GZ;z++)for(let y=0;y<GY;y++)for(let x=0;x<GX;x++){
+    const idx=vIdx(x,y,z);if(vis[idx]||!voxels[idx])continue;
+    const tid=voxels[idx],cells=[],q=[[x,y,z]];vis[idx]=1;
+    while(q.length){const[cx,cy,cz]=q.shift();cells.push([cx,cy,cz]);
+      for(const[dx,dy,dz]of[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){
+        const nx=cx+dx,ny=cy+dy,nz=cz+dz;
+        if(nx<0||nx>=GX||ny<0||ny>=GY||nz<0||nz>=GZ)continue;
+        const ni=vIdx(nx,ny,nz);if(vis[ni]||voxels[ni]!==tid)continue;vis[ni]=1;q.push([nx,ny,nz])}}
+    let minX=GX,maxX=0,minY=GY,maxY=0,minZ=GZ,maxZ=0;
+    for(const[cx,cy,cz]of cells){minX=Math.min(minX,cx);maxX=Math.max(maxX,cx);
+      minY=Math.min(minY,cy);maxY=Math.max(maxY,cy);minZ=Math.min(minZ,cz);maxZ=Math.max(maxZ,cz)}
+    regs.push({typeId:tid,cells,minX,maxX,minY,maxY,minZ,maxZ})}
+  return regs}
+
+function findFrontFace(reg){
+  let faces={nx:0,px:0,nz:0,pz:0};
+  for(const[x,y,z]of reg.cells){
+    if(x===reg.minX&&!vGet(x-1,y,z))faces.nx++;
+    if(x===reg.maxX&&!vGet(x+1,y,z))faces.px++;
+    if(z===reg.minZ&&!vGet(x,y,z-1))faces.nz++;
+    if(z===reg.maxZ&&!vGet(x,y,z+1))faces.pz++;}
+  let best='pz',bv=faces.pz;
+  if(faces.nz>bv){best='nz';bv=faces.nz}
+  if(faces.px>bv){best='px';bv=faces.px}
+  if(faces.nx>bv){best='nx';bv=faces.nx}
+  return best}
+
+/* ═══════════════  PREVIEW REBUILD  ═══════════════ */
+function rebuildPreview(){
+  pVoxG.clear();pDetailG.clear();buildPreviewFloor();
+  const{rw,rd,h,cw,ch,cd}=getDims();const WALL=.015;
+  const tShelf=(+shelfHEl.value||30)/100,tDrawer=(+drawerHEl.value||20)/100,
+    tShoe=(+shoeHEl.value||18)/100,tBoot=(+bootHEl.value||35)/100,
+    tBook=(+bookHEl.value||30)/100,tOpen=(+openHEl.value||35)/100;
+  const regs=findRegions3D();
+  $('info-regions').textContent=regs.length;
+
+  for(const reg of regs){
+    const info=TYPE_BY_ID[reg.typeId];if(!info)continue;
+    const bx1=reg.minX*cw-rw/2,bx2=(reg.maxX+1)*cw-rw/2;
+    const by1=reg.minY*ch,by2=(reg.maxY+1)*ch;
+    const bz1=reg.minZ*cd-rd/2,bz2=(reg.maxZ+1)*cd-rd/2;
+    const bW=bx2-bx1,bH=by2-by1,bD=bz2-bz1;
+    const bcx=(bx1+bx2)/2,bcy=(by1+by2)/2,bcz=(bz1+bz2)/2;
+    const inW=bW-WALL*4,inH=bH-WALL*4,inD=bD-WALL*4;
+    const front=findFrontFace(reg);
+
+    /* outer wireframe + fill */
+    const bm=new THREE.Mesh(new THREE.BoxGeometry(bW,bH,bD),getColorMat(info.color));
+    bm.position.set(bcx,bcy,bcz);pVoxG.add(bm);
+    const bwire=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(bW,bH,bD)),TM);
+    bwire.position.set(bcx,bcy,bcz);pVoxG.add(bwire);
+
+    /* details */
+    switch(info.key){
+      case 'shelf':case 'open':{
+        const tgt=info.key==='shelf'?tShelf:tOpen;
+        if(splitH){const n=Math.max(1,Math.round(bH/tgt));for(let i=1;i<n;i++)wb(pDetailG,inW,WALL,inD,bcx,by1+bH*i/n,bcz)}
+        if(splitW&&bW>cw*4)wb(pDetailG,WALL,inH,inD,bcx,bcy,bcz);
+        if(splitD&&bD>cd*4)wb(pDetailG,inW,inH,WALL,bcx,bcy,bcz);break}
+      case 'books':{
+        if(splitH){const n=Math.max(1,Math.round(bH/tBook));for(let i=1;i<n;i++)wb(pDetailG,inW,WALL,inD,bcx,by1+bH*i/n,bcz)}
+        if(splitW&&bW>cw*3)wb(pDetailG,WALL,inH,inD,bcx,bcy,bcz);
+        if(splitD&&bD>cd*3)wb(pDetailG,inW,inH,WALL,bcx,bcy,bcz);break}
+      case 'hanging':{
+        const ry=by2-bH*.1;const rodLen=front==='nz'||front==='pz'?inW:inD;
+        const rg=new THREE.CylinderGeometry(.01,.01,rodLen,8);
+        if(front==='nz'||front==='pz')rg.rotateZ(Math.PI/2);else rg.rotateX(Math.PI/2);
+        const rod=new THREE.LineSegments(new THREE.EdgesGeometry(rg),LM);rod.position.set(bcx,ry,bcz);pDetailG.add(rod);
+        wb(pDetailG,inW,WALL,inD,bcx,by2-WALL*2,bcz);
+        if(splitW&&bW>cw*4)wb(pDetailG,WALL,inH,inD,bcx,bcy,bcz);break}
+      case 'drawer':{
+        if(splitH){const n=Math.max(1,Math.round(bH/tDrawer));const gap=WALL,dH=(bH-gap*(n+1))/n;
+          let ffx=bcx,ffz=bcz;
+          if(front==='nz')ffz=bz1+WALL;else if(front==='pz')ffz=bz2-WALL;
+          else if(front==='nx')ffx=bx1+WALL;else ffx=bx2-WALL;
+          for(let i=0;i<n;i++){const dy=by1+gap+dH/2+i*(dH+gap);
+            if(front==='nz'||front==='pz'){wb(pDetailG,inW,dH-WALL,WALL,bcx,dy,ffz);
+              wb(pDetailG,inW*.22,WALL,WALL,bcx,dy,ffz+(front==='pz'?WALL:-WALL))}
+            else{wb(pDetailG,WALL,dH-WALL,inD,ffx,dy,bcz);
+              wb(pDetailG,WALL,WALL,inD*.22,ffx+(front==='px'?WALL:-WALL),dy,bcz)}}}
+        if(splitW&&bW>cw*4)wb(pDetailG,WALL,inH,inD,bcx,bcy,bcz);break}
+      case 'shoeLow':case 'shoeHi':{
+        const tgt=info.key==='shoeLow'?tShoe:tBoot;
+        if(splitH){const n=Math.max(1,Math.round(bH/tgt));
+          for(let i=0;i<n;i++){const sy=by1+bH*(i+.5)/n;
+            const szW=front==='nz'||front==='pz'?inW:inD;
+            const ratio=info.key==='shoeLow'?.55:.7;
+            const szD=front==='nz'||front==='pz'?bD*ratio:bW*ratio;
+            const pg=new THREE.PlaneGeometry(szW,szD);const pl=new THREE.LineSegments(new THREE.EdgesGeometry(pg),TM);
+            const angle=info.key==='shoeLow'?.3:.2;
+            if(front==='nz'||front==='pz')pl.rotation.x=-Math.PI/2+angle;
+            else pl.rotation.z=Math.PI/2-angle;
+            pl.position.set(bcx,sy,bcz);pDetailG.add(pl)}}break}
+      case 'top':{
+        if(splitH)wb(pDetailG,inW,WALL,inD,bcx,bcy,bcz);
+        if(splitW&&bW>cw*4)wb(pDetailG,WALL,inH,inD,bcx,bcy,bcz);break}
+      case 'sink':{
+        const basinH=bH*.2,basinW=inW*.65,basinD=inD*.65;
+        const bl=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(basinW,basinH,basinD)),TM);
+        bl.position.set(bcx,by2-basinH/2-WALL,bcz);pDetailG.add(bl);
+        const fH=bH*.3,fG=new THREE.CylinderGeometry(.006,.006,fH,6);
+        const fL=new THREE.LineSegments(new THREE.EdgesGeometry(fG),LM);
+        let faucZ=bcz,faucX=bcx;
+        if(front==='nz')faucZ=bz1+inD*.2;else if(front==='pz')faucZ=bz2-inD*.2;
+        else if(front==='nx')faucX=bx1+inW*.2;else faucX=bx2-inW*.2;
+        fL.position.set(faucX,by2+fH/2-WALL,faucZ);pDetailG.add(fL);break}
+      case 'cooktop':{
+        wb(pDetailG,inW*.9,WALL*2,inD*.9,bcx,by2-WALL*2,bcz,LM);
+        const bR=Math.min(inW,inD)*.16,offX=inW*.2,offZ=inD*.2;
+        for(const[dx2,dz2]of[[-1,-1],[-1,1],[1,-1],[1,1]]){
+          const cg=new THREE.RingGeometry(bR*.5,bR,16);cg.rotateX(-Math.PI/2);
+          const cl=new THREE.LineSegments(new THREE.EdgesGeometry(cg),TM);
+          cl.position.set(bcx+dx2*offX,by2-WALL,bcz+dz2*offZ);pDetailG.add(cl)}break}
+      case 'oven':{
+        let dx=0,dz=0;
+        if(front==='nz')dz=bz1+WALL;else if(front==='pz')dz=bz2-WALL;
+        else if(front==='nx')dx=bx1+WALL;else dx=bx2-WALL;
+        if(front==='nz'||front==='pz'){wb(pDetailG,inW-WALL*4,inH-WALL*4,WALL,bcx,bcy,dz);
+          wb(pDetailG,inW*.45,WALL,WALL,bcx,by2-bH*.15,dz+(front==='pz'?WALL:-WALL),LM)}
+        else{wb(pDetailG,WALL,inH-WALL*4,inD-WALL*4,dx,bcy,bcz);
+          wb(pDetailG,WALL,WALL,inD*.45,dx+(front==='px'?WALL:-WALL),by2-bH*.15,bcz,LM)}
+        wb(pDetailG,inW*.8,WALL,inD*.8,bcx,bcy,bcz);break}
+      case 'dishw':{
+        let dx=0,dz=0;
+        if(front==='nz')dz=bz1+WALL;else if(front==='pz')dz=bz2-WALL;
+        else if(front==='nx')dx=bx1+WALL;else dx=bx2-WALL;
+        if(front==='nz'||front==='pz'){wb(pDetailG,inW-WALL*4,inH-WALL*4,WALL,bcx,bcy,dz);
+          wb(pDetailG,inW*.35,WALL,WALL,bcx,by2-bH*.12,dz+(front==='pz'?WALL:-WALL),LM)}
+        else{wb(pDetailG,WALL,inH-WALL*4,inD-WALL*4,dx,bcy,bcz);
+          wb(pDetailG,WALL,WALL,inD*.35,dx+(front==='px'?WALL:-WALL),by2-bH*.12,bcz,LM)}
+        if(splitH){wb(pDetailG,inW*.8,WALL,inD*.8,bcx,by1+bH*.35,bcz);wb(pDetailG,inW*.8,WALL,inD*.8,bcx,by1+bH*.65,bcz)}break}
+    }
+  }
+}
+
+/* ═══════════════  INFO  ═══════════════ */
+function updateInfo(){
+  const{cw,ch,cd}=getDims();
+  let minX=GX,maxX=-1,minY=GY,maxY=-1,minZ=GZ,maxZ=-1;
+  for(let z=0;z<GZ;z++)for(let y=0;y<GY;y++)for(let x=0;x<GX;x++){
+    if(!vGet(x,y,z))continue;minX=Math.min(minX,x);maxX=Math.max(maxX,x);
+    minY=Math.min(minY,y);maxY=Math.max(maxY,y);minZ=Math.min(minZ,z);maxZ=Math.max(maxZ,z)}
+  if(maxX<0){$('auto-w').textContent=$('auto-h').textContent=$('auto-d').textContent='—';$('info-size').textContent='—';return}
+  const w=((maxX-minX+1)*cw*100).toFixed(0),ht=((maxY-minY+1)*ch*100).toFixed(0),d=((maxZ-minZ+1)*cd*100).toFixed(0);
+  $('auto-w').textContent=w;$('auto-h').textContent=ht;$('auto-d').textContent=d;
+  $('info-size').textContent=`${w}×${ht}×${d} см`}
+
+/* ═══════════════  REBUILD  ═══════════════ */
+let timer=0;
+function scheduleRebuild(){clearTimeout(timer);timer=setTimeout(fullRebuild,80)}
+function fullRebuild(){buildEditorFloor();rebuildEditorMeshes();rebuildPreview();updateInfo();fitCams()}
+
+/* ═══════════════  CAMERAS  ═══════════════ */
+function fitCams(){
+  const{rw,rd,h}=getDims();const sz=Math.max(rw,rd,h);
+  eFrust=sz*1.6;updateEditorFrustum();eControls.target.set(0,h/2,0);eControls.update();
+  pFrust=sz*1.6;updatePreviewFrustum();pControls.target.set(0,h/2,0);pControls.update()}
+function updateEditorFrustum(){const a=eAspect();eCam.left=-eFrust*a/2;eCam.right=eFrust*a/2;eCam.top=eFrust/2;eCam.bottom=-eFrust/2;eCam.updateProjectionMatrix()}
+function updatePreviewFrustum(){const a=pAspect();pCam.left=-pFrust*a/2;pCam.right=pFrust*a/2;pCam.top=pFrust/2;pCam.bottom=-pFrust/2;pCam.updateProjectionMatrix()}
+
+$('btn-reset-cam').addEventListener('click',()=>{
+  const{h}=getDims();
+  eCam.position.set(10,10,10);eControls.target.set(0,h/2,0);eControls.update();
+  pCam.position.set(12,12,12);pControls.target.set(0,h/2,0);pControls.update()});
+
+function onResize(){
+  eRenderer.setSize(editorVP.clientWidth,editorVP.clientHeight);updateEditorFrustum();
+  pRenderer.setSize(previewVP.clientWidth,previewVP.clientHeight);updatePreviewFrustum()}
+window.addEventListener('resize',onResize);
+new ResizeObserver(onResize).observe(editorVP);
+new ResizeObserver(onResize).observe(previewVP);
+
+(function animate(){requestAnimationFrame(animate);
+  eControls.update();eRenderer.render(eScene,eCam);
+  pControls.update();pRenderer.render(pScene,pCam)})();
+
+/* ═══════════════  INIT  ═══════════════ */
+buildPalette();buildPresets();
+const initP=CATEGORY_PRESETS.wardrobe[0];if(initP)initP.fill();
+fullRebuild();
+</script>
+</body>
+</html>
