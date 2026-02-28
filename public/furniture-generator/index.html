@@ -112,7 +112,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
     <div class="sec" id="palette">
       <h3 class="sec-head">Тип отделения</h3>
       <div class="pal-row" id="pal-row"></div>
-      <div style="margin-top:4px;display:flex;gap:4px">
+      <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">
+        <button class="pal-btn" id="divider-btn">
+          <span class="sw" style="background:#444"></span>Разделитель
+        </button>
         <button class="pal-btn" id="eraser-btn" style="border-style:dashed">
           <span class="sw" style="background:#fff"></span>Ластик
         </button>
@@ -211,6 +214,7 @@ const TYPES={
   shoeHi:{id:6,label:'Сапоги',color:'#d5b0f0'},
   books:{id:7,label:'Книги',color:'#b0d0f0'},
   top:{id:8,label:'Антресоль',color:'#d0d0d0'},
+  divider:{id:99,label:'Разделитель',color:'#444444'},
 };
 const TYPE_BY_ID={};
 for(const[k,v]of Object.entries(TYPES)) TYPE_BY_ID[v.id]={...v,key:k};
@@ -234,21 +238,29 @@ function mkFacades(fn,fs,fw,fe){return{north:fn(),south:fs(),west:fw(),east:fe()
 
 function fWardrobeN(){const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);fillR(g,2,0,14,9,TYPES.hanging.id);
   fillR(g,2,10,9,19,TYPES.shelf.id);fillR(g,10,10,14,19,TYPES.shelf.id);
-  fillR(g,15,0,17,9,TYPES.drawer.id);fillR(g,15,10,17,19,TYPES.drawer.id);
-  fillR(g,18,0,19,19,TYPES.shelf.id);return g}
+  fillR(g,15,0,15,19,TYPES.drawer.id);fillR(g,16,0,16,19,TYPES.divider.id);
+  fillR(g,17,0,17,19,TYPES.drawer.id);fillR(g,18,0,18,19,TYPES.divider.id);
+  fillR(g,19,0,19,19,TYPES.drawer.id);return g}
 function fWardrobeS(){const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);
-  fillR(g,2,0,14,19,TYPES.shelf.id);fillR(g,15,0,19,19,TYPES.drawer.id);return g}
+  fillR(g,2,0,14,19,TYPES.shelf.id);fillR(g,15,0,15,19,TYPES.drawer.id);
+  fillR(g,16,0,16,19,TYPES.divider.id);fillR(g,17,0,17,19,TYPES.drawer.id);
+  fillR(g,18,0,18,19,TYPES.divider.id);fillR(g,19,0,19,19,TYPES.drawer.id);return g}
 function fEmpty(){return emptyG()}
 
 function fBookN(){const g=emptyG();for(let i=0;i<5;i++)fillR(g,i*4,0,i*4+3,19,TYPES.books.id);return g}
 function fShoesN(){const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);fillR(g,2,0,7,19,TYPES.shoeHi.id);
   fillR(g,8,0,13,9,TYPES.shoeLow.id);fillR(g,8,10,13,19,TYPES.shoeLow.id);
-  fillR(g,14,0,17,19,TYPES.shoeLow.id);fillR(g,18,0,19,19,TYPES.drawer.id);return g}
+  fillR(g,14,0,16,19,TYPES.shoeLow.id);fillR(g,17,0,17,19,TYPES.drawer.id);
+  fillR(g,18,0,18,19,TYPES.divider.id);fillR(g,19,0,19,19,TYPES.drawer.id);return g}
 function fHallN(){const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);fillR(g,3,0,12,11,TYPES.hanging.id);
   fillR(g,3,12,7,19,TYPES.shelf.id);fillR(g,8,12,12,19,TYPES.open.id);
-  fillR(g,13,0,16,19,TYPES.shoeLow.id);fillR(g,17,0,19,19,TYPES.drawer.id);return g}
+  fillR(g,13,0,16,19,TYPES.shoeLow.id);fillR(g,17,0,17,19,TYPES.drawer.id);
+  fillR(g,18,0,18,19,TYPES.divider.id);fillR(g,19,0,19,19,TYPES.drawer.id);return g}
 function fHallE(){const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);fillR(g,3,0,12,19,TYPES.shelf.id);
-  fillR(g,13,0,19,19,TYPES.drawer.id);return g}
+  fillR(g,13,0,13,19,TYPES.drawer.id);fillR(g,14,0,14,19,TYPES.divider.id);
+  fillR(g,15,0,15,19,TYPES.drawer.id);fillR(g,16,0,16,19,TYPES.divider.id);
+  fillR(g,17,0,17,19,TYPES.drawer.id);fillR(g,18,0,18,19,TYPES.divider.id);
+  fillR(g,19,0,19,19,TYPES.drawer.id);return g}
 function fShelfN(){const g=emptyG();for(let i=0;i<5;i++){
   fillR(g,i*4,0,i*4+3,19,i%2===0?TYPES.open.id:TYPES.shelf.id)};return g}
 
@@ -294,10 +306,13 @@ function buildPalette(){
   if(!CAT_TYPES[currentCat].some(k=>TYPES[k].id===currentBrush)){
     currentBrush=TYPES[CAT_TYPES[currentCat][0]].id;isEraser=false}
   refreshPal()}
+const dividerBtn=document.getElementById('divider-btn');
 function refreshPal(){
   palRow.querySelectorAll('.pal-btn').forEach(b=>
     b.classList.toggle('active',+b.dataset.typeId===currentBrush&&!isEraser));
-  eraserBtn.classList.toggle('active',isEraser)}
+  eraserBtn.classList.toggle('active',isEraser);
+  dividerBtn.classList.toggle('active',currentBrush===TYPES.divider.id&&!isEraser)}
+dividerBtn.addEventListener('click',()=>{isEraser=false;currentBrush=TYPES.divider.id;refreshPal()});
 eraserBtn.addEventListener('click',()=>{isEraser=true;refreshPal()});
 
 /* ═══════════════════════════════════════════════════════
@@ -490,9 +505,24 @@ const LM=new THREE.LineBasicMaterial({color:0x000000,linewidth:2});
 const TM=new THREE.LineBasicMaterial({color:0x000000,linewidth:1});
 const RM=new THREE.LineBasicMaterial({color:0xdddddd,linewidth:1});
 
+/* color material cache */
+const _matCache={};
+function getColorMat(hex){
+  if(_matCache[hex])return _matCache[hex];
+  const m=new THREE.MeshBasicMaterial({color:new THREE.Color(hex),transparent:true,opacity:0.35,
+    depthWrite:false,side:THREE.DoubleSide});
+  _matCache[hex]=m;return m}
+
 function wb(p,w,h,d,x,y,z,m){m=m||LM;
   const g=new THREE.BoxGeometry(w,h,d),e=new THREE.EdgesGeometry(g),
     s=new THREE.LineSegments(e,m);s.position.set(x,y,z);p.add(s);return s}
+
+/* wireframe box + colored fill */
+function wbC(p,w,h,d,x,y,z,hex,m){m=m||TM;
+  const g=new THREE.BoxGeometry(w,h,d);
+  const e=new THREE.EdgesGeometry(g),s=new THREE.LineSegments(e,m);s.position.set(x,y,z);p.add(s);
+  const mesh=new THREE.Mesh(g.clone(),getColorMat(hex));mesh.position.set(x,y,z);p.add(mesh);
+  return s}
 
 /* ═══════════════════════════════════════════════════════
    3D BUILD
@@ -636,11 +666,11 @@ function rebuild(){
           const bw=bx2-bx1,bd=bz2-bz1;
           const bcx=(bx1+bx2)/2,bcz=(bz1+bz2)/2;
 
-          // Compartment box
-          wb(grp,bw-WALL,fh-WALL,bd-WALL, bcx,fcy,bcz,TM);
-
-          // Details
+          // Compartment box (skip for dividers — they are thin panels)
           const info=TYPE_BY_ID[reg.typeId];if(!info)continue;
+          const typeColor=info.color||'#cccccc';
+          if(reg.typeId!==TYPES.divider.id)
+            wbC(grp,bw-WALL,fh-WALL,bd-WALL, bcx,fcy,bcz,typeColor,TM);
           const inW=bw-WALL*4, inD=bd-WALL*4;
 
           switch(info.key){
@@ -654,22 +684,20 @@ function rebuild(){
               const re=new THREE.EdgesGeometry(rg),rod=new THREE.LineSegments(re,LM);
               rod.position.set(bcx,ry,bcz);grp.add(rod);
               wb(grp,inW,WALL,inD,bcx,fy2-WALL*2,bcz,TM);break}
-            case 'drawer':{const n=Math.max(1,Math.round(fh/(cH*3.5)));
-              const gap=WALL,dH=(fh-gap*(n+1))/n;
-              // front face Z depends on facade direction
+            case 'drawer':{
+              // 1 region = 1 drawer; use dividers to split
               let ffx=bcx,ffz=bcz;
               if(fc.name==='north')ffz=bz2-WALL;
               else if(fc.name==='south')ffz=bz1+WALL;
               else if(fc.name==='west')ffx=bx2-WALL;
               else ffx=bx1+WALL;
-              for(let i=0;i<n;i++){const dy=fy1+gap+dH/2+i*(dH+gap);
-                if(fc.name==='north'||fc.name==='south'){
-                  wb(grp,inW,dH-WALL,WALL,bcx,dy,ffz,TM);
-                  wb(grp,inW*.22,WALL,WALL,bcx,dy,ffz+(fc.name==='north'?WALL:-WALL),TM);
-                }else{
-                  wb(grp,WALL,dH-WALL,inD,ffx,dy,bcz,TM);
-                  wb(grp,WALL,WALL,inD*.22,ffx+(fc.name==='west'?WALL:-WALL),dy,bcz,TM);
-                }}break}
+              if(fc.name==='north'||fc.name==='south'){
+                wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,ffz,TM);
+                wb(grp,inW*.22,WALL,WALL,bcx,fcy,ffz+(fc.name==='north'?WALL:-WALL),TM);
+              }else{
+                wb(grp,WALL,fh-WALL*2,inD,ffx,fcy,bcz,TM);
+                wb(grp,WALL,WALL,inD*.22,ffx+(fc.name==='west'?WALL:-WALL),fcy,bcz,TM);
+              }break}
             case 'open':{
               if(fc.name==='north')wb(grp,inW,fh-WALL*4,WALL,bcx,fcy,bz1+WALL*2,TM);
               else if(fc.name==='south')wb(grp,inW,fh-WALL*4,WALL,bcx,fcy,bz2-WALL*2,TM);
@@ -695,6 +723,7 @@ function rebuild(){
                 pl.position.set(bcx,sy,bcz);grp.add(pl)}break}
             case 'top':{wb(grp,inW,WALL,inD,bcx,fcy,bcz,TM);
               if(bw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);break}
+            case 'divider':{wbC(grp,bw-WALL*2,WALL*2,bd-WALL*2,bcx,fcy,bcz,'#444444',TM);break}
           }
         }
         fCol=fColEnd+1;

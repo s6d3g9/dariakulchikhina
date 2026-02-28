@@ -19,6 +19,8 @@ export const ContractorSchema = z.object({
   factAddress: z.string().optional().nullable(),
   workTypes: z.array(z.string()),
   roleTypes: z.array(z.string()).optional().default([]),
+  contractorType: z.enum(['master', 'company']).default('master'),
+  parentId: z.number().optional().nullable(),
   pin: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   messenger: z.string().optional().nullable(),
@@ -29,6 +31,8 @@ export const CreateContractorSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9_-]+$/),
   name: z.string().min(1),
   pin: z.string().optional(),
+  contractorType: z.enum(['master', 'company']).default('master'),
+  parentId: z.number().optional().nullable(),
 })
 export const UpdateContractorSchema = ContractorSchema.omit({ id: true }).partial()
 export type Contractor = z.infer<typeof ContractorSchema>

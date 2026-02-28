@@ -7,37 +7,96 @@
 
     <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
     <div v-else>
-      <div
-        v-for="c in contractors"
-        :key="c.id"
-        class="a-card"
-        style="padding:16px 20px;margin-bottom:8px"
-      >
-        <div style="display:flex;align-items:flex-start;justify-content:space-between">
-          <div>
-            <div style="font-size:.9rem;font-weight:500;color:#1a1a1a;margin-bottom:3px">{{ c.name }}</div>
-            <div v-if="c.companyName" style="font-size:.78rem;color:#888">{{ c.companyName }}</div>
-            <div style="font-size:.76rem;color:#aaa;margin-top:2px">
-              <span v-if="c.phone">{{ c.phone }}&nbsp;&nbsp;</span>
-              <span v-if="c.email">{{ c.email }}&nbsp;&nbsp;</span>
-              <span v-if="c.pin" style="color:#888">ID: <b style="color:var(--glass-text)">{{ c.id }}</b>&nbsp;·&nbsp;PIN: <b style="color:var(--glass-text)">{{ c.pin }}</b></span>
-              <span v-else style="opacity:.5">PIN не задан</span>
+      <!-- ── Компании-подрядчики с мастерами ──────────────── -->
+      <div v-for="company in companies" :key="company.id" class="a-company-group">
+        <div class="a-card" style="padding:14px 20px;margin-bottom:4px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+                <span class="a-type-badge a-type-company">подрядчик</span>
+                <span style="font-size:.9rem;font-weight:500">{{ company.name }}</span>
+              </div>
+              <div v-if="company.companyName" style="font-size:.78rem;color:#888">{{ company.companyName }}</div>
+              <div style="font-size:.76rem;color:#aaa;margin-top:2px">
+                <span v-if="company.phone">{{ company.phone }}&nbsp;&nbsp;</span>
+                <span v-if="company.email">{{ company.email }}&nbsp;&nbsp;</span>
+                <span style="color:#888">ID: <b>{{ company.id }}</b></span>
+              </div>
             </div>
-            <div v-if="c.workTypes?.length" style="font-size:.72rem;color:#999;margin-top:3px">
-              {{ c.workTypes.join(', ') }}
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="a-btn-sm a-btn-add-master" @click="openCreateMaster(company.id)">+ мастер</button>
+              <NuxtLink :to="`/contractor/${company.id}`" target="_blank" class="a-btn-sm a-btn-cabinet">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                кабинет
+              </NuxtLink>
+              <button class="a-btn-sm" @click="openEdit(company)">изменить</button>
+              <button class="a-btn-sm a-btn-danger" @click="del(company.id)">удалить</button>
             </div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <NuxtLink
-              :to="`/contractor/${c.id}`"
-              target="_blank"
-              class="a-btn-sm a-btn-cabinet"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              кабинет
-            </NuxtLink>
-            <button class="a-btn-sm" @click="openEdit(c)">изменить</button>
-            <button class="a-btn-sm a-btn-danger" @click="del(c.id)">удалить</button>
+        </div>
+
+        <!-- Мастера данной компании -->
+        <div
+          v-for="m in (mastersByParent.get(company.id) || [])" :key="m.id"
+          class="a-card a-master-row"
+          style="padding:12px 20px 12px 44px;margin-bottom:4px"
+        >
+          <div style="display:flex;align-items:flex-start;justify-content:space-between">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+                <span class="a-type-badge a-type-master">мастер</span>
+                <span style="font-size:.88rem;font-weight:500">{{ m.name }}</span>
+              </div>
+              <div style="font-size:.76rem;color:#aaa;margin-top:1px">
+                <span v-if="m.phone">{{ m.phone }}&nbsp;&nbsp;</span>
+                <span v-if="m.email">{{ m.email }}&nbsp;&nbsp;</span>
+                <span style="color:#888">ID: <b>{{ m.id }}</b></span>
+              </div>
+              <div v-if="m.workTypes?.length" style="font-size:.72rem;color:#999;margin-top:2px">{{ m.workTypes.join(', ') }}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <NuxtLink :to="`/contractor/${m.id}`" target="_blank" class="a-btn-sm a-btn-cabinet">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                кабинет
+              </NuxtLink>
+              <button class="a-btn-sm" @click="openEdit(m)">изменить</button>
+              <button class="a-btn-sm a-btn-danger" @click="del(m.id)">удалить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Самозанятые мастера (без компании) ────────────── -->
+      <div v-if="standaloneMasters.length" style="margin-top:20px">
+        <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.8px;color:#aaa;margin-bottom:8px;padding:0 4px">
+          частные мастера / самозанятые
+        </div>
+        <div
+          v-for="m in standaloneMasters" :key="m.id"
+          class="a-card"
+          style="padding:14px 20px;margin-bottom:6px"
+        >
+          <div style="display:flex;align-items:flex-start;justify-content:space-between">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+                <span class="a-type-badge a-type-master">мастер</span>
+                <span style="font-size:.9rem;font-weight:500">{{ m.name }}</span>
+              </div>
+              <div style="font-size:.76rem;color:#aaa;margin-top:2px">
+                <span v-if="m.phone">{{ m.phone }}&nbsp;&nbsp;</span>
+                <span v-if="m.email">{{ m.email }}&nbsp;&nbsp;</span>
+                <span style="color:#888">ID: <b>{{ m.id }}</b></span>
+              </div>
+              <div v-if="m.workTypes?.length" style="font-size:.72rem;color:#999;margin-top:2px">{{ m.workTypes.join(', ') }}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <NuxtLink :to="`/contractor/${m.id}`" target="_blank" class="a-btn-sm a-btn-cabinet">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                кабинет
+              </NuxtLink>
+              <button class="a-btn-sm" @click="openEdit(m)">изменить</button>
+              <button class="a-btn-sm a-btn-danger" @click="del(m.id)">удалить</button>
+            </div>
           </div>
         </div>
       </div>
@@ -50,6 +109,24 @@
           {{ editingId ? 'редактировать' : 'добавить' }} подрядчика
         </h3>
         <form @submit.prevent="save">
+          <!-- section: type -->
+          <div class="a-section-title">тип участника</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
+            <div class="a-field">
+              <label>Тип</label>
+              <select v-model="form.contractorType" class="a-input a-select">
+                <option value="master">Мастер (частный специалист)</option>
+                <option value="company">Подрядчик (организация)</option>
+              </select>
+            </div>
+            <div v-if="form.contractorType === 'master'" class="a-field">
+              <label>Компания-работодатель</label>
+              <select v-model="form.parentId" class="a-input a-select">
+                <option :value="null">— самозанятый —</option>
+                <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
+              </select>
+            </div>
+          </div>
           <!-- section: main -->
           <div class="a-section-title">основное</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -204,9 +281,30 @@ const emptyForm = () => ({
   bankName: '', bik: '', settlementAccount: '', correspondentAccount: '',
   notes: '',
   workTypes: [] as string[],
+  contractorType: 'master' as 'master' | 'company',
+  parentId: null as number | null,
 })
 
 const form = reactive(emptyForm())
+
+const companies = computed(() =>
+  (contractors.value || []).filter((c: any) => c.contractorType === 'company')
+)
+
+const mastersByParent = computed(() => {
+  const map = new Map<number, any[]>()
+  for (const c of contractors.value || []) {
+    if (c.contractorType === 'master' && c.parentId) {
+      if (!map.has(c.parentId)) map.set(c.parentId, [])
+      map.get(c.parentId)!.push(c)
+    }
+  }
+  return map
+})
+
+const standaloneMasters = computed(() =>
+  (contractors.value || []).filter((c: any) => c.contractorType === 'master' && !c.parentId)
+)
 
 const workTypesStr = computed({
   get: () => form.workTypes.join(', '),
@@ -216,6 +314,14 @@ const workTypesStr = computed({
 function openCreate() {
   editingId.value = null
   Object.assign(form, emptyForm())
+  showModal.value = true
+}
+
+function openCreateMaster(companyId: number) {
+  editingId.value = null
+  Object.assign(form, emptyForm())
+  form.contractorType = 'master'
+  form.parentId = companyId
   showModal.value = true
 }
 
@@ -404,5 +510,45 @@ async function del(id: number) {
   border-radius: 18px;
   padding: 28px 30px;
   max-width: 90vw;
+}
+
+/* ── Type badges ────────────────────────────────────────── */
+.a-type-badge {
+  display: inline-block;
+  font-size: .65rem;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.a-type-company {
+  background: rgba(160,110,30,0.12);
+  color: rgba(140,90,15,1);
+  border: 1px solid rgba(160,110,30,0.25);
+}
+.dark .a-type-company { background: rgba(200,160,60,0.15); color: rgba(200,160,60,1); }
+.a-type-master {
+  background: rgba(60,100,200,0.1);
+  color: rgba(50,90,190,1);
+  border: 1px solid rgba(60,100,200,0.22);
+}
+.dark .a-type-master { background: rgba(100,140,255,0.15); color: rgba(130,165,255,1); }
+
+/* ── Add master button ──────────────────────────────────── */
+.a-btn-add-master {
+  color: rgba(50,90,190,1);
+  border-color: rgba(60,100,200,0.3);
+  background: rgba(60,100,200,0.06);
+}
+.a-btn-add-master:hover { background: rgba(60,100,200,0.15); }
+
+/* ── Company group indent ───────────────────────────────── */
+.a-company-group { margin-bottom: 12px; }
+.a-master-row {
+  border-left: 3px solid rgba(60,100,200,0.2);
+  border-radius: 0 10px 10px 0 !important;
+  margin-left: 16px;
 }
 </style>

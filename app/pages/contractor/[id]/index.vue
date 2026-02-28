@@ -2,7 +2,7 @@
   <div class="cab-root glass-page">
 
     <header class="cab-header glass-surface">
-      <div class="cab-logo">DK <span>| Кабинет исполнителя</span></div>
+      <div class="cab-logo">DK <span>| {{ contractor?.contractorType === 'company' ? 'Кабинет подрядчика' : 'Кабинет мастера' }}</span></div>
       <div class="cab-hright">
         <span v-if="contractor" class="cab-hname">{{ contractor.name }}</span>
         <button class="glass-chip cab-logout" @click="logout">Выйти</button>
@@ -261,7 +261,7 @@
       </main>
     </div>
 
-    <footer class="cab-footer">DK Studio · Кабинет исполнителя</footer>
+    <footer class="cab-footer">DK Studio · {{ contractor?.contractorType === 'company' ? 'Кабинет подрядчика' : 'Кабинет мастера' }}</footer>
   </div>
 </template>
 
