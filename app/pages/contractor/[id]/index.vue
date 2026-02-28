@@ -25,6 +25,7 @@
             <span class="cab-nav-icon">{{ item.icon }}</span>
             <span>{{ item.label }}</span>
             <span v-if="item.key === 'tasks' && activeCount" class="cab-badge">{{ activeCount }}</span>
+            <span v-if="item.key === 'stages' && contractor?.workTypes?.length" class="cab-badge">{{ contractor.workTypes.length }}</span>
           </button>
         </nav>
       </aside>
@@ -220,6 +221,30 @@
             </form>
           </template>
 
+          <!-- ── Этапы ────────────────────────────────────────────── -->
+          <template v-else-if="section === 'stages'">
+            <div v-if="!stagesForSelected.length" class="cab-empty">
+              <div class="cab-empty-icon">◫</div>
+              <p>Перейдите во вкладку «Профиль» и<br>выберите виды работ — здесь появятся<br>технологические этапы по каждому из них.</p>
+            </div>
+            <div v-else>
+              <div v-for="wt in stagesForSelected" :key="wt.workType" class="cab-stages-block glass-surface">
+                <button class="cab-stages-head" @click="toggleStagesOpen(wt.workType)">
+                  <span class="cab-stages-icon">{{ stagesOpen.has(wt.workType) ? '▾' : '▸' }}</span>
+                  <span class="cab-stages-title">{{ wt.label }}</span>
+                  <span class="cab-stages-count">{{ wt.stages.length }} этапов</span>
+                </button>
+                <div v-if="stagesOpen.has(wt.workType)" class="cab-stages-list">
+                  <div v-for="(stage, idx) in wt.stages" :key="stage.key" class="cab-stage-row">
+                    <span class="cab-stage-num">{{ idx + 1 }}</span>
+                    <span class="cab-stage-label">{{ stage.label }}</span>
+                    <span v-if="stage.hint" class="cab-stage-hint">{{ stage.hint }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
         </div>
       </main>
     </div>
@@ -229,7 +254,7 @@
 </template>
 
 <script setup lang="ts">
-import { CONTRACTOR_ROLE_TYPE_OPTIONS, CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
+import { CONTRACTOR_ROLE_TYPE_OPTIONS, CONTRACTOR_WORK_TYPE_OPTIONS, WORK_TYPE_STAGES } from '~~/shared/types/catalogs'
 
 definePageMeta({ layout: 'default' })
 
@@ -280,8 +305,27 @@ if (meData.value?.contractorId && meData.value.contractorId !== contractorId) {
 const section = ref('tasks')
 const nav = [
   { key: 'tasks',   icon: '◎', label: 'Мои задачи' },
+  { key: 'stages',  icon: '◫', label: 'Этапы работ' },
   { key: 'profile', icon: '◑', label: 'Мой профиль' },
 ]
+
+// ── Stages ────────────────────────────────────────────────────────
+const stagesOpen = reactive(new Set<string>())
+function toggleStagesOpen(key: string) {
+  if (stagesOpen.has(key)) stagesOpen.delete(key)
+  else stagesOpen.add(key)
+}
+
+const stagesForSelected = computed(() => {
+  const selected: string[] = contractor.value?.workTypes || []
+  return selected
+    .filter(wt => WORK_TYPE_STAGES[wt])
+    .map(wt => ({
+      workType: wt,
+      label: CONTRACTOR_WORK_TYPE_OPTIONS.find(o => o.value === wt)?.label || wt,
+      stages: WORK_TYPE_STAGES[wt],
+    }))
+})
 
 // ── Tasks ─────────────────────────────────────────────────────────
 const STATUSES = [
@@ -839,6 +883,52 @@ async function logout() {
 .cab-save-msg { font-size: 0.88rem; color: #4a7c59; font-weight: 600; }
 
 .cab-footer { text-align: center; padding: 18px; font-size: 0.8rem; opacity: 0.35; }
+
+/* Stages */
+.cab-stages-block {
+  border-radius: 12px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.cab-stages-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--glass-text, #1a1a2e);
+  text-align: left;
+}
+.cab-stages-head:hover { background: rgba(255,255,255,0.15); }
+.cab-stages-icon { font-size: 0.7rem; opacity: 0.45; width: 12px; flex-shrink: 0; }
+.cab-stages-title { font-size: 0.9rem; font-weight: 600; flex: 1; }
+.cab-stages-count { font-size: 0.72rem; opacity: 0.45; white-space: nowrap; }
+.cab-stages-list {
+  border-top: 1px solid rgba(255,255,255,0.12);
+  padding: 10px 0 8px;
+}
+.cab-stage-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 18px;
+  transition: background 0.1s;
+}
+.cab-stage-row:hover { background: rgba(255,255,255,0.1); }
+.cab-stage-num {
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.35;
+  min-width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.cab-stage-label { font-size: 0.85rem; flex: 1; line-height: 1.4; }
+.cab-stage-hint { font-size: 0.75rem; opacity: 0.5; white-space: nowrap; }
 
 /* Mobile */
 @media (max-width: 768px) {
