@@ -21,6 +21,14 @@
 
         <!-- Left sidebar: vertical nav -->
         <nav class="proj-sidenav">
+          <!-- Fixed management section -->
+          <div class="proj-sidenav-group">
+            <div class="proj-sidenav-group-label">Управление</div>
+            <button class="proj-sidenav-item" :class="{ 'proj-sidenav-item--active': activePage === 'project_roadmap' }" @click="activePage = 'project_roadmap'">дорожная карта</button>
+            <button class="proj-sidenav-item" :class="{ 'proj-sidenav-item--active': activePage === 'work_status' }" @click="activePage = 'work_status'">статусы работ</button>
+            <button class="proj-sidenav-item" :class="{ 'proj-sidenav-item--active': activePage === 'profile_customer' }" @click="activePage = 'profile_customer'">анкета клиента</button>
+            <button class="proj-sidenav-item" :class="{ 'proj-sidenav-item--active': activePage === 'profile_contractors' }" @click="activePage = 'profile_contractors'">подрядчики</button>
+          </div>
           <template v-for="group in navGroups" :key="group.label">
             <div class="proj-sidenav-group" v-if="group.pages.length">
               <div class="proj-sidenav-group-label">{{ group.label }}</div>
