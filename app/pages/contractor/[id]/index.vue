@@ -509,6 +509,9 @@ const { data: workItems, refresh: refreshItems } = await useFetch<any[]>(
 const { data: staff } = await useFetch<any[]>(
   `/api/contractors/${contractorId}/staff`, { default: () => [] }
 )
+const { data: linkedProjects } = await useFetch<any[]>(
+  `/api/contractors/${contractorId}/projects`, { default: () => [] }
+)
 
 // ── Form ──────────────────────────────────────────────────────────
 const form = reactive({
@@ -680,8 +683,10 @@ const byProject = computed(() => {
 
 // ── Все проекты (для формы новой задачи) ────────────────────────
 const allProjects = computed(() => {
-  const seen = new Set<string>()
-  const result: { slug: string; title: string }[] = []
+  // Берём проекты из API (привязанные к подрядчику/компании)
+  const result: { slug: string; title: string }[] = [...(linkedProjects.value || [])]
+  const seen = new Set(result.map(p => p.slug))
+  // Дополняем проектами из задач (на случай если API вернул меньше)
   for (const item of workItems.value || []) {
     if (!seen.has(item.projectSlug)) {
       seen.add(item.projectSlug)
