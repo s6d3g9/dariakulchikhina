@@ -30,6 +30,13 @@
             <span>{{ p.slug }}</span>
             <span v-if="p.status" :class="`pi-badge pi-badge--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
           </div>
+          <div v-if="p.taskTotal > 0" style="display:flex;align-items:center;gap:10px;margin-top:6px">
+            <div class="a-task-mini-bar" :title="`${p.taskDone} из ${p.taskTotal} выполнено`">
+              <div class="a-task-mini-fill" :style="{ width: Math.round(p.taskDone / p.taskTotal * 100) + '%' }" />
+            </div>
+            <span style="font-size:.72rem;color:#aaa">{{ p.taskDone }}/{{ p.taskTotal }}</span>
+            <span v-if="p.taskOverdue > 0" style="font-size:.72rem;color:#c00;font-weight:600">⚠ {{ p.taskOverdue }} просрочено</span>
+          </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
           <NuxtLink :to="`/admin/projects/${p.slug}`">
@@ -218,6 +225,21 @@ function phaseColor(status: string) {
 </script>
 
 <style scoped>
+/* ── Task mini progress bar ────────────────────────────── */
+.a-task-mini-bar {
+  width: 80px; height: 5px;
+  background: var(--glass-border);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.a-task-mini-fill {
+  height: 100%;
+  background: #15803d;
+  border-radius: 3px;
+  transition: width .3s;
+}
+
 /* ── Card ──────────────────────────────────────────────── */
 .a-card {
   background: var(--glass-bg);
