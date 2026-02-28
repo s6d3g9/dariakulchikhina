@@ -136,7 +136,7 @@
                 <button type="button" class="glass-chip bcab-sync-btn" @click="pullFromBrief" title="Перенести бюджет / срок / стиль из брифа">← из брифа</button>
               </div>
             </div>
-            <div v-if="client.linkedProject">
+            <div>
               <form @submit.prevent="saveObject" class="bcab-form">
                 <div class="bcab-form-section">
                   <h3>Адрес и тип</h3>
@@ -195,10 +195,6 @@
                   <span v-if="objectSaveMsg" class="bcab-save-msg">{{ objectSaveMsg }}</span>
                 </div>
               </form>
-            </div>
-            <div v-else class="bcab-placeholder">
-              <div class="bcab-placeholder-icon">◻</div>
-              <p>Проект пока не привязан.<br>Обратитесь к вашему дизайнеру.</p>
             </div>
           </template>
 
@@ -289,10 +285,16 @@ const objectForm = reactive({
 })
 
 watch(client, (val) => {
-  if (val?.brief) Object.assign(brief, val.brief)
-  const p = (val?.selfProfile as Record<string, unknown>) || {}
+  if (val?.brief) {
+    const { object_params: _op, ...briefFields } = (val.brief as any)
+    Object.assign(brief, briefFields)
+  }
+  // Populate objectForm: project selfProfile takes priority, fallback to brief.object_params
+  const sp = (val?.selfProfile as Record<string, unknown>) || {}
+  const op = ((val?.brief as any)?.object_params as Record<string, unknown>) || {}
+  const source: Record<string, unknown> = { ...op, ...sp }
   Object.keys(objectForm).forEach(k => {
-    ;(objectForm as any)[k] = (p[k] as string) ?? ''
+    ;(objectForm as any)[k] = (source[k] as string) ?? ''
   })
 }, { immediate: true })
 
@@ -324,9 +326,11 @@ const currentGalleryLabel = computed(() => {
 
 async function saveBrief() {
   saveMsg.value = ''
+  // Preserve object_params when saving brief fields
+  const existingObjectParams = (client.value?.brief as any)?.object_params || {}
   await $fetch(`/api/clients/${clientId}/brief`, {
     method: 'PUT',
-    body: { brief },
+    body: { ...brief, object_params: existingObjectParams },
   })
   await refresh()
   saveMsg.value = 'Сохранено!'
@@ -335,10 +339,19 @@ async function saveBrief() {
 
 async function saveObject() {
   objectSaveMsg.value = ''
-  await $fetch(`/api/clients/${clientId}/self-profile`, {
+  // Always save to clients.brief.object_params (works without a project)
+  const currentBrief = (client.value?.brief as any) || {}
+  await $fetch(`/api/clients/${clientId}/brief`, {
     method: 'PUT',
-    body: { content: { ...objectForm } },
+    body: { ...currentBrief, object_params: { ...objectForm } },
   })
+  // If linked to a project, also sync to self_profile
+  if (client.value?.linkedProject) {
+    await $fetch(`/api/clients/${clientId}/self-profile`, {
+      method: 'PUT',
+      body: { content: { ...objectForm } },
+    })
+  }
   await refresh()
   objectSaveMsg.value = 'Сохранено!'
   setTimeout(() => (objectSaveMsg.value = ''), 3000)
