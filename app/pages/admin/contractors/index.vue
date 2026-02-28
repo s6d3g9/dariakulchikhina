@@ -297,7 +297,6 @@
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const { data: contractors, pending, refresh } = await useFetch<any[]>('/api/contractors')
-const { data: allProjects, pending: projectsLoading } = await useFetch<any[]>('/api/projects', { server: false, default: () => [] })
 
 const showModal = ref(false)
 const saving = ref(false)
@@ -305,6 +304,8 @@ const formError = ref('')
 const editingId = ref<number | null>(null)
 const selectedProjectIds = ref<Set<number>>(new Set())
 const originalProjectIds = ref<Set<number>>(new Set())
+const allProjects = ref<any[]>([])
+const projectsLoading = ref(false)
 
 function toggleProject(id: number) {
   const s = new Set(selectedProjectIds.value)
@@ -372,16 +373,21 @@ async function openEdit(c: any) {
   for (const key of Object.keys(empty) as (keyof typeof empty)[]) {
     ;(form as any)[key] = c[key] ?? (empty as any)[key]
   }
-  // load linked projects
   selectedProjectIds.value = new Set()
   originalProjectIds.value = new Set()
+  projectsLoading.value = true
+  showModal.value = true
   try {
-    const linked = await $fetch<any[]>(`/api/contractors/${c.id}/projects`)
+    const [projs, linked] = await Promise.all([
+      $fetch<any[]>('/api/projects'),
+      $fetch<any[]>(`/api/contractors/${c.id}/projects`),
+    ])
+    allProjects.value = projs
     const ids = new Set(linked.map((p: any) => p.id))
     selectedProjectIds.value = ids
     originalProjectIds.value = new Set(ids)
   } catch {}
-  showModal.value = true
+  projectsLoading.value = false
 }
 
 function closeModal() {
