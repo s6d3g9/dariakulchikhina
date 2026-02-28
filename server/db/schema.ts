@@ -87,6 +87,7 @@ export const workStatusItems = pgTable('work_status_items', {
   projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   contractorId: integer('contractor_id').references(() => contractors.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
+  workType: text('work_type'),
   status: text('status').default('pending').notNull(),
   dateStart: text('date_start'),
   dateEnd: text('date_end'),

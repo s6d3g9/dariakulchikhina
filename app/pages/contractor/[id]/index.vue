@@ -25,7 +25,6 @@
             <span class="cab-nav-icon">{{ item.icon }}</span>
             <span>{{ item.label }}</span>
             <span v-if="item.key === 'tasks' && activeCount" class="cab-badge">{{ activeCount }}</span>
-            <span v-if="item.key === 'stages' && contractor?.workTypes?.length" class="cab-badge">{{ contractor.workTypes.length }}</span>
           </button>
         </nav>
       </aside>
@@ -66,66 +65,103 @@
                   <div class="cab-proj-progress-bar" :style="{ width: proj.totalCount ? (proj.doneCount / proj.totalCount * 100) + '%' : '0%' }" />
                 </div>
 
-                <div class="cab-tasks">
-                  <div
-                    v-for="item in proj.items" :key="item.id"
-                    class="cab-task glass-surface"
-                    :class="{ expanded: expandedId === item.id }"
-                  >
-                    <!-- Верхняя строка -->
-                    <div class="cab-task-top" @click="toggleExpand(item.id)">
-                      <span class="cab-task-expand-icon">{{ expandedId === item.id ? '▾' : '▸' }}</span>
-                      <span class="cab-task-name">{{ item.title }}</span>
-                      <select
-                        :value="item.status"
-                        class="cab-status-select"
-                        :class="`cab-status--${item.status}`"
-                        @click.stop
-                        @change="updateStatus(item, ($event.target as HTMLSelectElement).value)"
+                <!-- Группы по виду работ -->
+                <div v-for="wtGroup in proj.wtGroups" :key="wtGroup.workType" class="cab-wt-group">
+                  <button class="cab-wt-head" @click="toggleWtGroup(proj.slug, wtGroup.workType)">
+                    <span class="cab-wt-icon">{{ isWtGroupOpen(proj.slug, wtGroup.workType) ? '▾' : '▸' }}</span>
+                    <span class="cab-wt-name">{{ wtGroup.label }}</span>
+                    <span class="cab-wt-count">{{ wtGroup.items.length }} зад.</span>
+                    <span v-if="wtGroup.stages.length" class="cab-wt-prog">
+                      {{ stagesPct(proj.slug, wtGroup.workType, wtGroup.stages.length) }}% этапов
+                    </span>
+                  </button>
+
+                  <div v-if="isWtGroupOpen(proj.slug, wtGroup.workType)" class="cab-wt-body">
+                    <!-- Задачи -->
+                    <div class="cab-tasks">
+                      <div
+                        v-for="item in wtGroup.items" :key="item.id"
+                        class="cab-task glass-surface"
+                        :class="{ expanded: expandedId === item.id }"
                       >
-                        <option v-for="s in STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
-                      </select>
+                        <!-- Верхняя строка -->
+                        <div class="cab-task-top" @click="toggleExpand(item.id)">
+                          <span class="cab-task-expand-icon">{{ expandedId === item.id ? '▾' : '▸' }}</span>
+                          <span class="cab-task-name">{{ item.title }}</span>
+                          <select
+                            :value="item.status"
+                            class="cab-status-select"
+                            :class="`cab-status--${item.status}`"
+                            @click.stop
+                            @change="updateStatus(item, ($event.target as HTMLSelectElement).value)"
+                          >
+                            <option v-for="s in STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
+                          </select>
+                        </div>
+
+                        <!-- Collapsed: краткая инфо -->
+                        <template v-if="expandedId !== item.id">
+                          <div v-if="item.dateStart || item.dateEnd || item.budget" class="cab-task-meta">
+                            <span v-if="item.dateStart">с {{ item.dateStart }}</span>
+                            <span v-if="item.dateEnd">по {{ item.dateEnd }}</span>
+                            <span v-if="item.budget" class="cab-task-budget">{{ item.budget }}</span>
+                          </div>
+                          <div v-if="item.notes" class="cab-task-notes cab-task-notes--preview">{{ item.notes }}</div>
+                        </template>
+
+                        <!-- Expanded: редактирование -->
+                        <template v-else>
+                          <div class="cab-task-edit">
+                            <div class="cab-task-edit-row">
+                              <div class="cab-task-edit-field">
+                                <label>Дата начала</label>
+                                <input v-model="editMap[item.id].dateStart" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
+                              </div>
+                              <div class="cab-task-edit-field">
+                                <label>Дата окончания</label>
+                                <input v-model="editMap[item.id].dateEnd" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
+                              </div>
+                              <div v-if="item.budget" class="cab-task-edit-field">
+                                <label>Бюджет</label>
+                                <span class="cab-task-budget cab-task-budget--lg">{{ item.budget }}</span>
+                              </div>
+                            </div>
+                            <div class="cab-task-edit-field">
+                              <label>Заметка для дизайнера</label>
+                              <textarea v-model="editMap[item.id].notes" class="glass-input" rows="3" placeholder="Статус работ, вопросы, уточнения…" />
+                            </div>
+                            <div class="cab-task-edit-actions">
+                              <button type="button" class="cab-task-save" :disabled="savingItem === item.id" @click.stop="saveTaskDetails(item)">
+                                {{ savingItem === item.id ? 'Сохранение…' : 'Сохранить' }}
+                              </button>
+                              <button type="button" class="cab-task-cancel" @click.stop="expandedId = null">Отмена</button>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
                     </div>
 
-                    <!-- Collapsed: краткая инфо -->
-                    <template v-if="expandedId !== item.id">
-                      <div v-if="item.dateStart || item.dateEnd || item.budget" class="cab-task-meta">
-                        <span v-if="item.dateStart">с {{ item.dateStart }}</span>
-                        <span v-if="item.dateEnd">по {{ item.dateEnd }}</span>
-                        <span v-if="item.budget" class="cab-task-budget">{{ item.budget }}</span>
+                    <!-- Технологические этапы (интерактивный чеклист) -->
+                    <div v-if="wtGroup.stages.length" class="cab-stages-inline glass-surface">
+                      <div class="cab-stages-inline-head">
+                        <span class="cab-stages-inline-title">Технологические этапы</span>
+                        <span class="cab-stages-inline-pct">{{ stagesPct(proj.slug, wtGroup.workType, wtGroup.stages.length) }}%</span>
                       </div>
-                      <div v-if="item.notes" class="cab-task-notes cab-task-notes--preview">{{ item.notes }}</div>
-                    </template>
-
-                    <!-- Expanded: редактирование -->
-                    <template v-else>
-                      <div class="cab-task-edit">
-                        <div class="cab-task-edit-row">
-                          <div class="cab-task-edit-field">
-                            <label>Дата начала</label>
-                            <input v-model="editMap[item.id].dateStart" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
-                          </div>
-                          <div class="cab-task-edit-field">
-                            <label>Дата окончания</label>
-                            <input v-model="editMap[item.id].dateEnd" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
-                          </div>
-                          <div v-if="item.budget" class="cab-task-edit-field">
-                            <label>Бюджет</label>
-                            <span class="cab-task-budget cab-task-budget--lg">{{ item.budget }}</span>
-                          </div>
-                        </div>
-                        <div class="cab-task-edit-field">
-                          <label>Заметка для дизайнера</label>
-                          <textarea v-model="editMap[item.id].notes" class="glass-input" rows="3" placeholder="Статус работ, вопросы, уточнения…" />
-                        </div>
-                        <div class="cab-task-edit-actions">
-                          <button type="button" class="cab-task-save" :disabled="savingItem === item.id" @click.stop="saveTaskDetails(item)">
-                            {{ savingItem === item.id ? 'Сохранение…' : 'Сохранить' }}
-                          </button>
-                          <button type="button" class="cab-task-cancel" @click.stop="expandedId = null">Отмена</button>
-                        </div>
+                      <div class="cab-stages-inline-bar-wrap">
+                        <div class="cab-stages-inline-bar" :style="{ width: stagesPct(proj.slug, wtGroup.workType, wtGroup.stages.length) + '%' }" />
                       </div>
-                    </template>
+                      <div
+                        v-for="(stage, idx) in wtGroup.stages" :key="stage.key"
+                        class="cab-stage-check-row"
+                        :class="{ done: isStageDone(proj.slug, wtGroup.workType, stage.key) }"
+                        @click="toggleStage(proj.slug, wtGroup.workType, stage.key)"
+                      >
+                        <span class="cab-stage-check-icon">{{ isStageDone(proj.slug, wtGroup.workType, stage.key) ? '✓' : '○' }}</span>
+                        <span class="cab-stage-num">{{ idx + 1 }}</span>
+                        <span class="cab-stage-label">{{ stage.label }}</span>
+                        <span v-if="stage.hint" class="cab-stage-hint">{{ stage.hint }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -221,28 +257,6 @@
             </form>
           </template>
 
-          <!-- ── Этапы ────────────────────────────────────────────── -->
-          <template v-else-if="section === 'stages'">
-            <div v-if="!stagesForSelected.length" class="cab-empty">
-              <div class="cab-empty-icon">◫</div>
-              <p>Перейдите во вкладку «Профиль» и<br>выберите виды работ — здесь появятся<br>технологические этапы по каждому из них.</p>
-            </div>
-            <div v-else>
-              <div v-for="wt in stagesForSelected" :key="wt.workType" class="cab-stages-block glass-surface">
-                <button class="cab-stages-head" @click="toggleStagesOpen(wt.workType)">
-                  <span class="cab-stages-icon">{{ stagesOpen.has(wt.workType) ? '▾' : '▸' }}</span>
-                  <span class="cab-stages-title">{{ wt.label }}</span>
-                  <span class="cab-stages-count">{{ wt.stages.length }} этапов</span>
-                </button>
-                <div v-if="stagesOpen.has(wt.workType)" class="cab-stages-list">
-                  <div v-for="(stage, idx) in wt.stages" :key="stage.key" class="cab-stage-row">
-                    <span class="cab-stage-num">{{ idx + 1 }}</span>
-                    <span class="cab-stage-label">{{ stage.label }}</span>
-                    <span v-if="stage.hint" class="cab-stage-hint">{{ stage.hint }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </template>
 
         </div>
@@ -305,27 +319,49 @@ if (meData.value?.contractorId && meData.value.contractorId !== contractorId) {
 const section = ref('tasks')
 const nav = [
   { key: 'tasks',   icon: '◎', label: 'Мои задачи' },
-  { key: 'stages',  icon: '◫', label: 'Этапы работ' },
   { key: 'profile', icon: '◑', label: 'Мой профиль' },
 ]
 
-// ── Stages ────────────────────────────────────────────────────────
-const stagesOpen = reactive(new Set<string>())
-function toggleStagesOpen(key: string) {
-  if (stagesOpen.has(key)) stagesOpen.delete(key)
-  else stagesOpen.add(key)
+// ── Wt group open state ──────────────────────────────────────────
+const wtGroupOpenSet = reactive(new Set<string>())
+function wtGroupKey(slug: string, wt: string) { return `${slug}::${wt}` }
+function isWtGroupOpen(slug: string, wt: string) { return wtGroupOpenSet.has(wtGroupKey(slug, wt)) }
+function toggleWtGroup(slug: string, wt: string) {
+  const k = wtGroupKey(slug, wt)
+  if (wtGroupOpenSet.has(k)) wtGroupOpenSet.delete(k)
+  else wtGroupOpenSet.add(k)
 }
 
-const stagesForSelected = computed(() => {
-  const selected: string[] = contractor.value?.workTypes || []
-  return selected
-    .filter(wt => WORK_TYPE_STAGES[wt])
-    .map(wt => ({
-      workType: wt,
-      label: CONTRACTOR_WORK_TYPE_OPTIONS.find(o => o.value === wt)?.label || wt,
-      stages: WORK_TYPE_STAGES[wt],
-    }))
-})
+// ── Stage checklist (localStorage) ──────────────────────────────
+interface WtGroup { workType: string; label: string; items: any[]; stages: any[] }
+
+function lsKey(projectSlug: string, wt: string) {
+  return `cab_stages_${contractorId}_${projectSlug}_${wt}`
+}
+function loadStageDone(projectSlug: string, wt: string): Set<string> {
+  if (process.server) return new Set()
+  try { const r = localStorage.getItem(lsKey(projectSlug, wt)); return new Set(r ? JSON.parse(r) : []) }
+  catch { return new Set() }
+}
+const stagesCache = reactive<Record<string, Set<string>>>({})
+function getStageDone(projectSlug: string, wt: string): Set<string> {
+  const k = lsKey(projectSlug, wt)
+  if (!stagesCache[k]) stagesCache[k] = loadStageDone(projectSlug, wt)
+  return stagesCache[k]
+}
+function toggleStage(projectSlug: string, wt: string, stageKey: string) {
+  const s = getStageDone(projectSlug, wt)
+  if (s.has(stageKey)) s.delete(stageKey)
+  else s.add(stageKey)
+  if (!process.server) localStorage.setItem(lsKey(projectSlug, wt), JSON.stringify([...s]))
+}
+function isStageDone(projectSlug: string, wt: string, key: string) {
+  return getStageDone(projectSlug, wt).has(key)
+}
+function stagesPct(projectSlug: string, wt: string, total: number) {
+  if (!total) return 0
+  return Math.round(getStageDone(projectSlug, wt).size / total * 100)
+}
 
 // ── Tasks ─────────────────────────────────────────────────────────
 const STATUSES = [
@@ -349,6 +385,9 @@ watch(workItems, (items) => {
     if (!editMap[item.id]) {
       editMap[item.id] = { notes: item.notes || '', dateStart: item.dateStart || '', dateEnd: item.dateEnd || '' }
     }
+    // auto-open all wt groups
+    const k = wtGroupKey(item.projectSlug, item.workType || '__general__')
+    wtGroupOpenSet.add(k)
   }
 }, { immediate: true })
 
@@ -372,26 +411,35 @@ const FILTERS = computed(() => {
 
 const byProject = computed(() => {
   const all = workItems.value || []
-  const map = new Map<string, { slug: string; title: string; items: any[]; doneCount: number; totalCount: number }>()
+  const map = new Map<string, { slug: string; title: string; wtGroups: WtGroup[]; doneCount: number; totalCount: number }>()
   for (const item of all) {
     if (!map.has(item.projectSlug)) {
-      map.set(item.projectSlug, { slug: item.projectSlug, title: item.projectTitle, items: [], doneCount: 0, totalCount: 0 })
+      map.set(item.projectSlug, { slug: item.projectSlug, title: item.projectTitle, wtGroups: [], doneCount: 0, totalCount: 0 })
     }
     const proj = map.get(item.projectSlug)!
     proj.totalCount++
     if (item.status === 'done') proj.doneCount++
-    // фильтруем для показа
     const f = statusFilter.value
-    if (
+    const show = (
       f === 'all' ||
       (f === 'active' && ['planned','in_progress'].includes(item.status)) ||
       (f === 'done' && item.status === 'done') ||
       (f === 'cancelled' && item.status === 'cancelled')
-    ) {
-      proj.items.push(item)
+    )
+    if (!show) continue
+    const wt = item.workType || '__general__'
+    let grp = proj.wtGroups.find(g => g.workType === wt)
+    if (!grp) {
+      const label = wt === '__general__'
+        ? 'Общие задачи'
+        : (CONTRACTOR_WORK_TYPE_OPTIONS.find(o => o.value === wt)?.label || wt)
+      const stages = wt !== '__general__' ? (WORK_TYPE_STAGES[wt] || []) : []
+      grp = { workType: wt, label, items: [], stages }
+      proj.wtGroups.push(grp)
     }
+    grp.items.push(item)
   }
-  return [...map.values()].filter(p => p.items.length > 0)
+  return [...map.values()].filter(p => p.wtGroups.length > 0)
 })
 
 async function updateStatus(item: any, status: string) {
@@ -939,4 +987,84 @@ async function logout() {
   .cab-nav-item { flex-shrink: 0; border-radius: 20px; padding: 7px 14px; white-space: nowrap; }
   .cab-grid-2 { grid-template-columns: 1fr; }
 }
+
+/* Work type group */
+.cab-wt-group { margin-bottom: 14px; }
+.cab-wt-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--glass-bg, rgba(255,255,255,0.28));
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.3));
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--glass-text, #1a1a2e);
+  cursor: pointer;
+  text-align: left;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s;
+  margin-bottom: 6px;
+}
+.cab-wt-head:hover { background: rgba(255,255,255,0.38); }
+.cab-wt-icon { font-size: 0.65rem; opacity: 0.45; width: 12px; flex-shrink: 0; }
+.cab-wt-name { flex: 1; }
+.cab-wt-count { font-size: 0.73rem; opacity: 0.45; font-weight: 400; white-space: nowrap; }
+.cab-wt-prog { font-size: 0.73rem; font-weight: 700; opacity: 0.7; color: #228855; white-space: nowrap; }
+.cab-wt-body { padding-left: 4px; }
+
+/* Stage inline checklist */
+.cab-stages-inline {
+  margin-top: 12px;
+  border-radius: 12px;
+  padding: 14px 18px;
+  background: var(--glass-bg, rgba(255,255,255,0.18));
+}
+.cab-stages-inline-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.cab-stages-inline-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.5; }
+.cab-stages-inline-pct { font-size: 0.8rem; font-weight: 700; color: #228855; opacity: 0.85; }
+.cab-stages-inline-bar-wrap {
+  height: 3px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.cab-stages-inline-bar {
+  height: 100%;
+  background: rgba(40,160,100,0.6);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.cab-stage-check-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.12s;
+  user-select: none;
+}
+.cab-stage-check-row:hover { background: rgba(255,255,255,0.15); }
+.cab-stage-check-row.done { opacity: 0.55; }
+.cab-stage-check-icon {
+  font-size: 0.8rem;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  color: #228855;
+  font-weight: 700;
+  opacity: 0.75;
+}
+.cab-stage-check-row:not(.done) .cab-stage-check-icon { color: var(--glass-text, #1a1a2e); opacity: 0.3; }
+.cab-stage-check-row.done .cab-stage-label { text-decoration: line-through; }
 </style>

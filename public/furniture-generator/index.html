@@ -1,85 +1,90 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Parametric Furniture Generator</title>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
   font-family:"SF Mono","Fira Code","Courier New",Courier,monospace;color:#000}
-
-/* ── Layout ─────────────────────────────────────────── */
 #app{display:grid;width:100%;height:100%;
-  grid-template-columns:400px 1fr;
-  grid-template-rows:auto 1fr auto}
+  grid-template-columns:420px 1fr;grid-template-rows:auto 1fr auto}
 
-/* ── Category Tabs ──────────────────────────────────── */
+/* ── tabs ── */
 #cats{grid-column:1/3;display:flex;border-bottom:2px solid #000;background:#fff}
-.cat-btn{flex:1;padding:9px 6px;font:inherit;font-size:10px;letter-spacing:.07em;
+.cat-btn{flex:1;padding:9px 4px;font:inherit;font-size:10px;letter-spacing:.07em;
   text-transform:uppercase;background:#fff;border:none;border-right:2px solid #000;
   cursor:pointer;transition:background .15s}
 .cat-btn:last-child{border-right:none}
 .cat-btn.active{background:#000;color:#fff}
 .cat-btn:hover:not(.active){background:#eee}
 
-/* ── Left Panel ─────────────────────────────────────── */
+/* ── left ── */
 #left{grid-column:1;grid-row:2;border-right:2px solid #000;
   overflow-y:auto;display:flex;flex-direction:column}
 .sec{padding:7px 10px;border-bottom:2px solid #000}
 .sec-head{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
 
-/* ── Palette ────────────────────────────────────────── */
+/* palette */
 .pal-row{display:flex;flex-wrap:wrap;gap:3px}
 .pal-btn{display:flex;align-items:center;gap:4px;padding:3px 7px;font:inherit;font-size:8.5px;
   letter-spacing:.04em;text-transform:uppercase;border:2px solid #000;background:#fff;
   cursor:pointer;transition:all .12s;line-height:1.2}
-.pal-btn .swatch{width:10px;height:10px;border:1px solid #000;flex-shrink:0}
+.pal-btn .sw{width:10px;height:10px;border:1px solid #000;flex-shrink:0}
 .pal-btn.active{background:#000;color:#fff}
-.pal-btn.active .swatch{border-color:#fff}
+.pal-btn.active .sw{border-color:#fff}
 .pal-btn:hover:not(.active){background:#f0f0f0}
 
-/* ── View Tabs ──────────────────────────────────────── */
-.view-tabs{display:flex;gap:0;margin-bottom:5px}
-.vtab{flex:1;font:inherit;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
-  padding:5px 4px;border:2px solid #000;background:#fff;cursor:pointer;text-align:center;
-  transition:all .12s}
-.vtab:first-child{border-right:none}
-.vtab.active{background:#000;color:#fff}
-.vtab:hover:not(.active){background:#eee}
+/* view tabs */
+.vtabs{display:flex;gap:0;margin-bottom:5px}
+.vt{font:inherit;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 6px;border:2px solid #000;background:#fff;cursor:pointer;text-align:center;
+  transition:all .12s;flex:1}
+.vt+.vt{border-left:none}
+.vt.active{background:#000;color:#fff}
+.vt:hover:not(.active){background:#eee}
+
+/* facade sub-tabs */
+.ftabs{display:flex;gap:0;margin-bottom:4px}
+.ft{font:inherit;font-size:8px;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 0;border:1.5px solid #000;background:#fff;cursor:pointer;text-align:center;
+  transition:all .1s;flex:1}
+.ft+.ft{border-left:none}
+.ft.active{background:#333;color:#fff}
+.ft:hover:not(.active){background:#eee}
+
 .grid-panel{display:none}
 .grid-panel.visible{display:flex;flex-direction:column;align-items:center;gap:3px}
 
-/* ── Grids ──────────────────────────────────────────── */
+/* grids */
 .grid-area{flex:1;display:flex;flex-direction:column;min-height:0}
 .g20{display:grid;grid-template-columns:repeat(20,1fr);grid-template-rows:repeat(20,1fr);
   gap:0;border:2px solid #000;user-select:none;touch-action:none;
   width:100%;max-width:300px;aspect-ratio:1}
-.cell{border:0.5px solid #ccc;cursor:crosshair;transition:background .08s;min-height:0}
+.cell{border:.5px solid #ccc;cursor:crosshair;transition:background .08s;min-height:0}
 .cell:hover{outline:1.5px solid #000;outline-offset:-1.5px;z-index:1}
-
-.axis-label{font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:#888;text-align:center}
-.axis-row{display:flex;align-items:center;gap:4px;width:100%;max-width:316px}
-.axis-side{font-size:7px;letter-spacing:.06em;text-transform:uppercase;color:#888;
+.ax{font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:#888;text-align:center}
+.ax-row{display:flex;align-items:center;gap:4px;width:100%;max-width:316px}
+.ax-side{font-size:7px;letter-spacing:.06em;text-transform:uppercase;color:#888;
   writing-mode:vertical-lr;text-orientation:mixed;transform:rotate(180deg);width:12px;
   text-align:center;flex-shrink:0}
 
-/* ── Dims ───────────────────────────────────────────── */
+/* dims */
 .dim-row{display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap;align-items:center}
 .dim-row label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;
   display:flex;align-items:center;gap:4px}
 .dim-row input{width:52px;font:inherit;font-size:13px;text-align:center;
   border:2px solid #000;padding:2px}
-.dim-val{font-size:12px;font-weight:700;letter-spacing:.03em}
 .dim-auto{display:flex;gap:12px;margin-top:2px;padding:5px 0;
   border-top:1px solid #ccc;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
 .dim-auto .val{font-weight:700;font-size:12px}
 
-/* ── 3D View ────────────────────────────────────────── */
+/* canvas */
 #view{grid-column:2;grid-row:2;position:relative;overflow:hidden}
 #view canvas{display:block;width:100%;height:100%}
 
-/* ── Bottom Bar ─────────────────────────────────────── */
+/* bar */
 #bar{grid-column:1/3;border-top:2px solid #000;background:#fff;
   display:flex;align-items:center;padding:5px 14px;gap:14px;flex-wrap:wrap}
 #bar .info{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
@@ -94,7 +99,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
 </style>
 </head>
 <body>
-
 <div id="app">
   <div id="cats">
     <button class="cat-btn active" data-cat="wardrobe">Шкаф-купе</button>
@@ -105,59 +109,58 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
   </div>
 
   <div id="left">
-    <!-- Palette -->
     <div class="sec" id="palette">
-      <h3 class="sec-head">Тип отделения (фасад)</h3>
+      <h3 class="sec-head">Тип отделения</h3>
       <div class="pal-row" id="pal-row"></div>
       <div style="margin-top:4px;display:flex;gap:4px">
         <button class="pal-btn" id="eraser-btn" style="border-style:dashed">
-          <span class="swatch" style="background:#fff"></span>Ластик
-        </button>
-        <button class="pal-btn" id="room-brush-btn" style="border-color:#888">
-          <span class="swatch" style="background:#b8b8b8"></span>Мебель (план)
+          <span class="sw" style="background:#fff"></span>Ластик
         </button>
       </div>
     </div>
 
-    <!-- Grids -->
     <div class="sec grid-area" style="flex:1">
-      <div class="view-tabs">
-        <button class="vtab active" data-view="front">Фасад (Ш × В)</button>
-        <button class="vtab" data-view="top">План помещения (Ш × Г)</button>
+      <!-- main view tabs -->
+      <div class="vtabs">
+        <button class="vt active" data-view="facade">Фасады</button>
+        <button class="vt" data-view="top">План помещения</button>
       </div>
 
-      <!-- FRONT GRID -->
-      <div class="grid-panel visible" id="panel-front">
-        <div class="axis-label">↑ верх шкафа</div>
-        <div class="axis-row">
-          <div class="axis-side">← высота →</div>
+      <!-- FACADE panels -->
+      <div class="grid-panel visible" id="panel-facade">
+        <div class="ftabs">
+          <button class="ft active" data-face="north">Север</button>
+          <button class="ft" data-face="south">Юг</button>
+          <button class="ft" data-face="west">Запад</button>
+          <button class="ft" data-face="east">Восток</button>
+        </div>
+        <div class="ax" id="face-top-label">↑ верх</div>
+        <div class="ax-row">
+          <div class="ax-side" id="face-side-label">← высота →</div>
           <div style="flex:1;display:flex;justify-content:center">
-            <div class="g20" id="front-grid"></div>
+            <div class="g20" id="facade-grid"></div>
           </div>
         </div>
-        <div class="axis-label">← ширина мебели →</div>
-        <div style="font-size:8px;color:#888;text-align:center;margin-top:2px">
-          20 столбцов = ширина мебели из плана (<span id="front-w-label">—</span> см)
-        </div>
+        <div class="ax" id="face-bot-label">← ширина →</div>
+        <div style="font-size:8px;color:#888;text-align:center;margin-top:2px" id="face-info">—</div>
       </div>
 
-      <!-- TOP GRID -->
+      <!-- TOP panel -->
       <div class="grid-panel" id="panel-top">
-        <div class="axis-label">↑ дальняя стена</div>
-        <div class="axis-row">
-          <div class="axis-side">← глубина →</div>
+        <div class="ax">↑ Север (дальняя стена)</div>
+        <div class="ax-row">
+          <div class="ax-side">← Запад ... Восток →</div>
           <div style="flex:1;display:flex;justify-content:center">
             <div class="g20" id="top-grid"></div>
           </div>
         </div>
-        <div class="axis-label">← ширина комнаты → (вход ↓)</div>
+        <div class="ax">← Ширина комнаты → Юг (вход) ↓</div>
         <div style="font-size:8px;color:#888;text-align:center;margin-top:2px">
-          1 ячейка = <span id="top-cell-label">—</span> см. Рисуйте контур мебели в комнате.
+          1 ячейка = <span id="top-cell-label">—</span> см
         </div>
       </div>
     </div>
 
-    <!-- Dimensions -->
     <div class="sec" id="dims-panel">
       <h3 class="sec-head">Размеры</h3>
       <div class="dim-row">
@@ -165,11 +168,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
         <label>Комната Г <input type="number" id="roomD" value="400" min="100" max="1200" step="10"/> см</label>
       </div>
       <div class="dim-row">
-        <label>Высота шкафа <input type="number" id="dimH" value="240" min="30" max="350" step="5"/> см</label>
+        <label>Высота <input type="number" id="dimH" value="240" min="30" max="350" step="5"/> см</label>
       </div>
       <div class="dim-auto">
-        <div>Ширина мебели: <span class="val" id="auto-w">—</span> см</div>
-        <div>Глубина мебели: <span class="val" id="auto-d">—</span> см</div>
+        <div>Ш мебели: <span class="val" id="auto-w">—</span></div>
+        <div>Г мебели: <span class="val" id="auto-d">—</span></div>
       </div>
     </div>
   </div>
@@ -180,42 +183,37 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
     <div class="info">Секций: <span id="info-regions">0</span></div>
     <div class="info">Мебель: <span id="info-size">—</span></div>
     <div class="spacer"></div>
-    <button class="bar-btn" id="btn-clear-front">Очистить фасад</button>
+    <button class="bar-btn" id="btn-clear-face">Очистить фасад</button>
     <button class="bar-btn" id="btn-clear-top">Очистить план</button>
     <button class="bar-btn" id="btn-reset-cam">Сброс камеры</button>
   </div>
 </div>
 
-<!-- Three.js -->
 <script type="importmap">
-{
-  "imports":{
-    "three":"https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
-    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
-  }
-}
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+}}
 </script>
-
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-/* ===================================================================
+/* ═══════════════════════════════════════════════════════
    TYPES
-   =================================================================== */
+   ═══════════════════════════════════════════════════════ */
 const TYPES={
   shelf:{id:1,label:'Полка',color:'#a8d8ea'},
   hanging:{id:2,label:'Штанга',color:'#b5eaaa'},
   drawer:{id:3,label:'Ящик',color:'#f5c385'},
   open:{id:4,label:'Открытая секция',color:'#fff3b0'},
   shoeLow:{id:5,label:'Обувь низкая',color:'#f0b0c0'},
-  shoeHi:{id:6,label:'Сапоги / Высокая',color:'#d5b0f0'},
+  shoeHi:{id:6,label:'Сапоги',color:'#d5b0f0'},
   books:{id:7,label:'Книги',color:'#b0d0f0'},
   top:{id:8,label:'Антресоль',color:'#d0d0d0'},
 };
 const TYPE_BY_ID={};
 for(const[k,v]of Object.entries(TYPES)) TYPE_BY_ID[v.id]={...v,key:k};
-
 const CAT_TYPES={
   wardrobe:['shelf','hanging','drawer','open','top'],
   bookcase:['books','shelf','drawer','open'],
@@ -225,646 +223,579 @@ const CAT_TYPES={
 };
 
 const GS=20;
-function emptyG(){ return Array.from({length:GS},()=>new Uint8Array(GS)) }
-function fillRect(g,r1,c1,r2,c2,id){ for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) g[r][c]=id }
+function emptyG(){return Array.from({length:GS},()=>new Uint8Array(GS))}
+function fillR(g,r1,c1,r2,c2,v){for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++)g[r][c]=v}
 
-/* ===================================================================
-   PRESETS — FRONT
-   =================================================================== */
-function presetWardrobe(){
-  const g=emptyG();
-  fillRect(g,0,0,1,19,TYPES.top.id);
-  fillRect(g,2,0,14,9,TYPES.hanging.id);
-  fillRect(g,2,10,9,19,TYPES.shelf.id);
-  fillRect(g,10,10,14,19,TYPES.shelf.id);
-  fillRect(g,15,0,17,9,TYPES.drawer.id);
-  fillRect(g,15,10,17,19,TYPES.drawer.id);
-  fillRect(g,18,0,19,19,TYPES.shelf.id);
-  return g;
-}
-function presetBookcase(){
-  const g=emptyG();
-  for(let i=0;i<5;i++) fillRect(g,i*4,0,i*4+3,19,TYPES.books.id);
-  return g;
-}
-function presetShoes(){
-  const g=emptyG();
-  fillRect(g,0,0,1,19,TYPES.top.id);
-  fillRect(g,2,0,7,19,TYPES.shoeHi.id);
-  fillRect(g,8,0,13,9,TYPES.shoeLow.id);
-  fillRect(g,8,10,13,19,TYPES.shoeLow.id);
-  fillRect(g,14,0,17,19,TYPES.shoeLow.id);
-  fillRect(g,18,0,19,19,TYPES.drawer.id);
-  return g;
-}
-function presetHallway(){
-  const g=emptyG();
-  fillRect(g,0,0,2,19,TYPES.top.id);
-  fillRect(g,3,0,12,11,TYPES.hanging.id);
-  fillRect(g,3,12,7,19,TYPES.shelf.id);
-  fillRect(g,8,12,12,19,TYPES.open.id);
-  fillRect(g,13,0,16,19,TYPES.shoeLow.id);
-  fillRect(g,17,0,19,19,TYPES.drawer.id);
-  return g;
-}
-function presetShelving(){
-  const g=emptyG();
-  for(let i=0;i<5;i++){
-    fillRect(g,i*4,0,i*4+3,19,i%2===0?TYPES.open.id:TYPES.shelf.id);
-  }
-  return g;
-}
-const PRESETS_FRONT={wardrobe:presetWardrobe,bookcase:presetBookcase,
-  shoes:presetShoes,hallway:presetHallway,shelving:presetShelving};
+/* ═══════════════════════════════════════════════════════
+   PRESETS
+   ═══════════════════════════════════════════════════════ */
+/* Facade grids: { north, south, west, east } — each 20×20 */
+function mkFacades(fn,fs,fw,fe){return{north:fn(),south:fs(),west:fw(),east:fe()}}
 
-/* ===================================================================
-   PRESETS — TOP (room plan)
-   =================================================================== */
-function topStraight(){
-  const g=emptyG();
-  fillRect(g,0,0,4,19,1); // full width, 5 cells deep along back wall
-  return g;
-}
-function topNarrow(){
-  const g=emptyG();
-  fillRect(g,0,0,2,19,1); // narrow along back wall
-  return g;
-}
-function topCorner(){
-  const g=emptyG();
-  fillRect(g,0,0,3,9,1);  // left half, back wall
-  return g;
-}
-function topLShape(){
-  const g=emptyG();
-  fillRect(g,0,0,3,19,1);      // back wall full width
-  fillRect(g,4,15,12,19,1);     // right wing going forward
-  return g;
-}
-const PRESETS_TOP={
-  wardrobe:topStraight,
-  bookcase:topNarrow,
-  shoes:topCorner,
-  hallway:topLShape,
-  shelving:topCorner,
+function fWardrobeN(){const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);fillR(g,2,0,14,9,TYPES.hanging.id);
+  fillR(g,2,10,9,19,TYPES.shelf.id);fillR(g,10,10,14,19,TYPES.shelf.id);
+  fillR(g,15,0,17,9,TYPES.drawer.id);fillR(g,15,10,17,19,TYPES.drawer.id);
+  fillR(g,18,0,19,19,TYPES.shelf.id);return g}
+function fWardrobeS(){const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);
+  fillR(g,2,0,14,19,TYPES.shelf.id);fillR(g,15,0,19,19,TYPES.drawer.id);return g}
+function fEmpty(){return emptyG()}
+
+function fBookN(){const g=emptyG();for(let i=0;i<5;i++)fillR(g,i*4,0,i*4+3,19,TYPES.books.id);return g}
+function fShoesN(){const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);fillR(g,2,0,7,19,TYPES.shoeHi.id);
+  fillR(g,8,0,13,9,TYPES.shoeLow.id);fillR(g,8,10,13,19,TYPES.shoeLow.id);
+  fillR(g,14,0,17,19,TYPES.shoeLow.id);fillR(g,18,0,19,19,TYPES.drawer.id);return g}
+function fHallN(){const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);fillR(g,3,0,12,11,TYPES.hanging.id);
+  fillR(g,3,12,7,19,TYPES.shelf.id);fillR(g,8,12,12,19,TYPES.open.id);
+  fillR(g,13,0,16,19,TYPES.shoeLow.id);fillR(g,17,0,19,19,TYPES.drawer.id);return g}
+function fHallE(){const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);fillR(g,3,0,12,19,TYPES.shelf.id);
+  fillR(g,13,0,19,19,TYPES.drawer.id);return g}
+function fShelfN(){const g=emptyG();for(let i=0;i<5;i++){
+  fillR(g,i*4,0,i*4+3,19,i%2===0?TYPES.open.id:TYPES.shelf.id)};return g}
+
+const PRESETS_FACADES={
+  wardrobe: ()=>mkFacades(fWardrobeN,fWardrobeS,fEmpty,fEmpty),
+  bookcase: ()=>mkFacades(fBookN,fEmpty,fEmpty,fEmpty),
+  shoes:    ()=>mkFacades(fShoesN,fEmpty,fEmpty,fEmpty),
+  hallway:  ()=>mkFacades(fHallN,fEmpty,fEmpty,fHallE),
+  shelving: ()=>mkFacades(fShelfN,fEmpty,fEmpty,fEmpty),
 };
 
-/* ===================================================================
+/* Top-grid presets */
+function topStraight(){const g=emptyG();fillR(g,0,0,4,19,1);return g}
+function topNarrow(){const g=emptyG();fillR(g,0,0,2,19,1);return g}
+function topCorner(){const g=emptyG();fillR(g,0,0,3,9,1);return g}
+function topL(){const g=emptyG();fillR(g,0,0,3,19,1);fillR(g,4,15,12,19,1);return g}
+const PRESETS_TOP={wardrobe:topStraight,bookcase:topNarrow,shoes:topCorner,hallway:topL,shelving:topCorner};
+
+/* ═══════════════════════════════════════════════════════
    STATE
-   =================================================================== */
-let frontGrid=presetWardrobe();
-let topGrid=topStraight();
+   ═══════════════════════════════════════════════════════ */
+let facades = PRESETS_FACADES.wardrobe();
+let topGrid = topStraight();
 let currentBrush=TYPES.shelf.id;
 let isEraser=false;
-let isRoomBrush=false;  // for painting on top grid
 let painting=false;
 let currentCat='wardrobe';
-let activeView='front';
+let activeView='facade';
+let activeFace='north';
 
-/* ===================================================================
+/* ═══════════════════════════════════════════════════════
    PALETTE
-   =================================================================== */
+   ═══════════════════════════════════════════════════════ */
 const palRow=document.getElementById('pal-row');
 const eraserBtn=document.getElementById('eraser-btn');
-const roomBrushBtn=document.getElementById('room-brush-btn');
-
 function buildPalette(){
   palRow.innerHTML='';
-  CAT_TYPES[currentCat].forEach(key=>{
-    const t=TYPES[key];
-    const btn=document.createElement('button');
-    btn.className='pal-btn'+(t.id===currentBrush&&!isEraser&&!isRoomBrush?' active':'');
-    btn.dataset.typeId=t.id;
-    btn.innerHTML=`<span class="swatch" style="background:${t.color}"></span>${t.label}`;
-    btn.addEventListener('click',()=>{isEraser=false;isRoomBrush=false;currentBrush=t.id;refreshPal()});
-    palRow.appendChild(btn);
-  });
+  CAT_TYPES[currentCat].forEach(k=>{const t=TYPES[k];
+    const b=document.createElement('button');b.className='pal-btn';b.dataset.typeId=t.id;
+    b.innerHTML=`<span class="sw" style="background:${t.color}"></span>${t.label}`;
+    b.addEventListener('click',()=>{isEraser=false;currentBrush=t.id;refreshPal()});
+    palRow.appendChild(b)});
   if(!CAT_TYPES[currentCat].some(k=>TYPES[k].id===currentBrush)){
-    currentBrush=TYPES[CAT_TYPES[currentCat][0]].id;isEraser=false;isRoomBrush=false;
-  }
-  refreshPal();
-}
+    currentBrush=TYPES[CAT_TYPES[currentCat][0]].id;isEraser=false}
+  refreshPal()}
 function refreshPal(){
-  palRow.querySelectorAll('.pal-btn').forEach(b=>{
-    b.classList.toggle('active',+b.dataset.typeId===currentBrush&&!isEraser&&!isRoomBrush);
-  });
-  eraserBtn.classList.toggle('active',isEraser);
-  roomBrushBtn.classList.toggle('active',isRoomBrush);
-}
-eraserBtn.addEventListener('click',()=>{isEraser=true;isRoomBrush=false;refreshPal()});
-roomBrushBtn.addEventListener('click',()=>{isRoomBrush=true;isEraser=false;refreshPal()});
+  palRow.querySelectorAll('.pal-btn').forEach(b=>
+    b.classList.toggle('active',+b.dataset.typeId===currentBrush&&!isEraser));
+  eraserBtn.classList.toggle('active',isEraser)}
+eraserBtn.addEventListener('click',()=>{isEraser=true;refreshPal()});
 
-/* ===================================================================
-   VIEW TABS
-   =================================================================== */
-const panelFront=document.getElementById('panel-front');
+/* ═══════════════════════════════════════════════════════
+   VIEW TABS + FACADE SUB-TABS
+   ═══════════════════════════════════════════════════════ */
+const panelFacade=document.getElementById('panel-facade');
 const panelTop=document.getElementById('panel-top');
-document.querySelectorAll('.vtab').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelector('.vtab.active').classList.remove('active');
-    btn.classList.add('active');
-    activeView=btn.dataset.view;
-    panelFront.classList.toggle('visible',activeView==='front');
-    panelTop.classList.toggle('visible',activeView==='top');
-  });
-});
+document.querySelectorAll('.vt').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelector('.vt.active').classList.remove('active');b.classList.add('active');
+  activeView=b.dataset.view;
+  panelFacade.classList.toggle('visible',activeView==='facade');
+  panelTop.classList.toggle('visible',activeView==='top')}));
 
-/* ===================================================================
-   TOP GRID BBOX helper → furniture real dimensions
-   =================================================================== */
-function topBBox(){
-  let minR=GS,maxR=-1,minC=GS,maxC=-1;
-  for(let r=0;r<GS;r++) for(let c=0;c<GS;c++){
-    if(topGrid[r][c]){
-      minR=Math.min(minR,r);maxR=Math.max(maxR,r);
-      minC=Math.min(minC,c);maxC=Math.max(maxC,c);
-    }
-  }
-  if(maxR<0) return null;
-  return {minR,maxR,minC,maxC};
+document.querySelectorAll('.ft').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelector('.ft.active').classList.remove('active');b.classList.add('active');
+  activeFace=b.dataset.face;syncFacade();updateFaceLabels()}));
+
+function updateFaceLabels(){
+  const labels={
+    north:{top:'↑ верх',side:'← высота →',bot:'← запад — ширина — восток →',
+      info:'Северный фасад (дальняя стена)'},
+    south:{top:'↑ верх',side:'← высота →',bot:'← восток — ширина — запад →',
+      info:'Южный фасад (ближняя стена)'},
+    west:{top:'↑ верх',side:'← высота →',bot:'← север — глубина — юг →',
+      info:'Западный фасад (левая стена)'},
+    east:{top:'↑ верх',side:'← высота →',bot:'← юг — глубина — север →',
+      info:'Восточный фасад (правая стена)'},
+  }[activeFace];
+  document.getElementById('face-top-label').textContent=labels.top;
+  document.getElementById('face-side-label').textContent=labels.side;
+  document.getElementById('face-bot-label').textContent=labels.bot;
+  document.getElementById('face-info').textContent=labels.info;
 }
 
-function getRoomCellCm(){
-  const rw=+roomW.value||400;
-  const rd=+roomD.value||400;
-  return { cw:rw/GS, cd:rd/GS };
-}
-
-function getFurnitureDimsCm(){
-  const bb=topBBox();
-  if(!bb) return null;
-  const {cw,cd}=getRoomCellCm();
-  return {
-    w: (bb.maxC-bb.minC+1)*cw,
-    d: (bb.maxR-bb.minR+1)*cd,
-    h: +(dimH.value)||240,
-    bb
-  };
-}
-
-function updateDimLabels(){
-  const {cw,cd}=getRoomCellCm();
-  document.getElementById('top-cell-label').textContent=`${cw.toFixed(0)}×${cd.toFixed(0)}`;
-  const dims=getFurnitureDimsCm();
-  if(dims){
-    document.getElementById('auto-w').textContent=dims.w.toFixed(0);
-    document.getElementById('auto-d').textContent=dims.d.toFixed(0);
-    document.getElementById('front-w-label').textContent=dims.w.toFixed(0);
-    document.getElementById('info-size').textContent=
-      `${dims.w.toFixed(0)}×${dims.h}×${dims.d.toFixed(0)} см`;
-  } else {
-    document.getElementById('auto-w').textContent='—';
-    document.getElementById('auto-d').textContent='—';
-    document.getElementById('front-w-label').textContent='—';
-    document.getElementById('info-size').textContent='—';
-  }
-}
-
-/* ===================================================================
-   FRONT GRID (20×20)
-   =================================================================== */
-const frontGridEl=document.getElementById('front-grid');
-const fCells=[];
-function buildFrontGrid(){
-  frontGridEl.innerHTML='';fCells.length=0;
-  for(let r=0;r<GS;r++){fCells[r]=[];for(let c=0;c<GS;c++){
+/* ═══════════════════════════════════════════════════════
+   FACADE GRID (re-used for all 4 facades)
+   ═══════════════════════════════════════════════════════ */
+const facadeGridEl=document.getElementById('facade-grid');
+const facCells=[];
+function buildFacadeGrid(){
+  facadeGridEl.innerHTML='';facCells.length=0;
+  for(let r=0;r<GS;r++){facCells[r]=[];for(let c=0;c<GS;c++){
     const d=document.createElement('div');d.className='cell';
-    d.dataset.r=r;d.dataset.c=c;d.dataset.grid='front';
-    frontGridEl.appendChild(d);fCells[r][c]=d;
-  }}
-  syncFront();
-}
-function syncFront(){
-  for(let r=0;r<GS;r++) for(let c=0;c<GS;c++){
-    const v=frontGrid[r][c];
-    fCells[r][c].style.background=v?(TYPE_BY_ID[v]?.color||'#ddd'):'#fff';
-  }
-}
-function paintFront(r,c){
-  const val=isEraser?0:currentBrush;
-  if(frontGrid[r][c]===val)return;
-  frontGrid[r][c]=val;
-  fCells[r][c].style.background=val?(TYPE_BY_ID[val]?.color||'#ddd'):'#fff';
-  scheduleRebuild();
-}
-frontGridEl.addEventListener('pointerdown',e=>{
-  const t=e.target;if(t.dataset.grid!=='front')return;
-  painting=true;frontGridEl.setPointerCapture(e.pointerId);
-  paintFront(+t.dataset.r,+t.dataset.c);
-});
-frontGridEl.addEventListener('pointermove',e=>{
-  if(!painting)return;
+    d.dataset.r=r;d.dataset.c=c;d.dataset.grid='face';
+    facadeGridEl.appendChild(d);facCells[r][c]=d}}
+  syncFacade()}
+function syncFacade(){
+  const g=facades[activeFace];
+  for(let r=0;r<GS;r++)for(let c=0;c<GS;c++){
+    const v=g[r][c];facCells[r][c].style.background=v?(TYPE_BY_ID[v]?.color||'#ddd'):'#fff'}}
+function paintFace(r,c){
+  const g=facades[activeFace];const val=isEraser?0:currentBrush;
+  if(g[r][c]===val)return;g[r][c]=val;
+  facCells[r][c].style.background=val?(TYPE_BY_ID[val]?.color||'#ddd'):'#fff';
+  scheduleRebuild()}
+facadeGridEl.addEventListener('pointerdown',e=>{
+  const t=e.target;if(t.dataset.grid!=='face')return;
+  painting=true;facadeGridEl.setPointerCapture(e.pointerId);
+  paintFace(+t.dataset.r,+t.dataset.c)});
+facadeGridEl.addEventListener('pointermove',e=>{if(!painting)return;
   const el=document.elementFromPoint(e.clientX,e.clientY);
-  if(el&&el.dataset.grid==='front')paintFront(+el.dataset.r,+el.dataset.c);
-});
-frontGridEl.addEventListener('pointerup',()=>painting=false);
-frontGridEl.addEventListener('pointercancel',()=>painting=false);
-frontGridEl.addEventListener('contextmenu',e=>e.preventDefault());
+  if(el&&el.dataset.grid==='face')paintFace(+el.dataset.r,+el.dataset.c)});
+facadeGridEl.addEventListener('pointerup',()=>painting=false);
+facadeGridEl.addEventListener('pointercancel',()=>painting=false);
+facadeGridEl.addEventListener('contextmenu',e=>e.preventDefault());
 
-/* ===================================================================
-   TOP GRID (20×20) — room plan
-   =================================================================== */
+/* ═══════════════════════════════════════════════════════
+   TOP GRID
+   ═══════════════════════════════════════════════════════ */
 const topGridEl=document.getElementById('top-grid');
-const tCells=[];
-const FILL='#b8b8b8', EMPTY='#fff';
+const tCells=[];const FILL='#b8b8b8',EMPTY='#fff';
 function buildTopGrid(){
   topGridEl.innerHTML='';tCells.length=0;
   for(let r=0;r<GS;r++){tCells[r]=[];for(let c=0;c<GS;c++){
     const d=document.createElement('div');d.className='cell';
     d.dataset.r=r;d.dataset.c=c;d.dataset.grid='top';
-    topGridEl.appendChild(d);tCells[r][c]=d;
-  }}
-  syncTop();
-}
-function syncTop(){
-  for(let r=0;r<GS;r++) for(let c=0;c<GS;c++)
-    tCells[r][c].style.background=topGrid[r][c]?FILL:EMPTY;
-}
-function paintTop(r,c){
-  const val=isEraser?0:1;
-  if(topGrid[r][c]===val)return;
-  topGrid[r][c]=val;
-  tCells[r][c].style.background=val?FILL:EMPTY;
-  scheduleRebuild();
-}
-topGridEl.addEventListener('pointerdown',e=>{
-  const t=e.target;if(t.dataset.grid!=='top')return;
-  painting=true;topGridEl.setPointerCapture(e.pointerId);
-  paintTop(+t.dataset.r,+t.dataset.c);
-});
-topGridEl.addEventListener('pointermove',e=>{
-  if(!painting)return;
+    topGridEl.appendChild(d);tCells[r][c]=d}}
+  syncTop()}
+function syncTop(){for(let r=0;r<GS;r++)for(let c=0;c<GS;c++)
+  tCells[r][c].style.background=topGrid[r][c]?FILL:EMPTY}
+function paintTop(r,c){const val=isEraser?0:1;if(topGrid[r][c]===val)return;
+  topGrid[r][c]=val;tCells[r][c].style.background=val?FILL:EMPTY;scheduleRebuild()}
+topGridEl.addEventListener('pointerdown',e=>{const t=e.target;if(t.dataset.grid!=='top')return;
+  painting=true;topGridEl.setPointerCapture(e.pointerId);paintTop(+t.dataset.r,+t.dataset.c)});
+topGridEl.addEventListener('pointermove',e=>{if(!painting)return;
   const el=document.elementFromPoint(e.clientX,e.clientY);
-  if(el&&el.dataset.grid==='top')paintTop(+el.dataset.r,+el.dataset.c);
-});
+  if(el&&el.dataset.grid==='top')paintTop(+el.dataset.r,+el.dataset.c)});
 topGridEl.addEventListener('pointerup',()=>painting=false);
 topGridEl.addEventListener('pointercancel',()=>painting=false);
 topGridEl.addEventListener('contextmenu',e=>e.preventDefault());
 
-/* ===================================================================
-   CATEGORY TABS
-   =================================================================== */
-document.querySelectorAll('.cat-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelector('.cat-btn.active').classList.remove('active');
-    btn.classList.add('active');
-    currentCat=btn.dataset.cat;
-    frontGrid=PRESETS_FRONT[currentCat]();
-    topGrid=PRESETS_TOP[currentCat]();
-    buildPalette();syncFront();syncTop();rebuild();
-  });
-});
+/* ═══════════════════════════════════════════════════════
+   CATEGORIES
+   ═══════════════════════════════════════════════════════ */
+document.querySelectorAll('.cat-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelector('.cat-btn.active').classList.remove('active');b.classList.add('active');
+  currentCat=b.dataset.cat;facades=PRESETS_FACADES[currentCat]();
+  topGrid=PRESETS_TOP[currentCat]();buildPalette();syncFacade();syncTop();rebuild()}));
 
-/* ===================================================================
+/* ═══════════════════════════════════════════════════════
    DIMENSIONS
-   =================================================================== */
-const roomW=document.getElementById('roomW');
-const roomD=document.getElementById('roomD');
-const dimH=document.getElementById('dimH');
+   ═══════════════════════════════════════════════════════ */
+const roomW=document.getElementById('roomW'),roomD=document.getElementById('roomD'),
+  dimH=document.getElementById('dimH');
 [roomW,roomD,dimH].forEach(el=>el.addEventListener('input',()=>scheduleRebuild()));
 
-/* ===================================================================
+/* ═══════════════════════════════════════════════════════
    BUTTONS
-   =================================================================== */
-document.getElementById('btn-clear-front').addEventListener('click',()=>{
-  frontGrid=emptyG();syncFront();rebuild();
-});
+   ═══════════════════════════════════════════════════════ */
+document.getElementById('btn-clear-face').addEventListener('click',()=>{
+  facades[activeFace]=emptyG();syncFacade();rebuild()});
 document.getElementById('btn-clear-top').addEventListener('click',()=>{
-  topGrid=emptyG();syncTop();rebuild();
-});
+  topGrid=emptyG();syncTop();rebuild()});
 document.getElementById('btn-reset-cam').addEventListener('click',()=>{
   camera.position.set(12,12,12);camera.lookAt(0,0,0);
-  controls.target.set(0,0,0);controls.update();
-});
+  controls.target.set(0,0,0);controls.update()});
 
-/* ===================================================================
-   REGION DETECTION — front grid
-   =================================================================== */
-function findFrontRegions(){
-  const vis=Array.from({length:GS},()=>new Uint8Array(GS));
-  const regs=[];
-  for(let r=0;r<GS;r++) for(let c=0;c<GS;c++){
-    if(vis[r][c]||!frontGrid[r][c]) continue;
-    const tid=frontGrid[r][c], cl=[], q=[[r,c]];vis[r][c]=1;
+/* ═══════════════════════════════════════════════════════
+   TOP GRID helpers
+   ═══════════════════════════════════════════════════════ */
+function topBBox(){
+  let minR=GS,maxR=-1,minC=GS,maxC=-1;
+  for(let r=0;r<GS;r++)for(let c=0;c<GS;c++)if(topGrid[r][c]){
+    minR=Math.min(minR,r);maxR=Math.max(maxR,r);minC=Math.min(minC,c);maxC=Math.max(maxC,c)}
+  return maxR<0?null:{minR,maxR,minC,maxC}}
+
+function depthSpans(cMin,cMax){
+  const sp=[];let ins=false,s=0;
+  for(let r=0;r<GS;r++){let ok=true;
+    for(let c=cMin;c<=cMax;c++)if(!topGrid[r][c]){ok=false;break}
+    if(ok){if(!ins){ins=true;s=r}}else{if(ins){sp.push([s,r-1]);ins=false}}}
+  if(ins)sp.push([s,GS-1]);return sp}
+
+function colSpans(rMin,rMax){
+  const sp=[];let ins=false,s=0;
+  for(let c=0;c<GS;c++){let ok=true;
+    for(let r=rMin;r<=rMax;r++)if(!topGrid[r][c]){ok=false;break}
+    if(ok){if(!ins){ins=true;s=c}}else{if(ins){sp.push([s,c-1]);ins=false}}}
+  if(ins)sp.push([s,GS-1]);return sp}
+
+function updateDims(){
+  const RW=+roomW.value||400,RD=+roomD.value||400;
+  document.getElementById('top-cell-label').textContent=`${(RW/GS).toFixed(0)}×${(RD/GS).toFixed(0)}`;
+  const bb=topBBox();
+  if(bb){
+    const w=((bb.maxC-bb.minC+1)*(RW/GS)).toFixed(0);
+    const d=((bb.maxR-bb.minR+1)*(RD/GS)).toFixed(0);
+    const h=dimH.value||240;
+    document.getElementById('auto-w').textContent=w;
+    document.getElementById('auto-d').textContent=d;
+    document.getElementById('info-size').textContent=`${w}×${h}×${d} см`;
+  } else {
+    document.getElementById('auto-w').textContent='—';
+    document.getElementById('auto-d').textContent='—';
+    document.getElementById('info-size').textContent='—';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   REGION DETECTION
+   ═══════════════════════════════════════════════════════ */
+function findRegions(grid){
+  const vis=Array.from({length:GS},()=>new Uint8Array(GS)),regs=[];
+  for(let r=0;r<GS;r++)for(let c=0;c<GS;c++){
+    if(vis[r][c]||!grid[r][c])continue;const tid=grid[r][c],cl=[],q=[[r,c]];vis[r][c]=1;
     while(q.length){const[cr,cc]=q.shift();cl.push([cr,cc]);
-      for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){
-        const nr=cr+dr,nc=cc+dc;
-        if(nr>=0&&nr<GS&&nc>=0&&nc<GS&&!vis[nr][nc]&&frontGrid[nr][nc]===tid){
-          vis[nr][nc]=1;q.push([nr,nc])}}}
+      for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){const nr=cr+dr,nc=cc+dc;
+        if(nr>=0&&nr<GS&&nc>=0&&nc<GS&&!vis[nr][nc]&&grid[nr][nc]===tid){vis[nr][nc]=1;q.push([nr,nc])}}}
     let minR=GS,maxR=0,minC=GS,maxC=0;
     for(const[cr,cc]of cl){minR=Math.min(minR,cr);maxR=Math.max(maxR,cr);
       minC=Math.min(minC,cc);maxC=Math.max(maxC,cc)}
-    regs.push({typeId:tid,cells:cl,minR,maxR,minC,maxC});
+    regs.push({typeId:tid,cells:cl,minR,maxR,minC,maxC})}return regs}
+
+/* ═══════════════════════════════════════════════════════
+   THREE.JS
+   ═══════════════════════════════════════════════════════ */
+const viewEl=document.getElementById('view');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xfdfdfd);
+let frustumSize=14;const getA=()=>viewEl.clientWidth/(viewEl.clientHeight||1);
+const camera=new THREE.OrthographicCamera(-frustumSize*getA()/2,frustumSize*getA()/2,
+  frustumSize/2,-frustumSize/2,.1,1000);
+camera.position.set(12,12,12);camera.lookAt(scene.position);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);viewEl.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.12;
+
+const LM=new THREE.LineBasicMaterial({color:0x000000,linewidth:2});
+const TM=new THREE.LineBasicMaterial({color:0x000000,linewidth:1});
+const RM=new THREE.LineBasicMaterial({color:0xdddddd,linewidth:1});
+
+function wb(p,w,h,d,x,y,z,m){m=m||LM;
+  const g=new THREE.BoxGeometry(w,h,d),e=new THREE.EdgesGeometry(g),
+    s=new THREE.LineSegments(e,m);s.position.set(x,y,z);p.add(s);return s}
+
+/* ═══════════════════════════════════════════════════════
+   3D BUILD
+   ═══════════════════════════════════════════════════════
+
+   Top grid mapping:
+     row 0=north(back) → row 19=south(front)    → Z axis
+     col 0=west(left)  → col 19=east(right)     → X axis
+
+   Facades:
+     north: looking south → cols = X (west→east), rows = Y (top→bot)
+       facade col c → top col c, depth from row 0 going south
+     south: looking north → cols = X (east→west mirrored), rows = Y
+       facade col c → top col (19-c), depth from row 19 going north
+     west: looking east → cols = Z (north→south), rows = Y
+       facade col c → top row c, depth from col 0 going east
+     east: looking west → cols = Z (south→north mirrored), rows = Y
+       facade col c → top row (19-c), depth from col 19 going west
+*/
+
+let grp=new THREE.Group();scene.add(grp);
+let timer=0;function scheduleRebuild(){clearTimeout(timer);timer=setTimeout(rebuild,80)}
+
+function rebuild(){
+  scene.remove(grp);grp.traverse(o=>{if(o.geometry)o.geometry.dispose()});
+  grp=new THREE.Group();scene.add(grp);updateDims();
+
+  const RW=(+roomW.value||400)/100, RD=(+roomD.value||400)/100, H=(+dimH.value||240)/100;
+  const cRW=RW/GS, cRD=RD/GS, cH=H/GS, WALL=.02;
+
+  /* floor grid */
+  {const pts=[];
+    for(let i=0;i<=GS;i++){const x=i*cRW-RW/2;pts.push(new THREE.Vector3(x,0,-RD/2),new THREE.Vector3(x,0,RD/2))}
+    for(let j=0;j<=GS;j++){const z=j*cRD-RD/2;pts.push(new THREE.Vector3(-RW/2,0,z),new THREE.Vector3(RW/2,0,z))}
+    grp.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),RM));
+    const p=new THREE.PlaneGeometry(RW,RD),pe=new THREE.EdgesGeometry(p),
+      ps=new THREE.LineSegments(pe,new THREE.LineBasicMaterial({color:0xaaaaaa}));
+    ps.rotation.x=-Math.PI/2;grp.add(ps)}
+
+  const bb=topBBox();if(!bb){document.getElementById('info-regions').textContent='0';fitCam();return}
+
+  let totalRegs=0;
+
+  /* ── Process each facade ─────────────────────── */
+  const faceConfigs=[
+    {name:'north', grid:facades.north,
+      // facade col c → top col c; depth = contiguous filled rows from row bb.minR going south
+      toWorld:(fx1,fx2,fy1,fy2,dz1,dz2)=>{
+        const x1=fx1,x2=fx2; // X is already in room X coords
+        const z1=dz1,z2=dz2; // Z = depth going south from north wall
+        return {x1,x2,z1,z2,y1:fy1,y2:fy2}},
+      mapCol:c=>({axis:'col',idx:c}),   // facade col → top col
+      depthDir:'south',  // depth goes from north(minR) → south
+    },
+    {name:'south', grid:facades.south,
+      toWorld:(fx1,fx2,fy1,fy2,dz1,dz2)=>{
+        return {x1:fx1,x2:fx2,z1:dz1,z2:dz2,y1:fy1,y2:fy2}},
+      mapCol:c=>({axis:'col',idx:GS-1-c}),  // mirrored
+      depthDir:'north',
+    },
+    {name:'west', grid:facades.west,
+      toWorld:(fx1,fx2,fy1,fy2,dz1,dz2)=>{
+        // facade X → room Z, depth → room X from west
+        return {x1:dz1,x2:dz2,z1:fx1,z2:fx2,y1:fy1,y2:fy2}},
+      mapCol:c=>({axis:'row',idx:c}),
+      depthDir:'east',
+    },
+    {name:'east', grid:facades.east,
+      toWorld:(fx1,fx2,fy1,fy2,dz1,dz2)=>{
+        return {x1:dz1,x2:dz2,z1:fx1,z2:fx2,y1:fy1,y2:fy2}},
+      mapCol:c=>({axis:'row',idx:GS-1-c}),
+      depthDir:'west',
+    },
+  ];
+
+  for(const fc of faceConfigs){
+    const regs=findRegions(fc.grid);
+    totalRegs+=regs.length;
+
+    for(const reg of regs){
+      // For this region's column range, find depth in the top grid
+      for(let fCol=reg.minC;fCol<=reg.maxC;){
+        // Find contiguous run of facade columns that share similar depth
+        let fColEnd=fCol;
+
+        // Map facade columns to top-grid indices and get depth spans
+        const mapped=fc.mapCol(fCol);
+        let dSpans;
+        if(mapped.axis==='col'){
+          // N/S facades: facade col → top col; depth along rows
+          dSpans=getDepthForCol(mapped.idx,fc.depthDir);
+        } else {
+          // W/E facades: facade col → top row; depth along cols
+          dSpans=getDepthForRow(mapped.idx,fc.depthDir);
+        }
+
+        // Try to extend fColEnd while depth spans match
+        while(fColEnd+1<=reg.maxC){
+          const m2=fc.mapCol(fColEnd+1);
+          let ds2;
+          if(m2.axis==='col') ds2=getDepthForCol(m2.idx,fc.depthDir);
+          else ds2=getDepthForRow(m2.idx,fc.depthDir);
+          if(spansEqual(dSpans,ds2)) fColEnd++; else break;
+        }
+
+        if(dSpans.length===0){fCol=fColEnd+1;continue}
+
+        // Facade X range
+        let facadeXsize, facadeX1;
+        const m0=fc.mapCol(fCol), mE=fc.mapCol(fColEnd);
+        if(m0.axis==='col'){
+          // N/S: facade col → room X
+          const cMin=Math.min(m0.idx,mE.idx), cMax=Math.max(m0.idx,mE.idx);
+          facadeX1=cMin*cRW-RW/2;
+          facadeXsize=(cMax-cMin+1)*cRW;
+        } else {
+          // W/E: facade col → room Z
+          const rMin=Math.min(m0.idx,mE.idx), rMax=Math.max(m0.idx,mE.idx);
+          facadeX1=rMin*cRD-RD/2;
+          facadeXsize=(rMax-rMin+1)*cRD;
+        }
+
+        // Facade Y range (row 0=top, row 19=bottom)
+        const fy2=(GS-reg.minR)*cH;
+        const fy1=(GS-reg.maxR-1)*cH;
+        const fh=fy2-fy1, fcy=(fy1+fy2)/2;
+        const fcxFacade=(facadeX1+facadeX1+facadeXsize)/2;
+        const fw=facadeXsize;
+
+        for(const[depStart,depEnd]of dSpans){
+          // depStart/depEnd are in room units already
+          const dd=depEnd-depStart, cdep=(depStart+depEnd)/2;
+
+          // Convert to room coords
+          let bx1,bx2,bz1,bz2;
+          if(fc.name==='north'||fc.name==='south'){
+            bx1=facadeX1;bx2=facadeX1+fw;bz1=depStart;bz2=depEnd;
+          } else {
+            bz1=facadeX1;bz2=facadeX1+facadeXsize;bx1=depStart;bx2=depEnd;
+          }
+          const bw=bx2-bx1,bd=bz2-bz1;
+          const bcx=(bx1+bx2)/2,bcz=(bz1+bz2)/2;
+
+          // Compartment box
+          wb(grp,bw-WALL,fh-WALL,bd-WALL, bcx,fcy,bcz,TM);
+
+          // Details
+          const info=TYPE_BY_ID[reg.typeId];if(!info)continue;
+          const inW=bw-WALL*4, inD=bd-WALL*4;
+
+          switch(info.key){
+            case 'shelf':{const n=Math.max(1,Math.round(fh/(cH*4)));
+              for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM);break}
+            case 'books':{const n=Math.max(1,Math.round(fh/(cH*4)));
+              for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM);
+              if(bw>cRW*3)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);break}
+            case 'hanging':{const ry=fy2-fh*.1;
+              const rg=new THREE.CylinderGeometry(.012,.012,inW,8,1);rg.rotateZ(Math.PI/2);
+              const re=new THREE.EdgesGeometry(rg),rod=new THREE.LineSegments(re,LM);
+              rod.position.set(bcx,ry,bcz);grp.add(rod);
+              wb(grp,inW,WALL,inD,bcx,fy2-WALL*2,bcz,TM);break}
+            case 'drawer':{const n=Math.max(1,Math.round(fh/(cH*3.5)));
+              const gap=WALL,dH=(fh-gap*(n+1))/n;
+              // front face Z depends on facade direction
+              let ffx=bcx,ffz=bcz;
+              if(fc.name==='north')ffz=bz2-WALL;
+              else if(fc.name==='south')ffz=bz1+WALL;
+              else if(fc.name==='west')ffx=bx2-WALL;
+              else ffx=bx1+WALL;
+              for(let i=0;i<n;i++){const dy=fy1+gap+dH/2+i*(dH+gap);
+                if(fc.name==='north'||fc.name==='south'){
+                  wb(grp,inW,dH-WALL,WALL,bcx,dy,ffz,TM);
+                  wb(grp,inW*.22,WALL,WALL,bcx,dy,ffz+(fc.name==='north'?WALL:-WALL),TM);
+                }else{
+                  wb(grp,WALL,dH-WALL,inD,ffx,dy,bcz,TM);
+                  wb(grp,WALL,WALL,inD*.22,ffx+(fc.name==='west'?WALL:-WALL),dy,bcz,TM);
+                }}break}
+            case 'open':{
+              if(fc.name==='north')wb(grp,inW,fh-WALL*4,WALL,bcx,fcy,bz1+WALL*2,TM);
+              else if(fc.name==='south')wb(grp,inW,fh-WALL*4,WALL,bcx,fcy,bz2-WALL*2,TM);
+              else if(fc.name==='west')wb(grp,WALL,fh-WALL*4,inD,bx1+WALL*2,fcy,bcz,TM);
+              else wb(grp,WALL,fh-WALL*4,inD,bx2-WALL*2,fcy,bcz,TM);break}
+            case 'shoeLow':{const n=Math.max(1,Math.round(fh/(cH*3)));
+              for(let i=0;i<n;i++){const sy=fy1+fh*(i+.5)/n;
+                const szW=fc.name==='north'||fc.name==='south'?inW:inD;
+                const szD=fc.name==='north'||fc.name==='south'?bd*.55:bw*.55;
+                const pg=new THREE.PlaneGeometry(szW,szD);
+                const pe=new THREE.EdgesGeometry(pg),pl=new THREE.LineSegments(pe,TM);
+                if(fc.name==='north'||fc.name==='south')pl.rotation.x=-Math.PI/2+.3;
+                else pl.rotation.z=Math.PI/2-.3;
+                pl.position.set(bcx,sy,bcz);grp.add(pl)}break}
+            case 'shoeHi':{const n=Math.max(1,Math.round(fh/(cH*5)));
+              for(let i=0;i<n;i++){const sy=fy1+fh*(i+.5)/n;
+                const szW=fc.name==='north'||fc.name==='south'?inW:inD;
+                const szD=fc.name==='north'||fc.name==='south'?bd*.7:bw*.7;
+                const pg=new THREE.PlaneGeometry(szW,szD);
+                const pe=new THREE.EdgesGeometry(pg),pl=new THREE.LineSegments(pe,TM);
+                if(fc.name==='north'||fc.name==='south')pl.rotation.x=-Math.PI/2+.2;
+                else pl.rotation.z=Math.PI/2-.2;
+                pl.position.set(bcx,sy,bcz);grp.add(pl)}break}
+            case 'top':{wb(grp,inW,WALL,inD,bcx,fcy,bcz,TM);
+              if(bw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);break}
+          }
+        }
+        fCol=fColEnd+1;
+      }
+    }
   }
-  return regs;
+
+  document.getElementById('info-regions').textContent=totalRegs;
+
+  /* ── Outer shells: walk top grid and draw wall-height boxes ── */
+  for(let c=0;c<GS;){
+    // Find run of cols with same depth pattern
+    let ce=c;
+    while(ce+1<GS){let same=true;
+      for(let r=0;r<GS;r++)if(!!topGrid[r][c]!==!!topGrid[r][ce+1]){same=false;break}
+      if(same)ce++;else break}
+    const spans=depthSpans(c,ce);
+    const x1=c*cRW-RW/2,x2=(ce+1)*cRW-RW/2,pw=x2-x1,pcx=(x1+x2)/2;
+    for(const[ds,de]of spans){
+      const z1=ds*cRD-RD/2,z2=(de+1)*cRD-RD/2,pd=z2-z1,pcz=(z1+z2)/2;
+      wb(grp,pw,H,pd,pcx,H/2,pcz);
+      wb(grp,pw-.01,.03,pd-.01,pcx,-.015,pcz)}
+    c=ce+1}
+
+  fitCam();
 }
 
-/* ===================================================================
-   TOP GRID — scan per-column depth strips
-   For a column range [cMin..cMax], return depth spans where ALL columns filled.
-   =================================================================== */
-function depthSpansForCols(cMin,cMax){
-  const spans=[];let inSpan=false,s=0;
-  for(let r=0;r<GS;r++){
-    let ok=true;
-    for(let c=cMin;c<=cMax;c++) if(!topGrid[r][c]){ok=false;break}
-    if(ok){if(!inSpan){inSpan=true;s=r}}
-    else{if(inSpan){spans.push([s,r-1]);inSpan=false}}
+/* ── Depth helpers ──
+   Returns array of [startUnit, endUnit] in room coordinates. */
+
+function getDepthForCol(topCol, dir){
+  // N/S: depth along rows
+  const spans=[];
+  if(dir==='south'){
+    // from row 0 going south: check contiguous filled in this col
+    let ins=false,s=0;
+    for(let r=0;r<GS;r++){
+      if(topGrid[r][topCol]){if(!ins){ins=true;s=r}}
+      else{if(ins){spans.push(toRoomZ(s,r-1));ins=false}}}
+    if(ins)spans.push(toRoomZ(s,GS-1));
+  } else {
+    // from row 19 going north
+    let ins=false,s=0;
+    for(let r=GS-1;r>=0;r--){
+      if(topGrid[r][topCol]){if(!ins){ins=true;s=r}}
+      else{if(ins){spans.push(toRoomZ(r+1,s));ins=false}}}
+    if(ins)spans.push(toRoomZ(0,s));
   }
-  if(inSpan) spans.push([s,GS-1]);
   return spans;
 }
 
-/* ===================================================================
-   THREE.JS
-   =================================================================== */
-const viewEl=document.getElementById('view');
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0xfdfdfd);
-let frustumSize=14;
-const getAspect=()=>viewEl.clientWidth/(viewEl.clientHeight||1);
-const camera=new THREE.OrthographicCamera(
-  -frustumSize*getAspect()/2,frustumSize*getAspect()/2,
-  frustumSize/2,-frustumSize/2,0.1,1000);
-camera.position.set(12,12,12);camera.lookAt(scene.position);
-
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);
-viewEl.appendChild(renderer.domElement);
-
-const controls=new OrbitControls(camera,renderer.domElement);
-controls.enableDamping=true;controls.dampingFactor=0.12;
-controls.enableZoom=true;controls.enablePan=true;
-
-const LINE_MAT=new THREE.LineBasicMaterial({color:0x000000,linewidth:2});
-const THIN_MAT=new THREE.LineBasicMaterial({color:0x000000,linewidth:1});
-const ROOM_MAT=new THREE.LineBasicMaterial({color:0xdddddd,linewidth:1});
-
-function wireBox(p,w,h,d,x,y,z,m){
-  m=m||LINE_MAT;
-  const g=new THREE.BoxGeometry(w,h,d);
-  const e=new THREE.EdgesGeometry(g);
-  const s=new THREE.LineSegments(e,m);
-  s.position.set(x,y,z);p.add(s);return s;
+function getDepthForRow(topRow, dir){
+  // W/E: depth along cols
+  const RW=(+roomW.value||400)/100,cRW=RW/GS;
+  const spans=[];
+  if(dir==='east'){
+    let ins=false,s=0;
+    for(let c=0;c<GS;c++){
+      if(topGrid[topRow][c]){if(!ins){ins=true;s=c}}
+      else{if(ins){spans.push([s*cRW-RW/2,(c)*cRW-RW/2]);ins=false}}}
+    if(ins)spans.push([s*cRW-RW/2,GS*cRW-RW/2]);
+  } else {
+    let ins=false,s=0;
+    for(let c=GS-1;c>=0;c--){
+      if(topGrid[topRow][c]){if(!ins){ins=true;s=c}}
+      else{if(ins){spans.push([(c+1)*cRW-RW/2,(s+1)*cRW-RW/2]);ins=false}}}
+    if(ins)spans.push([0*cRW-RW/2,(s+1)*cRW-RW/2]);
+  }
+  return spans;
 }
 
-/* ===================================================================
-   3D BUILD
-   =================================================================== */
-let grp=new THREE.Group();scene.add(grp);
-let timer=0;
-function scheduleRebuild(){clearTimeout(timer);timer=setTimeout(rebuild,80)}
-
-function rebuild(){
-  scene.remove(grp);
-  grp.traverse(o=>{if(o.geometry)o.geometry.dispose()});
-  grp=new THREE.Group();scene.add(grp);
-
-  updateDimLabels();
-
-  const RW=(+roomW.value||400)/100;
-  const RD=(+roomD.value||400)/100;
-  const H =(+dimH.value||240)/100;
-  const WALL=0.02;
-
-  const cellRW=RW/GS;
-  const cellRD=RD/GS;
-
-  /* ── Room floor grid (faint) ── */
-  {
-    const pts=[];
-    for(let i=0;i<=GS;i++){
-      const x=i*cellRW-RW/2;
-      pts.push(new THREE.Vector3(x,0,-RD/2),new THREE.Vector3(x,0,RD/2));
-    }
-    for(let j=0;j<=GS;j++){
-      const z=j*cellRD-RD/2;
-      pts.push(new THREE.Vector3(-RW/2,0,z),new THREE.Vector3(RW/2,0,z));
-    }
-    const geo=new THREE.BufferGeometry().setFromPoints(pts);
-    grp.add(new THREE.LineSegments(geo,ROOM_MAT));
-
-    // Room outline
-    const ol=new THREE.PlaneGeometry(RW,RD);
-    const oe=new THREE.EdgesGeometry(ol);
-    const os=new THREE.LineSegments(oe,new THREE.LineBasicMaterial({color:0xaaaaaa,linewidth:1}));
-    os.rotation.x=-Math.PI/2;grp.add(os);
-  }
-
-  /* ── Furniture bbox from top grid ── */
-  const bb=topBBox();
-  if(!bb){
-    document.getElementById('info-regions').textContent='0';
-    fitCamera();return;
-  }
-
-  /*
-     KEY MAPPING:
-     • Top grid cols [bb.minC .. bb.maxC]  →  X axis  →  furniture width
-     • Top grid rows [bb.minR .. bb.maxR]  →  Z axis  →  furniture depth
-     • Front grid 20 cols  =  furniture width (maps to the SAME X range)
-     • Front grid 20 rows  =  furniture height (maps to Y axis)
-
-     So front-grid col c maps to:
-       X = bb.minC + c * (bb.maxC-bb.minC+1)/20   (in top-grid coords)
-
-     This way the two grids are connected:
-     - Draw footprint on top grid → defines which columns have depth
-     - Draw compartments on front grid → they are extruded only where footprint exists
-  */
-
-  const topW = bb.maxC - bb.minC + 1;   // top grid columns occupied
-  const topD = bb.maxR - bb.minR + 1;   // top grid rows occupied
-
-  // Front grid column c → top grid column range
-  function frontColToTopCols(fc){
-    const tc0 = bb.minC + fc * topW / GS;
-    const tc1 = bb.minC + (fc+1) * topW / GS;
-    return [Math.floor(tc0), Math.ceil(tc1)-1];
-  }
-
-  // Height mapping
-  const cellH = H / GS;
-
-  const frontRegions = findFrontRegions();
-  document.getElementById('info-regions').textContent = frontRegions.length;
-
-  for(const reg of frontRegions){
-    // For this region's column range [minC..maxC] in front grid,
-    // find the corresponding top-grid column range
-    const [topCMin] = frontColToTopCols(reg.minC);
-    const [, topCMax] = frontColToTopCols(reg.maxC);
-
-    // Get depth spans across these top-grid columns
-    const dSpans = depthSpansForCols(
-      Math.max(topCMin, bb.minC),
-      Math.min(topCMax, bb.maxC)
-    );
-
-    // Front-region X coords (in real units, relative to room)
-    const fx1 = (bb.minC + reg.minC * topW / GS) * cellRW - RW/2;
-    const fx2 = (bb.minC + (reg.maxC+1) * topW / GS) * cellRW - RW/2;
-    const rw = fx2 - fx1;
-    const fcx = (fx1+fx2)/2;
-
-    // Front-region Y coords
-    const fy1 = (GS - reg.maxR - 1) * cellH;
-    const fy2 = (GS - reg.minR) * cellH;
-    const rh = fy2 - fy1;
-    const fcy = (fy1 + fy2) / 2;
-
-    for(const [dStart, dEnd] of dSpans){
-      const z1 = dStart * cellRD - RD/2;
-      const z2 = (dEnd+1) * cellRD - RD/2;
-      const rd = z2 - z1;
-      const cz = (z1+z2)/2;
-
-      // Compartment box
-      wireBox(grp, rw-WALL, rh-WALL, rd-WALL, fcx, fcy, cz, THIN_MAT);
-
-      const info = TYPE_BY_ID[reg.typeId];
-      if(!info) continue;
-      const inW = rw - WALL*4;
-      const inD = rd - WALL*4;
-
-      switch(info.key){
-        case 'shelf':{
-          const n=Math.max(1,Math.round(rh/(cellH*4)));
-          for(let i=1;i<n;i++)
-            wireBox(grp,inW,WALL,inD, fcx,fy1+rh*i/n,cz,THIN_MAT);
-          break;
-        }
-        case 'books':{
-          const n=Math.max(1,Math.round(rh/(cellH*4)));
-          for(let i=1;i<n;i++)
-            wireBox(grp,inW,WALL,inD, fcx,fy1+rh*i/n,cz,THIN_MAT);
-          if(rw>cellRW*3)
-            wireBox(grp,WALL,rh-WALL*2,inD, fcx,fcy,cz,THIN_MAT);
-          break;
-        }
-        case 'hanging':{
-          const ry=fy2-rh*0.1;
-          const rg=new THREE.CylinderGeometry(0.012,0.012,inW,8,1);
-          rg.rotateZ(Math.PI/2);
-          const re=new THREE.EdgesGeometry(rg);
-          const rod=new THREE.LineSegments(re,LINE_MAT);
-          rod.position.set(fcx,ry,cz);grp.add(rod);
-          wireBox(grp,inW,WALL,inD, fcx,fy2-WALL*2,cz,THIN_MAT);
-          break;
-        }
-        case 'drawer':{
-          const n=Math.max(1,Math.round(rh/(cellH*3.5)));
-          const gap=WALL,dH=(rh-gap*(n+1))/n;
-          const fz=cz+rd/2-WALL*2;
-          for(let i=0;i<n;i++){
-            const dy=fy1+gap+dH/2+i*(dH+gap);
-            wireBox(grp,inW,dH-WALL,WALL, fcx,dy,fz,THIN_MAT);
-            wireBox(grp,inW*0.22,WALL,WALL, fcx,dy,fz+WALL,THIN_MAT);
-          }
-          break;
-        }
-        case 'open':{
-          wireBox(grp,inW,rh-WALL*4,WALL, fcx,fcy,cz-rd/2+WALL*3,THIN_MAT);
-          break;
-        }
-        case 'shoeLow':{
-          const n=Math.max(1,Math.round(rh/(cellH*3)));
-          for(let i=0;i<n;i++){
-            const sy=fy1+rh*(i+0.5)/n;
-            const pg=new THREE.PlaneGeometry(inW,rd*0.55);
-            const pe=new THREE.EdgesGeometry(pg);
-            const pl=new THREE.LineSegments(pe,THIN_MAT);
-            pl.rotation.x=-Math.PI/2+0.3;pl.position.set(fcx,sy,cz+0.02);
-            grp.add(pl);
-          }
-          break;
-        }
-        case 'shoeHi':{
-          const n=Math.max(1,Math.round(rh/(cellH*5)));
-          for(let i=0;i<n;i++){
-            const sy=fy1+rh*(i+0.5)/n;
-            const pg=new THREE.PlaneGeometry(inW,rd*0.7);
-            const pe=new THREE.EdgesGeometry(pg);
-            const pl=new THREE.LineSegments(pe,THIN_MAT);
-            pl.rotation.x=-Math.PI/2+0.2;pl.position.set(fcx,sy,cz+0.02);
-            grp.add(pl);
-          }
-          break;
-        }
-        case 'top':{
-          wireBox(grp,inW,WALL,inD, fcx,fcy,cz,THIN_MAT);
-          if(rw>cellRW*4)
-            wireBox(grp,WALL,rh-WALL*2,inD, fcx,fcy,cz,THIN_MAT);
-          break;
-        }
-      }
-    }
-  }
-
-  /* ── Outer shells per top-block column group ── */
-  // Walk each column, find contiguous depth spans, draw outer box
-  for(let c=bb.minC;c<=bb.maxC;){
-    // find run of consecutive columns
-    let cEnd=c;
-    while(cEnd+1<=bb.maxC){
-      // check same depth pattern
-      let same=true;
-      for(let r=0;r<GS;r++){
-        if(!!topGrid[r][c]!==!!topGrid[r][cEnd+1]){same=false;break}
-      }
-      if(same) cEnd++; else break;
-    }
-    // depth spans for [c..cEnd]
-    const spans=depthSpansForCols(c,cEnd);
-    const x1=c*cellRW-RW/2;
-    const x2=(cEnd+1)*cellRW-RW/2;
-    const pw=x2-x1, pcx=(x1+x2)/2;
-    for(const[ds,de]of spans){
-      const z1=ds*cellRD-RD/2;
-      const z2=(de+1)*cellRD-RD/2;
-      const pd=z2-z1,pcz=(z1+z2)/2;
-      wireBox(grp,pw,H,pd, pcx,H/2,pcz);
-      wireBox(grp,pw-0.01,0.03,pd-0.01, pcx,-0.015,pcz);
-    }
-    c=cEnd+1;
-  }
-
-  fitCamera();
+function toRoomZ(r1,r2){
+  const RD=(+roomD.value||400)/100,cRD=RD/GS;
+  return [r1*cRD-RD/2,(r2+1)*cRD-RD/2];
 }
 
-function fitCamera(){
+function spansEqual(a,b){
+  if(a.length!==b.length)return false;
+  for(let i=0;i<a.length;i++)if(Math.abs(a[i][0]-b[i][0])>.001||Math.abs(a[i][1]-b[i][1])>.001)return false;
+  return true;
+}
+
+function fitCam(){
   if(grp.children.length>0){
-    const box=new THREE.Box3().setFromObject(grp);
-    const sz=box.getSize(new THREE.Vector3());
-    const ct=box.getCenter(new THREE.Vector3());
-    grp.position.sub(ct);
-    frustumSize=Math.max(sz.x,sz.y,sz.z)*1.45;
-    updateFrustum();controls.target.set(0,0,0);
-  }
-}
+    const box=new THREE.Box3().setFromObject(grp),sz=box.getSize(new THREE.Vector3()),
+      ct=box.getCenter(new THREE.Vector3());
+    grp.position.sub(ct);frustumSize=Math.max(sz.x,sz.y,sz.z)*1.45;
+    updateFrustum();controls.target.set(0,0,0)}}
 
-function updateFrustum(){
-  const a=getAspect();
+function updateFrustum(){const a=getA();
   camera.left=-frustumSize*a/2;camera.right=frustumSize*a/2;
-  camera.top=frustumSize/2;camera.bottom=-frustumSize/2;
-  camera.updateProjectionMatrix();
-}
-window.addEventListener('resize',()=>{
-  renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);updateFrustum()});
-new ResizeObserver(()=>{
-  renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);updateFrustum()
-}).observe(viewEl);
+  camera.top=frustumSize/2;camera.bottom=-frustumSize/2;camera.updateProjectionMatrix()}
+window.addEventListener('resize',()=>{renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);updateFrustum()});
+new ResizeObserver(()=>{renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);updateFrustum()}).observe(viewEl);
 
-(function animate(){
-  requestAnimationFrame(animate);controls.update();
-  renderer.render(scene,camera);
-})();
+(function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)})();
 
-/* ===================================================================
+/* ═══════════════════════════════════════════════════════
    INIT
-   =================================================================== */
-buildPalette();buildFrontGrid();buildTopGrid();rebuild();
+   ═══════════════════════════════════════════════════════ */
+buildPalette();buildFacadeGrid();buildTopGrid();updateFaceLabels();rebuild();
 </script>
 </body>
 </html>

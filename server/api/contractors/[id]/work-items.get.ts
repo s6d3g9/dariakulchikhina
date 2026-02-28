@@ -9,6 +9,7 @@ export default defineEventHandler(async (event) => {
     .select({
       id: workStatusItems.id,
       title: workStatusItems.title,
+      workType: workStatusItems.workType,
       status: workStatusItems.status,
       dateStart: workStatusItems.dateStart,
       dateEnd: workStatusItems.dateEnd,

@@ -28,6 +28,16 @@
             </select>
           </div>
         </div>
+        <!-- row 1b: work type -->
+        <div class="ws-row">
+          <div class="ws-field">
+            <label class="ws-lbl">вид работ</label>
+            <select v-model="item.workType" class="ws-inp ws-select">
+              <option :value="null">— не указан —</option>
+              <option v-for="w in WORK_TYPE_OPTIONS" :key="w.value" :value="w.value">{{ w.label }}</option>
+            </select>
+          </div>
+        </div>
         <!-- row 2: dates + budget + contractor -->
         <div class="ws-row">
           <div class="ws-field">
@@ -67,6 +77,8 @@
 </template>
 
 <script setup lang="ts">
+import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
+const WORK_TYPE_OPTIONS = CONTRACTOR_WORK_TYPE_OPTIONS
 const props = defineProps<{ slug: string }>()
 
 const { data: rawItems, pending } = await useFetch<any[]>(
@@ -85,7 +97,7 @@ watch(rawItems, (v) => {
 }, { immediate: true })
 
 function addItem() {
-  items.value.push({ title: '', status: 'pending', dateStart: '', dateEnd: '', budget: '', notes: '', contractorId: null })
+  items.value.push({ title: '', status: 'pending', workType: null, dateStart: '', dateEnd: '', budget: '', notes: '', contractorId: null })
 }
 
 async function save() {
