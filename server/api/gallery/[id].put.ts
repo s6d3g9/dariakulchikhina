@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
   const id = Number(getRouterParam(event, 'id'))
-  const body = await readBody(event)
+  const body = await readNodeBody(event) as Record<string, unknown>
   const { title, image, tags, description, sortOrder } = body
 
   const [row] = await db.update(galleryItems)

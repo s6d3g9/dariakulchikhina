@@ -48,6 +48,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
 .viewport-wrap{position:relative;overflow:hidden}
 .viewport-wrap canvas{display:block;width:100%;height:100%}
 #editor-vp canvas{cursor:crosshair}
+#editor-vp canvas.cursor-mode{cursor:default}
+#editor-vp canvas.eraser-mode{cursor:crosshair}
+.handle-mesh{cursor:grab}
 .vp-label{position:absolute;top:6px;left:50%;transform:translateX(-50%);
   font:inherit;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
   color:#999;pointer-events:none;background:rgba(253,253,253,.8);padding:1px 8px}
@@ -100,6 +103,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
       <h3 class="sec-head">Тип отделения</h3>
       <div class="pal-row" id="pal-row"></div>
       <div style="margin-top:4px;display:flex;gap:4px">
+        <button class="pal-btn" id="cursor-btn" style="border-color:#ff6600">
+          <span class="sw" style="background:#ff6600"></span>Курсор
+        </button>
         <button class="pal-btn" id="eraser-btn" style="border-style:dashed">
           <span class="sw" style="background:#fff"></span>Ластик
         </button>
@@ -159,7 +165,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
   </div>
   <div id="editor-vp" class="viewport-wrap">
     <div class="vp-label">Редактор (кубики)</div>
-    <div id="click-hint">ЛКМ клик — 1 куб · ЛКМ тянуть — блок · Скролл при растяжке — глубина · Ластик — удалить</div>
+    <div id="click-hint">Кисть: ЛКМ — 1 куб, тянуть — блок, скролл — глубина · Курсор: клик — выбрать, хватать ручки — размер, Del — удалить</div>
     <div id="drag-hint"></div>
   </div>
   <div id="preview-vp" class="viewport-wrap">
@@ -349,13 +355,14 @@ function doUndo(){if(!undoStack.length)return;const s=undoStack.pop();
   GX=s.gx;GY=s.gy;GZ=s.gz;voxels=s.data;fullRebuild()}
 
 /* ═══════════════  STATE  ═══════════════ */
-let currentBrush=TYPES.shelf.id,isEraser=false,currentCat='wardrobe',activePresetIdx=0;
+let currentBrush=TYPES.shelf.id,currentTool='brush',currentCat='wardrobe',activePresetIdx=0;
 let splitH=true,splitW=true,splitD=true;
 let selectedReg=null; /* {typeId, minX,maxX,minY,maxY,minZ,maxZ} */
+let handleDrag=null;
 
 /* ═══════════════  DOM  ═══════════════ */
 const $=id=>document.getElementById(id);
-const palRow=$('pal-row'),eraserBtn=$('eraser-btn'),presetRow=$('preset-row');
+const palRow=$('pal-row'),eraserBtn=$('eraser-btn'),cursorBtn=$('cursor-btn'),presetRow=$('preset-row');
 const roomWEl=$('roomW'),roomDEl=$('roomD'),dimHEl=$('dimH');
 const shelfHEl=$('shelfH'),drawerHEl=$('drawerH'),shoeHEl=$('shoeH'),
   bootHEl=$('bootH'),bookHEl=$('bookH'),openHEl=$('openH');
@@ -371,18 +378,21 @@ function buildPalette(){
   CAT_TYPES[currentCat].forEach(k=>{const t=TYPES[k];
     const b=document.createElement('button');b.className='pal-btn';b.dataset.typeId=t.id;
     b.innerHTML=`<span class="sw" style="background:${t.color}"></span>${t.label}`;
-    b.addEventListener('click',()=>{isEraser=false;currentBrush=t.id;refreshPal()});
+    b.addEventListener('click',()=>{currentTool='brush';currentBrush=t.id;selectRegion(null);refreshPal()});
     palRow.appendChild(b)});
   if(!CAT_TYPES[currentCat].some(k=>TYPES[k].id===currentBrush)){
-    currentBrush=TYPES[CAT_TYPES[currentCat][0]].id;isEraser=false}
+    currentBrush=TYPES[CAT_TYPES[currentCat][0]].id;currentTool='brush'}
   refreshPal()}
 function refreshPal(){
+  eraserBtn.classList.toggle('active',currentTool==='eraser');
+  cursorBtn.classList.toggle('active',currentTool==='cursor');
   palRow.querySelectorAll('.pal-btn').forEach(b=>
-    b.classList.toggle('active',+b.dataset.typeId===currentBrush&&!isEraser));
-  eraserBtn.classList.toggle('active',isEraser);
+    b.classList.toggle('active',+b.dataset.typeId===currentBrush&&currentTool==='brush'));
+  const cv=eRenderer?.domElement;if(cv){cv.classList.toggle('cursor-mode',currentTool==='cursor');cv.classList.toggle('eraser-mode',currentTool==='eraser')}
   document.querySelectorAll('.subdiv-for').forEach(el=>
     el.style.display=el.dataset.for==String(currentBrush)?'':'none')}
-eraserBtn.addEventListener('click',()=>{isEraser=true;refreshPal()});
+eraserBtn.addEventListener('click',()=>{currentTool='eraser';selectRegion(null);refreshPal()});
+cursorBtn.addEventListener('click',()=>{currentTool='cursor';refreshPal()});
 
 function buildPresets(){
   presetRow.innerHTML='';
@@ -460,6 +470,81 @@ const selHighlightMesh=new THREE.LineSegments(new THREE.EdgesGeometry(unitBox),s
 selHighlightMesh.visible=false;eScene.add(selHighlightMesh);
 /* preview highlight added after pScene creation */
 let selHighlightP=null;
+
+/* ── resize handles (6 face handles) ── */
+const HANDLE_THICK=0.025;
+const handleMat=new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:.85,depthWrite:false});
+const handleGeo=new THREE.BoxGeometry(1,1,1);
+const handleG=new THREE.Group();eScene.add(handleG);
+const handles=[];
+for(const[axis,dir]of[['x',1],['x',-1],['y',1],['y',-1],['z',1],['z',-1]]){
+  const m=new THREE.Mesh(handleGeo,handleMat.clone());m.visible=false;
+  m.userData={isHandle:true,axis,dir};
+  const w=new THREE.LineSegments(new THREE.EdgesGeometry(handleGeo),new THREE.LineBasicMaterial({color:0x000000}));
+  m.add(w);handleG.add(m);handles.push({mesh:m,axis,dir})}
+
+function positionHandles(){
+  if(!selectedReg||currentTool!=='cursor'){handles.forEach(h=>h.mesh.visible=false);return}
+  const r=selectedReg,{rw,rd}=getDims();
+  const bx1=r.minX*CELL-rw/2,bx2=(r.maxX+1)*CELL-rw/2;
+  const by1=r.minY*CELL,by2=(r.maxY+1)*CELL;
+  const bz1=r.minZ*CELL-rd/2,bz2=(r.maxZ+1)*CELL-rd/2;
+  const bcx=(bx1+bx2)/2,bcy=(by1+by2)/2,bcz=(bz1+bz2)/2;
+  const bW=bx2-bx1,bH=by2-by1,bD=bz2-bz1;
+  const hs=HANDLE_THICK;
+  for(const h of handles){
+    h.mesh.visible=true;
+    if(h.axis==='x'&&h.dir===1){h.mesh.position.set(bx2+hs/2,bcy,bcz);h.mesh.scale.set(hs,Math.max(hs,bH*.35),Math.max(hs,bD*.35))}
+    else if(h.axis==='x'&&h.dir===-1){h.mesh.position.set(bx1-hs/2,bcy,bcz);h.mesh.scale.set(hs,Math.max(hs,bH*.35),Math.max(hs,bD*.35))}
+    else if(h.axis==='y'&&h.dir===1){h.mesh.position.set(bcx,by2+hs/2,bcz);h.mesh.scale.set(Math.max(hs,bW*.35),hs,Math.max(hs,bD*.35))}
+    else if(h.axis==='y'&&h.dir===-1){h.mesh.position.set(bcx,by1-hs/2,bcz);h.mesh.scale.set(Math.max(hs,bW*.35),hs,Math.max(hs,bD*.35))}
+    else if(h.axis==='z'&&h.dir===1){h.mesh.position.set(bcx,bcy,bz2+hs/2);h.mesh.scale.set(Math.max(hs,bW*.35),Math.max(hs,bH*.35),hs)}
+    else{h.mesh.position.set(bcx,bcy,bz1-hs/2);h.mesh.scale.set(Math.max(hs,bW*.35),Math.max(hs,bH*.35),hs)}
+  }
+}
+
+/* ── handle drag logic ── */
+function updateHandleDrag(e){
+  if(!handleDrag)return;
+  const rect=eRenderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,eCam);
+  const camDir=new THREE.Vector3();eCam.getWorldDirection(camDir);
+  const plane=new THREE.Plane().setFromNormalAndCoplanarPoint(camDir,handleDrag.startWorld);
+  const inter=new THREE.Vector3();
+  if(!raycaster.ray.intersectPlane(plane,inter))return;
+  const delta=inter.sub(handleDrag.startWorld);
+  const h=handleDrag.handle;
+  let axisDelta=h.axis==='x'?delta.x:h.axis==='y'?delta.y:delta.z;
+  const cellDelta=Math.round(axisDelta/CELL);
+  let newMinX=handleDrag.startMin.x,newMaxX=handleDrag.startMax.x;
+  let newMinY=handleDrag.startMin.y,newMaxY=handleDrag.startMax.y;
+  let newMinZ=handleDrag.startMin.z,newMaxZ=handleDrag.startMax.z;
+  if(h.axis==='x'&&h.dir===1) newMaxX=Math.max(newMinX,Math.min(GX-1,handleDrag.startMax.x+cellDelta));
+  if(h.axis==='x'&&h.dir===-1) newMinX=Math.min(newMaxX,Math.max(0,handleDrag.startMin.x+cellDelta));
+  if(h.axis==='y'&&h.dir===1) newMaxY=Math.max(newMinY,Math.min(GY-1,handleDrag.startMax.y+cellDelta));
+  if(h.axis==='y'&&h.dir===-1) newMinY=Math.min(newMaxY,Math.max(0,handleDrag.startMin.y+cellDelta));
+  if(h.axis==='z'&&h.dir===1) newMaxZ=Math.max(newMinZ,Math.min(GZ-1,handleDrag.startMax.z+cellDelta));
+  if(h.axis==='z'&&h.dir===-1) newMinZ=Math.min(newMaxZ,Math.max(0,handleDrag.startMin.z+cellDelta));
+  const{rw,rd}=getDims();
+  const sx=(newMaxX-newMinX+1)*CELL,sy=(newMaxY-newMinY+1)*CELL,sz=(newMaxZ-newMinZ+1)*CELL;
+  const cx=(newMinX+newMaxX+1)/2*CELL-rw/2,cy=(newMinY+newMaxY+1)/2*CELL,cz=(newMinZ+newMaxZ+1)/2*CELL-rd/2;
+  stretchMesh.position.set(cx,cy,cz);stretchMesh.scale.set(sx,sy,sz);stretchMesh.visible=true;
+  stretchWire.position.set(cx,cy,cz);stretchWire.scale.set(sx,sy,sz);stretchWire.visible=true;
+  const w=(newMaxX-newMinX+1)*10,hh=(newMaxY-newMinY+1)*10,dd=(newMaxZ-newMinZ+1)*10;
+  dragHint.textContent=`${w}×${hh}×${dd} см`;dragHint.style.display='block';
+  handleDrag.newBox={x1:newMinX,y1:newMinY,z1:newMinZ,x2:newMaxX,y2:newMaxY,z2:newMaxZ};
+}
+function commitHandleDrag(){
+  if(!handleDrag){cancelHandleDrag();return}
+  if(!handleDrag.newBox){cancelHandleDrag();return}
+  const r=handleDrag.origReg,nb=handleDrag.newBox;pushUndo();
+  for(const[cx,cy,cz]of r.cells)vSet(cx,cy,cz,0);
+  fillBox(nb.x1,nb.y1,nb.z1,nb.x2,nb.y2,nb.z2,r.typeId);
+  const newReg=findRegionAt(nb.x1,nb.y1,nb.z1);selectRegion(newReg);
+  rebuildEditorMeshes();rebuildPreview();updateInfo();cancelHandleDrag()}
+function cancelHandleDrag(){handleDrag=null;stretchMesh.visible=false;stretchWire.visible=false;dragHint.style.display='none';eControls.enabled=true}
 
 /* ghost */
 const ghostPlaceMat=new THREE.MeshBasicMaterial({color:0x666666,transparent:true,opacity:.2,depthWrite:false});

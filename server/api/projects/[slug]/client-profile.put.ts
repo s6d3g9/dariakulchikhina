@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
   await requireClient(event, slug)
 
-  const body = await readBody(event)
+  const body = await readNodeBody(event) as Record<string, unknown>
   const db = useDb()
 
   const [current] = await db.select().from(projects).where(eq(projects.slug, slug)).limit(1)

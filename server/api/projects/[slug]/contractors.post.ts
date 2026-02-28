@@ -5,7 +5,7 @@ import { eq, and } from 'drizzle-orm'
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const slug = getRouterParam(event, 'slug')!
-  const { contractorId } = await readBody<{ contractorId: number }>(event)
+  const { contractorId } = await readNodeBody(event) as { contractorId: number }
   if (!contractorId) throw createError({ statusCode: 400, message: 'contractorId required' })
 
   const db = useDb()
