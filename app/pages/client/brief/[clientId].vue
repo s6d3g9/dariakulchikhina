@@ -63,26 +63,44 @@
                 <div class="bcab-grid-2">
                   <div class="bcab-field">
                     <label>О себе</label>
-                    <textarea v-model="brief.about_me" class="glass-input" rows="3" placeholder="Расскажите немного о себе и своей семье…" />
+                    <textarea v-model="brief.about_me" class="glass-input" rows="3" placeholder="Расскажите немного о себе…" />
                   </div>
                   <div class="bcab-field">
                     <label>Состав семьи</label>
-                    <textarea v-model="brief.family" class="glass-input" rows="3" placeholder="Сколько человек, дети, питомцы…" />
+                    <div class="bcab-tags">
+                      <button
+                        v-for="t in FAMILY_TAGS" :key="t.val" type="button"
+                        class="bcab-tag" :class="{ active: brief.family.includes(t.val) }"
+                        @click="toggleTag(brief.family, t.val)"
+                      >{{ t.icon }} {{ t.label }}</button>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div class="bcab-form-section">
                 <h3>О проекте</h3>
-                <div class="bcab-grid-2">
-                  <div class="bcab-field">
-                    <label>Комнаты / помещения</label>
-                    <textarea v-model="brief.rooms" class="glass-input" rows="2" placeholder="Гостиная, спальня, кухня…" />
+                <div class="bcab-field bcab-field-full">
+                  <label>Комнаты / помещения</label>
+                  <div class="bcab-tags">
+                    <button
+                      v-for="t in ROOM_TAGS" :key="t" type="button"
+                      class="bcab-tag" :class="{ active: brief.rooms.includes(t) }"
+                      @click="toggleTag(brief.rooms, t)"
+                    >{{ t }}</button>
                   </div>
-                  <div class="bcab-field">
-                    <label>Предпочтения по стилю</label>
-                    <textarea v-model="brief.style_preference" class="glass-input" rows="2" placeholder="Скандинавский, лофт, минимализм…" />
+                </div>
+                <div class="bcab-field bcab-field-full" style="margin-top:14px">
+                  <label>Предпочтения по стилю</label>
+                  <div class="bcab-tags">
+                    <button
+                      v-for="t in STYLE_TAGS" :key="t" type="button"
+                      class="bcab-tag" :class="{ active: brief.style_preference.includes(t) }"
+                      @click="toggleTag(brief.style_preference, t)"
+                    >{{ t }}</button>
                   </div>
+                </div>
+                <div class="bcab-grid-2" style="margin-top:14px">
                   <div class="bcab-field">
                     <label>Бюджет</label>
                     <input v-model="brief.budget" class="glass-input" placeholder="Ориентировочный бюджет" />
@@ -278,9 +296,9 @@ const { data: client, pending, refresh } = await useFetch<any>(`/api/clients/${c
 
 const brief = reactive({
   about_me: '',
-  family: '',
-  rooms: '',
-  style_preference: '',
+  family: [] as string[],
+  rooms: [] as string[],
+  style_preference: [] as string[],
   budget: '',
   deadline_wish: '',
   current_pain: '',
@@ -304,7 +322,14 @@ const objectForm = reactive({
 watch(client, (val) => {
   if (val?.brief) {
     const { object_params: _op, ...briefFields } = (val.brief as any)
-    Object.assign(brief, briefFields)
+    // Migrate legacy string → array for tag fields
+    const toArr = (v: any) => Array.isArray(v) ? v : (v ? v.split(',').map((s: string) => s.trim()).filter(Boolean) : [])
+    Object.assign(brief, {
+      ...briefFields,
+      family: toArr(briefFields.family),
+      rooms: toArr(briefFields.rooms),
+      style_preference: toArr(briefFields.style_preference),
+    })
   }
   // Populate objectForm: project selfProfile takes priority, fallback to brief.object_params
   const sp = (val?.selfProfile as Record<string, unknown>) || {}
@@ -318,6 +343,38 @@ watch(client, (val) => {
 const section = ref('brief')
 const galleryOpen = ref(false)
 const saveMsg = ref('')
+
+// Tag options
+const FAMILY_TAGS = [
+  { val: 'муж', icon: '👨', label: 'Муж' },
+  { val: 'жена', icon: '👩', label: 'Жена' },
+  { val: 'мальчик', icon: '👦', label: 'Мальчик' },
+  { val: 'девочка', icon: '👧', label: 'Девочка' },
+  { val: 'младенец', icon: '👶', label: 'Младенец' },
+  { val: 'кошка', icon: '🐱', label: 'Кошка' },
+  { val: 'собака', icon: '🐶', label: 'Собака' },
+  { val: 'попугай', icon: '🦜', label: 'Попугай' },
+  { val: 'рыбки', icon: '🐠', label: 'Рыбки' },
+  { val: 'другие питомцы', icon: '🐾', label: 'Другие питомцы' },
+]
+
+const ROOM_TAGS = [
+  'Прихожая', 'Гостиная', 'Кухня', 'Столовая', 'Спальня',
+  'Детская', 'Кабинет', 'Гардероб', 'Ванная', 'Санузел',
+  'Кладовка', 'Балкон', 'Терраса', 'Гараж',
+]
+
+const STYLE_TAGS = [
+  'Модерн', 'Скандинавский', 'Минимализм', 'Лофт', 'Классика',
+  'Неоклассика', 'Ар-деко', 'Бохо', 'Эклектика', 'Contemporary',
+  'Японский', 'Средиземноморский', 'Прованс', 'Хай-тек', 'Шебби-шик',
+]
+
+function toggleTag(arr: string[], val: string) {
+  const idx = arr.indexOf(val)
+  if (idx === -1) arr.push(val)
+  else arr.splice(idx, 1)
+}
 const objectSaveMsg = ref('')
 
 // Address suggest
@@ -756,7 +813,43 @@ async function logout() {
   color: #888;
 }
 
-/* Placeholder */
+/* Tag selectors */
+.bcab-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 2px 0;
+}
+.bcab-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(180,180,220,0.35);
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(6px);
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: var(--glass-text, #1a1a2e);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  user-select: none;
+  white-space: nowrap;
+}
+.bcab-tag:hover {
+  background: rgba(255,255,255,0.32);
+  border-color: rgba(120,130,200,0.45);
+}
+.bcab-tag.active {
+  background: rgba(100,110,200,0.22);
+  border-color: rgba(100,110,200,0.55);
+  font-weight: 600;
+  transform: scale(1.03);
+}
+.bcab-field-full {
+  grid-column: 1 / -1;
+}
 .bcab-placeholder {
   display: flex;
   flex-direction: column;
