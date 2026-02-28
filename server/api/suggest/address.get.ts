@@ -9,14 +9,20 @@ export default defineEventHandler(async (event) => {
     const res = await fetch(url, {
       headers: { 'Accept': 'application/json' }
     })
-    const data = await res.json() as any
-    const results = (data.results || []).map((r: any) => ({
-      title: r.title?.text || '',
-      subtitle: r.subtitle?.text || '',
-      full: [r.title?.text, r.subtitle?.text].filter(Boolean).join(', '),
-    }))
+    const text = await res.text()
+    // Response is JSONP: suggest.apply({...}) — strip wrapper
+    const json = text.replace(/^suggest\.apply\(/, '').replace(/\)$/, '')
+    const data = JSON.parse(json) as any
+    const results = (data.results || []).map((r: any) => {
+      const title = r.title?.text || ''
+      const sub = r.subtitle?.text || ''
+      // Skip distance subtitles like "7057,38 км"
+      const subtitle = /км$/.test(sub) ? '' : sub
+      const full = [title, subtitle].filter(Boolean).join(', ')
+      return { title, subtitle, full }
+    })
     return { results }
-  } catch {
+  } catch (e) {
     return { results: [] }
   }
 })
