@@ -53,8 +53,8 @@
           <template v-if="section === 'brief'">
             <div class="bcab-section-head">
               <div v-if="client.linkedProject" class="bcab-sync-row">
-                <button type="button" class="glass-chip bcab-sync-btn" @click="pullFromProject" title="Перенести бюджет / срок / стиль из проекта">← из проекта</button>
-                <button type="button" class="glass-chip bcab-sync-btn" @click="pushToProject" title="Перенести бюджет / срок / стиль в проект">→ в проект</button>
+                <button type="button" class="bcab-sync-btn" @click="pullFromProject" title="Перенести бюджет / срок / стиль из проекта">← из проекта</button>
+                <button type="button" class="bcab-sync-btn" @click="pushToProject" title="Перенести бюджет / срок / стиль в проект">→ в проект</button>
               </div>
             </div>
             <form @submit.prevent="saveBrief" class="bcab-form">
@@ -121,7 +121,7 @@
               </div>
 
               <div class="bcab-foot">
-                <button type="submit" class="glass-chip bcab-save">Сохранить</button>
+                <button type="submit" class="bcab-save">Сохранить</button>
                 <span v-if="saveMsg" class="bcab-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -131,7 +131,7 @@
           <template v-else-if="section === 'object'">
             <div class="bcab-section-head">
               <div v-if="client.linkedProject" class="bcab-sync-row">
-                <button type="button" class="glass-chip bcab-sync-btn" @click="pullFromBrief" title="Перенести бюджет / срок / стиль из брифа">← из брифа</button>
+                <button type="button" class="bcab-sync-btn" @click="pullFromBrief" title="Перенести бюджет / срок / стиль из брифа">← из брифа</button>
               </div>
             </div>
             <div>
@@ -211,8 +211,8 @@
                   </div>
                 </div>
                 <div class="bcab-foot">
-                  <button type="submit" class="glass-chip bcab-save">Сохранить</button>
-                  <button type="button" class="glass-chip bcab-sync-btn" @click="pushToBrief">→ в бриф</button>
+                  <button type="submit" class="bcab-save">Сохранить</button>
+                  <button type="button" class="bcab-sync-btn" @click="pushToBrief">→ в бриф</button>
                   <span v-if="objectSaveMsg" class="bcab-save-msg">{{ objectSaveMsg }}</span>
                 </div>
               </form>
@@ -627,15 +627,22 @@ async function logout() {
 }
 .bcab-sync-btn {
   cursor: pointer;
-  background: rgba(100,120,200,0.12);
-  border: 1px solid rgba(100,120,200,0.28);
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 20px;
   font-size: 0.8rem;
-  padding: 5px 14px;
-  opacity: 0.85;
+  font-family: inherit;
+  color: var(--glass-text, #1a1a2e);
+  background: rgba(255,255,255,0.22);
+  border: 1px solid rgba(180,180,220,0.35);
+  backdrop-filter: blur(8px);
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
 }
 .bcab-sync-btn:hover {
-  background: rgba(100,120,200,0.22);
-  opacity: 1;
+  background: rgba(255,255,255,0.34);
+  border-color: rgba(120,130,200,0.5);
 }
 
 /* Brief form */
@@ -681,13 +688,22 @@ async function logout() {
 }
 .bcab-save {
   cursor: pointer;
-  background: rgba(80,100,200,0.18);
-  border: 1px solid rgba(80,100,200,0.35);
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 26px;
+  border-radius: 20px;
   font-size: 0.9rem;
-  padding: 8px 24px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--glass-text, #1a1a2e);
+  background: rgba(255,255,255,0.35);
+  border: 1px solid rgba(180,180,220,0.45);
+  backdrop-filter: blur(10px);
+  transition: background 0.15s, border-color 0.15s;
 }
 .bcab-save:hover {
-  background: rgba(80,100,200,0.28);
+  background: rgba(255,255,255,0.5);
+  border-color: rgba(120,130,200,0.55);
 }
 .bcab-save-msg {
   font-size: 0.88rem;
