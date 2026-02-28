@@ -25,6 +25,7 @@
             <span class="cab-nav-icon">{{ item.icon }}</span>
             <span>{{ item.label }}</span>
             <span v-if="item.key === 'tasks' && activeCount" class="cab-badge">{{ activeCount }}</span>
+            <span v-if="item.key === 'staff' && staff?.length" class="cab-badge">{{ staff.length }}</span>
           </button>
         </nav>
       </aside>
@@ -257,6 +258,40 @@
             </form>
           </template>
 
+          <!-- ── Бригада ────────────────────────────────────── -->
+          <template v-else-if="section === 'staff'">
+            <div v-if="!staff?.length" class="cab-empty">
+              <div class="cab-empty-icon">◔</div>
+              <p>Сотрудников пока нет.<br>Администратор добавит мастеров за вашей компанией.</p>
+            </div>
+            <div v-else class="cab-staff-list">
+              <NuxtLink
+                v-for="m in staff" :key="m.id"
+                :to="`/contractor/${m.id}`"
+                class="cab-staff-card glass-surface"
+              >
+                <div class="cab-staff-avatar">◑</div>
+                <div class="cab-staff-info">
+                  <div class="cab-staff-name">{{ m.name }}</div>
+                  <div v-if="m.workTypes?.length" class="cab-staff-wt">
+                    {{ m.workTypes.slice(0,3).map((w: string) => workTypeLabel(w)).join(' · ') }}
+                    <span v-if="m.workTypes.length > 3"> +{{ m.workTypes.length - 3 }}</span>
+                  </div>
+                  <div class="cab-staff-contacts">
+                    <span v-if="m.phone">☎️ {{ m.phone }}</span>
+                    <span v-if="m.messenger && m.messengerNick">
+                      <template v-if="m.messenger === 'telegram'">✈️</template>
+                      <template v-else-if="m.messenger === 'whatsapp'">&#128242;</template>
+                      <template v-else>💬</template>
+                      {{ m.messengerNick }}
+                    </span>
+                  </div>
+                </div>
+                <div class="cab-staff-arrow">›</div>
+              </NuxtLink>
+            </div>
+          </template>
+
         </div>
       </main>
     </div>
@@ -277,6 +312,9 @@ const contractorId = Number(route.params.id)
 const { data: contractor, pending, refresh } = await useFetch<any>(`/api/contractors/${contractorId}`)
 const { data: workItems, refresh: refreshItems } = await useFetch<any[]>(
   `/api/contractors/${contractorId}/work-items`, { default: () => [] }
+)
+const { data: staff } = await useFetch<any[]>(
+  `/api/contractors/${contractorId}/staff`, { default: () => [] }
 )
 
 // ── Form ──────────────────────────────────────────────────────────
@@ -1065,4 +1103,44 @@ async function logout() {
 }
 .cab-stage-check-row:not(.done) .cab-stage-check-icon { color: var(--glass-text, #1a1a2e); opacity: 0.3; }
 .cab-stage-check-row.done .cab-stage-label { text-decoration: line-through; }
+
+/* Staff list */
+.cab-staff-list { display: flex; flex-direction: column; gap: 10px; }
+.cab-staff-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--glass-text, #1a1a2e);
+  transition: box-shadow 0.18s, background 0.15s;
+}
+.cab-staff-card:hover {
+  box-shadow: 0 6px 24px rgba(80,90,180,0.13);
+  background: rgba(255,255,255,0.35);
+}
+.cab-staff-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: rgba(100,110,200,0.15);
+  border: 1px solid rgba(100,110,200,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+.cab-staff-info { flex: 1; min-width: 0; }
+.cab-staff-name { font-size: 0.92rem; font-weight: 600; margin-bottom: 3px; }
+.cab-staff-wt { font-size: 0.75rem; opacity: 0.55; margin-bottom: 4px; }
+.cab-staff-contacts {
+  display: flex; gap: 12px;
+  font-size: 0.78rem; opacity: 0.6;
+}
+.cab-staff-arrow {
+  font-size: 1.4rem;
+  opacity: 0.25;
+  flex-shrink: 0;
+  line-height: 1;
+}
 </style>
