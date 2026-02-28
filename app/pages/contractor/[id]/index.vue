@@ -257,8 +257,6 @@
             </form>
           </template>
 
-          </template>
-
         </div>
       </main>
     </div>
