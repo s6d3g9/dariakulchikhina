@@ -52,7 +52,6 @@
           <!-- Brief -->
           <template v-if="section === 'brief'">
             <div class="bcab-section-head">
-              <h2 class="bcab-section-title">Бриф</h2>
               <div v-if="client.linkedProject" class="bcab-sync-row">
                 <button type="button" class="glass-chip bcab-sync-btn" @click="pullFromProject" title="Перенести бюджет / срок / стиль из проекта">← из проекта</button>
                 <button type="button" class="glass-chip bcab-sync-btn" @click="pushToProject" title="Перенести бюджет / срок / стиль в проект">→ в проект</button>
@@ -131,7 +130,6 @@
           <!-- Object params -->
           <template v-else-if="section === 'object'">
             <div class="bcab-section-head">
-              <h2 class="bcab-section-title">Параметры объекта</h2>
               <div v-if="client.linkedProject" class="bcab-sync-row">
                 <button type="button" class="glass-chip bcab-sync-btn" @click="pullFromBrief" title="Перенести бюджет / срок / стиль из брифа">← из брифа</button>
               </div>
@@ -223,7 +221,6 @@
 
           <!-- Roadmap -->
           <template v-else-if="section === 'roadmap'">
-            <h2 class="bcab-section-title">Дорожная карта</h2>
             <div v-if="client.linkedProject?.slug">
               <ClientRoadmap :slug="client.linkedProject.slug" />
             </div>
@@ -235,7 +232,6 @@
 
           <!-- Contractors -->
           <template v-else-if="section === 'contractors'">
-            <h2 class="bcab-section-title">Контакты исполнителей</h2>
             <div v-if="client.linkedProject?.slug">
               <ClientContractorsProfile :slug="client.linkedProject.slug" />
             </div>
@@ -247,7 +243,6 @@
 
           <!-- Documents -->
           <template v-else-if="section === 'documents'">
-            <h2 class="bcab-section-title">Договоры и документы</h2>
             <div class="bcab-placeholder">
               <div class="bcab-placeholder-icon">◻</div>
               <p>Раздел в разработке.<br>Здесь будут ваши договоры и документы.</p>
@@ -256,7 +251,6 @@
 
           <!-- Galleries -->
           <template v-else-if="section.startsWith('gallery')">
-            <h2 class="bcab-section-title">{{ currentGalleryLabel }}</h2>
             <div class="bcab-placeholder">
               <div class="bcab-placeholder-icon">▣</div>
               <p>Галерея в разработке.<br>Скоро здесь появятся материалы.</p>
@@ -378,11 +372,6 @@ const galleries = [
   { key: 'gallery-art', label: 'Арт-объекты' },
   { key: 'gallery-moodboards', label: 'Мудборды' },
 ]
-
-const currentGalleryLabel = computed(() => {
-  const g = galleries.find(g => g.key === section.value)
-  return g ? `Галерея: ${g.label}` : 'Галерея'
-})
 
 async function saveBrief() {
   saveMsg.value = ''
@@ -626,19 +615,10 @@ async function logout() {
 .bcab-section-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 22px;
-}
-.bcab-section-head .bcab-section-title {
-  margin-bottom: 0;
-}
-.bcab-section-title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  margin-bottom: 22px;
-  color: var(--glass-text, #1a1a2e);
+  margin-bottom: 18px;
 }
 .bcab-sync-row {
   display: flex;
