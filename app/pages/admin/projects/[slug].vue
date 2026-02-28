@@ -37,10 +37,6 @@
 
         <!-- Right content -->
         <div class="proj-main">
-          <div class="proj-topbar">
-            <a :href="`https://dariakulchikhina.com/api/auth/client-open?projectSlug=${encodeURIComponent(project.slug)}`" class="proj-ready-link">кабинет клиента ↗</a>
-            <button class="proj-settings-btn" @click="showEdit = true">⚙ проект</button>
-          </div>
 
           <div v-if="activePage === 'project_roadmap'"><AdminRoadmap :slug="route.params.slug as string" /></div>
           <div v-else-if="activePage === 'work_status'"><AdminWorkStatus :slug="route.params.slug as string" /></div>
@@ -265,21 +261,6 @@ async function saveProject() {
 
 /* ── Right content ── */
 .proj-main { flex: 1; min-width: 0; }
-
-.proj-topbar {
-  display: flex; justify-content: flex-end;
-  gap: 8px; margin-bottom: 16px; align-items: center;
-}
-.proj-ready-link {
-  font-size: .78rem; color: #666; text-decoration: none;
-  border: 1px solid #ddd; padding: 5px 10px; border-radius: 2px;
-}
-.proj-ready-link:hover { border-color: #1a1a1a; color: #1a1a1a; }
-.proj-settings-btn {
-  border: 1px dashed #ddd; background: transparent; padding: 5px 10px;
-  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px; color: #666;
-}
-.proj-settings-btn:hover { border-color: #1a1a1a; color: #1a1a1a; }
 
 /* ── Modal ── */
 .a-btn-sm {
