@@ -11,13 +11,22 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedNodeBody(event, CreateProjectSchema)
   const db = useDb()
 
-  const [project] = await db.insert(projects).values({
-    slug: body.slug,
-    title: body.title,
-    clientPin: body.clientPin,
-    pages: CORE_PAGES,
-    profile: {},
-  }).returning()
+  let project: any
+  try {
+    ;[project] = await db.insert(projects).values({
+      slug: body.slug,
+      title: body.title,
+      clientPin: body.clientPin,
+      pages: CORE_PAGES,
+      profile: {},
+    }).returning()
+  } catch (e: any) {
+    const code = e?.cause?.code ?? e?.code
+    if (code === '23505') {
+      throw createError({ statusCode: 400, message: `Slug «${body.slug}» уже занят — выберите другой` })
+    }
+    throw e
+  }
 
   // Create roadmap stages from selected template
   if (body.roadmapTemplateKey) {
