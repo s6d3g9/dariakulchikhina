@@ -407,20 +407,26 @@ async function save() {
   formError.value = ''
   try {
     if (editingId.value) {
-      await $fetch(`/api/contractors/${editingId.value}`, { method: 'PUT', body: { ...form } })      // sync project links
-      const toAdd = [...selectedProjectIds.value].filter(id => !originalProjectIds.value.includes(id))
-      const toRemove = [...originalProjectIds.value].filter(id => !selectedProjectIds.value.includes(id))
-      const projectMap = Object.fromEntries((allProjects.value || []).map((p: any) => [p.id, p.slug]))
+      await $fetch(`/api/contractors/${editingId.value}`, { method: 'PUT', body: JSON.parse(JSON.stringify(form)) })
+      // sync project links
+      const toAdd = selectedProjectIds.value.filter(id => !originalProjectIds.value.includes(id))
+      const toRemove = originalProjectIds.value.filter(id => !selectedProjectIds.value.includes(id))
+      const projectMap: Record<number, string> = {}
+      for (const p of allProjects.value) projectMap[p.id] = p.slug
       await Promise.all([
         ...toAdd.map(id => $fetch(`/api/projects/${projectMap[id]}/contractors`, { method: 'POST', body: { contractorId: editingId.value } })),
         ...toRemove.map(id => $fetch(`/api/projects/${projectMap[id]}/contractors/${editingId.value}`, { method: 'DELETE' })),
-      ])    } else {
+      ])
+    } else {
       await $fetch('/api/contractors', { method: 'POST', body: { ...form } })
     }
     closeModal()
     refresh()
   } catch (e: any) {
-    formError.value = e.data?.message || '\u041e\u0448\u0438\u0431\u043a\u0430'
+    const status = e.status || e.statusCode || e.data?.statusCode || ''
+    const msg = e.data?.message || e.data?.statusMessage || e.message || 'неизвестная'
+    formError.value = `Ошибка ${status}: ${msg}`
+    console.error('save error', e)
   } finally {
     saving.value = false
   }
