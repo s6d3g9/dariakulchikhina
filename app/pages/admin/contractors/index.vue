@@ -313,12 +313,14 @@ async function del(id: number) {
   align-items: center;
   gap: 5px;
   text-decoration: none;
-  color: rgba(60,100,200,1);
-  border-color: rgba(60,100,200,.3);
-  background: rgba(60,100,200,.07);
-  opacity: 1;
+  font-family: inherit;
+  color: var(--glass-page-bg);
+  background: var(--glass-text);
+  border: none;
+  opacity: .75;
+  transition: opacity .15s;
 }
-.a-btn-cabinet:hover { background: rgba(60,100,200,.15); border-color: rgba(60,100,200,.55); box-shadow: none; }
+.a-btn-cabinet:hover { opacity: 1; box-shadow: none; background: var(--glass-text); }
 
 .a-btn-save {
   border: 1px solid var(--glass-border);

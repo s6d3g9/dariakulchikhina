@@ -1,341 +1,630 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parametric Furniture Generator</title>
-  <style>
-    /* ── Reset & Base ─────────────────────────────────── */
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Parametric Furniture Generator</title>
+<style>
+/* ── Reset ──────────────────────────────────────────── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
+  font-family:"SF Mono","Fira Code","Courier New",Courier,monospace;color:#000}
 
-    html, body {
-      width: 100%; height: 100%;
-      overflow: hidden;
-      background: #fdfdfd;
-      font-family: "SF Mono", "Fira Code", "Courier New", Courier, monospace;
-      color: #000;
-    }
+/* ── Layout ─────────────────────────────────────────── */
+#app{display:grid;width:100%;height:100%;
+  grid-template-columns:340px 1fr;
+  grid-template-rows:auto 1fr auto}
 
-    canvas { display: block; }
+/* ── Category Tabs ──────────────────────────────────── */
+#cats{grid-column:1/3;display:flex;border-bottom:2px solid #000;background:#fff}
+.cat-btn{flex:1;padding:10px 6px;font:inherit;font-size:10px;letter-spacing:.07em;
+  text-transform:uppercase;background:#fff;border:none;border-right:2px solid #000;
+  cursor:pointer;transition:background .15s}
+.cat-btn:last-child{border-right:none}
+.cat-btn.active{background:#000;color:#fff}
+.cat-btn:hover:not(.active){background:#eee}
 
-    /* ── Bottom Control Panel ─────────────────────────── */
-    #controls {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      z-index: 10;
-      display: flex;
-      align-items: stretch;
-      justify-content: center;
-      gap: 0;
-      background: #fff;
-      border-top: 2px solid #000;
-    }
+/* ── Left Panel ─────────────────────────────────────── */
+#left{grid-column:1;grid-row:2;border-right:2px solid #000;
+  overflow-y:auto;display:flex;flex-direction:column}
 
-    .ctrl-group {
-      flex: 1 1 0;
-      max-width: 280px;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      border-right: 2px solid #000;
-      padding: 12px 16px;
-    }
-    .ctrl-group:last-child { border-right: none; }
+/* ── Tool Palette ───────────────────────────────────── */
+#palette{padding:8px 10px;border-bottom:2px solid #000}
+#palette h3{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.pal-row{display:flex;flex-wrap:wrap;gap:4px}
+.pal-btn{display:flex;align-items:center;gap:5px;padding:4px 8px;font:inherit;font-size:9px;
+  letter-spacing:.04em;text-transform:uppercase;border:2px solid #000;background:#fff;
+  cursor:pointer;transition:all .12s;line-height:1.2}
+.pal-btn .swatch{width:12px;height:12px;border:1px solid #000;flex-shrink:0}
+.pal-btn.active{background:#000;color:#fff}
+.pal-btn.active .swatch{border-color:#fff}
+.pal-btn:hover:not(.active){background:#f0f0f0}
 
-    .ctrl-group label {
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      line-height: 1.3;
-      margin-bottom: 6px;
-      user-select: none;
-    }
+/* ── Grid ───────────────────────────────────────────── */
+#grid-wrap{flex:1;padding:10px;display:flex;flex-direction:column;min-height:0}
+#grid-wrap h3{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+#grid-container{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+#grid{display:grid;grid-template-columns:repeat(20,1fr);
+  gap:0;border:2px solid #000;aspect-ratio:1;
+  width:100%;max-width:320px;max-height:320px;user-select:none;touch-action:none}
+.cell{border:0.5px solid #ccc;cursor:crosshair;transition:background .08s}
+.cell:hover{outline:1.5px solid #000;outline-offset:-1.5px;z-index:1}
 
-    .ctrl-group input[type="number"] {
-      width: 100%;
-      font-family: inherit;
-      font-size: 22px;
-      text-align: center;
-      border: 2px solid #000;
-      background: #fdfdfd;
-      padding: 6px 4px;
-      outline: none;
-      -moz-appearance: textfield;
-      appearance: textfield;
-    }
-    .ctrl-group input[type="number"]::-webkit-inner-spin-button,
-    .ctrl-group input[type="number"]::-webkit-outer-spin-button {
-      opacity: 1;
-      height: 28px;
-    }
-    .ctrl-group input[type="number"]:focus {
-      border-color: #555;
-    }
+/* ── Dims ───────────────────────────────────────────── */
+#dims-panel{padding:8px 10px;border-top:2px solid #000}
+#dims-panel h3{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.dim-row{display:flex;gap:6px;margin-bottom:4px}
+.dim-row label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;
+  display:flex;align-items:center;gap:4px;flex:1}
+.dim-row input{width:56px;font:inherit;font-size:14px;text-align:center;
+  border:2px solid #000;padding:3px 2px}
 
-    /* ── Dimensions readout ────────────────────────────── */
-    #dims {
-      position: fixed;
-      top: 16px; left: 16px;
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      line-height: 1.6;
-      pointer-events: none;
-      user-select: none;
-    }
-  </style>
+/* ── 3D Canvas ──────────────────────────────────────── */
+#view{grid-column:2;grid-row:2;position:relative;overflow:hidden}
+#view canvas{display:block;width:100%;height:100%}
+
+/* ── Bottom Bar ─────────────────────────────────────── */
+#bar{grid-column:1/3;border-top:2px solid #000;background:#fff;
+  display:flex;align-items:center;padding:6px 14px;gap:16px}
+#bar .info{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+#bar .info span{font-weight:700}
+#bar .spacer{flex:1}
+.bar-btn{font:inherit;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:6px 14px;border:2px solid #000;background:#fff;cursor:pointer;transition:all .12s}
+.bar-btn:hover{background:#000;color:#fff}
+
+/* ── Scrollbar ──────────────────────────────────────── */
+#left::-webkit-scrollbar{width:4px}
+#left::-webkit-scrollbar-thumb{background:#000}
+</style>
 </head>
 <body>
 
-  <div id="dims"></div>
+<div id="app">
 
-  <div id="controls">
-    <div class="ctrl-group">
-      <label>Полки под сковородки</label>
-      <input type="number" id="panShelves" value="0" min="0" max="20" />
+  <!-- Category Tabs -->
+  <div id="cats">
+    <button class="cat-btn active" data-cat="wardrobe">Шкаф-купе</button>
+    <button class="cat-btn" data-cat="bookcase">Книжный шкаф</button>
+    <button class="cat-btn" data-cat="shoes">Обувной шкаф</button>
+    <button class="cat-btn" data-cat="hallway">Прихожая</button>
+    <button class="cat-btn" data-cat="shelving">Стеллаж</button>
+  </div>
+
+  <!-- Left Panel -->
+  <div id="left">
+    <div id="palette">
+      <h3>Тип отделения</h3>
+      <div class="pal-row" id="pal-row"></div>
+      <div style="margin-top:6px">
+        <button class="pal-btn" id="eraser-btn" style="border-style:dashed">
+          <span class="swatch" style="background:#fff"></span>Ластик
+        </button>
+      </div>
     </div>
-    <div class="ctrl-group">
-      <label>Высокая обувь / Сапоги</label>
-      <input type="number" id="highShoes" value="0" min="0" max="20" />
+
+    <div id="grid-wrap">
+      <h3>Сетка 20 × 20 — рисуйте отделения</h3>
+      <div id="grid-container">
+        <div id="grid"></div>
+      </div>
     </div>
-    <div class="ctrl-group">
-      <label>Низкая обувь (пар)</label>
-      <input type="number" id="lowShoes" value="2" min="0" max="40" />
-    </div>
-    <div class="ctrl-group">
-      <label>Выдвижные ящики (мелочь)</label>
-      <input type="number" id="smallDrawers" value="1" min="0" max="20" />
+
+    <div id="dims-panel">
+      <h3>Габариты (см)</h3>
+      <div class="dim-row">
+        <label>Ш <input type="number" id="dimW" value="120" min="30" max="400" step="5"/></label>
+        <label>В <input type="number" id="dimH" value="220" min="30" max="350" step="5"/></label>
+        <label>Г <input type="number" id="dimD" value="60" min="20" max="120" step="5"/></label>
+      </div>
     </div>
   </div>
 
-  <!-- Three.js + OrbitControls from CDN (importmap) -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+  <!-- 3D View -->
+  <div id="view"></div>
+
+  <!-- Bottom Bar -->
+  <div id="bar">
+    <div class="info">Секций: <span id="info-regions">0</span></div>
+    <div class="info">Размер: <span id="info-size">120×220×60</span> см</div>
+    <div class="spacer"></div>
+    <button class="bar-btn" id="btn-clear">Очистить</button>
+    <button class="bar-btn" id="btn-reset-cam">Сброс камеры</button>
+  </div>
+</div>
+
+<!-- Three.js -->
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ===================================================================
+   COMPARTMENT TYPES
+   =================================================================== */
+const TYPES = {
+  shelf:   { id: 1, label: 'Полка',            color: '#a8d8ea' },
+  hanging: { id: 2, label: 'Штанга',           color: '#b5eaaa' },
+  drawer:  { id: 3, label: 'Ящик',             color: '#f5c385' },
+  open:    { id: 4, label: 'Открытая секция',   color: '#fff3b0' },
+  shoeLow: { id: 5, label: 'Обувь низкая',     color: '#f0b0c0' },
+  shoeHi:  { id: 6, label: 'Сапоги / Высокая', color: '#d5b0f0' },
+  books:   { id: 7, label: 'Книги',            color: '#b0d0f0' },
+  top:     { id: 8, label: 'Антресоль',         color: '#d0d0d0' },
+};
+const TYPE_BY_ID = {};
+for (const [key, val] of Object.entries(TYPES)) TYPE_BY_ID[val.id] = { ...val, key };
+
+/* Types shown per category */
+const CAT_TYPES = {
+  wardrobe: ['shelf','hanging','drawer','open','top'],
+  bookcase: ['books','shelf','drawer','open'],
+  shoes:    ['shoeLow','shoeHi','drawer','shelf'],
+  hallway:  ['hanging','shoeLow','shoeHi','drawer','shelf','open'],
+  shelving: ['shelf','open','books','drawer'],
+};
+
+/* ===================================================================
+   PRESET TEMPLATES  (20×20 grid, 0 = empty, id = type)
+   =================================================================== */
+function emptyGrid(){ return Array.from({length:20},()=>new Uint8Array(20)) }
+
+function fillRect(g, r1,c1, r2,c2, id){
+  for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) g[r][c]=id;
+}
+
+function presetWardrobe(){
+  const g=emptyGrid();
+  fillRect(g,0,0,1,19, TYPES.top.id);      // top antresol
+  fillRect(g,2,0,14,9, TYPES.hanging.id);   // left hanging
+  fillRect(g,2,10,9,19, TYPES.shelf.id);    // right shelves
+  fillRect(g,10,10,14,19, TYPES.shelf.id);  // right lower shelves
+  fillRect(g,15,0,17,9, TYPES.drawer.id);   // left drawers
+  fillRect(g,15,10,17,19, TYPES.drawer.id); // right drawers
+  fillRect(g,18,0,19,19, TYPES.shelf.id);   // bottom shelf
+  return g;
+}
+function presetBookcase(){
+  const g=emptyGrid();
+  for(let i=0;i<5;i++) fillRect(g,i*4,0,i*4+3,19, TYPES.books.id);
+  return g;
+}
+function presetShoes(){
+  const g=emptyGrid();
+  fillRect(g,0,0,1,19, TYPES.top.id);
+  fillRect(g,2,0,7,19, TYPES.shoeHi.id);
+  fillRect(g,8,0,13,9, TYPES.shoeLow.id);
+  fillRect(g,8,10,13,19, TYPES.shoeLow.id);
+  fillRect(g,14,0,17,19, TYPES.shoeLow.id);
+  fillRect(g,18,0,19,19, TYPES.drawer.id);
+  return g;
+}
+function presetHallway(){
+  const g=emptyGrid();
+  fillRect(g,0,0,2,19, TYPES.top.id);
+  fillRect(g,3,0,12,11, TYPES.hanging.id);
+  fillRect(g,3,12,7,19, TYPES.shelf.id);
+  fillRect(g,8,12,12,19, TYPES.open.id);
+  fillRect(g,13,0,16,19, TYPES.shoeLow.id);
+  fillRect(g,17,0,19,19, TYPES.drawer.id);
+  return g;
+}
+function presetShelving(){
+  const g=emptyGrid();
+  for(let i=0;i<5;i++){
+    const id = i%2===0 ? TYPES.open.id : TYPES.shelf.id;
+    fillRect(g,i*4,0,i*4+3,19, id);
+  }
+  return g;
+}
+const PRESETS = { wardrobe:presetWardrobe, bookcase:presetBookcase,
+  shoes:presetShoes, hallway:presetHallway, shelving:presetShelving };
+
+/* ===================================================================
+   STATE
+   =================================================================== */
+let grid = presetWardrobe();
+let currentBrush = TYPES.shelf.id;
+let isEraser = false;
+let painting = false;
+let currentCat = 'wardrobe';
+
+/* ===================================================================
+   UI  —  PALETTE
+   =================================================================== */
+const palRow = document.getElementById('pal-row');
+const eraserBtn = document.getElementById('eraser-btn');
+
+function buildPalette(){
+  palRow.innerHTML='';
+  const types = CAT_TYPES[currentCat];
+  types.forEach(key=>{
+    const t = TYPES[key];
+    const btn = document.createElement('button');
+    btn.className = 'pal-btn' + (t.id===currentBrush && !isEraser ? ' active':'');
+    btn.dataset.typeId = t.id;
+    btn.innerHTML = `<span class="swatch" style="background:${t.color}"></span>${t.label}`;
+    btn.addEventListener('click',()=>{
+      isEraser=false; currentBrush=t.id;
+      refreshPaletteActive();
+    });
+    palRow.appendChild(btn);
+  });
+  if(!types.some(k=>TYPES[k].id===currentBrush)){
+    currentBrush=TYPES[types[0]].id; isEraser=false;
+  }
+  refreshPaletteActive();
+}
+
+function refreshPaletteActive(){
+  palRow.querySelectorAll('.pal-btn').forEach(b=>{
+    b.classList.toggle('active', +b.dataset.typeId===currentBrush && !isEraser);
+  });
+  eraserBtn.classList.toggle('active', isEraser);
+}
+eraserBtn.addEventListener('click',()=>{isEraser=true; refreshPaletteActive()});
+
+/* ===================================================================
+   UI  —  GRID
+   =================================================================== */
+const gridEl = document.getElementById('grid');
+const cells = [];
+
+function buildGrid(){
+  gridEl.innerHTML='';
+  cells.length=0;
+  for(let r=0;r<20;r++){
+    cells[r]=[];
+    for(let c=0;c<20;c++){
+      const d=document.createElement('div');
+      d.className='cell';
+      d.dataset.r=r; d.dataset.c=c;
+      gridEl.appendChild(d);
+      cells[r][c]=d;
     }
   }
-  </script>
+  syncGridColors();
+}
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+function syncGridColors(){
+  for(let r=0;r<20;r++) for(let c=0;c<20;c++){
+    const v=grid[r][c];
+    cells[r][c].style.background = v ? (TYPE_BY_ID[v]?.color||'#ddd') : '#fff';
+  }
+}
 
-    /* ─── Constants ──────────────────────────────────── */
-    const BASE_W    = 4;
-    const BASE_D    = 2;
-    const WALL      = 0.08;          // thickness of side/back panels
-    const LINE_CLR  = 0x000000;
+function paintCell(r,c){
+  const val = isEraser ? 0 : currentBrush;
+  if(grid[r][c]===val) return;
+  grid[r][c]=val;
+  cells[r][c].style.background = val ? (TYPE_BY_ID[val]?.color||'#ddd') : '#fff';
+  scheduleRebuild();
+}
 
-    const MODULE_DEFS = [
-      { id: 'panShelves',  unitH: 1.5, label: 'Полки' },
-      { id: 'highShoes',   unitH: 1.2, label: 'Сапоги' },
-      { id: 'lowShoes',    unitH: 0.6, label: 'Низкая обувь' },
-      { id: 'smallDrawers', unitH: 0.4, label: 'Ящики' },
-    ];
+gridEl.addEventListener('pointerdown',e=>{
+  const t=e.target; if(!t.dataset.r) return;
+  painting=true; gridEl.setPointerCapture(e.pointerId);
+  paintCell(+t.dataset.r, +t.dataset.c);
+});
+gridEl.addEventListener('pointermove',e=>{
+  if(!painting) return;
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if(el && el.dataset.r!==undefined) paintCell(+el.dataset.r, +el.dataset.c);
+});
+gridEl.addEventListener('pointerup',()=>{painting=false});
+gridEl.addEventListener('pointercancel',()=>{painting=false});
+gridEl.addEventListener('contextmenu',e=>{e.preventDefault()});
 
-    /* ─── Scene ──────────────────────────────────────── */
-    const scene    = new THREE.Scene();
-    scene.background = new THREE.Color(0xfdfdfd);
+/* ===================================================================
+   UI — CATEGORY TABS
+   =================================================================== */
+document.querySelectorAll('.cat-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelector('.cat-btn.active').classList.remove('active');
+    btn.classList.add('active');
+    currentCat = btn.dataset.cat;
+    grid = PRESETS[currentCat]();
+    buildPalette();
+    syncGridColors();
+    rebuild();
+  });
+});
 
-    /* ─── Orthographic Camera ────────────────────────── */
-    let frustumSize = 10;
-    const aspect = window.innerWidth / window.innerHeight;
-    const camera = new THREE.OrthographicCamera(
-      -frustumSize * aspect / 2,
-       frustumSize * aspect / 2,
-       frustumSize / 2,
-      -frustumSize / 2,
-      0.1, 1000
-    );
-    // Strict isometric
-    camera.position.set(10, 10, 10);
-    camera.lookAt(scene.position);
+/* ===================================================================
+   UI — DIMENSIONS
+   =================================================================== */
+const dimW=document.getElementById('dimW');
+const dimH=document.getElementById('dimH');
+const dimD=document.getElementById('dimD');
+[dimW,dimH,dimD].forEach(el=>el.addEventListener('input',()=>scheduleRebuild()));
 
-    /* ─── Renderer ───────────────────────────────────── */
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.prepend(renderer.domElement);
+/* ===================================================================
+   UI — BUTTONS
+   =================================================================== */
+document.getElementById('btn-clear').addEventListener('click',()=>{
+  grid=emptyGrid(); syncGridColors(); rebuild();
+});
+document.getElementById('btn-reset-cam').addEventListener('click',()=>{
+  camera.position.set(10,10,10); camera.lookAt(0,0,0);
+  controls.target.set(0,0,0); controls.update();
+});
 
-    /* ─── Controls ───────────────────────────────────── */
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.12;
-    controls.enableZoom    = true;
-    controls.enablePan     = true;
-
-    /* ─── Furniture Group ────────────────────────────── */
-    let furnitureGroup = new THREE.Group();
-    scene.add(furnitureGroup);
-
-    /* ─── Helpers ────────────────────────────────────── */
-    /**
-     * Create a wireframe (edges-only) box and add it to a parent.
-     */
-    function addWireBox(parent, w, h, d, x, y, z) {
-      const geo   = new THREE.BoxGeometry(w, h, d);
-      const edges = new THREE.EdgesGeometry(geo);
-      const mat   = new THREE.LineBasicMaterial({ color: LINE_CLR, linewidth: 2 });
-      const line  = new THREE.LineSegments(edges, mat);
-      line.position.set(x, y, z);
-      parent.add(line);
-      return line;
-    }
-
-    /**
-     * Build a single module (compartment).
-     *  - Two side panels
-     *  - Back panel
-     *  - Bottom shelf
-     *  - Top shelf (only on the very last module at the top)
-     *  - For drawers: inner horizontal divider lines
-     *  - For shoe shelves: tilted shelf hint
-     */
-    function buildModule(type, w, h, d, isLast) {
-      const g = new THREE.Group();
-
-      // Outer shell box (the compartment boundary)
-      addWireBox(g, w, h, d, 0, h / 2, 0);
-
-      // Inner shelving detail — differs per type
-      const innerW = w - WALL * 2;
-      const innerD = d - WALL;
-
-      if (type === 'panShelves') {
-        // Horizontal divider in the middle
-        addWireBox(g, innerW, WALL, innerD, 0, h * 0.5, WALL / 2);
-      }
-
-      if (type === 'smallDrawers') {
-        // Draw a smaller inset box to represent the drawer face
-        const drawerH = h - WALL * 2;
-        const drawerInset = 0.12;
-        addWireBox(g, innerW - drawerInset * 2, drawerH, WALL,
-                   0, h / 2, d / 2 - WALL / 2);
-        // Drawer handle — small horizontal line
-        const handleW = innerW * 0.35;
-        addWireBox(g, handleW, WALL, WALL,
-                   0, h / 2, d / 2 + WALL / 2);
-      }
-
-      if (type === 'lowShoes' || type === 'highShoes') {
-        // Tilted shelf inside  (simple inclined plane hint)
-        const shelfGeo = new THREE.PlaneGeometry(innerW, innerD);
-        const shelfEdges = new THREE.EdgesGeometry(shelfGeo);
-        const shelfLine = new THREE.LineSegments(
-          shelfEdges,
-          new THREE.LineBasicMaterial({ color: LINE_CLR, linewidth: 2 })
-        );
-        shelfLine.rotation.x = -Math.PI / 2 + 0.25;   // slight tilt
-        shelfLine.position.set(0, h * 0.35, WALL / 2);
-        g.add(shelfLine);
-      }
-
-      return g;
-    }
-
-    /* ─── Main Rebuild ───────────────────────────────── */
-    function rebuild() {
-      // Remove previous
-      scene.remove(furnitureGroup);
-      furnitureGroup.traverse(obj => {
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) obj.material.dispose();
-      });
-      furnitureGroup = new THREE.Group();
-      scene.add(furnitureGroup);
-
-      let currentY = 0;
-      let totalModules = 0;
-
-      // Bottom-up: Pan shelves → High shoes → Low shoes → Drawers
-      for (const def of MODULE_DEFS) {
-        const count = parseInt(document.getElementById(def.id).value, 10) || 0;
-        for (let i = 0; i < count; i++) {
-          const isLast = false; // we add a cap later
-          const mod = buildModule(def.id, BASE_W, def.unitH, BASE_D, isLast);
-          mod.position.y = currentY;
-          furnitureGroup.add(mod);
-          currentY += def.unitH;
-          totalModules++;
+/* ===================================================================
+   REGION DETECTION  (flood fill connected components)
+   =================================================================== */
+function findRegions(){
+  const visited = Array.from({length:20},()=>new Uint8Array(20));
+  const regions=[];
+  for(let r=0;r<20;r++) for(let c=0;c<20;c++){
+    if(visited[r][c] || grid[r][c]===0) continue;
+    const typeId=grid[r][c];
+    const cellsList=[];
+    const queue=[[r,c]]; visited[r][c]=1;
+    while(queue.length){
+      const [cr,cc]=queue.shift(); cellsList.push([cr,cc]);
+      for(const [dr,dc] of [[0,1],[0,-1],[1,0],[-1,0]]){
+        const nr=cr+dr, nc=cc+dc;
+        if(nr>=0&&nr<20&&nc>=0&&nc<20&&!visited[nr][nc]&&grid[nr][nc]===typeId){
+          visited[nr][nc]=1; queue.push([nr,nc]);
         }
       }
+    }
+    let minR=20,maxR=0,minC=20,maxC=0;
+    for(const [cr,cc] of cellsList){
+      minR=Math.min(minR,cr); maxR=Math.max(maxR,cr);
+      minC=Math.min(minC,cc); maxC=Math.max(maxC,cc);
+    }
+    regions.push({typeId, cells:cellsList, minR,maxR,minC,maxC});
+  }
+  return regions;
+}
 
-      // If nothing to show, bail out
-      if (totalModules === 0) {
-        document.getElementById('dims').textContent = '';
-        return;
+/* ===================================================================
+   THREE.JS SETUP
+   =================================================================== */
+const viewEl = document.getElementById('view');
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0xfdfdfd);
+
+let frustumSize = 14;
+const getAspect = ()=> viewEl.clientWidth / (viewEl.clientHeight||1);
+const camera = new THREE.OrthographicCamera(
+  -frustumSize*getAspect()/2, frustumSize*getAspect()/2,
+   frustumSize/2, -frustumSize/2, 0.1, 1000);
+camera.position.set(10,10,10);
+camera.lookAt(scene.position);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(viewEl.clientWidth, viewEl.clientHeight);
+viewEl.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping=true; controls.dampingFactor=0.12;
+controls.enableZoom=true; controls.enablePan=true;
+
+/* ===================================================================
+   WIREFRAME HELPERS
+   =================================================================== */
+const LINE_MAT = new THREE.LineBasicMaterial({color:0x000000, linewidth:2});
+const THIN_MAT = new THREE.LineBasicMaterial({color:0x000000, linewidth:1});
+
+function wireBox(parent, w,h,d, x,y,z, mat){
+  mat = mat || LINE_MAT;
+  const geo=new THREE.BoxGeometry(w,h,d);
+  const edges=new THREE.EdgesGeometry(geo);
+  const seg=new THREE.LineSegments(edges, mat);
+  seg.position.set(x,y,z);
+  parent.add(seg); return seg;
+}
+
+/* ===================================================================
+   3D BUILD
+   =================================================================== */
+let furnitureGroup = new THREE.Group();
+scene.add(furnitureGroup);
+
+let rebuildTimer=0;
+function scheduleRebuild(){ clearTimeout(rebuildTimer); rebuildTimer=setTimeout(rebuild,80); }
+
+function rebuild(){
+  scene.remove(furnitureGroup);
+  furnitureGroup.traverse(o=>{if(o.geometry)o.geometry.dispose()});
+  furnitureGroup=new THREE.Group();
+  scene.add(furnitureGroup);
+
+  const W = (+dimW.value||120)/100;
+  const H = (+dimH.value||220)/100;
+  const D = (+dimD.value||60)/100;
+  const WALL = 0.025;
+
+  const cellW = W/20;
+  const cellH = H/20;
+
+  /* Outer shell */
+  wireBox(furnitureGroup, W, H, D, 0, H/2, 0);
+
+  /* Plinth */
+  const plinthH=0.04;
+  wireBox(furnitureGroup, W-0.02, plinthH, D-0.02, 0, -plinthH/2, 0);
+
+  /* Regions */
+  const regions = findRegions();
+  document.getElementById('info-regions').textContent = regions.length;
+  document.getElementById('info-size').textContent =
+    `${dimW.value||120}×${dimH.value||220}×${dimD.value||60}`;
+
+  for(const reg of regions){
+    const x1 = reg.minC * cellW - W/2;
+    const x2 = (reg.maxC+1)*cellW - W/2;
+    const y1 = (20 - reg.maxR -1)*cellH;
+    const y2 = (20 - reg.minR)*cellH;
+    const rw = x2-x1;
+    const rh = y2-y1;
+    const cx = (x1+x2)/2;
+    const cy = (y1+y2)/2;
+
+    /* Compartment frame */
+    wireBox(furnitureGroup, rw-WALL, rh-WALL, D-WALL*2, cx, cy, 0, THIN_MAT);
+
+    const info = TYPE_BY_ID[reg.typeId];
+    if(!info) continue;
+
+    const inW = rw-WALL*4;
+    const inD = D-WALL*4;
+
+    switch(info.key){
+
+      /* ── ПОЛКА ─────────────────────────────── */
+      case 'shelf': {
+        const cnt = Math.max(1, Math.round(rh / (cellH*4)));
+        for(let i=1;i<cnt;i++){
+          const sy = y1 + rh*i/cnt;
+          wireBox(furnitureGroup, inW, WALL, inD, cx, sy, 0, THIN_MAT);
+        }
+        break;
       }
 
-      // Top cap (closing shelf)
-      addWireBox(furnitureGroup, BASE_W, WALL, BASE_D, 0, currentY + WALL / 2, 0);
+      /* ── КНИГИ ─────────────────────────────── */
+      case 'books': {
+        const cnt = Math.max(1, Math.round(rh / (cellH*4)));
+        for(let i=1;i<cnt;i++){
+          wireBox(furnitureGroup, inW, WALL, inD, cx, y1+rh*i/cnt, 0, THIN_MAT);
+        }
+        if(rw > cellW*8){
+          wireBox(furnitureGroup, WALL, rh-WALL*2, inD, cx, cy, 0, THIN_MAT);
+        }
+        break;
+      }
 
-      // Bottom base plinth
-      const plinthH = 0.15;
-      addWireBox(furnitureGroup, BASE_W - 0.1, plinthH, BASE_D - 0.1, 0, -plinthH / 2, 0);
+      /* ── ШТАНГА ────────────────────────────── */
+      case 'hanging': {
+        const rodY = y2 - rh*0.1;
+        const rodR = 0.012;
+        const rodGeo = new THREE.CylinderGeometry(rodR,rodR,inW,8,1);
+        rodGeo.rotateZ(Math.PI/2);
+        const rodEdge = new THREE.EdgesGeometry(rodGeo);
+        const rod = new THREE.LineSegments(rodEdge,LINE_MAT);
+        rod.position.set(cx, rodY, 0);
+        furnitureGroup.add(rod);
+        wireBox(furnitureGroup, inW, WALL, inD, cx, y2-WALL*2, 0, THIN_MAT);
+        break;
+      }
 
-      // ── Center the group in view ────────────────────
-      const box = new THREE.Box3().setFromObject(furnitureGroup);
-      const center = box.getCenter(new THREE.Vector3());
-      const size   = box.getSize(new THREE.Vector3());
+      /* ── ЯЩИК ──────────────────────────────── */
+      case 'drawer': {
+        const dCnt = Math.max(1, Math.round(rh / (cellH*3.5)));
+        const gap = WALL;
+        const dH = (rh - gap*(dCnt+1)) / dCnt;
+        for(let i=0;i<dCnt;i++){
+          const dy = y1 + gap + dH/2 + i*(dH+gap);
+          wireBox(furnitureGroup, inW, dH-WALL, WALL, cx, dy, D/2-WALL*2, THIN_MAT);
+          wireBox(furnitureGroup, inW*0.22, WALL, WALL, cx, dy, D/2-WALL, THIN_MAT);
+        }
+        break;
+      }
 
-      furnitureGroup.position.sub(center);          // center at origin
+      /* ── ОТКРЫТАЯ ──────────────────────────── */
+      case 'open': {
+        wireBox(furnitureGroup, inW, rh-WALL*4, WALL, cx, cy, -D/2+WALL*3, THIN_MAT);
+        break;
+      }
 
-      // Fit orthographic frustum
-      const maxDim = Math.max(size.x, size.y, size.z) * 1.35;
-      frustumSize = maxDim;
-      updateCameraFrustum();
+      /* ── ОБУВЬ НИЗКАЯ ──────────────────────── */
+      case 'shoeLow': {
+        const cnt = Math.max(1, Math.round(rh / (cellH*3)));
+        for(let i=0;i<cnt;i++){
+          const sy = y1 + rh*(i+0.5)/cnt;
+          const pg = new THREE.PlaneGeometry(inW, D*0.45);
+          const pe = new THREE.EdgesGeometry(pg);
+          const pl = new THREE.LineSegments(pe, THIN_MAT);
+          pl.rotation.x = -Math.PI/2 + 0.32;
+          pl.position.set(cx, sy, 0.04);
+          furnitureGroup.add(pl);
+        }
+        break;
+      }
 
-      controls.target.set(0, 0, 0);
-      controls.update();
+      /* ── САПОГИ ────────────────────────────── */
+      case 'shoeHi': {
+        const cnt = Math.max(1, Math.round(rh / (cellH*5)));
+        for(let i=0;i<cnt;i++){
+          const sy = y1 + rh*(i+0.5)/cnt;
+          const pg = new THREE.PlaneGeometry(inW, D*0.65);
+          const pe = new THREE.EdgesGeometry(pg);
+          const pl = new THREE.LineSegments(pe, THIN_MAT);
+          pl.rotation.x = -Math.PI/2 + 0.2;
+          pl.position.set(cx, sy, 0.03);
+          furnitureGroup.add(pl);
+        }
+        break;
+      }
 
-      // ── Dimensions readout ──────────────────────────
-      const dims = document.getElementById('dims');
-      const totalH = currentY.toFixed(2);
-      dims.innerHTML =
-        `Ш ${BASE_W} &times; Г ${BASE_D} &times; В ${totalH}<br>` +
-        `Модулей: ${totalModules}`;
+      /* ── АНТРЕСОЛЬ ─────────────────────────── */
+      case 'top': {
+        wireBox(furnitureGroup, inW, WALL, inD, cx, cy, 0, THIN_MAT);
+        if(rw > cellW*10){
+          wireBox(furnitureGroup, WALL, rh-WALL*2, inD, cx, cy, 0, THIN_MAT);
+        }
+        break;
+      }
     }
+  }
 
-    /* ─── Camera frustum helper ──────────────────────── */
-    function updateCameraFrustum() {
-      const asp = window.innerWidth / window.innerHeight;
-      camera.left   = -frustumSize * asp / 2;
-      camera.right  =  frustumSize * asp / 2;
-      camera.top    =  frustumSize / 2;
-      camera.bottom = -frustumSize / 2;
-      camera.updateProjectionMatrix();
-    }
+  /* Center & fit camera */
+  if(regions.length > 0){
+    const box = new THREE.Box3().setFromObject(furnitureGroup);
+    const center = box.getCenter(new THREE.Vector3());
+    const size   = box.getSize(new THREE.Vector3());
+    furnitureGroup.position.sub(center);
+    frustumSize = Math.max(size.x, size.y, size.z) * 1.4;
+    updateFrustum();
+    controls.target.set(0,0,0);
+  }
+}
 
-    /* ─── Resize ─────────────────────────────────────── */
-    window.addEventListener('resize', () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      updateCameraFrustum();
-    });
+/* ===================================================================
+   CAMERA
+   =================================================================== */
+function updateFrustum(){
+  const a=getAspect();
+  camera.left=-frustumSize*a/2; camera.right=frustumSize*a/2;
+  camera.top=frustumSize/2;     camera.bottom=-frustumSize/2;
+  camera.updateProjectionMatrix();
+}
 
-    /* ─── Input listeners ────────────────────────────── */
-    for (const def of MODULE_DEFS) {
-      const el = document.getElementById(def.id);
-      el.addEventListener('input', rebuild);
-      // Clamp to >= 0
-      el.addEventListener('change', () => {
-        if (parseInt(el.value, 10) < 0) el.value = 0;
-        rebuild();
-      });
-    }
+window.addEventListener('resize',()=>{
+  renderer.setSize(viewEl.clientWidth, viewEl.clientHeight);
+  updateFrustum();
+});
+new ResizeObserver(()=>{
+  renderer.setSize(viewEl.clientWidth, viewEl.clientHeight);
+  updateFrustum();
+}).observe(viewEl);
 
-    /* ─── Animation Loop ─────────────────────────────── */
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
+/* ===================================================================
+   ANIMATION
+   =================================================================== */
+(function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+})();
 
-    /* ─── Initial build ──────────────────────────────── */
-    rebuild();
-  </script>
+/* ===================================================================
+   INIT
+   =================================================================== */
+buildPalette();
+buildGrid();
+rebuild();
+</script>
 </body>
 </html>
