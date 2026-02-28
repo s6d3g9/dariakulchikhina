@@ -23,7 +23,11 @@ export default defineEventHandler(async (event) => {
   } catch (e: any) {
     const code = e?.cause?.code ?? e?.code
     if (code === '23505') {
-      throw createError({ statusCode: 400, message: `Slug «${body.slug}» уже занят — выберите другой` })
+      throw createError({
+        statusCode: 400,
+        statusMessage: `Slug «${body.slug}» уже занят — выберите другой`,
+        data: { message: `Slug «${body.slug}» уже занят — выберите другой` },
+      })
     }
     throw e
   }

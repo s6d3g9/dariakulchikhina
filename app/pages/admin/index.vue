@@ -198,7 +198,7 @@ async function createProject() {
     closeCreate()
     refresh()
   } catch (e: any) {
-    createError.value = e.data?.message || 'Ошибка создания проекта'
+    createError.value = e.data?.message || e.data?.statusMessage || e.statusMessage || e.message || 'Ошибка создания проекта'
     wizardStep.value = 1
   } finally {
     creating.value = false
