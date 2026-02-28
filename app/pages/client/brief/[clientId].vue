@@ -245,16 +245,19 @@ const currentGalleryLabel = computed(() => {
 })
 
 const paramLabels: Record<string, string> = {
-  address: 'Адрес',
-  area: 'Площадь',
-  rooms: 'Комнаты',
-  style: 'Стиль',
+  objectAddress: 'Адрес объекта',
+  objectType: 'Тип объекта',
+  objectArea: 'Площадь, м²',
+  roomCount: 'Количество комнат',
+  floor: 'Этаж',
+  ceilingHeight: 'Высота потолков',
+  stylePreferences: 'Стиль',
   budget: 'Бюджет',
   deadline: 'Срок',
 }
 
 const objectParams = computed(() => {
-  const p = client.value?.linkedProject?.profile || {}
+  const p = (client.value?.selfProfile as Record<string, unknown>) || {}
   return Object.fromEntries(
     Object.entries(paramLabels).map(([k]) => [k, p[k] ?? ''])
   )

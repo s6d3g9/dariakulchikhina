@@ -1,6 +1,6 @@
 import { useDb } from '~/server/db/index'
-import { clients, projects } from '~/server/db/schema'
-import { eq } from 'drizzle-orm'
+import { clients, projects, pageContent } from '~/server/db/schema'
+import { eq, and } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const clientIdSession = getClientIdSession(event)
@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
 
   // Find linked project (where profile.client_id === id)
   const allProjects = await db.select({
+    id: projects.id,
     slug: projects.slug,
     title: projects.title,
     status: projects.status,
@@ -35,5 +36,17 @@ export default defineEventHandler(async (event) => {
     String((p.profile as any)?.client_id) === String(id)
   ) || null
 
-  return { ...client, linkedProject }
+  // Fetch self_profile page content for the linked project
+  let selfProfile: Record<string, unknown> = {}
+  if (linkedProject) {
+    const [pc] = await db.select({ content: pageContent.content })
+      .from(pageContent)
+      .where(and(
+        eq(pageContent.projectId, (linkedProject as any).id),
+        eq(pageContent.pageSlug, 'self_profile')
+      )).limit(1)
+    selfProfile = (pc?.content as Record<string, unknown>) || {}
+  }
+
+  return { ...client, linkedProject, selfProfile }
 })
