@@ -30,7 +30,7 @@
           </div>
           <div class="ass-row">
             <label class="ass-lbl">адрес объекта</label>
-            <input v-model="form.survey_address" type="text" class="ass-inp" @blur="save">
+            <AppAddressInput v-model="form.survey_address" input-class="ass-inp" @blur="save" />
           </div>
           <div class="ass-row">
             <label class="ass-lbl">площадь (м²)</label>

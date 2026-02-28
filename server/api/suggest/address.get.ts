@@ -13,14 +13,16 @@ export default defineEventHandler(async (event) => {
     // Response is JSONP: suggest.apply({...}) — strip wrapper
     const json = text.replace(/^suggest\.apply\(/, '').replace(/\)$/, '')
     const data = JSON.parse(json) as any
-    const results = (data.results || []).map((r: any) => {
-      const title = r.title?.text || ''
-      const sub = r.subtitle?.text || ''
-      // Skip distance subtitles like "7057,38 км"
-      const subtitle = /км$/.test(sub) ? '' : sub
-      const full = [title, subtitle].filter(Boolean).join(', ')
-      return { title, subtitle, full }
-    })
+    const results = (data.results || [])
+      .filter((r: any) => r.type === 'toponym')
+      .map((r: any) => {
+        const title = r.title?.text || ''
+        const sub = (r.subtitle?.text || '').trim()
+        // Skip distance subtitles like "7057,38 км"
+        const subtitle = sub.endsWith('км') ? '' : sub
+        const full = [title, subtitle].filter(Boolean).join(', ')
+        return { title, subtitle, full }
+      })
     return { results }
   } catch (e) {
     return { results: [] }

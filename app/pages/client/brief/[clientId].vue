@@ -157,37 +157,35 @@
                 <div class="bcab-form-section">
                   <h3>Адрес и тип</h3>
                   <div class="bcab-grid-2">
-                    <div class="bcab-field bcab-field-suggest">
+                    <div class="bcab-field">
                       <label>Адрес объекта</label>
-                      <div class="bcab-suggest-wrap">
-                        <input
-                          v-model="objectForm.objectAddress"
-                          class="glass-input"
-                          autocomplete="off"
-                          @input="onAddressInput"
-                          @focus="onAddressInput"
-                          @blur="hideSuggest"
-                          @keydown.down.prevent="suggestDown"
-                          @keydown.up.prevent="suggestUp"
-                          @keydown.enter.prevent="suggestSelect"
-                        />
-                        <ul v-if="suggestions.length" class="bcab-suggest-list">
-                          <li
-                            v-for="(s, i) in suggestions"
-                            :key="i"
-                            class="bcab-suggest-item"
-                            :class="{ active: suggestIndex === i }"
-                            @mousedown.prevent="pickSuggest(s)"
-                          >
-                            <span class="bcab-suggest-title">{{ s.title }}</span>
-                            <span v-if="s.subtitle" class="bcab-suggest-sub">{{ s.subtitle }}</span>
-                          </li>
-                        </ul>
-                      </div>
+                      <AppAddressInput v-model="objectForm.objectAddress" input-class="glass-input" placeholder="Адрес объекта" />
                     </div>
                     <div class="bcab-field">
                       <label>Тип объекта</label>
-                      <input v-model="objectForm.objectType" class="glass-input" /></div>
+                      <select v-model="objectForm.objectType" class="glass-input">
+                        <option value="">—</option>
+                        <option>квартира</option>
+                        <option>студия</option>
+                        <option>апартаменты</option>
+                        <option>пентхаус</option>
+                        <option>таунхаус</option>
+                        <option>частный дом</option>
+                        <option>офис</option>
+                        <option>коммерческое помещение</option>
+                      </select>
+                    </div>
+                    <div class="bcab-field">
+                      <label>Состояние объекта</label>
+                      <select v-model="objectForm.objectCondition" class="glass-input">
+                        <option value="">—</option>
+                        <option>новостройка без отделки</option>
+                        <option>новостройка с отделкой</option>
+                        <option>вторичное жильё</option>
+                        <option>требует ремонта</option>
+                        <option>частичный ремонт</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
                 <div class="bcab-form-section">
@@ -208,6 +206,27 @@
                     <div class="bcab-field">
                       <label>Высота потолков</label>
                       <input v-model="objectForm.ceilingHeight" class="glass-input" />
+                    </div>
+                    <div class="bcab-field">
+                      <label>Балкон / лоджия</label>
+                      <select v-model="objectForm.hasBalcony" class="glass-input">
+                        <option value="">—</option>
+                        <option>нет</option>
+                        <option>балкон</option>
+                        <option>лоджия</option>
+                        <option>терраса</option>
+                        <option>несколько</option>
+                      </select>
+                    </div>
+                    <div class="bcab-field">
+                      <label>Парковка</label>
+                      <select v-model="objectForm.parking" class="glass-input">
+                        <option value="">—</option>
+                        <option>нет</option>
+                        <option>подземная</option>
+                        <option>наземная</option>
+                        <option>гараж</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -310,10 +329,13 @@ const brief = reactive({
 const objectForm = reactive({
   objectAddress: '',
   objectType: '',
+  objectCondition: '',
   objectArea: '',
   roomCount: '',
   floor: '',
   ceilingHeight: '',
+  hasBalcony: '',
+  parking: '',
   stylePreferences: '',
   budget: '',
   deadline: '',
@@ -395,42 +417,7 @@ function toggleTag(arr: string[], val: string) {
 }
 const objectSaveMsg = ref('')
 
-// Address suggest
-const suggestions = ref<{ title: string; subtitle: string; full: string }[]>([])
-const suggestIndex = ref(-1)
-let suggestTimer: ReturnType<typeof setTimeout> | null = null
-
-async function onAddressInput() {
-  const q = objectForm.objectAddress.trim()
-  if (suggestTimer) clearTimeout(suggestTimer)
-  if (q.length < 2) { suggestions.value = []; return }
-  suggestTimer = setTimeout(async () => {
-    try {
-      const data = await $fetch<any>('/api/suggest/address', { query: { q } })
-      suggestions.value = data.results || []
-      suggestIndex.value = -1
-    } catch { suggestions.value = [] }
-  }, 250)
-}
-
-function hideSuggest() {
-  setTimeout(() => { suggestions.value = [] }, 150)
-}
-
-function suggestDown() {
-  if (suggestIndex.value < suggestions.value.length - 1) suggestIndex.value++
-}
-function suggestUp() {
-  if (suggestIndex.value > 0) suggestIndex.value--
-}
-function suggestSelect() {
-  if (suggestIndex.value >= 0) pickSuggest(suggestions.value[suggestIndex.value])
-}
-function pickSuggest(s: { title: string; subtitle: string; full: string }) {
-  objectForm.objectAddress = s.full
-  suggestions.value = []
-  suggestIndex.value = -1
-}
+// Address suggest handled by AppAddressInput component
 
 const topNav = [
   { key: 'brief', icon: '◎', label: 'Бриф' },
@@ -792,7 +779,24 @@ async function logout() {
   width: 100%;
   resize: vertical;
 }
-.bcab-foot {
+.bcab-field select.glass-input {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+/* AppAddressInput in glass context */
+.bcab-field :deep(.aai-wrap) { flex: 1; min-width: 0; }
+.bcab-field :deep(.aai-wrap input.glass-input) { width: 100%; }
+.bcab-field :deep(.aai-list) {
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border, rgba(200,200,220,0.4));
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
   display: flex;
   align-items: center;
   gap: 16px;
@@ -821,51 +825,6 @@ async function logout() {
   font-size: 0.88rem;
   color: #4a7c59;
   font-weight: 600;
-}
-
-.bcab-field-suggest {
-  position: relative;
-}
-.bcab-suggest-wrap {
-  position: relative;
-}
-.bcab-suggest-list {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, rgba(200,200,220,0.4));
-  border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-  list-style: none;
-  margin: 0;
-  padding: 4px 0;
-  z-index: 500;
-  max-height: 240px;
-  overflow-y: auto;
-}
-.bcab-suggest-item {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 14px;
-  cursor: pointer;
-  transition: background 0.12s;
-  gap: 2px;
-}
-.bcab-suggest-item:hover,
-.bcab-suggest-item.active {
-  background: rgba(100,120,200,0.08);
-}
-.bcab-suggest-title {
-  font-size: 0.88rem;
-  color: #1a1a2e;
-  font-weight: 500;
-}
-.bcab-suggest-sub {
-  font-size: 0.76rem;
-  color: #888;
 }
 
 /* Tag selectors */

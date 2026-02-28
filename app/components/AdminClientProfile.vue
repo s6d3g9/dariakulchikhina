@@ -38,6 +38,7 @@
         <div v-for="field in contactFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
           <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="acp-inp acp-ta" rows="2" />
+          <AppAddressInput v-else-if="field.address" v-model="(form as any)[field.key]" input-class="acp-inp" @blur="save" />
           <input v-else v-model="(form as any)[field.key]" class="acp-inp" type="text">
         </div>
 
@@ -51,6 +52,7 @@
             <option value="">—</option>
             <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
           </select>
+          <AppAddressInput v-else-if="field.address" v-model="(form as any)[field.key]" input-class="acp-inp" @blur="save" />
           <input v-else v-model="(form as any)[field.key]" class="acp-inp" type="text">
         </div>
 
@@ -136,6 +138,7 @@ interface FieldDef {
   multi?: boolean
   date?: boolean
   options?: string[]
+  address?: boolean
 }
 
 interface CatalogFieldDef {
@@ -172,11 +175,11 @@ const contactFields: FieldDef[] = [
   { key: 'messenger', label: 'мессенджер', options: ['telegram', 'whatsapp', 'viber', 'signal'] },
   { key: 'messengerNick', label: 'ник / номер мессенджера' },
   { key: 'preferredContact', label: 'предпочтительный способ связи', options: ['телефон', 'email', 'мессенджер'] },
-  { key: 'address', label: 'адрес проживания' },
+  { key: 'address', label: 'адрес проживания', address: true },
 ]
 
 const objectFields: FieldDef[] = [
-  { key: 'objectAddress', label: 'адрес объекта' },
+  { key: 'objectAddress', label: 'адрес объекта', address: true },
   { key: 'objectType', label: 'тип объекта', options: ['квартира', 'дом', 'таунхаус', 'апартаменты', 'коммерческое помещение', 'офис'] },
   { key: 'objectCondition', label: 'состояние объекта', options: ['новостройка без отделки', 'новостройка с отделкой', 'вторичное жилье', 'требует ремонта', 'частичный ремонт'] },
   { key: 'objectArea', label: 'общая площадь (м²)' },
@@ -285,6 +288,21 @@ async function save() {
 </script>
 
 <style scoped>
+.acp-row :deep(.aai-wrap) { flex: 1; min-width: 0; }
+.acp-row :deep(.aai-wrap input) {
+  flex: 1;
+  border: none;
+  border-bottom: 1px solid var(--acp-inp-border);
+  padding: 6px 0;
+  font-size: .88rem;
+  outline: none;
+  font-family: inherit;
+  background: transparent;
+  color: var(--acp-inp-color);
+  width: 100%;
+}
+.acp-row :deep(.aai-wrap input:focus) { border-bottom-color: var(--acp-inp-focus); }
+
 .acp-card {
   --acp-bg: #fff;
   --acp-border: #e0e0e0;

@@ -71,7 +71,7 @@
         <div class="afc-rows">
           <div class="afc-row">
             <label class="afc-lbl">жилой комплекс / адрес</label>
-            <input v-model="form.objectAddress" class="afc-inp" placeholder="ЖК «Прима», ул. Садовая 1" @blur="save">
+            <AppAddressInput v-model="form.objectAddress" input-class="afc-inp" placeholder="ЖК «Прима», ул. Садовая 1" @blur="save" />
           </div>
           <div class="afc-row">
             <label class="afc-lbl">тип объекта</label>

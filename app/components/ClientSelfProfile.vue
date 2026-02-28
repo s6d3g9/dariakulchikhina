@@ -114,7 +114,7 @@
         <div class="csp-fields">
           <div class="csp-field csp-field--full">
             <label>Адрес объекта</label>
-            <input v-model="form.objectAddress" type="text" placeholder="ЖК Crystal, корп 2, кв 45">
+            <AppAddressInput v-model="form.objectAddress" placeholder="ЖК Crystal, корп 2, кв 45" />
           </div>
           <div class="csp-field">
             <label>Тип</label>
@@ -305,6 +305,15 @@ async function saveData() {
 </script>
 
 <style scoped>
+.csp-field :deep(.aai-wrap) { flex: 1; min-width: 0; }
+.csp-field :deep(.aai-wrap input) {
+  width: 100%; border: none; background: transparent;
+  font-size: .88rem; color: var(--c-text, #1a1a1a); font-family: inherit;
+  outline: none; padding: 0; resize: none;
+  border-bottom: 1px solid transparent;
+}
+.csp-field :deep(.aai-wrap input:focus) { border-bottom-color: var(--c-text, #1a1a1a); }
+
 .csp-root { padding: 4px 0 48px; }
 
 /* Stepper */
