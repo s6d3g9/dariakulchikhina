@@ -135,6 +135,24 @@
               </select>
             </div>
           </div>
+          <!-- section: projects (edit only) -->
+          <template v-if="isEditMode">
+            <div class="a-section-title">проекты</div>
+            <div v-if="projectsLoading" style="font-size:.8rem;color:#aaa;margin-bottom:12px">Загрузка проектов...</div>
+            <div v-else-if="projectsError" style="font-size:.8rem;color:#c00;margin-bottom:12px">{{ projectsError }}</div>
+            <div v-else-if="!allProjects.length" style="font-size:.8rem;color:#aaa;margin-bottom:12px">Нет проектов</div>
+            <div v-else class="a-projects-grid">
+              <label
+                v-for="p in allProjects" :key="p.id"
+                class="a-project-check"
+                :class="{ 'a-project-check--on': selectedProjectIds.includes(p.id) }"
+                @click.prevent="toggleProject(p.id)"
+              >
+                <span class="a-project-check-dot" />
+                <span>{{ p.title }}</span>
+              </label>
+            </div>
+          </template>
           <!-- section: main -->
           <div class="a-section-title">основное</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -252,25 +270,6 @@
               <input v-model="form.correspondentAccount" class="a-input">
             </div>
           </div>
-
-          <!-- section: projects (edit only) -->
-          <template v-if="isEditMode">
-            <div class="a-section-title">проекты</div>
-            <div v-if="projectsLoading" style="font-size:.8rem;color:#aaa;margin-bottom:12px">Загрузка проектов...</div>
-            <div v-else-if="projectsError" style="font-size:.8rem;color:#c00;margin-bottom:12px">{{ projectsError }}</div>
-            <div v-else-if="!allProjects.length" style="font-size:.8rem;color:#aaa;margin-bottom:12px">Нет проектов</div>
-            <div v-else class="a-projects-grid">
-              <label
-                v-for="p in allProjects" :key="p.id"
-                class="a-project-check"
-                :class="{ 'a-project-check--on': selectedProjectIds.includes(p.id) }"
-                @click.prevent="toggleProject(p.id)"
-              >
-                <span class="a-project-check-dot" />
-                <span>{{ p.title }}</span>
-              </label>
-            </div>
-          </template>
 
           <!-- section: notes -->
           <div class="a-section-title">примечания</div>
