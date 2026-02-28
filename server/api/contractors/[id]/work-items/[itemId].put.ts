@@ -1,6 +1,6 @@
 import { useDb } from '~/server/db/index'
-import { workStatusItems } from '~/server/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { workStatusItems, contractors } from '~/server/db/schema'
+import { eq, and, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
 const UpdateSchema = z.object({
@@ -16,12 +16,20 @@ export default defineEventHandler(async (event) => {
 
   const body = await readValidatedNodeBody(event, UpdateSchema)
   const db = useDb()
+
+  // Разрешаем редактировать задачи своих мастеров (если это компания)
+  const staff = await db
+    .select({ id: contractors.id })
+    .from(contractors)
+    .where(eq(contractors.parentId, contractorId))
+  const allIds = [contractorId, ...staff.map((s: any) => s.id)]
+
   const [updated] = await db
     .update(workStatusItems)
     .set(body)
     .where(and(
       eq(workStatusItems.id, itemId),
-      eq(workStatusItems.contractorId, contractorId),
+      inArray(workStatusItems.contractorId, allIds),
     ))
     .returning()
   if (!updated) throw createError({ statusCode: 404 })

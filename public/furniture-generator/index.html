@@ -58,9 +58,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
   width:100%;max-width:300px;aspect-ratio:1}
 .cell{border:.5px solid #ccc;cursor:crosshair;transition:background .08s;min-height:0;position:relative}
 .cell:hover{outline:1.5px solid #000;outline-offset:-1.5px;z-index:1}
-.cell.outside{background:repeating-linear-gradient(45deg,#f6f6f6,#f6f6f6 2px,#eaeaea 2px,#eaeaea 4px)!important;
-  pointer-events:none;opacity:.45}
-.cell.boundary{box-shadow:inset 0 0 0 1.5px #e44;z-index:1}
+.cell.outside{background:#fff!important;pointer-events:none;opacity:.35}
+.cell.boundary{}
 .ax{font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:#888;text-align:center}
 .ax-row{display:flex;align-items:center;gap:4px;width:100%;max-width:316px}
 .ax-side{font-size:7px;letter-spacing:.06em;text-transform:uppercase;color:#888;
@@ -90,6 +89,15 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
 .bar-btn{font:inherit;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
   padding:5px 12px;border:2px solid #000;background:#fff;cursor:pointer;transition:all .12s}
 .bar-btn:hover{background:#000;color:#fff}
+
+.tog-row{display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+.tog-btn{display:flex;align-items:center;gap:5px;padding:4px 8px;font:inherit;font-size:8.5px;
+  letter-spacing:.06em;text-transform:uppercase;border:2px solid #000;background:#fff;
+  cursor:pointer;transition:all .12s;line-height:1.2}
+.tog-btn .indicator{width:10px;height:10px;border:1.5px solid #000;background:#fff;flex-shrink:0}
+.tog-btn.on .indicator{background:#000}
+.tog-btn.on{background:#f0f0f0}
+.tog-btn:hover{background:#eee}
 
 #left::-webkit-scrollbar{width:4px}
 #left::-webkit-scrollbar{width:4px}
@@ -125,10 +133,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
 
       <div class="grid-panel visible" id="panel-facade">
         <div class="ftabs">
-          <button class="ft active" data-face="north">Север</button>
-          <button class="ft" data-face="south">Юг</button>
-          <button class="ft" data-face="west">Запад</button>
-          <button class="ft" data-face="east">Восток</button>
+          <button class="ft active" data-face="north">Фасад 1</button>
+          <button class="ft" data-face="south">Фасад 2</button>
+          <button class="ft" data-face="west">Фасад 3</button>
+          <button class="ft" data-face="east">Фасад 4</button>
         </div>
         <div class="ax" id="face-top-label">↑ верх</div>
         <div class="ax-row">
@@ -142,14 +150,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
       </div>
 
       <div class="grid-panel" id="panel-top">
-        <div class="ax">↑ Север (дальняя стена)</div>
+        <div class="ax">↑ Задняя стена (Фасад 1)</div>
         <div class="ax-row">
-          <div class="ax-side">← Запад ... Восток →</div>
+          <div class="ax-side">← Фасад 3 ... Фасад 4 →</div>
           <div style="flex:1;display:flex;justify-content:center">
             <div class="g20" id="top-grid"></div>
           </div>
         </div>
-        <div class="ax">← Ширина комнаты → Юг (вход) ↓</div>
+        <div class="ax">← Ширина комнаты → Передняя стена (Фасад 2) ↓</div>
         <div style="font-size:8px;color:#888;text-align:center;margin-top:2px">
           1 ячейка = <span id="top-cell-label">—</span> см
         </div>
@@ -172,17 +180,31 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
     </div>
 
     <div class="sec" id="subdiv-panel">
-      <h3 class="sec-head">Деление по высоте (см)</h3>
-      <div class="dim-row">
-        <label>Полка <input type="number" id="shelfH" value="30" min="10" max="120" step="5"/> см</label>
-        <label>Ящик <input type="number" id="drawerH" value="20" min="8" max="80" step="2"/> см</label>
+      <h3 class="sec-head">Деление секций</h3>
+      <div class="tog-row">
+        <button class="tog-btn on" id="tog-h"><span class="indicator"></span>По высоте</button>
+        <button class="tog-btn on" id="tog-w"><span class="indicator"></span>По ширине</button>
+        <button class="tog-btn on" id="tog-d"><span class="indicator"></span>По глубине</button>
       </div>
-      <div class="dim-row">
-        <label>Обувь <input type="number" id="shoeH" value="18" min="8" max="60" step="2"/> см</label>
-        <label>Сапоги <input type="number" id="bootH" value="35" min="15" max="80" step="5"/> см</label>
-      </div>
-      <div class="dim-row">
-        <label>Книги <input type="number" id="bookH" value="30" min="10" max="80" step="5"/> см</label>
+      <div id="subdiv-inputs">
+        <div class="dim-row subdiv-for" data-for="1">
+          <label>Полка <input type="number" id="shelfH" value="30" min="10" max="120" step="5"/> см</label>
+        </div>
+        <div class="dim-row subdiv-for" data-for="3">
+          <label>Ящик <input type="number" id="drawerH" value="20" min="8" max="80" step="2"/> см</label>
+        </div>
+        <div class="dim-row subdiv-for" data-for="4">
+          <label>Открытая <input type="number" id="openH" value="35" min="10" max="120" step="5"/> см</label>
+        </div>
+        <div class="dim-row subdiv-for" data-for="5">
+          <label>Обувь <input type="number" id="shoeH" value="18" min="8" max="60" step="2"/> см</label>
+        </div>
+        <div class="dim-row subdiv-for" data-for="6">
+          <label>Сапоги <input type="number" id="bootH" value="35" min="15" max="80" step="5"/> см</label>
+        </div>
+        <div class="dim-row subdiv-for" data-for="7">
+          <label>Книги <input type="number" id="bookH" value="30" min="10" max="80" step="5"/> см</label>
+        </div>
       </div>
     </div>
   </div>
@@ -297,7 +319,11 @@ function buildPalette(){
 function refreshPal(){
   palRow.querySelectorAll('.pal-btn').forEach(b=>
     b.classList.toggle('active',+b.dataset.typeId===currentBrush&&!isEraser));
-  eraserBtn.classList.toggle('active',isEraser)}
+  eraserBtn.classList.toggle('active',isEraser);
+  /* show only subdivision row relevant to current brush */
+  document.querySelectorAll('.subdiv-for').forEach(el=>{
+    el.style.display=el.dataset.for==String(currentBrush)?'':'none'});
+}
 eraserBtn.addEventListener('click',()=>{isEraser=true;refreshPal()});
 
 /* ═══════════════════════  VIEW / FACADE TABS  ═══════════════════════ */
@@ -326,10 +352,10 @@ document.querySelectorAll('.ft').forEach(b=>b.addEventListener('click',()=>selec
 
 function updateFaceLabels(){
   const L={
-    north:{top:'↑ верх',side:'← высота →',bot:'← запад — ширина — восток →',info:'Северный фасад (дальняя стена)'},
-    south:{top:'↑ верх',side:'← высота →',bot:'← восток — ширина — запад →',info:'Южный фасад (ближняя стена)'},
-    west:{top:'↑ верх',side:'← высота →',bot:'← север — глубина — юг →',info:'Западный фасад (левая стена)'},
-    east:{top:'↑ верх',side:'← высота →',bot:'← юг — глубина — север →',info:'Восточный фасад (правая стена)'},
+    north:{top:'↑ верх',side:'← высота →',bot:'← ширина →',info:'Фасад 1 — задняя стена'},
+    south:{top:'↑ верх',side:'← высота →',bot:'← ширина →',info:'Фасад 2 — передняя стена'},
+    west:{top:'↑ верх',side:'← высота →',bot:'← глубина →',info:'Фасад 3 — левая стена'},
+    east:{top:'↑ верх',side:'← высота →',bot:'← глубина →',info:'Фасад 4 — правая стена'},
   }[activeFace];
   document.getElementById('face-top-label').textContent=L.top;
   document.getElementById('face-side-label').textContent=L.side;
@@ -428,8 +454,14 @@ const roomWEl=document.getElementById('roomW'),roomDEl=document.getElementById('
   dimHEl=document.getElementById('dimH');
 const shelfHEl=document.getElementById('shelfH'),drawerHEl=document.getElementById('drawerH'),
   shoeHEl=document.getElementById('shoeH'),bootHEl=document.getElementById('bootH'),
-  bookHEl=document.getElementById('bookH');
-[roomWEl,roomDEl,dimHEl,shelfHEl,drawerHEl,shoeHEl,bootHEl,bookHEl].forEach(el=>
+  bookHEl=document.getElementById('bookH'),openHEl=document.getElementById('openH');
+const togH=document.getElementById('tog-h'),togW=document.getElementById('tog-w'),togD=document.getElementById('tog-d');
+const subdivInputs=document.getElementById('subdiv-inputs');
+let splitH=true, splitW=true, splitD=true;
+togH.addEventListener('click',()=>{splitH=!splitH;togH.classList.toggle('on',splitH);subdivInputs.style.display=splitH?'':'none';scheduleRebuild()});
+togW.addEventListener('click',()=>{splitW=!splitW;togW.classList.toggle('on',splitW);scheduleRebuild()});
+togD.addEventListener('click',()=>{splitD=!splitD;togD.classList.toggle('on',splitD);scheduleRebuild()});
+[roomWEl,roomDEl,dimHEl,shelfHEl,drawerHEl,shoeHEl,bootHEl,bookHEl,openHEl].forEach(el=>
   el.addEventListener('input',()=>scheduleRebuild()));
 
 /* ═══════════════════════  BUTTONS  ═══════════════════════ */
@@ -718,21 +750,27 @@ function rebuild(){
           const tShoe=(+shoeHEl.value||18)/100;
           const tBoot=(+bootHEl.value||35)/100;
           const tBook=(+bookHEl.value||30)/100;
+          const tOpen=(+openHEl.value||35)/100;
 
           switch(info.key){
-            case 'shelf':{const n=Math.max(1,Math.round(fh/tShelf));
-              for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM);break}
-            case 'books':{const n=Math.max(1,Math.round(fh/tBook));
-              for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM);
-              if(bw>cRW*3)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);break}
+            case 'shelf':{if(splitH){const n=Math.max(1,Math.round(fh/tShelf));
+              for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM)}
+              if(splitW&&fw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);
+              if(splitD&&bd>cRD*4)wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,bcz,TM);break}
+            case 'books':{if(splitH){const n=Math.max(1,Math.round(fh/tBook));
+              for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM)}
+              if(splitW&&bw>cRW*3)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);
+              if(splitD&&bd>cRD*3)wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,bcz,TM);break}
             case 'hanging':{const ry=fy2-fh*.1;
               const rg=new THREE.CylinderGeometry(.012,.012,inW>inD?inW:inD,8,1);
               if(fc.name==='north'||fc.name==='south')rg.rotateZ(Math.PI/2);
               else rg.rotateX(Math.PI/2);
               const re=new THREE.EdgesGeometry(rg),rod=new THREE.LineSegments(re,LM);
               rod.position.set(bcx,ry,bcz);grp.add(rod);
-              wb(grp,inW,WALL,inD,bcx,fy2-WALL*2,bcz,TM);break}
-            case 'drawer':{const n=Math.max(1,Math.round(fh/tDrawer));
+              wb(grp,inW,WALL,inD,bcx,fy2-WALL*2,bcz,TM);
+              if(splitW&&fw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);
+              if(splitD&&bd>cRD*4)wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,bcz,TM);break}
+            case 'drawer':{if(splitH){const n=Math.max(1,Math.round(fh/tDrawer));
               const gap=WALL,dH=(fh-gap*(n+1))/n;
               let ffx=bcx,ffz=bcz;
               if(fc.name==='north')ffz=bz2-WALL;
@@ -746,13 +784,19 @@ function rebuild(){
                 }else{
                   wb(grp,WALL,dH-WALL,inD,ffx,dy,bcz,TM);
                   wb(grp,WALL,WALL,inD*.22,ffx+(fc.name==='west'?WALL:-WALL),dy,bcz,TM);
-                }}break}
+                }}}
+              if(splitW&&fw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);
+              if(splitD&&bd>cRD*4)wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,bcz,TM);break}
             case 'open':{
               if(fc.name==='north')wb(grp,inW,fh-WALL*4,WALL,bcx,fcy,bz1+WALL*2,TM);
               else if(fc.name==='south')wb(grp,inW,fh-WALL*4,WALL,bcx,fcy,bz2-WALL*2,TM);
               else if(fc.name==='west')wb(grp,WALL,fh-WALL*4,inD,bx1+WALL*2,fcy,bcz,TM);
-              else wb(grp,WALL,fh-WALL*4,inD,bx2-WALL*2,fcy,bcz,TM);break}
-            case 'shoeLow':{const n=Math.max(1,Math.round(fh/tShoe));
+              else wb(grp,WALL,fh-WALL*4,inD,bx2-WALL*2,fcy,bcz,TM);
+              if(splitH){const n=Math.max(1,Math.round(fh/tOpen));
+                for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM)}
+              if(splitW&&fw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);
+              if(splitD&&bd>cRD*4)wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,bcz,TM);break}
+            case 'shoeLow':{if(splitH){const n=Math.max(1,Math.round(fh/tShoe));
               for(let i=0;i<n;i++){const sy=fy1+fh*(i+.5)/n;
                 const szW=fc.name==='north'||fc.name==='south'?inW:inD;
                 const szD=fc.name==='north'||fc.name==='south'?bd*.55:bw*.55;
@@ -760,8 +804,10 @@ function rebuild(){
                 const pe=new THREE.EdgesGeometry(pg),pl=new THREE.LineSegments(pe,TM);
                 if(fc.name==='north'||fc.name==='south')pl.rotation.x=-Math.PI/2+.3;
                 else{pl.rotation.z=Math.PI/2-.3}
-                pl.position.set(bcx,sy,bcz);grp.add(pl)}break}
-            case 'shoeHi':{const n=Math.max(1,Math.round(fh/tBoot));
+                pl.position.set(bcx,sy,bcz);grp.add(pl)}}
+              if(splitW&&fw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);
+              if(splitD&&bd>cRD*4)wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,bcz,TM);break}
+            case 'shoeHi':{if(splitH){const n=Math.max(1,Math.round(fh/tBoot));
               for(let i=0;i<n;i++){const sy=fy1+fh*(i+.5)/n;
                 const szW=fc.name==='north'||fc.name==='south'?inW:inD;
                 const szD=fc.name==='north'||fc.name==='south'?bd*.7:bw*.7;
@@ -769,9 +815,12 @@ function rebuild(){
                 const pe=new THREE.EdgesGeometry(pg),pl=new THREE.LineSegments(pe,TM);
                 if(fc.name==='north'||fc.name==='south')pl.rotation.x=-Math.PI/2+.2;
                 else{pl.rotation.z=Math.PI/2-.2}
-                pl.position.set(bcx,sy,bcz);grp.add(pl)}break}
-            case 'top':{wb(grp,inW,WALL,inD,bcx,fcy,bcz,TM);
-              if(bw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);break}
+                pl.position.set(bcx,sy,bcz);grp.add(pl)}}
+              if(splitW&&fw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);
+              if(splitD&&bd>cRD*4)wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,bcz,TM);break}
+            case 'top':{if(splitH)wb(grp,inW,WALL,inD,bcx,fcy,bcz,TM);
+              if(splitW&&bw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);
+              if(splitD&&bd>cRD*4)wb(grp,inW,fh-WALL*2,WALL,bcx,fcy,bcz,TM);break}
           }
         }
         fCol=fColEnd+1;

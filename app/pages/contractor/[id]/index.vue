@@ -37,6 +37,11 @@
           <!-- ── Задачи ──────────────────────────────────────────── -->
           <template v-if="section === 'tasks'">
 
+            <!-- Кнопка «Добавить задачу мастеру» для компании -->
+            <div v-if="contractor?.contractorType === 'company' && staff?.length" class="cab-add-task-row">
+              <button class="cab-add-task-btn" @click="openNewTaskModal">＋ Добавить задачу мастеру</button>
+            </div>
+
             <!-- Фильтр -->
             <div v-if="workItems?.length" class="cab-filters">
               <button
@@ -89,6 +94,7 @@
                         <div class="cab-task-top" @click="toggleExpand(item.id)">
                           <span class="cab-task-expand-icon">{{ expandedId === item.id ? '▾' : '▸' }}</span>
                           <span class="cab-task-name">{{ item.title }}</span>
+                          <span v-if="item.assignedToName" class="cab-task-assigned-badge">→ {{ item.assignedToName }}</span>
                           <span v-if="item.roadmapStageTitle" class="cab-task-stage-badge">{{ item.roadmapStageTitle }}</span>
                           <select
                             :value="item.status"
@@ -298,6 +304,71 @@
     </div>
 
     <footer class="cab-footer">DK Studio · {{ contractor?.contractorType === 'company' ? 'Кабинет подрядчика' : 'Кабинет мастера' }}</footer>
+
+    <!-- Модальное окно: новая задача мастеру -->
+    <Teleport to="body">
+      <div v-if="showNewTaskModal" class="cab-modal-overlay" @click.self="showNewTaskModal = false">
+        <div class="cab-modal glass-surface">
+          <div class="cab-modal-head">
+            <span class="cab-modal-title">Новая задача мастеру</span>
+            <button class="cab-modal-close" @click="showNewTaskModal = false">✕</button>
+          </div>
+          <div class="cab-modal-body">
+            <div class="cab-field">
+              <label>Мастер *</label>
+              <select v-model="newTask.masterContractorId" class="glass-input">
+                <option :value="null" disabled>— выберите мастера —</option>
+                <option v-for="m in staff" :key="m.id" :value="m.id">{{ m.name }}</option>
+              </select>
+            </div>
+            <div class="cab-field">
+              <label>Проект *</label>
+              <select v-model="newTask.projectSlug" class="glass-input">
+                <option value="" disabled>— выберите проект —</option>
+                <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
+              </select>
+            </div>
+            <div class="cab-field">
+              <label>Название задачи *</label>
+              <input v-model="newTask.title" class="glass-input" placeholder="Что нужно сделать…" />
+            </div>
+            <div class="cab-field">
+              <label>Вид работ</label>
+              <select v-model="newTask.workType" class="glass-input">
+                <option value="">— не указан —</option>
+                <option v-for="w in CONTRACTOR_WORK_TYPE_OPTIONS" :key="w.value" :value="w.value">{{ w.label }}</option>
+              </select>
+            </div>
+            <div class="cab-modal-row2">
+              <div class="cab-field">
+                <label>Дата начала</label>
+                <input v-model="newTask.dateStart" class="glass-input" placeholder="дд.мм.гггг" />
+              </div>
+              <div class="cab-field">
+                <label>Дата окончания</label>
+                <input v-model="newTask.dateEnd" class="glass-input" placeholder="дд.мм.гггг" />
+              </div>
+            </div>
+            <div class="cab-field">
+              <label>Бюджет</label>
+              <input v-model="newTask.budget" class="glass-input" placeholder="например: 50 000 ₽" />
+            </div>
+            <div class="cab-field">
+              <label>Примечание</label>
+              <textarea v-model="newTask.notes" class="glass-input" rows="3" placeholder="Уточнения, материалы, особые требования…" />
+            </div>
+          </div>
+          <div class="cab-modal-foot">
+            <button
+              class="cab-task-save"
+              :disabled="creatingTask || !newTask.masterContractorId || !newTask.projectSlug || !newTask.title.trim()"
+              @click="createTask"
+            >{{ creatingTask ? 'Создание…' : 'Создать задачу' }}</button>
+            <button class="cab-task-cancel" @click="showNewTaskModal = false">Отмена</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -354,10 +425,16 @@ if (meData.value?.contractorId && meData.value.contractorId !== contractorId) {
 
 // ── Nav ──────────────────────────────────────────────────────────
 const section = ref('tasks')
-const nav = [
-  { key: 'tasks',   icon: '◎', label: 'Мои задачи' },
-  { key: 'profile', icon: '◑', label: 'Мой профиль' },
-]
+const nav = computed(() => {
+  const items: { key: string; icon: string; label: string }[] = [
+    { key: 'tasks',   icon: '◎', label: 'Мои задачи' },
+    { key: 'profile', icon: '◑', label: 'Мой профиль' },
+  ]
+  if (contractor.value?.contractorType === 'company') {
+    items.splice(1, 0, { key: 'staff', icon: '◔', label: 'Бригада' })
+  }
+  return items
+})
 
 // ── Wt group open state ──────────────────────────────────────────
 const wtGroupOpenSet = reactive(new Set<string>())
@@ -478,6 +555,69 @@ const byProject = computed(() => {
   }
   return [...map.values()].filter(p => p.wtGroups.length > 0)
 })
+
+// ── Все проекты (для формы новой задачи) ────────────────────────
+const allProjects = computed(() => {
+  const seen = new Set<string>()
+  const result: { slug: string; title: string }[] = []
+  for (const item of workItems.value || []) {
+    if (!seen.has(item.projectSlug)) {
+      seen.add(item.projectSlug)
+      result.push({ slug: item.projectSlug, title: item.projectTitle })
+    }
+  }
+  return result
+})
+
+// ── Новая задача мастеру ─────────────────────────────────────────
+const showNewTaskModal = ref(false)
+const creatingTask = ref(false)
+const newTask = reactive({
+  masterContractorId: null as number | null,
+  projectSlug: '',
+  title: '',
+  workType: '',
+  dateStart: '',
+  dateEnd: '',
+  budget: '',
+  notes: '',
+})
+
+function openNewTaskModal() {
+  newTask.masterContractorId = staff.value?.length === 1 ? staff.value[0].id : null
+  newTask.projectSlug = allProjects.value.length === 1 ? allProjects.value[0].slug : ''
+  newTask.title = ''
+  newTask.workType = ''
+  newTask.dateStart = ''
+  newTask.dateEnd = ''
+  newTask.budget = ''
+  newTask.notes = ''
+  showNewTaskModal.value = true
+}
+
+async function createTask() {
+  if (!newTask.masterContractorId || !newTask.projectSlug || !newTask.title.trim()) return
+  creatingTask.value = true
+  try {
+    await $fetch(`/api/contractors/${contractorId}/work-items`, {
+      method: 'POST',
+      body: {
+        projectSlug: newTask.projectSlug,
+        masterContractorId: newTask.masterContractorId,
+        title: newTask.title.trim(),
+        workType: newTask.workType || null,
+        dateStart: newTask.dateStart || null,
+        dateEnd: newTask.dateEnd || null,
+        budget: newTask.budget || null,
+        notes: newTask.notes || null,
+      },
+    })
+    showNewTaskModal.value = false
+    refreshItems()
+  } finally {
+    creatingTask.value = false
+  }
+}
 
 async function updateStatus(item: any, status: string) {
   item.status = status
@@ -1123,6 +1263,24 @@ async function logout() {
   border-color: rgba(240,200,60,0.25);
   color: rgba(230,190,80,1);
 }
+/* Assigned-to master badge */
+.cab-task-assigned-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: rgba(80,140,255,0.1);
+  border: 1px solid rgba(80,140,255,0.25);
+  color: rgba(40,90,200,1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dark .cab-task-assigned-badge {
+  background: rgba(100,160,255,0.1);
+  border-color: rgba(100,160,255,0.25);
+  color: rgba(140,195,255,1);
+}
 
 /* Staff list */
 .cab-staff-list { display: flex; flex-direction: column; gap: 10px; }
@@ -1162,5 +1320,83 @@ async function logout() {
   opacity: 0.25;
   flex-shrink: 0;
   line-height: 1;
+}
+
+/* Добавить задачу мастеру */
+.cab-add-task-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.cab-add-task-btn {
+  background: rgba(99, 179, 237, 0.18);
+  border: 1px solid rgba(99, 179, 237, 0.4);
+  color: var(--glass-text, #1a1a2e);
+  border-radius: 20px;
+  padding: 7px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cab-add-task-btn:hover { background: rgba(99, 179, 237, 0.32); }
+
+/* Модальное окно */
+.cab-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.cab-modal {
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.cab-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--glass-border, rgba(255,255,255,0.2));
+}
+.cab-modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.cab-modal-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 4px 8px;
+}
+.cab-modal-close:hover { opacity: 1; }
+.cab-modal-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cab-modal-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.cab-modal-foot {
+  padding: 16px 24px 20px;
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid var(--glass-border, rgba(255,255,255,0.2));
 }
 </style>
