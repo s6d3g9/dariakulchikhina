@@ -796,6 +796,7 @@ async function logout() {
   border-radius: 10px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.12);
 }
+.bcab-foot {
   display: flex;
   align-items: center;
   gap: 16px;
