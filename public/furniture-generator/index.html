@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Parametric Furniture Generator</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
+  font-family:"SF Mono","Fira Code","Courier New",Courier,monospace;color:#000}
+#app{display:grid;width:100%;height:100%;
+  grid-template-columns:420px 1fr;grid-template-rows:auto 1fr auto}
+
+#cats{grid-column:1/3;display:flex;border-bottom:2px solid #000;background:#fff}
+.cat-btn{flex:1;padding:9px 4px;font:inherit;font-size:10px;letter-spacing:.07em;
+  text-transform:uppercase;background:#fff;border:none;border-right:2px solid #000;
+  cursor:pointer;transition:background .15s}
+.cat-btn:last-child{border-right:none}
+.cat-btn.active{background:#000;color:#fff}
+.cat-btn:hover:not(.active){background:#eee}
+
+#left{grid-column:1;grid-row:2;border-right:2px solid #000;
+  overflow-y:auto;display:flex;flex-direction:column}
+.sec{padding:7px 10px;border-bottom:2px solid #000}
+.sec-head{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+
+.pal-row{display:flex;flex-wrap:wrap;gap:3px}
+.pal-btn{display:flex;align-items:center;gap:4px;padding:3px 7px;font:inherit;font-size:8.5px;
+  letter-spacing:.04em;text-transform:uppercase;border:2px solid #000;background:#fff;
+  cursor:pointer;transition:all .12s;line-height:1.2}
+.pal-btn .sw{width:10px;height:10px;border:1px solid #000;flex-shrink:0}
+.pal-btn.active{background:#000;color:#fff}
+.pal-btn.active .sw{border-color:#fff}
+.pal-btn:hover:not(.active){background:#f0f0f0}
+
+.vtabs{display:flex;gap:0;margin-bottom:5px}
+.vt{font:inherit;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 6px;border:2px solid #000;background:#fff;cursor:pointer;text-align:center;
+  transition:all .12s;flex:1}
+.vt+.vt{border-left:none}
+.vt.active{background:#000;color:#fff}
+.vt:hover:not(.active){background:#eee}
+
+.ftabs{display:flex;gap:0;margin-bottom:4px}
+.ft{font:inherit;font-size:8px;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 0;border:1.5px solid #000;background:#fff;cursor:pointer;text-align:center;
+  transition:all .1s;flex:1}
+.ft+.ft{border-left:none}
+.ft.active{background:#333;color:#fff}
+.ft:hover:not(.active){background:#eee}
+
+.grid-panel{display:none}
+.grid-panel.visible{display:flex;flex-direction:column;align-items:center;gap:3px}
+.grid-area{flex:1;display:flex;flex-direction:column;min-height:0}
+
+.g20{display:grid;grid-template-columns:repeat(20,1fr);grid-template-rows:repeat(20,1fr);
+  gap:0;border:2px solid #000;user-select:none;touch-action:none;
+  width:100%;max-width:300px;aspect-ratio:1}
+.cell{border:.5px solid #ccc;cursor:crosshair;transition:background .08s;min-height:0;position:relative}
+.cell:hover{outline:1.5px solid #000;outline-offset:-1.5px;z-index:1}
+.cell.outside{background:repeating-linear-gradient(45deg,#f6f6f6,#f6f6f6 2px,#eaeaea 2px,#eaeaea 4px)!important;
+  pointer-events:none;opacity:.45}
+.cell.boundary{box-shadow:inset 0 0 0 1.5px #e44;z-index:1}
+.ax{font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:#888;text-align:center}
+.ax-row{display:flex;align-items:center;gap:4px;width:100%;max-width:316px}
+.ax-side{font-size:7px;letter-spacing:.06em;text-transform:uppercase;color:#888;
+  writing-mode:vertical-lr;text-orientation:mixed;transform:rotate(180deg);width:12px;
+  text-align:center;flex-shrink:0}
+
+.dim-row{display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap;align-items:center}
+.dim-row label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;
+  display:flex;align-items:center;gap:4px}
+.dim-row input{width:52px;font:inherit;font-size:13px;text-align:center;
+  border:2px solid #000;padding:2px}
+.dim-auto{display:flex;gap:12px;margin-top:2px;padding:5px 0;
+  border-top:1px solid #ccc;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+.dim-auto .val{font-weight:700;font-size:12px}
+
+#view{grid-column:2;grid-row:2;position:relative;overflow:hidden}
+#view canvas{display:block;width:100%;height:100%}
+#click-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  font:inherit;font-size:9px;letter-spacing:.06em;text-transform:uppercase;
+  color:#999;pointer-events:none;transition:opacity .3s}
+
+#bar{grid-column:1/3;border-top:2px solid #000;background:#fff;
+  display:flex;align-items:center;padding:5px 14px;gap:14px;flex-wrap:wrap}
+#bar .info{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+#bar .info span{font-weight:700}
+#bar .spacer{flex:1}
+.bar-btn{font:inherit;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:5px 12px;border:2px solid #000;background:#fff;cursor:pointer;transition:all .12s}
+.bar-btn:hover{background:#000;color:#fff}
+
+#left::-webkit-scrollbar{width:4px}
+#left::-webkit-scrollbar{width:4px}
+#left::-webkit-scrollbar-thumb{background:#000}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="cats">
+    <button class="cat-btn active" data-cat="wardrobe">Шкаф-купе</button>
+    <button class="cat-btn" data-cat="bookcase">Книжный шкаф</button>
+    <button class="cat-btn" data-cat="shoes">Обувной шкаф</button>
+    <button class="cat-btn" data-cat="hallway">Прихожая</button>
+    <button class="cat-btn" data-cat="shelving">Стеллаж</button>
+  </div>
+
+  <div id="left">
+    <div class="sec" id="palette">
+      <h3 class="sec-head">Тип отделения</h3>
+      <div class="pal-row" id="pal-row"></div>
+      <div style="margin-top:4px;display:flex;gap:4px">
+        <button class="pal-btn" id="eraser-btn" style="border-style:dashed">
+          <span class="sw" style="background:#fff"></span>Ластик
+        </button>
+      </div>
+    </div>
+
+    <div class="sec grid-area" style="flex:1">
+      <div class="vtabs">
+        <button class="vt active" data-view="facade">Фасады</button>
+        <button class="vt" data-view="top">План помещения</button>
+      </div>
+
+      <div class="grid-panel visible" id="panel-facade">
+        <div class="ftabs">
+          <button class="ft active" data-face="north">Север</button>
+          <button class="ft" data-face="south">Юг</button>
+          <button class="ft" data-face="west">Запад</button>
+          <button class="ft" data-face="east">Восток</button>
+        </div>
+        <div class="ax" id="face-top-label">↑ верх</div>
+        <div class="ax-row">
+          <div class="ax-side" id="face-side-label">← высота →</div>
+          <div style="flex:1;display:flex;justify-content:center">
+            <div class="g20" id="facade-grid"></div>
+          </div>
+        </div>
+        <div class="ax" id="face-bot-label">← ширина →</div>
+        <div style="font-size:8px;color:#888;text-align:center;margin-top:2px" id="face-info">—</div>
+      </div>
+
+      <div class="grid-panel" id="panel-top">
+        <div class="ax">↑ Север (дальняя стена)</div>
+        <div class="ax-row">
+          <div class="ax-side">← Запад ... Восток →</div>
+          <div style="flex:1;display:flex;justify-content:center">
+            <div class="g20" id="top-grid"></div>
+          </div>
+        </div>
+        <div class="ax">← Ширина комнаты → Юг (вход) ↓</div>
+        <div style="font-size:8px;color:#888;text-align:center;margin-top:2px">
+          1 ячейка = <span id="top-cell-label">—</span> см
+        </div>
+      </div>
+    </div>
+
+    <div class="sec" id="dims-panel">
+      <h3 class="sec-head">Размеры</h3>
+      <div class="dim-row">
+        <label>Комната Ш <input type="number" id="roomW" value="400" min="100" max="1200" step="10"/> см</label>
+        <label>Комната Г <input type="number" id="roomD" value="400" min="100" max="1200" step="10"/> см</label>
+      </div>
+      <div class="dim-row">
+        <label>Высота <input type="number" id="dimH" value="240" min="30" max="350" step="5"/> см</label>
+      </div>
+      <div class="dim-auto">
+        <div>Ш мебели: <span class="val" id="auto-w">—</span></div>
+        <div>Г мебели: <span class="val" id="auto-d">—</span></div>
+      </div>
+    </div>
+
+    <div class="sec" id="subdiv-panel">
+      <h3 class="sec-head">Деление по высоте (см)</h3>
+      <div class="dim-row">
+        <label>Полка <input type="number" id="shelfH" value="30" min="10" max="120" step="5"/> см</label>
+        <label>Ящик <input type="number" id="drawerH" value="20" min="8" max="80" step="2"/> см</label>
+      </div>
+      <div class="dim-row">
+        <label>Обувь <input type="number" id="shoeH" value="18" min="8" max="60" step="2"/> см</label>
+        <label>Сапоги <input type="number" id="bootH" value="35" min="15" max="80" step="5"/> см</label>
+      </div>
+      <div class="dim-row">
+        <label>Книги <input type="number" id="bookH" value="30" min="10" max="80" step="5"/> см</label>
+      </div>
+    </div>
+  </div>
+
+  <div id="view">
+    <div id="click-hint">Кликните на стенку мебели для выбора фасада</div>
+  </div>
+
+  <div id="bar">
+    <div class="info">Секций: <span id="info-regions">0</span></div>
+    <div class="info">Мебель: <span id="info-size">—</span></div>
+    <div class="spacer"></div>
+    <button class="bar-btn" id="btn-clear-face">Очистить фасад</button>
+    <button class="bar-btn" id="btn-clear-top">Очистить план</button>
+    <button class="bar-btn" id="btn-reset-cam">Сброс камеры</button>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+/* ═══════════════════════  TYPES  ═══════════════════════ */
+const TYPES={
+  shelf:  {id:1,label:'Полка',color:'#a8d8ea'},
+  hanging:{id:2,label:'Штанга',color:'#b5eaaa'},
+  drawer: {id:3,label:'Ящик',color:'#f5c385'},
+  open:   {id:4,label:'Открытая секция',color:'#fff3b0'},
+  shoeLow:{id:5,label:'Обувь низкая',color:'#f0b0c0'},
+  shoeHi: {id:6,label:'Сапоги',color:'#d5b0f0'},
+  books:  {id:7,label:'Книги',color:'#b0d0f0'},
+  top:    {id:8,label:'Антресоль',color:'#d0d0d0'},
+};
+const TYPE_BY_ID={};
+for(const[k,v]of Object.entries(TYPES)) TYPE_BY_ID[v.id]={...v,key:k};
+const CAT_TYPES={
+  wardrobe:['shelf','hanging','drawer','open','top'],
+  bookcase:['books','shelf','drawer','open'],
+  shoes:['shoeLow','shoeHi','drawer','shelf'],
+  hallway:['hanging','shoeLow','shoeHi','drawer','shelf','open'],
+  shelving:['shelf','open','books','drawer'],
+};
+
+const GS=20;
+function emptyG(){return Array.from({length:GS},()=>new Uint8Array(GS))}
+function fillR(g,r1,c1,r2,c2,v){for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++)g[r][c]=v}
+
+/* ═══════════════════════  PRESETS  ═══════════════════════ */
+function mkF(fn,fs,fw,fe){return{north:fn(),south:fs(),west:fw(),east:fe()}}
+
+function fWardN(){const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);fillR(g,2,0,14,9,TYPES.hanging.id);
+  fillR(g,2,10,9,19,TYPES.shelf.id);fillR(g,10,10,14,19,TYPES.shelf.id);
+  fillR(g,15,0,17,9,TYPES.drawer.id);fillR(g,15,10,17,19,TYPES.drawer.id);
+  fillR(g,18,0,19,19,TYPES.shelf.id);return g}
+function fWardS(){const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);
+  fillR(g,2,0,14,19,TYPES.shelf.id);fillR(g,15,0,19,19,TYPES.drawer.id);return g}
+function fE(){return emptyG()}
+function fBookN(){const g=emptyG();for(let i=0;i<5;i++)fillR(g,i*4,0,i*4+3,19,TYPES.books.id);return g}
+function fShoesN(){const g=emptyG();fillR(g,0,0,1,19,TYPES.top.id);fillR(g,2,0,7,19,TYPES.shoeHi.id);
+  fillR(g,8,0,13,9,TYPES.shoeLow.id);fillR(g,8,10,13,19,TYPES.shoeLow.id);
+  fillR(g,14,0,17,19,TYPES.shoeLow.id);fillR(g,18,0,19,19,TYPES.drawer.id);return g}
+function fHallN(){const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);fillR(g,3,0,12,11,TYPES.hanging.id);
+  fillR(g,3,12,7,19,TYPES.shelf.id);fillR(g,8,12,12,19,TYPES.open.id);
+  fillR(g,13,0,16,19,TYPES.shoeLow.id);fillR(g,17,0,19,19,TYPES.drawer.id);return g}
+function fHallE(){const g=emptyG();fillR(g,0,0,2,19,TYPES.top.id);fillR(g,3,0,12,19,TYPES.shelf.id);
+  fillR(g,13,0,19,19,TYPES.drawer.id);return g}
+function fShelfN(){const g=emptyG();for(let i=0;i<5;i++)
+  fillR(g,i*4,0,i*4+3,19,i%2===0?TYPES.open.id:TYPES.shelf.id);return g}
+
+const PRESETS_F={
+  wardrobe:()=>mkF(fWardN,fWardS,fE,fE),
+  bookcase:()=>mkF(fBookN,fE,fE,fE),
+  shoes:   ()=>mkF(fShoesN,fE,fE,fE),
+  hallway: ()=>mkF(fHallN,fE,fE,fHallE),
+  shelving:()=>mkF(fShelfN,fE,fE,fE),
+};
+function topStraight(){const g=emptyG();fillR(g,0,0,4,19,1);return g}
+function topNarrow(){const g=emptyG();fillR(g,0,0,2,19,1);return g}
+function topCorner(){const g=emptyG();fillR(g,0,0,3,9,1);return g}
+function topL(){const g=emptyG();fillR(g,0,0,3,19,1);fillR(g,4,15,12,19,1);return g}
+const PRESETS_T={wardrobe:topStraight,bookcase:topNarrow,shoes:topCorner,hallway:topL,shelving:topCorner};
+
+/* ═══════════════════════  STATE  ═══════════════════════ */
+let facades=PRESETS_F.wardrobe();
+let topGrid=topStraight();
+let currentBrush=TYPES.shelf.id;
+let isEraser=false;
+let painting=false;
+let currentCat='wardrobe';
+let activeView='facade';
+let activeFace='north';
+
+/* ═══════════════════════  PALETTE  ═══════════════════════ */
+const palRow=document.getElementById('pal-row');
+const eraserBtn=document.getElementById('eraser-btn');
+function buildPalette(){
+  palRow.innerHTML='';
+  CAT_TYPES[currentCat].forEach(k=>{const t=TYPES[k];
+    const b=document.createElement('button');b.className='pal-btn';b.dataset.typeId=t.id;
+    b.innerHTML=`<span class="sw" style="background:${t.color}"></span>${t.label}`;
+    b.addEventListener('click',()=>{isEraser=false;currentBrush=t.id;refreshPal()});
+    palRow.appendChild(b)});
+  if(!CAT_TYPES[currentCat].some(k=>TYPES[k].id===currentBrush)){
+    currentBrush=TYPES[CAT_TYPES[currentCat][0]].id;isEraser=false}
+  refreshPal()}
+function refreshPal(){
+  palRow.querySelectorAll('.pal-btn').forEach(b=>
+    b.classList.toggle('active',+b.dataset.typeId===currentBrush&&!isEraser));
+  eraserBtn.classList.toggle('active',isEraser)}
+eraserBtn.addEventListener('click',()=>{isEraser=true;refreshPal()});
+
+/* ═══════════════════════  VIEW / FACADE TABS  ═══════════════════════ */
+const panelFacade=document.getElementById('panel-facade');
+const panelTop=document.getElementById('panel-top');
+document.querySelectorAll('.vt').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelector('.vt.active').classList.remove('active');b.classList.add('active');
+  activeView=b.dataset.view;
+  panelFacade.classList.toggle('visible',activeView==='facade');
+  panelTop.classList.toggle('visible',activeView==='top')}));
+
+function selectFace(face){
+  activeFace=face;
+  document.querySelector('.ft.active').classList.remove('active');
+  document.querySelector(`.ft[data-face="${face}"]`).classList.add('active');
+  syncFacade();updateFaceLabels();
+  /* ensure facade view is active */
+  if(activeView!=='facade'){
+    document.querySelector('.vt.active').classList.remove('active');
+    document.querySelector('.vt[data-view="facade"]').classList.add('active');
+    activeView='facade';
+    panelFacade.classList.add('visible');panelTop.classList.remove('visible');
+  }
+}
+document.querySelectorAll('.ft').forEach(b=>b.addEventListener('click',()=>selectFace(b.dataset.face)));
+
+function updateFaceLabels(){
+  const L={
+    north:{top:'↑ верх',side:'← высота →',bot:'← запад — ширина — восток →',info:'Северный фасад (дальняя стена)'},
+    south:{top:'↑ верх',side:'← высота →',bot:'← восток — ширина — запад →',info:'Южный фасад (ближняя стена)'},
+    west:{top:'↑ верх',side:'← высота →',bot:'← север — глубина — юг →',info:'Западный фасад (левая стена)'},
+    east:{top:'↑ верх',side:'← высота →',bot:'← юг — глубина — север →',info:'Восточный фасад (правая стена)'},
+  }[activeFace];
+  document.getElementById('face-top-label').textContent=L.top;
+  document.getElementById('face-side-label').textContent=L.side;
+  document.getElementById('face-bot-label').textContent=L.bot;
+  document.getElementById('face-info').textContent=L.info;
+}
+
+/* ═══════════════════════  FACADE GRID  ═══════════════════════ */
+const facadeGridEl=document.getElementById('facade-grid');
+const facCells=[];
+function buildFacadeGrid(){
+  facadeGridEl.innerHTML='';facCells.length=0;
+  for(let r=0;r<GS;r++){facCells[r]=[];for(let c=0;c<GS;c++){
+    const d=document.createElement('div');d.className='cell';
+    d.dataset.r=r;d.dataset.c=c;d.dataset.grid='face';
+    facadeGridEl.appendChild(d);facCells[r][c]=d}}
+  syncFacade()}
+function getFacadeValidCols(face){
+  const valid=new Array(GS).fill(false);
+  for(let fc=0;fc<GS;fc++){
+    let topIdx;
+    if(face==='north')topIdx={axis:'col',idx:fc};
+    else if(face==='south')topIdx={axis:'col',idx:GS-1-fc};
+    else if(face==='west')topIdx={axis:'row',idx:fc};
+    else topIdx={axis:'row',idx:GS-1-fc};
+    if(topIdx.axis==='col'){
+      for(let r=0;r<GS;r++)if(topGrid[r][topIdx.idx]){valid[fc]=true;break}
+    }else{
+      for(let c=0;c<GS;c++)if(topGrid[topIdx.idx][c]){valid[fc]=true;break}
+    }
+  }
+  return valid}
+
+function syncFacade(){
+  const g=facades[activeFace];
+  const validCols=getFacadeValidCols(activeFace);
+  /* find boundary columns: first/last valid col */
+  let firstV=-1,lastV=-1;
+  for(let c=0;c<GS;c++)if(validCols[c]){if(firstV<0)firstV=c;lastV=c}
+  for(let r=0;r<GS;r++)for(let c=0;c<GS;c++){
+    const cell=facCells[r][c];
+    const v=g[r][c];
+    const isOut=!validCols[c];
+    cell.classList.toggle('outside',isOut);
+    /* red boundary on edges of valid zone */
+    const isBnd=validCols[c]&&((c===firstV)||(c===lastV)||(c>0&&!validCols[c-1])||(c<GS-1&&!validCols[c+1]));
+    cell.classList.toggle('boundary',isBnd);
+    if(!isOut) cell.style.background=v?(TYPE_BY_ID[v]?.color||'#ddd'):'#fff';
+    else cell.style.background=''; /* let CSS handle it */
+  }}
+function paintFace(r,c){
+  const g=facades[activeFace];const val=isEraser?0:currentBrush;
+  if(g[r][c]===val)return;g[r][c]=val;
+  facCells[r][c].style.background=val?(TYPE_BY_ID[val]?.color||'#ddd'):'#fff';
+  scheduleRebuild()}
+facadeGridEl.addEventListener('pointerdown',e=>{const t=e.target;if(t.dataset.grid!=='face')return;
+  painting=true;facadeGridEl.setPointerCapture(e.pointerId);paintFace(+t.dataset.r,+t.dataset.c)});
+facadeGridEl.addEventListener('pointermove',e=>{if(!painting)return;
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  if(el&&el.dataset.grid==='face')paintFace(+el.dataset.r,+el.dataset.c)});
+facadeGridEl.addEventListener('pointerup',()=>painting=false);
+facadeGridEl.addEventListener('pointercancel',()=>painting=false);
+facadeGridEl.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ═══════════════════════  TOP GRID  ═══════════════════════ */
+const topGridEl=document.getElementById('top-grid');
+const tCells=[];const FILL='#b8b8b8',EMPTY='#fff';
+function buildTopGrid(){
+  topGridEl.innerHTML='';tCells.length=0;
+  for(let r=0;r<GS;r++){tCells[r]=[];for(let c=0;c<GS;c++){
+    const d=document.createElement('div');d.className='cell';
+    d.dataset.r=r;d.dataset.c=c;d.dataset.grid='top';
+    topGridEl.appendChild(d);tCells[r][c]=d}}
+  syncTop()}
+function syncTop(){for(let r=0;r<GS;r++)for(let c=0;c<GS;c++)
+  tCells[r][c].style.background=topGrid[r][c]?FILL:EMPTY}
+function paintTop(r,c){const val=isEraser?0:1;if(topGrid[r][c]===val)return;
+  topGrid[r][c]=val;tCells[r][c].style.background=val?FILL:EMPTY;syncFacade();scheduleRebuild()}
+topGridEl.addEventListener('pointerdown',e=>{const t=e.target;if(t.dataset.grid!=='top')return;
+  painting=true;topGridEl.setPointerCapture(e.pointerId);paintTop(+t.dataset.r,+t.dataset.c)});
+topGridEl.addEventListener('pointermove',e=>{if(!painting)return;
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  if(el&&el.dataset.grid==='top')paintTop(+el.dataset.r,+el.dataset.c)});
+topGridEl.addEventListener('pointerup',()=>painting=false);
+topGridEl.addEventListener('pointercancel',()=>painting=false);
+topGridEl.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ═══════════════════════  CATEGORIES  ═══════════════════════ */
+document.querySelectorAll('.cat-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelector('.cat-btn.active').classList.remove('active');b.classList.add('active');
+  currentCat=b.dataset.cat;facades=PRESETS_F[currentCat]();
+  topGrid=PRESETS_T[currentCat]();buildPalette();syncFacade();syncTop();rebuild()}));
+
+/* ═══════════════════════  DIMENSIONS  ═══════════════════════ */
+const roomWEl=document.getElementById('roomW'),roomDEl=document.getElementById('roomD'),
+  dimHEl=document.getElementById('dimH');
+const shelfHEl=document.getElementById('shelfH'),drawerHEl=document.getElementById('drawerH'),
+  shoeHEl=document.getElementById('shoeH'),bootHEl=document.getElementById('bootH'),
+  bookHEl=document.getElementById('bookH');
+[roomWEl,roomDEl,dimHEl,shelfHEl,drawerHEl,shoeHEl,bootHEl,bookHEl].forEach(el=>
+  el.addEventListener('input',()=>scheduleRebuild()));
+
+/* ═══════════════════════  BUTTONS  ═══════════════════════ */
+document.getElementById('btn-clear-face').addEventListener('click',()=>{
+  facades[activeFace]=emptyG();syncFacade();rebuild()});
+document.getElementById('btn-clear-top').addEventListener('click',()=>{
+  topGrid=emptyG();syncTop();rebuild()});
+document.getElementById('btn-reset-cam').addEventListener('click',()=>{
+  camera.position.set(12,12,12);camera.lookAt(0,0,0);
+  controls.target.set(0,0,0);controls.update()});
+
+/* ═══════════════════════  TOP HELPERS  ═══════════════════════ */
+function topBBox(){
+  let minR=GS,maxR=-1,minC=GS,maxC=-1;
+  for(let r=0;r<GS;r++)for(let c=0;c<GS;c++)if(topGrid[r][c]){
+    minR=Math.min(minR,r);maxR=Math.max(maxR,r);minC=Math.min(minC,c);maxC=Math.max(maxC,c)}
+  return maxR<0?null:{minR,maxR,minC,maxC}}
+
+function depthSpans(cMin,cMax){
+  const sp=[];let ins=false,s=0;
+  for(let r=0;r<GS;r++){let ok=true;
+    for(let c=cMin;c<=cMax;c++)if(!topGrid[r][c]){ok=false;break}
+    if(ok){if(!ins){ins=true;s=r}}else{if(ins){sp.push([s,r-1]);ins=false}}}
+  if(ins)sp.push([s,GS-1]);return sp}
+
+function updateDims(){
+  const RW=+roomWEl.value||400,RD=+roomDEl.value||400;
+  document.getElementById('top-cell-label').textContent=`${(RW/GS).toFixed(0)}×${(RD/GS).toFixed(0)}`;
+  const bb=topBBox();
+  if(bb){
+    const w=((bb.maxC-bb.minC+1)*(RW/GS)).toFixed(0);
+    const d=((bb.maxR-bb.minR+1)*(RD/GS)).toFixed(0);
+    const h=dimHEl.value||240;
+    document.getElementById('auto-w').textContent=w;
+    document.getElementById('auto-d').textContent=d;
+    document.getElementById('info-size').textContent=`${w}×${h}×${d} см`;
+  }else{
+    document.getElementById('auto-w').textContent='—';
+    document.getElementById('auto-d').textContent='—';
+    document.getElementById('info-size').textContent='—';
+  }
+}
+
+/* ═══════════════════════  REGIONS  ═══════════════════════ */
+function findRegions(grid){
+  const vis=Array.from({length:GS},()=>new Uint8Array(GS)),regs=[];
+  for(let r=0;r<GS;r++)for(let c=0;c<GS;c++){
+    if(vis[r][c]||!grid[r][c])continue;const tid=grid[r][c],cl=[],q=[[r,c]];vis[r][c]=1;
+    while(q.length){const[cr,cc]=q.shift();cl.push([cr,cc]);
+      for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){const nr=cr+dr,nc=cc+dc;
+        if(nr>=0&&nr<GS&&nc>=0&&nc<GS&&!vis[nr][nc]&&grid[nr][nc]===tid){vis[nr][nc]=1;q.push([nr,nc])}}}
+    let minR=GS,maxR=0,minC=GS,maxC=0;
+    for(const[cr,cc]of cl){minR=Math.min(minR,cr);maxR=Math.max(maxR,cr);
+      minC=Math.min(minC,cc);maxC=Math.max(maxC,cc)}
+    regs.push({typeId:tid,cells:cl,minR,maxR,minC,maxC})}
+  return regs}
+
+/* ═══════════════  COLLISION ZONE MAP  ═══════════════
+   Build a set of top-grid cells that are "owned" by each facade.
+   Where two facades overlap (corner), drawers/hanging etc are blocked.
+   Returns a Map<'r,c', Set<faceName>> */
+function buildFaceOwnership(){
+  const own=new Map();
+  const bb=topBBox();if(!bb)return own;
+  // north facade owns the northernmost row of filled cells per column
+  for(let c=bb.minC;c<=bb.maxC;c++){
+    for(let r=0;r<GS;r++) if(topGrid[r][c]){own.set(`${r},${c}`,(own.get(`${r},${c}`)||new Set()).add('north'));break}}
+  // south facade owns the southernmost row per column
+  for(let c=bb.minC;c<=bb.maxC;c++){
+    for(let r=GS-1;r>=0;r--) if(topGrid[r][c]){own.set(`${r},${c}`,(own.get(`${r},${c}`)||new Set()).add('south'));break}}
+  // west facade owns the westernmost col per row
+  for(let r=bb.minR;r<=bb.maxR;r++){
+    for(let c=0;c<GS;c++) if(topGrid[r][c]){own.set(`${r},${c}`,(own.get(`${r},${c}`)||new Set()).add('west'));break}}
+  // east facade owns the easternmost col per row
+  for(let r=bb.minR;r<=bb.maxR;r++){
+    for(let c=GS-1;c>=0;c--) if(topGrid[r][c]){own.set(`${r},${c}`,(own.get(`${r},${c}`)||new Set()).add('east'));break}}
+  return own;
+}
+
+/* Types that require clearance (cannot open/extend in conflict zone) */
+const CONFLICT_TYPES=new Set(['drawer','hanging','shoeLow','shoeHi']);
+
+/* ═══════════════════════  THREE.JS  ═══════════════════════ */
+const viewEl=document.getElementById('view');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xfdfdfd);
+let frustumSize=14;const getA=()=>viewEl.clientWidth/(viewEl.clientHeight||1);
+const camera=new THREE.OrthographicCamera(-frustumSize*getA()/2,frustumSize*getA()/2,
+  frustumSize/2,-frustumSize/2,.1,1000);
+camera.position.set(12,12,12);camera.lookAt(scene.position);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);viewEl.appendChild(renderer.domElement);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.12;
+
+const LM=new THREE.LineBasicMaterial({color:0x000000,linewidth:2});
+const TM=new THREE.LineBasicMaterial({color:0x000000,linewidth:1});
+const RM=new THREE.LineBasicMaterial({color:0xdddddd,linewidth:1});
+const WarnM=new THREE.LineBasicMaterial({color:0xff0000,linewidth:2});
+
+const _matC={};
+function getColorMat(hex){
+  if(_matC[hex])return _matC[hex];
+  const m=new THREE.MeshBasicMaterial({color:new THREE.Color(hex),transparent:true,opacity:.35,
+    depthWrite:false,side:THREE.DoubleSide});
+  _matC[hex]=m;return m}
+
+function wb(p,w,h,d,x,y,z,m){m=m||LM;
+  const g=new THREE.BoxGeometry(w,h,d),e=new THREE.EdgesGeometry(g),
+    s=new THREE.LineSegments(e,m);s.position.set(x,y,z);p.add(s);return s}
+
+function wbC(p,w,h,d,x,y,z,hex,m){m=m||TM;
+  const g=new THREE.BoxGeometry(w,h,d);
+  const e=new THREE.EdgesGeometry(g),s=new THREE.LineSegments(e,m);s.position.set(x,y,z);p.add(s);
+  const mesh=new THREE.Mesh(g.clone(),getColorMat(hex));mesh.position.set(x,y,z);p.add(mesh);
+  return s}
+
+/* ═══════════════  CLICKABLE WALL PANELS  ═══════════════
+   During rebuild we create invisible meshes on each outer wall face.
+   On click, we raycast to detect which face was hit. */
+const wallGroup=new THREE.Group();scene.add(wallGroup);
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+
+/* click on 3D → select facade */
+let pointerDownPos=null;
+renderer.domElement.addEventListener('pointerdown',e=>{
+  pointerDownPos={x:e.clientX,y:e.clientY};
+});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(!pointerDownPos)return;
+  const dx=e.clientX-pointerDownPos.x, dy=e.clientY-pointerDownPos.y;
+  pointerDownPos=null;
+  /* only count as click if pointer didn't move much (not orbit) */
+  if(Math.abs(dx)>5||Math.abs(dy)>5)return;
+
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects(wallGroup.children,false);
+  if(hits.length>0){
+    const face=hits[0].object.userData.face;
+    if(face)selectFace(face);
+  }
+});
+
+/* ═══════════════════════  3D BUILD  ═══════════════════════ */
+let grp=new THREE.Group();scene.add(grp);
+let timer=0;function scheduleRebuild(){clearTimeout(timer);timer=setTimeout(rebuild,80)}
+
+function rebuild(){
+  scene.remove(grp);grp.traverse(o=>{if(o.geometry)o.geometry.dispose()});
+  grp=new THREE.Group();scene.add(grp);
+
+  /* clear wall click targets */
+  wallGroup.traverse(o=>{if(o.geometry)o.geometry.dispose()});
+  wallGroup.clear();
+
+  updateDims();
+
+  const RW=(+roomWEl.value||400)/100, RD=(+roomDEl.value||400)/100, H=(+dimHEl.value||240)/100;
+  const cRW=RW/GS, cRD=RD/GS, cH=H/GS, WALL=.02;
+
+  /* floor grid */
+  {const pts=[];
+    for(let i=0;i<=GS;i++){const x=i*cRW-RW/2;pts.push(new THREE.Vector3(x,0,-RD/2),new THREE.Vector3(x,0,RD/2))}
+    for(let j=0;j<=GS;j++){const z=j*cRD-RD/2;pts.push(new THREE.Vector3(-RW/2,0,z),new THREE.Vector3(RW/2,0,z))}
+    grp.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),RM));
+    const p=new THREE.PlaneGeometry(RW,RD),pe=new THREE.EdgesGeometry(p),
+      ps=new THREE.LineSegments(pe,new THREE.LineBasicMaterial({color:0xaaaaaa}));
+    ps.rotation.x=-Math.PI/2;grp.add(ps)}
+
+  const bb=topBBox();
+  if(!bb){document.getElementById('info-regions').textContent='0';fitCam();return}
+
+  /* build ownership map for collision detection */
+  const ownership=buildFaceOwnership();
+
+  let totalRegs=0;
+
+  const faceConfigs=[
+    {name:'north',grid:facades.north,
+      mapCol:c=>({axis:'col',idx:c}),depthDir:'south'},
+    {name:'south',grid:facades.south,
+      mapCol:c=>({axis:'col',idx:GS-1-c}),depthDir:'north'},
+    {name:'west',grid:facades.west,
+      mapCol:c=>({axis:'row',idx:c}),depthDir:'east'},
+    {name:'east',grid:facades.east,
+      mapCol:c=>({axis:'row',idx:GS-1-c}),depthDir:'west'},
+  ];
+
+  for(const fc of faceConfigs){
+    const regs=findRegions(fc.grid);
+    totalRegs+=regs.length;
+
+    for(const reg of regs){
+      for(let fCol=reg.minC;fCol<=reg.maxC;){
+        let fColEnd=fCol;
+        const mapped=fc.mapCol(fCol);
+        let dSpans=mapped.axis==='col'?getDepthForCol(mapped.idx,fc.depthDir)
+                                       :getDepthForRow(mapped.idx,fc.depthDir);
+
+        while(fColEnd+1<=reg.maxC){
+          const m2=fc.mapCol(fColEnd+1);
+          const ds2=m2.axis==='col'?getDepthForCol(m2.idx,fc.depthDir)
+                                    :getDepthForRow(m2.idx,fc.depthDir);
+          if(spansEqual(dSpans,ds2))fColEnd++;else break}
+
+        if(dSpans.length===0){fCol=fColEnd+1;continue}
+
+        let facadeX1,facadeXsize;
+        const m0=fc.mapCol(fCol),mE=fc.mapCol(fColEnd);
+        if(m0.axis==='col'){
+          const cMin=Math.min(m0.idx,mE.idx),cMax=Math.max(m0.idx,mE.idx);
+          facadeX1=cMin*cRW-RW/2;facadeXsize=(cMax-cMin+1)*cRW;
+        }else{
+          const rMin=Math.min(m0.idx,mE.idx),rMax=Math.max(m0.idx,mE.idx);
+          facadeX1=rMin*cRD-RD/2;facadeXsize=(rMax-rMin+1)*cRD;
+        }
+
+        const fy2=(GS-reg.minR)*cH,fy1=(GS-reg.maxR-1)*cH;
+        const fh=fy2-fy1,fcy=(fy1+fy2)/2;
+        const fw=facadeXsize;
+
+        /* ── check if this region is in a conflict zone ── */
+        let inConflict=false;
+        if(CONFLICT_TYPES.has(TYPE_BY_ID[reg.typeId]?.key)){
+          /* Check corners: facade's mapped top-grid cells overlap with perpendicular facade */
+          for(let fc2=fCol;fc2<=fColEnd&&!inConflict;fc2++){
+            const mp=fc.mapCol(fc2);
+            if(mp.axis==='col'){
+              /* N/S facade, check this column's frontier row */
+              if(fc.depthDir==='south'){
+                for(let r=0;r<GS;r++)if(topGrid[r][mp.idx]){
+                  const key=`${r},${mp.idx}`;
+                  const ow=ownership.get(key);
+                  if(ow&&ow.size>1)inConflict=true;break}
+              }else{
+                for(let r=GS-1;r>=0;r--)if(topGrid[r][mp.idx]){
+                  const key=`${r},${mp.idx}`;
+                  const ow=ownership.get(key);
+                  if(ow&&ow.size>1)inConflict=true;break}
+              }
+            }else{
+              if(fc.depthDir==='east'){
+                for(let c=0;c<GS;c++)if(topGrid[mp.idx][c]){
+                  const key=`${mp.idx},${c}`;
+                  const ow=ownership.get(key);
+                  if(ow&&ow.size>1)inConflict=true;break}
+              }else{
+                for(let c=GS-1;c>=0;c--)if(topGrid[mp.idx][c]){
+                  const key=`${mp.idx},${c}`;
+                  const ow=ownership.get(key);
+                  if(ow&&ow.size>1)inConflict=true;break}
+              }
+            }
+          }
+        }
+
+        for(const[depStart,depEnd]of dSpans){
+          let bx1,bx2,bz1,bz2;
+          if(fc.name==='north'||fc.name==='south'){
+            bx1=facadeX1;bx2=facadeX1+fw;bz1=depStart;bz2=depEnd;
+          }else{
+            bz1=facadeX1;bz2=facadeX1+facadeXsize;bx1=depStart;bx2=depEnd;
+          }
+          const bw=bx2-bx1,bd=bz2-bz1;
+          const bcx=(bx1+bx2)/2,bcz=(bz1+bz2)/2;
+
+          const info=TYPE_BY_ID[reg.typeId];if(!info)continue;
+          const typeColor=info.color||'#ccc';
+
+          /* If in conflict zone and is a conflicting type → draw red warning box, skip details */
+          if(inConflict){
+            wbC(grp,bw-WALL,fh-WALL,bd-WALL,bcx,fcy,bcz,'#ff4444',WarnM);
+            continue;
+          }
+
+          wbC(grp,bw-WALL,fh-WALL,bd-WALL,bcx,fcy,bcz,typeColor,TM);
+          const inW=bw-WALL*4,inD=bd-WALL*4;
+
+          /* read subdivision heights (cm → meters) */
+          const tShelf=(+shelfHEl.value||30)/100;
+          const tDrawer=(+drawerHEl.value||20)/100;
+          const tShoe=(+shoeHEl.value||18)/100;
+          const tBoot=(+bootHEl.value||35)/100;
+          const tBook=(+bookHEl.value||30)/100;
+
+          switch(info.key){
+            case 'shelf':{const n=Math.max(1,Math.round(fh/tShelf));
+              for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM);break}
+            case 'books':{const n=Math.max(1,Math.round(fh/tBook));
+              for(let i=1;i<n;i++)wb(grp,inW,WALL,inD,bcx,fy1+fh*i/n,bcz,TM);
+              if(bw>cRW*3)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);break}
+            case 'hanging':{const ry=fy2-fh*.1;
+              const rg=new THREE.CylinderGeometry(.012,.012,inW>inD?inW:inD,8,1);
+              if(fc.name==='north'||fc.name==='south')rg.rotateZ(Math.PI/2);
+              else rg.rotateX(Math.PI/2);
+              const re=new THREE.EdgesGeometry(rg),rod=new THREE.LineSegments(re,LM);
+              rod.position.set(bcx,ry,bcz);grp.add(rod);
+              wb(grp,inW,WALL,inD,bcx,fy2-WALL*2,bcz,TM);break}
+            case 'drawer':{const n=Math.max(1,Math.round(fh/tDrawer));
+              const gap=WALL,dH=(fh-gap*(n+1))/n;
+              let ffx=bcx,ffz=bcz;
+              if(fc.name==='north')ffz=bz2-WALL;
+              else if(fc.name==='south')ffz=bz1+WALL;
+              else if(fc.name==='west')ffx=bx2-WALL;
+              else ffx=bx1+WALL;
+              for(let i=0;i<n;i++){const dy=fy1+gap+dH/2+i*(dH+gap);
+                if(fc.name==='north'||fc.name==='south'){
+                  wb(grp,inW,dH-WALL,WALL,bcx,dy,ffz,TM);
+                  wb(grp,inW*.22,WALL,WALL,bcx,dy,ffz+(fc.name==='north'?WALL:-WALL),TM);
+                }else{
+                  wb(grp,WALL,dH-WALL,inD,ffx,dy,bcz,TM);
+                  wb(grp,WALL,WALL,inD*.22,ffx+(fc.name==='west'?WALL:-WALL),dy,bcz,TM);
+                }}break}
+            case 'open':{
+              if(fc.name==='north')wb(grp,inW,fh-WALL*4,WALL,bcx,fcy,bz1+WALL*2,TM);
+              else if(fc.name==='south')wb(grp,inW,fh-WALL*4,WALL,bcx,fcy,bz2-WALL*2,TM);
+              else if(fc.name==='west')wb(grp,WALL,fh-WALL*4,inD,bx1+WALL*2,fcy,bcz,TM);
+              else wb(grp,WALL,fh-WALL*4,inD,bx2-WALL*2,fcy,bcz,TM);break}
+            case 'shoeLow':{const n=Math.max(1,Math.round(fh/tShoe));
+              for(let i=0;i<n;i++){const sy=fy1+fh*(i+.5)/n;
+                const szW=fc.name==='north'||fc.name==='south'?inW:inD;
+                const szD=fc.name==='north'||fc.name==='south'?bd*.55:bw*.55;
+                const pg=new THREE.PlaneGeometry(szW,szD);
+                const pe=new THREE.EdgesGeometry(pg),pl=new THREE.LineSegments(pe,TM);
+                if(fc.name==='north'||fc.name==='south')pl.rotation.x=-Math.PI/2+.3;
+                else{pl.rotation.z=Math.PI/2-.3}
+                pl.position.set(bcx,sy,bcz);grp.add(pl)}break}
+            case 'shoeHi':{const n=Math.max(1,Math.round(fh/tBoot));
+              for(let i=0;i<n;i++){const sy=fy1+fh*(i+.5)/n;
+                const szW=fc.name==='north'||fc.name==='south'?inW:inD;
+                const szD=fc.name==='north'||fc.name==='south'?bd*.7:bw*.7;
+                const pg=new THREE.PlaneGeometry(szW,szD);
+                const pe=new THREE.EdgesGeometry(pg),pl=new THREE.LineSegments(pe,TM);
+                if(fc.name==='north'||fc.name==='south')pl.rotation.x=-Math.PI/2+.2;
+                else{pl.rotation.z=Math.PI/2-.2}
+                pl.position.set(bcx,sy,bcz);grp.add(pl)}break}
+            case 'top':{wb(grp,inW,WALL,inD,bcx,fcy,bcz,TM);
+              if(bw>cRW*4)wb(grp,WALL,fh-WALL*2,inD,bcx,fcy,bcz,TM);break}
+          }
+        }
+        fCol=fColEnd+1;
+      }
+    }
+  }
+
+  document.getElementById('info-regions').textContent=totalRegs;
+
+  /* ── Outer shells + clickable wall panels ── */
+  for(let c=0;c<GS;){
+    let ce=c;
+    while(ce+1<GS){let same=true;
+      for(let r=0;r<GS;r++)if(!!topGrid[r][c]!==!!topGrid[r][ce+1]){same=false;break}
+      if(same)ce++;else break}
+    const spans=depthSpans(c,ce);
+    const x1=c*cRW-RW/2,x2=(ce+1)*cRW-RW/2,pw=x2-x1,pcx=(x1+x2)/2;
+    for(const[ds,de]of spans){
+      const z1=ds*cRD-RD/2,z2=(de+1)*cRD-RD/2,pd=z2-z1,pcz=(z1+z2)/2;
+      wb(grp,pw,H,pd,pcx,H/2,pcz);
+      wb(grp,pw-.01,.03,pd-.01,pcx,-.015,pcz);
+
+      /* ── Create invisible clickable wall faces ── */
+      const T=.001;
+      /* north wall (z = z1) */
+      addWallPanel(pw,H,T, pcx,H/2,z1-T/2, 'north');
+      /* south wall (z = z2) */
+      addWallPanel(pw,H,T, pcx,H/2,z2+T/2, 'south');
+      /* west wall (x = x1) */
+      addWallPanel(T,H,pd, x1-T/2,H/2,pcz, 'west');
+      /* east wall (x = x2) */
+      addWallPanel(T,H,pd, x2+T/2,H/2,pcz, 'east');
+    }
+    c=ce+1}
+
+  fitCam();
+}
+
+function addWallPanel(w,h,d,x,y,z,face){
+  const geo=new THREE.BoxGeometry(w,h,d);
+  const mat=new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.set(x,y,z);
+  mesh.userData.face=face;
+  wallGroup.add(mesh);
+}
+
+/* ── Depth helpers ── */
+function getDepthForCol(topCol,dir){
+  const spans=[];
+  if(dir==='south'){
+    let ins=false,s=0;
+    for(let r=0;r<GS;r++){
+      if(topGrid[r][topCol]){if(!ins){ins=true;s=r}}
+      else{if(ins){spans.push(toRoomZ(s,r-1));ins=false}}}
+    if(ins)spans.push(toRoomZ(s,GS-1));
+  }else{
+    let ins=false,s=0;
+    for(let r=GS-1;r>=0;r--){
+      if(topGrid[r][topCol]){if(!ins){ins=true;s=r}}
+      else{if(ins){spans.push(toRoomZ(r+1,s));ins=false}}}
+    if(ins)spans.push(toRoomZ(0,s));
+  }
+  return spans}
+
+function getDepthForRow(topRow,dir){
+  const RW=(+roomWEl.value||400)/100,cw=RW/GS;
+  const spans=[];
+  if(dir==='east'){
+    let ins=false,s=0;
+    for(let c=0;c<GS;c++){
+      if(topGrid[topRow][c]){if(!ins){ins=true;s=c}}
+      else{if(ins){spans.push([s*cw-RW/2,c*cw-RW/2]);ins=false}}}
+    if(ins)spans.push([s*cw-RW/2,GS*cw-RW/2]);
+  }else{
+    let ins=false,s=0;
+    for(let c=GS-1;c>=0;c--){
+      if(topGrid[topRow][c]){if(!ins){ins=true;s=c}}
+      else{if(ins){spans.push([(c+1)*cw-RW/2,(s+1)*cw-RW/2]);ins=false}}}
+    if(ins)spans.push([0*cw-RW/2,(s+1)*cw-RW/2]);
+  }
+  return spans}
+
+function toRoomZ(r1,r2){
+  const RD=(+roomDEl.value||400)/100,cd=RD/GS;
+  return[r1*cd-RD/2,(r2+1)*cd-RD/2]}
+
+function spansEqual(a,b){
+  if(a.length!==b.length)return false;
+  for(let i=0;i<a.length;i++)if(Math.abs(a[i][0]-b[i][0])>.001||Math.abs(a[i][1]-b[i][1])>.001)return false;
+  return true}
+
+function fitCam(){
+  if(grp.children.length>0){
+    const box=new THREE.Box3().setFromObject(grp),sz=box.getSize(new THREE.Vector3()),
+      ct=box.getCenter(new THREE.Vector3());
+    grp.position.sub(ct);wallGroup.position.copy(grp.position);
+    frustumSize=Math.max(sz.x,sz.y,sz.z)*1.45;
+    updateFrustum();controls.target.set(0,0,0)}}
+
+function updateFrustum(){const a=getA();
+  camera.left=-frustumSize*a/2;camera.right=frustumSize*a/2;
+  camera.top=frustumSize/2;camera.bottom=-frustumSize/2;camera.updateProjectionMatrix()}
+window.addEventListener('resize',()=>{renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);updateFrustum()});
+new ResizeObserver(()=>{renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);updateFrustum()}).observe(viewEl);
+
+(function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)})();
+
+/* ═══════════════════════  INIT  ═══════════════════════ */
+buildPalette();buildFacadeGrid();buildTopGrid();updateFaceLabels();syncFacade();rebuild();
+</script>
+</body>
+</html>

@@ -29,7 +29,12 @@
             </div>
             <div class="col-span-2">
               <label class="text-xs text-gray-500 dark:text-gray-300 block mb-1">Название этапа</label>
-              <input v-model="stage.title" class="w-full glass-input rounded-md px-2 py-2 text-sm outline-none" />
+              <div style="display:flex;align-items:center;gap:8px">
+                <input v-model="stage.title" class="w-full glass-input rounded-md px-2 py-2 text-sm outline-none" />
+                <span v-if="stage.id && taskCountByStage[stage.id]" class="rm-task-badge" :title="taskCountByStage[stage.id] + ' задач привязано'">
+                  {{ taskCountByStage[stage.id] }} задач
+                </span>
+              </div>
             </div>
           </div>
 
@@ -149,6 +154,19 @@ const scenarioMap = Object.fromEntries(scenarioOptions.map(s => [s.key, s.label]
 const { data: roadmapData, pending } = await useFetch<any[]>(
   () => `/api/projects/${props.slug}/roadmap`
 )
+const { data: workStatusData } = await useFetch<any[]>(
+  () => `/api/projects/${props.slug}/work-status`, { server: false, default: () => [] }
+)
+
+const taskCountByStage = computed(() => {
+  const counts: Record<number, number> = {}
+  for (const item of workStatusData.value || []) {
+    if (item.roadmapStageId) {
+      counts[item.roadmapStageId] = (counts[item.roadmapStageId] || 0) + 1
+    }
+  }
+  return counts
+})
 
 const stages = ref<any[]>([])
 const saving = ref(false)
@@ -356,6 +374,20 @@ async function save() {
 .dark .rm-footer { border-color: rgba(255,255,255,0.07); }
 .rm-warn { font-size: .75rem; color: #e08a2f; }
 .rm-apply { padding: 8px 20px; font-size: .82rem; }
+.rm-task-badge {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: .68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(100,110,200,0.14);
+  color: rgba(80,90,180,1);
+  border: 1px solid rgba(100,110,200,0.25);
+  cursor: default;
+  flex-shrink: 0;
+}
+.dark .rm-task-badge { background: rgba(130,145,255,0.15); color: rgba(160,170,255,1); }
 .a-btn-save {
   border: 1px solid #1a1a1a;
   background: #1a1a1a;

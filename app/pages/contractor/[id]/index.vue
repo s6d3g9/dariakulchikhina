@@ -89,6 +89,7 @@
                         <div class="cab-task-top" @click="toggleExpand(item.id)">
                           <span class="cab-task-expand-icon">{{ expandedId === item.id ? '▾' : '▸' }}</span>
                           <span class="cab-task-name">{{ item.title }}</span>
+                          <span v-if="item.roadmapStageTitle" class="cab-task-stage-badge">{{ item.roadmapStageTitle }}</span>
                           <select
                             :value="item.status"
                             class="cab-status-select"
@@ -1103,6 +1104,25 @@ async function logout() {
 }
 .cab-stage-check-row:not(.done) .cab-stage-check-icon { color: var(--glass-text, #1a1a2e); opacity: 0.3; }
 .cab-stage-check-row.done .cab-stage-label { text-decoration: line-through; }
+
+/* Roadmap stage badge on task */
+.cab-task-stage-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: rgba(240,180,30,0.14);
+  border: 1px solid rgba(220,160,20,0.3);
+  color: rgba(160,110,10,1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dark .cab-task-stage-badge {
+  background: rgba(240,200,60,0.12);
+  border-color: rgba(240,200,60,0.25);
+  color: rgba(230,190,80,1);
+}
 
 /* Staff list */
 .cab-staff-list { display: flex; flex-direction: column; gap: 10px; }

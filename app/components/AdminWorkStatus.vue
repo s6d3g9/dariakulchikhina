@@ -28,13 +28,20 @@
             </select>
           </div>
         </div>
-        <!-- row 1b: work type -->
+        <!-- row 1b: work type + roadmap stage -->
         <div class="ws-row">
           <div class="ws-field">
             <label class="ws-lbl">вид работ</label>
             <select v-model="item.workType" class="ws-inp ws-select">
               <option :value="null">— не указан —</option>
               <option v-for="w in WORK_TYPE_OPTIONS" :key="w.value" :value="w.value">{{ w.label }}</option>
+            </select>
+          </div>
+          <div class="ws-field">
+            <label class="ws-lbl">этап дорожной карты</label>
+            <select v-model="item.roadmapStageId" class="ws-inp ws-select">
+              <option :value="null">— не привязан —</option>
+              <option v-for="s in roadmapStages" :key="s.id" :value="s.id">{{ s.title }}</option>
             </select>
           </div>
         </div>
@@ -87,17 +94,20 @@ const { data: rawItems, pending } = await useFetch<any[]>(
 const { data: contractors } = await useFetch<any[]>(
   () => `/api/projects/${props.slug}/contractors`, { server: false, default: () => [] }
 )
+const { data: roadmapStages } = await useFetch<any[]>(
+  () => `/api/projects/${props.slug}/roadmap`, { server: false, default: () => [] }
+)
 
 const items = ref<any[]>([])
 const saving = ref(false)
 const error = ref('')
 
 watch(rawItems, (v) => {
-  items.value = (v || []).map((i: any) => ({ ...i, contractorId: i.contractorId ?? null }))
+  items.value = (v || []).map((i: any) => ({ ...i, contractorId: i.contractorId ?? null, roadmapStageId: i.roadmapStageId ?? null }))
 }, { immediate: true })
 
 function addItem() {
-  items.value.push({ title: '', status: 'pending', workType: null, dateStart: '', dateEnd: '', budget: '', notes: '', contractorId: null })
+  items.value.push({ title: '', status: 'pending', workType: null, roadmapStageId: null, dateStart: '', dateEnd: '', budget: '', notes: '', contractorId: null })
 }
 
 async function save() {

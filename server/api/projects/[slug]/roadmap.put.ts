@@ -1,6 +1,6 @@
 import { useDb } from '~/server/db/index'
 import { roadmapStages, projects } from '~/server/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
 const Body = z.object({
@@ -26,10 +26,20 @@ export default defineEventHandler(async (event) => {
   const [project] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, slug)).limit(1)
   if (!project) throw createError({ statusCode: 404 })
 
-  await db.delete(roadmapStages).where(eq(roadmapStages.projectId, project.id))
+  const incoming = body.stages
+  const existingIds = incoming.map(s => s.id).filter(Boolean) as number[]
 
-  if (body.stages.length > 0) {
-    await db.insert(roadmapStages).values(body.stages.map((stage, index) => ({
+  // Delete stages not in the incoming list (preserves IDs for linked work items)
+  const existing = await db.select({ id: roadmapStages.id }).from(roadmapStages).where(eq(roadmapStages.projectId, project.id))
+  const toDelete = existing.map(r => r.id).filter(id => !existingIds.includes(id))
+  if (toDelete.length > 0) {
+    await db.delete(roadmapStages).where(inArray(roadmapStages.id, toDelete))
+  }
+
+  // Upsert each stage
+  for (let index = 0; index < incoming.length; index++) {
+    const stage = incoming[index]
+    const vals = {
       projectId: project.id,
       stageKey: stage.stageKey || null,
       title: stage.title,
@@ -39,7 +49,12 @@ export default defineEventHandler(async (event) => {
       dateEnd: stage.dateEnd || null,
       notes: stage.notes || null,
       sortOrder: stage.sortOrder ?? index,
-    })))
+    }
+    if (stage.id) {
+      await db.update(roadmapStages).set(vals).where(eq(roadmapStages.id, stage.id))
+    } else {
+      await db.insert(roadmapStages).values(vals)
+    }
   }
 
   return db
