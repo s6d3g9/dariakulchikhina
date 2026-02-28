@@ -789,13 +789,6 @@ async function logout() {
 /* AppAddressInput in glass context */
 .bcab-field :deep(.aai-wrap) { flex: 1; min-width: 0; }
 .bcab-field :deep(.aai-wrap input.glass-input) { width: 100%; }
-.bcab-field :deep(.aai-list) {
-  background: rgba(255,255,255,0.97);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border, rgba(200,200,220,0.4));
-  border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-}
 .bcab-foot {
   display: flex;
   align-items: center;

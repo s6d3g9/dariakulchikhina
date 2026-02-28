@@ -1,5 +1,5 @@
 <template>
-  <div class="aai-wrap">
+  <div ref="wrapEl" class="aai-wrap">
     <input
       :value="modelValue"
       :class="inputClass"
@@ -13,18 +13,24 @@
       @keydown.up.prevent="suggestUp"
       @keydown.enter.prevent="suggestSelect"
     />
-    <ul v-if="suggestions.length" class="aai-list">
-      <li
-        v-for="(s, i) in suggestions"
-        :key="i"
-        class="aai-item"
-        :class="{ 'aai-item--active': activeIndex === i }"
-        @mousedown.prevent="pick(s)"
+    <Teleport to="body">
+      <ul
+        v-if="suggestions.length"
+        class="aai-list"
+        :style="dropStyle"
       >
-        <span class="aai-title">{{ s.title }}</span>
-        <span v-if="s.subtitle" class="aai-sub">{{ s.subtitle }}</span>
-      </li>
-    </ul>
+        <li
+          v-for="(s, i) in suggestions"
+          :key="i"
+          class="aai-item"
+          :class="{ 'aai-item--active': activeIndex === i }"
+          @mousedown.prevent="pick(s)"
+        >
+          <span class="aai-title">{{ s.title }}</span>
+          <span v-if="s.subtitle" class="aai-sub">{{ s.subtitle }}</span>
+        </li>
+      </ul>
+    </Teleport>
   </div>
 </template>
 
@@ -46,20 +52,37 @@ interface Suggestion { title: string; subtitle: string; full: string }
 
 const suggestions = ref<Suggestion[]>([])
 const activeIndex = ref(-1)
+const wrapEl = ref<HTMLElement | null>(null)
+const dropStyle = ref<Record<string, string>>({})
 let timer: ReturnType<typeof setTimeout> | null = null
+
+function updatePos() {
+  const el = wrapEl.value
+  if (!el) return
+  const r = el.getBoundingClientRect()
+  dropStyle.value = {
+    position: 'fixed',
+    top: r.bottom + 4 + 'px',
+    left: r.left + 'px',
+    width: r.width + 'px',
+    zIndex: '99999',
+  }
+}
 
 function onInput(e: Event) {
   const val = (e.target as HTMLInputElement).value
   emit('update:modelValue', val)
-  fetch(val)
+  updatePos()
+  fetchSuggestions(val)
 }
 
 function onFocus(e: Event) {
   const val = (e.target as HTMLInputElement).value
-  if (val.length >= 2) fetch(val)
+  updatePos()
+  if (val.length >= 2) fetchSuggestions(val)
 }
 
-function fetch(q: string) {
+function fetchSuggestions(q: string) {
   if (timer) clearTimeout(timer)
   if (q.trim().length < 2) { suggestions.value = []; return }
   timer = setTimeout(async () => {
@@ -98,22 +121,20 @@ function pick(s: Suggestion) {
   width: 100%;
   min-width: 0;
 }
-/* inner input always fills the wrapper */
 input { display: block; width: 100%; box-sizing: border-box; }
+</style>
+
+<style>
+/* global — список телепортирован в body */
 .aai-list {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 999;
   background: #fff;
   border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.16);
   padding: 4px 0;
   margin: 0;
   list-style: none;
-  max-height: 240px;
+  max-height: 260px;
   overflow-y: auto;
 }
 .dark .aai-list { background: #1e1e1e; border-color: #333; }
@@ -131,7 +152,6 @@ input { display: block; width: 100%; box-sizing: border-box; }
 .dark .aai-item:hover,
 .dark .aai-item--active { background: rgba(255,255,255,.07); }
 
-.aai-title { font-size: .88rem; color: inherit; line-height: 1.3; }
+.aai-title { font-size: .88rem; color: #1a1a1a; line-height: 1.3; }
 .aai-sub   { font-size: .75rem; color: #999; }
-.dark .aai-sub { color: #666; }
 </style>
