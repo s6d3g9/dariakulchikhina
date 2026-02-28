@@ -53,8 +53,8 @@
           <template v-if="section === 'brief'">
             <div class="bcab-section-head">
               <div v-if="client.linkedProject" class="bcab-sync-row">
-                <button type="button" class="bcab-sync-btn" @click="pullFromProject" title="Перенести бюджет / срок / стиль из проекта">← из проекта</button>
-                <button type="button" class="bcab-sync-btn" @click="pushToProject" title="Перенести бюджет / срок / стиль в проект">→ в проект</button>
+                <button type="button" class="bcab-sync-btn" @click="pullFromProject" title="Загрузить все данные из проекта">← из проекта</button>
+                <button type="button" class="bcab-sync-btn" @click="pushToProject" title="Сохранить бриф и передать все данные в проект">→ в проект</button>
               </div>
             </div>
             <form @submit.prevent="saveBrief" class="bcab-form">
@@ -320,20 +320,38 @@ const objectForm = reactive({
 })
 
 watch(client, (val) => {
+  const sp = (val?.selfProfile as any) || {}
+  const op = ((val?.brief as any)?.object_params as any) || {}
+  const toArr = (v: any) => Array.isArray(v) ? v : (v ? String(v).split(',').map((s: string) => s.trim()).filter(Boolean) : [])
+
   if (val?.brief) {
-    const { object_params: _op, ...briefFields } = (val.brief as any)
-    // Migrate legacy string → array for tag fields
-    const toArr = (v: any) => Array.isArray(v) ? v : (v ? v.split(',').map((s: string) => s.trim()).filter(Boolean) : [])
-    Object.assign(brief, {
-      ...briefFields,
-      family: toArr(briefFields.family),
-      rooms: toArr(briefFields.rooms),
-      style_preference: toArr(briefFields.style_preference),
-    })
+    const { object_params: _op, ...bf } = (val.brief as any)
+    // clients.brief has priority; fall back to selfProfile fields
+    brief.about_me          = bf.about_me       || sp.lifestyle      || ''
+    brief.family            = toArr(bf.family?.length   ? bf.family   : sp.family_tags)
+    brief.rooms             = toArr(bf.rooms?.length    ? bf.rooms    : sp.rooms_tags)
+    brief.style_preference  = toArr(bf.style_preference?.length ? bf.style_preference : (sp.style_tags || sp.stylePreferences))
+    brief.budget            = bf.budget         || sp.budget         || ''
+    brief.deadline_wish     = bf.deadline_wish   || sp.deadline       || ''
+    brief.current_pain      = bf.current_pain    || sp.current_pain   || ''
+    brief.wishes            = bf.wishes          || sp.wishes         || ''
+    brief.avoid             = bf.avoid           || sp.dislikes       || ''
+    brief.references        = bf.references      || sp.brief_like_refs || ''
+  } else {
+    // No local brief yet — load entirely from selfProfile
+    brief.about_me         = sp.lifestyle       || ''
+    brief.family           = toArr(sp.family_tags)
+    brief.rooms            = toArr(sp.rooms_tags)
+    brief.style_preference = toArr(sp.style_tags || sp.stylePreferences)
+    brief.budget           = sp.budget          || ''
+    brief.deadline_wish    = sp.deadline         || ''
+    brief.current_pain     = sp.current_pain     || ''
+    brief.wishes           = sp.wishes           || ''
+    brief.avoid            = sp.dislikes         || ''
+    brief.references       = sp.brief_like_refs  || ''
   }
-  // Populate objectForm: project selfProfile takes priority, fallback to brief.object_params
-  const sp = (val?.selfProfile as Record<string, unknown>) || {}
-  const op = ((val?.brief as any)?.object_params as Record<string, unknown>) || {}
+
+  // objectForm: selfProfile takes priority over brief.object_params
   const source: Record<string, unknown> = { ...op, ...sp }
   Object.keys(objectForm).forEach(k => {
     ;(objectForm as any)[k] = (source[k] as string) ?? ''
@@ -430,14 +448,37 @@ const galleries = [
   { key: 'gallery-moodboards', label: 'Мудборды' },
 ]
 
+// Build self_profile payload from current brief
+function briefToSelfProfile() {
+  return {
+    lifestyle:      brief.about_me,
+    family_tags:    brief.family,
+    rooms_tags:     brief.rooms,
+    style_tags:     brief.style_preference,
+    stylePreferences: Array.isArray(brief.style_preference) ? brief.style_preference.join(', ') : brief.style_preference,
+    budget:         brief.budget,
+    deadline:       brief.deadline_wish,
+    current_pain:   brief.current_pain,
+    wishes:         brief.wishes,
+    dislikes:       brief.avoid,
+    brief_like_refs: brief.references,
+  }
+}
+
 async function saveBrief() {
   saveMsg.value = ''
-  // Preserve object_params when saving brief fields
   const existingObjectParams = (client.value?.brief as any)?.object_params || {}
   await $fetch(`/api/clients/${clientId}/brief`, {
     method: 'PUT',
     body: { ...brief, object_params: existingObjectParams },
   })
+  // Auto-sync to project selfProfile if linked
+  if (client.value?.linkedProject) {
+    await $fetch(`/api/clients/${clientId}/self-profile`, {
+      method: 'PUT',
+      body: { content: briefToSelfProfile() },
+    })
+  }
   await refresh()
   saveMsg.value = 'Сохранено!'
   setTimeout(() => (saveMsg.value = ''), 3000)
@@ -463,36 +504,50 @@ async function saveObject() {
   setTimeout(() => (objectSaveMsg.value = ''), 3000)
 }
 
-// Бриф ← проект: перенести бюджет/срок/стиль из self_profile в бриф
+// Бриф ← проект: полная загрузка всех полей из selfProfile
 function pullFromProject() {
   const p = (client.value?.selfProfile as any) || {}
-  if (p.budget) brief.budget = p.budget
-  if (p.deadline) brief.deadline_wish = p.deadline
-  if (p.stylePreferences) brief.style_preference = p.stylePreferences
-  if (p.brief_like_refs) brief.references = p.brief_like_refs
-  if (p.dislikes) brief.avoid = p.dislikes
+  const toArr = (v: any) => Array.isArray(v) ? v : (v ? String(v).split(',').map((s: string) => s.trim()).filter(Boolean) : [])
+  brief.about_me         = p.lifestyle       || brief.about_me
+  brief.family           = p.family_tags?.length ? toArr(p.family_tags) : brief.family
+  brief.rooms            = p.rooms_tags?.length  ? toArr(p.rooms_tags)  : brief.rooms
+  brief.style_preference = p.style_tags?.length  ? toArr(p.style_tags)  : (p.stylePreferences ? toArr(p.stylePreferences) : brief.style_preference)
+  brief.budget           = p.budget          || brief.budget
+  brief.deadline_wish    = p.deadline         || brief.deadline_wish
+  brief.current_pain     = p.current_pain     || brief.current_pain
+  brief.wishes           = p.wishes           || brief.wishes
+  brief.avoid            = p.dislikes         || brief.avoid
+  brief.references       = p.brief_like_refs  || brief.references
 }
 
-// Бриф → проект: перенести поля брифа в objectForm и сохранить
+// Бриф → проект: сохранить все поля брифа + шаредные поля в objectForm
 async function pushToProject() {
   if (brief.budget) objectForm.budget = brief.budget
   if (brief.deadline_wish) objectForm.deadline = brief.deadline_wish
-  if (brief.style_preference) objectForm.stylePreferences = brief.style_preference
+  if (brief.style_preference.length) objectForm.stylePreferences = Array.isArray(brief.style_preference) ? brief.style_preference.join(', ') : brief.style_preference
   await saveObject()
+  await $fetch(`/api/clients/${clientId}/self-profile`, {
+    method: 'PUT',
+    body: { content: briefToSelfProfile() },
+  })
+  await refresh()
 }
 
 // Параметры ← бриф: перенести из брифа в форму объекта
 function pullFromBrief() {
   if (brief.budget) objectForm.budget = brief.budget
   if (brief.deadline_wish) objectForm.deadline = brief.deadline_wish
-  if (brief.style_preference) objectForm.stylePreferences = brief.style_preference
+  if (brief.style_preference.length) objectForm.stylePreferences = Array.isArray(brief.style_preference) ? brief.style_preference.join(', ') : brief.style_preference
 }
 
 // Параметры → бриф: перенести из объекта в бриф
 function pushToBrief() {
   if (objectForm.budget) brief.budget = objectForm.budget
   if (objectForm.deadline) brief.deadline_wish = objectForm.deadline
-  if (objectForm.stylePreferences) brief.style_preference = objectForm.stylePreferences
+  if (objectForm.stylePreferences) {
+    const toArr = (v: string) => v.split(',').map(s => s.trim()).filter(Boolean)
+    brief.style_preference = toArr(objectForm.stylePreferences)
+  }
 }
 
 async function logout() {
