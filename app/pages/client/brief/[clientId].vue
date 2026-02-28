@@ -782,8 +782,7 @@ async function logout() {
 .bcab-field select.glass-input {
   appearance: none;
   cursor: pointer;
-  padding-right: 28px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
+  padding-right: 24px;
   background-repeat: no-repeat;
   background-position: right 10px center;
 }
