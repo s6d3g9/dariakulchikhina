@@ -231,7 +231,7 @@
 <script setup lang="ts">
 import { CONTRACTOR_ROLE_TYPE_OPTIONS, CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
 
-definePageMeta({ layout: 'default', middleware: ['contractor'] })
+definePageMeta({ layout: 'default' })
 
 const router = useRouter()
 const route = useRoute()

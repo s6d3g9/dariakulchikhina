@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Parametric Furniture Generator</title>
 <style>
-/* ── Reset ──────────────────────────────────────────── */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
   font-family:"SF Mono","Fira Code","Courier New",Courier,monospace;color:#000}
 
 /* ── Layout ─────────────────────────────────────────── */
 #app{display:grid;width:100%;height:100%;
-  grid-template-columns:340px 1fr;
+  grid-template-columns:400px 1fr;
   grid-template-rows:auto 1fr auto}
 
 /* ── Category Tabs ──────────────────────────────────── */
@@ -28,52 +27,67 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
 #left{grid-column:1;grid-row:2;border-right:2px solid #000;
   overflow-y:auto;display:flex;flex-direction:column}
 
-/* ── Tool Palette ───────────────────────────────────── */
-#palette{padding:8px 10px;border-bottom:2px solid #000}
-#palette h3{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
-.pal-row{display:flex;flex-wrap:wrap;gap:4px}
-.pal-btn{display:flex;align-items:center;gap:5px;padding:4px 8px;font:inherit;font-size:9px;
+.sec-head{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+
+/* ── Palette ────────────────────────────────────────── */
+#palette{padding:7px 10px;border-bottom:2px solid #000}
+.pal-row{display:flex;flex-wrap:wrap;gap:3px}
+.pal-btn{display:flex;align-items:center;gap:4px;padding:3px 7px;font:inherit;font-size:8.5px;
   letter-spacing:.04em;text-transform:uppercase;border:2px solid #000;background:#fff;
   cursor:pointer;transition:all .12s;line-height:1.2}
-.pal-btn .swatch{width:12px;height:12px;border:1px solid #000;flex-shrink:0}
+.pal-btn .swatch{width:10px;height:10px;border:1px solid #000;flex-shrink:0}
 .pal-btn.active{background:#000;color:#fff}
 .pal-btn.active .swatch{border-color:#fff}
 .pal-btn:hover:not(.active){background:#f0f0f0}
 
-/* ── Grid ───────────────────────────────────────────── */
-#grid-wrap{flex:1;padding:10px;display:flex;flex-direction:column;min-height:0}
-#grid-wrap h3{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
-#grid-container{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
-#grid{display:grid;grid-template-columns:repeat(20,1fr);
-  gap:0;border:2px solid #000;aspect-ratio:1;
-  width:100%;max-width:320px;max-height:320px;user-select:none;touch-action:none}
-.cell{border:0.5px solid #ccc;cursor:crosshair;transition:background .08s}
+/* ── View Tabs ──────────────────────────────────────── */
+.view-tabs{display:flex;gap:0;margin-bottom:5px}
+.vtab{flex:1;font:inherit;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 4px;border:2px solid #000;background:#fff;cursor:pointer;text-align:center;
+  transition:all .12s}
+.vtab:first-child{border-right:none}
+.vtab.active{background:#000;color:#fff}
+.vtab:hover:not(.active){background:#eee}
+.grid-panel{display:none}
+.grid-panel.visible{display:flex;flex-direction:column;align-items:center;gap:4px}
+
+/* ── Grids ──────────────────────────────────────────── */
+.grid-section{padding:8px 10px;border-bottom:2px solid #000;flex:1;display:flex;
+  flex-direction:column;min-height:0}
+.g20{display:grid;grid-template-columns:repeat(20,1fr);grid-template-rows:repeat(20,1fr);
+  gap:0;border:2px solid #000;user-select:none;touch-action:none;
+  width:100%;max-width:300px;aspect-ratio:1}
+.cell{border:0.5px solid #ccc;cursor:crosshair;transition:background .08s;min-height:0}
 .cell:hover{outline:1.5px solid #000;outline-offset:-1.5px;z-index:1}
 
-/* ── Dims ───────────────────────────────────────────── */
-#dims-panel{padding:8px 10px;border-top:2px solid #000}
-#dims-panel h3{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
-.dim-row{display:flex;gap:6px;margin-bottom:4px}
-.dim-row label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;
-  display:flex;align-items:center;gap:4px;flex:1}
-.dim-row input{width:56px;font:inherit;font-size:14px;text-align:center;
-  border:2px solid #000;padding:3px 2px}
+.axis-label{font-size:7px;letter-spacing:.08em;text-transform:uppercase;color:#888;text-align:center}
+.axis-row{display:flex;align-items:center;gap:4px;width:100%;max-width:316px}
+.axis-side{font-size:7px;letter-spacing:.06em;text-transform:uppercase;color:#888;
+  writing-mode:vertical-lr;text-orientation:mixed;transform:rotate(180deg);width:12px;
+  text-align:center;flex-shrink:0}
 
-/* ── 3D Canvas ──────────────────────────────────────── */
+/* ── Dims ───────────────────────────────────────────── */
+#dims-panel{padding:7px 10px;border-top:2px solid #000}
+.dim-row{display:flex;gap:6px;margin-bottom:3px;flex-wrap:wrap}
+.dim-row label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;
+  display:flex;align-items:center;gap:4px}
+.dim-row input{width:52px;font:inherit;font-size:13px;text-align:center;
+  border:2px solid #000;padding:2px}
+
+/* ── 3D View ────────────────────────────────────────── */
 #view{grid-column:2;grid-row:2;position:relative;overflow:hidden}
 #view canvas{display:block;width:100%;height:100%}
 
 /* ── Bottom Bar ─────────────────────────────────────── */
 #bar{grid-column:1/3;border-top:2px solid #000;background:#fff;
-  display:flex;align-items:center;padding:6px 14px;gap:16px}
+  display:flex;align-items:center;padding:5px 14px;gap:14px;flex-wrap:wrap}
 #bar .info{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
 #bar .info span{font-weight:700}
 #bar .spacer{flex:1}
 .bar-btn{font:inherit;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-  padding:6px 14px;border:2px solid #000;background:#fff;cursor:pointer;transition:all .12s}
+  padding:5px 12px;border:2px solid #000;background:#fff;cursor:pointer;transition:all .12s}
 .bar-btn:hover{background:#000;color:#fff}
 
-/* ── Scrollbar ──────────────────────────────────────── */
 #left::-webkit-scrollbar{width:4px}
 #left::-webkit-scrollbar-thumb{background:#000}
 </style>
@@ -81,7 +95,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
 <body>
 
 <div id="app">
-
   <!-- Category Tabs -->
   <div id="cats">
     <button class="cat-btn active" data-cat="wardrobe">Шкаф-купе</button>
@@ -94,28 +107,50 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
   <!-- Left Panel -->
   <div id="left">
     <div id="palette">
-      <h3>Тип отделения</h3>
+      <h3 class="sec-head">Тип отделения (для фасада)</h3>
       <div class="pal-row" id="pal-row"></div>
-      <div style="margin-top:6px">
+      <div style="margin-top:4px">
         <button class="pal-btn" id="eraser-btn" style="border-style:dashed">
           <span class="swatch" style="background:#fff"></span>Ластик
         </button>
       </div>
     </div>
 
-    <div id="grid-wrap">
-      <h3>Сетка 20 × 20 — рисуйте отделения</h3>
-      <div id="grid-container">
-        <div id="grid"></div>
+    <div class="grid-section">
+      <div class="view-tabs">
+        <button class="vtab active" data-view="front">Фасад (Ш × В)</button>
+        <button class="vtab" data-view="top">План помещения</button>
+      </div>
+
+      <!-- FRONT GRID  20×20 -->
+      <div class="grid-panel visible" id="panel-front">
+        <div class="axis-label">↑ верх шкафа</div>
+        <div class="axis-row">
+          <div class="axis-side">← высота →</div>
+          <div style="flex:1;display:flex;justify-content:center"><div class="g20" id="front-grid"></div></div>
+        </div>
+        <div class="axis-label">← ширина →</div>
+      </div>
+
+      <!-- TOP GRID  20×20  (plan view of the room) -->
+      <div class="grid-panel" id="panel-top">
+        <div class="axis-label">↑ дальняя стена</div>
+        <div class="axis-row">
+          <div class="axis-side">← глубина комнаты →</div>
+          <div style="flex:1;display:flex;justify-content:center"><div class="g20" id="top-grid"></div></div>
+        </div>
+        <div class="axis-label">← ширина комнаты → (вход ↓)</div>
       </div>
     </div>
 
     <div id="dims-panel">
-      <h3>Габариты (см)</h3>
+      <h3 class="sec-head">Размеры</h3>
       <div class="dim-row">
-        <label>Ш <input type="number" id="dimW" value="120" min="30" max="400" step="5"/></label>
-        <label>В <input type="number" id="dimH" value="220" min="30" max="350" step="5"/></label>
-        <label>Г <input type="number" id="dimD" value="60" min="20" max="120" step="5"/></label>
+        <label>Комната Ш <input type="number" id="roomW" value="400" min="100" max="1000" step="10"/></label>
+        <label>Комната Г <input type="number" id="roomD" value="400" min="100" max="1000" step="10"/></label>
+      </div>
+      <div class="dim-row">
+        <label>Шкаф В <input type="number" id="dimH" value="220" min="30" max="350" step="5"/></label>
       </div>
     </div>
   </div>
@@ -126,9 +161,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
   <!-- Bottom Bar -->
   <div id="bar">
     <div class="info">Секций: <span id="info-regions">0</span></div>
-    <div class="info">Размер: <span id="info-size">120×220×60</span> см</div>
+    <div class="info">Размер: <span id="info-size">—</span></div>
     <div class="spacer"></div>
-    <button class="bar-btn" id="btn-clear">Очистить</button>
+    <button class="bar-btn" id="btn-clear-front">Очистить фасад</button>
+    <button class="bar-btn" id="btn-clear-top">Очистить план</button>
     <button class="bar-btn" id="btn-reset-cam">Сброс камеры</button>
   </div>
 </div>
@@ -148,444 +184,631 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 /* ===================================================================
-   COMPARTMENT TYPES
+   TYPES
    =================================================================== */
 const TYPES = {
-  shelf:   { id: 1, label: 'Полка',            color: '#a8d8ea' },
-  hanging: { id: 2, label: 'Штанга',           color: '#b5eaaa' },
-  drawer:  { id: 3, label: 'Ящик',             color: '#f5c385' },
-  open:    { id: 4, label: 'Открытая секция',   color: '#fff3b0' },
-  shoeLow: { id: 5, label: 'Обувь низкая',     color: '#f0b0c0' },
-  shoeHi:  { id: 6, label: 'Сапоги / Высокая', color: '#d5b0f0' },
-  books:   { id: 7, label: 'Книги',            color: '#b0d0f0' },
-  top:     { id: 8, label: 'Антресоль',         color: '#d0d0d0' },
+  shelf:   { id:1, label:'Полка',            color:'#a8d8ea' },
+  hanging: { id:2, label:'Штанга',           color:'#b5eaaa' },
+  drawer:  { id:3, label:'Ящик',             color:'#f5c385' },
+  open:    { id:4, label:'Открытая секция',   color:'#fff3b0' },
+  shoeLow: { id:5, label:'Обувь низкая',     color:'#f0b0c0' },
+  shoeHi:  { id:6, label:'Сапоги / Высокая', color:'#d5b0f0' },
+  books:   { id:7, label:'Книги',            color:'#b0d0f0' },
+  top:     { id:8, label:'Антресоль',         color:'#d0d0d0' },
 };
-const TYPE_BY_ID = {};
-for (const [key, val] of Object.entries(TYPES)) TYPE_BY_ID[val.id] = { ...val, key };
+const TYPE_BY_ID={};
+for(const[k,v]of Object.entries(TYPES)) TYPE_BY_ID[v.id]={...v,key:k};
 
-/* Types shown per category */
-const CAT_TYPES = {
-  wardrobe: ['shelf','hanging','drawer','open','top'],
-  bookcase: ['books','shelf','drawer','open'],
-  shoes:    ['shoeLow','shoeHi','drawer','shelf'],
-  hallway:  ['hanging','shoeLow','shoeHi','drawer','shelf','open'],
-  shelving: ['shelf','open','books','drawer'],
+const CAT_TYPES={
+  wardrobe:['shelf','hanging','drawer','open','top'],
+  bookcase:['books','shelf','drawer','open'],
+  shoes:['shoeLow','shoeHi','drawer','shelf'],
+  hallway:['hanging','shoeLow','shoeHi','drawer','shelf','open'],
+  shelving:['shelf','open','books','drawer'],
 };
+
+const GS=20; // grid size
 
 /* ===================================================================
-   PRESET TEMPLATES  (20×20 grid, 0 = empty, id = type)
+   GRIDS
    =================================================================== */
-function emptyGrid(){ return Array.from({length:20},()=>new Uint8Array(20)) }
+function emptyG(){ return Array.from({length:GS},()=>new Uint8Array(GS)) }
+function fillRect(g,r1,c1,r2,c2,id){ for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) g[r][c]=id }
 
-function fillRect(g, r1,c1, r2,c2, id){
-  for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++) g[r][c]=id;
-}
+/* Top grid: 1 = furniture footprint in room, 0 = empty room */
+const ROOM_FILL = 1;
 
+/* ── Front Presets ─────────────────────────────── */
 function presetWardrobe(){
-  const g=emptyGrid();
-  fillRect(g,0,0,1,19, TYPES.top.id);      // top antresol
-  fillRect(g,2,0,14,9, TYPES.hanging.id);   // left hanging
-  fillRect(g,2,10,9,19, TYPES.shelf.id);    // right shelves
-  fillRect(g,10,10,14,19, TYPES.shelf.id);  // right lower shelves
-  fillRect(g,15,0,17,9, TYPES.drawer.id);   // left drawers
-  fillRect(g,15,10,17,19, TYPES.drawer.id); // right drawers
-  fillRect(g,18,0,19,19, TYPES.shelf.id);   // bottom shelf
+  const g=emptyG();
+  fillRect(g,0,0,1,19,TYPES.top.id);
+  fillRect(g,2,0,14,9,TYPES.hanging.id);
+  fillRect(g,2,10,9,19,TYPES.shelf.id);
+  fillRect(g,10,10,14,19,TYPES.shelf.id);
+  fillRect(g,15,0,17,9,TYPES.drawer.id);
+  fillRect(g,15,10,17,19,TYPES.drawer.id);
+  fillRect(g,18,0,19,19,TYPES.shelf.id);
   return g;
 }
 function presetBookcase(){
-  const g=emptyGrid();
-  for(let i=0;i<5;i++) fillRect(g,i*4,0,i*4+3,19, TYPES.books.id);
+  const g=emptyG();
+  for(let i=0;i<5;i++) fillRect(g,i*4,0,i*4+3,19,TYPES.books.id);
   return g;
 }
 function presetShoes(){
-  const g=emptyGrid();
-  fillRect(g,0,0,1,19, TYPES.top.id);
-  fillRect(g,2,0,7,19, TYPES.shoeHi.id);
-  fillRect(g,8,0,13,9, TYPES.shoeLow.id);
-  fillRect(g,8,10,13,19, TYPES.shoeLow.id);
-  fillRect(g,14,0,17,19, TYPES.shoeLow.id);
-  fillRect(g,18,0,19,19, TYPES.drawer.id);
+  const g=emptyG();
+  fillRect(g,0,0,1,19,TYPES.top.id);
+  fillRect(g,2,0,7,19,TYPES.shoeHi.id);
+  fillRect(g,8,0,13,9,TYPES.shoeLow.id);
+  fillRect(g,8,10,13,19,TYPES.shoeLow.id);
+  fillRect(g,14,0,17,19,TYPES.shoeLow.id);
+  fillRect(g,18,0,19,19,TYPES.drawer.id);
   return g;
 }
 function presetHallway(){
-  const g=emptyGrid();
-  fillRect(g,0,0,2,19, TYPES.top.id);
-  fillRect(g,3,0,12,11, TYPES.hanging.id);
-  fillRect(g,3,12,7,19, TYPES.shelf.id);
-  fillRect(g,8,12,12,19, TYPES.open.id);
-  fillRect(g,13,0,16,19, TYPES.shoeLow.id);
-  fillRect(g,17,0,19,19, TYPES.drawer.id);
+  const g=emptyG();
+  fillRect(g,0,0,2,19,TYPES.top.id);
+  fillRect(g,3,0,12,11,TYPES.hanging.id);
+  fillRect(g,3,12,7,19,TYPES.shelf.id);
+  fillRect(g,8,12,12,19,TYPES.open.id);
+  fillRect(g,13,0,16,19,TYPES.shoeLow.id);
+  fillRect(g,17,0,19,19,TYPES.drawer.id);
   return g;
 }
 function presetShelving(){
-  const g=emptyGrid();
+  const g=emptyG();
   for(let i=0;i<5;i++){
-    const id = i%2===0 ? TYPES.open.id : TYPES.shelf.id;
-    fillRect(g,i*4,0,i*4+3,19, id);
+    fillRect(g,i*4,0,i*4+3,19, i%2===0?TYPES.open.id:TYPES.shelf.id);
   }
   return g;
 }
-const PRESETS = { wardrobe:presetWardrobe, bookcase:presetBookcase,
-  shoes:presetShoes, hallway:presetHallway, shelving:presetShelving };
+const PRESETS_FRONT={wardrobe:presetWardrobe,bookcase:presetBookcase,
+  shoes:presetShoes,hallway:presetHallway,shelving:presetShelving};
+
+/* ── Top (Room Plan) Presets ───────────────────── */
+function topWardrobeStraight(){
+  const g=emptyG();
+  // Straight cabinet along back wall, full width, 4 cells deep
+  fillRect(g,0,0,3,19,ROOM_FILL);
+  return g;
+}
+function topBookcase(){
+  const g=emptyG();
+  fillRect(g,0,0,1,19,ROOM_FILL); // narrow along back wall
+  return g;
+}
+function topShoes(){
+  const g=emptyG();
+  fillRect(g,0,0,2,9,ROOM_FILL); // small block in corner
+  return g;
+}
+function topHallwayL(){
+  const g=emptyG();
+  // L-shape: along back wall + right wall
+  fillRect(g,0,0,2,19,ROOM_FILL);      // back wall
+  fillRect(g,3,16,12,19,ROOM_FILL);     // right wing
+  return g;
+}
+function topShelvingCorner(){
+  const g=emptyG();
+  fillRect(g,0,0,3,7,ROOM_FILL);
+  return g;
+}
+const PRESETS_TOP={wardrobe:topWardrobeStraight,bookcase:topBookcase,
+  shoes:topShoes,hallway:topHallwayL,shelving:topShelvingCorner};
 
 /* ===================================================================
    STATE
    =================================================================== */
-let grid = presetWardrobe();
+let frontGrid = presetWardrobe();
+let topGrid   = topWardrobeStraight();
 let currentBrush = TYPES.shelf.id;
 let isEraser = false;
 let painting = false;
 let currentCat = 'wardrobe';
+let activeView = 'front';
 
 /* ===================================================================
-   UI  —  PALETTE
+   PALETTE
    =================================================================== */
-const palRow = document.getElementById('pal-row');
-const eraserBtn = document.getElementById('eraser-btn');
+const palRow=document.getElementById('pal-row');
+const eraserBtn=document.getElementById('eraser-btn');
 
 function buildPalette(){
   palRow.innerHTML='';
-  const types = CAT_TYPES[currentCat];
-  types.forEach(key=>{
-    const t = TYPES[key];
-    const btn = document.createElement('button');
-    btn.className = 'pal-btn' + (t.id===currentBrush && !isEraser ? ' active':'');
-    btn.dataset.typeId = t.id;
-    btn.innerHTML = `<span class="swatch" style="background:${t.color}"></span>${t.label}`;
-    btn.addEventListener('click',()=>{
-      isEraser=false; currentBrush=t.id;
-      refreshPaletteActive();
-    });
+  CAT_TYPES[currentCat].forEach(key=>{
+    const t=TYPES[key];
+    const btn=document.createElement('button');
+    btn.className='pal-btn'+(t.id===currentBrush&&!isEraser?' active':'');
+    btn.dataset.typeId=t.id;
+    btn.innerHTML=`<span class="swatch" style="background:${t.color}"></span>${t.label}`;
+    btn.addEventListener('click',()=>{isEraser=false;currentBrush=t.id;refreshPal()});
     palRow.appendChild(btn);
   });
-  if(!types.some(k=>TYPES[k].id===currentBrush)){
-    currentBrush=TYPES[types[0]].id; isEraser=false;
+  if(!CAT_TYPES[currentCat].some(k=>TYPES[k].id===currentBrush)){
+    currentBrush=TYPES[CAT_TYPES[currentCat][0]].id; isEraser=false;
   }
-  refreshPaletteActive();
+  refreshPal();
 }
-
-function refreshPaletteActive(){
+function refreshPal(){
   palRow.querySelectorAll('.pal-btn').forEach(b=>{
-    b.classList.toggle('active', +b.dataset.typeId===currentBrush && !isEraser);
+    b.classList.toggle('active',+b.dataset.typeId===currentBrush&&!isEraser);
   });
-  eraserBtn.classList.toggle('active', isEraser);
+  eraserBtn.classList.toggle('active',isEraser);
 }
-eraserBtn.addEventListener('click',()=>{isEraser=true; refreshPaletteActive()});
+eraserBtn.addEventListener('click',()=>{isEraser=true;refreshPal()});
 
 /* ===================================================================
-   UI  —  GRID
+   VIEW TABS
    =================================================================== */
-const gridEl = document.getElementById('grid');
-const cells = [];
+const panelFront=document.getElementById('panel-front');
+const panelTop=document.getElementById('panel-top');
 
-function buildGrid(){
-  gridEl.innerHTML='';
-  cells.length=0;
-  for(let r=0;r<20;r++){
-    cells[r]=[];
-    for(let c=0;c<20;c++){
-      const d=document.createElement('div');
-      d.className='cell';
-      d.dataset.r=r; d.dataset.c=c;
-      gridEl.appendChild(d);
-      cells[r][c]=d;
-    }
-  }
-  syncGridColors();
+document.querySelectorAll('.vtab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelector('.vtab.active').classList.remove('active');
+    btn.classList.add('active');
+    activeView=btn.dataset.view;
+    panelFront.classList.toggle('visible',activeView==='front');
+    panelTop.classList.toggle('visible',activeView==='top');
+  });
+});
+
+/* ===================================================================
+   FRONT GRID (20×20) — compartment types
+   =================================================================== */
+const frontGridEl=document.getElementById('front-grid');
+const fCells=[];
+
+function buildFrontGrid(){
+  frontGridEl.innerHTML=''; fCells.length=0;
+  for(let r=0;r<GS;r++){fCells[r]=[];for(let c=0;c<GS;c++){
+    const d=document.createElement('div');d.className='cell';
+    d.dataset.r=r;d.dataset.c=c;d.dataset.grid='front';
+    frontGridEl.appendChild(d);fCells[r][c]=d;
+  }}
+  syncFront();
 }
-
-function syncGridColors(){
-  for(let r=0;r<20;r++) for(let c=0;c<20;c++){
-    const v=grid[r][c];
-    cells[r][c].style.background = v ? (TYPE_BY_ID[v]?.color||'#ddd') : '#fff';
+function syncFront(){
+  for(let r=0;r<GS;r++) for(let c=0;c<GS;c++){
+    const v=frontGrid[r][c];
+    fCells[r][c].style.background=v?(TYPE_BY_ID[v]?.color||'#ddd'):'#fff';
   }
 }
-
-function paintCell(r,c){
-  const val = isEraser ? 0 : currentBrush;
-  if(grid[r][c]===val) return;
-  grid[r][c]=val;
-  cells[r][c].style.background = val ? (TYPE_BY_ID[val]?.color||'#ddd') : '#fff';
+function paintFront(r,c){
+  const val=isEraser?0:currentBrush;
+  if(frontGrid[r][c]===val)return;
+  frontGrid[r][c]=val;
+  fCells[r][c].style.background=val?(TYPE_BY_ID[val]?.color||'#ddd'):'#fff';
   scheduleRebuild();
 }
-
-gridEl.addEventListener('pointerdown',e=>{
-  const t=e.target; if(!t.dataset.r) return;
-  painting=true; gridEl.setPointerCapture(e.pointerId);
-  paintCell(+t.dataset.r, +t.dataset.c);
+frontGridEl.addEventListener('pointerdown',e=>{
+  const t=e.target;if(t.dataset.grid!=='front')return;
+  painting=true;frontGridEl.setPointerCapture(e.pointerId);
+  paintFront(+t.dataset.r,+t.dataset.c);
 });
-gridEl.addEventListener('pointermove',e=>{
-  if(!painting) return;
-  const el = document.elementFromPoint(e.clientX, e.clientY);
-  if(el && el.dataset.r!==undefined) paintCell(+el.dataset.r, +el.dataset.c);
+frontGridEl.addEventListener('pointermove',e=>{
+  if(!painting)return;
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  if(el&&el.dataset.grid==='front')paintFront(+el.dataset.r,+el.dataset.c);
 });
-gridEl.addEventListener('pointerup',()=>{painting=false});
-gridEl.addEventListener('pointercancel',()=>{painting=false});
-gridEl.addEventListener('contextmenu',e=>{e.preventDefault()});
+frontGridEl.addEventListener('pointerup',()=>{painting=false});
+frontGridEl.addEventListener('pointercancel',()=>{painting=false});
+frontGridEl.addEventListener('contextmenu',e=>e.preventDefault());
 
 /* ===================================================================
-   UI — CATEGORY TABS
+   TOP GRID (20×20) — room plan, furniture footprint
+   =================================================================== */
+const topGridEl=document.getElementById('top-grid');
+const tCells=[];
+const FILL_COLOR='#b8b8b8';
+const EMPTY_COLOR='#fff';
+
+function buildTopGrid(){
+  topGridEl.innerHTML=''; tCells.length=0;
+  for(let r=0;r<GS;r++){tCells[r]=[];for(let c=0;c<GS;c++){
+    const d=document.createElement('div');d.className='cell';
+    d.dataset.r=r;d.dataset.c=c;d.dataset.grid='top';
+    topGridEl.appendChild(d);tCells[r][c]=d;
+  }}
+  syncTop();
+}
+function syncTop(){
+  for(let r=0;r<GS;r++) for(let c=0;c<GS;c++){
+    tCells[r][c].style.background=topGrid[r][c]?FILL_COLOR:EMPTY_COLOR;
+  }
+}
+function paintTop(r,c){
+  const val=isEraser?0:ROOM_FILL;
+  if(topGrid[r][c]===val)return;
+  topGrid[r][c]=val;
+  tCells[r][c].style.background=val?FILL_COLOR:EMPTY_COLOR;
+  scheduleRebuild();
+}
+topGridEl.addEventListener('pointerdown',e=>{
+  const t=e.target;if(t.dataset.grid!=='top')return;
+  painting=true;topGridEl.setPointerCapture(e.pointerId);
+  paintTop(+t.dataset.r,+t.dataset.c);
+});
+topGridEl.addEventListener('pointermove',e=>{
+  if(!painting)return;
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  if(el&&el.dataset.grid==='top')paintTop(+el.dataset.r,+el.dataset.c);
+});
+topGridEl.addEventListener('pointerup',()=>{painting=false});
+topGridEl.addEventListener('pointercancel',()=>{painting=false});
+topGridEl.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ===================================================================
+   CATEGORY TABS
    =================================================================== */
 document.querySelectorAll('.cat-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelector('.cat-btn.active').classList.remove('active');
     btn.classList.add('active');
-    currentCat = btn.dataset.cat;
-    grid = PRESETS[currentCat]();
-    buildPalette();
-    syncGridColors();
-    rebuild();
+    currentCat=btn.dataset.cat;
+    frontGrid=PRESETS_FRONT[currentCat]();
+    topGrid=PRESETS_TOP[currentCat]();
+    buildPalette();syncFront();syncTop();rebuild();
   });
 });
 
 /* ===================================================================
-   UI — DIMENSIONS
+   DIMENSIONS
    =================================================================== */
-const dimW=document.getElementById('dimW');
+const roomW=document.getElementById('roomW');
+const roomD=document.getElementById('roomD');
 const dimH=document.getElementById('dimH');
-const dimD=document.getElementById('dimD');
-[dimW,dimH,dimD].forEach(el=>el.addEventListener('input',()=>scheduleRebuild()));
+[roomW,roomD,dimH].forEach(el=>el.addEventListener('input',()=>scheduleRebuild()));
 
 /* ===================================================================
-   UI — BUTTONS
+   BUTTONS
    =================================================================== */
-document.getElementById('btn-clear').addEventListener('click',()=>{
-  grid=emptyGrid(); syncGridColors(); rebuild();
+document.getElementById('btn-clear-front').addEventListener('click',()=>{
+  frontGrid=emptyG();syncFront();rebuild();
+});
+document.getElementById('btn-clear-top').addEventListener('click',()=>{
+  topGrid=emptyG();syncTop();rebuild();
 });
 document.getElementById('btn-reset-cam').addEventListener('click',()=>{
-  camera.position.set(10,10,10); camera.lookAt(0,0,0);
-  controls.target.set(0,0,0); controls.update();
+  camera.position.set(12,12,12);camera.lookAt(0,0,0);
+  controls.target.set(0,0,0);controls.update();
 });
 
 /* ===================================================================
-   REGION DETECTION  (flood fill connected components)
+   REGION DETECTION — front grid
    =================================================================== */
-function findRegions(){
-  const visited = Array.from({length:20},()=>new Uint8Array(20));
-  const regions=[];
-  for(let r=0;r<20;r++) for(let c=0;c<20;c++){
-    if(visited[r][c] || grid[r][c]===0) continue;
-    const typeId=grid[r][c];
-    const cellsList=[];
-    const queue=[[r,c]]; visited[r][c]=1;
-    while(queue.length){
-      const [cr,cc]=queue.shift(); cellsList.push([cr,cc]);
-      for(const [dr,dc] of [[0,1],[0,-1],[1,0],[-1,0]]){
-        const nr=cr+dr, nc=cc+dc;
-        if(nr>=0&&nr<20&&nc>=0&&nc<20&&!visited[nr][nc]&&grid[nr][nc]===typeId){
-          visited[nr][nc]=1; queue.push([nr,nc]);
-        }
-      }
-    }
-    let minR=20,maxR=0,minC=20,maxC=0;
-    for(const [cr,cc] of cellsList){
-      minR=Math.min(minR,cr); maxR=Math.max(maxR,cr);
-      minC=Math.min(minC,cc); maxC=Math.max(maxC,cc);
-    }
-    regions.push({typeId, cells:cellsList, minR,maxR,minC,maxC});
+function findFrontRegions(){
+  const vis=Array.from({length:GS},()=>new Uint8Array(GS));
+  const regs=[];
+  for(let r=0;r<GS;r++) for(let c=0;c<GS;c++){
+    if(vis[r][c]||frontGrid[r][c]===0) continue;
+    const tid=frontGrid[r][c];
+    const cl=[];const q=[[r,c]];vis[r][c]=1;
+    while(q.length){const[cr,cc]=q.shift();cl.push([cr,cc]);
+      for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){
+        const nr=cr+dr,nc=cc+dc;
+        if(nr>=0&&nr<GS&&nc>=0&&nc<GS&&!vis[nr][nc]&&frontGrid[nr][nc]===tid){
+          vis[nr][nc]=1;q.push([nr,nc])}}}
+    let minR=GS,maxR=0,minC=GS,maxC=0;
+    for(const[cr,cc]of cl){minR=Math.min(minR,cr);maxR=Math.max(maxR,cr);
+      minC=Math.min(minC,cc);maxC=Math.max(maxC,cc)}
+    regs.push({typeId:tid,cells:cl,minR,maxR,minC,maxC});
   }
-  return regions;
+  return regs;
 }
 
 /* ===================================================================
-   THREE.JS SETUP
+   TOP GRID — find connected rectangular blocks of filled cells
    =================================================================== */
-const viewEl = document.getElementById('view');
-const scene  = new THREE.Scene();
-scene.background = new THREE.Color(0xfdfdfd);
+function findTopBlocks(){
+  const vis=Array.from({length:GS},()=>new Uint8Array(GS));
+  const blocks=[];
+  for(let r=0;r<GS;r++) for(let c=0;c<GS;c++){
+    if(vis[r][c]||topGrid[r][c]===0) continue;
+    const cl=[];const q=[[r,c]];vis[r][c]=1;
+    while(q.length){const[cr,cc]=q.shift();cl.push([cr,cc]);
+      for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){
+        const nr=cr+dr,nc=cc+dc;
+        if(nr>=0&&nr<GS&&nc>=0&&nc<GS&&!vis[nr][nc]&&topGrid[nr][nc]){
+          vis[nr][nc]=1;q.push([nr,nc])}}}
+    let minR=GS,maxR=0,minC=GS,maxC=0;
+    for(const[cr,cc]of cl){minR=Math.min(minR,cr);maxR=Math.max(maxR,cr);
+      minC=Math.min(minC,cc);maxC=Math.max(maxC,cc)}
+    blocks.push({cells:cl,minR,maxR,minC,maxC});
+  }
+  return blocks;
+}
 
-let frustumSize = 14;
-const getAspect = ()=> viewEl.clientWidth / (viewEl.clientHeight||1);
-const camera = new THREE.OrthographicCamera(
-  -frustumSize*getAspect()/2, frustumSize*getAspect()/2,
-   frustumSize/2, -frustumSize/2, 0.1, 1000);
-camera.position.set(10,10,10);
-camera.lookAt(scene.position);
-
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(viewEl.clientWidth, viewEl.clientHeight);
-viewEl.appendChild(renderer.domElement);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping=true; controls.dampingFactor=0.12;
-controls.enableZoom=true; controls.enablePan=true;
+/* Check if a top-grid column range has filled cells in a given row range */
+function topFilledAt(topR, colMin, colMax){
+  for(let c=colMin;c<=colMax;c++) if(!topGrid[topR][c]) return false;
+  return true;
+}
 
 /* ===================================================================
-   WIREFRAME HELPERS
+   THREE.JS
    =================================================================== */
-const LINE_MAT = new THREE.LineBasicMaterial({color:0x000000, linewidth:2});
-const THIN_MAT = new THREE.LineBasicMaterial({color:0x000000, linewidth:1});
+const viewEl=document.getElementById('view');
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xfdfdfd);
 
-function wireBox(parent, w,h,d, x,y,z, mat){
-  mat = mat || LINE_MAT;
+let frustumSize=14;
+const getAspect=()=>viewEl.clientWidth/(viewEl.clientHeight||1);
+const camera=new THREE.OrthographicCamera(
+  -frustumSize*getAspect()/2,frustumSize*getAspect()/2,
+  frustumSize/2,-frustumSize/2,0.1,1000);
+camera.position.set(12,12,12);camera.lookAt(scene.position);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);
+viewEl.appendChild(renderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=0.12;
+controls.enableZoom=true;controls.enablePan=true;
+
+const LINE_MAT=new THREE.LineBasicMaterial({color:0x000000,linewidth:2});
+const THIN_MAT=new THREE.LineBasicMaterial({color:0x000000,linewidth:1});
+const ROOM_MAT=new THREE.LineBasicMaterial({color:0xbbbbbb,linewidth:1});
+
+function wireBox(parent,w,h,d,x,y,z,mat){
+  mat=mat||LINE_MAT;
   const geo=new THREE.BoxGeometry(w,h,d);
   const edges=new THREE.EdgesGeometry(geo);
-  const seg=new THREE.LineSegments(edges, mat);
-  seg.position.set(x,y,z);
-  parent.add(seg); return seg;
+  const seg=new THREE.LineSegments(edges,mat);
+  seg.position.set(x,y,z);parent.add(seg);return seg;
 }
 
 /* ===================================================================
    3D BUILD
    =================================================================== */
-let furnitureGroup = new THREE.Group();
+let furnitureGroup=new THREE.Group();
 scene.add(furnitureGroup);
-
 let rebuildTimer=0;
-function scheduleRebuild(){ clearTimeout(rebuildTimer); rebuildTimer=setTimeout(rebuild,80); }
+function scheduleRebuild(){clearTimeout(rebuildTimer);rebuildTimer=setTimeout(rebuild,80)}
 
 function rebuild(){
   scene.remove(furnitureGroup);
   furnitureGroup.traverse(o=>{if(o.geometry)o.geometry.dispose()});
-  furnitureGroup=new THREE.Group();
-  scene.add(furnitureGroup);
+  furnitureGroup=new THREE.Group();scene.add(furnitureGroup);
 
-  const W = (+dimW.value||120)/100;
-  const H = (+dimH.value||220)/100;
-  const D = (+dimD.value||60)/100;
-  const WALL = 0.025;
+  const RW=(+roomW.value||400)/100;   // room width in units
+  const RD=(+roomD.value||400)/100;   // room depth in units
+  const H =(+dimH.value||220)/100;    // cabinet height
+  const WALL=0.025;
 
-  const cellW = W/20;
-  const cellH = H/20;
+  const cellRW=RW/GS;   // room cell width
+  const cellRD=RD/GS;   // room cell depth
+  const cellH=H/GS;     // front-grid cell height
 
-  /* Outer shell */
-  wireBox(furnitureGroup, W, H, D, 0, H/2, 0);
+  /* ── Room floor outline (subtle) ── */
+  {
+    const floorGeo=new THREE.PlaneGeometry(RW,RD);
+    const floorEdge=new THREE.EdgesGeometry(floorGeo);
+    const floor=new THREE.LineSegments(floorEdge,ROOM_MAT);
+    floor.rotation.x=-Math.PI/2;
+    floor.position.set(0,0,0);
+    furnitureGroup.add(floor);
 
-  /* Plinth */
-  const plinthH=0.04;
-  wireBox(furnitureGroup, W-0.02, plinthH, D-0.02, 0, -plinthH/2, 0);
+    /* Grid lines on floor */
+    const pts=[];
+    for(let i=0;i<=GS;i++){
+      const x=i*cellRW-RW/2;
+      pts.push(new THREE.Vector3(x,0,-RD/2),new THREE.Vector3(x,0,RD/2));
+    }
+    for(let j=0;j<=GS;j++){
+      const z=j*cellRD-RD/2;
+      pts.push(new THREE.Vector3(-RW/2,0,z),new THREE.Vector3(RW/2,0,z));
+    }
+    const gridLineGeo=new THREE.BufferGeometry().setFromPoints(pts);
+    const gridLines=new THREE.LineSegments(gridLineGeo,
+      new THREE.LineBasicMaterial({color:0xe0e0e0,linewidth:1}));
+    furnitureGroup.add(gridLines);
+  }
 
-  /* Regions */
-  const regions = findRegions();
-  document.getElementById('info-regions').textContent = regions.length;
-  document.getElementById('info-size').textContent =
-    `${dimW.value||120}×${dimH.value||220}×${dimD.value||60}`;
+  /* ── Find top-grid blocks (footprint) ── */
+  const topBlocks=findTopBlocks();
+  if(topBlocks.length===0){
+    document.getElementById('info-regions').textContent='0';
+    document.getElementById('info-size').textContent='—';
+    fitCamera();return;
+  }
 
-  for(const reg of regions){
-    const x1 = reg.minC * cellW - W/2;
-    const x2 = (reg.maxC+1)*cellW - W/2;
-    const y1 = (20 - reg.maxR -1)*cellH;
-    const y2 = (20 - reg.minR)*cellH;
-    const rw = x2-x1;
-    const rh = y2-y1;
-    const cx = (x1+x2)/2;
-    const cy = (y1+y2)/2;
+  /* For each top-grid block we extrude the front-grid compartments upward.
+     The front grid's column axis maps to the WIDEST dimension of the
+     footprint block.
 
-    /* Compartment frame */
-    wireBox(furnitureGroup, rw-WALL, rh-WALL, D-WALL*2, cx, cy, 0, THIN_MAT);
+     Top grid mapping:
+       row  → Z axis (row 0 = back of room = -Z, row 19 = front/entry = +Z)
+       col  → X axis (col 0 = left = -X,       col 19 = right = +X)
+     Front grid mapping:
+       row  → Y axis (row 0 = top,   row 19 = bottom)
+       col  → X axis (directly maps to top-grid col)
+  */
 
-    const info = TYPE_BY_ID[reg.typeId];
-    if(!info) continue;
+  const frontRegions=findFrontRegions();
+  document.getElementById('info-regions').textContent=frontRegions.length;
 
-    const inW = rw-WALL*4;
-    const inD = D-WALL*4;
+  /* Compute actual footprint bounding box for size readout */
+  let fpMinC=GS,fpMaxC=0,fpMinR=GS,fpMaxR=0;
+  for(const b of topBlocks){
+    for(const[r,c]of b.cells){
+      fpMinR=Math.min(fpMinR,r);fpMaxR=Math.max(fpMaxR,r);
+      fpMinC=Math.min(fpMinC,c);fpMaxC=Math.max(fpMaxC,c);
+    }
+  }
+  const actualW=((fpMaxC-fpMinC+1)*cellRW*100).toFixed(0);
+  const actualD=((fpMaxR-fpMinR+1)*cellRD*100).toFixed(0);
+  const actualH=(H*100).toFixed(0);
+  document.getElementById('info-size').textContent=`${actualW}×${actualH}×${actualD}`;
 
-    switch(info.key){
+  /* ── Build each top-grid column strip ── */
+  // For each filled cell in the top grid, check if it's part of a contiguous
+  // row-strip, then extrude the front-grid columns from that strip.
 
-      /* ── ПОЛКА ─────────────────────────────── */
-      case 'shelf': {
-        const cnt = Math.max(1, Math.round(rh / (cellH*4)));
-        for(let i=1;i<cnt;i++){
-          const sy = y1 + rh*i/cnt;
-          wireBox(furnitureGroup, inW, WALL, inD, cx, sy, 0, THIN_MAT);
+  // We process per top-block: find contiguous depth strips per column range.
+  for(const block of topBlocks){
+    // Build a set of filled cells in this block
+    const filled=new Set(block.cells.map(([r,c])=>`${r},${c}`));
+
+    // For each unique column in the block, get depth spans
+    const colsInBlock=new Set(block.cells.map(([,c])=>c));
+    const sortedCols=[...colsInBlock].sort((a,b)=>a-b);
+
+    // Group consecutive columns
+    const colGroups=[];
+    let start=sortedCols[0], prev=sortedCols[0];
+    for(let i=1;i<sortedCols.length;i++){
+      if(sortedCols[i]===prev+1){prev=sortedCols[i]}
+      else{colGroups.push([start,prev]);start=sortedCols[i];prev=start}
+    }
+    colGroups.push([start,prev]);
+
+    for(const[cMin,cMax]of colGroups){
+      // Find depth spans for this column group
+      // A depth span = contiguous rows where ALL columns [cMin..cMax] are filled
+      const depthSpans=[];
+      let inSpan=false,sStart=0;
+      for(let r=0;r<GS;r++){
+        let allFilled=true;
+        for(let c=cMin;c<=cMax;c++){
+          if(!filled.has(`${r},${c}`)){allFilled=false;break}
         }
-        break;
+        if(allFilled){if(!inSpan){inSpan=true;sStart=r}}
+        else{if(inSpan){depthSpans.push([sStart,r-1]);inSpan=false}}
       }
+      if(inSpan) depthSpans.push([sStart,GS-1]);
 
-      /* ── КНИГИ ─────────────────────────────── */
-      case 'books': {
-        const cnt = Math.max(1, Math.round(rh / (cellH*4)));
-        for(let i=1;i<cnt;i++){
-          wireBox(furnitureGroup, inW, WALL, inD, cx, y1+rh*i/cnt, 0, THIN_MAT);
+      for(const[dStart,dEnd]of depthSpans){
+        // 3D envelope for this piece
+        const x1=cMin*cellRW - RW/2;
+        const x2=(cMax+1)*cellRW - RW/2;
+        const z1=dStart*cellRD - RD/2;
+        const z2=(dEnd+1)*cellRD - RD/2;
+        const pw=x2-x1, pd=z2-z1;
+        const pcx=(x1+x2)/2, pcz=(z1+z2)/2;
+
+        // Outer shell
+        wireBox(furnitureGroup,pw,H,pd, pcx,H/2,pcz);
+        // Plinth
+        wireBox(furnitureGroup,pw-0.02,0.04,pd-0.02, pcx,-0.02,pcz);
+
+        // Map front-grid columns [cMin..cMax] for compartments
+        const fCellW=pw/(cMax-cMin+1); // width per front column within this piece
+
+        for(const reg of frontRegions){
+          // Only draw if this region's column range intersects [cMin..cMax]
+          const overlapMin=Math.max(reg.minC,cMin);
+          const overlapMax=Math.min(reg.maxC,cMax);
+          if(overlapMin>overlapMax) continue;
+
+          // Region X within this piece
+          const rx1=(overlapMin-cMin)*fCellW - pw/2;
+          const rx2=(overlapMax-cMin+1)*fCellW - pw/2;
+          const rw=rx2-rx1;
+          const rcx=(rx1+rx2)/2 + pcx;
+          // Region Y
+          const ry1=(GS-reg.maxR-1)*cellH;
+          const ry2=(GS-reg.minR)*cellH;
+          const rh=ry2-ry1;
+          const rcy=(ry1+ry2)/2;
+
+          // Compartment box
+          wireBox(furnitureGroup,rw-WALL,rh-WALL,pd-WALL*2, rcx,rcy,pcz,THIN_MAT);
+
+          const info=TYPE_BY_ID[reg.typeId];
+          if(!info) continue;
+          const inW=rw-WALL*4;
+          const inD=pd-WALL*4;
+
+          switch(info.key){
+            case 'shelf':{
+              const cnt=Math.max(1,Math.round(rh/(cellH*4)));
+              for(let i=1;i<cnt;i++)
+                wireBox(furnitureGroup,inW,WALL,inD, rcx,ry1+rh*i/cnt,pcz,THIN_MAT);
+              break;
+            }
+            case 'books':{
+              const cnt=Math.max(1,Math.round(rh/(cellH*4)));
+              for(let i=1;i<cnt;i++)
+                wireBox(furnitureGroup,inW,WALL,inD, rcx,ry1+rh*i/cnt,pcz,THIN_MAT);
+              if(rw>fCellW*6)
+                wireBox(furnitureGroup,WALL,rh-WALL*2,inD, rcx,rcy,pcz,THIN_MAT);
+              break;
+            }
+            case 'hanging':{
+              const rodY=ry2-rh*0.1;
+              const rg=new THREE.CylinderGeometry(0.012,0.012,inW,8,1);
+              rg.rotateZ(Math.PI/2);
+              const re=new THREE.EdgesGeometry(rg);
+              const rod=new THREE.LineSegments(re,LINE_MAT);
+              rod.position.set(rcx,rodY,pcz);furnitureGroup.add(rod);
+              wireBox(furnitureGroup,inW,WALL,inD, rcx,ry2-WALL*2,pcz,THIN_MAT);
+              break;
+            }
+            case 'drawer':{
+              const dCnt=Math.max(1,Math.round(rh/(cellH*3.5)));
+              const gap=WALL, dH=(rh-gap*(dCnt+1))/dCnt;
+              const faceZ=pcz+pd/2-WALL*2;
+              for(let i=0;i<dCnt;i++){
+                const dy=ry1+gap+dH/2+i*(dH+gap);
+                wireBox(furnitureGroup,inW,dH-WALL,WALL, rcx,dy,faceZ,THIN_MAT);
+                wireBox(furnitureGroup,inW*0.22,WALL,WALL, rcx,dy,faceZ+WALL,THIN_MAT);
+              }
+              break;
+            }
+            case 'open':{
+              wireBox(furnitureGroup,inW,rh-WALL*4,WALL, rcx,rcy,pcz-pd/2+WALL*3,THIN_MAT);
+              break;
+            }
+            case 'shoeLow':{
+              const cnt=Math.max(1,Math.round(rh/(cellH*3)));
+              for(let i=0;i<cnt;i++){
+                const sy=ry1+rh*(i+0.5)/cnt;
+                const pg=new THREE.PlaneGeometry(inW,pd*0.55);
+                const pe=new THREE.EdgesGeometry(pg);
+                const pl=new THREE.LineSegments(pe,THIN_MAT);
+                pl.rotation.x=-Math.PI/2+0.3;pl.position.set(rcx,sy,pcz+0.02);
+                furnitureGroup.add(pl);
+              }
+              break;
+            }
+            case 'shoeHi':{
+              const cnt=Math.max(1,Math.round(rh/(cellH*5)));
+              for(let i=0;i<cnt;i++){
+                const sy=ry1+rh*(i+0.5)/cnt;
+                const pg=new THREE.PlaneGeometry(inW,pd*0.7);
+                const pe=new THREE.EdgesGeometry(pg);
+                const pl=new THREE.LineSegments(pe,THIN_MAT);
+                pl.rotation.x=-Math.PI/2+0.2;pl.position.set(rcx,sy,pcz+0.02);
+                furnitureGroup.add(pl);
+              }
+              break;
+            }
+            case 'top':{
+              wireBox(furnitureGroup,inW,WALL,inD, rcx,rcy,pcz,THIN_MAT);
+              if(rw>fCellW*8)
+                wireBox(furnitureGroup,WALL,rh-WALL*2,inD, rcx,rcy,pcz,THIN_MAT);
+              break;
+            }
+          }
         }
-        if(rw > cellW*8){
-          wireBox(furnitureGroup, WALL, rh-WALL*2, inD, cx, cy, 0, THIN_MAT);
-        }
-        break;
-      }
-
-      /* ── ШТАНГА ────────────────────────────── */
-      case 'hanging': {
-        const rodY = y2 - rh*0.1;
-        const rodR = 0.012;
-        const rodGeo = new THREE.CylinderGeometry(rodR,rodR,inW,8,1);
-        rodGeo.rotateZ(Math.PI/2);
-        const rodEdge = new THREE.EdgesGeometry(rodGeo);
-        const rod = new THREE.LineSegments(rodEdge,LINE_MAT);
-        rod.position.set(cx, rodY, 0);
-        furnitureGroup.add(rod);
-        wireBox(furnitureGroup, inW, WALL, inD, cx, y2-WALL*2, 0, THIN_MAT);
-        break;
-      }
-
-      /* ── ЯЩИК ──────────────────────────────── */
-      case 'drawer': {
-        const dCnt = Math.max(1, Math.round(rh / (cellH*3.5)));
-        const gap = WALL;
-        const dH = (rh - gap*(dCnt+1)) / dCnt;
-        for(let i=0;i<dCnt;i++){
-          const dy = y1 + gap + dH/2 + i*(dH+gap);
-          wireBox(furnitureGroup, inW, dH-WALL, WALL, cx, dy, D/2-WALL*2, THIN_MAT);
-          wireBox(furnitureGroup, inW*0.22, WALL, WALL, cx, dy, D/2-WALL, THIN_MAT);
-        }
-        break;
-      }
-
-      /* ── ОТКРЫТАЯ ──────────────────────────── */
-      case 'open': {
-        wireBox(furnitureGroup, inW, rh-WALL*4, WALL, cx, cy, -D/2+WALL*3, THIN_MAT);
-        break;
-      }
-
-      /* ── ОБУВЬ НИЗКАЯ ──────────────────────── */
-      case 'shoeLow': {
-        const cnt = Math.max(1, Math.round(rh / (cellH*3)));
-        for(let i=0;i<cnt;i++){
-          const sy = y1 + rh*(i+0.5)/cnt;
-          const pg = new THREE.PlaneGeometry(inW, D*0.45);
-          const pe = new THREE.EdgesGeometry(pg);
-          const pl = new THREE.LineSegments(pe, THIN_MAT);
-          pl.rotation.x = -Math.PI/2 + 0.32;
-          pl.position.set(cx, sy, 0.04);
-          furnitureGroup.add(pl);
-        }
-        break;
-      }
-
-      /* ── САПОГИ ────────────────────────────── */
-      case 'shoeHi': {
-        const cnt = Math.max(1, Math.round(rh / (cellH*5)));
-        for(let i=0;i<cnt;i++){
-          const sy = y1 + rh*(i+0.5)/cnt;
-          const pg = new THREE.PlaneGeometry(inW, D*0.65);
-          const pe = new THREE.EdgesGeometry(pg);
-          const pl = new THREE.LineSegments(pe, THIN_MAT);
-          pl.rotation.x = -Math.PI/2 + 0.2;
-          pl.position.set(cx, sy, 0.03);
-          furnitureGroup.add(pl);
-        }
-        break;
-      }
-
-      /* ── АНТРЕСОЛЬ ─────────────────────────── */
-      case 'top': {
-        wireBox(furnitureGroup, inW, WALL, inD, cx, cy, 0, THIN_MAT);
-        if(rw > cellW*10){
-          wireBox(furnitureGroup, WALL, rh-WALL*2, inD, cx, cy, 0, THIN_MAT);
-        }
-        break;
       }
     }
   }
 
-  /* Center & fit camera */
-  if(regions.length > 0){
-    const box = new THREE.Box3().setFromObject(furnitureGroup);
-    const center = box.getCenter(new THREE.Vector3());
-    const size   = box.getSize(new THREE.Vector3());
+  fitCamera();
+}
+
+function fitCamera(){
+  if(furnitureGroup.children.length>0){
+    const box=new THREE.Box3().setFromObject(furnitureGroup);
+    const size=box.getSize(new THREE.Vector3());
+    const center=box.getCenter(new THREE.Vector3());
     furnitureGroup.position.sub(center);
-    frustumSize = Math.max(size.x, size.y, size.z) * 1.4;
+    frustumSize=Math.max(size.x,size.y,size.z)*1.5;
     updateFrustum();
     controls.target.set(0,0,0);
   }
@@ -596,35 +819,28 @@ function rebuild(){
    =================================================================== */
 function updateFrustum(){
   const a=getAspect();
-  camera.left=-frustumSize*a/2; camera.right=frustumSize*a/2;
-  camera.top=frustumSize/2;     camera.bottom=-frustumSize/2;
+  camera.left=-frustumSize*a/2;camera.right=frustumSize*a/2;
+  camera.top=frustumSize/2;camera.bottom=-frustumSize/2;
   camera.updateProjectionMatrix();
 }
-
 window.addEventListener('resize',()=>{
-  renderer.setSize(viewEl.clientWidth, viewEl.clientHeight);
-  updateFrustum();
-});
+  renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);updateFrustum()});
 new ResizeObserver(()=>{
-  renderer.setSize(viewEl.clientWidth, viewEl.clientHeight);
-  updateFrustum();
+  renderer.setSize(viewEl.clientWidth,viewEl.clientHeight);updateFrustum()
 }).observe(viewEl);
 
 /* ===================================================================
    ANIMATION
    =================================================================== */
 (function animate(){
-  requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
+  requestAnimationFrame(animate);controls.update();
+  renderer.render(scene,camera);
 })();
 
 /* ===================================================================
    INIT
    =================================================================== */
-buildPalette();
-buildGrid();
-rebuild();
+buildPalette();buildFrontGrid();buildTopGrid();rebuild();
 </script>
 </body>
 </html>

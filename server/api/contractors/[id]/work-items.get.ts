@@ -4,10 +4,6 @@ import { eq } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
-  const adminS = getAdminSession(event)
-  const contractorS = getContractorSession(event)
-  if (!adminS && contractorS !== id)
-    throw createError({ statusCode: 401 })
   const db = useDb()
   const items = await db
     .select({

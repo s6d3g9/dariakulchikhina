@@ -19,10 +19,6 @@ const SelfUpdateSchema = z.object({
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
-  const contractorS = getContractorSession(event)
-  const adminS = getAdminSession(event)
-  if (!adminS && contractorS !== id)
-    throw createError({ statusCode: 401 })
 
   const body = await readValidatedNodeBody(event, SelfUpdateSchema)
   const db = useDb()

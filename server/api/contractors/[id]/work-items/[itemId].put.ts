@@ -13,10 +13,6 @@ const UpdateSchema = z.object({
 export default defineEventHandler(async (event) => {
   const contractorId = Number(getRouterParam(event, 'id'))
   const itemId = Number(getRouterParam(event, 'itemId'))
-  const adminS = getAdminSession(event)
-  const contractorS = getContractorSession(event)
-  if (!adminS && contractorS !== contractorId)
-    throw createError({ statusCode: 401 })
 
   const body = await readValidatedNodeBody(event, UpdateSchema)
   const db = useDb()
