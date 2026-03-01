@@ -3,7 +3,6 @@
     <header class="admin-header glass-surface">
       <span class="admin-brand">админ-панель</span>
       <div class="admin-header-links">
-        <DesignPresetPicker />
         <button
           type="button"
           class="theme-dot"
@@ -200,8 +199,6 @@ function onDocClick(e: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('click', onDocClick)
-  const { initPreset } = useDesignPreset()
-  initPreset()
 })
 onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 watch(() => route.fullPath, closeAll)
