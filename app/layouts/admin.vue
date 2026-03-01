@@ -3,6 +3,7 @@
     <header class="admin-header glass-surface">
       <span class="admin-brand">админ-панель</span>
       <div class="admin-header-links">
+        <UIThemePicker />
         <button
           type="button"
           class="theme-dot"
@@ -199,6 +200,7 @@ function onDocClick(e: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('click', onDocClick)
+  useUITheme().initTheme()
 })
 onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 watch(() => route.fullPath, closeAll)
