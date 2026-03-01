@@ -95,10 +95,6 @@
           </div>
         </div>
 
-        <!-- переключатель ролей (для быстрого превью кабинетов) -->
-        <div class="admin-role-group">
-          <a :href="clientPreviewUrl" target="_blank" rel="noopener" class="admin-role-pill glass-chip">клиент ↗</a>
-        </div>
 
       </div><!-- /.admin-tabs -->
 
@@ -207,12 +203,6 @@ watch(() => route.fullPath, closeAll)
 
 // ── Pickers ─────────────────────────────────────────────────────
 function pickProject(slug: string) { closeAll(); navigateTo(`/admin/projects/${slug}`) }
-const clientPreviewUrl = computed(() =>
-  activeProjectSlug.value
-    ? `/admin/projects/${activeProjectSlug.value}?view=client`
-    : '/admin'
-)
-
 function pickContractor(id: number) {
   closeAll()
   // Если уже в проекте — показываем подрядчика inline внутри страницы проекта
@@ -393,27 +383,5 @@ async function logout() {
 }
 .admin-drop-all:hover { opacity: 1; }
 
-/* ── Role pills — same height as tabs ── */
-.admin-role-group {
-  margin-left: auto;
-  display: flex; gap: 6px; align-items: center;
-}
-.admin-role-pill {
-  height: 32px;
-  padding: 0 13px;
-  display: inline-flex;
-  align-items: center;
-  box-sizing: border-box;
-  text-decoration: none;
-  color: var(--glass-text);
-  font-size: .75rem;
-  line-height: 1;
-  letter-spacing: .3px;
-  text-transform: uppercase;
-  border-radius: 999px;
-  opacity: .48;
-  white-space: nowrap;
-  transition: opacity .15s;
-}
-.admin-role-pill:hover { opacity: .9; }
+
 </style>

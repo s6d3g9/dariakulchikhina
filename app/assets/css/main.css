@@ -233,22 +233,30 @@ html.dark .glass-input::placeholder {
 /* Admin panel global button styles */
 .a-btn-save {
   border: none;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--glass-text);
+  color: var(--glass-bg);
   padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
+  border-radius: 4px;
+  transition: opacity .15s;
 }
-.a-btn-save:hover { background: #333; }
-.a-btn-save:disabled { opacity: .45; cursor: default; }
+.a-btn-save:hover { opacity: .80; }
+.a-btn-save:disabled { opacity: .35; cursor: default; }
 .a-btn-sm {
-  border: none;
-  background: var(--glass-bg);
-  color: #666;
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 22%, transparent);
+  background: transparent;
+  color: var(--glass-text);
   padding: 4px 10px;
-  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
+  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 4px;
+  opacity: .72;
+  transition: opacity .15s, background .15s;
 }
-.a-btn-sm:hover { color: #1a1a1a; }
+.a-btn-sm:hover { opacity: 1; background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
+.a-btn-danger {
+  border-color: rgba(220,38,38,.35);
+  color: #dc2626;
+  opacity: 1;
+}
+.a-btn-danger:hover { background: rgba(220,38,38,.08); opacity: 1; }
 
 /* ── Global dark-mode safety net ── */
 html.dark {
@@ -554,20 +562,6 @@ html.dark .a-modal .a-field label,
 html.dark .a-modal label {
   color: #a8a8a8;
 }
-html.dark .a-modal .a-btn-sm {
-  color: #bbb;
-}
-html.dark .a-modal .a-btn-sm:hover {
-  color: #f2f2f2;
-}
-html.dark .a-modal .a-btn-save {
-  background: #f2f2f2;
-  color: #111;
-}
-html.dark .a-modal .a-btn-save:hover {
-  background: #ccc;
-}
-
 /* ── Page / layout fade transitions ─────────────────────────── */
 .fade-page-enter-active,
 .fade-page-leave-active {
