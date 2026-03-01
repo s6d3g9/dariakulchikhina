@@ -4,9 +4,9 @@ export default defineNuxtRouteMiddleware(async () => {
     const data = await $fetch<{ role?: string }>('/api/auth/me', { headers })
 
     if (data?.role !== 'contractor' && data?.role !== 'designer' && data?.role !== 'admin') {
-      return navigateTo('/contractor/login')
+      return navigateTo('/admin')
     }
   } catch {
-    return navigateTo('/contractor/login')
+    return navigateTo('/admin')
   }
 })

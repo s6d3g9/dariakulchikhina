@@ -8,12 +8,6 @@
         <NuxtLink to="/admin/login" class="px-8 py-2 border border-gray-300 dark:border-gray-600 hover:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
           Вход для дизайнера
         </NuxtLink>
-        <NuxtLink to="/client/login" class="px-8 py-2 border border-gray-300 dark:border-gray-600 hover:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-          Вход для клиента
-        </NuxtLink>
-        <NuxtLink to="/contractor/login" class="px-8 py-2 border border-gray-300 dark:border-gray-600 hover:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-          Вход для подрядчика
-        </NuxtLink>
       </div>
     </div>
   </div>

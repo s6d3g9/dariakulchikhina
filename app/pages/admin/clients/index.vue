@@ -272,7 +272,7 @@ function openClientCabinet(client: any) {
     navigateTo(`/admin/projects/${encodeURIComponent(targetSlug)}?view=client`)
     return
   }
-  navigateTo('/client/login')
+  navigateTo('/admin')
 }
 </script>
 

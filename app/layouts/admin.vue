@@ -98,7 +98,6 @@
         <!-- переключатель ролей (для быстрого превью кабинетов) -->
         <div class="admin-role-group">
           <a :href="clientPreviewUrl" target="_blank" rel="noopener" class="admin-role-pill glass-chip">клиент ↗</a>
-          <a href="/contractor/login" target="_blank" rel="noopener" class="admin-role-pill glass-chip">подрядчик ↗</a>
         </div>
 
       </div><!-- /.admin-tabs -->
@@ -209,7 +208,9 @@ watch(() => route.fullPath, closeAll)
 // ── Pickers ─────────────────────────────────────────────────────
 function pickProject(slug: string) { closeAll(); navigateTo(`/admin/projects/${slug}`) }
 const clientPreviewUrl = computed(() =>
-  activeProjectSlug.value ? `/client/${activeProjectSlug.value}` : '/client/login'
+  activeProjectSlug.value
+    ? `/admin/projects/${activeProjectSlug.value}?view=client`
+    : '/admin'
 )
 
 function pickContractor(id: number) {
