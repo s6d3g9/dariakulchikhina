@@ -422,7 +422,7 @@ export const ROADMAP_COMPLEXITY_OPTIONS = asOptions(ROADMAP_COMPLEXITY_TYPES, {
 // Для каждого CONTRACTOR_WORK_TYPE — упорядоченный список технологических этапов
 // по ГОСТ, СП и лучшей мировой практике строительства и отделки
 
-export type WorkStage = {
+type WorkStage = {
   key: string
   label: string
   hint?: string

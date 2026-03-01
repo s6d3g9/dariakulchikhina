@@ -1,6 +1,6 @@
-export type Req = { key: string; label: string; tag: string }
+type Req = { key: string; label: string; tag: string }
 
-export const BRIEF_REQUIREMENTS: Record<string, Req[]> = {
+export const BRIEF_REQUIREMENTS = {
   _common: [
     { key: 'brief_smart_home',       label: 'Умный дом',                  tag: '#smart_home'          },
     { key: 'brief_work_from_home',   label: 'Кабинет / работа дома',      tag: '#home_office'         },
@@ -179,7 +179,7 @@ export const BRIEF_REQUIREMENTS: Record<string, Req[]> = {
   ],
 }
 
-export const OBJECT_TYPE_LABELS: Record<string, string> = {
+export const OBJECT_TYPE_LABELS = {
   apartment:  'квартира',
   penthouse:  'пентхаус',
   house:      'частный дом',

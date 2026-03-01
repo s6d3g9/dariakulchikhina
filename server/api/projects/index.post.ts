@@ -4,7 +4,31 @@ import { CreateProjectSchema } from '~/shared/types/project'
 import { readCustomRoadmapTemplates } from '~/server/utils/roadmap-templates'
 import { ROADMAP_TEMPLATES } from '~/shared/types/roadmap-templates'
 
-const CORE_PAGES = ['materials', 'tz', 'profile_customer', 'profile_contractors', 'work_status', 'project_roadmap']
+const CORE_PAGES = [
+  'first_contact',
+  'self_profile',
+  'site_survey',
+  'tor_contract',
+  'space_planning',
+  'moodboard',
+  'concept_approval',
+  'working_drawings',
+  'specifications',
+  'mep_integration',
+  'design_album_final',
+  'procurement_list',
+  'suppliers',
+  'procurement_status',
+  'construction_plan',
+  'work_log',
+  'site_photos',
+  'punch_list',
+  'commissioning_act',
+  'client_sign_off',
+  'profile_contractors',
+  'work_status',
+  'project_roadmap',
+]
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -16,7 +40,6 @@ export default defineEventHandler(async (event) => {
     ;[project] = await db.insert(projects).values({
       slug: body.slug,
       title: body.title,
-      clientPin: body.clientPin,
       pages: CORE_PAGES,
       profile: {},
     }).returning()

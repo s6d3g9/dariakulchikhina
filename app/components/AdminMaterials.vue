@@ -213,7 +213,7 @@ async function save() {
   flex-wrap: wrap;
 }
 .am-btn-upload {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   padding: 4px 10px;
   font-size: .78rem;
@@ -222,12 +222,12 @@ async function save() {
   border-radius: 2px;
   white-space: nowrap;
 }
-.am-btn-upload:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
+.am-btn-upload:hover { opacity: .9; }
 .am-img-prev {
   max-width: 120px;
   max-height: 90px;
   object-fit: cover;
-  border: 1px solid color-mix(in srgb, var(--glass-border) 70%, #d7d7d7 30%);
+  border: none;
   border-radius: 2px;
 }
 .am-pending {
@@ -237,11 +237,11 @@ async function save() {
 .am-group {
   margin: 12px 0 8px;
   padding: 10px;
-  border: 1px solid color-mix(in srgb, var(--glass-border) 62%, #d7d7d7 38%);
+  border: none;
   border-radius: 10px;
 }
 .am-btn-sm {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   padding: 4px 10px;
   font-size: .78rem;
@@ -249,11 +249,11 @@ async function save() {
   font-family: inherit;
   border-radius: 2px;
 }
-.am-btn-sm:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
+.am-btn-sm:hover { opacity: .9; }
 .am-btn-sm.danger { color: #c00; border-color: #c00; }
 .am-btn-sm.danger:hover { background: #c00; color: #fff; }
 .am-btn-add {
-  border: 1px dashed color-mix(in srgb, var(--glass-border) 60%, #cfcfcf 40%);
+  border: none;
   background: var(--glass-bg);
   padding: 8px 16px;
   font-size: .82rem;
@@ -264,7 +264,7 @@ async function save() {
   margin-top: 8px;
   display: block;
 }
-.am-btn-add:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); color: var(--am-text); }
+.am-btn-add:hover { color: var(--am-text); opacity: .9; }
 .am-actions {
   display: flex;
   gap: 10px;

@@ -1,8 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  future: { compatibilityVersion: 4 },
-  compatibilityDate: '2024-11-01',
-
   devtools: { enabled: false },
 
   modules: ['@nuxt/ui', '@pinia/nuxt'],
@@ -25,9 +22,13 @@ export default defineNuxtConfig({
     },
   },
 
+  alias: {
+    '~/shared': `${process.cwd()}/shared`,
+  },
+
   nitro: {
     experimental: { websocket: true },
-    // Fix: Nuxt 4 compat shifts ~ to app/, but server files live at root
+    // Server and shared folders are at repo root
     alias: {
       '~/server': `${process.cwd()}/server`,
       '~/shared': `${process.cwd()}/shared`,

@@ -1,23 +1,6 @@
 <template>
   <div class="client-page">
-    <!-- Фаза 0: Инициация -->
-    <ClientInitiation v-if="page === 'phase_init'" :slug="route.params.slug as string" />
-    <!-- Анкета клиента -->
-    <ClientSelfProfile v-else-if="page === 'self_profile'" :slug="route.params.slug as string" />
-    <!-- Ход проекта (таймлайн + команда) -->
-    <ClientTimeline v-else-if="page === 'design_timeline'" :slug="route.params.slug as string" />
-    <!-- Альбом проекта -->
-    <ClientDesignAlbum v-else-if="page === 'design_album'" :slug="route.params.slug as string" />
-    <!-- Документы / договоры -->
-    <ClientContracts v-else-if="page === 'contracts'" :slug="route.params.slug as string" />
-    <!-- Роадмап -->
-    <ClientRoadmap v-else-if="page === 'project_roadmap'" :slug="route.params.slug as string" />
-    <!-- Статусы работ -->
-    <ClientWorkStatus v-else-if="page === 'work_status'" :slug="route.params.slug as string" />
-    <!-- Подрядчики проекта -->
-    <ClientContractorsProfile v-else-if="page === 'profile_contractors'" :slug="route.params.slug as string" />
-    <!-- Обычный JSON-контент -->
-    <ClientPageContent v-else :slug="route.params.slug as string" :page="page" />
+    <component :is="activeComponent" v-bind="activeProps" />
   </div>
 </template>
 
@@ -25,7 +8,37 @@
 definePageMeta({ layout: 'cabinet', middleware: ['client'] })
 
 const route = useRoute()
-const page  = computed(() => route.params.page as string)
+const slug = computed(() => route.params.slug as string)
+const page = computed(() => route.params.page as string)
+
+const normalizedPage = computed(() =>
+  page.value === 'brief' ? 'self_profile' : page.value,
+)
+
+const pageComponentMap: Record<string, any> = {
+  phase_init: ClientInitiation,
+  self_profile: AdminSmartBrief,
+  client_contacts: ClientContactDetails,
+  design_timeline: ClientTimeline,
+  design_album: ClientDesignAlbum,
+  contracts: ClientContracts,
+  project_roadmap: ClientRoadmap,
+  work_status: ClientWorkStatus,
+  profile_contractors: ClientContractorsProfile,
+}
+
+const activeComponent = computed(() => pageComponentMap[normalizedPage.value] || ClientPageContent)
+
+const activeProps = computed(() => {
+  const base = { slug: slug.value }
+  if (activeComponent.value === AdminSmartBrief) {
+    return { ...base, clientMode: true }
+  }
+  if (activeComponent.value === ClientPageContent) {
+    return { ...base, page: normalizedPage.value }
+  }
+  return base
+})
 </script>
 
 <style scoped>

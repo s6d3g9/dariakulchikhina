@@ -11,8 +11,8 @@
       >
         <div class="ws-head">
           <span class="ws-item-title">{{ item.title }}</span>
-          <span class="ws-badge" :class="statusClass(item.status)">
-            {{ statusLabel(item.status) }}
+          <span class="ws-badge" :class="workStatusCssClass(item.status)">
+            {{ workStatusLabel(item.status) }}
           </span>
         </div>
         <div v-if="item.dateStart || item.dateEnd" class="ws-meta">
@@ -26,27 +26,10 @@
 </template>
 
 <script setup lang="ts">
+import { workStatusLabel, workStatusCssClass } from '~~/shared/utils/work-status'
+
 const props = defineProps<{ slug: string }>()
 const { data: items, pending } = await useFetch<any[]>(`/api/projects/${props.slug}/work-status`)
-
-function statusLabel(s: string) {
-  const map: Record<string, string> = {
-    pending: 'ожидание', planned: 'запланировано', in_progress: 'в работе',
-    done: 'выполнено', paused: 'на паузе', cancelled: 'отменено'
-  }
-  return map[s] || s
-}
-function statusClass(s: string) {
-  const map: Record<string, string> = {
-    pending: 'ws-badge--pending',
-    planned: 'ws-badge--planned',
-    in_progress: 'ws-badge--progress',
-    done: 'ws-badge--done',
-    paused: 'ws-badge--paused',
-    cancelled: 'ws-badge--cancelled',
-  }
-  return map[s] || 'ws-badge--pending'
-}
 </script>
 
 <style scoped>
@@ -79,27 +62,29 @@ function statusClass(s: string) {
 .ws-badge {
   font-size: .65rem; letter-spacing: .4px; text-transform: uppercase;
   padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   color: var(--glass-text); opacity: .5;
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
-.ws-badge--progress {
-  color: rgba(160,100,0,1); opacity: 1;
-  border-color: rgba(220,160,60,.4);
-  background: rgba(255,200,80,.1);
+.ws-badge.ws-status--progress {
+  color: var(--ws-color-progress); opacity: 1;
+  background: var(--ws-bg-progress);
 }
-.ws-badge--done {
-  color: rgba(40,130,75,1); opacity: 1;
-  border-color: rgba(60,160,100,.4);
-  background: rgba(60,160,100,.08);
+.ws-badge.ws-status--done {
+  color: var(--ws-color-done); opacity: 1;
+  background: var(--ws-bg-done);
 }
-.ws-badge--cancelled {
-  color: rgba(180,60,60,1); opacity: 1;
-  border-color: rgba(220,80,80,.3);
-  background: rgba(220,80,80,.07);
+.ws-badge.ws-status--cancelled {
+  color: var(--ws-color-cancelled); opacity: 1;
+  background: var(--ws-bg-cancelled);
 }
-.ws-badge--pending,
-.ws-badge--planned,
-.ws-badge--paused { /* inherits base opacity */ }
+.ws-badge.ws-status--planned {
+  color: var(--ws-color-planned); opacity: 1;
+  background: var(--ws-bg-planned);
+}
+.ws-badge.ws-status--paused {
+  color: var(--ws-color-paused); opacity: 1;
+  background: var(--ws-bg-paused);
+}
 </style>

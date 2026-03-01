@@ -17,15 +17,15 @@
               rows="2"
               @blur="save"
             />
-            <select
-              v-else-if="f.options"
-              v-model="(form as any)[f.key]"
-              class="asb-inp asb-select"
-              @change="save"
-            >
-              <option value="">—</option>
-              <option v-for="o in f.options" :key="o" :value="o">{{ o }}</option>
-            </select>
+            <div v-else-if="f.options" class="asb-tagsel">
+              <span
+                v-for="o in f.options"
+                :key="o"
+                class="asb-tagopt"
+                :class="{ 'asb-tagopt--on': (form as any)[f.key] === o }"
+                @click="() => { (form as any)[f.key] = ((form as any)[f.key] === o ? '' : o); save() }"
+              >{{ o }}</span>
+            </div>
             <input
               v-else
               v-model="(form as any)[f.key]"
@@ -171,15 +171,15 @@
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
-            <select
-              v-else-if="f.options"
-              v-model="(form as any)[f.key]"
-              class="asb-inp asb-select"
-              @change="save"
-            >
-              <option value="">—</option>
-              <option v-for="o in f.options" :key="o" :value="o">{{ o }}</option>
-            </select>
+            <div v-else-if="f.options" class="asb-tagsel">
+              <span
+                v-for="o in f.options"
+                :key="o"
+                class="asb-tagopt"
+                :class="{ 'asb-tagopt--on': (form as any)[f.key] === o }"
+                @click="() => { (form as any)[f.key] = ((form as any)[f.key] === o ? '' : o); save() }"
+              >{{ o }}</span>
+            </div>
             <input
               v-else
               v-model="(form as any)[f.key]"
@@ -252,8 +252,11 @@
 
 <script setup lang="ts">
 import { BRIEF_REQUIREMENTS, OBJECT_TYPE_LABELS } from '~/utils/brief-requirements'
+import { BRIEF_REMOTE_WORK_OPTIONS, BRIEF_GUESTS_FREQ_OPTIONS, BRIEF_STYLE_OPTIONS, BRIEF_COLOR_OPTIONS } from '~~/shared/constants/profile-fields'
 
-const props = defineProps<{ slug: string }>()
+const props = withDefaults(defineProps<{ slug: string; clientMode?: boolean }>(), {
+  clientMode: false,
+})
 
 const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`)
 
@@ -265,16 +268,19 @@ watch(project, (p) => {
   }
 }, { immediate: true })
 
-const objectTypeLabel = computed(() => OBJECT_TYPE_LABELS[form.objectType] || form.objectType)
+const objectTypeLabel = computed(() => {
+  const key = String((form as any).objectType || '') as keyof typeof OBJECT_TYPE_LABELS
+  return OBJECT_TYPE_LABELS[key] || String((form as any).objectType || '')
+})
 
 // объединяем universal + тип объекта
 const filteredRequirements = computed(() => {
-  const objType = form.objectType || ''
-  const specific = BRIEF_REQUIREMENTS[objType] || BRIEF_REQUIREMENTS.apartment
-  const common = BRIEF_REQUIREMENTS._common
+  const objType = String((form as any).objectType || '') as keyof typeof BRIEF_REQUIREMENTS
+  const specific = BRIEF_REQUIREMENTS[objType] || BRIEF_REQUIREMENTS.apartment || []
+  const common = BRIEF_REQUIREMENTS._common || []
   // дедупликация по key
-  const seen = new Set(specific.map(r => r.key))
-  return [...specific, ...common.filter(r => !seen.has(r.key))]
+  const seen = new Set(specific.map((r: { key: string }) => r.key))
+  return [...specific, ...common.filter((r: { key: string }) => !seen.has(r.key))]
 })
 
 const autoTags = computed(() =>
@@ -294,8 +300,8 @@ const familyFields = [
   { key: 'brief_handed',          label: 'Доп. параметры',               placeholder: 'левша, физ. ограничения, инвалидное кресло...' },
   { key: 'brief_pets_desc',       label: 'Питомцы',                      placeholder: 'порода, размер' },
   { key: 'brief_pets_zone_detail',label: 'Зона питомца (детали)',        placeholder: 'лапомойка, миски, лоток, будка...' },
-  { key: 'brief_remote_work',     label: 'Удалённая работа',             options: ['нет', 'частично', 'постоянно', 'оба партнёра'] },
-  { key: 'brief_guests_freq',     label: 'Частота гостей',               options: ['редко', 'несколько раз в месяц', 'еженедельно', 'постоянно'] },
+  { key: 'brief_remote_work',     label: 'Удалённая работа',             options: BRIEF_REMOTE_WORK_OPTIONS },
+  { key: 'brief_guests_freq',     label: 'Частота гостей',               options: BRIEF_GUESTS_FREQ_OPTIONS },
   { key: 'brief_hobbies',         label: 'Хобби и увлечения',            placeholder: 'музыка, живопись, спорт...', multi: true },
 ]
 
@@ -310,8 +316,8 @@ const routineFields = [
 ]
 
 const styleFields = [
-  { key: 'brief_style_prefer',    label: 'Стиль',                        options: ['минимализм', 'скандинавский', 'контемпорари', 'ар-деко', 'неоклассика', 'лофт', 'японский', 'без предпочтений'] },
-  { key: 'brief_color_mood',      label: 'Цветовая гамма',               options: ['светлая нейтральная', 'тёплая земляная', 'тёмная насыщенная', 'контрастная', 'без предпочтений'] },
+  { key: 'brief_style_prefer',    label: 'Стиль',                        options: BRIEF_STYLE_OPTIONS },
+  { key: 'brief_color_mood',      label: 'Цветовая гамма',               options: BRIEF_COLOR_OPTIONS },
   { key: 'brief_color_palette',   label: 'Цветовая палитра (подробно)', placeholder: 'любимые сочетания, акцентные цвета, табу-цвета...' },
   { key: 'brief_like_refs',       label: 'Нравится (ссылки / описание)', multi: true, placeholder: 'ссылки на Pinterest, описание...' },
   { key: 'brief_dislike_refs',    label: 'Не нравится',                  multi: true, placeholder: 'что точно нельзя...' },
@@ -372,17 +378,31 @@ const restrictFields = [
 
 // ── Save ──────────────────────────────────────────────────────────
 const saving = ref(false)
-const savedAt = ref('')
+const { savedAt, touch: markSaved } = useTimestamp()
 
 async function save() {
   saving.value = true
   try {
-    await $fetch(`/api/projects/${props.slug}`, {
-      method: 'PUT',
-      body: { profile: { ...project.value?.profile, ...form } }
-    })
-    const now = new Date()
-    savedAt.value = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
+    // Проверяем — достаточно ли полей заполнено чтобы считать бриф завершённым
+    const filledCount = Object.entries(form)
+      .filter(([k, v]) => k.startsWith('brief_') && typeof v === 'string' && v.trim())
+      .length
+    const briefCompleted = filledCount >= 4 || (form as any).brief_completed
+    if (props.clientMode) {
+      await $fetch(`/api/projects/${props.slug}/client-profile`, {
+        method: 'PUT',
+        body: { ...form, brief_completed: briefCompleted },
+      })
+      if (project.value?.profile) {
+        Object.assign(project.value.profile, { ...form, brief_completed: briefCompleted })
+      }
+    } else {
+      await $fetch(`/api/projects/${props.slug}`, {
+        method: 'PUT',
+        body: { profile: { ...project.value?.profile, ...form, brief_completed: briefCompleted } }
+      })
+    }
+    markSaved()
   } finally {
     saving.value = false
   }
@@ -463,4 +483,18 @@ async function save() {
 }
 .asb-btn-save:disabled { opacity: .55; cursor: default; }
 .asb-btn-save:hover:not(:disabled) { opacity: .85; }
+
+/* Tag-style option selector */
+.asb-tagsel { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+.asb-tagopt {
+  padding: 4px 10px; font-size: .74rem; cursor: pointer; user-select: none;
+  border: 1px solid var(--border, #ddd); color: #888;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.asb-tagopt:hover { border-color: var(--text, #1a1a1a); color: var(--text, #1a1a1a); }
+.asb-tagopt--on {
+  background: var(--text, #1a1a1a); color: var(--bg, #fff);
+  border-color: var(--text, #1a1a1a);
+}
+
 </style>

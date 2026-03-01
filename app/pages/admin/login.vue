@@ -3,16 +3,6 @@
     <div class="glass-card border border-white/60 dark:border-white/10 p-10 w-80">
       <h2 class="text-xs font-medium tracking-widest uppercase text-gray-500 dark:text-gray-300 mb-6">Вход</h2>
       <form @submit.prevent="submit">
-        <div class="mb-4">
-          <input
-            v-model="form.login"
-            type="text"
-            placeholder="логин"
-            autocomplete="username"
-            required
-            class="w-full glass-input rounded-md px-3 py-2 text-sm outline-none"
-          />
-        </div>
         <div class="mb-6">
           <input
             v-model="form.password"
@@ -40,7 +30,7 @@
 definePageMeta({ layout: 'default' })
 
 const router = useRouter()
-const form = reactive({ login: '', password: '' })
+const form = reactive({ password: '' })
 const error = ref('')
 const loading = ref(false)
 
@@ -51,7 +41,7 @@ async function submit() {
     await $fetch('/api/auth/login', { method: 'POST', body: form })
     router.push('/admin')
   } catch (e: any) {
-    error.value = e.data?.statusMessage || 'Неверный логин или пароль'
+    error.value = e.data?.statusMessage || 'Неверный пароль'
   } finally {
     loading.value = false
   }

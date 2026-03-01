@@ -6,7 +6,7 @@ import { z } from 'zod'
 const Body = z.object({ text: z.string().min(1).max(2000) })
 
 export default defineEventHandler(async (event) => {
-  requireAdmin(event)
+  const session = requireAdmin(event)
   const slug = getRouterParam(event, 'slug')!
   const itemId = Number(getRouterParam(event, 'itemId'))
   const { text } = await readValidatedNodeBody(event, Body)
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const [comment] = await db.insert(workStatusItemComments).values({
     itemId,
     authorType: 'admin',
-    authorName: 'Дизайнер',
+    authorName: 'Дизайнер', // TODO: resolve from session.userId → admins table
     text,
   }).returning()
 

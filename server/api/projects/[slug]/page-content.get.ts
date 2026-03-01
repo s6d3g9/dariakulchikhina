@@ -8,11 +8,6 @@ export default defineEventHandler(async (event) => {
   const queryString = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?') + 1) : ''
   const page = new URLSearchParams(queryString).get('page') || undefined
 
-  const adminS = getAdminSession(event)
-  const clientS = getClientSession(event)
-  if (!adminS && clientS !== slug)
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-
   const db = useDb()
   const [project] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, slug)).limit(1)
   if (!project) throw createError({ statusCode: 404 })

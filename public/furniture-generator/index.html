@@ -5,87 +5,192 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>3D Furniture — Voxel Editor + Preview</title>
 <style>
+/* ═══════════════  LIQUID GLASS THEME  ═══════════════ */
+:root{
+  --g-bg:rgba(255,255,255,.48);
+  --g-border:rgba(255,255,255,.55);
+  --g-shadow:0 10px 28px rgba(18,18,18,.08);
+  --g-text:#1f1f1f;
+  --g-muted:rgba(31,31,31,.52);
+  --g-page:#f3f4f6;
+  --g-accent:rgba(31,31,31,.82);
+  --g-accent-solid:#1f1f1f;
+  --g-danger:#d44;
+  --blur:blur(18px) saturate(145%);
+  --blur-sm:blur(10px) saturate(130%);
+  --radius:10px;
+  --radius-sm:6px;
+}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
-  font-family:"SF Mono","Fira Code","Courier New",Courier,monospace;color:#000}
-#app{display:grid;width:100%;height:100%;
+html,body{width:100%;height:100%;overflow:hidden;
+  background:var(--g-page);color:var(--g-text);
+  font-family:"Inter","SF Pro Display","Segoe UI","Roboto",sans-serif}
+
+/* ── page gradient backdrop ── */
+#app{display:grid;width:100%;height:100%;position:relative;isolation:isolate;
   grid-template-columns:300px 1fr 1fr;grid-template-rows:auto 1fr auto}
-#cats{grid-column:1/4;display:flex;border-bottom:2px solid #000;background:#fff}
-.cat-btn{flex:1;padding:9px 4px;font:inherit;font-size:10px;letter-spacing:.07em;
-  text-transform:uppercase;background:#fff;border:none;border-right:2px solid #000;cursor:pointer;transition:background .15s}
+#app::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(70% 55% at 0% 0%,rgba(255,255,255,.32),transparent 62%),
+    radial-gradient(70% 50% at 100% 100%,rgba(255,255,255,.2),transparent 65%)}
+
+/* ── top category bar ── */
+#cats{grid-column:1/4;display:flex;
+  background:var(--g-bg);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-bottom:1px solid var(--g-border)}
+.cat-btn{flex:1;padding:10px 4px;font:inherit;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;background:transparent;border:none;
+  border-right:1px solid var(--g-border);color:var(--g-muted);cursor:pointer;
+  transition:all .2s}
 .cat-btn:last-child{border-right:none}
-.cat-btn.active{background:#000;color:#fff}
-.cat-btn:hover:not(.active){background:#eee}
-#left{grid-column:1;grid-row:2;border-right:2px solid #000;overflow-y:auto;display:flex;flex-direction:column}
-.sec{padding:7px 10px;border-bottom:2px solid #000}
-.sec-head{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-.pal-row{display:flex;flex-wrap:wrap;gap:3px}
-.pal-btn{display:flex;align-items:center;gap:4px;padding:3px 7px;font:inherit;font-size:8.5px;
-  letter-spacing:.04em;text-transform:uppercase;border:2px solid #000;background:#fff;
-  cursor:pointer;transition:all .12s;line-height:1.2}
-.pal-btn .sw{width:10px;height:10px;border:1px solid #000;flex-shrink:0}
-.pal-btn.active{background:#000;color:#fff}
-.pal-btn.active .sw{border-color:#fff}
-.pal-btn:hover:not(.active){background:#f0f0f0}
-.preset-row{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
-.preset-btn{padding:3px 7px;font:inherit;font-size:8px;letter-spacing:.05em;text-transform:uppercase;
-  border:1.5px solid #000;background:#fff;cursor:pointer;transition:all .12s;line-height:1.2}
-.preset-btn:hover{background:#eee}
-.preset-btn.active{background:#000;color:#fff}
-.dim-row{display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap;align-items:center}
-.dim-row label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:4px}
-.dim-row input{width:52px;font:inherit;font-size:13px;text-align:center;border:2px solid #000;padding:2px}
-.dim-auto{display:flex;gap:12px;margin-top:2px;padding:5px 0;border-top:1px solid #ccc;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
-.dim-auto .val{font-weight:700;font-size:12px}
-.tog-row{display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+.cat-btn.active{background:var(--g-accent);color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.15);font-weight:600}
+.cat-btn:hover:not(.active){background:rgba(31,31,31,.06);color:var(--g-text)}
+
+/* ── left panel ── */
+#left{grid-column:1;grid-row:2;overflow-y:auto;display:flex;flex-direction:column;
+  background:var(--g-bg);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-right:1px solid var(--g-border)}
+.sec{padding:9px 12px;border-bottom:1px solid var(--g-border)}
+.sec-head{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;
+  color:var(--g-muted);font-weight:600}
+
+/* ── palette buttons ── */
+.pal-row{display:flex;flex-wrap:wrap;gap:4px}
+.pal-btn{display:flex;align-items:center;gap:5px;padding:4px 8px;font:inherit;font-size:8.5px;
+  letter-spacing:.04em;text-transform:uppercase;
+  border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.55);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  cursor:pointer;transition:all .18s;line-height:1.2;color:var(--g-text)}
+.pal-btn .sw{width:11px;height:11px;border:1px solid rgba(0,0,0,.15);border-radius:3px;flex-shrink:0}
+.pal-btn.active{background:var(--g-accent);color:#fff;border-color:rgba(31,31,31,.3);
+  box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.pal-btn.active .sw{border-color:rgba(255,255,255,.5)}
+.pal-btn:hover:not(.active){background:rgba(31,31,31,.06);border-color:rgba(31,31,31,.18)}
+
+/* ── preset buttons ── */
+.preset-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.preset-btn{padding:4px 9px;font:inherit;font-size:8px;letter-spacing:.05em;text-transform:uppercase;
+  border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.45);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  cursor:pointer;transition:all .18s;line-height:1.2;color:var(--g-text)}
+.preset-btn:hover{background:rgba(31,31,31,.06);border-color:rgba(31,31,31,.18)}
+.preset-btn.active{background:var(--g-accent);color:#fff;border-color:rgba(31,31,31,.3);
+  box-shadow:0 2px 8px rgba(0,0,0,.12)}
+
+/* ── dimensions ── */
+.dim-row{display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap;align-items:center}
+.dim-row label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;display:flex;
+  align-items:center;gap:4px;color:var(--g-muted)}
+.dim-row input{width:52px;font:inherit;font-size:13px;text-align:center;
+  border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.6);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  padding:3px 2px;color:var(--g-text);transition:border-color .15s}
+.dim-row input:focus{outline:none;border-color:rgba(31,31,31,.35);
+  box-shadow:0 0 0 2px rgba(31,31,31,.08)}
+.dim-auto{display:flex;gap:12px;margin-top:3px;padding:5px 0;
+  border-top:1px solid var(--g-border);font-size:9px;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--g-muted)}
+.dim-auto .val{font-weight:700;font-size:12px;color:var(--g-text)}
+
+/* ── toggle buttons ── */
+.tog-row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
 .tog-btn{display:flex;align-items:center;gap:5px;padding:4px 8px;font:inherit;font-size:8.5px;
-  letter-spacing:.06em;text-transform:uppercase;border:2px solid #000;background:#fff;
-  cursor:pointer;transition:all .12s;line-height:1.2}
-.tog-btn .indicator{width:10px;height:10px;border:1.5px solid #000;background:#fff;flex-shrink:0}
-.tog-btn.on .indicator{background:#000}
-.tog-btn.on{background:#f0f0f0}
-.tog-btn:hover{background:#eee}
-.viewport-wrap{position:relative;overflow:hidden}
+  letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.45);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  cursor:pointer;transition:all .18s;line-height:1.2;color:var(--g-muted)}
+.tog-btn .indicator{width:10px;height:10px;border:1.5px solid var(--g-border);
+  border-radius:3px;background:transparent;flex-shrink:0;transition:all .18s}
+.tog-btn.on .indicator{background:var(--g-accent-solid);border-color:var(--g-accent-solid);
+  box-shadow:0 0 6px rgba(0,0,0,.15)}
+.tog-btn.on{color:var(--g-text);border-color:rgba(31,31,31,.2)}
+.tog-btn:hover{background:rgba(31,31,31,.05)}
+
+/* ── viewports ── */
+.viewport-wrap{position:relative;overflow:hidden;background:var(--g-page)}
 .viewport-wrap canvas{display:block;width:100%;height:100%}
-#editor-vp canvas{cursor:crosshair}
-#editor-vp canvas.cursor-mode{cursor:default}
+#editor-vp canvas{cursor:default}
+#editor-vp canvas.brush-mode{cursor:crosshair}
 #editor-vp canvas.eraser-mode{cursor:crosshair}
 .handle-mesh{cursor:grab}
-.vp-label{position:absolute;top:6px;left:50%;transform:translateX(-50%);
+.vp-label{position:absolute;top:8px;left:50%;transform:translateX(-50%);
   font:inherit;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
-  color:#999;pointer-events:none;background:rgba(253,253,253,.8);padding:1px 8px}
-#editor-vp{grid-column:2;grid-row:2;border-right:2px solid #000}
+  color:var(--g-muted);pointer-events:none;
+  background:var(--g-bg);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  padding:3px 12px;border-radius:var(--radius-sm);border:1px solid var(--g-border)}
+#editor-vp{grid-column:2;grid-row:2;border-right:1px solid var(--g-border)}
 #preview-vp{grid-column:3;grid-row:2}
-#click-hint{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
-  font:inherit;font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:#aaa;pointer-events:none}
+#click-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  font:inherit;font-size:8px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--g-muted);pointer-events:none;
+  background:var(--g-bg);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  padding:3px 10px;border-radius:var(--radius-sm);border:1px solid var(--g-border)}
 #drag-hint{position:absolute;top:30px;left:50%;transform:translateX(-50%);
   font:inherit;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
-  color:#e07a5f;pointer-events:none;background:rgba(253,253,253,.9);padding:2px 10px;
-  border:1px solid #e07a5f;display:none}
-#bar{grid-column:1/4;border-top:2px solid #000;background:#fff;
-  display:flex;align-items:center;padding:5px 14px;gap:14px;flex-wrap:wrap}
-#bar .info{font-size:10px;letter-spacing:.06em;text-transform:uppercase}
-#bar .info span{font-weight:700}
+  color:#e07a5f;pointer-events:none;
+  background:rgba(255,255,255,.85);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  padding:4px 12px;border-radius:var(--radius-sm);border:1px solid rgba(224,122,95,.35);display:none}
+
+/* ── bottom bar ── */
+#bar{grid-column:1/4;
+  background:var(--g-bg);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-top:1px solid var(--g-border);
+  display:flex;align-items:center;padding:6px 16px;gap:14px;flex-wrap:wrap}
+#bar .info{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--g-muted)}
+#bar .info span{font-weight:700;color:var(--g-text)}
 #bar .spacer{flex:1}
 .bar-btn{font:inherit;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-  padding:5px 12px;border:2px solid #000;background:#fff;cursor:pointer;transition:all .12s}
-.bar-btn:hover{background:#000;color:#fff}
+  padding:6px 14px;border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.55);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  cursor:pointer;transition:all .18s;color:var(--g-text)}
+.bar-btn:hover{background:var(--g-accent);color:#fff;border-color:rgba(31,31,31,.3);
+  box-shadow:0 2px 10px rgba(0,0,0,.12)}
+
+/* ── selection panel ── */
 #sel-panel{display:none}
 #sel-panel.open{display:block}
 #sel-panel .sel-head{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-#sel-panel .sel-head .sw{width:14px;height:14px;border:1.5px solid #000;flex-shrink:0}
-#sel-panel .sel-head .sel-name{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+#sel-panel .sel-head .sw{width:14px;height:14px;border:1px solid rgba(0,0,0,.12);border-radius:3px;flex-shrink:0}
+#sel-panel .sel-head .sel-name{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--g-text)}
 #sel-panel .sel-dims{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-#sel-panel .sel-dims label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:4px}
-#sel-panel .sel-dims input{width:52px;font:inherit;font-size:13px;text-align:center;border:2px solid #000;padding:2px}
-.sel-actions{display:flex;gap:4px;margin-top:6px}
-.sel-btn{padding:3px 8px;font:inherit;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
-  border:2px solid #000;background:#fff;cursor:pointer;transition:all .12s;line-height:1.2}
-.sel-btn:hover{background:#000;color:#fff}
-.sel-btn.danger{border-color:#c44;color:#c44}
-.sel-btn.danger:hover{background:#c44;color:#fff}
+#sel-panel .sel-dims label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;
+  display:flex;align-items:center;gap:4px;color:var(--g-muted)}
+#sel-panel .sel-dims input{width:52px;font:inherit;font-size:13px;text-align:center;
+  border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.6);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  padding:3px 2px;color:var(--g-text)}
+#sel-panel .sel-dims input:focus{outline:none;border-color:rgba(31,31,31,.35);
+  box-shadow:0 0 0 2px rgba(31,31,31,.08)}
+.sel-actions{display:flex;gap:5px;margin-top:7px}
+.sel-btn{padding:4px 10px;font:inherit;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--g-border);border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.55);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);
+  cursor:pointer;transition:all .18s;line-height:1.2;color:var(--g-text)}
+.sel-btn:hover{background:var(--g-accent);color:#fff;border-color:rgba(31,31,31,.3)}
+.sel-btn.danger{border-color:rgba(204,68,68,.35);color:var(--g-danger)}
+.sel-btn.danger:hover{background:rgba(204,68,68,.8);color:#fff;border-color:rgba(204,68,68,.5)}
+
+/* ── scrollbar ── */
 #left::-webkit-scrollbar{width:4px}
-#left::-webkit-scrollbar-thumb{background:#000}
+#left::-webkit-scrollbar-thumb{background:rgba(31,31,31,.2);border-radius:4px}
+#left::-webkit-scrollbar-track{background:transparent}
+
+/* ── export overlay ── */
+#export-overlay{display:none;position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  justify-content:center;align-items:center}
+#export-overlay.open{display:flex}
+#export-card{background:var(--g-bg);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid var(--g-border);border-radius:var(--radius);
+  box-shadow:var(--g-shadow);padding:22px;max-width:95vw;max-height:95vh;overflow:auto;position:relative}
+#export-card canvas{display:block;margin:0 auto 14px;border-radius:var(--radius-sm)}
+#export-close{position:absolute;top:8px;right:12px;font:inherit;font-size:18px;
+  background:none;border:none;cursor:pointer;color:var(--g-muted);transition:color .15s}
+#export-close:hover{color:var(--g-text)}
+#export-actions{display:flex;gap:8px;justify-content:center}
+#export-actions .bar-btn{font-size:11px;padding:7px 18px}
 </style>
 </head>
 <body>
@@ -97,6 +202,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
     <button class="cat-btn" data-cat="hallway">Прихожая</button>
     <button class="cat-btn" data-cat="shelving">Стеллаж</button>
     <button class="cat-btn" data-cat="kitchen">Кухня</button>
+    <button class="cat-btn" data-cat="closet">Гардеробная</button>
   </div>
   <div id="left">
     <div class="sec" id="palette">
@@ -147,6 +253,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
       </div>
     </div>
     <div class="sec">
+      <h3 class="sec-head">Ориентация фасадов</h3>
+      <div class="tog-row">
+        <button class="tog-btn on" id="front-auto" data-front="auto"><span class="indicator"></span>Авто</button>
+        <button class="tog-btn" id="front-pz" data-front="pz"><span class="indicator"></span>К нам (+Z)</button>
+        <button class="tog-btn" id="front-nz" data-front="nz"><span class="indicator"></span>От нас (−Z)</button>
+        <button class="tog-btn" id="front-px" data-front="px"><span class="indicator"></span>Вправо (+X)</button>
+        <button class="tog-btn" id="front-nx" data-front="nx"><span class="indicator"></span>Влево (−X)</button>
+      </div>
+    </div>
+    <div class="sec">
       <h3 class="sec-head">Деление секций</h3>
       <div class="tog-row">
         <button class="tog-btn on" id="tog-h"><span class="indicator"></span>По высоте</button>
@@ -175,9 +291,24 @@ html,body{width:100%;height:100%;overflow:hidden;background:#fdfdfd;
     <div class="info">Секций: <span id="info-regions">0</span></div>
     <div class="info">Размер: <span id="info-size">—</span></div>
     <div class="spacer"></div>
+    <button class="bar-btn" id="btn-save" title="Сохранить проект в файл">💾 Сохранить</button>
+    <button class="bar-btn" id="btn-load" title="Загрузить проект из файла">📂 Загрузить</button>
+    <input type="file" id="file-input" accept=".json" style="display:none"/>
+    <button class="bar-btn" id="btn-export" title="Экспорт чертежа PNG">📐 Чертёж</button>
     <button class="bar-btn" id="btn-undo">↩ Отменить</button>
     <button class="bar-btn" id="btn-clear">Очистить</button>
     <button class="bar-btn" id="btn-reset-cam">Сброс камеры</button>
+  </div>
+</div>
+<!-- export overlay -->
+<div id="export-overlay">
+  <div id="export-card">
+    <button id="export-close">✕</button>
+    <canvas id="export-canvas"></canvas>
+    <div id="export-actions">
+      <button class="bar-btn" id="export-download">💾 Скачать PNG</button>
+      <button class="bar-btn" id="export-dxf">📐 Скачать DXF (AutoCAD)</button>
+    </div>
   </div>
 </div>
 
@@ -205,20 +336,24 @@ const TYPES={
   cooktop:{id:10,label:'Варочная',color:'#e07a5f'},
   oven:{id:11,label:'Духовка',color:'#c97b3d'},
   dishw:{id:12,label:'Посудомойка',color:'#81b29a'},
+  door:{id:13,label:'Дверь',color:'#c8b896'},
+  doorGlass:{id:14,label:'Стекл. дверь',color:'#b8d8e8'},
 };
 const TYPE_BY_ID={};
 for(const[k,v]of Object.entries(TYPES)) TYPE_BY_ID[v.id]={...v,key:k};
 const CAT_TYPES={
-  wardrobe:['shelf','hanging','drawer','open','top'],
-  bookcase:['books','shelf','drawer','open'],
-  shoes:['shoeLow','shoeHi','drawer','shelf'],
-  hallway:['hanging','shoeLow','shoeHi','drawer','shelf','open'],
-  shelving:['shelf','open','books','drawer'],
-  kitchen:['shelf','drawer','open','top','sink','cooktop','oven','dishw'],
+  wardrobe:['shelf','hanging','drawer','open','top','door','doorGlass'],
+  bookcase:['books','shelf','drawer','open','door','doorGlass'],
+  shoes:['shoeLow','shoeHi','drawer','shelf','door'],
+  hallway:['hanging','shoeLow','shoeHi','drawer','shelf','open','door','doorGlass'],
+  shelving:['shelf','open','books','drawer','door','doorGlass'],
+  kitchen:['shelf','drawer','open','top','sink','cooktop','oven','dishw','door'],
+  closet:['shelf','hanging','drawer','open','top','shoeLow','shoeHi','door','doorGlass'],
 };
 
 /* ═══════════════  VOXEL GRID  ═══════════════ */
 const CELL=0.1; // 10cm in metres
+const GAP=0.003; // tiny gap between blocks to avoid z-fighting
 let GX=40, GY=24, GZ=40; // default 400×240×400 cm
 let voxels=new Uint8Array(GX*GY*GZ);
 const vIdx=(x,y,z)=>x+y*GX+z*GX*GY;
@@ -270,6 +405,27 @@ const CATEGORY_PRESETS={
       fillBox(fr(.3,GX),fr(.25,GY),0,fr(.7,GX),fr(.45,GY),d,T.shelf.id);
       fillBox(fr(.75,GX),fr(.25,GY),0,GX-1,fr(.45,GY),d,T.drawer.id);
       fillBox(0,0,0,GX-1,fr(.2,GY),d,T.shelf.id)}},
+    {name:'Две штанги',fill:()=>{const d=Math.min(5,GZ-1);
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.5,GY),0,GX-1,fr(.85,GY),d,T.hanging.id);
+      fillBox(0,fr(.1,GY),0,GX-1,fr(.45,GY),d,T.hanging.id);
+      fillBox(0,0,0,GX-1,fr(.08,GY),d,T.shelf.id)}},
+    {name:'П-образный',fill:()=>{const d=Math.min(5,GZ-1);const ld=Math.min(12,GZ-1);
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);fillBox(0,fr(.9,GY),0,fr(.15,GX),GY-1,ld,T.top.id);fillBox(fr(.85,GX),fr(.9,GY),0,GX-1,GY-1,ld,T.top.id);
+      fillBox(0,fr(.3,GY),0,fr(.47,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.53,GX),fr(.3,GY),0,GX-1,fr(.85,GY),d,T.shelf.id);
+      fillBox(0,fr(.3,GY),0,fr(.15,GX),fr(.85,GY),ld,T.shelf.id);
+      fillBox(fr(.85,GX),fr(.3,GY),0,GX-1,fr(.85,GY),ld,T.drawer.id);
+      fillBox(0,0,0,GX-1,fr(.25,GY),d,T.drawer.id)}},
+    {name:'Гардеробная',fill:()=>{const d=Math.min(5,GZ-1);
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.55,GY),0,fr(.32,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.36,GX),fr(.55,GY),0,fr(.64,GX),fr(.85,GY),d,T.shelf.id);
+      fillBox(fr(.68,GX),fr(.55,GY),0,GX-1,fr(.85,GY),d,T.hanging.id);
+      fillBox(0,fr(.3,GY),0,fr(.32,GX),fr(.5,GY),d,T.drawer.id);
+      fillBox(fr(.36,GX),fr(.3,GY),0,fr(.64,GX),fr(.5,GY),d,T.open.id);
+      fillBox(fr(.68,GX),fr(.3,GY),0,GX-1,fr(.5,GY),d,T.drawer.id);
+      fillBox(0,0,0,GX-1,fr(.25,GY),d,T.shelf.id)}},
   ],
   bookcase:[
     {name:'Классика',fill:()=>{const d=Math.min(3,GZ-1);const rows=5;
@@ -283,6 +439,22 @@ const CATEGORY_PRESETS={
       fillBox(0,fr(.3,GY),0,fr(.5,GX),fr(.55,GY),d,T.books.id);
       fillBox(fr(.55,GX),fr(.3,GY),0,GX-1,fr(.55,GY),d,T.shelf.id);
       fillBox(0,0,0,GX-1,fr(.25,GY),d,T.drawer.id)}},
+    {name:'Двухсекционный',fill:()=>{const d=Math.min(3,GZ-1);
+      fillBox(0,fr(.5,GY),0,fr(.47,GX),GY-1,d,T.books.id);
+      fillBox(fr(.53,GX),fr(.5,GY),0,GX-1,GY-1,d,T.books.id);
+      fillBox(0,0,0,fr(.47,GX),fr(.45,GY),d,T.books.id);
+      fillBox(fr(.53,GX),0,0,GX-1,fr(.45,GY),d,T.books.id)}},
+    {name:'Витрина',fill:()=>{const d=Math.min(3,GZ-1);
+      fillBox(0,fr(.7,GY),0,GX-1,GY-1,d,T.open.id);
+      fillBox(0,fr(.35,GY),0,GX-1,fr(.65,GY),d,T.books.id);
+      fillBox(0,0,0,GX-1,fr(.3,GY),d,T.shelf.id)}},
+    {name:'Библиотека',fill:()=>{const d=Math.min(3,GZ-1);
+      fillBox(0,fr(.75,GY),0,GX-1,GY-1,d,T.books.id);
+      fillBox(0,fr(.5,GY),0,fr(.47,GX),fr(.7,GY),d,T.books.id);
+      fillBox(fr(.53,GX),fr(.5,GY),0,GX-1,fr(.7,GY),d,T.open.id);
+      fillBox(0,fr(.25,GY),0,GX-1,fr(.45,GY),d,T.books.id);
+      fillBox(0,0,0,fr(.47,GX),fr(.2,GY),d,T.drawer.id);
+      fillBox(fr(.53,GX),0,0,GX-1,fr(.2,GY),d,T.drawer.id)}},
   ],
   shoes:[
     {name:'Классика',fill:()=>{const d=Math.min(4,GZ-1);
@@ -292,6 +464,21 @@ const CATEGORY_PRESETS={
     {name:'Компакт',fill:()=>{const d=Math.min(3,GZ-1);
       fillBox(0,fr(.5,GY),0,GX-1,GY-1,d,T.shoeLow.id);
       fillBox(0,0,0,GX-1,fr(.45,GY),d,T.drawer.id)}},
+    {name:'Высокая',fill:()=>{const d=Math.min(4,GZ-1);
+      fillBox(0,fr(.75,GY),0,GX-1,GY-1,d,T.shoeHi.id);
+      fillBox(0,fr(.5,GY),0,GX-1,fr(.7,GY),d,T.shoeHi.id);
+      fillBox(0,fr(.25,GY),0,GX-1,fr(.45,GY),d,T.shoeLow.id);
+      fillBox(0,0,0,GX-1,fr(.2,GY),d,T.shoeLow.id)}},
+    {name:'С полками',fill:()=>{const d=Math.min(4,GZ-1);
+      fillBox(0,fr(.8,GY),0,GX-1,GY-1,d,T.shelf.id);
+      fillBox(0,fr(.5,GY),0,GX-1,fr(.75,GY),d,T.shoeHi.id);
+      fillBox(0,fr(.2,GY),0,GX-1,fr(.45,GY),d,T.shoeLow.id);
+      fillBox(0,0,0,GX-1,fr(.15,GY),d,T.drawer.id)}},
+    {name:'Двухсекционная',fill:()=>{const d=Math.min(4,GZ-1);
+      fillBox(0,fr(.5,GY),0,fr(.47,GX),GY-1,d,T.shoeHi.id);
+      fillBox(fr(.53,GX),fr(.5,GY),0,GX-1,GY-1,d,T.shoeLow.id);
+      fillBox(0,0,0,fr(.47,GX),fr(.45,GY),d,T.shoeLow.id);
+      fillBox(fr(.53,GX),0,0,GX-1,fr(.45,GY),d,T.drawer.id)}},
   ],
   hallway:[
     {name:'Классика',fill:()=>{const d=Math.min(5,GZ-1);
@@ -308,6 +495,27 @@ const CATEGORY_PRESETS={
       fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);fillBox(0,fr(.9,GY),0,fr(.15,GX),GY-1,ld,T.top.id);
       fillBox(0,fr(.3,GY),0,GX-1,fr(.85,GY),d,T.hanging.id);fillBox(0,fr(.3,GY),0,fr(.15,GX),fr(.85,GY),ld,T.shelf.id);
       fillBox(0,0,0,GX-1,fr(.25,GY),d,T.shoeLow.id);fillBox(0,0,0,fr(.15,GX),fr(.25,GY),ld,T.drawer.id)}},
+    {name:'С зеркалом',fill:()=>{const d=Math.min(5,GZ-1);
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.35,GY),0,fr(.3,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.35,GX),fr(.35,GY),0,fr(.65,GX),fr(.85,GY),d,T.open.id);
+      fillBox(fr(.7,GX),fr(.35,GY),0,GX-1,fr(.85,GY),d,T.shelf.id);
+      fillBox(0,0,0,GX-1,fr(.3,GY),d,T.shoeLow.id)}},
+    {name:'Узкая',fill:()=>{const d=Math.min(3,GZ-1);
+      fillBox(0,fr(.85,GY),0,GX-1,GY-1,d,T.shelf.id);
+      fillBox(0,fr(.45,GY),0,GX-1,fr(.8,GY),d,T.hanging.id);
+      fillBox(0,fr(.2,GY),0,GX-1,fr(.4,GY),d,T.shoeLow.id);
+      fillBox(0,0,0,GX-1,fr(.15,GY),d,T.drawer.id)}},
+    {name:'Семейная',fill:()=>{const d=Math.min(5,GZ-1);
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.4,GY),0,fr(.3,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.35,GX),fr(.6,GY),0,fr(.65,GX),fr(.85,GY),d,T.shelf.id);
+      fillBox(fr(.35,GX),fr(.4,GY),0,fr(.65,GX),fr(.55,GY),d,T.drawer.id);
+      fillBox(fr(.7,GX),fr(.4,GY),0,GX-1,fr(.85,GY),d,T.hanging.id);
+      fillBox(0,fr(.15,GY),0,fr(.3,GX),fr(.35,GY),d,T.shoeHi.id);
+      fillBox(fr(.35,GX),fr(.15,GY),0,fr(.65,GX),fr(.35,GY),d,T.shoeLow.id);
+      fillBox(fr(.7,GX),fr(.15,GY),0,GX-1,fr(.35,GY),d,T.shoeHi.id);
+      fillBox(0,0,0,GX-1,fr(.1,GY),d,T.shelf.id)}},
   ],
   shelving:[
     {name:'Классика',fill:()=>{const d=Math.min(3,GZ-1);const rows=5;
@@ -319,6 +527,28 @@ const CATEGORY_PRESETS={
     {name:'С ящиками',fill:()=>{const d=Math.min(3,GZ-1);
       fillBox(0,fr(.4,GY),0,GX-1,GY-1,d,T.shelf.id);
       fillBox(0,fr(.2,GY),0,GX-1,fr(.35,GY),d,T.open.id);
+      fillBox(0,0,0,GX-1,fr(.15,GY),d,T.drawer.id)}},
+    {name:'Асимметрия',fill:()=>{const d=Math.min(3,GZ-1);
+      fillBox(0,fr(.75,GY),0,fr(.47,GX),GY-1,d,T.shelf.id);
+      fillBox(fr(.53,GX),fr(.75,GY),0,GX-1,GY-1,d,T.open.id);
+      fillBox(0,fr(.5,GY),0,fr(.47,GX),fr(.7,GY),d,T.open.id);
+      fillBox(fr(.53,GX),fr(.5,GY),0,GX-1,fr(.7,GY),d,T.shelf.id);
+      fillBox(0,fr(.25,GY),0,fr(.47,GX),fr(.45,GY),d,T.shelf.id);
+      fillBox(fr(.53,GX),fr(.25,GY),0,GX-1,fr(.45,GY),d,T.open.id);
+      fillBox(0,0,0,GX-1,fr(.2,GY),d,T.shelf.id)}},
+    {name:'Лесенка',fill:()=>{const d=Math.min(3,GZ-1);const cols=4;
+      for(let c=0;c<cols;c++){
+        const x1=fr(c/cols,GX),x2=fr((c+1)/cols,GX)-1;
+        const rows=cols-c+1;
+        for(let r=0;r<rows;r++){const y1=fr(r/rows,GY),y2=fr((r+1)/rows,GY)-1;
+          fillBox(x1,y1,0,x2,y2,d,r%2===0?T.shelf.id:T.open.id)}}}},
+    {name:'Книжная стенка',fill:()=>{const d=Math.min(3,GZ-1);
+      fillBox(0,fr(.8,GY),0,GX-1,GY-1,d,T.books.id);
+      fillBox(0,fr(.6,GY),0,fr(.47,GX),fr(.75,GY),d,T.shelf.id);
+      fillBox(fr(.53,GX),fr(.6,GY),0,GX-1,fr(.75,GY),d,T.books.id);
+      fillBox(0,fr(.4,GY),0,GX-1,fr(.55,GY),d,T.books.id);
+      fillBox(0,fr(.2,GY),0,fr(.47,GX),fr(.35,GY),d,T.open.id);
+      fillBox(fr(.53,GX),fr(.2,GY),0,GX-1,fr(.35,GY),d,T.shelf.id);
       fillBox(0,0,0,GX-1,fr(.15,GY),d,T.drawer.id)}},
   ],
   kitchen:[
@@ -345,6 +575,128 @@ const CATEGORY_PRESETS={
       fillBox(fr(.5,GX),0,0,fr(.73,GX),fr(.14,GY),d,T.oven.id);
       fillBox(fr(.76,GX),0,0,GX-1,fr(.3,GY),d,T.dishw.id);
       fillBox(fr(.28,GX),0,Math.round(GZ*.4),fr(.72,GX),fr(.3,GY),Math.round(GZ*.55),T.drawer.id)}},
+    {name:'П-образная',fill:()=>{const d=Math.min(5,GZ-1);const ld=Math.min(10,GZ-1);
+      fillBox(0,fr(.58,GY),0,GX-1,GY-1,d,T.shelf.id);
+      fillBox(0,fr(.58,GY),0,fr(.15,GX),GY-1,ld,T.shelf.id);
+      fillBox(fr(.85,GX),fr(.58,GY),0,GX-1,GY-1,ld,T.shelf.id);
+      fillBox(0,0,0,fr(.25,GX),fr(.3,GY),d,T.sink.id);
+      fillBox(fr(.28,GX),0,0,fr(.47,GX),fr(.3,GY),d,T.drawer.id);
+      fillBox(fr(.5,GX),fr(.17,GY),0,fr(.73,GX),fr(.3,GY),d,T.cooktop.id);
+      fillBox(fr(.5,GX),0,0,fr(.73,GX),fr(.14,GY),d,T.oven.id);
+      fillBox(fr(.76,GX),0,0,GX-1,fr(.3,GY),d,T.dishw.id);
+      fillBox(0,0,0,fr(.15,GX),fr(.3,GY),ld,T.drawer.id);
+      fillBox(fr(.85,GX),0,0,GX-1,fr(.3,GY),ld,T.shelf.id)}},
+    {name:'Без верха',fill:()=>{const d=Math.min(5,GZ-1);
+      fillBox(0,0,0,fr(.25,GX),fr(.4,GY),d,T.sink.id);
+      fillBox(fr(.28,GX),0,0,fr(.47,GX),fr(.4,GY),d,T.drawer.id);
+      fillBox(fr(.5,GX),fr(.22,GY),0,fr(.73,GX),fr(.4,GY),d,T.cooktop.id);
+      fillBox(fr(.5,GX),0,0,fr(.73,GX),fr(.19,GY),d,T.oven.id);
+      fillBox(fr(.76,GX),0,0,GX-1,fr(.4,GY),d,T.dishw.id)}},
+    {name:'Двухрядная',fill:()=>{const d=Math.min(5,GZ-1);const bd=Math.min(5,GZ-1);const offZ=Math.max(Math.round(GZ*.6),bd+1);const offZe=Math.min(offZ+bd,GZ-1);
+      fillBox(0,fr(.58,GY),0,GX-1,GY-1,d,T.shelf.id);
+      fillBox(0,0,0,fr(.25,GX),fr(.3,GY),d,T.sink.id);
+      fillBox(fr(.28,GX),0,0,fr(.55,GX),fr(.3,GY),d,T.drawer.id);
+      fillBox(fr(.58,GX),fr(.17,GY),0,fr(.78,GX),fr(.3,GY),d,T.cooktop.id);
+      fillBox(fr(.58,GX),0,0,fr(.78,GX),fr(.14,GY),d,T.oven.id);
+      fillBox(fr(.81,GX),0,0,GX-1,fr(.3,GY),d,T.dishw.id);
+      fillBox(fr(.2,GX),0,offZ,fr(.8,GX),fr(.3,GY),offZe,T.drawer.id);
+      fillBox(fr(.2,GX),fr(.58,GY),offZ,fr(.8,GX),GY-1,offZe,T.shelf.id)}},
+  ],
+  closet:[
+    {name:'Г-образная',fill:()=>{const d=Math.min(5,GZ-1);const ld=GZ-1;const sd=Math.min(5,GZ-1);
+      /* задняя стена — вся ширина */
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.45,GY),0,fr(.32,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.36,GX),fr(.55,GY),0,GX-1,fr(.85,GY),d,T.shelf.id);
+      fillBox(fr(.36,GX),fr(.3,GY),0,fr(.65,GX),fr(.5,GY),d,T.drawer.id);
+      fillBox(fr(.7,GX),fr(.3,GY),0,GX-1,fr(.5,GY),d,T.drawer.id);
+      fillBox(0,0,0,fr(.32,GX),fr(.4,GY),d,T.shoeLow.id);
+      fillBox(fr(.36,GX),0,0,GX-1,fr(.25,GY),d,T.shelf.id);
+      /* левая стена — по глубине */
+      fillBox(0,fr(.9,GY),d+1,fr(.15,GX),GY-1,ld,T.top.id);
+      fillBox(0,fr(.35,GY),d+1,fr(.15,GX),fr(.85,GY),ld,T.hanging.id);
+      fillBox(0,0,d+1,fr(.15,GX),fr(.3,GY),ld,T.shelf.id)}},
+    {name:'П-образная',fill:()=>{const d=Math.min(5,GZ-1);const ld=GZ-1;
+      /* задняя стена */
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.4,GY),0,fr(.47,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.53,GX),fr(.55,GY),0,GX-1,fr(.85,GY),d,T.shelf.id);
+      fillBox(fr(.53,GX),fr(.35,GY),0,GX-1,fr(.5,GY),d,T.drawer.id);
+      fillBox(0,0,0,GX-1,fr(.35,GY),d,T.shelf.id);
+      /* левая стена */
+      fillBox(0,fr(.9,GY),d+1,fr(.15,GX),GY-1,ld,T.top.id);
+      fillBox(0,fr(.4,GY),d+1,fr(.15,GX),fr(.85,GY),ld,T.shelf.id);
+      fillBox(0,fr(.15,GY),d+1,fr(.15,GX),fr(.35,GY),ld,T.drawer.id);
+      fillBox(0,0,d+1,fr(.15,GX),fr(.1,GY),ld,T.shoeLow.id);
+      /* правая стена */
+      fillBox(fr(.85,GX),fr(.9,GY),d+1,GX-1,GY-1,ld,T.top.id);
+      fillBox(fr(.85,GX),fr(.4,GY),d+1,GX-1,fr(.85,GY),ld,T.hanging.id);
+      fillBox(fr(.85,GX),0,d+1,GX-1,fr(.35,GY),ld,T.shoeHi.id)}},
+    {name:'Линейная',fill:()=>{const d=Math.min(6,GZ-1);
+      /* одна стена — просторнее */
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.45,GY),0,fr(.24,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.27,GX),fr(.55,GY),0,fr(.52,GX),fr(.85,GY),d,T.shelf.id);
+      fillBox(fr(.27,GX),fr(.3,GY),0,fr(.52,GX),fr(.5,GY),d,T.drawer.id);
+      fillBox(fr(.55,GX),fr(.45,GY),0,fr(.75,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.55,GX),fr(.15,GY),0,fr(.75,GX),fr(.4,GY),d,T.open.id);
+      fillBox(fr(.78,GX),fr(.55,GY),0,GX-1,fr(.85,GY),d,T.shelf.id);
+      fillBox(fr(.78,GX),fr(.3,GY),0,GX-1,fr(.5,GY),d,T.drawer.id);
+      fillBox(0,0,0,fr(.24,GX),fr(.4,GY),d,T.shoeHi.id);
+      fillBox(fr(.78,GX),0,0,GX-1,fr(.25,GY),d,T.shoeLow.id);
+      fillBox(fr(.27,GX),0,0,fr(.75,GX),fr(.25,GY),d,T.shelf.id)}},
+    {name:'Две стены',fill:()=>{const d=Math.min(5,GZ-1);const bz=Math.max(Math.round(GZ*.7),d+2);const be=GZ-1;
+      /* задняя стена */
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.35,GY),0,fr(.47,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.53,GX),fr(.55,GY),0,GX-1,fr(.85,GY),d,T.shelf.id);
+      fillBox(fr(.53,GX),fr(.3,GY),0,GX-1,fr(.5,GY),d,T.drawer.id);
+      fillBox(0,0,0,GX-1,fr(.3,GY),d,T.shelf.id);
+      /* передняя стена (дальняя по Z) */
+      fillBox(0,fr(.9,GY),bz,GX-1,GY-1,be,T.top.id);
+      fillBox(0,fr(.35,GY),bz,fr(.47,GX),fr(.85,GY),be,T.hanging.id);
+      fillBox(fr(.53,GX),fr(.35,GY),bz,GX-1,fr(.85,GY),be,T.shelf.id);
+      fillBox(0,fr(.1,GY),bz,fr(.47,GX),fr(.3,GY),be,T.drawer.id);
+      fillBox(fr(.53,GX),0,bz,GX-1,fr(.3,GY),be,T.shoeLow.id);
+      fillBox(0,0,bz,fr(.47,GX),fr(.08,GY),be,T.shelf.id)}},
+    {name:'С островом',fill:()=>{const d=Math.min(5,GZ-1);const ld=GZ-1;const iZ1=Math.round(GZ*.35);const iZ2=Math.round(GZ*.6);
+      /* задняя стена */
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.35,GY),0,GX-1,fr(.85,GY),d,T.hanging.id);
+      fillBox(0,0,0,GX-1,fr(.3,GY),d,T.shelf.id);
+      /* боковые стены */
+      fillBox(0,fr(.5,GY),d+1,fr(.12,GX),fr(.85,GY),ld,T.shelf.id);
+      fillBox(0,0,d+1,fr(.12,GX),fr(.45,GY),ld,T.drawer.id);
+      fillBox(fr(.88,GX),fr(.5,GY),d+1,GX-1,fr(.85,GY),ld,T.shelf.id);
+      fillBox(fr(.88,GX),0,d+1,GX-1,fr(.45,GY),ld,T.shoeLow.id);
+      /* остров по центру */
+      fillBox(fr(.3,GX),0,iZ1,fr(.7,GX),fr(.4,GY),iZ2,T.drawer.id);
+      fillBox(fr(.3,GX),fr(.45,GY),iZ1,fr(.7,GX),fr(.5,GY),iZ2,T.shelf.id)}},
+    {name:'Максимальная',fill:()=>{const d=Math.min(5,GZ-1);const ld=GZ-1;const bz=Math.max(Math.round(GZ*.75),d+2);const be=GZ-1;
+      /* задняя стена  */
+      fillBox(0,fr(.9,GY),0,GX-1,GY-1,d,T.top.id);
+      fillBox(0,fr(.5,GY),0,fr(.24,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.27,GX),fr(.55,GY),0,fr(.52,GX),fr(.85,GY),d,T.shelf.id);
+      fillBox(fr(.27,GX),fr(.3,GY),0,fr(.52,GX),fr(.5,GY),d,T.drawer.id);
+      fillBox(fr(.55,GX),fr(.5,GY),0,fr(.75,GX),fr(.85,GY),d,T.hanging.id);
+      fillBox(fr(.78,GX),fr(.55,GY),0,GX-1,fr(.85,GY),d,T.shelf.id);
+      fillBox(fr(.78,GX),fr(.3,GY),0,GX-1,fr(.5,GY),d,T.drawer.id);
+      fillBox(0,0,0,GX-1,fr(.25,GY),d,T.shelf.id);
+      /* левая стена */
+      fillBox(0,fr(.9,GY),d+1,fr(.12,GX),GY-1,ld,T.top.id);
+      fillBox(0,fr(.4,GY),d+1,fr(.12,GX),fr(.85,GY),ld,T.shelf.id);
+      fillBox(0,fr(.15,GY),d+1,fr(.12,GX),fr(.35,GY),ld,T.drawer.id);
+      fillBox(0,0,d+1,fr(.12,GX),fr(.1,GY),ld,T.shoeLow.id);
+      /* правая стена */
+      fillBox(fr(.88,GX),fr(.9,GY),d+1,GX-1,GY-1,ld,T.top.id);
+      fillBox(fr(.88,GX),fr(.4,GY),d+1,GX-1,fr(.85,GY),ld,T.hanging.id);
+      fillBox(fr(.88,GX),fr(.15,GY),d+1,GX-1,fr(.35,GY),ld,T.shoeHi.id);
+      fillBox(fr(.88,GX),0,d+1,GX-1,fr(.1,GY),ld,T.shelf.id);
+      /* передняя стена */
+      fillBox(fr(.2,GX),fr(.9,GY),bz,fr(.8,GX),GY-1,be,T.top.id);
+      fillBox(fr(.2,GX),fr(.35,GY),bz,fr(.5,GX),fr(.85,GY),be,T.open.id);
+      fillBox(fr(.55,GX),fr(.35,GY),bz,fr(.8,GX),fr(.85,GY),be,T.shelf.id);
+      fillBox(fr(.2,GX),0,bz,fr(.8,GX),fr(.3,GY),be,T.drawer.id)}},
   ],
 };
 
@@ -355,8 +707,9 @@ function doUndo(){if(!undoStack.length)return;const s=undoStack.pop();
   GX=s.gx;GY=s.gy;GZ=s.gz;voxels=s.data;fullRebuild()}
 
 /* ═══════════════  STATE  ═══════════════ */
-let currentBrush=TYPES.shelf.id,currentTool='brush',currentCat='wardrobe',activePresetIdx=0;
+let currentBrush=TYPES.shelf.id,currentTool='cursor',currentCat='wardrobe',activePresetIdx=0;
 let splitH=true,splitW=true,splitD=true;
+let frontOverride='auto'; /* 'auto','nz','pz','nx','px' */
 let selectedReg=null; /* {typeId, minX,maxX,minY,maxY,minZ,maxZ} */
 let handleDrag=null;
 
@@ -388,7 +741,7 @@ function refreshPal(){
   cursorBtn.classList.toggle('active',currentTool==='cursor');
   palRow.querySelectorAll('.pal-btn').forEach(b=>
     b.classList.toggle('active',+b.dataset.typeId===currentBrush&&currentTool==='brush'));
-  const cv=eRenderer?.domElement;if(cv){cv.classList.toggle('cursor-mode',currentTool==='cursor');cv.classList.toggle('eraser-mode',currentTool==='eraser')}
+  const cv=eRenderer?.domElement;if(cv){cv.classList.toggle('brush-mode',currentTool==='brush');cv.classList.toggle('eraser-mode',currentTool==='eraser')}
   document.querySelectorAll('.subdiv-for').forEach(el=>
     el.style.display=el.dataset.for==String(currentBrush)?'':'none')}
 eraserBtn.addEventListener('click',()=>{currentTool='eraser';selectRegion(null);refreshPal()});
@@ -413,6 +766,12 @@ document.querySelectorAll('.cat-btn').forEach(b=>b.addEventListener('click',()=>
 togH.addEventListener('click',()=>{splitH=!splitH;togH.classList.toggle('on',splitH);scheduleRebuild()});
 togW.addEventListener('click',()=>{splitW=!splitW;togW.classList.toggle('on',splitW);scheduleRebuild()});
 togD.addEventListener('click',()=>{splitD=!splitD;togD.classList.toggle('on',splitD);scheduleRebuild()});
+/* front override buttons */
+document.querySelectorAll('[data-front]').forEach(b=>b.addEventListener('click',()=>{
+  frontOverride=b.dataset.front;
+  document.querySelectorAll('[data-front]').forEach(bb=>{bb.classList.toggle('on',bb.dataset.front===frontOverride);bb.querySelector('.indicator').style.background=bb.dataset.front===frontOverride?'#000':'#fff'});
+  scheduleRebuild();
+}));
 [shelfHEl,drawerHEl,shoeHEl,bootHEl,bookHEl,openHEl].forEach(el=>el.addEventListener('input',()=>scheduleRebuild()));
 /* dim change → resize grid */
 [roomWEl,roomDEl,dimHEl].forEach(el=>el.addEventListener('input',()=>{
@@ -428,10 +787,11 @@ function getDims(){
 /* ═══════════════  SHARED MATERIALS  ═══════════════ */
 const _matC={};
 function getColorMat(hex){if(_matC[hex])return _matC[hex];
-  const m=new THREE.MeshBasicMaterial({color:new THREE.Color(hex),transparent:true,opacity:.45,depthWrite:false,side:THREE.DoubleSide});
+  const m=new THREE.MeshBasicMaterial({color:new THREE.Color(hex),transparent:true,opacity:.45,
+    side:THREE.DoubleSide,depthWrite:true,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2});
   _matC[hex]=m;return m}
-const TM=new THREE.LineBasicMaterial({color:0x000000,linewidth:1});
-const LM=new THREE.LineBasicMaterial({color:0x000000,linewidth:2});
+const TM=new THREE.LineBasicMaterial({color:0x000000,linewidth:1,depthTest:true});
+const LM=new THREE.LineBasicMaterial({color:0x000000,linewidth:2,depthTest:true});
 const RM=new THREE.LineBasicMaterial({color:0xdddddd,linewidth:1});
 const unitBox=new THREE.BoxGeometry(1,1,1);
 const unitEdges=new THREE.EdgesGeometry(unitBox);
@@ -442,12 +802,12 @@ function v2w(x,y,z){const{rw,rd}=getDims();
   return new THREE.Vector3((x+.5)*CELL-rw/2,(y+.5)*CELL,(z+.5)*CELL-rd/2)}
 function wb(parent,w,h,d,x,y,z,mat){mat=mat||TM;
   const g=new THREE.BoxGeometry(w,h,d),e=new THREE.EdgesGeometry(g),s=new THREE.LineSegments(e,mat);
-  s.position.set(x,y,z);parent.add(s);return s}
+  s.renderOrder=1;s.position.set(x,y,z);parent.add(s);return s}
 
 /* ══════════════════════════════════════════════
    EDITOR VIEWPORT
    ══════════════════════════════════════════════ */
-const eScene=new THREE.Scene();eScene.background=new THREE.Color(0xf8f8f8);
+const eScene=new THREE.Scene();eScene.background=new THREE.Color(0xf3f4f6);
 let eFrust=12;
 const eAspect=()=>editorVP.clientWidth/(editorVP.clientHeight||1);
 const eCam=new THREE.OrthographicCamera(-eFrust*eAspect()/2,eFrust*eAspect()/2,eFrust/2,-eFrust/2,.1,1000);
@@ -586,14 +946,14 @@ function rebuildEditorMeshes(){
     const bx1=reg.minX*CELL-rw/2,bx2=(reg.maxX+1)*CELL-rw/2;
     const by1=reg.minY*CELL,by2=(reg.maxY+1)*CELL;
     const bz1=reg.minZ*CELL-rd/2,bz2=(reg.maxZ+1)*CELL-rd/2;
-    const bW=bx2-bx1,bH=by2-by1,bD=bz2-bz1;
+    const bW=bx2-bx1-GAP,bH=by2-by1-GAP,bD=bz2-bz1-GAP;
     const bcx=(bx1+bx2)/2,bcy=(by1+by2)/2,bcz=(bz1+bz2)/2;
     const bm=new THREE.Mesh(new THREE.BoxGeometry(bW,bH,bD),getColorMat(info.color));
-    bm.position.set(bcx,bcy,bcz);
+    bm.renderOrder=0;bm.position.set(bcx,bcy,bcz);
     bm.userData._reg=reg;
     eBlockG.add(bm);
     const bw=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(bW,bH,bD)),TM);
-    bw.position.set(bcx,bcy,bcz);eBlockG.add(bw);
+    bw.renderOrder=1;bw.position.set(bcx,bcy,bcz);eBlockG.add(bw);
   }
   updateSelHighlight();
 }
@@ -872,7 +1232,7 @@ document.addEventListener('keydown',e=>{
 /* ══════════════════════════════════════════════
    PREVIEW VIEWPORT
    ══════════════════════════════════════════════ */
-const pScene=new THREE.Scene();pScene.background=new THREE.Color(0xfdfdfd);
+const pScene=new THREE.Scene();pScene.background=new THREE.Color(0xf3f4f6);
 let pFrust=12;
 const pAspect=()=>previewVP.clientWidth/(previewVP.clientHeight||1);
 const pCam=new THREE.OrthographicCamera(-pFrust*pAspect()/2,pFrust*pAspect()/2,pFrust/2,-pFrust/2,.1,1000);
@@ -938,14 +1298,14 @@ function rebuildPreview(){
     const bx1=reg.minX*CELL-rw/2,bx2=(reg.maxX+1)*CELL-rw/2;
     const by1=reg.minY*CELL,by2=(reg.maxY+1)*CELL;
     const bz1=reg.minZ*CELL-rd/2,bz2=(reg.maxZ+1)*CELL-rd/2;
-    const bW=bx2-bx1,bH=by2-by1,bD=bz2-bz1;
+    const bW=bx2-bx1-GAP,bH=by2-by1-GAP,bD=bz2-bz1-GAP;
     const bcx=(bx1+bx2)/2,bcy=(by1+by2)/2,bcz=(bz1+bz2)/2;
     const inW=bW-WALL*4,inH=bH-WALL*4,inD=bD-WALL*4;
-    const front=findFrontFace(reg);
+    const front=frontOverride==='auto'?findFrontFace(reg):frontOverride;
     const bm=new THREE.Mesh(new THREE.BoxGeometry(bW,bH,bD),getColorMat(info.color));
-    bm.position.set(bcx,bcy,bcz);pVoxG.add(bm);
+    bm.renderOrder=0;bm.position.set(bcx,bcy,bcz);pVoxG.add(bm);
     const bwire=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(bW,bH,bD)),TM);
-    bwire.position.set(bcx,bcy,bcz);pVoxG.add(bwire);
+    bwire.renderOrder=1;bwire.position.set(bcx,bcy,bcz);pVoxG.add(bwire);
     switch(info.key){
       case 'shelf':case 'open':{
         const tgt=info.key==='shelf'?tShelf:tOpen;
@@ -977,14 +1337,9 @@ function rebuildPreview(){
       case 'shoeLow':case 'shoeHi':{
         const tgt=info.key==='shoeLow'?tShoe:tBoot;
         if(splitH){const n=Math.max(1,Math.round(bH/tgt));
-          for(let i=0;i<n;i++){const sy=by1+bH*(i+.5)/n;
-            const szW=front==='nz'||front==='pz'?inW:inD;
-            const ratio=info.key==='shoeLow'?.55:.7;
-            const szD=front==='nz'||front==='pz'?bD*ratio:bW*ratio;
-            const pg=new THREE.PlaneGeometry(szW,szD);const pl=new THREE.LineSegments(new THREE.EdgesGeometry(pg),TM);
-            const angle=info.key==='shoeLow'?.3:.2;
-            if(front==='nz'||front==='pz')pl.rotation.x=-Math.PI/2+angle;else pl.rotation.z=Math.PI/2-angle;
-            pl.position.set(bcx,sy,bcz);pDetailG.add(pl)}}break}
+          for(let i=1;i<n;i++) wb(pDetailG,inW,WALL,inD,bcx,by1+bH*i/n,bcz)}
+        if(splitW&&bW>CELL*4)wb(pDetailG,WALL,inH,inD,bcx,bcy,bcz);
+        if(splitD&&bD>CELL*4)wb(pDetailG,inW,inH,WALL,bcx,bcy,bcz);break}
       case 'top':{if(splitH)wb(pDetailG,inW,WALL,inD,bcx,bcy,bcz);
         if(splitW&&bW>CELL*4)wb(pDetailG,WALL,inH,inD,bcx,bcy,bcz);break}
       case 'sink':{
@@ -1013,6 +1368,51 @@ function rebuildPreview(){
         else{wb(pDetailG,WALL,inH-WALL*4,inD-WALL*4,dx,bcy,bcz);
           wb(pDetailG,WALL,WALL,inD*.45,dx+(front==='px'?WALL:-WALL),by2-bH*.15,bcz,LM)}
         wb(pDetailG,inW*.8,WALL,inD*.8,bcx,bcy,bcz);break}
+      case 'door':case 'doorGlass':{
+        /* door panel on front face */
+        const isGlass=info.key==='doorGlass';
+        let dPx=bcx,dPz=bcz,dW2=inW,dH2=inH,dD2=inD;
+        const doorGap=WALL*2;
+        if(front==='nz'||front==='pz'){
+          dPz=front==='nz'?bz1+WALL:bz2-WALL;
+          /* door panel: full-height face */
+          wb(pDetailG,inW-doorGap,inH-doorGap,WALL,bcx,bcy,dPz,isGlass?RM:TM);
+          /* handle */
+          const hx=bcx+(front==='pz'?-1:1)*(inW/2-WALL*6);
+          const hG=new THREE.CylinderGeometry(.008,.008,bH*.12,6);
+          const hL=new THREE.LineSegments(new THREE.EdgesGeometry(hG),LM);
+          hL.position.set(hx,bcy,dPz+(front==='pz'?WALL*2:-WALL*2));pDetailG.add(hL);
+          /* hinge lines */
+          const hingX=bcx+(front==='pz'?1:-1)*(inW/2-WALL);
+          for(const hy of[by1+WALL*6,by2-WALL*6]){
+            const hiG=new THREE.CylinderGeometry(.005,.005,WALL*4,4);
+            const hiL=new THREE.LineSegments(new THREE.EdgesGeometry(hiG),TM);
+            hiL.position.set(hingX,hy,dPz);pDetailG.add(hiL)}
+          /* glass pane */
+          if(isGlass){
+            const gm=new THREE.Mesh(new THREE.PlaneGeometry(inW*.7,inH*.7),
+              new THREE.MeshBasicMaterial({color:0xb8d8e8,transparent:true,opacity:.15,side:THREE.DoubleSide}));
+            gm.position.set(bcx,bcy,dPz);pDetailG.add(gm)}
+        }else{
+          dPx=front==='nx'?bx1+WALL:bx2-WALL;
+          wb(pDetailG,WALL,inH-doorGap,inD-doorGap,dPx,bcy,bcz,isGlass?RM:TM);
+          const hz=bcz+(front==='px'?-1:1)*(inD/2-WALL*6);
+          const hG=new THREE.CylinderGeometry(.008,.008,bH*.12,6);
+          const hL=new THREE.LineSegments(new THREE.EdgesGeometry(hG),LM);
+          hL.position.set(dPx+(front==='px'?WALL*2:-WALL*2),bcy,hz);pDetailG.add(hL);
+          const hingZ=bcz+(front==='px'?1:-1)*(inD/2-WALL);
+          for(const hy of[by1+WALL*6,by2-WALL*6]){
+            const hiG=new THREE.CylinderGeometry(.005,.005,WALL*4,4);
+            const hiL=new THREE.LineSegments(new THREE.EdgesGeometry(hiG),TM);
+            hiL.position.set(dPx,hy,hingZ);pDetailG.add(hiL)}
+          if(isGlass){
+            const gm=new THREE.Mesh(new THREE.PlaneGeometry(inD*.7,inH*.7),
+              new THREE.MeshBasicMaterial({color:0xb8d8e8,transparent:true,opacity:.15,side:THREE.DoubleSide}));
+            gm.rotation.y=Math.PI/2;
+            gm.position.set(dPx,bcy,bcz);pDetailG.add(gm)}
+        }
+        if(splitW&&bW>CELL*4)wb(pDetailG,WALL,inH,inD,bcx,bcy,bcz);
+        break}
       case 'dishw':{
         let dx=0,dz=0;
         if(front==='nz')dz=bz1+WALL;else if(front==='pz')dz=bz2-WALL;
@@ -1064,6 +1464,341 @@ new ResizeObserver(onResize).observe(previewVP);
 (function animate(){requestAnimationFrame(animate);
   eControls.update();eRenderer.render(eScene,eCam);
   pControls.update();pRenderer.render(pScene,pCam)})();
+
+/* ═══════════════  SAVE / LOAD  ═══════════════ */
+function saveProject(){
+  const data={
+    version:2,
+    grid:{gx:GX,gy:GY,gz:GZ},
+    voxels:Array.from(voxels),
+    settings:{
+      category:currentCat,
+      roomW:+roomWEl.value,roomD:+roomDEl.value,dimH:+dimHEl.value,
+      splitH,splitW,splitD,
+      shelfH:+shelfHEl.value,drawerH:+drawerHEl.value,openH:+openHEl.value,
+      shoeH:+shoeHEl.value,bootH:+bootHEl.value,bookH:+bookHEl.value,
+      frontOverride
+    }
+  };
+  const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  const ts=new Date().toISOString().slice(0,16).replace(/[T:]/g,'-');
+  a.download=`furniture-${currentCat}-${ts}.json`;
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+function loadProject(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(!data.grid||!data.voxels)throw new Error('Invalid format');
+      pushUndo();
+      GX=data.grid.gx;GY=data.grid.gy;GZ=data.grid.gz;
+      voxels=new Uint8Array(data.voxels);
+      if(data.settings){
+        const s=data.settings;
+        if(s.category){currentCat=s.category;
+          document.querySelector('.cat-btn.active')?.classList.remove('active');
+          document.querySelector(`.cat-btn[data-cat="${s.category}"]`)?.classList.add('active');
+          buildPalette();buildPresets()}
+        if(s.roomW){roomWEl.value=s.roomW}
+        if(s.roomD){roomDEl.value=s.roomD}
+        if(s.dimH){dimHEl.value=s.dimH}
+        if(s.splitH!==undefined){splitH=s.splitH;togH.classList.toggle('on',splitH)}
+        if(s.splitW!==undefined){splitW=s.splitW;togW.classList.toggle('on',splitW)}
+        if(s.splitD!==undefined){splitD=s.splitD;togD.classList.toggle('on',splitD)}
+        if(s.shelfH)shelfHEl.value=s.shelfH;
+        if(s.drawerH)drawerHEl.value=s.drawerH;
+        if(s.openH)openHEl.value=s.openH;
+        if(s.shoeH)shoeHEl.value=s.shoeH;
+        if(s.bootH)bootHEl.value=s.bootH;
+        if(s.bookH)bookHEl.value=s.bookH;
+        if(s.frontOverride){frontOverride=s.frontOverride;
+          document.querySelectorAll('[data-front]').forEach(bb=>{bb.classList.toggle('on',bb.dataset.front===frontOverride);bb.querySelector('.indicator').style.background=bb.dataset.front===frontOverride?'#000':'#fff'})}
+      }
+      $('grid-info').textContent=`${GX}×${GY}×${GZ}`;
+      selectRegion(null);fullRebuild();
+    }catch(err){alert('Ошибка загрузки: '+err.message)}
+  };
+  reader.readAsText(file);
+}
+
+$('btn-save').addEventListener('click',saveProject);
+$('btn-load').addEventListener('click',()=>$('file-input').click());
+$('file-input').addEventListener('change',e=>{
+  const f=e.target.files[0];if(f)loadProject(f);e.target.value='';});
+
+/* ═══════════════  EXPORT HELPERS  ═══════════════ */
+function getVoxBounds(){
+  let minVX=GX,maxVX=0,minVY=GY,maxVY=0,minVZ=GZ,maxVZ=0;
+  for(let z=0;z<GZ;z++)for(let y=0;y<GY;y++)for(let x=0;x<GX;x++){
+    if(!vGet(x,y,z))continue;
+    minVX=Math.min(minVX,x);maxVX=Math.max(maxVX,x);
+    minVY=Math.min(minVY,y);maxVY=Math.max(maxVY,y);
+    minVZ=Math.min(minVZ,z);maxVZ=Math.max(maxVZ,z)}
+  return{minVX,maxVX,minVY,maxVY,minVZ,maxVZ,
+    cW:maxVX-minVX+1,cH:maxVY-minVY+1,cD:maxVZ-minVZ+1,empty:maxVX<minVX};
+}
+
+/* ═══════════════  EXPORT BLUEPRINT (PNG)  ═══════════════ */
+function exportBlueprint(){
+  const regs=findRegions3D();
+  if(!regs.length){alert('Нечего экспортировать — сцена пуста');return}
+  const b=getVoxBounds();if(b.empty)return;
+  const{minVX,maxVX,minVY,maxVY,minVZ,maxVZ,cW,cH,cD}=b;
+  const pxPerCm=4;
+  const pad=70,gap=60,dimOff=30,fontSize=12;
+
+  /* region sizes in cm */
+  const wCm=cW*10,hCm=cH*10,dCm=cD*10;
+  const fW=wCm*pxPerCm,fH=hCm*pxPerCm;
+  const sW=dCm*pxPerCm,sH=hCm*pxPerCm;
+  const tW=wCm*pxPerCm,tH=dCm*pxPerCm;
+
+  const totalW=pad*2+fW+gap+sW;
+  const totalH=pad*2+fH+gap+tH+gap+40;
+
+  const cvs=$('export-canvas');
+  cvs.width=totalW;cvs.height=totalH;
+  const ctx=cvs.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,totalW,totalH);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+
+  function drawDimLine(x1,y1,x2,y2,label){
+    const tk=6;
+    ctx.strokeStyle='#000';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    if(y1===y2){
+      ctx.beginPath();ctx.moveTo(x1,y1-tk);ctx.lineTo(x1,y1+tk);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x2,y2-tk);ctx.lineTo(x2,y2+tk);ctx.stroke();
+      ctx.fillStyle='#000';ctx.font=`${fontSize}px "SF Mono","Courier New",monospace`;
+      ctx.fillText(label,(x1+x2)/2,y1+16);
+    }else{
+      ctx.beginPath();ctx.moveTo(x1-tk,y1);ctx.lineTo(x1+tk,y1);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x2-tk,y2);ctx.lineTo(x2+tk,y2);ctx.stroke();
+      ctx.fillStyle='#000';ctx.font=`${fontSize}px "SF Mono","Courier New",monospace`;
+      ctx.save();ctx.translate(x1-16,(y1+y2)/2);ctx.rotate(-Math.PI/2);ctx.fillText(label,0,0);ctx.restore();
+    }
+  }
+
+  function drawRegView(ox,oy,title,getRect){
+    /* title */
+    ctx.fillStyle='#000';ctx.font=`bold ${fontSize+2}px "SF Mono","Courier New",monospace`;
+    ctx.textAlign='center';
+    const titleX=ox+(title.includes('СПЕР')? fW/2 : title.includes('СБОК')? sW/2 : tW/2);
+    ctx.fillText(title,titleX,oy-22);
+    /* regions */
+    for(const reg of regs){
+      const info=TYPE_BY_ID[reg.typeId];if(!info)continue;
+      const rc=getRect(reg);if(!rc)continue;
+      /* filled rect */
+      ctx.fillStyle=info.color;ctx.fillRect(rc.x,rc.y,rc.w,rc.h);
+      /* outline */
+      ctx.strokeStyle='#000';ctx.lineWidth=2;ctx.strokeRect(rc.x,rc.y,rc.w,rc.h);
+      /* dim label + type name */
+      ctx.fillStyle='#000';ctx.font=`bold ${fontSize}px "SF Mono","Courier New",monospace`;
+      ctx.textAlign='center';
+      ctx.fillText(`${Math.round(rc.w/pxPerCm)}×${Math.round(rc.h/pxPerCm)}`,rc.x+rc.w/2,rc.y+rc.h/2-8);
+      ctx.font=`${fontSize-1}px "SF Mono","Courier New",monospace`;
+      ctx.fillText(info.label,rc.x+rc.w/2,rc.y+rc.h/2+8);
+    }
+  }
+
+  /* FRONT (Ш×В): X→col, Y→row */
+  const fOx=pad,fOy=pad;
+  drawRegView(fOx,fOy,'ВИД СПЕРЕДИ (Ш×В)',reg=>{
+    const rx=(reg.minX-minVX)*10*pxPerCm,rw=(reg.maxX-reg.minX+1)*10*pxPerCm;
+    const ry=(cH-(reg.maxY-minVY+1))*10*pxPerCm,rh=(reg.maxY-reg.minY+1)*10*pxPerCm;
+    return{x:fOx+rx,y:fOy+ry,w:rw,h:rh};});
+  drawDimLine(fOx,fOy+fH+dimOff,fOx+fW,fOy+fH+dimOff,`${wCm} см`);
+  drawDimLine(fOx-dimOff,fOy,fOx-dimOff,fOy+fH,`${hCm} см`);
+  /* per-region width dims along bottom */
+  ctx.lineWidth=1;ctx.strokeStyle='#666';
+  const frontRegsX=[...regs].sort((a,b)=>a.minX-b.minX);
+  let prevEndX=-1;
+  for(const reg of frontRegsX){
+    const rx=fOx+(reg.minX-minVX)*10*pxPerCm;
+    const rw=(reg.maxX-reg.minX+1)*10*pxPerCm;
+    if(rx>prevEndX+1)drawDimLine(rx,fOy+fH+dimOff+20,rx+rw,fOy+fH+dimOff+20,`${(reg.maxX-reg.minX+1)*10}`);
+    prevEndX=Math.max(prevEndX,rx+rw);
+  }
+
+  /* SIDE (Г×В): Z→col, Y→row */
+  const sOx=pad+fW+gap,sOy=pad;
+  drawRegView(sOx,sOy,'ВИД СБОКУ (Г×В)',reg=>{
+    const rx=(reg.minZ-minVZ)*10*pxPerCm,rw=(reg.maxZ-reg.minZ+1)*10*pxPerCm;
+    const ry=(cH-(reg.maxY-minVY+1))*10*pxPerCm,rh=(reg.maxY-reg.minY+1)*10*pxPerCm;
+    return{x:sOx+rx,y:sOy+ry,w:rw,h:rh};});
+  drawDimLine(sOx,sOy+sH+dimOff,sOx+sW,sOy+sH+dimOff,`${dCm} см`);
+  drawDimLine(sOx+sW+dimOff,sOy,sOx+sW+dimOff,sOy+sH,`${hCm} см`);
+
+  /* TOP (Ш×Г): X→col, Z→row */
+  const tOx=pad,tOy=pad+fH+gap;
+  drawRegView(tOx,tOy,'ВИД СВЕРХУ (Ш×Г)',reg=>{
+    const rx=(reg.minX-minVX)*10*pxPerCm,rw=(reg.maxX-reg.minX+1)*10*pxPerCm;
+    const ry=(cD-(reg.maxZ-minVZ+1))*10*pxPerCm,rh=(reg.maxZ-reg.minZ+1)*10*pxPerCm;
+    return{x:tOx+rx,y:tOy+ry,w:rw,h:rh};});
+  drawDimLine(tOx,tOy+tH+dimOff,tOx+tW,tOy+tH+dimOff,`${wCm} см`);
+  drawDimLine(tOx-dimOff,tOy,tOx-dimOff,tOy+tH,`${dCm} см`);
+
+  /* legend */
+  const legY=tOy+tH+gap;
+  ctx.font=`bold ${fontSize}px "SF Mono","Courier New",monospace`;
+  ctx.textAlign='left';
+  let legX=pad;
+  const usedTypes=new Set(regs.map(r=>r.typeId));
+  for(const tid of usedTypes){
+    const info=TYPE_BY_ID[tid];if(!info)continue;
+    ctx.fillStyle=info.color;ctx.fillRect(legX,legY,14,14);
+    ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(legX,legY,14,14);
+    ctx.fillStyle='#000';ctx.fillText(info.label,legX+18,legY+10);
+    legX+=ctx.measureText(info.label).width+36;
+  }
+  ctx.textAlign='center';
+  $('export-overlay').classList.add('open');
+}
+
+/* ═══════════════  EXPORT DXF (AutoCAD)  ═══════════════ */
+function exportDXF(){
+  const regs=findRegions3D();
+  if(!regs.length){alert('Нечего экспортировать — сцена пуста');return}
+  const b=getVoxBounds();if(b.empty)return;
+  const{minVX,minVY,minVZ,cW,cH,cD}=b;
+  /* DXF uses mm; our cells = 10cm = 100mm */
+  const mm=100;
+  let eid=100;
+  const ne=()=>String(eid++);
+  const lines=[];
+  const L=(...a)=>{for(const s of a)lines.push(s)};
+
+  /* ---- HEADER ---- */
+  L('0','SECTION','2','HEADER',
+    '9','$ACADVER','1','AC1015',
+    '9','$INSUNITS','70','4',
+    '0','ENDSEC');
+
+  /* ---- TABLES (layers) ---- */
+  L('0','SECTION','2','TABLES','0','TABLE','2','LAYER','70',String(Object.keys(TYPE_BY_ID).length+3));
+  /* layer 0 */
+  L('0','LAYER','2','0','70','0','62','7','6','Continuous');
+  /* DIM layer */
+  L('0','LAYER','2','DIM','70','0','62','1','6','Continuous');
+  /* TEXT layer */
+  L('0','LAYER','2','TEXT','70','0','62','7','6','Continuous');
+  /* per-type layers */
+  function hexToAci(hex){
+    const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),bl=parseInt(hex.slice(5,7),16);
+    if(r>200&&g<100&&bl<100)return 1;/*red*/
+    if(r>200&&g>200&&bl<100)return 2;/*yellow*/
+    if(r<100&&g>200&&bl<100)return 3;/*green*/
+    if(r<100&&g>200&&bl>200)return 4;/*cyan*/
+    if(r<100&&g<100&&bl>200)return 5;/*blue*/
+    if(r>200&&g<100&&bl>200)return 6;/*magenta*/
+    if(r>180&&g>180&&bl>180)return 9;/*lt grey*/
+    if(r>150&&g>100)return 40;/*orange-ish*/
+    return 7;
+  }
+  for(const[id,info]of Object.entries(TYPE_BY_ID)){
+    L('0','LAYER','2',info.label.replace(/\s/g,'_'),'70','0','62',String(hexToAci(info.color)),'6','Continuous');
+  }
+  L('0','ENDTAB','0','ENDSEC');
+
+  /* ---- ENTITIES ---- */
+  L('0','SECTION','2','ENTITIES');
+
+  function addRect(layer,x1,y1,x2,y2){
+    L('0','LWPOLYLINE','5',ne(),'8',layer,'90','4','70','1');
+    L('10',String(x1),'20',String(y1));
+    L('10',String(x2),'20',String(y1));
+    L('10',String(x2),'20',String(y2));
+    L('10',String(x1),'20',String(y2));
+  }
+  function addText(layer,x,y,h,txt){
+    L('0','TEXT','5',ne(),'8',layer,
+      '10',String(x),'20',String(y),'40',String(h),
+      '1',txt,'72','1','11',String(x),'21',String(y));
+  }
+  function addDimH(x1,x2,y,label){
+    addRect('DIM',x1,y-2,x2,y+2);
+    L('0','LINE','5',ne(),'8','DIM','10',String(x1),'20',String(y-10),'11',String(x1),'21',String(y+10));
+    L('0','LINE','5',ne(),'8','DIM','10',String(x2),'20',String(y-10),'11',String(x2),'21',String(y+10));
+    addText('DIM',(x1+x2)/2,y+18,25,label);
+  }
+  function addDimV(x,y1,y2,label){
+    addRect('DIM',x-2,y1,x+2,y2);
+    L('0','LINE','5',ne(),'8','DIM','10',String(x-10),'20',String(y1),'11',String(x+10),'21',String(y1));
+    L('0','LINE','5',ne(),'8','DIM','10',String(x-10),'20',String(y2),'11',String(x+10),'21',String(y2));
+    addText('DIM',x-20,(y1+y2)/2,25,label);
+  }
+
+  /* offsets for 3 views */
+  const frontOffX=0,frontOffY=0;
+  const sideOffX=(cW*mm)+500,sideOffY=0;
+  const topOffX=0,topOffY=-(cH*mm)-500;
+
+  /* FRONT (X→col, Y→row) */
+  addText('TEXT',frontOffX+(cW*mm)/2,frontOffY+cH*mm+80,35,'ВИД СПЕРЕДИ');
+  for(const reg of regs){
+    const info=TYPE_BY_ID[reg.typeId];if(!info)continue;
+    const ln=info.label.replace(/\s/g,'_');
+    const x1=frontOffX+(reg.minX-minVX)*mm,x2=frontOffX+(reg.maxX-minVX+1)*mm;
+    const y1=frontOffY+(reg.minY-minVY)*mm,y2=frontOffY+(reg.maxY-minVY+1)*mm;
+    addRect(ln,x1,y1,x2,y2);
+    addText(ln,(x1+x2)/2,(y1+y2)/2,20,`${(reg.maxX-reg.minX+1)*10}x${(reg.maxY-reg.minY+1)*10}`);
+    addText(ln,(x1+x2)/2,(y1+y2)/2-30,18,info.label);
+  }
+  addDimH(frontOffX,frontOffX+cW*mm,frontOffY-60,`${cW*10}`);
+  addDimV(frontOffX-60,frontOffY,frontOffY+cH*mm,`${cH*10}`);
+
+  /* SIDE (Z→col, Y→row) */
+  addText('TEXT',sideOffX+(cD*mm)/2,sideOffY+cH*mm+80,35,'ВИД СБОКУ');
+  for(const reg of regs){
+    const info=TYPE_BY_ID[reg.typeId];if(!info)continue;
+    const ln=info.label.replace(/\s/g,'_');
+    const x1=sideOffX+(reg.minZ-minVZ)*mm,x2=sideOffX+(reg.maxZ-minVZ+1)*mm;
+    const y1=sideOffY+(reg.minY-minVY)*mm,y2=sideOffY+(reg.maxY-minVY+1)*mm;
+    addRect(ln,x1,y1,x2,y2);
+    addText(ln,(x1+x2)/2,(y1+y2)/2,20,`${(reg.maxZ-reg.minZ+1)*10}x${(reg.maxY-reg.minY+1)*10}`);
+    addText(ln,(x1+x2)/2,(y1+y2)/2-30,18,info.label);
+  }
+  addDimH(sideOffX,sideOffX+cD*mm,sideOffY-60,`${cD*10}`);
+  addDimV(sideOffX+cD*mm+60,sideOffY,sideOffY+cH*mm,`${cH*10}`);
+
+  /* TOP (X→col, Z→row) */
+  addText('TEXT',topOffX+(cW*mm)/2,topOffY+cD*mm+80,35,'ВИД СВЕРХУ');
+  for(const reg of regs){
+    const info=TYPE_BY_ID[reg.typeId];if(!info)continue;
+    const ln=info.label.replace(/\s/g,'_');
+    const x1=topOffX+(reg.minX-minVX)*mm,x2=topOffX+(reg.maxX-minVX+1)*mm;
+    const y1=topOffY+(reg.minZ-minVZ)*mm,y2=topOffY+(reg.maxZ-minVZ+1)*mm;
+    addRect(ln,x1,y1,x2,y2);
+    addText(ln,(x1+x2)/2,(y1+y2)/2,20,`${(reg.maxX-reg.minX+1)*10}x${(reg.maxZ-reg.minZ+1)*10}`);
+    addText(ln,(x1+x2)/2,(y1+y2)/2-30,18,info.label);
+  }
+  addDimH(topOffX,topOffX+cW*mm,topOffY-60,`${cW*10}`);
+  addDimV(topOffX-60,topOffY,topOffY+cD*mm,`${cD*10}`);
+
+  L('0','ENDSEC','0','EOF');
+
+  const dxf=lines.join('\n');
+  const blob=new Blob([dxf],{type:'application/dxf'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  const ts=new Date().toISOString().slice(0,16).replace(/[T:]/g,'-');
+  a.download=`blueprint-${currentCat}-${ts}.dxf`;
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+$('btn-export').addEventListener('click',exportBlueprint);
+$('export-close').addEventListener('click',()=>$('export-overlay').classList.remove('open'));
+$('export-overlay').addEventListener('click',e=>{if(e.target===$('export-overlay'))$('export-overlay').classList.remove('open')});
+$('export-download').addEventListener('click',()=>{
+  const cvs=$('export-canvas');
+  const a=document.createElement('a');a.href=cvs.toDataURL('image/png');
+  const ts=new Date().toISOString().slice(0,16).replace(/[T:]/g,'-');
+  a.download=`blueprint-${currentCat}-${ts}.png`;a.click();
+});
+$('export-dxf').addEventListener('click',exportDXF);
 
 /* ═══════════════  INIT  ═══════════════ */
 $('grid-info').textContent=`${GX}×${GY}×${GZ}`;

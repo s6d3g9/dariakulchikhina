@@ -2,10 +2,10 @@
   <div>
     <div class="a-card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;padding:12px 20px">
       <span style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.5px">проекты</span>
-      <button class="a-btn-save" @click="showCreate = true; wizardStep = 1" style="padding:7px 18px;font-size:.82rem">+ новый проект</button>
+      <button class="a-btn-save" aria-label="добавить" title="добавить" @click="showCreate = true; wizardStep = 1" style="padding:7px 14px;font-size:.96rem;line-height:1">+</button>
     </div>
 
-    <div v-if="pending" style="font-size:.88rem;color:#999;padding:12px 0">Загрузка...</div>
+    <div v-if="pending && !hasProjectsCache" style="font-size:.88rem;color:#999;padding:12px 0">Загрузка...</div>
     <div v-else-if="projects?.length === 0" style="font-size:.88rem;color:#999;padding:12px 0">Нет проектов</div>
     <div v-else>
       <!-- Search -->
@@ -36,6 +36,23 @@
             </div>
             <span style="font-size:.72rem;color:#aaa">{{ p.taskDone }}/{{ p.taskTotal }}</span>
             <span v-if="p.taskOverdue > 0" style="font-size:.72rem;color:#c00;font-weight:600">⚠ {{ p.taskOverdue }} просрочено</span>
+          </div>
+          <div v-if="p.roadmapSummary?.length" class="a-roadmap-mini">
+            <div class="arm-bar-wrap" :title="`${roadmapDoneCount(p.roadmapSummary)} выполнено / ${p.roadmapSummary.length} этапов`">
+              <div class="arm-bar-fill" :style="{ width: roadmapProgressWidth(p.roadmapSummary) + '%' }" />
+            </div>
+            <div class="arm-pills">
+              <span
+                v-for="ph in CARD_PHASES"
+                :key="ph.key"
+                class="arm-pill"
+                :class="cardPillClass(ph.key, cardPhaseStats(p.roadmapSummary))"
+                :title="ph.label + ': ' + (cardPhaseStats(p.roadmapSummary)[ph.key]?.done ?? 0) + '/' + (cardPhaseStats(p.roadmapSummary)[ph.key]?.total ?? 0)"
+              >
+                {{ ph.short }}
+                <span v-if="(cardPhaseStats(p.roadmapSummary)[ph.key]?.total ?? 0) > 0" class="arm-pill-cnt">{{ cardPhaseStats(p.roadmapSummary)[ph.key].done }}/{{ cardPhaseStats(p.roadmapSummary)[ph.key].total }}</span>
+              </span>
+            </div>
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
@@ -98,7 +115,7 @@
             </div>
             <div style="font-size:.78rem;color:#888;margin-bottom:4px">Будут созданы страницы:</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
-              <span v-for="pg in corePageLabels" :key="pg" style="font-size:.72rem;border:1px solid #ddd;padding:2px 8px;color:#666">{{ pg }}</span>
+              <span v-for="pg in corePageLabels" :key="pg" style="font-size:.72rem;padding:2px 8px;color:#666;border:none;background:color-mix(in srgb, var(--glass-bg) 90%, transparent);border-radius:999px">{{ pg }}</span>
             </div>
           </template>
 
@@ -120,10 +137,42 @@
 <script setup lang="ts">
 import { ROADMAP_TEMPLATES } from '~~/shared/types/roadmap-templates'
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
+import { normalizeRoadmapStatus, roadmapStatusLabel, roadmapStatusIcon, roadmapStatusCssClass, roadmapDoneCount, roadmapPhaseFromStageKey } from '~~/shared/utils/roadmap'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
-const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects')
+const projectsCache = useState<any[]>('cache-admin-projects', () => [])
+
+const { data: projects, pending } = await useFetch<any[]>('/api/projects', {
+  server: false,
+  default: () => projectsCache.value,
+})
+
+const hasProjectsCache = computed(() => projectsCache.value.length > 0)
+
+watch(projects, (value) => {
+  if (Array.isArray(value)) {
+    projectsCache.value = value
+  }
+}, { deep: true })
+
+// Прямой $fetch в обход Nuxt-кеша — гарантирует свежие данные
+async function reloadProjects() {
+  try {
+    const result = await $fetch<any[]>('/api/projects')
+    if (Array.isArray(result)) {
+      projects.value = result
+      projectsCache.value = result
+    }
+  } catch { /* silent */ }
+}
+
+// При возврате на страницу и при сохранении роадмапа — обновляем список
+const { lastSaved } = useRoadmapBus()
+watch(lastSaved, reloadProjects)
+onMounted(reloadProjects)
+onActivated(reloadProjects)
+
 const { data: customTemplates } = useFetch<any[]>('/api/roadmap-templates', { server: false, default: () => [] })
 
 // API returns all templates (built-in + custom). Use as primary source.
@@ -150,6 +199,51 @@ const creating = ref(false)
 const createError = ref('')
 const newProject = reactive({ title: '', slug: '', roadmapTemplateKey: '' })
 const searchQuery = ref('')
+
+const CARD_PHASES = [
+  { key: 'lead',            short: '0', label: 'Инициация' },
+  { key: 'concept',         short: '1', label: 'Концепция' },
+  { key: 'working_project', short: '2', label: 'Рабочий проект' },
+  { key: 'procurement',     short: '3', label: 'Закупки' },
+  { key: 'construction',    short: '4', label: 'Стройка' },
+  { key: 'commissioning',   short: '5', label: 'Сдача' },
+]
+const PHASE_BY_IDX = ['lead','concept','working_project','procurement','construction','commissioning']
+
+function cardPhaseStats(stages: Array<{ stageKey?: string; status?: string }>) {
+  type S = { done: number; active: number; total: number }
+  const stats: Record<string, S> = {}
+  CARD_PHASES.forEach(ph => { stats[ph.key] = { done: 0, active: 0, total: 0 } })
+  stages.forEach((stage, idx) => {
+    const phKey = roadmapPhaseFromStageKey(stage.stageKey) || PHASE_BY_IDX[idx] || 'lead'
+    if (!stats[phKey]) return
+    stats[phKey].total++
+    const st = normalizeRoadmapStatus(stage.status)
+    if (st === 'done' || st === 'skipped') stats[phKey].done++
+    else if (st === 'in_progress') stats[phKey].active++
+  })
+  return stats
+}
+
+function cardPillClass(phKey: string, stats: Record<string, { done: number; active: number; total: number }>) {
+  const s = stats[phKey]
+  if (!s || s.total === 0) return 'arm-pill--empty'
+  if (s.done === s.total) return 'arm-pill--done'
+  if (s.done > 0) return 'arm-pill--partial'
+  if (s.active > 0) return 'arm-pill--active'
+  return 'arm-pill--pending'
+}
+
+function roadmapProgressWidth(stages: Array<{ status?: string | null }>): number {
+  if (!stages?.length) return 0
+  let pts = 0
+  for (const s of stages) {
+    const st = normalizeRoadmapStatus(s.status)
+    if (st === 'done' || st === 'skipped') pts++
+    else if (st === 'in_progress') pts += 0.5
+  }
+  return Math.round(pts / stages.length * 100)
+}
 
 const filteredProjects = computed(() => {
   if (!searchQuery.value.trim()) return projects.value || []
@@ -222,6 +316,8 @@ function phaseLabel(status: string) {
 function phaseColor(status: string) {
   return PROJECT_PHASES.find(p => p.key === status)?.color || 'gray'
 }
+
+
 </script>
 
 <style scoped>
@@ -240,10 +336,74 @@ function phaseColor(status: string) {
   transition: width .3s;
 }
 
+/* ── Roadmap mini (phase pills) ────────────────────────── */
+.a-roadmap-mini { margin-top: 9px; }
+.arm-bar-wrap {
+  width: 100%; height: 4px;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 7px;
+  cursor: default;
+}
+.arm-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #10b981);
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+.arm-pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.arm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: .62rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: default;
+  transition: background .15s;
+}
+.arm-pill-cnt {
+  font-size: .58rem;
+  font-weight: 400;
+  opacity: .7;
+}
+.arm-pill--empty {
+  color: var(--glass-text);
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
+  opacity: .28;
+}
+.arm-pill--pending {
+  color: var(--glass-text);
+  background: color-mix(in srgb, var(--glass-text) 9%, transparent);
+  opacity: .55;
+}
+.arm-pill--partial {
+  color: #b45309;
+  background: rgba(245,158,11,.12);
+  opacity: 1;
+}
+.arm-pill--active {
+  color: #2563eb;
+  background: rgba(99,102,241,.13);
+  opacity: 1;
+}
+.arm-pill--done {
+  color: #15803d;
+  background: rgba(34,197,94,.13);
+  opacity: 1;
+}
+
 /* ── Card ──────────────────────────────────────────────── */
 .a-card {
   background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  border: none;
   box-shadow: var(--glass-shadow);
   -webkit-backdrop-filter: blur(18px) saturate(145%);
   backdrop-filter: blur(18px) saturate(145%);
@@ -267,7 +427,7 @@ function phaseColor(status: string) {
   padding: 2px 8px;
   border-radius: 999px;
   white-space: nowrap;
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -275,16 +435,16 @@ function phaseColor(status: string) {
   opacity: .7;
 }
 .pi-badge--gray      { opacity: .45; }
-.pi-badge--violet    { color: #7c3aed; border-color: rgba(124,58,237,.25); background: rgba(124,58,237,.07); opacity: 1; }
-.pi-badge--blue      { color: #1d4ed8; border-color: rgba(29,78,216,.25); background: rgba(29,78,216,.07); opacity: 1; }
-.pi-badge--amber     { color: #b45309; border-color: rgba(180,83,9,.25); background: rgba(180,83,9,.06); opacity: 1; }
-.pi-badge--orange    { color: #c2410c; border-color: rgba(194,65,12,.25); background: rgba(194,65,12,.06); opacity: 1; }
-.pi-badge--green     { color: #15803d; border-color: rgba(21,128,61,.25); background: rgba(21,128,61,.07); opacity: 1; }
-.pi-badge--teal      { color: #0f766e; border-color: rgba(15,118,110,.25); background: rgba(15,118,110,.07); opacity: 1; }
+.pi-badge--violet    { color: #7c3aed; background: rgba(124,58,237,.07); opacity: 1; }
+.pi-badge--blue      { color: #1d4ed8; background: rgba(29,78,216,.07); opacity: 1; }
+.pi-badge--amber     { color: #b45309; background: rgba(180,83,9,.06); opacity: 1; }
+.pi-badge--orange    { color: #c2410c; background: rgba(194,65,12,.06); opacity: 1; }
+.pi-badge--green     { color: #15803d; background: rgba(21,128,61,.07); opacity: 1; }
+.pi-badge--teal      { color: #0f766e; background: rgba(15,118,110,.07); opacity: 1; }
 
 /* ── Buttons ───────────────────────────────────────────── */
 .a-btn-sm {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -306,14 +466,13 @@ function phaseColor(status: string) {
 }
 .a-btn-danger {
   color: rgba(200,40,40,1);
-  border-color: rgba(200,40,40,.35);
   background: rgba(200,40,40,.07);
   opacity: 1;
 }
 .a-btn-danger:hover { background: rgba(200,40,40,.85); color: #fff; border-color: transparent; box-shadow: none; }
 
 .a-btn-save {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-text);
   color: var(--glass-page-bg);
   padding: 9px 22px;
@@ -340,7 +499,7 @@ function phaseColor(status: string) {
 }
 .a-input {
   display: block; width: 100%; box-sizing: border-box;
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   padding: 8px 12px;
@@ -349,9 +508,9 @@ function phaseColor(status: string) {
   font-family: inherit;
   color: var(--glass-text);
   border-radius: 8px;
-  transition: border-color .15s;
+  transition: opacity .15s;
 }
-.a-input:focus { border-color: var(--glass-text); }
+.a-input:focus { opacity: .92; }
 .a-select {
   appearance: none;
   -webkit-appearance: none;
@@ -369,7 +528,7 @@ function phaseColor(status: string) {
 }
 .a-modal {
   background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  border: none;
   box-shadow: 0 24px 60px rgba(0,0,0,.18);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   backdrop-filter: blur(24px) saturate(150%);

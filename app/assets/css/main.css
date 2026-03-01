@@ -7,7 +7,50 @@
   --glass-shadow: 0 10px 28px rgba(18, 18, 18, 0.08);
   --glass-text: #1f1f1f;
   --glass-page-bg: #f3f4f6;
+
+  /* ── Roadmap unified color tokens ─────────────────────── */
+  --rm-color-pending:  #9ca3af;
+  --rm-color-progress: #f59e0b;
+  --rm-color-done:     #16a34a;
+  --rm-color-skipped:  #d1d5db;
+
+  --rm-bg-pending:     rgba(156, 163, 175, 0.10);
+  --rm-bg-progress:    rgba(245, 158, 11, 0.12);
+  --rm-bg-done:        rgba(22, 163, 74, 0.10);
+  --rm-bg-skipped:     rgba(209, 213, 219, 0.08);
+
+  /* ── Work-status unified color tokens ──────────────────── */
+  --ws-color-pending:    #9ca3af;
+  --ws-color-planned:    #6366f1;
+  --ws-color-progress:   #f59e0b;
+  --ws-color-done:       #16a34a;
+  --ws-color-paused:     #a855f7;
+  --ws-color-cancelled:  #ef4444;
+  --ws-color-skipped:    #d1d5db;
+
+  --ws-bg-pending:       rgba(156, 163, 175, 0.10);
+  --ws-bg-planned:       rgba(99, 102, 241, 0.10);
+  --ws-bg-progress:      rgba(245, 158, 11, 0.12);
+  --ws-bg-done:          rgba(22, 163, 74, 0.10);
+  --ws-bg-paused:        rgba(168, 85, 247, 0.10);
+  --ws-bg-cancelled:     rgba(239, 68, 68, 0.10);
+  --ws-bg-skipped:       rgba(209, 213, 219, 0.08);
 }
+
+/* ── Roadmap global utility classes ──────────────────────── */
+.rm-status--pending  { color: var(--rm-color-pending);  background: var(--rm-bg-pending);  }
+.rm-status--progress { color: var(--rm-color-progress); background: var(--rm-bg-progress); }
+.rm-status--done     { color: var(--rm-color-done);     background: var(--rm-bg-done);     }
+.rm-status--skipped  { color: var(--rm-color-skipped);  background: var(--rm-bg-skipped);  opacity: .5; }
+
+/* ── Work-status global utility classes ──────────────────── */
+.ws-status--pending   { color: var(--ws-color-pending);   background: var(--ws-bg-pending);   }
+.ws-status--planned   { color: var(--ws-color-planned);   background: var(--ws-bg-planned);   }
+.ws-status--progress  { color: var(--ws-color-progress);  background: var(--ws-bg-progress);  }
+.ws-status--done      { color: var(--ws-color-done);      background: var(--ws-bg-done);      }
+.ws-status--paused    { color: var(--ws-color-paused);    background: var(--ws-bg-paused);    }
+.ws-status--cancelled { color: var(--ws-color-cancelled); background: var(--ws-bg-cancelled); }
+.ws-status--skipped   { color: var(--ws-color-skipped);   background: var(--ws-bg-skipped);   opacity: .5; }
 
 html.dark {
   --glass-bg: rgba(11, 12, 14, 0.9);
@@ -58,7 +101,7 @@ html.dark .glass-page::before {
 .glass-surface,
 .glass-card {
   background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  border: none;
   box-shadow: var(--glass-shadow);
   -webkit-backdrop-filter: blur(18px) saturate(145%);
   backdrop-filter: blur(18px) saturate(145%);
@@ -75,7 +118,7 @@ html.dark .glass-card {
 }
 
 .glass-chip {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   color: var(--glass-text);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
@@ -83,7 +126,7 @@ html.dark .glass-card {
 }
 
 .glass-input {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: color-mix(in srgb, var(--glass-bg) 86%, transparent);
   color: var(--glass-text);
   -webkit-backdrop-filter: blur(10px) saturate(130%);
@@ -113,27 +156,99 @@ html.dark .glass-input::placeholder {
   color: rgba(198, 202, 214, 0.74);
 }
 
+/* ── Unified cabinet/menu primitives (0.2 briefing style) ── */
+.std-sidenav {
+  border: none;
+  border-radius: 14px;
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+.std-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.std-nav-group-label {
+  font-size: .64rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--glass-text);
+  opacity: .48;
+  margin: 8px 0 6px;
+  padding: 0 10px;
+}
+
+.std-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  text-decoration: none;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--glass-text);
+  font-size: .8rem;
+  letter-spacing: .2px;
+  opacity: .64;
+  cursor: pointer;
+  transition: opacity .15s ease, background .15s ease;
+}
+
+.std-nav-item:hover {
+  opacity: .92;
+  background: color-mix(in srgb, var(--glass-bg) 82%, transparent);
+}
+
+.std-nav-item--active {
+  opacity: 1;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--glass-bg) 92%, transparent);
+  border: none;
+}
+
+@media (max-width: 768px) {
+  .std-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .std-nav::-webkit-scrollbar { display: none; }
+  .std-nav-item {
+    width: auto;
+    flex-shrink: 0;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: .74rem;
+  }
+}
+
 /* Admin panel global button styles */
 .a-btn-save {
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--glass-text);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  backdrop-filter: blur(14px) saturate(140%);
+  border: none;
+  background: #1a1a1a;
+  color: #fff;
   padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
 }
-.a-btn-save:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
-.a-btn-save:disabled { opacity: 0.6; cursor: default; }
+.a-btn-save:hover { background: #333; }
+.a-btn-save:disabled { opacity: .45; cursor: default; }
 .a-btn-sm {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
-  color: var(--glass-text);
+  color: #666;
   -webkit-backdrop-filter: blur(12px) saturate(140%);
   backdrop-filter: blur(12px) saturate(140%);
   padding: 4px 10px;
   font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
 }
-.a-btn-sm:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
+.a-btn-sm:hover { color: #1a1a1a; }
 
 /* ── Global dark-mode safety net ── */
 html.dark {
@@ -440,18 +555,26 @@ html.dark .a-modal label {
   color: #a8a8a8;
 }
 html.dark .a-modal .a-btn-sm {
-  border-color: #3a3a3a;
   color: #bbb;
 }
 html.dark .a-modal .a-btn-sm:hover {
-  border-color: #888;
   color: #f2f2f2;
 }
 html.dark .a-modal .a-btn-save {
-  background: #e8e8e8;
-  border-color: #e8e8e8;
+  background: #f2f2f2;
   color: #111;
 }
 html.dark .a-modal .a-btn-save:hover {
   background: #ccc;
+}
+
+/* ── Page / layout fade transitions ─────────────────────────── */
+.fade-page-enter-active,
+.fade-page-leave-active {
+  transition: opacity .22s ease, transform .22s ease;
+}
+.fade-page-enter-from,
+.fade-page-leave-to {
+  opacity: 0;
+  transform: translateY(5px);
 }

@@ -90,7 +90,7 @@
             <span class="amb-link-icon">🔗</span>
             <input v-model="link.url" class="amb-link-inp amb-link-url" placeholder="https://..." @blur="save">
             <input v-model="link.label" class="amb-link-inp" placeholder="описание..." @blur="save">
-            <button class="amb-link-del" @click="removeLink(idx)">×</button>
+            <button class="amb-link-del" @click="removeLink(Number(idx))">×</button>
           </div>
         </div>
         <button class="amb-add-link-btn" @click="addLink">+ добавить ссылку</button>
@@ -120,7 +120,7 @@ const props = defineProps<{ slug: string }>()
 
 const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`)
 
-const savedAt   = ref('')
+const { savedAt, touch: markSaved } = useTimestamp()
 const uploading = ref(false)
 const activeCat = ref('all')
 const newCategory = ref('style')
@@ -173,13 +173,7 @@ const filteredImages = computed(() =>
     : form.mb_images.filter((i: any) => i.category === activeCat.value)
 )
 
-const statusColor = computed(() => ({
-  '':         'gray',
-  collecting: 'blue',
-  review:     'yellow',
-  revision:   'red',
-  approved:   'green',
-}[form.mb_status] || 'gray'))
+const statusColor = useStatusColor(form, 'mb_status')
 
 function toggleTag(tag: string) {
   const idx = form.mb_style_tags.indexOf(tag)
@@ -193,7 +187,7 @@ async function save() {
     method: 'PUT',
     body: { profile: { ...(project.value?.profile || {}), ...form } },
   })
-  savedAt.value = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+  markSaved()
 }
 
 async function onImgInput(e: Event) {

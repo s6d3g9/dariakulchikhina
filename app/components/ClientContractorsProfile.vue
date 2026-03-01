@@ -32,17 +32,13 @@
 </template>
 
 <script setup lang="ts">
-import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
+import { workTypeLabel } from '~~/shared/utils/work-status'
 
 const props = defineProps<{ slug: string }>()
 
 const { data: contractors, pending } = await useFetch<any[]>(
   () => `/api/projects/${props.slug}/contractors`
 )
-
-function workTypeLabel(wt: string) {
-  return CONTRACTOR_WORK_TYPE_OPTIONS.find(o => o.value === wt)?.label ?? wt
-}
 </script>
 
 <style scoped>

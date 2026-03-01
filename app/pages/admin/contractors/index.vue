@@ -2,10 +2,20 @@
   <div>
     <div class="a-card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;margin-bottom:16px">
       <span style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.5px">подрядчики</span>
-      <button class="a-btn-save" @click="openCreate" style="padding:7px 18px;font-size:.82rem">+ добавить</button>
+      <button class="a-btn-save" aria-label="добавить" title="добавить" @click="openCreate" style="padding:7px 14px;font-size:.96rem;line-height:1">+</button>
     </div>
 
-    <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
+    <div v-if="projectSlugFilter" class="a-card a-filter-info">
+      <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
+      <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="a-filter-link">← к проекту</NuxtLink>
+      <NuxtLink to="/admin/contractors" class="a-filter-link">показать всех</NuxtLink>
+    </div>
+
+    <div v-if="pending && !hasContractorsCache" style="font-size:.88rem;color:#999">Загрузка...</div>
+    <div v-else-if="!contractors?.length" class="a-card a-empty-state">
+      <span v-if="projectSlugFilter">Для текущего проекта пока нет привязанных подрядчиков или мастеров</span>
+      <span v-else>Подрядчики и мастера пока не добавлены</span>
+    </div>
     <div v-else>
       <!-- ── Компании-подрядчики с мастерами ──────────────── -->
       <div v-for="company in companies" :key="company.id" class="a-company-group">
@@ -28,10 +38,10 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <button class="a-btn-sm a-btn-add-master" @click="openCreateMaster(company.id)">+ мастер</button>
-              <NuxtLink :to="`/contractor/${company.id}`" target="_blank" class="a-btn-sm a-btn-cabinet">
+              <button class="a-btn-sm a-btn-cabinet" @click="openContractorCabinet(company.id)">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 кабинет
-              </NuxtLink>
+              </button>
               <button class="a-btn-sm" @click="openEdit(company)">изменить</button>
               <button class="a-btn-sm a-btn-danger" @click="del(company.id)">удалить</button>
             </div>
@@ -61,10 +71,10 @@
               <div v-if="m.workTypes?.length" style="font-size:.72rem;color:#999;margin-top:2px">{{ m.workTypes.join(', ') }}</div>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
-              <NuxtLink :to="`/contractor/${m.id}`" target="_blank" class="a-btn-sm a-btn-cabinet">
+              <button class="a-btn-sm a-btn-cabinet" @click="openContractorCabinet(m.id)">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 кабинет
-              </NuxtLink>
+              </button>
               <button class="a-btn-sm" @click="openEdit(m)">изменить</button>
               <button class="a-btn-sm a-btn-danger" @click="del(m.id)">удалить</button>
             </div>
@@ -98,10 +108,10 @@
               </div>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
-              <NuxtLink :to="`/contractor/${m.id}`" target="_blank" class="a-btn-sm a-btn-cabinet">
+              <button class="a-btn-sm a-btn-cabinet" @click="openContractorCabinet(m.id)">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 кабинет
-              </NuxtLink>
+              </button>
               <button class="a-btn-sm" @click="openEdit(m)">изменить</button>
               <button class="a-btn-sm a-btn-danger" @click="del(m.id)">удалить</button>
             </div>
@@ -177,13 +187,10 @@
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div class="a-field">
-              <label>PIN</label>
-              <input v-model="form.pin" class="a-input">
-            </div>
-            <div class="a-field">
               <label>Виды работ</label>
               <input v-model="workTypesStr" class="a-input" placeholder="через запятую">
             </div>
+            <div class="a-field">&nbsp;</div>
           </div>
 
           <!-- section: contacts -->
@@ -226,11 +233,11 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div class="a-field">
               <label>Юридический адрес</label>
-              <input v-model="form.legalAddress" class="a-input">
+              <AppAddressInput v-model="form.legalAddress" input-class="a-input" />
             </div>
             <div class="a-field">
               <label>Фактический адрес</label>
-              <input v-model="form.factAddress" class="a-input">
+              <AppAddressInput v-model="form.factAddress" input-class="a-input" />
             </div>
           </div>
 
@@ -291,7 +298,33 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
-const { data: contractors, pending, refresh } = await useFetch<any[]>('/api/contractors')
+const route = useRoute()
+const projectSlugFilter = computed(() =>
+  typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '',
+)
+
+const contractorsCacheByProject = useState<Record<string, any[]>>('cache-admin-contractors-by-project', () => ({}))
+const contractorsCacheKey = computed(() => projectSlugFilter.value || '__all__')
+const hasContractorsCache = computed(() => (contractorsCacheByProject.value[contractorsCacheKey.value] || []).length > 0)
+
+const { data: contractors, pending, refresh } = await useFetch<any[]>(
+  () => projectSlugFilter.value
+    ? `/api/contractors?projectSlug=${encodeURIComponent(projectSlugFilter.value)}`
+    : '/api/contractors',
+  {
+    server: false,
+    default: () => contractorsCacheByProject.value[contractorsCacheKey.value] || [],
+  },
+)
+
+watch(contractors, (value) => {
+  if (Array.isArray(value)) {
+    contractorsCacheByProject.value = {
+      ...contractorsCacheByProject.value,
+      [contractorsCacheKey.value]: value,
+    }
+  }
+}, { deep: true })
 
 const showModal = ref(false)
 const saving = ref(false)
@@ -312,7 +345,7 @@ function toggleProject(id: number) {
 
 const emptyForm = () => ({
   name: '', slug: '', companyName: '', contactPerson: '',
-  pin: '', phone: '', email: '',
+  phone: '', email: '',
   messenger: '', messengerNick: '', website: '',
   legalAddress: '', factAddress: '',
   inn: '', kpp: '', ogrn: '',
@@ -437,17 +470,59 @@ async function del(id: number) {
   await $fetch(`/api/contractors/${id}`, { method: 'DELETE' })
   refresh()
 }
+
+function openContractorCabinet(id: number) {
+  // Если открыто с фильтром по проекту — открыть интегрированный превью в Admin
+  if (projectSlugFilter.value) {
+    navigateTo(`/admin/projects/${projectSlugFilter.value}?view=contractor&cid=${id}`)
+    return
+  }
+  // Иначе — взять первый привязанный проект подрядчика
+  const contractor = contractors.value?.find((c: any) => c.id === id)
+  const firstSlug = contractor?.linkedProjectSlugs?.[0]
+  if (firstSlug) {
+    navigateTo(`/admin/projects/${firstSlug}?view=contractor&cid=${id}`)
+    return
+  }
+  // Нет привязанных проектов — открыть standalone страницу
+  navigateTo(`/contractor/${id}`)
+}
 </script>
 
 <style scoped>
 /* ── Card ──────────────────────────────────────────────── */
 .a-card {
   background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  border: none;
   box-shadow: var(--glass-shadow);
   -webkit-backdrop-filter: blur(18px) saturate(145%);
   backdrop-filter: blur(18px) saturate(145%);
   border-radius: 14px;
+}
+
+.a-filter-info {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: .76rem;
+  color: var(--glass-text);
+}
+
+.a-filter-link {
+  text-decoration: none;
+  color: var(--glass-text);
+  opacity: .72;
+}
+
+.a-filter-link:hover { opacity: 1; }
+
+.a-empty-state {
+  padding: 22px 18px;
+  font-size: .84rem;
+  color: var(--glass-text);
+  opacity: .58;
 }
 
 /* ── Section title ─────────────────────────────────────── */
@@ -459,12 +534,12 @@ async function del(id: number) {
   opacity: .35;
   margin: 18px 0 10px;
   padding-bottom: 4px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: none;
 }
 
 /* ── Buttons ───────────────────────────────────────────── */
 .a-btn-sm {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -484,7 +559,6 @@ async function del(id: number) {
 }
 .a-btn-danger {
   color: rgba(200,40,40,1);
-  border-color: rgba(200,40,40,.35);
   background: rgba(200,40,40,.07);
   opacity: 1;
 }
@@ -504,7 +578,7 @@ async function del(id: number) {
 .a-btn-cabinet:hover { opacity: 1; box-shadow: none; background: var(--glass-text); }
 
 .a-btn-save {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-text);
   color: var(--glass-page-bg);
   padding: 9px 22px;
@@ -531,7 +605,7 @@ async function del(id: number) {
 }
 .a-input {
   display: block; width: 100%; box-sizing: border-box;
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   padding: 8px 12px;
@@ -540,9 +614,9 @@ async function del(id: number) {
   font-family: inherit;
   color: var(--glass-text);
   border-radius: 8px;
-  transition: border-color .15s;
+  transition: opacity .15s;
 }
-.a-input:focus { border-color: var(--glass-text); }
+.a-input:focus { opacity: .92; }
 .a-input:disabled { opacity: .4; cursor: default; }
 .a-select {
   cursor: pointer;
@@ -555,7 +629,7 @@ async function del(id: number) {
 }
 .a-textarea {
   resize: vertical;
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   padding: 8px 12px;
@@ -578,7 +652,7 @@ async function del(id: number) {
 }
 .a-modal {
   background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  border: none;
   box-shadow: 0 24px 60px rgba(0,0,0,.18);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   backdrop-filter: blur(24px) saturate(150%);
@@ -601,13 +675,13 @@ async function del(id: number) {
 .a-type-company {
   background: rgba(160,110,30,0.12);
   color: rgba(140,90,15,1);
-  border: 1px solid rgba(160,110,30,0.25);
+  border: none;
 }
 .dark .a-type-company { background: rgba(200,160,60,0.15); color: rgba(200,160,60,1); }
 .a-type-master {
   background: rgba(60,100,200,0.1);
   color: rgba(50,90,190,1);
-  border: 1px solid rgba(60,100,200,0.22);
+  border: none;
 }
 .dark .a-type-master { background: rgba(100,140,255,0.15); color: rgba(130,165,255,1); }
 
@@ -622,7 +696,7 @@ async function del(id: number) {
 /* ── Company group indent ───────────────────────────────── */
 .a-company-group { margin-bottom: 12px; }
 .a-master-row {
-  border-left: 3px solid rgba(60,100,200,0.2);
+  border-left: none;
   border-radius: 0 10px 10px 0 !important;
   margin-left: 16px;
 }
@@ -635,7 +709,7 @@ async function del(id: number) {
 .a-project-check {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px;
-  border: 1px solid var(--glass-border);
+  border: none;
   border-radius: 8px;
   cursor: pointer;
   font-size: .8rem;
@@ -646,7 +720,6 @@ async function del(id: number) {
 }
 .a-project-check:hover { opacity: .9; }
 .a-project-check--on {
-  border-color: #6366f1;
   background: rgba(99,102,241,.08);
   color: #6366f1;
   opacity: 1;
@@ -670,7 +743,7 @@ async function del(id: number) {
 .a-linked-projects { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
 .a-linked-proj-chip {
   font-size: .68rem; padding: 2px 7px;
-  border: 1px solid rgba(99,102,241,.25);
+  border: none;
   border-radius: 10px;
   color: #6366f1;
   background: rgba(99,102,241,.07);

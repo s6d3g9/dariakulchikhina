@@ -133,8 +133,9 @@ async function save() {
   --pg-add-hover-color: #1a1a1a;
   --danger-color: #c00;
 
-  background: var(--pg-bg);
-  border: 1px solid var(--pg-border);
+  background: color-mix(in srgb, var(--glass-bg) 90%, transparent);
+  border: none;
+  border-radius: 14px;
   padding: 20px;
   margin-bottom: 16px;
 }
@@ -153,7 +154,7 @@ async function save() {
 .pg-inp {
   flex: 1;
   border: none;
-  border-bottom: 1px solid var(--pg-inp-border);
+  border-bottom: none;
   padding: 6px 0;
   font-size: .88rem;
   outline: none;
@@ -163,8 +164,9 @@ async function save() {
 }
 .pg-inp:focus { border-bottom-color: var(--pg-inp-focus); }
 .pg-btn-add {
-  border: 1px dashed var(--pg-add-border);
-  background: transparent;
+  border: none;
+  background: color-mix(in srgb, var(--glass-bg) 92%, transparent);
+  border-radius: 999px;
   padding: 8px 16px;
   font-size: .82rem;
   cursor: pointer;
@@ -181,6 +183,6 @@ async function save() {
   gap: 12px;
   margin-top: 16px;
 }
-.a-btn-danger { color: var(--danger-color); border-color: var(--danger-color); }
+.a-btn-danger { color: var(--danger-color); }
 .a-btn-danger:hover { background: #c00; color: #fff; }
 </style>

@@ -24,7 +24,7 @@
             <button
               class="pd-step-num"
               :class="{ 'pd-step-num--link': stepToSlug[step.num] }"
-              @click="stepToSlug[step.num] && $emit('navigate', stepToSlug[step.num])"
+              @click="stepToSlug[step.num] && $emit('navigate', String(stepToSlug[step.num]))"
               :title="stepToSlug[step.num] ? 'Открыть раздел ' + step.num : step.num"
             >{{ step.num }}</button>
             <div class="pd-step-vline" />
@@ -115,13 +115,12 @@ const phaseMeta = computed(() =>
 .pd-wrap {
   margin-top: 12px;
   border-radius: 12px;
-  border: 1px solid rgba(0,0,0,0.08);
+  border: none;
   background: #fff;
   overflow: hidden;
 }
 .dark .pd-wrap {
   background: #101014;
-  border-color: rgba(255,255,255,0.08);
 }
 
 /* Header */
@@ -131,11 +130,10 @@ const phaseMeta = computed(() =>
   justify-content: space-between;
   gap: 16px;
   padding: 18px 20px 14px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
+  border-bottom: none;
   background: rgba(99,102,241,0.04);
 }
 .dark .pd-header {
-  border-color: rgba(255,255,255,0.06);
   background: rgba(99,102,241,0.07);
 }
 .pd-header-left { flex: 1; }
@@ -207,7 +205,7 @@ const phaseMeta = computed(() =>
   height: 34px;
   border-radius: 50%;
   background: #f3f4f6;
-  border: 2px solid #e5e7eb;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -226,7 +224,6 @@ const phaseMeta = computed(() =>
 .pd-step-num--link:hover {
   transform: scale(1.12);
   box-shadow: 0 0 0 4px rgba(99,102,241,0.22);
-  border-color: #6366f1;
   color: #6366f1;
   background: #eef2ff;
 }
@@ -238,17 +235,14 @@ const phaseMeta = computed(() =>
 }
 .dark .pd-step-num {
   background: #1e1e20;
-  border-color: #2d2d2d;
   color: #9ca3af;
 }
 .pd-step--critical .pd-step-num {
   background: #fff7ed;
-  border-color: #fb923c;
   color: #ea580c;
 }
 .dark .pd-step--critical .pd-step-num {
   background: #3d1500;
-  border-color: #c2410c;
   color: #fdba74;
 }
 
@@ -291,12 +285,11 @@ const phaseMeta = computed(() =>
   border-radius: 20px;
   background: #fff7ed;
   color: #ea580c;
-  border: 1px solid #fed7aa;
+  border: none;
 }
 .dark .pd-critical-badge {
   background: #3d1500;
   color: #fdba74;
-  border-color: #c2410c;
 }
 
 /* Row: icon + content */
@@ -333,7 +326,7 @@ const phaseMeta = computed(() =>
   padding: 2px 8px;
   border-radius: 6px;
   background: rgba(99,102,241,0.08);
-  border: 1px solid rgba(99,102,241,0.18);
+  border: none;
   color: #6366f1;
   font-size: .77rem;
   font-weight: 500;
@@ -355,12 +348,11 @@ const phaseMeta = computed(() =>
   padding: 2px 8px;
   border-radius: 6px;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: none;
   color: #64748b;
 }
 .dark .pd-artifact {
   background: #1e1e20;
-  border-color: #2d2d2d;
   color: #94a3b8;
 }
 </style>

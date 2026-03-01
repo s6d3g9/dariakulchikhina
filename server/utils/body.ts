@@ -1,21 +1,45 @@
 import type { H3Event } from 'h3'
 
 /**
- * h3 v2 RC bug workaround: event.req.text() crashes because event.req
- * returns a deprecated Node.js IncomingMessage, not a Fetch Request.
- * We read from event.node.req directly.
+ * Reads JSON body in Nitro/h3 v2 RC + Node.js adapter.
+ * Tries multiple strategies in order of reliability.
  */
 export async function readNodeBody(event: H3Event): Promise<unknown> {
-  const req = (event as any).node?.req ?? (event as any).req
-  return new Promise((resolve, reject) => {
-    let data = ''
-    req.on('data', (chunk: Buffer | string) => { data += chunk.toString() })
-    req.on('end', () => {
-      try { resolve(data ? JSON.parse(data) : {}) }
-      catch { resolve({}) }
+  const req: any = (event as any).node?.req ?? (event as any).req
+
+  // Strategy 1: already-buffered body (Nitro stores it in these fields)
+  for (const key of ['_body', 'rawBody', 'body']) {
+    if (req[key] != null && typeof req[key] !== 'function') {
+      const v = req[key]
+      if (typeof v === 'object' && !Buffer.isBuffer(v)) return v
+      try { return JSON.parse(Buffer.isBuffer(v) ? v.toString('utf8') : String(v)) } catch { /**/ }
+    }
+  }
+
+  // Strategy 2: Nitro's internal RawBodySymbol
+  const sym = Object.getOwnPropertySymbols(req).find(s => String(s).includes('RawBody') || String(s).includes('rawBody'))
+  if (sym) {
+    try {
+      const cached = await (req as any)[sym]
+      if (cached) return JSON.parse(Buffer.isBuffer(cached) ? cached.toString('utf8') : String(cached))
+    } catch { /**/ }
+  }
+
+  // Strategy 3: read the raw stream directly
+  try {
+    const raw = await new Promise<string>((resolve, reject) => {
+      if (req.readableEnded || req.destroyed) return resolve('')
+      let data = ''
+      req.on('data', (chunk: any) => { data += Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk) })
+      req.on('end', () => resolve(data))
+      req.on('error', reject)
+      // safety timeout
+      setTimeout(() => resolve(data), 5000)
     })
-    req.on('error', reject)
-  })
+    if (raw.trim()) return JSON.parse(raw)
+  } catch { /**/ }
+
+  return {}
 }
 
 export async function readValidatedNodeBody<T>(

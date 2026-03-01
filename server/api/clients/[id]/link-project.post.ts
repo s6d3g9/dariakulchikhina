@@ -18,11 +18,16 @@ export default defineEventHandler(async (event) => {
   const [project] = await db.select().from(projects).where(eq(projects.slug, projectSlug))
   if (!project) throw createError({ statusCode: 404, statusMessage: 'Project not found' })
 
-  // Merge client data + brief into project profile
+  // Merge canonical client identity data into project profile
   const currentProfile = (project.profile as Record<string, any>) || {}
-  const brief = (client.brief as Record<string, any>) || {}
+  const currentClientIds = Array.isArray(currentProfile.client_ids)
+    ? currentProfile.client_ids.map((id: unknown) => String(id)).filter(Boolean)
+    : []
+  const nextClientIds = Array.from(new Set([...currentClientIds, String(client.id)]))
+
   const updatedProfile = {
     ...currentProfile,
+    client_ids: nextClientIds,
     client_id: String(client.id),
     client_name: client.name,
     ...(client.phone    && { client_phone: client.phone }),
@@ -30,13 +35,6 @@ export default defineEventHandler(async (event) => {
     ...(client.address  && { objectAddress: currentProfile.objectAddress || client.address }),
     ...(client.messenger && { client_messenger: client.messenger }),
     ...(client.messengerNick && { client_messenger_nick: client.messengerNick }),
-    // Brief fields (only fill if not already in profile)
-    ...(brief.style_preference && !currentProfile.style_preference && { style_preference: brief.style_preference }),
-    ...(brief.budget           && !currentProfile.budget           && { budget: brief.budget }),
-    ...(brief.deadline_wish    && !currentProfile.deadline         && { deadline: brief.deadline_wish }),
-    ...(brief.rooms            && !currentProfile.rooms            && { rooms: brief.rooms }),
-    ...(brief.wishes           && !currentProfile.client_wishes    && { client_wishes: brief.wishes }),
-    ...(brief.about_me         && !currentProfile.client_about     && { client_about: brief.about_me }),
   }
 
   const [updated] = await db.update(projects)

@@ -22,7 +22,7 @@
         <div class="ass-rows">
           <div class="ass-row">
             <label class="ass-lbl">дата выезда</label>
-            <input v-model="form.survey_date" type="date" class="ass-inp" @change="save">
+            <AppDatePicker v-model="form.survey_date" model-type="iso" input-class="ass-inp" @update:model-value="save" />
           </div>
           <div class="ass-row">
             <label class="ass-lbl">инженер / замерщик</label>
@@ -76,7 +76,7 @@
             <span class="ass-file-type-badge" :class="`ass-badge--${file.type}`">{{ fileTypeLabel(file.type) }}</span>
             <a :href="file.url" target="_blank" class="ass-file-link">{{ file.label || file.filename }}</a>
             <span class="ass-file-date">{{ file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString('ru') : '' }}</span>
-            <button class="ass-file-del" @click="removeFile(idx)">×</button>
+            <button class="ass-file-del" @click="removeFile(Number(idx))">×</button>
           </div>
         </div>
         <div v-else class="ass-files-empty">файлы не загружены</div>
@@ -183,10 +183,7 @@ function toggleCheck(key: string) {
   save()
 }
 
-const surveyStatusColor = computed(() => {
-  const m: Record<string, string> = { completed: 'green', in_progress: 'yellow', planned: 'blue', revision: 'red' }
-  return m[form.survey_status] || 'gray'
-})
+const surveyStatusColor = useStatusColor(form, 'survey_status')
 
 function fileTypeLabel(type: string) {
   const m: Record<string, string> = {
@@ -256,7 +253,7 @@ async function removeFile(idx: number) {
 
 // ── Save ─────────────────────────────────────────────────────────
 const saving = ref(false)
-const savedAt = ref('')
+const { savedAt, touch: markSaved } = useTimestamp()
 
 async function save() {
   saving.value = true
@@ -265,8 +262,7 @@ async function save() {
       method: 'PUT',
       body: { profile: { ...project.value?.profile, ...form } }
     })
-    const now = new Date()
-    savedAt.value = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
+    markSaved()
   } finally {
     saving.value = false
   }
@@ -349,7 +345,7 @@ async function save() {
 .ass-badge--photo      { background: #f3e5f5; color: #6a1b9a; }
 .ass-badge--mep_report { background: #fff3e0; color: #e65100; }
 .ass-badge--survey_report { background: #e8f5e9; color: #2e7d32; }
-.ass-badge--floor_plan { background: #fafafa; color: #424242; border: 1px solid #ddd; }
+.ass-badge--floor_plan { background: #fafafa; color: #424242; border: none; }
 .ass-badge--other      { background: #f5f5f5; color: #666; }
 .ass-file-link { font-size: .82rem; color: var(--text, #333); text-decoration: none; flex: 1; }
 .ass-file-link:hover { text-decoration: underline; }

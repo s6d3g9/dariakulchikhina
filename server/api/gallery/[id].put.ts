@@ -8,16 +8,26 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const id = Number(getRouterParam(event, 'id'))
   const body = await readNodeBody(event) as Record<string, unknown>
-  const { title, image, tags, description, sortOrder } = body
+  const { title, image, images, tags, description, sortOrder, category, featured, width, height, properties } = body
+
+  const setData: Record<string, unknown> = {
+    title,
+    image: image || null,
+    tags: Array.isArray(tags) ? tags : [],
+    description: description || null,
+    sortOrder: sortOrder ?? 0,
+    category: (category as string) || undefined,
+  }
+
+  // Новые поля — обновляем только если переданы
+  if (Array.isArray(images)) setData.images = images
+  if (typeof featured === 'boolean') setData.featured = featured
+  if (typeof width === 'number') setData.width = width
+  if (typeof height === 'number') setData.height = height
+  if (properties && typeof properties === 'object') setData.properties = properties
 
   const [row] = await db.update(galleryItems)
-    .set({
-      title,
-      image: image || null,
-      tags: Array.isArray(tags) ? tags : [],
-      description: description || null,
-      sortOrder: sortOrder ?? 0,
-    })
+    .set(setData)
     .where(eq(galleryItems.id, id))
     .returning()
 

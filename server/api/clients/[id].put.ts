@@ -17,7 +17,6 @@ export default defineEventHandler(async (event) => {
     messengerNick: body.messengerNick?.trim() || null,
     address: body.address?.trim() || null,
     notes: body.notes?.trim() || null,
-    ...(body.pin?.trim() && { pin: body.pin.trim() }),
   }).where(eq(clients.id, id)).returning()
   if (!c) throw createError({ statusCode: 404, statusMessage: 'Client not found' })
   return c

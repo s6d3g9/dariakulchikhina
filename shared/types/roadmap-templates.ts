@@ -5,24 +5,24 @@ type ObjectType = typeof OBJECT_TYPES[number]
 type ComplexityType = typeof ROADMAP_COMPLEXITY_TYPES[number]
 type StageKey = typeof ROADMAP_STAGE_TYPES[number]
 
-export interface RoadmapTemplateStage {
+interface BuiltinRoadmapTemplateStage {
   stageKey: StageKey
   title: string
   description?: string
   notes?: string
 }
 
-export interface RoadmapTemplate {
+interface BuiltinRoadmapTemplate {
   key: string
   title: string
   objectType: ObjectType
   clientType: ClientType
   complexity: ComplexityType
   description: string
-  stages: RoadmapTemplateStage[]
+  stages: BuiltinRoadmapTemplateStage[]
 }
 
-export const ROADMAP_TEMPLATES: RoadmapTemplate[] = [
+export const ROADMAP_TEMPLATES: BuiltinRoadmapTemplate[] = [
   {
     key: 'apartment_physical_basic',
     title: 'Квартира · Физлицо · Базовый',

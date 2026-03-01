@@ -45,7 +45,7 @@
               <div v-else class="aca-render-icon">{{ r.type === 'pdf' ? '📄' : '🗂' }}</div>
               <div class="aca-render-overlay">
                 <a :href="r.url" target="_blank" class="aca-render-link">открыть ↗</a>
-                <button class="aca-render-del" @click="removeRender(idx)">×</button>
+                <button class="aca-render-del" @click="removeRender(Number(idx))">×</button>
               </div>
             </div>
 
@@ -88,11 +88,11 @@
           </div>
           <div class="aca-row">
             <label class="aca-lbl">дата подписания</label>
-            <input v-model="form.ca_approval_date" type="date" class="aca-inp" @change="save">
+            <AppDatePicker v-model="form.ca_approval_date" model-type="iso" input-class="aca-inp" @update:model-value="save" />
           </div>
           <div class="aca-row">
             <label class="aca-lbl">дата отправки клиенту</label>
-            <input v-model="form.ca_sent_date" type="date" class="aca-inp" @change="save">
+            <AppDatePicker v-model="form.ca_sent_date" model-type="iso" input-class="aca-inp" @update:model-value="save" />
           </div>
           <div class="aca-row">
             <label class="aca-lbl">версия пакета</label>
@@ -144,7 +144,7 @@ const props = defineProps<{ slug: string }>()
 
 const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`)
 
-const savedAt     = ref('')
+const { savedAt, touch: markSaved } = useTimestamp()
 const uploading   = ref(false)
 const uploadingAct = ref(false)
 const transitioning = ref(false)
@@ -171,14 +171,7 @@ watch(project, (p) => {
   if (!Array.isArray(form.ca_renders)) form.ca_renders = []
 }, { immediate: true })
 
-const statusColor = computed(() => ({
-  '':        'gray',
-  in_work:   'blue',
-  sent:      'yellow',
-  partial:   'yellow',
-  revision:  'red',
-  approved:  'green',
-}[form.ca_status] || 'gray'))
+const statusColor = useStatusColor(form, 'ca_status')
 
 const approvedCount = computed(() =>
   form.ca_renders.filter((r: any) => r.approval === 'approved').length
@@ -198,7 +191,7 @@ async function save() {
     method: 'PUT',
     body: { profile: { ...(project.value?.profile || {}), ...form } },
   })
-  savedAt.value = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+  markSaved()
 }
 
 async function onRenderInput(e: Event) {

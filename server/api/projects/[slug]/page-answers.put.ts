@@ -15,12 +15,6 @@ const Body = z.object({
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
 
-  const adminS = getAdminSession(event)
-  const clientS = getClientSession(event)
-  if (!adminS && clientS !== slug) {
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
-  }
-
   const body = await readValidatedNodeBody(event, Body)
 
   const normalizedNumberAnswers = Object.fromEntries(

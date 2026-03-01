@@ -7,6 +7,7 @@ export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const slug = getRouterParam(event, 'slug')!
   const body = await readValidatedNodeBody(event, UpdateProjectSchema)
+
   const db = useDb()
   const [updated] = await db.update(projects)
     .set({ ...body, updatedAt: new Date() })

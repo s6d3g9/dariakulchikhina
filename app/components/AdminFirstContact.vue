@@ -23,7 +23,7 @@
         <div class="afc-rows">
           <div class="afc-row">
             <label class="afc-lbl">дата первого контакта</label>
-            <input v-model="form.lead_date" type="date" class="afc-inp" @change="save">
+            <AppDatePicker v-model="form.lead_date" model-type="iso" input-class="afc-inp" @update:model-value="save" />
           </div>
           <div class="afc-row">
             <label class="afc-lbl">источник лида</label>
@@ -125,7 +125,7 @@
         <div class="afc-rows">
           <div class="afc-row">
             <label class="afc-lbl">дата встречи</label>
-            <input v-model="form.lead_meeting_date" type="date" class="afc-inp" @change="save">
+            <AppDatePicker v-model="form.lead_meeting_date" model-type="iso" input-class="afc-inp" @update:model-value="save" />
           </div>
           <div class="afc-row">
             <label class="afc-lbl">место встречи</label>
@@ -188,7 +188,7 @@ const props = defineProps<{ slug: string }>()
 
 const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`)
 
-const savedAt = ref('')
+const { savedAt, touch: markSaved } = useTimestamp()
 
 const form = reactive<any>({
   lead_status:           '',
@@ -227,21 +227,14 @@ watch(project, (p) => {
   })
 }, { immediate: true })
 
-const statusColor = computed(() => ({
-  '':          'gray',
-  new:         'gray',
-  contacted:   'blue',
-  meeting:     'yellow',
-  qualified:   'green',
-  declined:    'red',
-}[form.lead_status] || 'gray'))
+const statusColor = useStatusColor(form, 'lead_status')
 
 async function save() {
   await $fetch(`/api/projects/${props.slug}`, {
     method: 'PUT',
     body: { profile: { ...(project.value?.profile || {}), ...form } },
   })
-  savedAt.value = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+  markSaved()
 }
 
 // ── Yandex Maps ──────────────────────────────────────

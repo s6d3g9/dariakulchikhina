@@ -2,7 +2,7 @@
   <div>
     <div class="a-card" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;margin-bottom:16px">
       <span style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.5px">шаблоны и сценарии проектов</span>
-      <button class="a-btn-save" @click="openCreate" style="padding:7px 18px;font-size:.82rem">+ добавить шаблон</button>
+      <button class="a-btn-save" aria-label="добавить" title="добавить" @click="openCreate" style="padding:7px 14px;font-size:.96rem;line-height:1">+</button>
     </div>
 
     <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
@@ -40,7 +40,7 @@
             </div>
             <div class="a-field">
               <label>Сложность *</label>
-              <select v-model="form.complexity" class="a-input" style="border:1px solid #ddd;padding:8px" required>
+              <select v-model="form.complexity" class="a-input" style="padding:8px" required>
                 <option v-for="opt in ROADMAP_COMPLEXITY_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
             </div>
@@ -49,13 +49,13 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
             <div class="a-field">
               <label>Тип объекта *</label>
-              <select v-model="form.objectType" class="a-input" style="border:1px solid #ddd;padding:8px" required>
+              <select v-model="form.objectType" class="a-input" style="padding:8px" required>
                 <option v-for="opt in OBJECT_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
             </div>
             <div class="a-field">
               <label>Тип клиента *</label>
-              <select v-model="form.clientType" class="a-input" style="border:1px solid #ddd;padding:8px" required>
+              <select v-model="form.clientType" class="a-input" style="padding:8px" required>
                 <option v-for="opt in CLIENT_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
             </div>
@@ -63,7 +63,7 @@
 
           <div class="a-field">
             <label>Описание</label>
-            <textarea v-model="form.description" class="a-input" rows="2" style="border:1px solid #ddd;padding:8px"></textarea>
+            <textarea v-model="form.description" class="a-input" rows="2" style="padding:8px"></textarea>
           </div>
 
           <div class="a-field">
@@ -80,7 +80,7 @@
                   </div>
                   <div>
                     <label style="font-size:.72rem;color:#888">Тип этапа</label>
-                    <select v-model="stage.stageKey" class="a-input" style="border:1px solid #ddd;padding:8px" required>
+                    <select v-model="stage.stageKey" class="a-input" style="padding:8px" required>
                       <option v-for="opt in ROADMAP_STAGE_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                     </select>
                   </div>
@@ -252,32 +252,34 @@ async function removeTemplate(tpl: any) {
 </script>
 
 <style scoped>
-.a-card { background: #fff; border: 1px solid #e0e0e0; }
+.a-card { background: var(--glass-bg); border: none; box-shadow: var(--glass-shadow); -webkit-backdrop-filter: blur(18px) saturate(145%); backdrop-filter: blur(18px) saturate(145%); border-radius: 14px; }
 .a-btn-sm {
-  border: 1px solid #ddd; background: transparent; padding: 4px 10px;
+  border: none; background: var(--glass-bg); padding: 4px 10px;
   font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px;
 }
-.a-btn-sm:hover { border-color: #1a1a1a; }
+.a-btn-sm:hover { opacity: .9; }
 .a-btn-sm:disabled { opacity: .5; cursor: default; }
-.a-btn-danger { color: #c00; border-color: #c00; }
+.a-btn-danger { color: #c00; }
 .a-btn-danger:hover { background: #c00; color: #fff; }
 .a-btn-save {
-  border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff;
+  border: none; background: #1a1a1a; color: #fff;
   padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
 }
 .a-btn-save:hover { background: #333; }
 .a-field { margin-bottom: 14px; }
 .a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
 .a-input {
-  display: block; width: 100%; border: none; border-bottom: 1px solid #ddd;
+  display: block; width: 100%; border: none;
+  background: color-mix(in srgb, var(--glass-bg) 90%, transparent);
+  border-radius: 8px;
   padding: 8px 0; font-size: .88rem; outline: none; font-family: inherit;
 }
-.a-input:focus { border-bottom-color: #1a1a1a; }
+.a-input:focus { opacity: .92; }
 .a-modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.3);
   display: flex; align-items: center; justify-content: center; z-index: 100;
 }
-.a-modal { background: #fff; border: 1px solid #e0e0e0; padding: 24px; max-height: 90vh; overflow: auto; }
-.a-stage-item { border: 1px solid #eee; padding: 10px; }
-html.dark .a-stage-item { border-color: #2d2d2d; background: #1e1e20; }
+.a-modal { background: var(--glass-bg); border: none; box-shadow: var(--glass-shadow); -webkit-backdrop-filter: blur(20px) saturate(145%); backdrop-filter: blur(20px) saturate(145%); border-radius: 14px; padding: 24px; max-height: 90vh; overflow: auto; }
+.a-stage-item { border: none; border-radius: 12px; background: color-mix(in srgb, var(--glass-bg) 88%, transparent); padding: 10px; }
+html.dark .a-stage-item { background: #1e1e20; }
 </style>

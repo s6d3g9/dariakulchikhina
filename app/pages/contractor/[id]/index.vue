@@ -1,25 +1,17 @@
 <template>
   <div class="cab-root glass-page">
 
-    <header class="cab-header glass-surface">
-      <div class="cab-logo">DK <span>| {{ contractor?.contractorType === 'company' ? 'Кабинет подрядчика' : 'Кабинет мастера' }}</span></div>
-      <div class="cab-hright">
-        <span v-if="contractor" class="cab-hname">{{ contractor.name }}</span>
-        <button class="glass-chip cab-logout" @click="logout">Выйти</button>
-      </div>
-    </header>
-
     <div v-if="pending" class="cab-loading">Загружаем…</div>
 
     <div v-else-if="contractor" class="cab-body">
 
       <!-- Sidebar -->
-      <aside class="cab-sidebar glass-surface">
-        <nav class="cab-nav">
+      <aside class="cab-sidebar glass-surface std-sidenav">
+        <nav class="cab-nav std-nav">
           <button
             v-for="item in nav" :key="item.key"
-            class="cab-nav-item"
-            :class="{ active: section === item.key }"
+            class="cab-nav-item std-nav-item"
+            :class="{ active: section === item.key, 'std-nav-item--active': section === item.key }"
             @click="section = item.key"
           >
             <span class="cab-nav-icon">{{ item.icon }}</span>
@@ -416,8 +408,6 @@
       </main>
     </div>
 
-    <footer class="cab-footer">DK Studio · {{ contractor?.contractorType === 'company' ? 'Кабинет подрядчика' : 'Кабинет мастера' }}</footer>
-
     <!-- Lightbox -->
     <Teleport to="body">
       <div v-if="lightboxUrl" class="cab-lightbox" @click="lightboxUrl = null">
@@ -496,9 +486,7 @@
 <script setup lang="ts">
 import { CONTRACTOR_ROLE_TYPE_OPTIONS, CONTRACTOR_WORK_TYPE_OPTIONS, WORK_TYPE_STAGES } from '~~/shared/types/catalogs'
 
-definePageMeta({ layout: 'default' })
-
-const router = useRouter()
+definePageMeta({ layout: 'contractor' })
 const route = useRoute()
 const contractorId = Number(route.params.id)
 
@@ -993,11 +981,6 @@ async function saveProfile() {
     saving.value = false
   }
 }
-
-async function logout() {
-  await $fetch('/api/auth/contractor-logout', { method: 'POST' })
-  router.push('/contractor/login')
-}
 </script>
 
 <style scoped>
@@ -1031,7 +1014,7 @@ async function logout() {
 .cab-logout {
   cursor: pointer;
   background: none;
-  border: 1px solid var(--glass-border, rgba(255,255,255,0.3));
+  border: none;
   font-size: 0.85rem;
 }
 
@@ -1071,18 +1054,24 @@ async function logout() {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 9px 10px;
   background: none;
   border: none;
   text-align: left;
   cursor: pointer;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   color: var(--glass-text, #1a1a2e);
-  opacity: 0.7;
-  transition: background 0.15s, opacity 0.15s;
+  opacity: 0.64;
+  border-radius: 9px;
+  transition: background 0.15s, opacity 0.15s, border-color 0.15s;
 }
-.cab-nav-item:hover { background: rgba(255,255,255,0.18); opacity: 1; }
-.cab-nav-item.active { background: rgba(255,255,255,0.28); opacity: 1; font-weight: 600; }
+.cab-nav-item:hover { background: color-mix(in srgb, var(--glass-bg) 82%, transparent); opacity: .92; }
+.cab-nav-item.active {
+  background: color-mix(in srgb, var(--glass-bg) 92%, transparent);
+  border: none;
+  opacity: 1;
+  font-weight: 600;
+}
 .cab-nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
 .cab-badge {
   margin-left: auto;
@@ -1419,7 +1408,7 @@ async function logout() {
   width: 100%;
   padding: 10px 14px;
   background: var(--glass-bg, rgba(255,255,255,0.28));
-  border: 1px solid var(--glass-border, rgba(255,255,255,0.3));
+  border: none;
   border-radius: 10px;
   font-family: inherit;
   font-size: 0.85rem;

@@ -26,11 +26,11 @@
           </div>
           <div class="asp-row">
             <label class="asp-lbl">дата отправки клиенту</label>
-            <input v-model="form.sp_sent_date" type="date" class="asp-inp" @change="save">
+            <AppDatePicker v-model="form.sp_sent_date" model-type="iso" input-class="asp-inp" @update:model-value="save" />
           </div>
           <div class="asp-row">
             <label class="asp-lbl">дата согласования</label>
-            <input v-model="form.sp_approved_date" type="date" class="asp-inp" @change="save">
+            <AppDatePicker v-model="form.sp_approved_date" model-type="iso" input-class="asp-inp" @update:model-value="save" />
           </div>
           <div class="asp-row asp-row--full">
             <label class="asp-lbl">комментарий архитектора</label>
@@ -62,7 +62,7 @@
                 <input v-model="file.comment" class="asp-file-comment" placeholder="комментарий..." @blur="save">
               </div>
             </div>
-            <button class="asp-file-del" @click="removeFile(idx)" title="удалить">×</button>
+            <button class="asp-file-del" @click="removeFile(Number(idx))" title="удалить">×</button>
           </div>
         </div>
         <div v-else class="asp-files-empty">Файлы ещё не загружены</div>
@@ -98,7 +98,7 @@ const props = defineProps<{ slug: string }>()
 
 const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`)
 
-const savedAt   = ref('')
+const { savedAt, touch: markSaved } = useTimestamp()
 const uploading = ref(false)
 
 const form = reactive<any>({
@@ -122,20 +122,14 @@ watch(project, (p) => {
   })
 }, { immediate: true })
 
-const statusColor = computed(() => ({
-  '':           'gray',
-  in_work:      'blue',
-  sent_to_client:'yellow',
-  revision:     'red',
-  approved:     'green',
-}[form.sp_status] || 'gray'))
+const statusColor = useStatusColor(form, 'sp_status')
 
 async function save() {
   await $fetch(`/api/projects/${props.slug}`, {
     method: 'PUT',
     body: { profile: { ...(project.value?.profile || {}), ...form } },
   })
-  savedAt.value = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+  markSaved()
 }
 
 async function onFileInput(e: Event) {

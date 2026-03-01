@@ -2,6 +2,26 @@
   <div>
     <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
     <template v-else>
+      <div class="acp-card" style="margin-bottom:12px">
+        <div class="acp-section-title" style="margin-top:0">выбор клиента</div>
+        <div class="acp-row">
+          <label class="acp-lbl">клиент из CRM:</label>
+          <select v-model="selectedClientId" class="acp-inp acp-select">
+            <option value="">— выберите клиента —</option>
+            <option v-for="c in clients" :key="c.id" :value="String(c.id)">
+              {{ c.name }}
+              <template v-if="c.phone"> · {{ c.phone }}</template>
+              <template v-else-if="c.email"> · {{ c.email }}</template>
+            </option>
+          </select>
+          <button class="acp-link-btn" :disabled="!selectedClientId || linkingClient" @click="linkSelectedClient">
+            {{ linkingClient ? '...' : 'привязать' }}
+          </button>
+        </div>
+        <p v-if="linkError" class="acp-link-error">{{ linkError }}</p>
+        <p v-else-if="linkSuccess" class="acp-link-success">{{ linkSuccess }}</p>
+      </div>
+
       <div class="acp-card">
         <!-- photo upload -->
         <div class="acp-upload-row" style="margin-bottom:20px">
@@ -156,8 +176,15 @@ interface ChipsFieldDef {
 const props = defineProps<{ slug: string }>()
 
 const { data: project, pending, refresh } = await useFetch<any>(`/api/projects/${props.slug}`)
+const { data: clientsData } = await useFetch<any[]>('/api/clients', { default: () => [] })
 const saving = ref(false)
 const error = ref('')
+const linkingClient = ref(false)
+const linkError = ref('')
+const linkSuccess = ref('')
+const selectedClientId = ref('')
+
+const clients = computed(() => clientsData.value || [])
 
 const personalFields: FieldDef[] = [
   { key: 'fio', label: 'фио' },
@@ -256,8 +283,28 @@ watch(project, (p) => {
         form[k] = (v as string) ?? ''
       }
     }
+    selectedClientId.value = String(p.profile.client_id || '')
   }
 }, { immediate: true })
+
+async function linkSelectedClient() {
+  if (!selectedClientId.value) return
+  linkingClient.value = true
+  linkError.value = ''
+  linkSuccess.value = ''
+  try {
+    await $fetch(`/api/clients/${selectedClientId.value}/link-project`, {
+      method: 'POST',
+      body: { projectSlug: props.slug },
+    })
+    await refresh()
+    linkSuccess.value = 'Клиент привязан к проекту'
+  } catch (e: any) {
+    linkError.value = e?.data?.statusMessage || 'Не удалось привязать клиента'
+  } finally {
+    linkingClient.value = false
+  }
+}
 
 async function uploadPhoto(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
@@ -400,7 +447,7 @@ async function save() {
   max-width: 120px;
   max-height: 90px;
   object-fit: cover;
-  border: 1px solid var(--acp-img-border);
+  border: none;
   border-radius: 2px;
 }
 /* chips */
@@ -416,22 +463,21 @@ async function save() {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 12px;
-  border: 1px solid #ddd;
+  border: none;
   font-size: .78rem;
   cursor: pointer;
   user-select: none;
   transition: background 0.12s, border-color 0.12s;
   color: #555;
 }
-.acp-chip:hover { border-color: #999; }
+.acp-chip:hover { opacity: .9; }
 .acp-chip--on {
   background: #1a1a1a;
-  border-color: #1a1a1a;
   color: #fff;
 }
-.dark .acp-chip { border-color: #444; color: #bbb; }
-.dark .acp-chip:hover { border-color: #888; }
-.dark .acp-chip--on { background: #6366f1; border-color: #6366f1; color: #fff; }
+.dark .acp-chip { color: #bbb; }
+.dark .acp-chip:hover { opacity: .95; }
+.dark .acp-chip--on { background: #6366f1; color: #fff; }
 
 .acp-actions {
   display: flex;
@@ -440,4 +486,17 @@ async function save() {
   align-items: center;
   margin-top: 8px;
 }
+.acp-link-btn {
+  border: none;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 6px 12px;
+  font-size: .78rem;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 2px;
+}
+.acp-link-btn:disabled { opacity: .55; cursor: default; }
+.acp-link-error { margin: 6px 0 0; color: #c00; font-size: .78rem; }
+.acp-link-success { margin: 6px 0 0; color: #5caa7f; font-size: .78rem; }
 </style>

@@ -105,7 +105,10 @@ function suggestUp() {
   if (activeIndex.value > 0) activeIndex.value--
 }
 function suggestSelect() {
-  if (activeIndex.value >= 0) pick(suggestions.value[activeIndex.value])
+  if (activeIndex.value >= 0) {
+    const selected = suggestions.value[activeIndex.value]
+    if (selected) pick(selected)
+  }
 }
 function pick(s: Suggestion) {
   emit('update:modelValue', s.full)
@@ -128,7 +131,7 @@ input { display: block; width: 100%; box-sizing: border-box; }
 /* global — список телепортирован в body */
 .aai-list {
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: none;
   border-radius: 6px;
   box-shadow: 0 8px 32px rgba(0,0,0,.16);
   padding: 4px 0;
@@ -137,7 +140,7 @@ input { display: block; width: 100%; box-sizing: border-box; }
   max-height: 260px;
   overflow-y: auto;
 }
-.dark .aai-list { background: #1e1e1e; border-color: #333; }
+.dark .aai-list { background: #1e1e1e; }
 
 .aai-item {
   display: flex;

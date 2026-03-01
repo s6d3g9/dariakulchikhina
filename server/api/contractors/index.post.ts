@@ -9,7 +9,6 @@ export default defineEventHandler(async (event) => {
   const [contractor] = await db.insert(contractors).values({
     slug: body.slug,
     name: body.name,
-    pin: body.pin,
     contractorType: body.contractorType || 'master',
     parentId: body.parentId || null,
     workTypes: [],

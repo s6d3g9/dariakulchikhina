@@ -15,15 +15,10 @@ export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
   const rawUrl = event.node.req.url || ''
   const queryString = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?') + 1) : ''
-  const page = (new URLSearchParams(queryString).get('page') || '').trim()
+  const rawPage = new URLSearchParams(queryString).get('page') || undefined
+  const page = (rawPage || '').trim()
   if (!page) {
     throw createError({ statusCode: 400, statusMessage: 'Missing page' })
-  }
-
-  const adminS = getAdminSession(event)
-  const clientS = getClientSession(event)
-  if (!adminS && clientS !== slug) {
-    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
   const db = useDb()

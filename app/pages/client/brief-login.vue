@@ -3,36 +3,8 @@
     <div class="bl-wrap glass-card glass-surface">
       <div class="bl-logo">DK</div>
       <h1 class="bl-title">Кабинет клиента</h1>
-      <p class="bl-sub">Введите ваш номер и PIN-код</p>
-
-      <form class="bl-form" @submit.prevent="login">
-        <div class="bl-field">
-          <label>Ваш ID (выдаётся менеджером)</label>
-          <input
-            v-model="clientId"
-            type="number"
-            class="bl-input glass-input"
-            placeholder="12"
-            required
-            autofocus
-          >
-        </div>
-        <div class="bl-field">
-          <label>PIN-код</label>
-          <input
-            v-model="pin"
-            type="text"
-            inputmode="numeric"
-            class="bl-input glass-input"
-            placeholder="••••"
-            required
-          >
-        </div>
-        <p v-if="error" class="bl-error">{{ error }}</p>
-        <button type="submit" class="bl-btn" :disabled="loading">
-          {{ loading ? '...' : 'Войти' }}
-        </button>
-      </form>
+      <p class="bl-sub">Перенаправляем на страницу входа…</p>
+      <NuxtLink to="/client/login" class="bl-btn bl-btn--link">перейти сейчас</NuxtLink>
     </div>
   </div>
 </template>
@@ -40,26 +12,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'default' })
 
-const clientId = ref('')
-const pin      = ref('')
-const error    = ref('')
-const loading  = ref(false)
-const router   = useRouter()
-
-async function login() {
-  loading.value = true; error.value = ''
-  try {
-    const res = await $fetch<{ clientId: number }>('/api/auth/client-id-login', {
-      method: 'POST',
-      body: { clientId: Number(clientId.value), pin: pin.value },
-    })
-    router.push(`/client/brief/${res.clientId}`)
-  } catch (e: any) {
-    error.value = e?.data?.statusMessage || 'Ошибка входа'
-  } finally {
-    loading.value = false
-  }
-}
+await navigateTo('/client/login', { replace: true })
 </script>
 
 <style scoped>
@@ -97,4 +50,5 @@ async function login() {
 }
 .bl-btn:hover:not(:disabled) { opacity: .82; }
 .bl-btn:disabled { opacity: .4; cursor: default; }
+.bl-btn--link { text-align: center; text-decoration: none; display: block; }
 </style>

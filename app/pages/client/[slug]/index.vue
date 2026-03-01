@@ -15,17 +15,25 @@
         <div class="cw-phases-label">Этап проекта</div>
         <div class="cw-phases">
           <div
-            v-for="phase in phases"
+            v-for="(phase, idx) in phases"
             :key="phase.key"
             class="cw-phase-item"
             :class="{
               'cw-phase--done':   phaseIndex(phase.key) < currentPhaseIndex,
-              'cw-phase--active': phase.key === project.status,
+              'cw-phase--active': phase.key === currentPhaseKey,
               'cw-phase--future': phaseIndex(phase.key) > currentPhaseIndex,
             }"
           >
             <div class="cw-phase-dot"></div>
             <span class="cw-phase-label">{{ phase.label }}</span>
+            <div v-if="idx < phases.length - 1" class="cw-phase-connector">
+              <span
+                v-for="(dot, dotIdx) in connectorDots(idx)"
+                :key="`${phase.key}-sub-${dotIdx}`"
+                class="cw-subdot"
+                :class="`cw-subdot--${dot}`"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -68,22 +76,34 @@
 
 <script setup lang="ts">
 definePageMeta({ layout: 'cabinet', middleware: ['client'] })
+import { deriveProjectPhaseFromRoadmap, roadmapPhaseSubpoints } from '~~/shared/utils/roadmap'
+import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 
 const route = useRoute()
 const { data: project, pending } = await useFetch<any>(`/api/projects/${route.params.slug}`)
+const { data: roadmap } = await useFetch<any[]>(`/api/projects/${route.params.slug}/roadmap`, {
+  default: () => [],
+})
 
-const phases = [
-  { key: 'lead',            label: 'Инициация'  },
-  { key: 'concept',         label: 'Эскиз'      },
-  { key: 'working_project', label: 'Проект'     },
-  { key: 'procurement',     label: 'Закупки'    },
-  { key: 'construction',    label: 'Стройка'    },
-  { key: 'commissioning',   label: 'Сдача'      },
-  { key: 'completed',       label: 'Готово'     },
-]
+const phases = PROJECT_PHASES.map(p => ({ key: p.key, label: p.label }))
+
+const phaseKeyFromRoadmap = computed(() => {
+  return deriveProjectPhaseFromRoadmap(roadmap.value || [])
+})
+
+const currentPhaseKey = computed(() => phaseKeyFromRoadmap.value || project.value?.status || 'lead')
 const currentPhaseIndex = computed(() =>
-  phases.findIndex(p => p.key === project.value?.status)
+  phases.findIndex(p => p.key === currentPhaseKey.value)
 )
+
+const subpointsByPhase = computed(() => roadmapPhaseSubpoints(roadmap.value || []))
+
+function connectorDots(index: number) {
+  const nextPhase = phases[index + 1]
+  if (!nextPhase) return []
+  return subpointsByPhase.value[nextPhase.key] || []
+}
+
 function phaseIndex(key: string) {
   return phases.findIndex(p => p.key === key)
 }
@@ -120,15 +140,34 @@ const hasInfo = computed(() => {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   min-width: 72px; position: relative;
 }
-.cw-phase-item:not(:last-child)::after {
-  content: ''; position: absolute; top: 5px;
-  left: calc(50% + 7px); right: calc(-50% + 7px);
-  height: 1px; background: var(--glass-border);
+.cw-phase-connector {
+  position: absolute;
+  top: 5px;
+  left: calc(50% + 7px);
+  right: calc(-50% + 7px);
+  height: 1px;
+  background: var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
 }
 .cw-phase-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--glass-border); background: var(--glass-bg); position: relative; z-index: 1; }
+.cw-subdot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--glass-border);
+  position: relative;
+  z-index: 1;
+}
+.cw-subdot--pending { background: #9ca3af; }
+.cw-subdot--in_progress { background: #f59e0b; }
+.cw-subdot--done { background: #16a34a; }
+.cw-subdot--skipped { background: #d1d5db; opacity: .55; }
 .cw-phase-label { font-size: .55rem; text-transform: uppercase; letter-spacing: .5px; color: var(--glass-text); opacity: .3; text-align: center; line-height: 1.2; }
 .cw-phase--done .cw-phase-dot   { background: var(--glass-text); border-color: var(--glass-text); }
-.cw-phase--done::after          { background: var(--glass-text) !important; }
+.cw-phase--done .cw-phase-connector { background: var(--glass-text); }
 .cw-phase--active .cw-phase-dot { background: var(--glass-text); border-color: var(--glass-text); box-shadow: 0 0 0 3px rgba(0,0,0,.1); }
 .cw-phase--active .cw-phase-label { opacity: .9; font-weight: 600; }
 .cw-phase--future .cw-phase-label { opacity: .25; }

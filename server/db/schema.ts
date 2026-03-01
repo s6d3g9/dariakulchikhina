@@ -7,6 +7,7 @@ import {
   timestamp,
   jsonb,
   unique,
+  boolean,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -25,7 +26,6 @@ export const projects = pgTable('projects', {
   title: text('title').notNull(),
   status: text('status').default('lead').notNull(),
   userId: integer('user_id').references(() => users.id),
-  clientPin: text('client_pin'),
   pages: text('pages').array().default([]).notNull(),
   profile: jsonb('profile').$type<Record<string, string>>().default({}).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -70,7 +70,6 @@ export const contractors = pgTable('contractors', {
   roleTypes: text('role_types').array().default([]).notNull(),
   contractorType: text('contractor_type').default('master').notNull(),
   parentId: integer('parent_id'),
-  pin: text('pin'),
   notes: text('notes'),
   messenger: text('messenger'),
   messengerNick: text('messenger_nick'),
@@ -151,8 +150,18 @@ export const galleryItems = pgTable('gallery_items', {
   category: text('category').notNull(),
   title: text('title').notNull(),
   image: text('image'),
+  /** Дополнительные изображения (JSON-массив filename) */
+  images: jsonb('images').$type<string[]>().default([]).notNull(),
   tags: text('tags').array().default([]).notNull(),
   description: text('description'),
+  /** Избранный / Featured */
+  featured: boolean('featured').default(false).notNull(),
+  /** Ширина основного изображения (px) */
+  width: integer('width'),
+  /** Высота основного изображения (px) */
+  height: integer('height'),
+  /** Структурированные свойства материала (физ., хим., тактильные и т.д.) */
+  properties: jsonb('properties').$type<Record<string, unknown>>().default({}).notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
@@ -166,8 +175,18 @@ export const clients = pgTable('clients', {
   messengerNick: text('messenger_nick'),
   address: text('address'),
   notes: text('notes'),
-  pin: text('pin'),
   brief: jsonb('brief'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const documents = pgTable('documents', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  category: text('category').notNull().default('other'), // contract | act | invoice | template | other
+  title: text('title').notNull(),
+  filename: text('filename'),           // физическое имя файла в uploads/
+  url: text('url'),                     // публичный URL (если есть)
+  notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

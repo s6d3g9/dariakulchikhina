@@ -28,7 +28,7 @@
           }"
         >
           <!-- Connector line (except first) -->
-          <div v-if="idx > 0" class="ci-step-connector" :class="{ 'ci-step-connector--done': steps[idx - 1].done }"></div>
+          <div v-if="idx > 0" class="ci-step-connector" :class="{ 'ci-step-connector--done': !!steps[idx - 1]?.done }"></div>
 
           <div class="ci-step-inner">
             <!-- Left: number + icon -->
@@ -112,6 +112,8 @@
 </template>
 
 <script setup lang="ts">
+import { BRIEF_COMPLETION_KEYS } from '~~/shared/constants/profile-fields'
+
 const props = defineProps<{ slug: string }>()
 const route = useRoute()
 
@@ -124,11 +126,12 @@ const pf = computed<any>(() => project.value?.profile || {})
 const step01Done = computed(() => !!pf.value.lead_step_done)
 
 const step02Done = computed(() => {
-  // Brief is done if admin marked brief_completed OR key fields are filled
+  // Admin marked as completed
   if (pf.value.brief_completed) return true
-  const filled = ['fio', 'phone', 'brief_family_count', 'brief_style_preferences']
-    .filter(k => !!pf.value[k]).length
-  return filled >= 3
+  // Check if brief fields are filled (client or admin — same fields now)
+  const briefFilled = BRIEF_COMPLETION_KEYS
+    .filter((k: string) => !!pf.value[k]).length
+  return briefFilled >= 3
 })
 
 const step03Done = computed(() => pf.value.survey_status === 'completed')
@@ -161,7 +164,7 @@ const steps = computed(() => [
   {
     key:       'briefing',
     number:    '0.2',
-    title:     'Глубинное интервью',
+    title:     'Брифинг',
     desc:      'Заполнение подробной анкеты о составе семьи, хобби, утренних рутинах и привычках хранения.',
     done:      step02Done.value,
     active:    step01Done.value,
@@ -179,7 +182,7 @@ const steps = computed(() => [
   {
     key:       'survey',
     number:    '0.3',
-    title:     'Инженерный аудит и обмеры',
+    title:     'Обмеры / аудит',
     desc:      'Выезд инженера, лазерное 3D-сканирование, проверка вентканалов, стояков, электрощита.',
     done:      step03Done.value,
     active:    step02Done.value,
@@ -203,7 +206,7 @@ const steps = computed(() => [
   {
     key:       'tor_contract',
     number:    '0.4',
-    title:     'Техническое задание и договор',
+    title:     'ТЗ и договор',
     desc:      'Сведение данных из брифа и обмеров в единый документ с графиком и стоимостью работ.',
     done:      step04Done.value,
     active:    step03Done.value,
@@ -242,7 +245,7 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
 .ci-phase-header { margin-bottom: 44px; }
 .ci-phase-badge {
   display: inline-block; font-size: .65rem; text-transform: uppercase; letter-spacing: 1.5px;
-  color: var(--c-muted, #aaa); border: 1px solid var(--c-border, #e8e8e4);
+  color: var(--c-muted, #aaa);
   padding: 3px 10px; margin-bottom: 10px;
 }
 .ci-phase-title { font-size: 1.4rem; font-weight: 300; letter-spacing: -.3px; margin: 0 0 8px; }
@@ -269,24 +272,25 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
 .ci-step-num-wrap { width: 38px; display: flex; justify-content: center; }
 .ci-step-num {
   width: 38px; height: 38px; border-radius: 50%;
-  border: 1.5px solid var(--c-border, #e0e0e0);
+  border: none;
   display: flex; align-items: center; justify-content: center;
   font-size: .72rem; font-weight: 500; color: var(--c-muted, #aaa);
   background: var(--c-bg, #fff); flex-shrink: 0;
 }
 .ci-step-num--done   { background: var(--c-text, #1a1a1a); border-color: var(--c-text, #1a1a1a); color: #fff; }
-.ci-step-num--active { border-color: var(--c-text, #1a1a1a); color: var(--c-text, #1a1a1a); }
+.ci-step-num--active { color: var(--c-text, #1a1a1a); }
 
 /* Step body */
 .ci-step-body {
   flex: 1; min-width: 0;
-  border: 1px solid var(--c-border, #e8e8e4);
   padding: 20px 22px 22px;
   margin-bottom: 16px;
-  background: var(--c-bg, #fff);
+  background: color-mix(in srgb, var(--glass-bg, #fff) 88%, transparent);
+  border: none;
+  border-radius: 14px;
 }
-.ci-step--done .ci-step-body  { border-color: #c8e6d4; background: #f6fdf9; }
-.ci-step--active .ci-step-body { border-color: var(--c-text, #1a1a1a); }
+.ci-step--done .ci-step-body  { background: color-mix(in srgb, #d9f5e6 46%, transparent); }
+.ci-step--active .ci-step-body { background: color-mix(in srgb, var(--glass-bg, #fff) 94%, transparent); }
 .ci-step--pending .ci-step-body { opacity: .55; }
 
 /* Step header */
@@ -305,9 +309,9 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
 .ci-step-desc  { font-size: .78rem; color: var(--c-muted, #888); margin: 0 0 16px; line-height: 1.6; }
 
 /* Blocks */
-.ci-step-block { display: flex; gap: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--c-bg2, #f8f8f7); border-left: 2px solid var(--c-border, #e0e0e0); }
-.ci-step-block--biz { border-left-color: #e8b84b; }
-.ci-step-block--sys { border-left-color: #6b9fd4; }
+.ci-step-block { display: flex; gap: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--c-bg2, #f8f8f7); border: none; border-radius: 10px; }
+.ci-step-block--biz { background: color-mix(in srgb, #fff0d5 54%, transparent); }
+.ci-step-block--sys { background: color-mix(in srgb, #e8f1ff 54%, transparent); }
 .ci-block-label { font-size: .7rem; flex-shrink: 0; width: 80px; color: var(--c-muted, #aaa); padding-top: 1px; }
 .ci-block-text  { font-size: .78rem; color: var(--c-text, #444); line-height: 1.55; }
 
@@ -317,11 +321,13 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
 .ci-artifacts-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .ci-artifact {
   display: flex; align-items: center; gap: 7px;
-  border: 1px solid var(--c-border, #e8e8e4); padding: 6px 12px;
+  border: none; padding: 6px 12px;
+  background: color-mix(in srgb, var(--glass-bg, #fff) 86%, transparent);
+  border-radius: 999px;
   font-size: .76rem; text-decoration: none; color: inherit;
 }
 .ci-artifact--available { cursor: pointer; }
-.ci-artifact--available:hover { border-color: var(--c-text, #1a1a1a); }
+.ci-artifact--available:hover { opacity: .9; }
 .ci-artifact--pending { opacity: .45; cursor: default; }
 .ci-artifact-icon  { font-size: .9rem; }
 .ci-artifact-name  { flex: 1; }
@@ -331,11 +337,13 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
 /* Actions */
 .ci-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .ci-action-btn {
-  border: 1px solid var(--c-border, #e8e8e4); padding: 8px 18px;
+  border: none; padding: 8px 18px;
+  background: color-mix(in srgb, var(--glass-bg, #fff) 90%, transparent);
+  border-radius: 999px;
   font-size: .78rem; text-decoration: none; color: var(--c-text, #333);
   display: inline-flex; align-items: center;
 }
-.ci-action-btn:hover { border-color: var(--c-text, #1a1a1a); }
+.ci-action-btn:hover { opacity: .9; }
 .ci-action-btn--primary {
   background: var(--c-text, #1a1a1a); color: #fff;
   border-color: var(--c-text, #1a1a1a);
@@ -346,7 +354,9 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
 .ci-phase-done {
   display: flex; gap: 16px; align-items: flex-start;
   padding: 20px 22px; margin-top: 8px;
-  background: #f0faf5; border: 1px solid #a8d8bc;
+  background: color-mix(in srgb, #e5f7ee 58%, transparent);
+  border: none;
+  border-radius: 14px;
 }
 .ci-phase-done-icon { font-size: 1.5rem; flex-shrink: 0; color: #2a7a52; }
 .ci-phase-done strong { display: block; font-size: .92rem; margin-bottom: 4px; color: #2a7a52; }

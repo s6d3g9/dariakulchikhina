@@ -1,20 +1,12 @@
 import { useDb } from '~/server/db/index'
 import { projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { requireClient } from '~/server/utils/auth'
+import { CLIENT_PROFILE_EDITABLE_KEYS } from '~/shared/constants/profile-fields'
 
-const ALLOWED_KEYS = [
-  'fio', 'phone', 'email', 'messenger', 'messengerNick', 'preferredContact',
-  'birthday', 'familyStatus', 'children', 'pets', 'hobbies', 'lifestyle',
-  'objectAddress', 'objectType', 'objectArea', 'roomCount', 'floor', 'ceilingHeight',
-  'hasBalcony', 'parking',
-  'budget', 'deadline', 'stylePreferences', 'colorPreferences',
-  'brief_like_refs', 'dislikes', 'notes',
-]
+const ALLOWED_KEYS = new Set<string>(CLIENT_PROFILE_EDITABLE_KEYS)
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
-  await requireClient(event, slug)
 
   const body = await readNodeBody(event) as Record<string, unknown>
   const db = useDb()
@@ -23,8 +15,8 @@ export default defineEventHandler(async (event) => {
   if (!current) throw createError({ statusCode: 404, message: 'Project not found' })
 
   const safeFields = Object.fromEntries(
-    Object.entries(body as Record<string, unknown>).filter(([k]) => ALLOWED_KEYS.includes(k))
-  )
+    Object.entries(body as Record<string, unknown>).filter(([k]) => ALLOWED_KEYS.has(k))
+  ) as Record<string, unknown>
 
   const merged = { ...(current.profile as Record<string, unknown> || {}), ...safeFields }
 

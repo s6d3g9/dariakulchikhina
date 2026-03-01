@@ -15,7 +15,6 @@
               <span v-if="c.phone">{{ c.phone }}</span>
               <span v-if="c.email">{{ c.email }}</span>
               <span v-if="c.messenger">{{ c.messenger }}: {{ c.messengerNick }}</span>
-              <span v-if="c.pin" class="acp-pin">PIN: {{ c.pin }}</span>
             </div>
             <div v-if="c.workTypes?.length" class="acp-chips">
               <span v-for="wt in c.workTypes" :key="wt" class="acp-chip">{{ workTypeLabel(wt) }}</span>
@@ -35,7 +34,7 @@
       <template v-else>
         <div v-if="!allContractors.length" class="acp-empty">
           Нет подрядчиков в системе.
-          <NuxtLink to="/admin/contractors" class="acp-link">Добавить →</NuxtLink>
+          <NuxtLink :to="`/admin/contractors?projectSlug=${encodeURIComponent(props.slug)}`" class="acp-link">Добавить →</NuxtLink>
         </div>
         <template v-else>
           <div v-if="available.length === 0" class="acp-empty">Все подрядчики уже привязаны</div>
@@ -50,7 +49,6 @@
                   <div v-if="c.companyName" class="acp-sub">{{ c.companyName }}</div>
                   <div class="acp-meta-row">
                     <span v-if="c.phone">{{ c.phone }}</span>
-                    <span v-if="c.pin" class="acp-pin">PIN: {{ c.pin }}</span>
                   </div>
                   <div v-if="c.workTypes?.length" class="acp-chips">
                     <span v-for="wt in c.workTypes" :key="wt" class="acp-chip acp-chip--muted">{{ workTypeLabel(wt) }}</span>
@@ -70,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
+import { workTypeLabel } from '~~/shared/utils/work-status'
 
 const props = defineProps<{ slug: string }>()
 
@@ -98,10 +96,6 @@ const filteredAvailable = computed(() => {
     c.name?.toLowerCase().includes(q) || c.companyName?.toLowerCase().includes(q)
   )
 })
-
-function workTypeLabel(wt: string) {
-  return CONTRACTOR_WORK_TYPE_OPTIONS.find(o => o.value === wt)?.label ?? wt
-}
 
 async function link(contractorId: number) {
   linking.value = true
@@ -171,7 +165,6 @@ async function unlink(contractorId: number) {
   display: flex; gap: 12px; flex-wrap: wrap;
   font-size: .76rem; color: #aaa; margin-top: 4px;
 }
-.acp-pin { font-variant-numeric: tabular-nums; }
 .acp-notes { font-size: .78rem; color: #888; margin-top: 6px; font-style: italic; }
 .acp-link {
   font-size: .76rem; color: #6366f1; text-decoration: none;
@@ -181,12 +174,12 @@ async function unlink(contractorId: number) {
 .acp-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .acp-chip {
   font-size: .68rem; padding: 2px 7px;
-  border: 1px solid #ddd;
+  border: none;
   border-radius: 10px;
   color: #666;
   background: #fafafa;
 }
-.dark .acp-chip { border-color: #3a3a3a; color: #aaa; background: #222; }
+.dark .acp-chip { color: #aaa; background: #222; }
 .acp-chip--muted { opacity: 0.65; }
 
 .acp-btn-link, .acp-btn-unlink {
@@ -199,24 +192,24 @@ async function unlink(contractorId: number) {
   transition: background 0.12s, color 0.12s;
 }
 .acp-btn-link {
-  border: 1px solid #6366f1;
+  border: none;
   background: transparent;
   color: #6366f1;
 }
 .acp-btn-link:hover:not(:disabled) { background: #6366f1; color: #fff; }
 .acp-btn-unlink {
-  border: 1px solid #e0e0e0;
+  border: none;
   background: transparent;
   color: #c00;
 }
-.acp-btn-unlink:hover:not(:disabled) { border-color: #c00; background: #fff0f0; }
+.acp-btn-unlink:hover:not(:disabled) { background: #fff0f0; }
 .dark .acp-btn-unlink:hover:not(:disabled) { background: #2a0000; }
 .acp-btn-link:disabled, .acp-btn-unlink:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .acp-search-row { margin-bottom: 10px; }
 .acp-search {
   width: 100%; max-width: 400px;
-  border: 1px solid #e0e0e0;
+  border: none;
   border-radius: 4px;
   padding: 7px 12px;
   font-size: .84rem;
@@ -225,6 +218,5 @@ async function unlink(contractorId: number) {
   background: transparent;
   color: inherit;
 }
-.acp-search:focus { border-color: #6366f1; }
-.dark .acp-search { border-color: #333; }
+.acp-search:focus { opacity: .92; }
 </style>

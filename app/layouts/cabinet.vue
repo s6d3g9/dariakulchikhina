@@ -10,6 +10,10 @@
           <span class="cab-project-name">{{ projectTitle }}</span>
         </NuxtLink>
         <div class="cab-header-actions">
+          <NuxtLink to="/admin" class="cab-back-link">← админка</NuxtLink>
+          <select v-model="headerProjectSlug" class="cab-project-select" @change="switchProject">
+            <option v-for="p in publicProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
+          </select>
           <button class="cab-btn-icon" :title="isDark ? 'Светлая тема' : 'Тёмная тема'" @click="toggleTheme">
             <span class="cab-theme-icon">{{ isDark ? '☀' : '◐' }}</span>
           </button>
@@ -22,17 +26,17 @@
     <div class="cab-body">
 
       <!-- Sidebar (desktop) / Topbar (mobile) -->
-      <aside class="cab-sidebar" v-if="availablePages.length">
+      <aside class="cab-sidebar std-sidenav" v-if="availablePages.length">
         <!-- Phase badge -->
         <div class="cab-phase-wrap">
           <span class="cab-phase-badge glass-chip">{{ phaseLabel }}</span>
         </div>
         <!-- Nav links -->
-        <nav class="cab-nav">
+        <nav class="cab-nav std-nav">
           <NuxtLink
+            class="cab-nav-item std-nav-item"
             :to="`/client/${projectSlug}`"
-            class="cab-nav-item"
-            :class="{ 'cab-nav-item--active': isHome }"
+            :class="{ 'cab-nav-item--active': isHome, 'std-nav-item--active': isHome }"
           >
             <svg class="cab-nav-ico" width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
@@ -43,9 +47,9 @@
           <NuxtLink
             v-for="item in availablePages"
             :key="item.slug"
+            class="cab-nav-item std-nav-item"
             :to="`/client/${projectSlug}/${item.slug}`"
-            class="cab-nav-item"
-            :class="{ 'cab-nav-item--active': currentPage === item.slug }"
+            :class="{ 'cab-nav-item--active': normalizedCurrentPage === item.slug, 'std-nav-item--active': normalizedCurrentPage === item.slug }"
           >
             <span class="cab-nav-ico cab-nav-ico--txt">{{ item.icon }}</span>
             <span>{{ item.title }}</span>
@@ -70,6 +74,8 @@
 </template>
 
 <script setup lang="ts">
+import { getClientPages, PHASE_LABELS } from '~~/shared/constants/pages'
+
 const router = useRouter()
 const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
@@ -82,43 +88,58 @@ const { data: project } = await useFetch<any>(
   () => projectSlug.value ? `/api/projects/${projectSlug.value}` : null,
   { server: false }
 )
-const projectTitle = computed(() => project.value?.title || '')
 
-const ALL_PAGES = [
-  { slug: 'phase_init',          title: 'инициация',        icon: '◉' },
-  { slug: 'self_profile',        title: 'мои данные',       icon: '◎' },
-  { slug: 'design_timeline',     title: 'ход проекта',      icon: '◈' },
-  { slug: 'design_album',        title: 'альбом',           icon: '▣' },
-  { slug: 'contracts',           title: 'документы',        icon: '◻' },
-  { slug: 'materials',           title: 'материалы',        icon: '◫' },
-  { slug: 'tz',                  title: 'ТЗ',               icon: '◧' },
-  { slug: 'profile_contractors', title: 'подрядчики',       icon: '◑' },
-  { slug: 'work_status',         title: 'статусы работ',    icon: '◷' },
-  { slug: 'project_roadmap',     title: 'дорожная карта',   icon: '◈' },
-]
+type PublicProject = { slug: string; title: string }
+const { data: publicProjectsData } = await useFetch<PublicProject[]>('/api/public/projects', {
+  default: () => [],
+  server: false,
+})
+const publicProjects = computed(() => publicProjectsData.value || [])
+
+const projectTitle = computed(() => project.value?.title || '')
+const headerProjectSlug = ref('')
+
+const CLIENT_PAGES = getClientPages()
 
 const availablePages = computed(() => {
-  const pages = project.value?.pages || []
-  return ALL_PAGES.filter(p => pages.includes(p.slug))
+  const pages = new Set<string>(project.value?.pages || [])
+  pages.add('self_profile')
+  pages.add('client_contacts')
+  if (pages.has('brief')) pages.add('self_profile')
+  pages.delete('brief')
+  return CLIENT_PAGES.filter(p => pages.has(p.slug))
 })
 
-const phases = [
-  { key: 'lead',            label: 'Инициация'  },
-  { key: 'concept',         label: 'Эскиз'      },
-  { key: 'working_project', label: 'Проект'     },
-  { key: 'procurement',     label: 'Закупки'    },
-  { key: 'construction',    label: 'Стройка'    },
-  { key: 'commissioning',   label: 'Сдача'      },
-  { key: 'completed',       label: 'Готово'     },
-]
-const phaseLabel = computed(() =>
-  phases.find(p => p.key === project.value?.status)?.label || 'Инициация'
+const phaseLabel = computed(() => {
+  const key = String(project.value?.status || 'lead')
+  if (key === 'completed') return 'Фаза 6 · Завершение'
+  return PHASE_LABELS[key] || 'Фаза 0 · Инициация'
+})
+
+const normalizedCurrentPage = computed(() =>
+  currentPage.value === 'brief' ? 'self_profile' : currentPage.value,
 )
+
+watch(projectSlug, (slugValue) => {
+  headerProjectSlug.value = slugValue || ''
+}, { immediate: true })
+
+function switchProject() {
+  if (!headerProjectSlug.value) return
+  navigateTo(`/client/${encodeURIComponent(headerProjectSlug.value)}`)
+}
 
 async function logout() {
   await $fetch('/api/auth/client-logout', { method: 'POST' })
-  router.push('/client/login')
+  router.push('/client')
 }
+
+watch([availablePages, normalizedCurrentPage], ([pages, pageValue]) => {
+  if (!pageValue) return
+  if (!pages.some(p => p.slug === pageValue)) {
+    navigateTo(`/client/${projectSlug.value}`)
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -159,6 +180,32 @@ async function logout() {
   max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .cab-header-actions { display: flex; align-items: center; gap: 10px; }
+.cab-back-link {
+  text-decoration: none;
+  color: var(--glass-text);
+  opacity: .42;
+  font-size: .68rem;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  white-space: nowrap;
+}
+.cab-back-link:hover { opacity: .9; }
+.cab-project-select {
+  min-width: 220px;
+  max-width: 320px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: .72rem;
+  letter-spacing: .2px;
+  font-family: inherit;
+  cursor: pointer;
+}
 .cab-btn-icon {
   border: none; background: none; cursor: pointer; padding: 6px;
   color: var(--glass-text); opacity: .45; font-size: .9rem; line-height: 1;
@@ -166,7 +213,7 @@ async function logout() {
 }
 .cab-btn-icon:hover { opacity: 1; }
 .cab-btn-text {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   cursor: pointer; padding: 5px 12px;
@@ -202,7 +249,7 @@ async function logout() {
 }
 .cab-phase-wrap {
   padding: 0 6px 12px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: none;
   margin-bottom: 8px;
 }
 .cab-phase-badge {
@@ -214,17 +261,22 @@ async function logout() {
   display: inline-block;
 }
 
-.cab-nav { display: flex; flex-direction: column; gap: 1px; }
+.cab-nav { display: flex; flex-direction: column; gap: 2px; }
 .cab-nav-item {
   display: flex; align-items: center; gap: 9px;
-  padding: 8px 10px; border-radius: 9px;
+  padding: 9px 10px; border-radius: 9px;
   text-decoration: none; font-size: .78rem; letter-spacing: .3px;
-  color: var(--glass-text); opacity: .5;
-  transition: opacity .15s, background .15s;
+  color: var(--glass-text); opacity: .64;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: opacity .15s, background .15s, border-color .15s;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
 }
-.cab-nav-item:hover { opacity: .85; background: rgba(0,0,0,.04); }
-.cab-nav-item--active { opacity: 1; background: var(--glass-bg); font-weight: 500; }
+.cab-nav-item:hover { opacity: .92; background: color-mix(in srgb, var(--glass-bg) 82%, transparent); }
+.cab-nav-item--active { opacity: 1; background: color-mix(in srgb, var(--glass-bg) 92%, transparent); font-weight: 600; border: none; }
 .cab-nav-ico { flex-shrink: 0; display: flex; align-items: center; }
 .cab-nav-ico--txt { font-size: .7rem; opacity: .6; }
 
@@ -269,7 +321,7 @@ async function logout() {
   }
   .cab-nav::-webkit-scrollbar { display: none; }
   .cab-nav-item {
-    border: 1px solid var(--glass-border);
+    border: none;
     background: var(--glass-bg);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     border-radius: 999px;
@@ -288,6 +340,7 @@ async function logout() {
   .cab-inner { padding: 20px 16px 36px; }
   .cab-header-inner { padding: 0 16px; }
   .cab-project-name { max-width: 130px; }
+  .cab-project-select { min-width: 120px; max-width: 160px; }
   .cab-footer-inner { padding: 14px 16px; }
 }
 </style>

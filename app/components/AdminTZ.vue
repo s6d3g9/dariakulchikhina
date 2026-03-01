@@ -205,7 +205,7 @@ async function save() {
   flex-wrap: wrap;
 }
 .atz-btn-upload {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   padding: 4px 10px;
   font-size: .78rem;
@@ -214,12 +214,12 @@ async function save() {
   border-radius: 2px;
   white-space: nowrap;
 }
-.atz-btn-upload:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
+.atz-btn-upload:hover { opacity: .9; }
 .atz-img-prev {
   max-width: 120px;
   max-height: 90px;
   object-fit: cover;
-  border: 1px solid color-mix(in srgb, var(--glass-border) 70%, #d7d7d7 30%);
+  border: none;
   border-radius: 2px;
 }
 .atz-pending {
@@ -233,7 +233,7 @@ async function save() {
   padding-left: 20px;
 }
 .atz-btn-sm {
-  border: 1px solid var(--glass-border);
+  border: none;
   background: var(--glass-bg);
   padding: 4px 10px;
   font-size: .78rem;
@@ -241,11 +241,11 @@ async function save() {
   font-family: inherit;
   border-radius: 2px;
 }
-.atz-btn-sm:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); }
+.atz-btn-sm:hover { opacity: .9; }
 .atz-btn-sm.danger { color: #c00; border-color: #c00; }
 .atz-btn-sm.danger:hover { background: #c00; color: #fff; }
 .atz-btn-add {
-  border: 1px dashed color-mix(in srgb, var(--glass-border) 60%, #cfcfcf 40%);
+  border: none;
   background: var(--glass-bg);
   padding: 8px 16px;
   font-size: .82rem;
@@ -256,7 +256,7 @@ async function save() {
   margin-top: 8px;
   display: block;
 }
-.atz-btn-add:hover { border-color: color-mix(in srgb, var(--glass-text) 24%, var(--glass-border) 76%); color: var(--atz-text); }
+.atz-btn-add:hover { color: var(--atz-text); opacity: .9; }
 .atz-actions {
   display: flex;
   gap: 10px;

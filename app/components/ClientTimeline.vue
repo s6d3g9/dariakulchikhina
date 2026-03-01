@@ -12,9 +12,9 @@
           <span class="ctl-phase-badge">{{ currentPhaseName }}</span>
         </div>
 
-        <div class="ctl-timeline" v-if="stages?.length">
+        <div class="ctl-timeline" v-if="normalizedStages?.length">
           <div
-            v-for="(stage, idx) in stages"
+            v-for="(stage, idx) in normalizedStages"
             :key="stage.id"
             class="ctl-stage"
             :class="`ctl-stage--${stage.status}`"
@@ -22,9 +22,9 @@
             <!-- Left: status dot + line -->
             <div class="ctl-stage-track">
               <div class="ctl-track-dot" :class="`ctl-dot--${stage.status}`">
-                <span class="ctl-dot-inner">{{ statusIcon(stage.status) }}</span>
+                <span class="ctl-dot-inner">{{ roadmapStatusIcon(stage.status) }}</span>
               </div>
-              <div v-if="idx < stages.length - 1" class="ctl-track-line" :class="stage.status === 'done' ? 'ctl-line--done' : ''"></div>
+              <div v-if="idx < normalizedStages.length - 1" class="ctl-track-line" :class="stage.status === 'done' ? 'ctl-line--done' : ''"></div>
             </div>
 
             <!-- Right: content -->
@@ -32,7 +32,7 @@
               <div class="ctl-stage-head">
                 <span class="ctl-stage-name">{{ stage.title }}</span>
                 <span class="ctl-status-pill" :class="`ctl-pill--${stage.status}`">
-                  {{ statusLabel(stage.status) }}
+                  {{ roadmapStatusLabel(stage.status) }}
                 </span>
               </div>
 
@@ -124,44 +124,30 @@
 
 <script setup lang="ts">
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
+import { deriveProjectPhaseFromRoadmap, normalizeRoadmapStages, roadmapStatusLabel, roadmapStatusIcon } from '~~/shared/utils/roadmap'
+import { workTypeLabel } from '~~/shared/utils/work-status'
 
 const props = defineProps<{ slug: string }>()
 
-const { data: stages, pending: stagePending } = await useFetch<any[]>(
+const { lastSaved } = useRoadmapBus()
+
+const { data: stages, pending: stagePending, refresh: refreshStages } = await useFetch<any[]>(
   () => `/api/projects/${props.slug}/roadmap`
 )
 const { data: contractors, pending: teamPending } = await useFetch<any[]>(
   () => `/api/projects/${props.slug}/contractors`
 )
-const { data: project } = await useFetch<any>(() => `/api/projects/${props.slug}`)
+const { data: project, refresh: refreshProject } = await useFetch<any>(() => `/api/projects/${props.slug}`)
 
+watch(lastSaved, () => { refreshStages(); refreshProject() })
+
+const normalizedStages = computed(() => normalizeRoadmapStages(stages.value || []))
+
+const currentPhaseKey = computed(() => deriveProjectPhaseFromRoadmap(normalizedStages.value) || project.value?.status || 'lead')
 const currentPhaseName = computed(() =>
-  PROJECT_PHASES.find(p => p.key === project.value?.status)?.label || ''
+  PROJECT_PHASES.find(p => p.key === currentPhaseKey.value)?.label || ''
 )
 
-const WORK_TYPES: Record<string, string> = {
-  demolition: 'Демонтаж', partition_installation: 'Перегородки',
-  plastering: 'Штукатурка', puttying: 'Шпаклёвка', screed: 'Стяжка',
-  waterproofing: 'Гидроизоляция', electrical_installation: 'Электрика',
-  plumbing_installation: 'Сантехника', tile_installation: 'Укладка плитки',
-  painting: 'Покраска', wallpapering: 'Поклейка обоев',
-  ceiling_installation: 'Потолки', door_installation: 'Двери',
-  floor_installation: 'Полы', hvac: 'Вентиляция', smart_home: 'Умный дом',
-  furniture_installation: 'Мебель', final_cleaning: 'Уборка',
-}
-
-function workTypeLabel(wt: string) { return WORK_TYPES[wt] || wt }
-
-function statusLabel(s: string) {
-  const m: Record<string, string> = {
-    pending: 'ожидание', in_progress: 'в работе', done: 'готово', skipped: 'пропущено'
-  }
-  return m[s] || s
-}
-function statusIcon(s: string) {
-  const m: Record<string, string> = { pending: '○', in_progress: '◉', done: '✓', skipped: '—' }
-  return m[s] || '○'
-}
 function fmtDate(d: string) {
   if (!d || d === 'null') return ''
   try { return new Date(d).toLocaleDateString('ru', { day: 'numeric', month: 'short' }) }

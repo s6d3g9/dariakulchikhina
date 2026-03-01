@@ -32,7 +32,7 @@ const { isDark, toggleTheme } = useThemeToggle()
 
 
 .default-header {
-  border-bottom: 1px solid var(--border);
+  border-bottom: none;
   background: var(--header-bg);
 }
 
@@ -56,7 +56,7 @@ const { isDark, toggleTheme } = useThemeToggle()
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: none;
   background: color-mix(in srgb, var(--header-bg) 72%, #f7f7f7 28%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   -webkit-backdrop-filter: blur(10px) saturate(140%);

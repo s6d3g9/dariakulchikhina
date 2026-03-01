@@ -3,7 +3,7 @@
     <div class="dp-trigger">
       <input
         ref="inputEl"
-        :value="modelValue"
+        :value="draft"
         :placeholder="placeholder"
         :class="inputClass"
         class="dp-input"
@@ -72,9 +72,11 @@ const props = withDefaults(defineProps<{
   modelValue: string
   placeholder?: string
   inputClass?: string
+  modelType?: 'dmy' | 'iso'
 }>(), {
   placeholder: 'дд.мм.гггг',
-  inputClass: ''
+  inputClass: '',
+  modelType: 'dmy'
 })
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -82,6 +84,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const open = ref(false)
 const inputEl = ref<HTMLInputElement>()
 const popupStyle = ref<Record<string, string>>({})
+const draft = ref('')
 
 const today = new Date()
 const viewYear = ref(today.getFullYear())
@@ -97,17 +100,39 @@ function parseDMY(s: string): Date | null {
   const d = new Date(+m[3], +m[2] - 1, +m[1])
   return isNaN(d.getTime()) ? null : d
 }
+function parseISO(s: string): Date | null {
+  const m = s?.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return null
+  const d = new Date(+m[1], +m[2] - 1, +m[3])
+  return isNaN(d.getTime()) ? null : d
+}
 function fmt(d: Date): string {
   return [String(d.getDate()).padStart(2,'0'), String(d.getMonth()+1).padStart(2,'0'), d.getFullYear()].join('.')
+}
+function fmtISO(d: Date): string {
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
 }
 function isSameDay(a: Date, b: Date) {
   return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate()
 }
 
+function modelToDraft(value: string): string {
+  if (!value) return ''
+  if (props.modelType === 'iso') {
+    const parsed = parseISO(value)
+    return parsed ? fmt(parsed) : ''
+  }
+  return value
+}
+
+watch(() => props.modelValue, (value) => {
+  draft.value = modelToDraft(value)
+}, { immediate: true })
+
 interface Cell { day: number; month: number; year: number; isToday: boolean; isSelected: boolean; isOtherMonth: boolean }
 
 const calCells = computed<(Cell | null)[]>(() => {
-  const sel = parseDMY(props.modelValue)
+  const sel = parseDMY(draft.value)
   const firstDay = new Date(viewYear.value, viewMonth.value, 1)
   let startDow = firstDay.getDay() - 1
   if (startDow < 0) startDow = 6
@@ -154,7 +179,7 @@ function calcPosition() {
 }
 
 function openCal() {
-  const sel = parseDMY(props.modelValue)
+  const sel = parseDMY(draft.value)
   if (sel) { viewYear.value = sel.getFullYear(); viewMonth.value = sel.getMonth() }
   else { viewYear.value = today.getFullYear(); viewMonth.value = today.getMonth() }
   open.value = true
@@ -164,10 +189,12 @@ function close() { open.value = false }
 function toggle() { if (open.value) close(); else { inputEl.value?.focus(); openCal() } }
 
 function selectDay(year: number, month: number, day: number) {
-  emit('update:modelValue', fmt(new Date(year, month, day)))
+  const selected = new Date(year, month, day)
+  draft.value = fmt(selected)
+  emit('update:modelValue', props.modelType === 'iso' ? fmtISO(selected) : draft.value)
   close()
 }
-function clear() { emit('update:modelValue', ''); close() }
+function clear() { draft.value = ''; emit('update:modelValue', ''); close() }
 function goToday() { selectDay(today.getFullYear(), today.getMonth(), today.getDate()) }
 
 function onInput(e: Event) {
@@ -177,8 +204,17 @@ function onInput(e: Event) {
   if (digits.length <= 2) out = digits
   else if (digits.length <= 4) out = digits.slice(0,2) + '.' + digits.slice(2)
   else out = digits.slice(0,2) + '.' + digits.slice(2,4) + '.' + digits.slice(4,8)
-  emit('update:modelValue', out)
-  nextTick(() => { if (inputEl.value) inputEl.value.value = out })
+  draft.value = out
+  if (!out) {
+    emit('update:modelValue', '')
+    return
+  }
+  const parsed = parseDMY(out)
+  if (!parsed) {
+    if (props.modelType === 'dmy') emit('update:modelValue', out)
+    return
+  }
+  emit('update:modelValue', props.modelType === 'iso' ? fmtISO(parsed) : out)
 }
 
 function onOutside(e: MouseEvent) { if (open.value) close() }

@@ -25,7 +25,7 @@
           </div>
           <div class="ator-row">
             <label class="ator-lbl">дата договора</label>
-            <input v-model="form.contract_date" type="date" class="ator-inp" @change="save">
+            <AppDatePicker v-model="form.contract_date" model-type="iso" input-class="ator-inp" @update:model-value="save" />
           </div>
           <div class="ator-row">
             <label class="ator-lbl">статус</label>
@@ -54,7 +54,7 @@
               </a>
               <label class="ator-upload-btn">
                 {{ form.contract_file ? 'заменить' : '📎 загрузить PDF' }}
-                <input type="file" accept=".pdf,.docx" style="display:none" @change="e => uploadDoc(e,'contract')">
+                <input type="file" accept=".pdf,.docx" style="display:none" @change="onContractFileChange">
               </label>
               <span v-if="uploading === 'contract'" class="ator-uploading">загрузка...</span>
             </div>
@@ -81,7 +81,7 @@
           </div>
           <div class="ator-row">
             <label class="ator-lbl">дата выставления</label>
-            <input v-model="form.invoice_date" type="date" class="ator-inp" @change="save">
+            <AppDatePicker v-model="form.invoice_date" model-type="iso" input-class="ator-inp" @update:model-value="save" />
           </div>
           <div class="ator-row">
             <label class="ator-lbl">статус оплаты</label>
@@ -104,7 +104,7 @@
               </a>
               <label class="ator-upload-btn">
                 {{ form.invoice_file ? 'заменить' : '📎 загрузить PDF' }}
-                <input type="file" accept=".pdf" style="display:none" @change="e => uploadDoc(e,'invoice')">
+                <input type="file" accept=".pdf" style="display:none" @change="onInvoiceFileChange">
               </label>
               <span v-if="uploading === 'invoice'" class="ator-uploading">загрузка...</span>
             </div>
@@ -243,9 +243,17 @@ async function uploadDoc(e: Event, target: 'contract' | 'invoice') {
   }
 }
 
+function onContractFileChange(e: Event) {
+  uploadDoc(e, 'contract')
+}
+
+function onInvoiceFileChange(e: Event) {
+  uploadDoc(e, 'invoice')
+}
+
 // ── Save ──────────────────────────────────────────────────────────
 const saving = ref(false)
-const savedAt = ref('')
+const { savedAt, touch: markSaved } = useTimestamp()
 
 async function save() {
   saving.value = true
@@ -254,8 +262,7 @@ async function save() {
       method: 'PUT',
       body: { profile: { ...project.value?.profile, ...form } }
     })
-    const now = new Date()
-    savedAt.value = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`
+    markSaved()
   } finally {
     saving.value = false
   }

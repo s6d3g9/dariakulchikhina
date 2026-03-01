@@ -2,6 +2,7 @@ import { useDb } from '~/server/db/index'
 import { roadmapStages, projects } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
+import { normalizeRoadmapStatus } from '~~/shared/utils/roadmap'
 
 const Body = z.object({
   stages: z.array(z.object({
@@ -44,7 +45,7 @@ export default defineEventHandler(async (event) => {
       stageKey: stage.stageKey || null,
       title: stage.title,
       description: stage.description || null,
-      status: stage.status,
+      status: normalizeRoadmapStatus(stage.status),
       dateStart: stage.dateStart || null,
       dateEnd: stage.dateEnd || null,
       notes: stage.notes || null,
@@ -57,9 +58,14 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  return db
+  const rows = await db
     .select()
     .from(roadmapStages)
     .where(eq(roadmapStages.projectId, project.id))
     .orderBy(roadmapStages.sortOrder)
+
+  return rows.map((row: any) => ({
+    ...row,
+    status: normalizeRoadmapStatus(row?.status),
+  }))
 })

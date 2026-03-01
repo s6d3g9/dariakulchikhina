@@ -3,6 +3,7 @@
     <header class="contractor-header glass-surface">
       <span class="contractor-title">Кабинет подрядчика</span>
       <div class="contractor-actions">
+        <NuxtLink to="/admin" class="contractor-back-link">← админка</NuxtLink>
         <button
           type="button"
           class="theme-dot glass-chip"
@@ -20,6 +21,7 @@
 
 <script setup lang="ts">
 const router = useRouter()
+const route = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
 async function logout() {
   await $fetch('/api/auth/contractor-logout', { method: 'POST' })
@@ -62,6 +64,20 @@ async function logout() {
   gap: 10px;
 }
 
+.contractor-back-link {
+  text-decoration: none;
+  color: var(--glass-text);
+  opacity: .42;
+  font-size: .68rem;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  white-space: nowrap;
+}
+.contractor-back-link:hover { opacity: .9; }
+
 .contractor-main {
   flex: 1;
   padding: 24px;
@@ -71,7 +87,7 @@ async function logout() {
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: none;
   background: color-mix(in srgb, var(--bg) 72%, #f7f7f7 28%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   cursor: pointer;

@@ -7,11 +7,17 @@
         <span class="cl-title">клиенты</span>
         <span class="cl-badge">{{ clients?.length ?? 0 }}</span>
       </div>
-      <button class="cl-add-btn" @click="openAdd">+ добавить клиента</button>
+      <button class="cl-add-btn" aria-label="добавить" title="добавить" @click="openAdd">+</button>
+    </div>
+
+    <div v-if="projectSlugFilter" class="cl-filter-info glass-surface glass-card">
+      <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
+      <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="cl-filter-link">← к проекту</NuxtLink>
+      <NuxtLink to="/admin/clients" class="cl-filter-link">показать всех</NuxtLink>
     </div>
 
     <!-- Loading / Empty -->
-    <div v-if="pending" class="cl-empty glass-card glass-surface">Загрузка…</div>
+    <div v-if="pending && !hasClientsCache" class="cl-empty glass-card glass-surface">Загрузка…</div>
     <div v-else-if="!clients?.length" class="cl-empty glass-card glass-surface">
       <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Нет клиентов — добавьте первого
@@ -63,26 +69,15 @@
           >{{ p.title }}</NuxtLink>
         </div>
 
-        <!-- Login credentials (ID + PIN) -->
-        <div v-if="c.pin" class="cl-credentials">
-          <span class="cl-cred-item">ID: <b>{{ c.id }}</b></span>
-          <span class="cl-cred-sep">·</span>
-          <span class="cl-cred-item">PIN: <b>{{ c.pin }}</b></span>
-        </div>
-
         <div class="cl-card-foot">
           <button class="cl-link-btn" @click="openLink(c)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             {{ c.linkedProjects?.length ? 'сменить проект' : 'привязать к проекту' }}
           </button>
-          <NuxtLink
-            :to="`/client/brief/${c.id}`"
-            class="cl-cabinet-btn"
-            target="_blank"
-          >
+          <button class="cl-cabinet-btn" @click="openClientCabinet(c)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             кабинет
-          </NuxtLink>
+          </button>
         </div>
       </div>
     </div>
@@ -126,16 +121,11 @@
           </div>
           <div class="cl-field">
             <label>Адрес (домашний)</label>
-            <input v-model="form.address" class="cl-input glass-input" placeholder="г. Москва, ул. ...">
+            <AppAddressInput v-model="form.address" input-class="cl-input glass-input" placeholder="г. Москва, ул. ..." />
           </div>
           <div class="cl-field">
             <label>Заметки</label>
             <textarea v-model="form.notes" class="cl-input cl-ta glass-input" rows="3" placeholder="Любые пометки"></textarea>
-          </div>
-          <div class="cl-field">
-            <label>PIN-код для входа в кабинет</label>
-            <input v-model="form.pin" class="cl-input glass-input" placeholder="Например: 1234" maxlength="12">
-            <span class="cl-field-hint">Клиент войдёт по ID + PIN на /client/brief-login</span>
           </div>
           <p v-if="saveError" class="cl-error">{{ saveError }}</p>
           <div class="cl-modal-foot">
@@ -191,7 +181,34 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', middleware: 'admin' })
 
-const { data: clients, pending, refresh } = await useFetch<any[]>('/api/clients')
+const route = useRoute()
+const projectSlugFilter = computed(() =>
+  typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '',
+)
+
+const clientsCacheByProject = useState<Record<string, any[]>>('cache-admin-clients-by-project', () => ({}))
+const clientsCacheKey = computed(() => projectSlugFilter.value || '__all__')
+const hasClientsCache = computed(() => (clientsCacheByProject.value[clientsCacheKey.value] || []).length > 0)
+
+const { data: clients, pending, refresh } = await useFetch<any[]>(
+  () => projectSlugFilter.value
+    ? `/api/clients?projectSlug=${encodeURIComponent(projectSlugFilter.value)}`
+    : '/api/clients',
+  {
+    server: false,
+    default: () => clientsCacheByProject.value[clientsCacheKey.value] || [],
+  },
+)
+
+watch(clients, (value) => {
+  if (Array.isArray(value)) {
+    clientsCacheByProject.value = {
+      ...clientsCacheByProject.value,
+      [clientsCacheKey.value]: value,
+    }
+  }
+}, { deep: true })
+
 const { data: allProjects } = await useFetch<any[]>('/api/projects')
 
 // ── Add / Edit ─────────────────────────────────────────
@@ -200,13 +217,13 @@ const editingId = ref<number | null>(null)
 const saving = ref(false)
 const saveError = ref('')
 
-const defaultForm = () => ({ name: '', phone: '', email: '', messenger: '', messengerNick: '', address: '', notes: '', pin: '' })
+const defaultForm = () => ({ name: '', phone: '', email: '', messenger: '', messengerNick: '', address: '', notes: '' })
 const form = ref(defaultForm())
 
 function openAdd() { editingId.value = null; form.value = defaultForm(); saveError.value = ''; showModal.value = true }
 function openEdit(c: any) {
   editingId.value = c.id
-  form.value = { name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', messenger: c.messenger ?? '', messengerNick: c.messengerNick ?? '', address: c.address ?? '', notes: c.notes ?? '', pin: c.pin ?? '' }
+  form.value = { name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', messenger: c.messenger ?? '', messengerNick: c.messengerNick ?? '', address: c.address ?? '', notes: c.notes ?? '' }
   saveError.value = ''; showModal.value = true
 }
 function closeModal() { showModal.value = false }
@@ -246,6 +263,17 @@ async function doLink() {
   } catch (e: any) { linkError.value = e?.data?.statusMessage || 'Ошибка' }
   finally { linking.value = false }
 }
+
+function openClientCabinet(client: any) {
+  const currentProjectSlug = projectSlugFilter.value
+  const linkedProjectSlug = client?.linkedProjects?.[0]?.slug
+  const targetSlug = currentProjectSlug || linkedProjectSlug
+  if (targetSlug) {
+    navigateTo(`/admin/projects/${encodeURIComponent(targetSlug)}?view=client`)
+    return
+  }
+  navigateTo('/client/login')
+}
 </script>
 
 <style scoped>
@@ -264,11 +292,27 @@ async function doLink() {
 }
 .cl-add-btn {
   padding: 8px 18px; border-radius: 8px; font-size: .78px;
-  border: 1px solid var(--glass-border); background: var(--glass-text);
+  border: none; background: var(--glass-text);
   color: var(--glass-page-bg); cursor: pointer; font-family: inherit;
   white-space: nowrap; transition: opacity .15s; font-size: .78rem;
 }
 .cl-add-btn:hover { opacity: .82; }
+
+.cl-filter-info {
+  margin: -8px 0 14px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: .76rem;
+  color: var(--glass-text);
+}
+.cl-filter-link {
+  text-decoration: none;
+  color: var(--glass-text);
+  opacity: .72;
+}
+.cl-filter-link:hover { opacity: 1; }
 
 .cl-empty {
   padding: 60px 24px; text-align: center;
@@ -290,12 +334,12 @@ async function doLink() {
 .cl-icon-btn {
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border-radius: 7px; cursor: pointer;
-  border: 1px solid var(--glass-border); background: var(--glass-bg);
+  border: none; background: var(--glass-bg);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   color: var(--glass-text); opacity: .6; transition: opacity .15s;
 }
 .cl-icon-btn:hover { opacity: 1; }
-.cl-icon-btn--del { color: rgba(200,40,40,.9); border-color: rgba(200,40,40,.3); background: rgba(200,40,40,.06); opacity: 1; }
+.cl-icon-btn--del { color: rgba(200,40,40,.9); background: rgba(200,40,40,.06); opacity: 1; }
 .cl-icon-btn--del:hover { background: rgba(200,40,40,.85); color: #fff; border-color: transparent; }
 
 .cl-contacts { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
@@ -316,13 +360,13 @@ async function doLink() {
 .cl-linked-chip {
   font-size: .7rem; padding: 2px 9px; border-radius: 999px;
   text-decoration: none; color: var(--glass-text);
-  border: 1px solid var(--glass-border); background: var(--glass-bg);
+  border: none; background: var(--glass-bg);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
   opacity: .75; transition: opacity .15s;
 }
 .cl-linked-chip:hover { opacity: 1; }
 
-.cl-card-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--glass-border); display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.cl-card-foot { margin-top: auto; padding-top: 10px; border-top: none; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .cl-link-btn {
   display: flex; align-items: center; gap: 5px;
   font-size: .74rem; cursor: pointer; background: none; border: none;
@@ -371,7 +415,7 @@ async function doLink() {
 .cl-modal-foot { display: flex; gap: 8px; justify-content: flex-end; padding-top: 4px; }
 .cl-cancel-btn {
   padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: .8rem;
-  border: 1px solid var(--glass-border); background: transparent;
+  border: none; background: color-mix(in srgb, var(--glass-bg) 90%, transparent);
   color: var(--glass-text); opacity: .65; transition: opacity .15s;
 }
 .cl-cancel-btn:hover { opacity: 1; }
