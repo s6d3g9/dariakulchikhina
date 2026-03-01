@@ -10,13 +10,32 @@
 
   /* ── Button design tokens ─────────────────────────────── */
   --btn-bg:         rgba(0, 0, 0, 0.07);
+  --btn-bg-base:    rgba(0, 0, 0, 0.07);
   --btn-color:      #2c2c2a;
   --btn-border:     rgba(0, 0, 0, 0.14);
+  --btn-border-base: rgba(0, 0, 0, 0.14);
   --btn-radius:     3px;
   --btn-sm-bg:      transparent;
   --btn-sm-border:  rgba(0, 0, 0, 0.12);
   --btn-transform:  none;
   --btn-tracking:   .03em;
+  --btn-py:         9px;
+  --btn-px:         22px;
+  --btn-font-size:  .8rem;
+
+  /* ── Design-system tokens (overridden via JS) ──────────── */
+  --ds-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ds-font-size:   1rem;
+  --ds-font-weight: 400;
+  --ds-letter-spacing: .03em;
+  --ds-line-height: 1.5;
+  --ds-spacing:     1;
+  --glass-blur:     18px;
+  --glass-bg-alpha: 0.48;
+  --glass-border-alpha: 0.07;
+  --glass-shadow-alpha: 0.06;
+  --card-radius:    14px;
+  --input-radius:   6px;
 
   /* ── Roadmap unified color tokens ─────────────────────── */
   --rm-color-pending:  #9ca3af;
@@ -113,12 +132,12 @@ html.dark .glass-page::before {
   background: var(--glass-bg);
   border: none;
   box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
-  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(145%);
+  backdrop-filter: blur(var(--glass-blur, 18px)) saturate(145%);
 }
 
 .glass-card {
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
 }
 
 html.dark .glass-surface,
@@ -252,12 +271,12 @@ html.dark .glass-input::placeholder {
   color: var(--btn-color);
   border: 1px solid var(--btn-border);
   border-radius: var(--btn-radius);
-  padding: 9px 22px;
-  font-size: .8rem;
+  padding: var(--btn-py, 9px) var(--btn-px, 22px);
+  font-size: var(--btn-font-size, .8rem);
   letter-spacing: var(--btn-tracking);
   text-transform: var(--btn-transform);
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--ds-font-family, inherit);
   transition: opacity .18s, background .18s;
 }
 .a-btn-save:hover   { opacity: .72; }
@@ -272,12 +291,12 @@ html.dark .glass-input::placeholder {
   color: var(--btn-color);
   border: 1px solid var(--btn-sm-border);
   border-radius: var(--btn-radius);
-  padding: 5px 12px;
-  font-size: .76rem;
+  padding: calc(var(--btn-py, 5px) * 0.6) calc(var(--btn-px, 12px) * 0.6);
+  font-size: calc(var(--btn-font-size, .76rem) * 0.95);
   letter-spacing: var(--btn-tracking);
   text-transform: var(--btn-transform);
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--ds-font-family, inherit);
   opacity: .68;
   transition: opacity .18s, background .18s;
 }

@@ -4,6 +4,8 @@ import { eq, and } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
+  // Auth: admin or client for this project
+  requireAdminOrClient(event, slug)
   const rawUrl = event.node.req.url || ''
   const queryString = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?') + 1) : ''
   const page = new URLSearchParams(queryString).get('page') || undefined

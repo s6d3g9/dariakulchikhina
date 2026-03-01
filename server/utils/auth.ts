@@ -1,5 +1,6 @@
 import type { H3Event } from 'h3'
 import bcrypt from 'bcryptjs'
+import { createHmac } from 'crypto'
 
 // NOTE: h3 v2 RC bundled in Nitro has a bug where parseCookies calls
 // event.req.headers.get() but event.req is deprecated and returns raw IncomingMessage.
@@ -9,6 +10,34 @@ import bcrypt from 'bcryptjs'
 const ADMIN_COOKIE = 'daria_admin_session'
 const CLIENT_COOKIE = 'daria_client_session'
 const CONTRACTOR_COOKIE = 'daria_contractor_session'
+
+// --- HMAC session signing ---
+
+function _getSessionSecret(): string {
+  return process.env.NUXT_SESSION_SECRET || process.env.SESSION_SECRET || 'daria-fallback-secret-change-me'
+}
+
+function _sign(payload: string): string {
+  const secret = _getSessionSecret()
+  const sig = createHmac('sha256', secret).update(payload).digest('base64url')
+  return `${payload}.${sig}`
+}
+
+function _verifyAndParse(signed: string): string | null {
+  const dotIdx = signed.lastIndexOf('.')
+  if (dotIdx < 0) return null
+  const payload = signed.slice(0, dotIdx)
+  const sig = signed.slice(dotIdx + 1)
+  const secret = _getSessionSecret()
+  const expected = createHmac('sha256', secret).update(payload).digest('base64url')
+  // Constant-time comparison
+  if (sig.length !== expected.length) return null
+  let mismatch = 0
+  for (let i = 0; i < sig.length; i++) {
+    mismatch |= sig.charCodeAt(i) ^ expected.charCodeAt(i)
+  }
+  return mismatch === 0 ? payload : null
+}
 
 // --- Low-level cookie helpers (Node.js-native, no h3 getCookie/setCookie) ---
 
@@ -58,8 +87,9 @@ function _deleteCookie(event: H3Event, name: string) {
 // --- Admin session (designer) ---
 
 export function setAdminSession(event: H3Event, userId: number) {
-  const v = Buffer.from(JSON.stringify({ userId, ts: Date.now() })).toString('base64')
-  _writeCookie(event, ADMIN_COOKIE, v, {
+  const payload = Buffer.from(JSON.stringify({ userId, ts: Date.now() })).toString('base64url')
+  const signed = _sign(payload)
+  _writeCookie(event, ADMIN_COOKIE, signed, {
     httpOnly: true, sameSite: 'lax',
     secure: _isSecure(event),
     maxAge: 60 * 60 * 24 * 30, path: '/'
@@ -69,7 +99,15 @@ export function setAdminSession(event: H3Event, userId: number) {
 export function getAdminSession(event: H3Event): { userId: number } | null {
   const raw = _readCookie(event, ADMIN_COOKIE)
   if (!raw) return null
-  try { return JSON.parse(Buffer.from(raw, 'base64').toString()) } catch { return null }
+  try {
+    // Try signed format first
+    const payload = _verifyAndParse(raw)
+    if (payload) return JSON.parse(Buffer.from(payload, 'base64url').toString())
+    // Fallback: accept old unsigned base64 cookies (migration period)
+    const legacy = JSON.parse(Buffer.from(raw, 'base64').toString())
+    if (legacy && typeof legacy.userId === 'number') return legacy
+    return null
+  } catch { return null }
 }
 
 export function clearAdminSession(event: H3Event) {
@@ -85,7 +123,8 @@ export function requireAdmin(event: H3Event) {
 // --- Client session ---
 
 export function setClientSession(event: H3Event, projectSlug: string) {
-  _writeCookie(event, CLIENT_COOKIE, projectSlug, {
+  const signed = _sign(projectSlug)
+  _writeCookie(event, CLIENT_COOKIE, signed, {
     httpOnly: true, sameSite: 'lax',
     secure: _isSecure(event),
     maxAge: 60 * 60 * 24 * 30, path: '/'
@@ -93,7 +132,14 @@ export function setClientSession(event: H3Event, projectSlug: string) {
 }
 
 export function getClientSession(event: H3Event): string | null {
-  return _readCookie(event, CLIENT_COOKIE) || null
+  const raw = _readCookie(event, CLIENT_COOKIE)
+  if (!raw) return null
+  // Try signed format
+  const payload = _verifyAndParse(raw)
+  if (payload) return payload
+  // Fallback: old unsigned cookie (migration period)
+  if (raw && !raw.includes('.')) return raw
+  return null
 }
 
 export function clearClientSession(event: H3Event) {
@@ -110,7 +156,8 @@ export function requireClient(event: H3Event, projectSlug?: string) {
 // --- Contractor session ---
 
 export function setContractorSession(event: H3Event, contractorId: number) {
-  _writeCookie(event, CONTRACTOR_COOKIE, String(contractorId), {
+  const signed = _sign(String(contractorId))
+  _writeCookie(event, CONTRACTOR_COOKIE, signed, {
     httpOnly: true, sameSite: 'lax',
     secure: _isSecure(event),
     maxAge: 60 * 60 * 24 * 30, path: '/'
@@ -119,7 +166,13 @@ export function setContractorSession(event: H3Event, contractorId: number) {
 
 export function getContractorSession(event: H3Event): number | null {
   const raw = _readCookie(event, CONTRACTOR_COOKIE)
-  return raw ? Number(raw) : null
+  if (!raw) return null
+  // Try signed format
+  const payload = _verifyAndParse(raw)
+  if (payload) { const n = Number(payload); return Number.isFinite(n) ? n : null }
+  // Fallback: old unsigned cookie (migration period)
+  const legacy = Number(raw)
+  return Number.isFinite(legacy) ? legacy : null
 }
 
 export function clearContractorSession(event: H3Event) {
@@ -130,6 +183,24 @@ export function requireContractor(event: H3Event) {
   const id = getContractorSession(event)
   if (!id) throw createError({ statusCode: 401, statusMessage: 'Contractor not authenticated' })
   return id
+}
+
+/** Require admin OR an authenticated contractor with the given id */
+export function requireAdminOrContractor(event: H3Event, contractorId: number) {
+  const admin = getAdminSession(event)
+  if (admin) return { role: 'admin' as const, adminUserId: admin.userId }
+  const cid = getContractorSession(event)
+  if (cid && cid === contractorId) return { role: 'contractor' as const, contractorId: cid }
+  throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+}
+
+/** Require admin OR an authenticated client for this project slug */
+export function requireAdminOrClient(event: H3Event, projectSlug: string) {
+  const admin = getAdminSession(event)
+  if (admin) return { role: 'admin' as const, adminUserId: admin.userId }
+  const slug = getClientSession(event)
+  if (slug && slug === projectSlug) return { role: 'client' as const, projectSlug: slug }
+  throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 }
 
 // --- Password helpers ---

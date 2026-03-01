@@ -5,10 +5,15 @@ import { useDb } from '~/server/db/index'
 import { workStatusItemPhotos, workStatusItems, contractors } from '~/server/db/schema'
 import { eq, and, inArray } from 'drizzle-orm'
 import { ensureUploadDir, getUploadUrl } from '~/server/utils/storage'
+import { validateUploadedFile } from '~/server/utils/upload-validation'
 
 export default defineEventHandler(async (event) => {
   const contractorId = Number(getRouterParam(event, 'id'))
   const itemId = Number(getRouterParam(event, 'itemId'))
+
+  // Auth: require admin or the contractor themselves
+  requireAdminOrContractor(event, contractorId)
+
   const db = useDb()
 
   const staff = await db
@@ -28,6 +33,13 @@ export default defineEventHandler(async (event) => {
   if (!form) throw createError({ statusCode: 400, statusMessage: 'No form data' })
   const filePart = form.find(p => p.name === 'file')
   if (!filePart?.data) throw createError({ statusCode: 400, statusMessage: 'No file' })
+
+  // Validate file type and size
+  const validation = validateUploadedFile(filePart.data, filePart.filename, filePart.type)
+  if (!validation.valid) {
+    throw createError({ statusCode: 400, statusMessage: validation.error || 'Invalid file' })
+  }
+
   const captionPart = form.find(p => p.name === 'caption')
   const caption = captionPart ? String(captionPart.data) : null
 

@@ -90,7 +90,7 @@
               v-for="pg in clientNavPages" :key="pg.slug"
               class="proj-sidenav-item std-nav-item"
               :class="{ 'proj-sidenav-item--active': clientActivePage === pg.slug, 'std-nav-item--active': clientActivePage === pg.slug }"
-              @click="clientActivePage = pg.slug"
+              @click="selectClientPage(pg.slug)"
             >
               <span v-if="pg.icon" class="proj-sidenav-icon">{{ pg.icon }}</span>
               {{ pg.title }}
@@ -108,7 +108,7 @@
               v-for="sec in CONTRACTOR_SECTIONS" :key="sec.key"
               class="proj-sidenav-item std-nav-item"
               :class="{ 'proj-sidenav-item--active': contractorSection === sec.key, 'std-nav-item--active': contractorSection === sec.key }"
-              @click="contractorSection = sec.key"
+              @click="selectContractorSection(sec.key)"
             >
               <span class="proj-sidenav-icon">{{ sec.icon }}</span>{{ sec.label }}
             </button>
@@ -124,7 +124,7 @@
                   :key="pg.slug"
                   class="proj-sidenav-item std-nav-item"
                   :class="{ 'proj-sidenav-item--active': activePage === pg.slug, 'std-nav-item--active': activePage === pg.slug }"
-                  @click="activePage = pg.slug"
+                  @click="selectAdminPage(pg.slug)"
                 >{{ pg.title }}</button>
               </div>
             </template>
@@ -436,7 +436,30 @@ const contentKey = computed(() => {
   if (clientPreviewMode.value)     return `cli-${clientActivePage.value}`
   return `adm-${activePage.value}`
 })
-watch(contentKey, () => { if (import.meta.client) window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }) })
+function scrollToContent() {
+  nextTick(() => {
+    const el = document.querySelector('.proj-main')
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY - 16
+      window.scrollTo({ top, behavior: 'smooth' })
+    }
+  })
+}
+
+function selectAdminPage(slug: string) {
+  activePage.value = slug
+  scrollToContent()
+}
+
+function selectClientPage(slug: string) {
+  clientActivePage.value = slug
+  scrollToContent()
+}
+
+function selectContractorSection(key: string) {
+  contractorSection.value = key
+  scrollToContent()
+}
 
 const clientPageComponentMap: Record<string, Component> = {
   phase_init:            ClientInitiation,
@@ -727,10 +750,10 @@ async function linkClientToProject() {
 .proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
 
 /* ── Section switch fade ── */
-.tab-fade-enter-active { transition: opacity .18s ease, transform .18s ease; }
-.tab-fade-leave-active { transition: opacity .12s ease, transform .08s ease; }
-.tab-fade-enter-from  { opacity: 0; transform: translateY(6px); }
-.tab-fade-leave-to    { opacity: 0; transform: translateY(-4px); }
+.tab-fade-enter-active { transition: opacity .35s ease-in-out; }
+.tab-fade-leave-active { transition: opacity .25s ease-in-out; }
+.tab-fade-enter-from  { opacity: 0; }
+.tab-fade-leave-to    { opacity: 0; }
 
 /* ── Contractor preview card ── */
 .ctr-card { padding: 4px 0 32px; }

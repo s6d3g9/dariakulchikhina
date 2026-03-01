@@ -4,6 +4,8 @@ import { eq, inArray, sql } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
+  // Auth: admin or the contractor themselves
+  requireAdminOrContractor(event, id)
   const db = useDb()
 
   // Загружаем мастеров компании (если это подрядчик-компания)

@@ -13,6 +13,8 @@ const UpdateSchema = z.object({
 export default defineEventHandler(async (event) => {
   const contractorId = Number(getRouterParam(event, 'id'))
   const itemId = Number(getRouterParam(event, 'itemId'))
+  // Auth: admin or the contractor themselves
+  requireAdminOrContractor(event, contractorId)
 
   const body = await readValidatedNodeBody(event, UpdateSchema)
   const db = useDb()

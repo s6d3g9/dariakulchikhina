@@ -4,21 +4,23 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 const SelfUpdateSchema = z.object({
-  name: z.string().min(1).optional(),
-  companyName: z.string().nullable().optional(),
-  contactPerson: z.string().nullable().optional(),
-  phone: z.string().nullable().optional(),
-  email: z.string().nullable().optional(),
-  messenger: z.string().nullable().optional(),
-  messengerNick: z.string().nullable().optional(),
-  website: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  workTypes: z.array(z.string()).optional(),
-  roleTypes: z.array(z.string()).optional(),
+  name: z.string().min(1).max(200).optional(),
+  companyName: z.string().max(200).nullable().optional(),
+  contactPerson: z.string().max(200).nullable().optional(),
+  phone: z.string().max(50).nullable().optional(),
+  email: z.string().max(200).nullable().optional(),
+  messenger: z.string().max(100).nullable().optional(),
+  messengerNick: z.string().max(100).nullable().optional(),
+  website: z.string().max(500).nullable().optional(),
+  notes: z.string().max(5000).nullable().optional(),
+  workTypes: z.array(z.string().max(100)).max(50).optional(),
+  roleTypes: z.array(z.string().max(100)).max(50).optional(),
 })
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
+  // Auth: contractor can only edit themselves, admin can edit anyone
+  requireAdminOrContractor(event, id)
 
   const body = await readValidatedNodeBody(event, SelfUpdateSchema)
   const db = useDb()

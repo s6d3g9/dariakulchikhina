@@ -4,6 +4,8 @@ import { eq } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
+  // Auth: admin or client for this project
+  requireAdminOrClient(event, slug)
   const db = useDb()
   const [project] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, slug)).limit(1)
   if (!project) throw createError({ statusCode: 404, message: 'Проект не найден' })

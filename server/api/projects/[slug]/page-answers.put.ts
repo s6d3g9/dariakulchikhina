@@ -14,6 +14,8 @@ const Body = z.object({
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
+  // Auth: admin or client for this project
+  requireAdminOrClient(event, slug)
 
   const body = await readValidatedNodeBody(event, Body)
 

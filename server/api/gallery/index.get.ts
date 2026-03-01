@@ -19,7 +19,11 @@ export default defineEventHandler(async (event) => {
   if (category) conditions.push(eq(galleryItems.category, category))
   if (tag) conditions.push(arrayContains(galleryItems.tags, [tag]))
   if (featured === 'true') conditions.push(eq(galleryItems.featured, true))
-  if (search) conditions.push(ilike(galleryItems.title, `%${search}%`))
+  if (search) {
+    // Escape LIKE wildcard characters to prevent wildcard injection
+    const escaped = search.replace(/[%_\\]/g, (ch) => `\\${ch}`)
+    conditions.push(ilike(galleryItems.title, `%${escaped}%`))
+  }
 
   const where = conditions.length > 0 ? and(...conditions) : undefined
 

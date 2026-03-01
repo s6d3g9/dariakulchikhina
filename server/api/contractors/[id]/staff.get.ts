@@ -4,6 +4,8 @@ import { eq } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))
+  // Auth: admin or the contractor themselves
+  requireAdminOrContractor(event, id)
   const db = useDb()
   return db
     .select({

@@ -5,6 +5,8 @@ import { eq, and, inArray } from 'drizzle-orm'
 export default defineEventHandler(async (event) => {
   const contractorId = Number(getRouterParam(event, 'id'))
   const itemId = Number(getRouterParam(event, 'itemId'))
+  // Auth: admin or the contractor themselves
+  requireAdminOrContractor(event, contractorId)
   const db = useDb()
 
   // Проверяем доступ (свои задачи + задачи подчинённых)

@@ -1,20 +1,20 @@
 import { useDb } from '~/server/db/index'
 import { documents, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { readNodeBody } from '~/server/utils/body'
+import { z } from 'zod'
+
+const CreateDocumentSchema = z.object({
+  title: z.string().min(1).max(500).transform(s => s.trim()),
+  category: z.enum(['contract', 'act', 'invoice', 'template', 'other']).default('other'),
+  filename: z.string().max(500).nullable().optional(),
+  url: z.string().max(1000).nullable().optional(),
+  projectSlug: z.string().max(200).nullable().optional(),
+  notes: z.string().max(5000).nullable().optional(),
+})
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const body = await readNodeBody(event) as {
-    title: string
-    category: string
-    filename?: string
-    url?: string
-    projectSlug?: string
-    notes?: string
-  }
-
-  if (!body.title?.trim()) throw createError({ statusCode: 400, statusMessage: 'title required' })
+  const body = await readValidatedNodeBody(event, CreateDocumentSchema)
 
   const db = useDb()
   let projectId: number | null = null
@@ -26,8 +26,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const [doc] = await db.insert(documents).values({
-    title: body.title.trim(),
-    category: body.category || 'other',
+    title: body.title,
+    category: body.category,
     filename: body.filename || null,
     url: body.url || null,
     projectId,

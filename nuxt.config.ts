@@ -35,6 +35,12 @@ export default defineNuxtConfig({
     },
   },
 
+  imports: {
+    // Prevent Nuxt auto-import scanner from picking up generic type
+    // tokens like "string" from large Record<string,string> signatures
+    collectMeta: false,
+  },
+
   typescript: {
     strict: true,
     shim: false,

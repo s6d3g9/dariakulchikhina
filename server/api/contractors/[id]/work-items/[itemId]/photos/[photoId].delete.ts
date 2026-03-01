@@ -9,6 +9,10 @@ export default defineEventHandler(async (event) => {
   const contractorId = Number(getRouterParam(event, 'id'))
   const itemId = Number(getRouterParam(event, 'itemId'))
   const photoId = Number(getRouterParam(event, 'photoId'))
+
+  // Auth: admin or authenticated contractor
+  requireAdminOrContractor(event, contractorId)
+
   const db = useDb()
 
   const staff = await db
@@ -31,10 +35,12 @@ export default defineEventHandler(async (event) => {
 
   if (!photo) throw createError({ statusCode: 404 })
 
-  // Удаляем файл
+  // Удаляем файл (path traversal protection)
   try {
-    const filename = photo.url.replace('/uploads/', '')
-    await unlink(path.join(getUploadDir(), filename))
+    const filename = path.basename(photo.url)
+    if (filename && !filename.includes('..')) {
+      await unlink(path.join(getUploadDir(), filename))
+    }
   } catch { /* файл мог быть удалён вручную */ }
 
   return { ok: true }
