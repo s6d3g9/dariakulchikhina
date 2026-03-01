@@ -230,33 +230,56 @@ html.dark .glass-input::placeholder {
   }
 }
 
-/* Admin panel global button styles */
+/* ── Admin panel global button styles ──────────────────────────
+   Concept: monochrome, calm, minimal. Two families:
+   • .a-btn-save  — solid primary (dark on light / light on dark)
+   • .a-btn-sm    — ghost secondary, subtle border
+   ─────────────────────────────────────────────────────────── */
 .a-btn-save {
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
   background: var(--glass-text);
   color: var(--glass-bg);
-  padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
-  border-radius: 4px;
-  transition: opacity .15s;
+  padding: 9px 22px;
+  font-size: .8rem;
+  letter-spacing: .03em;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 3px;
+  transition: opacity .18s;
 }
-.a-btn-save:hover { opacity: .80; }
-.a-btn-save:disabled { opacity: .35; cursor: default; }
+.a-btn-save:hover   { opacity: .78; }
+.a-btn-save:active  { opacity: .62; }
+.a-btn-save:disabled { opacity: .28; cursor: default; }
+
 .a-btn-sm {
-  border: 1px solid color-mix(in srgb, var(--glass-text) 22%, transparent);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
   background: transparent;
   color: var(--glass-text);
-  padding: 4px 10px;
-  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 4px;
-  opacity: .72;
-  transition: opacity .15s, background .15s;
+  padding: 5px 12px;
+  font-size: .76rem;
+  letter-spacing: .02em;
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 3px;
+  opacity: .65;
+  transition: opacity .18s, background .18s;
 }
-.a-btn-sm:hover { opacity: 1; background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
+.a-btn-sm:hover   { opacity: .95; background: color-mix(in srgb, var(--glass-text) 5%, transparent); }
+.a-btn-sm:active  { opacity: 1; }
+.a-btn-sm:disabled { opacity: .28; cursor: default; }
+
 .a-btn-danger {
-  border-color: rgba(220,38,38,.35);
-  color: #dc2626;
-  opacity: 1;
+  border-color: rgba(180,40,40,.25);
+  color: #b83232;
+  opacity: .85;
 }
-.a-btn-danger:hover { background: rgba(220,38,38,.08); opacity: 1; }
+.a-btn-danger:hover { background: rgba(180,40,40,.06); opacity: 1; border-color: rgba(180,40,40,.40); }
 
 /* ── Global dark-mode safety net ── */
 html.dark {
