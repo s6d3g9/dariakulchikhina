@@ -426,6 +426,9 @@ const { data: contractorData, pending: contractorPending } = useFetch<any>(
 )
 
 watch(contractorPreviewMode, (on) => { if (on) contractorSection.value = 'profile' })
+// ── Client preview mode ────────────────────────────────────────
+const clientPreviewMode = computed(() => route.query.view === 'client')
+const clientActivePage  = ref('')
 
 // ── Content key: drives fade transition + scroll-reset on page switch ───────
 const contentKey = computed(() => {
@@ -433,10 +436,7 @@ const contentKey = computed(() => {
   if (clientPreviewMode.value)     return `cli-${clientActivePage.value}`
   return `adm-${activePage.value}`
 })
-watch(contentKey, () => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }) })
-// ── Client preview mode ────────────────────────────────────────
-const clientPreviewMode = computed(() => route.query.view === 'client')
-const clientActivePage  = ref('')
+watch(contentKey, () => { if (import.meta.client) window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }) })
 
 const clientPageComponentMap: Record<string, Component> = {
   phase_init:            ClientInitiation,
