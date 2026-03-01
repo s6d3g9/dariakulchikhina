@@ -134,44 +134,48 @@
 
         <!-- Right content -->
         <div class="proj-main">
-          <!-- contractor preview -->
-          <template v-if="contractorPreviewMode">
-            <div v-if="contractorPending" style="font-size:.82rem;color:#aaa;padding:20px 0">Загрузка...</div>
-            <template v-else-if="contractorData">
-              <!-- Профиль -->
-              <div v-if="contractorSection === 'profile'" class="ctr-card">
-                <div class="ctr-name">{{ contractorData.name }}</div>
-                <div v-if="contractorData.companyName" class="ctr-sub">{{ contractorData.companyName }}</div>
-                <div class="ctr-rows">
-                  <div v-if="contractorData.phone" class="ctr-row"><span class="ctr-lbl">тел</span><a :href="`tel:${contractorData.phone}`" class="ctr-val">{{ contractorData.phone }}</a></div>
-                  <div v-if="contractorData.email" class="ctr-row"><span class="ctr-lbl">email</span><a :href="`mailto:${contractorData.email}`" class="ctr-val">{{ contractorData.email }}</a></div>
-                  <div v-if="contractorData.messenger" class="ctr-row"><span class="ctr-lbl">{{ contractorData.messenger }}</span><span class="ctr-val">{{ contractorData.messengerNick }}</span></div>
-                  <div v-if="contractorData.website" class="ctr-row"><span class="ctr-lbl">сайт</span><a :href="contractorData.website" target="_blank" class="ctr-val">{{ contractorData.website }}</a></div>
-                </div>
-                <div v-if="contractorData.workTypes?.length" class="ctr-chips">
-                  <span v-for="wt in contractorData.workTypes" :key="wt" class="ctr-chip">{{ wt }}</span>
-                </div>
-                <div v-if="contractorData.notes" class="ctr-notes">{{ contractorData.notes }}</div>
-                <NuxtLink :to="`/admin/contractors#c-${contractorData.id}`" class="ctr-link-full">полная анкета ↗</NuxtLink>
-              </div>
-              <!-- Задачи -->
-              <AdminWorkStatus v-else-if="contractorSection === 'tasks'" :slug="slug" />
-              <!-- Документы -->
-              <AdminMaterials v-else-if="contractorSection === 'materials'" :slug="slug" />
-            </template>
-          </template>
-          <!-- client preview -->
-          <component
-            v-else-if="clientPreviewMode"
-            :is="clientActiveComponent"
-            v-bind="clientActiveComponentProps"
-          />
-          <!-- admin view -->
-          <component
-            v-else
-            :is="activeComponent"
-            v-bind="activeComponentProps"
-          />
+          <Transition name="tab-fade" mode="out-in">
+            <div :key="contentKey" class="proj-main-inner">
+              <!-- contractor preview -->
+              <template v-if="contractorPreviewMode">
+                <div v-if="contractorPending" style="font-size:.82rem;color:#aaa;padding:20px 0">Загрузка...</div>
+                <template v-else-if="contractorData">
+                  <!-- Профиль -->
+                  <div v-if="contractorSection === 'profile'" class="ctr-card">
+                    <div class="ctr-name">{{ contractorData.name }}</div>
+                    <div v-if="contractorData.companyName" class="ctr-sub">{{ contractorData.companyName }}</div>
+                    <div class="ctr-rows">
+                      <div v-if="contractorData.phone" class="ctr-row"><span class="ctr-lbl">тел</span><a :href="`tel:${contractorData.phone}`" class="ctr-val">{{ contractorData.phone }}</a></div>
+                      <div v-if="contractorData.email" class="ctr-row"><span class="ctr-lbl">email</span><a :href="`mailto:${contractorData.email}`" class="ctr-val">{{ contractorData.email }}</a></div>
+                      <div v-if="contractorData.messenger" class="ctr-row"><span class="ctr-lbl">{{ contractorData.messenger }}</span><span class="ctr-val">{{ contractorData.messengerNick }}</span></div>
+                      <div v-if="contractorData.website" class="ctr-row"><span class="ctr-lbl">сайт</span><a :href="contractorData.website" target="_blank" class="ctr-val">{{ contractorData.website }}</a></div>
+                    </div>
+                    <div v-if="contractorData.workTypes?.length" class="ctr-chips">
+                      <span v-for="wt in contractorData.workTypes" :key="wt" class="ctr-chip">{{ wt }}</span>
+                    </div>
+                    <div v-if="contractorData.notes" class="ctr-notes">{{ contractorData.notes }}</div>
+                    <NuxtLink :to="`/admin/contractors#c-${contractorData.id}`" class="ctr-link-full">полная анкета ↗</NuxtLink>
+                  </div>
+                  <!-- Задачи -->
+                  <AdminWorkStatus v-else-if="contractorSection === 'tasks'" :slug="slug" />
+                  <!-- Документы -->
+                  <AdminMaterials v-else-if="contractorSection === 'materials'" :slug="slug" />
+                </template>
+              </template>
+              <!-- client preview -->
+              <component
+                v-else-if="clientPreviewMode"
+                :is="clientActiveComponent"
+                v-bind="clientActiveComponentProps"
+              />
+              <!-- admin view -->
+              <component
+                v-else
+                :is="activeComponent"
+                v-bind="activeComponentProps"
+              />
+            </div>
+          </Transition>
         </div>
       </div>
     </template>
@@ -422,6 +426,14 @@ const { data: contractorData, pending: contractorPending } = useFetch<any>(
 )
 
 watch(contractorPreviewMode, (on) => { if (on) contractorSection.value = 'profile' })
+
+// ── Content key: drives fade transition + scroll-reset on page switch ───────
+const contentKey = computed(() => {
+  if (contractorPreviewMode.value) return `ctr-${contractorSection.value}`
+  if (clientPreviewMode.value)     return `cli-${clientActivePage.value}`
+  return `adm-${activePage.value}`
+})
+watch(contentKey, () => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }) })
 // ── Client preview mode ────────────────────────────────────────
 const clientPreviewMode = computed(() => route.query.view === 'client')
 const clientActivePage  = ref('')
@@ -712,6 +724,13 @@ async function linkClientToProject() {
 
 /* ── Right content ── */
 .proj-main { flex: 1; min-width: 0; }
+.proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
+
+/* ── Section switch fade ── */
+.tab-fade-enter-active { transition: opacity .18s ease, transform .18s ease; }
+.tab-fade-leave-active { transition: opacity .12s ease, transform .08s ease; }
+.tab-fade-enter-from  { opacity: 0; transform: translateY(6px); }
+.tab-fade-leave-to    { opacity: 0; transform: translateY(-4px); }
 
 /* ── Contractor preview card ── */
 .ctr-card { padding: 4px 0 32px; }
