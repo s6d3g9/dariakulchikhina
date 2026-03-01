@@ -748,16 +748,6 @@ async function linkClientToProject() {
 .proj-sidenav-empty { font-size: .76rem; color: #bbb; padding: 10px; }
 
 /* ── Modal ── */
-.a-btn-sm {
-  border: none; background: var(--glass-bg); padding: 4px 10px;
-  font-size: .78rem; cursor: pointer; font-family: inherit; border-radius: 2px; color: #666;
-}
-.a-btn-sm:hover { color: #1a1a1a; }
-.a-btn-save {
-  border: none; background: #1a1a1a; color: #fff;
-  padding: 10px 24px; font-size: .85rem; cursor: pointer; font-family: inherit;
-}
-.a-btn-save:hover { background: #333; }
 .a-field { margin-bottom: 14px; }
 .a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
 .a-input {
