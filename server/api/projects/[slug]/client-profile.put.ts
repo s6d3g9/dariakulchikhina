@@ -28,9 +28,9 @@ export default defineEventHandler(async (event) => {
     Object.entries(body as Record<string, unknown>)
       .filter(([k]) => ALLOWED_KEYS.has(k))
       .map(([k, v]) => [k, sanitizeValue(v)])
-  ) as Record<string, unknown>
+  ) as Record<string, string>
 
-  const merged = { ...(current.profile as Record<string, unknown> || {}), ...safeFields }
+  const merged: Record<string, string> = { ...(current.profile as Record<string, string> || {}), ...safeFields }
 
   await db.update(projects)
     .set({ profile: merged, updatedAt: new Date() })
