@@ -175,17 +175,41 @@ async function save() {
 const mapEl = ref<HTMLElement | null>(null)
 const mapSearch = ref('')
 const mapError = ref('')
+const runtimeConfig = useRuntimeConfig()
 let ymap: any = null
 let placemark: any = null
+
+function getYandexScriptSrc() {
+  const key = String(runtimeConfig.public?.yandexMapsApiKey || '').trim()
+  const base = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
+  return key ? `${base}&apikey=${encodeURIComponent(key)}` : base
+}
 
 async function initMap() {
   if (!mapEl.value) return
   mapError.value = ''
   try {
+    const key = String(runtimeConfig.public?.yandexMapsApiKey || '').trim()
+    if (!key) {
+      mapError.value = 'Не задан YANDEX_MAPS_API_KEY (Nuxt runtimeConfig.public).'
+      return
+    }
+
     if (!(window as any).ymaps) {
       await new Promise<void>((resolve, reject) => {
+        const existing = document.querySelector<HTMLScriptElement>('script[data-ymaps="1"]')
+        if (existing) {
+          existing.addEventListener('load', () => {
+            if ((window as any).ymaps) (window as any).ymaps.ready(resolve)
+            else reject(new Error('ymaps not available'))
+          }, { once: true })
+          existing.addEventListener('error', () => reject(new Error('Script failed to load')), { once: true })
+          return
+        }
+
         const s = document.createElement('script')
-        s.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
+        s.src = getYandexScriptSrc()
+        s.setAttribute('data-ymaps', '1')
         s.onload = () => {
           if ((window as any).ymaps) {
             (window as any).ymaps.ready(resolve)
@@ -225,7 +249,7 @@ async function initMap() {
       save()
     })
   } catch (err: any) {
-    mapError.value = 'Не удалось загрузить карту'
+    mapError.value = `Не удалось загрузить карту: ${err?.message || 'unknown error'}`
   }
 }
 
@@ -316,23 +340,23 @@ async function toggleStepCompletion(stepKey: string) {
 .afc-ta { resize: vertical; min-height: 60px; font-family: inherit; }
 
 .afc-map { width: 100%; height: 300px; border: 1px solid var(--border, #e0e0e0); border-radius: 2px; }
-.afc-map-error { margin-top: 6px; padding: 6px 10px; font-size: .78rem; color: #c00; background: rgba(204,0,0,.06); border: 1px solid rgba(204,0,0,.15); border-radius: 3px; }
+.afc-map-error { margin-top: 6px; padding: 6px 10px; font-size: .78rem; color: var(--ds-error, #c00); background: color-mix(in srgb, var(--ds-error, #c00) 6%, transparent); border: 1px solid color-mix(in srgb, var(--ds-error, #c00) 15%, transparent); border-radius: 3px; }
 .afc-map-btn { padding: 7px 14px; border: 1px solid var(--border, #e0e0e0); background: transparent; font-size: .8rem; cursor: pointer; font-family: inherit; color: #555; white-space: nowrap; }
 .afc-map-btn:hover { border-color: #aaa; color: #1a1a1a; }
-.afc-map-btn--clear { border-color: #f5c0c0; color: #c00; }
-.afc-map-btn--clear:hover { border-color: #c00; }
+.afc-map-btn--clear { border-color: color-mix(in srgb, var(--ds-error, #c00) 30%, transparent); color: var(--ds-error, #c00); }
+.afc-map-btn--clear:hover { border-color: var(--ds-error, #c00); }
 
 .afc-complete-card {
   display: flex; align-items: flex-start; gap: 16px;
   padding: 16px 18px; border: 1px solid var(--border, #e0e0e0);
 }
-.afc-complete-card--done { border-color: #a8d8bc; background: #f0faf5; }
+.afc-complete-card--done { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); background: #f0faf5; }
 .afc-complete-icon { font-size: 1.4rem; flex-shrink: 0; width: 28px; text-align: center; margin-top: 2px; }
 .afc-complete-text { flex: 1; }
 .afc-complete-text strong { display: block; font-size: .88rem; margin-bottom: 4px; }
 .afc-complete-text p { margin: 0; font-size: .78rem; color: #888; }
-.afc-complete-card--done .afc-complete-text p { color: #2a7a52; }
+.afc-complete-card--done .afc-complete-text p { color: var(--ds-success, #2a7a52); }
 .afc-complete-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 7px 16px; font-size: .78rem; cursor: pointer; font-family: inherit; color: #666; align-self: center; white-space: nowrap; }
-.afc-complete-card--done .afc-complete-btn { border-color: #a8d8bc; color: #2a7a52; }
+.afc-complete-card--done .afc-complete-btn { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); color: var(--ds-success, #2a7a52); }
 .afc-complete-btn:hover { border-color: #aaa; color: inherit; }
 </style>
