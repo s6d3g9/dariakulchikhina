@@ -74,23 +74,6 @@
         @update:status="projectStatus = $event"
       />
 
-      <!-- Roadmap panel (collapsible, always accessible, synced with /admin cards) -->
-      <div v-if="!clientPreviewMode && !contractorPreviewMode" class="proj-roadmap-panel">
-        <button class="proj-roadmap-toggle" @click="roadmapExpanded = !roadmapExpanded">
-          <span class="proj-roadmap-toggle-label">Дорожная карта</span>
-          <AdminRoadmapTimeline
-            v-if="roadmapSummaryLive.length"
-            :stages="roadmapSummaryLive"
-            class="proj-roadmap-mini-preview"
-          />
-          <span class="proj-roadmap-chevron" :class="{ 'proj-roadmap-chevron--open': roadmapExpanded }">›</span>
-        </button>
-        <Transition name="roadmap-collapse">
-          <div v-if="roadmapExpanded" class="proj-roadmap-body">
-            <AdminRoadmap :slug="(route.params.slug as string)" />
-          </div>
-        </Transition>
-      </div>
       <div class="proj-layout">
 
         <!-- Left sidebar: vertical nav -->
@@ -237,7 +220,6 @@
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
 import type { Component } from 'vue'
 import {
-  AdminRoadmap,
   AdminWorkStatus,
   AdminClientProfile,
   AdminFirstContact,
@@ -434,18 +416,6 @@ const { data: contractorData, pending: contractorPending } = useFetch<any>(
 
 watch(contractorPreviewMode, (on) => { if (on) contractorSection.value = 'profile' })
 
-// ── Roadmap panel ─────────────────────────────────────────────
-const roadmapExpanded = ref(false)
-const { lastSaved: roadmapLastSaved } = useRoadmapBus()
-
-const { data: roadmapStagesLive, refresh: refreshRoadmapLive } = useFetch<any[]>(
-  () => `/api/projects/${slug.value}/roadmap`,
-  { server: false, default: () => [] },
-)
-
-watch(roadmapLastSaved, () => refreshRoadmapLive())
-
-const roadmapSummaryLive = computed(() => roadmapStagesLive.value || [])
 // ── Client preview mode ────────────────────────────────────────
 const clientPreviewMode = computed(() => route.query.view === 'client')
 const clientActivePage  = ref('')
@@ -812,34 +782,4 @@ async function linkClientToProject() {
 }
 .dark .a-modal { background: #1a1a1c; border-color: #2a2a2e; }
 
-/* ── Roadmap collapsible panel ────────────────────────────── */
-.proj-roadmap-panel {
-  margin-bottom: 14px;
-  background: var(--glass-bg);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.08);
-}
-.proj-roadmap-toggle {
-  display: flex; align-items: center; gap: 12px;
-  width: 100%; padding: 12px 16px; border: none; background: none;
-  cursor: pointer; font-family: inherit; text-align: left;
-}
-.proj-roadmap-toggle-label {
-  font-size: .72rem; text-transform: uppercase; letter-spacing: .5px;
-  color: var(--glass-text, #aaa); opacity: .55; white-space: nowrap; flex-shrink: 0;
-}
-.proj-roadmap-mini-preview { flex: 1; min-width: 0; pointer-events: none; }
-.proj-roadmap-chevron {
-  font-size: 1.25rem; color: var(--glass-text, #aaa); opacity: .35; flex-shrink: 0;
-  transition: transform .22s; transform: rotate(0deg);
-}
-.proj-roadmap-chevron--open { transform: rotate(90deg); opacity: .65; }
-.proj-roadmap-body { padding: 0 16px 16px; }
-.roadmap-collapse-enter-active,
-.roadmap-collapse-leave-active { transition: opacity .25s ease, transform .25s ease; }
-.roadmap-collapse-enter-from,
-.roadmap-collapse-leave-to { opacity: 0; transform: translateY(-8px); }
 </style>

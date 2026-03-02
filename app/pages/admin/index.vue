@@ -271,14 +271,17 @@ function phaseColor(status: string) {
   transition: width .3s;
 }
 
-/* ── Card ──────────────────────────────────────────────── */
+/* ── Card (glass-surface parity) ───────────────────────── */
 .a-card {
   background: var(--glass-bg);
   border: none;
-  box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
-  backdrop-filter: blur(18px) saturate(145%);
-  border-radius: 14px;
+  box-shadow: var(--ds-shadow, var(--glass-shadow));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  border-radius: var(--card-radius, 14px);
+  transition: box-shadow var(--ds-transition, 180ms ease),
+              border-radius var(--ds-transition, 180ms ease),
+              background var(--ds-transition, 180ms ease);
 }
 
 /* ── Links ─────────────────────────────────────────────── */
