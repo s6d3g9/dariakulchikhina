@@ -122,14 +122,14 @@ watch(lastSaved, loadStatuses)
 </script>
 
 <style scoped>
-/* ── Root — plain flow, parent .proj-nav-col handles sticky/scroll ── */
+/* ── Root — absolute, left of sidenav, zero layout impact ── */
 .avr-root {
-  width: 36px;
-  flex-shrink: 0;
-  /* match .proj-sidenav padding-top: 10px */
+  position: absolute;
+  left: -32px;
+  top: 0;
+  width: 26px;
   padding-top: 10px;
   padding-bottom: 24px;
-  margin-right: 4px;
   /* vertical progress line */
   background:
     linear-gradient(

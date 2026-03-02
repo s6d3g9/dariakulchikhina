@@ -699,25 +699,22 @@ async function linkClientToProject() {
 /* ── Layout ── */
 .proj-content-area { display: flex; align-items: flex-start; gap: 0; }
 
-/* Nav column — roadmap dots + sidenav share one sticky scroll ── */
+/* Nav column — roadmap overlays absolutely, no extra width ── */
 .proj-nav-col {
-  display: flex;
-  align-items: flex-start;
+  width: 190px;
   flex-shrink: 0;
   position: sticky;
   top: 80px;
   align-self: flex-start;
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
-  scrollbar-width: none;
+  /* overflow visible so absolute roadmap shows outside */
+  overflow: visible;
+  margin-right: 20px;
 }
-.proj-nav-col::-webkit-scrollbar { display: none; }
 
 /* ── Left sidebar nav ── */
 .proj-sidenav {
   width: 190px; flex-shrink: 0;
   padding: 10px;
-  margin-right: 20px;
 }
 
 .proj-sidenav-group { margin-bottom: 18px; }
