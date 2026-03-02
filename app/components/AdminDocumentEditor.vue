@@ -327,12 +327,159 @@ function applyMap(map: Record<string, string>) {
 // ── Editor ──
 function generateText(): string {
   if (!selectedTpl.value) return ''
+  // Auto-compute derived fields before rendering
+  computeDerivedFields()
   let text = selectedTpl.value.template
   for (const [k, v] of Object.entries(fieldValues.value)) {
-    text = text.split(`{{${k}}}`).join(v || `[${k}]`)
+    text = text.split(`{{${k}}}`).join(v || '__________')
   }
+  // Replace any {{remaining}} shorthand
+  const rem = computedRemaining.value
+  text = text.split('{{remaining_amount}}').join(rem || '__________')
   return text
 }
+
+// ── Number → Russian words ──────────────────────────────────────────────────
+const ONES  = ['','один','два','три','четыре','пять','шесть','семь','восемь','девять',
+                'десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать',
+                'шестнадцать','семнадцать','восемнадцать','девятнадцать']
+const TENS  = ['','','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто']
+const HUND  = ['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот']
+const THOU  = ['','одна','две','три','четыре','пять','шесть','семь','восемь','девять',
+                'десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать',
+                'шестнадцать','семнадцать','восемнадцать','девятнадцать']
+const THOUS_SFX = (n: number) => {
+  if (n >= 11 && n <= 14) return 'тысяч'
+  const r = n % 10
+  if (r === 1) return 'тысяча'
+  if (r >= 2 && r <= 4) return 'тысячи'
+  return 'тысяч'
+}
+const MILL_SFX = (n: number) => {
+  if (n >= 11 && n <= 14) return 'миллионов'
+  const r = n % 10
+  if (r === 1) return 'миллион'
+  if (r >= 2 && r <= 4) return 'миллиона'
+  return 'миллионов'
+}
+
+function threeDigitsToWords(n: number, fem = false): string {
+  if (n === 0) return ''
+  const parts: string[] = []
+  const h = Math.floor(n / 100)
+  const t = Math.floor((n % 100) / 10)
+  const o = n % 10
+  if (h) parts.push(HUND[h])
+  if (t === 1) {
+    parts.push(fem ? THOU[t * 10 + o] : ONES[t * 10 + o])
+  } else {
+    if (t) parts.push(TENS[t])
+    if (o) parts.push(fem ? THOU[o] : ONES[o])
+  }
+  return parts.join(' ')
+}
+
+function numberToWords(n: number): string {
+  if (n === 0) return 'ноль'
+  const parts: string[] = []
+  const mill = Math.floor(n / 1_000_000)
+  const thou = Math.floor((n % 1_000_000) / 1000)
+  const rest = n % 1000
+
+  if (mill) {
+    parts.push(threeDigitsToWords(mill, false))
+    parts.push(MILL_SFX(mill))
+  }
+  if (thou) {
+    parts.push(threeDigitsToWords(thou, true))
+    parts.push(THOUS_SFX(thou))
+  }
+  if (rest || (!mill && !thou)) {
+    parts.push(threeDigitsToWords(rest, false))
+  }
+  return parts.filter(Boolean).join(' ')
+}
+
+// Capitalize first letter
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// Parse amount from string like "350 000 руб." or "350000" → number
+function parseRuAmount(s: string): number {
+  const n = parseInt(s.replace(/\s/g, '').replace(/[^0-9]/g, ''), 10)
+  return isNaN(n) ? 0 : n
+}
+
+// Format ISO date YYYY-MM-DD → DD.MM.YYYY
+function formatIsoDate(s: string): string {
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (m) return `${m[3]}.${m[2]}.${m[1]}`
+  return s
+}
+
+// Computed: remaining = price - advance_amount
+const computedRemaining = computed<string>(() => {
+  const priceNum = parseRuAmount(fieldValues.value['price'] || '')
+  const advAmt   = parseRuAmount(fieldValues.value['advance_amount'] || '')
+  if (!priceNum || !advAmt) return ''
+  const rem = priceNum - advAmt
+  if (rem <= 0) return ''
+  return `${rem.toLocaleString('ru-RU')} руб.`
+})
+
+// Auto-derive advance_amount and price_words when price/advance changes
+function computeDerivedFields() {
+  const vals = fieldValues.value
+  const priceNum = parseRuAmount(vals['price'] || '')
+
+  // advance_amount: if price + advance% filled and advance_amount empty
+  if (priceNum && vals['advance'] && !vals['advance_amount']) {
+    const pct = parseFloat(vals['advance'].replace('%', '').replace(',', '.'))
+    if (!isNaN(pct) && pct > 0 && pct <= 100) {
+      const amt = Math.round(priceNum * pct / 100)
+      fieldValues.value['advance_amount'] = `${amt.toLocaleString('ru-RU')} руб.`
+      fieldAutoFilled.value['advance_amount'] = true
+    }
+  }
+
+  // price_words: if price filled and price_words empty
+  if (priceNum && !vals['price_words']) {
+    const words = capitalize(numberToWords(priceNum))
+    const kopecks = `00 копеек`
+    fieldValues.value['price_words'] = `${words} рублей ${kopecks}`
+    fieldAutoFilled.value['price_words'] = true
+  }
+
+  // Format ISO dates
+  for (const key of ['contract_date', 'client_passport_date', 'act_date', 'date', 'delivery_date']) {
+    if (vals[key] && /^\d{4}-\d{2}-\d{2}/.test(vals[key])) {
+      fieldValues.value[key] = formatIsoDate(vals[key])
+      fieldAutoFilled.value[key] = true
+    }
+  }
+}
+
+// Watch price + advance to auto-fill
+watch(
+  () => [fieldValues.value['price'], fieldValues.value['advance']],
+  ([price, advance]) => {
+    if (!price) return
+    const priceNum = parseRuAmount(price)
+    if (!priceNum) return
+
+    const pct = parseFloat((advance || '').replace('%', '').replace(',', '.'))
+    if (!isNaN(pct) && pct > 0 && pct <= 100) {
+      const amt = Math.round(priceNum * pct / 100)
+      fieldValues.value['advance_amount'] = `${amt.toLocaleString('ru-RU')} руб.`
+      fieldAutoFilled.value['advance_amount'] = true
+    }
+    if (!fieldValues.value['price_words']) {
+      fieldValues.value['price_words'] = `${capitalize(numberToWords(priceNum))} рублей 00 копеек`
+      fieldAutoFilled.value['price_words'] = true
+    }
+  }
+)
 
 function syncEditorContent() {
   editorContent.value = generateText()
@@ -343,64 +490,101 @@ function syncEditorContent() {
 
 function regenerateText() { syncEditorContent() }
 
+function escHtml(s: string): string {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+}
+
+function buildPaymentTable(vals: Record<string,string>): string {
+  const price = vals['price'] || '__________'
+  const adv   = vals['advance_amount'] || computedRemaining.value ? (vals['advance_amount'] || '__________') : '__________'
+  const rem   = computedRemaining.value || '__________'
+  const advPct = vals['advance'] || '50'
+  const remPct = vals['advance'] ? String(100 - parseFloat(vals['advance'].replace('%','').replace(',','.')) || 50) : '50'
+  return `<table class="pay-table">
+<thead><tr><th>№</th><th>Платёж</th><th>Сумма, руб.</th><th>Срок</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Аванс (${advPct}%)</td><td>${adv}</td><td>При подписании договора</td></tr>
+<tr><td>2</td><td>Доплата (${remPct}%)</td><td>${rem}</td><td>По окончании работ</td></tr>
+<tr class="total-row"><td colspan="2"><b>Итого</b></td><td colspan="2"><b>${price}</b></td></tr>
+</tbody></table>`
+}
+
+function renderLinesToHtml(lines: string[], vals: Record<string,string>): string {
+  const out: string[] = []
+  for (const line of lines) {
+    const t = line.trim()
+    if (!t) { out.push('<div class="doc-gap"></div>'); continue }
+
+    // All-caps section heading: "1. НАЗВАНИЕ РАЗДЕЛА"
+    if (/^\d+(\.\d+)?\.\s+[А-ЯЁA-Z «»"\-–—\/]{4,}$/.test(t)) {
+      out.push(`<div class="doc-section">${escHtml(t)}</div>`); continue
+    }
+
+    // Sub-point: "2.3. текст"
+    if (/^\d+\.\d+\./.test(t)) {
+      out.push(`<div class="doc-sub">${escHtml(line)}</div>`); continue
+    }
+
+    // Bullet / dash
+    if (/^[•–—-]\s/.test(t)) {
+      out.push(`<div class="doc-bullet">${escHtml(t)}</div>`); continue
+    }
+
+    // Payment schedule marker
+    if (/оплат|платёж|стоимость.*работ/i.test(t) && t.includes('{{')) {
+      out.push(`<div class="doc-line">${escHtml(t)}</div>`)
+      out.push(buildPaymentTable(vals))
+      continue
+    }
+
+    // Total marker — skip the placeholder line if we inserted the table
+    if (t.startsWith('|') || /^\+[-+]+\+$/.test(t)) continue
+
+    out.push(`<div class="doc-line">${escHtml(line)}</div>`)
+  }
+  return out.join('\n')
+}
+
 function printDocument() {
-  const text = editorContent.value || generateText()
-  const title = selectedTpl.value?.name || 'Документ'
-  const lines = text.split('\n')
+  const rawText = editorContent.value || generateText()
+  const title   = selectedTpl.value?.name || 'Документ'
+  const lines   = rawText.split('\n')
+  const vals    = fieldValues.value
+
+  const bodyHtml = renderLinesToHtml(lines, vals)
 
   const htmlContent = `<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>${title}</title>
+  <title>${escHtml(title)}</title>
   <style>
     @page { size: A4; margin: 20mm 20mm 25mm 30mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Times New Roman', Times, serif;
       font-size: 14pt;
-      line-height: 1.5;
+      line-height: 1.6;
       color: #000;
       background: #fff;
     }
-    .doc-title {
-      text-align: center;
-      font-weight: bold;
-      font-size: 14pt;
-      text-transform: uppercase;
-      margin-bottom: 6pt;
-      letter-spacing: 0.5pt;
+    .doc-gap    { height: 6pt; }
+    .doc-line   { text-align: justify; white-space: pre-wrap; margin-bottom: 2pt; }
+    .doc-sub    { text-align: justify; white-space: pre-wrap; margin-bottom: 2pt; padding-left: 18pt; }
+    .doc-bullet { padding-left: 18pt; margin-bottom: 2pt; }
+    .doc-section {
+      font-weight: bold; text-transform: uppercase;
+      margin-top: 16pt; margin-bottom: 4pt; text-align: center;
     }
-    .doc-header-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 18pt;
+    .pay-table {
+      width: 100%; border-collapse: collapse; margin: 10pt 0;
       font-size: 12pt;
     }
-    .doc-body { text-align: justify; }
-    .doc-line {
-      margin-bottom: 0;
-      line-height: 1.6;
-      white-space: pre-wrap;
+    .pay-table th, .pay-table td {
+      border: 1px solid #000; padding: 4pt 6pt; text-align: left;
     }
-    .doc-line--blank { height: 12pt; }
-    .doc-line--section {
-      font-weight: bold;
-      margin-top: 14pt;
-      margin-bottom: 4pt;
-    }
-    .doc-signatures {
-      margin-top: 36pt;
-      display: flex;
-      justify-content: space-between;
-    }
-    .sig-col { min-width: 240px; }
-    .sig-label { font-size: 11pt; margin-bottom: 18pt; }
-    .sig-line {
-      border-bottom: 1px solid #000;
-      height: 18pt;
-      margin-top: 18pt;
-    }
+    .pay-table thead th { background: #e8e8e8; font-weight: bold; }
+    .pay-table .total-row td { font-weight: bold; background: #f5f5f5; }
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
@@ -408,14 +592,7 @@ function printDocument() {
 </head>
 <body>
 <div class="doc-body">
-${lines.map(line => {
-  const t = line.trim()
-  if (!t) return '<div class="doc-line doc-line--blank"></div>'
-  // Section headings — all-caps lines with digits like '1. НАЗВАНИЕ'
-  const isSection = /^\d+\.\s+[А-ЯЁA-Z\s]+$/.test(t)
-  if (isSection) return `<div class="doc-line doc-line--section">${t}</div>`
-  return `<div class="doc-line">${t}</div>`
-}).join('\n')}
+${bodyHtml}
 </div>
 <script>window.onload = function() { window.print(); }<\/script>
 </body>
