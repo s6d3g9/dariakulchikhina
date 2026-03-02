@@ -5,16 +5,22 @@
       :key="phase.key"
       class="avr-phase"
     >
-      <!-- ── Phase header — same height as .proj-sidenav-group-label ── -->
+      <!-- ── Phase header — large survey-mark node ── -->
       <div
         class="avr-phase-hd"
         :class="{ 'avr-phase-hd--done': phaseDone(phase.key) }"
         :title="phase.name"
       >
-        <span class="avr-badge">{{ phase.num }}</span>
+        <!-- outer ring -->
+        <span class="avr-badge">
+          <!-- inner centre dot -->
+          <span class="avr-badge-core" />
+          <!-- label -->
+          <span class="avr-badge-n">{{ phase.num }}</span>
+        </span>
       </div>
 
-      <!-- ── Items — same height as .proj-sidenav-item ── -->
+      <!-- ── Items — small precise graduation dots ── -->
       <div
         v-for="pg in phase.pages"
         :key="pg.slug"
@@ -32,8 +38,8 @@
           :disabled="saving[pg.slug]"
           @click.stop="toggleDone(pg)"
         >
-          <svg v-if="statusOf(pg.slug) === 'done'" viewBox="0 0 8 8" fill="none" width="9" height="9">
-            <path d="M1.5 4l2 2 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg v-if="statusOf(pg.slug) === 'done'" viewBox="0 0 8 8" fill="none" width="7" height="7">
+            <path d="M1.5 4l2 2 3-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <span v-else-if="statusOf(pg.slug) === 'in_progress'" class="avr-pip" />
         </button>
@@ -122,72 +128,102 @@ watch(lastSaved, loadStatuses)
 </script>
 
 <style scoped>
-/* ── Root — absolute, left of sidenav, zero layout impact ── */
+/*
+  Architectural scale / survey staff aesthetic:
+  ─ Phase nodes  : large concentric-ring markers (major graduation)
+  ─ Sub-item dots: small single-ring marks   (minor graduation)
+  ─ Spine        : 1 px dead-centre line
+*/
+
+/* ── Root — absolute overlay, zero layout shift ── */
 .avr-root {
   position: absolute;
-  left: -32px;
+  left: -36px;
   top: 0;
-  width: 26px;
+  width: 30px;
   padding-top: 10px;
   padding-bottom: 24px;
-  /* vertical progress line */
+  /* 1 px spine — starts below first phase badge, ends above last dot */
   background:
     linear-gradient(
-      color-mix(in srgb, var(--glass-text) 8%, transparent),
-      color-mix(in srgb, var(--glass-text) 8%, transparent)
+      color-mix(in srgb, var(--glass-text) 11%, transparent),
+      color-mix(in srgb, var(--glass-text) 11%, transparent)
     )
-    center 21px / 1px calc(100% - 48px) no-repeat;
+    center 30px / 1px calc(100% - 58px) no-repeat;
 }
 
-/* ── Phase group — same outer rhythm as .proj-sidenav-group ── */
+/* ── Phase group ── */
 .avr-phase {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* match .proj-sidenav-group: margin-bottom: 18px */
-  margin-bottom: 18px;
+  margin-bottom: 18px; /* = .proj-sidenav-group gap */
 }
 .avr-phase:last-child { margin-bottom: 0; }
 
-/* ── Phase header — mirrors .proj-sidenav-group-label height ──
-   font-size: .62rem, line-height ~1.4 → ~14px + margin-bottom: 6px ── */
+/* ── Phase header row ── */
 .avr-phase-hd {
+  width: 100%;
   height: 20px;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  z-index: 1;
-  width: 100%;
+  z-index: 2;
 }
 
-/* Phase number badge — same size as item dots */
+/*
+  Major graduation mark — outer ring 26 × 26 px
+  Inspired by: theodolite crosshair node, level-staff graduation
+*/
 .avr-badge {
-  width: 18px;
-  height: 18px;
+  position: relative;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--glass-text) 28%, transparent);
   background: var(--glass-bg, #12121a);
-  border: 1px solid color-mix(in srgb, var(--glass-text) 22%, transparent);
-  font-size: .5rem;
-  font-weight: 700;
-  color: var(--glass-text);
-  opacity: .5;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: border-color .18s;
+  flex-shrink: 0;
+}
+/* inner centre filled dot (the second concentric ring) */
+.avr-badge-core {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--glass-text) 22%, transparent);
+  transition: background .18s;
+}
+/* phase number floats above, very faint — just a hint */
+.avr-badge-n {
+  position: absolute;
+  font-size: .42rem;
+  font-weight: 700;
+  letter-spacing: .01em;
+  color: var(--glass-text);
+  opacity: .38;
+  top: -9px;
+  right: -3px;
   line-height: 1;
   user-select: none;
-  transition: opacity .15s, border-color .15s;
-}
-.avr-phase-hd--done .avr-badge {
-  opacity: .85;
-  border-color: color-mix(in srgb, var(--glass-text) 45%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 8%, var(--glass-bg, #12121a));
+  pointer-events: none;
 }
 
-/* ── Item row — exact height of .proj-sidenav-item ──
-   padding: 9px 10px → 18px + font 0.8rem*1.3 ≈ 16.6px = 34.6px → 35px ── */
+/* done state — stronger ring + filled core */
+.avr-phase-hd--done .avr-badge {
+  border-color: color-mix(in srgb, var(--glass-text) 55%, transparent);
+}
+.avr-phase-hd--done .avr-badge-core {
+  background: color-mix(in srgb, var(--glass-text) 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
+/* ── Item row — height = .proj-sidenav-item ── */
 .avr-item {
   height: 35px;
   width: 100%;
@@ -196,58 +232,62 @@ watch(lastSaved, loadStatuses)
   justify-content: center;
   cursor: pointer;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
-/* ── Dot — monochrome, same size as phase badge ── */
+/*
+  Minor graduation mark — 11 × 11 px single ring
+  Clearly smaller than phase badge = proper scale hierarchy
+*/
 .avr-dot {
-  width: 18px;
-  height: 18px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 20%, transparent);
   background: var(--glass-bg, #12121a);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: border-color .12s, background .12s, transform .1s;
+  transition: border-color .12s, background .12s, transform .12s;
 }
 .avr-dot:hover {
-  border-color: color-mix(in srgb, var(--glass-text) 45%, transparent);
-  transform: scale(1.18);
+  border-color: color-mix(in srgb, var(--glass-text) 50%, transparent);
+  transform: scale(1.3);
 }
-.avr-dot:disabled { opacity: .22; cursor: default; transform: none !important; }
+.avr-dot:disabled { opacity: .2; cursor: default; transform: none !important; }
 
-/* done — subtly filled */
+/* done — filled */
 .avr-dot--done {
-  background: color-mix(in srgb, var(--glass-text) 18%, var(--glass-bg, #12121a));
-  border-color: color-mix(in srgb, var(--glass-text) 48%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 30%, var(--glass-bg, #12121a));
+  border-color: color-mix(in srgb, var(--glass-text) 52%, transparent);
 }
-/* in_progress — stronger ring */
+/* in_progress — visible ring */
 .avr-dot--in_progress {
-  border-color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 42%, transparent);
+  border-width: 1.5px;
 }
 
-/* Active current page */
+/* active page — double ring via box-shadow */
 .avr-item--active .avr-dot {
   border-color: color-mix(in srgb, var(--glass-text) 65%, transparent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 7%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 9%, transparent);
 }
-.avr-item--active .avr-dot:hover { transform: scale(1.22); }
+.avr-item--active .avr-dot:hover { transform: scale(1.28); }
 
-/* In-progress pip */
+/* in-progress inner pip */
 .avr-pip {
-  width: 5px;
-  height: 5px;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
   background: var(--glass-text);
-  opacity: .45;
+  opacity: .5;
   display: block;
   flex-shrink: 0;
 }
 
-/* Done checkmark */
-.avr-dot--done svg { color: var(--glass-text); opacity: .6; }
+/* done checkmark */
+.avr-dot--done svg { color: var(--glass-text); opacity: .55; }
 </style>
