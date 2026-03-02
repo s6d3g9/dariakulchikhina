@@ -296,10 +296,10 @@ function toggle(key: string) {
 const familyFields = [
   { key: 'brief_adults_count',    label: 'Взрослых в семье',            placeholder: 'например: 2' },
   { key: 'brief_kids_ages',       label: 'Дети (возраст)',               placeholder: 'например: 4 и 8 лет' },
-  { key: 'brief_ergonomics',      label: 'Эргономика (рост, особенности)', placeholder: 'высокий рост, адаптация столешниц...' },
-  { key: 'brief_handed',          label: 'Доп. параметры',               placeholder: 'левша, физ. ограничения, инвалидное кресло...' },
+  { key: 'brief_ergonomics',      label: 'Эргономика (рост, особенности)', placeholder: 'высокий рост, адаптация столешниц...', multi: true },
+  { key: 'brief_handed',          label: 'Доп. параметры',               placeholder: 'левша, физ. ограничения, инвалидное кресло...', multi: true },
   { key: 'brief_pets_desc',       label: 'Питомцы',                      placeholder: 'порода, размер' },
-  { key: 'brief_pets_zone_detail',label: 'Зона питомца (детали)',        placeholder: 'лапомойка, миски, лоток, будка...' },
+  { key: 'brief_pets_zone_detail',label: 'Зона питомца (детали)',        placeholder: 'лапомойка, миски, лоток, будка...', multi: true },
   { key: 'brief_remote_work',     label: 'Удалённая работа',             options: BRIEF_REMOTE_WORK_OPTIONS },
   { key: 'brief_guests_freq',     label: 'Частота гостей',               options: BRIEF_GUESTS_FREQ_OPTIONS },
   { key: 'brief_hobbies',         label: 'Хобби и увлечения',            placeholder: 'музыка, живопись, спорт...', multi: true },
