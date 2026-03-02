@@ -17,17 +17,12 @@
       >
         <span class="apf-pill-num">{{ ph.short }}</span>
         <span class="apf-pill-label">{{ ph.label }}</span>
-        <span v-if="ph.key !== 'completed'" class="apf-pill-count">
-          {{ stageStats[ph.key]?.done ?? 0 }}/{{ stageStats[ph.key]?.total ?? 0 }}
-        </span>
+
       </button>
     </div>
 
     <!-- Bottom meta -->
     <div class="apf-meta">
-      <span class="apf-total">
-        {{ totalDone }}/{{ totalStages }} этапов выполнено
-      </span>
       <span v-if="savingStatus" class="apf-saving">сохранение...</span>
       <span v-else-if="savedOk" class="apf-saved">✓ сохранено</span>
     </div>
@@ -35,12 +30,8 @@
 </template>
 
 <script setup lang="ts">
-import { normalizeRoadmapStatus, roadmapPhaseFromStageKey } from '~~/shared/utils/roadmap'
-
 const props = defineProps<{ slug: string; status: string }>()
 const emit = defineEmits<{ (e: 'update:status', v: string): void }>()
-
-const { lastSaved } = useRoadmapBus()
 
 // ── Конфиг фаз ──────────────────────────────────────────────────
 const PHASES = [
@@ -53,54 +44,14 @@ const PHASES = [
   { key: 'completed',       short: '✓', label: 'Завершён',        desc: 'Проект закрыт',                     color: '#14b8a6' },
 ]
 
-const PHASE_BY_IDX = ['lead','concept','working_project','procurement','construction','commissioning']
-
-// ── Данные роадмапа ──────────────────────────────────────────────
-const { data: roadmapStages, refresh } = useFetch<any[]>(
-  () => `/api/projects/${props.slug}/roadmap`,
-  { server: false, default: () => [] },
-)
-
-// Пересчитать после сохранения из AdminRoadmap
-watch(lastSaved, () => refresh())
-
-// ── Статистика по фазам ──────────────────────────────────────────
-const stageStats = computed(() => {
-  const stats: Record<string, { done: number; inProgress: number; total: number }> = {}
-  PHASES.forEach(ph => { stats[ph.key] = { done: 0, inProgress: 0, total: 0 } })
-
-  const sorted = [...(roadmapStages.value || [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-  sorted.forEach((stage, idx) => {
-    const phKey = roadmapPhaseFromStageKey(stage.stageKey) || PHASE_BY_IDX[idx] || 'lead'
-    if (!stats[phKey]) return
-    stats[phKey].total++
-    const st = normalizeRoadmapStatus(stage.status)
-    if (st === 'done' || st === 'skipped') stats[phKey].done++
-    if (st === 'in_progress') stats[phKey].inProgress++
-  })
-  return stats
-})
-
-const totalStages = computed(() =>
-  Object.values(stageStats.value).reduce((s, v) => s + v.total, 0)
-)
-const totalDone = computed(() =>
-  Object.values(stageStats.value).reduce((s, v) => s + v.done, 0)
-)
 // Бар двигается по позиции фазы (0→0%, lead→~8%, ..., completed→100%)
-// + небольшая прибавка если внутри фазы есть выполненные этапы
 const fillPct = computed(() => {
   const mainPhases = PHASES.filter(p => p.key !== 'completed')
-  const idx = mainPhases.findIndex(p => p.key === currentKey.value)
   if (currentKey.value === 'completed') return 100
+  const idx = mainPhases.findIndex(p => p.key === currentKey.value)
   if (idx < 0) return 0
-  // каждая фаза = 100/6 ≈ 16.67%
   const perPhase = 100 / mainPhases.length
-  const base = idx * perPhase
-  // прибавка за выполненные этапы внутри текущей фазы
-  const s = stageStats.value[currentKey.value]
-  const extra = (s && s.total > 0) ? (s.done / s.total) * perPhase : 0
-  return Math.round(base + extra)
+  return Math.round((idx + 0.5) * perPhase)
 })
 
 // ── Текущий статус проекта ────────────────────────────────────────
@@ -114,13 +65,8 @@ function phaseOrder(key: string) { return PHASES.findIndex(p => p.key === key) }
 function pillClass(key: string) {
   const order = phaseOrder(key)
   const current = phaseOrder(currentKey.value)
-  const stats = stageStats.value[key]
-
   if (key === currentKey.value) return 'apf-pill--active'
   if (order < current) return 'apf-pill--done'
-  if (stats?.inProgress) return 'apf-pill--progress'
-  if (stats?.done && stats.done < stats.total) return 'apf-pill--partial'
-  if (stats?.done === stats?.total && stats?.total > 0) return 'apf-pill--all-done'
   return 'apf-pill--future'
 }
 
@@ -209,12 +155,6 @@ async function setPhase(key: string) {
   white-space: nowrap;
   line-height: 1;
 }
-.apf-pill-count {
-  font-size: .58rem;
-  opacity: .6;
-  line-height: 1;
-}
-
 /* ── Состояния пилов ── */
 .apf-pill--active {
   background: #6366f1;
@@ -228,18 +168,6 @@ async function setPhase(key: string) {
   opacity: 1;
 }
 .apf-pill--done .apf-pill-num::after { content: ' ✓'; font-size: .58rem; }
-.apf-pill--progress {
-  background: rgba(245,158,11,.12);
-  color: #a16207;
-  opacity: 1;
-}
-.apf-pill--partial {
-  opacity: .65;
-}
-.apf-pill--all-done {
-  background: rgba(22,163,74,.08);
-  opacity: .8;
-}
 .apf-pill--future { opacity: .32; }
 
 /* ── Мета-строка ── */
@@ -249,7 +177,6 @@ async function setPhase(key: string) {
   gap: 10px;
   font-size: .7rem;
 }
-.apf-total { color: var(--glass-text); opacity: .45; }
 .apf-saving { color: var(--glass-text); opacity: .4; font-style: italic; }
 .apf-saved { color: #16a34a; }
 
