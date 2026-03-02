@@ -89,9 +89,6 @@
               referrerpolicy="no-referrer-when-downgrade"
               title="Карта"
             />
-            <div class="afc-map-error" style="margin-top:6px">
-              Упрощённая карта без API-ключа.
-            </div>
           </div>
           <div class="afc-row afc-row--full">
             <label class="afc-lbl">заметки о встрече / первое впечатление</label>
