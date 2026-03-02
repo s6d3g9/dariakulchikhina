@@ -138,10 +138,8 @@
             </select>
           </div>
 
-          <!-- Map Error -->
-          <div v-if="mapError" class="afc-map-error" style="margin-top: 1rem; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; color: #dc2626;">
-            <strong>Ошибка карты:</strong> {{ mapError }}
-          </div>
+          <!-- Yandex Map Error -->
+          <div v-if="mapError" class="afc-map-error">{{ mapError }}</div>
           
           <!-- Yandex Map -->
           <div class="afc-row afc-row--full">
@@ -243,7 +241,6 @@ async function save() {
 }
 
 // ── Yandex Maps ──────────────────────────────────────
-const runtimeConfig = useRuntimeConfig()
 const mapEl = ref<HTMLElement | null>(null)
 const mapSearch = ref('')
 const mapError = ref('')
@@ -251,57 +248,93 @@ let ymap: any = null
 let placemark: any = null
 
 async function initMap() {
-  if (!mapEl.value) return
+  console.log('[AdminFirstContact] initMap started')
+  
+  if (!mapEl.value) {
+    console.error('[AdminFirstContact] mapEl is null')
+    mapError.value = 'Элемент карты не найден'
+    return
+  }
+
   mapError.value = ''
+  
   try {
+    // Проверяем и загружаем скрипт если нужно
     if (!(window as any).ymaps) {
-      // Проверяем, не загружен ли уже скрипт
-      if (!document.querySelector('script[src*="api-maps.yandex.ru"]')) {
-        await new Promise<void>((resolve, reject) => {
-          const s = document.createElement('script')
-          s.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
-          s.onload = () => {
-            if ((window as any).ymaps) {
-              (window as any).ymaps.ready(resolve)
-            } else {
-              reject(new Error('ymaps not available'))
-            }
-          }
-          s.onerror = () => reject(new Error('Failed to load script'))
-          document.head.appendChild(s)
-        })
-      } else {
-        // Скрипт загружется, ждем
-        await new Promise<void>((resolve) => {
-          const checkYmaps = () => {
-            if ((window as any).ymaps) {
-              (window as any).ymaps.ready(resolve)
-            } else {
-              setTimeout(checkYmaps, 100)
-            }
-          }
-          checkYmaps()
-        })
+      console.log('[AdminFirstContact] Loading ymaps script')
+      
+      // Проверяем, нет ли уже скрипта в странице
+      let script = document.querySelector('script[src*="api-maps.yandex.ru"]') as HTMLScriptElement
+      
+      if (!script) {
+        // Создаем новый скрипт
+        script = document.createElement('script')
+        script.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
+        script.type = 'text/javascript'
+        document.head.appendChild(script)
+        console.log('[AdminFirstContact] Script tag added to DOM')
       }
-    } else {
-      await new Promise<void>(r => (window as any).ymaps.ready(r))
+      
+      // Ждем загрузки скрипта
+      await new Promise<void>((resolve, reject) => {
+        let attempts = 0
+        const maxAttempts = 100 // 10 секунд
+        
+        const checkScript = () => {
+          attempts++
+          console.log(`[AdminFirstContact] Waiting for ymaps... attempt ${attempts}`)
+          
+          if ((window as any).ymaps) {
+            console.log('[AdminFirstContact] ymaps object found')
+            resolve()
+          } else if (attempts >= maxAttempts) {
+            reject(new Error('Превышено время ожидания загрузки ymaps'))
+          } else {
+            setTimeout(checkScript, 100)
+          }
+        }
+        
+        checkScript()
+      })
     }
     
+    console.log('[AdminFirstContact] ymaps available, waiting for ready')
+    
+    // Ждем готовности API
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('ymaps.ready() timeout'))
+      }, 10000)
+      
+      ;(window as any).ymaps.ready(() => {
+        clearTimeout(timeout)
+        console.log('[AdminFirstContact] ymaps.ready() completed')
+        resolve()
+      })
+    })
+    
+    console.log('[AdminFirstContact] ymaps ready, creating map')
     const ymaps = (window as any).ymaps
     const center = form.meeting_map_lat
       ? [form.meeting_map_lat, form.meeting_map_lng]
       : [55.751574, 37.573856]
+    
+    console.log('[AdminFirstContact] Creating map with center:', center)
     ymap = new ymaps.Map(mapEl.value, {
       center,
       zoom: form.meeting_map_lat ? 15 : 10,
       controls: ['zoomControl', 'geolocationControl'],
     })
     
+    console.log('[AdminFirstContact] Map created successfully')
+    
     if (form.meeting_map_lat) {
+      console.log('[AdminFirstContact] Adding existing placemark')
       placemark = new ymaps.Placemark([form.meeting_map_lat, form.meeting_map_lng], {}, { preset: 'islands#violetDotIcon' })
       ymap.geoObjects.add(placemark)
     }
     
+    console.log('[AdminFirstContact] Setting up click events')
     ymap.events.add('click', async (e: any) => {
       const coords = e.get('coords')
       setPin(coords)
@@ -315,8 +348,14 @@ async function initMap() {
       save()
     })
     
+    console.log('[AdminFirstContact] Map initialization completed successfully')
+    mapLoading.value = false
+    
   } catch (err: any) {
-    mapError.value = 'Ошибка загрузки карты'
+    console.error('[AdminFirstContact] Map initialization error:', err)
+    mapError.value = 'Ошибка загрузки карты: ' + err.message
+    mapLoading.value = false
+    throw err
   }
 }
 
@@ -370,11 +409,9 @@ function clearPin() {
 }
 
 onMounted(() => {
-  // If mapEl is already available (data loaded server-side), init immediately
   if (mapEl.value) {
     nextTick(initMap)
   } else {
-    // Otherwise watch for it to become available after data fetches
     const stop = watch(mapEl, (el) => {
       if (el) { nextTick(initMap); stop() }
     })
@@ -413,7 +450,12 @@ function toggleStepDone() {
 .afc-ta  { resize: vertical; }
 
 /* Map */
-.afc-map { width: 100%; height: 300px; border: 1px solid var(--border, #e0e0e0); border-radius: 2px; }
+.afc-map { 
+  width: 100%; 
+  height: 300px; 
+  border: 1px solid var(--border, #e0e0e0); 
+  border-radius: 2px; 
+}
 .afc-map-error { margin-top: 6px; padding: 6px 10px; font-size: .78rem; color: #c00; background: rgba(204,0,0,.06); border: 1px solid rgba(204,0,0,.15); border-radius: 3px; }
 .afc-map-btn { padding: 7px 14px; border: 1px solid var(--border, #e0e0e0); background: transparent; font-size: .8rem; cursor: pointer; font-family: inherit; color: #555; white-space: nowrap; }
 .afc-map-btn:hover { border-color: #aaa; color: #1a1a1a; }
