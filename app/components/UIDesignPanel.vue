@@ -740,6 +740,105 @@
                 </div>
               </div>
 
+
+
+              <!-- ═══ Скроллбар ═══ -->
+              <div v-show="isTabVisible('scrollbar')" class="dp-page dp-page--cols">
+                <div class="dp-col">
+                  <div class="dp-col-label">Полоса прокрутки</div>
+                  <div class="dp-field">
+                    <label class="dp-label">ширина <span class="dp-val">{{ tokens.scrollbarWidth }}px</span></label>
+                    <input type="range" min="2" max="14" step="1" :value="tokens.scrollbarWidth" class="dp-range" @input="onRange('scrollbarWidth', $event)">
+                    <div class="dp-field-hint">Ширина в пикселях для всех скроллбаров</div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">непрозрачность <span class="dp-val">{{ pct(tokens.scrollbarOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.8" step="0.01" :value="tokens.scrollbarOpacity" class="dp-range" @input="onFloat('scrollbarOpacity', $event)">
+                    <div class="dp-field-hint">0 — невидимый, скроллбар появляется при наведении</div>
+                  </div>
+                </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Превью</div>
+                  <div :style="{ height: '120px', overflowY: 'scroll', padding: '8px 12px', background: 'color-mix(in srgb, var(--glass-text) 3%, transparent)', borderRadius: 'var(--card-radius,14px)', scrollbarWidth: 'thin', scrollbarColor: `color-mix(in srgb, var(--glass-text) ${Math.round(tokens.scrollbarOpacity*100)}%, transparent) transparent` }">
+                    <div v-for="i in 12" :key="i" :style="{ padding: '4px 0', fontSize: 'var(--ds-text-xs,.7rem)', color: 'var(--glass-text)', borderBottom: '1px solid color-mix(in srgb, var(--glass-text) 7%, transparent)' }">Строка {{ i }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ═══ Таблицы ═══ -->
+              <div v-show="isTabVisible('tables')" class="dp-page dp-page--cols">
+                <div class="dp-col">
+                  <div class="dp-col-label">Шапка и строки</div>
+                  <div class="dp-field">
+                    <label class="dp-label">фон заголовка <span class="dp-val">{{ pct(tokens.tableHeaderOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.25" step="0.005" :value="tokens.tableHeaderOpacity" class="dp-range" @input="onFloat('tableHeaderOpacity', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">фон при наведении <span class="dp-val">{{ pct(tokens.tableRowHoverOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.15" step="0.005" :value="tokens.tableRowHoverOpacity" class="dp-range" @input="onFloat('tableRowHoverOpacity', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">обводка ячеек <span class="dp-val">{{ pct(tokens.tableBorderOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.4" step="0.01" :value="tokens.tableBorderOpacity" class="dp-range" @input="onFloat('tableBorderOpacity', $event)">
+                  </div>
+                </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Превью</div>
+                  <div class="dp-live-preview" style="margin-top:0; padding:0; overflow:hidden; border-radius:var(--card-radius,14px);">
+                    <table style="width:100%; border-collapse:collapse; font-size:.68rem; font-family:inherit;">
+                      <thead>
+                        <tr>
+                          <th v-for="h in ['Название','Статус','Дата']" :key="h" :style="{ padding:'6px 10px', textAlign:'left', fontWeight:600, color:'var(--glass-text)', background:`color-mix(in srgb, var(--glass-text) ${Math.round(tokens.tableHeaderOpacity*100)}%, transparent)`, borderBottom:`1px solid color-mix(in srgb, var(--glass-text) ${Math.round(tokens.tableBorderOpacity*100)}%, transparent)` }">{{ h }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(row, i) in [['Проект A','В работе','01.03'],['Проект B','Готово','15.02'],['Проект C','Ожидание','...']]" :key="i"
+                          :style="{ background: i % 2 === 0 ? `color-mix(in srgb, var(--glass-text) ${Math.round(tokens.tableRowHoverOpacity*100)}%, transparent)` : 'transparent' }">
+                          <td v-for="cell in row" :key="cell" :style="{ padding:'6px 10px', color:'var(--glass-text)', borderBottom:`1px solid color-mix(in srgb, var(--glass-text) ${Math.round(tokens.tableBorderOpacity*100)}%, transparent)` }">{{ cell }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ═══ Значки / счётчики ═══ -->
+              <div v-show="isTabVisible('badges')" class="dp-page dp-page--cols">
+                <div class="dp-col">
+                  <div class="dp-col-label">Счётчики и метки</div>
+                  <div class="dp-field">
+                    <label class="dp-label">скругление <span class="dp-val">{{ tokens.badgeRadius === 999 ? '∞ (пилюля)' : tokens.badgeRadius + 'px' }}</span></label>
+                    <input type="range" min="0" max="999" step="1" :value="tokens.badgeRadius" class="dp-range" @input="onRange('badgeRadius', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">насыщенность фона <span class="dp-val">{{ pct(tokens.badgeBgOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.5" step="0.01" :value="tokens.badgeBgOpacity" class="dp-range" @input="onFloat('badgeBgOpacity', $event)">
+                    <div class="dp-field-hint">Фон использует акцентный цвет из палитры</div>
+                  </div>
+                </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Превью</div>
+                  <div class="dp-live-preview" style="margin-top:0; flex-wrap:wrap; gap:8px; align-content:flex-start; align-items:center;">
+                    <span v-for="n in [1, 5, 12, 99]" :key="n" :style="{
+                      display:'inline-flex', alignItems:'center', justifyContent:'center',
+                      minWidth: '22px', height: '22px', padding: '0 6px',
+                      borderRadius: (tokens.badgeRadius > 99 ? 999 : tokens.badgeRadius) + 'px',
+                      background: `color-mix(in srgb, ${accentColor} ${Math.round(tokens.badgeBgOpacity*100)}%, transparent)`,
+                      color: 'var(--glass-text)', fontSize:'.62rem', fontWeight:700,
+                      fontFamily:'inherit',
+                    }">{{ n }}</span>
+                    <span :style="{
+                      display:'inline-flex', alignItems:'center', justifyContent:'center',
+                      minWidth: '22px', height: '22px', padding: '0 6px',
+                      borderRadius: (tokens.badgeRadius > 99 ? 999 : tokens.badgeRadius) + 'px',
+                      background: accentColor,
+                      color: '#fff', fontSize:'.62rem', fontWeight:700,
+                      fontFamily:'inherit',
+                    }">NEW</span>
+                  </div>
+                </div>
+              </div>
+
             </div><!-- /.dp-tab-content -->
 
 
@@ -912,9 +1011,12 @@ const tabList = [
   { id: 'nav',       label: 'навигация' },
   { id: 'statuses',  label: 'статусы' },
   { id: 'popups',    label: 'попапы' },
+  { id: 'scrollbar', label: 'скролл' },
+  { id: 'tables',    label: 'таблицы' },
+  { id: 'badges',    label: 'значки' },
 ]
 // kept for inspect-mode compatibility
-const sections = reactive({ presets: true, palette: true, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false })
+const sections = reactive({ presets: true, palette: true, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false })
 function toggle(key: keyof typeof sections) { activeTab.value = key }
 
 /* ── Option lists ────────────────────────────────── */
@@ -983,6 +1085,9 @@ const sectionSearchMap: Record<string, string[]> = {
   nav:      ['навиг', 'sidebar', 'menu', 'пункт', 'nav', 'меню'],
   statuses: ['статус', 'пин', 'status', 'pin bar', 'badge', 'прогресс', 'дорожная карта', 'roadmap'],
   popups:   ['попап', 'popup', 'dropdown', 'оверлей', 'overlay', 'modal', 'blur', 'затемн'],
+  scrollbar: ['скроллбар', 'scrollbar', 'полоса прокрутки', 'ширина', 'width', 'прозрач'],
+  tables:   ['таблиц', 'table', 'таблетк', 'строка', 'заголовок', 'row', 'header', 'border', 'hover'],
+  badges:   ['значок', 'значки', 'badge', 'counter', 'счётчик', 'уведомлени', 'notification'],
 }
 
 function isTabVisible(key: string): boolean {
@@ -1138,6 +1243,8 @@ const sectionLabels: Record<string, string> = {
   presets: 'Рецепты', palette: 'Палитра', buttons: 'Кнопки',
   type: 'Типографика', typeScale: 'Шкала', surface: 'Поверхности',
   radii: 'Скругления', anim: 'Анимация', grid: 'Сетка', darkMode: 'Тёмная тема',
+  inputs: 'Инпуты', tags: 'Теги/чипы', nav: 'Навигация', statuses: 'Статусы', popups: 'Попапы',
+  scrollbar: 'Скроллбар', tables: 'Таблицы', badges: 'Значки',
 }
 
 const inspectHighlightStyle = computed(() => ({

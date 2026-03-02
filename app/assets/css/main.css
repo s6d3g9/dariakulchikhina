@@ -293,6 +293,7 @@ html.dark .glass-card {
   background: var(--chip-bg, var(--glass-bg));
   color: var(--glass-text);
   padding: var(--chip-padding-v, 3px) var(--chip-padding-h, 9px);
+  border-radius: var(--chip-radius, 999px); /* override the card-radius bridge */
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   backdrop-filter: blur(14px) saturate(140%);
 }
@@ -319,8 +320,8 @@ html.dark .glass-card {
 }
 
 html.dark .glass-chip {
-  background: rgba(18, 19, 24, 0.9);
-  border-color: rgba(255, 255, 255, 0.14);
+  /* token-based: var(--chip-bg) and var(--chip-border-color) handle dark mode automatically */
+  border-color: var(--chip-border-color, rgba(255, 255, 255, 0.12));
 }
 
 html.dark .glass-input {
@@ -908,7 +909,42 @@ html.dark .a-modal .a-field label,
 html.dark .a-modal label {
   color: #a8a8a8;
 }
-/* ── Page / layout fade transitions ─────────────────────────── */
+/* ── Custom scrollbar ────────────────────────────────────────── */
+* { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb, rgba(127,127,127,.15)) transparent; }
+::-webkit-scrollbar { width: var(--scrollbar-width, 4px); height: var(--scrollbar-width, 4px); }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb, rgba(127,127,127,.15)); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { filter: brightness(1.2); }
+
+/* ── Tables ──────────────────────────────────────────────────── */
+.ds-table, table.std-table {
+  border-collapse: collapse; width: 100%;
+}
+.ds-table th, table.std-table th {
+  background: var(--table-header-bg, color-mix(in srgb, var(--glass-text) 4%, transparent));
+  font-size: .75rem; font-weight: 600;
+  padding: 8px 12px; text-align: left; color: var(--glass-text);
+  border-bottom: 1px solid var(--table-border-color, color-mix(in srgb, var(--glass-text) 8%, transparent));
+}
+.ds-table td, table.std-table td {
+  padding: 8px 12px; font-size: .8rem; color: var(--glass-text);
+  border-bottom: 1px solid var(--table-border-color, color-mix(in srgb, var(--glass-text) 8%, transparent));
+}
+.ds-table tr:hover td, table.std-table tr:hover td {
+  background: var(--table-row-hover-bg, color-mix(in srgb, var(--glass-text) 3%, transparent));
+}
+
+/* ── Badges / counters ───────────────────────────────────────── */
+.ds-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: var(--badge-radius, 999px);
+  background: var(--badge-bg, color-mix(in srgb, var(--ds-accent) 12%, transparent));
+  color: var(--glass-text); font-size: .6rem; font-weight: 700;
+  line-height: 1;
+}
+
+/* ── Page / layout fade transitions —————————————————— */
 .fade-page-enter-active,
 .fade-page-leave-active {
   transition: opacity .22s ease, transform .22s ease;

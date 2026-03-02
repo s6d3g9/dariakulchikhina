@@ -113,6 +113,19 @@ export interface DesignTokens {
   /* ── Popups and overlays ── */
   modalOverlayOpacity: number   // 0..0.9  — backdrop darkness
   dropdownBlur: number          // px — autocomplete/address dropdown blur
+
+  /* ── Scrollbar ── */
+  scrollbarWidth: number        // px — custom scrollbar width (3..18)
+  scrollbarOpacity: number      // 0..0.8 — scrollbar thumb opacity
+
+  /* ── Tables ── */
+  tableHeaderOpacity: number    // 0..0.25 — thead background fill
+  tableRowHoverOpacity: number  // 0..0.15 — row hover background
+  tableBorderOpacity: number    // 0..0.4  — cell border opacity
+
+  /* ── Badges / Counters ── */
+  badgeBgOpacity: number        // 0..0.5  — notification badge fill
+  badgeRadius: number           // px (999 = pill)
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -191,6 +204,16 @@ export const DEFAULT_TOKENS: DesignTokens = {
 
   modalOverlayOpacity: 0.35,
   dropdownBlur: 18,
+
+  scrollbarWidth: 4,
+  scrollbarOpacity: 0.15,
+
+  tableHeaderOpacity: 0.04,
+  tableRowHoverOpacity: 0.03,
+  tableBorderOpacity: 0.08,
+
+  badgeBgOpacity: 0.12,
+  badgeRadius: 999,
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -781,6 +804,23 @@ export function useDesignSystem() {
     // Modal overlay / Dropdowns
     el.style.setProperty('--modal-overlay-opacity', String(t.modalOverlayOpacity))
     el.style.setProperty('--dropdown-blur', `${t.dropdownBlur}px`)
+
+    // Scrollbar
+    el.style.setProperty('--scrollbar-width', `${t.scrollbarWidth}px`)
+    el.style.setProperty('--scrollbar-thumb', `color-mix(in srgb, var(--glass-text) ${Math.round(t.scrollbarOpacity * 100)}%, transparent)`)
+
+    // Tables
+    const thPct = Math.round(t.tableHeaderOpacity * 100)
+    const trPct = Math.round(t.tableRowHoverOpacity * 100)
+    const tbPct = Math.round(t.tableBorderOpacity * 100)
+    el.style.setProperty('--table-header-bg', `color-mix(in srgb, var(--glass-text) ${thPct}%, transparent)`)
+    el.style.setProperty('--table-row-hover-bg', `color-mix(in srgb, var(--glass-text) ${trPct}%, transparent)`)
+    el.style.setProperty('--table-border-color', `color-mix(in srgb, var(--glass-text) ${tbPct}%, transparent)`)
+
+    // Badges / Counters
+    const bdgPct = Math.round(t.badgeBgOpacity * 100)
+    el.style.setProperty('--badge-bg', `color-mix(in srgb, var(--ds-accent) ${bdgPct}%, transparent)`)
+    el.style.setProperty('--badge-radius', `${t.badgeRadius}px`)
 
     // Re-apply UI theme's CSS vars on top (they set --btn-bg-base, --glass-* etc.
     // which must persist after applyToDOM sets --btn-bg = var(--btn-bg-base))

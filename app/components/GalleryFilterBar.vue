@@ -338,24 +338,22 @@ html.dark .gfb-featured-btn--active {
   margin-left: auto;
 }
 .gfb-tag {
-  padding: 4px 10px;
-  border: none; border-radius: 6px; cursor: pointer;
+  padding: var(--chip-padding-v, 4px) var(--chip-padding-h, 10px);
+  border: 1px solid var(--chip-border-color, transparent);
+  border-radius: var(--chip-radius, 999px);
+  cursor: pointer;
   font-family: inherit; font-size: .68rem;
   letter-spacing: .2px; white-space: nowrap;
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--glass-text, #1a1a1a); opacity: .5;
+  background: var(--chip-bg, color-mix(in srgb, var(--glass-text) 5%, transparent));
+  color: var(--glass-text); opacity: .5;
   transition: opacity .13s, background .13s;
 }
 .gfb-tag:hover { opacity: .8; }
 .gfb-tag--active {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.78);
+  background: var(--ds-accent, #6366f1);
   color: #fff;
-}
-html.dark .gfb-tag { background: rgba(255, 255, 255, 0.07); }
-html.dark .gfb-tag--active {
-  background: rgba(255, 255, 255, 0.88);
-  color: #111;
+  border-color: transparent;
 }
 
 /* ── Mobile ──────────────────────────────────────────────── */

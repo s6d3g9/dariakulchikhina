@@ -188,8 +188,8 @@ function fmtDate(val: string | null): string {
 }
 .rm-status--pending,
 .rm-status--skipped   { color: var(--glass-text); opacity: .38; }
-.rm-status--progress  { color: rgba(180,120,0,1);  background: rgba(255,200,80,.08); opacity: 1; }
-.rm-status--done      { color: rgba(40,140,80,1);  background: rgba(60,160,100,.07); opacity: 1; }
+.rm-status--progress  { color: var(--rm-color-progress); background: var(--rm-bg-progress); border-radius: var(--status-pill-radius, 999px); opacity: 1; }
+.rm-status--done      { color: var(--rm-color-done);     background: var(--rm-bg-done);     border-radius: var(--status-pill-radius, 999px); opacity: 1; }
 
 /* ── Этапы внутри фазы ── */
 .rm-phase-stages {

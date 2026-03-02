@@ -103,6 +103,17 @@
           <input v-else v-model="(form as any)[field.key]" class="acp-inp" type="text">
         </div>
 
+        <!-- section: passport -->
+        <div class="acp-section-title">
+          🔒 паспортные данные
+          <span class="acp-section-hint">(для договоров)</span>
+        </div>
+
+        <div v-for="field in passportFields" :key="field.key" class="acp-row">
+          <label class="acp-lbl">{{ field.label }}:</label>
+          <input v-model="(form as any)[field.key]" class="acp-inp" type="text">
+        </div>
+
         <!-- section: project params catalog -->
         <div class="acp-section-title">параметры проекта</div>
 
@@ -237,6 +248,18 @@ const lifestyleFields: FieldDef[] = [
   { key: 'notes', label: 'дополнительно', multi: true },
 ]
 
+const passportFields: FieldDef[] = [
+  { key: 'passport_series', label: 'серия паспорта' },
+  { key: 'passport_number', label: 'номер паспорта' },
+  { key: 'passport_issued_by', label: 'кем выдан' },
+  { key: 'passport_issue_date', label: 'дата выдачи' },
+  { key: 'passport_department_code', label: 'код подразделения' },
+  { key: 'passport_birth_place', label: 'место рождения' },
+  { key: 'passport_registration_address', label: 'адрес регистрации' },
+  { key: 'passport_inn', label: 'ИНН' },
+  { key: 'passport_snils', label: 'СНИЛС' },
+]
+
 const catalogSelectFields: CatalogFieldDef[] = [
   { key: 'clientType',        label: 'тип клиента',          opts: CLIENT_TYPE_OPTIONS },
   { key: 'objectTypeCode',    label: 'тип объекта (код)',     opts: OBJECT_TYPE_OPTIONS },
@@ -252,7 +275,7 @@ const chipsFields: ChipsFieldDef[] = [
   { key: 'contractorWorkTypes',  label: 'виды работ (план)',  opts: CONTRACTOR_WORK_TYPE_OPTIONS },
 ]
 
-const allFields = [...personalFields, ...contactFields, ...objectFields, ...projectFields, ...lifestyleFields]
+const allFields = [...personalFields, ...contactFields, ...objectFields, ...projectFields, ...lifestyleFields, ...passportFields]
 
 const formInit: Record<string, string | string[]> = { photo: '' }
 for (const f of allFields) formInit[f.key] = ''
@@ -380,6 +403,10 @@ async function save() {
   border-bottom: 1px solid #e0e0e0;
 }
 .acp-section-title:first-child { margin-top: 0; }
+.acp-section-hint {
+  font-size: .62rem; font-weight: 400; letter-spacing: .02em;
+  text-transform: none; opacity: .5; margin-left: 4px;
+}
 .acp-row {
   display: flex;
   align-items: flex-start;
@@ -461,23 +488,22 @@ async function save() {
 }
 .acp-chip {
   display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  border: none;
+  padding: var(--chip-padding-v, 3px) var(--chip-padding-h, 10px);
+  border-radius: var(--chip-radius, 12px);
+  border: 1px solid var(--chip-border-color, transparent);
+  background: var(--chip-bg, color-mix(in srgb, var(--glass-text) 7%, transparent));
   font-size: .78rem;
   cursor: pointer;
   user-select: none;
   transition: background 0.12s, border-color 0.12s;
-  color: #555;
+  color: var(--glass-text);
 }
 .acp-chip:hover { opacity: .9; }
 .acp-chip--on {
-  background: #1a1a1a;
+  background: var(--ds-accent, #6366f1);
   color: #fff;
+  border-color: transparent;
 }
-.dark .acp-chip { color: #bbb; }
-.dark .acp-chip:hover { opacity: .95; }
-.dark .acp-chip--on { background: #6366f1; color: #fff; }
 
 .acp-actions {
   display: flex;
