@@ -1132,6 +1132,7 @@ const copyLabel = ref('копировать')
 const animPlaying = ref(false)
 const searchQuery = ref('')
 const appliedFlash = ref(false)
+const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
 
 /* ── Tab navigation ─────────────────────────────── */
 const activeTab = ref('presets')

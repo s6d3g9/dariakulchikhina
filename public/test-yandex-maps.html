@@ -37,7 +37,7 @@
         // Ждем загрузки API
         ymaps.ready(() => {
             try {
-                setStatus('API готов, создаём карту...');
+                setStatus('Создание карты...');
                 
                 const myMap = new ymaps.Map('map', {
                     center: [55.751574, 37.573856], // Москва
@@ -46,18 +46,18 @@
                 });
                 
                 const placemark = new ymaps.Placemark([55.751574, 37.573856], {
-                    balloonContent: 'Тестовая метка - карта работает!'
+                    balloonContent: 'Карта работает!'
                 }, {
                     preset: 'islands#violetDotIcon'
                 });
                 
                 myMap.geoObjects.add(placemark);
                 
-                setStatus('✅ Карта загружена и работает успешно!');
+                setStatus('✅ Карта работает!');
                 
             } catch (error) {
                 setStatus('❌ Ошибка: ' + error.message, true);
-                console.error('[TEST] Ошибка карты:', error);
+                console.error('Ошибка карты:', error);
             }
         });
     </script>

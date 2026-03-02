@@ -122,10 +122,10 @@ onBeforeUnmount(() => document.removeEventListener('click', onOutside, true))
 .utp-panel {
   min-width: 200px;
   border-radius: 10px;
-  border: 1px solid var(--dropdown-border, color-mix(in srgb, var(--glass-text) 12%, transparent));
+  border: 1px solid var(--dropdown-border, rgba(0,0,0,0.10));
   padding: 9px 7px 7px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.09);
-  background: var(--dropdown-bg, color-mix(in srgb, var(--glass-page-bg, #f4f4f4) 94%, var(--glass-text, #1f1f1f) 6%));
+  box-shadow: var(--dropdown-shadow, 0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07));
+  background: var(--dropdown-bg, rgba(255,255,255,0.97));
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
 }

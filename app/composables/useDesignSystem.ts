@@ -610,7 +610,11 @@ export function useDesignSystem() {
   /* ── Persist / restore ─────────────────────────────────── */
   function save() {
     if (!import.meta.client) return
-    localStorage.setItem(LS_KEY, JSON.stringify(tokens.value))
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(tokens.value))
+    } catch (err) {
+      console.warn('Failed to save design tokens:', err)
+    }
   }
 
   function load() {
@@ -624,11 +628,27 @@ export function useDesignSystem() {
     } catch { /* corrupt data → just use defaults */ }
   }
 
+  /* ── Token updates ─────────────────────────────────────── */
+  function set<K extends keyof DesignTokens>(key: K, value: DesignTokens[K]) {
+    if (tokens.value[key] === value) return
+    pushHistory()
+    tokens.value[key] = value
+    applyToDOM()
+    save()
+  }
+
+  function setMultiple(updates: Partial<DesignTokens>) {
+    pushHistory()
+    Object.assign(tokens.value, updates)
+    applyToDOM()
+    save()
+  }
+
   function reset() {
     pushHistory()
     tokens.value = { ...DEFAULT_TOKENS }
-    save()
     applyToDOM()
+    save()
   }
 
   /* ── History stack (Undo / Redo) ─────────────────────── */
@@ -642,8 +662,7 @@ export function useDesignSystem() {
     future.value = [...future.value, { ...tokens.value }]
     tokens.value = { ...history.value[history.value.length - 1] }
     history.value = history.value.slice(0, -1)
-    applyToDOM()
-    save()
+    // Auto-apply and save handled by watcher
   }
 
   function redo() {
@@ -651,8 +670,7 @@ export function useDesignSystem() {
     history.value = [...history.value, { ...tokens.value }]
     tokens.value = { ...future.value[future.value.length - 1] }
     future.value = future.value.slice(0, -1)
-    applyToDOM()
-    save()
+    // Auto-apply and save handled by watcher
   }
 
   const canUndo = computed(() => history.value.length > 0)
@@ -661,20 +679,22 @@ export function useDesignSystem() {
   /* ── Apply tokens to CSS custom properties on <html> ──── */
   function applyToDOM() {
     if (!import.meta.client) return
-    const el = document.documentElement
-    const t = tokens.value
-    const sz = BTN_SIZE_MAP[t.btnSize]
+    
+    try {
+      const el = document.documentElement
+      const t = tokens.value
+      const sz = BTN_SIZE_MAP[t.btnSize]
 
-    // Buttons
-    el.style.setProperty('--btn-radius', `${t.btnRadius}px`)
-    el.style.setProperty('--btn-py', `${t.btnPaddingV > 0 ? t.btnPaddingV : sz.py}px`)
-    el.style.setProperty('--btn-px', `${t.btnPaddingH > 0 ? t.btnPaddingH : sz.px}px`)
-    el.style.setProperty('--btn-font-size', `${sz.fontSize}rem`)
-    el.style.setProperty('--btn-transform', t.btnTransform)
-    el.style.setProperty('--btn-tracking', `${t.letterSpacing}em`)
-    el.style.setProperty('--btn-weight', String(t.btnWeight))
-    el.style.setProperty('--btn-padding-h', `${t.btnPaddingH > 0 ? t.btnPaddingH : sz.px}px`)
-    el.style.setProperty('--btn-padding-v', `${t.btnPaddingV > 0 ? t.btnPaddingV : sz.py}px`)
+      // Buttons
+      el.style.setProperty('--btn-radius', `${t.btnRadius}px`)
+      el.style.setProperty('--btn-py', `${t.btnPaddingV > 0 ? t.btnPaddingV : sz.py}px`)
+      el.style.setProperty('--btn-px', `${t.btnPaddingH > 0 ? t.btnPaddingH : sz.px}px`)
+      el.style.setProperty('--btn-font-size', `${sz.fontSize}rem`)
+      el.style.setProperty('--btn-transform', t.btnTransform)
+      el.style.setProperty('--btn-tracking', `${t.letterSpacing}em`)
+      el.style.setProperty('--btn-weight', String(t.btnWeight))
+      el.style.setProperty('--btn-padding-h', `${t.btnPaddingH > 0 ? t.btnPaddingH : sz.px}px`)
+      el.style.setProperty('--btn-padding-v', `${t.btnPaddingV > 0 ? t.btnPaddingV : sz.py}px`)
 
     switch (t.btnStyle) {
       case 'filled':
@@ -848,6 +868,17 @@ export function useDesignSystem() {
     // Modal overlay / Dropdowns
     el.style.setProperty('--modal-overlay-opacity', String(t.modalOverlayOpacity))
     el.style.setProperty('--dropdown-blur', `${t.dropdownBlur}px`)
+    // Derive dropdown bg from current page bg: opaque surface clearly visible above page
+    const isDark = el.classList.contains('dark')
+    if (isDark) {
+      el.style.setProperty('--dropdown-bg', 'rgba(18, 21, 30, 0.98)')
+      el.style.setProperty('--dropdown-border', 'rgba(255,255,255,0.12)')
+      el.style.setProperty('--dropdown-shadow', '0 4px 28px rgba(0,0,0,0.55), 0 1px 6px rgba(0,0,0,0.30)')
+    } else {
+      el.style.setProperty('--dropdown-bg', 'rgba(255, 255, 255, 0.97)')
+      el.style.setProperty('--dropdown-border', 'rgba(0,0,0,0.10)')
+      el.style.setProperty('--dropdown-shadow', '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07)')
+    }
 
     // Scrollbar
     el.style.setProperty('--scrollbar-width', `${t.scrollbarWidth}px`)
@@ -872,22 +903,17 @@ export function useDesignSystem() {
       const { refreshThemeVars } = useUITheme()
       refreshThemeVars()
     } catch { /* useUITheme not ready yet */ }
-  }
 
-  /* ── Setter (push to history, apply, persist) ──────────── */
-  function set<K extends keyof DesignTokens>(key: K, value: DesignTokens[K]) {
-    pushHistory()
-    tokens.value[key] = value
-    applyToDOM()
-    save()
+    } catch (outerErr) {
+      console.warn('applyToDOM failed:', outerErr)
+    }
   }
 
   /* ── Batch setter (one undo step for preset switch) ───── */
   function applyPreset(preset: DesignPreset) {
     pushHistory()
     tokens.value = { ...tokens.value, ...preset.tokens }
-    applyToDOM()
-    save()
+    // Auto-apply and save handled by watcher
   }
 
   /* ── Export / Import ───────────────────────────────────── */

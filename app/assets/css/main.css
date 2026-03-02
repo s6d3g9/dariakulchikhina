@@ -106,9 +106,10 @@ textarea, select {
   --input-font-size: var(--ds-text-sm, .833rem);
   --nav-item-padding-h: 10px;
   --nav-item-padding-v: 9px;
-  /* ── Dropdown/popup surfaces (авто-деривируется из темы) ── */
-  --dropdown-bg: color-mix(in srgb, var(--glass-page-bg) 94%, var(--glass-text) 6%);
-  --dropdown-border: color-mix(in srgb, var(--glass-text) 12%, transparent);
+  /* ── Dropdown/popup surfaces ── */
+  --dropdown-bg:     rgba(255, 255, 255, 0.97);
+  --dropdown-border: rgba(0, 0, 0, 0.10);
+  --dropdown-shadow: 0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07);
   --chip-radius:    999px;
   --modal-radius:   16px;
   --btn-weight:     500;
@@ -226,6 +227,9 @@ html.dark {
   --glass-shadow:   0 18px 36px rgba(0, 0, 0, 0.58);
   --glass-text:     #f5f5f6;
   --glass-page-bg:  #0d0e11;
+  --dropdown-bg:    rgba(18, 21, 30, 0.98);
+  --dropdown-border: rgba(255, 255, 255, 0.12);
+  --dropdown-shadow: 0 4px 28px rgba(0, 0, 0, 0.55), 0 1px 6px rgba(0,0,0,0.30);
 }
 
 body {
@@ -327,6 +331,16 @@ html.dark .glass-card {
   border-radius: var(--chip-radius, 999px); /* override the card-radius bridge */
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* ── Universal dropdown/popup floating surface ── */
+.glass-dropdown {
+  background: var(--dropdown-bg, rgba(255,255,255,0.97));
+  border: 1px solid var(--dropdown-border, rgba(0,0,0,0.10));
+  box-shadow: var(--dropdown-shadow, 0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07));
+  backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(150%);
+  color: var(--glass-text);
 }
 
 .glass-input {
@@ -453,8 +467,9 @@ html.dark .glass-input::placeholder {
   color: var(--btn-color);
   border: var(--ds-border-width, 1px) var(--ds-border-style, solid) var(--btn-border);
   border-radius: var(--btn-radius);
-  padding: var(--btn-py, 9px) var(--btn-px, 22px);
+  padding: var(--btn-padding-v, var(--btn-py, 9px)) var(--btn-padding-h, var(--btn-px, 22px));
   font-size: var(--btn-font-size, .8rem);
+  font-weight: var(--btn-weight, 500);
   letter-spacing: var(--btn-tracking);
   text-transform: var(--btn-transform);
   cursor: pointer;
@@ -473,8 +488,9 @@ html.dark .glass-input::placeholder {
   color: var(--btn-color);
   border: var(--ds-border-width, 1px) var(--ds-border-style, solid) var(--btn-sm-border);
   border-radius: var(--btn-radius);
-  padding: calc(var(--btn-py, 5px) * 0.6) calc(var(--btn-px, 12px) * 0.6);
+  padding: calc(var(--btn-padding-v, var(--btn-py, 5px)) * 0.6) calc(var(--btn-padding-h, var(--btn-px, 12px)) * 0.6);
   font-size: calc(var(--btn-font-size, .76rem) * 0.95);
+  font-weight: var(--btn-weight, 500);
   letter-spacing: var(--btn-tracking);
   text-transform: var(--btn-transform);
   cursor: pointer;

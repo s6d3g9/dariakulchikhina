@@ -146,10 +146,10 @@ onBeforeUnmount(() => document.removeEventListener('click', onOutside, true))
   max-height: 340px;
   overflow: auto;
   border-radius: 12px;
-  border: 1px solid var(--dropdown-border, color-mix(in srgb, var(--glass-text) 12%, transparent));
+  border: 1px solid var(--dropdown-border, rgba(0,0,0,0.10));
   padding: 6px;
-  background: var(--dropdown-bg, color-mix(in srgb, var(--glass-page-bg, #f4f4f4) 94%, var(--glass-text, #1f1f1f) 6%));
-  box-shadow: 0 8px 32px rgba(0,0,0,.10);
+  background: var(--dropdown-bg, rgba(255,255,255,0.97));
+  box-shadow: var(--dropdown-shadow, 0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07));
 }
 
 .nct-option {

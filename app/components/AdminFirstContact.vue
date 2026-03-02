@@ -127,7 +127,9 @@
 <script setup lang="ts">
 const { slug } = defineProps<{ slug: string }>()
 
-const { data: project, pending } = await useFetch(() => `/api/projects/${slug}`)
+const { data: project, pending } = await useFetch(() => `/api/projects/${slug}`, {
+  server: false
+})
 
 // Form data
 const form = reactive({
@@ -158,12 +160,13 @@ watch(project, (p) => {
 const statusColor = useStatusColor(form, 'lead_status')
 
 // Saving system
-const { savedAt, markSaved } = useAutoSave()
+const { savedAt, touch: markSaved } = useTimestamp()
 
 async function save() {
+  if (!project.value) return
   await $fetch(`/api/projects/${slug}`, {
     method: 'PUT',
-    body: { profile: { ...(project.value?.profile || {}), ...form } },
+    body: { profile: { ...(project.value.profile || {}), ...form } },
   })
   markSaved()
 }
@@ -270,13 +273,11 @@ function clearPin() {
 }
 
 onMounted(() => {
-  if (mapEl.value) {
-    nextTick(initMap)
-  } else {
-    const stop = watch(mapEl, (el) => {
-      if (el) { nextTick(initMap); stop() }
-    })
-  }
+  nextTick(() => {
+    if (mapEl.value) {
+      initMap()
+    }
+  })
 })
 
 // ── Step completion ──────────────────────────────────────
