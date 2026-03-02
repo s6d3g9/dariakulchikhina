@@ -81,12 +81,24 @@
               карта
               <span v-if="form.meeting_map_address" style="font-weight:400;color:#444;font-size:.8rem;margin-left:6px">{{ form.meeting_map_address }}</span>
             </label>
-            <div ref="mapEl" class="afc-map"></div>
+            <div v-if="hasYandexApiKey" ref="mapEl" class="afc-map"></div>
+            <iframe
+              v-else
+              class="afc-map"
+              style="border:0"
+              :src="fallbackMapSrc"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title="Карта (упрощённый режим)"
+            />
             <div v-if="mapError" class="afc-map-error">{{ mapError }}</div>
-            <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+            <div v-if="hasYandexApiKey" style="display:flex;gap:8px;align-items:center;margin-top:6px">
               <input v-model="mapSearch" class="afc-inp" placeholder="поиск адреса..." style="flex:1" @keydown.enter.prevent="searchAddress">
               <button type="button" class="afc-map-btn" @click="searchAddress">найти</button>
               <button v-if="form.meeting_map_lat" type="button" class="afc-map-btn afc-map-btn--clear" @click="clearPin">✕ сбросить</button>
+            </div>
+            <div v-else class="afc-map-error" style="margin-top:6px">
+              Упрощённый режим карты (без пина). Для интерактивной карты добавьте `YANDEX_MAPS_API_KEY`.
             </div>
           </div>
           <div class="afc-row afc-row--full">
@@ -176,8 +188,15 @@ const mapEl = ref<HTMLElement | null>(null)
 const mapSearch = ref('')
 const mapError = ref('')
 const runtimeConfig = useRuntimeConfig()
+const hasYandexApiKey = computed(() => String(runtimeConfig.public?.yandexMapsApiKey || '').trim().length > 0)
 let ymap: any = null
 let placemark: any = null
+
+const fallbackMapSrc = computed(() => {
+  const lat = typeof form.meeting_map_lat === 'number' ? form.meeting_map_lat : 55.751574
+  const lng = typeof form.meeting_map_lng === 'number' ? form.meeting_map_lng : 37.573856
+  return `https://yandex.ru/map-widget/v1/?ll=${lng}%2C${lat}&z=${form.meeting_map_lat ? 15 : 10}`
+})
 
 function getYandexScriptSrc() {
   const key = String(runtimeConfig.public?.yandexMapsApiKey || '').trim()
@@ -298,7 +317,7 @@ function clearPin() {
 
 onMounted(() => {
   nextTick(() => {
-    if (mapEl.value) {
+    if (hasYandexApiKey.value && mapEl.value) {
       initMap()
     }
   })
