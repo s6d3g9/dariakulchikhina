@@ -495,6 +495,251 @@
                 </div>
               </div>
 
+              <!-- ═══ Поля ввода ═══ -->
+              <div v-show="isTabVisible('inputs')" class="dp-page dp-page--cols">
+                <div class="dp-col">
+                  <div class="dp-col-label">Фон поля</div>
+                  <div class="dp-field">
+                    <label class="dp-label">прозрачность фона <span class="dp-val">{{ pct(tokens.inputBgOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.25" step="0.005" :value="tokens.inputBgOpacity" class="dp-range" @input="onFloat('inputBgOpacity', $event)">
+                    <div class="dp-field-hint">0% — полностью прозрачный фон; 25% — плотный</div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">непрозрачность рамки <span class="dp-val">{{ pct(tokens.inputBorderOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.4" step="0.01" :value="tokens.inputBorderOpacity" class="dp-range" @input="onFloat('inputBorderOpacity', $event)">
+                    <div class="dp-field-hint">0% — рамки нет; добавляет тонкую обводку вокруг поля</div>
+                  </div>
+                  <div class="dp-col-label" style="margin-top:10px">Скругление</div>
+                  <div class="dp-field">
+                    <label class="dp-label">радиус <span class="dp-val">{{ tokens.inputRadius }}px</span></label>
+                    <input type="range" min="0" max="20" step="1" :value="tokens.inputRadius" class="dp-range" @input="onRange('inputRadius', $event)">
+                  </div>
+                </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Превью</div>
+                  <div class="dp-live-preview" style="margin-top:0; flex-direction:column; gap:8px">
+                    <input
+                      class="dp-demo-input"
+                      placeholder="Текстовое поле"
+                      :style="{
+                        borderRadius: tokens.inputRadius + 'px',
+                        background: `color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBgOpacity*100)}%, transparent)`,
+                        border: tokens.inputBorderOpacity > 0.005
+                          ? `1px solid color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBorderOpacity*100)}%, transparent)`
+                          : 'none',
+                        padding: '7px 10px', outline: 'none', width: '100%',
+                        fontSize: 'var(--ds-text-sm, .8rem)', fontFamily: 'inherit',
+                        color: 'var(--glass-text)',
+                      }"
+                    />
+                    <select
+                      class="dp-demo-input"
+                      :style="{
+                        borderRadius: tokens.inputRadius + 'px',
+                        background: `color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBgOpacity*100)}%, transparent)`,
+                        border: tokens.inputBorderOpacity > 0.005
+                          ? `1px solid color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBorderOpacity*100)}%, transparent)`
+                          : 'none',
+                        padding: '7px 10px', width: '100%',
+                        fontSize: 'var(--ds-text-sm, .8rem)', fontFamily: 'inherit',
+                        color: 'var(--glass-text)', appearance: 'none',
+                      }"
+                    >
+                      <option>Выпадающий список</option>
+                    </select>
+                    <textarea
+                      placeholder="Многострочное поле&#10;второй ряд"
+                      rows="2"
+                      :style="{
+                        borderRadius: tokens.inputRadius + 'px',
+                        background: `color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBgOpacity*100)}%, transparent)`,
+                        border: tokens.inputBorderOpacity > 0.005
+                          ? `1px solid color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBorderOpacity*100)}%, transparent)`
+                          : 'none',
+                        padding: '7px 10px', width: '100%', resize: 'none',
+                        fontSize: 'var(--ds-text-sm, .8rem)', fontFamily: 'inherit',
+                        color: 'var(--glass-text)',
+                      }"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- ═══ Теги и чипы ═══ -->
+              <div v-show="isTabVisible('tags')" class="dp-page dp-page--cols">
+                <div class="dp-col">
+                  <div class="dp-col-label">Внешний вид</div>
+                  <div class="dp-field">
+                    <label class="dp-label">скругление <span class="dp-val">{{ tokens.chipRadius === 999 ? '∞ (пилюля)' : tokens.chipRadius + 'px' }}</span></label>
+                    <input type="range" min="0" max="999" step="1" :value="tokens.chipRadius" class="dp-range" @input="onRange('chipRadius', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">фоновый слой <span class="dp-val">{{ pct(tokens.chipBgOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.3" step="0.005" :value="tokens.chipBgOpacity" class="dp-range" @input="onFloat('chipBgOpacity', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">непрозрачность рамки <span class="dp-val">{{ pct(tokens.chipBorderOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.4" step="0.01" :value="tokens.chipBorderOpacity" class="dp-range" @input="onFloat('chipBorderOpacity', $event)">
+                  </div>
+                  <div class="dp-col-label" style="margin-top:10px">Отступы внутри тега</div>
+                  <div class="dp-field">
+                    <label class="dp-label">горизонт. <span class="dp-val">{{ tokens.chipPaddingH }}px</span></label>
+                    <input type="range" min="3" max="24" step="1" :value="tokens.chipPaddingH" class="dp-range" @input="onRange('chipPaddingH', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">вертикальн. <span class="dp-val">{{ tokens.chipPaddingV }}px</span></label>
+                    <input type="range" min="1" max="12" step="1" :value="tokens.chipPaddingV" class="dp-range" @input="onRange('chipPaddingV', $event)">
+                  </div>
+                </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Превью</div>
+                  <div class="dp-live-preview" style="margin-top:0; flex-wrap:wrap; gap:6px; align-content:flex-start">
+                    <span v-for="label in ['Тег', 'Метка', 'Категория', '#хэштег', 'Статус', 'Фильтр']" :key="label"
+                      :style="{
+                        display: 'inline-flex', alignItems: 'center',
+                        borderRadius: (tokens.chipRadius > 99 ? 999 : tokens.chipRadius) + 'px',
+                        background: `color-mix(in srgb, #1f1f1f ${Math.round(tokens.chipBgOpacity*100)}%, transparent)`,
+                        border: tokens.chipBorderOpacity > 0.005
+                          ? `1px solid color-mix(in srgb, #1f1f1f ${Math.round(tokens.chipBorderOpacity*100)}%, transparent)`
+                          : '1px solid transparent',
+                        padding: `${tokens.chipPaddingV}px ${tokens.chipPaddingH}px`,
+                        fontSize: 'var(--ds-text-xs, .7rem)',
+                        color: 'var(--glass-text)',
+                        fontFamily: 'inherit',
+                      }"
+                    >{{ label }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ═══ Навигация ═══ -->
+              <div v-show="isTabVisible('nav')" class="dp-page dp-page--cols">
+                <div class="dp-col">
+                  <div class="dp-col-label">Пункты меню</div>
+                  <div class="dp-field">
+                    <label class="dp-label">скругление пункта <span class="dp-val">{{ tokens.navItemRadius }}px</span></label>
+                    <input type="range" min="0" max="24" step="1" :value="tokens.navItemRadius" class="dp-range" @input="onRange('navItemRadius', $event)">
+                    <div class="dp-field-hint">Применяется ко всем пунктам бокового меню</div>
+                  </div>
+                </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Превью</div>
+                  <div class="dp-live-preview" style="margin-top:0; flex-direction:column; gap:2px; padding:8px; border-radius:var(--card-radius,14px); background:color-mix(in srgb,var(--glass-bg) 80%,transparent)">
+                    <div v-for="(item, i) in ['Обзор', 'Клиенты', 'Проекты', 'Документы']" :key="item"
+                      :style="{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '7px 10px',
+                        borderRadius: tokens.navItemRadius + 'px',
+                        background: i === 0 ? 'color-mix(in srgb, var(--glass-bg) 92%, transparent)' : 'transparent',
+                        fontWeight: i === 0 ? '600' : '400',
+                        opacity: i === 0 ? '1' : '0.65',
+                        fontSize: 'var(--ds-text-sm, .8rem)',
+                        fontFamily: 'inherit',
+                        color: 'var(--glass-text)',
+                        cursor: 'pointer',
+                      }"
+                    >{{ item }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ═══ Статусы и пин-бары ═══ -->
+              <div v-show="isTabVisible('statuses')" class="dp-page dp-page--cols">
+                <div class="dp-col">
+                  <div class="dp-col-label">Пин-бары и статус-метки</div>
+                  <div class="dp-field">
+                    <label class="dp-label">насыщенность фона <span class="dp-val">{{ pct(tokens.statusBgOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.5" step="0.005" :value="tokens.statusBgOpacity" class="dp-range" @input="onFloat('statusBgOpacity', $event)">
+                    <div class="dp-field-hint">Управляет яркостью фона всех статусных меток (выполнено, в работе, ожидание, отмена)</div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">форма <span class="dp-val">{{ tokens.statusPillRadius === 999 ? '∞ (пилюля)' : tokens.statusPillRadius + 'px' }}</span></label>
+                    <input type="range" min="0" max="999" step="1" :value="tokens.statusPillRadius" class="dp-range" @input="onRange('statusPillRadius', $event)">
+                  </div>
+                </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Превью статусов</div>
+                  <div class="dp-live-preview" style="margin-top:0; flex-wrap:wrap; gap:6px; align-content:flex-start">
+                    <span v-for="s in [
+                      { label: 'ожидание',  color: 'var(--glass-text)', bg: 'var(--rm-bg-pending)' },
+                      { label: 'в работе',  color: 'var(--ds-warning)',  bg: 'var(--rm-bg-progress)' },
+                      { label: 'выполнено', color: 'var(--ds-success)',  bg: 'var(--rm-bg-done)' },
+                      { label: 'пропущено', color: 'var(--glass-text)',  bg: 'var(--rm-bg-skipped)' },
+                      { label: 'запланировано', color: 'var(--ds-accent)', bg: 'var(--ws-bg-planned)' },
+                      { label: 'на паузе', color: 'var(--ds-accent)', bg: 'var(--ws-bg-paused)' },
+                      { label: 'отмена',   color: 'var(--ds-error)',  bg: 'var(--ws-bg-cancelled)' },
+                    ]" :key="s.label"
+                      :style="{
+                        display: 'inline-flex', alignItems: 'center',
+                        borderRadius: (tokens.statusPillRadius > 99 ? 999 : tokens.statusPillRadius) + 'px',
+                        background: s.bg,
+                        padding: `${tokens.chipPaddingV}px ${tokens.chipPaddingH}px`,
+                        fontSize: 'var(--ds-text-xs, .68rem)',
+                        fontWeight: '500',
+                        color: s.color,
+                        fontFamily: 'inherit',
+                      }"
+                    >{{ s.label }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ═══ Попапы и оверлеи ═══ -->
+              <div v-show="isTabVisible('popups')" class="dp-page dp-page--cols">
+                <div class="dp-col">
+                  <div class="dp-col-label">Выпадающие панели</div>
+                  <div class="dp-field">
+                    <label class="dp-label">размытие дропдауна <span class="dp-val">{{ tokens.dropdownBlur }}px</span></label>
+                    <input type="range" min="0" max="40" step="1" :value="tokens.dropdownBlur" class="dp-range" @input="onRange('dropdownBlur', $event)">
+                    <div class="dp-field-hint">Применяется к автодополнению адреса, выпадающим спискам</div>
+                  </div>
+                  <div class="dp-col-label" style="margin-top:10px">Модальные окна</div>
+                  <div class="dp-field">
+                    <label class="dp-label">затемнение оверлея <span class="dp-val">{{ pct(tokens.modalOverlayOpacity) }}</span></label>
+                    <input type="range" min="0" max="0.9" step="0.02" :value="tokens.modalOverlayOpacity" class="dp-range" @input="onFloat('modalOverlayOpacity', $event)">
+                    <div class="dp-field-hint">Прозрачность тёмной подложки под модальным окном</div>
+                  </div>
+                  <div class="dp-col-label" style="margin-top:10px">Скругление</div>
+                  <div class="dp-field">
+                    <label class="dp-label">радиус модального <span class="dp-val">{{ tokens.modalRadius }}px</span></label>
+                    <input type="range" min="0" max="28" step="1" :value="tokens.modalRadius" class="dp-range" @input="onRange('modalRadius', $event)">
+                  </div>
+                </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Превью дропдауна</div>
+                  <div class="dp-live-preview" style="margin-top:0; padding:0; overflow:hidden; border-radius:var(--card-radius,14px);">
+                    <div :style="{
+                      background: 'var(--glass-bg)',
+                      backdropFilter: `blur(${tokens.dropdownBlur}px) saturate(var(--glass-saturation,145%))`,
+                      WebkitBackdropFilter: `blur(${tokens.dropdownBlur}px) saturate(var(--glass-saturation,145%))`,
+                      border: '1px solid color-mix(in srgb, var(--glass-text) 10%, transparent)',
+                      borderRadius: 'var(--card-radius,14px)',
+                      padding: '4px',
+                      boxShadow: 'var(--ds-shadow-lg)',
+                    }">
+                      <div v-for="opt in ['Первый вариант', 'Второй вариант', 'Третий вариант']" :key="opt"
+                        :style="{
+                          padding: '7px 12px',
+                          borderRadius: 'calc(var(--card-radius,14px) - 4px)',
+                          fontSize: 'var(--ds-text-sm, .8rem)',
+                          fontFamily: 'inherit',
+                          color: 'var(--glass-text)',
+                          cursor: 'pointer',
+                        }"
+                      >{{ opt }}</div>
+                    </div>
+                  </div>
+                  <div class="dp-col-label" style="margin-top:12px">Превью оверлея</div>
+                  <div :style="{
+                    height: '44px', borderRadius: 'var(--card-radius,14px)',
+                    background: `rgba(0,0,0,${tokens.modalOverlayOpacity})`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 'var(--ds-text-xs,.7rem)', color: 'rgba(255,255,255,.6)',
+                    fontFamily: 'inherit',
+                  }">затемнение {{ pct(tokens.modalOverlayOpacity) }}</div>
+                </div>
+              </div>
+
             </div><!-- /.dp-tab-content -->
 
 
@@ -662,9 +907,14 @@ const tabList = [
   { id: 'grid',      label: 'сетка' },
   { id: 'typeScale', label: 'шкала' },
   { id: 'darkMode',  label: 'тёмная тема' },
+  { id: 'inputs',    label: 'инпуты' },
+  { id: 'tags',      label: 'теги' },
+  { id: 'nav',       label: 'навигация' },
+  { id: 'statuses',  label: 'статусы' },
+  { id: 'popups',    label: 'попапы' },
 ]
 // kept for inspect-mode compatibility
-const sections = reactive({ presets: true, palette: true, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false })
+const sections = reactive({ presets: true, palette: true, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false })
 function toggle(key: keyof typeof sections) { activeTab.value = key }
 
 /* ── Option lists ────────────────────────────────── */
@@ -728,6 +978,11 @@ const sectionSearchMap: Record<string, string[]> = {
   anim:     ['анимац', 'animation', 'easing', 'длительн', 'duration'],
   grid:     ['сетк', 'grid', 'макет', 'layout', 'контейнер', 'container', 'sidebar', 'обводк', 'border'],
   darkMode: ['тёмн', 'темн', 'dark', 'mode', 'elevation', 'saturation'],
+  inputs:   ['инпут', 'поле', 'ввод', 'input', 'text field', 'textarea', 'border opacity', 'прозрачн'],
+  tags:     ['тег', 'чип', 'badge', 'chip', 'tag', 'пилюля', 'метка', 'padding'],
+  nav:      ['навиг', 'sidebar', 'menu', 'пункт', 'nav', 'меню'],
+  statuses: ['статус', 'пин', 'status', 'pin bar', 'badge', 'прогресс', 'дорожная карта', 'roadmap'],
+  popups:   ['попап', 'popup', 'dropdown', 'оверлей', 'overlay', 'modal', 'blur', 'затемн'],
 }
 
 function isTabVisible(key: string): boolean {
@@ -2002,4 +2257,12 @@ onBeforeUnmount(() => {
   transition: background .1s, color .1s;
 }
 .dp-comp-copy-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
+
+/* ── Inupt / select preview elements (inputs tab) ── */
+.dp-demo-input {
+  display: block; width: 100%;
+  font-family: inherit; font-size: var(--ds-text-sm, .8rem);
+  color: var(--glass-text);
+  /* background/border/radius are applied inline via :style binding */
+}
 </style>

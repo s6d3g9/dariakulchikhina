@@ -31,9 +31,9 @@ button, a, input, select, textarea, summary {
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]),
 textarea,
 select {
-  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  background: var(--input-bg, color-mix(in srgb, var(--glass-text) 5%, transparent));
   color: var(--glass-text);
-  border: none;
+  border: 1px solid var(--input-border-color, transparent);
   outline: none;
   border-radius: var(--input-radius, 6px);
   font-family: var(--ds-font-family);
@@ -42,7 +42,7 @@ select {
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]):focus,
 textarea:focus,
 select:focus {
-  background: color-mix(in srgb, var(--glass-text) 9%, transparent);
+  background: var(--input-bg-focus, color-mix(in srgb, var(--glass-text) 9%, transparent));
   outline: none;
 }
 ::placeholder {
@@ -180,19 +180,19 @@ textarea, select {
 }
 
 /* ── Roadmap global utility classes ──────────────────────── */
-.rm-status--pending  { color: var(--rm-color-pending);  background: var(--rm-bg-pending);  }
-.rm-status--progress { color: var(--rm-color-progress); background: var(--rm-bg-progress); }
-.rm-status--done     { color: var(--rm-color-done);     background: var(--rm-bg-done);     }
-.rm-status--skipped  { color: var(--rm-color-skipped);  background: var(--rm-bg-skipped);  opacity: .5; }
+.rm-status--pending  { color: var(--rm-color-pending);  background: var(--rm-bg-pending);  border-radius: var(--status-pill-radius, 999px); }
+.rm-status--progress { color: var(--rm-color-progress); background: var(--rm-bg-progress); border-radius: var(--status-pill-radius, 999px); }
+.rm-status--done     { color: var(--rm-color-done);     background: var(--rm-bg-done);     border-radius: var(--status-pill-radius, 999px); }
+.rm-status--skipped  { color: var(--rm-color-skipped);  background: var(--rm-bg-skipped);  border-radius: var(--status-pill-radius, 999px); opacity: .5; }
 
 /* ── Work-status global utility classes ──────────────────── */
-.ws-status--pending   { color: var(--ws-color-pending);   background: var(--ws-bg-pending);   }
-.ws-status--planned   { color: var(--ws-color-planned);   background: var(--ws-bg-planned);   }
-.ws-status--progress  { color: var(--ws-color-progress);  background: var(--ws-bg-progress);  }
-.ws-status--done      { color: var(--ws-color-done);      background: var(--ws-bg-done);      }
-.ws-status--paused    { color: var(--ws-color-paused);    background: var(--ws-bg-paused);    }
-.ws-status--cancelled { color: var(--ws-color-cancelled); background: var(--ws-bg-cancelled); }
-.ws-status--skipped   { color: var(--ws-color-skipped);   background: var(--ws-bg-skipped);   opacity: .5; }
+.ws-status--pending   { color: var(--ws-color-pending);   background: var(--ws-bg-pending);   border-radius: var(--status-pill-radius, 999px); }
+.ws-status--planned   { color: var(--ws-color-planned);   background: var(--ws-bg-planned);   border-radius: var(--status-pill-radius, 999px); }
+.ws-status--progress  { color: var(--ws-color-progress);  background: var(--ws-bg-progress);  border-radius: var(--status-pill-radius, 999px); }
+.ws-status--done      { color: var(--ws-color-done);      background: var(--ws-bg-done);      border-radius: var(--status-pill-radius, 999px); }
+.ws-status--paused    { color: var(--ws-color-paused);    background: var(--ws-bg-paused);    border-radius: var(--status-pill-radius, 999px); }
+.ws-status--cancelled { color: var(--ws-color-cancelled); background: var(--ws-bg-cancelled); border-radius: var(--status-pill-radius, 999px); }
+.ws-status--skipped   { color: var(--ws-color-skipped);   background: var(--ws-bg-skipped);   border-radius: var(--status-pill-radius, 999px); opacity: .5; }
 
 /* ── Generic dark fallback (when no data-theme set) ── */
 html.dark {
@@ -289,9 +289,10 @@ html.dark .glass-card {
 }
 
 .glass-chip {
-  border: none;
-  background: var(--glass-bg);
+  border: 1px solid var(--chip-border-color, transparent);
+  background: var(--chip-bg, var(--glass-bg));
   color: var(--glass-text);
+  padding: var(--chip-padding-v, 3px) var(--chip-padding-h, 9px);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
   backdrop-filter: blur(14px) saturate(140%);
 }
@@ -368,7 +369,7 @@ html.dark .glass-input::placeholder {
   text-decoration: none;
   text-align: left;
   padding: calc(var(--ds-space-2, 8px) + 1px) calc(var(--ds-space-2, 8px) + 2px);
-  border-radius: calc(var(--btn-radius, 3px) + 6px);
+  border-radius: var(--nav-item-radius, 9px);
   background: transparent;
   color: var(--glass-text);
   font-family: var(--ds-font-family);
@@ -868,9 +869,13 @@ html.dark .ac-option b {
   color: #a78bfa;
 }
 
+/* ── modal backdrop ── */
+.a-modal-backdrop {
+  background: rgba(0, 0, 0, var(--modal-overlay-opacity, 0.35));
+}
 /* ── dark mode: modal windows (a-modal pattern used across admin) ── */
 html.dark .a-modal-backdrop {
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, var(--modal-overlay-opacity, 0.65));
 }
 html.dark .a-modal {
   background: #151517;

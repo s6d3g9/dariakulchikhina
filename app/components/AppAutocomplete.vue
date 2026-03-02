@@ -160,8 +160,8 @@ onMounted(() => { query.value = props.modelValue || '' })
   border-radius: var(--card-radius, 10px);
   padding: 4px;
   background: var(--glass-bg);
-  backdrop-filter: blur(18px) saturate(var(--glass-saturation, 145%));
-  -webkit-backdrop-filter: blur(18px) saturate(var(--glass-saturation, 145%));
+  backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  -webkit-backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
   border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
   box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.12));
 }

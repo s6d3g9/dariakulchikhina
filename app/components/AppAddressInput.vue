@@ -134,8 +134,8 @@ input { display: block; width: 100%; box-sizing: border-box; }
   border: 1px solid color-mix(in srgb, var(--glass-text, #1f1f1f) 10%, transparent);
   border-radius: var(--card-radius, 10px);
   box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.14));
-  backdrop-filter: blur(18px) saturate(145%);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(145%);
+  -webkit-backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(145%);
   padding: 4px 0;
   margin: 0;
   list-style: none;

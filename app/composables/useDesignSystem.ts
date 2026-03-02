@@ -92,6 +92,27 @@ export interface DesignTokens {
   /* ── Dark mode adjustments ── */
   darkElevation: number   // lighten surfaces 0..20
   darkSaturation: number  // desaturate 0..100
+
+  /* ── Input fields ── */
+  inputBgOpacity: number        // 0..0.25 — field background fill
+  inputBorderOpacity: number    // 0..0.4  — field border/ring
+
+  /* ── Chips / Tags ── */
+  chipBgOpacity: number         // 0..0.3  — tag background fill
+  chipBorderOpacity: number     // 0..0.4  — tag border
+  chipPaddingH: number          // px — horizontal padding
+  chipPaddingV: number          // px — vertical padding
+
+  /* ── Navigation sidebar ── */
+  navItemRadius: number         // px — nav-item border-radius
+
+  /* ── Status pills / pin bars ── */
+  statusBgOpacity: number       // 0..0.5  — base fill for all status badges
+  statusPillRadius: number      // px (999 = pill)
+
+  /* ── Popups and overlays ── */
+  modalOverlayOpacity: number   // 0..0.9  — backdrop darkness
+  dropdownBlur: number          // px — autocomplete/address dropdown blur
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -154,6 +175,22 @@ export const DEFAULT_TOKENS: DesignTokens = {
 
   darkElevation: 6,
   darkSaturation: 50,
+
+  inputBgOpacity: 0.05,
+  inputBorderOpacity: 0.00,
+
+  chipBgOpacity: 0.07,
+  chipBorderOpacity: 0.00,
+  chipPaddingH: 9,
+  chipPaddingV: 3,
+
+  navItemRadius: 9,
+
+  statusBgOpacity: 0.09,
+  statusPillRadius: 999,
+
+  modalOverlayOpacity: 0.35,
+  dropdownBlur: 18,
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -702,6 +739,48 @@ export function useDesignSystem() {
     el.style.setProperty('--ds-dark-text', `hsl(220, ${(dkSat * 0.15).toFixed(1)}%, 90%)`)
     el.style.setProperty('--ds-dark-text-muted', `hsl(220, ${(dkSat * 0.1).toFixed(1)}%, 65%)`)
     el.style.setProperty('--ds-dark-border', `hsl(220, ${(dkSat * 0.2).toFixed(1)}%, ${(14 + dkElev * 0.6).toFixed(1)}%)`)
+
+    // Input fields
+    const inputBgPct = Math.round(t.inputBgOpacity * 100)
+    const inputFocusPct = Math.min(18, Math.round(t.inputBgOpacity * 1.8 * 100))
+    const inputBorderPct = Math.round(t.inputBorderOpacity * 100)
+    el.style.setProperty('--input-bg', `color-mix(in srgb, var(--glass-text) ${inputBgPct}%, transparent)`)
+    el.style.setProperty('--input-bg-focus', `color-mix(in srgb, var(--glass-text) ${inputFocusPct}%, transparent)`)
+    el.style.setProperty('--input-border-color', t.inputBorderOpacity > 0.005
+      ? `color-mix(in srgb, var(--glass-text) ${inputBorderPct}%, transparent)`
+      : 'transparent')
+
+    // Chips / Tags
+    const chipBgPct = Math.round(t.chipBgOpacity * 100)
+    const chipBorderPct = Math.round(t.chipBorderOpacity * 100)
+    el.style.setProperty('--chip-bg', `color-mix(in srgb, var(--glass-text) ${chipBgPct}%, transparent)`)
+    el.style.setProperty('--chip-border-color', t.chipBorderOpacity > 0.005
+      ? `color-mix(in srgb, var(--glass-text) ${chipBorderPct}%, transparent)`
+      : 'transparent')
+    el.style.setProperty('--chip-padding-h', `${t.chipPaddingH}px`)
+    el.style.setProperty('--chip-padding-v', `${t.chipPaddingV}px`)
+
+    // Navigation
+    el.style.setProperty('--nav-item-radius', `${t.navItemRadius}px`)
+
+    // Status pills / pin bars
+    const sBg = t.statusBgOpacity
+    el.style.setProperty('--status-pill-radius', `${t.statusPillRadius}px`)
+    el.style.setProperty('--rm-bg-pending',   `color-mix(in srgb, var(--glass-text) ${Math.round(sBg * 100)}%, transparent)`)
+    el.style.setProperty('--rm-bg-progress',  `color-mix(in srgb, var(--ds-warning) ${Math.round(sBg * 155)}%, transparent)`)
+    el.style.setProperty('--rm-bg-done',      `color-mix(in srgb, var(--ds-success) ${Math.round(sBg * 122)}%, transparent)`)
+    el.style.setProperty('--rm-bg-skipped',   `color-mix(in srgb, var(--glass-text) ${Math.round(sBg * 55)}%, transparent)`)
+    el.style.setProperty('--ws-bg-pending',   `color-mix(in srgb, var(--glass-text) ${Math.round(sBg * 100)}%, transparent)`)
+    el.style.setProperty('--ws-bg-planned',   `color-mix(in srgb, var(--ds-accent) ${Math.round(sBg * 133)}%, transparent)`)
+    el.style.setProperty('--ws-bg-progress',  `color-mix(in srgb, var(--ds-warning) ${Math.round(sBg * 155)}%, transparent)`)
+    el.style.setProperty('--ws-bg-done',      `color-mix(in srgb, var(--ds-success) ${Math.round(sBg * 122)}%, transparent)`)
+    el.style.setProperty('--ws-bg-paused',    `color-mix(in srgb, var(--ds-accent) ${Math.round(sBg * 110)}%, transparent)`)
+    el.style.setProperty('--ws-bg-cancelled', `color-mix(in srgb, var(--ds-error) ${Math.round(sBg * 133)}%, transparent)`)
+    el.style.setProperty('--ws-bg-skipped',   `color-mix(in srgb, var(--glass-text) ${Math.round(sBg * 55)}%, transparent)`)
+
+    // Modal overlay / Dropdowns
+    el.style.setProperty('--modal-overlay-opacity', String(t.modalOverlayOpacity))
+    el.style.setProperty('--dropdown-blur', `${t.dropdownBlur}px`)
 
     // Re-apply UI theme's CSS vars on top (they set --btn-bg-base, --glass-* etc.
     // which must persist after applyToDOM sets --btn-bg = var(--btn-bg-base))
