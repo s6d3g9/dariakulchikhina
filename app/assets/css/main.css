@@ -151,6 +151,32 @@ html.dark {
 body {
   background: var(--glass-page-bg);
   color: var(--glass-text);
+  /* ── Typography tokens ── */
+  font-family: var(--ds-font-family);
+  font-size: var(--ds-font-size);
+  font-weight: var(--ds-font-weight);
+  line-height: var(--ds-line-height);
+  letter-spacing: var(--ds-letter-spacing);
+}
+
+/* ── Heading type scale ─────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--ds-font-family);
+  font-weight: var(--ds-heading-weight);
+  line-height: 1.25;
+  margin-bottom: var(--ds-paragraph-spacing);
+  letter-spacing: var(--ds-letter-spacing);
+}
+h1 { font-size: var(--ds-text-3xl); }
+h2 { font-size: var(--ds-text-2xl); }
+h3 { font-size: var(--ds-text-xl); }
+h4 { font-size: var(--ds-text-lg); }
+h5, h6 { font-size: var(--ds-text-base); }
+p { margin-bottom: var(--ds-paragraph-spacing); }
+
+/* ── All form elements inherit font ── */
+input, textarea, select, button {
+  font-family: var(--ds-font-family);
 }
 
 html,
@@ -193,7 +219,7 @@ html.dark .glass-page::before {
   box-shadow: var(--ds-shadow, var(--glass-shadow));
   -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
   backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
-  transition: box-shadow var(--ds-transition, 180ms ease), border-radius var(--ds-transition, 180ms ease);
+  transition: box-shadow var(--ds-transition, 180ms ease), border-radius var(--ds-transition, 180ms ease), backdrop-filter var(--ds-transition, 180ms ease);
 }
 
 .glass-card {
@@ -222,6 +248,8 @@ html.dark .glass-card {
   -webkit-backdrop-filter: blur(10px) saturate(130%);
   backdrop-filter: blur(10px) saturate(130%);
   transition: border-color var(--ds-transition, 180ms ease);
+  font-family: var(--ds-font-family);
+  font-size: var(--ds-text-sm, .833rem);
 }
 
 .glass-input::placeholder {
@@ -250,11 +278,12 @@ html.dark .glass-input::placeholder {
 /* ── Unified cabinet/menu primitives (0.2 briefing style) ── */
 .std-sidenav {
   border: none;
-  border-radius: 14px;
+  border-radius: var(--card-radius, 14px);
   background: var(--glass-bg);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--ds-shadow, var(--glass-shadow));
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   backdrop-filter: blur(16px) saturate(140%);
+  transition: box-shadow var(--ds-transition, 180ms ease), border-radius var(--ds-transition, 180ms ease);
 }
 
 .std-nav {
@@ -264,8 +293,8 @@ html.dark .glass-input::placeholder {
 }
 
 .std-nav-group-label {
-  font-size: .64rem;
-  font-weight: 600;
+  font-size: var(--ds-text-xs, .64rem);
+  font-weight: var(--ds-heading-weight, 600);
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--glass-text);
@@ -282,15 +311,16 @@ html.dark .glass-input::placeholder {
   border: none;
   text-decoration: none;
   text-align: left;
-  padding: 9px 10px;
-  border-radius: 9px;
+  padding: calc(var(--ds-space-2, 8px) + 1px) calc(var(--ds-space-2, 8px) + 2px);
+  border-radius: calc(var(--btn-radius, 3px) + 6px);
   background: transparent;
   color: var(--glass-text);
-  font-size: .8rem;
-  letter-spacing: .2px;
+  font-family: var(--ds-font-family);
+  font-size: var(--ds-text-sm, .8rem);
+  letter-spacing: var(--ds-letter-spacing, .2px);
   opacity: .64;
   cursor: pointer;
-  transition: opacity .15s ease, background .15s ease;
+  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
 }
 
 .std-nav-item:hover {
@@ -331,7 +361,7 @@ html.dark .glass-input::placeholder {
   gap: 6px;
   background: var(--btn-bg);
   color: var(--btn-color);
-  border: 1px solid var(--btn-border);
+  border: var(--ds-border-width, 1px) var(--ds-border-style, solid) var(--btn-border);
   border-radius: var(--btn-radius);
   padding: var(--btn-py, 9px) var(--btn-px, 22px);
   font-size: var(--btn-font-size, .8rem);
@@ -339,7 +369,7 @@ html.dark .glass-input::placeholder {
   text-transform: var(--btn-transform);
   cursor: pointer;
   font-family: var(--ds-font-family, inherit);
-  transition: opacity .18s, background .18s;
+  transition: opacity var(--ds-transition, 180ms ease), background var(--ds-transition, 180ms ease);
 }
 .a-btn-save:hover   { opacity: .72; }
 .a-btn-save:active  { opacity: .55; }
@@ -351,7 +381,7 @@ html.dark .glass-input::placeholder {
   gap: 5px;
   background: var(--btn-sm-bg);
   color: var(--btn-color);
-  border: 1px solid var(--btn-sm-border);
+  border: var(--ds-border-width, 1px) var(--ds-border-style, solid) var(--btn-sm-border);
   border-radius: var(--btn-radius);
   padding: calc(var(--btn-py, 5px) * 0.6) calc(var(--btn-px, 12px) * 0.6);
   font-size: calc(var(--btn-font-size, .76rem) * 0.95);
@@ -360,7 +390,7 @@ html.dark .glass-input::placeholder {
   cursor: pointer;
   font-family: var(--ds-font-family, inherit);
   opacity: .68;
-  transition: opacity .18s, background .18s;
+  transition: opacity var(--ds-transition, 180ms ease), background var(--ds-transition, 180ms ease);
 }
 .a-btn-sm:hover  { opacity: .95; background: color-mix(in srgb, var(--btn-sm-border) 40%, transparent); }
 .a-btn-sm:active { opacity: 1; }

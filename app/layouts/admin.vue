@@ -251,7 +251,10 @@ async function logout() {
   min-height: 100vh;
   padding-top: calc(28px + var(--dp-panel-h, 0px));
   transition: padding-top .2s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--ds-font-family);
+  font-size: var(--ds-font-size);
+  font-weight: var(--ds-font-weight);
+  line-height: var(--ds-line-height);
 }
 
 /* ── Header ── */
@@ -260,7 +263,7 @@ async function logout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 var(--card-radius) var(--card-radius);
 }
 .admin-brand {
   font-size: .68rem;
@@ -307,13 +310,14 @@ async function logout() {
   box-sizing: border-box;
   text-decoration: none;
   color: var(--glass-text);
-  font-size: .78rem;
+  font-family: var(--ds-font-family);
+  font-size: var(--ds-text-sm, .78rem);
   line-height: 1;
-  letter-spacing: .2px;
+  letter-spacing: var(--ds-letter-spacing);
   opacity: .62;
   border-radius: 999px;
   white-space: nowrap;
-  transition: opacity .15s, background .15s;
+  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
 }
 .admin-tab:hover  { opacity: .9; }
 .admin-tab--active { opacity: 1; font-weight: 600; }
@@ -336,14 +340,14 @@ async function logout() {
   background: var(--glass-bg);
   color: var(--glass-text);
   font-size: .6rem;
-  font-weight: 700;
+  font-weight: var(--ds-heading-weight, 700);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   flex-shrink: 0;
-  transition: opacity .15s, background .15s;
+  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
 }
 .admin-mini-chip--dim {
   background: transparent;
@@ -359,18 +363,20 @@ async function logout() {
   min-width: 240px;
   max-height: 320px;
   overflow: auto;
-  border-radius: 12px;
+  border-radius: var(--card-radius, 12px);
   border: 1px solid var(--glass-border);
   padding: 6px;
   z-index: 80;
-  box-shadow: 0 8px 32px rgba(0,0,0,.10);
+  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.10));
+  transition: box-shadow var(--ds-transition, 180ms ease);
 }
 .admin-drop-item {
   width: 100%; border: none; background: transparent;
-  color: var(--glass-text); border-radius: 8px;
+  color: var(--glass-text); border-radius: calc(var(--card-radius, 12px) * 0.65);
   display: flex; align-items: center; gap: 8px;
   padding: 8px; text-align: left; cursor: pointer;
-  font-family: inherit; font-size: .76rem;
+  font-family: var(--ds-font-family); font-size: var(--ds-text-sm, .76rem);
+  transition: background var(--ds-transition, 150ms ease);
 }
 .admin-drop-item:hover { background: color-mix(in srgb, var(--glass-bg) 85%, transparent); }
 .admin-drop-item--active { background: color-mix(in srgb, var(--glass-bg) 94%, transparent); font-weight: 600; }
