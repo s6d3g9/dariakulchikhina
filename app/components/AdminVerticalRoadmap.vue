@@ -137,10 +137,10 @@ watch(lastSaved, loadStatuses)
   /* Spine: 1 px line on the RIGHT edge */
   background:
     linear-gradient(
-      color-mix(in srgb, var(--glass-text) 14%, transparent),
-      color-mix(in srgb, var(--glass-text) 14%, transparent)
+      color-mix(in srgb, var(--glass-text) 22%, transparent),
+      color-mix(in srgb, var(--glass-text) 22%, transparent)
     )
-    right 0 top 14px / 1px calc(100% - 36px) no-repeat;
+    right 0 top 14px / 2px calc(100% - 36px) no-repeat;
 }
 
 /* ── Phase group ── */
