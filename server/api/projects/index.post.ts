@@ -25,9 +25,6 @@ const CORE_PAGES = [
   'punch_list',
   'commissioning_act',
   'client_sign_off',
-  'profile_contractors',
-  'work_status',
-  'project_roadmap',
 ]
 
 export default defineEventHandler(async (event) => {

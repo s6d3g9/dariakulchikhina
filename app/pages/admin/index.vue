@@ -170,9 +170,6 @@ const CORE_PAGE_LABELS: Record<string, string> = {
   materials: 'материалы',
   tz: 'ТЗ',
   profile_customer: 'профиль клиента',
-  profile_contractors: 'подрядчики',
-  work_status: 'статус работ',
-  project_roadmap: 'роадмап',
 }
 const corePageLabels = Object.values(CORE_PAGE_LABELS)
 
