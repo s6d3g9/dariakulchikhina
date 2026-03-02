@@ -81,24 +81,16 @@
               карта
               <span v-if="form.meeting_map_address" style="font-weight:400;color:#444;font-size:.8rem;margin-left:6px">{{ form.meeting_map_address }}</span>
             </label>
-            <div v-if="hasYandexApiKey" ref="mapEl" class="afc-map"></div>
             <iframe
-              v-else
               class="afc-map"
               style="border:0"
               :src="fallbackMapSrc"
               loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
-              title="Карта (упрощённый режим)"
+              title="Карта"
             />
-            <div v-if="mapError" class="afc-map-error">{{ mapError }}</div>
-            <div v-if="hasYandexApiKey" style="display:flex;gap:8px;align-items:center;margin-top:6px">
-              <input v-model="mapSearch" class="afc-inp" placeholder="поиск адреса..." style="flex:1" @keydown.enter.prevent="searchAddress">
-              <button type="button" class="afc-map-btn" @click="searchAddress">найти</button>
-              <button v-if="form.meeting_map_lat" type="button" class="afc-map-btn afc-map-btn--clear" @click="clearPin">✕ сбросить</button>
-            </div>
-            <div v-else class="afc-map-error" style="margin-top:6px">
-              Упрощённый режим карты (без пина). Для интерактивной карты добавьте `YANDEX_MAPS_API_KEY`.
+            <div class="afc-map-error" style="margin-top:6px">
+              Упрощённая карта без API-ключа.
             </div>
           </div>
           <div class="afc-row afc-row--full">
@@ -183,144 +175,12 @@ async function save() {
   markSaved()
 }
 
-// ── Yandex Maps ──────────────────────────────────────
-const mapEl = ref<HTMLElement | null>(null)
-const mapSearch = ref('')
-const mapError = ref('')
-const runtimeConfig = useRuntimeConfig()
-const hasYandexApiKey = computed(() => String(runtimeConfig.public?.yandexMapsApiKey || '').trim().length > 0)
-let ymap: any = null
-let placemark: any = null
+// ── Map (simple iframe mode) ─────────────────────────
 
 const fallbackMapSrc = computed(() => {
   const lat = typeof form.meeting_map_lat === 'number' ? form.meeting_map_lat : 55.751574
   const lng = typeof form.meeting_map_lng === 'number' ? form.meeting_map_lng : 37.573856
   return `https://yandex.ru/map-widget/v1/?ll=${lng}%2C${lat}&z=${form.meeting_map_lat ? 15 : 10}`
-})
-
-function getYandexScriptSrc() {
-  const key = String(runtimeConfig.public?.yandexMapsApiKey || '').trim()
-  const base = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
-  return key ? `${base}&apikey=${encodeURIComponent(key)}` : base
-}
-
-async function initMap() {
-  if (!mapEl.value) return
-  mapError.value = ''
-  try {
-    const key = String(runtimeConfig.public?.yandexMapsApiKey || '').trim()
-    if (!key) {
-      mapError.value = 'Не задан YANDEX_MAPS_API_KEY (Nuxt runtimeConfig.public).'
-      return
-    }
-
-    if (!(window as any).ymaps) {
-      await new Promise<void>((resolve, reject) => {
-        const existing = document.querySelector<HTMLScriptElement>('script[data-ymaps="1"]')
-        if (existing) {
-          existing.addEventListener('load', () => {
-            if ((window as any).ymaps) (window as any).ymaps.ready(resolve)
-            else reject(new Error('ymaps not available'))
-          }, { once: true })
-          existing.addEventListener('error', () => reject(new Error('Script failed to load')), { once: true })
-          return
-        }
-
-        const s = document.createElement('script')
-        s.src = getYandexScriptSrc()
-        s.setAttribute('data-ymaps', '1')
-        s.onload = () => {
-          if ((window as any).ymaps) {
-            (window as any).ymaps.ready(resolve)
-          } else {
-            reject(new Error('ymaps not available'))
-          }
-        }
-        s.onerror = () => reject(new Error('Script failed to load'))
-        document.head.appendChild(s)
-      })
-    } else {
-      await new Promise<void>(r => (window as any).ymaps.ready(r))
-    }
-    const ymaps = (window as any).ymaps
-    const center = form.meeting_map_lat
-      ? [form.meeting_map_lat, form.meeting_map_lng]
-      : [55.751574, 37.573856]
-    ymap = new ymaps.Map(mapEl.value, {
-      center,
-      zoom: form.meeting_map_lat ? 15 : 10,
-      controls: ['zoomControl', 'geolocationControl'],
-    })
-    if (form.meeting_map_lat) {
-      placemark = new ymaps.Placemark([form.meeting_map_lat, form.meeting_map_lng], {}, { preset: 'islands#violetDotIcon' })
-      ymap.geoObjects.add(placemark)
-    }
-    ymap.events.add('click', async (e: any) => {
-      const coords = e.get('coords')
-      setPin(coords)
-      try {
-        const res = await ymaps.geocode(coords, { results: 1 })
-        const obj = res.geoObjects.get(0)
-        form.meeting_map_address = obj ? obj.getAddressLine() : `${coords[0].toFixed(5)}, ${coords[1].toFixed(5)}`
-      } catch {
-        form.meeting_map_address = `${coords[0].toFixed(5)}, ${coords[1].toFixed(5)}`
-      }
-      save()
-    })
-  } catch (err: any) {
-    mapError.value = `Не удалось загрузить карту: ${err?.message || 'unknown error'}`
-  }
-}
-
-function setPin(coords: [number, number]) {
-  const ymaps = (window as any).ymaps
-  if (placemark) ymap.geoObjects.remove(placemark)
-  placemark = new ymaps.Placemark(coords, {}, { preset: 'islands#violetDotIcon', draggable: true })
-  placemark.events.add('dragend', async () => {
-    const c = placemark.geometry.getCoordinates()
-    form.meeting_map_lat = c[0]
-    form.meeting_map_lng = c[1]
-    const res = await ymaps.geocode(c, { results: 1 })
-    const obj = res.geoObjects.get(0)
-    form.meeting_map_address = obj ? obj.getAddressLine() : `${c[0].toFixed(5)}, ${c[1].toFixed(5)}`
-    save()
-  })
-  ymap.geoObjects.add(placemark)
-  form.meeting_map_lat = coords[0]
-  form.meeting_map_lng = coords[1]
-}
-
-async function searchAddress() {
-  if (!mapSearch.value.trim()) return
-  const ymaps = (window as any).ymaps
-  try {
-    const res = await ymaps.geocode(mapSearch.value, { results: 1 })
-    const obj = res.geoObjects.get(0)
-    if (!obj) { mapError.value = 'Адрес не найден'; return }
-    mapError.value = ''
-    const coords = obj.geometry.getCoordinates()
-    form.meeting_map_address = obj.getAddressLine()
-    setPin(coords)
-    save()
-  } catch (err: any) {
-    mapError.value = 'Ошибка поиска адреса'
-  }
-}
-
-function clearPin() {
-  if (placemark) { ymap.geoObjects.remove(placemark); placemark = null }
-  form.meeting_map_lat = null
-  form.meeting_map_lng = null
-  form.meeting_map_address = ''
-  save()
-}
-
-onMounted(() => {
-  nextTick(() => {
-    if (hasYandexApiKey.value && mapEl.value) {
-      initMap()
-    }
-  })
 })
 
 // ── Step completion ──────────────────────────────────────
