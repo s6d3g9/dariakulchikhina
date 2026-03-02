@@ -1,40 +1,43 @@
 <template>
   <div class="avr-root">
-    <div class="avr-timeline">
-      <template v-for="(phase, pi) in PHASE_GROUPS" :key="phase.key">
-        <!-- Phase separator node -->
-        <div
-          class="avr-phase-node"
-          :class="{ 'avr-phase-node--done': phaseDone(phase.key), 'avr-phase-node--first': pi === 0 }"
-          :title="phase.name"
+    <div
+      v-for="phase in PHASE_GROUPS"
+      :key="phase.key"
+      class="avr-phase"
+    >
+      <!-- ── Phase header — same height as .proj-sidenav-group-label ── -->
+      <div
+        class="avr-phase-hd"
+        :class="{ 'avr-phase-hd--done': phaseDone(phase.key) }"
+        :title="phase.name"
+      >
+        <span class="avr-badge">{{ phase.num }}</span>
+      </div>
+
+      <!-- ── Items — same height as .proj-sidenav-item ── -->
+      <div
+        v-for="pg in phase.pages"
+        :key="pg.slug"
+        class="avr-item"
+        :class="{
+          'avr-item--active': activePage === pg.slug,
+          [`avr-item--${statusOf(pg.slug)}`]: true,
+        }"
+        :title="pg.title"
+        @click="emit('navigate', pg.slug)"
+      >
+        <button
+          class="avr-dot"
+          :class="`avr-dot--${statusOf(pg.slug)}`"
+          :disabled="saving[pg.slug]"
+          @click.stop="toggleDone(pg)"
         >
-          <span class="avr-phase-n">{{ phase.num }}</span>
-        </div>
-        <!-- Items -->
-        <div
-          v-for="pg in phase.pages"
-          :key="pg.slug"
-          class="avr-item"
-          :class="{
-            'avr-item--active': activePage === pg.slug,
-            [`avr-item--${statusOf(pg.slug)}`]: true,
-          }"
-          :title="pg.title"
-          @click="emit('navigate', pg.slug)"
-        >
-          <button
-            class="avr-dot"
-            :class="`avr-dot--${statusOf(pg.slug)}`"
-            :disabled="saving[pg.slug]"
-            @click.stop="toggleDone(pg)"
-          >
-            <svg v-if="statusOf(pg.slug) === 'done'" viewBox="0 0 10 10" fill="none" width="8" height="8">
-              <path d="M2 5l2.5 2.5 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span v-else-if="statusOf(pg.slug) === 'in_progress'" class="avr-pip" />
-          </button>
-        </div>
-      </template>
+          <svg v-if="statusOf(pg.slug) === 'done'" viewBox="0 0 8 8" fill="none" width="7" height="7">
+            <path d="M1.5 4l2 2 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span v-else-if="statusOf(pg.slug) === 'in_progress'" class="avr-pip" />
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -119,122 +122,142 @@ watch(lastSaved, loadStatuses)
 </script>
 
 <style scoped>
-/* ── Container ── */
+/* ── Root — sticky, matches sidenav positioning ── */
 .avr-root {
-  width: 40px;
+  width: 36px;
   flex-shrink: 0;
-  overflow-y: auto;
-  max-height: calc(100vh - 180px);
-  scrollbar-width: none;
   position: sticky;
   top: 80px;
   align-self: flex-start;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  /* match .proj-sidenav padding-top: 10px; no horizontal padding */
+  padding-top: 10px;
   padding-bottom: 24px;
+  margin-right: 4px;
+  /* vertical progress line */
+  background:
+    linear-gradient(
+      color-mix(in srgb, var(--glass-text) 10%, transparent),
+      color-mix(in srgb, var(--glass-text) 10%, transparent)
+    )
+    center 17px / 1px calc(100% - 41px) no-repeat;
 }
 .avr-root::-webkit-scrollbar { display: none; }
 
-/* ── Timeline track ── */
-.avr-timeline {
+/* ── Phase group — same outer rhythm as .proj-sidenav-group ── */
+.avr-phase {
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;
+  /* match .proj-sidenav-group: margin-bottom: 18px */
+  margin-bottom: 18px;
 }
-/* Continuous vertical background line */
-.avr-timeline::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 14px;   /* start at center of first phase node */
-  bottom: 17px;/* end at center of last item dot */
-  width: 2px;
-  transform: translateX(-50%);
-  background: color-mix(in srgb, var(--glass-text) 13%, transparent);
-  border-radius: 1px;
-  z-index: 0;
-}
+.avr-phase:last-child { margin-bottom: 0; }
 
-/* ── Phase separator node ── */
-.avr-phase-node {
-  position: relative;
-  z-index: 1;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--glass-bg, #1a1a2e);
-  border: 1.5px solid color-mix(in srgb, var(--glass-text) 22%, transparent);
+/* ── Phase header — mirrors .proj-sidenav-group-label height ──
+   font-size: .62rem, line-height ~1.4 → ~14px,
+   margin-bottom: 6px (same) ── */
+.avr-phase-hd {
+  height: 14px;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* match sidenav group-label total height (~28px with margins) */
-  margin: 8px 0 3px;
-  flex-shrink: 0;
-  transition: border-color .2s;
-}
-.avr-phase-node--first { margin-top: 10px; } /* match sidenav container top: 10px padding */
-.avr-phase-node--done {
-  border-color: rgba(16,185,129,.55);
-  background: color-mix(in srgb, rgba(16,185,129,.15) 100%, var(--glass-bg));
-}
-.avr-phase-n {
-  font-size: .5rem;
-  font-weight: 700;
-  color: var(--glass-text);
-  opacity: .6;
-  line-height: 1;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* ── Item row (matches sidenav-item height ~35px) ── */
-.avr-item {
   position: relative;
   z-index: 1;
-  width: 40px;
+  width: 100%;
+}
+
+/* Phase number badge — sits over the line */
+.avr-badge {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  /* cover the line with bg */
+  background: var(--glass-bg, #12121a);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  font-size: .46rem;
+  font-weight: 700;
+  color: var(--glass-text);
+  opacity: .45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  user-select: none;
+  transition: opacity .15s, border-color .15s;
+}
+.avr-phase-hd--done .avr-badge {
+  opacity: .8;
+  border-color: color-mix(in srgb, var(--glass-text) 40%, transparent);
+}
+
+/* ── Item row — exact height of .proj-sidenav-item ──
+   padding: 9px 10px → 18px + font 0.8rem*1.3 ≈ 16.6px = 34.6px → 35px ── */
+.avr-item {
   height: 35px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
-/* ── Dot button ── */
+/* ── Dot — monochrome only ── */
 .avr-dot {
-  position: relative;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 1.5px solid color-mix(in srgb, var(--glass-text) 22%, transparent);
-  background: var(--glass-bg, #1a1a2e);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
+  /* bg covers the line */
+  background: var(--glass-bg, #12121a);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: background .13s, border-color .13s, transform .12s;
+  transition: border-color .12s, background .12s, transform .1s;
 }
-.avr-dot:hover        { transform: scale(1.35); }
-.avr-dot:disabled     { opacity: .4; cursor: default; transform: none !important; }
+.avr-dot:hover {
+  border-color: color-mix(in srgb, var(--glass-text) 42%, transparent);
+  transform: scale(1.35);
+}
+.avr-dot:disabled { opacity: .25; cursor: default; transform: none !important; }
 
-.avr-dot--done        { background: rgba(16,185,129,.22); border-color: rgba(16,185,129,.65); }
-.avr-dot--in_progress { background: rgba(245,158,11,.18); border-color: rgba(245,158,11,.7); }
+/* done — filled */
+.avr-dot--done {
+  background: color-mix(in srgb, var(--glass-text) 22%, var(--glass-bg, #12121a));
+  border-color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+}
+/* in_progress — visible ring, inner pip */
+.avr-dot--in_progress {
+  border-color: color-mix(in srgb, var(--glass-text) 35%, transparent);
+}
 
-/* Active item dot: slightly larger ring */
+/* Active current page */
 .avr-item--active .avr-dot {
-  transform: scale(1.3);
-  border-color: color-mix(in srgb, var(--glass-text) 55%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 62%, transparent);
+  box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--glass-text) 8%, transparent);
+  transform: scale(1.15);
 }
-.avr-item--active .avr-dot:hover { transform: scale(1.45); }
+.avr-item--active .avr-dot:hover { transform: scale(1.4); }
 
+/* In-progress pip */
 .avr-pip {
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
-  background: #f59e0b;
+  background: var(--glass-text);
+  opacity: .55;
   display: block;
   flex-shrink: 0;
 }
+
+/* Done checkmark inherits text color */
+.avr-dot--done svg { color: var(--glass-text); opacity: .65; }
 </style>
