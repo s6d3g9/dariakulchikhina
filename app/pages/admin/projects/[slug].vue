@@ -74,7 +74,17 @@
         @update:status="projectStatus = $event"
       />
 
-      <div class="proj-layout">
+      <div class="proj-content-area">
+
+        <!-- Vertical roadmap — admin mode only -->
+        <AdminVerticalRoadmap
+          v-if="!clientPreviewMode && !contractorPreviewMode"
+          :slug="route.params.slug as string"
+          :active-page="activePage"
+          @navigate="selectAdminPage"
+        />
+
+        <div class="proj-layout">
 
         <!-- Left sidebar: vertical nav -->
         <nav class="proj-sidenav std-sidenav">
@@ -175,6 +185,7 @@
               />
             </div>
           </Transition>
+        </div>
         </div>
       </div>
     </template>
@@ -685,7 +696,8 @@ async function linkClientToProject() {
 .proj-client-success { margin: 8px 0 0; color: #5caa7f; font-size: .78rem; }
 
 /* ── Layout ── */
-.proj-layout { display: flex; align-items: flex-start; gap: 0; }
+.proj-content-area { display: flex; align-items: flex-start; gap: 0; }
+.proj-layout { display: flex; align-items: flex-start; gap: 0; flex: 1; min-width: 0; }
 
 /* ── Left sidebar nav ── */
 .proj-sidenav {
