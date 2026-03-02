@@ -249,7 +249,8 @@ async function logout() {
 /* ── Page ── */
 .admin-bg {
   min-height: 100vh;
-  padding-top: 28px; /* space for design topbar */
+  padding-top: calc(28px + var(--dp-panel-h, 0px));
+  transition: padding-top .2s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 

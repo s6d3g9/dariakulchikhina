@@ -12,9 +12,14 @@
         <span class="dp-trigger-label">дизайн</span>
       </button>
       <span class="dp-topbar-sep" />
-      <button type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': inspectMode }" @click="toggleInspect" title="Инспектор">
+      <button type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': inspectMode }" @click="toggleInspect" title="CSS-инспектор">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 2l4.5 10 1.5-3.5L11.5 7z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8l3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-        <span>инспектор</span>
+        <span>css</span>
+      </button>
+      <span class="dp-topbar-sep" />
+      <button type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': compMode }" @click="toggleComp" title="Компонентный инспектор — имя компонента и путь к файлу">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M4 5l-2.5 2L4 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 5l2.5 2L10 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3l-2 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span>компоненты</span>
       </button>
       <span class="dp-topbar-sep" />
       <button type="button" class="dp-topbar-btn" :disabled="!canUndo" @click="undo" title="Отменить">
@@ -33,7 +38,7 @@
     <Teleport to="body">
       <Transition name="dp-slide">
         <div v-if="open" class="dp-overlay" @click.self="open = false">
-          <div class="dp-panel" @click.stop>
+          <div class="dp-panel" ref="panelEl" @click.stop>
 
             <!-- ── Top row: tabs + actions ── -->
             <div class="dp-panel-toprow">
@@ -536,6 +541,37 @@
         </Transition>
       </div>
     </Teleport>
+
+    <!-- ═══ Component Inspector ═══ -->
+    <Teleport to="body">
+      <div v-if="compMode" class="dp-comp-layer">
+        <!-- Following hover tooltip (no pointer-events) -->
+        <div
+          v-if="compHover.visible && !compResult"
+          class="dp-comp-tooltip"
+          :style="compTooltipStyle"
+        >
+          <span class="dp-comp-tag">{{ compHover.name }}</span>
+          <span class="dp-comp-hint">↵ click to lock</span>
+        </div>
+        <!-- Locked result card (pointer-events: auto) -->
+        <Transition name="dp-fade">
+          <div v-if="compResult" class="dp-comp-result" :style="compResultStyle">
+            <div class="dp-comp-result-header">
+              <span class="dp-comp-result-label">Vue компонент</span>
+              <button type="button" class="dp-comp-close" @click="compResult = null">✕</button>
+            </div>
+            <div class="dp-comp-result-name">{{ compResult.name }}</div>
+            <div class="dp-comp-result-path">{{ compResult.path }}</div>
+            <button type="button" class="dp-comp-copy-btn" @click="copyCompResult">
+              <svg v-if="!compResult.copied" width="11" height="11" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg v-else width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              {{ compResult.copied ? '✓ скопировано!' : 'копировать' }}
+            </button>
+          </div>
+        </Transition>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -1003,8 +1039,114 @@ function disableInspect() {
   document.body.style.cursor = ''
 }
 
+/* ══════════════════════════════════════════════════════
+   PUSH MODE — ResizeObserver sets --dp-panel-h on :root
+   ══════════════════════════════════════════════════════ */
+const panelEl = ref<HTMLElement | null>(null)
+let panelRO: ResizeObserver | null = null
+
+watch(open, (v) => {
+  if (v) {
+    nextTick(() => {
+      if (panelEl.value) {
+        panelRO = new ResizeObserver(([entry]) => {
+          document.documentElement.style.setProperty('--dp-panel-h', entry.contentRect.height + 'px')
+        })
+        panelRO.observe(panelEl.value)
+      }
+    })
+  } else {
+    panelRO?.disconnect()
+    panelRO = null
+    document.documentElement.style.setProperty('--dp-panel-h', '0px')
+  }
+})
+
+/* ══════════════════════════════════════════════════════
+   COMPONENT INSPECTOR — hover shows Vue component + path
+   ══════════════════════════════════════════════════════ */
+const compMode = ref(false)
+const compHover = reactive({ visible: false, x: 0, y: 0, name: '', path: '' })
+
+interface CompResult { name: string; path: string; copied: boolean; x: number; y: number }
+const compResult = ref<CompResult | null>(null)
+
+const compTooltipStyle = computed(() => {
+  const ox = compHover.x + 18
+  const overflow = ox + 240 > window.innerWidth
+  return {
+    left: overflow ? `${compHover.x - 248}px` : `${ox}px`,
+    top: `${Math.max(36, compHover.y - 14)}px`,
+  }
+})
+
+const compResultStyle = computed(() => {
+  if (!compResult.value) return {}
+  const cx = Math.min(compResult.value.x, window.innerWidth - 260)
+  const cy = Math.min(compResult.value.y + 20, window.innerHeight - 130)
+  return { left: `${Math.max(8, cx)}px`, top: `${cy}px` }
+})
+
+function getVueComponent(el: HTMLElement): { name: string; path: string } | null {
+  const skip = new Set(['Transition', 'TransitionGroup', 'KeepAlive', 'Suspense', 'Teleport', 'RouterView', 'NuxtLink', 'RouterLink'])
+  let node = (el as any).__vueParentComponent
+  while (node) {
+    const name: string = node.type?.__name || node.type?.name || ''
+    if (name && !skip.has(name) && name !== 'Anonymous' && name !== 'App') {
+      const path = `app/components/${name}.vue`
+      return { name, path }
+    }
+    node = node.parent
+  }
+  return null
+}
+
+function onCompMove(e: MouseEvent) {
+  if (compResult.value) return
+  const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+  if (!el || el.closest('.dp-comp-layer') || el.closest('.dp-topbar')) { compHover.visible = false; return }
+  const info = getVueComponent(el)
+  if (!info) { compHover.visible = false; return }
+  compHover.x = e.clientX; compHover.y = e.clientY
+  compHover.name = info.name; compHover.path = info.path
+  compHover.visible = true
+}
+
+function onCompClick(e: MouseEvent) {
+  const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+  if (!el || el.closest('.dp-comp-layer') || el.closest('.dp-topbar')) return
+  e.preventDefault(); e.stopPropagation()
+  const info = getVueComponent(el)
+  if (info) {
+    compResult.value = { ...info, copied: false, x: e.clientX, y: e.clientY }
+    compHover.visible = false
+  }
+}
+
+function copyCompResult() {
+  if (!compResult.value) return
+  navigator.clipboard.writeText(`${compResult.value.name}\n${compResult.value.path}`)
+  compResult.value.copied = true
+  setTimeout(() => { if (compResult.value) compResult.value.copied = false }, 2000)
+}
+
+function toggleComp() {
+  if (compMode.value) {
+    compMode.value = false; compHover.visible = false; compResult.value = null
+    document.removeEventListener('mousemove', onCompMove, true)
+    document.removeEventListener('click', onCompClick, true)
+    document.body.style.cursor = ''
+  } else {
+    compMode.value = true; compResult.value = null
+    document.addEventListener('mousemove', onCompMove, true)
+    document.addEventListener('click', onCompClick, true)
+    document.body.style.cursor = 'crosshair'
+  }
+}
+
 /* ── Keyboard ────────────────────────────────────── */
 function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && compMode.value) { toggleComp(); return }
   if (e.key === 'Escape' && inspectMode.value) { disableInspect(); return }
   if (e.key === 'Escape' && open.value) { open.value = false; return }
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && open.value) { e.preventDefault(); undo() }
@@ -1014,6 +1156,9 @@ onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey)
   if (inspectMode.value) disableInspect()
+  if (compMode.value) toggleComp()
+  panelRO?.disconnect()
+  document.documentElement.style.setProperty('--dp-panel-h', '0px')
 })
 </script>
 
@@ -1623,4 +1768,71 @@ onBeforeUnmount(() => {
   font-family: 'JetBrains Mono', monospace;
   max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* ══════════════════════════════════════════════════════
+   COMPONENT INSPECTOR STYLES
+   ══════════════════════════════════════════════════════ */
+.dp-comp-layer {
+  position: fixed; inset: 0; z-index: 10003;
+  pointer-events: none;
+}
+
+/* Hover tooltip (follows cursor) */
+.dp-comp-tooltip {
+  position: fixed; pointer-events: none;
+  background: hsl(230, 18%, 11%); color: #e0e4f0;
+  border-radius: 7px; padding: 6px 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.35), 0 0 0 1px hsla(220, 70%, 65%, .18);
+  font-size: .62rem; line-height: 1.4;
+  max-width: 300px; white-space: nowrap;
+  display: flex; align-items: center; gap: 10px;
+}
+.dp-comp-tag {
+  font-weight: 700; color: hsl(215, 85%, 72%); font-size: .66rem;
+}
+.dp-comp-hint {
+  font-size: .52rem; color: rgba(255,255,255,.3); letter-spacing: .04em;
+}
+
+/* Locked result card */
+.dp-comp-result {
+  position: fixed; z-index: 10004; pointer-events: auto;
+  width: 240px;
+  background: hsl(230, 18%, 11%); color: #e0e4f0;
+  border-radius: 10px; padding: 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4), 0 0 0 1px hsla(215, 80%, 65%, .18);
+  font-size: .62rem; overflow: hidden;
+}
+.dp-comp-result-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px 5px; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.dp-comp-result-label {
+  font-size: .5rem; text-transform: uppercase; letter-spacing: .12em;
+  color: rgba(255,255,255,.3); font-weight: 700;
+}
+.dp-comp-close {
+  background: none; border: none; color: rgba(255,255,255,.3);
+  cursor: pointer; font-size: .6rem; padding: 2px 4px; line-height: 1;
+}
+.dp-comp-close:hover { color: rgba(255,255,255,.7); }
+.dp-comp-result-name {
+  padding: 10px 12px 2px;
+  font-size: .78rem; font-weight: 700; color: hsl(215, 85%, 72%);
+  letter-spacing: .01em;
+}
+.dp-comp-result-path {
+  padding: 0 12px 10px;
+  font-size: .56rem; color: hsl(35, 70%, 65%);
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .01em;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.dp-comp-copy-btn {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding: 9px 12px; border: none; background: transparent;
+  color: rgba(255,255,255,.55); font-size: .62rem; cursor: pointer;
+  font-family: inherit; letter-spacing: .02em;
+  transition: background .1s, color .1s;
+}
+.dp-comp-copy-btn:hover { background: rgba(255,255,255,.06); color: #fff; }
 </style>
