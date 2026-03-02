@@ -30,15 +30,15 @@
           <div class="csp-fields">
             <div class="csp-field csp-field--full">
               <label>ФИО</label>
-              <input v-model="form.fio" type="text" placeholder="Иванова Мария Сергеевна">
+              <input class="glass-input" v-model="form.fio" type="text" placeholder="Иванова Мария Сергеевна">
             </div>
             <div class="csp-field">
               <label>Телефон</label>
-              <input v-model="form.phone" type="tel" placeholder="+7 900 000 00 00">
+              <input class="glass-input" v-model="form.phone" type="tel" placeholder="+7 900 000 00 00">
             </div>
             <div class="csp-field">
               <label>Email</label>
-              <input v-model="form.email" type="email" placeholder="email@example.com">
+              <input class="glass-input" v-model="form.email" type="email" placeholder="email@example.com">
             </div>
             <div class="csp-field csp-field--full">
               <label>Мессенджер</label>
@@ -50,7 +50,7 @@
             </div>
             <div class="csp-field">
               <label>Ник / номер в мессенджере</label>
-              <input v-model="form.messengerNick" type="text" placeholder="@username">
+              <input class="glass-input" v-model="form.messengerNick" type="text" placeholder="@username">
             </div>
             <div class="csp-field csp-field--full">
               <label>Удобный способ связи</label>
@@ -83,19 +83,19 @@
             </div>
             <div class="csp-field">
               <label>Площадь (м²)</label>
-              <input v-model="form.objectArea" type="text" placeholder="87">
+              <input class="glass-input" v-model="form.objectArea" type="text" placeholder="87">
             </div>
             <div class="csp-field">
               <label>Количество комнат</label>
-              <input v-model="form.roomCount" type="text" placeholder="3">
+              <input class="glass-input" v-model="form.roomCount" type="text" placeholder="3">
             </div>
             <div class="csp-field">
               <label>Этаж</label>
-              <input v-model="form.floor" type="text" placeholder="12 из 25">
+              <input class="glass-input" v-model="form.floor" type="text" placeholder="12 из 25">
             </div>
             <div class="csp-field">
               <label>Высота потолков</label>
-              <input v-model="form.ceilingHeight" type="text" placeholder="2.8 м">
+              <input class="glass-input" v-model="form.ceilingHeight" type="text" placeholder="2.8 м">
             </div>
             <div class="csp-field csp-field--full">
               <label>Балкон / лоджия</label>
@@ -118,19 +118,19 @@
           <div class="csp-fields">
             <div class="csp-field">
               <label>Взрослых</label>
-              <input v-model="form.brief_adults_count" type="text" placeholder="2">
+              <input class="glass-input" v-model="form.brief_adults_count" type="text" placeholder="2">
             </div>
             <div class="csp-field">
               <label>Дети (возраст)</label>
-              <input v-model="form.brief_kids_ages" type="text" placeholder="4 и 8 лет">
+              <input class="glass-input" v-model="form.brief_kids_ages" type="text" placeholder="4 и 8 лет">
             </div>
             <div class="csp-field">
               <label>Питомцы</label>
-              <input v-model="form.brief_pets_desc" type="text" placeholder="кот, собака породы...">
+              <input class="glass-input" v-model="form.brief_pets_desc" type="text" placeholder="кот, собака породы...">
             </div>
             <div class="csp-field">
               <label>Зона питомца</label>
-              <input v-model="form.brief_pets_zone_detail" type="text" placeholder="лапомойка, миски, лоток...">
+              <input class="glass-input" v-model="form.brief_pets_zone_detail" type="text" placeholder="лапомойка, миски, лоток...">
             </div>
             <div class="csp-field csp-field--full">
               <label>Удалённая работа</label>
@@ -150,7 +150,7 @@
             </div>
             <div class="csp-field csp-field--full">
               <label>Хобби и увлечения</label>
-              <textarea v-model="form.brief_hobbies" rows="2" placeholder="спорт, музыка, живопись, готовка..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_hobbies" rows="2" placeholder="спорт, музыка, живопись, готовка..."></textarea>
             </div>
           </div>
         </div>
@@ -178,19 +178,19 @@
             </div>
             <div class="csp-field csp-field--full">
               <label>Цветовая палитра подробнее</label>
-              <textarea v-model="form.brief_color_palette" rows="2" placeholder="любимые сочетания, акцентные цвета, табу-цвета..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_color_palette" rows="2" placeholder="любимые сочетания, акцентные цвета, табу-цвета..."></textarea>
             </div>
             <div class="csp-field csp-field--full">
               <label>Что нравится — ссылки, Pinterest, описание</label>
-              <textarea v-model="form.brief_like_refs" rows="2" placeholder="ссылки или описание вдохновляющих интерьеров..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_like_refs" rows="2" placeholder="ссылки или описание вдохновляющих интерьеров..."></textarea>
             </div>
             <div class="csp-field csp-field--full">
               <label>Что не нравится / точно нельзя</label>
-              <textarea v-model="form.brief_dislike_refs" rows="2" placeholder="цвета, материалы, стили..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_dislike_refs" rows="2" placeholder="цвета, материалы, стили..."></textarea>
             </div>
             <div class="csp-field csp-field--full">
               <label>Предпочтения по материалам</label>
-              <textarea v-model="form.brief_material_prefs" rows="2" placeholder="натуральный камень, дерево, металл, текстиль..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_material_prefs" rows="2" placeholder="натуральный камень, дерево, металл, текстиль..."></textarea>
             </div>
           </div>
         </div>
@@ -202,35 +202,35 @@
           <div class="csp-fields">
             <div class="csp-field csp-field--full">
               <label>Каким должен быть дом — настроение и ощущения</label>
-              <textarea v-model="form.brief_home_mood" rows="3" placeholder="уютный и тихий / яркий и вдохновляющий / строгий и функциональный..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_home_mood" rows="3" placeholder="уютный и тихий / яркий и вдохновляющий / строгий и функциональный..."></textarea>
             </div>
             <div class="csp-field csp-field--full">
               <label>Что хочется чувствовать, открывая дверь домой</label>
-              <textarea v-model="form.brief_return_emotion" rows="2" placeholder="покой, энергию, вдохновение..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_return_emotion" rows="2" placeholder="покой, энергию, вдохновение..."></textarea>
             </div>
             <div class="csp-field csp-field--full">
               <label>Ассоциация — это пространство как...</label>
-              <textarea v-model="form.brief_space_image" rows="2" placeholder="отель / лес / галерея / рабочий кабинет..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_space_image" rows="2" placeholder="отель / лес / галерея / рабочий кабинет..."></textarea>
             </div>
             <div class="csp-field csp-field--full">
               <label>Утренний ритуал</label>
-              <textarea v-model="form.brief_morning_routine" rows="2" placeholder="кофе в тишине, утренняя пробежка, завтрак всей семьёй..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_morning_routine" rows="2" placeholder="кофе в тишине, утренняя пробежка, завтрак всей семьёй..."></textarea>
             </div>
             <div class="csp-field csp-field--full">
               <label>Вечерний ритуал</label>
-              <textarea v-model="form.brief_evening_routine" rows="2" placeholder="кино, ужин с гостями, чтение, йога..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_evening_routine" rows="2" placeholder="кино, ужин с гостями, чтение, йога..."></textarea>
             </div>
             <div class="csp-field">
               <label>Бюджет на реализацию</label>
-              <input v-model="form.brief_budget_limits" type="text" placeholder="₽ 3 000 000">
+              <input class="glass-input" v-model="form.brief_budget_limits" type="text" placeholder="₽ 3 000 000">
             </div>
             <div class="csp-field">
               <label>Желаемый срок сдачи</label>
-              <input v-model="form.brief_deadlines_hard" type="text" placeholder="до декабря 2025">
+              <input class="glass-input" v-model="form.brief_deadlines_hard" type="text" placeholder="до декабря 2025">
             </div>
             <div class="csp-field csp-field--full">
               <label>Особые пожелания, аллергии, ограничения</label>
-              <textarea v-model="form.brief_special_notes" rows="2" placeholder="аллергии на запахи, дети до 3 лет, инвалидная коляска, питомцы..."></textarea>
+              <textarea class="glass-input u-ta" v-model="form.brief_special_notes" rows="2" placeholder="аллергии на запахи, дети до 3 лет, инвалидная коляска, питомцы..."></textarea>
             </div>
           </div>
         </div>
@@ -246,39 +246,39 @@
           <div class="csp-fields">
             <div class="csp-field">
               <label>Серия паспорта</label>
-              <input v-model="form.passport_series" type="text" placeholder="45 09" maxlength="5">
+              <input class="glass-input" v-model="form.passport_series" type="text" placeholder="45 09" maxlength="5">
             </div>
             <div class="csp-field">
               <label>Номер паспорта</label>
-              <input v-model="form.passport_number" type="text" placeholder="123456" maxlength="6">
+              <input class="glass-input" v-model="form.passport_number" type="text" placeholder="123456" maxlength="6">
             </div>
             <div class="csp-field csp-field--full">
               <label>Кем выдан</label>
-              <input v-model="form.passport_issued_by" type="text" placeholder="ГУ МВД России по г. Москве">
+              <input class="glass-input" v-model="form.passport_issued_by" type="text" placeholder="ГУ МВД России по г. Москве">
             </div>
             <div class="csp-field">
               <label>Дата выдачи</label>
-              <input v-model="form.passport_issue_date" type="text" placeholder="01.03.2020">
+              <input class="glass-input" v-model="form.passport_issue_date" type="text" placeholder="01.03.2020">
             </div>
             <div class="csp-field">
               <label>Код подразделения</label>
-              <input v-model="form.passport_department_code" type="text" placeholder="770-001" maxlength="7">
+              <input class="glass-input" v-model="form.passport_department_code" type="text" placeholder="770-001" maxlength="7">
             </div>
             <div class="csp-field csp-field--full">
               <label>Место рождения</label>
-              <input v-model="form.passport_birth_place" type="text" placeholder="г. Москва">
+              <input class="glass-input" v-model="form.passport_birth_place" type="text" placeholder="г. Москва">
             </div>
             <div class="csp-field csp-field--full">
               <label>Адрес регистрации (прописка)</label>
-              <input v-model="form.passport_registration_address" type="text" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5">
+              <input class="glass-input" v-model="form.passport_registration_address" type="text" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5">
             </div>
             <div class="csp-field">
               <label>ИНН</label>
-              <input v-model="form.passport_inn" type="text" placeholder="770000000000" maxlength="12">
+              <input class="glass-input" v-model="form.passport_inn" type="text" placeholder="770000000000" maxlength="12">
             </div>
             <div class="csp-field">
               <label>СНИЛС</label>
-              <input v-model="form.passport_snils" type="text" placeholder="000-000-000 00" maxlength="14">
+              <input class="glass-input" v-model="form.passport_snils" type="text" placeholder="000-000-000 00" maxlength="14">
             </div>
           </div>
         </div>
@@ -429,7 +429,6 @@ async function saveData() {
   display: grid; grid-template-columns: 1fr 1fr; gap: 0;
   border: none;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--glass-bg, #fff) 90%, transparent);
 }
 .csp-field {
   padding: 14px 18px; border-right: none;
@@ -441,15 +440,6 @@ async function saveData() {
   display: block; font-size: .6rem; text-transform: uppercase; letter-spacing: .8px;
   color: var(--c-muted, #aaa); margin-bottom: 8px;
 }
-.csp-field input,
-.csp-field textarea {
-  width: 100%; border: none; background: transparent;
-  font-size: .88rem; color: var(--c-text, #1a1a1a); font-family: inherit;
-  outline: none; padding: 0; resize: vertical;
-  border-bottom: 1px solid transparent;
-}
-.csp-field input:focus,
-.csp-field textarea:focus { border-bottom-color: var(--c-text, #1a1a1a); }
 
 /* Tags */
 .csp-tagsel { display: flex; flex-wrap: wrap; gap: 6px; }

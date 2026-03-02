@@ -192,7 +192,7 @@
             v-model="newClientForm.name"
             type="text"
             required
-            style="width:100%;padding:10px;border:1px solid var(--glass-border);border-radius:6px;background:var(--glass-bg);color:var(--glass-text)"
+            class="glass-input"
             placeholder="Введите имя клиента"
           />
         </div>
@@ -201,7 +201,7 @@
           <input
             v-model="newClientForm.email"
             type="email"
-            style="width:100%;padding:10px;border:1px solid var(--glass-border);border-radius:6px;background:var(--glass-bg);color:var(--glass-text)"
+            class="glass-input"
             placeholder="Введите email"
           />
         </div>
@@ -210,7 +210,7 @@
           <input
             v-model="newClientForm.phone"
             type="tel"
-            style="width:100%;padding:10px;border:1px solid var(--glass-border);border-radius:6px;background:var(--glass-bg);color:var(--glass-text)"
+            class="glass-input"
             placeholder="Введите телефон"
           />
         </div>
