@@ -125,6 +125,7 @@
       <div class="de-editor-toolbar">
         <div class="de-editor-btns">
           <button class="de-tbtn" @click="regenerateText">⟲ обновить</button>
+          <button class="de-tbtn" @click="printDocument">🖨 PDF</button>
           <button class="de-tbtn" @click="downloadTxt">⬇ .txt</button>
           <button class="de-tbtn" @click="copyToClipboard">📋 копировать</button>
         </div>
@@ -141,7 +142,8 @@
       </div>
       <div class="de-actions">
         <button class="a-btn-sm" @click="step = 1">← поля</button>
-        <button class="a-btn-sm" @click="downloadTxt">⬇ скачать</button>
+        <button class="a-btn-sm" @click="printDocument">🖨 PDF</button>
+        <button class="a-btn-sm" @click="downloadTxt">⬇ .txt</button>
         <button class="a-btn-save" :disabled="saving" @click="saveDocument">
           {{ saving ? 'сохраняется...' : '✓ сохранить документ' }}
         </button>
@@ -267,6 +269,9 @@ function applyProjectData() {
     deadline: p.deadline || '',
     client_name: p.client_name || '',
     client_address: p.objectAddress || '',
+    client_phone: p.phone || '',
+    client_email: p.email || '',
+    object_type: p.objectType || '',
     object: `${p.objectType || ''} ${p.objectArea || ''} кв.м, ${p.objectAddress || ''}`.trim(),
     style: p.style || p._profile?.style || '',
     // Passport data from project profile
@@ -275,6 +280,7 @@ function applyProjectData() {
     client_passport_date: p.passport_issue_date || '',
     client_registration: p.passport_registration_address || '',
     client_inn: p.passport_inn || '',
+    penalty_pct: '0,1%',
   }
   applyMap(map)
 }
@@ -282,7 +288,12 @@ function applyProjectData() {
 function applyClientData() {
   const c = pickedClient.value
   if (!c || !selectedTpl.value) return
-  applyMap({ client_name: c.name || '', client_address: c.address || '' })
+  applyMap({
+    client_name: c.name || '',
+    client_address: c.address || '',
+    client_phone: c.phone || '',
+    client_email: c.email || '',
+  })
 }
 
 function applyContractorData() {
@@ -331,6 +342,91 @@ function syncEditorContent() {
 }
 
 function regenerateText() { syncEditorContent() }
+
+function printDocument() {
+  const text = editorContent.value || generateText()
+  const title = selectedTpl.value?.name || 'Документ'
+  const lines = text.split('\n')
+
+  const htmlContent = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    @page { size: A4; margin: 20mm 20mm 25mm 30mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 14pt;
+      line-height: 1.5;
+      color: #000;
+      background: #fff;
+    }
+    .doc-title {
+      text-align: center;
+      font-weight: bold;
+      font-size: 14pt;
+      text-transform: uppercase;
+      margin-bottom: 6pt;
+      letter-spacing: 0.5pt;
+    }
+    .doc-header-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 18pt;
+      font-size: 12pt;
+    }
+    .doc-body { text-align: justify; }
+    .doc-line {
+      margin-bottom: 0;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .doc-line--blank { height: 12pt; }
+    .doc-line--section {
+      font-weight: bold;
+      margin-top: 14pt;
+      margin-bottom: 4pt;
+    }
+    .doc-signatures {
+      margin-top: 36pt;
+      display: flex;
+      justify-content: space-between;
+    }
+    .sig-col { min-width: 240px; }
+    .sig-label { font-size: 11pt; margin-bottom: 18pt; }
+    .sig-line {
+      border-bottom: 1px solid #000;
+      height: 18pt;
+      margin-top: 18pt;
+    }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+<div class="doc-body">
+${lines.map(line => {
+  const t = line.trim()
+  if (!t) return '<div class="doc-line doc-line--blank"></div>'
+  // Section headings — all-caps lines with digits like '1. НАЗВАНИЕ'
+  const isSection = /^\d+\.\s+[А-ЯЁA-Z\s]+$/.test(t)
+  if (isSection) return `<div class="doc-line doc-line--section">${t}</div>`
+  return `<div class="doc-line">${t}</div>`
+}).join('\n')}
+</div>
+<script>window.onload = function() { window.print(); }<\/script>
+</body>
+</html>`
+
+  const win = window.open('', '_blank')
+  if (win) {
+    win.document.write(htmlContent)
+    win.document.close()
+  }
+}
 
 function onEditorInput() {
   if (editorEl.value) editorContent.value = editorEl.value.innerText
