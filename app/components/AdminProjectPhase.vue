@@ -107,6 +107,8 @@ const fillPct = computed(() => {
 const currentKey = ref(props.status || 'lead')
 watch(() => props.status, v => { if (v) currentKey.value = v })
 
+const { notifySaved } = useRoadmapBus()
+
 function phaseOrder(key: string) { return PHASES.findIndex(p => p.key === key) }
 
 function pillClass(key: string) {
@@ -134,6 +136,7 @@ async function setPhase(key: string) {
   try {
     await $fetch(`/api/projects/${props.slug}`, { method: 'PUT', body: { status: key } })
     emit('update:status', key)
+    notifySaved()
     savedOk.value = true
     setTimeout(() => { savedOk.value = false }, 2500)
   } catch (e) { console.error(e) }
