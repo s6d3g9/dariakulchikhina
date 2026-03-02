@@ -120,11 +120,14 @@
                 <button v-if="!services.length" class="cab-btn cab-btn--primary" @click="initFromTemplates">
                   Загрузить шаблон (Москва)
                 </button>
+                <button v-if="!editingServices" class="cab-btn" @click="startEditServices">
+                  {{ services.length ? 'Редактировать' : 'Создать вручную' }}
+                </button>
                 <button v-if="editingServices" class="cab-btn cab-btn--primary" @click="saveEditedServices">
                   {{ savingSvc ? 'Сохранение…' : 'Сохранить' }}
                 </button>
+                <button v-if="editingServices" class="cab-btn" @click="addCustomService">＋ Услуга</button>
                 <button v-if="editingServices" class="cab-btn" @click="cancelEditServices">Отмена</button>
-                <button v-if="!editingServices && services.length" class="cab-btn" @click="startEditServices">Редактировать</button>
               </div>
             </div>
 
@@ -143,6 +146,14 @@
                   <div class="svc-edit-name">
                     <input v-model="svc.title" class="glass-input svc-inp" placeholder="Название" />
                   </div>
+                  <div class="svc-edit-desc">
+                    <input v-model="svc.description" class="glass-input svc-inp" placeholder="Описание" />
+                  </div>
+                  <div class="svc-edit-cat">
+                    <select v-model="svc.category" class="glass-input svc-inp">
+                      <option v-for="opt in SERVICE_CATEGORY_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                    </select>
+                  </div>
                   <div class="svc-edit-price">
                     <input v-model.number="svc.price" class="glass-input svc-inp svc-inp--num" type="number" min="0" />
                   </div>
@@ -154,7 +165,6 @@
                   <button class="svc-del" @click="removeEditService(svc.serviceKey)">✕</button>
                 </div>
               </div>
-              <button class="cab-btn svc-add-btn" @click="addCustomService">＋ Добавить услугу</button>
             </template>
 
             <template v-else-if="services.length">
@@ -179,11 +189,14 @@
                 <button v-if="!packages.length" class="cab-btn cab-btn--primary" @click="initPackages">
                   Загрузить стандартные пакеты
                 </button>
+                <button v-if="!editingPackages" class="cab-btn" @click="startEditPackages">
+                  {{ packages.length ? 'Редактировать' : 'Создать вручную' }}
+                </button>
                 <button v-if="editingPackages" class="cab-btn cab-btn--primary" @click="saveEditedPackages">
                   {{ savingPkg ? 'Сохранение…' : 'Сохранить' }}
                 </button>
+                <button v-if="editingPackages" class="cab-btn" @click="addCustomPackage">＋ Пакет</button>
                 <button v-if="editingPackages" class="cab-btn" @click="cancelEditPackages">Отмена</button>
-                <button v-if="!editingPackages && packages.length" class="cab-btn" @click="startEditPackages">Редактировать</button>
               </div>
             </div>
 
@@ -201,6 +214,7 @@
                     <input v-model.number="pkg.pricePerSqm" class="glass-input svc-inp svc-inp--num" type="number" min="0" />
                     <span class="pkg-unit">₽/м²</span>
                   </div>
+                  <button type="button" class="svc-del" @click="removeEditPackage(pkg.key)">✕</button>
                 </div>
                 <textarea v-model="pkg.description" class="glass-input pkg-desc-inp" rows="2" placeholder="Описание пакета" />
                 <div class="pkg-services-edit">
@@ -461,6 +475,10 @@ const SPECIALIZATION_OPTIONS = [
 ]
 
 const PRICE_UNITS_LIST = Object.entries(PRICE_UNIT_LABELS).map(([value, label]) => ({ value, label }))
+const SERVICE_CATEGORY_OPTIONS = Object.entries(DESIGNER_SERVICE_CATEGORY_LABELS).map(([value, label]) => ({
+  value,
+  label,
+})) as { value: DesignerServiceCategory; label: string }[]
 
 function toggleSpec(sp: string) {
   const idx = form.specializations.indexOf(sp)
@@ -485,6 +503,7 @@ const editServicesByCat = computed(() => {
 
 function startEditServices() {
   editServicesList.value = JSON.parse(JSON.stringify(services.value))
+  if (!editServicesList.value.length) addCustomService()
   editingServices.value = true
 }
 function cancelEditServices() {
@@ -503,8 +522,9 @@ function removeEditService(key: string) {
   editServicesList.value = editServicesList.value.filter(s => s.serviceKey !== key)
 }
 function addCustomService() {
+  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
   editServicesList.value.push({
-    serviceKey: `custom_${Date.now()}`,
+    serviceKey: `custom_${id}`,
     title: '',
     description: '',
     category: 'additional',
@@ -535,6 +555,7 @@ const allServiceKeys = computed(() => {
 
 function startEditPackages() {
   editPackagesList.value = JSON.parse(JSON.stringify(packages.value))
+  if (!editPackagesList.value.length) addCustomPackage()
   editingPackages.value = true
 }
 function cancelEditPackages() {
@@ -553,6 +574,20 @@ function togglePkgService(pkg: DesignerPackage, key: string) {
   const idx = pkg.serviceKeys.indexOf(key)
   if (idx >= 0) pkg.serviceKeys.splice(idx, 1)
   else pkg.serviceKeys.push(key)
+}
+function addCustomPackage() {
+  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
+  editPackagesList.value.push({
+    key: `custom_package_${id}`,
+    title: '',
+    description: '',
+    serviceKeys: [],
+    pricePerSqm: 0,
+    enabled: true,
+  })
+}
+function removeEditPackage(key: string) {
+  editPackagesList.value = editPackagesList.value.filter(p => p.key !== key)
 }
 async function initPackages() {
   const pkgs = initPackagesFromTemplates()
@@ -754,6 +789,8 @@ async function doCreateProject() {
 }
 .svc-enable input { accent-color: #646cff; }
 .svc-edit-name { flex: 2; }
+.svc-edit-desc { flex: 2; }
+.svc-edit-cat { flex: 1.3; }
 .svc-edit-price { flex: 1; }
 .svc-edit-unit { flex: 1; }
 .svc-inp {
