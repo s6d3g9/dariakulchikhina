@@ -637,13 +637,6 @@ export function useDesignSystem() {
     save()
   }
 
-  function setMultiple(updates: Partial<DesignTokens>) {
-    pushHistory()
-    Object.assign(tokens.value, updates)
-    applyToDOM()
-    save()
-  }
-
   function reset() {
     pushHistory()
     tokens.value = { ...DEFAULT_TOKENS }
@@ -662,7 +655,8 @@ export function useDesignSystem() {
     future.value = [...future.value, { ...tokens.value }]
     tokens.value = { ...history.value[history.value.length - 1] }
     history.value = history.value.slice(0, -1)
-    // Auto-apply and save handled by watcher
+    applyToDOM()
+    save()
   }
 
   function redo() {
@@ -670,7 +664,8 @@ export function useDesignSystem() {
     history.value = [...history.value, { ...tokens.value }]
     tokens.value = { ...future.value[future.value.length - 1] }
     future.value = future.value.slice(0, -1)
-    // Auto-apply and save handled by watcher
+    applyToDOM()
+    save()
   }
 
   const canUndo = computed(() => history.value.length > 0)
@@ -904,8 +899,8 @@ export function useDesignSystem() {
       refreshThemeVars()
     } catch { /* useUITheme not ready yet */ }
 
-    } catch (outerErr) {
-      console.warn('applyToDOM failed:', outerErr)
+    } catch (e) {
+      console.warn('[DesignSystem] applyToDOM error:', e)
     }
   }
 
@@ -913,7 +908,8 @@ export function useDesignSystem() {
   function applyPreset(preset: DesignPreset) {
     pushHistory()
     tokens.value = { ...tokens.value, ...preset.tokens }
-    // Auto-apply and save handled by watcher
+    applyToDOM()
+    save()
   }
 
   /* ── Export / Import ───────────────────────────────────── */
