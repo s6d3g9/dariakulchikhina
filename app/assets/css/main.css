@@ -85,6 +85,12 @@ textarea, select {
   --ds-letter-spacing: .03em;
   --ds-line-height: 1.5;
   --ds-paragraph-spacing: .75rem;
+  --ds-word-spacing:     normal;
+  --ds-text-indent:      0;
+  --ds-heading-letter-spacing: -0.01em;
+  --ds-heading-line-height: 1.2;
+  --ds-paragraph-max-width: none;
+  --ds-text-align:       left;
   --ds-spacing:     1;
   --ds-spacing-unit: 4px;
   --glass-blur:     18px;
@@ -194,6 +200,16 @@ textarea, select {
 .ws-status--cancelled { color: var(--ws-color-cancelled); background: var(--ws-bg-cancelled); border-radius: var(--status-pill-radius, 999px); }
 .ws-status--skipped   { color: var(--ws-color-skipped);   background: var(--ws-bg-skipped);   border-radius: var(--status-pill-radius, 999px); opacity: .5; }
 
+/* ── Universal status-indicator dots ———————————————————
+   Matches any BEM modifier: .xxx-dot--gray, .yyy-dot--blue, etc.
+   All admin components share these colors — no per-component overrides needed.
+──────────────────────────────────────────────────────────────────── */
+[class*="-dot--gray"]   { background: #cacaca; }
+[class*="-dot--blue"]   { background: #6b9fd4; }
+[class*="-dot--yellow"] { background: #e8b84b; }
+[class*="-dot--red"]    { background: #d46b6b; }
+[class*="-dot--green"]  { background: #5caa7f; }
+
 /* ── Generic dark fallback (when no data-theme set) ── */
 html.dark {
   --glass-bg:       rgba(18, 20, 26, 0.9);
@@ -218,16 +234,22 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--ds-font-family);
   font-weight: var(--ds-heading-weight);
-  line-height: 1.25;
+  line-height: var(--ds-heading-line-height, 1.25);
   margin-bottom: var(--ds-paragraph-spacing);
-  letter-spacing: var(--ds-letter-spacing);
+  letter-spacing: var(--ds-heading-letter-spacing, -0.01em);
 }
 h1 { font-size: var(--ds-text-3xl); }
 h2 { font-size: var(--ds-text-2xl); }
 h3 { font-size: var(--ds-text-xl); }
 h4 { font-size: var(--ds-text-lg); }
 h5, h6 { font-size: var(--ds-text-base); }
-p { margin-bottom: var(--ds-paragraph-spacing); }
+p {
+  margin-bottom: var(--ds-paragraph-spacing);
+  word-spacing: var(--ds-word-spacing, normal);
+  text-indent: var(--ds-text-indent, 0);
+  text-align: var(--ds-text-align, left);
+  max-width: var(--ds-paragraph-max-width, none);
+}
 
 /* ── All form elements inherit font ── */
 input, textarea, select, button {

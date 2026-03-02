@@ -40,6 +40,12 @@ export interface DesignTokens {
   letterSpacing: number
   lineHeight: number
   paragraphSpacing: number
+  wordSpacing: number          // 0..0.25em — межсловный интервал
+  textIndent: number           // 0..3em — отступ первой строки
+  headingLetterSpacing: number // -0.05..0.1em — межбуквенный заголовков
+  headingLineHeight: number    // 1.0..2.0 — межстрочный заголовков
+  paragraphMaxWidth: number    // 0 = без ограничения, 40..100ch
+  textAlign: 'left' | 'center' | 'right' | 'justify'
   typeScale: number  // ratio 1.067..1.5 (minor second .. perfect fifth)
 
   /* ── Semantic colors (HSL) ── */
@@ -145,6 +151,12 @@ export const DEFAULT_TOKENS: DesignTokens = {
   letterSpacing: 0.03,
   lineHeight: 1.5,
   paragraphSpacing: 0.75,
+  wordSpacing: 0,
+  textIndent: 0,
+  headingLetterSpacing: -0.01,
+  headingLineHeight: 1.2,
+  paragraphMaxWidth: 0,
+  textAlign: 'left',
   typeScale: 1.2,  // minor third
 
   accentHue: 220,
@@ -677,6 +689,12 @@ export function useDesignSystem() {
     el.style.setProperty('--ds-letter-spacing', `${t.letterSpacing}em`)
     el.style.setProperty('--ds-line-height', String(t.lineHeight))
     el.style.setProperty('--ds-paragraph-spacing', `${t.paragraphSpacing}rem`)
+    el.style.setProperty('--ds-word-spacing', t.wordSpacing === 0 ? 'normal' : `${t.wordSpacing}em`)
+    el.style.setProperty('--ds-text-indent', t.textIndent === 0 ? '0' : `${t.textIndent}em`)
+    el.style.setProperty('--ds-heading-letter-spacing', `${t.headingLetterSpacing}em`)
+    el.style.setProperty('--ds-heading-line-height', String(t.headingLineHeight))
+    el.style.setProperty('--ds-paragraph-max-width', t.paragraphMaxWidth === 0 ? 'none' : `${t.paragraphMaxWidth}ch`)
+    el.style.setProperty('--ds-text-align', t.textAlign)
 
     // Type scale (modular ratio)
     const r = t.typeScale

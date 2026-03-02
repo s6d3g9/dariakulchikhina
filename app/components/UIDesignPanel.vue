@@ -256,16 +256,49 @@
                     <label class="dp-label">межстрочный <span class="dp-val">{{ tokens.lineHeight.toFixed(2) }}</span></label>
                     <input type="range" min="1.1" max="2.0" step="0.05" :value="tokens.lineHeight" class="dp-range" @input="onFloat('lineHeight', $event)">
                   </div>
+                  <div class="dp-col-label" style="margin-top:10px">Абзацы</div>
+                  <div class="dp-field">
+                    <label class="dp-label">отступ между абз. <span class="dp-val">{{ tokens.paragraphSpacing.toFixed(2) }}rem</span></label>
+                    <input type="range" min="0" max="2.5" step="0.05" :value="tokens.paragraphSpacing" class="dp-range" @input="onFloat('paragraphSpacing', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">межсловный <span class="dp-val">{{ tokens.wordSpacing === 0 ? 'авто' : tokens.wordSpacing.toFixed(2) + 'em' }}</span></label>
+                    <input type="range" min="0" max="0.3" step="0.01" :value="tokens.wordSpacing" class="dp-range" @input="onFloat('wordSpacing', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">отступ 1-й строки <span class="dp-val">{{ tokens.textIndent === 0 ? 'нет' : tokens.textIndent.toFixed(1) + 'em' }}</span></label>
+                    <input type="range" min="0" max="4" step="0.25" :value="tokens.textIndent" class="dp-range" @input="onFloat('textIndent', $event)">
+                  </div>
+                  <div class="dp-col-label" style="margin-top:10px">Заголовки</div>
+                  <div class="dp-field">
+                    <label class="dp-label">межбуквенный <span class="dp-val">{{ tokens.headingLetterSpacing.toFixed(3) }}em</span></label>
+                    <input type="range" min="-0.06" max="0.15" step="0.005" :value="tokens.headingLetterSpacing" class="dp-range" @input="onFloat('headingLetterSpacing', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">межстрочный <span class="dp-val">{{ tokens.headingLineHeight.toFixed(2) }}</span></label>
+                    <input type="range" min="0.9" max="2.0" step="0.05" :value="tokens.headingLineHeight" class="dp-range" @input="onFloat('headingLineHeight', $event)">
+                  </div>
                 </div>
                 <div class="dp-col">
                   <div class="dp-col-label">Превью</div>
-                  <div class="dp-live-preview" style="margin-top:0">
+                  <div class="dp-col-label" style="margin-top:0">Выравнивание</div>
+                  <div class="dp-align-group">
+                    <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'left' }" title="По левому" @click="set('textAlign', 'left')">&#xE244;</button>
+                    <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'center' }" title="По центру" @click="set('textAlign', 'center')">&#xE243;</button>
+                    <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'right' }" title="По правому" @click="set('textAlign', 'right')">&#xE245;</button>
+                    <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'justify' }" title="По ширине" @click="set('textAlign', 'justify')">&#xE242;</button>
+                  </div>
+                  <div class="dp-field" style="margin-top:8px">
+                    <label class="dp-label">ширина абзаца <span class="dp-val">{{ tokens.paragraphMaxWidth === 0 ? '∞' : tokens.paragraphMaxWidth + 'ch' }}</span></label>
+                    <input type="range" min="0" max="100" step="2" :value="tokens.paragraphMaxWidth" class="dp-range" @input="onRange('paragraphMaxWidth', $event)">
+                  </div>
+                  <div class="dp-live-preview" style="margin-top:8px">
                     <div class="dp-type-sample" :style="typeSampleStyle">
-                      <div class="dp-type-h" :style="{ fontWeight: String(tokens.headingWeight) }">Заголовок страницы</div>
-                      <div class="dp-type-p">Дизайн-система позволяет управлять каждым визуальным элементом.</div>
+                      <div class="dp-type-h" :style="{ fontWeight: String(tokens.headingWeight), letterSpacing: tokens.headingLetterSpacing + 'em', lineHeight: String(tokens.headingLineHeight) }">Заголовок страницы</div>
+                      <div class="dp-type-p" :style="{ textIndent: tokens.textIndent > 0 ? tokens.textIndent + 'em' : undefined, wordSpacing: tokens.wordSpacing > 0 ? tokens.wordSpacing + 'em' : undefined, textAlign: tokens.textAlign }">Дизайн-система позволяет управлять каждым визуальным элементом.</div>
                     </div>
                   </div>
-                  <div class="dp-col-label" style="margin-top:12px">Шкала</div>
+                  <div class="dp-col-label" style="margin-top:10px">Шкала</div>
                   <div class="dp-scale-visual">
                     <div v-for="s in typeScaleSizes" :key="s.name" class="dp-scale-row" :style="{ fontSize: s.size + 'rem', fontFamily: tokens.fontFamily }">
                       <span class="dp-scale-name">{{ s.name }}</span>
@@ -887,6 +920,7 @@
             <div class="dp-inspect-props">
               <span v-for="s in inspectHover.sections" :key="s" class="dp-inspect-prop-chip">{{ sectionLabels[s] || s }}</span>
             </div>
+            <div v-if="inspectHover.sections.length" class="dp-inspect-hint">\u2190 \u043a\u043b\u0438\u043a \u2014 \u0440\u0435\u0434\u0430\u043a\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c</div>
           </div>
         </Transition>
         <!-- Click result panel -->
@@ -894,28 +928,38 @@
           <div v-if="inspectResult" class="dp-inspect-result" :style="inspectResultStyle">
             <div class="dp-inspect-result-header">
               <span class="dp-inspect-result-tag">{{ inspectResult.tag }}</span>
+              <span v-if="inspectResult.classes" class="dp-inspect-result-tag" style="color:hsl(35,80%,70%);margin-left:4px;font-size:.6rem">.{{ inspectResult.classes }}</span>
               <button type="button" class="dp-inspect-result-close" @click="inspectResult = null">✕</button>
             </div>
+
+            <!-- Quick-edit sliders -->
+            <div v-if="quickEditControls.length" class="dp-qe-section">
+              <div class="dp-qe-label">Редактировать</div>
+              <div v-for="ctrl in quickEditControls" :key="ctrl.key" class="dp-qe-row">
+                <span class="dp-qe-name">{{ ctrl.label }}</span>
+                <input
+                  type="range"
+                  class="dp-qe-range"
+                  :min="ctrl.min"
+                  :max="ctrl.max"
+                  :step="ctrl.step"
+                  :value="(tokens as any)[ctrl.key]"
+                  @input="ctrl.isFloat ? onFloat(ctrl.key as any, $event) : onRange(ctrl.key as any, $event)"
+                />
+                <span class="dp-qe-val">{{ ctrl.fmt((tokens as any)[ctrl.key]) }}</span>
+              </div>
+            </div>
+
             <div class="dp-inspect-result-info">
-              <div v-if="inspectResult.classes" class="dp-inspect-result-classes">.{{ inspectResult.classes }}</div>
               <div class="dp-inspect-result-sections">
-                <span class="dp-inspect-result-label">Связанные секции:</span>
+                <span class="dp-inspect-result-label">Открыть секцию:</span>
                 <button
                   v-for="s in inspectResult.sections"
                   :key="s"
                   type="button"
                   class="dp-inspect-section-link"
                   @click="jumpToSection(s)"
-                >{{ sectionLabels[s] || s }}</button>
-              </div>
-              <div class="dp-inspect-result-tokens">
-                <span class="dp-inspect-result-label">Токены:</span>
-                <div class="dp-inspect-token-list">
-                  <div v-for="tk in inspectResult.tokenInfo" :key="tk.name" class="dp-inspect-token-row">
-                    <span class="dp-inspect-token-name">{{ tk.name }}</span>
-                    <span class="dp-inspect-token-value">{{ tk.value }}</span>
-                  </div>
-                </div>
+                >↗ {{ sectionLabels[s] || s }}</button>
               </div>
             </div>
           </div>
@@ -1203,6 +1247,9 @@ const typeSampleStyle = computed(() => {
     fontFamily: t.fontFamily, fontSize: `${t.fontSize}rem`,
     fontWeight: String(t.fontWeight), letterSpacing: `${t.letterSpacing}em`,
     lineHeight: String(t.lineHeight),
+    wordSpacing: t.wordSpacing > 0 ? `${t.wordSpacing}em` : 'normal',
+    textAlign: t.textAlign as string,
+    maxWidth: t.paragraphMaxWidth > 0 ? `${t.paragraphMaxWidth}ch` : 'none',
   }
 })
 
@@ -1247,6 +1294,88 @@ const sectionLabels: Record<string, string> = {
   scrollbar: 'Скроллбар', tables: 'Таблицы', badges: 'Значки',
 }
 
+/* ─── Quick-edit token controls ─────────────────────────────────────────────
+   Used in the inspect result panel to render inline sliders per section.
+─────────────────────────────────────────────────────────────────────────── */
+type QEControl = { key: keyof DesignTokens; label: string; min: number; max: number; step: number; isFloat?: boolean; fmt: (v: number) => string }
+const TOKEN_CONTROLS: Record<string, QEControl[]> = {
+  buttons: [
+    { key: 'btnRadius', label: 'скругление', min: 0, max: 32, step: 1, fmt: v => v + 'px' },
+    { key: 'btnWeight', label: 'жирность', min: 400, max: 700, step: 100, fmt: v => String(v) },
+  ],
+  type: [
+    { key: 'fontSize', label: 'размер', min: 0.7, max: 1.4, step: 0.02, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+    { key: 'lineHeight', label: 'межстрочный', min: 1.1, max: 2.0, step: 0.05, isFloat: true, fmt: v => v.toFixed(2) },
+    { key: 'letterSpacing', label: 'межбукв', min: -0.02, max: 0.15, step: 0.005, isFloat: true, fmt: v => v.toFixed(3) + 'em' },
+    { key: 'wordSpacing', label: 'межслов', min: 0, max: 0.3, step: 0.01, isFloat: true, fmt: v => v === 0 ? 'авто' : v.toFixed(2) + 'em' },
+    { key: 'textIndent', label: 'отступ 1стр', min: 0, max: 4, step: 0.25, isFloat: true, fmt: v => v === 0 ? 'нет' : v.toFixed(1) + 'em' },
+    { key: 'headingLetterSpacing', label: 'загол.межбукв', min: -0.06, max: 0.15, step: 0.005, isFloat: true, fmt: v => v.toFixed(3) + 'em' },
+    { key: 'headingLineHeight', label: 'загол.строка', min: 0.9, max: 2.0, step: 0.05, isFloat: true, fmt: v => v.toFixed(2) },
+    { key: 'paragraphMaxWidth', label: 'ширина абз', min: 0, max: 100, step: 2, fmt: v => v === 0 ? '∞' : v + 'ch' },
+  ],
+  typeScale: [
+    { key: 'typeScale', label: 'шкала', min: 1.067, max: 1.618, step: 0.001, isFloat: true, fmt: v => v.toFixed(3) },
+  ],
+  surface: [
+    { key: 'glassBlur', label: 'размытие', min: 0, max: 40, step: 1, fmt: v => v + 'px' },
+    { key: 'glassOpacity', label: 'прозрачность', min: 0, max: 1, step: 0.02, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+    { key: 'shadowOpacity', label: 'тень', min: 0, max: 0.4, step: 0.01, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+  ],
+  radii: [
+    { key: 'cardRadius', label: 'карточка', min: 0, max: 32, step: 1, fmt: v => v + 'px' },
+    { key: 'inputRadius', label: 'инпут', min: 0, max: 20, step: 1, fmt: v => v + 'px' },
+  ],
+  anim: [
+    { key: 'animDuration', label: 'длительность', min: 0, max: 600, step: 10, fmt: v => v + 'ms' },
+  ],
+  grid: [
+    { key: 'gridGap', label: 'gap', min: 4, max: 32, step: 1, fmt: v => v + 'px' },
+    { key: 'borderWidth', label: 'обводка', min: 0, max: 3, step: 0.5, isFloat: true, fmt: v => v + 'px' },
+  ],
+  inputs: [
+    { key: 'inputBgOpacity', label: 'фон', min: 0, max: 0.25, step: 0.005, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+    { key: 'inputBorderOpacity', label: 'рамка', min: 0, max: 0.4, step: 0.01, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+    { key: 'inputRadius', label: 'радиус', min: 0, max: 20, step: 1, fmt: v => v + 'px' },
+  ],
+  tags: [
+    { key: 'chipRadius', label: 'скругление', min: 0, max: 999, step: 1, fmt: v => v > 99 ? '∞' : v + 'px' },
+    { key: 'chipBgOpacity', label: 'фон', min: 0, max: 0.3, step: 0.005, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+    { key: 'chipPaddingH', label: 'паддинг Г', min: 3, max: 24, step: 1, fmt: v => v + 'px' },
+  ],
+  statuses: [
+    { key: 'statusPillRadius', label: 'форма', min: 0, max: 999, step: 1, fmt: v => v > 99 ? '∞' : v + 'px' },
+    { key: 'statusBgOpacity', label: 'фон', min: 0, max: 0.5, step: 0.005, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+  ],
+  nav: [
+    { key: 'navItemRadius', label: 'скругление', min: 0, max: 24, step: 1, fmt: v => v + 'px' },
+  ],
+  popups: [
+    { key: 'dropdownBlur', label: 'размытие', min: 0, max: 40, step: 1, fmt: v => v + 'px' },
+    { key: 'modalOverlayOpacity', label: 'затемнение', min: 0, max: 0.9, step: 0.02, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+  ],
+  badges: [
+    { key: 'badgeRadius', label: 'форма', min: 0, max: 999, step: 1, fmt: v => v > 99 ? '∞' : v + 'px' },
+    { key: 'badgeBgOpacity', label: 'фон', min: 0, max: 0.5, step: 0.01, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+  ],
+  scrollbar: [
+    { key: 'scrollbarWidth', label: 'ширина', min: 2, max: 14, step: 1, fmt: v => v + 'px' },
+    { key: 'scrollbarOpacity', label: 'видимость', min: 0, max: 0.8, step: 0.01, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
+  ],
+}
+
+const quickEditControls = computed((): QEControl[] => {
+  if (!inspectResult.value) return []
+  const seen = new Set<string>()
+  return inspectResult.value.sections
+    .flatMap(s => (TOKEN_CONTROLS[s] || [])
+      .filter(c => {
+        if (seen.has(c.key)) return false
+        seen.add(c.key)
+        return true
+      })
+    ).slice(0, 8)
+})
+
 const inspectHighlightStyle = computed(() => ({
   left: `${inspectHover.rect.x}px`, top: `${inspectHover.rect.y}px`,
   width: `${inspectHover.rect.w}px`, height: `${inspectHover.rect.h}px`,
@@ -1259,11 +1388,13 @@ const inspectTooltipStyle = computed(() => {
 const inspectResultStyle = computed(() => {
   if (!inspectResult.value) return {}
   const r = inspectResult.value.rect
+  const panelW = quickEditControls.value.length > 0 ? 300 : 260
   const leftEdge = r.x + r.w + 12
-  const useLeft = leftEdge + 260 < window.innerWidth
+  const useLeft = leftEdge + panelW < window.innerWidth
   return {
-    top: `${Math.max(8, Math.min(r.y, window.innerHeight - 300))}px`,
-    left: useLeft ? `${leftEdge}px` : `${Math.max(8, r.x - 272)}px`,
+    top: `${Math.max(8, Math.min(r.y, window.innerHeight - 400))}px`,
+    left: useLeft ? `${leftEdge}px` : `${Math.max(8, r.x - panelW - 12)}px`,
+    width: `${panelW}px`,
   }
 })
 
@@ -1324,6 +1455,31 @@ function detectSections(el: HTMLElement): string[] {
   const colorStr = cs.color + cs.backgroundColor
   if (colorStr.includes('var(--ds-accent') || cls.includes('accent') || cls.includes('primary')) {
     found.add('palette')
+  }
+
+  // Input fields
+  if (['input', 'textarea', 'select'].includes(tag) || cls.includes('input') || cls.includes('field') || cls.includes('form-control')) {
+    found.add('inputs')
+  }
+
+  // Tags / chips
+  if (cls.includes('chip') || cls.includes('tag') || cls.includes('badge') || cls.includes('pill') || cls.includes('label') || cls.includes('gfb-tag')) {
+    found.add('tags')
+  }
+
+  // Status pills
+  if (cls.includes('status') || cls.includes('rm-status') || cls.includes('ws-status') || cls.includes('stat-pill')) {
+    found.add('statuses')
+  }
+
+  // Navigation
+  if (cls.includes('nav') || cls.includes('sidebar') || cls.includes('menu-item') || cls.includes('std-nav') || tag === 'nav' || tag === 'aside') {
+    found.add('nav')
+  }
+
+  // Scrollable containers
+  if (cs.overflow === 'auto' || cs.overflow === 'scroll' || cs.overflowY === 'auto' || cs.overflowY === 'scroll') {
+    found.add('scrollbar')
   }
 
   // If nothing specific found, show typography + radii as starting point
@@ -2070,6 +2226,17 @@ onBeforeUnmount(() => {
 .dp-scale-sample { flex: 1; }
 .dp-scale-px { font-size: .48rem; opacity: .3; font-variant-numeric: tabular-nums; }
 
+/* ── Text align buttons ── */
+.dp-align-group { display: flex; gap: 4px; margin: 4px 0 2px; }
+.dp-align-btn {
+  flex: 1; height: 28px; border-radius: 5px; border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06); color: rgba(255,255,255,.55);
+  cursor: pointer; font-size: .7rem; display: flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s;
+}
+.dp-align-btn:hover { background: rgba(255,255,255,.12); color: rgba(255,255,255,.85); }
+.dp-align-btn--active { background: rgba(255,255,255,.18) !important; color: hsl(200,80%,70%) !important; border-color: rgba(255,255,255,.25); }
+
 /* ── Dark mode preview ── */
 .dp-dark-preview { background: #0a0a0c !important; border-radius: 10px; overflow: hidden; }
 .dp-dark-cards { display: flex; flex-direction: column; gap: 6px; padding: 4px; }
@@ -2263,6 +2430,52 @@ onBeforeUnmount(() => {
   font-size: .54rem; color: rgba(255,255,255,.5);
   font-family: 'JetBrains Mono', monospace;
   max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Quick-edit section inside inspect result ── */
+.dp-inspect-result { max-height: 480px; width: 300px !important; }
+.dp-qe-section {
+  padding: 8px 12px 4px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.dp-qe-label {
+  font-size: .5rem; text-transform: uppercase; letter-spacing: .12em;
+  opacity: .35; font-weight: 700; margin-bottom: 7px;
+  color: hsl(200, 60%, 70%);
+}
+.dp-qe-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 34px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.dp-qe-name {
+  font-size: .57rem; color: rgba(255,255,255,.55); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.dp-qe-range {
+  -webkit-appearance: none; appearance: none;
+  height: 3px; border-radius: 99px;
+  background: rgba(255,255,255,.12); outline: none; cursor: pointer;
+  width: 100%;
+}
+.dp-qe-range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px;
+  border-radius: 50%; background: hsl(200, 80%, 62%);
+  cursor: pointer; box-shadow: 0 0 0 2px rgba(0,0,0,.3);
+  transition: transform .1s;
+}
+.dp-qe-range::-webkit-slider-thumb:hover { transform: scale(1.25); }
+.dp-qe-range::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: hsl(200, 80%, 62%); border: none; cursor: pointer;
+}
+.dp-qe-val {
+  font-size: .55rem; color: hsl(200, 60%, 70%);
+  font-variant-numeric: tabular-nums; text-align: right;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  white-space: nowrap;
 }
 
 /* ══════════════════════════════════════════════════════
