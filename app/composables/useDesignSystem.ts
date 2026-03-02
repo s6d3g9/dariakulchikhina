@@ -895,8 +895,26 @@ export function useDesignSystem() {
     // Re-apply UI theme's CSS vars on top (they set --btn-bg-base, --glass-* etc.
     // which must persist after applyToDOM sets --btn-bg = var(--btn-bg-base))
     try {
-      const { refreshThemeVars } = useUITheme()
+      const { refreshThemeVars, themeId, UI_THEMES } = useUITheme()
       refreshThemeVars()
+
+      // Override glass-bg / glass-border alpha with design-system token values.
+      // Theme vars hardcode rgba(…,0.52) etc.; we parse out the RGB and re-apply
+      // the alpha from the token so the Glass controls in the panel actually work.
+      const theme = UI_THEMES.find(th => th.id === themeId.value)
+      if (theme) {
+        const isDark = el.classList.contains('dark')
+        const tVars = isDark ? theme.darkVars : theme.vars
+        const rgbaRe = /rgba?\(\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)/
+        const bgMatch = (tVars['--glass-bg'] || '').match(rgbaRe)
+        if (bgMatch) {
+          el.style.setProperty('--glass-bg', `rgba(${bgMatch[1]}, ${bgMatch[2]}, ${bgMatch[3]}, ${t.glassOpacity})`)
+        }
+        const borderMatch = (tVars['--glass-border'] || '').match(rgbaRe)
+        if (borderMatch) {
+          el.style.setProperty('--glass-border', `rgba(${borderMatch[1]}, ${borderMatch[2]}, ${borderMatch[3]}, ${t.glassBorderOpacity})`)
+        }
+      }
     } catch { /* useUITheme not ready yet */ }
 
     } catch (e) {

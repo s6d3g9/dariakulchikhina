@@ -209,7 +209,17 @@
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">насыщенность <span class="dp-val">{{ tokens.btnWeight }}</span></label>
-                    <input type="range" min="400" max="700" step="100" :value="tokens.btnWeight" class="dp-range" @input="onRange('btnWeight', $event)">
+                    <input type="range" min="300" max="800" step="100" :value="tokens.btnWeight" class="dp-range" @input="onRange('btnWeight', $event)">
+                  </div>
+                  <div class="dp-col-label" style="margin-top:8px">Отступы</div>
+                  <div class="dp-type-ctx-hint">0 = авто по размеру кнопки</div>
+                  <div class="dp-field">
+                    <label class="dp-label">отступ гор. <span class="dp-val">{{ tokens.btnPaddingH === 0 ? 'авто' : tokens.btnPaddingH + 'px' }}</span></label>
+                    <input type="range" min="0" max="60" step="1" :value="tokens.btnPaddingH" class="dp-range" @input="onRange('btnPaddingH', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">отступ верт. <span class="dp-val">{{ tokens.btnPaddingV === 0 ? 'авто' : tokens.btnPaddingV + 'px' }}</span></label>
+                    <input type="range" min="0" max="32" step="1" :value="tokens.btnPaddingV" class="dp-range" @input="onRange('btnPaddingV', $event)">
                   </div>
                 </div>
                 <div class="dp-col">
@@ -298,29 +308,26 @@
 
                   <!-- Контекст: Кнопки -->
                   <template v-else-if="typeCtx === 'buttons'">
-                    <div class="dp-type-ctx-hint">Отступ внутри кнопки. 0 = авто по btnSize</div>
+                    <div class="dp-type-ctx-hint">Типографика кнопок (стиль и отступы → таб «Кнопки»)</div>
                     <div class="dp-field">
-                      <label class="dp-label">отступ гор. <span class="dp-val">{{ tokens.btnPaddingH === 0 ? 'авто' : tokens.btnPaddingH + 'px' }}</span></label>
-                      <input type="range" min="0" max="60" step="1" :value="tokens.btnPaddingH" class="dp-range" @input="onRange('btnPaddingH', $event)">
-                    </div>
-                    <div class="dp-field">
-                      <label class="dp-label">отступ верт. <span class="dp-val">{{ tokens.btnPaddingV === 0 ? 'авто' : tokens.btnPaddingV + 'px' }}</span></label>
-                      <input type="range" min="0" max="32" step="1" :value="tokens.btnPaddingV" class="dp-range" @input="onRange('btnPaddingV', $event)">
-                    </div>
-                    <div class="dp-col-label" style="margin-top:8px">Текст кнопки</div>
-                    <div class="dp-field">
-                      <label class="dp-label">межбуквенный <span class="dp-val">{{ tokens.letterSpacing.toFixed(2) }}em</span></label>
+                      <label class="dp-label">межбуквенный кнопок <span class="dp-val">{{ tokens.letterSpacing.toFixed(2) }}em</span></label>
                       <input type="range" min="-0.02" max="0.15" step="0.005" :value="tokens.letterSpacing" class="dp-range" @input="onFloat('letterSpacing', $event)">
                     </div>
                     <div class="dp-field">
                       <label class="dp-label">насыщенность <span class="dp-val">{{ tokens.btnWeight }}</span></label>
                       <input type="range" min="300" max="800" step="100" :value="tokens.btnWeight" class="dp-range" @input="onRange('btnWeight', $event)">
                     </div>
+                    <div class="dp-field">
+                      <label class="dp-label">регистр</label>
+                      <div class="dp-chips">
+                        <button v-for="s in textTransforms" :key="s.id" type="button" class="dp-chip" :class="{ 'dp-chip--active': tokens.btnTransform === s.id }" @click="set('btnTransform', s.id)">{{ s.label }}</button>
+                      </div>
+                    </div>
                   </template>
 
                   <!-- Контекст: Поля ввода -->
                   <template v-else-if="typeCtx === 'inputs'">
-                    <div class="dp-type-ctx-hint">Отступы и шрифт внутри полей ввода</div>
+                    <div class="dp-type-ctx-hint">Шрифт и отступы полей ввода</div>
                     <div class="dp-field">
                       <label class="dp-label">размер шрифта <span class="dp-val">{{ tokens.inputFontSize === 0 ? 'авто' : tokens.inputFontSize.toFixed(3) + 'rem' }}</span></label>
                       <input type="range" min="0" max="1.2" step="0.025" :value="tokens.inputFontSize" class="dp-range" @input="onFloat('inputFontSize', $event)">
@@ -332,15 +339,6 @@
                     <div class="dp-field">
                       <label class="dp-label">отступ верт. <span class="dp-val">{{ tokens.inputPaddingV }}px</span></label>
                       <input type="range" min="2" max="24" step="1" :value="tokens.inputPaddingV" class="dp-range" @input="onRange('inputPaddingV', $event)">
-                    </div>
-                    <div class="dp-col-label" style="margin-top:8px">Нав. панель</div>
-                    <div class="dp-field">
-                      <label class="dp-label">отступ гор. <span class="dp-val">{{ tokens.navItemPaddingH }}px</span></label>
-                      <input type="range" min="4" max="28" step="1" :value="tokens.navItemPaddingH" class="dp-range" @input="onRange('navItemPaddingH', $event)">
-                    </div>
-                    <div class="dp-field">
-                      <label class="dp-label">отступ верт. <span class="dp-val">{{ tokens.navItemPaddingV }}px</span></label>
-                      <input type="range" min="2" max="18" step="1" :value="tokens.navItemPaddingV" class="dp-range" @input="onRange('navItemPaddingV', $event)">
                     </div>
                   </template>
                 </div>
@@ -554,6 +552,7 @@
                     <label class="dp-label">стиль</label>
                     <div class="dp-chips">
                       <button type="button" class="dp-chip" :class="{ 'dp-chip--active': tokens.borderStyle === 'solid' }" @click="set('borderStyle', 'solid')">solid</button>
+                      <button type="button" class="dp-chip" :class="{ 'dp-chip--active': tokens.borderStyle === 'dashed' }" @click="set('borderStyle', 'dashed')">dashed</button>
                       <button type="button" class="dp-chip" :class="{ 'dp-chip--active': tokens.borderStyle === 'none' }" @click="set('borderStyle', 'none')">none</button>
                     </div>
                   </div>
@@ -748,7 +747,18 @@
                   <div class="dp-field">
                     <label class="dp-label">скругление пункта <span class="dp-val">{{ tokens.navItemRadius }}px</span></label>
                     <input type="range" min="0" max="24" step="1" :value="tokens.navItemRadius" class="dp-range" @input="onRange('navItemRadius', $event)">
-                    <div class="dp-field-hint">Применяется ко всем пунктам бокового меню</div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">отступ гор. <span class="dp-val">{{ tokens.navItemPaddingH }}px</span></label>
+                    <input type="range" min="4" max="28" step="1" :value="tokens.navItemPaddingH" class="dp-range" @input="onRange('navItemPaddingH', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">отступ верт. <span class="dp-val">{{ tokens.navItemPaddingV }}px</span></label>
+                    <input type="range" min="2" max="18" step="1" :value="tokens.navItemPaddingV" class="dp-range" @input="onRange('navItemPaddingV', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">ширина сайдбара <span class="dp-val">{{ tokens.sidebarWidth }}px</span></label>
+                    <input type="range" min="180" max="380" step="5" :value="tokens.sidebarWidth" class="dp-range" @input="onRange('sidebarWidth', $event)">
                   </div>
                 </div>
                 <div class="dp-col">
@@ -757,7 +767,7 @@
                     <div v-for="(item, i) in ['Обзор', 'Клиенты', 'Проекты', 'Документы']" :key="item"
                       :style="{
                         display: 'flex', alignItems: 'center', gap: '8px',
-                        padding: '7px 10px',
+                        padding: tokens.navItemPaddingV + 'px ' + tokens.navItemPaddingH + 'px',
                         borderRadius: tokens.navItemRadius + 'px',
                         background: i === 0 ? 'color-mix(in srgb, var(--glass-bg) 92%, transparent)' : 'transparent',
                         fontWeight: i === 0 ? '600' : '400',
@@ -2363,38 +2373,39 @@ onBeforeUnmount(() => {
 /* ── Text align buttons ── */
 .dp-align-group { display: flex; gap: 4px; margin: 4px 0 2px; }
 .dp-align-btn {
-  flex: 1; height: 28px; border-radius: 5px; border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.06); color: rgba(255,255,255,.55);
+  flex: 1; height: 28px; border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  color: var(--glass-text); opacity: .55;
   cursor: pointer; font-size: .7rem; display: flex; align-items: center; justify-content: center;
-  transition: background .12s, color .12s;
+  transition: background .12s, opacity .12s;
 }
-.dp-align-btn:hover { background: rgba(255,255,255,.12); color: rgba(255,255,255,.85); }
-.dp-align-btn--active { background: rgba(255,255,255,.18) !important; color: hsl(200,80%,70%) !important; border-color: rgba(255,255,255,.25); }
+.dp-align-btn:hover { background: color-mix(in srgb, var(--glass-text) 10%, transparent); opacity: .85; }
+.dp-align-btn--active {
+  background: color-mix(in srgb, var(--ds-accent, hsl(200,80%,55%)) 18%, transparent) !important;
+  color: var(--ds-accent, hsl(200,80%,55%)) !important;
+  border-color: color-mix(in srgb, var(--ds-accent, hsl(200,80%,55%)) 30%, transparent);
+  opacity: 1 !important;
+}
 
 /* ── Typography context tabs ── */
 .dp-typo-ctx-tabs { display: flex; gap: 3px; margin-bottom: 10px; }
 .dp-typo-ctx-btn {
-  flex: 1; height: 24px; border-radius: 5px; border: 1px solid rgba(255,255,255,.1);
-  background: rgba(255,255,255,.05); color: rgba(255,255,255,.5);
+  flex: 1; height: 24px; border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+  color: var(--glass-text); opacity: .5;
   cursor: pointer; font-size: .57rem; letter-spacing: .01em; transition: all .12s;
+  font-family: inherit;
 }
-.dp-typo-ctx-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); }
-.dp-typo-ctx-btn--active { background: rgba(255,255,255,.15) !important; color: hsl(200,80%,70%) !important; border-color: rgba(255,255,255,.22); }
-.dp-type-ctx-hint { font-size: .52rem; opacity: .35; margin-bottom: 6px; line-height: 1.4; }
-.dp-headings-preview { display: flex; flex-direction: column; gap: 4px; padding: 6px 0 2px; }
-.dp-heading-prev-item { color: var(--glass-text); line-height: 1.3; }
-.dp-inputs-preview { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
-
-/* ── Typography context tabs ── */
-.dp-typo-ctx-tabs { display: flex; gap: 3px; margin-bottom: 10px; }
-.dp-typo-ctx-btn {
-  flex: 1; height: 24px; border-radius: 5px; border: 1px solid rgba(255,255,255,.1);
-  background: rgba(255,255,255,.05); color: rgba(255,255,255,.5);
-  cursor: pointer; font-size: .57rem; letter-spacing: .01em; transition: all .12s;
+.dp-typo-ctx-btn:hover { background: color-mix(in srgb, var(--glass-text) 8%, transparent); opacity: .8; }
+.dp-typo-ctx-btn--active {
+  background: color-mix(in srgb, var(--ds-accent, hsl(200,80%,55%)) 15%, transparent) !important;
+  color: var(--ds-accent, hsl(200,80%,55%)) !important;
+  border-color: color-mix(in srgb, var(--ds-accent, hsl(200,80%,55%)) 25%, transparent);
+  opacity: 1 !important;
 }
-.dp-typo-ctx-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); }
-.dp-typo-ctx-btn--active { background: rgba(255,255,255,.15) !important; color: hsl(200,80%,70%) !important; border-color: rgba(255,255,255,.22); }
-.dp-type-ctx-hint { font-size: .52rem; opacity: .35; margin-bottom: 6px; line-height: 1.4; }
+.dp-type-ctx-hint { font-size: .52rem; opacity: .35; margin-bottom: 6px; line-height: 1.4; color: var(--glass-text); }
 .dp-headings-preview { display: flex; flex-direction: column; gap: 4px; padding: 6px 0 2px; }
 .dp-heading-prev-item { color: var(--glass-text); line-height: 1.3; }
 .dp-inputs-preview { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
@@ -2468,7 +2479,7 @@ onBeforeUnmount(() => {
 .dp-applied-toast {
   position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
   padding: 6px 16px; border-radius: 8px;
-  background: hsl(142, 60%, 42%); color: #fff;
+  background: var(--ds-success, hsl(142, 60%, 42%)); color: #fff;
   font-size: .64rem; font-weight: 600; letter-spacing: .03em;
   box-shadow: 0 4px 16px rgba(0,0,0,.15);
   pointer-events: none; white-space: nowrap;

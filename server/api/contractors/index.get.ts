@@ -8,21 +8,8 @@ export default defineEventHandler(async (event) => {
   const q = safeGetQuery(event)
   const projectSlugFilter = (q.projectSlug as string) || ''
 
-  const rowsRaw = projectSlugFilter
-    ? await db
-      .select({
-        contractor: contractors,
-        projectIds: sql<number[]>`array_remove(array_agg(${projectContractors.projectId}), null)`,
-        projectTitles: sql<string[]>`array_remove(array_agg(${projects.title}), null)`,
-        projectSlugs: sql<string[]>`array_remove(array_agg(${projects.slug}), null)`,
-      })
-      .from(contractors)
-      .innerJoin(projectContractors, eq(projectContractors.contractorId, contractors.id))
-      .innerJoin(projects, eq(projects.id, projectContractors.projectId))
-      .where(eq(projects.slug, projectSlugFilter))
-      .groupBy(contractors.id)
-      .orderBy(contractors.name)
-    : await db
+  // Always show ALL contractors (with their linked projects info)
+  const rowsRaw = await db
       .select({
         contractor: contractors,
         projectIds: sql<number[]>`array_remove(array_agg(${projectContractors.projectId}), null)`,
