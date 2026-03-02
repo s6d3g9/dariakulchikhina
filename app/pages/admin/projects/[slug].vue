@@ -9,69 +9,18 @@
         <span>{{ project.title }}</span>
       </div>
 
-      <div class="proj-client-card glass-card" style="margin-bottom:14px">
-        <div class="proj-client-title">
-          клиент проекта
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" style="margin-left:8px" @click="showClientModal = true">+</button>
-        </div>
-        <div v-if="showClientForm" class="proj-client-row">
-          <select v-model="selectedClientId" class="proj-client-select">
-            <option value="">— выберите клиента —</option>
-            <option v-for="c in clients" :key="c.id" :value="String(c.id)">
-              {{ c.name }}<template v-if="c.phone"> · {{ c.phone }}</template><template v-else-if="c.email"> · {{ c.email }}</template>
-            </option>
-          </select>
-          <button class="proj-client-btn" :disabled="!selectedClientId || linkingClient" @click="linkClientToProject">
-            {{ linkingClient ? '...' : 'привязать' }}
-          </button>
-        </div>
-        <div v-if="linkedClients.length" class="proj-client-linked">
-          <span class="proj-client-linked-label">привязанные клиенты:</span>
-          <span v-for="client in linkedClients" :key="client.id" class="proj-client-linked-chip">{{ client.name }}</span>
-        </div>
-        <p v-if="clientLinkError" class="proj-client-error">{{ clientLinkError }}</p>
-        <p v-else-if="clientLinkSuccess" class="proj-client-success">{{ clientLinkSuccess }}</p>
+      <div class="proj-link-toolbar glass-card" style="margin-bottom:14px">
+        <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click="showClientModal = true">
+          клиенты ({{ linkedClients.length }})
+        </button>
+        <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click="showContractorModal = true">
+          подрядчики ({{ linkedContractorsList.length }})
+        </button>
       </div>
-
-      <!-- Contractor link card -->
-      <div class="proj-client-card glass-card" style="margin-bottom:14px">
-        <div class="proj-client-title">
-          подрядчики проекта
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" style="margin-left:8px" @click="showContractorModal = true">+</button>
-        </div>
-        <div v-if="showContractorForm" class="proj-client-row">
-          <select v-model="selectedContractorId" class="proj-client-select">
-            <option value="">— выберите подрядчика —</option>
-            <option
-              v-for="c in allContractors"
-              :key="c.id"
-              :value="String(c.id)"
-              :disabled="linkedContractorIds.has(String(c.id))"
-            >
-              {{ c.name }}<template v-if="c.companyName"> · {{ c.companyName }}</template>
-            </option>
-          </select>
-          <button
-            class="proj-client-btn"
-            :disabled="!selectedContractorId || linkingContractor"
-            @click="linkContractorToProject"
-          >
-            {{ linkingContractor ? '...' : 'привязать' }}
-          </button>
-        </div>
-        <div v-if="linkedContractorsList.length" class="proj-client-linked">
-          <span class="proj-client-linked-label">привязанные подрядчики:</span>
-          <span
-            v-for="c in linkedContractorsList"
-            :key="c.id"
-            class="proj-client-linked-chip proj-client-linked-chip--removable"
-            :title="'отвязать ' + c.name"
-            @click="unlinkContractor(c.id)"
-          >{{ c.name }} ×</span>
-        </div>
-        <p v-if="contractorLinkError" class="proj-client-error">{{ contractorLinkError }}</p>
-        <p v-else-if="contractorLinkSuccess" class="proj-client-success">{{ contractorLinkSuccess }}</p>
-      </div>
+      <p v-if="clientLinkError" class="proj-client-error" style="margin-bottom:6px">{{ clientLinkError }}</p>
+      <p v-else-if="clientLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ clientLinkSuccess }}</p>
+      <p v-if="contractorLinkError" class="proj-client-error" style="margin-bottom:6px">{{ contractorLinkError }}</p>
+      <p v-else-if="contractorLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ contractorLinkSuccess }}</p>
 
       <!-- ═══ Mobile top horizontal nav bar ═══ -->
       <div v-if="!contractorPreviewMode" class="proj-mobile-nav">
@@ -264,13 +213,34 @@
     <!-- Client Selection Modal -->
     <div v-if="showClientModal" class="a-modal-backdrop" @click.self="showClientModal = false">
       <div class="a-modal">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">добавить клиента в проект</h3>
+        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">клиенты проекта</h3>
+
+        <div v-if="linkedClients.length" style="margin-bottom:14px">
+          <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
+          <div class="modal-clients-list">
+            <div v-for="client in linkedClients" :key="`linked-${client.id}`" class="modal-client-item modal-client-item--linked">
+              <div class="modal-client-info">
+                <div class="modal-client-name">{{ client.name }}</div>
+                <div class="modal-client-details">
+                  <template v-if="client.phone">{{ client.phone }}</template>
+                  <template v-else-if="client.email">{{ client.email }}</template>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="modal-action-btn modal-action-btn--remove"
+                @click="unlinkClientFromModal(String(client.id))"
+              >-</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
         <div class="modal-clients-list">
           <div
-            v-for="client in clients"
+            v-for="client in availableClientsForModal"
             :key="client.id"
             class="modal-client-item"
-            :class="{ 'modal-client-item--linked': linkedClientIds.includes(String(client.id)) }"
           >
             <div class="modal-client-info">
               <div class="modal-client-name">{{ client.name }}</div>
@@ -280,19 +250,13 @@
               </div>
             </div>
             <button
-              v-if="!linkedClientIds.includes(String(client.id))"
               type="button"
               class="modal-action-btn modal-action-btn--add"
               @click="linkClientFromModal(String(client.id))"
             >+</button>
-            <button
-              v-else
-              type="button"
-              class="modal-action-btn modal-action-btn--remove"
-              @click="unlinkClientFromModal(String(client.id))"
-            >-</button>
           </div>
         </div>
+        <div v-if="!linkedClients.length && !availableClientsForModal.length" style="font-size:.82rem;color:#888">Нет клиентов в системе</div>
         <p v-if="clientLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ clientLinkError }}</p>
         <p v-if="clientLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ clientLinkSuccess }}</p>
         <div style="display:flex;justify-content:flex-end;margin-top:20px">
@@ -304,13 +268,38 @@
     <!-- Contractor Selection Modal -->
     <div v-if="showContractorModal" class="a-modal-backdrop" @click.self="showContractorModal = false">
       <div class="a-modal">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">добавить подрядчика в проект</h3>
+        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">подрядчики проекта</h3>
+
+        <div v-if="linkedContractorsList.length" style="margin-bottom:14px">
+          <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
+          <div class="modal-contractors-list">
+            <div
+              v-for="contractor in linkedContractorsList"
+              :key="`linked-${contractor.id}`"
+              class="modal-contractor-item modal-contractor-item--linked"
+            >
+              <div class="modal-contractor-info">
+                <div class="modal-contractor-name">{{ contractor.name }}</div>
+                <div class="modal-contractor-details">
+                  <template v-if="contractor.companyName">{{ contractor.companyName }}</template>
+                  <template v-else-if="contractor.phone">{{ contractor.phone }}</template>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="modal-action-btn modal-action-btn--remove"
+                @click="unlinkContractor(contractor.id)"
+              >-</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
         <div class="modal-contractors-list">
           <div
-            v-for="contractor in allContractors"
+            v-for="contractor in availableContractorsForModal"
             :key="contractor.id"
             class="modal-contractor-item"
-            :class="{ 'modal-contractor-item--linked': linkedContractorIds.has(String(contractor.id)) }"
           >
             <div class="modal-contractor-info">
               <div class="modal-contractor-name">{{ contractor.name }}</div>
@@ -320,19 +309,13 @@
               </div>
             </div>
             <button
-              v-if="!linkedContractorIds.has(String(contractor.id))"
               type="button"
               class="modal-action-btn modal-action-btn--add"
               @click="linkContractorFromModal(contractor.id)"
             >+</button>
-            <button
-              v-else
-              type="button"
-              class="modal-action-btn modal-action-btn--remove"
-              @click="unlinkContractor(contractor.id)"
-            >-</button>
           </div>
         </div>
+        <div v-if="!linkedContractorsList.length && !availableContractorsForModal.length" style="font-size:.82rem;color:#888">Нет подрядчиков в системе</div>
         <p v-if="contractorLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ contractorLinkError }}</p>
         <p v-if="contractorLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ contractorLinkSuccess }}</p>
         <div style="display:flex;justify-content:flex-end;margin-top:20px">
@@ -565,14 +548,12 @@ const selectedClientId = ref('')
 const linkingClient = ref(false)
 const clientLinkError = ref('')
 const clientLinkSuccess = ref('')
-const showClientForm = ref(false)
 const showClientModal = ref(false)
 // ── Contractor link state ─────────────────────────────────────────
 const selectedContractorId = ref('')
 const linkingContractor = ref(false)
 const contractorLinkError = ref('')
 const contractorLinkSuccess = ref('')
-const showContractorForm = ref(false)
 const showContractorModal = ref(false)
 
 const allContractors = computed(() => allContractorsData.value || [])
@@ -653,6 +634,15 @@ const linkedClientIds = computed(() => {
 const linkedClients = computed(() => {
   const linkedSet = new Set(linkedClientIds.value)
   return clients.value.filter((c: any) => linkedSet.has(String(c.id)))
+})
+
+const availableClientsForModal = computed(() => {
+  const linkedSet = new Set(linkedClientIds.value)
+  return clients.value.filter((c: any) => !linkedSet.has(String(c.id)))
+})
+
+const availableContractorsForModal = computed(() => {
+  return allContractors.value.filter((c: any) => !linkedContractorIds.value.has(String(c.id)))
 })
 
 const editForm = reactive({
