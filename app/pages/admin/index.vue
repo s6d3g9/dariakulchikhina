@@ -37,7 +37,6 @@
             <span style="font-size:.72rem;color:#aaa">{{ p.taskDone }}/{{ p.taskTotal }}</span>
             <span v-if="p.taskOverdue > 0" style="font-size:.72rem;color:#c00;font-weight:600">⚠ {{ p.taskOverdue }} просрочено</span>
           </div>
-          <AdminRoadmapTimeline v-if="p.roadmapSummary?.length" :stages="p.roadmapSummary" />
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
           <NuxtLink :to="`/admin/projects/${p.slug}`">
