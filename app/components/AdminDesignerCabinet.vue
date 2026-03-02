@@ -130,6 +130,8 @@
                 <button v-if="editingServices" class="cab-btn" @click="cancelEditServices">Отмена</button>
               </div>
             </div>
+            <p v-if="svcEditError" class="cab-inline-error">{{ svcEditError }}</p>
+            <p v-if="svcEditSuccess" class="cab-inline-success">{{ svcEditSuccess }}</p>
 
             <div v-if="!services.length && !editingServices" class="cab-empty">
               <div class="cab-empty-icon">◎</div>
@@ -199,6 +201,8 @@
                 <button v-if="editingPackages" class="cab-btn" @click="cancelEditPackages">Отмена</button>
               </div>
             </div>
+            <p v-if="pkgEditError" class="cab-inline-error">{{ pkgEditError }}</p>
+            <p v-if="pkgEditSuccess" class="cab-inline-success">{{ pkgEditSuccess }}</p>
 
             <div v-if="!packages.length && !editingPackages" class="cab-empty">
               <div class="cab-empty-icon">◑</div>
@@ -491,6 +495,8 @@ function toggleSpec(sp: string) {
 const editingServices = ref(false)
 const savingSvc = ref(false)
 const editServicesList = ref<DesignerServicePrice[]>([])
+const svcEditError = ref('')
+const svcEditSuccess = ref('')
 
 const editServicesByCat = computed(() => {
   const map = new Map<DesignerServiceCategory, DesignerServicePrice[]>()
@@ -502,18 +508,30 @@ const editServicesByCat = computed(() => {
 })
 
 function startEditServices() {
+  svcEditError.value = ''
+  svcEditSuccess.value = ''
   editServicesList.value = JSON.parse(JSON.stringify(services.value))
   if (!editServicesList.value.length) addCustomService()
   editingServices.value = true
 }
 function cancelEditServices() {
+  svcEditError.value = ''
   editingServices.value = false
 }
 async function saveEditedServices() {
+  svcEditError.value = ''
+  svcEditSuccess.value = ''
+  const normalized = normalizeServicesForSave(editServicesList.value)
+  if (!normalized.ok) {
+    svcEditError.value = normalized.error
+    return
+  }
   savingSvc.value = true
   try {
-    await saveServices(editServicesList.value)
+    await saveServices(normalized.list)
     editingServices.value = false
+    svcEditSuccess.value = 'Услуги сохранены'
+    setTimeout(() => { svcEditSuccess.value = '' }, 2500)
   } finally {
     savingSvc.value = false
   }
@@ -533,6 +551,31 @@ function addCustomService() {
     enabled: true,
   })
 }
+
+function normalizeServicesForSave(list: DesignerServicePrice[]): { ok: true; list: DesignerServicePrice[] } | { ok: false; error: string } {
+  const cleaned = list
+    .map(item => ({
+      ...item,
+      title: String(item.title || '').trim(),
+      description: String(item.description || '').trim(),
+      price: Number.isFinite(Number(item.price)) ? Math.max(0, Number(item.price)) : 0,
+    }))
+    .filter(item => item.title || item.description || item.price > 0)
+
+  if (!cleaned.length) {
+    return { ok: false, error: 'Добавьте хотя бы одну услугу с названием' }
+  }
+
+  const seen = new Set<string>()
+  for (const item of cleaned) {
+    if (!item.title) return { ok: false, error: 'У всех услуг должно быть заполнено название' }
+    if (!item.serviceKey) return { ok: false, error: 'Ошибка ключа услуги, добавьте услугу заново' }
+    if (seen.has(item.serviceKey)) return { ok: false, error: 'Найдены дубли услуг, удалите повторения' }
+    seen.add(item.serviceKey)
+  }
+
+  return { ok: true, list: cleaned }
+}
 async function initFromTemplates() {
   const list = initServicesFromTemplates()
   await saveServices(list)
@@ -545,6 +588,8 @@ async function initFromTemplates() {
 const editingPackages = ref(false)
 const savingPkg = ref(false)
 const editPackagesList = ref<DesignerPackage[]>([])
+const pkgEditError = ref('')
+const pkgEditSuccess = ref('')
 
 const allServiceKeys = computed(() => {
   if (editingServices.value) {
@@ -554,18 +599,30 @@ const allServiceKeys = computed(() => {
 })
 
 function startEditPackages() {
+  pkgEditError.value = ''
+  pkgEditSuccess.value = ''
   editPackagesList.value = JSON.parse(JSON.stringify(packages.value))
   if (!editPackagesList.value.length) addCustomPackage()
   editingPackages.value = true
 }
 function cancelEditPackages() {
+  pkgEditError.value = ''
   editingPackages.value = false
 }
 async function saveEditedPackages() {
+  pkgEditError.value = ''
+  pkgEditSuccess.value = ''
+  const normalized = normalizePackagesForSave(editPackagesList.value)
+  if (!normalized.ok) {
+    pkgEditError.value = normalized.error
+    return
+  }
   savingPkg.value = true
   try {
-    await savePackages(editPackagesList.value)
+    await savePackages(normalized.list)
     editingPackages.value = false
+    pkgEditSuccess.value = 'Пакеты сохранены'
+    setTimeout(() => { pkgEditSuccess.value = '' }, 2500)
   } finally {
     savingPkg.value = false
   }
@@ -588,6 +645,33 @@ function addCustomPackage() {
 }
 function removeEditPackage(key: string) {
   editPackagesList.value = editPackagesList.value.filter(p => p.key !== key)
+}
+
+function normalizePackagesForSave(list: DesignerPackage[]): { ok: true; list: DesignerPackage[] } | { ok: false; error: string } {
+  const cleaned = list
+    .map(pkg => ({
+      ...pkg,
+      key: String(pkg.key || '').trim(),
+      title: String(pkg.title || '').trim(),
+      description: String(pkg.description || '').trim(),
+      pricePerSqm: Number.isFinite(Number(pkg.pricePerSqm)) ? Math.max(0, Number(pkg.pricePerSqm)) : 0,
+      serviceKeys: Array.from(new Set((pkg.serviceKeys || []).filter(Boolean))),
+    }))
+    .filter(pkg => pkg.title || pkg.pricePerSqm > 0 || pkg.serviceKeys.length > 0)
+
+  if (!cleaned.length) {
+    return { ok: false, error: 'Добавьте хотя бы один пакет' }
+  }
+
+  const seen = new Set<string>()
+  for (const pkg of cleaned) {
+    if (!pkg.key) return { ok: false, error: 'Ошибка ключа пакета, добавьте пакет заново' }
+    if (!pkg.title) return { ok: false, error: 'У всех пакетов должно быть заполнено название' }
+    if (seen.has(pkg.key)) return { ok: false, error: 'Найдены дубли пакетов, удалите повторения' }
+    seen.add(pkg.key)
+  }
+
+  return { ok: true, list: cleaned }
 }
 async function initPackages() {
   const pkgs = initPackagesFromTemplates()
@@ -757,6 +841,16 @@ async function doCreateProject() {
 }
 .cab-section-head h2 { font-size: 1.3rem; font-weight: 600; }
 .cab-section-actions { display: flex; gap: 8px; }
+.cab-inline-error {
+  margin: -10px 0 12px;
+  color: #f87171;
+  font-size: .82rem;
+}
+.cab-inline-success {
+  margin: -10px 0 12px;
+  color: #34d399;
+  font-size: .82rem;
+}
 
 /* ── Buttons ── */
 .cab-btn {
