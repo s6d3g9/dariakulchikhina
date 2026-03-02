@@ -1089,40 +1089,40 @@ const compResultStyle = computed(() => {
 })
 
 function getVueComponent(el: HTMLElement): { name: string; path: string } {
-  const skip = new Set([
+  const SKIP = new Set([
     'Transition', 'TransitionGroup', 'KeepAlive', 'Suspense', 'Teleport',
     'RouterView', 'NuxtLink', 'RouterLink', 'App', 'Anonymous',
     'UIDesignPanel', 'NuxtPage', 'NuxtLayout',
   ])
 
-  // Walk UP the real DOM tree — __vueParentComponent is only on root elements of a component
+  // ── 1. data-comp-name — stamped by comp-inspector plugin (works in production)
+  const stamped = (el.closest('[data-comp-name]') as HTMLElement | null)
+  if (stamped?.dataset.compName && !SKIP.has(stamped.dataset.compName)) {
+    const name = stamped.dataset.compName
+    const path = stamped.dataset.compFile || `app/components/${name}.vue`
+    return { name, path }
+  }
+
+  // ── 2. __vueParentComponent — available in dev / SSR hydrated DOM
   let domEl: Element | null = el
   while (domEl && domEl !== document.body) {
-    const vnode = (domEl as any).__vueParentComponent
-    if (vnode) {
-      // Walk the Vue component-parent chain from this node
-      let node: any = vnode
-      while (node) {
-        const name: string = node.type?.__name || node.type?.name || ''
-        if (name && !skip.has(name)) {
-          // Try to infer path from filename slot-in-type
-          const file: string = node.type?.__file || ''
-          const pathFromFile = file
-            ? file.replace(/^.*?(app\/.*)$/, '$1')
-            : `app/components/${name}.vue`
-          return { name, path: pathFromFile }
-        }
-        node = node.parent
+    let node: any = (domEl as any).__vueParentComponent
+    while (node) {
+      const name: string = node.type?.__name || node.type?.name || ''
+      if (name && !SKIP.has(name)) {
+        const file: string = node.type?.__file || ''
+        const path = file ? file.replace(/^.*?(app\/.*)$/, '$1') : `app/components/${name}.vue`
+        return { name, path }
       }
+      node = node.parent
     }
     domEl = domEl.parentElement
   }
 
-  // Fallback: show DOM identity so the card always appears
+  // ── 3. Fallback: DOM identity so the card always appears
   const tag = el.tagName.toLowerCase()
-  const cls = Array.from(el.classList).filter(c => !c.startsWith('dp-')).slice(0, 3).join('.')
-  const fallback = cls ? `.${cls}` : `<${tag}>`
-  return { name: fallback, path: `(DOM: ${tag})` }
+  const cls = Array.from(el.classList).filter(c => !c.startsWith('dp-') && !c.startsWith('nuxt')).slice(0, 3).join('.')
+  return { name: cls ? `.${cls}` : `<${tag}>`, path: `(DOM: ${tag})` }
 }
 
 function onCompMove(e: MouseEvent) {
