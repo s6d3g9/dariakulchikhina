@@ -1,104 +1,86 @@
 <template>
-  <div class="cct-root">
-    <div v-if="pending" class="cct-loading"><div class="cct-loading-bar"></div></div>
+  <div class="cct-root glass-card">
+    <div v-if="pending" class="cct-loading">Загрузка...</div>
 
     <template v-else-if="project">
 
-      <!-- Contract card -->
+      <!-- ── Договор ── -->
       <div class="cct-section">
-        <div class="cct-section-head">
-          <span class="cct-section-title">Договор</span>
-          <span class="cct-badge" :class="`cct-badge--${contractStatusColor}`">
-            {{ contractStatusLabel }}
-          </span>
+        <div class="cct-section-title">
+          договор
+          <span class="cct-badge" :class="`cct-badge--${contractStatusColor}`">{{ contractStatusLabel }}</span>
         </div>
-        <div class="cct-grid" v-if="hasContract">
-          <div v-if="profile.contract_number" class="cct-cell">
-            <span class="cct-cell-lbl">Номер договора</span>
-            <span class="cct-cell-val">{{ profile.contract_number }}</span>
+        <div class="cct-rows" v-if="hasContract">
+          <div v-if="profile.contract_number" class="cct-row">
+            <span class="cct-lbl">Номер договора</span>
+            <span class="cct-val">{{ profile.contract_number }}</span>
           </div>
-          <div v-if="profile.contract_date" class="cct-cell">
-            <span class="cct-cell-lbl">Дата</span>
-            <span class="cct-cell-val">{{ fmtDate(profile.contract_date) }}</span>
+          <div v-if="profile.contract_date" class="cct-row">
+            <span class="cct-lbl">Дата</span>
+            <span class="cct-val">{{ fmtDate(profile.contract_date) }}</span>
           </div>
-          <div v-if="profile.contract_parties" class="cct-cell cct-cell--full">
-            <span class="cct-cell-lbl">Стороны</span>
-            <span class="cct-cell-val">{{ profile.contract_parties }}</span>
+          <div v-if="profile.contract_parties" class="cct-row">
+            <span class="cct-lbl">Стороны</span>
+            <span class="cct-val">{{ profile.contract_parties }}</span>
           </div>
-          <div v-if="profile.tor_scope" class="cct-cell cct-cell--full">
-            <span class="cct-cell-lbl">Объём работ</span>
-            <span class="cct-cell-val cct-cell-val--pre">{{ profile.tor_scope }}</span>
+          <div v-if="profile.tor_scope" class="cct-row">
+            <span class="cct-lbl">Объём работ</span>
+            <span class="cct-val cct-val--pre">{{ profile.tor_scope }}</span>
           </div>
         </div>
         <div v-else class="cct-empty">Договор ещё не заполнен</div>
-
-        <div v-if="profile.contract_file" class="cct-download">
-          <a :href="profile.contract_file" target="_blank" class="cct-download-btn">
-            ↓ Скачать договор
-          </a>
+        <div v-if="profile.contract_file" class="cct-dl">
+          <a :href="profile.contract_file" target="_blank" class="cct-dl-btn">↓ Скачать договор</a>
         </div>
       </div>
 
-      <!-- Invoice / Advance -->
+      <!-- ── Счёт и оплата ── -->
       <div class="cct-section">
-        <div class="cct-section-head">
-          <span class="cct-section-title">Счёт и оплата</span>
-          <span class="cct-badge" :class="`cct-badge--${paymentStatusColor}`">
-            {{ paymentStatusLabel }}
-          </span>
+        <div class="cct-section-title">
+          счёт и оплата
+          <span class="cct-badge" :class="`cct-badge--${paymentStatusColor}`">{{ paymentStatusLabel }}</span>
         </div>
-        <div class="cct-grid" v-if="hasInvoice">
-          <div v-if="profile.invoice_amount" class="cct-cell">
-            <span class="cct-cell-lbl">Сумма</span>
-            <span class="cct-cell-val">{{ profile.invoice_amount }}</span>
+        <div class="cct-rows" v-if="hasInvoice">
+          <div v-if="profile.invoice_amount" class="cct-row">
+            <span class="cct-lbl">Сумма</span>
+            <span class="cct-val">{{ profile.invoice_amount }}</span>
           </div>
-          <div v-if="profile.invoice_advance_pct" class="cct-cell">
-            <span class="cct-cell-lbl">Аванс</span>
-            <span class="cct-cell-val">{{ profile.invoice_advance_pct }}</span>
+          <div v-if="profile.invoice_advance_pct" class="cct-row">
+            <span class="cct-lbl">Аванс</span>
+            <span class="cct-val">{{ profile.invoice_advance_pct }}</span>
           </div>
-          <div v-if="profile.invoice_date" class="cct-cell">
-            <span class="cct-cell-lbl">Дата выставления</span>
-            <span class="cct-cell-val">{{ fmtDate(profile.invoice_date) }}</span>
+          <div v-if="profile.invoice_date" class="cct-row">
+            <span class="cct-lbl">Дата выставления</span>
+            <span class="cct-val">{{ fmtDate(profile.invoice_date) }}</span>
           </div>
-          <div v-if="profile.invoice_payment_details" class="cct-cell cct-cell--full">
-            <span class="cct-cell-lbl">Реквизиты оплаты</span>
-            <span class="cct-cell-val cct-cell-val--pre">{{ profile.invoice_payment_details }}</span>
+          <div v-if="profile.invoice_payment_details" class="cct-row">
+            <span class="cct-lbl">Реквизиты оплаты</span>
+            <span class="cct-val cct-val--pre">{{ profile.invoice_payment_details }}</span>
           </div>
         </div>
         <div v-else class="cct-empty">Счёт ещё не выставлен</div>
-
-        <div v-if="profile.invoice_file" class="cct-download">
-          <a :href="profile.invoice_file" target="_blank" class="cct-download-btn">
-            ↓ Скачать счёт
-          </a>
+        <div v-if="profile.invoice_file" class="cct-dl">
+          <a :href="profile.invoice_file" target="_blank" class="cct-dl-btn">↓ Скачать счёт</a>
         </div>
       </div>
 
-      <!-- ToR summary -->
-      <div class="cct-section" v-if="profile.tor_timeline || profile.tor_deliverables">
-        <div class="cct-section-head">
-          <span class="cct-section-title">Техническое задание</span>
-        </div>
-        <div class="cct-grid">
-          <div v-if="profile.tor_timeline" class="cct-cell">
-            <span class="cct-cell-lbl">Сроки проектирования</span>
-            <span class="cct-cell-val">{{ profile.tor_timeline }}</span>
+      <!-- ── ТЗ (краткое) ── -->
+      <div class="cct-section" v-if="profile.tor_timeline || profile.tor_deliverables || profile.tor_exclusions">
+        <div class="cct-section-title">техническое задание</div>
+        <div class="cct-rows">
+          <div v-if="profile.tor_timeline" class="cct-row">
+            <span class="cct-lbl">Сроки проектирования</span>
+            <span class="cct-val">{{ profile.tor_timeline }}</span>
           </div>
-          <div v-if="profile.tor_deliverables" class="cct-cell">
-            <span class="cct-cell-lbl">Формат результата</span>
-            <span class="cct-cell-val">{{ profile.tor_deliverables }}</span>
+          <div v-if="profile.tor_deliverables" class="cct-row">
+            <span class="cct-lbl">Формат результата</span>
+            <span class="cct-val">{{ profile.tor_deliverables }}</span>
           </div>
-          <div v-if="profile.tor_exclusions" class="cct-cell cct-cell--full">
-            <span class="cct-cell-lbl">Не входит в проект</span>
-            <span class="cct-cell-val cct-cell-val--pre">{{ profile.tor_exclusions }}</span>
+          <div v-if="profile.tor_exclusions" class="cct-row">
+            <span class="cct-lbl">Не входит в проект</span>
+            <span class="cct-val cct-val--pre">{{ profile.tor_exclusions }}</span>
           </div>
         </div>
-      </div>
-
-      <!-- Future payment notice -->
-      <div class="cct-future-notice">
-        <span class="cct-future-icon">◌</span>
-        <span>Онлайн-оплата будет доступна в следующей версии кабинета</span>
       </div>
 
     </template>
@@ -144,62 +126,47 @@ function fmtDate(d: string) {
 </script>
 
 <style scoped>
-.cct-root { padding: 4px 0 48px; display: flex; flex-direction: column; gap: 0; }
-.cct-loading { padding: 40px 0; }
-.cct-loading-bar { height: 2px; width: 60px; background: var(--c-border, #e8e8e4); animation: cc-bar .9s ease infinite alternate; }
-@keyframes cc-bar { to { width: 140px; opacity: .4; } }
+.cct-root { padding: 16px; }
+.cct-loading { font-size: .85rem; color: color-mix(in srgb, var(--glass-text) 45%, transparent); }
 
-/* Section */
-.cct-section { border: 1px solid var(--c-border, #e8e8e4); margin-bottom: 16px; }
-.cct-section-head {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 20px; border-bottom: 1px solid var(--c-border, #e8e8e4);
-  background: var(--c-bg2, #f8f8f7);
+.cct-section { margin-bottom: 24px; }
+.cct-section-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: .68rem; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--glass-text); opacity: .45; margin-bottom: 14px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--glass-border);
 }
-.cct-section-title { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--c-muted, #888); }
+
+.cct-rows { display: flex; flex-direction: column; gap: 12px; }
+.cct-row { display: flex; flex-direction: column; gap: 3px; }
+.cct-lbl {
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--glass-text); opacity: .4;
+}
+.cct-val { font-size: .88rem; color: var(--glass-text); line-height: 1.5; }
+.cct-val--pre { white-space: pre-wrap; }
+
+.cct-empty { font-size: .85rem; color: var(--glass-text); opacity: .35; padding: 4px 0; }
 
 /* Badge */
 .cct-badge {
-  font-size: .62rem; padding: 2px 10px; letter-spacing: .5px; text-transform: uppercase; border-radius: 2px;
+  font-size: .62rem; padding: 2px 10px; letter-spacing: .4px;
+  text-transform: uppercase; border-radius: 999px; opacity: 1;
 }
-.cct-badge--gray   { background: #f0f0f0; color: #888; }
-.cct-badge--blue   { background: #e3f0ff; color: #1565c0; }
-.cct-badge--green  { background: #e8f5e9; color: #2e7d32; }
-.cct-badge--yellow { background: #fff8e1; color: #c87400; }
-.cct-badge--red    { background: #fce4e4; color: #ba2626; }
-
-/* Grid */
-.cct-grid { display: grid; grid-template-columns: 1fr 1fr; }
-.cct-cell {
-  padding: 14px 20px; border-right: 1px solid var(--c-border, #e8e8e4);
-  border-bottom: 1px solid var(--c-border, #e8e8e4);
-}
-.cct-cell:nth-child(2n) { border-right: none; }
-.cct-cell--full { grid-column: 1 / -1; border-right: none; }
-.cct-cell-lbl { display: block; font-size: .6rem; text-transform: uppercase; letter-spacing: .8px; color: var(--c-muted, #aaa); margin-bottom: 4px; }
-.cct-cell-val { font-size: .86rem; color: var(--c-text, #1a1a1a); }
-.cct-cell-val--pre { white-space: pre-line; }
-.cct-empty { padding: 20px; font-size: .8rem; color: var(--c-muted, #aaa); }
+.cct-badge--gray   { background: color-mix(in srgb, var(--glass-text) 8%, transparent); color: color-mix(in srgb, var(--glass-text) 50%, transparent); }
+.cct-badge--blue   { background: rgba(37,99,235,.08); color: #2563eb; }
+.cct-badge--green  { background: rgba(22,163,74,.08); color: #16a34a; }
+.cct-badge--yellow { background: rgba(200,116,0,.08); color: #c87400; }
+.cct-badge--red    { background: rgba(220,38,38,.08); color: #dc2626; }
 
 /* Download */
-.cct-download { padding: 14px 20px; border-top: 1px solid var(--c-border, #e8e8e4); }
-.cct-download-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: .8rem; color: var(--c-text, #1a1a1a); text-decoration: none;
-  border: 1px solid var(--c-border, #e8e8e4); padding: 8px 16px;
+.cct-dl { margin-top: 12px; }
+.cct-dl-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .8rem; text-decoration: none;
+  color: var(--glass-page-bg); background: var(--glass-text);
+  padding: 6px 14px; border-radius: 8px;
+  transition: opacity .15s;
 }
-.cct-download-btn:hover { border-color: var(--c-text, #1a1a1a); }
-
-/* Future notice */
-.cct-future-notice {
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 20px; border: 1px dashed var(--c-border, #e8e8e4);
-  font-size: .76rem; color: var(--c-muted, #aaa);
-}
-.cct-future-icon { font-size: 1rem; opacity: .5; }
-
-@media (max-width: 640px) {
-  .cct-grid { grid-template-columns: 1fr; }
-  .cct-cell:nth-child(2n) { border-right: none; }
-}
+.cct-dl-btn:hover { opacity: .8; }
 </style>

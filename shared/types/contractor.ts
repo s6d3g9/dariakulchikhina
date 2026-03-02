@@ -25,6 +25,30 @@ export const ContractorSchema = z.object({
   messenger: z.string().optional().nullable(),
   messengerNick: z.string().optional().nullable(),
   website: z.string().optional().nullable(),
+  // Паспортные данные
+  passportSeries: z.string().optional().nullable(),
+  passportNumber: z.string().optional().nullable(),
+  passportIssuedBy: z.string().optional().nullable(),
+  passportIssueDate: z.string().optional().nullable(),
+  passportDepartmentCode: z.string().optional().nullable(),
+  birthDate: z.string().optional().nullable(),
+  birthPlace: z.string().optional().nullable(),
+  registrationAddress: z.string().optional().nullable(),
+  snils: z.string().optional().nullable(),
+  // Доп. контакты
+  telegram: z.string().optional().nullable(),
+  whatsapp: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
+  workRadius: z.string().optional().nullable(),
+  // Финансовые / организационные
+  taxSystem: z.string().optional().nullable(),
+  paymentMethods: z.array(z.string()).optional().default([]),
+  hourlyRate: z.string().optional().nullable(),
+  hasInsurance: z.boolean().optional().default(false),
+  insuranceDetails: z.string().optional().nullable(),
+  education: z.string().optional().nullable(),
+  certifications: z.array(z.string()).optional().default([]),
+  experienceYears: z.number().optional().nullable(),
 })
 export const CreateContractorSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9_-]+$/),

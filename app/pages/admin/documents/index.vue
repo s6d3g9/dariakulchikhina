@@ -19,10 +19,21 @@
       <!-- ══ Left: category sidebar ══ -->
       <nav class="docs-nav std-sidenav">
         <div class="std-nav">
+          <!-- Create from template button -->
+          <button
+            class="docs-nav-item docs-nav-create std-nav-item"
+            :class="{ 'std-nav-item--active': viewMode === 'editor' }"
+            @click="openGenerate"
+          >
+            <span class="docs-nav-num">✦</span>
+            <span class="docs-nav-label">создать из шаблона</span>
+          </button>
+
+          <!-- Category nav items -->
           <button
             v-for="cat in CATEGORIES" :key="cat.key"
             class="docs-nav-item std-nav-item"
-            :class="{ 'std-nav-item--active': activeCategory === cat.key && !activeDoc }"
+            :class="{ 'std-nav-item--active': activeCategory === cat.key && viewMode === 'list' && !activeDoc }"
             @click="selectCategory(cat.key)"
           >
             <span class="docs-nav-num">{{ cat.num }}</span>
@@ -32,79 +43,97 @@
         </div>
       </nav>
 
-      <!-- ══ Right: content area (list OR document view) ══ -->
+      <!-- ══ Right: content area ══ -->
       <div class="docs-main">
+        <Transition name="tab-fade" mode="out-in">
 
-        <!-- ── Document view (inline render) ── -->
-        <template v-if="activeDoc">
-          <div class="docs-view">
-            <div class="docs-view-head">
-              <button class="docs-back" @click="activeDoc = null">← назад к списку</button>
-              <div class="docs-view-actions">
-                <a v-if="activeDoc.url" :href="activeDoc.url" target="_blank" class="a-btn-sm">↗ открыть файл</a>
-                <button class="a-btn-sm" @click="editDoc">✎ редактировать</button>
-                <button class="a-btn-sm a-btn-danger" @click="deleteDoc(activeDoc.id)">удалить</button>
-              </div>
-            </div>
-            <div class="docs-view-card glass-card">
-              <div class="docs-view-badge" :class="`docs-view-badge--${activeDoc.category}`">
-                {{ catLabel(activeDoc.category) }}
-              </div>
-              <h2 class="docs-view-title">{{ activeDoc.title }}</h2>
-              <div v-if="activeDoc.projectTitle" class="docs-view-project">
-                проект: <NuxtLink :to="`/admin/projects/${activeDoc.projectSlug}`" class="docs-view-project-link">{{ activeDoc.projectTitle }}</NuxtLink>
-              </div>
-              <div class="docs-view-meta">
-                <span class="docs-view-date">{{ formatDate(activeDoc.createdAt) }}</span>
-                <span v-if="activeDoc.filename" class="docs-view-file">{{ activeDoc.filename }}</span>
-              </div>
-              <div v-if="activeDoc.notes" class="docs-view-notes">{{ activeDoc.notes }}</div>
-
-              <!-- Inline preview for text files -->
-              <div v-if="previewText" class="docs-view-preview">
-                <pre class="docs-view-pre">{{ previewText }}</pre>
-              </div>
-              <div v-else-if="activeDoc.url && isImage(activeDoc.url)" class="docs-view-preview">
-                <img :src="activeDoc.url" class="docs-view-img" />
-              </div>
-              <div v-else-if="activeDoc.url && isPdf(activeDoc.url)" class="docs-view-preview">
-                <iframe :src="activeDoc.url" class="docs-view-pdf" />
-              </div>
-            </div>
+          <!-- ── EDITOR VIEW (inline) ── -->
+          <div v-if="viewMode === 'editor'" key="editor">
+            <AdminDocumentEditor
+              :templates="DOC_TEMPLATES"
+              :projects="allProjects"
+              @close="viewMode = 'list'"
+              @saved="onEditorSaved"
+            />
           </div>
-        </template>
 
-        <!-- ── Document list ── -->
-        <template v-else>
-          <div v-if="pending" class="docs-empty">Загрузка...</div>
-          <div v-else-if="!filteredDocs.length" class="docs-empty">
-            {{ search ? 'Ничего не найдено' : 'Нет документов в этой категории' }}
-          </div>
-          <transition-group v-else name="doc-list" tag="div" class="docs-list">
-            <div
-              v-for="doc in filteredDocs" :key="doc.id"
-              class="doc-card glass-card"
-              @click="openDoc(doc)"
-            >
-              <div class="doc-card-head">
-                <span class="doc-badge" :class="`doc-badge--${doc.category}`">
-                  {{ catLabel(doc.category) }}
-                </span>
-                <span v-if="doc.projectTitle" class="doc-project">
-                  {{ doc.projectTitle }}
-                </span>
-                <span class="doc-date">{{ formatDate(doc.createdAt) }}</span>
-                <div class="doc-actions" @click.stop>
-                  <a v-if="doc.url" :href="doc.url" target="_blank" class="doc-btn-ico" title="открыть">↗</a>
-                  <button class="doc-btn-ico doc-btn-ico--del" title="удалить" @click="deleteDoc(doc.id)">×</button>
+          <!-- ── Document detail view ── -->
+          <div v-else-if="activeDoc" key="doc-view">
+            <div class="docs-view">
+              <div class="docs-view-head">
+                <button class="docs-back" @click="activeDoc = null">← назад к списку</button>
+                <div class="docs-view-actions">
+                  <a v-if="activeDoc.url" :href="activeDoc.url" target="_blank" class="a-btn-sm">↗ открыть файл</a>
+                  <button class="a-btn-sm" @click="editDoc">✎ редактировать</button>
+                  <button class="a-btn-sm a-btn-danger" @click="deleteDoc(activeDoc.id)">удалить</button>
                 </div>
               </div>
-              <div class="doc-title">{{ doc.title }}</div>
-              <div v-if="doc.notes" class="doc-notes">{{ doc.notes }}</div>
-            </div>
-          </transition-group>
-        </template>
+              <div class="docs-view-card glass-card">
+                <div class="docs-view-badge" :class="`docs-view-badge--${activeDoc.category}`">
+                  {{ catLabel(activeDoc.category) }}
+                </div>
+                <h2 class="docs-view-title">{{ activeDoc.title }}</h2>
+                <div v-if="activeDoc.projectTitle" class="docs-view-project">
+                  проект: <NuxtLink :to="`/admin/projects/${activeDoc.projectSlug}`" class="docs-view-project-link">{{ activeDoc.projectTitle }}</NuxtLink>
+                </div>
+                <div class="docs-view-meta">
+                  <span class="docs-view-date">{{ formatDate(activeDoc.createdAt) }}</span>
+                  <span v-if="activeDoc.filename" class="docs-view-file">{{ activeDoc.filename }}</span>
+                </div>
+                <div v-if="activeDoc.notes" class="docs-view-notes">{{ activeDoc.notes }}</div>
 
+                <!-- Inline preview for text files -->
+                <div v-if="previewText" class="docs-view-preview">
+                  <pre class="docs-view-pre">{{ previewText }}</pre>
+                </div>
+                <div v-else-if="activeDoc.url && isImage(activeDoc.url)" class="docs-view-preview">
+                  <img :src="activeDoc.url" class="docs-view-img" />
+                </div>
+                <div v-else-if="activeDoc.url && isPdf(activeDoc.url)" class="docs-view-preview">
+                  <iframe :src="activeDoc.url" class="docs-view-pdf"></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Document list ── -->
+          <div v-else key="doc-list">
+            <div v-if="pending" class="docs-empty">
+              <span class="docs-empty-icon">⏳</span>
+              Загрузка...
+            </div>
+            <div v-else-if="!filteredDocs.length" class="docs-empty">
+              <span class="docs-empty-icon">{{ search ? '🔍' : '📂' }}</span>
+              <span>{{ search ? 'Ничего не найдено' : 'Нет документов в этой категории' }}</span>
+              <button v-if="!search" class="docs-empty-action a-btn-sm" @click="openGenerate">✦ создать из шаблона</button>
+            </div>
+            <transition-group v-else name="doc-list" tag="div" class="docs-list">
+              <div
+                v-for="doc in filteredDocs" :key="doc.id"
+                class="doc-card glass-card"
+                @click="openDoc(doc)"
+              >
+                <div class="doc-card-head">
+                  <span class="doc-file-icon">{{ fileIcon(doc.url) }}</span>
+                  <span class="doc-badge" :class="`doc-badge--${doc.category}`">
+                    {{ catLabel(doc.category) }}
+                  </span>
+                  <span v-if="doc.projectTitle" class="doc-project">
+                    {{ doc.projectTitle }}
+                  </span>
+                  <span class="doc-date">{{ formatDate(doc.createdAt) }}</span>
+                  <div class="doc-actions" @click.stop>
+                    <a v-if="doc.url" :href="doc.url" target="_blank" class="doc-btn-ico" title="открыть">↗</a>
+                    <button class="doc-btn-ico doc-btn-ico--del" title="удалить" @click="deleteDoc(doc.id)">×</button>
+                  </div>
+                </div>
+                <div class="doc-title">{{ doc.title }}</div>
+                <div v-if="doc.notes" class="doc-notes">{{ doc.notes }}</div>
+              </div>
+            </transition-group>
+          </div>
+
+        </Transition>
       </div>
     </div>
 
@@ -146,7 +175,7 @@
             </div>
             <div class="docs-field">
               <label class="docs-label">Заметки</label>
-              <textarea v-model="uploadForm.notes" rows="2" class="docs-input docs-input--textarea" placeholder="дополнительная информация..." />
+              <textarea v-model="uploadForm.notes" rows="2" class="docs-input docs-input--textarea" placeholder="дополнительная информация..."></textarea>
             </div>
             <p v-if="uploadError" class="docs-error">{{ uploadError }}</p>
           </div>
@@ -155,26 +184,6 @@
             <button class="a-btn-save" :disabled="uploading || !uploadForm.title" @click="submitUpload">
               {{ uploading ? 'загрузка...' : (editingDoc ? 'сохранить' : 'загрузить') }}
             </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- ═══ Generate modal — Document Editor ═══ -->
-    <Teleport to="body">
-      <div v-if="showGenerateModal" class="docs-backdrop" @click.self="showGenerateModal = false">
-        <div class="docs-modal docs-modal--wide glass-surface">
-          <div class="docs-modal-head">
-            <span>Создать документ из шаблона</span>
-            <button class="docs-modal-close" @click="showGenerateModal = false">✕</button>
-          </div>
-          <div class="docs-modal-body">
-            <AdminDocumentEditor
-              :templates="DOC_TEMPLATES"
-              :projects="allProjects"
-              @close="showGenerateModal = false"
-              @saved="onEditorSaved"
-            />
           </div>
         </div>
       </div>
@@ -227,6 +236,10 @@ const DOC_TEMPLATES = [
       { key: 'contract_number', label: 'Номер договора', placeholder: '№ 01/2026' },
       { key: 'contract_date',   label: 'Дата договора',  placeholder: '01.03.2026' },
       { key: 'client_name',     label: 'ФИО клиента',    placeholder: 'Иванов Иван Иванович' },
+      { key: 'client_passport',  label: 'Паспорт (серия номер)', placeholder: '45 09 123456' },
+      { key: 'client_passport_issued', label: 'Кем выдан',  placeholder: 'ГУ МВД России по г. Москве' },
+      { key: 'client_passport_date', label: 'Дата выдачи паспорта', placeholder: '01.03.2020' },
+      { key: 'client_registration', label: 'Адрес регистрации', placeholder: 'г. Москва, ул. Пушкина, д.10, кв.5' },
       { key: 'client_address',  label: 'Адрес клиента',  placeholder: 'г. Москва, ул. ...' },
       { key: 'object_address',  label: 'Адрес объекта',  placeholder: 'г. Москва, ул. ...' },
       { key: 'area',            label: 'Площадь (кв.м)', placeholder: '120' },
@@ -239,7 +252,9 @@ const DOC_TEMPLATES = [
 г. Москва                                                        {{contract_date}}
 
 Дария Кульчихина, именуемая далее «Исполнитель», с одной стороны,
-и {{client_name}}, именуемый(ая) далее «Заказчик», с другой стороны,
+и {{client_name}}, паспорт {{client_passport}}, выдан {{client_passport_issued}}
+{{client_passport_date}}, зарегистрированный(ая) по адресу: {{client_registration}},
+именуемый(ая) далее «Заказчик», с другой стороны,
 заключили настоящий договор о нижеследующем:
 
 1. ПРЕДМЕТ ДОГОВОРА
@@ -507,6 +522,7 @@ const allProjects = computed(() => (projectsData.value || []).map((p: any) => ({
 // ══════════════════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════════════════
+const viewMode = ref<'list' | 'editor'>('list')
 const activeCategory = ref('all')
 const search = ref('')
 const activeDoc = ref<any>(null)
@@ -533,8 +549,19 @@ const filteredDocs = computed(() => {
       (d.projectTitle || '').toLowerCase().includes(q),
     )
   }
-  return list
+  return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
+
+function fileIcon(url?: string): string {
+  if (!url) return '📄'
+  if (/\.pdf$/i.test(url)) return '📕'
+  if (/\.(doc|docx)$/i.test(url)) return '📘'
+  if (/\.(xls|xlsx)$/i.test(url)) return '📊'
+  if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url)) return '🖼'
+  if (/\.(txt|md|csv)$/i.test(url)) return '📝'
+  if (/\.(zip|rar|7z|tar)$/i.test(url)) return '📦'
+  return '📄'
+}
 
 function formatDate(val: string) {
   if (!val) return ''
@@ -546,12 +573,14 @@ function isPdf(url: string) { return /\.pdf$/i.test(url) }
 function isTextFile(url: string) { return /\.(txt|md|csv)$/i.test(url) }
 
 function selectCategory(key: string) {
+  viewMode.value = 'list'
   activeCategory.value = key
   activeDoc.value = null
   previewText.value = ''
 }
 
 async function openDoc(doc: any) {
+  viewMode.value = 'list'
   activeDoc.value = doc
   previewText.value = ''
   // Try to load text preview
@@ -670,16 +699,15 @@ async function deleteDoc(id: number) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// GENERATE FROM TEMPLATE (delegated to AdminDocumentEditor)
+// GENERATE FROM TEMPLATE (inline editor)
 // ══════════════════════════════════════════════════════════════════
-const showGenerateModal = ref(false)
-
 function openGenerate() {
-  showGenerateModal.value = true
+  viewMode.value = 'editor'
+  activeDoc.value = null
 }
 
 async function onEditorSaved() {
-  showGenerateModal.value = false
+  viewMode.value = 'list'
   await refresh()
 }
 </script>
@@ -732,12 +760,20 @@ async function onEditorSaved() {
   background: color-mix(in srgb, var(--glass-text) 10%, transparent);
   flex-shrink: 0; line-height: 1.6;
 }
+.docs-nav-create {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  margin-bottom: 4px; padding-bottom: 8px !important;
+  font-weight: 500 !important;
+}
 
 /* ── Main content ── */
 .docs-main { flex: 1; min-width: 0; }
 .docs-empty {
-  font-size: var(--ds-text-sm, .84rem); color: var(--glass-text); opacity: .35; padding: 20px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  font-size: var(--ds-text-sm, .84rem); color: var(--glass-text); opacity: .35; padding: 40px 0;
 }
+.docs-empty-icon { font-size: 1.8rem; opacity: .5; }
+.docs-empty-action { margin-top: 4px; opacity: 1; }
 .docs-list { display: flex; flex-direction: column; gap: 8px; }
 
 /* ── Doc card ── */
@@ -758,6 +794,9 @@ async function onEditorSaved() {
   padding: 2px 8px; border-radius: var(--chip-radius, 999px);
   background: color-mix(in srgb, var(--glass-text) 7%, transparent);
   color: var(--glass-text); flex-shrink: 0;
+}
+.doc-file-icon {
+  font-size: .9rem; flex-shrink: 0; line-height: 1; opacity: .6;
 }
 .doc-badge--contract,
 .doc-badge--contract_supply,
@@ -802,6 +841,8 @@ html.dark .doc-badge--estimate { background: rgba(168,85,247,.15); color: #c4b5f
 .doc-list-enter-active, .doc-list-leave-active { transition: all .2s ease; }
 .doc-list-enter-from { opacity: 0; transform: translateY(-4px); }
 .doc-list-leave-to  { opacity: 0; transform: translateY(4px); }
+.tab-fade-enter-active, .tab-fade-leave-active { transition: opacity .2s ease; }
+.tab-fade-enter-from, .tab-fade-leave-to { opacity: 0; }
 
 /* ══ Document inline view ══ */
 .docs-view-head {
@@ -879,7 +920,6 @@ html.dark .doc-badge--estimate { background: rgba(168,85,247,.15); color: #c4b5f
   display: flex; flex-direction: column;
   overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,.18);
 }
-.docs-modal--wide { width: 600px; }
 .docs-modal-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px;
@@ -916,40 +956,6 @@ html.dark .doc-badge--estimate { background: rgba(168,85,247,.15); color: #c4b5f
 .docs-input--select { appearance: none; cursor: pointer; }
 .docs-input--textarea { resize: vertical; min-height: 60px; }
 .docs-error { font-size: var(--ds-text-xs, .78rem); color: var(--ds-error, #dc2626); }
-
-/* ── Generate modal ── */
-.docs-gen-hint { font-size: var(--ds-text-sm, .82rem); color: var(--glass-text); opacity: .7; margin-bottom: 4px; }
-.docs-gen-hint strong { opacity: 1; }
-.docs-tpl-list { display: flex; flex-direction: column; gap: 6px; }
-.docs-tpl-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  width: 100%; border: none; text-align: left;
-  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
-  color: var(--glass-text); border-radius: var(--card-radius, 10px); padding: 12px;
-  cursor: pointer; font-family: inherit;
-  transition: background var(--ds-transition, .15s ease);
-  border: 1px solid transparent;
-}
-.docs-tpl-item:hover { background: color-mix(in srgb, var(--glass-text) 7%, transparent); }
-.docs-tpl-item--active {
-  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  border-color: color-mix(in srgb, var(--glass-text) 20%, transparent);
-}
-.docs-tpl-icon { font-size: 1.4rem; flex-shrink: 0; line-height: 1.2; }
-.docs-tpl-name { font-size: var(--ds-text-sm, .84rem); font-weight: 500; margin-bottom: 2px; }
-.docs-tpl-desc { font-size: var(--ds-text-xs, .74rem); color: var(--glass-text); opacity: .5; }
-.docs-gen-project { margin-bottom: 4px; }
-.docs-gen-fields { display: flex; flex-direction: column; gap: 8px; }
-.docs-gen-preview {
-  border-radius: var(--card-radius, 10px);
-  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
-  padding: 14px; max-height: 300px; overflow-y: auto;
-}
-.docs-gen-pre {
-  margin: 0; font-family: 'JetBrains Mono', 'Courier New', monospace;
-  font-size: var(--ds-text-xs, .74rem); color: var(--glass-text);
-  white-space: pre-wrap; line-height: 1.6;
-}
 
 /* ── Responsive ── */
 @media (max-width: 768px) {

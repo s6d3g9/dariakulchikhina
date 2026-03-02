@@ -1,114 +1,133 @@
 <template>
-  <div>
-    <div class="a-card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;padding:12px 20px">
-      <span style="font-size:.78rem;color:#888;text-transform:uppercase;letter-spacing:.5px">проекты</span>
-      <button class="a-btn-save" aria-label="добавить" title="добавить" @click="showCreate = true; wizardStep = 1" style="padding:7px 14px;font-size:.96rem;line-height:1">+</button>
+  <div class="pj-root">
+
+    <!-- ── Header bar ── -->
+    <div class="pj-topbar glass-card">
+      <div class="pj-topbar-left">
+        <span class="pj-topbar-title">проекты</span>
+        <span class="pj-count">{{ projects?.length ?? 0 }}</span>
+      </div>
+      <div class="pj-topbar-right">
+        <input v-model="searchQuery" class="pj-search glass-input" placeholder="поиск..." />
+        <button class="a-btn-sm" @click="showCreate = true; wizardStep = 1">+ создать</button>
+      </div>
     </div>
 
-    <div v-if="pending && !hasProjectsCache" style="font-size:.88rem;color:#999;padding:12px 0">Загрузка...</div>
-    <div v-else-if="projects?.length === 0" style="font-size:.88rem;color:#999;padding:12px 0">Нет проектов</div>
+    <!-- ── Loading / Empty ── -->
+    <div v-if="pending && !hasProjectsCache" class="pj-empty">
+      <span class="pj-empty-icon">⏳</span>Загрузка…
+    </div>
+    <div v-else-if="projects?.length === 0" class="pj-empty">
+      <span class="pj-empty-icon">📁</span>
+      <span>Нет проектов — создайте первый</span>
+      <button class="a-btn-sm" style="margin-top:6px" @click="showCreate = true; wizardStep = 1">+ создать проект</button>
+    </div>
     <div v-else>
-      <!-- Search -->
-      <div style="margin-bottom:12px">
-        <input
-          v-model="searchQuery"
-          class="a-input"
-          placeholder="поиск проекта..."
-          style="max-width:360px"
-        />
+      <div v-if="filteredProjects.length === 0" class="pj-empty">
+        <span class="pj-empty-icon">🔍</span>Ничего не найдено
       </div>
-      <div v-if="filteredProjects.length === 0" style="font-size:.84rem;color:#bbb;padding:10px 0">Ничего не найдено</div>
-      <div
-        v-for="p in filteredProjects"
-        :key="p.id"
-        class="a-card"
-        style="display:flex;flex-direction:column;gap:10px;padding:16px 20px;margin-bottom:8px"
-      >
-        <!-- Title row -->
-        <div>
-          <NuxtLink :to="`/admin/projects/${p.slug}`" class="a-project-link">{{ p.title }}</NuxtLink>
-          <div style="font-size:.76rem;color:#aaa;margin-top:2px;display:flex;align-items:center;gap:8px">
-            <span>{{ p.slug }}</span>
-            <span v-if="p.status" :class="`pi-badge pi-badge--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
-          </div>
-          <div v-if="p.taskTotal > 0" style="display:flex;align-items:center;gap:10px;margin-top:6px">
-            <div class="a-task-mini-bar" :title="`${p.taskDone} из ${p.taskTotal} выполнено`">
-              <div class="a-task-mini-fill" :style="{ width: Math.round(p.taskDone / p.taskTotal * 100) + '%' }" />
+      <transition-group v-else name="pj-list" tag="div" class="pj-grid">
+        <div
+          v-for="p in filteredProjects" :key="p.id"
+          class="pj-card glass-card"
+        >
+          <div class="pj-card-main">
+            <NuxtLink :to="`/admin/projects/${p.slug}`" class="pj-card-title">{{ p.title }}</NuxtLink>
+            <div class="pj-card-meta">
+              <span class="pj-card-slug">{{ p.slug }}</span>
+              <span v-if="p.status" class="pj-phase" :class="`pj-phase--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
             </div>
-            <span style="font-size:.72rem;color:#aaa">{{ p.taskDone }}/{{ p.taskTotal }}</span>
-            <span v-if="p.taskOverdue > 0" style="font-size:.72rem;color:#c00;font-weight:600">⚠ {{ p.taskOverdue }} просрочено</span>
+            <div v-if="p.taskTotal > 0" class="pj-progress">
+              <div class="pj-progress-bar" :title="`${p.taskDone} из ${p.taskTotal} выполнено`">
+                <div class="pj-progress-fill" :style="{ width: Math.round(p.taskDone / p.taskTotal * 100) + '%' }" />
+              </div>
+              <span class="pj-progress-text">{{ p.taskDone }}/{{ p.taskTotal }}</span>
+              <span v-if="p.taskOverdue > 0" class="pj-overdue">⚠ {{ p.taskOverdue }} просрочено</span>
+            </div>
+          </div>
+          <NuxtLink :to="`/admin/projects/${p.slug}`" class="pj-card-arrow">→</NuxtLink>
+        </div>
+      </transition-group>
+    </div>
+
+    <!-- ══ Create modal ══ -->
+    <Teleport to="body">
+      <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
+        <div class="pj-modal glass-surface">
+          <div class="pj-modal-head">
+            <span>новый проект</span>
+            <span class="pj-modal-step">шаг {{ wizardStep }} из 2</span>
+            <button class="pj-modal-close" @click="closeCreate">✕</button>
+          </div>
+          <div class="pj-modal-body">
+            <form @submit.prevent="onWizardSubmit">
+              <!-- Step 1 -->
+              <template v-if="wizardStep === 1">
+                <div class="pj-form-field">
+                  <label class="pj-form-label">Название</label>
+                  <input v-model="newProject.title" class="pj-form-input" required placeholder="Название проекта" autofocus />
+                </div>
+                <div class="pj-form-field">
+                  <label class="pj-form-label">Slug (URL)</label>
+                  <input v-model="newProject.slug" class="pj-form-input" required placeholder="project-slug" />
+                </div>
+                <div class="pj-form-field">
+                  <label class="pj-form-label">Сценарий дорожной карты</label>
+                  <select v-model="newProject.roadmapTemplateKey" class="pj-form-input pj-form-select">
+                    <option value="">— без шаблона</option>
+                    <option v-for="tpl in allTemplates" :key="tpl.key" :value="tpl.key">
+                      {{ tpl.title }}{{ tpl.isBuiltIn === false ? ' · пользовательский' : '' }}
+                    </option>
+                  </select>
+                </div>
+              </template>
+
+              <!-- Step 2: preview -->
+              <template v-else>
+                <div class="pj-preview-row">
+                  <span class="pj-preview-label">Проект</span>
+                  <span class="pj-preview-value">{{ newProject.title }} · <span class="pj-preview-dim">{{ newProject.slug }}</span></span>
+                </div>
+                <div class="pj-preview-row">
+                  <span class="pj-preview-label">Сценарий</span>
+                  <span class="pj-preview-value">{{ selectedTemplate ? selectedTemplate.title : '— без шаблона' }}</span>
+                </div>
+                <div v-if="selectedTemplate?.description" class="pj-preview-desc">{{ selectedTemplate.description }}</div>
+
+                <div v-if="selectedTemplate" class="pj-preview-stages">
+                  <span class="pj-preview-label">Этапы роадмапа ({{ selectedTemplate.stages.length }})</span>
+                  <div class="pj-stages-list">
+                    <div v-for="(s, i) in selectedTemplate.stages" :key="i" class="pj-stage-item">
+                      <span class="pj-stage-num">{{ i + 1 }}</span>
+                      <span>{{ s.title }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="pj-preview-hint">Роадмап будет пустым — этапы можно добавить вручную</div>
+
+                <div class="pj-preview-pages">
+                  <span class="pj-preview-label">Страницы</span>
+                  <div class="pj-pages-chips">
+                    <span v-for="pg in corePageLabels" :key="pg" class="pj-page-chip">{{ pg }}</span>
+                  </div>
+                </div>
+              </template>
+
+              <p v-if="createError" class="pj-form-error">{{ createError }}</p>
+
+              <div class="pj-modal-foot">
+                <button type="button" class="a-btn-sm" @click="closeCreate">отмена</button>
+                <button v-if="wizardStep === 2" type="button" class="a-btn-sm" @click="wizardStep = 1">← назад</button>
+                <button type="submit" class="a-btn-save" :disabled="creating">
+                  {{ wizardStep === 1 ? 'далее →' : (creating ? '...' : 'создать проект') }}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
-    <div v-if="showCreate" class="a-modal-backdrop" @click.self="closeCreate">
-      <div class="a-modal" style="width:520px;max-width:94vw">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px">новый проект</h3>
-        <div style="font-size:.72rem;color:#bbb;margin-bottom:20px">шаг {{ wizardStep }} из 2</div>
-
-        <form @submit.prevent="onWizardSubmit">
-          <!-- Step 1: название, slug, шаблон -->
-          <template v-if="wizardStep === 1">
-            <div class="a-field">
-              <label>Название</label>
-              <input v-model="newProject.title" class="a-input" required placeholder="Название проекта" autofocus>
-            </div>
-            <div class="a-field">
-              <label>Slug (URL)</label>
-              <input v-model="newProject.slug" class="a-input" required placeholder="project-slug">
-            </div>
-            <div class="a-field">
-              <label>Сценарий дорожной карты</label>
-              <select v-model="newProject.roadmapTemplateKey" class="a-input a-select">
-                <option value="">— без шаблона</option>
-                <option v-for="tpl in allTemplates" :key="tpl.key" :value="tpl.key">
-                  {{ tpl.title }}{{ tpl.isBuiltIn === false ? ' · пользовательский' : '' }}
-                </option>
-              </select>
-            </div>
-          </template>
-
-          <!-- Step 2: превью -->
-          <template v-else>
-            <div class="a-field" style="margin-bottom:6px">
-              <label>Проект</label>
-              <div style="font-size:.88rem">{{ newProject.title }} · <span style="color:#aaa">{{ newProject.slug }}</span></div>
-            </div>
-            <div class="a-field" style="margin-bottom:6px">
-              <label>Сценарий</label>
-              <div style="font-size:.88rem">{{ selectedTemplate ? selectedTemplate.title : '— без шаблона' }}</div>
-              <div v-if="selectedTemplate" style="font-size:.74rem;color:#aaa;margin-top:2px">{{ selectedTemplate.description }}</div>
-            </div>
-            <div v-if="selectedTemplate" class="a-field" style="margin-bottom:6px">
-              <label>Этапы роадмапа ({{ selectedTemplate.stages.length }})</label>
-              <ul style="margin:6px 0 0;padding-left:16px;max-height:180px;overflow:auto">
-                <li v-for="(s, i) in selectedTemplate.stages" :key="i" style="font-size:.78rem;color:#666;margin-bottom:2px">
-                  {{ i + 1 }}. {{ s.title }}
-                </li>
-              </ul>
-            </div>
-            <div v-else style="font-size:.8rem;color:#aaa;margin-bottom:12px">
-              Роадмап будет пустым — этапы можно добавить вручную
-            </div>
-            <div style="font-size:.78rem;color:#888;margin-bottom:4px">Будут созданы страницы:</div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
-              <span v-for="pg in corePageLabels" :key="pg" style="font-size:.72rem;padding:2px 8px;color:#666;border:none;background:color-mix(in srgb, var(--glass-bg) 90%, transparent);border-radius:999px">{{ pg }}</span>
-            </div>
-          </template>
-
-          <p v-if="createError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ createError }}</p>
-
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-            <button type="button" class="a-btn-sm" @click="closeCreate">отмена</button>
-            <button v-if="wizardStep === 2" type="button" class="a-btn-sm" @click="wizardStep = 1">← назад</button>
-            <button type="submit" class="a-btn-save" :disabled="creating">
-              {{ wizardStep === 1 ? 'далее →' : (creating ? '...' : 'создать проект') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -120,7 +139,7 @@ definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const projectsCache = useState<any[]>('cache-admin-projects', () => [])
 
-const { data: projects, pending } = await useFetch<any[]>('/api/projects', {
+const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects', {
   server: false,
   default: () => projectsCache.value,
 })
@@ -133,7 +152,6 @@ watch(projects, (value) => {
   }
 }, { deep: true })
 
-// Прямой $fetch в обход Nuxt-кеша — гарантирует свежие данные
 async function reloadProjects() {
   try {
     const result = await $fetch<any[]>('/api/projects')
@@ -151,7 +169,6 @@ function updateProjectStatus(slug: string, newStatus: string) {
   }
 }
 
-// При возврате на страницу и при сохранении роадмапа — обновляем список
 const { lastSaved } = useRoadmapBus()
 watch(lastSaved, reloadProjects)
 onMounted(reloadProjects)
@@ -159,8 +176,6 @@ onActivated(reloadProjects)
 
 const { data: customTemplates } = useFetch<any[]>('/api/roadmap-templates', { server: false, default: () => [] })
 
-// API returns all templates (built-in + custom). Use as primary source.
-// Fall back to local ROADMAP_TEMPLATES before the client-side fetch completes.
 const allTemplates = computed(() =>
   (customTemplates.value && customTemplates.value.length > 0)
     ? customTemplates.value
@@ -252,164 +267,221 @@ function phaseLabel(status: string) {
 function phaseColor(status: string) {
   return PROJECT_PHASES.find(p => p.key === status)?.color || 'gray'
 }
-
-
 </script>
 
 <style scoped>
-/* ── Task mini progress bar ────────────────────────────── */
-.a-task-mini-bar {
-  width: 80px; height: 5px;
-  background: var(--glass-border);
-  border-radius: 3px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.a-task-mini-fill {
-  height: 100%;
-  background: #15803d;
-  border-radius: 3px;
-  transition: width .3s;
-}
+/* ══════════════════════════════════════════════════════════════
+   PROJECTS — glass design system
+   ══════════════════════════════════════════════════════════════ */
 
-/* ── Card (glass-surface parity) ───────────────────────── */
-.a-card {
-  background: var(--glass-bg);
-  border: none;
-  box-shadow: var(--ds-shadow, var(--glass-shadow));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
-  backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
-  border-radius: var(--card-radius, 14px);
-  transition: box-shadow var(--ds-transition, 180ms ease),
-              border-radius var(--ds-transition, 180ms ease),
-              background var(--ds-transition, 180ms ease);
+/* ── Topbar ── */
+.pj-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
 }
+.pj-topbar-left { display: flex; align-items: center; gap: 10px; }
+.pj-topbar-title {
+  font-size: var(--ds-text-sm, .78rem); text-transform: uppercase;
+  letter-spacing: .08em; color: var(--glass-text); opacity: .45;
+  font-weight: var(--ds-heading-weight, 600);
+}
+.pj-count {
+  font-size: var(--ds-text-xs, .65rem); padding: 1px 7px;
+  border-radius: var(--chip-radius, 999px);
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  color: var(--glass-text); opacity: .6;
+}
+.pj-topbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pj-search { width: 220px; padding: 7px 12px; font-size: var(--ds-text-sm, .8rem); }
 
-/* ── Links ─────────────────────────────────────────────── */
-.a-project-link {
-  font-size: .9rem;
-  color: var(--glass-text);
-  text-decoration: none;
-  font-weight: 500;
+/* ── Empty state ── */
+.pj-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  font-size: var(--ds-text-sm, .84rem); color: var(--glass-text);
+  opacity: .4; padding: 40px 0; text-align: center;
 }
-.a-project-link:hover { text-decoration: underline; }
+.pj-empty-icon { font-size: 1.8rem; opacity: .5; }
 
-/* ── Phase badges ─────────────────────────────────────── */
-.pi-badge {
-  display: inline-block;
-  font-size: .65rem;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 999px;
-  white-space: nowrap;
-  border: none;
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  color: var(--glass-text);
-  opacity: .7;
-}
-.pi-badge--gray      { opacity: .45; }
-.pi-badge--violet    { color: #7c3aed; background: rgba(124,58,237,.07); opacity: 1; }
-.pi-badge--blue      { color: #1d4ed8; background: rgba(29,78,216,.07); opacity: 1; }
-.pi-badge--amber     { color: #b45309; background: rgba(180,83,9,.06); opacity: 1; }
-.pi-badge--orange    { color: #c2410c; background: rgba(194,65,12,.06); opacity: 1; }
-.pi-badge--green     { color: #15803d; background: rgba(21,128,61,.07); opacity: 1; }
-.pi-badge--teal      { color: #0f766e; background: rgba(15,118,110,.07); opacity: 1; }
+/* ── Project grid ── */
+.pj-grid { display: flex; flex-direction: column; gap: 8px; }
 
-/* ── Buttons ───────────────────────────────────────────── */
-.a-btn-sm {
-  border: none;
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  padding: 5px 12px;
-  font-size: .78rem;
-  cursor: pointer;
-  font-family: inherit;
-  border-radius: 8px;
-  color: var(--glass-text);
-  opacity: .75;
-  text-decoration: none;
-  display: inline-block;
-  white-space: nowrap;
-  transition: opacity .15s, box-shadow .15s;
+/* ── Project card ── */
+.pj-card {
+  display: flex; align-items: center; padding: 14px 18px; gap: 12px;
+  transition: box-shadow var(--ds-transition, .18s ease), transform var(--ds-transition, .18s ease);
 }
-.a-btn-sm:hover {
-  opacity: 1;
-  box-shadow: 0 3px 10px rgba(0,0,0,.1);
+.pj-card:hover {
+  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.1));
+  transform: translateY(-1px);
 }
-.a-btn-danger {
-  color: rgba(200,40,40,1);
-  background: rgba(200,40,40,.07);
-  opacity: 1;
-}
-.a-btn-danger:hover { background: rgba(200,40,40,.85); color: #fff; border-color: transparent; box-shadow: none; }
-
-.a-btn-save {
-  border: none;
-  background: var(--glass-text);
-  color: var(--glass-page-bg);
-  padding: 9px 22px;
-  font-size: .82rem;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  border-radius: 9px;
-  transition: opacity .15s;
-}
-.a-btn-save:hover { opacity: .82; }
-.a-btn-save:disabled { opacity: .45; cursor: default; }
-
-/* ── Form ──────────────────────────────────────────────── */
-.a-field { margin-bottom: 14px; }
-.a-field label {
+.pj-card-main { flex: 1; min-width: 0; }
+.pj-card-title {
+  font-size: var(--ds-text-sm, .9rem); font-weight: 500;
+  color: var(--glass-text); text-decoration: none;
   display: block;
-  font-size: .72rem;
-  text-transform: uppercase;
-  letter-spacing: .4px;
-  color: var(--glass-text);
-  opacity: .45;
-  margin-bottom: 6px;
 }
-.a-input {
-  display: block; width: 100%; box-sizing: border-box;
-  border: none;
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  padding: 8px 12px;
-  font-size: .88rem;
-  outline: none;
-  font-family: inherit;
-  color: var(--glass-text);
-  border-radius: 8px;
+.pj-card-title:hover { text-decoration: underline; }
+.pj-card-meta {
+  display: flex; align-items: center; gap: 8px; margin-top: 3px;
+}
+.pj-card-slug {
+  font-size: var(--ds-text-xs, .74rem); color: var(--glass-text); opacity: .3;
+}
+.pj-card-arrow {
+  font-size: 1rem; color: var(--glass-text); opacity: .15;
+  text-decoration: none; flex-shrink: 0;
   transition: opacity .15s;
 }
-.a-input:focus { opacity: .92; }
-.a-select {
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
+.pj-card:hover .pj-card-arrow { opacity: .5; }
+
+/* ── Phase badge ── */
+.pj-phase {
+  font-size: .6rem; font-weight: 500; padding: 2px 8px;
+  border-radius: var(--chip-radius, 999px); white-space: nowrap;
+}
+.pj-phase--gray    { color: var(--glass-text); opacity: .35; background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
+.pj-phase--violet  { color: #7c3aed; background: rgba(124,58,237,.08); }
+.pj-phase--blue    { color: #2563eb; background: rgba(37,99,235,.08); }
+.pj-phase--amber   { color: #b45309; background: rgba(180,83,9,.07); }
+.pj-phase--orange  { color: #c2410c; background: rgba(194,65,12,.07); }
+.pj-phase--green   { color: #15803d; background: rgba(21,128,61,.08); }
+.pj-phase--teal    { color: #0f766e; background: rgba(15,118,110,.08); }
+html.dark .pj-phase--violet { color: #a78bfa; background: rgba(167,139,250,.12); }
+html.dark .pj-phase--blue   { color: #93c5fd; background: rgba(147,197,253,.12); }
+html.dark .pj-phase--amber  { color: #fcd34d; background: rgba(252,211,77,.1); }
+html.dark .pj-phase--orange { color: #fdba74; background: rgba(253,186,116,.1); }
+html.dark .pj-phase--green  { color: #86efac; background: rgba(134,239,172,.1); }
+html.dark .pj-phase--teal   { color: #5eead4; background: rgba(94,234,212,.1); }
+
+/* ── Progress ── */
+.pj-progress {
+  display: flex; align-items: center; gap: 10px; margin-top: 6px;
+}
+.pj-progress-bar {
+  width: 80px; height: 4px; border-radius: 3px; overflow: hidden; flex-shrink: 0;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+.pj-progress-fill {
+  height: 100%; border-radius: 3px; background: #15803d; transition: width .3s;
+}
+.pj-progress-text {
+  font-size: var(--ds-text-xs, .7rem); color: var(--glass-text); opacity: .35;
+}
+.pj-overdue {
+  font-size: var(--ds-text-xs, .7rem); color: var(--ds-error, #dc2626); font-weight: 600;
 }
 
-/* ── Modal ─────────────────────────────────────────────── */
-.a-modal-backdrop {
+/* ── Transitions ── */
+.pj-list-enter-active, .pj-list-leave-active { transition: all .2s ease; }
+.pj-list-enter-from { opacity: 0; transform: translateY(-4px); }
+.pj-list-leave-to  { opacity: 0; transform: translateY(4px); }
+
+/* ══ Modal ══ */
+.pj-backdrop {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.35);
-  -webkit-backdrop-filter: blur(5px);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
-  z-index: 200;
+  z-index: 200; padding: 16px;
 }
-.a-modal {
-  background: var(--glass-bg);
-  border: none;
-  box-shadow: 0 24px 60px rgba(0,0,0,.18);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  backdrop-filter: blur(24px) saturate(150%);
-  border-radius: 18px;
-  padding: 28px 30px;
-  width: 360px;
-  max-width: 90vw;
+.pj-modal {
+  width: 520px; max-width: 100%; max-height: 90vh;
+  border-radius: var(--modal-radius, 16px);
+  display: flex; flex-direction: column;
+  overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,.18);
+}
+.pj-modal-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  font-size: var(--ds-text-sm, .84rem); font-weight: 500; color: var(--glass-text);
+  flex-shrink: 0;
+}
+.pj-modal-step {
+  font-size: var(--ds-text-xs, .7rem); color: var(--glass-text); opacity: .35;
+  margin-left: auto;
+}
+.pj-modal-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 1rem; color: var(--glass-text); opacity: .45; padding: 2px 6px;
+  margin-left: 8px;
+}
+.pj-modal-close:hover { opacity: 1; }
+.pj-modal-body {
+  overflow-y: auto; flex: 1; padding: 16px 20px;
+}
+.pj-modal-foot {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding-top: 14px; margin-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent);
+}
+
+/* ── Form fields ── */
+.pj-form-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.pj-form-label {
+  font-size: .6rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--glass-text); opacity: .4; font-weight: 600;
+}
+.pj-form-input {
+  border: none; padding: 8px 10px;
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  color: var(--glass-text); border-radius: var(--input-radius, 8px);
+  font-size: var(--ds-text-sm, .84rem); font-family: inherit; outline: none;
+  width: 100%; box-sizing: border-box;
+  transition: background .15s ease;
+}
+.pj-form-input:focus { background: color-mix(in srgb, var(--glass-text) 9%, transparent); }
+.pj-form-select { appearance: none; cursor: pointer; }
+.pj-form-error {
+  font-size: var(--ds-text-xs, .78rem); color: var(--ds-error, #dc2626); margin-bottom: 8px;
+}
+
+/* ── Preview (step 2) ── */
+.pj-preview-row {
+  display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px;
+}
+.pj-preview-label {
+  font-size: .58rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--glass-text); opacity: .35; font-weight: 600;
+}
+.pj-preview-value {
+  font-size: var(--ds-text-sm, .86rem); color: var(--glass-text);
+}
+.pj-preview-dim { color: var(--glass-text); opacity: .4; }
+.pj-preview-desc {
+  font-size: var(--ds-text-xs, .74rem); color: var(--glass-text); opacity: .4;
+  margin-bottom: 10px;
+}
+.pj-preview-hint {
+  font-size: var(--ds-text-xs, .78rem); color: var(--glass-text); opacity: .35;
+  margin-bottom: 12px;
+}
+.pj-preview-stages { margin-bottom: 12px; }
+.pj-stages-list {
+  margin-top: 6px; max-height: 180px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.pj-stage-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: var(--ds-text-xs, .76rem); color: var(--glass-text); opacity: .6;
+}
+.pj-stage-num {
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .55rem; font-weight: 600; flex-shrink: 0;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+.pj-preview-pages { margin-bottom: 8px; }
+.pj-pages-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.pj-page-chip {
+  font-size: .68rem; padding: 2px 8px;
+  border-radius: var(--chip-radius, 999px);
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  color: var(--glass-text); opacity: .5;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .pj-search { width: 140px; }
 }
 </style>

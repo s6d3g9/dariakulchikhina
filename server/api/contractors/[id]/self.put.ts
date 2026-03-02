@@ -15,6 +15,40 @@ const SelfUpdateSchema = z.object({
   notes: z.string().max(5000).nullable().optional(),
   workTypes: z.array(z.string().max(100)).max(50).optional(),
   roleTypes: z.array(z.string().max(100)).max(50).optional(),
+  // Паспортные данные
+  passportSeries: z.string().max(10).nullable().optional(),
+  passportNumber: z.string().max(10).nullable().optional(),
+  passportIssuedBy: z.string().max(500).nullable().optional(),
+  passportIssueDate: z.string().max(20).nullable().optional(),
+  passportDepartmentCode: z.string().max(20).nullable().optional(),
+  birthDate: z.string().max(20).nullable().optional(),
+  birthPlace: z.string().max(500).nullable().optional(),
+  registrationAddress: z.string().max(500).nullable().optional(),
+  snils: z.string().max(20).nullable().optional(),
+  // Доп. контакты
+  telegram: z.string().max(200).nullable().optional(),
+  whatsapp: z.string().max(50).nullable().optional(),
+  city: z.string().max(200).nullable().optional(),
+  workRadius: z.string().max(100).nullable().optional(),
+  // Реквизиты
+  inn: z.string().max(20).nullable().optional(),
+  kpp: z.string().max(20).nullable().optional(),
+  ogrn: z.string().max(20).nullable().optional(),
+  bankName: z.string().max(300).nullable().optional(),
+  bik: z.string().max(20).nullable().optional(),
+  settlementAccount: z.string().max(30).nullable().optional(),
+  correspondentAccount: z.string().max(30).nullable().optional(),
+  legalAddress: z.string().max(500).nullable().optional(),
+  factAddress: z.string().max(500).nullable().optional(),
+  // Финансовые / организационные
+  taxSystem: z.string().max(50).nullable().optional(),
+  paymentMethods: z.array(z.string().max(50)).max(10).optional(),
+  hourlyRate: z.string().max(50).nullable().optional(),
+  hasInsurance: z.boolean().optional(),
+  insuranceDetails: z.string().max(1000).nullable().optional(),
+  education: z.string().max(500).nullable().optional(),
+  certifications: z.array(z.string().max(200)).max(20).optional(),
+  experienceYears: z.number().int().min(0).max(100).nullable().optional(),
 })
 
 export default defineEventHandler(async (event) => {

@@ -74,6 +74,30 @@ export const contractors = pgTable('contractors', {
   messenger: text('messenger'),
   messengerNick: text('messenger_nick'),
   website: text('website'),
+  // Паспортные данные
+  passportSeries: text('passport_series'),
+  passportNumber: text('passport_number'),
+  passportIssuedBy: text('passport_issued_by'),
+  passportIssueDate: text('passport_issue_date'),
+  passportDepartmentCode: text('passport_department_code'),
+  birthDate: text('birth_date'),
+  birthPlace: text('birth_place'),
+  registrationAddress: text('registration_address'),
+  snils: text('snils'),
+  // Доп. контакты
+  telegram: text('telegram'),
+  whatsapp: text('whatsapp'),
+  city: text('city'),
+  workRadius: text('work_radius'),
+  // Финансовые / организационные
+  taxSystem: text('tax_system'),
+  paymentMethods: text('payment_methods').array().default([]),
+  hourlyRate: text('hourly_rate'),
+  hasInsurance: boolean('has_insurance').default(false),
+  insuranceDetails: text('insurance_details'),
+  education: text('education'),
+  certifications: text('certifications').array().default([]),
+  experienceYears: integer('experience_years'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -187,6 +211,18 @@ export const documents = pgTable('documents', {
   filename: text('filename'),           // физическое имя файла в uploads/
   url: text('url'),                     // публичный URL (если есть)
   notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const contractorDocuments = pgTable('contractor_documents', {
+  id: serial('id').primaryKey(),
+  contractorId: integer('contractor_id').notNull().references(() => contractors.id, { onDelete: 'cascade' }),
+  category: text('category').notNull().default('other'), // passport | license | certificate | contract | insurance | snils | inn_doc | other
+  title: text('title').notNull(),
+  filename: text('filename'),
+  url: text('url'),
+  notes: text('notes'),
+  expiresAt: text('expires_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

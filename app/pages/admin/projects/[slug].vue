@@ -382,6 +382,7 @@ import {
   ClientBrief,
   ClientTZ,
   ClientWorkProgress,
+  ClientPassport,
 } from '#components'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
@@ -729,6 +730,7 @@ const clientPageComponentMap: Record<string, Component> = {
   self_profile:          ClientSelfProfile,
   brief:                 ClientSelfProfile,
   client_contacts:       ClientContactDetails,
+  client_passport:       ClientPassport,
   client_brief:          ClientBrief,
   client_tz:             ClientTZ,
   contracts:             ClientContracts,

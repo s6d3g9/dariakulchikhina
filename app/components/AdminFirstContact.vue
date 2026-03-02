@@ -141,12 +141,6 @@
           <!-- Map Error -->
           <div v-if="mapError" class="afc-map-error" style="margin-top: 1rem; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; color: #dc2626;">
             <strong>Ошибка карты:</strong> {{ mapError }}
-            <br><small>API загружается, подождите...</small>
-          </div>
-          
-          <!-- Map Loading Status -->
-          <div v-if="mapLoading" class="afc-map-loading" style="margin-top: 1rem; padding: 1rem; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 0.5rem; color: #0369a1;">
-            <strong>Загрузка карты:</strong> {{ mapLoadingStatus }}
           </div>
           
           <!-- Yandex Map -->
@@ -253,69 +247,46 @@ const runtimeConfig = useRuntimeConfig()
 const mapEl = ref<HTMLElement | null>(null)
 const mapSearch = ref('')
 const mapError = ref('')
-const mapLoading = ref(true)
-const mapLoadingStatus = ref('Инициализация...')
 let ymap: any = null
 let placemark: any = null
 
 async function initMap() {
-  if (!mapEl.value || typeof window === 'undefined') {
-    mapError.value = 'Элемент карты не найден или нет окна браузера'
-    mapLoading.value = false
-    return
-  }
-  
+  if (!mapEl.value) return
   mapError.value = ''
-  mapLoading.value = true
-  mapLoadingStatus.value = 'Проверка API...'
-  
   try {
     if (!(window as any).ymaps) {
-      mapLoadingStatus.value = 'Загрузка скрипта API...'
-      await new Promise<void>((resolve, reject) => {
-        const s = document.createElement('script')
-        // Простая загрузка как раньше - без API ключа и дополнительных параметров
-        s.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
-        console.log('Loading Yandex Maps from:', s.src)
-        
-        s.onload = () => {
-          if ((window as any).ymaps) {
-            mapLoadingStatus.value = 'Ожидание готовности API...'
-            // Добавляем таймаут на случай зависания
-            const timeout = setTimeout(() => {
-              reject(new Error('API timeout - ymaps.ready() не отвечает'))
-            }, 10000)
-            
-            ;(window as any).ymaps.ready(() => {
-              clearTimeout(timeout)
-              resolve()
-            })
-          } else {
-            reject(new Error('ymaps not available after script load'))
+      // Проверяем, не загружен ли уже скрипт
+      if (!document.querySelector('script[src*="api-maps.yandex.ru"]')) {
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement('script')
+          s.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
+          s.onload = () => {
+            if ((window as any).ymaps) {
+              (window as any).ymaps.ready(resolve)
+            } else {
+              reject(new Error('ymaps not available'))
+            }
           }
-        }
-        s.onerror = (e) => {
-          console.error('Script loading error:', e)
-          reject(new Error('Failed to load Yandex Maps script'))
-        }
-        document.head.appendChild(s)
-      })
-    } else {
-      mapLoadingStatus.value = 'API уже загружен, ожидание готовности...'
-      // Таймаут для уже загруженного API
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('API timeout - ymaps уже загружен но ready() не отвечает'))
-        }, 5000)
-        
-        ;(window as any).ymaps.ready(() => {
-          clearTimeout(timeout)
-          resolve()
+          s.onerror = () => reject(new Error('Failed to load script'))
+          document.head.appendChild(s)
         })
-      })
+      } else {
+        // Скрипт загружется, ждем
+        await new Promise<void>((resolve) => {
+          const checkYmaps = () => {
+            if ((window as any).ymaps) {
+              (window as any).ymaps.ready(resolve)
+            } else {
+              setTimeout(checkYmaps, 100)
+            }
+          }
+          checkYmaps()
+        })
+      }
+    } else {
+      await new Promise<void>(r => (window as any).ymaps.ready(r))
     }
     
-    mapLoadingStatus.value = 'Создание карты...'
     const ymaps = (window as any).ymaps
     const center = form.meeting_map_lat
       ? [form.meeting_map_lat, form.meeting_map_lng]
@@ -327,12 +298,10 @@ async function initMap() {
     })
     
     if (form.meeting_map_lat) {
-      mapLoadingStatus.value = 'Добавление маркера...'
       placemark = new ymaps.Placemark([form.meeting_map_lat, form.meeting_map_lng], {}, { preset: 'islands#violetDotIcon' })
       ymap.geoObjects.add(placemark)
     }
     
-    mapLoadingStatus.value = 'Настройка обработчиков событий...'
     ymap.events.add('click', async (e: any) => {
       const coords = e.get('coords')
       setPin(coords)
@@ -346,14 +315,8 @@ async function initMap() {
       save()
     })
     
-    mapLoading.value = false
-    mapLoadingStatus.value = 'Карта успешно загружена'
-    console.log('Yandex Maps initialized successfully')
-    
   } catch (err: any) {
-    console.error('[AdminFirstContact] Map init failed:', err)
-    mapError.value = `Ошибка инициализации: ${err.message}`
-    mapLoading.value = false
+    mapError.value = 'Ошибка загрузки карты'
   }
 }
 

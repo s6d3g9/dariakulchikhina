@@ -235,8 +235,56 @@
           </div>
         </div>
 
-        <!-- Step 4: Готово -->
-        <div v-else-if="currentStep === 4" key="s4" class="csp-step-body csp-done">
+        <!-- Step 4: Паспортные данные -->
+        <div v-else-if="currentStep === 4" key="s4" class="csp-step-body">
+          <h2 class="csp-step-title">Паспортные данные</h2>
+          <p class="csp-step-hint">Для договоров и юридических документов. Данные хранятся конфиденциально.</p>
+          <div class="csp-privacy-notice">
+            <span class="csp-privacy-icon">🔒</span>
+            Эти данные используются только для оформления договоров и не передаются третьим лицам.
+          </div>
+          <div class="csp-fields">
+            <div class="csp-field">
+              <label>Серия паспорта</label>
+              <input v-model="form.passport_series" type="text" placeholder="45 09" maxlength="5">
+            </div>
+            <div class="csp-field">
+              <label>Номер паспорта</label>
+              <input v-model="form.passport_number" type="text" placeholder="123456" maxlength="6">
+            </div>
+            <div class="csp-field csp-field--full">
+              <label>Кем выдан</label>
+              <input v-model="form.passport_issued_by" type="text" placeholder="ГУ МВД России по г. Москве">
+            </div>
+            <div class="csp-field">
+              <label>Дата выдачи</label>
+              <input v-model="form.passport_issue_date" type="text" placeholder="01.03.2020">
+            </div>
+            <div class="csp-field">
+              <label>Код подразделения</label>
+              <input v-model="form.passport_department_code" type="text" placeholder="770-001" maxlength="7">
+            </div>
+            <div class="csp-field csp-field--full">
+              <label>Место рождения</label>
+              <input v-model="form.passport_birth_place" type="text" placeholder="г. Москва">
+            </div>
+            <div class="csp-field csp-field--full">
+              <label>Адрес регистрации (прописка)</label>
+              <input v-model="form.passport_registration_address" type="text" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5">
+            </div>
+            <div class="csp-field">
+              <label>ИНН</label>
+              <input v-model="form.passport_inn" type="text" placeholder="770000000000" maxlength="12">
+            </div>
+            <div class="csp-field">
+              <label>СНИЛС</label>
+              <input v-model="form.passport_snils" type="text" placeholder="000-000-000 00" maxlength="14">
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: Готово -->
+        <div v-else-if="currentStep === 5" key="s5" class="csp-step-body csp-done">
           <div class="csp-done-icon">✓</div>
           <h2 class="csp-step-title">Анкета заполнена</h2>
           <p class="csp-step-hint">Ваши данные сохранены. Дизайнер просмотрит их в ближайшее время.</p>
@@ -247,11 +295,11 @@
     </div>
 
     <!-- Navigation -->
-    <div class="csp-nav" v-if="currentStep < 4">
+    <div class="csp-nav" v-if="currentStep < 5">
       <button v-if="currentStep > 0" class="csp-btn csp-btn--outline" @click="prev">← Назад</button>
       <span class="csp-spacer"></span>
       <p v-if="saveError" class="csp-error">{{ saveError }}</p>
-      <button v-if="currentStep < 3" class="csp-btn csp-btn--primary" @click="nextAndSave">Далее →</button>
+      <button v-if="currentStep < 4" class="csp-btn csp-btn--primary" @click="nextAndSave">Далее →</button>
       <button v-else class="csp-btn csp-btn--primary" @click="finish" :disabled="saving">
         {{ saving ? 'Сохранение...' : 'Сохранить ✓' }}
       </button>
@@ -286,6 +334,7 @@ const steps = [
   { title: 'Объект' },
   { title: 'Стиль' },
   { title: 'Концепция' },
+  { title: 'Паспорт' },
 ]
 
 const form = reactive<Record<string, any>>(createEmptyClientProfileDraft())
@@ -307,7 +356,7 @@ async function nextAndSave() {
 }
 async function finish() {
   await saveData()
-  if (!saveError.value) currentStep.value = 4
+  if (!saveError.value) currentStep.value = 5
 }
 
 async function saveData() {
@@ -419,6 +468,17 @@ async function saveData() {
 /* Done */
 .csp-done { text-align: center; padding: 48px 0; }
 .csp-done-icon { font-size: 2.5rem; margin-bottom: 16px; opacity: .4; }
+
+/* Privacy notice */
+.csp-privacy-notice {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; margin-bottom: 16px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--c-text, #1a1a1a) 4%, transparent);
+  font-size: .76rem; color: var(--c-text, #1a1a1a); opacity: .6;
+  line-height: 1.5;
+}
+.csp-privacy-icon { font-size: 1rem; flex-shrink: 0; }
 
 /* Navigation */
 .csp-nav {

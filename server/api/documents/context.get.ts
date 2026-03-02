@@ -53,6 +53,16 @@ export default defineEventHandler(async (event) => {
     floor: profile.floor || '',
     messenger: profile.messenger || '',
     messengerNick: profile.messengerNick || '',
+    // Passport data for contracts
+    passport_series: profile.passport_series || '',
+    passport_number: profile.passport_number || '',
+    passport_issued_by: profile.passport_issued_by || '',
+    passport_issue_date: profile.passport_issue_date || '',
+    passport_department_code: profile.passport_department_code || '',
+    passport_birth_place: profile.passport_birth_place || '',
+    passport_registration_address: profile.passport_registration_address || '',
+    passport_inn: profile.passport_inn || '',
+    passport_snils: profile.passport_snils || '',
     // Raw profile for any extra fields
     _profile: profile,
   }

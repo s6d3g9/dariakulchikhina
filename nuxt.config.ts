@@ -19,6 +19,7 @@ export default defineNuxtConfig({
     // Public
     public: {
       appName: 'Daria Kulchikhina',
+      yandexMapsApiKey: process.env.YANDEX_MAPS_API_KEY,
     },
   },
 

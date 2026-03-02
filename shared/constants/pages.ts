@@ -55,6 +55,7 @@ export const PROJECT_PAGES: ProjectPageDef[] = [
   // Клиентские страницы (без фазы)
   { slug: 'client_contacts',     title: 'контактные данные',      icon: '◌', phase: undefined },
   { slug: 'client_brief',        title: 'бриф',                   icon: '◎', phase: undefined },
+  { slug: 'client_passport',     title: 'паспортные данные',      icon: '🔒', phase: undefined },
   { slug: 'client_tz',           title: 'техническое задание',    icon: '◧', phase: undefined },
   { slug: 'contracts',           title: 'документы',              icon: '◻', phase: undefined },
   { slug: 'work_progress',       title: 'ход работ',              icon: '◈', phase: undefined },

@@ -18,6 +18,7 @@
             <span>{{ item.label }}</span>
             <span v-if="item.key === 'tasks' && activeCount" class="cab-badge">{{ activeCount }}</span>
             <span v-if="item.key === 'staff' && staff?.length" class="cab-badge">{{ staff.length }}</span>
+            <span v-if="item.key === 'documents' && contractorDocs?.length" class="cab-badge">{{ contractorDocs.length }}</span>
           </button>
         </nav>
       </aside>
@@ -28,6 +29,39 @@
 
           <!-- ── Обзор (Dashboard) ──────────────────────────────── -->
           <template v-if="section === 'dashboard'">
+
+            <!-- Приветствие и профиль -->
+            <div class="dash-welcome glass-surface">
+              <div class="dash-welcome-left">
+                <div class="dash-avatar">{{ contractor?.name?.charAt(0)?.toUpperCase() || '◑' }}</div>
+                <div>
+                  <div class="dash-welcome-name">{{ contractor?.name }}</div>
+                  <div class="dash-welcome-role">
+                    {{ contractor?.contractorType === 'company' ? 'Подрядчик (компания)' : 'Мастер' }}
+                    <span v-if="contractor?.city"> · {{ contractor.city }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="dash-profile-progress">
+                <div class="dash-profile-pct-ring" :style="{ '--pct': profilePct }">
+                  <span class="dash-profile-pct-val">{{ profilePct }}%</span>
+                </div>
+                <div class="dash-profile-progress-info">
+                  <span class="dash-profile-progress-label">Профиль заполнен</span>
+                  <button v-if="profilePct < 100" class="dash-profile-fill-btn" @click="section = profileNextSection">Заполнить →</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="dash-quick-nav">
+              <button v-for="item in quickActions" :key="item.key" class="dash-quick-btn glass-surface" @click="section = item.key">
+                <span class="dash-quick-icon">{{ item.icon }}</span>
+                <span class="dash-quick-label">{{ item.label }}</span>
+                <span v-if="item.badge" class="dash-quick-badge">{{ item.badge }}</span>
+              </button>
+            </div>
+
             <div class="dash-stats">
               <div class="dash-stat glass-surface">
                 <div class="dash-stat-val">{{ dashStats.total }}</div>
@@ -55,6 +89,17 @@
               </div>
               <div class="dash-progress-bar-wrap">
                 <div class="dash-progress-bar" :style="{ width: dashStats.total ? (dashStats.done / dashStats.total * 100) + '%' : '0%' }" />
+              </div>
+            </div>
+
+            <!-- Привязанные проекты -->
+            <div v-if="linkedProjects?.length" class="dash-projects glass-surface">
+              <div class="dash-section-title">Мои проекты ({{ linkedProjects.length }})</div>
+              <div class="dash-projects-grid">
+                <div v-for="p in linkedProjects" :key="p.slug" class="dash-project-card">
+                  <span class="dash-project-name">{{ p.title }}</span>
+                  <span class="dash-project-slug">{{ p.slug }}</span>
+                </div>
               </div>
             </div>
 
@@ -281,12 +326,11 @@
             </template>
           </template>
 
-          <!-- ── Профиль ─────────────────────────────────────────── -->
-          <template v-else-if="section === 'profile'">
+          <!-- ── Контактные данные ──────────────────────────────── -->
+          <template v-else-if="section === 'contacts'">
             <form @submit.prevent="saveProfile" class="cab-form">
-
               <div class="cab-form-section">
-                <h3>Контакты</h3>
+                <h3>Основные контакты</h3>
                 <div class="cab-grid-2">
                   <div class="cab-field">
                     <label>Имя / название</label>
@@ -294,18 +338,32 @@
                   </div>
                   <div class="cab-field">
                     <label>Компания</label>
-                    <input v-model="form.companyName" class="glass-input" />
+                    <input v-model="form.companyName" class="glass-input" placeholder="ООО / ИП…" />
                   </div>
                   <div class="cab-field">
                     <label>Телефон</label>
-                    <input v-model="form.phone" class="glass-input" type="tel" />
+                    <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" />
                   </div>
                   <div class="cab-field">
                     <label>Email</label>
-                    <input v-model="form.email" class="glass-input" type="email" />
+                    <input v-model="form.email" class="glass-input" type="email" placeholder="mail@example.com" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="cab-form-section">
+                <h3>Мессенджеры</h3>
+                <div class="cab-grid-2">
+                  <div class="cab-field">
+                    <label>Telegram</label>
+                    <input v-model="form.telegram" class="glass-input" placeholder="@username или номер" />
                   </div>
                   <div class="cab-field">
-                    <label>Мессенджер</label>
+                    <label>WhatsApp</label>
+                    <input v-model="form.whatsapp" class="glass-input" placeholder="+7 (___) ___-__-__" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Мессенджер (другой)</label>
                     <select v-model="form.messenger" class="glass-input cab-select">
                       <option value="">—</option>
                       <option>telegram</option>
@@ -317,17 +375,217 @@
                     <label>Ник / номер</label>
                     <input v-model="form.messengerNick" class="glass-input" />
                   </div>
+                </div>
+              </div>
+
+              <div class="cab-form-section">
+                <h3>Адрес и география</h3>
+                <div class="cab-grid-2">
                   <div class="cab-field">
+                    <label>Город</label>
+                    <input v-model="form.city" class="glass-input" placeholder="Москва" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Радиус выезда</label>
+                    <input v-model="form.workRadius" class="glass-input" placeholder="50 км / Москва и МО" />
+                  </div>
+                  <div class="cab-field cab-field-full">
+                    <label>Фактический адрес</label>
+                    <input v-model="form.factAddress" class="glass-input" placeholder="Адрес для корреспонденции" />
+                  </div>
+                  <div class="cab-field cab-field-full">
                     <label>Сайт / портфолио</label>
-                    <input v-model="form.website" class="glass-input" />
+                    <input v-model="form.website" class="glass-input" placeholder="https://example.com" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="cab-foot">
+                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              </div>
+            </form>
+          </template>
+
+          <!-- ── Паспортные данные ──────────────────────────────── -->
+          <template v-else-if="section === 'passport'">
+            <form @submit.prevent="saveProfile" class="cab-form">
+              <div class="cab-form-section">
+                <h3>Паспорт гражданина РФ</h3>
+                <div class="cab-grid-2">
+                  <div class="cab-field">
+                    <label>Серия</label>
+                    <input v-model="form.passportSeries" class="glass-input" placeholder="00 00" maxlength="5" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Номер</label>
+                    <input v-model="form.passportNumber" class="glass-input" placeholder="000000" maxlength="7" />
+                  </div>
+                  <div class="cab-field cab-field-full">
+                    <label>Кем выдан</label>
+                    <input v-model="form.passportIssuedBy" class="glass-input" placeholder="ОВД района…" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Дата выдачи</label>
+                    <input v-model="form.passportIssueDate" class="glass-input" placeholder="дд.мм.гггг" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Код подразделения</label>
+                    <input v-model="form.passportDepartmentCode" class="glass-input" placeholder="000-000" maxlength="7" />
                   </div>
                 </div>
               </div>
 
               <div class="cab-form-section">
-                <h3>Специализации</h3>
+                <h3>Персональные данные</h3>
+                <div class="cab-grid-2">
+                  <div class="cab-field">
+                    <label>Дата рождения</label>
+                    <input v-model="form.birthDate" class="glass-input" placeholder="дд.мм.гггг" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Место рождения</label>
+                    <input v-model="form.birthPlace" class="glass-input" placeholder="г. Москва" />
+                  </div>
+                  <div class="cab-field cab-field-full">
+                    <label>Адрес регистрации</label>
+                    <input v-model="form.registrationAddress" class="glass-input" placeholder="Адрес по прописке" />
+                  </div>
+                  <div class="cab-field">
+                    <label>СНИЛС</label>
+                    <input v-model="form.snils" class="glass-input" placeholder="000-000-000 00" maxlength="14" />
+                  </div>
+                  <div class="cab-field">
+                    <label>ИНН</label>
+                    <input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="cab-foot">
+                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              </div>
+            </form>
+          </template>
+
+          <!-- ── Реквизиты ──────────────────────────────────────── -->
+          <template v-else-if="section === 'requisites'">
+            <form @submit.prevent="saveProfile" class="cab-form">
+              <div class="cab-form-section">
+                <h3>Юридические данные</h3>
+                <div class="cab-grid-2">
+                  <div class="cab-field">
+                    <label>ИНН</label>
+                    <input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" />
+                  </div>
+                  <div class="cab-field">
+                    <label>КПП</label>
+                    <input v-model="form.kpp" class="glass-input" placeholder="000000000" maxlength="9" />
+                  </div>
+                  <div class="cab-field">
+                    <label>ОГРН / ОГРНИП</label>
+                    <input v-model="form.ogrn" class="glass-input" placeholder="0000000000000" maxlength="15" />
+                  </div>
+                  <div class="cab-field cab-field-full">
+                    <label>Юридический адрес</label>
+                    <input v-model="form.legalAddress" class="glass-input" placeholder="Адрес регистрации ИП / ООО" />
+                  </div>
+                  <div class="cab-field cab-field-full">
+                    <label>Фактический адрес</label>
+                    <input v-model="form.factAddress" class="glass-input" placeholder="Адрес ведения деятельности" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="cab-form-section">
+                <h3>Банковские реквизиты</h3>
+                <div class="cab-grid-2">
+                  <div class="cab-field cab-field-full">
+                    <label>Наименование банка</label>
+                    <input v-model="form.bankName" class="glass-input" placeholder="ПАО Сбербанк" />
+                  </div>
+                  <div class="cab-field">
+                    <label>БИК</label>
+                    <input v-model="form.bik" class="glass-input" placeholder="000000000" maxlength="9" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Расчётный счёт</label>
+                    <input v-model="form.settlementAccount" class="glass-input" placeholder="00000000000000000000" maxlength="20" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Корреспондентский счёт</label>
+                    <input v-model="form.correspondentAccount" class="glass-input" placeholder="00000000000000000000" maxlength="20" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="cab-foot">
+                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              </div>
+            </form>
+          </template>
+
+          <!-- ── Документы ──────────────────────────────────────── -->
+          <template v-else-if="section === 'documents'">
+            <div class="cab-form-section">
+              <h3>Загрузить документ</h3>
+              <div class="cab-grid-2">
+                <div class="cab-field">
+                  <label>Название</label>
+                  <input v-model="newDocTitle" class="glass-input" placeholder="Название документа" />
+                </div>
+                <div class="cab-field">
+                  <label>Категория</label>
+                  <select v-model="newDocCategory" class="glass-input cab-select">
+                    <option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
+                  </select>
+                </div>
                 <div class="cab-field cab-field-full">
-                  <label>Роль / профессия</label>
+                  <label>Примечание</label>
+                  <input v-model="newDocNotes" class="glass-input" placeholder="Необязательно" />
+                </div>
+              </div>
+              <div style="margin-top: 12px;">
+                <label class="cab-upload-btn">
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadDoc" />
+                  {{ docUploading ? 'Загрузка…' : '＋ Выбрать файл' }}
+                </label>
+              </div>
+            </div>
+
+            <div v-if="contractorDocs?.length" class="cab-docs-list">
+              <div v-for="doc in contractorDocs" :key="doc.id" class="cab-doc-card glass-surface">
+                <div class="cab-doc-icon">
+                  {{ doc.category === 'passport' ? '🪪' : doc.category === 'license' ? '📜' : doc.category === 'certificate' ? '📄' : doc.category === 'contract' ? '📋' : doc.category === 'insurance' ? '🛡' : doc.category === 'diploma' ? '🎓' : '📎' }}
+                </div>
+                <div class="cab-doc-info">
+                  <div class="cab-doc-title">{{ doc.title }}</div>
+                  <div class="cab-doc-meta">
+                    <span class="cab-doc-cat">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}</span>
+                    <span v-if="doc.notes" class="cab-doc-notes">{{ doc.notes }}</span>
+                    <span v-if="doc.expiresAt" class="cab-doc-expires">до {{ doc.expiresAt }}</span>
+                  </div>
+                </div>
+                <div class="cab-doc-actions">
+                  <a v-if="doc.url" :href="doc.url" target="_blank" class="cab-doc-link">Скачать</a>
+                  <button class="cab-doc-del" @click="deleteDoc(doc.id)">✕</button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="cab-empty">
+              <div class="cab-empty-icon">📂</div>
+              <p>Документов пока нет.<br>Загрузите паспорт, лицензии, сертификаты и другие документы.</p>
+            </div>
+          </template>
+
+          <!-- ── Специализации ──────────────────────────────────── -->
+          <template v-else-if="section === 'specialization'">
+            <form @submit.prevent="saveProfile" class="cab-form">
+              <div class="cab-form-section">
+                <h3>Роль / профессия</h3>
+                <div class="cab-field cab-field-full">
                   <div v-for="group in ROLE_GROUPS" :key="group.label" class="cab-tag-group">
                     <div class="cab-tag-group-label">{{ group.label }}</div>
                     <div class="cab-tags">
@@ -339,9 +597,11 @@
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div class="cab-field cab-field-full" style="margin-top:16px">
-                  <label>Виды работ</label>
+              <div class="cab-form-section">
+                <h3>Виды работ</h3>
+                <div class="cab-field cab-field-full">
                   <div v-for="group in WORK_GROUPS" :key="group.label" class="cab-tag-group">
                     <div class="cab-tag-group-label">{{ group.label }}</div>
                     <div class="cab-tags">
@@ -351,6 +611,20 @@
                         @click="toggleArr(form.workTypes, w.value)"
                       >{{ w.label }}</button>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cab-form-section">
+                <h3>Опыт</h3>
+                <div class="cab-grid-2">
+                  <div class="cab-field">
+                    <label>Стаж (лет)</label>
+                    <input v-model.number="form.experienceYears" class="glass-input" type="number" min="0" max="100" placeholder="10" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Образование</label>
+                    <input v-model="form.education" class="glass-input" placeholder="Высшее строительное…" />
                   </div>
                 </div>
               </div>
@@ -368,6 +642,210 @@
                 <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+          </template>
+
+          <!-- ── Финансы ────────────────────────────────────────── -->
+          <template v-else-if="section === 'finances'">
+            <form @submit.prevent="saveProfile" class="cab-form">
+              <div class="cab-form-section">
+                <h3>Система налогообложения</h3>
+                <div class="cab-grid-2">
+                  <div class="cab-field">
+                    <label>СНО</label>
+                    <select v-model="form.taxSystem" class="glass-input cab-select">
+                      <option value="">— не указана —</option>
+                      <option value="osn">ОСН (общая)</option>
+                      <option value="usn6">УСН 6%</option>
+                      <option value="usn15">УСН 15%</option>
+                      <option value="patent">Патент</option>
+                      <option value="npd">НПД (самозанятый)</option>
+                      <option value="other">Другая</option>
+                    </select>
+                  </div>
+                  <div class="cab-field">
+                    <label>Ставка / стоимость часа</label>
+                    <input v-model="form.hourlyRate" class="glass-input" placeholder="2 500 ₽/час" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="cab-form-section">
+                <h3>Способы оплаты</h3>
+                <div class="cab-tags">
+                  <button
+                    v-for="pm in PAYMENT_METHOD_OPTIONS" :key="pm.value" type="button"
+                    class="cab-tag" :class="{ active: form.paymentMethods.includes(pm.value) }"
+                    @click="toggleArr(form.paymentMethods, pm.value)"
+                  >{{ pm.label }}</button>
+                </div>
+              </div>
+
+              <div class="cab-form-section">
+                <h3>Страхование</h3>
+                <div class="cab-grid-2">
+                  <div class="cab-field">
+                    <label class="cab-checkbox-label">
+                      <input v-model="form.hasInsurance" type="checkbox" class="cab-checkbox" />
+                      Есть страховка ответственности
+                    </label>
+                  </div>
+                  <div v-if="form.hasInsurance" class="cab-field cab-field-full">
+                    <label>Детали страхования</label>
+                    <textarea v-model="form.insuranceDetails" class="glass-input" rows="2" placeholder="Компания, номер полиса, срок…" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="cab-form-section">
+                <h3>Сертификаты и допуски</h3>
+                <div class="cab-certs-list">
+                  <div v-for="(cert, idx) in form.certifications" :key="idx" class="cab-cert-item">
+                    <span>{{ cert }}</span>
+                    <button type="button" class="cab-cert-del" @click="removeCert(idx)">✕</button>
+                  </div>
+                </div>
+                <div class="cab-cert-add">
+                  <input v-model="newCert" class="glass-input" placeholder="Новый сертификат / допуск" @keydown.enter.prevent="addCert" />
+                  <button type="button" class="cab-task-save" @click="addCert">+</button>
+                </div>
+              </div>
+
+              <div class="cab-foot">
+                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              </div>
+            </form>
+          </template>
+
+          <!-- ── Портфолио ──────────────────────────────────────── -->
+          <template v-else-if="section === 'portfolio'">
+            <!-- Статистика портфолио -->
+            <div class="cab-portfolio-stats glass-surface">
+              <div class="cab-portfolio-stat">
+                <span class="cab-portfolio-stat-val">{{ portfolioStats.doneCount }}</span>
+                <span class="cab-portfolio-stat-label">Выполнено задач</span>
+              </div>
+              <div class="cab-portfolio-stat">
+                <span class="cab-portfolio-stat-val">{{ portfolioStats.projectCount }}</span>
+                <span class="cab-portfolio-stat-label">Проектов</span>
+              </div>
+              <div class="cab-portfolio-stat">
+                <span class="cab-portfolio-stat-val">{{ portfolioStats.photoCount }}</span>
+                <span class="cab-portfolio-stat-label">Фотографий</span>
+              </div>
+              <div class="cab-portfolio-stat">
+                <span class="cab-portfolio-stat-val">{{ contractor?.experienceYears || '—' }}</span>
+                <span class="cab-portfolio-stat-label">Лет опыта</span>
+              </div>
+            </div>
+
+            <!-- Специализации -->
+            <div v-if="contractor?.workTypes?.length" class="cab-portfolio-specializations glass-surface">
+              <div class="cab-portfolio-spec-title">Специализации</div>
+              <div class="cab-portfolio-chips">
+                <span v-for="wt in contractor.workTypes" :key="wt" class="glass-chip">
+                  {{ CONTRACTOR_WORK_TYPE_OPTIONS.find(o => o.value === wt)?.label || wt }}
+                </span>
+              </div>
+            </div>
+
+            <div class="cab-form-section">
+              <h3>Выполненные работы</h3>
+              <div class="cab-portfolio-grid">
+                <div v-for="proj in byProject" :key="proj.slug" class="cab-portfolio-proj glass-surface">
+                  <div class="cab-portfolio-proj-head">
+                    <span class="cab-portfolio-proj-title">{{ proj.title }}</span>
+                    <span class="cab-portfolio-proj-progress">{{ proj.doneCount }}/{{ proj.totalCount }}</span>
+                  </div>
+                  <div v-for="wt in proj.wtGroups" :key="wt.workType">
+                    <div v-for="item in wt.items.filter(i => i.status === 'done')" :key="item.id" class="cab-portfolio-item">
+                      <span class="cab-portfolio-item-check">✓</span>
+                      <span class="cab-portfolio-item-name">{{ item.title }}</span>
+                      <span class="cab-portfolio-item-wt">{{ wt.label }}</span>
+                      <span class="cab-portfolio-item-photos" v-if="item.photoCount">📷 {{ item.photoCount }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-if="!byProject.length" class="cab-empty" style="margin-top:12px;">
+                <div class="cab-empty-icon">◖</div>
+                <p>Завершённых проектов пока нет.<br>Ваше портфолио автоматически пополнится по мере выполнения задач.</p>
+              </div>
+            </div>
+
+            <div class="cab-form-section">
+              <h3>Ссылки на внешнее портфолио</h3>
+              <div class="cab-grid-2">
+                <div class="cab-field cab-field-full">
+                  <label>Сайт / Behance / Instagram</label>
+                  <input v-model="form.website" class="glass-input" placeholder="https://…" />
+                </div>
+              </div>
+              <div class="cab-foot" style="margin-top:12px;">
+                <button type="button" class="cab-save" :disabled="saving" @click="saveProfile">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              </div>
+            </div>
+          </template>
+
+          <!-- ── Настройки ──────────────────────────────────────── -->
+          <template v-else-if="section === 'settings'">
+            <div class="cab-form-section">
+              <h3>Аккаунт</h3>
+              <div class="cab-grid-2">
+                <div class="cab-field">
+                  <label>ID</label>
+                  <div class="cab-field-static">{{ contractorId }}</div>
+                </div>
+                <div class="cab-field">
+                  <label>Slug (ссылка для входа)</label>
+                  <div class="cab-field-static cab-field-slug">{{ contractor?.slug }}</div>
+                </div>
+                <div class="cab-field">
+                  <label>Тип</label>
+                  <div class="cab-field-static">{{ contractor?.contractorType === 'company' ? 'Компания-подрядчик' : 'Мастер' }}</div>
+                </div>
+                <div class="cab-field">
+                  <label>Зарегистрирован</label>
+                  <div class="cab-field-static">{{ contractor?.createdAt ? new Date(contractor.createdAt).toLocaleDateString('ru-RU') : '—' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cab-form-section">
+              <h3>Уведомления</h3>
+              <div class="cab-settings-toggles">
+                <label class="cab-toggle-row">
+                  <input type="checkbox" v-model="notifSettings.newTasks" class="cab-toggle-checkbox" />
+                  <span class="cab-toggle-label">Новые задачи</span>
+                  <span class="cab-toggle-hint">Уведомлять о назначении новых задач</span>
+                </label>
+                <label class="cab-toggle-row">
+                  <input type="checkbox" v-model="notifSettings.deadlines" class="cab-toggle-checkbox" />
+                  <span class="cab-toggle-label">Дедлайны</span>
+                  <span class="cab-toggle-hint">Напоминание за 1 день до срока</span>
+                </label>
+                <label class="cab-toggle-row">
+                  <input type="checkbox" v-model="notifSettings.comments" class="cab-toggle-checkbox" />
+                  <span class="cab-toggle-label">Комментарии</span>
+                  <span class="cab-toggle-hint">Новые комментарии к задачам</span>
+                </label>
+                <label class="cab-toggle-row">
+                  <input type="checkbox" v-model="notifSettings.statusChanges" class="cab-toggle-checkbox" />
+                  <span class="cab-toggle-label">Смена статуса</span>
+                  <span class="cab-toggle-hint">Изменение статуса задач дизайнером</span>
+                </label>
+              </div>
+              <button class="cab-save-btn cab-save-btn--sm" style="margin-top:12px" @click="saveNotifSettings">Сохранить настройки</button>
+            </div>
+
+            <div class="cab-form-section">
+              <h3>Безопасность</h3>
+              <p class="cab-settings-hint">
+                Для входа в кабинет используйте ваш ID <b>({{ contractorId }})</b> и slug <b>({{ contractor?.slug }})</b>.
+                Если нужно сменить slug — обратитесь к администратору.
+              </p>
+            </div>
           </template>
 
           <!-- ── Бригада ────────────────────────────────────── -->
@@ -485,6 +963,15 @@
 
 <script setup lang="ts">
 import { CONTRACTOR_ROLE_TYPE_OPTIONS, CONTRACTOR_WORK_TYPE_OPTIONS, WORK_TYPE_STAGES } from '~~/shared/types/catalogs'
+import { workTypeLabel } from '~~/shared/utils/work-status'
+
+const PAYMENT_METHOD_OPTIONS = [
+  { value: 'cash', label: 'Наличные' },
+  { value: 'sbp', label: 'СБП' },
+  { value: 'card_transfer', label: 'На карту' },
+  { value: 'bank_transfer', label: 'Безналичный (р/с)' },
+  { value: 'crypto', label: 'Криптовалюта' },
+]
 
 definePageMeta({ layout: 'contractor' })
 const route = useRoute()
@@ -513,6 +1000,40 @@ const form = reactive({
   notes: '',
   roleTypes: [] as string[],
   workTypes: [] as string[],
+  // Паспортные данные
+  passportSeries: '',
+  passportNumber: '',
+  passportIssuedBy: '',
+  passportIssueDate: '',
+  passportDepartmentCode: '',
+  birthDate: '',
+  birthPlace: '',
+  registrationAddress: '',
+  snils: '',
+  // Доп. контакты
+  telegram: '',
+  whatsapp: '',
+  city: '',
+  workRadius: '',
+  // Реквизиты
+  inn: '',
+  kpp: '',
+  ogrn: '',
+  bankName: '',
+  bik: '',
+  settlementAccount: '',
+  correspondentAccount: '',
+  legalAddress: '',
+  factAddress: '',
+  // Финансовые
+  taxSystem: '',
+  paymentMethods: [] as string[],
+  hourlyRate: '',
+  hasInsurance: false,
+  insuranceDetails: '',
+  education: '',
+  certifications: [] as string[],
+  experienceYears: null as number | null,
 })
 
 watch(contractor, (c) => {
@@ -527,7 +1048,101 @@ watch(contractor, (c) => {
   form.notes         = c.notes         || ''
   form.roleTypes     = Array.isArray(c.roleTypes) ? [...c.roleTypes] : []
   form.workTypes     = Array.isArray(c.workTypes) ? [...c.workTypes] : []
+  // Паспортные
+  form.passportSeries        = c.passportSeries        || ''
+  form.passportNumber        = c.passportNumber        || ''
+  form.passportIssuedBy      = c.passportIssuedBy      || ''
+  form.passportIssueDate     = c.passportIssueDate     || ''
+  form.passportDepartmentCode = c.passportDepartmentCode || ''
+  form.birthDate             = c.birthDate             || ''
+  form.birthPlace            = c.birthPlace            || ''
+  form.registrationAddress   = c.registrationAddress   || ''
+  form.snils                 = c.snils                 || ''
+  // Доп. контакты
+  form.telegram    = c.telegram    || ''
+  form.whatsapp    = c.whatsapp    || ''
+  form.city        = c.city        || ''
+  form.workRadius  = c.workRadius  || ''
+  // Реквизиты
+  form.inn                 = c.inn                 || ''
+  form.kpp                 = c.kpp                 || ''
+  form.ogrn                = c.ogrn                || ''
+  form.bankName            = c.bankName            || ''
+  form.bik                 = c.bik                 || ''
+  form.settlementAccount   = c.settlementAccount   || ''
+  form.correspondentAccount = c.correspondentAccount || ''
+  form.legalAddress        = c.legalAddress        || ''
+  form.factAddress         = c.factAddress         || ''
+  // Финансовые
+  form.taxSystem       = c.taxSystem       || ''
+  form.paymentMethods  = Array.isArray(c.paymentMethods) ? [...c.paymentMethods] : []
+  form.hourlyRate      = c.hourlyRate      || ''
+  form.hasInsurance    = c.hasInsurance    || false
+  form.insuranceDetails = c.insuranceDetails || ''
+  form.education       = c.education       || ''
+  form.certifications  = Array.isArray(c.certifications) ? [...c.certifications] : []
+  form.experienceYears = c.experienceYears ?? null
 }, { immediate: true })
+
+// ── Документы подрядчика ─────────────────────────────────────────
+const { data: contractorDocs, refresh: refreshDocs } = await useFetch<any[]>(
+  `/api/contractors/${contractorId}/documents`, { default: () => [] }
+)
+const docUploading = ref(false)
+const newDocTitle = ref('')
+const newDocCategory = ref('other')
+const newDocNotes = ref('')
+
+const DOC_CATEGORIES = [
+  { value: 'passport',    label: 'Паспорт' },
+  { value: 'inn_doc',     label: 'ИНН' },
+  { value: 'snils',       label: 'СНИЛС' },
+  { value: 'license',     label: 'Лицензия' },
+  { value: 'certificate', label: 'Сертификат' },
+  { value: 'contract',    label: 'Договор' },
+  { value: 'insurance',   label: 'Страховка' },
+  { value: 'diploma',     label: 'Диплом / удостоверение' },
+  { value: 'sro',         label: 'СРО допуск' },
+  { value: 'other',       label: 'Другой' },
+]
+
+async function uploadDoc(ev: Event) {
+  const files = (ev.target as HTMLInputElement).files
+  if (!files?.length) return
+  docUploading.value = true
+  try {
+    for (const file of Array.from(files)) {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('title', newDocTitle.value || file.name)
+      fd.append('category', newDocCategory.value)
+      if (newDocNotes.value) fd.append('notes', newDocNotes.value)
+      await $fetch(`/api/contractors/${contractorId}/documents`, { method: 'POST', body: fd })
+    }
+    newDocTitle.value = ''
+    newDocNotes.value = ''
+    newDocCategory.value = 'other'
+    refreshDocs()
+  } finally {
+    docUploading.value = false
+    ;(ev.target as HTMLInputElement).value = ''
+  }
+}
+
+async function deleteDoc(docId: number) {
+  if (!confirm('Удалить документ?')) return
+  await $fetch(`/api/contractors/${contractorId}/documents/${docId}`, { method: 'DELETE' })
+  refreshDocs()
+}
+
+// Новый сертификат (для секции «Финансы»)
+const newCert = ref('')
+function addCert() {
+  const v = newCert.value.trim()
+  if (v && !form.certifications.includes(v)) form.certifications.push(v)
+  newCert.value = ''
+}
+function removeCert(idx: number) { form.certifications.splice(idx, 1) }
 
 // ── Auth guard ───────────────────────────────────────────────────
 const { data: meData } = await useFetch<any>('/api/auth/me')
@@ -536,12 +1151,19 @@ if (meData.value?.contractorId && meData.value.contractorId !== contractorId) {
 }
 
 // ── Nav ──────────────────────────────────────────────────────────
-const section = ref('tasks')
+const section = ref('dashboard')
 const nav = computed(() => {
   const items: { key: string; icon: string; label: string }[] = [
-    { key: 'dashboard', icon: '◈', label: 'Обзор' },
-    { key: 'tasks',   icon: '◎', label: 'Мои задачи' },
-    { key: 'profile', icon: '◑', label: 'Мой профиль' },
+    { key: 'dashboard',     icon: '◈', label: 'Обзор' },
+    { key: 'tasks',         icon: '◎', label: 'Мои задачи' },
+    { key: 'contacts',      icon: '☎', label: 'Контактные данные' },
+    { key: 'passport',      icon: '◑', label: 'Паспортные данные' },
+    { key: 'requisites',    icon: '◒', label: 'Реквизиты' },
+    { key: 'documents',     icon: '◓', label: 'Документы' },
+    { key: 'specialization',icon: '◔', label: 'Специализации' },
+    { key: 'finances',      icon: '◕', label: 'Финансы' },
+    { key: 'portfolio',     icon: '◖', label: 'Портфолио' },
+    { key: 'settings',      icon: '⚙', label: 'Настройки' },
   ]
   if (contractor.value?.contractorType === 'company') {
     items.splice(2, 0, { key: 'staff', icon: '◔', label: 'Бригада' })
@@ -779,6 +1401,79 @@ const dashDeadlines = computed(() =>
 const dashNoDue = computed(() =>
   (workItems.value || []).filter((i: any) => !i.dateEnd && i.status !== 'done' && i.status !== 'cancelled')
 )
+
+// ── Профиль: полнота заполнения ──────────────────────────────────
+const profileFields: { key: string; section: string }[] = [
+  { key: 'name', section: 'contacts' },
+  { key: 'phone', section: 'contacts' },
+  { key: 'email', section: 'contacts' },
+  { key: 'city', section: 'contacts' },
+  { key: 'passportSeries', section: 'passport' },
+  { key: 'passportNumber', section: 'passport' },
+  { key: 'inn', section: 'requisites' },
+  { key: 'bankName', section: 'requisites' },
+  { key: 'settlementAccount', section: 'requisites' },
+  { key: 'workTypes', section: 'specialization' },
+  { key: 'roleTypes', section: 'specialization' },
+  { key: 'hourlyRate', section: 'finances' },
+]
+const profilePct = computed(() => {
+  const c = contractor.value
+  if (!c) return 0
+  let filled = 0
+  for (const f of profileFields) {
+    const v = c[f.key]
+    if (Array.isArray(v) ? v.length > 0 : !!v) filled++
+  }
+  return Math.round(filled / profileFields.length * 100)
+})
+const profileNextSection = computed(() => {
+  const c = contractor.value
+  if (!c) return 'contacts'
+  for (const f of profileFields) {
+    const v = c[f.key]
+    if (!(Array.isArray(v) ? v.length > 0 : !!v)) return f.section
+  }
+  return 'contacts'
+})
+
+// ── Quick actions ─────────────────────────────────────────────────
+const quickActions = computed(() => {
+  const items = [
+    { key: 'tasks',    icon: '◎', label: 'Мои задачи', badge: activeCount.value || '' },
+    { key: 'contacts', icon: '☎', label: 'Контакты',   badge: '' },
+    { key: 'documents',icon: '◓', label: 'Документы',  badge: '' },
+    { key: 'finances', icon: '◕', label: 'Финансы',    badge: '' },
+  ]
+  return items
+})
+
+// ── Portfolio stats ───────────────────────────────────────────────
+const portfolioStats = computed(() => {
+  const all = workItems.value || []
+  const doneItems = all.filter((i: any) => i.status === 'done')
+  const projects = new Set(doneItems.map((i: any) => i.projectSlug))
+  const photoCount = doneItems.reduce((sum: number, i: any) => sum + (i.photoCount || 0), 0)
+  return {
+    doneCount: doneItems.length,
+    projectCount: projects.size,
+    photoCount,
+  }
+})
+
+// ── Notification settings (localStorage) ─────────────────────────
+const NOTIF_LS_KEY = `cab_notif_${contractorId}`
+function loadNotifSettings() {
+  if (process.server) return { newTasks: true, deadlines: true, comments: true, statusChanges: false }
+  try {
+    const raw = localStorage.getItem(NOTIF_LS_KEY)
+    return raw ? JSON.parse(raw) : { newTasks: true, deadlines: true, comments: true, statusChanges: false }
+  } catch { return { newTasks: true, deadlines: true, comments: true, statusChanges: false } }
+}
+const notifSettings = reactive(loadNotifSettings())
+function saveNotifSettings() {
+  if (!process.server) localStorage.setItem(NOTIF_LS_KEY, JSON.stringify({ ...notifSettings }))
+}
 
 // ── Photos ────────────────────────────────────────────────────────
 const photosByItem = reactive<Record<number, any[]>>({})
@@ -1635,6 +2330,102 @@ async function saveProfile() {
 }
 
 /* ── Dashboard ───────────────────────────────────────────────── */
+/* Welcome card */
+.dash-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.dash-welcome-left { display: flex; align-items: center; gap: 14px; }
+.dash-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, #4a80f0, #6c47ff);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.4rem; font-weight: 800;
+}
+.dash-welcome-name { font-size: 1.15rem; font-weight: 700; color: var(--glass-text, #1a1a2e); }
+.dash-welcome-role { font-size: 0.82rem; opacity: 0.55; margin-top: 2px; }
+
+/* Profile progress ring */
+.dash-profile-progress { display: flex; align-items: center; gap: 12px; }
+.dash-profile-pct-ring {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: conic-gradient(#4a80f0 calc(var(--pct) * 1%), rgba(0,0,0,0.08) 0);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.dash-profile-pct-ring::after {
+  content: '';
+  position: absolute;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--glass-bg, #fff);
+}
+.dash-profile-pct-val {
+  position: relative; z-index: 1;
+  font-size: 0.72rem; font-weight: 800;
+  color: var(--glass-text, #1a1a2e);
+}
+.dash-profile-progress-info { display: flex; flex-direction: column; gap: 2px; }
+.dash-profile-progress-label { font-size: 0.78rem; opacity: 0.6; font-weight: 500; }
+.dash-profile-fill-btn {
+  background: none; border: none; color: #4a80f0; cursor: pointer;
+  font-size: 0.78rem; font-weight: 600; padding: 0; text-align: left;
+}
+.dash-profile-fill-btn:hover { text-decoration: underline; }
+
+/* Quick actions */
+.dash-quick-nav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+@media (max-width: 640px) { .dash-quick-nav { grid-template-columns: repeat(2, 1fr); } }
+.dash-quick-btn {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 14px 10px 12px; border-radius: 14px; border: none;
+  cursor: pointer; gap: 6px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+.dash-quick-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(74,128,240,0.12); }
+.dash-quick-icon { font-size: 1.4rem; }
+.dash-quick-label { font-size: 0.78rem; font-weight: 600; opacity: 0.7; }
+.dash-quick-badge {
+  position: absolute; top: 6px; right: 8px;
+  background: #4a80f0; color: #fff;
+  font-size: 0.65rem; font-weight: 700;
+  padding: 1px 6px; border-radius: 99px;
+  min-width: 18px; text-align: center;
+}
+
+/* Projects */
+.dash-projects {
+  padding: 16px 20px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+}
+.dash-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.dash-project-card {
+  display: flex; flex-direction: column;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(74,128,240,0.06);
+  border: 1px solid var(--glass-border, rgba(0,0,0,0.06));
+}
+.dash-project-name { font-size: 0.88rem; font-weight: 600; }
+.dash-project-slug { font-size: 0.72rem; opacity: 0.4; margin-top: 2px; }
+
 .dash-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1813,4 +2604,255 @@ async function saveProfile() {
 .cab-comment-form { display: flex; gap: 8px; align-items: flex-end; }
 .cab-comment-input { flex: 1; resize: vertical; min-height: 56px; }
 .cab-comment-send { white-space: nowrap; align-self: flex-end; }
+
+/* ── Documents ───────────────────────────────────────────────── */
+.cab-docs-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.cab-doc-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 12px;
+}
+.cab-doc-icon { font-size: 1.6rem; flex-shrink: 0; }
+.cab-doc-info { flex: 1; min-width: 0; }
+.cab-doc-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 3px; }
+.cab-doc-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.75rem; opacity: 0.6; }
+.cab-doc-cat {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(100,110,200,0.12);
+  font-weight: 600;
+}
+.cab-doc-expires { color: #c05818; font-weight: 600; }
+.cab-doc-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.cab-doc-link {
+  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(74,128,240,0.1);
+  border: 1px solid rgba(74,128,240,0.25);
+  color: #4a80f0;
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cab-doc-link:hover { background: rgba(74,128,240,0.18); }
+.cab-doc-del {
+  background: rgba(200,50,50,0.08);
+  border: 1px solid rgba(200,50,50,0.2);
+  color: #bb3333;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cab-doc-del:hover { background: rgba(200,50,50,0.18); }
+
+.cab-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 18px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a80f0;
+  background: rgba(74,128,240,0.1);
+  border: 1px solid rgba(74,128,240,0.25);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cab-upload-btn:hover { background: rgba(74,128,240,0.18); }
+
+/* ── Certificates ────────────────────────────────────────────── */
+.cab-certs-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.cab-cert-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(100,110,200,0.12);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.cab-cert-del {
+  background: none;
+  border: none;
+  font-size: 0.65rem;
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 2px;
+}
+.cab-cert-del:hover { opacity: 1; }
+.cab-cert-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.cab-cert-add .glass-input { flex: 1; }
+
+/* ── Checkbox ────────────────────────────────────────────────── */
+.cab-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 8px 0;
+}
+.cab-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #4a80f0;
+  cursor: pointer;
+}
+
+/* ── Portfolio ───────────────────────────────────────────────── */
+.cab-portfolio-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 20px 16px 16px;
+  border-radius: 16px;
+  text-align: center;
+}
+@media (max-width: 640px) { .cab-portfolio-stats { grid-template-columns: repeat(2, 1fr); } }
+.cab-portfolio-stat-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #4a80f0;
+  display: block;
+}
+.cab-portfolio-stat-label {
+  font-size: 0.72rem;
+  opacity: 0.5;
+  margin-top: 4px;
+  display: block;
+}
+.cab-portfolio-specializations {
+  padding: 14px 18px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+.cab-portfolio-spec-title {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.4;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.cab-portfolio-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cab-portfolio-grid { display: flex; flex-direction: column; gap: 14px; }
+.cab-portfolio-proj {
+  padding: 14px 18px;
+  border-radius: 14px;
+}
+.cab-portfolio-proj-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cab-portfolio-proj-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--glass-text, #1a1a2e);
+}
+.cab-portfolio-proj-progress {
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.5;
+}
+.cab-portfolio-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(74, 128, 240, 0.04);
+  margin-bottom: 4px;
+}
+.cab-portfolio-item-check {
+  color: #2ea86a;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.cab-portfolio-item-name { font-size: 0.88rem; font-weight: 500; flex: 1; }
+.cab-portfolio-item-wt { font-size: 0.72rem; opacity: 0.4; }
+.cab-portfolio-item-photos { font-size: 0.78rem; opacity: 0.6; flex-shrink: 0; }
+
+/* ── Settings ────────────────────────────────────────────────── */
+.cab-field-static {
+  font-size: 0.9rem;
+  padding: 8px 0;
+  opacity: 0.7;
+  font-weight: 500;
+}
+.cab-field-slug {
+  font-family: monospace;
+  letter-spacing: 0.04em;
+  color: var(--glass-text, #1a1a2e);
+  opacity: 0.85;
+}
+.cab-settings-hint {
+  font-size: 0.85rem;
+  opacity: 0.5;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Notification toggles */
+.cab-settings-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cab-toggle-row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.cab-toggle-row:hover {
+  background: rgba(74, 128, 240, 0.04);
+}
+.cab-toggle-checkbox {
+  grid-row: 1 / 3;
+  width: 18px; height: 18px;
+  margin-top: 2px;
+  accent-color: #4a80f0;
+  cursor: pointer;
+}
+.cab-toggle-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--glass-text, #1a1a2e);
+}
+.cab-toggle-hint {
+  font-size: 0.76rem;
+  opacity: 0.45;
+  grid-column: 2;
+}
+.cab-save-btn--sm {
+  font-size: 0.8rem;
+  padding: 8px 18px;
+}
 </style>

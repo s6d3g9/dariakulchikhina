@@ -1,16 +1,24 @@
 <template>
   <div class="contractor-root glass-page">
     <header class="contractor-header glass-surface">
-      <span class="contractor-title">Кабинет подрядчика</span>
+      <div class="contractor-brand">
+        <span class="contractor-title">кабинет подрядчика</span>
+        <span v-if="contractorName" class="contractor-user-name">{{ contractorName }}</span>
+      </div>
       <div class="contractor-actions">
-        <NuxtLink to="/admin" class="contractor-back-link">← админка</NuxtLink>
+        <div v-if="profilePct < 100" class="contractor-progress" :title="`Профиль заполнен на ${profilePct}%`">
+          <div class="contractor-progress-bar">
+            <div class="contractor-progress-fill" :style="{ width: profilePct + '%' }" />
+          </div>
+          <span class="contractor-progress-label">{{ profilePct }}%</span>
+        </div>
         <button
           type="button"
           class="theme-dot glass-chip"
           :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
           @click="toggleTheme"
         ></button>
-        <UButton class="glass-chip" variant="ghost" size="sm" @click="logout">Выйти</UButton>
+        <button class="contractor-logout-btn glass-chip" @click="logout">Выйти</button>
       </div>
     </header>
     <main class="contractor-main">
@@ -23,9 +31,40 @@
 const router = useRouter()
 const route = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
+
+// Получаем данные текущего авторизованного подрядчика
+const { data: meData } = await useFetch<any>('/api/auth/me')
+const contractorId = computed(() => meData.value?.contractorId)
+
+const { data: contractor } = await useFetch<any>(
+  () => contractorId.value ? `/api/contractors/${contractorId.value}` : '',
+  { watch: [contractorId], immediate: true }
+)
+
+const contractorName = computed(() => contractor.value?.name || '')
+
+// Процент заполненности профиля
+const profilePct = computed(() => {
+  const c = contractor.value
+  if (!c) return 0
+  const fields = [
+    c.name, c.phone, c.email,
+    c.telegram || c.whatsapp || c.messengerNick,
+    c.city,
+    c.passportSeries, c.passportNumber,
+    c.inn,
+    c.workTypes?.length > 0,
+    c.roleTypes?.length > 0,
+    c.notes,
+    c.bankName,
+  ]
+  const filled = fields.filter(Boolean).length
+  return Math.round((filled / fields.length) * 100)
+})
+
 async function logout() {
   await $fetch('/api/auth/contractor-logout', { method: 'POST' })
-  router.push('/admin')
+  router.push('/contractor/login')
 }
 </script>
 
@@ -41,7 +80,6 @@ async function logout() {
   background: var(--bg);
 }
 
-
 .contractor-header {
   border-bottom: 1px solid transparent;
   padding: 12px 20px;
@@ -51,6 +89,12 @@ async function logout() {
   border-radius: 0 0 16px 16px;
 }
 
+.contractor-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
 .contractor-title {
   font-size: .74rem;
   letter-spacing: 1.5px;
@@ -58,25 +102,59 @@ async function logout() {
   color: var(--title);
 }
 
+.contractor-user-name {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--glass-text, #1a1a2e);
+  opacity: .7;
+}
+
 .contractor-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.contractor-back-link {
-  text-decoration: none;
-  color: var(--glass-text);
-  opacity: .42;
+.contractor-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.contractor-progress-bar {
+  width: 60px;
+  height: 4px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.contractor-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a80f0, #6c47ff);
+  border-radius: 99px;
+  transition: width 0.5s;
+}
+
+.contractor-progress-label {
   font-size: .68rem;
-  letter-spacing: .4px;
-  text-transform: uppercase;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--glass-border);
+  font-weight: 700;
+  opacity: .55;
   white-space: nowrap;
 }
-.contractor-back-link:hover { opacity: .9; }
+
+.contractor-logout-btn {
+  font-size: .78rem;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.3));
+  background: none;
+  cursor: pointer;
+  color: var(--glass-text, #1a1a2e);
+  opacity: .6;
+  transition: opacity 0.15s;
+}
+.contractor-logout-btn:hover { opacity: 1; }
 
 .contractor-main {
   flex: 1;
@@ -96,4 +174,9 @@ async function logout() {
   -webkit-appearance: none;
 }
 
+@media (max-width: 640px) {
+  .contractor-header { flex-wrap: wrap; gap: 8px; }
+  .contractor-brand { width: 100%; }
+  .contractor-progress-bar { width: 40px; }
+}
 </style>

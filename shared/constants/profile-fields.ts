@@ -22,6 +22,12 @@ export const CLIENT_PROFILE_BASE_KEYS = [
   'hasBalcony', 'parking',
 ] as const
 
+export const CLIENT_PROFILE_PASSPORT_KEYS = [
+  'passport_series', 'passport_number', 'passport_issued_by', 'passport_issue_date',
+  'passport_department_code', 'passport_birth_place', 'passport_registration_address',
+  'passport_inn', 'passport_snils',
+] as const
+
 export const CLIENT_PROFILE_BRIEF_KEYS = [
   'brief_adults_count', 'brief_kids_ages', 'brief_ergonomics', 'brief_handed',
   'brief_pets_desc', 'brief_pets_zone_detail', 'brief_remote_work', 'brief_guests_freq', 'brief_hobbies',
@@ -33,7 +39,7 @@ export const CLIENT_PROFILE_BRIEF_KEYS = [
   'brief_budget_limits', 'brief_deadlines_hard', 'brief_special_notes', 'brief_allergies',
 ] as const
 
-export const CLIENT_PROFILE_EDITABLE_KEYS = [...CLIENT_PROFILE_BASE_KEYS, ...CLIENT_PROFILE_BRIEF_KEYS] as const
+export const CLIENT_PROFILE_EDITABLE_KEYS = [...CLIENT_PROFILE_BASE_KEYS, ...CLIENT_PROFILE_PASSPORT_KEYS, ...CLIENT_PROFILE_BRIEF_KEYS] as const
 
 export type ClientProfileEditableKey = (typeof CLIENT_PROFILE_EDITABLE_KEYS)[number]
 
