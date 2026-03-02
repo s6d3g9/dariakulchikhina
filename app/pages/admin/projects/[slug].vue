@@ -16,11 +16,16 @@
         <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click="showContractorModal = true">
           подрядчики ({{ linkedContractorsList.length }})
         </button>
+        <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click="showDesignerModal = true">
+          дизайнеры ({{ linkedDesignersList.length }})
+        </button>
       </div>
       <p v-if="clientLinkError" class="proj-client-error" style="margin-bottom:6px">{{ clientLinkError }}</p>
       <p v-else-if="clientLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ clientLinkSuccess }}</p>
       <p v-if="contractorLinkError" class="proj-client-error" style="margin-bottom:6px">{{ contractorLinkError }}</p>
       <p v-else-if="contractorLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ contractorLinkSuccess }}</p>
+      <p v-if="designerLinkError" class="proj-client-error" style="margin-bottom:6px">{{ designerLinkError }}</p>
+      <p v-else-if="designerLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ designerLinkSuccess }}</p>
 
       <!-- ═══ Mobile top horizontal nav bar ═══ -->
       <div v-if="!contractorPreviewMode" class="proj-mobile-nav">
@@ -323,6 +328,67 @@
         </div>
       </div>
     </div>
+
+    <!-- Designer Selection Modal -->
+    <div v-if="showDesignerModal" class="a-modal-backdrop" @click.self="showDesignerModal = false">
+      <div class="a-modal">
+        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">дизайнеры проекта</h3>
+
+        <div v-if="linkedDesignersList.length" style="margin-bottom:14px">
+          <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
+          <div class="modal-designers-list">
+            <div
+              v-for="designer in linkedDesignersList"
+              :key="`linked-${designer.id}`"
+              class="modal-designer-item modal-designer-item--linked"
+            >
+              <div class="modal-designer-info">
+                <div class="modal-designer-name">{{ designer.name }}</div>
+                <div class="modal-designer-details">
+                  <template v-if="designer.companyName">{{ designer.companyName }}</template>
+                  <template v-else-if="designer.phone">{{ designer.phone }}</template>
+                  <template v-else-if="designer.email">{{ designer.email }}</template>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="modal-action-btn modal-action-btn--remove"
+                @click="unlinkDesigner(designer.id)"
+              >-</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
+        <div class="modal-designers-list">
+          <div
+            v-for="designer in availableDesignersForModal"
+            :key="designer.id"
+            class="modal-designer-item"
+          >
+            <div class="modal-designer-info">
+              <div class="modal-designer-name">{{ designer.name }}</div>
+              <div class="modal-designer-details">
+                <template v-if="designer.companyName">{{ designer.companyName }}</template>
+                <template v-else-if="designer.phone">{{ designer.phone }}</template>
+                <template v-else-if="designer.email">{{ designer.email }}</template>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="modal-action-btn modal-action-btn--add"
+              @click="linkDesignerFromModal(designer.id)"
+            >+</button>
+          </div>
+        </div>
+        <div v-if="!linkedDesignersList.length && !availableDesignersForModal.length" style="font-size:.82rem;color:#888">Нет дизайнеров в системе</div>
+        <p v-if="designerLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ designerLinkError }}</p>
+        <p v-if="designerLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ designerLinkSuccess }}</p>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="a-btn-sm" @click="showDesignerModal = false">закрыть</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -403,6 +469,11 @@ const { data: clientsData } = await useFetch<any[]>('/api/clients', { default: (
 const { data: allContractorsData, refresh: refreshAllContractors } = await useFetch<any[]>('/api/contractors', { default: () => [] })
 const { data: linkedContractorsData, refresh: refreshLinkedContractors } = await useFetch<any[]>(
   `/api/projects/${slug.value}/contractors`,
+  { default: () => [] },
+)
+const { data: allDesignersData } = await useFetch<any[]>('/api/designers', { default: () => [] })
+const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await useFetch<any[]>(
+  `/api/projects/${slug.value}/designers`,
   { default: () => [] },
 )
 const activePage = ref('first_contact')
@@ -555,10 +626,18 @@ const linkingContractor = ref(false)
 const contractorLinkError = ref('')
 const contractorLinkSuccess = ref('')
 const showContractorModal = ref(false)
+// ── Designer link state ──────────────────────────────────────────
+const linkingDesigner = ref(false)
+const designerLinkError = ref('')
+const designerLinkSuccess = ref('')
+const showDesignerModal = ref(false)
 
 const allContractors = computed(() => allContractorsData.value || [])
 const linkedContractorsList = computed(() => linkedContractorsData.value || [])
 const linkedContractorIds = computed(() => new Set(linkedContractorsList.value.map((c: any) => String(c.id))))
+const allDesigners = computed(() => allDesignersData.value || [])
+const linkedDesignersList = computed(() => linkedDesignersData.value || [])
+const linkedDesignerIds = computed(() => new Set(linkedDesignersList.value.map((d: any) => String(d.id))))
 
 async function linkContractorToProject() {
   if (!selectedContractorId.value) return
@@ -643,6 +722,10 @@ const availableClientsForModal = computed(() => {
 
 const availableContractorsForModal = computed(() => {
   return allContractors.value.filter((c: any) => !linkedContractorIds.value.has(String(c.id)))
+})
+
+const availableDesignersForModal = computed(() => {
+  return allDesigners.value.filter((d: any) => !linkedDesignerIds.value.has(String(d.id)))
 })
 
 const editForm = reactive({
@@ -914,6 +997,46 @@ async function unlinkClientFromModal(clientId: string) {
     setTimeout(() => { clientLinkSuccess.value = '' }, 2500)
   } catch (e: any) {
     clientLinkError.value = e?.data?.statusMessage || 'Не удалось удалить клиента'
+  }
+}
+
+async function linkDesignerFromModal(designerId: number) {
+  if (linkingDesigner.value) return
+  linkingDesigner.value = true
+  designerLinkError.value = ''
+  designerLinkSuccess.value = ''
+  try {
+    await $fetch(`/api/projects/${slug.value}/designers`, {
+      method: 'POST',
+      body: { designerId },
+    })
+    await refreshLinkedDesigners()
+    designerLinkSuccess.value = 'Дизайнер добавлен'
+    setTimeout(() => { designerLinkSuccess.value = '' }, 3000)
+  } catch (e: any) {
+    designerLinkError.value = e?.data?.message || 'Не удалось добавить дизайнера'
+  } finally {
+    linkingDesigner.value = false
+  }
+}
+
+async function unlinkDesigner(designerId: number) {
+  if (linkingDesigner.value) return
+  linkingDesigner.value = true
+  designerLinkError.value = ''
+  designerLinkSuccess.value = ''
+  try {
+    await $fetch(`/api/projects/${slug.value}/designers`, {
+      method: 'DELETE',
+      body: { designerId },
+    })
+    await refreshLinkedDesigners()
+    designerLinkSuccess.value = 'Дизайнер отвязан'
+    setTimeout(() => { designerLinkSuccess.value = '' }, 2500)
+  } catch (e: any) {
+    designerLinkError.value = e?.data?.message || 'Не удалось отвязать дизайнера'
+  } finally {
+    linkingDesigner.value = false
   }
 }
 </script>
@@ -1283,13 +1406,13 @@ async function unlinkClientFromModal(clientId: string) {
 .admin-mini-chip:hover { opacity: 1; background: var(--glass-bg); }
 
 /* Modal Lists */
-.modal-clients-list, .modal-contractors-list {
+.modal-clients-list, .modal-contractors-list, .modal-designers-list {
   max-height: 400px;
   overflow-y: auto;
   margin-bottom: 16px;
 }
 
-.modal-client-item, .modal-contractor-item {
+.modal-client-item, .modal-contractor-item, .modal-designer-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1301,24 +1424,24 @@ async function unlinkClientFromModal(clientId: string) {
   transition: background .15s, border-color .15s;
 }
 
-.modal-client-item--linked, .modal-contractor-item--linked {
+.modal-client-item--linked, .modal-contractor-item--linked, .modal-designer-item--linked {
   background: color-mix(in srgb, var(--glass-bg) 94%, var(--glass-text) 6%);
   border-color: color-mix(in srgb, var(--glass-border) 80%, var(--glass-text) 20%);
 }
 
-.modal-client-info, .modal-contractor-info {
+.modal-client-info, .modal-contractor-info, .modal-designer-info {
   flex: 1;
   min-width: 0;
 }
 
-.modal-client-name, .modal-contractor-name {
+.modal-client-name, .modal-contractor-name, .modal-designer-name {
   font-size: .88rem;
   font-weight: 500;
   color: var(--glass-text, #1a1a1a);
   margin-bottom: 2px;
 }
 
-.modal-client-details, .modal-contractor-details {
+.modal-client-details, .modal-contractor-details, .modal-designer-details {
   font-size: .76rem;
   color: color-mix(in srgb, var(--glass-text) 70%, transparent);
 }
@@ -1506,12 +1629,12 @@ async function unlinkClientFromModal(clientId: string) {
   }
 
   /* Modal lists — card-like */
-  .modal-client-item, .modal-contractor-item {
+  .modal-client-item, .modal-contractor-item, .modal-designer-item {
     padding: 10px;
     flex-wrap: wrap;
     gap: 8px;
   }
-  .modal-client-name, .modal-contractor-name {
+  .modal-client-name, .modal-contractor-name, .modal-designer-name {
     font-size: .82rem;
   }
 
