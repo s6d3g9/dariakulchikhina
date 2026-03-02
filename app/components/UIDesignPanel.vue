@@ -1074,14 +1074,16 @@ onBeforeUnmount(() => {
 /* ── Overlay (click-to-dismiss backdrop) ── */
 .dp-overlay {
   position: fixed; top: 28px; left: 0; right: 0; bottom: 0; z-index: 10000;
+  background: rgba(0,0,0,.15);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
 }
 
 /* ── Panel (horizontal dropdown) ── */
 .dp-panel {
-  width: 100%; max-height: calc(100vh - 28px);
+  width: 100%; max-height: min(580px, 68vh);
   background: var(--glass-page-bg, #f4f4f2);
   border-bottom: 1px solid rgba(0,0,0,.08);
-  box-shadow: 0 12px 40px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06);
+  box-shadow: 0 12px 40px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.07);
   display: flex; flex-direction: column; overflow: hidden;
 }
 :global(html.dark) .dp-panel { background: #111113; border-bottom-color: rgba(255,255,255,.08); }
