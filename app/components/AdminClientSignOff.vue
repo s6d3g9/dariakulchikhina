@@ -126,12 +126,12 @@ async function uploadFile(e: Event) {
 .acso-wrap { padding: 4px 0 40px; }
 .acso-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
 .acso-banner { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border, #ececec); margin-bottom: 28px; }
-.acso-banner--signed { border-color: #5caa7f; background: color-mix(in srgb, #5caa7f 8%, transparent); }
+.acso-banner--signed { border-color: var(--ds-success, #5caa7f); background: color-mix(in srgb, var(--ds-success, #5caa7f) 8%, transparent); }
 .acso-banner--disputed { border-color: #e8b84b; background: color-mix(in srgb, #e8b84b 8%, transparent); }
 .acso-banner-icon { font-size: 1.6rem; }
 .acso-banner-body { display: flex; align-items: center; gap: 12px; flex: 1; flex-wrap: wrap; }
 .acso-status-sel { background: none; border: 1px solid var(--border, #e0e0e0); padding: 5px 10px; font-size: .82rem; font-family: inherit; color: inherit; cursor: pointer; }
-.acso-saved { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.acso-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 .acso-section { margin-bottom: 32px; }
 .acso-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
 .acso-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
@@ -145,12 +145,22 @@ async function uploadFile(e: Event) {
 .acso-file-link { font-size: .8rem; color: inherit; text-decoration: none; }
 .acso-file-link:hover { text-decoration: underline; }
 .acso-file-del { background: none; border: none; cursor: pointer; color: #bbb; font-size: .76rem; }
-.acso-file-del:hover { color: #c00; }
+.acso-file-del:hover { color: var(--ds-error, #c00); }
 .acso-upload-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
 .acso-upload-btn:hover { border-color: #aaa; color: inherit; }
 .acso-uploading { font-size: .76rem; color: #999; margin-left: 10px; }
-.acso-complete-card { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; border: 1px solid #5caa7f; background: color-mix(in srgb, #5caa7f 8%, transparent); }
+.acso-complete-card { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; border: 1px solid var(--ds-success, #5caa7f); background: color-mix(in srgb, var(--ds-success, #5caa7f) 8%, transparent); }
 .acso-complete-icon { font-size: 2rem; }
 .acso-complete-text strong { display: block; font-size: .88rem; margin-bottom: 4px; }
 .acso-complete-text p { font-size: .78rem; color: inherit; opacity: .7; margin: 0; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .acso-rows { grid-template-columns: 1fr; }
+  .acso-banner { flex-direction: column; gap: 8px; padding: 12px; }
+  .acso-banner-body { width: 100%; }
+  .acso-status-sel { width: 100%; }
+  .acso-complete-card { flex-direction: column; gap: 10px; padding: 14px; }
+  .acso-upload-btn { width: 100%; justify-content: center; }
+}
 </style>

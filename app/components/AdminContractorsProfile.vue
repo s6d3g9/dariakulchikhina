@@ -131,7 +131,7 @@ async function unlink(contractorId: number) {
 .acnp-wrap { padding: 4px 0; }
 .acnp-loading { font-size: .86rem; color: #999; padding: 12px 0; }
 .acnp-empty  { font-size: .84rem; color: #bbb; padding: 10px 0; }
-.acnp-error  { font-size: .8rem; color: #c00; margin-top: 12px; }
+.acnp-error  { font-size: .8rem; color: var(--ds-error, #c00); margin-top: 12px; }
 
 .acnp-section-title {
   font-size: .68rem;
@@ -167,7 +167,7 @@ async function unlink(contractorId: number) {
 }
 .acnp-notes { font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 50%, transparent); margin-top: 6px; font-style: italic; }
 .acnp-link {
-  font-size: .76rem; color: #6366f1; text-decoration: none;
+  font-size: .76rem; color: var(--ds-accent, #6366f1); text-decoration: none;
 }
 .acnp-link:hover { text-decoration: underline; }
 
@@ -193,15 +193,15 @@ async function unlink(contractorId: number) {
 .acnp-btn-link {
   border: none;
   background: transparent;
-  color: #6366f1;
+  color: var(--ds-accent, #6366f1);
 }
-.acnp-btn-link:hover:not(:disabled) { background: #6366f1; color: #fff; }
+.acnp-btn-link:hover:not(:disabled) { background: var(--ds-accent, #6366f1); color: #fff; }
 .acnp-btn-unlink {
   border: none;
   background: transparent;
-  color: #c00;
+  color: var(--ds-error, #c00);
 }
-.acnp-btn-unlink:hover:not(:disabled) { background: #fff0f0; }
+.acnp-btn-unlink:hover:not(:disabled) { background: color-mix(in srgb, var(--ds-error, #c00) 8%, transparent); }
 .dark .acnp-btn-unlink:hover:not(:disabled) { background: #2a0000; }
 .acnp-btn-link:disabled, .acnp-btn-unlink:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -218,4 +218,20 @@ async function unlink(contractorId: number) {
   color: inherit;
 }
 .acnp-search:focus { opacity: .92; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .acnp-card { padding: 12px; }
+  .acnp-card-top {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .acnp-card-actions {
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .acnp-search { max-width: none; }
+  .acnp-meta-row { gap: 8px; }
+}
 </style>

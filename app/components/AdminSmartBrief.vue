@@ -497,4 +497,15 @@ async function save() {
   border-color: var(--text, #1a1a1a);
 }
 
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .asb-row { grid-template-columns: 1fr; gap: 2px; }
+  .asb-lbl { font-size: .72rem; padding-top: 0; }
+  .asb-checks-grid { grid-template-columns: 1fr; }
+  .asb-tags-banner { padding: 10px 12px; gap: 6px; }
+  .asb-footer { flex-direction: column; align-items: stretch; gap: 10px; }
+  .asb-btn-save { width: 100%; text-align: center; }
+  .asb-section-title { flex-direction: column; align-items: flex-start; }
+}
+
 </style>

@@ -135,6 +135,11 @@
           <NuxtLink to="/admin/documents" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDocumentsTab }">документы</NuxtLink>
         </div>
 
+        <!-- дизайнеры -->
+        <div class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDesignersTab }">
+          <NuxtLink to="/admin/designers" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDesignersTab }">дизайнеры</NuxtLink>
+        </div>
+
 
       </div><!-- /.admin-tabs -->
 
@@ -175,7 +180,7 @@
             placeholder="Введите телефон"
           />
         </div>
-        <p v-if="clientActionMessage" style="color:#c00;font-size:.8rem;margin:10px 0">{{ clientActionMessage }}</p>
+        <p v-if="clientActionMessage" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ clientActionMessage }}</p>
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
           <button type="button" class="a-btn-sm" @click="showAddClientModal = false" :disabled="clientActionLoading">отмена</button>
           <button type="submit" class="a-btn-sm a-btn-sm--primary" :disabled="clientActionLoading || !newClientForm.name">
@@ -194,12 +199,17 @@ const { isDark, toggleTheme } = useThemeToggle()
 
 // ── Route helpers (must be before useFetch that references them) ──
 const activeProjectSlug = computed(() => {
-  if (route.path.startsWith('/admin/projects/')) {
-    const s = route.params.slug
-    return typeof s === 'string' ? s : ''
+  const normalize = (value: unknown) => {
+    if (typeof value !== 'string') return ''
+    const trimmed = value.trim()
+    if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return ''
+    return trimmed
   }
-  const q = route.query.projectSlug
-  return typeof q === 'string' ? q : ''
+
+  if (route.path.startsWith('/admin/projects/')) {
+    return normalize(route.params.slug)
+  }
+  return normalize(route.query.projectSlug)
 })
 
 // Current project info for linking/unlinking
@@ -228,6 +238,7 @@ const isContractorsTab = computed(() => route.path.startsWith('/admin/contractor
 const isClientsTab     = computed(() => route.path.startsWith('/admin/clients'))
 const isGalleryTab     = computed(() => route.path.startsWith('/admin/gallery'))
 const isDocumentsTab   = computed(() => route.path.startsWith('/admin/documents'))
+const isDesignersTab   = computed(() => route.path.startsWith('/admin/designers'))
 
 const contractorsTabTo    = computed(() => withCtx('/admin/contractors'))
 const clientsTabTo        = computed(() => withCtx('/admin/clients'))
@@ -639,10 +650,10 @@ async function logout() {
   border: 1px solid var(--glass-border);
 }
 .admin-drop-action-btn--add:hover {
-  background: #10b981; color: white; border-color: #059669;
+  background: var(--ds-success, #10b981); color: white; border-color: color-mix(in srgb, var(--ds-success, #10b981) 80%, #000);
 }
 .admin-drop-action-btn--remove:hover {
-  background: #ef4444; color: white; border-color: #dc2626;
+  background: var(--ds-error, #ef4444); color: white; border-color: color-mix(in srgb, var(--ds-error, #ef4444) 80%, #000);
 }
 .admin-drop-action-btn:disabled {
   opacity: 0.4; cursor: not-allowed;
@@ -737,6 +748,129 @@ async function logout() {
   text-decoration: none; border-top: 1px solid var(--glass-border); margin-top: 4px;
 }
 .admin-drop-all:hover { opacity: 1; }
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — admin layout
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Tablet ── */
+@media (max-width: 1024px) {
+  .admin-container {
+    padding: 0 12px;
+    margin: 18px auto;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .admin-bg {
+    padding-top: calc(20px + var(--dp-panel-h, 0px));
+  }
+
+  .admin-header {
+    padding: 10px 12px;
+    border-radius: 0;
+  }
+  .admin-brand {
+    font-size: .58rem;
+    letter-spacing: 1.2px;
+  }
+  .admin-header-links {
+    gap: 8px;
+  }
+  .admin-link {
+    font-size: .7rem;
+  }
+
+  .admin-container {
+    padding: 0 10px;
+    margin: 10px auto;
+  }
+
+  /* Tabs — horizontal scroll strip */
+  .admin-tabs {
+    gap: 4px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+  .admin-tabs::-webkit-scrollbar { display: none; }
+
+  .admin-tab {
+    height: 30px;
+    padding: 0 10px;
+    font-size: .72rem;
+    flex-shrink: 0;
+  }
+
+  .admin-chip-tab {
+    height: 30px;
+    flex-shrink: 0;
+  }
+
+  .admin-mini-chip {
+    width: 22px;
+    height: 22px;
+    font-size: .52rem;
+  }
+
+  /* Dropdowns — full-width overlay on mobile */
+  .admin-dropdown {
+    position: fixed;
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    min-width: 0;
+    max-width: none;
+    max-height: 50vh;
+    border-radius: 16px;
+    box-shadow: 0 -4px 40px rgba(0,0,0,.18);
+    z-index: 200;
+  }
+
+  .admin-drop-item {
+    padding: 10px 10px;
+    font-size: .8rem;
+  }
+
+  /* Modal — full width on mobile */
+  .a-modal {
+    width: 100%;
+    max-width: calc(100vw - 20px);
+    max-height: 85vh;
+    padding: 20px 16px;
+    border-radius: 16px;
+    overflow-y: auto;
+  }
+}
+
+/* ── Small phones ── */
+@media (max-width: 400px) {
+  .admin-header {
+    padding: 8px 10px;
+  }
+  .admin-container {
+    padding: 0 8px;
+  }
+  .admin-tab {
+    height: 28px;
+    padding: 0 8px;
+    font-size: .68rem;
+  }
+  .admin-chip-tab {
+    height: 28px;
+  }
+  .admin-mini-chip {
+    width: 20px;
+    height: 20px;
+    font-size: .48rem;
+  }
+}
 
 
 </style>

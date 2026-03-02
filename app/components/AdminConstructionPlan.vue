@@ -114,7 +114,7 @@ function removeTask(i: number) {
 .acp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
 .acp-status-sel { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.acp-saved { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.acp-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 .acp-section { margin-bottom: 32px; }
 .acp-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); display: flex; align-items: center; gap: 10px; }
 .acp-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
@@ -132,6 +132,13 @@ function removeTask(i: number) {
 .acp-task-inp { flex: 1; border: 1px solid var(--border, #e0e0e0); padding: 6px 10px; font-size: .8rem; background: none; color: inherit; font-family: inherit; outline: none; }
 .acp-task-date { width: 130px; border: 1px solid var(--border, #e0e0e0); padding: 6px 10px; font-size: .78rem; background: none; color: inherit; font-family: inherit; outline: none; flex-shrink: 0; }
 .acp-task-del { background: none; border: none; cursor: pointer; color: #bbb; font-size: 1.1rem; line-height: 1; padding: 0 3px; flex-shrink: 0; }
-.acp-task-del:hover { color: #c00; }
+.acp-task-del:hover { color: var(--ds-error, #c00); }
 .acp-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #ececec); }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .acp-task-row { flex-direction: column; align-items: stretch; gap: 6px; }
+  .acp-task-date { width: 100%; }
+  .acp-task-input { min-width: 0; }
+}
 </style>

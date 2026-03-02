@@ -73,10 +73,45 @@
         <p v-else-if="contractorLinkSuccess" class="proj-client-success">{{ contractorLinkSuccess }}</p>
       </div>
 
+      <!-- ═══ Mobile top horizontal nav bar ═══ -->
+      <div v-if="!contractorPreviewMode" class="proj-mobile-nav">
+        <!-- Client preview mode -->
+        <template v-if="clientPreviewMode">
+          <div class="proj-mobile-bar-header">
+            <span class="proj-mobile-bar-label">👁 клиент</span>
+            <NuxtLink :to="`/admin/projects/${slug}`" class="proj-preview-exit" style="font-size:.72rem">× выйти</NuxtLink>
+          </div>
+          <div class="proj-mobile-bar-scroll">
+            <button
+              v-for="pg in clientNavPages" :key="pg.slug"
+              class="proj-mobile-bar-btn"
+              :class="{ 'proj-mobile-bar-btn--active': clientActivePage === pg.slug }"
+              @click="selectClientPage(pg.slug)"
+            >
+              <span v-if="pg.icon" class="proj-mobile-bar-icon">{{ pg.icon }}</span>
+              {{ pg.title }}
+            </button>
+          </div>
+        </template>
+        <!-- Admin mode: phase groups as scrollable tabs -->
+        <template v-else>
+          <div class="proj-mobile-bar-scroll">
+            <template v-for="group in navGroups" :key="'mob-' + group.label">
+              <button
+                v-for="pg in group.pages" :key="pg.slug"
+                class="proj-mobile-bar-btn"
+                :class="{ 'proj-mobile-bar-btn--active': activePage === pg.slug }"
+                @click="selectAdminPage(pg.slug)"
+              >{{ pg.title }}</button>
+            </template>
+          </div>
+        </template>
+      </div>
+
       <div class="proj-content-area">
 
         <!-- Nav column + sidebar, sticky together -->
-        <div class="proj-nav-col">
+        <div v-if="!contractorPreviewMode" class="proj-nav-col">
 
         <!-- Left sidebar: vertical nav -->
         <nav class="proj-sidenav std-sidenav">
@@ -114,24 +149,8 @@
             <div v-if="!clientNavPages.length" class="proj-sidenav-empty">Нет страниц для клиента</div>
           </template>
 
-          <!-- CONTRACTOR PREVIEW MODE -->
-          <template v-else-if="contractorPreviewMode">
-            <div class="proj-preview-banner">
-              <span class="proj-preview-label">🛠 {{ contractorData?.name || 'подрядчик' }}</span>
-              <NuxtLink :to="`/admin/projects/${slug}`" class="proj-preview-exit">× выйти</NuxtLink>
-            </div>
-            <button
-              v-for="sec in CONTRACTOR_SECTIONS" :key="sec.key"
-              class="proj-sidenav-item std-nav-item"
-              :class="{ 'proj-sidenav-item--active': contractorSection === sec.key, 'std-nav-item--active': contractorSection === sec.key }"
-              @click="selectContractorSection(sec.key)"
-            >
-              <span class="proj-sidenav-icon">{{ sec.icon }}</span>{{ sec.label }}
-            </button>
-          </template>
-
           <!-- ADMIN NAV with roadmap dots -->
-          <template v-else>
+          <template v-else-if="!contractorPreviewMode">
             <template v-for="(group, gi) in navGroups" :key="group.label">
               <div class="proj-sidenav-group" v-if="group.pages.length">
                 <div class="proj-sidenav-group-label std-nav-group-label">{{ group.label }}</div>
@@ -186,26 +205,7 @@
               <template v-if="contractorPreviewMode">
                 <div v-if="contractorPending" style="font-size:.82rem;color:#aaa;padding:20px 0">Загрузка...</div>
                 <template v-else-if="contractorData">
-                  <!-- Профиль -->
-                  <div v-if="contractorSection === 'profile'" class="ctr-card">
-                    <div class="ctr-name">{{ contractorData.name }}</div>
-                    <div v-if="contractorData.companyName" class="ctr-sub">{{ contractorData.companyName }}</div>
-                    <div class="ctr-rows">
-                      <div v-if="contractorData.phone" class="ctr-row"><span class="ctr-lbl">тел</span><a :href="`tel:${contractorData.phone}`" class="ctr-val">{{ contractorData.phone }}</a></div>
-                      <div v-if="contractorData.email" class="ctr-row"><span class="ctr-lbl">email</span><a :href="`mailto:${contractorData.email}`" class="ctr-val">{{ contractorData.email }}</a></div>
-                      <div v-if="contractorData.messenger" class="ctr-row"><span class="ctr-lbl">{{ contractorData.messenger }}</span><span class="ctr-val">{{ contractorData.messengerNick }}</span></div>
-                      <div v-if="contractorData.website" class="ctr-row"><span class="ctr-lbl">сайт</span><a :href="contractorData.website" target="_blank" class="ctr-val">{{ contractorData.website }}</a></div>
-                    </div>
-                    <div v-if="contractorData.workTypes?.length" class="ctr-chips">
-                      <span v-for="wt in contractorData.workTypes" :key="wt" class="ctr-chip">{{ wt }}</span>
-                    </div>
-                    <div v-if="contractorData.notes" class="ctr-notes">{{ contractorData.notes }}</div>
-                    <NuxtLink :to="`/admin/contractors#c-${contractorData.id}`" class="ctr-link-full">полная анкета ↗</NuxtLink>
-                  </div>
-                  <!-- Задачи -->
-                  <AdminWorkStatus v-else-if="contractorSection === 'tasks'" :slug="slug" />
-                  <!-- Документы -->
-                  <AdminMaterials v-else-if="contractorSection === 'materials'" :slug="slug" />
+                  <AdminContractorCabinet :contractor-id="contractorPreviewId" />
                 </template>
               </template>
               <!-- client preview -->
@@ -252,7 +252,7 @@
               </label>
             </div>
           </div>
-          <p v-if="editError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ editError }}</p>
+          <p v-if="editError" style="color:var(--ds-error, #c00);font-size:.8rem;margin-bottom:10px">{{ editError }}</p>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
             <button type="button" class="a-btn-sm" @click="showEdit = false">отмена</button>
             <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
@@ -293,8 +293,8 @@
             >-</button>
           </div>
         </div>
-        <p v-if="clientLinkError" style="color:#c00;font-size:.8rem;margin:10px 0">{{ clientLinkError }}</p>
-        <p v-if="clientLinkSuccess" style="color:#5caa7f;font-size:.8rem;margin:10px 0">{{ clientLinkSuccess }}</p>
+        <p v-if="clientLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ clientLinkError }}</p>
+        <p v-if="clientLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ clientLinkSuccess }}</p>
         <div style="display:flex;justify-content:flex-end;margin-top:20px">
           <button type="button" class="a-btn-sm" @click="showClientModal = false">закрыть</button>
         </div>
@@ -333,8 +333,8 @@
             >-</button>
           </div>
         </div>
-        <p v-if="contractorLinkError" style="color:#c00;font-size:.8rem;margin:10px 0">{{ contractorLinkError }}</p>
-        <p v-if="contractorLinkSuccess" style="color:#5caa7f;font-size:.8rem;margin:10px 0">{{ contractorLinkSuccess }}</p>
+        <p v-if="contractorLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ contractorLinkError }}</p>
+        <p v-if="contractorLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ contractorLinkSuccess }}</p>
         <div style="display:flex;justify-content:flex-end;margin-top:20px">
           <button type="button" class="a-btn-sm" @click="showContractorModal = false">закрыть</button>
         </div>
@@ -688,20 +688,11 @@ const pageComponentMap: Record<string, Component> = {
 // ── Contractor preview mode ─────────────────────────────────────────
 const contractorPreviewMode = computed(() => route.query.view === 'contractor')
 const contractorPreviewId   = computed(() => route.query.cid ? Number(route.query.cid) : null)
-const contractorSection     = ref('profile')
-
-const CONTRACTOR_SECTIONS = [
-  { key: 'profile',   label: 'профиль',  icon: '🗣' },
-  { key: 'tasks',     label: 'задачи',   icon: '📌' },
-  { key: 'materials', label: 'материалы', icon: '📄' },
-]
 
 const { data: contractorData, pending: contractorPending } = useFetch<any>(
   () => contractorPreviewId.value ? `/api/contractors/${contractorPreviewId.value}` : null,
   { watch: [contractorPreviewId] },
 )
-
-watch(contractorPreviewMode, (on) => { if (on) contractorSection.value = 'profile' })
 
 // ── Client preview mode ────────────────────────────────────────
 const clientPreviewMode = computed(() => route.query.view === 'client')
@@ -709,20 +700,28 @@ const clientActivePage  = ref('')
 
 // ── Content key: drives fade transition + scroll-reset on page switch ───────
 const contentKey = computed(() => {
-  if (contractorPreviewMode.value) return `ctr-${contractorSection.value}`
+  if (contractorPreviewMode.value) return 'ctr-cabinet'
   if (clientPreviewMode.value)     return `cli-${clientActivePage.value}`
   return `adm-${activePage.value}`
 })
 function selectAdminPage(slug: string) {
   activePage.value = slug
+  scrollMobileBarToActive()
 }
 
 function selectClientPage(slug: string) {
   clientActivePage.value = slug
+  scrollMobileBarToActive()
 }
 
-function selectContractorSection(key: string) {
-  contractorSection.value = key
+/** Auto-scroll the mobile horizontal nav so the active button is visible */
+function scrollMobileBarToActive() {
+  nextTick(() => {
+    const active = document.querySelector('.proj-mobile-bar-btn--active') as HTMLElement | null
+    if (active) {
+      active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+    }
+  })
 }
 
 const clientPageComponentMap: Record<string, Component> = {
@@ -1005,8 +1004,8 @@ async function unlinkClientFromModal(clientId: string) {
   border-color: rgba(200,50,50,.25);
 }
 .proj-client-btn:disabled { opacity: .6; cursor: default; }
-.proj-client-error { margin: 8px 0 0; color: #c00; font-size: .78rem; }
-.proj-client-success { margin: 8px 0 0; color: #5caa7f; font-size: .78rem; }
+.proj-client-error { margin: 8px 0 0; color: var(--ds-error, #c00); font-size: .78rem; }
+.proj-client-success { margin: 8px 0 0; color: var(--ds-success, #5caa7f); font-size: .78rem; }
 
 /* ── Client link inline (inside client preview sidebar) ── */
 .proj-client-link-inline {
@@ -1050,7 +1049,7 @@ async function unlinkClientFromModal(clientId: string) {
 
 /* ── Left sidebar nav ── */
 .proj-sidenav {
-  width: 190px; flex-shrink: 0;
+  width: var(--ds-sidebar-width, 190px); flex-shrink: 0;
   padding: 10px;
 }
 
@@ -1350,7 +1349,7 @@ async function unlinkClientFromModal(clientId: string) {
 }
 
 .modal-action-btn--add {
-  background: #28a745;
+  background: var(--ds-success, #28a745);
   color: #fff;
 }
 
@@ -1360,13 +1359,191 @@ async function unlinkClientFromModal(clientId: string) {
 }
 
 .modal-action-btn--remove {
-  background: #dc3545;
+  background: var(--ds-error, #dc3545);
   color: #fff;
 }
 
 .modal-action-btn--remove:hover {
   background: #c82333;
   transform: scale(1.05);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE HORIZONTAL NAV BAR
+   ══════════════════════════════════════════════════════════════ */
+
+/* Hidden on desktop */
+.proj-mobile-nav {
+  display: none;
+  position: relative;
+  z-index: 30;
+  margin-bottom: 10px;
+}
+
+/* Scrollable horizontal strip */
+.proj-mobile-bar-scroll {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 6px 0 4px;
+}
+.proj-mobile-bar-scroll::-webkit-scrollbar { display: none; }
+
+/* Each button — compact pill */
+.proj-mobile-bar-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--glass-text);
+  font-family: var(--ds-font-family);
+  font-size: .68rem;
+  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: .55;
+  transition: opacity .12s, background .12s, border-color .12s;
+}
+.proj-mobile-bar-btn:hover {
+  opacity: .85;
+}
+.proj-mobile-bar-btn--active {
+  opacity: 1;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--glass-bg) 95%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 30%, transparent);
+}
+
+.proj-mobile-bar-icon {
+  font-size: .7rem;
+}
+
+/* Client preview header row */
+.proj-mobile-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 2px;
+}
+.proj-mobile-bar-label {
+  font-size: .66rem;
+  color: var(--glass-text);
+  opacity: .5;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE OVERRIDES
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Tablet ── */
+@media (max-width: 1024px) {
+  .proj-sidenav {
+    width: 160px;
+  }
+  .proj-nav-col {
+    margin-right: 12px;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  /* Show mobile nav */
+  .proj-mobile-nav { display: block; }
+
+  /* Hide desktop left sidebar */
+  .proj-nav-col { display: none !important; }
+
+  /* Stack content vertically */
+  .proj-content-area {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .proj-main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Client/contractor cards — full width, tighter padding */
+  .proj-client-card {
+    margin-left: 0;
+    margin-right: 0;
+    padding: 12px;
+  }
+  .proj-client-title {
+    font-size: .72rem;
+  }
+  .proj-client-select {
+    font-size: .76rem;
+    padding: 6px 8px;
+  }
+  .proj-client-btn {
+    font-size: .72rem;
+    padding: 6px 10px;
+  }
+  .proj-client-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .proj-client-linked {
+    flex-wrap: wrap;
+  }
+  .proj-client-linked-chip {
+    font-size: .66rem;
+    padding: 2px 6px;
+  }
+
+  /* Modals — full width */
+  .a-modal {
+    width: 100%;
+    max-width: calc(100vw - 20px);
+    max-height: 85vh;
+    padding: 18px 14px;
+    overflow-y: auto;
+  }
+  .a-modal h3 {
+    font-size: .78rem;
+  }
+
+  /* Modal lists — card-like */
+  .modal-client-item, .modal-contractor-item {
+    padding: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .modal-client-name, .modal-contractor-name {
+    font-size: .82rem;
+  }
+
+  /* Breadcrumb */
+  .proj-content-area + * {
+    font-size: .72rem;
+  }
+}
+
+/* ── Small phones ── */
+@media (max-width: 400px) {
+  .proj-mobile-nav-toggle {
+    padding: 8px 10px;
+    font-size: .76rem;
+  }
+  .proj-mobile-nav-item {
+    padding: 9px 10px;
+    font-size: .78rem;
+  }
+  .proj-client-card {
+    padding: 10px;
+  }
 }
 
 </style>

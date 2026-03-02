@@ -65,7 +65,7 @@
 
       <button class="am-btn-add glass-chip" style="margin-bottom:12px" @click="addTab">+ новая вкладка</button>
       <div class="am-actions">
-        <p v-if="error" style="color:#c00;font-size:.8rem;margin-right:auto">{{ error }}</p>
+        <p v-if="error" style="color:var(--ds-error, #c00);font-size:.8rem;margin-right:auto">{{ error }}</p>
         <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</button>
       </div>
     </template>
@@ -250,7 +250,7 @@ async function save() {
   border-radius: 2px;
 }
 .am-btn-sm:hover { opacity: .9; }
-.am-btn-sm.danger { color: #c00; border-color: #c00; }
+.am-btn-sm.danger { color: var(--ds-error, #c00); border-color: var(--ds-error, #c00); }
 .am-btn-sm.danger:hover { background: #c00; color: #fff; }
 .am-btn-add {
   border: none;
@@ -271,5 +271,22 @@ async function save() {
   justify-content: flex-end;
   align-items: center;
   margin-top: 20px;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .am-card { padding: 14px; }
+  .am-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .am-lbl { width: auto; }
+  .am-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .am-actions .a-btn-save,
+  .am-btn-add { width: 100%; }
 }
 </style>

@@ -126,7 +126,7 @@ function removePhotoTag(ph: any, t: string) {
 .asp2-upload-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border, #e0e0e0); padding: 6px 14px; font-size: .78rem; color: inherit; cursor: pointer; user-select: none; margin-left: auto; }
 .asp2-upload-btn:hover { border-color: #aaa; }
 .asp2-upload-btn--loading { opacity: .6; cursor: wait; }
-.asp2-saved { font-size: .72rem; color: #5caa7f; }
+.asp2-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); }
 .asp2-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .asp2-tag { border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .7rem; padding: 3px 8px; border-radius: 999px; cursor: pointer; font-family: inherit; }
 .asp2-tag--active { background: var(--border, #e0e0e0); }
@@ -146,4 +146,11 @@ function removePhotoTag(ph: any, t: string) {
 .asp2-ph-tag button { background: none; border: none; cursor: pointer; color: #aaa; padding: 0; font-size: .7rem; line-height: 1; }
 .asp2-tag-inp { border: none; border-bottom: 1px dashed var(--border, #ccc); background: none; color: inherit; font-size: .65rem; width: 60px; outline: none; font-family: inherit; }
 .asp2-empty { font-size: .8rem; color: #bbb; padding: 60px 0; text-align: center; border: 1px dashed var(--border, #ececec); }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .asp2-toolbar { gap: 8px; }
+  .asp2-upload-btn { margin-left: 0; width: 100%; justify-content: center; }
+  .asp2-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+}
 </style>

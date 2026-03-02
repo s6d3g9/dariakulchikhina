@@ -86,6 +86,7 @@
                     <button type="button" class="dp-sm-btn" @click="copyExport">{{ copyLabel }}</button>
                     <button v-if="exportTab === 'json'" type="button" class="dp-sm-btn" @click="doImport">импорт JSON</button>
                   </div>
+                  <div v-if="importError && exportTab === 'json'" class="dp-import-error">{{ importError }}</div>
                 </div>
               </div>
             </Transition>
@@ -651,9 +652,9 @@
                       placeholder="Текстовое поле"
                       :style="{
                         borderRadius: tokens.inputRadius + 'px',
-                        background: `color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBgOpacity*100)}%, transparent)`,
+                        background: `color-mix(in srgb, var(--glass-text) ${Math.round(tokens.inputBgOpacity*100)}%, transparent)`,
                         border: tokens.inputBorderOpacity > 0.005
-                          ? `1px solid color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBorderOpacity*100)}%, transparent)`
+                          ? `1px solid color-mix(in srgb, var(--glass-text) ${Math.round(tokens.inputBorderOpacity*100)}%, transparent)`
                           : 'none',
                         padding: '7px 10px', outline: 'none', width: '100%',
                         fontSize: 'var(--ds-text-sm, .8rem)', fontFamily: 'inherit',
@@ -664,9 +665,9 @@
                       class="dp-demo-input"
                       :style="{
                         borderRadius: tokens.inputRadius + 'px',
-                        background: `color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBgOpacity*100)}%, transparent)`,
+                        background: `color-mix(in srgb, var(--glass-text) ${Math.round(tokens.inputBgOpacity*100)}%, transparent)`,
                         border: tokens.inputBorderOpacity > 0.005
-                          ? `1px solid color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBorderOpacity*100)}%, transparent)`
+                          ? `1px solid color-mix(in srgb, var(--glass-text) ${Math.round(tokens.inputBorderOpacity*100)}%, transparent)`
                           : 'none',
                         padding: '7px 10px', width: '100%',
                         fontSize: 'var(--ds-text-sm, .8rem)', fontFamily: 'inherit',
@@ -680,9 +681,9 @@
                       rows="2"
                       :style="{
                         borderRadius: tokens.inputRadius + 'px',
-                        background: `color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBgOpacity*100)}%, transparent)`,
+                        background: `color-mix(in srgb, var(--glass-text) ${Math.round(tokens.inputBgOpacity*100)}%, transparent)`,
                         border: tokens.inputBorderOpacity > 0.005
-                          ? `1px solid color-mix(in srgb, #1f1f1f ${Math.round(tokens.inputBorderOpacity*100)}%, transparent)`
+                          ? `1px solid color-mix(in srgb, var(--glass-text) ${Math.round(tokens.inputBorderOpacity*100)}%, transparent)`
                           : 'none',
                         padding: '7px 10px', width: '100%', resize: 'none',
                         fontSize: 'var(--ds-text-sm, .8rem)', fontFamily: 'inherit',
@@ -726,9 +727,9 @@
                       :style="{
                         display: 'inline-flex', alignItems: 'center',
                         borderRadius: (tokens.chipRadius > 99 ? 999 : tokens.chipRadius) + 'px',
-                        background: `color-mix(in srgb, #1f1f1f ${Math.round(tokens.chipBgOpacity*100)}%, transparent)`,
+                        background: `color-mix(in srgb, var(--glass-text) ${Math.round(tokens.chipBgOpacity*100)}%, transparent)`,
                         border: tokens.chipBorderOpacity > 0.005
-                          ? `1px solid color-mix(in srgb, #1f1f1f ${Math.round(tokens.chipBorderOpacity*100)}%, transparent)`
+                          ? `1px solid color-mix(in srgb, var(--glass-text) ${Math.round(tokens.chipBorderOpacity*100)}%, transparent)`
                           : '1px solid transparent',
                         padding: `${tokens.chipPaddingV}px ${tokens.chipPaddingH}px`,
                         fontSize: 'var(--ds-text-xs, .7rem)',
@@ -769,7 +770,7 @@
                         display: 'flex', alignItems: 'center', gap: '8px',
                         padding: tokens.navItemPaddingV + 'px ' + tokens.navItemPaddingH + 'px',
                         borderRadius: tokens.navItemRadius + 'px',
-                        background: i === 0 ? 'color-mix(in srgb, var(--glass-bg) 92%, transparent)' : 'transparent',
+                        background: i === 0 ? 'color-mix(in srgb, var(--ds-accent-light, var(--glass-text)) 25%, var(--glass-bg) 75%)' : 'transparent',
                         fontWeight: i === 0 ? '600' : '400',
                         opacity: i === 0 ? '1' : '0.65',
                         fontSize: 'var(--ds-text-sm, .8rem)',
@@ -1136,6 +1137,7 @@ const { isDark } = useThemeToggle()
 
 const open = ref(false)
 const showExport = ref(false)
+const importError = ref('')
 const exportTab = ref<'json' | 'css'>('json')
 const importBuffer = ref('')
 const copyLabel = ref('копировать')
@@ -1166,9 +1168,9 @@ const tabList = [
   { id: 'tables',    label: 'таблицы' },
   { id: 'badges',    label: 'значки' },
 ]
-// kept for inspect-mode compatibility
+// Tab keying — sections object kept only for inspect-mode quick-jump compatibility
 const sections = reactive({ presets: true, palette: true, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false })
-function toggle(key: keyof typeof sections) { activeTab.value = key }
+function toggle(key: keyof typeof sections) { activeTab.value = key as string }
 
 /* ── Option lists ────────────────────────────────── */
 const btnStyles = [
@@ -1242,25 +1244,21 @@ const sectionSearchMap: Record<string, string[]> = {
 }
 
 function isTabVisible(key: string): boolean {
-  if (searchQuery.value.trim()) {
-    // When searching, show the first matching tab automatically
-    const q = searchQuery.value.toLowerCase()
-    const words = sectionSearchMap[key] || []
-    const matches = words.some(w => w.includes(q) || q.includes(w))
-    if (matches && activeTab.value !== key) {
-      // Auto-switch to best matching tab
-      const matchingTabs = tabList.filter(t => {
-        const ws = sectionSearchMap[t.id] || []
-        return ws.some(w => w.includes(q) || q.includes(w))
-      })
-      if (matchingTabs.length > 0 && matchingTabs[0]?.id === key) {
-        activeTab.value = key
-      }
-    }
-    return activeTab.value === key
-  }
   return activeTab.value === key
 }
+
+// Auto-switch to first matching tab when search query changes
+watch(searchQuery, (q) => {
+  if (!q.trim()) return
+  const lower = q.toLowerCase()
+  const matchingTab = tabList.find(t => {
+    const ws = sectionSearchMap[t.id] || []
+    return ws.some(w => w.includes(lower) || lower.includes(w))
+  })
+  if (matchingTab && activeTab.value !== matchingTab.id) {
+    activeTab.value = matchingTab.id
+  }
+})
 
 function pct(v: number) { return `${(v * 100).toFixed(0)}%` }
 
@@ -1302,8 +1300,15 @@ function copyExport() {
   setTimeout(() => { copyLabel.value = 'копировать' }, 2000)
 }
 function doImport() {
-  if (importJSON(importBuffer.value)) {
-    showExport.value = false
+  importError.value = ''
+  try {
+    if (importJSON(importBuffer.value)) {
+      showExport.value = false
+    } else {
+      importError.value = 'Неверный формат JSON — токены не применены'
+    }
+  } catch (e: unknown) {
+    importError.value = e instanceof Error ? e.message : 'Ошибка разбора JSON'
   }
 }
 
@@ -1317,8 +1322,8 @@ function playAnim() {
 const previewBtnStyle = computed(() => {
   const t = tokens.value
   const sz = BTN_SIZE_MAP[t.btnSize]
-  const bg = t.btnStyle === 'filled' || t.btnStyle === 'soft' ? 'rgba(0,0,0,0.07)' : 'transparent'
-  const border = t.btnStyle === 'ghost' || t.btnStyle === 'soft' ? 'transparent' : 'rgba(0,0,0,0.14)'
+  const bg = t.btnStyle === 'filled' || t.btnStyle === 'soft' ? 'color-mix(in srgb, var(--glass-text) 7%, transparent)' : 'transparent'
+  const border = t.btnStyle === 'ghost' || t.btnStyle === 'soft' ? 'transparent' : 'color-mix(in srgb, var(--glass-text) 14%, transparent)'
   return {
     borderRadius: `${t.btnRadius}px`, padding: `${sz.py}px ${sz.px}px`,
     fontSize: `${sz.fontSize}rem`, textTransform: t.btnTransform,
@@ -1334,7 +1339,7 @@ const previewSmBtnStyle = computed(() => {
     borderRadius: `${t.btnRadius}px`, padding: `${sz.py}px ${sz.px}px`,
     fontSize: `${sz.fontSize}rem`, textTransform: t.btnTransform,
     letterSpacing: `${t.letterSpacing}em`, background: 'transparent',
-    border: `1px solid rgba(0,0,0,0.12)`, fontFamily: t.fontFamily,
+    border: `1px solid color-mix(in srgb, var(--glass-text) 12%, transparent)`, fontFamily: t.fontFamily,
   }
 })
 
@@ -1353,8 +1358,8 @@ const previewBtnTypeStyle = computed(() => {
   const sz = BTN_SIZE_MAP[t.btnSize]
   const finalPy = t.btnPaddingV > 0 ? t.btnPaddingV : sz.py
   const finalPx = t.btnPaddingH > 0 ? t.btnPaddingH : sz.px
-  const bg = t.btnStyle === 'filled' || t.btnStyle === 'soft' ? 'rgba(0,0,0,0.07)' : 'transparent'
-  const border = t.btnStyle === 'ghost' || t.btnStyle === 'soft' ? 'transparent' : 'rgba(0,0,0,0.14)'
+  const bg = t.btnStyle === 'filled' || t.btnStyle === 'soft' ? 'color-mix(in srgb, var(--glass-text) 7%, transparent)' : 'transparent'
+  const border = t.btnStyle === 'ghost' || t.btnStyle === 'soft' ? 'transparent' : 'color-mix(in srgb, var(--glass-text) 14%, transparent)'
   return {
     borderRadius: `${t.btnRadius}px`, padding: `${finalPy}px ${finalPx}px`,
     fontSize: `${sz.fontSize}rem`, textTransform: t.btnTransform,
@@ -1372,8 +1377,8 @@ const previewInputStyle = computed(() => {
     padding: `${t.inputPaddingV}px ${t.inputPaddingH}px`,
     fontSize: t.inputFontSize > 0 ? `${t.inputFontSize}rem` : 'var(--ds-text-sm, .833rem)',
     fontFamily: t.fontFamily,
-    background: 'rgba(0,0,0,0.06)',
-    border: `1px solid rgba(0,0,0,0.15)`,
+    background: 'color-mix(in srgb, var(--glass-text) 6%, transparent)',
+    border: `1px solid color-mix(in srgb, var(--glass-text) 15%, transparent)`,
     color: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box',
   }
 })
@@ -1395,8 +1400,8 @@ const surfaceStyle = computed(() => {
   return {
     backdropFilter: `blur(${t.glassBlur}px) saturate(${t.glassSaturation}%)`,
     WebkitBackdropFilter: `blur(${t.glassBlur}px) saturate(${t.glassSaturation}%)`,
-    background: `rgba(255,255,255,${t.glassOpacity})`,
-    border: `${t.borderWidth}px ${t.borderStyle} rgba(0,0,0,${t.glassBorderOpacity})`,
+    background: 'var(--glass-bg)',
+    border: `${t.borderWidth}px ${t.borderStyle} var(--glass-border)`,
     boxShadow: `0 ${t.shadowOffsetY}px ${t.shadowBlurRadius}px ${t.shadowSpread}px rgba(0,0,0,${t.shadowOpacity})`,
     borderRadius: `${t.cardRadius}px`,
   }
@@ -2110,6 +2115,7 @@ onBeforeUnmount(() => {
   resize: none; outline: none;
 }
 .dp-export-actions { display: flex; flex-direction: column; gap: 4px; }
+.dp-import-error { margin-top: 4px; padding: 5px 8px; border-radius: 6px; font-size: .75rem; color: var(--ds-status-danger, #ef4444); background: color-mix(in srgb, var(--ds-status-danger, #ef4444) 10%, transparent); }
 :global(html.dark) .dp-export { background: rgba(255,255,255,.02); }
 :global(html.dark) .dp-export-area { border-color: rgba(255,255,255,.08); }
 

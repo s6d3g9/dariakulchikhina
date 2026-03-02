@@ -1165,4 +1165,24 @@ const {
   .dash-quick-nav { grid-template-columns: repeat(2, 1fr); }
   .dash-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Small phones ── */
+@media (max-width: 480px) {
+  .cab-portfolio-stats { grid-template-columns: repeat(2, 1fr); }
+  .dash-stats { grid-template-columns: 1fr; }
+  .dash-quick-nav { grid-template-columns: repeat(2, 1fr); }
+  .cab-modal-row2 { grid-template-columns: 1fr; }
+  .cab-form-section { padding: 14px 12px; }
+  .cab-task { padding: 10px 12px; }
+  .cab-task-edit-row { flex-direction: column; }
+  .cab-task-edit-field { min-width: 0; }
+  .cab-wt-head { padding: 8px 10px; font-size: .8rem; }
+  .cab-doc-card { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  .cab-doc-actions { width: 100%; justify-content: flex-end; }
+  .cab-staff-card { flex-wrap: wrap; padding: 12px 14px; gap: 10px; }
+  .dash-welcome { padding: 14px 16px; }
+  .dash-project-card { padding: 10px; }
+  .cab-nav { scrollbar-width: none; -ms-overflow-style: none; }
+  .cab-nav::-webkit-scrollbar { display: none; }
+}
 </style>

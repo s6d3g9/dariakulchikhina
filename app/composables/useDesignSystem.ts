@@ -633,7 +633,7 @@ export function useDesignSystem() {
     if (tokens.value[key] === value) return
     pushHistory()
     tokens.value[key] = value
-    applyToDOM()
+    scheduleApplyToDOM()
     save()
   }
 
@@ -672,9 +672,19 @@ export function useDesignSystem() {
   const canRedo = computed(() => future.value.length > 0)
 
   /* ── Apply tokens to CSS custom properties on <html> ──── */
+  let _rafId = 0
+  function scheduleApplyToDOM() {
+    if (!import.meta.client) return
+    if (_rafId) cancelAnimationFrame(_rafId)
+    _rafId = requestAnimationFrame(() => { _rafId = 0; _applyToDOMSync() })
+  }
+  /** Synchronous version — for immediate calls (undo/redo/preset). */
   function applyToDOM() {
     if (!import.meta.client) return
-    
+    if (_rafId) { cancelAnimationFrame(_rafId); _rafId = 0 }
+    _applyToDOMSync()
+  }
+  function _applyToDOMSync() {
     try {
       const el = document.documentElement
       const t = tokens.value
@@ -707,6 +717,22 @@ export function useDesignSystem() {
       case 'soft':
         el.style.setProperty('--btn-bg', 'var(--btn-bg-base, rgba(0,0,0,0.04))')
         el.style.setProperty('--btn-border', 'transparent')
+        break
+    }
+
+    // Small button — derive from main style
+    switch (t.btnStyle) {
+      case 'ghost':
+        el.style.setProperty('--btn-sm-bg', 'transparent')
+        el.style.setProperty('--btn-sm-border', 'transparent')
+        break
+      case 'outline':
+        el.style.setProperty('--btn-sm-bg', 'transparent')
+        el.style.setProperty('--btn-sm-border', 'var(--btn-border-base, rgba(0,0,0,0.12))')
+        break
+      default: // filled, soft
+        el.style.setProperty('--btn-sm-bg', 'transparent')
+        el.style.setProperty('--btn-sm-border', 'var(--btn-border-base, rgba(0,0,0,0.12))')
         break
     }
 
@@ -952,6 +978,15 @@ export function useDesignSystem() {
     const t = tokens.value
     const sz = BTN_SIZE_MAP[t.btnSize]
     const r = t.typeScale
+    const inputBgPct = Math.round(t.inputBgOpacity * 100)
+    const inputBorderPct = Math.round(t.inputBorderOpacity * 100)
+    const chipBgPct = Math.round(t.chipBgOpacity * 100)
+    const chipBorderPct = Math.round(t.chipBorderOpacity * 100)
+    const sBg = t.statusBgOpacity
+    const thPct = Math.round(t.tableHeaderOpacity * 100)
+    const trPct = Math.round(t.tableRowHoverOpacity * 100)
+    const tbPct = Math.round(t.tableBorderOpacity * 100)
+    const bdgPct = Math.round(t.badgeBgOpacity * 100)
     const lines = [
       ':root {',
       `  /* ── Buttons ── */`,
@@ -961,6 +996,8 @@ export function useDesignSystem() {
       `  --btn-font-size: ${sz.fontSize}rem;`,
       `  --btn-transform: ${t.btnTransform};`,
       `  --btn-weight: ${t.btnWeight};`,
+      `  --btn-padding-h: ${t.btnPaddingH > 0 ? t.btnPaddingH : sz.px}px;`,
+      `  --btn-padding-v: ${t.btnPaddingV > 0 ? t.btnPaddingV : sz.py}px;`,
       ``,
       `  /* ── Typography ── */`,
       `  --ds-font-family: ${t.fontFamily};`,
@@ -969,6 +1006,13 @@ export function useDesignSystem() {
       `  --ds-heading-weight: ${t.headingWeight};`,
       `  --ds-letter-spacing: ${t.letterSpacing}em;`,
       `  --ds-line-height: ${t.lineHeight};`,
+      `  --ds-paragraph-spacing: ${t.paragraphSpacing}rem;`,
+      `  --ds-word-spacing: ${t.wordSpacing === 0 ? 'normal' : t.wordSpacing + 'em'};`,
+      `  --ds-text-indent: ${t.textIndent === 0 ? '0' : t.textIndent + 'em'};`,
+      `  --ds-heading-letter-spacing: ${t.headingLetterSpacing}em;`,
+      `  --ds-heading-line-height: ${t.headingLineHeight};`,
+      `  --ds-paragraph-max-width: ${t.paragraphMaxWidth === 0 ? 'none' : t.paragraphMaxWidth + 'ch'};`,
+      `  --ds-text-align: ${t.textAlign};`,
       ``,
       `  /* ── Type Scale (ratio: ${r}) ── */`,
       `  --ds-text-xs:  ${(t.fontSize / r / r).toFixed(3)}rem;`,
@@ -981,14 +1025,14 @@ export function useDesignSystem() {
       ``,
       `  /* ── Semantic Colors ── */`,
       `  --ds-accent: hsl(${t.accentHue}, ${t.accentSaturation}%, ${t.accentLightness}%);`,
+      `  --ds-accent-light: hsl(${t.accentHue}, ${t.accentSaturation}%, ${Math.min(95, t.accentLightness + 35)}%);`,
+      `  --ds-accent-dark: hsl(${t.accentHue}, ${t.accentSaturation}%, ${Math.max(15, t.accentLightness - 20)}%);`,
       `  --ds-success: hsl(${t.successHue}, ${t.successSaturation}%, 45%);`,
       `  --ds-error: hsl(${t.errorHue}, ${t.errorSaturation}%, 50%);`,
       `  --ds-warning: hsl(${t.warningHue}, ${t.warningSaturation}%, 50%);`,
       ``,
       `  /* ── Glass ── */`,
       `  --glass-blur: ${t.glassBlur}px;`,
-      `  --glass-bg-alpha: ${t.glassOpacity};`,
-      `  --glass-border-alpha: ${t.glassBorderOpacity};`,
       `  --glass-saturation: ${t.glassSaturation}%;`,
       ``,
       `  /* ── Shadows ── */`,
@@ -1009,12 +1053,50 @@ export function useDesignSystem() {
       ``,
       `  /* ── Grid ── */`,
       `  --ds-container-width: ${t.containerWidth}px;`,
+      `  --ds-sidebar-width: ${t.sidebarWidth}px;`,
       `  --ds-grid-gap: ${t.gridGap}px;`,
-      `  --ds-grid-columns: ${t.gridColumns};`,
       ``,
       `  /* ── Borders ── */`,
       `  --ds-border-width: ${t.borderWidth}px;`,
       `  --ds-border-style: ${t.borderStyle};`,
+      ``,
+      `  /* ── Inputs ── */`,
+      `  --input-bg: color-mix(in srgb, var(--glass-text) ${inputBgPct}%, transparent);`,
+      `  --input-border-color: ${t.inputBorderOpacity > 0.005 ? `color-mix(in srgb, var(--glass-text) ${inputBorderPct}%, transparent)` : 'transparent'};`,
+      `  --input-padding-h: ${t.inputPaddingH}px;`,
+      `  --input-padding-v: ${t.inputPaddingV}px;`,
+      `  --input-font-size: ${t.inputFontSize > 0 ? t.inputFontSize + 'rem' : 'var(--ds-text-sm)'};`,
+      ``,
+      `  /* ── Chips / Tags ── */`,
+      `  --chip-bg: color-mix(in srgb, var(--glass-text) ${chipBgPct}%, transparent);`,
+      `  --chip-border-color: ${t.chipBorderOpacity > 0.005 ? `color-mix(in srgb, var(--glass-text) ${chipBorderPct}%, transparent)` : 'transparent'};`,
+      `  --chip-padding-h: ${t.chipPaddingH}px;`,
+      `  --chip-padding-v: ${t.chipPaddingV}px;`,
+      ``,
+      `  /* ── Navigation ── */`,
+      `  --nav-item-radius: ${t.navItemRadius}px;`,
+      `  --nav-item-padding-h: ${t.navItemPaddingH}px;`,
+      `  --nav-item-padding-v: ${t.navItemPaddingV}px;`,
+      ``,
+      `  /* ── Status pills ── */`,
+      `  --status-pill-radius: ${t.statusPillRadius}px;`,
+      ``,
+      `  /* ── Popups ── */`,
+      `  --modal-overlay-opacity: ${t.modalOverlayOpacity};`,
+      `  --dropdown-blur: ${t.dropdownBlur}px;`,
+      ``,
+      `  /* ── Scrollbar ── */`,
+      `  --scrollbar-width: ${t.scrollbarWidth}px;`,
+      `  --scrollbar-thumb: color-mix(in srgb, var(--glass-text) ${Math.round(t.scrollbarOpacity * 100)}%, transparent);`,
+      ``,
+      `  /* ── Tables ── */`,
+      `  --table-header-bg: color-mix(in srgb, var(--glass-text) ${thPct}%, transparent);`,
+      `  --table-row-hover-bg: color-mix(in srgb, var(--glass-text) ${trPct}%, transparent);`,
+      `  --table-border-color: color-mix(in srgb, var(--glass-text) ${tbPct}%, transparent);`,
+      ``,
+      `  /* ── Badges ── */`,
+      `  --badge-bg: color-mix(in srgb, var(--ds-accent) ${bdgPct}%, transparent);`,
+      `  --badge-radius: ${t.badgeRadius}px;`,
       `}`,
     ]
     return lines.join('\n')

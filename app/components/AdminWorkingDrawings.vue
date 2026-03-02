@@ -177,7 +177,7 @@ function removeSheet(idx: number) {
 .awd-dot--red    { background: #d46b6b; }
 .awd-dot--green  { background: #5caa7f; }
 .awd-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.awd-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.awd-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 .awd-section { margin-bottom: 32px; }
 .awd-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
@@ -200,7 +200,7 @@ function removeSheet(idx: number) {
 .awd-sheet-link { font-size: .72rem; color: #6b9fd4; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .awd-sheet-link:hover { text-decoration: underline; }
 .awd-sheet-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1.1rem; line-height: 1; padding: 0 2px; }
-.awd-sheet-del:hover { color: #c00; }
+.awd-sheet-del:hover { color: var(--ds-error, #c00); }
 .awd-empty { font-size: .78rem; color: #bbb; margin-bottom: 10px; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); }
 
 .awd-upload-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
@@ -209,4 +209,11 @@ function removeSheet(idx: number) {
 
 .awd-checks { display: flex; flex-wrap: wrap; gap: 16px; }
 .awd-check { display: flex; align-items: center; gap: 8px; font-size: .82rem; cursor: pointer; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .awd-rows { grid-template-columns: 1fr; }
+  .awd-row--full { grid-column: auto; }
+  .awd-checks { gap: 10px; }
+}
 </style>

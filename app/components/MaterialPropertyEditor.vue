@@ -569,7 +569,7 @@ const MpeArray = defineComponent({
   justify-content: center;
   border: none;
   background: transparent;
-  color: #f87171;
+  color: var(--ds-error, #f87171);
   font-size: 1.1rem;
   cursor: pointer;
   border-radius: 4px;
@@ -603,4 +603,16 @@ const MpeArray = defineComponent({
 
 .mpe-fade-enter-active, .mpe-fade-leave-active { transition: opacity .12s; }
 .mpe-fade-enter-from, .mpe-fade-leave-to { opacity: 0; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .mpe-fields { grid-template-columns: 1fr; }
+  .mpe-body { padding: 0 8px 8px; }
+  .mpe-cert-row, .mpe-custom-row {
+    flex-wrap: wrap;
+  }
+  .mpe-custom-block { padding: 8px; }
+  .mpe-custom-header { flex-wrap: wrap; }
+  .mpe-input--sm { max-width: none; }
+}
 </style>

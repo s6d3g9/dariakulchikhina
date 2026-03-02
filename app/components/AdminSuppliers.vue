@@ -142,7 +142,7 @@ function removeSupplier(idx: number) {
 .asup-dot--red    { background: #d46b6b; }
 .asup-dot--green  { background: #5caa7f; }
 .asup-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.asup-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.asup-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 .asup-section { margin-bottom: 32px; }
 .asup-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
@@ -161,7 +161,7 @@ function removeSupplier(idx: number) {
 .asup-card-row { display: flex; flex-direction: column; }
 .asup-card-row--full { grid-column: 1 / -1; }
 .asup-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1.1rem; }
-.asup-del:hover { color: #c00; }
+.asup-del:hover { color: var(--ds-error, #c00); }
 .asup-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
 .asup-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: #666; cursor: pointer; font-family: inherit; }
 .asup-add-btn:hover { border-color: #aaa; color: inherit; }

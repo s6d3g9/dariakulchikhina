@@ -462,7 +462,7 @@ async function save() {
   font-family: inherit; transition: opacity .15s, background .15s;
 }
 .arm-icon-btn:hover { opacity: .7; background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
-.arm-icon-btn--del:hover { color: #dc2626; opacity: .8; }
+.arm-icon-btn--del:hover { color: var(--ds-error, #dc2626); opacity: .8; }
 
 .arm-card-body { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 8px; }
 @media (max-width: 768px) { .arm-card-body { grid-template-columns: repeat(2, 1fr); } }
@@ -488,7 +488,7 @@ async function save() {
 .arm-input--textarea { resize: none; font-size: .78rem; }
 
 /* ── Messages ── */
-.arm-error { color: #dc2626; font-size: .78rem; margin-top: 8px; }
+.arm-error { color: var(--ds-error, #dc2626); font-size: .78rem; margin-top: 8px; }
 .arm-saved { color: #15803d; font-size: .78rem; margin-top: 8px; }
 
 /* ── Template picker modal ── */

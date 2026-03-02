@@ -153,7 +153,7 @@ function removeOrder(idx: number) {
 .aps-dot--red    { background: #d46b6b; }
 .aps-dot--green  { background: #5caa7f; }
 .aps-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.aps-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.aps-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 /* Progress */
 .aps-progress-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
@@ -179,7 +179,7 @@ function removeOrder(idx: number) {
 .aps-order-details { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
 .aps-order-field { display: flex; flex-direction: column; }
 .aps-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1.1rem; margin-left: auto; }
-.aps-del:hover { color: #c00; }
+.aps-del:hover { color: var(--ds-error, #c00); }
 .aps-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
 .aps-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: #666; cursor: pointer; font-family: inherit; }
 .aps-add-btn:hover { border-color: #aaa; color: inherit; }

@@ -251,4 +251,17 @@ function fmtDate(val: string | null): string {
   margin: 4px 0 0; font-size: .74rem; color: var(--glass-text); opacity: .42; line-height: 1.42;
   font-style: italic;
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .rm-phase-stages {
+    padding-left: 10px;
+    margin-left: 10px;
+  }
+  .rm-phase-dot {
+    width: 26px;
+    height: 26px;
+  }
+  .rm-phases { gap: 16px; }
+}
 </style>

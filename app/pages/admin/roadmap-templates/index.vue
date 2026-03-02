@@ -33,7 +33,7 @@
         </h3>
 
         <form @submit.prevent="saveTemplate">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="a-form-grid">
             <div class="a-field">
               <label>Название *</label>
               <input v-model="form.title" class="a-input" required>
@@ -46,7 +46,7 @@
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="a-form-grid">
             <div class="a-field">
               <label>Тип объекта *</label>
               <select v-model="form.objectType" class="a-input" style="padding:8px" required>
@@ -73,7 +73,7 @@
             </div>
             <div style="display:grid;gap:8px;max-height:300px;overflow:auto;padding-right:4px">
               <div v-for="(stage, idx) in form.stages" :key="idx" class="a-stage-item">
-                <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+                <div class="a-stage-grid">
                   <div>
                     <label style="font-size:.72rem;color:#888">Название этапа</label>
                     <input v-model="stage.title" class="a-input" required>
@@ -94,7 +94,7 @@
             </div>
           </div>
 
-          <p v-if="formError" style="color:#c00;font-size:.8rem;margin-bottom:10px">{{ formError }}</p>
+          <p v-if="formError" style="color:var(--ds-error, #c00);font-size:.8rem;margin-bottom:10px">{{ formError }}</p>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
             <button type="button" class="a-btn-sm" @click="closeModal">отмена</button>
             <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
@@ -259,7 +259,7 @@ async function removeTemplate(tpl: any) {
 }
 .a-btn-sm:hover { opacity: .9; }
 .a-btn-sm:disabled { opacity: .5; cursor: default; }
-.a-btn-danger { color: #c00; }
+.a-btn-danger { color: var(--ds-error, #c00); }
 .a-btn-danger:hover { background: #c00; color: #fff; }
 .a-btn-save {
   border: none; background: #1a1a1a; color: #fff;
@@ -282,4 +282,14 @@ async function removeTemplate(tpl: any) {
 .a-modal { background: var(--glass-bg); border: none; box-shadow: var(--glass-shadow); -webkit-backdrop-filter: blur(20px) saturate(145%); backdrop-filter: blur(20px) saturate(145%); border-radius: 14px; padding: 24px; max-height: 90vh; overflow: auto; }
 .a-stage-item { border: none; border-radius: 12px; background: color-mix(in srgb, var(--glass-bg) 88%, transparent); padding: 10px; }
 html.dark .a-stage-item { background: #1e1e20; }
+.a-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.a-stage-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .a-modal { padding: 16px; }
+  .a-form-grid { grid-template-columns: 1fr; }
+  .a-stage-grid { grid-template-columns: 1fr; }
+  .a-btn-save { width: 100%; text-align: center; }
+}
 </style>

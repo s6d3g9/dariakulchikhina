@@ -118,7 +118,7 @@ function fmtDate(val: string | null | undefined): string {
 }
 .ctz-badge--signed { color: #16a34a; background: rgba(22,163,74,.08); opacity: 1; }
 .ctz-badge--sent   { color: #2563eb; background: rgba(37,99,235,.08); opacity: 1; }
-.ctz-badge--rejected { color: #dc2626; background: rgba(220,38,38,.08); opacity: 1; }
+.ctz-badge--rejected { color: var(--ds-error, #dc2626); background: color-mix(in srgb, var(--ds-error, #dc2626) 8%, transparent); opacity: 1; }
 
 .ctz-download { margin-top: 12px; }
 .ctz-download-btn {

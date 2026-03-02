@@ -202,7 +202,7 @@ function removeFile(idx: number) {
 .aspec-dot--red    { background: #d46b6b; }
 .aspec-dot--green  { background: #5caa7f; }
 .aspec-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.aspec-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.aspec-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 .aspec-section { margin-bottom: 32px; }
 .aspec-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
@@ -226,7 +226,7 @@ function removeFile(idx: number) {
 .aspec-cell-sm { max-width: 100px; }
 .aspec-cell-xs { max-width: 60px; }
 .aspec-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1rem; }
-.aspec-del:hover { color: #c00; }
+.aspec-del:hover { color: var(--ds-error, #c00); }
 .aspec-empty { font-size: .78rem; color: #bbb; margin-bottom: 10px; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); }
 
 .aspec-actions { display: flex; gap: 10px; margin-bottom: 12px; }
@@ -243,4 +243,13 @@ function removeFile(idx: number) {
 .aspec-upload-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
 .aspec-upload-btn:hover { border-color: #aaa; color: inherit; }
 .aspec-upload-btn--loading { opacity: .6; cursor: wait; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .aspec-rows { grid-template-columns: 1fr; }
+  .aspec-row--full { grid-column: auto; }
+  .aspec-table { font-size: .72rem; }
+  .aspec-cell-sm { max-width: 70px; }
+  .aspec-cell-xs { max-width: 45px; }
+}
 </style>

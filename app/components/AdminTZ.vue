@@ -66,7 +66,7 @@
 
       <button class="atz-btn-add glass-chip" style="margin-bottom:12px" @click="addSec">+ новый раздел</button>
       <div class="atz-actions">
-        <p v-if="error" style="color:#c00;font-size:.8rem;margin-right:auto">{{ error }}</p>
+        <p v-if="error" style="color:var(--ds-error, #c00);font-size:.8rem;margin-right:auto">{{ error }}</p>
         <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</button>
       </div>
     </template>
@@ -242,7 +242,7 @@ async function save() {
   border-radius: 2px;
 }
 .atz-btn-sm:hover { opacity: .9; }
-.atz-btn-sm.danger { color: #c00; border-color: #c00; }
+.atz-btn-sm.danger { color: var(--ds-error, #c00); border-color: var(--ds-error, #c00); }
 .atz-btn-sm.danger:hover { background: #c00; color: #fff; }
 .atz-btn-add {
   border: none;
@@ -263,5 +263,23 @@ async function save() {
   justify-content: flex-end;
   align-items: center;
   margin-top: 20px;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .atz-card { padding: 14px; }
+  .atz-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .atz-lbl { width: auto; }
+  .atz-question { padding-left: 10px; }
+  .atz-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .atz-actions .a-btn-save,
+  .atz-btn-add { width: 100%; }
 }
 </style>

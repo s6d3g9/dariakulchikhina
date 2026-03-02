@@ -919,7 +919,7 @@ async function onEditorSaved() {
 
 /* ── Nav sidebar ── */
 .docs-nav {
-  width: 220px; flex-shrink: 0; padding: 8px;
+  width: var(--ds-sidebar-width, 220px); flex-shrink: 0; padding: 8px;
   position: sticky; top: 80px;
   max-height: calc(100vh - 120px); overflow-y: auto;
   scrollbar-width: thin; scrollbar-color: rgba(128,128,128,.15) transparent;
@@ -979,7 +979,7 @@ async function onEditorSaved() {
 }
 .doc-badge--contract,
 .doc-badge--contract_supply,
-.doc-badge--contract_work { background: rgba(99,102,241,.12); color: #6366f1; }
+.doc-badge--contract_work { background: color-mix(in srgb, var(--ds-accent, #6366f1) 12%, transparent); color: var(--ds-accent, #6366f1); }
 .doc-badge--act,
 .doc-badge--act_defect { background: rgba(34,197,94,.10); color: #16a34a; }
 .doc-badge--invoice { background: rgba(245,158,11,.12); color: #d97706; }
@@ -1046,7 +1046,7 @@ html.dark .doc-badge--estimate { background: rgba(168,85,247,.15); color: #c4b5f
 }
 .docs-view-badge--contract,
 .docs-view-badge--contract_supply,
-.docs-view-badge--contract_work { background: rgba(99,102,241,.12); color: #6366f1; }
+.docs-view-badge--contract_work { background: color-mix(in srgb, var(--ds-accent, #6366f1) 12%, transparent); color: var(--ds-accent, #6366f1); }
 .docs-view-badge--act { background: rgba(34,197,94,.10); color: #16a34a; }
 .docs-view-badge--invoice { background: rgba(245,158,11,.12); color: #d97706; }
 

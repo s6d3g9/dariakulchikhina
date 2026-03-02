@@ -160,7 +160,7 @@ function removeFile(idx: number) {
 .amep-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
 .amep-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.amep-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.amep-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 .amep-section { margin-bottom: 32px; }
 .amep-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
@@ -185,7 +185,7 @@ function removeFile(idx: number) {
 .amep-file-name:hover { text-decoration: underline; }
 .amep-file-type { font-size: .68rem; color: #aaa; }
 .amep-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1rem; }
-.amep-del:hover { color: #c00; }
+.amep-del:hover { color: var(--ds-error, #c00); }
 .amep-upload-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
 .amep-upload-btn:hover { border-color: #aaa; color: inherit; }
 .amep-upload-btn--loading { opacity: .6; cursor: wait; }

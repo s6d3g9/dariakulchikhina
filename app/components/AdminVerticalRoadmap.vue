@@ -254,4 +254,26 @@ watch(lastSaved, loadStatuses)
 }
 
 .avr-dot--done svg { color: var(--glass-text); opacity: .55; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .avr-root {
+    left: -28px;
+    width: 24px;
+  }
+  .avr-badge {
+    width: 18px;
+    height: 18px;
+  }
+  .avr-badge-n {
+    font-size: .4rem;
+  }
+  .avr-dot {
+    width: 9px;
+    height: 9px;
+  }
+  .avr-item {
+    height: 30px;
+  }
+}
 </style>

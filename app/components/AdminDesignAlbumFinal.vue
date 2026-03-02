@@ -191,7 +191,7 @@ function removeFile(idx: number) {
   background: none; border: 1px solid var(--glass-border); border-radius: 8px;
   padding: 4px 10px; font-size: .78rem; font-family: inherit; color: var(--glass-text); cursor: pointer;
 }
-.adaf-saved { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.adaf-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 .adaf-section { margin-bottom: 32px; }
 .adaf-section-title {
@@ -239,7 +239,7 @@ function removeFile(idx: number) {
   display: inline-flex; align-items: center; justify-content: center;
   transition: background .15s, color .15s, border-color .15s;
 }
-.adaf-del:hover { color: #dc2626; border-color: #dc2626; background: rgba(220,38,38,.06); }
+.adaf-del:hover { color: var(--ds-error, #dc2626); border-color: var(--ds-error, #dc2626); background: color-mix(in srgb, var(--ds-error, #dc2626) 6%, transparent); }
 
 .adaf-empty {
   font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 35%, transparent);
@@ -296,5 +296,11 @@ function removeFile(idx: number) {
   content: '✓'; position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
   font-size: .68rem; color: var(--glass-page-bg); font-weight: 700;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .adaf-rows { grid-template-columns: 1fr; }
+  .adaf-row--full { grid-column: auto; }
 }
 </style>

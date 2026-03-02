@@ -149,7 +149,7 @@ async function submit() {
 }
 
 .login-error {
-  color: #e05252;
+  color: var(--ds-error, #e05252);
   font-size: 0.82rem;
   font-weight: 600;
   margin: 0;

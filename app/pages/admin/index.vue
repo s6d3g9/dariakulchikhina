@@ -481,7 +481,12 @@ html.dark .pj-phase--teal   { color: #5eead4; background: rgba(94,234,212,.1); }
 }
 
 /* ── Responsive ── */
+@media (max-width: 768px) {
+  .pj-search { width: 100%; max-width: none; }
+  .pj-pages-chips { gap: 4px; }
+  .pj-page-chip { font-size: .62rem; padding: 2px 6px; }
+}
 @media (max-width: 640px) {
-  .pj-search { width: 140px; }
+  .pj-search { width: 100%; }
 }
 </style>

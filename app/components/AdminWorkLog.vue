@@ -106,7 +106,7 @@ function pluralRu(n: number) {
 .awl-count { font-size: .74rem; color: #999; }
 .awl-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .76rem; padding: 5px 12px; cursor: pointer; font-family: inherit; margin-left: auto; }
 .awl-add-btn:hover { border-color: #aaa; }
-.awl-saved { font-size: .72rem; color: #5caa7f; }
+.awl-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); }
 .awl-list { display: flex; flex-direction: column; gap: 12px; }
 .awl-entry { border: 1px solid var(--border, #ececec); padding: 12px 14px; }
 .awl-entry-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -115,7 +115,7 @@ function pluralRu(n: number) {
 .awl-type-badge { font-size: .9rem; }
 .awl-tb--issue { filter: hue-rotate(20deg); }
 .awl-del { margin-left: auto; background: none; border: none; cursor: pointer; color: #bbb; font-size: 1.1rem; line-height: 1; }
-.awl-del:hover { color: #c00; }
+.awl-del:hover { color: var(--ds-error, #c00); }
 .awl-text { width: 100%; border: 1px solid var(--border, #e0e0e0); padding: 8px 10px; font-size: .82rem; background: none; color: inherit; font-family: inherit; outline: none; resize: vertical; box-sizing: border-box; }
 .awl-photos-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .awl-photo-thumb { width: 64px; height: 64px; overflow: hidden; border: 1px solid var(--border, #ececec); display: block; }
@@ -124,4 +124,13 @@ function pluralRu(n: number) {
 .awl-photo-btn:hover { border-color: #aaa; color: inherit; }
 .awl-photo-btn--loading { opacity: .6; cursor: wait; }
 .awl-empty { font-size: .8rem; color: #bbb; padding: 40px 0; text-align: center; border: 1px dashed var(--border, #ececec); }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .awl-toolbar { flex-wrap: wrap; }
+  .awl-add-btn { margin-left: 0; width: 100%; text-align: center; }
+  .awl-entry { padding: 10px; }
+  .awl-entry-head { gap: 6px; }
+  .awl-photo-thumb { width: 48px; height: 48px; }
+}
 </style>

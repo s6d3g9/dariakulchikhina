@@ -651,7 +651,7 @@ html.dark .agal-batch-btn--active { background: rgba(96,165,250,.18); color: #93
   transition: background .13s;
 }
 .agal-batch-action:hover { background: rgba(0,0,0,.12); }
-.agal-batch-action--del { background: rgba(220,38,38,.1); color: #dc2626; }
+.agal-batch-action--del { background: color-mix(in srgb, var(--ds-error, #dc2626) 10%, transparent); color: var(--ds-error, #dc2626); }
 .agal-batch-action--del:hover { background: rgba(220,38,38,.2); }
 html.dark .agal-batch-action { background: rgba(255,255,255,.08); }
 html.dark .agal-batch-action--del { background: rgba(220,38,38,.15); }
@@ -1087,7 +1087,7 @@ html.dark .agal-multi-add { border-color: rgba(255,255,255,.15); }
   cursor: pointer;
 }
 
-.agal-error { font-size: .78rem; color: #dc2626; margin: 0; }
+.agal-error { font-size: .78rem; color: var(--ds-error, #dc2626); margin: 0; }
 
 .agal-modal-foot {
   display: flex; gap: 8px; justify-content: flex-end;

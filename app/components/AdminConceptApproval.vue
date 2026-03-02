@@ -263,7 +263,7 @@ async function moveToPhase2() {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
   background: #f0faf5; border: 1px solid #a8d8bc; padding: 14px 18px; margin-bottom: 28px;
 }
-.aca-banner-text { font-size: .82rem; color: #2a7a52; }
+.aca-banner-text { font-size: .82rem; color: var(--ds-success, #2a7a52); }
 .aca-banner-text strong { display: block; margin-bottom: 2px; }
 .aca-btn-transition {
   background: #2a7a52; color: #fff; border: none; padding: 8px 18px;
@@ -277,7 +277,7 @@ async function moveToPhase2() {
 .aca-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
 .aca-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.aca-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.aca-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 .aca-section { margin-bottom: 32px; }
 .aca-section-title {
@@ -286,8 +286,8 @@ async function moveToPhase2() {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
 .aca-stat-pill { font-size: .68rem; padding: 2px 8px; border-radius: 2px; }
-.aca-stat-pill--ok  { background: #e6f7ef; color: #2a7a52; }
-.aca-stat-pill--rev { background: #fff0f0; color: #c00; }
+.aca-stat-pill--ok  { background: color-mix(in srgb, var(--ds-success, #5caa7f) 12%, transparent); color: var(--ds-success, #2a7a52); }
+.aca-stat-pill--rev { background: color-mix(in srgb, var(--ds-error, #c00) 8%, transparent); color: var(--ds-error, #c00); }
 
 /* Renders grid */
 .aca-renders {
@@ -314,8 +314,8 @@ async function moveToPhase2() {
 .aca-render-actions { display: flex; align-items: center; gap: 6px; }
 .aca-render-approval { flex: 1; border: 1px solid var(--border, #e0e0e0); background: none; font-size: .72rem; padding: 3px 6px; font-family: inherit; color: inherit; }
 .aca-approval-badge { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: .7rem; flex-shrink: 0; border-radius: 50%; }
-.aca-approval-badge--ok  { background: #e6f7ef; color: #2a7a52; }
-.aca-approval-badge--rev { background: #fff0f0; color: #c00; }
+.aca-approval-badge--ok  { background: color-mix(in srgb, var(--ds-success, #5caa7f) 12%, transparent); color: var(--ds-success, #2a7a52); }
+.aca-approval-badge--rev { background: color-mix(in srgb, var(--ds-error, #c00) 8%, transparent); color: var(--ds-error, #c00); }
 .aca-render-comment { border: 1px solid var(--border, #e0e0e0); background: none; padding: 4px 8px; font-size: .72rem; font-family: inherit; color: inherit; outline: none; width: 100%; box-sizing: border-box; }
 
 .aca-renders-empty { text-align: center; padding: 32px 0; color: #bbb; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
@@ -344,13 +344,21 @@ async function moveToPhase2() {
   display: flex; align-items: flex-start; gap: 16px; padding: 16px 18px;
   border: 1px solid var(--border, #e0e0e0);
 }
-.aca-lock-card--locked { border-color: #a8d8bc; background: #f0faf5; }
+.aca-lock-card--locked { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); background: #f0faf5; }
 .aca-lock-icon { font-size: 1.8rem; flex-shrink: 0; }
 .aca-lock-text { flex: 1; }
 .aca-lock-text strong { display: block; font-size: .88rem; margin-bottom: 4px; }
 .aca-lock-text p { margin: 0; font-size: .78rem; color: #888; }
-.aca-lock-card--locked .aca-lock-text p { color: #2a7a52; }
+.aca-lock-card--locked .aca-lock-text p { color: var(--ds-success, #2a7a52); }
 .aca-lock-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 7px 16px; font-size: .78rem; cursor: pointer; font-family: inherit; color: #666; align-self: center; white-space: nowrap; }
-.aca-lock-card--locked .aca-lock-btn { border-color: #a8d8bc; color: #2a7a52; }
+.aca-lock-card--locked .aca-lock-btn { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); color: var(--ds-success, #2a7a52); }
 .aca-lock-btn:hover { border-color: #aaa; color: inherit; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .aca-rows { grid-template-columns: 1fr; }
+  .aca-row--full { grid-column: auto; }
+  .aca-lock-card { flex-direction: column; gap: 10px; }
+  .aca-lock-btn { align-self: flex-start; }
+}
 </style>

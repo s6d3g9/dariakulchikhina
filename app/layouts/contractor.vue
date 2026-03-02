@@ -70,9 +70,9 @@ async function logout() {
 
 <style scoped>
 .contractor-root {
-  --bg: #ffffff;
-  --border: #e6e6e6;
-  --title: #888888;
+  --bg: var(--glass-page-bg, #ffffff);
+  --border: var(--glass-border, #e6e6e6);
+  --title: color-mix(in srgb, var(--glass-text, #888) 55%, transparent);
 
   min-height: 100vh;
   display: flex;
@@ -124,14 +124,14 @@ async function logout() {
 .contractor-progress-bar {
   width: 60px;
   height: 4px;
-  background: rgba(0,0,0,0.08);
+  background: color-mix(in srgb, var(--glass-text, #000) 8%, transparent);
   border-radius: 99px;
   overflow: hidden;
 }
 
 .contractor-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4a80f0, #6c47ff);
+  background: linear-gradient(90deg, var(--ds-accent, #4a80f0), var(--ds-accent-dark, #6c47ff));
   border-radius: 99px;
   transition: width 0.5s;
 }
@@ -166,7 +166,7 @@ async function logout() {
   height: 18px;
   border-radius: 999px;
   border: none;
-  background: color-mix(in srgb, var(--bg) 72%, #f7f7f7 28%);
+  background: color-mix(in srgb, var(--bg) 72%, var(--glass-page-bg, #f7f7f7) 28%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   cursor: pointer;
   padding: 0;

@@ -258,4 +258,17 @@ async function toggleStepCompletion(stepKey: string) {
 .afc-complete-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 7px 16px; font-size: .78rem; cursor: pointer; font-family: inherit; color: #666; align-self: center; white-space: nowrap; }
 .afc-complete-card--done .afc-complete-btn { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); color: var(--ds-success, #2a7a52); }
 .afc-complete-btn:hover { border-color: #aaa; color: inherit; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .afc-wrap { max-width: 100%; }
+  .afc-row { flex-direction: column; align-items: stretch; gap: 4px; }
+  .afc-lbl { min-width: auto; font-size: .74rem; }
+  .afc-map-coords { grid-template-columns: 1fr; }
+  .afc-map { height: 220px; }
+  .afc-complete-card { flex-direction: column; gap: 10px; padding: 14px; }
+  .afc-complete-btn { align-self: flex-start; }
+  .afc-status-row { flex-wrap: wrap; }
+  .afc-section-title { font-size: .82rem; }
+}
 </style>

@@ -143,7 +143,7 @@
       </div>
 
       <div class="acp-actions">
-        <p v-if="error" style="color:#c00;font-size:.8rem;margin-right:auto">{{ error }}</p>
+        <p v-if="error" style="color:var(--ds-error, #c00);font-size:.8rem;margin-right:auto">{{ error }}</p>
         <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</button>
       </div>
     </template>
@@ -505,6 +505,46 @@ async function save() {
   border-color: transparent;
 }
 
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .acp-card { padding: 14px; }
+  .acp-row {
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
+  }
+  .acp-lbl {
+    width: auto;
+    padding-top: 0;
+  }
+  .acp-upload-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .acp-chips {
+    gap: 4px;
+  }
+  .acp-chip {
+    font-size: .72rem;
+    padding: 4px 8px;
+  }
+  .acp-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .acp-actions .a-btn-save {
+    width: 100%;
+  }
+  .acp-section-title {
+    font-size: .66rem;
+    margin: 14px 0 8px;
+  }
+  .acp-img-prev {
+    max-width: 80px;
+    max-height: 60px;
+  }
+}
+
 .acp-actions {
   display: flex;
   gap: 10px;
@@ -523,6 +563,6 @@ async function save() {
   border-radius: 2px;
 }
 .acp-link-btn:disabled { opacity: .55; cursor: default; }
-.acp-link-error { margin: 6px 0 0; color: #c00; font-size: .78rem; }
-.acp-link-success { margin: 6px 0 0; color: #5caa7f; font-size: .78rem; }
+.acp-link-error { margin: 6px 0 0; color: var(--ds-error, #c00); font-size: .78rem; }
+.acp-link-success { margin: 6px 0 0; color: var(--ds-success, #5caa7f); font-size: .78rem; }
 </style>

@@ -157,7 +157,7 @@ function fmtDate(d: string) {
 .cct-badge--blue   { background: rgba(37,99,235,.08); color: #2563eb; }
 .cct-badge--green  { background: rgba(22,163,74,.08); color: #16a34a; }
 .cct-badge--yellow { background: rgba(200,116,0,.08); color: #c87400; }
-.cct-badge--red    { background: rgba(220,38,38,.08); color: #dc2626; }
+.cct-badge--red    { background: color-mix(in srgb, var(--ds-error, #dc2626) 8%, transparent); color: var(--ds-error, #dc2626); }
 
 /* Download */
 .cct-dl { margin-top: 12px; }

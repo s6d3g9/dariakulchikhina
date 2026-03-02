@@ -223,7 +223,7 @@ const phaseMeta = computed(() =>
 .pd-step-num--link:hover {
   transform: scale(1.12);
   box-shadow: 0 0 0 4px rgba(99,102,241,0.22);
-  color: #6366f1;
+  color: var(--ds-accent, #6366f1);
   background: #eef2ff;
 }
 .dark .pd-step-num--link:hover {
@@ -326,7 +326,7 @@ const phaseMeta = computed(() =>
   border-radius: 6px;
   background: rgba(99,102,241,0.08);
   border: none;
-  color: #6366f1;
+  color: var(--ds-accent, #6366f1);
   font-size: .77rem;
   font-weight: 500;
 }
@@ -353,5 +353,29 @@ const phaseMeta = computed(() =>
 .dark .pd-artifact {
   background: #1e1e20;
   color: #94a3b8;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .pd-step {
+    gap: 10px;
+  }
+  .pd-step-num {
+    width: 28px;
+    height: 28px;
+    font-size: .6rem;
+  }
+  .pd-step-body {
+    padding-bottom: 14px;
+  }
+  .pd-step-head {
+    gap: 6px;
+  }
+  .pd-step-title {
+    font-size: .8rem;
+  }
+  .pd-row {
+    gap: 6px;
+  }
 }
 </style>

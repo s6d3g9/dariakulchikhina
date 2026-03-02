@@ -376,4 +376,16 @@ async function save() {
 }
 .ass-btn-save:disabled { opacity: .55; cursor: default; }
 .ass-btn-save:hover:not(:disabled) { opacity: .85; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .ass-row { grid-template-columns: 1fr; gap: 2px; }
+  .ass-lbl { font-size: .72rem; padding-top: 0; }
+  .ass-checks-grid { grid-template-columns: 1fr; }
+  .ass-status-row { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  .ass-upload-row { flex-wrap: wrap; gap: 8px; }
+  .ass-file-item { flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
+  .ass-footer { padding-top: 16px; }
+  .ass-btn-save { width: 100%; text-align: center; }
+}
 </style>

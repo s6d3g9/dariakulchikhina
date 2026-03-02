@@ -165,7 +165,7 @@ function removeItem(idx: number) {
 .apl-dot--red    { background: #d46b6b; }
 .apl-dot--green  { background: #5caa7f; }
 .apl-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.apl-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.apl-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 .apl-summary { display: flex; gap: 24px; font-size: .78rem; color: #888; margin-bottom: 24px; padding: 10px 0; border-bottom: 1px solid var(--border, #ececec); }
 
@@ -188,10 +188,23 @@ function removeItem(idx: number) {
 .apl-cell-status { min-width: 110px; }
 .apl-row--received { opacity: .6; }
 .apl-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1rem; }
-.apl-del:hover { color: #c00; }
+.apl-del:hover { color: var(--ds-error, #c00); }
 .apl-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
 
 .apl-actions { display: flex; gap: 10px; margin-bottom: 12px; }
 .apl-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: #666; cursor: pointer; font-family: inherit; }
 .apl-add-btn:hover { border-color: #aaa; color: inherit; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .apl-summary { flex-wrap: wrap; gap: 8px 16px; font-size: .74rem; }
+  .apl-table { font-size: .72rem; }
+  .apl-table th { font-size: .6rem; padding: 4px 3px; }
+  .apl-table td { padding: 3px; }
+  .apl-cell { font-size: .72rem; padding: 3px 4px; }
+  .apl-cell-sm { max-width: 80px; }
+  .apl-cell-xs { max-width: 50px; }
+  .apl-actions { flex-wrap: wrap; }
+  .apl-status-row { flex-wrap: wrap; gap: 8px; }
+}
 </style>

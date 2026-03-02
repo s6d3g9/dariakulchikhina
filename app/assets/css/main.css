@@ -214,11 +214,11 @@ textarea, select {
    Matches any BEM modifier: .xxx-dot--gray, .yyy-dot--blue, etc.
    All admin components share these colors — no per-component overrides needed.
 ──────────────────────────────────────────────────────────────────── */
-[class*="-dot--gray"]   { background: #cacaca; }
-[class*="-dot--blue"]   { background: #6b9fd4; }
-[class*="-dot--yellow"] { background: #e8b84b; }
-[class*="-dot--red"]    { background: #d46b6b; }
-[class*="-dot--green"]  { background: #5caa7f; }
+[class*="-dot--gray"]   { background: color-mix(in srgb, var(--glass-text) 45%, transparent); }
+[class*="-dot--blue"]   { background: var(--ds-accent, #6b9fd4); }
+[class*="-dot--yellow"] { background: var(--ds-warning, #e8b84b); }
+[class*="-dot--red"]    { background: var(--ds-error, #d46b6b); }
+[class*="-dot--green"]  { background: var(--ds-success, #5caa7f); }
 
 /* ── Generic dark fallback (when no data-theme set) ── */
 html.dark {
@@ -338,8 +338,8 @@ html.dark .glass-card {
   background: var(--dropdown-bg, rgba(255,255,255,0.97));
   border: 1px solid var(--dropdown-border, rgba(0,0,0,0.10));
   box-shadow: var(--dropdown-shadow, 0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07));
-  backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(150%);
-  -webkit-backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(150%);
+  backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  -webkit-backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
   color: var(--glass-text);
 }
 
@@ -451,7 +451,7 @@ html.dark .glass-input::placeholder {
     flex-shrink: 0;
     border-radius: 999px;
     padding: 7px 12px;
-    font-size: .74rem;
+    font-size: var(--ds-text-xs, .74rem);
   }
 }
 
@@ -503,11 +503,11 @@ html.dark .glass-input::placeholder {
 .a-btn-sm:disabled { opacity: .28; cursor: default; }
 
 .a-btn-danger {
-  border-color: rgba(160, 40, 40, .24);
-  color: #a83232;
+  border-color: color-mix(in srgb, var(--ds-error, #a83232) 24%, transparent);
+  color: var(--ds-error, #a83232);
   opacity: .82;
 }
-.a-btn-danger:hover { background: rgba(160,40,40,.06); opacity: 1; border-color: rgba(160,40,40,.38); }
+.a-btn-danger:hover { background: color-mix(in srgb, var(--ds-error, #a83232) 6%, transparent); opacity: 1; border-color: color-mix(in srgb, var(--ds-error, #a83232) 38%, transparent); }
 
 /* ════════════════════════════════════════════════════════════
    UI THEMES — data-theme="..." on <html>
@@ -970,12 +970,12 @@ html.dark .a-modal label {
 }
 .ds-table th, table.std-table th {
   background: var(--table-header-bg, color-mix(in srgb, var(--glass-text) 4%, transparent));
-  font-size: .75rem; font-weight: 600;
+  font-size: var(--ds-text-xs, .75rem); font-weight: 600;
   padding: 8px 12px; text-align: left; color: var(--glass-text);
   border-bottom: 1px solid var(--table-border-color, color-mix(in srgb, var(--glass-text) 8%, transparent));
 }
 .ds-table td, table.std-table td {
-  padding: 8px 12px; font-size: .8rem; color: var(--glass-text);
+  padding: 8px 12px; font-size: var(--ds-text-sm, .8rem); color: var(--glass-text);
   border-bottom: 1px solid var(--table-border-color, color-mix(in srgb, var(--glass-text) 8%, transparent));
 }
 .ds-table tr:hover td, table.std-table tr:hover td {
@@ -1001,4 +1001,66 @@ html.dark .a-modal label {
 .fade-page-leave-to {
   opacity: 0;
   transform: translateY(5px);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GLOBAL MOBILE RESPONSIVE
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  /* ── Glass cards — tighter padding ── */
+  .glass-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .glass-surface {
+    border-radius: 10px;
+  }
+
+  /* ── Tables — ensure horizontal scroll ── */
+  .ds-table, table.std-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ds-table th, table.std-table th {
+    padding: 6px 8px;
+    font-size: .66rem;
+    white-space: nowrap;
+  }
+  .ds-table td, table.std-table td {
+    padding: 6px 8px;
+    font-size: .76rem;
+  }
+
+  /* ── Standard sidebar nav — hide on mobile (pages with mobile nav override this) ── */
+  .std-sidenav {
+    border-radius: 10px;
+  }
+
+  /* ── Inputs — slightly larger touch targets ── */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]),
+  textarea,
+  select {
+    padding: var(--input-padding-v, 10px) var(--input-padding-h, 12px);
+    font-size: max(16px, var(--input-font-size, var(--ds-text-sm, .833rem))); /* Prevent iOS zoom on focus */
+  }
+
+  /* ── Buttons — bigger touch targets ── */
+  .a-btn-sm, .a-btn-save {
+    min-height: 38px;
+    padding: 8px 14px;
+  }
+
+  /* ── Fix horizontal overflow on body ── */
+  html, body {
+    overflow-x: hidden;
+  }
+}
+
+@media (max-width: 400px) {
+  .glass-card {
+    padding: 10px;
+    border-radius: 10px;
+  }
 }

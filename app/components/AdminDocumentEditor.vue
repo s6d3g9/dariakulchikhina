@@ -877,7 +877,7 @@ async function saveDocument() {
   border: 1px solid rgba(34, 197, 94, .2);
 }
 .de-toast--err {
-  background: rgba(220, 38, 38, .1); color: #dc2626;
+  background: color-mix(in srgb, var(--ds-error, #dc2626) 10%, transparent); color: var(--ds-error, #dc2626);
   border: 1px solid rgba(220, 38, 38, .2);
 }
 html.dark .de-toast--ok { background: rgba(34, 197, 94, .15); color: #86efac; }

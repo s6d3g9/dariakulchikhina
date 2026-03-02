@@ -253,4 +253,16 @@ function fmtDate(val: string | null | undefined): string {
 .cwp-task-title { font-size: .82rem; font-weight: 500; color: var(--glass-text); }
 .cwp-task-meta { font-size: .72rem; color: var(--glass-text); opacity: .4; margin-top: 2px; }
 .cwp-task-notes { font-size: .74rem; color: var(--glass-text); opacity: .45; margin-top: 4px; font-style: italic; white-space: pre-line; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .cwp-card { padding: 14px; }
+  .cwp-card-head { gap: 8px; }
+  .cwp-pct { font-size: .9rem; }
+  .cwp-stages {
+    padding-left: 8px;
+    margin-left: 8px;
+  }
+  .cwp-phase-row { gap: 8px; }
+}
 </style>

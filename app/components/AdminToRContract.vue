@@ -351,4 +351,12 @@ async function save() {
 }
 .ator-btn-save:disabled { opacity: .55; cursor: default; }
 .ator-btn-save:hover:not(:disabled) { opacity: .85; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .ator-row { grid-template-columns: 1fr; gap: 2px; }
+  .ator-lbl { padding-top: 0; font-size: .72rem; }
+  .ator-footer { flex-direction: column; align-items: stretch; gap: 10px; }
+  .ator-btn-save { width: 100%; text-align: center; }
+}
 </style>

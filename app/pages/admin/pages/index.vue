@@ -27,7 +27,7 @@
     <button class="pg-btn-add" @click="addPage">+ новая страница</button>
 
     <div class="pg-actions">
-      <p v-if="error" style="color:#c00;font-size:.8rem">{{ error }}</p>
+      <p v-if="error" style="color:var(--ds-error, #c00);font-size:.8rem">{{ error }}</p>
       <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</button>
     </div>
   </div>
@@ -117,7 +117,7 @@ async function save() {
   --pg-add-color: #888;
   --pg-add-hover-border: #1a1a1a;
   --pg-add-hover-color: #1a1a1a;
-  --danger-color: #c00;
+  --danger-color: var(--ds-error, #c00);
   --pg-h1-color: #666;
 }
 .pg-card {
@@ -131,7 +131,7 @@ async function save() {
   --pg-add-color: #888;
   --pg-add-hover-border: #1a1a1a;
   --pg-add-hover-color: #1a1a1a;
-  --danger-color: #c00;
+  --danger-color: var(--ds-error, #c00);
 
   background: color-mix(in srgb, var(--glass-bg) 90%, transparent);
   border: none;
@@ -185,4 +185,20 @@ async function save() {
 }
 .a-btn-danger { color: var(--danger-color); }
 .a-btn-danger:hover { background: #c00; color: #fff; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .pg-card { padding: 14px; }
+  .pg-row {
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
+  }
+  .pg-lbl { width: auto; }
+  .pg-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pg-actions .a-btn-save { width: 100%; }
+}
 </style>

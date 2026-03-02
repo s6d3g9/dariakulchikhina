@@ -406,7 +406,7 @@ const groupIcons: Record<string, string> = {
 }
 .mpp-comm-avail--in-stock { background: #16a34a20; color: #4ade80; }
 .mpp-comm-avail--to-order { background: #eab30820; color: #fbbf24; }
-.mpp-comm-avail--discontinued { background: #ef444420; color: #f87171; }
+.mpp-comm-avail--discontinued { background: color-mix(in srgb, var(--ds-error, #ef4444) 13%, transparent); color: var(--ds-error, #f87171); }
 
 /* ── Переходы ─────────────────────────────────────── */
 .mpp-fade-enter-active, .mpp-fade-leave-active { transition: opacity .15s, transform .15s; }
@@ -418,5 +418,25 @@ const groupIcons: Record<string, string> = {
   text-align: center;
   color: color-mix(in srgb, var(--glass-text, #e0e0e0) 35%, transparent);
   font-size: .82rem;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .mpp-grid {
+    grid-template-columns: 1fr;
+  }
+  .mpp-cert {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .mpp-commercial-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .mpp-comm-price {
+    margin-left: 0;
+  }
 }
 </style>

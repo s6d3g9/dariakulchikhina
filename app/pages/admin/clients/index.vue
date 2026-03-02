@@ -406,7 +406,7 @@ function openClientCabinet(client: any) {
 .cl-input { padding: 8px 12px; border-radius: 8px; font-size: .88rem; font-family: inherit; width: 100%; box-sizing: border-box; }
 .cl-ta { resize: vertical; min-height: 72px; }
 .cl-select { cursor: pointer; }
-.cl-error { font-size: .78rem; color: #dc2626; margin: 0; padding: 7px 12px; background: rgba(220,38,38,.08); border-radius: 6px; }
+.cl-error { font-size: .78rem; color: var(--ds-error, #dc2626); margin: 0; padding: 7px 12px; background: color-mix(in srgb, var(--ds-error, #dc2626) 8%, transparent); border-radius: 6px; }
 
 .cl-link-preview { padding: 12px 14px; border-radius: 10px; font-size: .8rem; }
 .cl-link-preview-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .5px; opacity: .45; margin: 0 0 8px; }
@@ -429,6 +429,9 @@ function openClientCabinet(client: any) {
 
 @media (max-width: 600px) {
   .cl-row { grid-template-columns: 1fr; }
+  .cl-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
   .cl-grid { grid-template-columns: 1fr; }
 }
 </style>

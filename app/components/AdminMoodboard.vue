@@ -233,7 +233,7 @@ function removeLink(idx: number) {
 .amb-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
 .amb-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.amb-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.amb-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 .amb-section { margin-bottom: 32px; }
 .amb-section-title {
@@ -295,7 +295,7 @@ function removeLink(idx: number) {
 .amb-link-inp { flex: 1; border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 8px; font-size: .78rem; font-family: inherit; color: inherit; outline: none; }
 .amb-link-url { flex: 2; }
 .amb-link-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1.1rem; }
-.amb-link-del:hover { color: #c00; }
+.amb-link-del:hover { color: var(--ds-error, #c00); }
 .amb-add-link-btn { background: none; border: 1px dashed var(--border, #e0e0e0); padding: 6px 14px; font-size: .78rem; color: #aaa; cursor: pointer; font-family: inherit; }
 .amb-add-link-btn:hover { border-color: #aaa; color: inherit; }
 
@@ -306,4 +306,17 @@ function removeLink(idx: number) {
 .amb-lbl { font-size: .72rem; color: #999; }
 .amb-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; }
 .amb-ta { resize: vertical; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .amb-rows { grid-template-columns: 1fr; }
+  .amb-row--full { grid-column: auto; }
+  .amb-gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .amb-link-item { flex-wrap: wrap; }
+  .amb-link-inp, .amb-link-url { flex: 1 1 100%; min-width: 0; }
+  .amb-status-row { flex-wrap: wrap; gap: 8px; }
+  .amb-section-title { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .amb-cat-filter { margin-left: 0; width: 100%; }
+  .amb-upload-bar { gap: 6px; }
+}
 </style>

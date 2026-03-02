@@ -136,7 +136,7 @@ async function uploadFile(e: Event) {
 .aca2-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
 .aca2-status-sel { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.aca2-saved { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.aca2-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 .aca2-section { margin-bottom: 32px; }
 .aca2-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
 .aca2-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
@@ -150,11 +150,20 @@ async function uploadFile(e: Event) {
 .aca2-file-link { font-size: .8rem; color: inherit; text-decoration: none; }
 .aca2-file-link:hover { text-decoration: underline; }
 .aca2-file-del { background: none; border: none; cursor: pointer; color: #bbb; font-size: .76rem; }
-.aca2-file-del:hover { color: #c00; }
+.aca2-file-del:hover { color: var(--ds-error, #c00); }
 .aca2-upload-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
 .aca2-upload-btn:hover { border-color: #aaa; color: inherit; }
 .aca2-uploading { font-size: .76rem; color: #999; margin-left: 10px; }
 .aca2-checks { display: flex; flex-direction: column; gap: 10px; }
 .aca2-check-item { display: flex; align-items: center; gap: 10px; font-size: .82rem; cursor: pointer; }
 .aca2-check-item input { cursor: pointer; width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .aca2-rows { grid-template-columns: 1fr; }
+  .aca2-status-row { flex-wrap: wrap; }
+  .aca2-status-sel { width: 100%; }
+  .aca2-upload-btn { width: 100%; justify-content: center; }
+  .aca2-check-item { gap: 8px; padding: 4px 0; }
+}
 </style>
