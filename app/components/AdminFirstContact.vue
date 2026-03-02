@@ -216,7 +216,6 @@ async function toggleStepCompletion(stepKey: string) {
 .afc-ta { resize: vertical; min-height: 60px; font-family: inherit; }
 
 .afc-map { width: 100%; height: 300px; border: 1px solid var(--border, #e0e0e0); border-radius: 2px; }
-.afc-map-error { margin-top: 6px; padding: 6px 10px; font-size: .78rem; color: var(--ds-error, #c00); background: color-mix(in srgb, var(--ds-error, #c00) 6%, transparent); border: 1px solid color-mix(in srgb, var(--ds-error, #c00) 15%, transparent); border-radius: 3px; }
 .afc-map-btn { padding: 7px 14px; border: 1px solid var(--border, #e0e0e0); background: transparent; font-size: .8rem; cursor: pointer; font-family: inherit; color: #555; white-space: nowrap; }
 .afc-map-btn:hover { border-color: #aaa; color: #1a1a1a; }
 .afc-map-btn--clear { border-color: color-mix(in srgb, var(--ds-error, #c00) 30%, transparent); color: var(--ds-error, #c00); }
