@@ -20,7 +20,7 @@
       <template v-for="(phase, pi) in phases" :key="phase.key">
         <!-- Track segment (before each node except first) -->
         <div v-if="!!pi" class="art-track-seg">
-          <div class="art-track-fill" :style="{ width: trackFillPct(phases.indexOf(phase)) + '%' }" />
+          <div class="art-track-fill" :style="{ width: trackFillPct(pi) + '%' }" />
         </div>
         <!-- Node -->
         <div class="art-step" :class="`art-step--${phase.status}`">
@@ -30,7 +30,7 @@
             </svg>
             <span v-else-if="phase.status === 'in_progress'" class="art-ip-dot" />
             <span v-else-if="phase.status === 'partial'" class="art-partial-icon">◔</span>
-            <span v-else class="art-num">{{ phases.indexOf(phase) + 1 }}</span>
+            <span v-else class="art-num">{{ pi + 1 }}</span>
             <span v-if="phase.status === 'in_progress'" class="art-pulse" />
           </div>
           <div class="art-step-body">

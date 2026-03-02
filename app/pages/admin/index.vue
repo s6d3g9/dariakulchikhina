@@ -22,9 +22,9 @@
         v-for="p in filteredProjects"
         :key="p.id"
         class="a-card"
-        style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;margin-bottom:8px"
+        style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 20px;margin-bottom:8px"
       >
-        <div>
+        <div style="flex:1;min-width:0">
           <NuxtLink :to="`/admin/projects/${p.slug}`" class="a-project-link">{{ p.title }}</NuxtLink>
           <div style="font-size:.76rem;color:#aaa;margin-top:2px;display:flex;align-items:center;gap:8px">
             <span>{{ p.slug }}</span>
