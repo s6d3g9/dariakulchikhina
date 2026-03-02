@@ -1,22 +1,9 @@
 import {
-  DESIGNER_SERVICE_TEMPLATES,
-  DESIGNER_PACKAGE_TEMPLATES,
-  DESIGNER_SERVICE_CATEGORY_LABELS,
-  PRICE_UNIT_LABELS,
-  DESIGNER_PROJECT_STATUS_LABELS,
   type DesignerServicePrice,
   type DesignerPackage,
   type DesignerServiceCategory,
   type DesignerProjectStatus,
 } from '~~/shared/types/designer'
-
-export {
-  DESIGNER_SERVICE_TEMPLATES,
-  DESIGNER_PACKAGE_TEMPLATES,
-  DESIGNER_SERVICE_CATEGORY_LABELS,
-  PRICE_UNIT_LABELS,
-  DESIGNER_PROJECT_STATUS_LABELS,
-}
 
 // ── Types ──────────────────────────────────────────────────────
 

@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'admin' })
+definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const { data: allDesigners, pending, refresh } = useFetch<any[]>('/api/designers', { default: () => [] })
 
