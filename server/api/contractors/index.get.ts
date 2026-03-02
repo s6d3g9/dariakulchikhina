@@ -5,7 +5,7 @@ import { eq, sql } from 'drizzle-orm'
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
-  const q = getQuery(event)
+  const q = safeGetQuery(event)
   const projectSlugFilter = (q.projectSlug as string) || ''
 
   const rowsRaw = projectSlugFilter

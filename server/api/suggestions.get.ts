@@ -34,7 +34,7 @@ export default defineEventHandler((event) => {
   if (!admin && !client && !contractor) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
-  const params = getQuery(event)
+  const params = safeGetQuery(event)
 
   const q = ((params.q as string) || '').toLowerCase().trim()
   const category = (params.category as string) || ''

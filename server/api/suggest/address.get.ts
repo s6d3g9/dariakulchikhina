@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const q = getQuery(event)
+  const q = safeGetQuery(event)
   const query = (q.q as string) || ''
   if (!query.trim()) return { results: [] }
 

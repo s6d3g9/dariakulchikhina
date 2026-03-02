@@ -21,15 +21,15 @@ export interface ProjectPageDef {
 
 export const PROJECT_PAGES: ProjectPageDef[] = [
   // Фаза 0 – Инициация
-  { slug: 'first_contact',       title: '0.1 первичный контакт',  icon: '◍', phase: 'lead' },
-  { slug: 'self_profile',        title: '0.2 брифинг',            icon: '◎', phase: 'lead', adminVisible: true },
-  { slug: 'site_survey',         title: '0.3 обмеры / аудит',     icon: '◐', phase: 'lead' },
-  { slug: 'tor_contract',        title: '0.4 ТЗ и договор',       icon: '◒', phase: 'lead' },
+  { slug: 'first_contact',       title: '0.1 первичный контакт',  icon: '◍', phase: 'lead', clientVisible: false },
+  { slug: 'self_profile',        title: '0.2 брифинг',            icon: '◎', phase: 'lead', adminVisible: true, clientVisible: false },
+  { slug: 'site_survey',         title: '0.3 обмеры / аудит',     icon: '◐', phase: 'lead', clientVisible: false },
+  { slug: 'tor_contract',        title: '0.4 ТЗ и договор',       icon: '◒', phase: 'lead', clientVisible: false },
 
   // Фаза 1 – Концепция
-  { slug: 'space_planning',      title: '1.1 планировки',         icon: '◖', phase: 'concept' },
-  { slug: 'moodboard',           title: '1.2 мудборд',            icon: '◗', phase: 'concept' },
-  { slug: 'concept_approval',    title: '1.3 согласование',       icon: '◑', phase: 'concept' },
+  { slug: 'space_planning',      title: '1.1 планировки',         icon: '◖', phase: 'concept', clientVisible: false },
+  { slug: 'moodboard',           title: '1.2 мудборд',            icon: '◗', phase: 'concept', clientVisible: false },
+  { slug: 'concept_approval',    title: '1.3 согласование',       icon: '◑', phase: 'concept', clientVisible: false },
 
   // Фаза 2 – Рабочий проект
   { slug: 'working_drawings',    title: '2.1 рабочие чертежи',    icon: '▧', phase: 'working_project', clientVisible: false },

@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
   // Auth: admin or client for this project
   requireAdminOrClient(event, slug)
-  const q = getQuery(event)
+  const q = safeGetQuery(event)
   const rawPage = (q.page as string) || undefined
   const page = (rawPage || '').trim()
   if (!page) {

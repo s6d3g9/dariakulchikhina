@@ -6,7 +6,7 @@ import { requireAdmin } from '~/server/utils/auth'
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
-  const query = getQuery(event)
+  const query = safeGetQuery(event)
 
   const category = (query.category as string) || undefined
   const tag = (query.tag as string) || undefined

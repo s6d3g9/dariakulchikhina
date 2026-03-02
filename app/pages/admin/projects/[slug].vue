@@ -12,7 +12,7 @@
       <div class="proj-client-card glass-card" style="margin-bottom:14px">
         <div class="proj-client-title">
           клиент проекта
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" style="margin-left:8px" @click="showClientForm = !showClientForm">+</button>
+          <button type="button" class="admin-mini-chip admin-mini-chip--dim" style="margin-left:8px" @click="showClientModal = true">+</button>
         </div>
         <div v-if="showClientForm" class="proj-client-row">
           <select v-model="selectedClientId" class="proj-client-select">
@@ -37,7 +37,7 @@
       <div class="proj-client-card glass-card" style="margin-bottom:14px">
         <div class="proj-client-title">
           подрядчики проекта
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" style="margin-left:8px" @click="showContractorForm = !showContractorForm">+</button>
+          <button type="button" class="admin-mini-chip admin-mini-chip--dim" style="margin-left:8px" @click="showContractorModal = true">+</button>
         </div>
         <div v-if="showContractorForm" class="proj-client-row">
           <select v-model="selectedContractorId" class="proj-client-select">
@@ -86,6 +86,21 @@
             <div class="proj-preview-banner">
               <span class="proj-preview-label">👁 клиент</span>
               <NuxtLink :to="`/admin/projects/${slug}`" class="proj-preview-exit">× выйти</NuxtLink>
+            </div>
+            <!-- Link client to project (if none linked yet) -->
+            <div v-if="!linkedClients.length" class="proj-client-link-inline">
+              <select v-model="selectedClientId" class="proj-client-select-sm">
+                <option value="">— привязать клиента —</option>
+                <option v-for="c in clients" :key="c.id" :value="String(c.id)">
+                  {{ c.name }}
+                </option>
+              </select>
+              <button class="proj-client-btn-sm" :disabled="!selectedClientId || linkingClient" @click="linkClientToProject">
+                {{ linkingClient ? '...' : '✓' }}
+              </button>
+            </div>
+            <div v-else class="proj-client-link-inline proj-client-link-inline--name">
+              <span class="proj-client-linked-name">{{ linkedClients.map(c => c.name).join(', ') }}</span>
             </div>
             <button
               v-for="pg in clientNavPages" :key="pg.slug"
@@ -243,6 +258,86 @@
             <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Client Selection Modal -->
+    <div v-if="showClientModal" class="a-modal-backdrop" @click.self="showClientModal = false">
+      <div class="a-modal">
+        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">добавить клиента в проект</h3>
+        <div class="modal-clients-list">
+          <div
+            v-for="client in clients"
+            :key="client.id"
+            class="modal-client-item"
+            :class="{ 'modal-client-item--linked': linkedClientIds.includes(String(client.id)) }"
+          >
+            <div class="modal-client-info">
+              <div class="modal-client-name">{{ client.name }}</div>
+              <div class="modal-client-details">
+                <template v-if="client.phone">{{ client.phone }}</template>
+                <template v-else-if="client.email">{{ client.email }}</template>
+              </div>
+            </div>
+            <button
+              v-if="!linkedClientIds.includes(String(client.id))"
+              type="button"
+              class="modal-action-btn modal-action-btn--add"
+              @click="linkClientFromModal(String(client.id))"
+            >+</button>
+            <button
+              v-else
+              type="button"
+              class="modal-action-btn modal-action-btn--remove"
+              @click="unlinkClientFromModal(String(client.id))"
+            >-</button>
+          </div>
+        </div>
+        <p v-if="clientLinkError" style="color:#c00;font-size:.8rem;margin:10px 0">{{ clientLinkError }}</p>
+        <p v-if="clientLinkSuccess" style="color:#5caa7f;font-size:.8rem;margin:10px 0">{{ clientLinkSuccess }}</p>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="a-btn-sm" @click="showClientModal = false">закрыть</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contractor Selection Modal -->
+    <div v-if="showContractorModal" class="a-modal-backdrop" @click.self="showContractorModal = false">
+      <div class="a-modal">
+        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">добавить подрядчика в проект</h3>
+        <div class="modal-contractors-list">
+          <div
+            v-for="contractor in allContractors"
+            :key="contractor.id"
+            class="modal-contractor-item"
+            :class="{ 'modal-contractor-item--linked': linkedContractorIds.has(String(contractor.id)) }"
+          >
+            <div class="modal-contractor-info">
+              <div class="modal-contractor-name">{{ contractor.name }}</div>
+              <div class="modal-contractor-details">
+                <template v-if="contractor.companyName">{{ contractor.companyName }}</template>
+                <template v-else-if="contractor.phone">{{ contractor.phone }}</template>
+              </div>
+            </div>
+            <button
+              v-if="!linkedContractorIds.has(String(contractor.id))"
+              type="button"
+              class="modal-action-btn modal-action-btn--add"
+              @click="linkContractorFromModal(contractor.id)"
+            >+</button>
+            <button
+              v-else
+              type="button"
+              class="modal-action-btn modal-action-btn--remove"
+              @click="unlinkContractor(contractor.id)"
+            >-</button>
+          </div>
+        </div>
+        <p v-if="contractorLinkError" style="color:#c00;font-size:.8rem;margin:10px 0">{{ contractorLinkError }}</p>
+        <p v-if="contractorLinkSuccess" style="color:#5caa7f;font-size:.8rem;margin:10px 0">{{ contractorLinkSuccess }}</p>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="a-btn-sm" @click="showContractorModal = false">закрыть</button>
+        </div>
       </div>
     </div>
   </div>
@@ -470,12 +565,14 @@ const linkingClient = ref(false)
 const clientLinkError = ref('')
 const clientLinkSuccess = ref('')
 const showClientForm = ref(false)
+const showClientModal = ref(false)
 // ── Contractor link state ─────────────────────────────────────────
 const selectedContractorId = ref('')
 const linkingContractor = ref(false)
 const contractorLinkError = ref('')
 const contractorLinkSuccess = ref('')
 const showContractorForm = ref(false)
+const showContractorModal = ref(false)
 
 const allContractors = computed(() => allContractorsData.value || [])
 const linkedContractorsList = computed(() => linkedContractorsData.value || [])
@@ -515,6 +612,23 @@ async function unlinkContractor(contractorId: number) {
     setTimeout(() => { contractorLinkSuccess.value = '' }, 2500)
   } catch (e: any) {
     contractorLinkError.value = e?.data?.message || 'Не удалось отвязать подрядчика'
+  }
+}
+
+// Modal functions for contractors
+async function linkContractorFromModal(contractorId: number) {
+  contractorLinkError.value = ''
+  contractorLinkSuccess.value = ''
+  try {
+    await $fetch(`/api/projects/${slug.value}/contractors`, {
+      method: 'POST',
+      body: { contractorId },
+    })
+    await refreshLinkedContractors()
+    contractorLinkSuccess.value = 'Подрядчик добавлен'
+    setTimeout(() => { contractorLinkSuccess.value = '' }, 3000)
+  } catch (e: any) {
+    contractorLinkError.value = e?.data?.message || 'Не удалось добавить подрядчика'
   }
 }
 
@@ -628,6 +742,8 @@ const allClientPages = getClientPages()
 const clientNavPages = computed(() => {
   const pages = project.value?.pages || []
   return allClientPages.filter(p => {
+    // Client-only pages (no phase) are always visible
+    if (!p.phase) return true
     if (p.slug === 'self_profile' && pages.includes('brief')) return true
     return pages.includes(p.slug)
   })
@@ -780,6 +896,35 @@ async function linkClientToProject() {
     linkingClient.value = false
   }
 }
+
+// Modal functions for clients
+async function linkClientFromModal(clientId: string) {
+  try {
+    await $fetch(`/api/clients/${clientId}/link-project`, {
+      method: 'POST',
+      body: { projectSlug: slug.value },
+    })
+    await refresh()
+    clientLinkSuccess.value = 'Клиент добавлен в проект'
+    setTimeout(() => { clientLinkSuccess.value = '' }, 3000)
+  } catch (e: any) {
+    clientLinkError.value = e?.data?.statusMessage || 'Не удалось добавить клиента'
+  }
+}
+
+async function unlinkClientFromModal(clientId: string) {
+  try {
+    await $fetch(`/api/clients/${clientId}/unlink-project`, {
+      method: 'POST',
+      body: { projectSlug: slug.value },
+    })
+    await refresh()
+    clientLinkSuccess.value = 'Клиент удален из проекта'
+    setTimeout(() => { clientLinkSuccess.value = '' }, 2500)
+  } catch (e: any) {
+    clientLinkError.value = e?.data?.statusMessage || 'Не удалось удалить клиента'
+  }
+}
 </script>
 
 <style scoped>
@@ -860,6 +1005,33 @@ async function linkClientToProject() {
 .proj-client-btn:disabled { opacity: .6; cursor: default; }
 .proj-client-error { margin: 8px 0 0; color: #c00; font-size: .78rem; }
 .proj-client-success { margin: 8px 0 0; color: #5caa7f; font-size: .78rem; }
+
+/* ── Client link inline (inside client preview sidebar) ── */
+.proj-client-link-inline {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 10px; margin-bottom: 6px;
+}
+.proj-client-link-inline--name {
+  padding: 4px 10px 8px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.proj-client-linked-name {
+  font-size: .76rem; color: var(--glass-text); opacity: .7; font-weight: 500;
+}
+.proj-client-select-sm {
+  flex: 1; min-width: 0; font-size: .72rem; font-family: inherit;
+  padding: 4px 6px; border-radius: 6px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg); color: var(--glass-text);
+}
+.proj-client-btn-sm {
+  border: none; background: var(--glass-text); color: var(--glass-page-bg);
+  width: 24px; height: 24px; border-radius: 6px; font-size: .72rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: opacity .15s;
+}
+.proj-client-btn-sm:disabled { opacity: .4; cursor: default; }
+.proj-client-btn-sm:hover:not(:disabled) { opacity: .8; }
 
 /* ── Layout ── */
 .proj-content-area { display: flex; align-items: flex-start; gap: 0; }
@@ -1118,5 +1290,81 @@ async function linkClientToProject() {
   opacity: .38;
 }
 .admin-mini-chip:hover { opacity: 1; background: var(--glass-bg); }
+
+/* Modal Lists */
+.modal-clients-list, .modal-contractors-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.modal-client-item, .modal-contractor-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid var(--glass-border, #e0e0e0);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: var(--glass-bg, #fff);
+  transition: background .15s, border-color .15s;
+}
+
+.modal-client-item--linked, .modal-contractor-item--linked {
+  background: color-mix(in srgb, var(--glass-bg) 94%, var(--glass-text) 6%);
+  border-color: color-mix(in srgb, var(--glass-border) 80%, var(--glass-text) 20%);
+}
+
+.modal-client-info, .modal-contractor-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-client-name, .modal-contractor-name {
+  font-size: .88rem;
+  font-weight: 500;
+  color: var(--glass-text, #1a1a1a);
+  margin-bottom: 2px;
+}
+
+.modal-client-details, .modal-contractor-details {
+  font-size: .76rem;
+  color: color-mix(in srgb, var(--glass-text) 70%, transparent);
+}
+
+.modal-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s, color .15s, transform .1s;
+}
+
+.modal-action-btn--add {
+  background: #28a745;
+  color: #fff;
+}
+
+.modal-action-btn--add:hover {
+  background: #218838;
+  transform: scale(1.05);
+}
+
+.modal-action-btn--remove {
+  background: #dc3545;
+  color: #fff;
+}
+
+.modal-action-btn--remove:hover {
+  background: #c82333;
+  transform: scale(1.05);
+}
 
 </style>

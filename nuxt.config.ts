@@ -45,4 +45,12 @@ export default defineNuxtConfig({
     strict: true,
     shim: false,
   },
+
+  sourcemap: { server: false, client: false },
+
+  vite: {
+    build: {
+      sourcemap: false,
+    },
+  },
 })

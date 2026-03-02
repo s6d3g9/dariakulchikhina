@@ -5,7 +5,7 @@ import { asc } from 'drizzle-orm'
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
-  const query = getQuery(event)
+  const query = safeGetQuery(event)
   const projectSlugFilter = (query.projectSlug as string) || ''
 
   const allClientsRaw = await db

@@ -4,7 +4,7 @@ import { eq, desc } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const query = getQuery(event)
+  const query = safeGetQuery(event)
   const category    = (query.category as string) || ''
   const projectSlug = (query.projectSlug as string) || ''
 

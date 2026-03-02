@@ -160,7 +160,7 @@
       </div>
     </Teleport>
 
-    <!-- ═══ Generate modal ═══ -->
+    <!-- ═══ Generate modal — Document Editor ═══ -->
     <Teleport to="body">
       <div v-if="showGenerateModal" class="docs-backdrop" @click.self="showGenerateModal = false">
         <div class="docs-modal docs-modal--wide glass-surface">
@@ -169,67 +169,12 @@
             <button class="docs-modal-close" @click="showGenerateModal = false">✕</button>
           </div>
           <div class="docs-modal-body">
-
-            <!-- Step 1: pick template -->
-            <template v-if="genStep === 1">
-              <p class="docs-gen-hint">Выберите шаблон документа:</p>
-              <div class="docs-tpl-list">
-                <button
-                  v-for="tpl in DOC_TEMPLATES" :key="tpl.key"
-                  class="docs-tpl-item"
-                  :class="{ 'docs-tpl-item--active': genSelectedTpl?.key === tpl.key }"
-                  @click="genSelectedTpl = tpl"
-                >
-                  <span class="docs-tpl-icon">{{ tpl.icon }}</span>
-                  <div>
-                    <div class="docs-tpl-name">{{ tpl.name }}</div>
-                    <div class="docs-tpl-desc">{{ tpl.description }}</div>
-                  </div>
-                </button>
-              </div>
-              <div class="docs-modal-foot" style="padding: 0; border: none; margin-top: 8px;">
-                <button class="a-btn-sm" @click="showGenerateModal = false">отмена</button>
-                <button class="a-btn-save" :disabled="!genSelectedTpl" @click="genStep = 2">далее →</button>
-              </div>
-            </template>
-
-            <!-- Step 2: fill fields -->
-            <template v-if="genStep === 2 && genSelectedTpl">
-              <p class="docs-gen-hint">Заполните поля для <strong>{{ genSelectedTpl.name }}</strong>:</p>
-              <div class="docs-gen-project">
-                <label class="docs-label">Проект</label>
-                <select v-model="genProjectSlug" class="docs-input docs-input--select" @change="onGenProjectChange">
-                  <option value="">— без проекта —</option>
-                  <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
-                </select>
-              </div>
-              <div class="docs-gen-fields">
-                <div v-for="field in genSelectedTpl.fields" :key="field.key" class="docs-field">
-                  <label class="docs-label">{{ field.label }}</label>
-                  <textarea v-if="field.multiline" v-model="genFields[field.key]" rows="3" class="docs-input docs-input--textarea" :placeholder="field.placeholder || ''" />
-                  <input v-else v-model="genFields[field.key]" class="docs-input" :placeholder="field.placeholder || ''" />
-                </div>
-              </div>
-              <div class="docs-modal-foot" style="padding: 0; border: none; margin-top: 8px;">
-                <button class="a-btn-sm" @click="genStep = 1">← назад</button>
-                <button class="a-btn-save" @click="genStep = 3">предпросмотр →</button>
-              </div>
-            </template>
-
-            <!-- Step 3: preview + save -->
-            <template v-if="genStep === 3 && genSelectedTpl">
-              <p class="docs-gen-hint">Предпросмотр — <strong>{{ genSelectedTpl.name }}</strong>:</p>
-              <div class="docs-gen-preview">
-                <pre class="docs-gen-pre">{{ generatedText }}</pre>
-              </div>
-              <div class="docs-modal-foot" style="padding: 0; border: none; margin-top: 8px;">
-                <button class="a-btn-sm" @click="genStep = 2">← назад</button>
-                <button class="a-btn-sm" @click="downloadGenerated">⬇ скачать</button>
-                <button class="a-btn-save" :disabled="genSaving" @click="saveGenerated">
-                  {{ genSaving ? 'сохраняется...' : '✓ сохранить' }}
-                </button>
-              </div>
-            </template>
+            <AdminDocumentEditor
+              :templates="DOC_TEMPLATES"
+              :projects="allProjects"
+              @close="showGenerateModal = false"
+              @saved="onEditorSaved"
+            />
           </div>
         </div>
       </div>
@@ -725,89 +670,17 @@ async function deleteDoc(id: number) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// GENERATE FROM TEMPLATE
+// GENERATE FROM TEMPLATE (delegated to AdminDocumentEditor)
 // ══════════════════════════════════════════════════════════════════
 const showGenerateModal = ref(false)
-const genStep = ref(1)
-const genSelectedTpl = ref<(typeof DOC_TEMPLATES)[number] | null>(null)
-const genProjectSlug = ref('')
-const genFields = ref<Record<string, string>>({})
-const genSaving = ref(false)
 
 function openGenerate() {
-  genStep.value = 1
-  genSelectedTpl.value = null
-  genProjectSlug.value = ''
-  genFields.value = {}
   showGenerateModal.value = true
 }
 
-function onGenProjectChange() {
-  const proj = allProjects.value.find(p => p.slug === genProjectSlug.value)
-  if (!proj) return
-  genFields.value = {
-    ...genFields.value,
-    client_name: proj.clientName || genFields.value.client_name || '',
-    object_address: proj.address || genFields.value.object_address || '',
-  }
-}
-
-watch(genSelectedTpl, (tpl) => {
-  if (tpl) {
-    const fields: Record<string, string> = {}
-    for (const f of tpl.fields) fields[f.key] = genFields.value[f.key] || ''
-    genFields.value = fields
-  }
-})
-
-const generatedText = computed(() => {
-  if (!genSelectedTpl.value) return ''
-  let text = genSelectedTpl.value.template
-  for (const [k, v] of Object.entries(genFields.value)) {
-    text = text.split(`{{${k}}}`).join(v || `[${k}]`)
-  }
-  return text
-})
-
-function downloadGenerated() {
-  if (!generatedText.value) return
-  const blob = new Blob([generatedText.value], { type: 'text/plain;charset=utf-8' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `${genSelectedTpl.value?.name || 'document'}.txt`
-  a.click()
-  URL.revokeObjectURL(a.href)
-}
-
-async function saveGenerated() {
-  if (!genSelectedTpl.value || !generatedText.value) return
-  genSaving.value = true
-  try {
-    const blob = new Blob([generatedText.value], { type: 'text/plain;charset=utf-8' })
-    const file = new File([blob], `${genSelectedTpl.value.name}.txt`, { type: 'text/plain' })
-    const fd = new FormData()
-    fd.append('file', file)
-    const { url, filename } = await $fetch<any>('/api/upload', { method: 'POST', body: fd })
-
-    await $fetch('/api/documents', {
-      method: 'POST',
-      body: {
-        title: genSelectedTpl.value.name + (genProjectSlug.value ? ' · ' + allProjects.value.find(p => p.slug === genProjectSlug.value)?.title : ''),
-        category: genSelectedTpl.value.category,
-        projectSlug: genProjectSlug.value || undefined,
-        url,
-        filename,
-        notes: 'Создан из шаблона · ' + new Date().toLocaleDateString('ru-RU'),
-      },
-    })
-
-    showGenerateModal.value = false
-    await refresh()
-  } catch (e: any) {
-    console.error(e)
-  } finally {
-    genSaving.value = false
-  }
+async function onEditorSaved() {
+  showGenerateModal.value = false
+  await refresh()
 }
 </script>
 

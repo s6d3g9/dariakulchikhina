@@ -272,7 +272,8 @@ function openClientCabinet(client: any) {
     navigateTo(`/admin/projects/${encodeURIComponent(targetSlug)}?view=client`)
     return
   }
-  navigateTo('/admin')
+  // No linked project — open link modal so user can pick one
+  openLink(client)
 }
 </script>
 

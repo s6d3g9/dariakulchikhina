@@ -154,11 +154,11 @@
           </div>
           <div class="afc-row afc-row--full">
             <label class="afc-lbl">заметки о встрече / первое впечатление</label>
-            <textarea v-model="form.lead_meeting_notes" class="afc-inp afc-ta" rows="3" @blur="save" />
+            <textarea v-model="form.lead_meeting_notes" class="afc-inp afc-ta" rows="3" @blur="save"></textarea>
           </div>
           <div class="afc-row afc-row--full">
             <label class="afc-lbl">особые пожелания / первые предпочтения</label>
-            <textarea v-model="form.lead_first_wishes" class="afc-inp afc-ta" rows="2" @blur="save" />
+            <textarea v-model="form.lead_first_wishes" class="afc-inp afc-ta" rows="2" @blur="save"></textarea>
           </div>
         </div>
       </div>
