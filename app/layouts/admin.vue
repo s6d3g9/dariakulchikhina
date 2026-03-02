@@ -1,9 +1,9 @@
 <template>
   <div class="admin-bg glass-page">
+    <UIDesignPanel />
     <header class="admin-header glass-surface">
       <span class="admin-brand">админ-панель</span>
       <div class="admin-header-links">
-        <UIDesignPanel />
         <button
           type="button"
           class="theme-dot"
@@ -249,6 +249,7 @@ async function logout() {
 /* ── Page ── */
 .admin-bg {
   min-height: 100vh;
+  padding-top: 28px; /* space for design topbar */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
