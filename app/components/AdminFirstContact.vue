@@ -138,6 +138,17 @@
             </select>
           </div>
 
+          <!-- Map Error -->
+          <div v-if="mapError" class="afc-map-error" style="margin-top: 1rem; padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; color: #dc2626;">
+            <strong>Ошибка карты:</strong> {{ mapError }}
+            <br><small>API загружается, подождите...</small>
+          </div>
+          
+          <!-- Map Loading Status -->
+          <div v-if="mapLoading" class="afc-map-loading" style="margin-top: 1rem; padding: 1rem; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 0.5rem; color: #0369a1;">
+            <strong>Загрузка карты:</strong> {{ mapLoadingStatus }}
+          </div>
+          
           <!-- Yandex Map -->
           <div class="afc-row afc-row--full">
             <label class="afc-lbl">
@@ -145,7 +156,6 @@
               <span v-if="form.meeting_map_address" style="font-weight:400;color:#444;font-size:.8rem;margin-left:6px">{{ form.meeting_map_address }}</span>
             </label>
             <div ref="mapEl" class="afc-map"></div>
-            <div v-if="mapError" class="afc-map-error">{{ mapError }}</div>
             <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
               <input v-model="mapSearch" class="afc-inp" placeholder="поиск адреса..." style="flex:1" @keydown.enter.prevent="searchAddress">
               <button type="button" class="afc-map-btn" @click="searchAddress">найти</button>
@@ -239,33 +249,73 @@ async function save() {
 }
 
 // ── Yandex Maps ──────────────────────────────────────
+const runtimeConfig = useRuntimeConfig()
 const mapEl = ref<HTMLElement | null>(null)
 const mapSearch = ref('')
 const mapError = ref('')
+const mapLoading = ref(true)
+const mapLoadingStatus = ref('Инициализация...')
 let ymap: any = null
 let placemark: any = null
 
 async function initMap() {
-  if (!mapEl.value || typeof window === 'undefined') return
+  if (!mapEl.value || typeof window === 'undefined') {
+    mapError.value = 'Элемент карты не найден или нет окна браузера'
+    mapLoading.value = false
+    return
+  }
+  
   mapError.value = ''
+  mapLoading.value = true
+  mapLoadingStatus.value = 'Проверка API...'
+  
   try {
     if (!(window as any).ymaps) {
+      mapLoadingStatus.value = 'Загрузка скрипта API...'
       await new Promise<void>((resolve, reject) => {
         const s = document.createElement('script')
+        // Простая загрузка как раньше - без API ключа и дополнительных параметров
         s.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
+        console.log('Loading Yandex Maps from:', s.src)
+        
         s.onload = () => {
           if ((window as any).ymaps) {
-            (window as any).ymaps.ready(resolve)
+            mapLoadingStatus.value = 'Ожидание готовности API...'
+            // Добавляем таймаут на случай зависания
+            const timeout = setTimeout(() => {
+              reject(new Error('API timeout - ymaps.ready() не отвечает'))
+            }, 10000)
+            
+            ;(window as any).ymaps.ready(() => {
+              clearTimeout(timeout)
+              resolve()
+            })
           } else {
             reject(new Error('ymaps not available after script load'))
           }
         }
-        s.onerror = () => reject(new Error('Failed to load Yandex Maps script'))
+        s.onerror = (e) => {
+          console.error('Script loading error:', e)
+          reject(new Error('Failed to load Yandex Maps script'))
+        }
         document.head.appendChild(s)
       })
     } else {
-      await new Promise<void>(r => (window as any).ymaps.ready(r))
+      mapLoadingStatus.value = 'API уже загружен, ожидание готовности...'
+      // Таймаут для уже загруженного API
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('API timeout - ymaps уже загружен но ready() не отвечает'))
+        }, 5000)
+        
+        ;(window as any).ymaps.ready(() => {
+          clearTimeout(timeout)
+          resolve()
+        })
+      })
     }
+    
+    mapLoadingStatus.value = 'Создание карты...'
     const ymaps = (window as any).ymaps
     const center = form.meeting_map_lat
       ? [form.meeting_map_lat, form.meeting_map_lng]
@@ -275,10 +325,14 @@ async function initMap() {
       zoom: form.meeting_map_lat ? 15 : 10,
       controls: ['zoomControl', 'geolocationControl'],
     })
+    
     if (form.meeting_map_lat) {
+      mapLoadingStatus.value = 'Добавление маркера...'
       placemark = new ymaps.Placemark([form.meeting_map_lat, form.meeting_map_lng], {}, { preset: 'islands#violetDotIcon' })
       ymap.geoObjects.add(placemark)
     }
+    
+    mapLoadingStatus.value = 'Настройка обработчиков событий...'
     ymap.events.add('click', async (e: any) => {
       const coords = e.get('coords')
       setPin(coords)
@@ -291,9 +345,15 @@ async function initMap() {
       }
       save()
     })
+    
+    mapLoading.value = false
+    mapLoadingStatus.value = 'Карта успешно загружена'
+    console.log('Yandex Maps initialized successfully')
+    
   } catch (err: any) {
-    console.warn('[AdminFirstContact] Map init failed:', err)
-    mapError.value = 'Не удалось загрузить карту. Проверьте подключение к интернету.'
+    console.error('[AdminFirstContact] Map init failed:', err)
+    mapError.value = `Ошибка инициализации: ${err.message}`
+    mapLoading.value = false
   }
 }
 
@@ -373,11 +433,7 @@ function toggleStepDone() {
 
 .afc-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .afc-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.afc-dot--gray   { background: #ccc; }
-.afc-dot--blue   { background: #6b9fd4; }
-.afc-dot--yellow { background: #e8b84b; }
-.afc-dot--red    { background: #d46b6b; }
-.afc-dot--green  { background: #5caa7f; }
+/* dot colors: → main.css [class*="-dot--*"] */
 .afc-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
 .afc-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
 

@@ -158,11 +158,7 @@ function removeFile(idx: number) {
 
 .amep-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .amep-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.amep-dot--gray   { background: #ccc; }
-.amep-dot--blue   { background: #6b9fd4; }
-.amep-dot--yellow { background: #e8b84b; }
-.amep-dot--red    { background: #d46b6b; }
-.amep-dot--green  { background: #5caa7f; }
+/* dot colors: → main.css [class*="-dot--*"] */
 .amep-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
 .amep-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
 

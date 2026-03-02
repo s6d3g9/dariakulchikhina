@@ -275,11 +275,7 @@ async function moveToPhase2() {
 /* Status */
 .aca-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .aca-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.aca-dot--gray   { background: #ccc; }
-.aca-dot--blue   { background: #6b9fd4; }
-.aca-dot--yellow { background: #e8b84b; }
-.aca-dot--red    { background: #d46b6b; }
-.aca-dot--green  { background: #5caa7f; }
+/* dot colors: → main.css [class*="-dot--*"] */
 .aca-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
 .aca-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
 

@@ -180,11 +180,7 @@ function fileIcon(f: any) {
 
 .asp-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .asp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.asp-dot--gray   { background: #ccc; }
-.asp-dot--blue   { background: #6b9fd4; }
-.asp-dot--yellow { background: #e8b84b; }
-.asp-dot--red    { background: #d46b6b; }
-.asp-dot--green  { background: #5caa7f; }
+/* dot colors: → main.css [class*="-dot--*"] */
 .asp-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
 .asp-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
 

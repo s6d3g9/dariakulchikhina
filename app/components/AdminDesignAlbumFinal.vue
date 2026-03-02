@@ -181,53 +181,120 @@ function removeFile(idx: number) {
 
 <style scoped>
 .adaf-wrap { padding: 4px 0 40px; }
-.adaf-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
+.adaf-loading { padding: 40px 0; font-size: .82rem; color: color-mix(in srgb, var(--glass-text) 50%, transparent); }
 
 .adaf-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .adaf-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.adaf-dot--gray   { background: #ccc; }
-.adaf-dot--blue   { background: #6b9fd4; }
-.adaf-dot--yellow { background: #e8b84b; }
-.adaf-dot--red    { background: #d46b6b; }
-.adaf-dot--green  { background: #5caa7f; }
-.adaf-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.adaf-saved       { font-size: .72rem; color: #5caa7f; margin-left: auto; }
+.adaf-dot--gray   { background: color-mix(in srgb, var(--glass-text) 30%, transparent); }
+/* other dot colors: → main.css [class*="-dot--*"] */
+.adaf-status-sel  {
+  background: none; border: 1px solid var(--glass-border); border-radius: 8px;
+  padding: 4px 10px; font-size: .78rem; font-family: inherit; color: var(--glass-text); cursor: pointer;
+}
+.adaf-saved { font-size: .72rem; color: #5caa7f; margin-left: auto; }
 
 .adaf-section { margin-bottom: 32px; }
-.adaf-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
+.adaf-section-title {
+  font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px;
+  color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+  margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--glass-border);
+}
 
 .adaf-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
 .adaf-row { display: flex; flex-direction: column; gap: 5px; }
 .adaf-row--full { grid-column: 1 / -1; }
-.adaf-lbl { font-size: .72rem; color: #999; }
-.adaf-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; }
-.adaf-inp:focus { border-color: #aaa; }
+.adaf-lbl { font-size: .72rem; color: color-mix(in srgb, var(--glass-text) 45%, transparent); }
+.adaf-inp {
+  border: 1px solid var(--glass-border); border-radius: 8px;
+  padding: 7px 10px; font-size: .82rem;
+  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+  color: var(--glass-text); font-family: inherit; outline: none;
+  transition: border-color .15s;
+}
+.adaf-inp:focus { border-color: var(--glass-text); }
 .adaf-ta  { resize: vertical; }
 
 /* Chapters */
 .adaf-chapters { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.adaf-chapter { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border, #e0e0e0); background: var(--bg2, #f8f8f7); }
-.adaf-ch-num { font-size: .68rem; color: #aaa; font-weight: 600; padding-top: 8px; min-width: 20px; }
+.adaf-chapter {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--glass-border); border-radius: 10px;
+  background: color-mix(in srgb, var(--glass-bg) 50%, transparent);
+}
+.adaf-ch-num { font-size: .68rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); font-weight: 600; padding-top: 8px; min-width: 20px; }
 .adaf-ch-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .adaf-ch-meta { display: flex; gap: 10px; align-items: center; }
-.adaf-ch-status { border: 1px solid var(--border, #e0e0e0); background: none; font-size: .72rem; padding: 3px 6px; font-family: inherit; color: inherit; }
-.adaf-ch-pages { font-size: .72rem; color: #aaa; }
-.adaf-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1rem; }
-.adaf-del:hover { color: #c00; }
-.adaf-empty { font-size: .78rem; color: #bbb; margin-bottom: 10px; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); }
-.adaf-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: #666; cursor: pointer; font-family: inherit; }
-.adaf-add-btn:hover { border-color: #aaa; color: inherit; }
+.adaf-ch-status {
+  border: 1px solid var(--glass-border); border-radius: 8px;
+  background: none; font-size: .72rem; padding: 3px 6px;
+  font-family: inherit; color: var(--glass-text);
+}
+.adaf-ch-pages { font-size: .72rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); }
+
+/* Round delete button */
+.adaf-del {
+  width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--glass-border);
+  background: none; cursor: pointer; font-size: .82rem; line-height: 1;
+  color: color-mix(in srgb, var(--glass-text) 40%, transparent);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.adaf-del:hover { color: #dc2626; border-color: #dc2626; background: rgba(220,38,38,.06); }
+
+.adaf-empty {
+  font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 35%, transparent);
+  margin-bottom: 10px; padding: 20px 0; text-align: center;
+  border: 1px dashed var(--glass-border); border-radius: 10px;
+}
+
+/* Round action buttons */
+.adaf-add-btn {
+  border: 1px solid var(--glass-border); border-radius: 999px;
+  background: none; padding: 6px 18px; font-size: .78rem;
+  color: color-mix(in srgb, var(--glass-text) 60%, transparent);
+  cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s;
+}
+.adaf-add-btn:hover { border-color: var(--glass-text); color: var(--glass-text); }
 
 /* Files */
 .adaf-files { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-.adaf-file { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid var(--border, #e0e0e0); }
-.adaf-file-name { font-size: .78rem; color: inherit; text-decoration: none; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adaf-file {
+  display: flex; align-items: center; gap: 10px; padding: 6px 10px;
+  border: 1px solid var(--glass-border); border-radius: 10px;
+}
+.adaf-file-name { font-size: .78rem; color: var(--glass-text); text-decoration: none; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adaf-file-name:hover { text-decoration: underline; }
-.adaf-file-ver { font-size: .68rem; color: #aaa; }
-.adaf-upload-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
-.adaf-upload-btn:hover { border-color: #aaa; color: inherit; }
+.adaf-file-ver { font-size: .68rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); }
+
+.adaf-upload-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--glass-border); border-radius: 999px;
+  padding: 7px 18px; font-size: .78rem;
+  color: color-mix(in srgb, var(--glass-text) 60%, transparent);
+  cursor: pointer; user-select: none; transition: border-color .15s, color .15s;
+}
+.adaf-upload-btn:hover { border-color: var(--glass-text); color: var(--glass-text); }
 .adaf-upload-btn--loading { opacity: .6; cursor: wait; }
 
+/* Custom round checkboxes */
 .adaf-checks { display: flex; flex-wrap: wrap; gap: 16px; }
-.adaf-check { display: flex; align-items: center; gap: 8px; font-size: .82rem; cursor: pointer; }
+.adaf-check {
+  display: flex; align-items: center; gap: 8px; font-size: .82rem;
+  cursor: pointer; color: var(--glass-text);
+}
+.adaf-check input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none; margin: 0;
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid var(--glass-border); background: none;
+  cursor: pointer; position: relative; flex-shrink: 0;
+  transition: background .15s, border-color .15s;
+}
+.adaf-check input[type="checkbox"]:checked {
+  background: var(--glass-text); border-color: var(--glass-text);
+}
+.adaf-check input[type="checkbox"]:checked::after {
+  content: '✓'; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .68rem; color: var(--glass-page-bg); font-weight: 700;
+}
 </style>

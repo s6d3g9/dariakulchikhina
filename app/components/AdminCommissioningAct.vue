@@ -134,10 +134,7 @@ async function uploadFile(e: Event) {
 .aca2-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
 .aca2-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .aca2-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.aca2-dot--gray   { background: #ccc; }
-.aca2-dot--blue   { background: #6b9fd4; }
-.aca2-dot--yellow { background: #e8b84b; }
-.aca2-dot--green  { background: #5caa7f; }
+/* dot colors: → main.css [class*="-dot--*"] */
 .aca2-status-sel { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
 .aca2-saved { font-size: .72rem; color: #5caa7f; margin-left: auto; }
 .aca2-section { margin-bottom: 32px; }
