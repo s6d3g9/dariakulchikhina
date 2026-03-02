@@ -672,6 +672,9 @@ export function useDesignSystem() {
     el.style.setProperty('--input-radius', `${t.inputRadius}px`)
     el.style.setProperty('--chip-radius', `${t.chipRadius}px`)
     el.style.setProperty('--modal-radius', `${t.modalRadius}px`)
+    // Computed inner radii — scale proportionally with card-radius
+    el.style.setProperty('--card-radius-inner', `${Math.max(3, Math.round(t.cardRadius * 0.6))}px`)
+    el.style.setProperty('--card-radius-xs',    `${Math.max(2, Math.round(t.cardRadius * 0.35))}px`)
 
     // Animation
     el.style.setProperty('--ds-anim-duration', `${t.animDuration}ms`)

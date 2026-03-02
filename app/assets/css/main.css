@@ -125,32 +125,32 @@ textarea, select {
   --ds-dark-saturation: 50%;
 
   /* ── Roadmap unified color tokens ─────────────────────── */
-  --rm-color-pending:  #9ca3af;
-  --rm-color-progress: #f59e0b;
-  --rm-color-done:     #16a34a;
-  --rm-color-skipped:  #d1d5db;
+  --rm-color-pending:  color-mix(in srgb, var(--glass-text) 55%, transparent);
+  --rm-color-progress: var(--ds-warning);
+  --rm-color-done:     var(--ds-success);
+  --rm-color-skipped:  color-mix(in srgb, var(--glass-text) 25%, transparent);
 
-  --rm-bg-pending:     rgba(156, 163, 175, 0.10);
-  --rm-bg-progress:    rgba(245, 158, 11, 0.12);
-  --rm-bg-done:        rgba(22, 163, 74, 0.10);
-  --rm-bg-skipped:     rgba(209, 213, 219, 0.08);
+  --rm-bg-pending:     color-mix(in srgb, var(--glass-text)  8%, transparent);
+  --rm-bg-progress:    color-mix(in srgb, var(--ds-warning) 14%, transparent);
+  --rm-bg-done:        color-mix(in srgb, var(--ds-success) 11%, transparent);
+  --rm-bg-skipped:     color-mix(in srgb, var(--glass-text)  5%, transparent);
 
   /* ── Work-status unified color tokens ──────────────────── */
-  --ws-color-pending:    #9ca3af;
-  --ws-color-planned:    #6366f1;
-  --ws-color-progress:   #f59e0b;
-  --ws-color-done:       #16a34a;
-  --ws-color-paused:     #a855f7;
-  --ws-color-cancelled:  #ef4444;
-  --ws-color-skipped:    #d1d5db;
+  --ws-color-pending:    color-mix(in srgb, var(--glass-text) 55%, transparent);
+  --ws-color-planned:    var(--ds-accent);
+  --ws-color-progress:   var(--ds-warning);
+  --ws-color-done:       var(--ds-success);
+  --ws-color-paused:     color-mix(in srgb, var(--ds-accent) 75%, hsl(280,50%,60%) 25%);
+  --ws-color-cancelled:  var(--ds-error);
+  --ws-color-skipped:    color-mix(in srgb, var(--glass-text) 25%, transparent);
 
-  --ws-bg-pending:       rgba(156, 163, 175, 0.10);
-  --ws-bg-planned:       rgba(99, 102, 241, 0.10);
-  --ws-bg-progress:      rgba(245, 158, 11, 0.12);
-  --ws-bg-done:          rgba(22, 163, 74, 0.10);
-  --ws-bg-paused:        rgba(168, 85, 247, 0.10);
-  --ws-bg-cancelled:     rgba(239, 68, 68, 0.10);
-  --ws-bg-skipped:       rgba(209, 213, 219, 0.08);
+  --ws-bg-pending:       color-mix(in srgb, var(--glass-text)  8%, transparent);
+  --ws-bg-planned:       color-mix(in srgb, var(--ds-accent)  12%, transparent);
+  --ws-bg-progress:      color-mix(in srgb, var(--ds-warning) 14%, transparent);
+  --ws-bg-done:          color-mix(in srgb, var(--ds-success) 11%, transparent);
+  --ws-bg-paused:        color-mix(in srgb, var(--ds-accent)  10%, transparent);
+  --ws-bg-cancelled:     color-mix(in srgb, var(--ds-error)   12%, transparent);
+  --ws-bg-skipped:       color-mix(in srgb, var(--glass-text)  5%, transparent);
 }
 
 /* ── Roadmap global utility classes ──────────────────────── */

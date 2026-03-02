@@ -137,6 +137,45 @@
                     <input type="range" min="20" max="80" step="1" :value="tokens.accentLightness" class="dp-range" @input="onRange('accentLightness', $event)">
                   </div>
                 </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Статусы</div>
+                  <div class="dp-status-row">
+                    <span class="dp-status-dot" :style="{background:`hsl(${tokens.successHue},${tokens.successSaturation}%,45%)`}"/>
+                    <span class="dp-status-name">успех / выполнено</span>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">H <span class="dp-val">{{ tokens.successHue }}°</span></label>
+                    <input type="range" min="0" max="360" step="1" :value="tokens.successHue" class="dp-range dp-range--hue" @input="onRange('successHue', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">S <span class="dp-val">{{ tokens.successSaturation }}%</span></label>
+                    <input type="range" min="0" max="100" step="1" :value="tokens.successSaturation" class="dp-range" @input="onRange('successSaturation', $event)">
+                  </div>
+                  <div class="dp-status-row" style="margin-top:10px">
+                    <span class="dp-status-dot" :style="{background:`hsl(${tokens.warningHue},${tokens.warningSaturation}%,50%)`}"/>
+                    <span class="dp-status-name">в работе / ожидание</span>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">H <span class="dp-val">{{ tokens.warningHue }}°</span></label>
+                    <input type="range" min="0" max="360" step="1" :value="tokens.warningHue" class="dp-range dp-range--hue" @input="onRange('warningHue', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">S <span class="dp-val">{{ tokens.warningSaturation }}%</span></label>
+                    <input type="range" min="0" max="100" step="1" :value="tokens.warningSaturation" class="dp-range" @input="onRange('warningSaturation', $event)">
+                  </div>
+                  <div class="dp-status-row" style="margin-top:10px">
+                    <span class="dp-status-dot" :style="{background:`hsl(${tokens.errorHue},${tokens.errorSaturation}%,50%)`}"/>
+                    <span class="dp-status-name">ошибка / отмена</span>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">H <span class="dp-val">{{ tokens.errorHue }}°</span></label>
+                    <input type="range" min="0" max="360" step="1" :value="tokens.errorHue" class="dp-range dp-range--hue" @input="onRange('errorHue', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">S <span class="dp-val">{{ tokens.errorSaturation }}%</span></label>
+                    <input type="range" min="0" max="100" step="1" :value="tokens.errorSaturation" class="dp-range" @input="onRange('errorSaturation', $event)">
+                  </div>
+                </div>
               </div>
 
               <!-- ═══ Кнопки ═══ -->
@@ -668,7 +707,7 @@ const currentScaleLabel = computed(() =>
 /* ── Section search filter ──────────────────────── */
 const sectionSearchMap: Record<string, string[]> = {
   presets:  ['рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal'],
-  palette:  ['палитра', 'цвет', 'акцент', 'color', 'theme', 'accent', 'hue'],
+  palette:  ['палитра', 'цвет', 'акцент', 'color', 'theme', 'accent', 'hue', 'статусы', 'success', 'успех', 'ошибка', 'error', 'warning', 'предупреждение'],
   buttons:  ['кнопк', 'button', 'стиль', 'размер', 'закругл', 'регистр', 'btn'],
   type:     ['типограф', 'шрифт', 'font', 'размер', 'вес', 'межбукв', 'межстроч', 'letter', 'line-height'],
   typeScale: ['масштаб', 'scale', 'шкала', 'ratio', 'модуляр'],
@@ -1412,6 +1451,19 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(0,0,0,.08); margin-bottom: 2px;
 }
 :global(html.dark) .dp-accent-preview-big { border-color: rgba(255,255,255,.08); }
+
+/* Status row (palette tab — success/warning/error) */
+.dp-status-row {
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 4px;
+}
+.dp-status-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.06);
+}
+.dp-status-name {
+  font-size: .6rem; color: var(--glass-text); opacity: .55; letter-spacing: .04em;
+}
 
 /* ── Swatch grid in palette tab ── */
 .dp-swatch-grid {
