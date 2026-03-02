@@ -76,16 +76,8 @@
 
       <div class="proj-content-area">
 
-        <!-- Nav column: roadmap dots + sidebar, sticky together -->
+        <!-- Nav column + sidebar, sticky together -->
         <div class="proj-nav-col">
-
-        <!-- Vertical roadmap — admin mode only -->
-        <AdminVerticalRoadmap
-          v-if="!clientPreviewMode && !contractorPreviewMode"
-          :slug="route.params.slug as string"
-          :active-page="activePage"
-          @navigate="selectAdminPage"
-        />
 
         <!-- Left sidebar: vertical nav -->
         <nav class="proj-sidenav std-sidenav">
