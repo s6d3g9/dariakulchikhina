@@ -323,93 +323,9 @@
                 </div>
               </div>
 
-              <!-- Clients -->
-              <div class="proj-section">
-                <div class="proj-section-head">
-                  <span class="proj-section-title">Клиенты ({{ dp.clients.length }})</span>
-                  <button class="proj-add-btn" @click="openAddClientModal(dp.id)">＋</button>
-                </div>
-                <div v-if="dp.clients.length" class="proj-people">
-                  <div v-for="c in dp.clients" :key="c.id" class="proj-person">
-                    <span class="proj-person-name">{{ c.name }}</span>
-                    <span v-if="c.phone" class="proj-person-info">{{ c.phone }}</span>
-                    <span v-if="c.email" class="proj-person-info">{{ c.email }}</span>
-                  </div>
-                </div>
-                <div v-else class="proj-empty-mini">Клиенты не добавлены</div>
-              </div>
-
-              <!-- Contractors -->
-              <div class="proj-section">
-                <div class="proj-section-head">
-                  <span class="proj-section-title">Подрядчики ({{ dp.contractors.length }})</span>
-                  <button class="proj-add-btn" @click="openAddContractorModal(dp.id)">＋</button>
-                </div>
-                <div v-if="dp.contractors.length" class="proj-people">
-                  <div v-for="ct in dp.contractors" :key="ct.id" class="proj-person">
-                    <span class="proj-person-name">{{ ct.name }}</span>
-                    <span v-if="ct.role" class="proj-person-role">{{ ct.role }}</span>
-                  </div>
-                </div>
-                <div v-else class="proj-empty-mini">Подрядчики не добавлены</div>
-              </div>
-
               <div v-if="dp.notes" class="proj-notes">{{ dp.notes }}</div>
             </div>
 
-            <!-- Add client modal -->
-            <div v-if="addClientModal.visible" class="cab-inline-modal glass-surface">
-              <div class="cab-modal-head">
-                <span class="cab-modal-title">Добавить клиента</span>
-                <button class="cab-modal-close" @click="addClientModal.visible = false">✕</button>
-              </div>
-              <div class="cab-modal-body">
-                <div class="cab-field">
-                  <label>Клиент</label>
-                  <select v-model="addClientModal.clientId" class="glass-input">
-                    <option :value="0" disabled>— выберите клиента —</option>
-                    <option v-for="c in availableClients" :key="c.id" :value="c.id">{{ c.name }}</option>
-                  </select>
-                </div>
-              </div>
-              <div class="cab-modal-foot">
-                <button
-                  class="cab-btn cab-btn--primary"
-                  :disabled="!addClientModal.clientId"
-                  @click="doAddClient"
-                >Добавить</button>
-                <button class="cab-btn" @click="addClientModal.visible = false">Отмена</button>
-              </div>
-            </div>
-
-            <!-- Add contractor modal -->
-            <div v-if="addContractorModal.visible" class="cab-inline-modal glass-surface">
-              <div class="cab-modal-head">
-                <span class="cab-modal-title">Добавить подрядчика</span>
-                <button class="cab-modal-close" @click="addContractorModal.visible = false">✕</button>
-              </div>
-              <div class="cab-modal-body">
-                <div class="cab-field">
-                  <label>Подрядчик</label>
-                  <select v-model="addContractorModal.contractorId" class="glass-input">
-                    <option :value="0" disabled>— выберите подрядчика —</option>
-                    <option v-for="ct in availableContractors" :key="ct.id" :value="ct.id">{{ ct.name }}</option>
-                  </select>
-                </div>
-                <div class="cab-field">
-                  <label>Роль (необязательно)</label>
-                  <input v-model="addContractorModal.role" class="glass-input" placeholder="напр. Электрик" />
-                </div>
-              </div>
-              <div class="cab-modal-foot">
-                <button
-                  class="cab-btn cab-btn--primary"
-                  :disabled="!addContractorModal.contractorId"
-                  @click="doAddContractor"
-                >Добавить</button>
-                <button class="cab-btn" @click="addContractorModal.visible = false">Отмена</button>
-              </div>
-            </div>
           </template>
 
           <!-- ═══════════════ PROFILE ═══════════════ -->
@@ -679,60 +595,7 @@ async function doCreateProject() {
   showNewProjectModal.value = false
 }
 
-// ── Add client modal ──
-const addClientModal = reactive({
-  visible: false,
-  designerProjectId: 0,
-  clientId: 0,
-})
 
-const availableClients = computed(() => {
-  return (allClients.value || []).map((c: any) => ({ id: c.id, name: c.name }))
-})
-
-function openAddClientModal(dpId: number) {
-  addClientModal.designerProjectId = dpId
-  addClientModal.clientId = 0
-  addClientModal.visible = true
-}
-
-async function doAddClient() {
-  if (!addClientModal.clientId) return
-  await addClientToProject(addClientModal.designerProjectId, addClientModal.clientId)
-  addClientModal.visible = false
-}
-
-// ── Add contractor modal ──
-const addContractorModal = reactive({
-  visible: false,
-  designerProjectId: 0,
-  contractorId: 0,
-  role: '',
-})
-
-const availableContractors = computed(() => {
-  return (allContractors.value || []).map((ct: any) => ({
-    id: ct.contractor?.id || ct.id,
-    name: ct.contractor?.name || ct.name,
-  }))
-})
-
-function openAddContractorModal(dpId: number) {
-  addContractorModal.designerProjectId = dpId
-  addContractorModal.contractorId = 0
-  addContractorModal.role = ''
-  addContractorModal.visible = true
-}
-
-async function doAddContractor() {
-  if (!addContractorModal.contractorId) return
-  await addContractorToProject(
-    addContractorModal.designerProjectId,
-    addContractorModal.contractorId,
-    addContractorModal.role || undefined,
-  )
-  addContractorModal.visible = false
-}
 </script>
 
 <style scoped>
