@@ -235,70 +235,166 @@
                   </div>
                 </div>
                 <div class="dp-col">
-                  <div class="dp-col-label">Параметры</div>
-                  <div class="dp-field">
-                    <label class="dp-label">размер <span class="dp-val">{{ (tokens.fontSize * 100).toFixed(0) }}%</span></label>
-                    <input type="range" min="0.7" max="1.4" step="0.02" :value="tokens.fontSize" class="dp-range" @input="onFloat('fontSize', $event)">
+                  <!-- Переключатель контекста -->
+                  <div class="dp-typo-ctx-tabs">
+                    <button type="button" class="dp-typo-ctx-btn" :class="{'dp-typo-ctx-btn--active': typeCtx==='text'}" @click="typeCtx='text'">Текст</button>
+                    <button type="button" class="dp-typo-ctx-btn" :class="{'dp-typo-ctx-btn--active': typeCtx==='headings'}" @click="typeCtx='headings'">Загол.</button>
+                    <button type="button" class="dp-typo-ctx-btn" :class="{'dp-typo-ctx-btn--active': typeCtx==='buttons'}" @click="typeCtx='buttons'">Кнопки</button>
+                    <button type="button" class="dp-typo-ctx-btn" :class="{'dp-typo-ctx-btn--active': typeCtx==='inputs'}" @click="typeCtx='inputs'">Поля</button>
                   </div>
-                  <div class="dp-field">
-                    <label class="dp-label">основной вес <span class="dp-val">{{ tokens.fontWeight }}</span></label>
-                    <input type="range" min="300" max="700" step="100" :value="tokens.fontWeight" class="dp-range" @input="onRange('fontWeight', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">вес заголовков <span class="dp-val">{{ tokens.headingWeight }}</span></label>
-                    <input type="range" min="500" max="900" step="100" :value="tokens.headingWeight" class="dp-range" @input="onRange('headingWeight', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">межбуквенный <span class="dp-val">{{ tokens.letterSpacing.toFixed(2) }}em</span></label>
-                    <input type="range" min="-0.02" max="0.15" step="0.005" :value="tokens.letterSpacing" class="dp-range" @input="onFloat('letterSpacing', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">межстрочный <span class="dp-val">{{ tokens.lineHeight.toFixed(2) }}</span></label>
-                    <input type="range" min="1.1" max="2.0" step="0.05" :value="tokens.lineHeight" class="dp-range" @input="onFloat('lineHeight', $event)">
-                  </div>
-                  <div class="dp-col-label" style="margin-top:10px">Абзацы</div>
-                  <div class="dp-field">
-                    <label class="dp-label">отступ между абз. <span class="dp-val">{{ tokens.paragraphSpacing.toFixed(2) }}rem</span></label>
-                    <input type="range" min="0" max="2.5" step="0.05" :value="tokens.paragraphSpacing" class="dp-range" @input="onFloat('paragraphSpacing', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">межсловный <span class="dp-val">{{ tokens.wordSpacing === 0 ? 'авто' : tokens.wordSpacing.toFixed(2) + 'em' }}</span></label>
-                    <input type="range" min="0" max="0.3" step="0.01" :value="tokens.wordSpacing" class="dp-range" @input="onFloat('wordSpacing', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">отступ 1-й строки <span class="dp-val">{{ tokens.textIndent === 0 ? 'нет' : tokens.textIndent.toFixed(1) + 'em' }}</span></label>
-                    <input type="range" min="0" max="4" step="0.25" :value="tokens.textIndent" class="dp-range" @input="onFloat('textIndent', $event)">
-                  </div>
-                  <div class="dp-col-label" style="margin-top:10px">Заголовки</div>
-                  <div class="dp-field">
-                    <label class="dp-label">межбуквенный <span class="dp-val">{{ tokens.headingLetterSpacing.toFixed(3) }}em</span></label>
-                    <input type="range" min="-0.06" max="0.15" step="0.005" :value="tokens.headingLetterSpacing" class="dp-range" @input="onFloat('headingLetterSpacing', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">межстрочный <span class="dp-val">{{ tokens.headingLineHeight.toFixed(2) }}</span></label>
-                    <input type="range" min="0.9" max="2.0" step="0.05" :value="tokens.headingLineHeight" class="dp-range" @input="onFloat('headingLineHeight', $event)">
-                  </div>
+
+                  <!-- Контекст: Текст -->
+                  <template v-if="typeCtx === 'text'">
+                    <div class="dp-field">
+                      <label class="dp-label">размер <span class="dp-val">{{ (tokens.fontSize * 100).toFixed(0) }}%</span></label>
+                      <input type="range" min="0.7" max="1.4" step="0.02" :value="tokens.fontSize" class="dp-range" @input="onFloat('fontSize', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">основной вес <span class="dp-val">{{ tokens.fontWeight }}</span></label>
+                      <input type="range" min="300" max="700" step="100" :value="tokens.fontWeight" class="dp-range" @input="onRange('fontWeight', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">межбуквенный <span class="dp-val">{{ tokens.letterSpacing.toFixed(2) }}em</span></label>
+                      <input type="range" min="-0.02" max="0.15" step="0.005" :value="tokens.letterSpacing" class="dp-range" @input="onFloat('letterSpacing', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">межстрочный <span class="dp-val">{{ tokens.lineHeight.toFixed(2) }}</span></label>
+                      <input type="range" min="1.1" max="2.0" step="0.05" :value="tokens.lineHeight" class="dp-range" @input="onFloat('lineHeight', $event)">
+                    </div>
+                    <div class="dp-col-label" style="margin-top:8px">Абзацы</div>
+                    <div class="dp-field">
+                      <label class="dp-label">отступ между абз. <span class="dp-val">{{ tokens.paragraphSpacing.toFixed(2) }}rem</span></label>
+                      <input type="range" min="0" max="2.5" step="0.05" :value="tokens.paragraphSpacing" class="dp-range" @input="onFloat('paragraphSpacing', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">межсловный <span class="dp-val">{{ tokens.wordSpacing === 0 ? 'авто' : tokens.wordSpacing.toFixed(2) + 'em' }}</span></label>
+                      <input type="range" min="0" max="0.3" step="0.01" :value="tokens.wordSpacing" class="dp-range" @input="onFloat('wordSpacing', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">отступ 1-й строки <span class="dp-val">{{ tokens.textIndent === 0 ? 'нет' : tokens.textIndent.toFixed(1) + 'em' }}</span></label>
+                      <input type="range" min="0" max="4" step="0.25" :value="tokens.textIndent" class="dp-range" @input="onFloat('textIndent', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">ширина абзаца <span class="dp-val">{{ tokens.paragraphMaxWidth === 0 ? '∞' : tokens.paragraphMaxWidth + 'ch' }}</span></label>
+                      <input type="range" min="0" max="100" step="2" :value="tokens.paragraphMaxWidth" class="dp-range" @input="onRange('paragraphMaxWidth', $event)">
+                    </div>
+                  </template>
+
+                  <!-- Контекст: Заголовки -->
+                  <template v-else-if="typeCtx === 'headings'">
+                    <div class="dp-field">
+                      <label class="dp-label">вес заголовков <span class="dp-val">{{ tokens.headingWeight }}</span></label>
+                      <input type="range" min="300" max="900" step="100" :value="tokens.headingWeight" class="dp-range" @input="onRange('headingWeight', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">межбуквенный <span class="dp-val">{{ tokens.headingLetterSpacing.toFixed(3) }}em</span></label>
+                      <input type="range" min="-0.06" max="0.15" step="0.005" :value="tokens.headingLetterSpacing" class="dp-range" @input="onFloat('headingLetterSpacing', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">межстрочный <span class="dp-val">{{ tokens.headingLineHeight.toFixed(2) }}</span></label>
+                      <input type="range" min="0.9" max="2.0" step="0.05" :value="tokens.headingLineHeight" class="dp-range" @input="onFloat('headingLineHeight', $event)">
+                    </div>
+                  </template>
+
+                  <!-- Контекст: Кнопки -->
+                  <template v-else-if="typeCtx === 'buttons'">
+                    <div class="dp-type-ctx-hint">Отступ внутри кнопки. 0 = авто по btnSize</div>
+                    <div class="dp-field">
+                      <label class="dp-label">отступ гор. <span class="dp-val">{{ tokens.btnPaddingH === 0 ? 'авто' : tokens.btnPaddingH + 'px' }}</span></label>
+                      <input type="range" min="0" max="60" step="1" :value="tokens.btnPaddingH" class="dp-range" @input="onRange('btnPaddingH', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">отступ верт. <span class="dp-val">{{ tokens.btnPaddingV === 0 ? 'авто' : tokens.btnPaddingV + 'px' }}</span></label>
+                      <input type="range" min="0" max="32" step="1" :value="tokens.btnPaddingV" class="dp-range" @input="onRange('btnPaddingV', $event)">
+                    </div>
+                    <div class="dp-col-label" style="margin-top:8px">Текст кнопки</div>
+                    <div class="dp-field">
+                      <label class="dp-label">межбуквенный <span class="dp-val">{{ tokens.letterSpacing.toFixed(2) }}em</span></label>
+                      <input type="range" min="-0.02" max="0.15" step="0.005" :value="tokens.letterSpacing" class="dp-range" @input="onFloat('letterSpacing', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">насыщенность <span class="dp-val">{{ tokens.btnWeight }}</span></label>
+                      <input type="range" min="300" max="800" step="100" :value="tokens.btnWeight" class="dp-range" @input="onRange('btnWeight', $event)">
+                    </div>
+                  </template>
+
+                  <!-- Контекст: Поля ввода -->
+                  <template v-else-if="typeCtx === 'inputs'">
+                    <div class="dp-type-ctx-hint">Отступы и шрифт внутри полей ввода</div>
+                    <div class="dp-field">
+                      <label class="dp-label">размер шрифта <span class="dp-val">{{ tokens.inputFontSize === 0 ? 'авто' : tokens.inputFontSize.toFixed(3) + 'rem' }}</span></label>
+                      <input type="range" min="0" max="1.2" step="0.025" :value="tokens.inputFontSize" class="dp-range" @input="onFloat('inputFontSize', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">отступ гор. <span class="dp-val">{{ tokens.inputPaddingH }}px</span></label>
+                      <input type="range" min="4" max="32" step="1" :value="tokens.inputPaddingH" class="dp-range" @input="onRange('inputPaddingH', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">отступ верт. <span class="dp-val">{{ tokens.inputPaddingV }}px</span></label>
+                      <input type="range" min="2" max="24" step="1" :value="tokens.inputPaddingV" class="dp-range" @input="onRange('inputPaddingV', $event)">
+                    </div>
+                    <div class="dp-col-label" style="margin-top:8px">Нав. панель</div>
+                    <div class="dp-field">
+                      <label class="dp-label">отступ гор. <span class="dp-val">{{ tokens.navItemPaddingH }}px</span></label>
+                      <input type="range" min="4" max="28" step="1" :value="tokens.navItemPaddingH" class="dp-range" @input="onRange('navItemPaddingH', $event)">
+                    </div>
+                    <div class="dp-field">
+                      <label class="dp-label">отступ верт. <span class="dp-val">{{ tokens.navItemPaddingV }}px</span></label>
+                      <input type="range" min="2" max="18" step="1" :value="tokens.navItemPaddingV" class="dp-range" @input="onRange('navItemPaddingV', $event)">
+                    </div>
+                  </template>
                 </div>
+
                 <div class="dp-col">
                   <div class="dp-col-label">Превью</div>
-                  <div class="dp-col-label" style="margin-top:0">Выравнивание</div>
-                  <div class="dp-align-group">
-                    <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'left' }" title="По левому" @click="set('textAlign', 'left')">&#xE244;</button>
-                    <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'center' }" title="По центру" @click="set('textAlign', 'center')">&#xE243;</button>
-                    <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'right' }" title="По правому" @click="set('textAlign', 'right')">&#xE245;</button>
-                    <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'justify' }" title="По ширине" @click="set('textAlign', 'justify')">&#xE242;</button>
-                  </div>
-                  <div class="dp-field" style="margin-top:8px">
-                    <label class="dp-label">ширина абзаца <span class="dp-val">{{ tokens.paragraphMaxWidth === 0 ? '∞' : tokens.paragraphMaxWidth + 'ch' }}</span></label>
-                    <input type="range" min="0" max="100" step="2" :value="tokens.paragraphMaxWidth" class="dp-range" @input="onRange('paragraphMaxWidth', $event)">
-                  </div>
-                  <div class="dp-live-preview" style="margin-top:8px">
-                    <div class="dp-type-sample" :style="typeSampleStyle">
-                      <div class="dp-type-h" :style="{ fontWeight: String(tokens.headingWeight), letterSpacing: tokens.headingLetterSpacing + 'em', lineHeight: String(tokens.headingLineHeight) }">Заголовок страницы</div>
-                      <div class="dp-type-p" :style="{ textIndent: tokens.textIndent > 0 ? tokens.textIndent + 'em' : undefined, wordSpacing: tokens.wordSpacing > 0 ? tokens.wordSpacing + 'em' : undefined, textAlign: tokens.textAlign }">Дизайн-система позволяет управлять каждым визуальным элементом.</div>
+
+                  <!-- Превью: Текст -->
+                  <template v-if="typeCtx === 'text'">
+                    <div class="dp-col-label" style="margin-top:0">Выравнивание</div>
+                    <div class="dp-align-group">
+                      <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'left' }" title="По левому" @click="set('textAlign', 'left')">&#x2190;</button>
+                      <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'center' }" title="По центру" @click="set('textAlign', 'center')">&#x2630;</button>
+                      <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'right' }" title="По правому" @click="set('textAlign', 'right')">&#x2192;</button>
+                      <button type="button" class="dp-align-btn" :class="{ 'dp-align-btn--active': tokens.textAlign === 'justify' }" title="По ширине" @click="set('textAlign', 'justify')">&#x2261;</button>
                     </div>
-                  </div>
-                  <div class="dp-col-label" style="margin-top:10px">Шкала</div>
+                    <div class="dp-live-preview" style="margin-top:8px">
+                      <div class="dp-type-sample" :style="typeSampleStyle">
+                        <div class="dp-type-h" :style="{ fontWeight: String(tokens.headingWeight), letterSpacing: tokens.headingLetterSpacing + 'em', lineHeight: String(tokens.headingLineHeight) }">Заголовок</div>
+                        <div class="dp-type-p" :style="{ textIndent: tokens.textIndent > 0 ? tokens.textIndent + 'em' : undefined, wordSpacing: tokens.wordSpacing > 0 ? tokens.wordSpacing + 'em' : undefined, textAlign: tokens.textAlign }">Дизайн-система позволяет управлять каждым визуальным элементом.</div>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Превью: Заголовки -->
+                  <template v-else-if="typeCtx === 'headings'">
+                    <div class="dp-headings-preview" :style="{ fontFamily: tokens.fontFamily }">
+                      <div v-for="(label, i) in ['Заголовок H1','Заголовок H2','Заголовок H3','Заголовок H4']" :key="i"
+                        class="dp-heading-prev-item"
+                        :style="{ fontWeight: String(tokens.headingWeight), letterSpacing: tokens.headingLetterSpacing + 'em', lineHeight: String(tokens.headingLineHeight), fontSize: [2.074, 1.728, 1.44, 1.2][i] * tokens.fontSize + 'rem' }">{{ label }}</div>
+                    </div>
+                  </template>
+
+                  <!-- Превью: Кнопки -->
+                  <template v-else-if="typeCtx === 'buttons'">
+                    <div class="dp-btn-preview" style="flex-direction:column; gap:10px">
+                      <span :style="previewBtnTypeStyle">Сохранить</span>
+                      <span :style="previewSmBtnStyle">Отмена</span>
+                      <span :style="previewGhostBtnStyle">Доп. действия</span>
+                    </div>
+                    <div class="dp-type-ctx-hint" style="margin-top:10px">Гор./верт. отступ и стиль — в табе Кнопки</div>
+                  </template>
+
+                  <!-- Превью: Поля -->
+                  <template v-else-if="typeCtx === 'inputs'">
+                    <div class="dp-inputs-preview">
+                      <input type="text" readonly :style="previewInputStyle" placeholder="Имя клиента">
+                      <input type="text" readonly :style="previewInputStyle" placeholder="Адрес объекта">
+                      <textarea readonly :style="{...previewInputStyle, height: '56px', resize: 'none'}" placeholder="Описание проекта"></textarea>
+                    </div>
+                  </template>
+
+                  <!-- Шкала шрифта (всегда) -->
+                  <div class="dp-col-label" style="margin-top:12px">Шкала</div>
                   <div class="dp-scale-visual">
                     <div v-for="s in typeScaleSizes" :key="s.name" class="dp-scale-row" :style="{ fontSize: s.size + 'rem', fontFamily: tokens.fontFamily }">
                       <span class="dp-scale-name">{{ s.name }}</span>
@@ -1241,6 +1337,36 @@ const previewGhostBtnStyle = computed(() => {
   }
 })
 
+const previewBtnTypeStyle = computed(() => {
+  const t = tokens.value
+  const sz = BTN_SIZE_MAP[t.btnSize]
+  const finalPy = t.btnPaddingV > 0 ? t.btnPaddingV : sz.py
+  const finalPx = t.btnPaddingH > 0 ? t.btnPaddingH : sz.px
+  const bg = t.btnStyle === 'filled' || t.btnStyle === 'soft' ? 'rgba(0,0,0,0.07)' : 'transparent'
+  const border = t.btnStyle === 'ghost' || t.btnStyle === 'soft' ? 'transparent' : 'rgba(0,0,0,0.14)'
+  return {
+    borderRadius: `${t.btnRadius}px`, padding: `${finalPy}px ${finalPx}px`,
+    fontSize: `${sz.fontSize}rem`, textTransform: t.btnTransform,
+    letterSpacing: `${t.letterSpacing}em`,
+    background: bg, border: `1px solid ${border}`,
+    fontWeight: String(t.btnWeight), fontFamily: t.fontFamily,
+    display: 'inline-block', cursor: 'default',
+  }
+})
+
+const previewInputStyle = computed(() => {
+  const t = tokens.value
+  return {
+    borderRadius: `${t.inputRadius}px`,
+    padding: `${t.inputPaddingV}px ${t.inputPaddingH}px`,
+    fontSize: t.inputFontSize > 0 ? `${t.inputFontSize}rem` : 'var(--ds-text-sm, .833rem)',
+    fontFamily: t.fontFamily,
+    background: 'rgba(0,0,0,0.06)',
+    border: `1px solid rgba(0,0,0,0.15)`,
+    color: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box',
+  }
+})
+
 const typeSampleStyle = computed(() => {
   const t = tokens.value
   return {
@@ -1302,6 +1428,8 @@ const TOKEN_CONTROLS: Record<string, QEControl[]> = {
   buttons: [
     { key: 'btnRadius', label: 'скругление', min: 0, max: 32, step: 1, fmt: v => v + 'px' },
     { key: 'btnWeight', label: 'жирность', min: 400, max: 700, step: 100, fmt: v => String(v) },
+    { key: 'btnPaddingH', label: 'отст. гор.', min: 0, max: 60, step: 1, fmt: v => v === 0 ? 'авто' : v + 'px' },
+    { key: 'btnPaddingV', label: 'отст. верт.', min: 0, max: 32, step: 1, fmt: v => v === 0 ? 'авто' : v + 'px' },
   ],
   type: [
     { key: 'fontSize', label: 'размер', min: 0.7, max: 1.4, step: 0.02, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
@@ -1336,6 +1464,9 @@ const TOKEN_CONTROLS: Record<string, QEControl[]> = {
     { key: 'inputBgOpacity', label: 'фон', min: 0, max: 0.25, step: 0.005, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
     { key: 'inputBorderOpacity', label: 'рамка', min: 0, max: 0.4, step: 0.01, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
     { key: 'inputRadius', label: 'радиус', min: 0, max: 20, step: 1, fmt: v => v + 'px' },
+    { key: 'inputPaddingH', label: 'отст. гор.', min: 4, max: 32, step: 1, fmt: v => v + 'px' },
+    { key: 'inputPaddingV', label: 'отст. верт.', min: 2, max: 24, step: 1, fmt: v => v + 'px' },
+    { key: 'inputFontSize', label: 'шрифт', min: 0, max: 1.2, step: 0.025, isFloat: true, fmt: v => v === 0 ? 'авто' : v.toFixed(2) + 'rem' },
   ],
   tags: [
     { key: 'chipRadius', label: 'скругление', min: 0, max: 999, step: 1, fmt: v => v > 99 ? '∞' : v + 'px' },
@@ -1348,6 +1479,8 @@ const TOKEN_CONTROLS: Record<string, QEControl[]> = {
   ],
   nav: [
     { key: 'navItemRadius', label: 'скругление', min: 0, max: 24, step: 1, fmt: v => v + 'px' },
+    { key: 'navItemPaddingH', label: 'отст. гор.', min: 4, max: 28, step: 1, fmt: v => v + 'px' },
+    { key: 'navItemPaddingV', label: 'отст. верт.', min: 2, max: 18, step: 1, fmt: v => v + 'px' },
   ],
   popups: [
     { key: 'dropdownBlur', label: 'размытие', min: 0, max: 40, step: 1, fmt: v => v + 'px' },
@@ -2236,6 +2369,34 @@ onBeforeUnmount(() => {
 }
 .dp-align-btn:hover { background: rgba(255,255,255,.12); color: rgba(255,255,255,.85); }
 .dp-align-btn--active { background: rgba(255,255,255,.18) !important; color: hsl(200,80%,70%) !important; border-color: rgba(255,255,255,.25); }
+
+/* ── Typography context tabs ── */
+.dp-typo-ctx-tabs { display: flex; gap: 3px; margin-bottom: 10px; }
+.dp-typo-ctx-btn {
+  flex: 1; height: 24px; border-radius: 5px; border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.5);
+  cursor: pointer; font-size: .57rem; letter-spacing: .01em; transition: all .12s;
+}
+.dp-typo-ctx-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); }
+.dp-typo-ctx-btn--active { background: rgba(255,255,255,.15) !important; color: hsl(200,80%,70%) !important; border-color: rgba(255,255,255,.22); }
+.dp-type-ctx-hint { font-size: .52rem; opacity: .35; margin-bottom: 6px; line-height: 1.4; }
+.dp-headings-preview { display: flex; flex-direction: column; gap: 4px; padding: 6px 0 2px; }
+.dp-heading-prev-item { color: var(--glass-text); line-height: 1.3; }
+.dp-inputs-preview { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+
+/* ── Typography context tabs ── */
+.dp-typo-ctx-tabs { display: flex; gap: 3px; margin-bottom: 10px; }
+.dp-typo-ctx-btn {
+  flex: 1; height: 24px; border-radius: 5px; border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.5);
+  cursor: pointer; font-size: .57rem; letter-spacing: .01em; transition: all .12s;
+}
+.dp-typo-ctx-btn:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); }
+.dp-typo-ctx-btn--active { background: rgba(255,255,255,.15) !important; color: hsl(200,80%,70%) !important; border-color: rgba(255,255,255,.22); }
+.dp-type-ctx-hint { font-size: .52rem; opacity: .35; margin-bottom: 6px; line-height: 1.4; }
+.dp-headings-preview { display: flex; flex-direction: column; gap: 4px; padding: 6px 0 2px; }
+.dp-heading-prev-item { color: var(--glass-text); line-height: 1.3; }
+.dp-inputs-preview { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
 
 /* ── Dark mode preview ── */
 .dp-dark-preview { background: #0a0a0c !important; border-radius: 10px; overflow: hidden; }

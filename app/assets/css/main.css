@@ -37,7 +37,8 @@ select {
   outline: none;
   border-radius: var(--input-radius, 6px);
   font-family: var(--ds-font-family);
-  font-size: var(--ds-text-sm, .833rem);
+  font-size: var(--input-font-size, var(--ds-text-sm, .833rem));
+  padding: var(--input-padding-v, 8px) var(--input-padding-h, 12px);
 }
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]):focus,
 textarea:focus,
@@ -100,6 +101,11 @@ textarea, select {
   --glass-saturation: 145%;
   --card-radius:    14px;
   --input-radius:   6px;
+  --input-padding-h: 12px;
+  --input-padding-v: 8px;
+  --input-font-size: var(--ds-text-sm, .833rem);
+  --nav-item-padding-h: 10px;
+  --nav-item-padding-v: 9px;
   --chip-radius:    999px;
   --modal-radius:   16px;
   --btn-weight:     500;
@@ -325,11 +331,12 @@ html.dark .glass-card {
   background: color-mix(in srgb, var(--glass-bg) 86%, transparent);
   color: var(--glass-text);
   border-radius: var(--input-radius, 6px);
+  padding: var(--input-padding-v, 8px) var(--input-padding-h, 12px);
+  font-size: var(--input-font-size, var(--ds-text-sm, .833rem));
   -webkit-backdrop-filter: blur(10px) saturate(130%);
   backdrop-filter: blur(10px) saturate(130%);
   transition: border-color var(--ds-transition, 180ms ease);
   font-family: var(--ds-font-family);
-  font-size: var(--ds-text-sm, .833rem);
 }
 
 .glass-input::placeholder {
@@ -391,7 +398,7 @@ html.dark .glass-input::placeholder {
   border: none;
   text-decoration: none;
   text-align: left;
-  padding: calc(var(--ds-space-2, 8px) + 1px) calc(var(--ds-space-2, 8px) + 2px);
+  padding: var(--nav-item-padding-v, 9px) var(--nav-item-padding-h, 10px);
   border-radius: var(--nav-item-radius, 9px);
   background: transparent;
   color: var(--glass-text);

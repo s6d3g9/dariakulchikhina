@@ -102,6 +102,9 @@ export interface DesignTokens {
   /* ── Input fields ── */
   inputBgOpacity: number        // 0..0.25 — field background fill
   inputBorderOpacity: number    // 0..0.4  — field border/ring
+  inputPaddingH: number         // px — horizontal inner padding
+  inputPaddingV: number         // px — vertical inner padding
+  inputFontSize: number         // 0 = auto (--ds-text-sm), >0 = direct rem
 
   /* ── Chips / Tags ── */
   chipBgOpacity: number         // 0..0.3  — tag background fill
@@ -111,6 +114,12 @@ export interface DesignTokens {
 
   /* ── Navigation sidebar ── */
   navItemRadius: number         // px — nav-item border-radius
+  navItemPaddingH: number       // px — nav-item horizontal padding
+  navItemPaddingV: number       // px — nav-item vertical padding
+
+  /* ── Button padding override ── */
+  btnPaddingH: number           // 0 = auto from btnSize, >0 = direct px
+  btnPaddingV: number           // 0 = auto from btnSize, >0 = direct px
 
   /* ── Status pills / pin bars ── */
   statusBgOpacity: number       // 0..0.5  — base fill for all status badges
@@ -208,6 +217,16 @@ export const DEFAULT_TOKENS: DesignTokens = {
   chipBorderOpacity: 0.00,
   chipPaddingH: 9,
   chipPaddingV: 3,
+
+  inputPaddingH: 12,
+  inputPaddingV: 8,
+  inputFontSize: 0,
+
+  navItemPaddingH: 12,
+  navItemPaddingV: 6,
+
+  btnPaddingH: 0,
+  btnPaddingV: 0,
 
   navItemRadius: 9,
 
@@ -648,12 +667,14 @@ export function useDesignSystem() {
 
     // Buttons
     el.style.setProperty('--btn-radius', `${t.btnRadius}px`)
-    el.style.setProperty('--btn-py', `${sz.py}px`)
-    el.style.setProperty('--btn-px', `${sz.px}px`)
+    el.style.setProperty('--btn-py', `${t.btnPaddingV > 0 ? t.btnPaddingV : sz.py}px`)
+    el.style.setProperty('--btn-px', `${t.btnPaddingH > 0 ? t.btnPaddingH : sz.px}px`)
     el.style.setProperty('--btn-font-size', `${sz.fontSize}rem`)
     el.style.setProperty('--btn-transform', t.btnTransform)
     el.style.setProperty('--btn-tracking', `${t.letterSpacing}em`)
     el.style.setProperty('--btn-weight', String(t.btnWeight))
+    el.style.setProperty('--btn-padding-h', `${t.btnPaddingH > 0 ? t.btnPaddingH : sz.px}px`)
+    el.style.setProperty('--btn-padding-v', `${t.btnPaddingV > 0 ? t.btnPaddingV : sz.py}px`)
 
     switch (t.btnStyle) {
       case 'filled':
@@ -790,6 +811,9 @@ export function useDesignSystem() {
     el.style.setProperty('--input-border-color', t.inputBorderOpacity > 0.005
       ? `color-mix(in srgb, var(--glass-text) ${inputBorderPct}%, transparent)`
       : 'transparent')
+    el.style.setProperty('--input-padding-h', `${t.inputPaddingH}px`)
+    el.style.setProperty('--input-padding-v', `${t.inputPaddingV}px`)
+    el.style.setProperty('--input-font-size', t.inputFontSize > 0 ? `${t.inputFontSize}rem` : 'var(--ds-text-sm, .833rem)')
 
     // Chips / Tags
     const chipBgPct = Math.round(t.chipBgOpacity * 100)
@@ -803,6 +827,8 @@ export function useDesignSystem() {
 
     // Navigation
     el.style.setProperty('--nav-item-radius', `${t.navItemRadius}px`)
+    el.style.setProperty('--nav-item-padding-h', `${t.navItemPaddingH}px`)
+    el.style.setProperty('--nav-item-padding-v', `${t.navItemPaddingV}px`)
 
     // Status pills / pin bars
     const sBg = t.statusBgOpacity
