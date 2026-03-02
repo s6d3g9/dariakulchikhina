@@ -438,10 +438,12 @@ const contentKey = computed(() => {
 })
 function scrollToContent() {
   nextTick(() => {
-    const el = document.querySelector('.proj-main')
-    if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY - 16
-      window.scrollTo({ top, behavior: 'smooth' })
+    const el = document.querySelector('.proj-layout') as HTMLElement | null
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    // Скроллим только если блок выше видимой области
+    if (rect.top < 0) {
+      window.scrollTo({ top: window.scrollY + rect.top - 16, behavior: 'smooth' })
     }
   })
 }

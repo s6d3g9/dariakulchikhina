@@ -27,15 +27,74 @@
   --ds-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --ds-font-size:   1rem;
   --ds-font-weight: 400;
+  --ds-heading-weight: 600;
   --ds-letter-spacing: .03em;
   --ds-line-height: 1.5;
+  --ds-paragraph-spacing: .75rem;
   --ds-spacing:     1;
+  --ds-spacing-unit: 4px;
   --glass-blur:     18px;
   --glass-bg-alpha: 0.48;
   --glass-border-alpha: 0.07;
   --glass-shadow-alpha: 0.06;
+  --glass-saturation: 145%;
   --card-radius:    14px;
   --input-radius:   6px;
+  --chip-radius:    999px;
+  --modal-radius:   16px;
+  --btn-weight:     500;
+
+  /* ── Type scale (modular ratio 1.2) ── */
+  --ds-type-scale:  1.2;
+  --ds-text-xs:     0.694rem;
+  --ds-text-sm:     0.833rem;
+  --ds-text-base:   1rem;
+  --ds-text-lg:     1.2rem;
+  --ds-text-xl:     1.44rem;
+  --ds-text-2xl:    1.728rem;
+  --ds-text-3xl:    2.074rem;
+
+  /* ── Semantic colors ── */
+  --ds-accent:      hsl(220, 14%, 50%);
+  --ds-accent-hue:  220;
+  --ds-accent-sat:  14%;
+  --ds-accent-ltn:  50%;
+  --ds-accent-light: hsl(220, 14%, 85%);
+  --ds-accent-dark:  hsl(220, 14%, 30%);
+  --ds-success:     hsl(142, 71%, 45%);
+  --ds-success-light: hsl(142, 71%, 92%);
+  --ds-error:       hsl(0, 72%, 50%);
+  --ds-error-light: hsl(0, 72%, 93%);
+  --ds-warning:     hsl(38, 92%, 50%);
+  --ds-warning-light: hsl(38, 92%, 92%);
+
+  /* ── Shadows ── */
+  --ds-shadow:      0 8px 24px 0px rgba(0,0,0,0.06);
+  --ds-shadow-sm:   0 2px 10px rgba(0,0,0,0.042);
+  --ds-shadow-lg:   0 16px 48px 0px rgba(0,0,0,0.084);
+  --ds-shadow-y:    8px;
+  --ds-shadow-blur: 24px;
+  --ds-shadow-spread: 0px;
+  --ds-shadow-alpha: 0.06;
+
+  /* ── Animation ── */
+  --ds-anim-duration: 180ms;
+  --ds-anim-easing: ease;
+  --ds-transition: 180ms ease;
+
+  /* ── Grid/Layout ── */
+  --ds-container-width: 1140px;
+  --ds-sidebar-width: 260px;
+  --ds-grid-gap: 16px;
+  --ds-grid-columns: 12;
+
+  /* ── Borders ── */
+  --ds-border-width: 1px;
+  --ds-border-style: solid;
+
+  /* ── Dark mode ── */
+  --ds-dark-elevation: 6;
+  --ds-dark-saturation: 50%;
 
   /* ── Roadmap unified color tokens ─────────────────────── */
   --rm-color-pending:  #9ca3af;
@@ -131,9 +190,10 @@ html.dark .glass-page::before {
 .glass-card {
   background: var(--glass-bg);
   border: none;
-  box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(145%);
-  backdrop-filter: blur(var(--glass-blur, 18px)) saturate(145%);
+  box-shadow: var(--ds-shadow, var(--glass-shadow));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  transition: box-shadow var(--ds-transition, 180ms ease), border-radius var(--ds-transition, 180ms ease);
 }
 
 .glass-card {
@@ -158,8 +218,10 @@ html.dark .glass-card {
   border: none;
   background: color-mix(in srgb, var(--glass-bg) 86%, transparent);
   color: var(--glass-text);
+  border-radius: var(--input-radius, 6px);
   -webkit-backdrop-filter: blur(10px) saturate(130%);
   backdrop-filter: blur(10px) saturate(130%);
+  transition: border-color var(--ds-transition, 180ms ease);
 }
 
 .glass-input::placeholder {

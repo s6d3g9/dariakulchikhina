@@ -287,7 +287,7 @@ async function logout() {
 }
 
 /* ── Container / tabs ── */
-.admin-container { max-width: 1140px; margin: 22px auto; padding: 0 16px; }
+.admin-container { max-width: var(--ds-container-width, 1140px); margin: 22px auto; padding: 0 16px; transition: max-width var(--ds-transition, 180ms ease); }
 .admin-tabs {
   display: flex;
   gap: 6px;
