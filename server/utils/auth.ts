@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import bcrypt from 'bcryptjs'
-import { createHmac } from 'crypto'
+import { createHmac, randomBytes } from 'crypto'
 
 // NOTE: h3 v2 RC bundled in Nitro has a bug where parseCookies calls
 // event.req.headers.get() but event.req is deprecated and returns raw IncomingMessage.
@@ -25,7 +25,7 @@ function _getSessionSecret(): string {
   return secret
 }
 // Random fallback generated once per process — never predictable
-const _fallbackSecret = require('crypto').randomBytes(32).toString('hex')
+const _fallbackSecret = randomBytes(32).toString('hex')
 
 function _sign(payload: string): string {
   const secret = _getSessionSecret()
