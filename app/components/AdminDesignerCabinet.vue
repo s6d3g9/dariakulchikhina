@@ -423,6 +423,20 @@
               <h2>Документы</h2>
             </div>
 
+            <div class="u-modal__row2" style="margin-bottom:12px">
+              <div class="u-field">
+                <label class="u-field__label">Поиск</label>
+                <input v-model="designerDocSearch" class="glass-input" placeholder="Название, заметка" />
+              </div>
+              <div class="u-field">
+                <label class="u-field__label">Фильтр категории</label>
+                <select v-model="designerDocFilter" class="glass-input">
+                  <option value="">Все категории</option>
+                  <option v-for="dc in DESIGNER_DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
+                </select>
+              </div>
+            </div>
+
             <div class="u-form-section">
               <h3>Загрузить документ</h3>
               <div class="u-modal__row2">
@@ -449,8 +463,8 @@
               </div>
             </div>
 
-            <div v-if="designerDocs?.length" class="cab-docs-list">
-              <div v-for="doc in designerDocs" :key="doc.id" class="cab-doc-card glass-surface">
+            <div v-if="filteredDesignerDocs.length" class="cab-docs-list">
+              <div v-for="doc in filteredDesignerDocs" :key="doc.id" class="cab-doc-card glass-surface">
                 <div class="cab-doc-icon">📎</div>
                 <div class="cab-doc-info">
                   <div class="cab-doc-title">{{ doc.title }}</div>
@@ -464,6 +478,10 @@
                   <button class="cab-doc-del" @click="deleteDesignerDoc(doc.id)">✕</button>
                 </div>
               </div>
+            </div>
+            <div v-else-if="designerDocs?.length" class="u-empty glass-surface">
+              <span>🔎</span>
+              <p>По фильтру ничего не найдено.</p>
             </div>
             <div v-else class="u-empty glass-surface">
               <span>📂</span>
@@ -520,7 +538,7 @@
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Примечание</label>
-                  <textarea v-model="newProject.notes" class="glass-input" rows="2" placeholder="Комментарий к проекту…" />
+                  <textarea v-model="newProject.notes" class="glass-input u-ta" rows="2" placeholder="Комментарий к проекту…" />
                 </div>
               </div>
               <div class="u-modal__foot">
@@ -595,7 +613,7 @@
                   </div>
                   <div class="u-field" style="margin-top:8px">
                     <label class="u-field__label">Примечание</label>
-                    <textarea v-model="projectEdit.notes" class="glass-input" rows="2" />
+                    <textarea v-model="projectEdit.notes" class="glass-input u-ta" rows="2" />
                   </div>
                 </div>
                 <div class="u-modal__foot">
@@ -655,7 +673,7 @@
               <div class="u-form-section">
                 <h3>О себе</h3>
                 <div class="u-field u-field--full">
-                  <textarea v-model="form.about" class="glass-input" rows="4" placeholder="Расскажите о своём подходе к дизайну, стилях, специализации…" />
+                  <textarea v-model="form.about" class="glass-input u-ta" rows="4" placeholder="Расскажите о своём подходе к дизайну, стилях, специализации…" />
                 </div>
               </div>
 
@@ -776,6 +794,20 @@ const designerDocUploading = ref(false)
 const newDesignerDocTitle = ref('')
 const newDesignerDocCategory = ref('other')
 const newDesignerDocNotes = ref('')
+const designerDocSearch = ref('')
+const designerDocFilter = ref('')
+
+const filteredDesignerDocs = computed(() => {
+  const rows = designerDocs.value || []
+  const q = designerDocSearch.value.trim().toLowerCase()
+  return rows.filter((doc: any) => {
+    const byCategory = !designerDocFilter.value || doc.category === designerDocFilter.value
+    if (!byCategory) return false
+    if (!q) return true
+    const hay = `${doc.title || ''} ${doc.notes || ''} ${doc.category || ''}`.toLowerCase()
+    return hay.includes(q)
+  })
+})
 
 function toggleSpec(sp: string) {
   const idx = form.specializations.indexOf(sp)

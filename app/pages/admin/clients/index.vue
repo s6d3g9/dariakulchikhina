@@ -188,6 +188,20 @@
         <div class="cl-form">
           <div class="cl-row">
             <div class="cl-field">
+              <label>Поиск</label>
+              <input v-model="docsSearch" class="cl-input glass-input" placeholder="Название, заметка" />
+            </div>
+            <div class="cl-field">
+              <label>Фильтр категории</label>
+              <select v-model="docsFilter" class="cl-input glass-input cl-select">
+                <option value="">Все категории</option>
+                <option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="cl-row">
+            <div class="cl-field">
               <label>Название</label>
               <input v-model="docsTitle" class="cl-input glass-input" placeholder="Название документа" />
             </div>
@@ -209,8 +223,8 @@
             </label>
           </div>
 
-          <div v-if="clientDocs?.length" class="cl-docs-list">
-            <div v-for="doc in clientDocs" :key="doc.id" class="cl-doc-item glass-surface">
+          <div v-if="filteredClientDocs.length" class="cl-docs-list">
+            <div v-for="doc in filteredClientDocs" :key="doc.id" class="cl-doc-item glass-surface">
               <div>
                 <div class="cl-doc-title">{{ doc.title }}</div>
                 <div class="cl-doc-meta">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}<span v-if="doc.notes"> · {{ doc.notes }}</span></div>
@@ -221,6 +235,7 @@
               </div>
             </div>
           </div>
+          <div v-else-if="clientDocs?.length" class="cl-empty glass-surface" style="padding:20px">По фильтру ничего не найдено</div>
           <div v-else class="cl-empty glass-surface" style="padding:20px">Документов пока нет</div>
         </div>
       </div>
@@ -342,11 +357,25 @@ const docsTitle = ref('')
 const docsCategory = ref('other')
 const docsNotes = ref('')
 const docsUploading = ref(false)
+const docsSearch = ref('')
+const docsFilter = ref('')
 
 const { data: clientDocs, refresh: refreshClientDocs } = await useFetch<any[]>(
   () => docsClientId.value ? `/api/clients/${docsClientId.value}/documents` : null,
   { default: () => [] },
 )
+
+const filteredClientDocs = computed(() => {
+  const rows = clientDocs.value || []
+  const q = docsSearch.value.trim().toLowerCase()
+  return rows.filter((doc: any) => {
+    const byCategory = !docsFilter.value || doc.category === docsFilter.value
+    if (!byCategory) return false
+    if (!q) return true
+    const hay = `${doc.title || ''} ${doc.notes || ''} ${doc.category || ''}`.toLowerCase()
+    return hay.includes(q)
+  })
+})
 
 function openDocs(client: any) {
   docsClient.value = client
@@ -354,6 +383,8 @@ function openDocs(client: any) {
   docsTitle.value = ''
   docsCategory.value = 'other'
   docsNotes.value = ''
+  docsSearch.value = ''
+  docsFilter.value = ''
   showDocs.value = true
   refreshClientDocs()
 }

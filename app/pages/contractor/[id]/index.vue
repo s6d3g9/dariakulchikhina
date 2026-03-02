@@ -143,25 +143,25 @@
                 <button class="cab-modal-close" @click="showNewTaskModal = false">✕</button>
               </div>
               <div class="cab-modal-body">
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Мастер *</label>
                   <select v-model="newTask.masterContractorId" class="glass-input">
                     <option :value="null" disabled>— выберите мастера —</option>
                     <option v-for="m in staff" :key="m.id" :value="m.id">{{ m.name }}</option>
                   </select>
                 </div>
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Проект *</label>
                   <select v-model="newTask.projectSlug" class="glass-input">
                     <option value="" disabled>— выберите проект —</option>
                     <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
                   </select>
                 </div>
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Название задачи *</label>
                   <input v-model="newTask.title" class="glass-input" placeholder="Что нужно сделать…" />
                 </div>
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Вид работ</label>
                   <select v-model="newTask.workType" class="glass-input">
                     <option value="">— не указан —</option>
@@ -169,22 +169,22 @@
                   </select>
                 </div>
                 <div class="cab-modal-row2">
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Дата начала</label>
                     <input v-model="newTask.dateStart" class="glass-input" placeholder="дд.мм.гггг" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Дата окончания</label>
                     <input v-model="newTask.dateEnd" class="glass-input" placeholder="дд.мм.гггг" />
                   </div>
                 </div>
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Бюджет</label>
                   <input v-model="newTask.budget" class="glass-input" placeholder="например: 50 000 ₽" />
                 </div>
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Примечание</label>
-                  <textarea v-model="newTask.notes" class="glass-input" rows="3" placeholder="Уточнения, материалы, особые требования…" />
+                  <textarea v-model="newTask.notes" class="glass-input u-ta" rows="3" placeholder="Уточнения, материалы, особые требования…" />
                 </div>
               </div>
               <div class="cab-modal-foot">
@@ -295,7 +295,7 @@
                             </div>
                             <div class="cab-task-edit-field">
                               <label>Заметка для дизайнера</label>
-                              <textarea v-model="editMap[item.id].notes" class="glass-input" rows="3" placeholder="Статус работ, вопросы, уточнения…" />
+                              <textarea v-model="editMap[item.id].notes" class="glass-input u-ta" rows="3" placeholder="Статус работ, вопросы, уточнения…" />
                             </div>
                             <div class="cab-task-edit-actions">
                               <button type="button" class="cab-task-save" :disabled="savingItem === item.id" @click.stop="saveTaskDetails(item)">
@@ -389,40 +389,40 @@
           <!-- ── Контактные данные ──────────────────────────────── -->
           <template v-else-if="section === 'contacts'">
             <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Основные контакты</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
+                <div class="u-grid-2">
+                  <div class="u-field">
                     <label>Имя / название</label>
                     <input v-model="form.name" class="glass-input" required />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Компания</label>
                     <input v-model="form.companyName" class="glass-input" placeholder="ООО / ИП…" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Телефон</label>
                     <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Email</label>
                     <input v-model="form.email" class="glass-input" type="email" placeholder="mail@example.com" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Мессенджеры</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
+                <div class="u-grid-2">
+                  <div class="u-field">
                     <label>Telegram</label>
                     <input v-model="form.telegram" class="glass-input" placeholder="@username или номер" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>WhatsApp</label>
                     <input v-model="form.whatsapp" class="glass-input" placeholder="+7 (___) ___-__-__" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Мессенджер (другой)</label>
                     <select v-model="form.messenger" class="glass-input cab-select">
                       <option value="">—</option>
@@ -431,38 +431,38 @@
                       <option>viber</option>
                     </select>
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Ник / номер</label>
                     <input v-model="form.messengerNick" class="glass-input" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Адрес и география</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
+                <div class="u-grid-2">
+                  <div class="u-field">
                     <label>Город</label>
                     <input v-model="form.city" class="glass-input" placeholder="Москва" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Радиус выезда</label>
                     <input v-model="form.workRadius" class="glass-input" placeholder="50 км / Москва и МО" />
                   </div>
-                  <div class="cab-field cab-field-full">
+                  <div class="u-field u-field--full">
                     <label>Фактический адрес</label>
                     <input v-model="form.factAddress" class="glass-input" placeholder="Адрес для корреспонденции" />
                   </div>
-                  <div class="cab-field cab-field-full">
+                  <div class="u-field u-field--full">
                     <label>Сайт / портфолио</label>
                     <input v-model="form.website" class="glass-input" placeholder="https://example.com" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-foot">
-                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
-                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              <div class="u-form-foot">
+                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
           </template>
@@ -470,61 +470,61 @@
           <!-- ── Паспортные данные ──────────────────────────────── -->
           <template v-else-if="section === 'passport'">
             <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Паспорт гражданина РФ</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
+                <div class="u-grid-2">
+                  <div class="u-field">
                     <label>Серия</label>
                     <input v-model="form.passportSeries" class="glass-input" placeholder="00 00" maxlength="5" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Номер</label>
                     <input v-model="form.passportNumber" class="glass-input" placeholder="000000" maxlength="7" />
                   </div>
-                  <div class="cab-field cab-field-full">
+                  <div class="u-field u-field--full">
                     <label>Кем выдан</label>
                     <input v-model="form.passportIssuedBy" class="glass-input" placeholder="ОВД района…" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Дата выдачи</label>
                     <input v-model="form.passportIssueDate" class="glass-input" placeholder="дд.мм.гггг" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Код подразделения</label>
                     <input v-model="form.passportDepartmentCode" class="glass-input" placeholder="000-000" maxlength="7" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Персональные данные</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
+                <div class="u-grid-2">
+                  <div class="u-field">
                     <label>Дата рождения</label>
                     <input v-model="form.birthDate" class="glass-input" placeholder="дд.мм.гггг" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Место рождения</label>
                     <input v-model="form.birthPlace" class="glass-input" placeholder="г. Москва" />
                   </div>
-                  <div class="cab-field cab-field-full">
+                  <div class="u-field u-field--full">
                     <label>Адрес регистрации</label>
                     <input v-model="form.registrationAddress" class="glass-input" placeholder="Адрес по прописке" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>СНИЛС</label>
                     <input v-model="form.snils" class="glass-input" placeholder="000-000-000 00" maxlength="14" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>ИНН</label>
                     <input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-foot">
-                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
-                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              <div class="u-form-foot">
+                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
           </template>
@@ -532,77 +532,91 @@
           <!-- ── Реквизиты ──────────────────────────────────────── -->
           <template v-else-if="section === 'requisites'">
             <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Юридические данные</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
+                <div class="u-grid-2">
+                  <div class="u-field">
                     <label>ИНН</label>
                     <input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>КПП</label>
                     <input v-model="form.kpp" class="glass-input" placeholder="000000000" maxlength="9" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>ОГРН / ОГРНИП</label>
                     <input v-model="form.ogrn" class="glass-input" placeholder="0000000000000" maxlength="15" />
                   </div>
-                  <div class="cab-field cab-field-full">
+                  <div class="u-field u-field--full">
                     <label>Юридический адрес</label>
                     <input v-model="form.legalAddress" class="glass-input" placeholder="Адрес регистрации ИП / ООО" />
                   </div>
-                  <div class="cab-field cab-field-full">
+                  <div class="u-field u-field--full">
                     <label>Фактический адрес</label>
                     <input v-model="form.factAddress" class="glass-input" placeholder="Адрес ведения деятельности" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Банковские реквизиты</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field cab-field-full">
+                <div class="u-grid-2">
+                  <div class="u-field u-field--full">
                     <label>Наименование банка</label>
                     <input v-model="form.bankName" class="glass-input" placeholder="ПАО Сбербанк" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>БИК</label>
                     <input v-model="form.bik" class="glass-input" placeholder="000000000" maxlength="9" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Расчётный счёт</label>
                     <input v-model="form.settlementAccount" class="glass-input" placeholder="00000000000000000000" maxlength="20" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Корреспондентский счёт</label>
                     <input v-model="form.correspondentAccount" class="glass-input" placeholder="00000000000000000000" maxlength="20" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-foot">
-                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
-                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              <div class="u-form-foot">
+                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
           </template>
 
           <!-- ── Документы ──────────────────────────────────────── -->
           <template v-else-if="section === 'documents'">
-            <div class="cab-form-section">
+            <div class="u-grid-2" style="margin-bottom:12px">
+              <div class="u-field">
+                <label>Поиск</label>
+                <input v-model="docsSearch" class="glass-input" placeholder="Название, заметка" />
+              </div>
+              <div class="u-field">
+                <label>Категория</label>
+                <select v-model="docsFilter" class="glass-input cab-select">
+                  <option value="">Все категории</option>
+                  <option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="u-form-section">
               <h3>Загрузить документ</h3>
-              <div class="cab-grid-2">
-                <div class="cab-field">
+              <div class="u-grid-2">
+                <div class="u-field">
                   <label>Название</label>
                   <input v-model="newDocTitle" class="glass-input" placeholder="Название документа" />
                 </div>
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Категория</label>
                   <select v-model="newDocCategory" class="glass-input cab-select">
                     <option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
                   </select>
                 </div>
-                <div class="cab-field cab-field-full">
+                <div class="u-field u-field--full">
                   <label>Примечание</label>
                   <input v-model="newDocNotes" class="glass-input" placeholder="Необязательно" />
                 </div>
@@ -615,8 +629,8 @@
               </div>
             </div>
 
-            <div v-if="contractorDocs?.length" class="cab-docs-list">
-              <div v-for="doc in contractorDocs" :key="doc.id" class="cab-doc-card glass-surface">
+            <div v-if="filteredContractorDocs.length" class="cab-docs-list">
+              <div v-for="doc in filteredContractorDocs" :key="doc.id" class="cab-doc-card glass-surface">
                 <div class="cab-doc-icon">
                   {{ doc.category === 'passport' ? '🪪' : doc.category === 'license' ? '📜' : doc.category === 'certificate' ? '📄' : doc.category === 'contract' ? '📋' : doc.category === 'insurance' ? '🛡' : doc.category === 'diploma' ? '🎓' : '📎' }}
                 </div>
@@ -634,6 +648,10 @@
                 </div>
               </div>
             </div>
+            <div v-else-if="contractorDocs?.length" class="cab-empty">
+              <div class="cab-empty-icon">🔎</div>
+              <p>По фильтру ничего не найдено.</p>
+            </div>
             <div v-else class="cab-empty">
               <div class="cab-empty-icon">📂</div>
               <p>Документов пока нет.<br>Загрузите паспорт, лицензии, сертификаты и другие документы.</p>
@@ -643,15 +661,15 @@
           <!-- ── Специализации ──────────────────────────────────── -->
           <template v-else-if="section === 'specialization'">
             <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Роль / профессия</h3>
-                <div class="cab-field cab-field-full">
-                  <div v-for="group in ROLE_GROUPS" :key="group.label" class="cab-tag-group">
-                    <div class="cab-tag-group-label">{{ group.label }}</div>
-                    <div class="cab-tags">
+                <div class="u-field u-field--full">
+                  <div v-for="group in ROLE_GROUPS" :key="group.label" class="u-tag-group">
+                    <div class="u-tag-group__label">{{ group.label }}</div>
+                    <div class="u-tags">
                       <button
                         v-for="r in group.items" :key="r.value" type="button"
-                        class="cab-tag" :class="{ active: form.roleTypes.includes(r.value) }"
+                        class="u-tag" :class="{ active: form.roleTypes.includes(r.value) }"
                         @click="toggleArr(form.roleTypes, r.value)"
                       >{{ r.label }}</button>
                     </div>
@@ -659,15 +677,15 @@
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Виды работ</h3>
-                <div class="cab-field cab-field-full">
-                  <div v-for="group in WORK_GROUPS" :key="group.label" class="cab-tag-group">
-                    <div class="cab-tag-group-label">{{ group.label }}</div>
-                    <div class="cab-tags">
+                <div class="u-field u-field--full">
+                  <div v-for="group in WORK_GROUPS" :key="group.label" class="u-tag-group">
+                    <div class="u-tag-group__label">{{ group.label }}</div>
+                    <div class="u-tags">
                       <button
                         v-for="w in group.items" :key="w.value" type="button"
-                        class="cab-tag" :class="{ active: form.workTypes.includes(w.value) }"
+                        class="u-tag" :class="{ active: form.workTypes.includes(w.value) }"
                         @click="toggleArr(form.workTypes, w.value)"
                       >{{ w.label }}</button>
                     </div>
@@ -675,31 +693,31 @@
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Опыт</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
+                <div class="u-grid-2">
+                  <div class="u-field">
                     <label>Стаж (лет)</label>
                     <input v-model.number="form.experienceYears" class="glass-input" type="number" min="0" max="100" placeholder="10" />
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Образование</label>
                     <input v-model="form.education" class="glass-input" placeholder="Высшее строительное…" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>О себе</h3>
-                <div class="cab-field cab-field-full">
+                <div class="u-field u-field--full">
                   <label>Заметки / описание</label>
-                  <textarea v-model="form.notes" class="glass-input" rows="4" placeholder="Опыт, специализация, особые условия работы…" />
+                  <textarea v-model="form.notes" class="glass-input u-ta" rows="4" placeholder="Опыт, специализация, особые условия работы…" />
                 </div>
               </div>
 
-              <div class="cab-foot">
-                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
-                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              <div class="u-form-foot">
+                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
           </template>
@@ -707,10 +725,10 @@
           <!-- ── Финансы ────────────────────────────────────────── -->
           <template v-else-if="section === 'finances'">
             <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Система налогообложения</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
+                <div class="u-grid-2">
+                  <div class="u-field">
                     <label>СНО</label>
                     <select v-model="form.taxSystem" class="glass-input cab-select">
                       <option value="">— не указана —</option>
@@ -722,41 +740,41 @@
                       <option value="other">Другая</option>
                     </select>
                   </div>
-                  <div class="cab-field">
+                  <div class="u-field">
                     <label>Ставка / стоимость часа</label>
                     <input v-model="form.hourlyRate" class="glass-input" placeholder="2 500 ₽/час" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Способы оплаты</h3>
-                <div class="cab-tags">
+                <div class="u-tags">
                   <button
                     v-for="pm in PAYMENT_METHOD_OPTIONS" :key="pm.value" type="button"
-                    class="cab-tag" :class="{ active: form.paymentMethods.includes(pm.value) }"
+                    class="u-tag" :class="{ active: form.paymentMethods.includes(pm.value) }"
                     @click="toggleArr(form.paymentMethods, pm.value)"
                   >{{ pm.label }}</button>
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Страхование</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
+                <div class="u-grid-2">
+                  <div class="u-field">
                     <label class="cab-checkbox-label">
                       <input v-model="form.hasInsurance" type="checkbox" class="cab-checkbox" />
                       Есть страховка ответственности
                     </label>
                   </div>
-                  <div v-if="form.hasInsurance" class="cab-field cab-field-full">
+                  <div v-if="form.hasInsurance" class="u-field u-field--full">
                     <label>Детали страхования</label>
-                    <textarea v-model="form.insuranceDetails" class="glass-input" rows="2" placeholder="Компания, номер полиса, срок…" />
+                    <textarea v-model="form.insuranceDetails" class="glass-input u-ta" rows="2" placeholder="Компания, номер полиса, срок…" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Сертификаты и допуски</h3>
                 <div class="cab-certs-list">
                   <div v-for="(cert, idx) in form.certifications" :key="idx" class="cab-cert-item">
@@ -770,9 +788,9 @@
                 </div>
               </div>
 
-              <div class="cab-foot">
-                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
-                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              <div class="u-form-foot">
+                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
           </template>
@@ -809,7 +827,7 @@
               </div>
             </div>
 
-            <div class="cab-form-section">
+            <div class="u-form-section">
               <h3>Выполненные работы</h3>
               <div class="cab-portfolio-grid">
                 <div v-for="proj in byProject" :key="proj.slug" class="cab-portfolio-proj glass-surface">
@@ -833,46 +851,46 @@
               </div>
             </div>
 
-            <div class="cab-form-section">
+            <div class="u-form-section">
               <h3>Ссылки на внешнее портфолио</h3>
-              <div class="cab-grid-2">
-                <div class="cab-field cab-field-full">
+              <div class="u-grid-2">
+                <div class="u-field u-field--full">
                   <label>Сайт / Behance / Instagram</label>
                   <input v-model="form.website" class="glass-input" placeholder="https://…" />
                 </div>
               </div>
-              <div class="cab-foot" style="margin-top:12px;">
-                <button type="button" class="cab-save" :disabled="saving" @click="saveProfile">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
-                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              <div class="u-form-foot" style="margin-top:12px;">
+                <button type="button" class="a-btn-save" :disabled="saving" @click="saveProfile">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </div>
           </template>
 
           <!-- ── Настройки ──────────────────────────────────────── -->
           <template v-else-if="section === 'settings'">
-            <div class="cab-form-section">
+            <div class="u-form-section">
               <h3>Аккаунт</h3>
-              <div class="cab-grid-2">
-                <div class="cab-field">
+              <div class="u-grid-2">
+                <div class="u-field">
                   <label>ID</label>
                   <div class="cab-field-static">{{ contractorId }}</div>
                 </div>
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Slug (ссылка для входа)</label>
                   <div class="cab-field-static cab-field-slug">{{ contractor?.slug }}</div>
                 </div>
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Тип</label>
                   <div class="cab-field-static">{{ contractor?.contractorType === 'company' ? 'Компания-подрядчик' : 'Мастер' }}</div>
                 </div>
-                <div class="cab-field">
+                <div class="u-field">
                   <label>Зарегистрирован</label>
                   <div class="cab-field-static">{{ contractor?.createdAt ? new Date(contractor.createdAt).toLocaleDateString('ru-RU') : '—' }}</div>
                 </div>
               </div>
             </div>
 
-            <div class="cab-form-section">
+            <div class="u-form-section">
               <h3>Уведомления</h3>
               <div class="cab-settings-toggles">
                 <label class="cab-toggle-row">
@@ -896,10 +914,10 @@
                   <span class="cab-toggle-hint">Изменение статуса задач дизайнером</span>
                 </label>
               </div>
-              <button class="cab-save-btn cab-save-btn--sm" style="margin-top:12px" @click="saveNotifSettings">Сохранить настройки</button>
+              <button class="a-btn-sm" style="margin-top:12px" @click="saveNotifSettings">Сохранить настройки</button>
             </div>
 
-            <div class="cab-form-section">
+            <div class="u-form-section">
               <h3>Безопасность</h3>
               <p class="cab-settings-hint">
                 Для входа в кабинет используйте ваш ID <b>({{ contractorId }})</b> и slug <b>({{ contractor?.slug }})</b>.
@@ -1088,6 +1106,8 @@ const docUploading = ref(false)
 const newDocTitle = ref('')
 const newDocCategory = ref('other')
 const newDocNotes = ref('')
+const docsSearch = ref('')
+const docsFilter = ref('')
 
 const DOC_CATEGORIES = [
   { value: 'passport',    label: 'Паспорт' },
@@ -1101,6 +1121,18 @@ const DOC_CATEGORIES = [
   { value: 'sro',         label: 'СРО допуск' },
   { value: 'other',       label: 'Другой' },
 ]
+
+const filteredContractorDocs = computed(() => {
+  const rows = contractorDocs.value || []
+  const q = docsSearch.value.trim().toLowerCase()
+  return rows.filter((doc: any) => {
+    const byCategory = !docsFilter.value || doc.category === docsFilter.value
+    if (!byCategory) return false
+    if (!q) return true
+    const hay = `${doc.title || ''} ${doc.notes || ''} ${doc.category || ''}`.toLowerCase()
+    return hay.includes(q)
+  })
+})
 
 async function uploadDoc(ev: Event) {
   const files = (ev.target as HTMLInputElement).files
@@ -1954,83 +1986,11 @@ async function saveProfile() {
 .cab-status--cancelled   { background: color-mix(in srgb, var(--ds-error, #c83232) 12%, transparent);   color: var(--ds-error, #bb3333); }
 
 /* Form */
-.cab-form-section {
-  background: var(--glass-bg, rgba(255,255,255,0.35));
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border, rgba(255,255,255,0.3));
-  border-radius: 16px;
-  padding: 20px 24px;
-  margin-bottom: 18px;
-}
-.cab-form-section h3 {
-  margin: 0 0 16px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.cab-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.cab-field { display: flex; flex-direction: column; gap: 5px; }
-.cab-field label { font-size: 0.78rem; opacity: 0.6; }
-.cab-field .glass-input { width: 100%; resize: vertical; }
-.cab-field-full { grid-column: 1 / -1; }
 .cab-select { appearance: none; cursor: pointer; }
 
 /* Tag groups */
-.cab-tag-group { margin-bottom: 12px; }
-.cab-tag-group-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  opacity: 0.5;
-  margin-bottom: 7px;
-}
-.cab-tags { display: flex; flex-wrap: wrap; gap: 7px; }
-.cab-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 20px;
-  border: 1px solid rgba(180,180,220,0.3);
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(6px);
-  font-size: 0.8rem;
-  font-family: inherit;
-  color: var(--glass-text, #1a1a2e);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  user-select: none;
-  white-space: nowrap;
-}
-.cab-tag:hover { background: rgba(255,255,255,0.28); border-color: rgba(120,130,200,0.4); }
-.cab-tag.active {
-  background: rgba(100,110,200,0.22);
-  border-color: rgba(100,110,200,0.55);
-  font-weight: 600;
-}
 
 /* Form footer */
-.cab-foot { display: flex; align-items: center; gap: 16px; margin-top: 6px; }
-.cab-save {
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 26px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-family: inherit;
-  font-weight: 600;
-  color: var(--glass-text, #1a1a2e);
-  background: rgba(255,255,255,0.35);
-  border: 1px solid rgba(180,180,220,0.45);
-  backdrop-filter: blur(10px);
-  transition: background 0.15s;
-}
-.cab-save:hover { background: rgba(255,255,255,0.5); }
-.cab-save:disabled { opacity: 0.5; cursor: default; }
-.cab-save-msg { font-size: 0.88rem; color: var(--ds-success, #4a7c59); font-weight: 600; }
 
 .cab-footer { text-align: center; padding: 18px; font-size: 0.8rem; opacity: 0.35; }
 
@@ -2087,7 +2047,6 @@ async function saveProfile() {
   .cab-sidebar { width: 100%; position: static; padding: 6px 0; }
   .cab-nav { flex-direction: row; overflow-x: auto; gap: 4px; padding: 0 4px 4px; }
   .cab-nav-item { flex-shrink: 0; border-radius: 20px; padding: 7px 14px; white-space: nowrap; }
-  .cab-grid-2 { grid-template-columns: 1fr; }
 }
 
 /* Work type group */
