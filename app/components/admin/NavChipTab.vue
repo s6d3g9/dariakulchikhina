@@ -146,9 +146,9 @@ onBeforeUnmount(() => document.removeEventListener('click', onOutside, true))
   max-height: 340px;
   overflow: auto;
   border-radius: 12px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--dropdown-border, color-mix(in srgb, var(--glass-text) 12%, transparent));
   padding: 6px;
-  background: var(--glass-surface-bg, #fff);
+  background: var(--dropdown-bg, color-mix(in srgb, var(--glass-page-bg, #f4f4f4) 94%, var(--glass-text, #1f1f1f) 6%));
   box-shadow: 0 8px 32px rgba(0,0,0,.10);
 }
 
@@ -165,8 +165,8 @@ onBeforeUnmount(() => document.removeEventListener('click', onOutside, true))
   text-align: left;
   cursor: pointer;
 }
-.nct-option:hover { background: color-mix(in srgb, var(--glass-bg) 85%, transparent); }
-.nct-option--active { background: color-mix(in srgb, var(--glass-bg) 94%, transparent); font-weight: 600; }
+.nct-option:hover { background: color-mix(in srgb, var(--glass-text) 7%, transparent); }
+.nct-option--active { background: color-mix(in srgb, var(--glass-text) 10%, transparent); font-weight: 600; }
 
 .nct-option-ini {
   width: 22px;

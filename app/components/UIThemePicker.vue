@@ -122,10 +122,10 @@ onBeforeUnmount(() => document.removeEventListener('click', onOutside, true))
 .utp-panel {
   min-width: 200px;
   border-radius: 10px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--dropdown-border, color-mix(in srgb, var(--glass-text) 12%, transparent));
   padding: 9px 7px 7px;
   box-shadow: 0 12px 32px rgba(0,0,0,0.09);
-  background: var(--glass-bg);
+  background: var(--dropdown-bg, color-mix(in srgb, var(--glass-page-bg, #f4f4f4) 94%, var(--glass-text, #1f1f1f) 6%));
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
 }
@@ -156,8 +156,8 @@ onBeforeUnmount(() => document.removeEventListener('click', onOutside, true))
   transition: background .12s;
   text-align: left;
 }
-.utp-item:hover { background: color-mix(in srgb, var(--glass-bg) 82%, transparent); }
-.utp-item--active { background: color-mix(in srgb, var(--glass-bg) 94%, transparent); }
+.utp-item:hover { background: color-mix(in srgb, var(--glass-text) 7%, transparent); }
+.utp-item--active { background: color-mix(in srgb, var(--glass-text) 10%, transparent); }
 
 .utp-item-swatch {
   width: 14px; height: 14px;

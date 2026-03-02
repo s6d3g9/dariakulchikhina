@@ -106,6 +106,9 @@ textarea, select {
   --input-font-size: var(--ds-text-sm, .833rem);
   --nav-item-padding-h: 10px;
   --nav-item-padding-v: 9px;
+  /* ── Dropdown/popup surfaces (авто-деривируется из темы) ── */
+  --dropdown-bg: color-mix(in srgb, var(--glass-page-bg) 94%, var(--glass-text) 6%);
+  --dropdown-border: color-mix(in srgb, var(--glass-text) 12%, transparent);
   --chip-radius:    999px;
   --modal-radius:   16px;
   --btn-weight:     500;

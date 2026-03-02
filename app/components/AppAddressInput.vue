@@ -130,12 +130,12 @@ input { display: block; width: 100%; box-sizing: border-box; }
 <style>
 /* global — список телепортирован в body */
 .aai-list {
-  background: var(--glass-bg, rgba(255,255,255,.88));
-  border: 1px solid color-mix(in srgb, var(--glass-text, #1f1f1f) 10%, transparent);
+  background: var(--dropdown-bg, color-mix(in srgb, var(--glass-page-bg, #f4f4f4) 94%, var(--glass-text, #1f1f1f) 6%));
+  border: 1px solid var(--dropdown-border, color-mix(in srgb, var(--glass-text, #1f1f1f) 12%, transparent));
   border-radius: var(--card-radius, 10px);
   box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.14));
-  backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(145%);
-  -webkit-backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(145%);
+  backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  -webkit-backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
   padding: 4px 0;
   margin: 0;
   list-style: none;

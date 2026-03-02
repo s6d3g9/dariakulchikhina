@@ -251,10 +251,12 @@ onBeforeUnmount(() => {
 .dp-icon-btn:hover { color: var(--glass-text, #333); }
 .dp-popup {
   position: fixed; z-index: 9999; width: 252px;
-  background: var(--glass-bg, #fff);
-  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: var(--dropdown-bg, color-mix(in srgb, var(--glass-page-bg, #f4f4f4) 94%, var(--glass-text, #1f1f1f) 6%));
+  border: 1px solid var(--dropdown-border, color-mix(in srgb, var(--glass-text, #1f1f1f) 12%, transparent));
   border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.18));
+  backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  -webkit-backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
   padding: 10px; user-select: none;
   color: var(--glass-text, #1a1a1a);
 }

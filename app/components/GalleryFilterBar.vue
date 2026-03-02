@@ -278,13 +278,10 @@ html.dark .gfb-sort-btn { background: rgba(255, 255, 255, 0.06); }
   min-width: 140px;
   padding: 4px;
   border-radius: 10px; z-index: 20;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-  background: var(--glass-bg, rgba(255, 255, 255, 0.92));
-  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
-}
-html.dark .gfb-sort-dropdown {
-  background: rgba(28, 29, 34, 0.95);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.18));
+  background: var(--dropdown-bg, color-mix(in srgb, var(--glass-page-bg, #f4f4f4) 94%, var(--glass-text, #1f1f1f) 6%));
+  border: 1px solid var(--dropdown-border, color-mix(in srgb, var(--glass-text) 10%, transparent));
+  -webkit-backdrop-filter: blur(var(--dropdown-blur, 20px)); backdrop-filter: blur(var(--dropdown-blur, 20px));
 }
 
 .gfb-sort-opt {

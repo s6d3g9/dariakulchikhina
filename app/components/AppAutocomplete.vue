@@ -159,10 +159,10 @@ onMounted(() => { query.value = props.modelValue || '' })
   z-index: 100;
   border-radius: var(--card-radius, 10px);
   padding: 4px;
-  background: var(--glass-bg);
+  background: var(--dropdown-bg, color-mix(in srgb, var(--glass-page-bg, #f4f4f4) 94%, var(--glass-text, #1f1f1f) 6%));
   backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
   -webkit-backdrop-filter: blur(var(--dropdown-blur, 18px)) saturate(var(--glass-saturation, 145%));
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border: 1px solid var(--dropdown-border, color-mix(in srgb, var(--glass-text, #1f1f1f) 12%, transparent));
   box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.12));
 }
 
