@@ -137,6 +137,66 @@
               <button class="cab-add-task-btn" @click="openNewTaskModal">＋ Добавить задачу мастеру</button>
             </div>
 
+            <div v-if="showNewTaskModal" class="cab-inline-task-window glass-surface">
+              <div class="cab-modal-head">
+                <span class="cab-modal-title">Новая задача мастеру</span>
+                <button class="cab-modal-close" @click="showNewTaskModal = false">✕</button>
+              </div>
+              <div class="cab-modal-body">
+                <div class="cab-field">
+                  <label>Мастер *</label>
+                  <select v-model="newTask.masterContractorId" class="glass-input">
+                    <option :value="null" disabled>— выберите мастера —</option>
+                    <option v-for="m in staff" :key="m.id" :value="m.id">{{ m.name }}</option>
+                  </select>
+                </div>
+                <div class="cab-field">
+                  <label>Проект *</label>
+                  <select v-model="newTask.projectSlug" class="glass-input">
+                    <option value="" disabled>— выберите проект —</option>
+                    <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
+                  </select>
+                </div>
+                <div class="cab-field">
+                  <label>Название задачи *</label>
+                  <input v-model="newTask.title" class="glass-input" placeholder="Что нужно сделать…" />
+                </div>
+                <div class="cab-field">
+                  <label>Вид работ</label>
+                  <select v-model="newTask.workType" class="glass-input">
+                    <option value="">— не указан —</option>
+                    <option v-for="w in CONTRACTOR_WORK_TYPE_OPTIONS" :key="w.value" :value="w.value">{{ w.label }}</option>
+                  </select>
+                </div>
+                <div class="cab-modal-row2">
+                  <div class="cab-field">
+                    <label>Дата начала</label>
+                    <input v-model="newTask.dateStart" class="glass-input" placeholder="дд.мм.гггг" />
+                  </div>
+                  <div class="cab-field">
+                    <label>Дата окончания</label>
+                    <input v-model="newTask.dateEnd" class="glass-input" placeholder="дд.мм.гггг" />
+                  </div>
+                </div>
+                <div class="cab-field">
+                  <label>Бюджет</label>
+                  <input v-model="newTask.budget" class="glass-input" placeholder="например: 50 000 ₽" />
+                </div>
+                <div class="cab-field">
+                  <label>Примечание</label>
+                  <textarea v-model="newTask.notes" class="glass-input" rows="3" placeholder="Уточнения, материалы, особые требования…" />
+                </div>
+              </div>
+              <div class="cab-modal-foot">
+                <button
+                  class="cab-task-save"
+                  :disabled="creatingTask || !newTask.masterContractorId || !newTask.projectSlug || !newTask.title.trim()"
+                  @click="createTask"
+                >{{ creatingTask ? 'Создание…' : 'Создать задачу' }}</button>
+                <button class="cab-task-cancel" @click="showNewTaskModal = false">Отмена</button>
+              </div>
+            </div>
+
             <!-- Фильтр -->
             <div v-if="workItems?.length" class="cab-filters">
               <button
@@ -894,70 +954,6 @@
       </div>
     </Teleport>
 
-    <!-- Модальное окно: новая задача мастеру -->
-    <Teleport to="body">
-      <div v-if="showNewTaskModal" class="cab-modal-overlay" @click.self="showNewTaskModal = false">
-        <div class="cab-modal glass-surface">
-          <div class="cab-modal-head">
-            <span class="cab-modal-title">Новая задача мастеру</span>
-            <button class="cab-modal-close" @click="showNewTaskModal = false">✕</button>
-          </div>
-          <div class="cab-modal-body">
-            <div class="cab-field">
-              <label>Мастер *</label>
-              <select v-model="newTask.masterContractorId" class="glass-input">
-                <option :value="null" disabled>— выберите мастера —</option>
-                <option v-for="m in staff" :key="m.id" :value="m.id">{{ m.name }}</option>
-              </select>
-            </div>
-            <div class="cab-field">
-              <label>Проект *</label>
-              <select v-model="newTask.projectSlug" class="glass-input">
-                <option value="" disabled>— выберите проект —</option>
-                <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
-              </select>
-            </div>
-            <div class="cab-field">
-              <label>Название задачи *</label>
-              <input v-model="newTask.title" class="glass-input" placeholder="Что нужно сделать…" />
-            </div>
-            <div class="cab-field">
-              <label>Вид работ</label>
-              <select v-model="newTask.workType" class="glass-input">
-                <option value="">— не указан —</option>
-                <option v-for="w in CONTRACTOR_WORK_TYPE_OPTIONS" :key="w.value" :value="w.value">{{ w.label }}</option>
-              </select>
-            </div>
-            <div class="cab-modal-row2">
-              <div class="cab-field">
-                <label>Дата начала</label>
-                <input v-model="newTask.dateStart" class="glass-input" placeholder="дд.мм.гггг" />
-              </div>
-              <div class="cab-field">
-                <label>Дата окончания</label>
-                <input v-model="newTask.dateEnd" class="glass-input" placeholder="дд.мм.гггг" />
-              </div>
-            </div>
-            <div class="cab-field">
-              <label>Бюджет</label>
-              <input v-model="newTask.budget" class="glass-input" placeholder="например: 50 000 ₽" />
-            </div>
-            <div class="cab-field">
-              <label>Примечание</label>
-              <textarea v-model="newTask.notes" class="glass-input" rows="3" placeholder="Уточнения, материалы, особые требования…" />
-            </div>
-          </div>
-          <div class="cab-modal-foot">
-            <button
-              class="cab-task-save"
-              :disabled="creatingTask || !newTask.masterContractorId || !newTask.projectSlug || !newTask.title.trim()"
-              @click="createTask"
-            >{{ creatingTask ? 'Создание…' : 'Создать задачу' }}</button>
-            <button class="cab-task-cancel" @click="showNewTaskModal = false">Отмена</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -1737,7 +1733,7 @@ async function saveProfile() {
 
 /* Sidebar */
 .cab-sidebar {
-  width: 200px;
+  width: var(--ds-sidebar-width, 200px);
   flex-shrink: 0;
   border-radius: 16px;
   padding: 12px 0;
@@ -1953,9 +1949,9 @@ async function saveProfile() {
 .cab-status--pending     { background: rgba(160,160,170,0.18); color: #888; }
 .cab-status--planned     { background: rgba(80,120,220,0.15);  color: #3b6fd4; }
 .cab-status--in_progress { background: rgba(210,160,30,0.15);  color: #a07a10; }
-.cab-status--paused      { background: rgba(220,100,40,0.15);  color: #c05818; }
-.cab-status--done        { background: rgba(40,160,100,0.15);  color: #228855; }
-.cab-status--cancelled   { background: rgba(200,50,50,0.12);   color: #bb3333; }
+.cab-status--paused      { background: color-mix(in srgb, var(--ds-warning, #dc6428) 15%, transparent);  color: var(--ds-warning, #c05818); }
+.cab-status--done        { background: rgba(40,160,100,0.15);  color: var(--ds-success, #228855); }
+.cab-status--cancelled   { background: color-mix(in srgb, var(--ds-error, #c83232) 12%, transparent);   color: var(--ds-error, #bb3333); }
 
 /* Form */
 .cab-form-section {
@@ -2034,7 +2030,7 @@ async function saveProfile() {
 }
 .cab-save:hover { background: rgba(255,255,255,0.5); }
 .cab-save:disabled { opacity: 0.5; cursor: default; }
-.cab-save-msg { font-size: 0.88rem; color: #4a7c59; font-weight: 600; }
+.cab-save-msg { font-size: 0.88rem; color: var(--ds-success, #4a7c59); font-weight: 600; }
 
 .cab-footer { text-align: center; padding: 18px; font-size: 0.8rem; opacity: 0.35; }
 
@@ -2119,7 +2115,7 @@ async function saveProfile() {
 .cab-wt-icon { font-size: 0.65rem; opacity: 0.45; width: 12px; flex-shrink: 0; }
 .cab-wt-name { flex: 1; }
 .cab-wt-count { font-size: 0.73rem; opacity: 0.45; font-weight: 400; white-space: nowrap; }
-.cab-wt-prog { font-size: 0.73rem; font-weight: 700; opacity: 0.7; color: #228855; white-space: nowrap; }
+.cab-wt-prog { font-size: 0.73rem; font-weight: 700; opacity: 0.7; color: var(--ds-success, #228855); white-space: nowrap; }
 .cab-wt-body { padding-left: 4px; }
 
 /* Stage inline checklist */
@@ -2136,7 +2132,7 @@ async function saveProfile() {
   margin-bottom: 6px;
 }
 .cab-stages-inline-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.5; }
-.cab-stages-inline-pct { font-size: 0.8rem; font-weight: 700; color: #228855; opacity: 0.85; }
+.cab-stages-inline-pct { font-size: 0.8rem; font-weight: 700; color: var(--ds-success, #228855); opacity: 0.85; }
 .cab-stages-inline-bar-wrap {
   height: 3px;
   background: rgba(255,255,255,0.18);
@@ -2167,7 +2163,7 @@ async function saveProfile() {
   width: 16px;
   text-align: center;
   flex-shrink: 0;
-  color: #228855;
+  color: var(--ds-success, #228855);
   font-weight: 700;
   opacity: 0.75;
 }
@@ -2270,6 +2266,12 @@ async function saveProfile() {
 }
 .cab-add-task-btn:hover { background: rgba(99, 179, 237, 0.32); }
 
+.cab-inline-task-window {
+  margin-bottom: 14px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
 /* Модальное окно */
 .cab-modal-overlay {
   position: fixed;
@@ -2344,7 +2346,7 @@ async function saveProfile() {
 .dash-welcome-left { display: flex; align-items: center; gap: 14px; }
 .dash-avatar {
   width: 48px; height: 48px; border-radius: 50%;
-  background: linear-gradient(135deg, #4a80f0, #6c47ff);
+  background: linear-gradient(135deg, var(--ds-accent, #4a80f0), var(--ds-accent-dark, #6c47ff));
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-size: 1.4rem; font-weight: 800;
 }
@@ -2355,7 +2357,7 @@ async function saveProfile() {
 .dash-profile-progress { display: flex; align-items: center; gap: 12px; }
 .dash-profile-pct-ring {
   width: 52px; height: 52px; border-radius: 50%;
-  background: conic-gradient(#4a80f0 calc(var(--pct) * 1%), rgba(0,0,0,0.08) 0);
+  background: conic-gradient(var(--ds-accent, #4a80f0) calc(var(--pct) * 1%), rgba(0,0,0,0.08) 0);
   display: flex; align-items: center; justify-content: center;
   position: relative;
 }
@@ -2374,7 +2376,7 @@ async function saveProfile() {
 .dash-profile-progress-info { display: flex; flex-direction: column; gap: 2px; }
 .dash-profile-progress-label { font-size: 0.78rem; opacity: 0.6; font-weight: 500; }
 .dash-profile-fill-btn {
-  background: none; border: none; color: #4a80f0; cursor: pointer;
+  background: none; border: none; color: var(--ds-accent, #4a80f0); cursor: pointer;
   font-size: 0.78rem; font-weight: 600; padding: 0; text-align: left;
 }
 .dash-profile-fill-btn:hover { text-decoration: underline; }
@@ -2399,7 +2401,7 @@ async function saveProfile() {
 .dash-quick-label { font-size: 0.78rem; font-weight: 600; opacity: 0.7; }
 .dash-quick-badge {
   position: absolute; top: 6px; right: 8px;
-  background: #4a80f0; color: #fff;
+  background: var(--ds-accent, #4a80f0); color: #fff;
   font-size: 0.65rem; font-weight: 700;
   padding: 1px 6px; border-radius: 99px;
   min-width: 18px; text-align: center;
@@ -2449,9 +2451,9 @@ async function saveProfile() {
   opacity: 0.6;
   margin-top: 6px;
 }
-.dash-stat--blue .dash-stat-val { color: #4a80f0; }
-.dash-stat--green .dash-stat-val { color: #2ea86a; }
-.dash-stat--red .dash-stat-val { color: #e05252; }
+.dash-stat--blue .dash-stat-val { color: var(--ds-accent, #4a80f0); }
+.dash-stat--green .dash-stat-val { color: var(--ds-success, #2ea86a); }
+.dash-stat--red .dash-stat-val { color: var(--ds-error, #e05252); }
 .dash-progress {
   padding: 16px 20px;
   border-radius: 14px;
@@ -2476,13 +2478,13 @@ async function saveProfile() {
   font-size: 0.88rem;
 }
 .dash-deadline-row:last-child, .dash-nodue-row:last-child { border-bottom: none; }
-.dash-deadline-row.overdue .dash-deadline-title { color: #e05252; }
+.dash-deadline-row.overdue .dash-deadline-title { color: var(--ds-error, #e05252); }
 .dash-deadline-dot, .dash-nodue-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
   background: rgba(0,0,0,0.15);
 }
-.dash-deadline-dot.red { background: #e05252; }
-.dash-deadline-dot.amber { background: #f0a030; }
+.dash-deadline-dot.red { background: var(--ds-error, #e05252); }
+.dash-deadline-dot.amber { background: var(--ds-warning, #f0a030); }
 .dash-deadline-title { flex: 1; font-weight: 500; }
 .dash-deadline-proj { font-size: 0.78rem; opacity: 0.5; }
 .dash-deadline-date { font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
@@ -2490,7 +2492,7 @@ async function saveProfile() {
 .dash-nodue-proj { font-size: 0.78rem; opacity: 0.45; }
 
 /* Overdue date highlight */
-.cab-task-overdue { color: #e05252; font-weight: 700; }
+.cab-task-overdue { color: var(--ds-error, #e05252); font-weight: 700; }
 .cab-task-counters { display: flex; gap: 8px; margin-top: 4px; }
 .cab-task-counter { font-size: 0.75rem; opacity: 0.65; }
 
@@ -2514,7 +2516,7 @@ async function saveProfile() {
   border-radius: 20px;
   background: rgba(74,128,240,0.1);
   border: 1px solid rgba(74,128,240,0.25);
-  color: #4a80f0;
+  color: var(--ds-accent, #4a80f0);
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s;
@@ -2594,7 +2596,7 @@ async function saveProfile() {
   border-radius: 10px;
   background: rgba(0,0,0,0.04);
 }
-.cab-comment--admin { background: rgba(74,128,240,0.07); border-left: 2px solid #4a80f0; }
+.cab-comment--admin { background: color-mix(in srgb, var(--ds-accent, #4a80f0) 7%, transparent); border-left: 2px solid #4a80f0; }
 .dark .cab-comment { background: rgba(255,255,255,0.05); }
 .dark .cab-comment--admin { background: rgba(74,128,240,0.1); }
 .cab-comment-author { font-size: 0.78rem; font-weight: 700; opacity: 0.7; }
@@ -2625,7 +2627,7 @@ async function saveProfile() {
   background: rgba(100,110,200,0.12);
   font-weight: 600;
 }
-.cab-doc-expires { color: #c05818; font-weight: 600; }
+.cab-doc-expires { color: var(--ds-warning, #c05818); font-weight: 600; }
 .cab-doc-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .cab-doc-link {
   font-size: 0.8rem;
@@ -2633,7 +2635,7 @@ async function saveProfile() {
   border-radius: 20px;
   background: rgba(74,128,240,0.1);
   border: 1px solid rgba(74,128,240,0.25);
-  color: #4a80f0;
+  color: var(--ds-accent, #4a80f0);
   text-decoration: none;
   font-weight: 600;
   white-space: nowrap;
@@ -2642,7 +2644,7 @@ async function saveProfile() {
 .cab-doc-del {
   background: rgba(200,50,50,0.08);
   border: 1px solid rgba(200,50,50,0.2);
-  color: #bb3333;
+  color: var(--ds-error, #bb3333);
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -2661,7 +2663,7 @@ async function saveProfile() {
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #4a80f0;
+  color: var(--ds-accent, #4a80f0);
   background: rgba(74,128,240,0.1);
   border: 1px solid rgba(74,128,240,0.25);
   cursor: pointer;
@@ -2709,7 +2711,7 @@ async function saveProfile() {
 .cab-checkbox {
   width: 18px;
   height: 18px;
-  accent-color: #4a80f0;
+  accent-color: var(--ds-accent, #4a80f0);
   cursor: pointer;
 }
 
@@ -2728,7 +2730,7 @@ async function saveProfile() {
   font-size: 1.8rem;
   font-weight: 800;
   line-height: 1;
-  color: #4a80f0;
+  color: var(--ds-accent, #4a80f0);
   display: block;
 }
 .cab-portfolio-stat-label {
@@ -2786,7 +2788,7 @@ async function saveProfile() {
   margin-bottom: 4px;
 }
 .cab-portfolio-item-check {
-  color: #2ea86a;
+  color: var(--ds-success, #2ea86a);
   font-weight: 700;
   font-size: 0.9rem;
   flex-shrink: 0;
@@ -2838,7 +2840,7 @@ async function saveProfile() {
   grid-row: 1 / 3;
   width: 18px; height: 18px;
   margin-top: 2px;
-  accent-color: #4a80f0;
+  accent-color: var(--ds-accent, #4a80f0);
   cursor: pointer;
 }
 .cab-toggle-label {
