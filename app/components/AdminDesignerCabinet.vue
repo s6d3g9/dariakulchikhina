@@ -14,8 +14,9 @@
           >
             <span class="cab-nav-icon">{{ item.icon }}</span>
             <span>{{ item.label }}</span>
-            <span v-if="item.key === 'projects' && designerProjects.length" class="cab-badge">{{ designerProjects.length }}</span>
-            <span v-if="item.key === 'services' && services.length" class="cab-badge">{{ services.length }}</span>
+            <span v-if="item.key === 'projects' && designerProjects.length" class="u-counter">{{ designerProjects.length }}</span>
+            <span v-if="item.key === 'services' && services.length" class="u-counter">{{ services.length }}</span>
+            <span v-if="item.key === 'subscriptions' && subscriptions.length" class="u-counter">{{ subscriptions.length }}</span>
           </button>
         </nav>
       </aside>
@@ -58,6 +59,11 @@
                 <span class="dash-quick-label">Пакеты</span>
                 <span v-if="packages.length" class="dash-quick-badge">{{ packages.length }}</span>
               </button>
+              <button class="dash-quick-btn glass-surface" @click="section = 'subscriptions'">
+                <span class="dash-quick-icon">⟳</span>
+                <span class="dash-quick-label">Подписки</span>
+                <span v-if="subscriptions.length" class="dash-quick-badge">{{ subscriptions.length }}</span>
+              </button>
               <button class="dash-quick-btn glass-surface" @click="section = 'projects'">
                 <span class="dash-quick-icon">◒</span>
                 <span class="dash-quick-label">Проекты</span>
@@ -92,17 +98,17 @@
               <div class="cab-cta-icon">💡</div>
               <div>
                 <strong>Начните с настройки прайс-листа</strong><br>
-                Добавьте свои услуги и пакеты, чтобы генерировать проекты с автоматическим роадмепом.
+                Добавьте свои услуги, пакеты и подписки, чтобы генерировать проекты с автоматическим роадмепом.
               </div>
               <button class="cab-cta-btn" @click="initFromTemplates">Загрузить шаблон цен (Москва)</button>
             </div>
 
             <div v-if="designerProjects.length" class="dash-projects glass-surface">
-              <div class="dash-section-title">Последние проекты</div>
+              <div class="u-section-title">Последние проекты</div>
               <div class="dash-projects-grid">
                 <div v-for="dp in designerProjects.slice(0, 6)" :key="dp.id" class="dash-project-card">
                   <span class="dash-project-name">{{ dp.projectTitle }}</span>
-                  <span class="dash-project-status" :class="`st-${dp.status}`">
+                  <span class="dash-project-status u-status" :class="`u-status--${dp.status}`">
                     {{ DESIGNER_PROJECT_STATUS_LABELS[dp.status as keyof typeof DESIGNER_PROJECT_STATUS_LABELS] || dp.status }}
                   </span>
                   <span v-if="dp.totalPrice" class="dash-project-price">{{ dp.totalPrice.toLocaleString('ru-RU') }} ₽</span>
@@ -114,27 +120,27 @@
 
           <!-- ═══════════════ SERVICES & PRICING ═══════════════ -->
           <template v-else-if="section === 'services'">
-            <div class="cab-section-head">
+            <div class="u-section-title">
               <h2>Услуги и прайс-лист</h2>
-              <div class="cab-section-actions">
-                <button v-if="!services.length" class="cab-btn cab-btn--primary" @click="initFromTemplates">
+              <div>
+                <button v-if="!services.length" class="a-btn-save" @click="initFromTemplates">
                   Загрузить шаблон (Москва)
                 </button>
-                <button v-if="!editingServices" class="cab-btn" @click="startEditServices">
+                <button v-if="!editingServices" class="a-btn-sm" @click="startEditServices">
                   {{ services.length ? 'Редактировать' : 'Создать вручную' }}
                 </button>
-                <button v-if="editingServices" class="cab-btn cab-btn--primary" @click="saveEditedServices">
+                <button v-if="editingServices" class="a-btn-save" @click="saveEditedServices">
                   {{ savingSvc ? 'Сохранение…' : 'Сохранить' }}
                 </button>
-                <button v-if="editingServices" class="cab-btn" @click="addCustomService">＋ Услуга</button>
-                <button v-if="editingServices" class="cab-btn" @click="cancelEditServices">Отмена</button>
+                <button v-if="editingServices" class="a-btn-sm" @click="addCustomService">＋ Услуга</button>
+                <button v-if="editingServices" class="a-btn-sm" @click="cancelEditServices">Отмена</button>
               </div>
             </div>
             <p v-if="svcEditError" class="cab-inline-error">{{ svcEditError }}</p>
             <p v-if="svcEditSuccess" class="cab-inline-success">{{ svcEditSuccess }}</p>
 
-            <div v-if="!services.length && !editingServices" class="cab-empty">
-              <div class="cab-empty-icon">◎</div>
+            <div v-if="!services.length && !editingServices" class="u-empty glass-surface">
+              <span>◎</span>
               <p>Услуги не настроены.<br>Загрузите шаблон московских расценок или добавьте вручную.</p>
             </div>
 
@@ -164,6 +170,11 @@
                       <option v-for="u in PRICE_UNITS_LIST" :key="u.value" :value="u.value">{{ u.label }}</option>
                     </select>
                   </div>
+                  <div class="edit-actions">
+                    <button type="button" class="svc-mini" title="Дублировать" @click="duplicateEditService(svc.serviceKey)">⎘</button>
+                    <button type="button" class="svc-mini" title="Вверх" @click="moveEditService(svc.serviceKey, -1)">↑</button>
+                    <button type="button" class="svc-mini" title="Вниз" @click="moveEditService(svc.serviceKey, 1)">↓</button>
+                  </div>
                   <button class="svc-del" @click="removeEditService(svc.serviceKey)">✕</button>
                 </div>
               </div>
@@ -176,7 +187,24 @@
                   <div v-for="svc in catServices" :key="svc.serviceKey" class="svc-row" :class="{ disabled: !svc.enabled }">
                     <div class="svc-name">{{ svc.title }}</div>
                     <div class="svc-desc">{{ svc.description }}</div>
-                    <div class="svc-price">{{ formatPrice(svc.price, svc.unit) }}</div>
+                    <div class="svc-price svc-price-inline" @click="startInlinePrice(svc)">
+                      <template v-if="inlinePriceKey === svc.serviceKey">
+                        <input
+                          v-model.number="inlinePriceVal"
+                          class="svc-price-inline-input"
+                          type="number"
+                          min="0"
+                          @blur="commitInlinePrice(svc)"
+                          @keyup.enter="commitInlinePrice(svc)"
+                          @keyup.escape="cancelInlinePrice"
+                          @click.stop
+                        />
+                      </template>
+                      <template v-else>
+                        {{ formatPrice(svc.price, svc.unit) }}
+                        <span class="svc-price-edit-icon">✎</span>
+                      </template>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -185,27 +213,27 @@
 
           <!-- ═══════════════ PACKAGES ═══════════════ -->
           <template v-else-if="section === 'packages'">
-            <div class="cab-section-head">
+            <div class="u-section-title">
               <h2>Пакеты услуг</h2>
-              <div class="cab-section-actions">
-                <button v-if="!packages.length" class="cab-btn cab-btn--primary" @click="initPackages">
+              <div>
+                <button v-if="!packages.length" class="a-btn-save" @click="initPackages">
                   Загрузить стандартные пакеты
                 </button>
-                <button v-if="!editingPackages" class="cab-btn" @click="startEditPackages">
+                <button v-if="!editingPackages" class="a-btn-sm" @click="startEditPackages">
                   {{ packages.length ? 'Редактировать' : 'Создать вручную' }}
                 </button>
-                <button v-if="editingPackages" class="cab-btn cab-btn--primary" @click="saveEditedPackages">
+                <button v-if="editingPackages" class="a-btn-save" @click="saveEditedPackages">
                   {{ savingPkg ? 'Сохранение…' : 'Сохранить' }}
                 </button>
-                <button v-if="editingPackages" class="cab-btn" @click="addCustomPackage">＋ Пакет</button>
-                <button v-if="editingPackages" class="cab-btn" @click="cancelEditPackages">Отмена</button>
+                <button v-if="editingPackages" class="a-btn-sm" @click="addCustomPackage">＋ Пакет</button>
+                <button v-if="editingPackages" class="a-btn-sm" @click="cancelEditPackages">Отмена</button>
               </div>
             </div>
             <p v-if="pkgEditError" class="cab-inline-error">{{ pkgEditError }}</p>
             <p v-if="pkgEditSuccess" class="cab-inline-success">{{ pkgEditSuccess }}</p>
 
-            <div v-if="!packages.length && !editingPackages" class="cab-empty">
-              <div class="cab-empty-icon">◑</div>
+            <div v-if="!packages.length && !editingPackages" class="u-empty glass-surface">
+              <span>◑</span>
               <p>Пакеты не настроены.<br>Загрузите стандартные или создайте собственные.</p>
             </div>
 
@@ -218,6 +246,11 @@
                     <input v-model.number="pkg.pricePerSqm" class="glass-input svc-inp svc-inp--num" type="number" min="0" />
                     <span class="pkg-unit">₽/м²</span>
                   </div>
+                  <div class="edit-actions">
+                    <button type="button" class="svc-mini" title="Дублировать" @click="duplicateEditPackage(pkg.key)">⎘</button>
+                    <button type="button" class="svc-mini" title="Вверх" @click="moveEditPackage(pkg.key, -1)">↑</button>
+                    <button type="button" class="svc-mini" title="Вниз" @click="moveEditPackage(pkg.key, 1)">↓</button>
+                  </div>
                   <button type="button" class="svc-del" @click="removeEditPackage(pkg.key)">✕</button>
                 </div>
                 <textarea v-model="pkg.description" class="glass-input pkg-desc-inp" rows="2" placeholder="Описание пакета" />
@@ -228,7 +261,7 @@
                       v-for="svc in allServiceKeys"
                       :key="svc.key"
                       type="button"
-                      class="cab-tag"
+                      class="u-tag"
                       :class="{ active: pkg.serviceKeys.includes(svc.key) }"
                       @click="togglePkgService(pkg, svc.key)"
                     >{{ svc.title }}</button>
@@ -259,30 +292,156 @@
             </template>
           </template>
 
-          <!-- ═══════════════ PROJECTS ═══════════════ -->
-          <template v-else-if="section === 'projects'">
-            <div class="cab-section-head">
-              <h2>Мои проекты</h2>
-              <button class="cab-btn cab-btn--primary" @click="showNewProjectModal = true">＋ Новый проект</button>
+          <!-- ═══════════════ SUBSCRIPTIONS ═══════════════ -->
+          <template v-else-if="section === 'subscriptions'">
+            <div class="u-section-title">
+              <h2>Подписки и абонементы</h2>
+              <div>
+                <button v-if="!subscriptions.length" class="a-btn-save" @click="initSubs">
+                  Загрузить шаблоны подписок
+                </button>
+                <button v-if="!editingSubscriptions" class="a-btn-sm" @click="startEditSubscriptions">
+                  {{ subscriptions.length ? 'Редактировать' : 'Создать вручную' }}
+                </button>
+                <button v-if="editingSubscriptions" class="a-btn-save" @click="saveEditedSubscriptions">
+                  {{ savingSub ? 'Сохранение…' : 'Сохранить' }}
+                </button>
+                <button v-if="editingSubscriptions" class="a-btn-sm" @click="addCustomSubscription">＋ Подписка</button>
+                <button v-if="editingSubscriptions" class="a-btn-sm" @click="cancelEditSubscriptions">Отмена</button>
+              </div>
+            </div>
+            <p v-if="subEditError" class="cab-inline-error">{{ subEditError }}</p>
+            <p v-if="subEditSuccess" class="cab-inline-success">{{ subEditSuccess }}</p>
+
+            <div v-if="!subscriptions.length && !editingSubscriptions" class="u-empty glass-surface">
+              <span>⟳</span>
+              <p>Подписки не настроены.<br>Загрузите шаблоны или создайте собственный абонемент.</p>
             </div>
 
-            <!-- New project modal -->
-            <div v-if="showNewProjectModal" class="cab-inline-modal glass-surface">
-              <div class="cab-modal-head">
-                <span class="cab-modal-title">Создать проект</span>
-                <button class="cab-modal-close" @click="showNewProjectModal = false">✕</button>
+            <!-- Edit mode -->
+            <template v-if="editingSubscriptions">
+              <div v-for="sub in editSubscriptionsList" :key="sub.key" class="sub-edit glass-surface">
+                <div class="sub-edit-head">
+                  <label class="svc-enable"><input type="checkbox" v-model="sub.enabled" /></label>
+                  <input v-model="sub.title" class="glass-input pkg-title-inp" placeholder="Название подписки" />
+                  <div class="edit-actions">
+                    <button type="button" class="svc-mini" title="Дублировать" @click="duplicateEditSubscription(sub.key)">⎘</button>
+                    <button type="button" class="svc-mini" title="Вверх" @click="moveEditSubscription(sub.key, -1)">↑</button>
+                    <button type="button" class="svc-mini" title="Вниз" @click="moveEditSubscription(sub.key, 1)">↓</button>
+                  </div>
+                  <button type="button" class="svc-del" @click="removeEditSubscription(sub.key)">✕</button>
+                </div>
+                <textarea v-model="sub.description" class="glass-input pkg-desc-inp" rows="2" placeholder="Описание подписки" />
+                <div class="sub-edit-pricing">
+                  <div class="u-field">
+                    <label class="u-field__label">Период</label>
+                    <select v-model="sub.billingPeriod" class="glass-input svc-inp">
+                      <option v-for="bp in BILLING_PERIODS_LIST" :key="bp.value" :value="bp.value">{{ bp.label }}</option>
+                    </select>
+                  </div>
+                  <div class="u-field">
+                    <label class="u-field__label">Цена (₽)</label>
+                    <input v-model.number="sub.price" class="glass-input svc-inp svc-inp--num" type="number" min="0" />
+                  </div>
+                  <div class="u-field">
+                    <label class="u-field__label">Скидка (%)</label>
+                    <input v-model.number="sub.discount" class="glass-input svc-inp svc-inp--num" type="number" min="0" max="100" />
+                  </div>
+                  <div v-if="sub.discount > 0" class="sub-effective-price">
+                    <span class="sub-eff-label">Итого со скидкой:</span>
+                    <span class="sub-eff-val">{{ Math.round(sub.price * (1 - sub.discount / 100)).toLocaleString('ru-RU') }} ₽</span>
+                  </div>
+                </div>
+                <div class="sub-edit-limits">
+                  <strong>Лимиты:</strong>
+                  <div class="sub-limits-grid">
+                    <div v-for="(val, lk) in sub.limits" :key="lk" class="sub-limit-row">
+                      <input :value="lk" class="glass-input svc-inp" readonly />
+                      <input :value="val" class="glass-input svc-inp svc-inp--num" type="number" min="0"
+                        @input="sub.limits[lk] = Number(($event.target as HTMLInputElement).value)" />
+                      <button type="button" class="svc-del" @click="delete sub.limits[lk]">✕</button>
+                    </div>
+                  </div>
+                  <button type="button" class="a-btn-sm" @click="addSubLimit(sub)">＋ Лимит</button>
+                </div>
+                <div class="pkg-services-edit">
+                  <strong>Включённые услуги:</strong>
+                  <div class="pkg-svc-tags">
+                    <button
+                      v-for="svc in allServiceKeys"
+                      :key="svc.key"
+                      type="button"
+                      class="u-tag"
+                      :class="{ active: sub.serviceKeys.includes(svc.key) }"
+                      @click="toggleSubService(sub, svc.key)"
+                    >{{ svc.title }}</button>
+                  </div>
+                </div>
               </div>
-              <div class="cab-modal-body">
-                <div class="cab-field">
-                  <label>Название проекта *</label>
+            </template>
+
+            <!-- View mode -->
+            <template v-else-if="subscriptions.length">
+              <div class="sub-grid">
+                <div v-for="sub in subscriptions" :key="sub.key" class="sub-card glass-surface" :class="{ disabled: !sub.enabled }">
+                  <div class="sub-card-head">
+                    <h3 class="sub-card-title">{{ sub.title }}</h3>
+                    <span class="sub-period-badge">{{ getBillingLabel(sub.billingPeriod) }}</span>
+                  </div>
+                  <div class="sub-card-price-row">
+                    <span class="sub-card-price">{{ sub.price.toLocaleString('ru-RU') }} <small>₽</small></span>
+                    <span v-if="sub.discount > 0" class="sub-card-discount">−{{ sub.discount }}%</span>
+                  </div>
+                  <div v-if="sub.discount > 0" class="sub-card-effective">
+                    Итого: {{ Math.round(sub.price * (1 - sub.discount / 100)).toLocaleString('ru-RU') }} ₽
+                  </div>
+                  <p class="sub-card-desc">{{ sub.description }}</p>
+                  <div v-if="Object.keys(sub.limits || {}).length" class="sub-card-limits">
+                    <div v-for="(val, lk) in sub.limits" :key="lk" class="sub-limit-chip">
+                      <span class="sub-limit-key">{{ formatLimitKey(String(lk)) }}</span>
+                      <span class="sub-limit-val">{{ val }}</span>
+                    </div>
+                  </div>
+                  <div v-if="sub.serviceKeys?.length" class="pkg-card-services">
+                    <span v-for="sk in sub.serviceKeys" :key="sk" class="pkg-svc-chip">
+                      {{ getServiceTitle(sk) }}
+                    </span>
+                  </div>
+                  <div class="sub-card-monthly">
+                    <span class="sub-m-label">В месяц:</span>
+                    <span class="sub-m-val">{{ getMonthlyPrice(sub).toLocaleString('ru-RU') }} ₽</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </template>
+
+          <!-- ═══════════════ PROJECTS ═══════════════ -->
+          <template v-else-if="section === 'projects'">
+            <div class="u-section-title">
+              <h2>Мои проекты</h2>
+              <button class="a-btn-save" @click="showNewProjectModal = true">＋ Новый проект</button>
+            </div>
+            <p v-if="projectEditError" class="cab-inline-error">{{ projectEditError }}</p>
+            <p v-if="projectEditSuccess" class="cab-inline-success">{{ projectEditSuccess }}</p>
+
+            <!-- New project modal -->
+            <div v-if="showNewProjectModal" class="u-modal glass-surface">
+              <div class="u-modal__head">
+                <span class="u-modal__title">Создать проект</span>
+                <button class="u-modal__close" @click="showNewProjectModal = false">✕</button>
+              </div>
+              <div class="u-modal__body">
+                <div class="u-field">
+                  <label class="u-field__label">Название проекта *</label>
                   <input v-model="newProject.title" class="glass-input" placeholder="Квартира на Арбате" @input="newProject.slug = autoSlug(newProject.title)" />
                 </div>
-                <div class="cab-field">
-                  <label>Slug (URL)</label>
+                <div class="u-field">
+                  <label class="u-field__label">Slug (URL)</label>
                   <input v-model="newProject.slug" class="glass-input" placeholder="kvartira-na-arbate" />
                 </div>
-                <div class="cab-field">
-                  <label>Пакет услуг</label>
+                <div class="u-field">
+                  <label class="u-field__label">Пакет услуг</label>
                   <select v-model="newProject.packageKey" class="glass-input">
                     <option value="">— без пакета —</option>
                     <option v-for="pkg in availablePackages" :key="pkg.key" :value="pkg.key">
@@ -290,13 +449,13 @@
                     </option>
                   </select>
                 </div>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
-                    <label>Цена за м²</label>
+                <div class="u-modal__row2">
+                  <div class="u-field">
+                    <label class="u-field__label">Цена за м²</label>
                     <input v-model.number="newProject.pricePerSqm" class="glass-input" type="number" min="0" />
                   </div>
-                  <div class="cab-field">
-                    <label>Площадь (м²)</label>
+                  <div class="u-field">
+                    <label class="u-field__label">Площадь (м²)</label>
                     <input v-model.number="newProject.area" class="glass-input" type="number" min="0" />
                   </div>
                 </div>
@@ -304,24 +463,24 @@
                   <span>Итого:</span>
                   <strong>{{ (newProject.pricePerSqm * newProject.area).toLocaleString('ru-RU') }} ₽</strong>
                 </div>
-                <div class="cab-field">
-                  <label>Примечание</label>
+                <div class="u-field">
+                  <label class="u-field__label">Примечание</label>
                   <textarea v-model="newProject.notes" class="glass-input" rows="2" placeholder="Комментарий к проекту…" />
                 </div>
               </div>
-              <div class="cab-modal-foot">
+              <div class="u-modal__foot">
                 <button
-                  class="cab-btn cab-btn--primary"
+                  class="a-btn-save"
                   :disabled="creatingProject || !newProject.title.trim() || !newProject.slug.trim()"
                   @click="doCreateProject"
                 >{{ creatingProject ? 'Создание…' : 'Создать проект' }}</button>
-                <button class="cab-btn" @click="showNewProjectModal = false">Отмена</button>
+                <button class="a-btn-sm" @click="showNewProjectModal = false">Отмена</button>
               </div>
             </div>
 
             <!-- Project list -->
-            <div v-if="!designerProjects.length && !showNewProjectModal" class="cab-empty">
-              <div class="cab-empty-icon">◒</div>
+            <div v-if="!designerProjects.length && !showNewProjectModal" class="u-empty glass-surface">
+              <span>◒</span>
               <p>Проектов пока нет.<br>Создайте первый проект, чтобы начать работу.</p>
             </div>
 
@@ -329,15 +488,66 @@
               <div class="proj-card-head">
                 <div class="proj-card-title-row">
                   <h3 class="proj-card-title">{{ dp.projectTitle }}</h3>
-                  <span class="proj-card-status" :class="`st-${dp.status}`">
+                  <span class="u-status" :class="`u-status--${dp.status}`">
                     {{ DESIGNER_PROJECT_STATUS_LABELS[dp.status as keyof typeof DESIGNER_PROJECT_STATUS_LABELS] || dp.status }}
                   </span>
+                  <button type="button" class="a-btn-sm" @click="startEditDesignerProject(dp)">редактировать</button>
                 </div>
                 <div class="proj-card-meta">
                   <span v-if="dp.packageKey" class="proj-card-pkg">{{ getPackageTitle(dp.packageKey) }}</span>
                   <span v-if="dp.area" class="proj-card-area">{{ dp.area }} м²</span>
                   <span v-if="dp.pricePerSqm" class="proj-card-ppm">{{ dp.pricePerSqm.toLocaleString('ru-RU') }} ₽/м²</span>
                   <span v-if="dp.totalPrice" class="proj-card-total">{{ dp.totalPrice.toLocaleString('ru-RU') }} ₽</span>
+                </div>
+              </div>
+
+              <div v-if="editingDesignerProjectId === dp.id" class="u-modal glass-surface" style="margin-top:10px">
+                <div class="u-modal__body">
+                  <div class="u-modal__row2">
+                    <div class="u-field">
+                      <label class="u-field__label">Название проекта</label>
+                      <input v-model="projectEdit.title" class="glass-input" />
+                    </div>
+                    <div class="u-field">
+                      <label class="u-field__label">Статус</label>
+                      <select v-model="projectEdit.status" class="glass-input">
+                        <option value="draft">Черновик</option>
+                        <option value="active">В работе</option>
+                        <option value="paused">Пауза</option>
+                        <option value="completed">Завершён</option>
+                        <option value="archived">Архив</option>
+                      </select>
+                    </div>
+                    <div class="u-field">
+                      <label class="u-field__label">Пакет</label>
+                      <select v-model="projectEdit.packageKey" class="glass-input">
+                        <option value="">— без пакета —</option>
+                        <option v-for="pkg in packages" :key="pkg.key" :value="pkg.key">{{ pkg.title }}</option>
+                      </select>
+                    </div>
+                    <div class="u-field">
+                      <label class="u-field__label">Цена за м²</label>
+                      <input v-model.number="projectEdit.pricePerSqm" type="number" min="0" class="glass-input" />
+                    </div>
+                    <div class="u-field">
+                      <label class="u-field__label">Площадь (м²)</label>
+                      <input v-model.number="projectEdit.area" type="number" min="0" class="glass-input" />
+                    </div>
+                    <div class="u-field">
+                      <label class="u-field__label">Итого</label>
+                      <input :value="((projectEdit.pricePerSqm || 0) * (projectEdit.area || 0)).toLocaleString('ru-RU') + ' ₽'" class="glass-input" readonly />
+                    </div>
+                  </div>
+                  <div class="u-field" style="margin-top:8px">
+                    <label class="u-field__label">Примечание</label>
+                    <textarea v-model="projectEdit.notes" class="glass-input" rows="2" />
+                  </div>
+                </div>
+                <div class="u-modal__foot">
+                  <button type="button" class="a-btn-sm" @click="cancelEditDesignerProject">Отмена</button>
+                  <button type="button" class="a-btn-save" :disabled="savingProject" @click="saveDesignerProjectEdits">
+                    {{ savingProject ? 'Сохранение…' : 'Сохранить проект' }}
+                  </button>
                 </div>
               </div>
 
@@ -349,68 +559,68 @@
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-else-if="section === 'profile'">
             <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Основные данные</h3>
-                <div class="cab-grid-2">
-                  <div class="cab-field">
-                    <label>Имя / Студия *</label>
+                <div class="u-modal__row2">
+                  <div class="u-field">
+                    <label class="u-field__label">Имя / Студия *</label>
                     <input v-model="form.name" class="glass-input" required />
                   </div>
-                  <div class="cab-field">
-                    <label>Компания</label>
+                  <div class="u-field">
+                    <label class="u-field__label">Компания</label>
                     <input v-model="form.companyName" class="glass-input" placeholder="ООО / ИП…" />
                   </div>
-                  <div class="cab-field">
-                    <label>Телефон</label>
+                  <div class="u-field">
+                    <label class="u-field__label">Телефон</label>
                     <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" />
                   </div>
-                  <div class="cab-field">
-                    <label>Email</label>
+                  <div class="u-field">
+                    <label class="u-field__label">Email</label>
                     <input v-model="form.email" class="glass-input" type="email" placeholder="mail@example.com" />
                   </div>
-                  <div class="cab-field">
-                    <label>Telegram</label>
+                  <div class="u-field">
+                    <label class="u-field__label">Telegram</label>
                     <input v-model="form.telegram" class="glass-input" placeholder="@username" />
                   </div>
-                  <div class="cab-field">
-                    <label>Сайт / портфолио</label>
+                  <div class="u-field">
+                    <label class="u-field__label">Сайт / портфолио</label>
                     <input v-model="form.website" class="glass-input" placeholder="https://…" />
                   </div>
-                  <div class="cab-field">
-                    <label>Город</label>
+                  <div class="u-field">
+                    <label class="u-field__label">Город</label>
                     <input v-model="form.city" class="glass-input" placeholder="Москва" />
                   </div>
-                  <div class="cab-field">
-                    <label>Опыт работы</label>
+                  <div class="u-field">
+                    <label class="u-field__label">Опыт работы</label>
                     <input v-model="form.experience" class="glass-input" placeholder="10 лет" />
                   </div>
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>О себе</h3>
-                <div class="cab-field cab-field-full">
+                <div class="u-field u-field--full">
                   <textarea v-model="form.about" class="glass-input" rows="4" placeholder="Расскажите о своём подходе к дизайну, стилях, специализации…" />
                 </div>
               </div>
 
-              <div class="cab-form-section">
+              <div class="u-form-section">
                 <h3>Специализации</h3>
-                <div class="cab-tags">
+                <div class="u-tags">
                   <button
                     v-for="sp in SPECIALIZATION_OPTIONS"
                     :key="sp"
                     type="button"
-                    class="cab-tag"
+                    class="u-tag"
                     :class="{ active: form.specializations.includes(sp) }"
                     @click="toggleSpec(sp)"
                   >{{ sp }}</button>
                 </div>
               </div>
 
-              <div class="cab-foot">
-                <button type="submit" class="cab-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
-                <span v-if="saveMsg" class="cab-save-msg">{{ saveMsg }}</span>
+              <div class="u-form-foot">
+                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
           </template>
@@ -428,9 +638,15 @@ import {
   DESIGNER_PROJECT_STATUS_LABELS,
   DESIGNER_SERVICE_TEMPLATES,
   DESIGNER_PACKAGE_TEMPLATES,
+  DESIGNER_SUBSCRIPTION_TEMPLATES,
+  BILLING_PERIOD_LABELS,
+  BILLING_PERIOD_MONTHS,
+  BILLING_PERIODS,
   type DesignerServicePrice,
   type DesignerPackage,
+  type DesignerSubscription,
   type DesignerServiceCategory,
+  type BillingPeriod,
   PRICE_UNITS,
 } from '~~/shared/types/designer'
 
@@ -457,9 +673,13 @@ const {
   initServicesFromTemplates,
   savePackages,
   initPackagesFromTemplates,
+  subscriptions,
+  saveSubscriptions,
+  initSubscriptionsFromTemplates,
   newProject,
   creatingProject,
   createProject,
+  updateDesignerProject,
   addClientToProject,
   addContractorToProject,
   allClients,
@@ -483,6 +703,7 @@ const SERVICE_CATEGORY_OPTIONS = Object.entries(DESIGNER_SERVICE_CATEGORY_LABELS
   value,
   label,
 })) as { value: DesignerServiceCategory; label: string }[]
+const BILLING_PERIODS_LIST = Object.entries(BILLING_PERIOD_LABELS).map(([value, label]) => ({ value, label }))
 
 function toggleSpec(sp: string) {
   const idx = form.specializations.indexOf(sp)
@@ -497,6 +718,34 @@ const savingSvc = ref(false)
 const editServicesList = ref<DesignerServicePrice[]>([])
 const svcEditError = ref('')
 const svcEditSuccess = ref('')
+
+// ── Inline price editing ──
+const inlinePriceKey = ref<string | null>(null)
+const inlinePriceVal = ref(0)
+
+function startInlinePrice(svc: DesignerServicePrice) {
+  if (inlinePriceKey.value === svc.serviceKey) return
+  inlinePriceKey.value = svc.serviceKey
+  inlinePriceVal.value = svc.price
+  nextTick(() => {
+    const inp = document.querySelector('.svc-price-inline-input') as HTMLInputElement
+    inp?.focus()
+    inp?.select()
+  })
+}
+function cancelInlinePrice() {
+  inlinePriceKey.value = null
+}
+async function commitInlinePrice(svc: DesignerServicePrice) {
+  if (inlinePriceKey.value !== svc.serviceKey) return
+  const newPrice = Math.max(0, Number(inlinePriceVal.value) || 0)
+  inlinePriceKey.value = null
+  if (newPrice === svc.price) return
+  const updated = services.value.map(s =>
+    s.serviceKey === svc.serviceKey ? { ...s, price: newPrice } : { ...s }
+  )
+  await saveServices(updated)
+}
 
 const editServicesByCat = computed(() => {
   const map = new Map<DesignerServiceCategory, DesignerServicePrice[]>()
@@ -550,6 +799,26 @@ function addCustomService() {
     price: 0,
     enabled: true,
   })
+}
+function duplicateEditService(key: string) {
+  const index = editServicesList.value.findIndex(s => s.serviceKey === key)
+  if (index < 0) return
+  const source = editServicesList.value[index]
+  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
+  const copy: DesignerServicePrice = {
+    ...JSON.parse(JSON.stringify(source)),
+    serviceKey: `${source.serviceKey}_copy_${id}`,
+    title: source.title ? `${source.title} (копия)` : 'Новая услуга',
+  }
+  editServicesList.value.splice(index + 1, 0, copy)
+}
+function moveEditService(key: string, direction: -1 | 1) {
+  const index = editServicesList.value.findIndex(s => s.serviceKey === key)
+  if (index < 0) return
+  const targetIndex = index + direction
+  if (targetIndex < 0 || targetIndex >= editServicesList.value.length) return
+  const [item] = editServicesList.value.splice(index, 1)
+  editServicesList.value.splice(targetIndex, 0, item)
 }
 
 function normalizeServicesForSave(list: DesignerServicePrice[]): { ok: true; list: DesignerServicePrice[] } | { ok: false; error: string } {
@@ -643,6 +912,26 @@ function addCustomPackage() {
     enabled: true,
   })
 }
+function duplicateEditPackage(key: string) {
+  const index = editPackagesList.value.findIndex(p => p.key === key)
+  if (index < 0) return
+  const source = editPackagesList.value[index]
+  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
+  const copy: DesignerPackage = {
+    ...JSON.parse(JSON.stringify(source)),
+    key: `${source.key}_copy_${id}`,
+    title: source.title ? `${source.title} (копия)` : 'Новый пакет',
+  }
+  editPackagesList.value.splice(index + 1, 0, copy)
+}
+function moveEditPackage(key: string, direction: -1 | 1) {
+  const index = editPackagesList.value.findIndex(p => p.key === key)
+  if (index < 0) return
+  const targetIndex = index + direction
+  if (targetIndex < 0 || targetIndex >= editPackagesList.value.length) return
+  const [item] = editPackagesList.value.splice(index, 1)
+  editPackagesList.value.splice(targetIndex, 0, item)
+}
 function removeEditPackage(key: string) {
   editPackagesList.value = editPackagesList.value.filter(p => p.key !== key)
 }
@@ -678,6 +967,143 @@ async function initPackages() {
   await savePackages(pkgs)
 }
 
+// ── Subscriptions editing ──
+
+const editingSubscriptions = ref(false)
+const savingSub = ref(false)
+const editSubscriptionsList = ref<DesignerSubscription[]>([])
+const subEditError = ref('')
+const subEditSuccess = ref('')
+
+function startEditSubscriptions() {
+  subEditError.value = ''
+  subEditSuccess.value = ''
+  editSubscriptionsList.value = JSON.parse(JSON.stringify(subscriptions.value))
+  if (!editSubscriptionsList.value.length) addCustomSubscription()
+  editingSubscriptions.value = true
+}
+function cancelEditSubscriptions() {
+  subEditError.value = ''
+  editingSubscriptions.value = false
+}
+async function saveEditedSubscriptions() {
+  subEditError.value = ''
+  subEditSuccess.value = ''
+  const normalized = normalizeSubscriptionsForSave(editSubscriptionsList.value)
+  if (!normalized.ok) {
+    subEditError.value = normalized.error
+    return
+  }
+  savingSub.value = true
+  try {
+    await saveSubscriptions(normalized.list)
+    editingSubscriptions.value = false
+    subEditSuccess.value = 'Подписки сохранены'
+    setTimeout(() => { subEditSuccess.value = '' }, 2500)
+  } finally {
+    savingSub.value = false
+  }
+}
+function addCustomSubscription() {
+  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
+  editSubscriptionsList.value.push({
+    key: `custom_sub_${id}`,
+    title: '',
+    description: '',
+    billingPeriod: 'monthly',
+    price: 0,
+    discount: 0,
+    serviceKeys: [],
+    limits: {},
+    enabled: true,
+  })
+}
+function duplicateEditSubscription(key: string) {
+  const index = editSubscriptionsList.value.findIndex(s => s.key === key)
+  if (index < 0) return
+  const source = editSubscriptionsList.value[index]
+  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
+  const copy: DesignerSubscription = {
+    ...JSON.parse(JSON.stringify(source)),
+    key: `${source.key}_copy_${id}`,
+    title: source.title ? `${source.title} (копия)` : 'Новая подписка',
+  }
+  editSubscriptionsList.value.splice(index + 1, 0, copy)
+}
+function moveEditSubscription(key: string, direction: -1 | 1) {
+  const index = editSubscriptionsList.value.findIndex(s => s.key === key)
+  if (index < 0) return
+  const targetIndex = index + direction
+  if (targetIndex < 0 || targetIndex >= editSubscriptionsList.value.length) return
+  const [item] = editSubscriptionsList.value.splice(index, 1)
+  editSubscriptionsList.value.splice(targetIndex, 0, item)
+}
+function removeEditSubscription(key: string) {
+  editSubscriptionsList.value = editSubscriptionsList.value.filter(s => s.key !== key)
+}
+function toggleSubService(sub: DesignerSubscription, key: string) {
+  const idx = sub.serviceKeys.indexOf(key)
+  if (idx >= 0) sub.serviceKeys.splice(idx, 1)
+  else sub.serviceKeys.push(key)
+}
+function addSubLimit(sub: DesignerSubscription) {
+  const name = prompt('Ключ лимита (например: visits, online_hours, renders)')
+  if (!name) return
+  if (!sub.limits) sub.limits = {}
+  sub.limits[name] = 0
+}
+
+function normalizeSubscriptionsForSave(list: DesignerSubscription[]): { ok: true; list: DesignerSubscription[] } | { ok: false; error: string } {
+  const cleaned = list
+    .map(sub => ({
+      ...sub,
+      key: String(sub.key || '').trim(),
+      title: String(sub.title || '').trim(),
+      description: String(sub.description || '').trim(),
+      price: Number.isFinite(Number(sub.price)) ? Math.max(0, Number(sub.price)) : 0,
+      discount: Number.isFinite(Number(sub.discount)) ? Math.min(100, Math.max(0, Number(sub.discount))) : 0,
+      serviceKeys: Array.from(new Set((sub.serviceKeys || []).filter(Boolean))),
+      limits: sub.limits || {},
+    }))
+    .filter(sub => sub.title || sub.price > 0)
+
+  if (!cleaned.length) {
+    return { ok: false, error: 'Добавьте хотя бы одну подписку' }
+  }
+
+  const seen = new Set<string>()
+  for (const sub of cleaned) {
+    if (!sub.key) return { ok: false, error: 'Ошибка ключа подписки, добавьте подписку заново' }
+    if (!sub.title) return { ok: false, error: 'У всех подписок должно быть заполнено название' }
+    if (seen.has(sub.key)) return { ok: false, error: 'Найдены дубли подписок, удалите повторения' }
+    seen.add(sub.key)
+  }
+
+  return { ok: true, list: cleaned }
+}
+
+async function initSubs() {
+  const subs = initSubscriptionsFromTemplates()
+  await saveSubscriptions(subs)
+}
+
+function getBillingLabel(bp: string): string {
+  return BILLING_PERIOD_LABELS[bp as BillingPeriod] || bp
+}
+function getMonthlyPrice(sub: DesignerSubscription): number {
+  const months = BILLING_PERIOD_MONTHS[sub.billingPeriod as BillingPeriod] || 1
+  const effectivePrice = sub.discount > 0 ? sub.price * (1 - sub.discount / 100) : sub.price
+  return Math.round(effectivePrice / months)
+}
+function formatLimitKey(key: string): string {
+  const map: Record<string, string> = {
+    visits: 'Выездов',
+    online_hours: 'Часов онлайн',
+    renders: 'Рендеров',
+  }
+  return map[key] || key
+}
+
 function getServiceTitle(key: string): string {
   const svc = services.value.find(s => s.serviceKey === key)
   if (svc) return svc.title
@@ -708,10 +1134,70 @@ const availablePackages = computed(() => {
 // ── Projects ──
 
 const showNewProjectModal = ref(false)
+const editingDesignerProjectId = ref<number | null>(null)
+const savingProject = ref(false)
+const projectEditError = ref('')
+const projectEditSuccess = ref('')
+const projectEdit = reactive({
+  designerProjectId: 0,
+  title: '',
+  packageKey: '',
+  pricePerSqm: 0,
+  area: 0,
+  status: 'draft' as 'draft' | 'active' | 'paused' | 'completed' | 'archived',
+  notes: '',
+})
 
 async function doCreateProject() {
   await createProject()
   showNewProjectModal.value = false
+}
+
+function startEditDesignerProject(dp: any) {
+  projectEditError.value = ''
+  projectEditSuccess.value = ''
+  editingDesignerProjectId.value = dp.id
+  projectEdit.designerProjectId = dp.id
+  projectEdit.title = String(dp.projectTitle || '')
+  projectEdit.packageKey = String(dp.packageKey || '')
+  projectEdit.pricePerSqm = Number(dp.pricePerSqm || 0)
+  projectEdit.area = Number(dp.area || 0)
+  projectEdit.status = (dp.status || 'draft') as any
+  projectEdit.notes = String(dp.notes || '')
+}
+
+function cancelEditDesignerProject() {
+  editingDesignerProjectId.value = null
+  projectEditError.value = ''
+}
+
+async function saveDesignerProjectEdits() {
+  projectEditError.value = ''
+  projectEditSuccess.value = ''
+  if (!projectEdit.title.trim()) {
+    projectEditError.value = 'Укажите название проекта'
+    return
+  }
+
+  savingProject.value = true
+  try {
+    await updateDesignerProject({
+      designerProjectId: projectEdit.designerProjectId,
+      title: projectEdit.title.trim(),
+      packageKey: projectEdit.packageKey || null,
+      pricePerSqm: Number(projectEdit.pricePerSqm || 0),
+      area: Number(projectEdit.area || 0),
+      status: projectEdit.status,
+      notes: projectEdit.notes || null,
+    })
+    editingDesignerProjectId.value = null
+    projectEditSuccess.value = 'Проект обновлён'
+    setTimeout(() => { projectEditSuccess.value = '' }, 2500)
+  } catch (e: any) {
+    projectEditError.value = e?.data?.message || 'Не удалось сохранить проект'
+  } finally {
+    savingProject.value = false
+  }
 }
 
 
@@ -745,10 +1231,6 @@ async function doCreateProject() {
 .cab-nav-item:hover { background: rgba(255,255,255,.05); }
 .cab-nav-item.active { background: rgba(255,255,255,.1); color: #fff; font-weight: 600; }
 .cab-nav-icon { font-size: 1.1em; width: 22px; text-align: center; }
-.cab-badge {
-  margin-left: auto; background: rgba(100,108,255,.25); color: #a0a8ff;
-  font-size: .75rem; padding: 1px 8px; border-radius: 10px;
-}
 .cab-main { flex: 1; padding: 28px 32px; overflow-y: auto; }
 .cab-inner { max-width: 960px; }
 
@@ -780,7 +1262,7 @@ async function doCreateProject() {
   font-size: .8rem; padding: 0; text-align: left;
 }
 
-.dash-quick-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.dash-quick-nav { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
 .dash-quick-btn {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 18px 12px; border-radius: 12px; cursor: pointer;
@@ -817,7 +1299,6 @@ async function doCreateProject() {
 .cab-cta-btn:hover { background: #5558dd; }
 
 .dash-projects { padding: 20px 24px; border-radius: 12px; margin-bottom: 20px; }
-.dash-section-title { font-size: .95rem; font-weight: 600; margin-bottom: 14px; }
 .dash-projects-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .dash-project-card {
   display: flex; flex-direction: column; gap: 4px;
@@ -826,21 +1307,9 @@ async function doCreateProject() {
 }
 .dash-project-name { font-weight: 600; font-size: .9rem; }
 .dash-project-status { font-size: .75rem; padding: 2px 8px; border-radius: 6px; width: fit-content; }
-.st-draft { background: rgba(255,255,255,.08); color: #aaa; }
-.st-active { background: rgba(96,165,250,.15); color: #60a5fa; }
-.st-paused { background: rgba(251,191,36,.15); color: #fbbf24; }
-.st-completed { background: rgba(52,211,153,.15); color: #34d399; }
-.st-archived { background: rgba(255,255,255,.05); color: #666; }
 .dash-project-price { font-size: .82rem; color: #34d399; }
 .dash-project-area { font-size: .78rem; color: var(--c-text-muted, #888); }
 
-/* ── Section heads ── */
-.cab-section-head {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 20px;
-}
-.cab-section-head h2 { font-size: 1.3rem; font-weight: 600; }
-.cab-section-actions { display: flex; gap: 8px; }
 .cab-inline-error {
   margin: -10px 0 12px;
   color: #f87171;
@@ -851,17 +1320,6 @@ async function doCreateProject() {
   color: #34d399;
   font-size: .82rem;
 }
-
-/* ── Buttons ── */
-.cab-btn {
-  padding: 8px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.05); color: var(--c-text, #ccc);
-  cursor: pointer; font-size: .88rem; transition: all .15s;
-}
-.cab-btn:hover { background: rgba(255,255,255,.1); }
-.cab-btn--primary { background: #646cff; color: #fff; border-color: #646cff; }
-.cab-btn--primary:hover { background: #5558dd; }
-.cab-btn:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ── Services ── */
 .svc-category { padding: 20px 24px; border-radius: 12px; margin-bottom: 14px; }
@@ -896,6 +1354,26 @@ async function doCreateProject() {
 .svc-del {
   background: none; border: none; color: #f87171; cursor: pointer;
   font-size: 1.1rem; padding: 4px 8px;
+}
+.edit-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 2px;
+}
+.svc-mini {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  line-height: 1;
+  cursor: pointer;
+  font-size: .72rem;
+}
+.svc-mini:hover {
+  opacity: .8;
 }
 .svc-add-btn { margin-top: 12px; }
 
@@ -935,22 +1413,11 @@ async function doCreateProject() {
 .pkg-services-edit strong { font-size: .85rem; margin-bottom: 8px; display: block; }
 .pkg-svc-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 
-/* ── Tags ── */
-.cab-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.cab-tag {
-  padding: 6px 14px; border-radius: 8px; font-size: .82rem;
-  border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03);
-  color: var(--c-text, #ccc); cursor: pointer; transition: all .15s;
-}
-.cab-tag:hover { border-color: rgba(100,108,255,.3); }
-.cab-tag.active { background: rgba(100,108,255,.15); border-color: #646cff; color: #a0a8ff; }
-
 /* ── Projects ── */
 .proj-card { padding: 22px 24px; border-radius: 14px; margin-bottom: 16px; }
 .proj-card-head { margin-bottom: 16px; }
 .proj-card-title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
 .proj-card-title { font-size: 1.1rem; font-weight: 600; }
-.proj-card-status { font-size: .78rem; padding: 2px 10px; border-radius: 6px; }
 .proj-card-meta { display: flex; gap: 16px; font-size: .82rem; color: var(--c-text-muted, #888); }
 .proj-card-pkg { color: #a0a8ff; }
 .proj-card-total { color: #34d399; font-weight: 600; }
@@ -983,42 +1450,10 @@ async function doCreateProject() {
 }
 .proj-total strong { color: #34d399; font-size: 1.15rem; }
 
-/* ── Modals ── */
-.cab-inline-modal {
-  padding: 24px; border-radius: 14px; margin-bottom: 20px;
-  border: 1px solid rgba(100,108,255,.2);
-}
-.cab-modal-head {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 18px;
-}
-.cab-modal-title { font-size: 1.05rem; font-weight: 600; }
-.cab-modal-close {
-  background: none; border: none; color: var(--c-text-muted, #888);
-  cursor: pointer; font-size: 1.2rem; padding: 4px 8px;
-}
-.cab-modal-body { display: flex; flex-direction: column; gap: 14px; }
-.cab-modal-foot { display: flex; gap: 10px; margin-top: 18px; }
-
 /* ── Form ── */
 .cab-form { display: flex; flex-direction: column; gap: 24px; }
-.cab-form-section h3 { font-size: 1rem; font-weight: 600; margin-bottom: 14px; color: #a0a8ff; }
-.cab-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.cab-field { display: flex; flex-direction: column; gap: 4px; }
-.cab-field label { font-size: .8rem; color: var(--c-text-muted, #888); }
-.cab-field-full { grid-column: 1 / -1; }
-.cab-foot { display: flex; align-items: center; gap: 14px; }
-.cab-save {
-  background: #646cff; color: #fff; border: none; padding: 10px 28px;
-  border-radius: 8px; cursor: pointer; font-size: .92rem;
-}
-.cab-save:hover { background: #5558dd; }
-.cab-save:disabled { opacity: .5; cursor: not-allowed; }
-.cab-save-msg { color: #34d399; font-size: .85rem; }
-
-/* ── Empty states ── */
-.cab-empty { text-align: center; padding: 48px 24px; color: var(--c-text-muted, #888); }
-.cab-empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+/* Designer accent colour on section headings */
+.u-form-section h3 { color: var(--ds-accent, #646cff); }
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
@@ -1031,9 +1466,90 @@ async function doCreateProject() {
   .cab-main { padding: 20px 16px; }
   .dash-quick-nav { grid-template-columns: repeat(2, 1fr); }
   .dash-stats { grid-template-columns: repeat(2, 1fr); }
-  .cab-grid-2 { grid-template-columns: 1fr; }
   .dash-projects-grid { grid-template-columns: 1fr; }
   .pkg-grid { grid-template-columns: 1fr; }
+  .sub-grid { grid-template-columns: 1fr; }
   .dash-welcome { flex-direction: column; gap: 16px; }
 }
+
+/* ── Subscriptions ── */
+.sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.sub-card {
+  padding: 22px 20px; border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.06); transition: all .15s;
+}
+.sub-card:hover { border-color: rgba(100,108,255,.25); }
+.sub-card.disabled { opacity: .4; }
+.sub-card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.sub-card-title { font-size: 1.05rem; font-weight: 600; }
+.sub-period-badge {
+  font-size: .72rem; padding: 3px 10px; border-radius: 6px;
+  background: rgba(100,108,255,.12); color: #a0a8ff; white-space: nowrap;
+}
+.sub-card-price-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.sub-card-price { font-size: 1.3rem; font-weight: 700; color: #646cff; }
+.sub-card-price small { font-size: .7rem; font-weight: 400; color: var(--c-text-muted, #888); }
+.sub-card-discount {
+  font-size: .8rem; font-weight: 600; color: #34d399;
+  background: rgba(52,211,153,.1); padding: 2px 8px; border-radius: 6px;
+}
+.sub-card-effective {
+  font-size: .82rem; color: #34d399; margin-bottom: 8px;
+}
+.sub-card-desc { font-size: .85rem; color: var(--c-text-muted, #888); margin-bottom: 14px; line-height: 1.4; }
+.sub-card-limits {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+}
+.sub-limit-chip {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .75rem; padding: 3px 10px; border-radius: 6px;
+  background: rgba(255,255,255,.06);
+}
+.sub-limit-key { color: var(--c-text-muted, #aaa); }
+.sub-limit-val { font-weight: 600; color: var(--c-text, #ccc); }
+.sub-card-monthly {
+  display: flex; justify-content: space-between;
+  padding: 10px 12px; border-radius: 8px;
+  background: rgba(100,108,255,.06); margin-top: 10px; font-size: .82rem;
+}
+.sub-m-label { color: var(--c-text-muted, #888); }
+.sub-m-val { font-weight: 600; color: #646cff; }
+
+/* Subscription edit */
+.sub-edit { padding: 20px 24px; border-radius: 12px; margin-bottom: 14px; }
+.sub-edit-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.sub-edit-pricing {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+  margin-bottom: 14px; align-items: end;
+}
+.sub-effective-price {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 8px; background: rgba(52,211,153,.06);
+  font-size: .85rem;
+}
+.sub-eff-label { color: var(--c-text-muted, #888); }
+.sub-eff-val { font-weight: 600; color: #34d399; }
+.sub-edit-limits { margin-bottom: 14px; }
+.sub-edit-limits strong { font-size: .85rem; margin-bottom: 8px; display: block; }
+.sub-limits-grid { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.sub-limit-row { display: flex; align-items: center; gap: 8px; }
+.sub-limit-row .svc-inp { max-width: 160px; }
+
+/* ── Inline price editing ── */
+.svc-price-inline {
+  display: inline-flex; align-items: center; gap: 4px;
+  cursor: pointer; position: relative;
+}
+.svc-price-inline:hover { color: #646cff; }
+.svc-price-inline-input {
+  width: 100px; padding: 3px 8px; font-size: .85rem;
+  border-radius: 4px; border: 1px solid #646cff;
+  background: rgba(100,108,255,.08); color: var(--c-text, #ccc);
+  text-align: right;
+}
+.svc-price-edit-icon {
+  opacity: 0; font-size: .7rem; transition: opacity .15s;
+}
+.svc-price-inline:hover .svc-price-edit-icon { opacity: .5; }
 </style>

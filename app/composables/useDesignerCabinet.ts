@@ -1,6 +1,11 @@
 import {
+  DESIGNER_SERVICE_TEMPLATES,
+  DESIGNER_PACKAGE_TEMPLATES,
+  DESIGNER_SUBSCRIPTION_TEMPLATES,
+  PRICE_UNIT_LABELS,
   type DesignerServicePrice,
   type DesignerPackage,
+  type DesignerSubscription,
   type DesignerServiceCategory,
   type DesignerProjectStatus,
 } from '~~/shared/types/designer'
@@ -23,6 +28,17 @@ interface DesignerProject {
   projectStatus: string
   clients: { id: number; name: string; phone: string | null; email: string | null }[]
   contractors: { id: number; name: string; role: string | null }[]
+}
+
+interface UpdateDesignerProjectPayload {
+  designerProjectId: number
+  title?: string
+  packageKey?: string | null
+  pricePerSqm?: number | null
+  area?: number | null
+  totalPrice?: number | null
+  status?: 'draft' | 'active' | 'paused' | 'completed' | 'archived'
+  notes?: string | null
 }
 
 export function useDesignerCabinet(designerId: Ref<number | null>) {
@@ -62,6 +78,7 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
       { key: 'dashboard', icon: '◈', label: 'Обзор' },
       { key: 'services', icon: '◎', label: 'Услуги и цены' },
       { key: 'packages', icon: '◑', label: 'Пакеты' },
+      { key: 'subscriptions', icon: '⟳', label: 'Подписки' },
       { key: 'projects', icon: '◒', label: 'Проекты' },
       { key: 'profile', icon: '◓', label: 'Профиль' },
     ]
@@ -169,6 +186,35 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     }))
   }
 
+  // ── Subscriptions ──
+  const subscriptions = computed<DesignerSubscription[]>(() => {
+    if (!designer.value?.subscriptions) return []
+    return designer.value.subscriptions as DesignerSubscription[]
+  })
+
+  async function saveSubscriptions(newSubs: DesignerSubscription[]) {
+    if (!did.value) return
+    await $fetch(`/api/designers/${did.value}`, {
+      method: 'PUT' as any,
+      body: { subscriptions: newSubs },
+    })
+    await refresh()
+  }
+
+  function initSubscriptionsFromTemplates(): DesignerSubscription[] {
+    return DESIGNER_SUBSCRIPTION_TEMPLATES.map(t => ({
+      key: t.key,
+      title: t.title,
+      description: t.description,
+      billingPeriod: t.billingPeriod,
+      price: t.price,
+      discount: t.discount,
+      serviceKeys: [...t.serviceKeys],
+      limits: { ...t.limits },
+      enabled: true,
+    }))
+  }
+
   // ── Designer projects ──
   const designerProjects = computed<DesignerProject[]>(() => {
     if (!designer.value?.designerProjects) return []
@@ -246,6 +292,15 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     }
   }
 
+  async function updateDesignerProject(payload: UpdateDesignerProjectPayload) {
+    if (!did.value) return
+    await $fetch(`/api/designers/${did.value}/project`, {
+      method: 'PUT',
+      body: payload,
+    })
+    await refresh()
+  }
+
   // ── Add client to project ──
   async function addClientToProject(designerProjectId: number, clientId: number) {
     if (!did.value) return
@@ -306,7 +361,8 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     const filled = fields.filter(f => d[f]).length
     const hasSvc = (d.services as any[])?.length > 0 ? 1 : 0
     const hasPkg = (d.packages as any[])?.length > 0 ? 1 : 0
-    return Math.round((filled + hasSvc + hasPkg) / (fields.length + 2) * 100)
+    const hasSub = (d.subscriptions as any[])?.length > 0 ? 1 : 0
+    return Math.round((filled + hasSvc + hasPkg + hasSub) / (fields.length + 3) * 100)
   })
 
   // ── Create designer ──
@@ -358,10 +414,16 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     savePackages,
     initPackagesFromTemplates,
 
+    // Subscriptions
+    subscriptions,
+    saveSubscriptions,
+    initSubscriptionsFromTemplates,
+
     // Projects
     newProject,
     creatingProject,
     createProject,
+    updateDesignerProject,
     addClientToProject,
     addContractorToProject,
     removeLink,
