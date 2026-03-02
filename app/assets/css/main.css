@@ -1,6 +1,34 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* ── Universal inheritance bridge ────────────────────────────
+   Forces font-family to cascade into every element including
+   those in scoped component styles that don't override it.
+   font-size on <html> (set by applyToDOM) makes ALL rem values
+   across the entire app scale proportionally with the token.
+──────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* Controlled elements inherit animation speed from token */
+button, a, input, select, textarea, summary {
+  transition-duration: var(--ds-anim-duration, 180ms);
+  transition-timing-function: var(--ds-anim-easing, ease);
+}
+
+/* ── Border-radius bridge — maps component patterns to tokens */
+.glass-surface, .glass-card, .glass-chip,
+.a-modal, .admin-dropdown, .std-sidenav {
+  border-radius: var(--card-radius, 14px);
+}
+.glass-input, input[type="text"], input[type="email"],
+input[type="password"], input[type="search"], input[type="number"],
+textarea, select {
+  border-radius: var(--input-radius, 6px);
+}
+
 :root {
   --glass-bg: rgba(255, 255, 255, 0.48);
   --glass-border: rgba(255, 255, 255, 0.55);

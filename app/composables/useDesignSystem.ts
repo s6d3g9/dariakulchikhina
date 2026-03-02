@@ -602,7 +602,14 @@ export function useDesignSystem() {
         break
     }
 
-    // Typography
+    // Typography — set DIRECTLY on <html> so ALL rem values scale proportionally
+    // and font-family/weight/line-height inherit into every component automatically
+    el.style.fontSize = `${t.fontSize}rem`
+    el.style.fontFamily = t.fontFamily
+    el.style.fontWeight = String(t.fontWeight)
+    el.style.lineHeight = String(t.lineHeight)
+    el.style.letterSpacing = `${t.letterSpacing}em`
+
     el.style.setProperty('--ds-font-family', t.fontFamily)
     el.style.setProperty('--ds-font-size', `${t.fontSize}rem`)
     el.style.setProperty('--ds-font-weight', String(t.fontWeight))
