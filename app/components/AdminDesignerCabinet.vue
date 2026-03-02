@@ -17,6 +17,7 @@
             <span v-if="item.key === 'projects' && designerProjects.length" class="u-counter">{{ designerProjects.length }}</span>
             <span v-if="item.key === 'services' && services.length" class="u-counter">{{ services.length }}</span>
             <span v-if="item.key === 'subscriptions' && subscriptions.length" class="u-counter">{{ subscriptions.length }}</span>
+            <span v-if="item.key === 'documents' && designerDocs?.length" class="u-counter">{{ designerDocs.length }}</span>
           </button>
         </nav>
       </aside>
@@ -416,6 +417,60 @@
             </template>
           </template>
 
+          <!-- ═══════════════ DOCUMENTS ═══════════════ -->
+          <template v-else-if="section === 'documents'">
+            <div class="u-section-title">
+              <h2>Документы</h2>
+            </div>
+
+            <div class="u-form-section">
+              <h3>Загрузить документ</h3>
+              <div class="u-modal__row2">
+                <div class="u-field">
+                  <label class="u-field__label">Название</label>
+                  <input v-model="newDesignerDocTitle" class="glass-input" placeholder="Название документа" />
+                </div>
+                <div class="u-field">
+                  <label class="u-field__label">Категория</label>
+                  <select v-model="newDesignerDocCategory" class="glass-input">
+                    <option v-for="dc in DESIGNER_DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
+                  </select>
+                </div>
+                <div class="u-field u-field--full">
+                  <label class="u-field__label">Примечание</label>
+                  <input v-model="newDesignerDocNotes" class="glass-input" placeholder="Необязательно" />
+                </div>
+              </div>
+              <div style="margin-top: 12px;">
+                <label class="cab-upload-btn">
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadDesignerDoc" />
+                  {{ designerDocUploading ? 'Загрузка…' : '＋ Выбрать файл' }}
+                </label>
+              </div>
+            </div>
+
+            <div v-if="designerDocs?.length" class="cab-docs-list">
+              <div v-for="doc in designerDocs" :key="doc.id" class="cab-doc-card glass-surface">
+                <div class="cab-doc-icon">📎</div>
+                <div class="cab-doc-info">
+                  <div class="cab-doc-title">{{ doc.title }}</div>
+                  <div class="cab-doc-meta">
+                    <span class="cab-doc-cat">{{ DESIGNER_DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}</span>
+                    <span v-if="doc.notes" class="cab-doc-notes">{{ doc.notes }}</span>
+                  </div>
+                </div>
+                <div class="cab-doc-actions">
+                  <a v-if="doc.url" :href="doc.url" target="_blank" class="cab-doc-link">Скачать</a>
+                  <button class="cab-doc-del" @click="deleteDesignerDoc(doc.id)">✕</button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="u-empty glass-surface">
+              <span>📂</span>
+              <p>Документов пока нет.<br>Загрузите договоры, ТЗ, референсы и акты.</p>
+            </div>
+          </template>
+
           <!-- ═══════════════ PROJECTS ═══════════════ -->
           <template v-else-if="section === 'projects'">
             <div class="u-section-title">
@@ -704,6 +759,23 @@ const SERVICE_CATEGORY_OPTIONS = Object.entries(DESIGNER_SERVICE_CATEGORY_LABELS
   label,
 })) as { value: DesignerServiceCategory; label: string }[]
 const BILLING_PERIODS_LIST = Object.entries(BILLING_PERIOD_LABELS).map(([value, label]) => ({ value, label }))
+const DESIGNER_DOC_CATEGORIES = [
+  { value: 'contract', label: 'Договор' },
+  { value: 'tz', label: 'ТЗ' },
+  { value: 'invoice', label: 'Счёт' },
+  { value: 'act', label: 'Акт' },
+  { value: 'reference', label: 'Референс' },
+  { value: 'other', label: 'Другое' },
+]
+
+const { data: designerDocs, refresh: refreshDesignerDocs } = await useFetch<any[]>(
+  `/api/designers/${props.designerId}/documents`,
+  { default: () => [] },
+)
+const designerDocUploading = ref(false)
+const newDesignerDocTitle = ref('')
+const newDesignerDocCategory = ref('other')
+const newDesignerDocNotes = ref('')
 
 function toggleSpec(sp: string) {
   const idx = form.specializations.indexOf(sp)
@@ -1102,6 +1174,36 @@ function formatLimitKey(key: string): string {
     renders: 'Рендеров',
   }
   return map[key] || key
+}
+
+async function uploadDesignerDoc(ev: Event) {
+  const input = ev.target as HTMLInputElement
+  const files = input.files
+  if (!files?.length) return
+
+  designerDocUploading.value = true
+  try {
+    for (const file of Array.from(files)) {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('title', newDesignerDocTitle.value || file.name)
+      fd.append('category', newDesignerDocCategory.value)
+      fd.append('notes', newDesignerDocNotes.value)
+      await $fetch(`/api/designers/${props.designerId}/documents`, { method: 'POST', body: fd })
+    }
+    await refreshDesignerDocs()
+    newDesignerDocTitle.value = ''
+    newDesignerDocNotes.value = ''
+    input.value = ''
+  } finally {
+    designerDocUploading.value = false
+  }
+}
+
+async function deleteDesignerDoc(docId: number) {
+  if (!confirm('Удалить документ?')) return
+  await $fetch(`/api/designers/${props.designerId}/documents/${docId}`, { method: 'DELETE' })
+  await refreshDesignerDocs()
 }
 
 function getServiceTitle(key: string): string {

@@ -74,6 +74,10 @@
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             {{ c.linkedProjects?.length ? 'сменить проект' : 'привязать к проекту' }}
           </button>
+          <button class="cl-link-btn" @click="openDocs(c)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.8"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.8"/></svg>
+            документы
+          </button>
           <button class="cl-cabinet-btn" @click="openClientCabinet(c)">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             кабинет
@@ -175,6 +179,53 @@
       </div>
     </div>
 
+    <div v-if="showDocs" class="cl-backdrop" @click.self="closeDocs">
+      <div class="cl-modal glass-surface glass-card">
+        <div class="cl-modal-head">
+          <span>документы клиента «{{ docsClient?.name }}»</span>
+          <button class="cl-close" @click="closeDocs">✕</button>
+        </div>
+        <div class="cl-form">
+          <div class="cl-row">
+            <div class="cl-field">
+              <label>Название</label>
+              <input v-model="docsTitle" class="cl-input glass-input" placeholder="Название документа" />
+            </div>
+            <div class="cl-field">
+              <label>Категория</label>
+              <select v-model="docsCategory" class="cl-input glass-input cl-select">
+                <option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="cl-field">
+            <label>Примечание</label>
+            <input v-model="docsNotes" class="cl-input glass-input" placeholder="Необязательно" />
+          </div>
+          <div style="margin-bottom:14px">
+            <label class="cl-save-btn" style="display:inline-flex;align-items:center;cursor:pointer">
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadClientDoc" />
+              {{ docsUploading ? 'загрузка…' : '＋ выбрать файл' }}
+            </label>
+          </div>
+
+          <div v-if="clientDocs?.length" class="cl-docs-list">
+            <div v-for="doc in clientDocs" :key="doc.id" class="cl-doc-item glass-surface">
+              <div>
+                <div class="cl-doc-title">{{ doc.title }}</div>
+                <div class="cl-doc-meta">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}<span v-if="doc.notes"> · {{ doc.notes }}</span></div>
+              </div>
+              <div class="cl-doc-actions">
+                <a v-if="doc.url" :href="doc.url" target="_blank" class="cl-linked-chip glass-chip">скачать</a>
+                <button class="cl-icon-btn cl-icon-btn--del" @click="deleteClientDoc(doc.id)">✕</button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="cl-empty glass-surface" style="padding:20px">Документов пока нет</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -210,6 +261,14 @@ watch(clients, (value) => {
 }, { deep: true })
 
 const { data: allProjects } = await useFetch<any[]>('/api/projects')
+
+const DOC_CATEGORIES = [
+  { value: 'passport', label: 'Паспорт' },
+  { value: 'contract', label: 'Договор' },
+  { value: 'invoice', label: 'Счёт' },
+  { value: 'act', label: 'Акт' },
+  { value: 'other', label: 'Другое' },
+]
 
 // ── Add / Edit ─────────────────────────────────────────
 const showModal = ref(false)
@@ -274,6 +333,64 @@ function openClientCabinet(client: any) {
   }
   // No linked project — open link modal so user can pick one
   openLink(client)
+}
+
+const showDocs = ref(false)
+const docsClient = ref<any>(null)
+const docsClientId = ref<number | null>(null)
+const docsTitle = ref('')
+const docsCategory = ref('other')
+const docsNotes = ref('')
+const docsUploading = ref(false)
+
+const { data: clientDocs, refresh: refreshClientDocs } = await useFetch<any[]>(
+  () => docsClientId.value ? `/api/clients/${docsClientId.value}/documents` : null,
+  { default: () => [] },
+)
+
+function openDocs(client: any) {
+  docsClient.value = client
+  docsClientId.value = client.id
+  docsTitle.value = ''
+  docsCategory.value = 'other'
+  docsNotes.value = ''
+  showDocs.value = true
+  refreshClientDocs()
+}
+
+function closeDocs() {
+  showDocs.value = false
+}
+
+async function uploadClientDoc(ev: Event) {
+  const input = ev.target as HTMLInputElement
+  const files = input.files
+  if (!files?.length || !docsClientId.value) return
+
+  docsUploading.value = true
+  try {
+    for (const file of Array.from(files)) {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('title', docsTitle.value || file.name)
+      fd.append('category', docsCategory.value)
+      fd.append('notes', docsNotes.value)
+      await $fetch(`/api/clients/${docsClientId.value}/documents`, { method: 'POST', body: fd })
+    }
+    await refreshClientDocs()
+    docsTitle.value = ''
+    docsNotes.value = ''
+    input.value = ''
+  } finally {
+    docsUploading.value = false
+  }
+}
+
+async function deleteClientDoc(docId: number) {
+  if (!docsClientId.value) return
+  if (!confirm('Удалить документ?')) return
+  await $fetch(`/api/clients/${docsClientId.value}/documents/${docId}`, { method: 'DELETE' })
+  await refreshClientDocs()
 }
 </script>
 
@@ -382,6 +499,20 @@ function openClientCabinet(client: any) {
   opacity: .75; transition: opacity .15s; white-space: nowrap;
 }
 .cl-cabinet-btn:hover { opacity: 1; }
+
+.cl-docs-list { display: flex; flex-direction: column; gap: 8px; }
+.cl-doc-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+}
+.cl-doc-title { font-size: .84rem; font-weight: 500; }
+.cl-doc-meta { font-size: .72rem; opacity: .72; }
+.cl-doc-actions { display: flex; align-items: center; gap: 8px; }
 
 .cl-backdrop {
   position: fixed; inset: 0; z-index: 1000;
