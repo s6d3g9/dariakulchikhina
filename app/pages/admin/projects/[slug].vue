@@ -221,10 +221,8 @@
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
 import type { Component } from 'vue'
 import {
-  AdminRoadmap,
   AdminWorkStatus,
   AdminClientProfile,
-  AdminContractorsProfile,
   AdminFirstContact,
   AdminSmartBrief,
   AdminSiteSurvey,
@@ -247,10 +245,7 @@ import {
   AdminClientSignOff,
   AdminPageContent,
   AdminMaterials,
-  ClientRoadmap,
-  ClientWorkStatus,
   ClientPageContent,
-  ClientContractorsProfile,
   ClientInitiation,
   ClientContactDetails,
   ClientTimeline,
@@ -285,9 +280,6 @@ const MODERN_PROJECT_PAGES = [
   'punch_list',
   'commissioning_act',
   'client_sign_off',
-  'profile_contractors',
-  'work_status',
-  'project_roadmap',
 ]
 
 const LEGACY_PROJECT_PAGES = new Set(['materials', 'tz', 'profile_customer'])
@@ -383,10 +375,8 @@ const editForm = reactive({
 })
 
 const pageComponentMap: Record<string, Component> = {
-  project_roadmap: AdminRoadmap,
   work_status: AdminWorkStatus,
   profile_customer: AdminClientProfile,
-  profile_contractors: AdminContractorsProfile,
   first_contact: AdminFirstContact,
   self_profile: AdminSmartBrief,
   brief: AdminSmartBrief,
@@ -456,9 +446,6 @@ const clientPageComponentMap: Record<string, Component> = {
   design_timeline:       ClientTimeline,
   design_album:          ClientDesignAlbum,
   contracts:             ClientContracts,
-  project_roadmap:       ClientRoadmap,
-  work_status:           ClientWorkStatus,
-  profile_contractors:   ClientContractorsProfile,
 }
 
 const allClientPages = getClientPages()

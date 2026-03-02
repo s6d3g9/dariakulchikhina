@@ -52,11 +52,6 @@ export const PROJECT_PAGES: ProjectPageDef[] = [
   { slug: 'commissioning_act',   title: '5.2 акт приёмки',        icon: '◴', phase: 'commissioning', clientVisible: false },
   { slug: 'client_sign_off',     title: '5.3 подпись клиента',    icon: '◵', phase: 'commissioning', clientVisible: false },
 
-  // Общие (не привязаны к фазам 0–5, но видны в каждом проекте)
-  { slug: 'profile_contractors', title: 'подрядчики',             icon: '◑', phase: 'general' },
-  { slug: 'work_status',         title: 'статусы работ',          icon: '◷', phase: 'general' },
-  { slug: 'project_roadmap',     title: 'дорожная карта',         icon: '◈', phase: 'general' },
-
   // Устаревшие / клиентские (без фазы)
   { slug: 'client_contacts',     title: 'контактные данные',      icon: '◌', phase: undefined },
   { slug: 'design_timeline',     title: 'ход проекта',            icon: '◈', phase: undefined },
@@ -92,12 +87,11 @@ export const PHASE_LABELS: Record<string, string> = {
   procurement:     'Фаза 3 · Комплектация',
   construction:    'Фаза 4 · Строительство',
   commissioning:   'Фаза 5 · Сдача',
-  general:         'Общее',
 }
 
 /** Группы навигации для админского sidebar (по фазам) */
 export function getAdminNavGroups(): { label: string; pages: ProjectPageDef[] }[] {
-  const phases = ['lead', 'concept', 'working_project', 'procurement', 'construction', 'commissioning', 'general']
+  const phases = ['lead', 'concept', 'working_project', 'procurement', 'construction', 'commissioning']
   const admin = getAdminPages()
   return phases
     .map(phase => ({
@@ -130,7 +124,4 @@ export const CORE_PAGES = [
   'punch_list',
   'commissioning_act',
   'client_sign_off',
-  'profile_contractors',
-  'work_status',
-  'project_roadmap',
 ] as const
