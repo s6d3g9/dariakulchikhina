@@ -148,11 +148,11 @@
           <div class="docs-modal-body">
             <div class="docs-field">
               <label class="docs-label">Название *</label>
-              <input v-model="uploadForm.title" class="docs-input" placeholder="Договор подряда №12..." />
+              <input v-model="uploadForm.title" class="glass-input" placeholder="Договор подряда №12..." />
             </div>
             <div class="docs-field">
               <label class="docs-label">Категория</label>
-              <select v-model="uploadForm.category" class="docs-input docs-input--select">
+              <select v-model="uploadForm.category" class="glass-input">
                 <option v-for="c in CATEGORIES.filter(c => c.key !== 'all')" :key="c.key" :value="c.key">
                   {{ c.num }} {{ c.label }}
                 </option>
@@ -160,22 +160,22 @@
             </div>
             <div class="docs-field">
               <label class="docs-label">Проект</label>
-              <select v-model="uploadForm.projectSlug" class="docs-input docs-input--select">
+              <select v-model="uploadForm.projectSlug" class="glass-input">
                 <option value="">— без проекта —</option>
                 <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
               </select>
             </div>
             <div v-if="!editingDoc" class="docs-field">
               <label class="docs-label">Файл</label>
-              <input type="file" class="docs-input" @change="onFileSelect" />
+              <input type="file" class="glass-input" @change="onFileSelect" />
             </div>
             <div class="docs-field">
               <label class="docs-label">Или вставьте URL</label>
-              <input v-model="uploadForm.url" class="docs-input" placeholder="https://..." />
+              <input v-model="uploadForm.url" class="glass-input" placeholder="https://..." />
             </div>
             <div class="docs-field">
               <label class="docs-label">Заметки</label>
-              <textarea v-model="uploadForm.notes" rows="2" class="docs-input docs-input--textarea" placeholder="дополнительная информация..."></textarea>
+              <textarea v-model="uploadForm.notes" rows="2" class="glass-input u-ta" placeholder="дополнительная информация..."></textarea>
             </div>
             <p v-if="uploadError" class="docs-error">{{ uploadError }}</p>
           </div>
@@ -1123,17 +1123,6 @@ html.dark .doc-badge--estimate { background: rgba(168,85,247,.15); color: #c4b5f
   font-size: .62rem; text-transform: uppercase; letter-spacing: .06em;
   color: var(--glass-text); opacity: .45; font-weight: var(--ds-heading-weight, 600);
 }
-.docs-input {
-  border: none;
-  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
-  color: var(--glass-text); padding: 8px 10px;
-  border-radius: var(--input-radius, 8px);
-  font-size: var(--ds-text-sm, .82rem); font-family: inherit; outline: none;
-  transition: background var(--ds-transition, .15s ease);
-}
-.docs-input:focus { background: color-mix(in srgb, var(--glass-text) 9%, transparent); }
-.docs-input--select { appearance: none; cursor: pointer; }
-.docs-input--textarea { resize: vertical; min-height: 60px; }
 .docs-error { font-size: var(--ds-text-xs, .78rem); color: var(--ds-error, #dc2626); }
 
 /* ── Responsive ── */

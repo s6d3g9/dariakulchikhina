@@ -65,15 +65,15 @@
               <template v-if="wizardStep === 1">
                 <div class="pj-form-field">
                   <label class="pj-form-label">Название</label>
-                  <input v-model="newProject.title" class="pj-form-input" required placeholder="Название проекта" autofocus />
+                  <input v-model="newProject.title" class="glass-input" required placeholder="Название проекта" autofocus />
                 </div>
                 <div class="pj-form-field">
                   <label class="pj-form-label">Slug (URL)</label>
-                  <input v-model="newProject.slug" class="pj-form-input" required placeholder="project-slug" />
+                  <input v-model="newProject.slug" class="glass-input" required placeholder="project-slug" />
                 </div>
                 <div class="pj-form-field">
                   <label class="pj-form-label">Сценарий дорожной карты</label>
-                  <select v-model="newProject.roadmapTemplateKey" class="pj-form-input pj-form-select">
+                  <select v-model="newProject.roadmapTemplateKey" class="glass-input">
                     <option value="">— без шаблона</option>
                     <option v-for="tpl in allTemplates" :key="tpl.key" :value="tpl.key">
                       {{ tpl.title }}{{ tpl.isBuiltIn === false ? ' · пользовательский' : '' }}
@@ -422,16 +422,6 @@ html.dark .pj-phase--teal   { color: #5eead4; background: rgba(94,234,212,.1); }
   font-size: .6rem; text-transform: uppercase; letter-spacing: .06em;
   color: var(--glass-text); opacity: .4; font-weight: 600;
 }
-.pj-form-input {
-  border: none; padding: 8px 10px;
-  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
-  color: var(--glass-text); border-radius: var(--input-radius, 8px);
-  font-size: var(--ds-text-sm, .84rem); font-family: inherit; outline: none;
-  width: 100%; box-sizing: border-box;
-  transition: background .15s ease;
-}
-.pj-form-input:focus { background: color-mix(in srgb, var(--glass-text) 9%, transparent); }
-.pj-form-select { appearance: none; cursor: pointer; }
 .pj-form-error {
   font-size: var(--ds-text-xs, .78rem); color: var(--ds-error, #dc2626); margin-bottom: 8px;
 }

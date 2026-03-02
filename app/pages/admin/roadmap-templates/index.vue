@@ -36,11 +36,11 @@
           <div class="a-form-grid">
             <div class="a-field">
               <label>Название *</label>
-              <input v-model="form.title" class="a-input" required>
+              <input v-model="form.title" class="glass-input" required>
             </div>
             <div class="a-field">
               <label>Сложность *</label>
-              <select v-model="form.complexity" class="a-input" style="padding:8px" required>
+              <select v-model="form.complexity" class="glass-input" required>
                 <option v-for="opt in ROADMAP_COMPLEXITY_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
             </div>
@@ -49,13 +49,13 @@
           <div class="a-form-grid">
             <div class="a-field">
               <label>Тип объекта *</label>
-              <select v-model="form.objectType" class="a-input" style="padding:8px" required>
+              <select v-model="form.objectType" class="glass-input" required>
                 <option v-for="opt in OBJECT_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
             </div>
             <div class="a-field">
               <label>Тип клиента *</label>
-              <select v-model="form.clientType" class="a-input" style="padding:8px" required>
+              <select v-model="form.clientType" class="glass-input" required>
                 <option v-for="opt in CLIENT_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
             </div>
@@ -63,7 +63,7 @@
 
           <div class="a-field">
             <label>Описание</label>
-            <textarea v-model="form.description" class="a-input" rows="2" style="padding:8px"></textarea>
+            <textarea v-model="form.description" class="glass-input u-ta" rows="2"></textarea>
           </div>
 
           <div class="a-field">
@@ -76,11 +76,11 @@
                 <div class="a-stage-grid">
                   <div>
                     <label style="font-size:.72rem;color:#888">Название этапа</label>
-                    <input v-model="stage.title" class="a-input" required>
+                    <input v-model="stage.title" class="glass-input" required>
                   </div>
                   <div>
                     <label style="font-size:.72rem;color:#888">Тип этапа</label>
-                    <select v-model="stage.stageKey" class="a-input" style="padding:8px" required>
+                    <select v-model="stage.stageKey" class="glass-input" required>
                       <option v-for="opt in ROADMAP_STAGE_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                     </select>
                   </div>
@@ -88,7 +88,7 @@
                 </div>
                 <div style="margin-top:8px">
                   <label style="font-size:.72rem;color:#888">Описание этапа</label>
-                  <input v-model="stage.description" class="a-input">
+                  <input v-model="stage.description" class="glass-input">
                 </div>
               </div>
             </div>
@@ -268,13 +268,6 @@ async function removeTemplate(tpl: any) {
 .a-btn-save:hover { background: #333; }
 .a-field { margin-bottom: 14px; }
 .a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
-.a-input {
-  display: block; width: 100%; border: none;
-  background: color-mix(in srgb, var(--glass-bg) 90%, transparent);
-  border-radius: 8px;
-  padding: 8px 0; font-size: .88rem; outline: none; font-family: inherit;
-}
-.a-input:focus { opacity: .92; }
 .a-modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.3);
   display: flex; align-items: center; justify-content: center; z-index: 100;

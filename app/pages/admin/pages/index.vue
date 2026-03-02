@@ -5,19 +5,19 @@
     <div v-for="(p, i) in pages" :key="i" class="pg-card">
       <div class="pg-row">
         <label class="pg-lbl">slug:</label>
-        <input v-model="p.slug" class="pg-inp" type="text">
+        <input v-model="p.slug" class="glass-input" type="text">
       </div>
       <div class="pg-row">
         <label class="pg-lbl">название:</label>
-        <input v-model="p.title" class="pg-inp" type="text">
+        <input v-model="p.title" class="glass-input" type="text">
       </div>
       <div class="pg-row">
         <label class="pg-lbl">заголовок:</label>
-        <input v-model="p.pageTitle" class="pg-inp" type="text" placeholder="Заголовок страницы">
+        <input v-model="p.pageTitle" class="glass-input" type="text" placeholder="Заголовок страницы">
       </div>
       <div class="pg-row">
         <label class="pg-lbl">шрифт (px):</label>
-        <input v-model.number="p.fontSize" class="pg-inp" type="number" min="10" max="28" step="1" style="max-width:90px">
+        <input v-model.number="p.fontSize" class="glass-input" type="number" min="10" max="28" step="1" style="max-width:90px">
       </div>
       <div style="text-align:right;margin-top:8px">
         <button class="a-btn-sm a-btn-danger" @click="removePage(i)">удалить страницу</button>
@@ -151,18 +151,6 @@ async function save() {
   color: var(--pg-lbl);
   flex-shrink: 0;
 }
-.pg-inp {
-  flex: 1;
-  border: none;
-  border-bottom: none;
-  padding: 6px 0;
-  font-size: .88rem;
-  outline: none;
-  background: transparent;
-  font-family: inherit;
-  color: var(--pg-inp-color);
-}
-.pg-inp:focus { border-bottom-color: var(--pg-inp-focus); }
 .pg-btn-add {
   border: none;
   background: color-mix(in srgb, var(--glass-bg) 92%, transparent);

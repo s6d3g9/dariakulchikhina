@@ -174,7 +174,7 @@
         <form @submit.prevent="saveProject">
           <div class="a-field">
             <label>Название</label>
-            <input v-model="editForm.title" class="a-input" required>
+            <input v-model="editForm.title" class="glass-input" required>
           </div>
           <div class="a-field">
             <label style="margin-bottom:10px;display:block">Видимые страницы</label>
@@ -1354,12 +1354,6 @@ async function unlinkDesigner(designerId: number) {
 /* ── Modal ── */
 .a-field { margin-bottom: 14px; }
 .a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
-.a-input {
-  display: block; width: 100%; border: none; border-bottom: 1px solid #ddd;
-  padding: 8px 0; font-size: .88rem; outline: none; font-family: inherit;
-  color: inherit; background: transparent;
-}
-.a-input:focus { border-bottom-color: #1a1a1a; }
 .a-modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,.3);
   display: flex; align-items: center; justify-content: center; z-index: 100;

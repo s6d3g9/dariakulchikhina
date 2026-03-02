@@ -158,14 +158,14 @@
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Тип</label>
-                  <select v-model="form.contractorType" class="ct-form-input ct-form-select">
+                  <select v-model="form.contractorType" class="glass-input">
                     <option value="master">Мастер (частный специалист)</option>
                     <option value="company">Подрядчик (организация)</option>
                   </select>
                 </div>
                 <div v-if="form.contractorType === 'master'" class="u-field">
                   <label class="u-field__label">Компания-работодатель</label>
-                  <select v-model="form.parentId" class="ct-form-input ct-form-select">
+                  <select v-model="form.parentId" class="glass-input">
                     <option :value="null">— самозанятый —</option>
                     <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
                   </select>
@@ -196,27 +196,27 @@
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Название *</label>
-                  <input v-model="form.name" class="ct-form-input" required />
+                  <input v-model="form.name" class="glass-input" required />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Slug *</label>
-                  <input v-model="form.slug" class="ct-form-input" required :disabled="!!editingId" />
+                  <input v-model="form.slug" class="glass-input" required :disabled="!!editingId" />
                 </div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Компания</label>
-                  <input v-model="form.companyName" class="ct-form-input" />
+                  <input v-model="form.companyName" class="glass-input" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Контактное лицо</label>
-                  <input v-model="form.contactPerson" class="ct-form-input" />
+                  <input v-model="form.contactPerson" class="glass-input" />
                 </div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Виды работ</label>
-                  <input v-model="workTypesStr" class="ct-form-input" placeholder="через запятую" />
+                  <input v-model="workTypesStr" class="glass-input" placeholder="через запятую" />
                 </div>
                 <div class="u-field"></div>
               </div>
@@ -226,17 +226,17 @@
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Телефон</label>
-                  <input v-model="form.phone" class="ct-form-input" />
+                  <input v-model="form.phone" class="glass-input" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Email</label>
-                  <input v-model="form.email" class="ct-form-input" />
+                  <input v-model="form.email" class="glass-input" />
                 </div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Мессенджер</label>
-                  <select v-model="form.messenger" class="ct-form-input ct-form-select">
+                  <select v-model="form.messenger" class="glass-input">
                     <option value="">—</option>
                     <option value="telegram">telegram</option>
                     <option value="whatsapp">whatsapp</option>
@@ -245,13 +245,13 @@
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Ник / номер мессенджера</label>
-                  <input v-model="form.messengerNick" class="ct-form-input" />
+                  <input v-model="form.messengerNick" class="glass-input" />
                 </div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Сайт / портфолио</label>
-                  <input v-model="form.website" class="ct-form-input" placeholder="https://" />
+                  <input v-model="form.website" class="glass-input" placeholder="https://" />
                 </div>
                 <div class="u-field"></div>
               </div>
@@ -261,11 +261,11 @@
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Юридический адрес</label>
-                  <AppAddressInput v-model="form.legalAddress" input-class="ct-form-input" />
+                  <AppAddressInput v-model="form.legalAddress" input-class="glass-input" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Фактический адрес</label>
-                  <AppAddressInput v-model="form.factAddress" input-class="ct-form-input" />
+                  <AppAddressInput v-model="form.factAddress" input-class="glass-input" />
                 </div>
               </div>
 
@@ -274,42 +274,42 @@
               <div class="u-grid-3">
                 <div class="u-field">
                   <label class="u-field__label">ИНН</label>
-                  <input v-model="form.inn" class="ct-form-input" />
+                  <input v-model="form.inn" class="glass-input" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">КПП</label>
-                  <input v-model="form.kpp" class="ct-form-input" />
+                  <input v-model="form.kpp" class="glass-input" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">ОГРН / ОГРНИП</label>
-                  <input v-model="form.ogrn" class="ct-form-input" />
+                  <input v-model="form.ogrn" class="glass-input" />
                 </div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Банк</label>
-                  <input v-model="form.bankName" class="ct-form-input" />
+                  <input v-model="form.bankName" class="glass-input" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">БИК</label>
-                  <input v-model="form.bik" class="ct-form-input" />
+                  <input v-model="form.bik" class="glass-input" />
                 </div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Расчётный счёт</label>
-                  <input v-model="form.settlementAccount" class="ct-form-input" />
+                  <input v-model="form.settlementAccount" class="glass-input" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Корр. счёт</label>
-                  <input v-model="form.correspondentAccount" class="ct-form-input" />
+                  <input v-model="form.correspondentAccount" class="glass-input" />
                 </div>
               </div>
 
               <!-- notes -->
               <div class="ct-form-section">примечания</div>
               <div class="u-field">
-                <textarea v-model="form.notes" class="ct-form-input ct-form-textarea" rows="3" placeholder="заметки о подрядчике"></textarea>
+                <textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="заметки о подрядчике"></textarea>
               </div>
 
               <p v-if="formError" class="ct-form-error ct-form-error--bottom">{{ formError }}</p>
@@ -878,18 +878,6 @@ html.dark .ct-badge--master { background: rgba(99, 140, 255, .15); color: #82a5f
   margin: 16px 0 8px; padding-bottom: 4px;
 }
 .ct-form-section:first-child { margin-top: 0; }
-.ct-form-input {
-  border: none; padding: 8px 10px;
-  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
-  color: var(--glass-text); border-radius: var(--input-radius, 8px);
-  font-size: var(--ds-text-sm, .82rem); font-family: inherit; outline: none;
-  width: 100%; box-sizing: border-box;
-  transition: background .15s ease;
-}
-.ct-form-input:focus { background: color-mix(in srgb, var(--glass-text) 9%, transparent); }
-.ct-form-input:disabled { opacity: .4; cursor: default; }
-.ct-form-select { appearance: none; cursor: pointer; }
-.ct-form-textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
 .ct-form-hint {
   font-size: var(--ds-text-xs, .78rem); color: var(--glass-text); opacity: .4;
   margin-bottom: 8px;
