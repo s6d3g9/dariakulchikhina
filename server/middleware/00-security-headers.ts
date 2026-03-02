@@ -28,6 +28,9 @@ export default defineEventHandler((event) => {
   // Referrer policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
 
+  // HSTS — tells browsers to always use HTTPS for 1 year (ignored on HTTP per RFC 6797)
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+
   // Permissions policy (disable sensitive APIs)
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
 
