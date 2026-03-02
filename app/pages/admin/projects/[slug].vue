@@ -8,18 +8,6 @@
         <span style="margin:0 6px">/</span>
         <span>{{ project.title }}</span>
       </div>
-
-      <div class="proj-link-toolbar glass-card" style="margin-bottom:14px">
-        <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click="showClientModal = true">
-          клиенты ({{ linkedClients.length }})
-        </button>
-        <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click="showContractorModal = true">
-          подрядчики ({{ linkedContractorsList.length }})
-        </button>
-        <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click="showDesignerModal = true">
-          дизайнеры ({{ linkedDesignersList.length }})
-        </button>
-      </div>
       <p v-if="clientLinkError" class="proj-client-error" style="margin-bottom:6px">{{ clientLinkError }}</p>
       <p v-else-if="clientLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ clientLinkSuccess }}</p>
       <p v-if="contractorLinkError" class="proj-client-error" style="margin-bottom:6px">{{ contractorLinkError }}</p>

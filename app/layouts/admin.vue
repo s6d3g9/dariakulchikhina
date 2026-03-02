@@ -29,6 +29,13 @@
             :title="currentProjectTitle"
             @click.stop="projectsOpen = !projectsOpen"
           >{{ currentProjectInitials }}</button>
+          <button
+            v-else
+            type="button"
+            class="admin-mini-chip admin-mini-chip--dim"
+            title="Список проектов"
+            @click.stop="projectsOpen = !projectsOpen"
+          >…</button>
           <div v-if="projectsOpen" class="admin-dropdown glass-surface" @click.stop>
             <button
               v-for="p in quickProjects" :key="p.slug"
@@ -136,8 +143,35 @@
         </div>
 
         <!-- дизайнеры -->
-        <div class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDesignersTab }">
+        <div ref="designersTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDesignersTab }">
           <NuxtLink to="/admin/designers" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDesignersTab }">дизайнеры</NuxtLink>
+          <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="designersOpen = !designersOpen">…</button>
+          <div v-if="designersOpen" class="admin-dropdown glass-surface" @click.stop>
+            <div
+              v-for="d in quickDesigners" :key="d.id"
+              class="admin-drop-item-with-actions"
+            >
+              <button
+                type="button" class="admin-drop-item admin-drop-item--flex"
+                @click="pickDesigner(d)"
+              >
+                <span class="admin-drop-ini">{{ nameInitials(d.name) }}</span>
+                <span class="admin-drop-lbl">{{ d.name }}</span>
+              </button>
+              <button
+                v-if="activeProjectSlug"
+                type="button"
+                class="admin-drop-action-btn"
+                :class="isDesignerLinked(d.id) ? 'admin-drop-action-btn--remove' : 'admin-drop-action-btn--add'"
+                :disabled="clientActionLoading"
+                @click.stop="toggleDesignerLink(d.id, d.name)"
+                :title="isDesignerLinked(d.id) ? 'Отвязать от проекта' : 'Привязать к проекту'"
+              >{{ isDesignerLinked(d.id) ? '-' : '+' }}</button>
+            </div>
+            <div class="admin-drop-divider"></div>
+            <NuxtLink to="/admin/designers" class="admin-drop-all" @click="designersOpen = false">все дизайнеры →</NuxtLink>
+            <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
+          </div>
         </div>
 
 
@@ -268,6 +302,14 @@ const quickContractors = computed(() => (contractorsData.value || []).slice(0, 1
 const { data: clientsData, refresh: refreshClients } = useFetch<any[]>('/api/clients', { server: false, default: () => [] })
 const quickClients = computed(() => (clientsData.value || []).slice(0, 12))
 
+// ── Designers data ──────────────────────────────────────────────
+const { data: designersData } = useFetch<any[]>('/api/designers', { server: false, default: () => [] })
+const quickDesigners = computed(() => (designersData.value || []).slice(0, 12))
+const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await useFetch<any[]>(
+  () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/designers` : null,
+  { watch: [activeProjectSlug], server: false, default: () => [] },
+)
+
 // Client management
 const showAddClientModal = ref(false)
 const newClientForm = reactive({
@@ -332,6 +374,10 @@ const linkedContractorIds = computed(() => {
   return new Set<string>()
 })
 
+const linkedDesignerIds = computed(() => {
+  return new Set((linkedDesignersData.value || []).map((d: any) => String(d.id)))
+})
+
 // Check if client/contractor is linked to current project
 function isClientLinked(clientId: string): boolean {
   return linkedClientIds.value.has(String(clientId))
@@ -339,6 +385,10 @@ function isClientLinked(clientId: string): boolean {
 
 function isContractorLinked(contractorId: string): boolean {
   return linkedContractorIds.value.has(String(contractorId))
+}
+
+function isDesignerLinked(designerId: string): boolean {
+  return linkedDesignerIds.value.has(String(designerId))
 }
 
 // Toggle client link to current project
@@ -423,6 +473,44 @@ async function toggleContractorLink(contractorId: string, contractorName: string
   }
 }
 
+async function toggleDesignerLink(designerId: string, designerName: string) {
+  if (!activeProjectSlug.value) {
+    clientActionMessage.value = 'Нет активного проекта'
+    return
+  }
+
+  clientActionLoading.value = true
+  clientActionMessage.value = ''
+
+  const isLinked = isDesignerLinked(designerId)
+
+  try {
+    if (isLinked) {
+      await $fetch(`/api/projects/${activeProjectSlug.value}/designers`, {
+        method: 'DELETE',
+        body: { designerId: Number(designerId) },
+      })
+      clientActionMessage.value = `Дизайнер "${designerName}" отвязан от проекта`
+    } else {
+      await $fetch(`/api/projects/${activeProjectSlug.value}/designers`, {
+        method: 'POST',
+        body: { designerId: Number(designerId) },
+      })
+      clientActionMessage.value = `Дизайнер "${designerName}" привязан к проекту`
+    }
+
+    await refreshLinkedDesigners()
+
+    setTimeout(() => {
+      clientActionMessage.value = ''
+    }, 2000)
+  } catch (error: any) {
+    clientActionMessage.value = error?.data?.message || 'Ошибка при изменении связи дизайнера'
+  } finally {
+    clientActionLoading.value = false
+  }
+}
+
 // ── Initials helpers ────────────────────────────────────────────
 function projectInitials(title: string) {
   const s = String(title || '').trim()
@@ -439,18 +527,20 @@ const projectsOpen    = ref(false)
 const contractorsOpen = ref(false)
 const clientsOpen     = ref(false)
 const galleryOpen     = ref(false)
+const designersOpen   = ref(false)
 
 const projectsTabRef    = ref<HTMLElement | null>(null)
 const contractorsTabRef = ref<HTMLElement | null>(null)
 const clientsTabRef     = ref<HTMLElement | null>(null)
 const galleryTabRef     = ref<HTMLElement | null>(null)
+const designersTabRef   = ref<HTMLElement | null>(null)
 
 function closeAll() {
-  projectsOpen.value = contractorsOpen.value = clientsOpen.value = galleryOpen.value = false
+  projectsOpen.value = contractorsOpen.value = clientsOpen.value = galleryOpen.value = designersOpen.value = false
 }
 
 function onDocClick(e: MouseEvent) {
-  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value]
+  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value]
   if (refs.every(r => !r || !r.contains(e.target as Node))) closeAll()
 }
 
@@ -494,6 +584,10 @@ function pickClient(cl: any) {
   navigateTo(clientsTabTo.value)
 }
 function pickGallery(slug: string) { closeAll(); navigateTo(withCtx(`/admin/gallery/${slug}`)) }
+function pickDesigner(designer: any) {
+  closeAll()
+  navigateTo('/admin/designers')
+}
 
 // ── Auth ─────────────────────────────────────────────────────────
 async function logout() {
