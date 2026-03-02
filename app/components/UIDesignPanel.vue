@@ -552,6 +552,7 @@
           :style="compTooltipStyle"
         >
           <span class="dp-comp-tag">{{ compHover.name }}</span>
+          <span class="dp-comp-path">{{ compHover.path }}</span>
           <span class="dp-comp-hint">↵ click to lock</span>
         </div>
         <!-- Locked result card (pointer-events: auto) -->
@@ -1087,18 +1088,41 @@ const compResultStyle = computed(() => {
   return { left: `${Math.max(8, cx)}px`, top: `${cy}px` }
 })
 
-function getVueComponent(el: HTMLElement): { name: string; path: string } | null {
-  const skip = new Set(['Transition', 'TransitionGroup', 'KeepAlive', 'Suspense', 'Teleport', 'RouterView', 'NuxtLink', 'RouterLink'])
-  let node = (el as any).__vueParentComponent
-  while (node) {
-    const name: string = node.type?.__name || node.type?.name || ''
-    if (name && !skip.has(name) && name !== 'Anonymous' && name !== 'App') {
-      const path = `app/components/${name}.vue`
-      return { name, path }
+function getVueComponent(el: HTMLElement): { name: string; path: string } {
+  const skip = new Set([
+    'Transition', 'TransitionGroup', 'KeepAlive', 'Suspense', 'Teleport',
+    'RouterView', 'NuxtLink', 'RouterLink', 'App', 'Anonymous',
+    'UIDesignPanel', 'NuxtPage', 'NuxtLayout',
+  ])
+
+  // Walk UP the real DOM tree — __vueParentComponent is only on root elements of a component
+  let domEl: Element | null = el
+  while (domEl && domEl !== document.body) {
+    const vnode = (domEl as any).__vueParentComponent
+    if (vnode) {
+      // Walk the Vue component-parent chain from this node
+      let node: any = vnode
+      while (node) {
+        const name: string = node.type?.__name || node.type?.name || ''
+        if (name && !skip.has(name)) {
+          // Try to infer path from filename slot-in-type
+          const file: string = node.type?.__file || ''
+          const pathFromFile = file
+            ? file.replace(/^.*?(app\/.*)$/, '$1')
+            : `app/components/${name}.vue`
+          return { name, path: pathFromFile }
+        }
+        node = node.parent
+      }
     }
-    node = node.parent
+    domEl = domEl.parentElement
   }
-  return null
+
+  // Fallback: show DOM identity so the card always appears
+  const tag = el.tagName.toLowerCase()
+  const cls = Array.from(el.classList).filter(c => !c.startsWith('dp-')).slice(0, 3).join('.')
+  const fallback = cls ? `.${cls}` : `<${tag}>`
+  return { name: fallback, path: `(DOM: ${tag})` }
 }
 
 function onCompMove(e: MouseEvent) {
@@ -1106,7 +1130,6 @@ function onCompMove(e: MouseEvent) {
   const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
   if (!el || el.closest('.dp-comp-layer') || el.closest('.dp-topbar')) { compHover.visible = false; return }
   const info = getVueComponent(el)
-  if (!info) { compHover.visible = false; return }
   compHover.x = e.clientX; compHover.y = e.clientY
   compHover.name = info.name; compHover.path = info.path
   compHover.visible = true
@@ -1117,10 +1140,8 @@ function onCompClick(e: MouseEvent) {
   if (!el || el.closest('.dp-comp-layer') || el.closest('.dp-topbar')) return
   e.preventDefault(); e.stopPropagation()
   const info = getVueComponent(el)
-  if (info) {
-    compResult.value = { ...info, copied: false, x: e.clientX, y: e.clientY }
-    compHover.visible = false
-  }
+  compResult.value = { ...info, copied: false, x: e.clientX, y: e.clientY }
+  compHover.visible = false
 }
 
 function copyCompResult() {
@@ -1784,11 +1805,15 @@ onBeforeUnmount(() => {
   border-radius: 7px; padding: 6px 10px;
   box-shadow: 0 4px 20px rgba(0,0,0,.35), 0 0 0 1px hsla(220, 70%, 65%, .18);
   font-size: .62rem; line-height: 1.4;
-  max-width: 300px; white-space: nowrap;
-  display: flex; align-items: center; gap: 10px;
+  max-width: 320px;
+  display: flex; flex-direction: column; gap: 3px;
 }
 .dp-comp-tag {
-  font-weight: 700; color: hsl(215, 85%, 72%); font-size: .66rem;
+  font-weight: 700; color: hsl(215, 85%, 72%); font-size: .66rem; white-space: nowrap;
+}
+.dp-comp-path {
+  font-size: .57rem; color: rgba(255,255,255,.45); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 300px;
 }
 .dp-comp-hint {
   font-size: .52rem; color: rgba(255,255,255,.3); letter-spacing: .04em;
