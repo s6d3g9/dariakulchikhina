@@ -269,6 +269,188 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       darkElevation: 10, darkSaturation: 35,
     },
   },
+  /* ── New presets ─────────────────────────────────── */
+  {
+    id: 'glassmorphism',
+    name: 'Glassmorphism',
+    description: 'Матовое стекло — как iOS / macOS',
+    icon: '❖',
+    tokens: {
+      btnRadius: 12, btnStyle: 'soft', btnTransform: 'none', btnWeight: 500,
+      fontWeight: 400, headingWeight: 600, letterSpacing: 0.02, lineHeight: 1.5, typeScale: 1.2,
+      glassBlur: 32, glassOpacity: 0.30, glassBorderOpacity: 0.12, glassSaturation: 180,
+      shadowOffsetY: 12, shadowBlurRadius: 40, shadowSpread: 0, shadowOpacity: 0.08,
+      cardRadius: 16, inputRadius: 10, chipRadius: 999, modalRadius: 20,
+      animDuration: 200, animEasing: 'cubic-bezier(0.16,1,0.3,1)',
+      borderWidth: 1, borderStyle: 'solid', gridGap: 16,
+      accentHue: 230, accentSaturation: 50, accentLightness: 58,
+      darkElevation: 8, darkSaturation: 45,
+    },
+  },
+  {
+    id: 'luxury',
+    name: 'Luxury',
+    description: 'Премиум — тёмные тона, золотой акцент',
+    icon: '♦',
+    tokens: {
+      btnRadius: 2, btnStyle: 'filled', btnTransform: 'uppercase', btnWeight: 500,
+      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontWeight: 400, headingWeight: 700, letterSpacing: 0.1, lineHeight: 1.6, typeScale: 1.25,
+      paragraphSpacing: 1.0,
+      glassBlur: 10, glassOpacity: 0.55, glassBorderOpacity: 0.08, glassSaturation: 110,
+      shadowOffsetY: 4, shadowBlurRadius: 20, shadowSpread: 0, shadowOpacity: 0.06,
+      cardRadius: 4, inputRadius: 3, chipRadius: 4, modalRadius: 6,
+      animDuration: 240, animEasing: 'cubic-bezier(0.33,1,0.68,1)',
+      borderWidth: 1, borderStyle: 'solid', gridGap: 20,
+      accentHue: 42, accentSaturation: 70, accentLightness: 50,
+      darkElevation: 3, darkSaturation: 25,
+    },
+  },
+  {
+    id: 'playful',
+    name: 'Playful',
+    description: 'Яркий и весёлый — как Figma / Notion AI',
+    icon: '●',
+    tokens: {
+      btnRadius: 999, btnStyle: 'filled', btnTransform: 'none', btnWeight: 600,
+      fontWeight: 400, headingWeight: 700, letterSpacing: 0.01, lineHeight: 1.55, typeScale: 1.25,
+      glassBlur: 20, glassOpacity: 0.50, glassBorderOpacity: 0.06, glassSaturation: 160,
+      shadowOffsetY: 8, shadowBlurRadius: 28, shadowSpread: 0, shadowOpacity: 0.07,
+      cardRadius: 22, inputRadius: 14, chipRadius: 999, modalRadius: 24,
+      animDuration: 200, animEasing: 'cubic-bezier(0.16,1,0.3,1)',
+      borderWidth: 0, gridGap: 16,
+      accentHue: 270, accentSaturation: 65, accentLightness: 55,
+      darkElevation: 8, darkSaturation: 55,
+    },
+  },
+  {
+    id: 'swiss',
+    name: 'Swiss',
+    description: 'Швейцарский стиль — Helvetica, сетка, порядок',
+    icon: '▦',
+    tokens: {
+      btnRadius: 0, btnStyle: 'filled', btnTransform: 'uppercase', btnWeight: 500,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
+      fontWeight: 400, headingWeight: 700, letterSpacing: 0.04, lineHeight: 1.45, typeScale: 1.333,
+      paragraphSpacing: 0.5,
+      glassBlur: 0, glassOpacity: 0.95, glassBorderOpacity: 0.0, glassSaturation: 100,
+      shadowOffsetY: 0, shadowBlurRadius: 0, shadowSpread: 0, shadowOpacity: 0,
+      cardRadius: 0, inputRadius: 0, chipRadius: 0, modalRadius: 0,
+      animDuration: 100, animEasing: 'linear',
+      borderWidth: 2, borderStyle: 'solid', gridGap: 16, gridColumns: 12,
+      accentHue: 0, accentSaturation: 85, accentLightness: 50,
+      darkElevation: 2, darkSaturation: 10,
+    },
+  },
+  {
+    id: 'monochrome',
+    name: 'Monochrome',
+    description: 'Чисто чёрно-белый, без лишнего цвета',
+    icon: '◒',
+    tokens: {
+      btnRadius: 4, btnStyle: 'outline', btnTransform: 'none', btnWeight: 500,
+      fontWeight: 400, headingWeight: 600, letterSpacing: 0.03, lineHeight: 1.55, typeScale: 1.2,
+      glassBlur: 12, glassOpacity: 0.45, glassBorderOpacity: 0.08, glassSaturation: 100,
+      shadowOffsetY: 4, shadowBlurRadius: 16, shadowSpread: 0, shadowOpacity: 0.05,
+      cardRadius: 8, inputRadius: 4, chipRadius: 6, modalRadius: 10,
+      animDuration: 150, animEasing: 'ease',
+      borderWidth: 1, borderStyle: 'solid', gridGap: 14,
+      accentHue: 0, accentSaturation: 0, accentLightness: 30,
+      darkElevation: 5, darkSaturation: 0,
+    },
+  },
+  {
+    id: 'scandinavian',
+    name: 'Scandinavian',
+    description: 'Воздушный и тёплый — скандинавский уют',
+    icon: '◇',
+    tokens: {
+      btnRadius: 8, btnStyle: 'soft', btnTransform: 'none', btnWeight: 400,
+      fontWeight: 400, headingWeight: 500, letterSpacing: 0.02, lineHeight: 1.65, typeScale: 1.15,
+      paragraphSpacing: 1.0,
+      glassBlur: 16, glassOpacity: 0.40, glassBorderOpacity: 0.04, glassSaturation: 120,
+      shadowOffsetY: 6, shadowBlurRadius: 24, shadowSpread: 0, shadowOpacity: 0.04,
+      cardRadius: 14, inputRadius: 8, chipRadius: 10, modalRadius: 16,
+      animDuration: 250, animEasing: 'cubic-bezier(0.16,1,0.3,1)',
+      borderWidth: 0, gridGap: 20,
+      accentHue: 30, accentSaturation: 25, accentLightness: 52,
+      darkElevation: 7, darkSaturation: 30,
+    },
+  },
+  {
+    id: 'dashboard',
+    name: 'Dashboard',
+    description: 'Компактный — как Grafana / Datadog',
+    icon: '▥',
+    tokens: {
+      btnRadius: 4, btnStyle: 'filled', btnTransform: 'none', btnWeight: 500,
+      fontSize: 0.88,
+      fontWeight: 400, headingWeight: 600, letterSpacing: 0.02, lineHeight: 1.4, typeScale: 1.125,
+      paragraphSpacing: 0.5,
+      glassBlur: 10, glassOpacity: 0.60, glassBorderOpacity: 0.1, glassSaturation: 110,
+      shadowOffsetY: 2, shadowBlurRadius: 8, shadowSpread: 0, shadowOpacity: 0.04,
+      cardRadius: 6, inputRadius: 4, chipRadius: 4, modalRadius: 8,
+      animDuration: 120, animEasing: 'ease',
+      borderWidth: 1, borderStyle: 'solid', gridGap: 10, gridColumns: 12,
+      accentHue: 210, accentSaturation: 55, accentLightness: 50,
+      containerWidth: 1320,
+      darkElevation: 4, darkSaturation: 40,
+    },
+  },
+  {
+    id: 'material3',
+    name: 'Material 3',
+    description: 'Google Material You — динамичные формы',
+    icon: '◐',
+    tokens: {
+      btnRadius: 20, btnStyle: 'filled', btnTransform: 'none', btnWeight: 500,
+      fontWeight: 400, headingWeight: 600, letterSpacing: 0.01, lineHeight: 1.5, typeScale: 1.2,
+      glassBlur: 0, glassOpacity: 0.88, glassBorderOpacity: 0, glassSaturation: 100,
+      shadowOffsetY: 2, shadowBlurRadius: 6, shadowSpread: 0, shadowOpacity: 0.15,
+      cardRadius: 16, inputRadius: 12, chipRadius: 8, modalRadius: 28,
+      animDuration: 200, animEasing: 'cubic-bezier(0.22,1,0.36,1)',
+      borderWidth: 0, gridGap: 16,
+      accentHue: 260, accentSaturation: 50, accentLightness: 52,
+      darkElevation: 8, darkSaturation: 50,
+    },
+  },
+  {
+    id: 'apple',
+    name: 'Apple HIG',
+    description: 'Чистый стиль Apple — SF Pro, мягкость',
+    icon: '◆',
+    tokens: {
+      btnRadius: 10, btnStyle: 'filled', btnTransform: 'none', btnWeight: 500,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif',
+      fontWeight: 400, headingWeight: 600, letterSpacing: 0.01, lineHeight: 1.47, typeScale: 1.2,
+      glassBlur: 20, glassOpacity: 0.72, glassBorderOpacity: 0.08, glassSaturation: 180,
+      shadowOffsetY: 4, shadowBlurRadius: 16, shadowSpread: 0, shadowOpacity: 0.06,
+      cardRadius: 12, inputRadius: 8, chipRadius: 8, modalRadius: 14,
+      animDuration: 180, animEasing: 'cubic-bezier(0.16,1,0.3,1)',
+      borderWidth: 0, gridGap: 16,
+      accentHue: 215, accentSaturation: 90, accentLightness: 50,
+      darkElevation: 6, darkSaturation: 50,
+    },
+  },
+  {
+    id: 'retro',
+    name: 'Retro Terminal',
+    description: 'Терминал 80-х — моноширинный, зелёный',
+    icon: '▮',
+    tokens: {
+      btnRadius: 0, btnStyle: 'outline', btnTransform: 'uppercase', btnWeight: 400,
+      fontFamily: '"JetBrains Mono", "Courier New", monospace',
+      fontWeight: 400, headingWeight: 700, letterSpacing: 0.06, lineHeight: 1.5, typeScale: 1.125,
+      paragraphSpacing: 0.75,
+      glassBlur: 0, glassOpacity: 0.92, glassBorderOpacity: 0.15, glassSaturation: 100,
+      shadowOffsetY: 0, shadowBlurRadius: 12, shadowSpread: 0, shadowOpacity: 0.15,
+      cardRadius: 0, inputRadius: 0, chipRadius: 0, modalRadius: 0,
+      animDuration: 50, animEasing: 'linear',
+      borderWidth: 1, borderStyle: 'solid', gridGap: 12,
+      accentHue: 120, accentSaturation: 80, accentLightness: 45,
+      darkElevation: 2, darkSaturation: 60,
+    },
+  },
 ]
 
 /* ═══════════════════════════════════════════════════════════
@@ -616,10 +798,42 @@ export function useDesignSystem() {
     applyToDOM()
   }
 
+  /* ── Preview mode (try preset without committing) ──── */
+  const snapshotBeforePreview = useState<DesignTokens | null>('dsSnapshot', () => null)
+  const isPreviewActive = computed(() => snapshotBeforePreview.value !== null)
+
+  function previewPreset(preset: DesignPreset) {
+    if (!snapshotBeforePreview.value) {
+      snapshotBeforePreview.value = { ...tokens.value }
+    }
+    tokens.value = { ...tokens.value, ...preset.tokens }
+    applyToDOM()
+  }
+
+  function confirmPreview() {
+    if (snapshotBeforePreview.value) {
+      pushHistory()
+      // tokens already have the preview state — just persist
+      // We pushed history with the snapshot so undo goes back correctly
+      history.value[history.value.length - 1] = { ...snapshotBeforePreview.value }
+      snapshotBeforePreview.value = null
+      save()
+    }
+  }
+
+  function cancelPreview() {
+    if (snapshotBeforePreview.value) {
+      tokens.value = { ...snapshotBeforePreview.value }
+      snapshotBeforePreview.value = null
+      applyToDOM()
+    }
+  }
+
   return {
     tokens, set, reset, applyPreset,
     undo, redo, canUndo, canRedo,
     exportJSON, importJSON, exportCSS,
     initDesignSystem, applyToDOM, save, load,
+    previewPreset, confirmPreview, cancelPreview, isPreviewActive,
   }
 }

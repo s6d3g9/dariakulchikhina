@@ -33,6 +33,9 @@
                 <button type="button" class="dp-icon-btn" @click="showExport = !showExport" title="Экспорт / Импорт">
                   <svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 2v7M4 6l3 3 3-3M3 11h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
+                <button type="button" class="dp-icon-btn" :class="{ 'dp-icon-btn--inspect-active': inspectMode }" @click="toggleInspect" title="Инспектор элементов">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2l4.5 10 1.5-3.5L11.5 7z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8l3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+                </button>
                 <button type="button" class="dp-icon-btn dp-icon-btn--danger" @click="resetAll" title="Сбросить всё">
                   <svg width="14" height="14" viewBox="0 0 14 14"><path d="M2.5 4.5h9M5.5 4.5V3a1 1 0 011-1h1a1 1 0 011 1v1.5M4 4.5v7a1 1 0 001 1h4a1 1 0 001-1v-7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
@@ -526,9 +529,87 @@
               </section>
 
             </div><!-- /.dp-body -->
+
+            <!-- ═══ Sticky footer: Apply Style ═══ -->
+            <footer class="dp-footer">
+              <Transition name="dp-fade">
+                <div v-if="isPreviewActive" class="dp-footer-preview">
+                  <div class="dp-preview-badge">
+                    <span class="dp-preview-dot" />
+                    <span>превью</span>
+                  </div>
+                  <div class="dp-footer-actions">
+                    <button type="button" class="dp-footer-cancel" @click="cancelCurrentPreview">отмена</button>
+                    <button type="button" class="dp-footer-apply" @click="applyCurrentStyle">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      Применить стиль
+                    </button>
+                  </div>
+                </div>
+              </Transition>
+              <Transition name="dp-fade">
+                <div v-if="appliedFlash" class="dp-applied-toast">✓ Стиль применён</div>
+              </Transition>
+            </footer>
           </div><!-- /.dp-panel -->
         </div>
       </Transition>
+    </Teleport>
+    <!-- ═══ Inspect Mode Overlay ═══ -->
+    <Teleport to="body">
+      <div v-if="inspectMode" class="dp-inspect-overlay" @click.stop>
+        <!-- Hover highlight box -->
+        <div
+          v-if="inspectHover.visible"
+          class="dp-inspect-highlight"
+          :style="inspectHighlightStyle"
+        />
+        <!-- Tooltip -->
+        <Transition name="dp-fade">
+          <div
+            v-if="inspectHover.visible"
+            class="dp-inspect-tooltip"
+            :style="inspectTooltipStyle"
+          >
+            <span class="dp-inspect-tag">{{ inspectHover.tag }}</span>
+            <span v-if="inspectHover.classes" class="dp-inspect-classes">.{{ inspectHover.classes }}</span>
+            <div class="dp-inspect-props">
+              <span v-for="s in inspectHover.sections" :key="s" class="dp-inspect-prop-chip">{{ sectionLabels[s] || s }}</span>
+            </div>
+          </div>
+        </Transition>
+        <!-- Click result panel -->
+        <Transition name="dp-fade">
+          <div v-if="inspectResult" class="dp-inspect-result" :style="inspectResultStyle">
+            <div class="dp-inspect-result-header">
+              <span class="dp-inspect-result-tag">{{ inspectResult.tag }}</span>
+              <button type="button" class="dp-inspect-result-close" @click="inspectResult = null">✕</button>
+            </div>
+            <div class="dp-inspect-result-info">
+              <div v-if="inspectResult.classes" class="dp-inspect-result-classes">.{{ inspectResult.classes }}</div>
+              <div class="dp-inspect-result-sections">
+                <span class="dp-inspect-result-label">Связанные секции:</span>
+                <button
+                  v-for="s in inspectResult.sections"
+                  :key="s"
+                  type="button"
+                  class="dp-inspect-section-link"
+                  @click="jumpToSection(s)"
+                >{{ sectionLabels[s] || s }}</button>
+              </div>
+              <div class="dp-inspect-result-tokens">
+                <span class="dp-inspect-result-label">Токены:</span>
+                <div class="dp-inspect-token-list">
+                  <div v-for="tk in inspectResult.tokenInfo" :key="tk.name" class="dp-inspect-token-row">
+                    <span class="dp-inspect-token-name">{{ tk.name }}</span>
+                    <span class="dp-inspect-token-value">{{ tk.value }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </div>
     </Teleport>
   </div>
 </template>
@@ -544,6 +625,7 @@ const {
   tokens, set, reset: dsReset, applyPreset,
   undo, redo, canUndo, canRedo,
   exportJSON, importJSON, exportCSS,
+  previewPreset, confirmPreview, cancelPreview, isPreviewActive,
 } = useDesignSystem()
 const { themeId, applyTheme, UI_THEMES } = useUITheme()
 
@@ -554,6 +636,7 @@ const importBuffer = ref('')
 const copyLabel = ref('копировать')
 const animPlaying = ref(false)
 const searchQuery = ref('')
+const appliedFlash = ref(false)
 
 /* ── Collapsible sections ─────────────────────────── */
 const sections = reactive({
@@ -621,7 +704,7 @@ const currentScaleLabel = computed(() =>
 
 /* ── Section search filter ──────────────────────── */
 const sectionSearchMap: Record<string, string[]> = {
-  presets:  ['рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph'],
+  presets:  ['рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal'],
   palette:  ['палитра', 'цвет', 'акцент', 'color', 'theme', 'accent', 'hue'],
   buttons:  ['кнопк', 'button', 'стиль', 'размер', 'закругл', 'регистр', 'btn'],
   type:     ['типограф', 'шрифт', 'font', 'размер', 'вес', 'межбукв', 'межстроч', 'letter', 'line-height'],
@@ -650,7 +733,18 @@ function pickTheme(id: string) { applyTheme(id) }
 
 function pickPreset(p: DesignPreset) {
   activePresetId.value = p.id
-  applyPreset(p)
+  previewPreset(p)
+}
+
+function applyCurrentStyle() {
+  confirmPreview()
+  appliedFlash.value = true
+  setTimeout(() => { appliedFlash.value = false }, 1600)
+}
+
+function cancelCurrentPreview() {
+  cancelPreview()
+  activePresetId.value = ''
 }
 
 function onRange<K extends keyof DesignTokens>(key: K, e: Event) {
@@ -660,7 +754,7 @@ function onFloat<K extends keyof DesignTokens>(key: K, e: Event) {
   set(key, parseFloat((e.target as HTMLInputElement).value) as DesignTokens[K])
 }
 
-function resetAll() { dsReset(); activePresetId.value = '' }
+function resetAll() { cancelPreview(); dsReset(); activePresetId.value = '' }
 
 function copyExport() {
   const text = exportTab.value === 'json' ? exportJSON() : exportCSS()
@@ -736,14 +830,265 @@ const surfaceStyle = computed(() => {
   }
 })
 
+/* ══════════════════════════════════════════════════════
+   INSPECT MODE — click any element to reveal controls
+   ══════════════════════════════════════════════════════ */
+const inspectMode = ref(false)
+const inspectHover = reactive({
+  visible: false,
+  rect: { x: 0, y: 0, w: 0, h: 0 },
+  tag: '',
+  classes: '',
+  sections: [] as string[],
+})
+
+interface InspectResult {
+  tag: string
+  classes: string
+  sections: string[]
+  tokenInfo: { name: string; value: string }[]
+  rect: { x: number; y: number; w: number; h: number }
+}
+const inspectResult = ref<InspectResult | null>(null)
+
+const sectionLabels: Record<string, string> = {
+  presets: 'Рецепты', palette: 'Палитра', buttons: 'Кнопки',
+  type: 'Типографика', typeScale: 'Шкала', surface: 'Поверхности',
+  radii: 'Скругления', anim: 'Анимация', grid: 'Сетка', darkMode: 'Тёмная тема',
+}
+
+const inspectHighlightStyle = computed(() => ({
+  left: `${inspectHover.rect.x}px`, top: `${inspectHover.rect.y}px`,
+  width: `${inspectHover.rect.w}px`, height: `${inspectHover.rect.h}px`,
+}))
+const inspectTooltipStyle = computed(() => {
+  const r = inspectHover.rect
+  const top = r.y > 60 ? r.y - 8 : r.y + r.h + 8
+  return { left: `${Math.max(8, r.x)}px`, top: `${top}px`, transform: r.y > 60 ? 'translateY(-100%)' : 'none' }
+})
+const inspectResultStyle = computed(() => {
+  if (!inspectResult.value) return {}
+  const r = inspectResult.value.rect
+  const leftEdge = r.x + r.w + 12
+  const useLeft = leftEdge + 260 < window.innerWidth
+  return {
+    top: `${Math.max(8, Math.min(r.y, window.innerHeight - 300))}px`,
+    left: useLeft ? `${leftEdge}px` : `${Math.max(8, r.x - 272)}px`,
+  }
+})
+
+/* ── Detect which design sections affect an element ── */
+function detectSections(el: HTMLElement): string[] {
+  const cs = getComputedStyle(el)
+  const tag = el.tagName.toLowerCase()
+  const cls = el.className?.toString?.() || ''
+  const found = new Set<string>()
+
+  // Buttons
+  if (tag === 'button' || tag === 'a' || el.getAttribute('role') === 'button' ||
+      cls.includes('btn') || cls.includes('chip')) {
+    found.add('buttons')
+  }
+
+  // Typography — element has visible text
+  const hasText = el.childNodes.length > 0 && Array.from(el.childNodes).some(n => n.nodeType === 3 && n.textContent?.trim())
+  if (hasText || ['h1','h2','h3','h4','h5','h6','p','span','label','a','li','td','th'].includes(tag)) {
+    found.add('type')
+    found.add('typeScale')
+  }
+
+  // Glass / Surfaces
+  if (cs.backdropFilter !== 'none' || cls.includes('glass') || cls.includes('surface') ||
+      parseFloat(cs.getPropertyValue('--glass-blur') || '0') > 0) {
+    found.add('surface')
+  }
+
+  // Shadows
+  if (cs.boxShadow && cs.boxShadow !== 'none') {
+    found.add('surface')
+  }
+
+  // Border radius
+  if (parseFloat(cs.borderRadius) > 0) {
+    found.add('radii')
+  }
+
+  // Animation / transition
+  if ((cs.transition && cs.transition !== 'none' && !cs.transition.startsWith('all 0s')) ||
+      (cs.animation && cs.animation !== 'none')) {
+    found.add('anim')
+  }
+
+  // Grid / layout containers
+  if (cs.display === 'grid' || cs.display === 'flex' ||
+      cls.includes('container') || cls.includes('sidebar') || cls.includes('grid')) {
+    found.add('grid')
+  }
+
+  // Borders
+  if (parseFloat(cs.borderWidth) > 0 && cs.borderStyle !== 'none') {
+    found.add('grid') // borders are in grid section
+  }
+
+  // Color / accent
+  const colorStr = cs.color + cs.backgroundColor
+  if (colorStr.includes('var(--ds-accent') || cls.includes('accent') || cls.includes('primary')) {
+    found.add('palette')
+  }
+
+  // If nothing specific found, show typography + radii as starting point
+  if (found.size === 0) {
+    found.add('type')
+    found.add('radii')
+  }
+
+  return Array.from(found)
+}
+
+/* ── Get token values that affect this element ── */
+function getTokenInfo(el: HTMLElement, secs: string[]): { name: string; value: string }[] {
+  const cs = getComputedStyle(el)
+  const info: { name: string; value: string }[] = []
+
+  if (secs.includes('buttons')) {
+    info.push({ name: 'border-radius', value: cs.borderRadius })
+    info.push({ name: 'padding', value: cs.padding })
+    info.push({ name: 'font-size', value: cs.fontSize })
+    info.push({ name: 'font-weight', value: cs.fontWeight })
+    info.push({ name: 'text-transform', value: cs.textTransform })
+  }
+  if (secs.includes('type') || secs.includes('typeScale')) {
+    info.push({ name: 'font-family', value: cs.fontFamily?.split(',')[0]?.replace(/"/g, '') ?? 'inherit' })
+    info.push({ name: 'font-size', value: cs.fontSize })
+    info.push({ name: 'line-height', value: cs.lineHeight })
+    info.push({ name: 'letter-spacing', value: cs.letterSpacing })
+  }
+  if (secs.includes('surface')) {
+    info.push({ name: 'backdrop-filter', value: cs.backdropFilter || 'none' })
+    info.push({ name: 'box-shadow', value: cs.boxShadow === 'none' ? 'none' : cs.boxShadow.substring(0, 40) + '…' })
+    info.push({ name: 'background', value: cs.backgroundColor })
+  }
+  if (secs.includes('radii')) {
+    info.push({ name: 'border-radius', value: cs.borderRadius })
+  }
+  if (secs.includes('anim')) {
+    info.push({ name: 'transition', value: cs.transitionDuration + ' ' + cs.transitionTimingFunction })
+  }
+  if (secs.includes('grid')) {
+    info.push({ name: 'display', value: cs.display })
+    info.push({ name: 'gap', value: cs.gap || 'n/a' })
+    info.push({ name: 'border', value: `${cs.borderWidth} ${cs.borderStyle}` })
+  }
+
+  // Dedupe by name
+  const seen = new Set<string>()
+  return info.filter(i => {
+    if (seen.has(i.name)) return false
+    seen.add(i.name)
+    return true
+  })
+}
+
+/* ── Inspect event handlers ── */
+function isInsidePanel(el: HTMLElement): boolean {
+  return !!el.closest('.dp-panel') || !!el.closest('.dp-inspect-result') ||
+         !!el.closest('.dp-inspect-tooltip') || !!el.closest('.dp-overlay')
+}
+
+function onInspectMove(e: MouseEvent) {
+  const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+  if (!el || isInsidePanel(el)) {
+    inspectHover.visible = false
+    return
+  }
+  const rect = el.getBoundingClientRect()
+  inspectHover.rect = { x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+  inspectHover.tag = el.tagName.toLowerCase()
+  const cls = el.className?.toString?.() || ''
+  inspectHover.classes = cls.split(/\s+/).filter(c => c && !c.startsWith('dp-')).slice(0, 3).join('.')
+  inspectHover.sections = detectSections(el)
+  inspectHover.visible = true
+}
+
+function onInspectClick(e: MouseEvent) {
+  e.preventDefault()
+  e.stopPropagation()
+  const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+  if (!el || isInsidePanel(el)) return
+
+  const rect = el.getBoundingClientRect()
+  const secs = detectSections(el)
+  const tokenInfo = getTokenInfo(el, secs)
+  const cls = el.className?.toString?.() || ''
+
+  inspectResult.value = {
+    tag: el.tagName.toLowerCase(),
+    classes: cls.split(/\s+/).filter(c => c && !c.startsWith('dp-')).slice(0, 4).join('.'),
+    sections: secs,
+    tokenInfo,
+    rect: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
+  }
+}
+
+function jumpToSection(sec: string) {
+  // Open panel if needed
+  if (!open.value) open.value = true
+  // Open the section
+  const key = sec as keyof typeof sections
+  if (key in sections) {
+    sections[key] = true
+  }
+  // Scroll to it after DOM update
+  nextTick(() => {
+    const sectionEl = document.querySelector(`.dp-body .dp-section:nth-child(${getSectionIndex(sec) + 1})`)
+    sectionEl?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+  // Exit inspect mode
+  disableInspect()
+}
+
+function getSectionIndex(sec: string): number {
+  const order = ['presets', 'palette', 'buttons', 'type', 'surface', 'radii', 'anim', 'grid', 'typeScale', 'darkMode']
+  return order.indexOf(sec)
+}
+
+function toggleInspect() {
+  if (inspectMode.value) {
+    disableInspect()
+  } else {
+    enableInspect()
+  }
+}
+
+function enableInspect() {
+  inspectMode.value = true
+  inspectResult.value = null
+  document.addEventListener('mousemove', onInspectMove, true)
+  document.addEventListener('click', onInspectClick, true)
+  document.body.style.cursor = 'crosshair'
+}
+
+function disableInspect() {
+  inspectMode.value = false
+  inspectHover.visible = false
+  inspectResult.value = null
+  document.removeEventListener('mousemove', onInspectMove, true)
+  document.removeEventListener('click', onInspectClick, true)
+  document.body.style.cursor = ''
+}
+
 /* ── Keyboard ────────────────────────────────────── */
 function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && inspectMode.value) { disableInspect(); return }
   if (e.key === 'Escape' && open.value) { open.value = false; return }
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && open.value) { e.preventDefault(); undo() }
   if ((e.ctrlKey || e.metaKey) && e.key === 'y' && open.value) { e.preventDefault(); redo() }
 }
 onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  if (inspectMode.value) disableInspect()
+})
 </script>
 
 <style scoped>
@@ -911,19 +1256,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 :global(html.dark) .dp-chip--active { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.2); }
 
 /* ── Presets grid ── */
-.dp-presets { display: flex; flex-direction: column; gap: 4px; }
+.dp-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .dp-preset-card {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 10px; border-radius: 8px; border: 1px solid transparent;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 8px 10px; border-radius: 8px; border: 1px solid transparent;
   background: transparent; cursor: pointer; font-family: inherit;
   color: var(--glass-text); transition: all .12s; text-align: left; width: 100%;
 }
 .dp-preset-card:hover { background: rgba(0,0,0,.025); }
 .dp-preset-card--active { border-color: rgba(0,0,0,.14); background: rgba(0,0,0,.03); }
-.dp-preset-icon { font-size: 1rem; width: 28px; text-align: center; opacity: .6; }
+.dp-preset-icon { font-size: .9rem; width: 24px; text-align: center; opacity: .6; }
 .dp-preset-info { display: flex; flex-direction: column; gap: 1px; }
-.dp-preset-name { font-size: .7rem; font-weight: 600; }
-.dp-preset-desc { font-size: .58rem; opacity: .4; }
+.dp-preset-name { font-size: .66rem; font-weight: 600; }
+.dp-preset-desc { font-size: .54rem; opacity: .4; line-height: 1.3; }
 :global(html.dark) .dp-preset-card:hover { background: rgba(255,255,255,.03); }
 :global(html.dark) .dp-preset-card--active { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.04); }
 
@@ -1084,5 +1429,187 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 .dp-field-hint {
   font-size: .54rem; opacity: .3; margin-top: 3px; letter-spacing: .01em;
   color: var(--glass-text);
+}
+
+/* ── Sticky footer ── */
+.dp-footer {
+  flex-shrink: 0; position: relative;
+  border-top: 1px solid rgba(0,0,0,.05);
+  min-height: 0;
+}
+:global(html.dark) .dp-footer { border-top-color: rgba(255,255,255,.05); }
+
+.dp-footer-preview {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; gap: 8px;
+  background: rgba(0,0,0,.02);
+}
+:global(html.dark) .dp-footer-preview { background: rgba(255,255,255,.02); }
+
+.dp-preview-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .62rem; letter-spacing: .04em; opacity: .6;
+  font-weight: 500; color: var(--glass-text);
+}
+.dp-preview-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: hsl(38, 90%, 55%);
+  animation: dp-pulse 1.4s ease infinite;
+}
+@keyframes dp-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .5; transform: scale(.85); }
+}
+
+.dp-footer-actions { display: flex; gap: 6px; }
+
+.dp-footer-cancel {
+  padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(0,0,0,.1);
+  background: transparent; font-size: .64rem; cursor: pointer;
+  font-family: inherit; color: var(--glass-text); opacity: .5;
+  transition: all .12s;
+}
+.dp-footer-cancel:hover { opacity: .8; }
+:global(html.dark) .dp-footer-cancel { border-color: rgba(255,255,255,.1); }
+
+.dp-footer-apply {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 18px; border-radius: 6px; border: none;
+  background: var(--ds-accent, hsl(220,14%,50%));
+  color: #fff; font-size: .66rem; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  letter-spacing: .03em; transition: all .15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+.dp-footer-apply:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+.dp-footer-apply:active { transform: translateY(0); }
+
+.dp-applied-toast {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  padding: 6px 16px; border-radius: 8px;
+  background: hsl(142, 60%, 42%); color: #fff;
+  font-size: .64rem; font-weight: 600; letter-spacing: .03em;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  pointer-events: none; white-space: nowrap;
+  margin-bottom: 8px;
+}
+
+/* ── Fade transition ── */
+.dp-fade-enter-active { transition: opacity .2s ease, transform .2s ease; }
+.dp-fade-leave-active { transition: opacity .15s ease, transform .15s ease; }
+.dp-fade-enter-from { opacity: 0; transform: translateY(6px); }
+.dp-fade-leave-to { opacity: 0; transform: translateY(6px); }
+
+/* ── Presets: 2-column grid for many presets ── */
+@media (max-width: 480px) {
+  .dp-presets { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════════════════════════════════════
+   INSPECT MODE STYLES
+   ══════════════════════════════════════════════════════ */
+.dp-icon-btn--inspect-active {
+  opacity: 1 !important;
+  background: hsl(200, 80%, 50%) !important;
+  color: #fff !important;
+  border-color: hsl(200, 80%, 45%) !important;
+}
+
+.dp-inspect-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  pointer-events: none;
+}
+
+.dp-inspect-highlight {
+  position: fixed; pointer-events: none;
+  border: 2px solid hsl(200, 85%, 55%);
+  background: hsla(200, 85%, 55%, .08);
+  border-radius: 3px;
+  transition: all .08s ease;
+  box-shadow: 0 0 0 1px hsla(200, 85%, 55%, .2), 0 0 12px hsla(200, 85%, 55%, .1);
+}
+
+.dp-inspect-tooltip {
+  position: fixed; pointer-events: none;
+  background: hsl(220, 20%, 16%); color: #e8e8eb;
+  padding: 5px 9px; border-radius: 6px;
+  font-size: .6rem; line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  max-width: 280px; z-index: 10001;
+  white-space: nowrap;
+}
+.dp-inspect-tag {
+  color: hsl(200, 80%, 70%); font-weight: 600;
+}
+.dp-inspect-classes {
+  color: hsl(35, 80%, 70%); margin-left: 4px; font-size: .56rem;
+}
+.dp-inspect-props {
+  display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px;
+}
+.dp-inspect-prop-chip {
+  padding: 1px 6px; border-radius: 3px;
+  background: hsla(200, 80%, 55%, .2); color: hsl(200, 80%, 75%);
+  font-size: .52rem; font-weight: 500;
+}
+
+/* ── Inspect result card ── */
+.dp-inspect-result {
+  position: fixed; z-index: 10002; pointer-events: auto;
+  width: 260px; max-height: 360px; overflow-y: auto;
+  background: hsl(220, 20%, 14%); color: #e0e0e4;
+  border-radius: 10px; padding: 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 0 0 1px hsla(200, 80%, 55%, .15);
+  font-size: .62rem;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.1) transparent;
+}
+.dp-inspect-result-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px 6px; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.dp-inspect-result-tag {
+  font-size: .7rem; font-weight: 700; color: hsl(200, 80%, 70%);
+}
+.dp-inspect-result-close {
+  background: none; border: none; color: rgba(255,255,255,.3);
+  cursor: pointer; font-size: .6rem; padding: 2px 4px;
+}
+.dp-inspect-result-close:hover { color: rgba(255,255,255,.7); }
+
+.dp-inspect-result-info { padding: 8px 12px 12px; }
+.dp-inspect-result-classes {
+  color: hsl(35, 80%, 70%); font-size: .58rem; margin-bottom: 8px;
+}
+.dp-inspect-result-sections { margin-bottom: 10px; }
+.dp-inspect-result-label {
+  display: block; font-size: .52rem; text-transform: uppercase;
+  letter-spacing: .1em; opacity: .35; margin-bottom: 5px; font-weight: 600;
+}
+.dp-inspect-section-link {
+  display: inline-block; padding: 3px 9px; border-radius: 4px;
+  background: hsla(200, 80%, 55%, .15); color: hsl(200, 80%, 70%);
+  border: 1px solid hsla(200, 80%, 55%, .2);
+  font-size: .58rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; margin: 0 3px 3px 0;
+  transition: all .12s;
+}
+.dp-inspect-section-link:hover {
+  background: hsla(200, 80%, 55%, .3); color: #fff;
+}
+
+.dp-inspect-result-tokens { margin-top: 4px; }
+.dp-inspect-token-list { display: flex; flex-direction: column; gap: 2px; }
+.dp-inspect-token-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 3px 6px; border-radius: 4px;
+  background: rgba(255,255,255,.03);
+}
+.dp-inspect-token-name {
+  font-size: .56rem; color: hsl(300, 40%, 75%); font-weight: 500;
+}
+.dp-inspect-token-value {
+  font-size: .54rem; color: rgba(255,255,255,.5);
+  font-family: 'JetBrains Mono', monospace;
+  max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 </style>

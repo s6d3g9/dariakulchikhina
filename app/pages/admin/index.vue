@@ -37,23 +37,7 @@
             <span style="font-size:.72rem;color:#aaa">{{ p.taskDone }}/{{ p.taskTotal }}</span>
             <span v-if="p.taskOverdue > 0" style="font-size:.72rem;color:#c00;font-weight:600">⚠ {{ p.taskOverdue }} просрочено</span>
           </div>
-          <div v-if="p.roadmapSummary?.length" class="a-roadmap-mini">
-            <div class="arm-bar-wrap" :title="`${roadmapDoneCount(p.roadmapSummary)} выполнено / ${p.roadmapSummary.length} этапов`">
-              <div class="arm-bar-fill" :style="{ width: roadmapProgressWidth(p.roadmapSummary) + '%' }" />
-            </div>
-            <div class="arm-pills">
-              <span
-                v-for="ph in CARD_PHASES"
-                :key="ph.key"
-                class="arm-pill"
-                :class="cardPillClass(ph.key, cardPhaseStats(p.roadmapSummary))"
-                :title="ph.label + ': ' + (cardPhaseStats(p.roadmapSummary)[ph.key]?.done ?? 0) + '/' + (cardPhaseStats(p.roadmapSummary)[ph.key]?.total ?? 0)"
-              >
-                {{ ph.short }}
-                <span v-if="(cardPhaseStats(p.roadmapSummary)[ph.key]?.total ?? 0) > 0" class="arm-pill-cnt">{{ cardPhaseStats(p.roadmapSummary)[ph.key].done }}/{{ cardPhaseStats(p.roadmapSummary)[ph.key].total }}</span>
-              </span>
-            </div>
-          </div>
+          <AdminRoadmapTimeline v-if="p.roadmapSummary?.length" :stages="p.roadmapSummary" />
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
           <NuxtLink :to="`/admin/projects/${p.slug}`">
@@ -137,7 +121,6 @@
 <script setup lang="ts">
 import { ROADMAP_TEMPLATES } from '~~/shared/types/roadmap-templates'
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
-import { normalizeRoadmapStatus, roadmapStatusLabel, roadmapStatusIcon, roadmapStatusCssClass, roadmapDoneCount, roadmapPhaseFromStageKey } from '~~/shared/utils/roadmap'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
@@ -199,51 +182,6 @@ const creating = ref(false)
 const createError = ref('')
 const newProject = reactive({ title: '', slug: '', roadmapTemplateKey: '' })
 const searchQuery = ref('')
-
-const CARD_PHASES = [
-  { key: 'lead',            short: '0', label: 'Инициация' },
-  { key: 'concept',         short: '1', label: 'Концепция' },
-  { key: 'working_project', short: '2', label: 'Рабочий проект' },
-  { key: 'procurement',     short: '3', label: 'Закупки' },
-  { key: 'construction',    short: '4', label: 'Стройка' },
-  { key: 'commissioning',   short: '5', label: 'Сдача' },
-]
-const PHASE_BY_IDX = ['lead','concept','working_project','procurement','construction','commissioning']
-
-function cardPhaseStats(stages: Array<{ stageKey?: string; status?: string }>) {
-  type S = { done: number; active: number; total: number }
-  const stats: Record<string, S> = {}
-  CARD_PHASES.forEach(ph => { stats[ph.key] = { done: 0, active: 0, total: 0 } })
-  stages.forEach((stage, idx) => {
-    const phKey = roadmapPhaseFromStageKey(stage.stageKey) || PHASE_BY_IDX[idx] || 'lead'
-    if (!stats[phKey]) return
-    stats[phKey].total++
-    const st = normalizeRoadmapStatus(stage.status)
-    if (st === 'done' || st === 'skipped') stats[phKey].done++
-    else if (st === 'in_progress') stats[phKey].active++
-  })
-  return stats
-}
-
-function cardPillClass(phKey: string, stats: Record<string, { done: number; active: number; total: number }>) {
-  const s = stats[phKey]
-  if (!s || s.total === 0) return 'arm-pill--empty'
-  if (s.done === s.total) return 'arm-pill--done'
-  if (s.done > 0) return 'arm-pill--partial'
-  if (s.active > 0) return 'arm-pill--active'
-  return 'arm-pill--pending'
-}
-
-function roadmapProgressWidth(stages: Array<{ status?: string | null }>): number {
-  if (!stages?.length) return 0
-  let pts = 0
-  for (const s of stages) {
-    const st = normalizeRoadmapStatus(s.status)
-    if (st === 'done' || st === 'skipped') pts++
-    else if (st === 'in_progress') pts += 0.5
-  }
-  return Math.round(pts / stages.length * 100)
-}
 
 const filteredProjects = computed(() => {
   if (!searchQuery.value.trim()) return projects.value || []
@@ -334,70 +272,6 @@ function phaseColor(status: string) {
   background: #15803d;
   border-radius: 3px;
   transition: width .3s;
-}
-
-/* ── Roadmap mini (phase pills) ────────────────────────── */
-.a-roadmap-mini { margin-top: 9px; }
-.arm-bar-wrap {
-  width: 100%; height: 4px;
-  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 7px;
-  cursor: default;
-}
-.arm-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6366f1, #10b981);
-  border-radius: 3px;
-  transition: width .4s ease;
-}
-.arm-pills {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.arm-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: .62rem;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 999px;
-  white-space: nowrap;
-  cursor: default;
-  transition: background .15s;
-}
-.arm-pill-cnt {
-  font-size: .58rem;
-  font-weight: 400;
-  opacity: .7;
-}
-.arm-pill--empty {
-  color: var(--glass-text);
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
-  opacity: .28;
-}
-.arm-pill--pending {
-  color: var(--glass-text);
-  background: color-mix(in srgb, var(--glass-text) 9%, transparent);
-  opacity: .55;
-}
-.arm-pill--partial {
-  color: #b45309;
-  background: rgba(245,158,11,.12);
-  opacity: 1;
-}
-.arm-pill--active {
-  color: #2563eb;
-  background: rgba(99,102,241,.13);
-  opacity: 1;
-}
-.arm-pill--done {
-  color: #15803d;
-  background: rgba(34,197,94,.13);
-  opacity: 1;
 }
 
 /* ── Card ──────────────────────────────────────────────── */

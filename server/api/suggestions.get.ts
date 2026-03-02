@@ -27,6 +27,13 @@ function flattenCategory(data: any): string[] {
 }
 
 export default defineEventHandler((event) => {
+  // Auth: require any authenticated session (admin, client, or contractor)
+  const admin = getAdminSession(event)
+  const client = getClientSession(event)
+  const contractor = getContractorSession(event)
+  if (!admin && !client && !contractor) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  }
   // Parse query params manually to avoid getRequestURL host issue
   const reqUrl = event.node.req.url || ''
   const qsIdx = reqUrl.indexOf('?')
