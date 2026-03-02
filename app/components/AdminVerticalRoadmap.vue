@@ -32,7 +32,7 @@
           :disabled="saving[pg.slug]"
           @click.stop="toggleDone(pg)"
         >
-          <svg v-if="statusOf(pg.slug) === 'done'" viewBox="0 0 8 8" fill="none" width="7" height="7">
+          <svg v-if="statusOf(pg.slug) === 'done'" viewBox="0 0 8 8" fill="none" width="9" height="9">
             <path d="M1.5 4l2 2 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <span v-else-if="statusOf(pg.slug) === 'in_progress'" class="avr-pip" />
@@ -122,29 +122,22 @@ watch(lastSaved, loadStatuses)
 </script>
 
 <style scoped>
-/* ── Root — sticky, matches sidenav positioning ── */
+/* ── Root — plain flow, parent .proj-nav-col handles sticky/scroll ── */
 .avr-root {
   width: 36px;
   flex-shrink: 0;
-  position: sticky;
-  top: 80px;
-  align-self: flex-start;
-  max-height: calc(100vh - 180px);
-  overflow-y: auto;
-  scrollbar-width: none;
-  /* match .proj-sidenav padding-top: 10px; no horizontal padding */
+  /* match .proj-sidenav padding-top: 10px */
   padding-top: 10px;
   padding-bottom: 24px;
   margin-right: 4px;
   /* vertical progress line */
   background:
     linear-gradient(
-      color-mix(in srgb, var(--glass-text) 10%, transparent),
-      color-mix(in srgb, var(--glass-text) 10%, transparent)
+      color-mix(in srgb, var(--glass-text) 8%, transparent),
+      color-mix(in srgb, var(--glass-text) 8%, transparent)
     )
-    center 17px / 1px calc(100% - 41px) no-repeat;
+    center 21px / 1px calc(100% - 48px) no-repeat;
 }
-.avr-root::-webkit-scrollbar { display: none; }
 
 /* ── Phase group — same outer rhythm as .proj-sidenav-group ── */
 .avr-phase {
@@ -157,10 +150,9 @@ watch(lastSaved, loadStatuses)
 .avr-phase:last-child { margin-bottom: 0; }
 
 /* ── Phase header — mirrors .proj-sidenav-group-label height ──
-   font-size: .62rem, line-height ~1.4 → ~14px,
-   margin-bottom: 6px (same) ── */
+   font-size: .62rem, line-height ~1.4 → ~14px + margin-bottom: 6px ── */
 .avr-phase-hd {
-  height: 14px;
+  height: 20px;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
@@ -170,18 +162,17 @@ watch(lastSaved, loadStatuses)
   width: 100%;
 }
 
-/* Phase number badge — sits over the line */
+/* Phase number badge — same size as item dots */
 .avr-badge {
-  width: 13px;
-  height: 13px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  /* cover the line with bg */
   background: var(--glass-bg, #12121a);
-  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
-  font-size: .46rem;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 22%, transparent);
+  font-size: .5rem;
   font-weight: 700;
   color: var(--glass-text);
-  opacity: .45;
+  opacity: .5;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -190,8 +181,9 @@ watch(lastSaved, loadStatuses)
   transition: opacity .15s, border-color .15s;
 }
 .avr-phase-hd--done .avr-badge {
-  opacity: .8;
-  border-color: color-mix(in srgb, var(--glass-text) 40%, transparent);
+  opacity: .85;
+  border-color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 8%, var(--glass-bg, #12121a));
 }
 
 /* ── Item row — exact height of .proj-sidenav-item ──
@@ -207,14 +199,13 @@ watch(lastSaved, loadStatuses)
   z-index: 1;
 }
 
-/* ── Dot — monochrome only ── */
+/* ── Dot — monochrome, same size as phase badge ── */
 .avr-dot {
-  width: 10px;
-  height: 10px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
-  /* bg covers the line */
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
   background: var(--glass-bg, #12121a);
   cursor: pointer;
   display: flex;
@@ -224,40 +215,39 @@ watch(lastSaved, loadStatuses)
   transition: border-color .12s, background .12s, transform .1s;
 }
 .avr-dot:hover {
-  border-color: color-mix(in srgb, var(--glass-text) 42%, transparent);
-  transform: scale(1.35);
-}
-.avr-dot:disabled { opacity: .25; cursor: default; transform: none !important; }
-
-/* done — filled */
-.avr-dot--done {
-  background: color-mix(in srgb, var(--glass-text) 22%, var(--glass-bg, #12121a));
   border-color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+  transform: scale(1.18);
 }
-/* in_progress — visible ring, inner pip */
+.avr-dot:disabled { opacity: .22; cursor: default; transform: none !important; }
+
+/* done — subtly filled */
+.avr-dot--done {
+  background: color-mix(in srgb, var(--glass-text) 18%, var(--glass-bg, #12121a));
+  border-color: color-mix(in srgb, var(--glass-text) 48%, transparent);
+}
+/* in_progress — stronger ring */
 .avr-dot--in_progress {
-  border-color: color-mix(in srgb, var(--glass-text) 35%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 38%, transparent);
 }
 
 /* Active current page */
 .avr-item--active .avr-dot {
-  border-color: color-mix(in srgb, var(--glass-text) 62%, transparent);
-  box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--glass-text) 8%, transparent);
-  transform: scale(1.15);
+  border-color: color-mix(in srgb, var(--glass-text) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 7%, transparent);
 }
-.avr-item--active .avr-dot:hover { transform: scale(1.4); }
+.avr-item--active .avr-dot:hover { transform: scale(1.22); }
 
 /* In-progress pip */
 .avr-pip {
-  width: 3px;
-  height: 3px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--glass-text);
-  opacity: .55;
+  opacity: .45;
   display: block;
   flex-shrink: 0;
 }
 
-/* Done checkmark inherits text color */
-.avr-dot--done svg { color: var(--glass-text); opacity: .65; }
+/* Done checkmark */
+.avr-dot--done svg { color: var(--glass-text); opacity: .6; }
 </style>

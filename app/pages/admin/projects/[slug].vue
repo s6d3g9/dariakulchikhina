@@ -76,6 +76,9 @@
 
       <div class="proj-content-area">
 
+        <!-- Nav column: roadmap dots + sidebar, sticky together -->
+        <div class="proj-nav-col">
+
         <!-- Vertical roadmap — admin mode only -->
         <AdminVerticalRoadmap
           v-if="!clientPreviewMode && !contractorPreviewMode"
@@ -83,8 +86,6 @@
           :active-page="activePage"
           @navigate="selectAdminPage"
         />
-
-        <div class="proj-layout">
 
         <!-- Left sidebar: vertical nav -->
         <nav class="proj-sidenav std-sidenav">
@@ -140,6 +141,7 @@
           </template>
 
         </nav>
+        </div><!-- /.proj-nav-col -->
 
         <!-- Right content -->
         <div class="proj-main">
@@ -185,7 +187,6 @@
               />
             </div>
           </Transition>
-        </div>
         </div>
       </div>
     </template>
@@ -697,12 +698,24 @@ async function linkClientToProject() {
 
 /* ── Layout ── */
 .proj-content-area { display: flex; align-items: flex-start; gap: 0; }
-.proj-layout { display: flex; align-items: flex-start; gap: 0; flex: 1; min-width: 0; }
+
+/* Nav column — roadmap dots + sidenav share one sticky scroll ── */
+.proj-nav-col {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+  position: sticky;
+  top: 80px;
+  align-self: flex-start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.proj-nav-col::-webkit-scrollbar { display: none; }
 
 /* ── Left sidebar nav ── */
 .proj-sidenav {
   width: 190px; flex-shrink: 0;
-  position: sticky; top: 80px;
   padding: 10px;
   margin-right: 20px;
 }
