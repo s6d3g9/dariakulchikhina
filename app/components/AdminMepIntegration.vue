@@ -35,8 +35,8 @@
               </select>
             </div>
             <div class="amep-disc-body">
-              <input v-model="form[`mep_${d.key}_contractor`]" class="amep-inp" placeholder="подрядчик / инженер" @blur="save">
-              <textarea v-model="form[`mep_${d.key}_notes`]" class="amep-inp amep-ta" rows="1" placeholder="заметки..." @blur="save" />
+              <input v-model="form[`mep_${d.key}_contractor`]" class="glass-input" placeholder="подрядчик / инженер" @blur="save">
+              <textarea v-model="form[`mep_${d.key}_notes`]" class="glass-input u-ta" rows="1" placeholder="заметки..." @blur="save" />
             </div>
           </div>
         </div>
@@ -45,7 +45,7 @@
       <!-- Section: General notes -->
       <div class="amep-section">
         <div class="amep-section-title">общие заметки</div>
-        <textarea v-model="form.mep_general_notes" class="amep-inp amep-ta" rows="3" @blur="save" placeholder="координация, столкновения, особые требования..." />
+        <textarea v-model="form.mep_general_notes" class="glass-input u-ta" rows="3" @blur="save" placeholder="координация, столкновения, особые требования..." />
       </div>
 
       <!-- Section: Files -->
@@ -165,9 +165,6 @@ function removeFile(idx: number) {
 .amep-section { margin-bottom: 32px; }
 .amep-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
 
-.amep-inp { width: 100%; border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; box-sizing: border-box; }
-.amep-inp:focus { border-color: #aaa; }
-.amep-ta  { resize: vertical; }
 
 /* Disciplines grid */
 .amep-disciplines { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

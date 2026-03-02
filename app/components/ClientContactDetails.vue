@@ -6,15 +6,15 @@
       <div class="ccd-rows">
         <div class="ccd-row">
           <label class="ccd-lbl">ФИО</label>
-          <input v-model="form.fio" class="ccd-inp" type="text" placeholder="Фамилия Имя Отчество" @blur="save" />
+          <input v-model="form.fio" class="u-prop-inp" type="text" placeholder="Фамилия Имя Отчество" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Телефон</label>
-          <input v-model="form.phone" class="ccd-inp" type="tel" placeholder="+7 (___) ___-__-__" @blur="save" />
+          <input v-model="form.phone" class="u-prop-inp" type="tel" placeholder="+7 (___) ___-__-__" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Email</label>
-          <input v-model="form.email" class="ccd-inp" type="email" placeholder="name@example.com" @blur="save" />
+          <input v-model="form.email" class="u-prop-inp" type="email" placeholder="name@example.com" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Мессенджер</label>
@@ -28,7 +28,7 @@
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Ник в мессенджере</label>
-          <input v-model="form.messengerNick" class="ccd-inp" type="text" placeholder="@username" @blur="save" />
+          <input v-model="form.messengerNick" class="u-prop-inp" type="text" placeholder="@username" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Предпочтительный способ связи</label>
@@ -49,11 +49,11 @@
       <div class="ccd-rows">
         <div class="ccd-row">
           <label class="ccd-lbl">Адрес проживания</label>
-          <AppAddressInput v-model="form.address" input-class="ccd-inp" placeholder="Ваш домашний адрес" @blur="save" />
+          <AppAddressInput v-model="form.address" input-class="u-prop-inp" placeholder="Ваш домашний адрес" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Адрес объекта</label>
-          <AppAddressInput v-model="form.objectAddress" input-class="ccd-inp" placeholder="Адрес квартиры / дома" @blur="save" />
+          <AppAddressInput v-model="form.objectAddress" input-class="u-prop-inp" placeholder="Адрес квартиры / дома" @blur="save" />
         </div>
       </div>
     </div>
@@ -74,19 +74,19 @@
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Площадь (м²)</label>
-          <input v-model="form.objectArea" class="ccd-inp" type="text" placeholder="85" @blur="save" />
+          <input v-model="form.objectArea" class="u-prop-inp" type="text" placeholder="85" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Количество комнат</label>
-          <input v-model="form.roomCount" class="ccd-inp" type="text" placeholder="3" @blur="save" />
+          <input v-model="form.roomCount" class="u-prop-inp" type="text" placeholder="3" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Этаж</label>
-          <input v-model="form.floor" class="ccd-inp" type="text" placeholder="7" @blur="save" />
+          <input v-model="form.floor" class="u-prop-inp" type="text" placeholder="7" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Высота потолков (м)</label>
-          <input v-model="form.ceilingHeight" class="ccd-inp" type="text" placeholder="2.7" @blur="save" />
+          <input v-model="form.ceilingHeight" class="u-prop-inp" type="text" placeholder="2.7" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Балкон / лоджия</label>

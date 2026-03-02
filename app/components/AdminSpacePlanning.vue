@@ -19,26 +19,26 @@
       <!-- Section: General info -->
       <div class="asp-section">
         <div class="asp-section-title">общая информация</div>
-        <div class="asp-rows">
-          <div class="asp-row">
-            <label class="asp-lbl">версия комплекта</label>
-            <input v-model="form.sp_version" class="asp-inp" placeholder="v1, v2, финальная..." @blur="save">
+        <div class="u-grid-2">
+          <div class="u-field">
+            <label class="u-field__label">версия комплекта</label>
+            <input v-model="form.sp_version" class="glass-input" placeholder="v1, v2, финальная..." @blur="save">
           </div>
-          <div class="asp-row">
-            <label class="asp-lbl">дата отправки клиенту</label>
-            <AppDatePicker v-model="form.sp_sent_date" model-type="iso" input-class="asp-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата отправки клиенту</label>
+            <AppDatePicker v-model="form.sp_sent_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="asp-row">
-            <label class="asp-lbl">дата согласования</label>
-            <AppDatePicker v-model="form.sp_approved_date" model-type="iso" input-class="asp-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата согласования</label>
+            <AppDatePicker v-model="form.sp_approved_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="asp-row asp-row--full">
-            <label class="asp-lbl">комментарий архитектора</label>
-            <textarea v-model="form.sp_architect_notes" class="asp-inp asp-ta" rows="2" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">комментарий архитектора</label>
+            <textarea v-model="form.sp_architect_notes" class="glass-input u-ta" rows="2" @blur="save" />
           </div>
-          <div class="asp-row asp-row--full">
-            <label class="asp-lbl">замечания клиента (revision)</label>
-            <textarea v-model="form.sp_client_notes" class="asp-inp asp-ta" rows="2" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">замечания клиента (revision)</label>
+            <textarea v-model="form.sp_client_notes" class="glass-input u-ta" rows="2" @blur="save" />
           </div>
         </div>
       </div>
@@ -187,13 +187,6 @@ function fileIcon(f: any) {
 .asp-section { margin-bottom: 32px; }
 .asp-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
 
-.asp-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.asp-row { display: flex; flex-direction: column; gap: 5px; }
-.asp-row--full { grid-column: 1 / -1; }
-.asp-lbl { font-size: .72rem; color: #999; }
-.asp-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; }
-.asp-inp:focus { border-color: #aaa; }
-.asp-ta  { resize: vertical; }
 
 /* Files */
 .asp-files-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
@@ -218,8 +211,6 @@ function fileIcon(f: any) {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .asp-rows { grid-template-columns: 1fr; }
-  .asp-row--full { grid-column: auto; }
   .asp-checks-row { gap: 10px; }
 }
 </style>

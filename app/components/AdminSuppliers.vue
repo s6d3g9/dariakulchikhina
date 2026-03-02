@@ -23,13 +23,13 @@
         <div class="asup-cards" v-if="form.sup_items?.length">
           <div v-for="(s, idx) in form.sup_items" :key="idx" class="asup-card">
             <div class="asup-card-header">
-              <input v-model="s.name" class="asup-inp asup-card-name" placeholder="название компании" @blur="save">
+              <input v-model="s.name" class="glass-input" placeholder="название компании" @blur="save">
               <button class="asup-del" @click="removeSupplier(Number(idx))">×</button>
             </div>
             <div class="asup-card-rows">
               <div class="asup-card-row">
                 <label class="asup-lbl">категория</label>
-                <select v-model="s.category" class="asup-inp" @change="save">
+                <select v-model="s.category" class="glass-input" @change="save">
                   <option value="">—</option>
                   <option value="finish">отделка</option>
                   <option value="plumbing">сантехника</option>
@@ -43,19 +43,19 @@
               </div>
               <div class="asup-card-row">
                 <label class="asup-lbl">контакт</label>
-                <input v-model="s.contact" class="asup-inp" placeholder="имя, телефон..." @blur="save">
+                <input v-model="s.contact" class="glass-input" placeholder="имя, телефон..." @blur="save">
               </div>
               <div class="asup-card-row">
                 <label class="asup-lbl">email</label>
-                <input v-model="s.email" type="email" class="asup-inp" @blur="save">
+                <input v-model="s.email" type="email" class="glass-input" @blur="save">
               </div>
               <div class="asup-card-row">
                 <label class="asup-lbl">сайт</label>
-                <input v-model="s.website" class="asup-inp" placeholder="https://..." @blur="save">
+                <input v-model="s.website" class="glass-input" placeholder="https://..." @blur="save">
               </div>
               <div class="asup-card-row">
                 <label class="asup-lbl">статус</label>
-                <select v-model="s.status" class="asup-inp" @change="save">
+                <select v-model="s.status" class="glass-input" @change="save">
                   <option value="">—</option>
                   <option value="potential">рассматривается</option>
                   <option value="quoted">КП получено</option>
@@ -66,7 +66,7 @@
               </div>
               <div class="asup-card-row asup-card-row--full">
                 <label class="asup-lbl">заметки</label>
-                <textarea v-model="s.notes" class="asup-inp asup-ta" rows="1" @blur="save" />
+                <textarea v-model="s.notes" class="glass-input u-ta" rows="1" @blur="save" />
               </div>
             </div>
           </div>
@@ -79,7 +79,7 @@
       <!-- Notes -->
       <div class="asup-section">
         <div class="asup-section-title">общие заметки</div>
-        <textarea v-model="form.sup_notes" class="asup-inp asup-ta" rows="3" @blur="save" placeholder="критерии выбора, особые условия..." />
+        <textarea v-model="form.sup_notes" class="glass-input u-ta" rows="3" @blur="save" placeholder="критерии выбора, особые условия..." />
       </div>
 
     </template>
@@ -147,10 +147,6 @@ function removeSupplier(idx: number) {
 .asup-section { margin-bottom: 32px; }
 .asup-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
 
-.asup-lbl { font-size: .72rem; color: #999; margin-bottom: 3px; }
-.asup-inp { width: 100%; border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; box-sizing: border-box; }
-.asup-inp:focus { border-color: #aaa; }
-.asup-ta  { resize: vertical; }
 
 /* Cards */
 .asup-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }

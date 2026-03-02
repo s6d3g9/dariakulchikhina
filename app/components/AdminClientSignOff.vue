@@ -19,30 +19,30 @@
 
       <div class="acso-section">
         <div class="acso-section-title">данные подписания</div>
-        <div class="acso-rows">
-          <div class="acso-row">
-            <label class="acso-lbl">дата отправки клиенту</label>
-            <AppDatePicker v-model="form.cso_sent_date" model-type="iso" input-class="acso-inp" @update:model-value="save" />
+        <div class="u-grid-2">
+          <div class="u-field">
+            <label class="u-field__label">дата отправки клиенту</label>
+            <AppDatePicker v-model="form.cso_sent_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="acso-row">
-            <label class="acso-lbl">дата подписания</label>
-            <AppDatePicker v-model="form.cso_sign_date" model-type="iso" input-class="acso-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата подписания</label>
+            <AppDatePicker v-model="form.cso_sign_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="acso-row">
-            <label class="acso-lbl">клиент (ФИО)</label>
-            <input v-model="form.cso_client_name" class="acso-inp" placeholder="Иванов Иван Иванович" @blur="save">
+          <div class="u-field">
+            <label class="u-field__label">клиент (ФИО)</label>
+            <input v-model="form.cso_client_name" class="glass-input" placeholder="Иванов Иван Иванович" @blur="save">
           </div>
-          <div class="acso-row">
-            <label class="acso-lbl">версия акта</label>
-            <input v-model="form.cso_version" class="acso-inp" placeholder="v1" @blur="save">
+          <div class="u-field">
+            <label class="u-field__label">версия акта</label>
+            <input v-model="form.cso_version" class="glass-input" placeholder="v1" @blur="save">
           </div>
-          <div class="acso-row acso-row--full">
-            <label class="acso-lbl">комментарий клиента</label>
-            <textarea v-model="form.cso_client_comment" class="acso-inp acso-ta" rows="3" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">комментарий клиента</label>
+            <textarea v-model="form.cso_client_comment" class="glass-input u-ta" rows="3" @blur="save" />
           </div>
-          <div class="acso-row acso-row--full">
-            <label class="acso-lbl">внутренние заметки</label>
-            <textarea v-model="form.cso_notes" class="acso-inp acso-ta" rows="2" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">внутренние заметки</label>
+            <textarea v-model="form.cso_notes" class="glass-input u-ta" rows="2" @blur="save" />
           </div>
         </div>
       </div>
@@ -134,13 +134,6 @@ async function uploadFile(e: Event) {
 .acso-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 .acso-section { margin-bottom: 32px; }
 .acso-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
-.acso-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.acso-row { display: flex; flex-direction: column; gap: 5px; }
-.acso-row--full { grid-column: 1 / -1; }
-.acso-lbl { font-size: .72rem; color: #999; }
-.acso-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: none; color: inherit; font-family: inherit; outline: none; }
-.acso-inp:focus { border-color: #aaa; }
-.acso-ta { resize: vertical; }
 .acso-file-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .acso-file-link { font-size: .8rem; color: inherit; text-decoration: none; }
 .acso-file-link:hover { text-decoration: underline; }
@@ -156,7 +149,6 @@ async function uploadFile(e: Event) {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .acso-rows { grid-template-columns: 1fr; }
   .acso-banner { flex-direction: column; gap: 8px; padding: 12px; }
   .acso-banner-body { width: 100%; }
   .acso-status-sel { width: 100%; }

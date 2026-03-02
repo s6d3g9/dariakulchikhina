@@ -155,16 +155,16 @@
             <form v-show="modalTab === 'main' || !isEditMode" @submit.prevent="save">
               <!-- type -->
               <div class="ct-form-section">тип участника</div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Тип</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Тип</label>
                   <select v-model="form.contractorType" class="ct-form-input ct-form-select">
                     <option value="master">Мастер (частный специалист)</option>
                     <option value="company">Подрядчик (организация)</option>
                   </select>
                 </div>
-                <div v-if="form.contractorType === 'master'" class="ct-form-field">
-                  <label class="ct-form-label">Компания-работодатель</label>
+                <div v-if="form.contractorType === 'master'" class="u-field">
+                  <label class="u-field__label">Компания-работодатель</label>
                   <select v-model="form.parentId" class="ct-form-input ct-form-select">
                     <option :value="null">— самозанятый —</option>
                     <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
@@ -193,49 +193,49 @@
 
               <!-- main -->
               <div class="ct-form-section">основное</div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Название *</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Название *</label>
                   <input v-model="form.name" class="ct-form-input" required />
                 </div>
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Slug *</label>
+                <div class="u-field">
+                  <label class="u-field__label">Slug *</label>
                   <input v-model="form.slug" class="ct-form-input" required :disabled="!!editingId" />
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Компания</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Компания</label>
                   <input v-model="form.companyName" class="ct-form-input" />
                 </div>
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Контактное лицо</label>
+                <div class="u-field">
+                  <label class="u-field__label">Контактное лицо</label>
                   <input v-model="form.contactPerson" class="ct-form-input" />
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Виды работ</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Виды работ</label>
                   <input v-model="workTypesStr" class="ct-form-input" placeholder="через запятую" />
                 </div>
-                <div class="ct-form-field"></div>
+                <div class="u-field"></div>
               </div>
 
               <!-- contacts -->
               <div class="ct-form-section">контакты</div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Телефон</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Телефон</label>
                   <input v-model="form.phone" class="ct-form-input" />
                 </div>
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Email</label>
+                <div class="u-field">
+                  <label class="u-field__label">Email</label>
                   <input v-model="form.email" class="ct-form-input" />
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Мессенджер</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Мессенджер</label>
                   <select v-model="form.messenger" class="ct-form-input ct-form-select">
                     <option value="">—</option>
                     <option value="telegram">telegram</option>
@@ -243,72 +243,72 @@
                     <option value="viber">viber</option>
                   </select>
                 </div>
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Ник / номер мессенджера</label>
+                <div class="u-field">
+                  <label class="u-field__label">Ник / номер мессенджера</label>
                   <input v-model="form.messengerNick" class="ct-form-input" />
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Сайт / портфолио</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Сайт / портфолио</label>
                   <input v-model="form.website" class="ct-form-input" placeholder="https://" />
                 </div>
-                <div class="ct-form-field"></div>
+                <div class="u-field"></div>
               </div>
 
               <!-- addresses -->
               <div class="ct-form-section">адреса</div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Юридический адрес</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Юридический адрес</label>
                   <AppAddressInput v-model="form.legalAddress" input-class="ct-form-input" />
                 </div>
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Фактический адрес</label>
+                <div class="u-field">
+                  <label class="u-field__label">Фактический адрес</label>
                   <AppAddressInput v-model="form.factAddress" input-class="ct-form-input" />
                 </div>
               </div>
 
               <!-- requisites -->
               <div class="ct-form-section">реквизиты</div>
-              <div class="ct-form-grid ct-form-grid--3">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">ИНН</label>
+              <div class="u-grid-3">
+                <div class="u-field">
+                  <label class="u-field__label">ИНН</label>
                   <input v-model="form.inn" class="ct-form-input" />
                 </div>
-                <div class="ct-form-field">
-                  <label class="ct-form-label">КПП</label>
+                <div class="u-field">
+                  <label class="u-field__label">КПП</label>
                   <input v-model="form.kpp" class="ct-form-input" />
                 </div>
-                <div class="ct-form-field">
-                  <label class="ct-form-label">ОГРН / ОГРНИП</label>
+                <div class="u-field">
+                  <label class="u-field__label">ОГРН / ОГРНИП</label>
                   <input v-model="form.ogrn" class="ct-form-input" />
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Банк</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Банк</label>
                   <input v-model="form.bankName" class="ct-form-input" />
                 </div>
-                <div class="ct-form-field">
-                  <label class="ct-form-label">БИК</label>
+                <div class="u-field">
+                  <label class="u-field__label">БИК</label>
                   <input v-model="form.bik" class="ct-form-input" />
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Расчётный счёт</label>
+              <div class="u-grid-2">
+                <div class="u-field">
+                  <label class="u-field__label">Расчётный счёт</label>
                   <input v-model="form.settlementAccount" class="ct-form-input" />
                 </div>
-                <div class="ct-form-field">
-                  <label class="ct-form-label">Корр. счёт</label>
+                <div class="u-field">
+                  <label class="u-field__label">Корр. счёт</label>
                   <input v-model="form.correspondentAccount" class="ct-form-input" />
                 </div>
               </div>
 
               <!-- notes -->
               <div class="ct-form-section">примечания</div>
-              <div class="ct-form-field">
+              <div class="u-field">
                 <textarea v-model="form.notes" class="ct-form-input ct-form-textarea" rows="3" placeholder="заметки о подрядчике"></textarea>
               </div>
 
@@ -322,7 +322,7 @@
             <!-- ═══ TAB: Паспорт ═══ -->
             <div v-if="isEditMode && modalTab === 'passport'" class="ct-tab-content">
               <div class="ct-form-section">паспортные данные (только чтение)</div>
-              <div class="ct-form-grid ct-form-grid--3">
+              <div class="u-grid-3">
                 <div class="ct-ro-field">
                   <span class="ct-ro-label">Серия</span>
                   <span class="ct-ro-value">{{ editContractor?.passportSeries || '—' }}</span>
@@ -336,7 +336,7 @@
                   <span class="ct-ro-value">{{ editContractor?.passportDepartmentCode || '—' }}</span>
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
+              <div class="u-grid-2">
                 <div class="ct-ro-field">
                   <span class="ct-ro-label">Кем выдан</span>
                   <span class="ct-ro-value">{{ editContractor?.passportIssuedBy || '—' }}</span>
@@ -346,7 +346,7 @@
                   <span class="ct-ro-value">{{ editContractor?.passportIssueDate || '—' }}</span>
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
+              <div class="u-grid-2">
                 <div class="ct-ro-field">
                   <span class="ct-ro-label">Дата рождения</span>
                   <span class="ct-ro-value">{{ editContractor?.birthDate || '—' }}</span>
@@ -356,7 +356,7 @@
                   <span class="ct-ro-value">{{ editContractor?.birthPlace || '—' }}</span>
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
+              <div class="u-grid-2">
                 <div class="ct-ro-field">
                   <span class="ct-ro-label">Адрес регистрации</span>
                   <span class="ct-ro-value">{{ editContractor?.registrationAddress || '—' }}</span>
@@ -390,7 +390,7 @@
             <!-- ═══ TAB: Финансы ═══ -->
             <div v-if="isEditMode && modalTab === 'finances'" class="ct-tab-content">
               <div class="ct-form-section">финансовые данные (только чтение)</div>
-              <div class="ct-form-grid ct-form-grid--3">
+              <div class="u-grid-3">
                 <div class="ct-ro-field">
                   <span class="ct-ro-label">Ставка (₽/час)</span>
                   <span class="ct-ro-value">{{ editContractor?.hourlyRate ? editContractor.hourlyRate + ' ₽' : '—' }}</span>
@@ -404,7 +404,7 @@
                   <span class="ct-ro-value">{{ editContractor?.experienceYears ?? '—' }}</span>
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
+              <div class="u-grid-2">
                 <div class="ct-ro-field">
                   <span class="ct-ro-label">Способы оплаты</span>
                   <span class="ct-ro-value">{{ formatPaymentMethods(editContractor?.paymentMethods) }}</span>
@@ -414,7 +414,7 @@
                   <span class="ct-ro-value">{{ editContractor?.hasInsurance ? 'Да — ' + (editContractor?.insuranceDetails || '') : 'Нет' }}</span>
                 </div>
               </div>
-              <div class="ct-form-grid ct-form-grid--2">
+              <div class="u-grid-2">
                 <div class="ct-ro-field">
                   <span class="ct-ro-label">Образование</span>
                   <span class="ct-ro-value">{{ editContractor?.education || '—' }}</span>
@@ -878,17 +878,6 @@ html.dark .ct-badge--master { background: rgba(99, 140, 255, .15); color: #82a5f
   margin: 16px 0 8px; padding-bottom: 4px;
 }
 .ct-form-section:first-child { margin-top: 0; }
-.ct-form-grid { display: grid; gap: 10px; margin-bottom: 4px; }
-.ct-form-grid--2 { grid-template-columns: 1fr 1fr; }
-.ct-form-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
-@media (max-width: 600px) {
-  .ct-form-grid--2, .ct-form-grid--3 { grid-template-columns: 1fr; }
-}
-.ct-form-field { display: flex; flex-direction: column; gap: 4px; }
-.ct-form-label {
-  font-size: .6rem; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--glass-text); opacity: .4; font-weight: 600;
-}
 .ct-form-input {
   border: none; padding: 8px 10px;
   background: color-mix(in srgb, var(--glass-text) 5%, transparent);

@@ -16,30 +16,30 @@
 
       <div class="aca2-section">
         <div class="aca2-section-title">реквизиты акта</div>
-        <div class="aca2-rows">
-          <div class="aca2-row">
-            <label class="aca2-lbl">номер акта</label>
-            <input v-model="form.cma_act_number" class="aca2-inp" placeholder="АКТ-2026-01" @blur="save">
+        <div class="u-grid-2">
+          <div class="u-field">
+            <label class="u-field__label">номер акта</label>
+            <input v-model="form.cma_act_number" class="glass-input" placeholder="АКТ-2026-01" @blur="save">
           </div>
-          <div class="aca2-row">
-            <label class="aca2-lbl">дата подписания</label>
-            <AppDatePicker v-model="form.cma_sign_date" model-type="iso" input-class="aca2-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата подписания</label>
+            <AppDatePicker v-model="form.cma_sign_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="aca2-row">
-            <label class="aca2-lbl">место подписания</label>
-            <input v-model="form.cma_location" class="aca2-inp" placeholder="город, адрес" @blur="save">
+          <div class="u-field">
+            <label class="u-field__label">место подписания</label>
+            <input v-model="form.cma_location" class="glass-input" placeholder="город, адрес" @blur="save">
           </div>
-          <div class="aca2-row">
-            <label class="aca2-lbl">сумма договора</label>
-            <input v-model="form.cma_contract_sum" class="aca2-inp" placeholder="₽" @blur="save">
+          <div class="u-field">
+            <label class="u-field__label">сумма договора</label>
+            <input v-model="form.cma_contract_sum" class="glass-input" placeholder="₽" @blur="save">
           </div>
-          <div class="aca2-row aca2-row--full">
-            <label class="aca2-lbl">описание выполненных работ</label>
-            <textarea v-model="form.cma_works_description" class="aca2-inp aca2-ta" rows="3" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">описание выполненных работ</label>
+            <textarea v-model="form.cma_works_description" class="glass-input u-ta" rows="3" @blur="save" />
           </div>
-          <div class="aca2-row aca2-row--full">
-            <label class="aca2-lbl">примечания / оговорки</label>
-            <textarea v-model="form.cma_notes" class="aca2-inp aca2-ta" rows="2" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">примечания / оговорки</label>
+            <textarea v-model="form.cma_notes" class="glass-input u-ta" rows="2" @blur="save" />
           </div>
         </div>
       </div>
@@ -139,13 +139,6 @@ async function uploadFile(e: Event) {
 .aca2-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 .aca2-section { margin-bottom: 32px; }
 .aca2-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
-.aca2-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.aca2-row { display: flex; flex-direction: column; gap: 5px; }
-.aca2-row--full { grid-column: 1 / -1; }
-.aca2-lbl { font-size: .72rem; color: #999; }
-.aca2-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: none; color: inherit; font-family: inherit; outline: none; }
-.aca2-inp:focus { border-color: #aaa; }
-.aca2-ta { resize: vertical; }
 .aca2-file-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .aca2-file-link { font-size: .8rem; color: inherit; text-decoration: none; }
 .aca2-file-link:hover { text-decoration: underline; }
@@ -160,7 +153,6 @@ async function uploadFile(e: Event) {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .aca2-rows { grid-template-columns: 1fr; }
   .aca2-status-row { flex-wrap: wrap; }
   .aca2-status-sel { width: 100%; }
   .aca2-upload-btn { width: 100%; justify-content: center; }

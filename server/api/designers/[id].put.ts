@@ -16,6 +16,7 @@ const UpdateDesignerSchema = z.object({
   specializations: z.array(z.string()).optional(),
   services: z.array(z.any()).optional(),
   packages: z.array(z.any()).optional(),
+  subscriptions: z.array(z.any()).optional(),
 })
 
 export default defineEventHandler(async (event) => {
@@ -39,6 +40,7 @@ export default defineEventHandler(async (event) => {
   if (body.specializations !== undefined) updates.specializations = body.specializations
   if (body.services !== undefined) updates.services = body.services
   if (body.packages !== undefined) updates.packages = body.packages
+  if (body.subscriptions !== undefined) updates.subscriptions = body.subscriptions
 
   const [updated] = await db.update(designers).set(updates).where(eq(designers.id, id)).returning()
   if (!updated) throw createError({ statusCode: 404, statusMessage: 'Designer not found' })

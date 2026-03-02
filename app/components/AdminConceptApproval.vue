@@ -81,25 +81,25 @@
       <!-- Section: Approval tracking -->
       <div class="aca-section">
         <div class="aca-section-title">акт согласования</div>
-        <div class="aca-rows">
-          <div class="aca-row">
-            <label class="aca-lbl">номер акта</label>
-            <input v-model="form.ca_approval_act" class="aca-inp" placeholder="АКТ-2025-01" @blur="save">
+        <div class="u-grid-2">
+          <div class="u-field">
+            <label class="u-field__label">номер акта</label>
+            <input v-model="form.ca_approval_act" class="glass-input" placeholder="АКТ-2025-01" @blur="save">
           </div>
-          <div class="aca-row">
-            <label class="aca-lbl">дата подписания</label>
-            <AppDatePicker v-model="form.ca_approval_date" model-type="iso" input-class="aca-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата подписания</label>
+            <AppDatePicker v-model="form.ca_approval_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="aca-row">
-            <label class="aca-lbl">дата отправки клиенту</label>
-            <AppDatePicker v-model="form.ca_sent_date" model-type="iso" input-class="aca-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата отправки клиенту</label>
+            <AppDatePicker v-model="form.ca_sent_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="aca-row">
-            <label class="aca-lbl">версия пакета</label>
-            <input v-model="form.ca_version" class="aca-inp" placeholder="v1, v2..." @blur="save">
+          <div class="u-field">
+            <label class="u-field__label">версия пакета</label>
+            <input v-model="form.ca_version" class="glass-input" placeholder="v1, v2..." @blur="save">
           </div>
-          <div class="aca-row aca-row--full">
-            <label class="aca-lbl">файл акта / приложения</label>
+          <div class="u-field u-field--full">
+            <label class="u-field__label">файл акта / приложения</label>
             <div class="aca-file-row">
               <a v-if="form.ca_act_file" :href="form.ca_act_file" target="_blank" class="aca-file-link">
                 📄 {{ form.ca_act_filename || 'открыть файл' }}
@@ -111,9 +111,9 @@
               <span v-if="uploadingAct" class="aca-uploading">загрузка...</span>
             </div>
           </div>
-          <div class="aca-row aca-row--full">
-            <label class="aca-lbl">итоговые комментарии</label>
-            <textarea v-model="form.ca_notes" class="aca-inp aca-ta" rows="3" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">итоговые комментарии</label>
+            <textarea v-model="form.ca_notes" class="glass-input u-ta" rows="3" @blur="save" />
           </div>
         </div>
       </div>
@@ -327,12 +327,6 @@ async function moveToPhase2() {
 .aca-upload-btn--loading { opacity: .6; cursor: wait; }
 
 /* Form rows */
-.aca-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.aca-row { display: flex; flex-direction: column; gap: 5px; }
-.aca-row--full { grid-column: 1 / -1; }
-.aca-lbl { font-size: .72rem; color: #999; }
-.aca-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; }
-.aca-ta { resize: vertical; }
 .aca-file-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .aca-file-link { font-size: .8rem; color: inherit; text-decoration: none; opacity: .8; }
 .aca-file-link:hover { text-decoration: underline; }
@@ -356,8 +350,6 @@ async function moveToPhase2() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .aca-rows { grid-template-columns: 1fr; }
-  .aca-row--full { grid-column: auto; }
   .aca-lock-card { flex-direction: column; gap: 10px; }
   .aca-lock-btn { align-self: flex-start; }
 }

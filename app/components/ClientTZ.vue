@@ -6,21 +6,21 @@
       <!-- ── Содержание ТЗ ── -->
       <div class="ctz-section">
         <div class="ctz-section-title">содержание технического задания</div>
-        <div class="ctz-rows">
-          <div v-if="profile.tor_scope" class="ctz-row">
-            <span class="ctz-lbl">Объём работ</span>
+        <div class="u-prop-rows">
+          <div v-if="profile.tor_scope" class="u-field">
+            <span class="u-field__label">Объём работ</span>
             <span class="ctz-val ctz-val--pre">{{ profile.tor_scope }}</span>
           </div>
-          <div v-if="profile.tor_exclusions" class="ctz-row">
-            <span class="ctz-lbl">Исключения</span>
+          <div v-if="profile.tor_exclusions" class="u-field">
+            <span class="u-field__label">Исключения</span>
             <span class="ctz-val ctz-val--pre">{{ profile.tor_exclusions }}</span>
           </div>
-          <div v-if="profile.tor_timeline" class="ctz-row">
-            <span class="ctz-lbl">Сроки проектирования</span>
+          <div v-if="profile.tor_timeline" class="u-field">
+            <span class="u-field__label">Сроки проектирования</span>
             <span class="ctz-val">{{ profile.tor_timeline }}</span>
           </div>
-          <div v-if="profile.tor_deliverables" class="ctz-row">
-            <span class="ctz-lbl">Формат результата</span>
+          <div v-if="profile.tor_deliverables" class="u-field">
+            <span class="u-field__label">Формат результата</span>
             <span class="ctz-val ctz-val--pre">{{ profile.tor_deliverables }}</span>
           </div>
         </div>
@@ -29,25 +29,25 @@
       <!-- ── Договор (если есть) ── -->
       <div v-if="hasContract" class="ctz-section">
         <div class="ctz-section-title">договор</div>
-        <div class="ctz-rows">
-          <div v-if="profile.contract_number" class="ctz-row">
-            <span class="ctz-lbl">Номер</span>
+        <div class="u-prop-rows">
+          <div v-if="profile.contract_number" class="u-field">
+            <span class="u-field__label">Номер</span>
             <span class="ctz-val">{{ profile.contract_number }}</span>
           </div>
-          <div v-if="profile.contract_date" class="ctz-row">
-            <span class="ctz-lbl">Дата</span>
+          <div v-if="profile.contract_date" class="u-field">
+            <span class="u-field__label">Дата</span>
             <span class="ctz-val">{{ fmtDate(profile.contract_date) }}</span>
           </div>
-          <div v-if="profile.contract_status" class="ctz-row">
-            <span class="ctz-lbl">Статус</span>
+          <div v-if="profile.contract_status" class="u-field">
+            <span class="u-field__label">Статус</span>
             <span class="ctz-badge" :class="`ctz-badge--${profile.contract_status}`">{{ contractStatusLabel }}</span>
           </div>
-          <div v-if="profile.contract_parties" class="ctz-row">
-            <span class="ctz-lbl">Стороны договора</span>
+          <div v-if="profile.contract_parties" class="u-field">
+            <span class="u-field__label">Стороны договора</span>
             <span class="ctz-val">{{ profile.contract_parties }}</span>
           </div>
-          <div v-if="profile.contract_notes" class="ctz-row">
-            <span class="ctz-lbl">Примечания</span>
+          <div v-if="profile.contract_notes" class="u-field">
+            <span class="u-field__label">Примечания</span>
             <span class="ctz-val ctz-val--pre">{{ profile.contract_notes }}</span>
           </div>
         </div>
@@ -102,12 +102,6 @@ function fmtDate(val: string | null | undefined): string {
   padding-bottom: 8px; border-bottom: 1px solid var(--glass-border);
 }
 
-.ctz-rows { display: flex; flex-direction: column; gap: 12px; }
-.ctz-row { display: flex; flex-direction: column; gap: 3px; }
-.ctz-lbl {
-  font-size: .68rem; text-transform: uppercase; letter-spacing: .5px;
-  color: var(--glass-text); opacity: .4;
-}
 .ctz-val { font-size: .88rem; color: var(--glass-text); line-height: 1.5; }
 .ctz-val--pre { white-space: pre-wrap; }
 

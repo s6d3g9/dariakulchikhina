@@ -15,6 +15,7 @@ const CreateDesignerSchema = z.object({
   specializations: z.array(z.string()).optional().default([]),
   services: z.array(z.any()).optional().default([]),
   packages: z.array(z.any()).optional().default([]),
+  subscriptions: z.array(z.any()).optional().default([]),
 })
 
 export default defineEventHandler(async (event) => {
@@ -35,6 +36,7 @@ export default defineEventHandler(async (event) => {
     specializations: body.specializations,
     services: body.services,
     packages: body.packages,
+    subscriptions: body.subscriptions,
   }).returning()
 
   return designer

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
+    <div v-if="pending" style="font-size:.88rem;color:color-mix(in srgb, var(--glass-text) 55%, transparent)">Загрузка...</div>
     <template v-else>
       <div class="acp-card" style="margin-bottom:12px">
         <div class="acp-section-title" style="margin-top:0">выбор клиента</div>
@@ -374,19 +374,19 @@ async function save() {
 .acp-row :deep(.aai-wrap input:focus) { border-bottom-color: var(--acp-inp-focus); }
 
 .acp-card {
-  --acp-bg: #fff;
-  --acp-border: #e0e0e0;
-  --acp-row-border: #f5f5f5;
-  --acp-lbl: #888;
-  --acp-inp-border: #ddd;
-  --acp-inp-focus: #1a1a1a;
+  --acp-bg: var(--glass-page-bg, #fff);
+  --acp-border: var(--glass-border, #e0e0e0);
+  --acp-row-border: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  --acp-lbl: color-mix(in srgb, var(--glass-text) 55%, transparent);
+  --acp-inp-border: color-mix(in srgb, var(--glass-text) 20%, transparent);
+  --acp-inp-focus: var(--glass-text);
   --acp-inp-color: inherit;
-  --acp-ta-border: #ddd;
-  --acp-btn-border: #1a1a1a;
-  --acp-btn-color: #1a1a1a;
-  --acp-btn-hover-bg: #1a1a1a;
-  --acp-btn-hover-color: #fff;
-  --acp-img-border: #ddd;
+  --acp-ta-border: color-mix(in srgb, var(--glass-text) 20%, transparent);
+  --acp-btn-border: var(--glass-text);
+  --acp-btn-color: var(--glass-text);
+  --acp-btn-hover-bg: var(--glass-text);
+  --acp-btn-hover-color: var(--glass-page-bg);
+  --acp-img-border: color-mix(in srgb, var(--glass-text) 20%, transparent);
 
   background: var(--acp-bg);
   border: 1px solid var(--acp-border);
@@ -397,10 +397,10 @@ async function save() {
   font-size: .72rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #aaa;
+  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
   margin: 20px 0 10px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--glass-border, #e0e0e0);
 }
 .acp-section-title:first-child { margin-top: 0; }
 .acp-section-hint {
@@ -554,8 +554,8 @@ async function save() {
 }
 .acp-link-btn {
   border: none;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--glass-text);
+  color: var(--glass-page-bg);
   padding: 6px 12px;
   font-size: .78rem;
   cursor: pointer;

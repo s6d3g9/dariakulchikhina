@@ -18,17 +18,17 @@
       <div class="ator-section">
         <div class="ator-section-title">договор и ТЗ</div>
 
-        <div class="ator-rows">
-          <div class="ator-row">
-            <label class="ator-lbl">номер договора</label>
-            <input v-model="form.contract_number" class="ator-inp" placeholder="ДОГ-2025-001" @blur="save">
+        <div class="u-prop-rows">
+          <div class="u-prop-row">
+            <label class="u-prop-label">номер договора</label>
+            <input v-model="form.contract_number" class="u-prop-inp" placeholder="ДОГ-2025-001" @blur="save">
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">дата договора</label>
-            <AppDatePicker v-model="form.contract_date" model-type="iso" input-class="ator-inp" @update:model-value="save" />
+          <div class="u-prop-row">
+            <label class="u-prop-label">дата договора</label>
+            <AppDatePicker v-model="form.contract_date" model-type="iso" input-class="u-prop-inp" @update:model-value="save" />
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">статус</label>
+          <div class="u-prop-row">
+            <label class="u-prop-label">статус</label>
             <div class="ator-status-wrap">
               <div class="ator-status-flow">
                 <button
@@ -42,12 +42,12 @@
               </div>
             </div>
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">стороны договора</label>
-            <input v-model="form.contract_parties" class="ator-inp" placeholder="ИП Иванова — ООО Заказчик" @blur="save">
+          <div class="u-prop-row">
+            <label class="u-prop-label">стороны договора</label>
+            <input v-model="form.contract_parties" class="u-prop-inp" placeholder="ИП Иванова — ООО Заказчик" @blur="save">
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">файл договора</label>
+          <div class="u-prop-row">
+            <label class="u-prop-label">файл договора</label>
             <div class="ator-file-row">
               <a v-if="form.contract_file" :href="form.contract_file" target="_blank" class="ator-file-link">
                 📄 {{ form.contract_filename || 'открыть' }}
@@ -59,9 +59,9 @@
               <span v-if="uploading === 'contract'" class="ator-uploading">загрузка...</span>
             </div>
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">примечания</label>
-            <textarea v-model="form.contract_notes" class="ator-inp ator-ta" rows="2" @blur="save" />
+          <div class="u-prop-row">
+            <label class="u-prop-label">примечания</label>
+            <textarea v-model="form.contract_notes" class="u-prop-inp u-prop-ta" rows="2" @blur="save" />
           </div>
         </div>
       </div>
@@ -70,21 +70,21 @@
       <div class="ator-section">
         <div class="ator-section-title">инвойс · аванс (этап 1)</div>
 
-        <div class="ator-rows">
-          <div class="ator-row">
-            <label class="ator-lbl">сумма инвойса</label>
-            <input v-model="form.invoice_amount" class="ator-inp" type="text" placeholder="₽ 250 000" @blur="save">
+        <div class="u-prop-rows">
+          <div class="u-prop-row">
+            <label class="u-prop-label">сумма инвойса</label>
+            <input v-model="form.invoice_amount" class="u-prop-inp" type="text" placeholder="₽ 250 000" @blur="save">
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">% аванса</label>
-            <input v-model="form.invoice_advance_pct" class="ator-inp" type="text" placeholder="50%" @blur="save">
+          <div class="u-prop-row">
+            <label class="u-prop-label">% аванса</label>
+            <input v-model="form.invoice_advance_pct" class="u-prop-inp" type="text" placeholder="50%" @blur="save">
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">дата выставления</label>
-            <AppDatePicker v-model="form.invoice_date" model-type="iso" input-class="ator-inp" @update:model-value="save" />
+          <div class="u-prop-row">
+            <label class="u-prop-label">дата выставления</label>
+            <AppDatePicker v-model="form.invoice_date" model-type="iso" input-class="u-prop-inp" @update:model-value="save" />
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">статус оплаты</label>
+          <div class="u-prop-row">
+            <label class="u-prop-label">статус оплаты</label>
             <div class="ator-status-flow">
               <button
                 v-for="s in paymentStatuses"
@@ -96,8 +96,8 @@
               >{{ s.label }}</button>
             </div>
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">файл инвойса</label>
+          <div class="u-prop-row">
+            <label class="u-prop-label">файл инвойса</label>
             <div class="ator-file-row">
               <a v-if="form.invoice_file" :href="form.invoice_file" target="_blank" class="ator-file-link">
                 📄 {{ form.invoice_filename || 'открыть' }}
@@ -109,9 +109,9 @@
               <span v-if="uploading === 'invoice'" class="ator-uploading">загрузка...</span>
             </div>
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">реквизиты оплаты</label>
-            <textarea v-model="form.invoice_payment_details" class="ator-inp ator-ta" rows="2"
+          <div class="u-prop-row">
+            <label class="u-prop-label">реквизиты оплаты</label>
+            <textarea v-model="form.invoice_payment_details" class="u-prop-inp u-prop-ta" rows="2"
               placeholder="счёт, банк, назначение платежа..." @blur="save" />
           </div>
         </div>
@@ -120,24 +120,24 @@
       <!-- ── ToR Scope ───────────────────────────────────────────── -->
       <div class="ator-section">
         <div class="ator-section-title">содержание ТЗ (Terms of Reference)</div>
-        <div class="ator-rows">
-          <div class="ator-row">
-            <label class="ator-lbl">объём работ</label>
-            <textarea v-model="form.tor_scope" class="ator-inp ator-ta" rows="3"
+        <div class="u-prop-rows">
+          <div class="u-prop-row">
+            <label class="u-prop-label">объём работ</label>
+            <textarea v-model="form.tor_scope" class="u-prop-inp u-prop-ta" rows="3"
               placeholder="что входит в проект: концепция, 3D, РД, авторский надзор..." @blur="save" />
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">исключения</label>
-            <textarea v-model="form.tor_exclusions" class="ator-inp ator-ta" rows="2"
+          <div class="u-prop-row">
+            <label class="u-prop-label">исключения</label>
+            <textarea v-model="form.tor_exclusions" class="u-prop-inp u-prop-ta" rows="2"
               placeholder="что не входит..." @blur="save" />
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">сроки проектирования</label>
-            <input v-model="form.tor_timeline" class="ator-inp" placeholder="например: 8 недель от старта" @blur="save">
+          <div class="u-prop-row">
+            <label class="u-prop-label">сроки проектирования</label>
+            <input v-model="form.tor_timeline" class="u-prop-inp" placeholder="например: 8 недель от старта" @blur="save">
           </div>
-          <div class="ator-row">
-            <label class="ator-lbl">формат результата</label>
-            <textarea v-model="form.tor_deliverables" class="ator-inp ator-ta" rows="2"
+          <div class="u-prop-row">
+            <label class="u-prop-label">формат результата</label>
+            <textarea v-model="form.tor_deliverables" class="u-prop-inp u-prop-ta" rows="2"
               placeholder="PDF, DWG, 3D-файлы, BIM..." @blur="save" />
           </div>
         </div>
@@ -298,20 +298,6 @@ async function save() {
 }
 
 /* Rows */
-.ator-rows { display: flex; flex-direction: column; }
-.ator-row {
-  display: grid; grid-template-columns: 160px 1fr; align-items: start;
-  padding: 8px 0; border-bottom: 1px solid var(--border, #f0f0f0);
-}
-.ator-row:last-child { border-bottom: none; }
-.ator-lbl { font-size: .76rem; color: #888; padding-top: 6px; }
-.ator-inp {
-  border: none; border-bottom: 1px solid var(--border, #ddd);
-  padding: 6px 0; font-size: .88rem; background: transparent; outline: none;
-  font-family: inherit; color: var(--text, inherit); width: 100%;
-}
-.ator-inp:focus { border-bottom-color: var(--text, #1a1a1a); }
-.ator-ta { resize: vertical; min-height: 36px; }
 
 /* Status flow */
 .ator-status-wrap { padding: 4px 0; }
@@ -354,8 +340,6 @@ async function save() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .ator-row { grid-template-columns: 1fr; gap: 2px; }
-  .ator-lbl { padding-top: 0; font-size: .72rem; }
   .ator-footer { flex-direction: column; align-items: stretch; gap: 10px; }
   .ator-btn-save { width: 100%; text-align: center; }
 }

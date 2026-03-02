@@ -352,7 +352,7 @@ async function save() {
 }
 .arm-tracker-fill {
   height: 100%;
-  background: #15803d;
+  background: var(--ds-success);
   border-radius: 2px;
   transition: width .4s ease;
 }
@@ -371,20 +371,20 @@ async function save() {
   background: color-mix(in srgb, var(--glass-text) 6%, transparent);
   opacity: .4;
 }
-.arm-node--done { background: rgba(34,197,94,.15); color: #15803d; border-color: #15803d; opacity: 1; }
-.arm-node--in_progress { background: rgba(245,158,11,.12); color: #a16207; border-color: #f59e0b; opacity: 1; animation: arm-pulse 2s ease-in-out infinite; }
+.arm-node--done { background: color-mix(in srgb, var(--ds-success) 15%, transparent); color: var(--ds-success); border-color: var(--ds-success); opacity: 1; }
+.arm-node--in_progress { background: color-mix(in srgb, var(--ds-warning) 12%, transparent); color: var(--ds-warning); border-color: var(--ds-warning); opacity: 1; animation: arm-pulse 2s ease-in-out infinite; }
 .arm-node--skipped { opacity: .25; text-decoration: line-through; }
 .arm-node--pending { opacity: .4; }
 .arm-node:hover { opacity: 1; transform: scale(1.15); }
 .arm-node-icon { line-height: 1; }
 
 @keyframes arm-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,.3); }
-  50% { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ds-warning) 30%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--ds-warning) 0%, transparent); }
 }
 
 .arm-progress-text { font-size: .72rem; color: var(--glass-text); opacity: .55; }
-.arm-ip-count { color: #a16207; opacity: 1; }
+.arm-ip-count { color: var(--ds-warning); opacity: 1; }
 
 /* ── Header ── */
 .arm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -418,8 +418,8 @@ async function save() {
   border-radius: 12px; padding: 14px 16px;
   border-left: 3px solid transparent; transition: border-color .2s;
 }
-.arm-card--done { border-left-color: #15803d; }
-.arm-card--in_progress { border-left-color: #f59e0b; }
+.arm-card--done { border-left-color: var(--ds-success); }
+.arm-card--in_progress { border-left-color: var(--ds-warning); }
 .arm-card--skipped { opacity: .55; }
 .arm-card--pending { border-left-color: color-mix(in srgb, var(--glass-text) 12%, transparent); }
 
@@ -431,8 +431,8 @@ async function save() {
   background: color-mix(in srgb, var(--glass-text) 8%, transparent);
   color: var(--glass-text); opacity: .5;
 }
-.arm-card-num--done { background: rgba(34,197,94,.15); color: #15803d; opacity: 1; }
-.arm-card-num--in_progress { background: rgba(245,158,11,.12); color: #a16207; opacity: 1; }
+.arm-card-num--done { background: color-mix(in srgb, var(--ds-success) 15%, transparent); color: var(--ds-success); opacity: 1; }
+.arm-card-num--in_progress { background: color-mix(in srgb, var(--ds-warning) 12%, transparent); color: var(--ds-warning); opacity: 1; }
 .arm-card-num--skipped { background: color-mix(in srgb, var(--glass-text) 8%, transparent); color: var(--glass-text); opacity: .45; }
 
 /* Status chip */
@@ -444,15 +444,15 @@ async function save() {
 }
 .arm-status-chip:hover { opacity: .75; }
 .arm-status-chip--pending { color: var(--glass-text); background: color-mix(in srgb, var(--glass-text) 9%, transparent); opacity: .55; }
-.arm-status-chip--in_progress { color: #a16207; background: rgba(245,158,11,.12); }
-.arm-status-chip--done { color: #15803d; background: rgba(34,197,94,.13); }
+.arm-status-chip--in_progress { color: var(--ds-warning); background: color-mix(in srgb, var(--ds-warning) 12%, transparent); }
+.arm-status-chip--done { color: var(--ds-success); background: color-mix(in srgb, var(--ds-success) 13%, transparent); }
 .arm-status-chip--skipped { color: var(--glass-text); background: color-mix(in srgb, var(--glass-text) 8%, transparent); opacity: .45; }
 
 .arm-card-title-wrap { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .arm-task-badge {
   white-space: nowrap; font-size: .66rem; font-weight: 700;
   padding: 2px 8px; border-radius: 10px;
-  background: rgba(100,110,200,.12); color: rgba(80,90,180,1); flex-shrink: 0;
+  background: color-mix(in srgb, var(--ds-accent) 12%, transparent); color: var(--ds-accent); flex-shrink: 0;
 }
 .arm-card-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .arm-icon-btn {

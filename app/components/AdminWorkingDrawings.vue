@@ -20,26 +20,26 @@
       <!-- Section: General -->
       <div class="awd-section">
         <div class="awd-section-title">общая информация</div>
-        <div class="awd-rows">
-          <div class="awd-row">
-            <label class="awd-lbl">версия комплекта</label>
-            <input v-model="form.wd_version" class="awd-inp" placeholder="v1, v2..." @blur="save">
+        <div class="u-grid-2">
+          <div class="u-field">
+            <label class="u-field__label">версия комплекта</label>
+            <input v-model="form.wd_version" class="glass-input" placeholder="v1, v2..." @blur="save">
           </div>
-          <div class="awd-row">
-            <label class="awd-lbl">дата выдачи</label>
-            <AppDatePicker v-model="form.wd_issue_date" model-type="iso" input-class="awd-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата выдачи</label>
+            <AppDatePicker v-model="form.wd_issue_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="awd-row">
-            <label class="awd-lbl">дата согласования</label>
-            <AppDatePicker v-model="form.wd_approved_date" model-type="iso" input-class="awd-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата согласования</label>
+            <AppDatePicker v-model="form.wd_approved_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="awd-row">
-            <label class="awd-lbl">масштаб чертежей</label>
-            <input v-model="form.wd_scale" class="awd-inp" placeholder="1:50, 1:100..." @blur="save">
+          <div class="u-field">
+            <label class="u-field__label">масштаб чертежей</label>
+            <input v-model="form.wd_scale" class="glass-input" placeholder="1:50, 1:100..." @blur="save">
           </div>
-          <div class="awd-row awd-row--full">
-            <label class="awd-lbl">комментарий архитектора</label>
-            <textarea v-model="form.wd_notes" class="awd-inp awd-ta" rows="2" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">комментарий архитектора</label>
+            <textarea v-model="form.wd_notes" class="glass-input u-ta" rows="2" @blur="save" />
           </div>
         </div>
       </div>
@@ -52,7 +52,7 @@
           <div v-for="(sheet, idx) in form.wd_sheets" :key="idx" class="awd-sheet-item">
             <div class="awd-sheet-num">{{ Number(idx) + 1 }}</div>
             <div class="awd-sheet-body">
-              <input v-model="sheet.name" class="awd-inp awd-sheet-name" placeholder="название листа" @blur="save">
+              <input v-model="sheet.name" class="glass-input" placeholder="название листа" @blur="save">
               <div class="awd-sheet-row2">
                 <select v-model="sheet.type" class="awd-sheet-type" @change="save">
                   <option value="floor_plan">план этажа</option>
@@ -182,13 +182,6 @@ function removeSheet(idx: number) {
 .awd-section { margin-bottom: 32px; }
 .awd-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
 
-.awd-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.awd-row { display: flex; flex-direction: column; gap: 5px; }
-.awd-row--full { grid-column: 1 / -1; }
-.awd-lbl { font-size: .72rem; color: #999; }
-.awd-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; }
-.awd-inp:focus { border-color: #aaa; }
-.awd-ta  { resize: vertical; }
 
 .awd-sheets { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
 .awd-sheet-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border, #e0e0e0); background: var(--bg2, #f8f8f7); }
@@ -212,8 +205,6 @@ function removeSheet(idx: number) {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .awd-rows { grid-template-columns: 1fr; }
-  .awd-row--full { grid-column: auto; }
   .awd-checks { gap: 10px; }
 }
 </style>

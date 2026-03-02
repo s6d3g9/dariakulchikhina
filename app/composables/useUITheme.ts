@@ -48,7 +48,13 @@ export const UI_THEMES: UITheme[] = [
       '--btn-sm-bg':     'transparent',
       '--btn-sm-border': 'rgba(255, 255, 255, 0.10)',
     },
-    tokens: { btnRadius: 3, btnTransform: 'none', letterSpacing: 0.03 },
+    tokens: {
+      btnRadius: 3, btnTransform: 'none', letterSpacing: 0.03,
+      accentHue: 220, accentSaturation: 14, accentLightness: 50,
+      successHue: 142, successSaturation: 71,
+      errorHue: 0, errorSaturation: 72,
+      warningHue: 38, warningSaturation: 92,
+    },
   },
 
   /* ── 2. Linen — warm ivory ── */
@@ -78,7 +84,13 @@ export const UI_THEMES: UITheme[] = [
       '--btn-sm-bg':     'transparent',
       '--btn-sm-border': 'rgba(200, 170, 120, 0.12)',
     },
-    tokens: { btnRadius: 4, btnTransform: 'none', letterSpacing: 0.03 },
+    tokens: {
+      btnRadius: 4, btnTransform: 'none', letterSpacing: 0.03,
+      accentHue: 25, accentSaturation: 45, accentLightness: 48,
+      successHue: 150, successSaturation: 55,
+      errorHue: 8, errorSaturation: 60,
+      warningHue: 35, warningSaturation: 80,
+    },
   },
 
   /* ── 3. Stone — greige, sharp, uppercase ── */
@@ -108,7 +120,13 @@ export const UI_THEMES: UITheme[] = [
       '--btn-sm-bg':     'transparent',
       '--btn-sm-border': 'rgba(180, 170, 150, 0.12)',
     },
-    tokens: { btnRadius: 1, btnTransform: 'uppercase', letterSpacing: 0.08 },
+    tokens: {
+      btnRadius: 1, btnTransform: 'uppercase', letterSpacing: 0.08,
+      accentHue: 75, accentSaturation: 20, accentLightness: 42,
+      successHue: 140, successSaturation: 40,
+      errorHue: 0, errorSaturation: 55,
+      warningHue: 40, warningSaturation: 70,
+    },
   },
 
   /* ── 4. Fog — cool grey-blue, pill buttons ── */
@@ -138,7 +156,13 @@ export const UI_THEMES: UITheme[] = [
       '--btn-sm-bg':     'transparent',
       '--btn-sm-border': 'rgba(160, 165, 200, 0.10)',
     },
-    tokens: { btnRadius: 999, btnTransform: 'none', letterSpacing: 0.02 },
+    tokens: {
+      btnRadius: 999, btnTransform: 'none', letterSpacing: 0.02,
+      accentHue: 245, accentSaturation: 45, accentLightness: 55,
+      successHue: 160, successSaturation: 60,
+      errorHue: 350, errorSaturation: 65,
+      warningHue: 42, warningSaturation: 85,
+    },
   },
 
   /* ── 5. Parchment — warm ivory, outline only ── */
@@ -168,7 +192,13 @@ export const UI_THEMES: UITheme[] = [
       '--btn-sm-bg':     'transparent',
       '--btn-sm-border': 'rgba(200, 170, 100, 0.18)',
     },
-    tokens: { btnRadius: 0, btnTransform: 'uppercase', letterSpacing: 0.09 },
+    tokens: {
+      btnRadius: 0, btnTransform: 'uppercase', letterSpacing: 0.09,
+      accentHue: 32, accentSaturation: 55, accentLightness: 46,
+      successHue: 145, successSaturation: 50,
+      errorHue: 5, errorSaturation: 58,
+      warningHue: 38, warningSaturation: 78,
+    },
   },
 ]
 

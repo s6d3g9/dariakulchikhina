@@ -28,9 +28,9 @@
             @click="toggleTag(tag)"
           >#{{ tag }}</button>
         </div>
-        <div class="amb-row" style="margin-top:12px">
-          <label class="amb-lbl">ключевые слова (дополнительно)</label>
-          <input v-model="form.mb_keywords" class="amb-inp" placeholder="минимализм, japandi, wabi-sabi..." @blur="save">
+        <div class="u-field" style="margin-top:12px">
+          <label class="u-field__label">ключевые слова (дополнительно)</label>
+          <input v-model="form.mb_keywords" class="glass-input" placeholder="минимализм, japandi, wabi-sabi..." @blur="save">
         </div>
       </div>
 
@@ -99,14 +99,14 @@
       <!-- General notes -->
       <div class="amb-section">
         <div class="amb-section-title">примечания</div>
-        <div class="amb-rows">
-          <div class="amb-row amb-row--full">
-            <label class="amb-lbl">замечания дизайнера</label>
-            <textarea v-model="form.mb_notes" class="amb-inp amb-ta" rows="3" @blur="save" />
+        <div class="u-grid-2">
+          <div class="u-field u-field--full">
+            <label class="u-field__label">замечания дизайнера</label>
+            <textarea v-model="form.mb_notes" class="glass-input u-ta" rows="3" @blur="save" />
           </div>
-          <div class="amb-row amb-row--full">
-            <label class="amb-lbl">антипримеры (что NOT to do)</label>
-            <textarea v-model="form.mb_dislikes" class="amb-inp amb-ta" rows="2" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">антипримеры (что NOT to do)</label>
+            <textarea v-model="form.mb_dislikes" class="glass-input u-ta" rows="2" @blur="save" />
           </div>
         </div>
       </div>
@@ -227,7 +227,7 @@ function removeLink(idx: number) {
 
 <style scoped>
 .amb-wrap { padding: 4px 0 40px; }
-.amb-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
+.amb-loading { padding: 40px 0; font-size: .82rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 
 .amb-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .amb-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -237,25 +237,25 @@ function removeLink(idx: number) {
 
 .amb-section { margin-bottom: 32px; }
 .amb-section-title {
-  font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa;
+  font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: color-mix(in srgb, var(--glass-text) 50%, transparent);
   margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec);
   display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
 }
-.amb-section-count { font-size: .7rem; color: #bbb; }
+.amb-section-count { font-size: .7rem; color: color-mix(in srgb, var(--glass-text) 45%, transparent); }
 
 /* Style tags */
 .amb-tags-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .amb-tag-btn {
   border: 1px solid var(--border, #e0e0e0); background: none; padding: 4px 10px;
-  font-size: .72rem; font-family: inherit; color: #999; cursor: pointer;
+  font-size: .72rem; font-family: inherit; color: color-mix(in srgb, var(--glass-text) 55%, transparent); cursor: pointer;
 }
-.amb-tag-btn:hover { border-color: #aaa; color: inherit; }
-.amb-tag-btn--on { border-color: #1a1a1a; color: #1a1a1a; background: var(--bg2, #f8f8f7); }
+.amb-tag-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 50%, transparent); color: inherit; }
+.amb-tag-btn--on { border-color: var(--glass-text); color: var(--glass-text); background: var(--bg2, #f8f8f7); }
 
 /* Category filter */
 .amb-cat-filter { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
-.amb-cat-btn { border: 1px solid transparent; background: none; padding: 2px 8px; font-size: .7rem; font-family: inherit; color: #bbb; cursor: pointer; }
-.amb-cat-btn:hover { color: #666; border-color: var(--border, #e0e0e0); }
+.amb-cat-btn { border: 1px solid transparent; background: none; padding: 2px 8px; font-size: .7rem; font-family: inherit; color: color-mix(in srgb, var(--glass-text) 45%, transparent); cursor: pointer; }
+.amb-cat-btn:hover { color: color-mix(in srgb, var(--glass-text) 65%, transparent); border-color: var(--border, #e0e0e0); }
 .amb-cat-btn--active { color: inherit; border-color: var(--border, #e0e0e0); }
 
 /* Gallery */
@@ -278,13 +278,13 @@ function removeLink(idx: number) {
 .amb-img-cat option { background: #222; }
 .amb-img-del { background: none; border: 1px solid rgba(255,255,255,.3); color: #fff; cursor: pointer; font-size: .9rem; line-height: 1; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
 .amb-img-comment { border: 1px solid var(--border, #e0e0e0); background: none; padding: 4px 8px; font-size: .72rem; font-family: inherit; color: inherit; outline: none; }
-.amb-gallery-empty { text-align: center; padding: 32px 0; color: #bbb; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
+.amb-gallery-empty { text-align: center; padding: 32px 0; color: color-mix(in srgb, var(--glass-text) 45%, transparent); border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
 .amb-gallery-empty span { font-size: 1.8rem; display: block; margin-bottom: 8px; opacity: .4; }
 .amb-gallery-empty p { font-size: .78rem; margin: 0; }
 
 .amb-upload-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.amb-upload-btn { display: inline-flex; align-items: center; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
-.amb-upload-btn:hover { border-color: #aaa; color: inherit; }
+.amb-upload-btn { display: inline-flex; align-items: center; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); cursor: pointer; user-select: none; }
+.amb-upload-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 50%, transparent); color: inherit; }
 .amb-upload-btn--loading { opacity: .6; cursor: wait; }
 .amb-new-cat-sel { border: 1px solid var(--border, #e0e0e0); background: none; padding: 5px 10px; font-size: .78rem; font-family: inherit; color: inherit; }
 
@@ -294,23 +294,15 @@ function removeLink(idx: number) {
 .amb-link-icon { font-size: 1rem; flex-shrink: 0; }
 .amb-link-inp { flex: 1; border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 8px; font-size: .78rem; font-family: inherit; color: inherit; outline: none; }
 .amb-link-url { flex: 2; }
-.amb-link-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1.1rem; }
+.amb-link-del { background: none; border: none; cursor: pointer; color: color-mix(in srgb, var(--glass-text) 50%, transparent); font-size: 1.1rem; }
 .amb-link-del:hover { color: var(--ds-error, #c00); }
-.amb-add-link-btn { background: none; border: 1px dashed var(--border, #e0e0e0); padding: 6px 14px; font-size: .78rem; color: #aaa; cursor: pointer; font-family: inherit; }
-.amb-add-link-btn:hover { border-color: #aaa; color: inherit; }
+.amb-add-link-btn { background: none; border: 1px dashed var(--border, #e0e0e0); padding: 6px 14px; font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 50%, transparent); cursor: pointer; font-family: inherit; }
+.amb-add-link-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 50%, transparent); color: inherit; }
 
 /* Row form */
-.amb-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.amb-row { display: flex; flex-direction: column; gap: 5px; }
-.amb-row--full { grid-column: 1 / -1; }
-.amb-lbl { font-size: .72rem; color: #999; }
-.amb-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; }
-.amb-ta { resize: vertical; }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .amb-rows { grid-template-columns: 1fr; }
-  .amb-row--full { grid-column: auto; }
   .amb-gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
   .amb-link-item { flex-wrap: wrap; }
   .amb-link-inp, .amb-link-url { flex: 1 1 100%; min-width: 0; }

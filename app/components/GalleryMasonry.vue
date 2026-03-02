@@ -265,7 +265,7 @@ html.dark .msn-blur-placeholder {
   padding: 4px 8px; border-radius: 8px;
   background: rgba(255, 255, 255, 0.82);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  color: #1a1a1a; font-size: .64rem; font-weight: 600;
+  color: var(--glass-text, #1a1a1a); font-size: .64rem; font-weight: 600;
 }
 
 /* ── Info ────────────────────────────────────────────────── */
@@ -288,11 +288,11 @@ html.dark .msn-blur-placeholder {
 .msn-tag {
   font-size: .62rem; padding: 2px 7px;
   border-radius: 5px;
-  background: rgba(0, 0, 0, 0.06); color: var(--glass-text, #1a1a1a); opacity: .65;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, #1a1a1a); opacity: .65;
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   letter-spacing: .1px; white-space: nowrap;
 }
-html.dark .msn-tag { background: rgba(255, 255, 255, 0.09); opacity: .75; }
+html.dark .msn-tag { opacity: .75; }
 
 /* ── Mobile ──────────────────────────────────────────────── */
 @media (max-width: 640px) {

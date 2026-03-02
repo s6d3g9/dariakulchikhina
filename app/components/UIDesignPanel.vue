@@ -1223,7 +1223,7 @@ const currentScaleLabel = computed(() =>
 
 /* ── Section search filter ──────────────────────── */
 const sectionSearchMap: Record<string, string[]> = {
-  presets:  ['рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal'],
+  presets:  ['рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal', 'minale', 'bauhaus', 'artdeco', 'cyberpunk', 'zen', 'y2k', 'newspaper', 'pastel', 'tokyo', 'terracotta', 'arctic', 'glow', 'ink', 'bubblegum', 'blueprint'],
   palette:  ['палитра', 'цвет', 'акцент', 'color', 'theme', 'accent', 'hue', 'статусы', 'success', 'успех', 'ошибка', 'error', 'warning', 'предупреждение'],
   buttons:  ['кнопк', 'button', 'стиль', 'размер', 'закругл', 'регистр', 'btn'],
   type:     ['типограф', 'шрифт', 'font', 'размер', 'вес', 'межбукв', 'межстроч', 'letter', 'line-height'],

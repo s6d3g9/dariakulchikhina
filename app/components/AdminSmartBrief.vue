@@ -6,13 +6,13 @@
       <!-- Section: Family -->
       <div class="asb-section">
         <div class="asb-section-title">состав семьи и образ жизни</div>
-        <div class="asb-rows">
-          <div v-for="f in familyFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in familyFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-if="f.multi"
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               :placeholder="f.placeholder || ''"
               rows="2"
               @blur="save"
@@ -29,7 +29,7 @@
             <input
               v-else
               v-model="(form as any)[f.key]"
-              class="asb-inp"
+              class="u-prop-inp"
               type="text"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -41,12 +41,12 @@
       <!-- Section: Concept -->
       <div class="asb-section">
         <div class="asb-section-title">концепция и атмосфера</div>
-        <div class="asb-rows">
-          <div v-for="f in conceptFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in conceptFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               rows="2"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -58,12 +58,12 @@
       <!-- Section: Routines -->
       <div class="asb-section">
         <div class="asb-section-title">ритуалы и распорядок</div>
-        <div class="asb-rows">
-          <div v-for="f in routineFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in routineFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               rows="2"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -75,12 +75,12 @@
       <!-- Section: Kitchen -->
       <div class="asb-section">
         <div class="asb-section-title">кухня и гастрономия</div>
-        <div class="asb-rows">
-          <div v-for="f in kitchenFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in kitchenFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               rows="2"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -92,12 +92,12 @@
       <!-- Section: Sport -->
       <div class="asb-section">
         <div class="asb-section-title">спорт и домашняя активность</div>
-        <div class="asb-rows">
-          <div v-for="f in sportFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in sportFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               rows="2"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -109,12 +109,12 @@
       <!-- Section: Storage -->
       <div class="asb-section">
         <div class="asb-section-title">хранение и хозяйство</div>
-        <div class="asb-rows">
-          <div v-for="f in storageFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in storageFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               rows="2"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -126,12 +126,12 @@
       <!-- Section: Lighting -->
       <div class="asb-section">
         <div class="asb-section-title">световые сценарии</div>
-        <div class="asb-rows">
-          <div v-for="f in lightingFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in lightingFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               rows="2"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -143,12 +143,12 @@
       <!-- Section: Tech -->
       <div class="asb-section">
         <div class="asb-section-title">умный дом и технологии</div>
-        <div class="asb-rows">
-          <div v-for="f in techFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in techFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               rows="2"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -160,13 +160,13 @@
       <!-- Section: Style -->
       <div class="asb-section">
         <div class="asb-section-title">стиль и эстетика</div>
-        <div class="asb-rows">
-          <div v-for="f in styleFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in styleFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-if="f.multi"
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               rows="2"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -183,7 +183,7 @@
             <input
               v-else
               v-model="(form as any)[f.key]"
-              class="asb-inp"
+              class="u-prop-inp"
               type="text"
               @blur="save"
             >
@@ -194,12 +194,12 @@
       <!-- Section: Restrictions -->
       <div class="asb-section">
         <div class="asb-section-title">ограничения и особые условия</div>
-        <div class="asb-rows">
-          <div v-for="f in restrictFields" :key="f.key" class="asb-row">
-            <label class="asb-lbl">{{ f.label }}</label>
+        <div class="u-prop-rows">
+          <div v-for="f in restrictFields" :key="f.key" class="u-prop-row">
+            <label class="u-prop-label">{{ f.label }}</label>
             <textarea
               v-model="(form as any)[f.key]"
-              class="asb-inp asb-ta"
+              class="u-prop-inp u-prop-ta"
               rows="2"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -411,7 +411,7 @@ async function save() {
 
 <style scoped>
 .asb-wrap { padding: 4px 0 48px; }
-.asb-loading { font-size: .88rem; color: #999; }
+.asb-loading { font-size: .88rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 
 /* Tags banner */
 .asb-tags-banner {
@@ -421,7 +421,7 @@ async function save() {
   background: var(--surface, #fafafa);
 }
 .asb-tags-banner--empty { opacity: .55; }
-.asb-tags-label { font-size: .72rem; color: #999; letter-spacing: .6px; text-transform: uppercase; margin-right: 6px; white-space: nowrap; }
+.asb-tags-label { font-size: .72rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); letter-spacing: .6px; text-transform: uppercase; margin-right: 6px; white-space: nowrap; }
 .asb-tag {
   font-size: .76rem; padding: 3px 10px;
   background: var(--text, #1a1a1a); color: var(--bg, #fff);
@@ -431,16 +431,16 @@ async function save() {
 /* Sections */
 .asb-section { margin-bottom: 32px; }
 .asb-section-title {
-  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: #999;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: color-mix(in srgb, var(--glass-text) 55%, transparent);
   margin-bottom: 14px; padding-bottom: 8px;
   border-bottom: 1px solid var(--border, #ececec);
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
 .asb-type-hint {
   font-size: .7rem; text-transform: none; letter-spacing: 0;
-  background: #eef2ff; color: #4f46e5; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+  background: color-mix(in srgb, var(--ds-accent) 12%, transparent); color: var(--ds-accent); padding: 2px 8px; border-radius: 10px; font-weight: 500;
 }
-.asb-type-hint--warn { background: #fff7ed; color: #b45309; }
+.asb-type-hint--warn { background: color-mix(in srgb, var(--ds-warning) 12%, transparent); color: var(--ds-warning); }
 
 /* Checkboxes grid */
 .asb-checks-grid {
@@ -451,31 +451,16 @@ async function save() {
 }
 .asb-checkbox { width: 14px; height: 14px; cursor: pointer; accent-color: var(--text, #1a1a1a); flex-shrink: 0; }
 .asb-check-label { font-size: .82rem; color: var(--text, #333); flex: 1; }
-.asb-check-tag { font-size: .68rem; font-family: monospace; color: #aaa; white-space: nowrap; }
+.asb-check-tag { font-size: .68rem; font-family: monospace; color: color-mix(in srgb, var(--glass-text) 45%, transparent); white-space: nowrap; }
 
 /* Form rows */
-.asb-rows { display: flex; flex-direction: column; gap: 4px; }
-.asb-row {
-  display: grid; grid-template-columns: 160px 1fr; align-items: start;
-  padding: 8px 0; border-bottom: 1px solid var(--border, #f0f0f0);
-}
-.asb-row:last-child { border-bottom: none; }
-.asb-lbl { font-size: .76rem; color: #888; padding-top: 6px; }
-.asb-inp {
-  border: none; border-bottom: 1px solid var(--border, #ddd);
-  padding: 6px 0; font-size: .88rem; background: transparent; outline: none;
-  font-family: inherit; color: var(--text, inherit); width: 100%;
-}
-.asb-inp:focus { border-bottom-color: var(--text, #1a1a1a); }
-.asb-ta { resize: vertical; min-height: 36px; }
-.asb-select { appearance: none; cursor: pointer; }
 
 /* Footer */
 .asb-footer {
   display: flex; align-items: center; justify-content: flex-end; gap: 16px;
   padding-top: 20px; border-top: 1px solid var(--border, #ececec); margin-top: 8px;
 }
-.asb-saved { font-size: .76rem; color: #9d9; }
+.asb-saved { font-size: .76rem; color: var(--ds-success); }
 .asb-btn-save {
   border: 1px solid var(--text, #1a1a1a); background: var(--text, #1a1a1a);
   color: var(--bg, #fff); padding: 10px 24px; font-size: .85rem;
@@ -488,7 +473,7 @@ async function save() {
 .asb-tagsel { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
 .asb-tagopt {
   padding: 4px 10px; font-size: .74rem; cursor: pointer; user-select: none;
-  border: 1px solid var(--border, #ddd); color: #888;
+  border: 1px solid var(--border, #ddd); color: color-mix(in srgb, var(--glass-text) 55%, transparent);
   transition: background .12s, color .12s, border-color .12s;
 }
 .asb-tagopt:hover { border-color: var(--text, #1a1a1a); color: var(--text, #1a1a1a); }
@@ -499,8 +484,6 @@ async function save() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .asb-row { grid-template-columns: 1fr; gap: 2px; }
-  .asb-lbl { font-size: .72rem; padding-top: 0; }
   .asb-checks-grid { grid-template-columns: 1fr; }
   .asb-tags-banner { padding: 10px 12px; gap: 6px; }
   .asb-footer { flex-direction: column; align-items: stretch; gap: 10px; }

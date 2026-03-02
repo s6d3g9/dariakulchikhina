@@ -244,6 +244,8 @@ export const designers = pgTable('designers', {
   services: jsonb('services').$type<Record<string, unknown>[]>().default([]).notNull(),
   /** Пакеты услуг (JSON: DesignerPackage[]) */
   packages: jsonb('packages').$type<Record<string, unknown>[]>().default([]).notNull(),
+  /** Подписки / абонементы (JSON: DesignerSubscription[]) */
+  subscriptions: jsonb('subscriptions').$type<Record<string, unknown>[]>().default([]).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

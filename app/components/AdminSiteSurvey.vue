@@ -19,26 +19,26 @@
       <!-- Section: Visit Info -->
       <div class="ass-section">
         <div class="ass-section-title">информация о выезде</div>
-        <div class="ass-rows">
-          <div class="ass-row">
-            <label class="ass-lbl">дата выезда</label>
-            <AppDatePicker v-model="form.survey_date" model-type="iso" input-class="ass-inp" @update:model-value="save" />
+        <div class="u-prop-rows">
+          <div class="u-prop-row">
+            <label class="u-prop-label">дата выезда</label>
+            <AppDatePicker v-model="form.survey_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="ass-row">
-            <label class="ass-lbl">инженер / замерщик</label>
-            <input v-model="form.survey_engineer" type="text" class="ass-inp" placeholder="ФИО" @blur="save">
+          <div class="u-prop-row">
+            <label class="u-prop-label">инженер / замерщик</label>
+            <input v-model="form.survey_engineer" type="text" class="glass-input" placeholder="ФИО" @blur="save">
           </div>
-          <div class="ass-row">
-            <label class="ass-lbl">адрес объекта</label>
-            <AppAddressInput v-model="form.survey_address" input-class="ass-inp" @blur="save" />
+          <div class="u-prop-row">
+            <label class="u-prop-label">адрес объекта</label>
+            <AppAddressInput v-model="form.survey_address" input-class="glass-input" @blur="save" />
           </div>
-          <div class="ass-row">
-            <label class="ass-lbl">площадь (м²)</label>
-            <input v-model="form.survey_area" type="text" class="ass-inp" placeholder="например: 87.4" @blur="save">
+          <div class="u-prop-row">
+            <label class="u-prop-label">площадь (м²)</label>
+            <input v-model="form.survey_area" type="text" class="glass-input" placeholder="например: 87.4" @blur="save">
           </div>
-          <div class="ass-row">
-            <label class="ass-lbl">высота потолков</label>
-            <input v-model="form.survey_ceiling" type="text" class="ass-inp" placeholder="например: 3.1 м / на разных участках" @blur="save">
+          <div class="u-prop-row">
+            <label class="u-prop-label">высота потолков</label>
+            <input v-model="form.survey_ceiling" type="text" class="glass-input" placeholder="например: 3.1 м / на разных участках" @blur="save">
           </div>
         </div>
       </div>
@@ -60,9 +60,9 @@
             </span>
           </label>
         </div>
-        <div class="ass-row" style="margin-top:14px">
-          <label class="ass-lbl">заметки по инженерии</label>
-          <textarea v-model="form.survey_mep_notes" class="ass-inp ass-ta" rows="3" @blur="save" />
+        <div class="u-prop-row" style="margin-top:14px">
+          <label class="u-prop-label">заметки по инженерии</label>
+          <textarea v-model="form.survey_mep_notes" class="glass-input u-ta" rows="3" @blur="save" />
         </div>
       </div>
 
@@ -84,7 +84,7 @@
         <!-- Upload section -->
         <div class="ass-upload-zone">
           <div class="ass-upload-row">
-            <select v-model="newFileType" class="ass-inp ass-select" style="max-width:180px">
+            <select v-model="newFileType" class="glass-input" style="max-width:180px">
               <option value="pointcloud">облако точек (.e57/.rcp)</option>
               <option value="photo">фотофиксация (.zip/.jpg)</option>
               <option value="mep_report">MEP-отчёт (.pdf)</option>
@@ -92,7 +92,7 @@
               <option value="floor_plan">поэтажный план</option>
               <option value="other">другое</option>
             </select>
-            <input v-model="newFileLabel" class="ass-inp" style="flex:1" placeholder="название / описание файла" type="text">
+            <input v-model="newFileLabel" class="glass-input" style="flex:1" placeholder="название / описание файла" type="text">
           </div>
           <label class="ass-upload-btn">
             <span>📎 прикрепить файл</span>
@@ -105,20 +105,20 @@
       <!-- Section: Notes -->
       <div class="ass-section">
         <div class="ass-section-title">итоги обследования</div>
-        <div class="ass-rows">
-          <div class="ass-row">
-            <label class="ass-lbl">выявленные проблемы</label>
-            <textarea v-model="form.survey_issues" class="ass-inp ass-ta" rows="3"
+        <div class="u-prop-rows">
+          <div class="u-prop-row">
+            <label class="u-prop-label">выявленные проблемы</label>
+            <textarea v-model="form.survey_issues" class="glass-input u-ta" rows="3"
               placeholder="нарушение несущих конструкций, аварийные трубы, демонтаж..." @blur="save"/>
           </div>
-          <div class="ass-row">
-            <label class="ass-lbl">рекомендации</label>
-            <textarea v-model="form.survey_recommendations" class="ass-inp ass-ta" rows="3"
+          <div class="u-prop-row">
+            <label class="u-prop-label">рекомендации</label>
+            <textarea v-model="form.survey_recommendations" class="glass-input u-ta" rows="3"
               placeholder="что необходимо сделать до начала проектирования..." @blur="save"/>
           </div>
-          <div class="ass-row">
-            <label class="ass-lbl">ДопопционизИнформация</label>
-            <textarea v-model="form.survey_notes" class="ass-inp ass-ta" rows="2" @blur="save"/>
+          <div class="u-prop-row">
+            <label class="u-prop-label">ДопопционизИнформация</label>
+            <textarea v-model="form.survey_notes" class="glass-input u-ta" rows="2" @blur="save"/>
           </div>
         </div>
       </div>
@@ -271,7 +271,7 @@ async function save() {
 
 <style scoped>
 .ass-wrap { padding: 4px 0 48px; }
-.ass-loading { font-size: .88rem; color: #999; }
+.ass-loading { font-size: .88rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 
 /* Status row */
 .ass-status-row {
@@ -282,42 +282,27 @@ async function save() {
 .ass-status-dot {
   width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
 }
-.ass-dot--green  { background: #4caf50; }
-.ass-dot--yellow { background: #ffb300; }
-.ass-dot--blue   { background: #2196f3; }
-.ass-dot--red    { background: #f44336; }
-.ass-dot--gray   { background: #bdbdbd; }
+.ass-dot--green  { background: var(--ds-success); }
+.ass-dot--yellow { background: var(--ds-warning); }
+.ass-dot--blue   { background: var(--ds-accent); }
+.ass-dot--red    { background: var(--ds-error); }
+.ass-dot--gray   { background: color-mix(in srgb, var(--glass-text) 40%, transparent); }
 
 .ass-status-select {
   border: none; background: transparent; font-family: inherit;
   font-size: .88rem; cursor: pointer; outline: none; color: var(--text, inherit);
 }
-.ass-saved { font-size: .76rem; color: #9d9; margin-left: auto; }
+.ass-saved { font-size: .76rem; color: var(--ds-success); margin-left: auto; }
 
 /* Sections */
 .ass-section { margin-bottom: 28px; }
 .ass-section-title {
-  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: #999;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: color-mix(in srgb, var(--glass-text) 55%, transparent);
   margin-bottom: 14px; padding-bottom: 8px;
   border-bottom: 1px solid var(--border, #ececec);
 }
 
 /* Rows */
-.ass-rows { display: flex; flex-direction: column; gap: 0; }
-.ass-row {
-  display: grid; grid-template-columns: 160px 1fr; align-items: start;
-  padding: 8px 0; border-bottom: 1px solid var(--border, #f0f0f0);
-}
-.ass-row:last-child { border-bottom: none; }
-.ass-lbl { font-size: .76rem; color: #888; padding-top: 6px; }
-.ass-inp {
-  border: none; border-bottom: 1px solid var(--border, #ddd);
-  padding: 6px 0; font-size: .88rem; background: transparent; outline: none;
-  font-family: inherit; color: var(--text, inherit); width: 100%;
-}
-.ass-inp:focus { border-bottom-color: var(--text, #1a1a1a); }
-.ass-ta { resize: vertical; min-height: 36px; }
-.ass-select { appearance: none; cursor: pointer; }
 
 /* MEP Checks */
 .ass-checks-grid {
@@ -328,8 +313,8 @@ async function save() {
 }
 .ass-checkbox { width: 14px; height: 14px; cursor: pointer; accent-color: var(--text, #1a1a1a); flex-shrink: 0; }
 .ass-check-label { font-size: .82rem; color: var(--text, #333); flex: 1; }
-.ass-check-status { font-size: .68rem; color: #bbb; }
-.ass-check-ok { color: #4caf50; }
+.ass-check-status { font-size: .68rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); }
+.ass-check-ok { color: var(--ds-success); }
 
 /* Files */
 .ass-files-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
@@ -341,20 +326,20 @@ async function save() {
   font-size: .68rem; padding: 2px 8px; border-radius: 2px; font-weight: 500;
   flex-shrink: 0; text-transform: uppercase; letter-spacing: .5px;
 }
-.ass-badge--pointcloud { background: #e3f2fd; color: #1565c0; }
-.ass-badge--photo      { background: #f3e5f5; color: #6a1b9a; }
-.ass-badge--mep_report { background: #fff3e0; color: #e65100; }
-.ass-badge--survey_report { background: #e8f5e9; color: #2e7d32; }
-.ass-badge--floor_plan { background: #fafafa; color: #424242; border: none; }
-.ass-badge--other      { background: #f5f5f5; color: #666; }
+.ass-badge--pointcloud { background: color-mix(in srgb, var(--ds-accent) 12%, transparent); color: var(--ds-accent); }
+.ass-badge--photo      { background: color-mix(in srgb, var(--ds-accent) 10%, transparent); color: color-mix(in srgb, var(--glass-text) 70%, transparent); }
+.ass-badge--mep_report { background: color-mix(in srgb, var(--ds-warning) 12%, transparent); color: var(--ds-warning); }
+.ass-badge--survey_report { background: color-mix(in srgb, var(--ds-success) 12%, transparent); color: var(--ds-success); }
+.ass-badge--floor_plan { background: color-mix(in srgb, var(--glass-text) 5%, transparent); color: color-mix(in srgb, var(--glass-text) 70%, transparent); border: none; }
+.ass-badge--other      { background: color-mix(in srgb, var(--glass-text) 5%, transparent); color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 .ass-file-link { font-size: .82rem; color: var(--text, #333); text-decoration: none; flex: 1; }
 .ass-file-link:hover { text-decoration: underline; }
-.ass-file-date { font-size: .72rem; color: #aaa; white-space: nowrap; }
+.ass-file-date { font-size: .72rem; color: color-mix(in srgb, var(--glass-text) 45%, transparent); white-space: nowrap; }
 .ass-file-del {
-  border: none; background: none; cursor: pointer; color: #ccc; font-size: 1rem; padding: 0 4px;
+  border: none; background: none; cursor: pointer; color: color-mix(in srgb, var(--glass-text) 35%, transparent); font-size: 1rem; padding: 0 4px;
 }
-.ass-file-del:hover { color: #f44336; }
-.ass-files-empty { font-size: .82rem; color: #aaa; margin-bottom: 16px; }
+.ass-file-del:hover { color: var(--ds-error); }
+.ass-files-empty { font-size: .82rem; color: color-mix(in srgb, var(--glass-text) 45%, transparent); margin-bottom: 16px; }
 
 /* Upload */
 .ass-upload-zone { border: 1px dashed var(--border, #ddd); padding: 16px; }
@@ -365,7 +350,7 @@ async function save() {
   font-size: .82rem; cursor: pointer; color: var(--text, #444);
 }
 .ass-upload-btn:hover { border-color: var(--text, #1a1a1a); }
-.ass-uploading { font-size: .78rem; color: #999; margin-left: 8px; }
+.ass-uploading { font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); margin-left: 8px; }
 
 /* Footer */
 .ass-footer { display: flex; justify-content: flex-end; padding-top: 20px; border-top: 1px solid var(--border, #ececec); }
@@ -379,8 +364,6 @@ async function save() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .ass-row { grid-template-columns: 1fr; gap: 2px; }
-  .ass-lbl { font-size: .72rem; padding-top: 0; }
   .ass-checks-grid { grid-template-columns: 1fr; }
   .ass-status-row { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
   .ass-upload-row { flex-wrap: wrap; gap: 8px; }

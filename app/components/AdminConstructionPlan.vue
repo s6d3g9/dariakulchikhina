@@ -17,26 +17,26 @@
 
       <div class="acp-section">
         <div class="acp-section-title">общая информация</div>
-        <div class="acp-rows">
-          <div class="acp-row">
-            <label class="acp-lbl">дата начала работ</label>
-            <AppDatePicker v-model="form.cp_start_date" model-type="iso" input-class="acp-inp" @update:model-value="save" />
+        <div class="u-grid-2">
+          <div class="u-field">
+            <label class="u-field__label">дата начала работ</label>
+            <AppDatePicker v-model="form.cp_start_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="acp-row">
-            <label class="acp-lbl">плановая дата окончания</label>
-            <AppDatePicker v-model="form.cp_end_date" model-type="iso" input-class="acp-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">плановая дата окончания</label>
+            <AppDatePicker v-model="form.cp_end_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="acp-row">
-            <label class="acp-lbl">генеральный подрядчик</label>
-            <input v-model="form.cp_contractor" class="acp-inp" placeholder="название компании" @blur="save">
+          <div class="u-field">
+            <label class="u-field__label">генеральный подрядчик</label>
+            <input v-model="form.cp_contractor" class="glass-input" placeholder="название компании" @blur="save">
           </div>
-          <div class="acp-row">
-            <label class="acp-lbl">авторский надзор</label>
-            <input v-model="form.cp_supervisor" class="acp-inp" placeholder="ФИО / компания" @blur="save">
+          <div class="u-field">
+            <label class="u-field__label">авторский надзор</label>
+            <input v-model="form.cp_supervisor" class="glass-input" placeholder="ФИО / компания" @blur="save">
           </div>
-          <div class="acp-row acp-row--full">
-            <label class="acp-lbl">примечания</label>
-            <textarea v-model="form.cp_notes" class="acp-inp acp-ta" rows="3" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">примечания</label>
+            <textarea v-model="form.cp_notes" class="glass-input u-ta" rows="3" @blur="save" />
           </div>
         </div>
       </div>
@@ -117,15 +117,9 @@ function removeTask(i: number) {
 .acp-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 .acp-section { margin-bottom: 32px; }
 .acp-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); display: flex; align-items: center; gap: 10px; }
-.acp-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.acp-row { display: flex; flex-direction: column; gap: 5px; }
-.acp-row--full { grid-column: 1 / -1; }
-.acp-lbl { font-size: .72rem; color: #999; }
-.acp-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; }
-.acp-inp:focus { border-color: #aaa; }
-.acp-ta { resize: vertical; }
 .acp-add-btn { margin-left: auto; border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .7rem; padding: 3px 8px; cursor: pointer; font-family: inherit; }
 .acp-add-btn:hover { border-color: #aaa; }
+.acp-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #ececec); }
 .acp-tasks { display: flex; flex-direction: column; gap: 6px; }
 .acp-task { display: flex; align-items: center; gap: 8px; }
 .acp-task-status { border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; padding: 5px 6px; font-size: .78rem; cursor: pointer; width: 48px; flex-shrink: 0; }
@@ -133,7 +127,6 @@ function removeTask(i: number) {
 .acp-task-date { width: 130px; border: 1px solid var(--border, #e0e0e0); padding: 6px 10px; font-size: .78rem; background: none; color: inherit; font-family: inherit; outline: none; flex-shrink: 0; }
 .acp-task-del { background: none; border: none; cursor: pointer; color: #bbb; font-size: 1.1rem; line-height: 1; padding: 0 3px; flex-shrink: 0; }
 .acp-task-del:hover { color: var(--ds-error, #c00); }
-.acp-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #ececec); }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {

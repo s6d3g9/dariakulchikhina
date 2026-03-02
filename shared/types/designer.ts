@@ -465,6 +465,82 @@ export const DesignerPackageSchema = z.object({
 
 export type DesignerPackage = z.infer<typeof DesignerPackageSchema>
 
+// ── Подписки (рекуррентные услуги) ──────────────────────────────
+
+export const BILLING_PERIODS = ['monthly', 'quarterly', 'annual'] as const
+export type BillingPeriod = typeof BILLING_PERIODS[number]
+
+export const BILLING_PERIOD_LABELS: Record<BillingPeriod, string> = {
+  monthly: 'Ежемесячно',
+  quarterly: 'Ежеквартально',
+  annual: 'Ежегодно',
+}
+
+export const BILLING_PERIOD_MONTHS: Record<BillingPeriod, number> = {
+  monthly: 1,
+  quarterly: 3,
+  annual: 12,
+}
+
+export const DesignerSubscriptionSchema = z.object({
+  key: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().optional().default(''),
+  billingPeriod: z.enum(BILLING_PERIODS),
+  price: z.number().min(0),
+  /** Скидка в % (0–100) при оплате сразу за весь период */
+  discount: z.number().min(0).max(100).default(0),
+  /** Включённые услуги */
+  serviceKeys: z.array(z.string()),
+  /** Лимиты: сколько выездов / часов / рендеров в месяц */
+  limits: z.record(z.string(), z.number()).optional().default({}),
+  enabled: z.boolean().default(true),
+})
+
+export type DesignerSubscription = z.infer<typeof DesignerSubscriptionSchema>
+
+export const DESIGNER_SUBSCRIPTION_TEMPLATES: {
+  key: string
+  title: string
+  description: string
+  billingPeriod: BillingPeriod
+  price: number
+  discount: number
+  serviceKeys: string[]
+  limits: Record<string, number>
+}[] = [
+  {
+    key: 'support_monthly',
+    title: 'Сопровождение (месяц)',
+    description: 'Ежемесячное сопровождение проекта: 2 выезда + удалённые консультации без лимита',
+    billingPeriod: 'monthly',
+    price: 40000,
+    discount: 0,
+    serviceKeys: ['onsite_consultation', 'online_consultation', 'author_supervision'],
+    limits: { visits: 2, online_hours: 8 },
+  },
+  {
+    key: 'support_quarterly',
+    title: 'Сопровождение (квартал)',
+    description: 'Квартальный абонемент: 6 выездов + удалённые консультации + приёмка этапов',
+    billingPeriod: 'quarterly',
+    price: 105000,
+    discount: 12,
+    serviceKeys: ['onsite_consultation', 'online_consultation', 'author_supervision', 'commissioning'],
+    limits: { visits: 6, online_hours: 24 },
+  },
+  {
+    key: 'full_annual',
+    title: 'Полное сопровождение (год)',
+    description: 'Годовой контракт: неограниченные выезды + полный надзор + комплектация + стайлинг',
+    billingPeriod: 'annual',
+    price: 360000,
+    discount: 25,
+    serviceKeys: ['onsite_consultation', 'online_consultation', 'author_supervision', 'commissioning', 'procurement_service', 'styling'],
+    limits: { visits: 48 },
+  },
+]
+
 export const DesignerProfileSchema = z.object({
   name: z.string().min(1),
   companyName: z.string().optional().default(''),

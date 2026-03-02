@@ -22,11 +22,11 @@
         <div class="afc-rows">
           <div class="afc-row">
             <label class="afc-lbl">дата первого контакта</label>
-            <AppDatePicker v-model="form.lead_date" model-type="iso" input-class="afc-inp" @update:model-value="save" />
+            <AppDatePicker v-model="form.lead_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
           <div class="afc-row">
             <label class="afc-lbl">источник лида</label>
-            <select v-model="form.lead_source" class="afc-inp afc-sel" @change="save">
+            <select v-model="form.lead_source" class="glass-input" @change="save">
               <option value="">—</option>
               <option value="call">входящий звонок</option>
               <option value="site">сайт / заявка</option>
@@ -39,15 +39,15 @@
           </div>
           <div class="afc-row">
             <label class="afc-lbl">ФИО клиента</label>
-            <input v-model="form.fio" class="afc-inp" placeholder="Как к вам обращаться?" @blur="save">
+            <input v-model="form.fio" class="glass-input" placeholder="Как к вам обращаться?" @blur="save">
           </div>
           <div class="afc-row">
             <label class="afc-lbl">телефон</label>
-            <input v-model="form.phone" class="afc-inp" placeholder="+7 (___) ___-__-__" @blur="save">
+            <input v-model="form.phone" class="glass-input" placeholder="+7 (___) ___-__-__" @blur="save">
           </div>
           <div class="afc-row">
             <label class="afc-lbl">email</label>
-            <input v-model="form.email" class="afc-inp" type="email" placeholder="name@example.com" @blur="save">
+            <input v-model="form.email" class="glass-input" type="email" placeholder="name@example.com" @blur="save">
           </div>
         </div>
       </div>
@@ -58,15 +58,15 @@
         <div class="afc-rows">
           <div class="afc-row">
             <label class="afc-lbl">дата встречи</label>
-            <AppDatePicker v-model="form.lead_meeting_date" model-type="iso" input-class="afc-inp" @update:model-value="save" />
+            <AppDatePicker v-model="form.lead_meeting_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
           <div class="afc-row">
             <label class="afc-lbl">время встречи</label>
-            <input v-model="form.lead_meeting_time" class="afc-inp" type="time" @blur="save">
+            <input v-model="form.lead_meeting_time" class="glass-input" type="time" @blur="save">
           </div>
           <div class="afc-row">
             <label class="afc-lbl">место встречи</label>
-            <select v-model="form.lead_meeting_place" class="afc-inp afc-sel" @change="save">
+            <select v-model="form.lead_meeting_place" class="glass-input" @change="save">
               <option value="">—</option>
               <option value="office">офис студии</option>
               <option value="object">на объекте</option>
@@ -92,14 +92,14 @@
             <div class="afc-map-fields">
               <input
                 v-model="form.meeting_map_address"
-                class="afc-inp"
+                class="glass-input"
                 placeholder="Адрес точки встречи"
                 @blur="save"
               >
               <div class="afc-map-coords">
                 <input
                   v-model.number="form.meeting_map_lat"
-                  class="afc-inp"
+                  class="glass-input"
                   type="number"
                   step="0.000001"
                   placeholder="Широта (lat)"
@@ -107,7 +107,7 @@
                 >
                 <input
                   v-model.number="form.meeting_map_lng"
-                  class="afc-inp"
+                  class="glass-input"
                   type="number"
                   step="0.000001"
                   placeholder="Долгота (lng)"
@@ -118,11 +118,11 @@
           </div>
           <div class="afc-row afc-row--full">
             <label class="afc-lbl">заметки о встрече / первое впечатление</label>
-            <textarea v-model="form.lead_meeting_notes" class="afc-inp afc-ta" rows="3" @blur="save"></textarea>
+            <textarea v-model="form.lead_meeting_notes" class="glass-input u-ta" rows="3" @blur="save"></textarea>
           </div>
           <div class="afc-row afc-row--full">
             <label class="afc-lbl">особые пожелания / первые предпочтения</label>
-            <textarea v-model="form.lead_first_wishes" class="afc-inp afc-ta" rows="2" @blur="save"></textarea>
+            <textarea v-model="form.lead_first_wishes" class="glass-input u-ta" rows="2" @blur="save"></textarea>
           </div>
         </div>
       </div>
@@ -236,10 +236,7 @@ async function toggleStepCompletion(stepKey: string) {
 .afc-row { display: flex; align-items: center; gap: 12px; }
 .afc-row--full { flex-direction: column; align-items: stretch; gap: 6px; }
 .afc-lbl { min-width: 140px; font-size: .8rem; color: #666; flex-shrink: 0; }
-.afc-inp { flex: 1; padding: 8px 12px; border: 1px solid var(--border, #e0e0e0); border-radius: 2px; font-size: .8rem; font-family: inherit; color: inherit; background: transparent; }
-.afc-inp:focus { outline: none; border-color: #888; }
 .afc-sel { cursor: pointer; }
-.afc-ta { resize: vertical; min-height: 60px; font-family: inherit; }
 
 .afc-map { width: 100%; height: 300px; border: 1px solid var(--border, #e0e0e0); border-radius: 2px; }
 .afc-map-fields { display: flex; flex-direction: column; gap: 8px; }

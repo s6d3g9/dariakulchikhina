@@ -20,18 +20,18 @@
       <!-- Section: Info -->
       <div class="aspec-section">
         <div class="aspec-section-title">общие сведения</div>
-        <div class="aspec-rows">
-          <div class="aspec-row">
-            <label class="aspec-lbl">версия</label>
-            <input v-model="form.spec_version" class="aspec-inp" placeholder="v1..." @blur="save">
+        <div class="u-grid-2">
+          <div class="u-field">
+            <label class="u-field__label">версия</label>
+            <input v-model="form.spec_version" class="glass-input" placeholder="v1..." @blur="save">
           </div>
-          <div class="aspec-row">
-            <label class="aspec-lbl">дата выдачи</label>
-            <AppDatePicker v-model="form.spec_issue_date" model-type="iso" input-class="aspec-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата выдачи</label>
+            <AppDatePicker v-model="form.spec_issue_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="aspec-row aspec-row--full">
-            <label class="aspec-lbl">примечания</label>
-            <textarea v-model="form.spec_notes" class="aspec-inp aspec-ta" rows="2" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">примечания</label>
+            <textarea v-model="form.spec_notes" class="glass-input u-ta" rows="2" @blur="save" />
           </div>
         </div>
       </div>
@@ -207,13 +207,6 @@ function removeFile(idx: number) {
 .aspec-section { margin-bottom: 32px; }
 .aspec-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
 
-.aspec-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.aspec-row { display: flex; flex-direction: column; gap: 5px; }
-.aspec-row--full { grid-column: 1 / -1; }
-.aspec-lbl { font-size: .72rem; color: #999; }
-.aspec-inp { border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; }
-.aspec-inp:focus { border-color: #aaa; }
-.aspec-ta  { resize: vertical; }
 
 /* Table */
 .aspec-table-wrap { overflow-x: auto; margin-bottom: 12px; }
@@ -246,8 +239,6 @@ function removeFile(idx: number) {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .aspec-rows { grid-template-columns: 1fr; }
-  .aspec-row--full { grid-column: auto; }
   .aspec-table { font-size: .72rem; }
   .aspec-cell-sm { max-width: 70px; }
   .aspec-cell-xs { max-width: 45px; }

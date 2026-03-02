@@ -32,21 +32,21 @@
           <div v-for="(o, idx) in form.ps_orders" :key="idx" class="aps-order" :class="{ 'aps-order--done': o.status === 'received' }">
             <div class="aps-order-head">
               <span class="aps-order-num">#{{ Number(idx) + 1 }}</span>
-              <input v-model="o.name" class="aps-inp aps-order-name" placeholder="наименование заказа" @blur="save">
+              <input v-model="o.name" class="glass-input" placeholder="наименование заказа" @blur="save">
               <button class="aps-del" @click="removeOrder(Number(idx))">×</button>
             </div>
             <div class="aps-order-details">
               <div class="aps-order-field">
                 <label class="aps-lbl">поставщик</label>
-                <input v-model="o.supplier" class="aps-inp" @blur="save">
+                <input v-model="o.supplier" class="glass-input" @blur="save">
               </div>
               <div class="aps-order-field">
                 <label class="aps-lbl">номер заказа</label>
-                <input v-model="o.orderNumber" class="aps-inp" @blur="save">
+                <input v-model="o.orderNumber" class="glass-input" @blur="save">
               </div>
               <div class="aps-order-field">
                 <label class="aps-lbl">статус</label>
-                <select v-model="o.status" class="aps-inp" @change="save">
+                <select v-model="o.status" class="glass-input" @change="save">
                   <option value="">—</option>
                   <option value="pending">ожидание</option>
                   <option value="ordered">заказано</option>
@@ -60,19 +60,19 @@
               </div>
               <div class="aps-order-field">
                 <label class="aps-lbl">ожидаемая дата</label>
-                <AppDatePicker v-model="o.expectedDate" model-type="iso" input-class="aps-inp" @update:model-value="save" />
+                <AppDatePicker v-model="o.expectedDate" model-type="iso" input-class="glass-input" @update:model-value="save" />
               </div>
               <div class="aps-order-field">
                 <label class="aps-lbl">сумма</label>
-                <input v-model="o.amount" class="aps-inp" @blur="save">
+                <input v-model="o.amount" class="glass-input" @blur="save">
               </div>
               <div class="aps-order-field">
                 <label class="aps-lbl">трек-номер</label>
-                <input v-model="o.tracking" class="aps-inp" placeholder="трекинг..." @blur="save">
+                <input v-model="o.tracking" class="glass-input" placeholder="трекинг..." @blur="save">
               </div>
             </div>
             <div class="aps-order-notes">
-              <textarea v-model="o.notes" class="aps-inp aps-ta" rows="1" placeholder="заметки..." @blur="save" />
+              <textarea v-model="o.notes" class="glass-input u-ta" rows="1" placeholder="заметки..." @blur="save" />
             </div>
           </div>
         </div>
@@ -84,7 +84,7 @@
       <!-- Notes -->
       <div class="aps-section">
         <div class="aps-section-title">общие заметки</div>
-        <textarea v-model="form.ps_notes" class="aps-inp aps-ta" rows="3" @blur="save" placeholder="задержки, альтернативы, приоритеты..." />
+        <textarea v-model="form.ps_notes" class="glass-input u-ta" rows="3" @blur="save" placeholder="задержки, альтернативы, приоритеты..." />
       </div>
 
     </template>
@@ -164,10 +164,6 @@ function removeOrder(idx: number) {
 .aps-section { margin-bottom: 32px; }
 .aps-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
 
-.aps-lbl { font-size: .72rem; color: #999; margin-bottom: 3px; }
-.aps-inp { width: 100%; border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; box-sizing: border-box; }
-.aps-inp:focus { border-color: #aaa; }
-.aps-ta  { resize: vertical; }
 
 /* Orders */
 .aps-orders { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }

@@ -510,6 +510,426 @@ html.dark .glass-input::placeholder {
 .a-btn-danger:hover { background: color-mix(in srgb, var(--ds-error, #a83232) 6%, transparent); opacity: 1; border-color: color-mix(in srgb, var(--ds-error, #a83232) 38%, transparent); }
 
 /* ════════════════════════════════════════════════════════════
+   UNIFIED COMPONENT LIBRARY (u-*)
+   Canonical classes replacing 100+ scoped duplicates.
+   All token-driven, dark-mode safe, responsive.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── u-section-title ─────────────────────────────────────────
+   Replaces: asb-section-title, acp-section-title, ws-detail-section-title,
+   acnp-section-title, acso-section-title, ator-section-title, amep-section-title,
+   aca-section-title, aca2-section-title, apl-section-title, aps-section-title,
+   asp-section-title, aspec-section-title, asup-section-title, adaf-section-title,
+   afc-section-title, amb-section-title, de-section-title, ctz-section-title,
+   cct-section-title, section-title, atz-card-label, awd-section-title, etc.
+──────────────────────────────────────────────────────────── */
+.u-section-title {
+  font-size: var(--ds-text-xs, .72rem);
+  font-weight: var(--ds-heading-weight, 600);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
+  margin: 18px 0 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.u-section-title:first-child { margin-top: 0; }
+
+/* ── u-topbar ────────────────────────────────────────────────
+   Replaces: pj-topbar, docs-topbar, ct-topbar, ds-topbar
+──────────────────────────────────────────────────────────── */
+.u-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.u-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.u-topbar__title {
+  font-size: var(--ds-text-sm, .78rem);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--glass-text);
+  opacity: .45;
+  font-weight: var(--ds-heading-weight, 600);
+}
+.u-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── u-search ────────────────────────────────────────────────
+   Replaces: pj-search, docs-search, ct-search, ds-search, gfb-search
+   Use together with glass-input: <input class="glass-input u-search">
+──────────────────────────────────────────────────────────── */
+.u-search {
+  width: 200px;
+  padding: 7px 12px;
+  font-size: var(--ds-text-sm, .8rem);
+}
+
+/* ── u-modal ─────────────────────────────────────────────────
+   Replaces: pj-modal, docs-modal, ct-modal, cl-modal, cab-modal, a-modal
+   Full modal system: overlay + container + head/body/foot/close
+──────────────────────────────────────────────────────────── */
+.u-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, var(--modal-overlay-opacity, 0.35));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.u-modal {
+  width: 520px;
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: var(--modal-radius, 16px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, .18);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
+  color: var(--glass-text);
+}
+.u-modal--narrow { width: 420px; }
+.u-modal--wide   { width: 640px; }
+.u-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  font-size: var(--ds-text-sm, .84rem);
+  font-weight: 600;
+  color: var(--glass-text);
+  flex-shrink: 0;
+}
+.u-modal__title {
+  font-size: var(--ds-text-sm, .84rem);
+  font-weight: 600;
+}
+.u-modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--glass-text);
+  opacity: .45;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
+}
+.u-modal__close:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+.u-modal__body {
+  overflow-y: auto;
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.u-modal__foot {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent);
+  flex-shrink: 0;
+}
+.u-modal__row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── u-counter ───────────────────────────────────────────────
+   Replaces: cab-badge, dash-quick-badge, ds-count, ws-filter-n, cab-filter-count
+   Small numeric badge/counter (e.g. sidebar menu counts)
+──────────────────────────────────────────────────────────── */
+.u-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--badge-radius, 999px);
+  background: color-mix(in srgb, var(--ds-accent) 12%, transparent);
+  color: var(--glass-text);
+  font-size: .6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.u-counter--sm {
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: .5rem;
+}
+.u-counter--success { background: color-mix(in srgb, var(--ds-success) 14%, transparent); }
+.u-counter--warning { background: color-mix(in srgb, var(--ds-warning) 14%, transparent); }
+.u-counter--danger  { background: color-mix(in srgb, var(--ds-error) 14%, transparent); }
+
+/* ── u-status ────────────────────────────────────────────────
+   Replaces: proj-card-status, st-draft, st-active, st-completed
+   Inline status pill for entity cards
+──────────────────────────────────────────────────────────── */
+.u-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--ds-text-xs, .65rem);
+  font-weight: 600;
+  letter-spacing: .03em;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.u-status--draft {
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 55%, transparent);
+}
+.u-status--active {
+  background: color-mix(in srgb, var(--ds-success) 12%, transparent);
+  color: var(--ds-success);
+}
+.u-status--completed {
+  background: color-mix(in srgb, var(--ds-accent) 12%, transparent);
+  color: var(--ds-accent);
+}
+.u-status--warning {
+  background: color-mix(in srgb, var(--ds-warning) 12%, transparent);
+  color: var(--ds-warning);
+}
+.u-status--error {
+  background: color-mix(in srgb, var(--ds-error) 12%, transparent);
+  color: var(--ds-error);
+}
+
+/* ── u-field ─────────────────────────────────────────────────
+   Standard form field wrapper (label + input)
+──────────────────────────────────────────────────────────── */
+.u-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.u-field__label {
+  font-size: var(--ds-text-xs, .72rem);
+  font-weight: 500;
+  color: color-mix(in srgb, var(--glass-text) 60%, transparent);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* ── u-empty ─────────────────────────────────────────────────
+   Empty state placeholder
+──────────────────────────────────────────────────────────── */
+.u-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+  font-size: var(--ds-text-sm, .84rem);
+}
+
+/* ── u-form-section ──────────────────────────────────────────
+   Glass card wrapper for a form block
+──────────────────────────────────────────────────────────── */
+.u-form-section {
+  background: var(--glass-bg, rgba(255,255,255,.35));
+  border: 1px solid var(--glass-border, rgba(255,255,255,.3));
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+}
+.u-form-section h3 {
+  margin: 0 0 14px;
+  font-size: .9rem;
+  font-weight: 700;
+  opacity: .65;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* ── u-grid-2 / u-grid-3 ─────────────────────────────────────
+   Responsive form grids
+──────────────────────────────────────────────────────────── */
+.u-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.u-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+@media (max-width: 600px) {
+  .u-grid-2, .u-grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ── u-field--full ───────────────────────────────────────────
+   Span full width inside a u-grid-2
+──────────────────────────────────────────────────────────── */
+.u-field--full { grid-column: 1 / -1; }
+
+/* ── u-form-foot ─────────────────────────────────────────────
+   Row at the bottom of a form section (save + msg)
+──────────────────────────────────────────────────────────── */
+.u-form-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+/* ── u-save-msg ──────────────────────────────────────────────
+   Inline save-success message next to a submit button
+──────────────────────────────────────────────────────────── */
+.u-save-msg {
+  font-size: .88rem;
+  color: var(--ds-success, #2ea86a);
+  font-weight: 600;
+}
+
+/* ── u-tag-group ─────────────────────────────────────────────
+   Labelled group of u-tags (e.g. "Роли", "Виды работ")
+──────────────────────────────────────────────────────────── */
+.u-tag-group { margin-bottom: 12px; }
+.u-tag-group__label {
+  font-size: var(--ds-text-xs, .7rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
+  margin-bottom: 7px;
+}
+
+/* ── u-tags / u-tag ──────────────────────────────────────────
+   Selectable tag-chip row (e.g. skills, categories)
+──────────────────────────────────────────────────────────── */
+.u-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.u-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 13px;
+  border-radius: 8px;
+  font-size: .82rem;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+  color: var(--glass-text);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.u-tag:hover {
+  border-color: color-mix(in srgb, var(--ds-accent, #646cff) 35%, transparent);
+}
+.u-tag.active,
+.u-tag--active {
+  background: color-mix(in srgb, var(--ds-accent, #646cff) 15%, transparent);
+  border-color: var(--ds-accent, #646cff);
+  color: var(--ds-accent, #646cff);
+  font-weight: 600;
+}
+
+/* ── u-prop-rows / u-prop-row ────────────────────────────────
+   Horizontal property rows: 160px label | flex value
+   Used in smart brief, contract forms, etc.
+──────────────────────────────────────────────────────────── */
+.u-prop-rows { display: flex; flex-direction: column; gap: 0; }
+.u-prop-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+.u-prop-row:last-child { border-bottom: none; }
+.u-prop-label {
+  font-size: var(--ds-text-xs, .76rem);
+  color: color-mix(in srgb, var(--glass-text) 55%, transparent);
+  padding-top: 6px;
+}
+.u-prop-inp {
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 15%, transparent);
+  padding: 6px 0;
+  font-size: .88rem;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  color: var(--glass-text, inherit);
+  width: 100%;
+  box-sizing: border-box;
+}
+.u-prop-inp:focus { border-bottom-color: var(--glass-text, currentColor); }
+.u-prop-inp:disabled { opacity: .4; cursor: default; }
+.u-prop-ta { resize: vertical; min-height: 36px; }
+.u-prop-select { appearance: none; cursor: pointer; }
+
+/* ── u-ta ────────────────────────────────────────────────────
+   Textarea resize utility (pair with glass-input or u-prop-inp)
+──────────────────────────────────────────────────────────── */
+.u-ta          { resize: vertical; }
+.u-ta--sm      { resize: vertical; min-height: 36px; }
+.u-ta--md      { resize: vertical; min-height: 72px; }
+.u-ta--lg      { resize: vertical; min-height: 120px; }
+
+/* ── Dark mode for unified components ────────────────────── */
+html.dark .u-modal-overlay {
+  background: rgba(0, 0, 0, var(--modal-overlay-opacity, 0.65));
+}
+html.dark .u-modal {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  color: var(--glass-text);
+}
+
+/* ── Responsive: unified components ──────────────────────── */
+@media (max-width: 768px) {
+  .u-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .u-topbar__right {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .u-search {
+    width: 100%;
+  }
+  .u-section-title {
+    font-size: .66rem;
+    margin: 14px 0 8px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .u-modal {
+    width: 100%;
+    max-height: 85vh;
+    border-radius: 12px;
+  }
+  .u-modal__row2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
    UI THEMES — data-theme="..." on <html>
    Five calm styles from cool grey to warm cream.
    ════════════════════════════════════════════════════════════ */

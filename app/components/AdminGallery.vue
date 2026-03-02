@@ -597,12 +597,10 @@ async function del(id: number) {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 20px; padding: 0 5px;
   border-radius: 999px; font-size: .62rem;
-  background: rgba(0,0,0,.09); color: var(--glass-text, #1a1a1a);
+  background: color-mix(in srgb, var(--glass-text) 9%, transparent); color: var(--glass-text, #1a1a1a);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
-.agal-badge--filter { background: rgba(59,130,246,.15); color: #2563eb; }
-html.dark .agal-badge { background: rgba(255,255,255,.12); color: #e5e5e5; }
-html.dark .agal-badge--filter { background: rgba(96,165,250,.18); color: #93bbfc; }
+.agal-badge--filter { background: color-mix(in srgb, var(--ds-accent) 15%, transparent); color: var(--ds-accent); }
 
 .agal-add-btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -612,11 +610,10 @@ html.dark .agal-badge--filter { background: rgba(96,165,250,.18); color: #93bbfc
   font-family: inherit; cursor: pointer;
   border-radius: 8px; white-space: nowrap;
   border: none;
-  background: rgba(0,0,0,.78); color: #fff;
+  background: var(--glass-text, #1a1a1a); color: var(--glass-page-bg, #f4f4f2);
   transition: opacity .15s;
 }
 .agal-add-btn:hover { opacity: .82; }
-html.dark .agal-add-btn { background: rgba(255,255,255,.9); color: #111; }
 
 /* ─── Batch mode button ────────────────────────────────── */
 .agal-batch-btn {
@@ -624,13 +621,11 @@ html.dark .agal-add-btn { background: rgba(255,255,255,.9); color: #111; }
   padding: 7px 12px; border-radius: 8px;
   border: none; cursor: pointer;
   font-family: inherit; font-size: .72rem;
-  background: rgba(0,0,0,.06); color: var(--glass-text, #1a1a1a);
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, #1a1a1a);
   transition: background .13s, opacity .13s;
 }
-.agal-batch-btn:hover { background: rgba(0,0,0,.1); }
-.agal-batch-btn--active { background: rgba(59,130,246,.12); color: #2563eb; }
-html.dark .agal-batch-btn { background: rgba(255,255,255,.08); }
-html.dark .agal-batch-btn--active { background: rgba(96,165,250,.18); color: #93bbfc; }
+.agal-batch-btn:hover { background: color-mix(in srgb, var(--glass-text) 10%, transparent); }
+.agal-batch-btn--active { background: color-mix(in srgb, var(--ds-accent) 12%, transparent); color: var(--ds-accent); }
 
 /* ─── Batch toolbar ────────────────────────────────────── */
 .agal-batch-bar {
@@ -647,14 +642,12 @@ html.dark .agal-batch-btn--active { background: rgba(96,165,250,.18); color: #93
   padding: 5px 10px; border-radius: 6px;
   border: none; cursor: pointer;
   font-family: inherit; font-size: .7rem;
-  background: rgba(0,0,0,.06); color: var(--glass-text, #1a1a1a);
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, #1a1a1a);
   transition: background .13s;
 }
-.agal-batch-action:hover { background: rgba(0,0,0,.12); }
-.agal-batch-action--del { background: color-mix(in srgb, var(--ds-error, #dc2626) 10%, transparent); color: var(--ds-error, #dc2626); }
-.agal-batch-action--del:hover { background: rgba(220,38,38,.2); }
-html.dark .agal-batch-action { background: rgba(255,255,255,.08); }
-html.dark .agal-batch-action--del { background: rgba(220,38,38,.15); }
+.agal-batch-action:hover { background: color-mix(in srgb, var(--glass-text) 12%, transparent); }
+.agal-batch-action--del { background: color-mix(in srgb, var(--ds-error) 10%, transparent); color: var(--ds-error); }
+.agal-batch-action--del:hover { background: color-mix(in srgb, var(--ds-error) 20%, transparent); }
 
 .agal-slide-enter-active,
 .agal-slide-leave-active { transition: opacity .2s ease, transform .2s ease, max-height .2s ease; }
@@ -677,7 +670,7 @@ html.dark .agal-batch-action--del { background: rgba(220,38,38,.15); }
 }
 .agal-round-check--sm { width: 20px; height: 20px; }
 .agal-round-check--on {
-  background: #3b82f6; border-color: #3b82f6; color: #fff;
+  background: var(--ds-accent); border-color: var(--ds-accent); color: #fff;
   transform: scale(1.05);
 }
 .agal-list-check { flex-shrink: 0; cursor: pointer; }
@@ -686,7 +679,7 @@ html.dark .agal-batch-action--del { background: rgba(220,38,38,.15); }
 .agal-card--selected,
 .agal-list-row--selected,
 .msn-card--selected {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--ds-accent);
   outline-offset: 2px;
 }
 
@@ -699,8 +692,8 @@ html.dark .agal-batch-action--del { background: rgba(220,38,38,.15); }
   transition: border-color .15s;
 }
 .agal-drop-zone--over {
-  border-color: #3b82f6;
-  background: rgba(59,130,246,.08);
+  border-color: var(--ds-accent);
+  background: color-mix(in srgb, var(--ds-accent) 8%, transparent);
 }
 
 /* ─── Loading ──────────────────────────────────────────── */
@@ -709,12 +702,11 @@ html.dark .agal-batch-action--del { background: rgba(220,38,38,.15); }
 }
 .agal-spinner {
   width: 32px; height: 32px;
-  border: 2px solid rgba(0,0,0,.1);
-  border-top-color: rgba(0,0,0,.5);
+  border: 2px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-top-color: color-mix(in srgb, var(--glass-text) 50%, transparent);
   border-radius: 50%;
   animation: agalSpin .7s linear infinite;
 }
-html.dark .agal-spinner { border-color: rgba(255,255,255,.1); border-top-color: rgba(255,255,255,.5); }
 @keyframes agalSpin { to { transform: rotate(360deg); } }
 
 /* ─── Empty ─────────────────────────────────────────────── */
@@ -749,19 +741,15 @@ html.dark .agal-spinner { border-color: rgba(255,255,255,.1); border-top-color: 
   transform: translateY(-3px);
   box-shadow: 0 16px 40px rgba(18,18,18,.13);
 }
-html.dark .agal-card {
-  background: linear-gradient(160deg, rgba(22,23,28,.92) 0%, rgba(14,15,18,.96) 100%);
-  box-shadow: 0 12px 40px rgba(0,0,0,.5);
-}
+
 
 .agal-img-zone {
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: rgba(0,0,0,.05);
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
   flex-shrink: 0;
 }
-html.dark .agal-img-zone { background: rgba(255,255,255,.04); }
 
 .agal-img {
   width: 100%; height: 100%;
@@ -792,13 +780,13 @@ html.dark .agal-img-zone { background: rgba(255,255,255,.04); }
 .agal-icon-btn {
   display: flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; border-radius: 8px; border: none; cursor: pointer;
-  background: rgba(255,255,255,.82);
+  background: var(--glass-bg, rgba(255,255,255,.82));
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  color: #1a1a1a;
+  color: var(--glass-text, #1a1a1a);
   box-shadow: 0 2px 8px rgba(0,0,0,.18);
   transition: background .13s, transform .13s, color .13s;
 }
-.agal-icon-btn:hover { background: #fff; transform: scale(1.08); }
+.agal-icon-btn:hover { background: var(--glass-bg, #fff); transform: scale(1.08); }
 .agal-icon-btn--del { background: rgba(220,38,38,.8); color: #fff; }
 .agal-icon-btn--del:hover { background: rgba(220,38,38,.97); }
 
@@ -833,11 +821,10 @@ html.dark .agal-img-zone { background: rgba(255,255,255,.04); }
 .agal-tag {
   font-size: .65rem; padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(0,0,0,.07); color: var(--glass-text, #1a1a1a); opacity: .7;
+  background: color-mix(in srgb, var(--glass-text) 7%, transparent); color: var(--glass-text, #1a1a1a); opacity: .7;
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   letter-spacing: .1px; white-space: nowrap;
 }
-html.dark .agal-tag { background: rgba(255,255,255,.1); opacity: .8; }
 
 /* ─── List view ─────────────────────────────────────────── */
 .agal-list {
@@ -856,7 +843,7 @@ html.dark .agal-tag { background: rgba(255,255,255,.1); opacity: .8; }
 .agal-list-thumb {
   width: 64px; height: 48px; flex-shrink: 0;
   border-radius: 8px; overflow: hidden;
-  background: rgba(0,0,0,.04);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
 .agal-list-thumb img {
   width: 100%; height: 100%; object-fit: cover; display: block;
@@ -899,16 +886,12 @@ html.dark .agal-tag { background: rgba(255,255,255,.1); opacity: .8; }
   transform: translateY(-3px);
   box-shadow: 0 18px 44px rgba(18,18,18,.14);
 }
-html.dark .msn-card {
-  background: linear-gradient(160deg, rgba(22,23,28,.92) 0%, rgba(14,15,18,.96) 100%);
-  box-shadow: 0 12px 40px rgba(0,0,0,.5);
-}
+
 
 .msn-img-wrap {
   position: relative; overflow: hidden;
-  background: rgba(0,0,0,.04);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
-html.dark .msn-img-wrap { background: rgba(255,255,255,.04); }
 
 .msn-img {
   width: 100%; height: 100%;
@@ -941,9 +924,9 @@ html.dark .msn-img-wrap { background: rgba(255,255,255,.04); }
 .msn-multi {
   display: flex; align-items: center; gap: 3px;
   padding: 4px 8px; border-radius: 8px;
-  background: rgba(255,255,255,.82);
+  background: var(--glass-bg, rgba(255,255,255,.82));
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  color: #1a1a1a; font-size: .64rem; font-weight: 600;
+  color: var(--glass-text, #1a1a1a); font-size: .64rem; font-weight: 600;
 }
 
 .msn-info {
@@ -964,11 +947,10 @@ html.dark .msn-img-wrap { background: rgba(255,255,255,.04); }
 .msn-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .msn-tag {
   font-size: .62rem; padding: 2px 7px; border-radius: 5px;
-  background: rgba(0,0,0,.06); color: var(--glass-text, #1a1a1a); opacity: .65;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, #1a1a1a); opacity: .65;
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   letter-spacing: .1px; white-space: nowrap;
 }
-html.dark .msn-tag { background: rgba(255,255,255,.09); opacity: .75; }
 
 /* ─── Modal ─────────────────────────────────────────────── */
 .agal-backdrop {
@@ -992,12 +974,11 @@ html.dark .msn-tag { background: rgba(255,255,255,.09); opacity: .75; }
 }
 .agal-close {
   width: 28px; height: 28px; border-radius: 7px; border: none;
-  background: rgba(0,0,0,.08); color: var(--glass-text, #1a1a1a);
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent); color: var(--glass-text, #1a1a1a);
   cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
-.agal-close:hover { background: rgba(0,0,0,.15); }
-html.dark .agal-close { background: rgba(255,255,255,.1); color: #eee; }
+.agal-close:hover { background: color-mix(in srgb, var(--glass-text) 15%, transparent); }
 
 /* ─── Form ──────────────────────────────────────────────── */
 .agal-form { display: flex; flex-direction: column; gap: 16px; }
@@ -1025,8 +1006,7 @@ html.dark .agal-close { background: rgba(255,255,255,.1); color: #eee; }
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   transition: background .13s;
 }
-.agal-upload-btn:hover { background: rgba(255,255,255,.72); }
-html.dark .agal-upload-btn { color: #e5e5e5; }
+.agal-upload-btn:hover { background: color-mix(in srgb, var(--glass-text) 8%, var(--glass-bg)); }
 
 .agal-preview {
   margin-top: 4px; border-radius: 10px; overflow: hidden;
@@ -1052,7 +1032,7 @@ html.dark .agal-upload-btn { color: #e5e5e5; }
 .agal-multi-thumb {
   position: relative; width: 72px; height: 54px;
   border-radius: 8px; overflow: hidden;
-  background: rgba(0,0,0,.04);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
 .agal-multi-thumb img {
   width: 100%; height: 100%; object-fit: cover; display: block;
@@ -1068,13 +1048,12 @@ html.dark .agal-upload-btn { color: #e5e5e5; }
   width: 72px; height: 54px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 8px; cursor: pointer;
-  border: 1.5px dashed rgba(0,0,0,.15);
+  border: 1.5px dashed color-mix(in srgb, var(--glass-text) 15%, transparent);
   background: transparent;
   color: var(--glass-text, #1a1a1a); opacity: .3;
   transition: opacity .13s, border-color .13s;
 }
-.agal-multi-add:hover { opacity: .6; border-color: rgba(0,0,0,.3); }
-html.dark .agal-multi-add { border-color: rgba(255,255,255,.15); }
+.agal-multi-add:hover { opacity: .6; border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
 
 /* ─── Toggle / Checkbox ────────────────────────────────── */
 .agal-toggle-label {
@@ -1083,7 +1062,7 @@ html.dark .agal-multi-add { border-color: rgba(255,255,255,.15); }
   opacity: .75 !important; cursor: pointer;
 }
 .agal-checkbox {
-  width: 16px; height: 16px; accent-color: #fbbf24;
+  width: 16px; height: 16px; accent-color: var(--ds-warning, #fbbf24);
   cursor: pointer;
 }
 
@@ -1100,17 +1079,16 @@ html.dark .agal-multi-add { border-color: rgba(255,255,255,.15); }
   background: transparent; color: var(--glass-text, #1a1a1a);
   transition: background .13s;
 }
-.agal-cancel-btn:hover { background: rgba(0,0,0,.06); }
+.agal-cancel-btn:hover { background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
 .agal-save-btn {
   padding: 9px 22px; border-radius: 9px; cursor: pointer;
   font-family: inherit; font-size: .82rem; letter-spacing: .2px;
   border: none;
-  background: rgba(0,0,0,.82); color: #fff;
+  background: var(--glass-text, #1a1a1a); color: var(--glass-page-bg, #f4f4f2);
   transition: opacity .15s;
 }
 .agal-save-btn:hover:not(:disabled) { opacity: .8; }
 .agal-save-btn:disabled { opacity: .45; cursor: default; }
-html.dark .agal-save-btn { background: rgba(255,255,255,.88); color: #111; }
 
 /* ─── Modal transition ─────────────────────────────────── */
 .modal-fade-enter-active,

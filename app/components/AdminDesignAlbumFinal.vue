@@ -21,31 +21,31 @@
       <!-- Section: Album info -->
       <div class="adaf-section">
         <div class="adaf-section-title">информация об альбоме</div>
-        <div class="adaf-rows">
-          <div class="adaf-row">
-            <label class="adaf-lbl">версия</label>
-            <input v-model="form.daf_version" class="adaf-inp" placeholder="v1, финальная..." @blur="save">
+        <div class="u-grid-2">
+          <div class="u-field">
+            <label class="u-field__label">версия</label>
+            <input v-model="form.daf_version" class="glass-input" placeholder="v1, финальная..." @blur="save">
           </div>
-          <div class="adaf-row">
-            <label class="adaf-lbl">дата выдачи</label>
-            <AppDatePicker v-model="form.daf_issue_date" model-type="iso" input-class="adaf-inp" @update:model-value="save" />
+          <div class="u-field">
+            <label class="u-field__label">дата выдачи</label>
+            <AppDatePicker v-model="form.daf_issue_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="adaf-row">
-            <label class="adaf-lbl">кол-во страниц</label>
-            <input v-model="form.daf_page_count" type="number" min="0" class="adaf-inp" @blur="save">
+          <div class="u-field">
+            <label class="u-field__label">кол-во страниц</label>
+            <input v-model="form.daf_page_count" type="number" min="0" class="glass-input" @blur="save">
           </div>
-          <div class="adaf-row">
-            <label class="adaf-lbl">формат</label>
-            <select v-model="form.daf_format" class="adaf-inp" @change="save">
+          <div class="u-field">
+            <label class="u-field__label">формат</label>
+            <select v-model="form.daf_format" class="glass-input" @change="save">
               <option value="">—</option>
               <option value="A3">A3</option>
               <option value="A4">A4</option>
               <option value="mixed">смешанный</option>
             </select>
           </div>
-          <div class="adaf-row adaf-row--full">
-            <label class="adaf-lbl">примечания</label>
-            <textarea v-model="form.daf_notes" class="adaf-inp adaf-ta" rows="2" @blur="save" />
+          <div class="u-field u-field--full">
+            <label class="u-field__label">примечания</label>
+            <textarea v-model="form.daf_notes" class="glass-input u-ta" rows="2" @blur="save" />
           </div>
         </div>
       </div>
@@ -58,7 +58,7 @@
           <div v-for="(ch, idx) in form.daf_chapters" :key="idx" class="adaf-chapter">
             <div class="adaf-ch-num">{{ Number(idx) + 1 }}</div>
             <div class="adaf-ch-body">
-              <input v-model="ch.title" class="adaf-inp" placeholder="название раздела" @blur="save">
+              <input v-model="ch.title" class="glass-input" placeholder="название раздела" @blur="save">
               <div class="adaf-ch-meta">
                 <select v-model="ch.status" class="adaf-ch-status" @change="save">
                   <option value="">—</option>
@@ -200,19 +200,6 @@ function removeFile(idx: number) {
   margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--glass-border);
 }
 
-.adaf-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.adaf-row { display: flex; flex-direction: column; gap: 5px; }
-.adaf-row--full { grid-column: 1 / -1; }
-.adaf-lbl { font-size: .72rem; color: color-mix(in srgb, var(--glass-text) 45%, transparent); }
-.adaf-inp {
-  border: 1px solid var(--glass-border); border-radius: 8px;
-  padding: 7px 10px; font-size: .82rem;
-  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
-  color: var(--glass-text); font-family: inherit; outline: none;
-  transition: border-color .15s;
-}
-.adaf-inp:focus { border-color: var(--glass-text); }
-.adaf-ta  { resize: vertical; }
 
 /* Chapters */
 .adaf-chapters { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
@@ -300,7 +287,5 @@ function removeFile(idx: number) {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .adaf-rows { grid-template-columns: 1fr; }
-  .adaf-row--full { grid-column: auto; }
 }
 </style>

@@ -93,7 +93,7 @@
       <!-- Notes -->
       <div class="apl-section">
         <div class="apl-section-title">заметки</div>
-        <textarea v-model="form.proc_notes" class="apl-inp apl-ta" rows="3" @blur="save" placeholder="примечания по закупкам..." />
+        <textarea v-model="form.proc_notes" class="glass-input u-ta" rows="3" @blur="save" placeholder="примечания по закупкам..." />
       </div>
 
     </template>
@@ -155,45 +155,42 @@ function removeItem(idx: number) {
 
 <style scoped>
 .apl-wrap { padding: 4px 0 40px; }
-.apl-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
+.apl-loading { padding: 40px 0; font-size: .82rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 
 .apl-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .apl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.apl-dot--gray   { background: #ccc; }
-.apl-dot--blue   { background: #6b9fd4; }
-.apl-dot--yellow { background: #e8b84b; }
-.apl-dot--red    { background: #d46b6b; }
-.apl-dot--green  { background: #5caa7f; }
+.apl-dot--gray   { background: color-mix(in srgb, var(--glass-text) 40%, transparent); }
+.apl-dot--blue   { background: var(--ds-accent); }
+.apl-dot--yellow { background: var(--ds-warning); }
+.apl-dot--red    { background: var(--ds-error); }
+.apl-dot--green  { background: var(--ds-success); }
 .apl-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
 .apl-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
-.apl-summary { display: flex; gap: 24px; font-size: .78rem; color: #888; margin-bottom: 24px; padding: 10px 0; border-bottom: 1px solid var(--border, #ececec); }
+.apl-summary { display: flex; gap: 24px; font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); margin-bottom: 24px; padding: 10px 0; border-bottom: 1px solid var(--border, #ececec); }
 
 .apl-section { margin-bottom: 32px; }
-.apl-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
+.apl-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: color-mix(in srgb, var(--glass-text) 50%, transparent); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
 
-.apl-inp { width: 100%; border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: var(--bg, #fff); color: inherit; font-family: inherit; outline: none; box-sizing: border-box; }
-.apl-inp:focus { border-color: #aaa; }
-.apl-ta  { resize: vertical; }
 
 .apl-table-wrap { overflow-x: auto; margin-bottom: 12px; }
 .apl-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
-.apl-table th { font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; color: #aaa; font-weight: 500; text-align: left; padding: 6px 4px 8px; border-bottom: 1px solid var(--border, #e0e0e0); white-space: nowrap; }
+.apl-table th { font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; color: color-mix(in srgb, var(--glass-text) 50%, transparent); font-weight: 500; text-align: left; padding: 6px 4px 8px; border-bottom: 1px solid var(--border, #e0e0e0); white-space: nowrap; }
 .apl-table td { padding: 4px 4px; border-bottom: 1px solid var(--border, #f0f0f0); vertical-align: middle; }
-.apl-td-num { font-size: .68rem; color: #bbb; text-align: center; width: 28px; }
+.apl-td-num { font-size: .68rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); text-align: center; width: 28px; }
 .apl-cell { width: 100%; border: 1px solid transparent; background: none; padding: 4px 6px; font-size: .78rem; font-family: inherit; color: inherit; outline: none; }
 .apl-cell:focus { border-color: var(--border, #e0e0e0); }
 .apl-cell-sm { max-width: 100px; }
 .apl-cell-xs { max-width: 60px; }
 .apl-cell-status { min-width: 110px; }
 .apl-row--received { opacity: .6; }
-.apl-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1rem; }
+.apl-del { background: none; border: none; cursor: pointer; color: color-mix(in srgb, var(--glass-text) 45%, transparent); font-size: 1rem; }
 .apl-del:hover { color: var(--ds-error, #c00); }
-.apl-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
+.apl-empty { font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
 
 .apl-actions { display: flex; gap: 10px; margin-bottom: 12px; }
-.apl-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: #666; cursor: pointer; font-family: inherit; }
-.apl-add-btn:hover { border-color: #aaa; color: inherit; }
+.apl-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); cursor: pointer; font-family: inherit; }
+.apl-add-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 50%, transparent); color: inherit; }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
