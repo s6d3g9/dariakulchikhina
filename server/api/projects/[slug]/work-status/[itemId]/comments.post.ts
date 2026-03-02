@@ -1,5 +1,5 @@
 import { useDb } from '~/server/db/index'
-import { workStatusItemComments, workStatusItems, projects } from '~/server/db/schema'
+import { workStatusItemComments, workStatusItems, projects, users } from '~/server/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { z } from 'zod'
 
@@ -21,10 +21,15 @@ export default defineEventHandler(async (event) => {
     .limit(1)
   if (!item) throw createError({ statusCode: 404 })
 
+  // Resolve admin name from session
+  let authorName = 'Дизайнер'
+  const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, session.userId)).limit(1)
+  if (user?.name) authorName = user.name
+
   const [comment] = await db.insert(workStatusItemComments).values({
     itemId,
     authorType: 'admin',
-    authorName: 'Дизайнер', // TODO: resolve from session.userId → admins table
+    authorName,
     text,
   }).returning()
 

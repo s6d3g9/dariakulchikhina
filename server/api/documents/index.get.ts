@@ -4,11 +4,9 @@ import { eq, desc } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const rawUrl = event.node.req.url || ''
-  const qs = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?') + 1) : ''
-  const params = new URLSearchParams(qs)
-  const category    = params.get('category') || ''
-  const projectSlug = params.get('projectSlug') || ''
+  const query = getQuery(event)
+  const category    = (query.category as string) || ''
+  const projectSlug = (query.projectSlug as string) || ''
 
   const db = useDb()
 

@@ -39,8 +39,8 @@
             <span v-if="p.taskOverdue > 0" style="font-size:.72rem;color:#c00;font-weight:600">⚠ {{ p.taskOverdue }} просрочено</span>
           </div>
         </div>
-        <!-- Phase pills -->
-        <AdminProjectPhase
+        <!-- Vertical phase circles -->
+        <AdminPhaseCircles
           :slug="p.slug"
           :status="p.status"
           @update:status="updateProjectStatus(p.slug, $event)"

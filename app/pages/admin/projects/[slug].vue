@@ -67,8 +67,8 @@
         <p v-else-if="contractorLinkSuccess" class="proj-client-success">{{ contractorLinkSuccess }}</p>
       </div>
 
-      <!-- Horizontal phase tracker -->
-      <AdminProjectPhase
+      <!-- Vertical phase tracker with circles -->
+      <AdminPhaseCircles
         :slug="route.params.slug as string"
         :status="projectStatus"
         @update:status="projectStatus = $event"

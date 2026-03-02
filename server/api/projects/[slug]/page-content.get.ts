@@ -6,9 +6,8 @@ export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
   // Auth: admin or client for this project
   requireAdminOrClient(event, slug)
-  const rawUrl = event.node.req.url || ''
-  const queryString = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?') + 1) : ''
-  const page = new URLSearchParams(queryString).get('page') || undefined
+  const q = getQuery(event)
+  const page = (q.page as string) || undefined
 
   const db = useDb()
   const [project] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, slug)).limit(1)

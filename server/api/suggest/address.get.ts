@@ -6,9 +6,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const rawUrl = event.node.req.url || ''
-  const qs = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?') + 1) : ''
-  const query = new URLSearchParams(qs).get('q') || ''
+  const q = getQuery(event)
+  const query = (q.q as string) || ''
   if (!query.trim()) return { results: [] }
 
   try {

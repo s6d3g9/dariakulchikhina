@@ -6,14 +6,12 @@ import { requireAdmin } from '~/server/utils/auth'
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
-  const rawUrl = event.node?.req?.url || event.path || ''
-  const queryString = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?') + 1) : ''
-  const params = new URLSearchParams(queryString)
+  const query = getQuery(event)
 
-  const category = params.get('category') || undefined
-  const tag = params.get('tag') || undefined
-  const featured = params.get('featured') || undefined
-  const search = params.get('search') || undefined
+  const category = (query.category as string) || undefined
+  const tag = (query.tag as string) || undefined
+  const featured = (query.featured as string) || undefined
+  const search = (query.search as string) || undefined
 
   const conditions = []
   if (category) conditions.push(eq(galleryItems.category, category))

@@ -34,13 +34,10 @@ export default defineEventHandler((event) => {
   if (!admin && !client && !contractor) {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
-  // Parse query params manually to avoid getRequestURL host issue
-  const reqUrl = event.node.req.url || ''
-  const qsIdx = reqUrl.indexOf('?')
-  const params = new URLSearchParams(qsIdx >= 0 ? reqUrl.slice(qsIdx) : '')
+  const params = getQuery(event)
 
-  const q = (params.get('q') || '').toLowerCase().trim()
-  const category = params.get('category') || ''
+  const q = ((params.q as string) || '').toLowerCase().trim()
+  const category = (params.category as string) || ''
 
   const db = loadSuggestions()
 

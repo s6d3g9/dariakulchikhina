@@ -3,29 +3,7 @@ import { projects, roadmapStages } from '~/server/db/schema'
 import { CreateProjectSchema } from '~/shared/types/project'
 import { readCustomRoadmapTemplates } from '~/server/utils/roadmap-templates'
 import { ROADMAP_TEMPLATES } from '~/shared/types/roadmap-templates'
-
-const CORE_PAGES = [
-  'first_contact',
-  'self_profile',
-  'site_survey',
-  'tor_contract',
-  'space_planning',
-  'moodboard',
-  'concept_approval',
-  'working_drawings',
-  'specifications',
-  'mep_integration',
-  'design_album_final',
-  'procurement_list',
-  'suppliers',
-  'procurement_status',
-  'construction_plan',
-  'work_log',
-  'site_photos',
-  'punch_list',
-  'commissioning_act',
-  'client_sign_off',
-]
+import { CORE_PAGES } from '~/shared/constants/pages'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)

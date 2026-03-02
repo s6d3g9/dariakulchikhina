@@ -5,9 +5,8 @@ import { eq, sql } from 'drizzle-orm'
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
-  const rawUrl = event.node.req.url || ''
-  const queryString = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?') + 1) : ''
-  const projectSlugFilter = new URLSearchParams(queryString).get('projectSlug') || ''
+  const q = getQuery(event)
+  const projectSlugFilter = (q.projectSlug as string) || ''
 
   const rowsRaw = projectSlugFilter
     ? await db

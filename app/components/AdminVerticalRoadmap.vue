@@ -92,7 +92,7 @@ async function toggleDone(pg: { slug: string; title: string }) {
       method: 'PATCH',
       body: { stageKey: pg.slug, title: pg.title, status: next },
     })
-    // notify bus → AdminProjectPhase and /admin cards refresh
+    // notify bus → AdminPhaseCircles and /admin cards refresh
     useRoadmapBus().notifySaved()
   } catch {
     // revert on error
