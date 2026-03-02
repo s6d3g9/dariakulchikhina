@@ -37,8 +37,7 @@
     <!-- ═══ Panel (horizontal dropdown) ═══ -->
     <Teleport to="body">
       <Transition name="dp-slide">
-        <div v-if="open" class="dp-overlay" @click.self="open = false">
-          <div class="dp-panel" ref="panelEl" @click.stop>
+        <div v-if="open" class="dp-panel" ref="panelEl">
 
             <!-- ── Top row: tabs + actions ── -->
             <div class="dp-panel-toprow">
@@ -482,7 +481,6 @@
               </Transition>
             </footer>
           </div><!-- /.dp-panel -->
-        </div>
       </Transition>
     </Teleport>
     <!-- ═══ Inspect Mode Overlay ═══ -->
@@ -1046,20 +1044,30 @@ function disableInspect() {
 const panelEl = ref<HTMLElement | null>(null)
 let panelRO: ResizeObserver | null = null
 
+function onOutsideClick(e: MouseEvent) {
+  const t = e.target as HTMLElement
+  if (panelEl.value?.contains(t)) return
+  if (t.closest?.('.dp-topbar') || t.closest?.('.dp-wrap')) return
+  open.value = false
+}
+
 watch(open, (v) => {
   if (v) {
     nextTick(() => {
       if (panelEl.value) {
-        panelRO = new ResizeObserver(([entry]) => {
-          document.documentElement.style.setProperty('--dp-panel-h', entry.contentRect.height + 'px')
+        panelRO = new ResizeObserver((entries) => {
+          const h = entries[0]?.contentRect.height ?? 0
+          document.documentElement.style.setProperty('--dp-panel-h', h + 'px')
         })
         panelRO.observe(panelEl.value)
       }
+      document.addEventListener('mousedown', onOutsideClick, true)
     })
   } else {
     panelRO?.disconnect()
     panelRO = null
     document.documentElement.style.setProperty('--dp-panel-h', '0px')
+    document.removeEventListener('mousedown', onOutsideClick, true)
   }
 })
 
@@ -1176,6 +1184,7 @@ function onKey(e: KeyboardEvent) {
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey)
+  document.removeEventListener('mousedown', onOutsideClick, true)
   if (inspectMode.value) disableInspect()
   if (compMode.value) toggleComp()
   panelRO?.disconnect()
@@ -1237,16 +1246,10 @@ onBeforeUnmount(() => {
   letter-spacing: .04em; text-transform: uppercase; font-weight: 500;
 }
 
-/* ── Overlay (click-to-dismiss backdrop) ── */
-.dp-overlay {
-  position: fixed; top: 28px; left: 0; right: 0; bottom: 0; z-index: 10000;
-  background: rgba(0,0,0,.15);
-  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-}
-
 /* ── Panel (horizontal dropdown) ── */
 .dp-panel {
-  width: 100%; max-height: min(580px, 68vh);
+  position: fixed; top: 28px; left: 0; right: 0; z-index: 10001;
+  max-height: min(580px, 68vh);
   background: var(--glass-page-bg, #f4f4f2);
   border-bottom: 1px solid rgba(0,0,0,.08);
   box-shadow: 0 12px 40px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.07);
@@ -1555,10 +1558,8 @@ onBeforeUnmount(() => {
 /* ── Transitions (slide down from top) ── */
 .dp-slide-enter-active { transition: opacity .18s ease, transform .22s cubic-bezier(0.16,1,0.3,1); }
 .dp-slide-leave-active { transition: opacity .14s ease, transform .14s ease; }
-.dp-slide-enter-from { opacity: 0; }
-.dp-slide-enter-from .dp-panel { transform: translateY(-12px); }
-.dp-slide-leave-to { opacity: 0; }
-.dp-slide-leave-to .dp-panel { transform: translateY(-8px); }
+.dp-slide-enter-from { opacity: 0; transform: translateY(-12px); }
+.dp-slide-leave-to { opacity: 0; transform: translateY(-8px); }
 
 .dp-collapse-enter-active { transition: max-height .2s ease, opacity .2s ease; overflow: hidden; }
 .dp-collapse-leave-active { transition: max-height .15s ease, opacity .15s ease; overflow: hidden; }
