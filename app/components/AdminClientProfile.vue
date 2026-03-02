@@ -411,7 +411,7 @@ async function save() {
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  border-radius: 0;
+  border-radius: var(--input-radius, 6px);
   padding-right: 20px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -421,7 +421,7 @@ async function save() {
   resize: vertical;
   border: 1px solid var(--acp-ta-border);
   padding: 6px 8px;
-  border-radius: 2px;
+  border-radius: var(--input-radius, 6px);
   line-height: 1.5;
   color: var(--acp-inp-color);
 }

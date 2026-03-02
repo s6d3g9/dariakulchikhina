@@ -130,17 +130,18 @@ input { display: block; width: 100%; box-sizing: border-box; }
 <style>
 /* global — список телепортирован в body */
 .aai-list {
-  background: #fff;
-  border: none;
-  border-radius: 6px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.16);
+  background: var(--glass-bg, rgba(255,255,255,.88));
+  border: 1px solid color-mix(in srgb, var(--glass-text, #1f1f1f) 10%, transparent);
+  border-radius: var(--card-radius, 10px);
+  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.14));
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
   padding: 4px 0;
   margin: 0;
   list-style: none;
   max-height: 260px;
   overflow-y: auto;
 }
-.dark .aai-list { background: #1e1e1e; }
 
 .aai-item {
   display: flex;
@@ -151,10 +152,8 @@ input { display: block; width: 100%; box-sizing: border-box; }
   transition: background .1s;
 }
 .aai-item:hover,
-.aai-item--active { background: rgba(0,0,0,.05); }
-.dark .aai-item:hover,
-.dark .aai-item--active { background: rgba(255,255,255,.07); }
+.aai-item--active { background: color-mix(in srgb, var(--glass-text, #1f1f1f) 6%, transparent); }
 
-.aai-title { font-size: .88rem; color: #1a1a1a; line-height: 1.3; }
-.aai-sub   { font-size: .75rem; color: #999; }
+.aai-title { font-size: .88rem; color: var(--glass-text, #1a1a1a); line-height: 1.3; }
+.aai-sub   { font-size: .75rem; color: color-mix(in srgb, var(--glass-text, #1a1a1a) 50%, transparent); }
 </style>

@@ -23,6 +23,32 @@ button, a, input, select, textarea, summary {
 .a-modal, .admin-dropdown, .std-sidenav {
   border-radius: var(--card-radius, 14px);
 }
+/* ── Global form-control base ────────────────────────────────
+   Sets token-based bg/color/border on ALL inputs so they never
+   fall back to the browser's white-box default.
+   Scoped component styles override as needed via higher specificity.
+──────────────────────────────────────────────────────────────── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]),
+textarea,
+select {
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  color: var(--glass-text);
+  border: none;
+  outline: none;
+  border-radius: var(--input-radius, 6px);
+  font-family: var(--ds-font-family);
+  font-size: var(--ds-text-sm, .833rem);
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="reset"]):focus,
+textarea:focus,
+select:focus {
+  background: color-mix(in srgb, var(--glass-text) 9%, transparent);
+  outline: none;
+}
+::placeholder {
+  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+  opacity: 1;
+}
 .glass-input, input[type="text"], input[type="email"],
 input[type="password"], input[type="search"], input[type="number"],
 textarea, select {

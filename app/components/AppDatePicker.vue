@@ -289,7 +289,7 @@ onBeforeUnmount(() => {
 .dp-day:disabled { cursor: default; }
 .dp-day--other { opacity: .35; }
 .dp-day--today { color: #3b82f6; font-weight: 600; }
-.dp-day--sel { background: #3b82f6 !important; color: #fff !important; font-weight: 600; border-radius: 5px; }
+.dp-day--sel { background: var(--ds-accent) !important; color: #fff !important; font-weight: 600; border-radius: 5px; }
 .dp-footer {
   display: flex; justify-content: space-between; margin-top: 8px;
   border-top: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent); padding-top: 7px;

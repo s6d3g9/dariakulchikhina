@@ -157,29 +157,29 @@ onMounted(() => { query.value = props.modelValue || '' })
   max-height: 220px;
   overflow-y: auto;
   z-index: 100;
-  border-radius: 10px;
+  border-radius: var(--card-radius, 10px);
   padding: 4px;
-  background: rgba(255,255,255,.72);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  border: 1px solid rgba(255,255,255,.45);
-  box-shadow: 0 8px 32px rgba(0,0,0,.10);
+  background: var(--glass-bg);
+  backdrop-filter: blur(18px) saturate(var(--glass-saturation, 145%));
+  -webkit-backdrop-filter: blur(18px) saturate(var(--glass-saturation, 145%));
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.12));
 }
 
 .ac-option {
   padding: 7px 12px;
   font-size: .82rem;
-  border-radius: 7px;
+  border-radius: calc(var(--card-radius, 10px) - 4px);
   cursor: pointer;
-  color: #1a1a2e;
+  color: var(--glass-text);
   transition: background .15s;
 }
 .ac-option:hover,
 .ac-option.active {
-  background: rgba(110,90,220,.13);
+  background: color-mix(in srgb, var(--ds-accent) 12%, transparent);
 }
 .ac-option :deep(b) {
-  color: #6e5adc;
+  color: var(--ds-accent);
   font-weight: 700;
 }
 

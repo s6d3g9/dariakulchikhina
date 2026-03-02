@@ -114,13 +114,12 @@ const phaseMeta = computed(() =>
 /* Wrapper */
 .pd-wrap {
   margin-top: 12px;
-  border-radius: 12px;
+  border-radius: var(--card-radius, 12px);
   border: none;
-  background: #fff;
+  background: color-mix(in srgb, var(--glass-bg) 85%, transparent);
+  backdrop-filter: blur(14px) saturate(var(--glass-saturation, 145%));
+  -webkit-backdrop-filter: blur(14px) saturate(var(--glass-saturation, 145%));
   overflow: hidden;
-}
-.dark .pd-wrap {
-  background: #101014;
 }
 
 /* Header */

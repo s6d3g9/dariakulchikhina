@@ -145,27 +145,27 @@ async function unlink(contractorId: number) {
 .dark .acnp-section-title { border-color: #2e2e2e; }
 
 .acnp-card {
-  border: 1px solid #e4e4e4;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
   padding: 14px 16px;
   margin-bottom: 8px;
-  background: #fff;
+  background: color-mix(in srgb, var(--glass-bg) 80%, transparent);
+  border-radius: var(--card-radius, 10px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
-.dark .acnp-card { border-color: #2a2a2a; background: #1c1c1e; }
 .acnp-card--avail { border-style: dashed; background: transparent; }
-.dark .acnp-card--avail { border-color: #333; }
 
 .acnp-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .acnp-card-info { flex: 1; min-width: 0; }
 .acnp-card-actions { flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
 
-.acnp-name { font-size: .9rem; font-weight: 500; color: #1a1a1a; }
-.dark .acnp-name { color: #e8e8e8; }
-.acnp-sub  { font-size: .78rem; color: #999; margin-top: 1px; }
+.acnp-name { font-size: .9rem; font-weight: 500; color: var(--glass-text); }
+.acnp-sub  { font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); margin-top: 1px; }
 .acnp-meta-row {
   display: flex; gap: 12px; flex-wrap: wrap;
-  font-size: .76rem; color: #aaa; margin-top: 4px;
+  font-size: .76rem; color: color-mix(in srgb, var(--glass-text) 45%, transparent); margin-top: 4px;
 }
-.acnp-notes { font-size: .78rem; color: #888; margin-top: 6px; font-style: italic; }
+.acnp-notes { font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 50%, transparent); margin-top: 6px; font-style: italic; }
 .acnp-link {
   font-size: .76rem; color: #6366f1; text-decoration: none;
 }
@@ -175,11 +175,10 @@ async function unlink(contractorId: number) {
 .acnp-chip {
   font-size: .68rem; padding: 2px 7px;
   border: none;
-  border-radius: 10px;
-  color: #666;
-  background: #fafafa;
+  border-radius: var(--chip-radius, 999px);
+  color: color-mix(in srgb, var(--glass-text) 60%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 7%, transparent);
 }
-.dark .acnp-chip { color: #aaa; background: #222; }
 .acnp-chip--muted { opacity: 0.65; }
 
 .acnp-btn-link, .acnp-btn-unlink {
