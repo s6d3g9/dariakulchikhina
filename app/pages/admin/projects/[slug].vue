@@ -10,8 +10,11 @@
       </div>
 
       <div class="proj-client-card glass-card" style="margin-bottom:14px">
-        <div class="proj-client-title">клиент проекта</div>
-        <div class="proj-client-row">
+        <div class="proj-client-title">
+          клиент проекта
+          <button type="button" class="admin-mini-chip admin-mini-chip--dim" style="margin-left:8px" @click="showClientForm = !showClientForm">+</button>
+        </div>
+        <div v-if="showClientForm" class="proj-client-row">
           <select v-model="selectedClientId" class="proj-client-select">
             <option value="">— выберите клиента —</option>
             <option v-for="c in clients" :key="c.id" :value="String(c.id)">
@@ -32,8 +35,11 @@
 
       <!-- Contractor link card -->
       <div class="proj-client-card glass-card" style="margin-bottom:14px">
-        <div class="proj-client-title">подрядчики проекта</div>
-        <div class="proj-client-row">
+        <div class="proj-client-title">
+          подрядчики проекта
+          <button type="button" class="admin-mini-chip admin-mini-chip--dim" style="margin-left:8px" @click="showContractorForm = !showContractorForm">+</button>
+        </div>
+        <div v-if="showContractorForm" class="proj-client-row">
           <select v-model="selectedContractorId" class="proj-client-select">
             <option value="">— выберите подрядчика —</option>
             <option
@@ -66,13 +72,6 @@
         <p v-if="contractorLinkError" class="proj-client-error">{{ contractorLinkError }}</p>
         <p v-else-if="contractorLinkSuccess" class="proj-client-success">{{ contractorLinkSuccess }}</p>
       </div>
-
-      <!-- Vertical phase tracker with circles -->
-      <AdminPhaseCircles
-        :slug="route.params.slug as string"
-        :status="projectStatus"
-        @update:status="projectStatus = $event"
-      />
 
       <div class="proj-content-area">
 
@@ -116,9 +115,9 @@
             </button>
           </template>
 
-          <!-- ADMIN NAV -->
+          <!-- ADMIN NAV with roadmap dots -->
           <template v-else>
-            <template v-for="group in navGroups" :key="group.label">
+            <template v-for="(group, gi) in navGroups" :key="group.label">
               <div class="proj-sidenav-group" v-if="group.pages.length">
                 <div class="proj-sidenav-group-label std-nav-group-label">{{ group.label }}</div>
                 <button
@@ -133,6 +132,35 @@
           </template>
 
         </nav>
+
+        <!-- Roadmap tracker — separate column to the left -->
+        <div v-if="!clientPreviewMode && !contractorPreviewMode" ref="rmColRef" class="rm-col">
+          <div class="rm-track" :style="{ top: rmTrackTop + 'px', bottom: rmTrackBottom + 'px' }" />
+          <div class="rm-fill" :style="{ top: rmTrackTop + 'px', height: rmFillPx + 'px' }" />
+          <template v-for="group in navGroups" :key="'rm-' + group.label">
+            <div v-if="group.pages.length" class="rm-group">
+              <div class="rm-phase-row" :data-rm-phase="group.label">
+                <span class="rm-dot rm-dot--phase" :class="[rmPhaseClass(group)]">
+                  <span v-if="rmPhaseDone(group)" class="rm-inner" />
+                </span>
+              </div>
+              <div
+                v-for="pg in group.pages"
+                :key="pg.slug"
+                class="rm-item-row"
+              >
+                <span
+                  class="rm-dot rm-dot--item"
+                  :class="`rm-dot--${rmStatusOf(pg.slug)}`"
+                  :data-rm-slug="pg.slug"
+                  @click="rmSliderClick(pg)"
+                >
+                  <span v-if="rmStatusOf(pg.slug) === 'done'" class="rm-inner rm-inner--sm" />
+                </span>
+              </div>
+            </div>
+          </template>
+        </div>
         </div><!-- /.proj-nav-col -->
 
         <!-- Right content -->
@@ -222,6 +250,7 @@
 
 <script setup lang="ts">
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
+import { normalizeRoadmapStatus } from '~~/shared/utils/roadmap'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -255,6 +284,9 @@ import {
   ClientDesignAlbum,
   ClientContracts,
   ClientSelfProfile,
+  ClientBrief,
+  ClientTZ,
+  ClientWorkProgress,
 } from '#components'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
@@ -299,15 +331,151 @@ const showEdit = ref(false)
 const saving = ref(false)
 const editError = ref('')
 const projectStatus = ref(project.value?.status || 'lead')
+
+// ── Roadmap dot tracker (inline in sidebar) ─────────────────────
+const rmMap = reactive<Record<string, string>>({})
+const rmSaving = ref(false)
+const rmColRef = ref<HTMLElement>()
+
+function rmStatusOf(s: string): string { return rmMap[s] || 'pending' }
+
+function rmPhaseDone(group: { pages: { slug: string }[] }): boolean {
+  return group.pages.length > 0 && group.pages.every(p => rmStatusOf(p.slug) === 'done')
+}
+
+function rmPhasePartial(group: { pages: { slug: string }[] }): boolean {
+  return group.pages.some(p => rmStatusOf(p.slug) === 'done' || rmStatusOf(p.slug) === 'in_progress') && !rmPhaseDone(group)
+}
+
+function rmPhaseClass(group: { pages: { slug: string }[] }): string {
+  if (rmPhaseDone(group)) return 'rm-dot--phase-done'
+  if (rmPhasePartial(group)) return 'rm-dot--phase-partial'
+  return ''
+}
+
+// Flat ordered list of pages matching render order
+const rmAllPages = computed(() => {
+  const pages: { slug: string; title: string }[] = []
+  for (const group of navGroups.value) {
+    for (const pg of group.pages) pages.push(pg)
+  }
+  return pages
+})
+
+// Slider click: everything up to this item = done, everything after = pending
+// If clicking the last done item, reset it (slide back one)
+async function rmSliderClick(pg: { slug: string; title: string }) {
+  if (rmSaving.value) return
+  const pages = rmAllPages.value
+  const clickedIdx = pages.findIndex(p => p.slug === pg.slug)
+  if (clickedIdx < 0) return
+
+  // If this is the last done item, slide back
+  const currentLastDone = pages.reduce((acc, p, i) => rmStatusOf(p.slug) === 'done' ? i : acc, -1)
+  const targetIdx = (clickedIdx === currentLastDone) ? clickedIdx - 1 : clickedIdx
+
+  // Compute changed items
+  const changes: { slug: string; title: string; status: string }[] = []
+  for (let i = 0; i < pages.length; i++) {
+    const desired = i <= targetIdx ? 'done' : 'pending'
+    if (rmStatusOf(pages[i].slug) !== desired) {
+      changes.push({ slug: pages[i].slug, title: pages[i].title, status: desired })
+    }
+  }
+  if (!changes.length) return
+
+  // Instant visual update
+  for (const c of changes) rmMap[c.slug] = c.status
+  updateFillLine()
+
+  // Save all changes
+  rmSaving.value = true
+  try {
+    await Promise.all(changes.map(c =>
+      $fetch(`/api/projects/${slug.value}/roadmap-stage`, {
+        method: 'PATCH',
+        body: { stageKey: c.slug, title: c.title, status: c.status },
+      })
+    ))
+    useRoadmapBus().notifySaved()
+  } catch {
+    // Reload on error to get real state
+    await loadRmStatuses()
+  } finally {
+    rmSaving.value = false
+  }
+}
+
+// Fill line + track line positions (measured from DOM)
+const rmFillPx = ref(0)
+const rmTrackTop = ref(0)
+const rmTrackBottom = ref(0)
+
+function updateFillLine() {
+  nextTick(() => {
+    if (!rmColRef.value) return
+    const col = rmColRef.value
+    const colRect = col.getBoundingClientRect()
+
+    // All dots: phase + items
+    const phaseDots = Array.from(col.querySelectorAll<HTMLElement>('.rm-dot--phase'))
+    const itemDots = Array.from(col.querySelectorAll<HTMLElement>('[data-rm-slug]'))
+    const allDots = [...phaseDots, ...itemDots].sort((a, b) => {
+      return a.getBoundingClientRect().top - b.getBoundingClientRect().top
+    })
+    if (!allDots.length) {
+      rmFillPx.value = 0
+      rmTrackTop.value = 0
+      rmTrackBottom.value = 0
+      return
+    }
+
+    // Track: from first dot center to last dot center
+    const firstRect = allDots[0].getBoundingClientRect()
+    const lastRect = allDots[allDots.length - 1].getBoundingClientRect()
+    const firstCenter = firstRect.top + firstRect.height / 2 - colRect.top
+    const lastCenter = lastRect.top + lastRect.height / 2 - colRect.top
+    rmTrackTop.value = firstCenter
+    rmTrackBottom.value = colRect.height - lastCenter
+
+    // Fill: from first dot center to last done dot center
+    let lastDoneEl: HTMLElement | null = null
+    for (const dot of itemDots) {
+      const s = dot.dataset.rmSlug || ''
+      if (rmStatusOf(s) === 'done') lastDoneEl = dot
+    }
+    if (!lastDoneEl) { rmFillPx.value = 0; return }
+
+    const doneRect = lastDoneEl.getBoundingClientRect()
+    const doneCenter = doneRect.top + doneRect.height / 2 - colRect.top
+    rmFillPx.value = doneCenter - firstCenter
+  })
+}
+
+async function loadRmStatuses() {
+  try {
+    const rows = await $fetch<any[]>(`/api/projects/${slug.value}/roadmap`)
+    for (const row of rows) {
+      if (row.stageKey) rmMap[row.stageKey] = normalizeRoadmapStatus(row.status)
+    }
+  } catch { /* ignore */ }
+  updateFillLine()
+}
+
+onMounted(loadRmStatuses)
+const { lastSaved: rmLastSaved } = useRoadmapBus()
+watch(rmLastSaved, loadRmStatuses)
 const selectedClientId = ref('')
 const linkingClient = ref(false)
 const clientLinkError = ref('')
 const clientLinkSuccess = ref('')
+const showClientForm = ref(false)
 // ── Contractor link state ─────────────────────────────────────────
 const selectedContractorId = ref('')
 const linkingContractor = ref(false)
 const contractorLinkError = ref('')
 const contractorLinkSuccess = ref('')
+const showContractorForm = ref(false)
 
 const allContractors = computed(() => allContractorsData.value || [])
 const linkedContractorsList = computed(() => linkedContractorsData.value || [])
@@ -447,9 +615,12 @@ const clientPageComponentMap: Record<string, Component> = {
   self_profile:          ClientSelfProfile,
   brief:                 ClientSelfProfile,
   client_contacts:       ClientContactDetails,
+  client_brief:          ClientBrief,
+  client_tz:             ClientTZ,
+  contracts:             ClientContracts,
+  work_progress:         ClientWorkProgress,
   design_timeline:       ClientTimeline,
   design_album:          ClientDesignAlbum,
-  contracts:             ClientContracts,
 }
 
 const allClientPages = getClientPages()
@@ -622,6 +793,8 @@ async function linkClientToProject() {
   color: var(--glass-text);
   opacity: .58;
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
 }
 .proj-client-row {
   display: flex;
@@ -691,14 +864,12 @@ async function linkClientToProject() {
 /* ── Layout ── */
 .proj-content-area { display: flex; align-items: flex-start; gap: 0; }
 
-/* Nav column — roadmap overlays absolutely, no extra width ── */
+/* Nav column — contains nav + roadmap col side by side ── */
 .proj-nav-col {
-  width: 190px;
-  flex-shrink: 0;
   position: sticky;
   top: 80px;
   align-self: flex-start;
-  /* overflow visible so absolute roadmap shows outside */
+  flex-shrink: 0;
   overflow: visible;
   margin-right: 20px;
 }
@@ -777,6 +948,135 @@ async function linkClientToProject() {
 .proj-sidenav-icon { margin-right: 4px; font-size: .8rem; }
 .proj-sidenav-empty { font-size: .76rem; color: #bbb; padding: 10px; }
 
+/* ── Roadmap column ─────────────────────────────────────── */
+.rm-col {
+  width: 24px;
+  flex-shrink: 0;
+  position: absolute;
+  left: -30px;
+  top: 0;
+  bottom: 0;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* Rows match nav item heights */
+.rm-group { margin-bottom: 18px; }
+.rm-group:last-child { margin-bottom: 0; }
+
+.rm-phase-row {
+  height: 22px; /* matches group-label line-height + margins */
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rm-item-row {
+  height: 35px; /* matches sidenav-item height (9px + line + 9px) approx */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Base dot */
+.rm-dot {
+  border-radius: 50%;
+  background: var(--glass-bg, #12121a);
+  border: 2px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  z-index: 3;
+  box-sizing: border-box;
+  transition: border-color .25s, background .25s, box-shadow .25s, transform .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* ── Phase dot — large ── */
+.rm-dot--phase {
+  width: 14px;
+  height: 14px;
+}
+.rm-dot--phase-partial {
+  border-color: color-mix(in srgb, var(--glass-text) 35%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 6%, var(--glass-bg, #12121a));
+}
+.rm-dot--phase-done {
+  border-color: color-mix(in srgb, var(--glass-text) 52%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 14%, var(--glass-bg, #12121a));
+}
+
+/* ── Sub-item dot ── */
+.rm-dot--item {
+  width: 11px;
+  height: 11px;
+  cursor: pointer;
+}
+.rm-dot--item:hover {
+  border-color: color-mix(in srgb, var(--glass-text) 40%, transparent);
+  transform: scale(1.3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 6%, transparent);
+}
+
+/* ── Status variants ── */
+.rm-dot--done {
+  border-color: color-mix(in srgb, var(--glass-text) 48%, transparent);
+  background: var(--glass-bg, #12121a);
+}
+.rm-dot--in_progress {
+  border-color: color-mix(in srgb, var(--glass-text) 28%, transparent);
+  background: var(--glass-bg, #12121a);
+}
+.rm-dot--pending {
+  border-color: color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+/* ── Inner filled circle (instead of checkmarks) ── */
+.rm-inner {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--glass-text);
+  opacity: .5;
+  display: block;
+}
+.rm-inner--sm {
+  width: 5px;
+  height: 5px;
+  opacity: .45;
+}
+
+/* ── Track line ── */
+.rm-track {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 2px;
+  transition: top .3s, bottom .3s;
+}
+
+/* ── Fill line ── */
+.rm-fill {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--glass-text) 36%, transparent),
+    color-mix(in srgb, var(--glass-text) 26%, transparent)
+  );
+  pointer-events: none;
+  z-index: 2;
+  border-radius: 2px;
+  transition: height .35s cubic-bezier(.4, 0, .2, 1);
+}
+
 /* ── Modal ── */
 .a-field { margin-bottom: 14px; }
 .a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
@@ -795,5 +1095,28 @@ async function linkClientToProject() {
   padding: 32px; width: 480px; max-width: 90vw; max-height: 90vh; overflow-y: auto;
 }
 .dark .a-modal { background: #1a1a1c; border-color: #2a2a2e; }
+
+/* Small circle chip — matches admin layout style */
+.admin-mini-chip {
+  width: 24px; height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  font-size: .6rem;
+  font-weight: var(--ds-heading-weight, 700);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
+}
+.admin-mini-chip--dim {
+  background: transparent;
+  opacity: .38;
+}
+.admin-mini-chip:hover { opacity: 1; background: var(--glass-bg); }
 
 </style>

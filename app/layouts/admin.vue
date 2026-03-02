@@ -96,6 +96,11 @@
           </div>
         </div>
 
+        <!-- документы -->
+        <div class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDocumentsTab }">
+          <NuxtLink to="/admin/documents" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDocumentsTab }">документы</NuxtLink>
+        </div>
+
 
       </div><!-- /.admin-tabs -->
 
@@ -138,6 +143,7 @@ const isProjectsTab    = computed(() => route.path === '/admin' || route.path.st
 const isContractorsTab = computed(() => route.path.startsWith('/admin/contractors'))
 const isClientsTab     = computed(() => route.path.startsWith('/admin/clients'))
 const isGalleryTab     = computed(() => route.path.startsWith('/admin/gallery'))
+const isDocumentsTab   = computed(() => route.path.startsWith('/admin/documents'))
 
 const contractorsTabTo    = computed(() => withCtx('/admin/contractors'))
 const clientsTabTo        = computed(() => withCtx('/admin/clients'))

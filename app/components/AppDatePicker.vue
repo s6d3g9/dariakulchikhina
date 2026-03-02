@@ -29,6 +29,7 @@
     <Teleport to="body">
       <div
         v-if="open"
+        ref="popupEl"
         class="dp-popup"
         :style="popupStyle"
         @mousedown.prevent
@@ -83,6 +84,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const open = ref(false)
 const inputEl = ref<HTMLInputElement>()
+const popupEl = ref<HTMLElement>()
 const popupStyle = ref<Record<string, string>>({})
 const draft = ref('')
 
@@ -171,10 +173,10 @@ function calcPosition() {
   if (!inputEl.value) return
   const rect = inputEl.value.getBoundingClientRect()
   const spaceBelow = window.innerHeight - rect.bottom
-  if (spaceBelow >= 290 || spaceBelow >= rect.top) {
-    popupStyle.value = { top: rect.bottom + window.scrollY + 4 + 'px', left: rect.left + window.scrollX + 'px' }
+  if (spaceBelow >= 290) {
+    popupStyle.value = { position: 'fixed', top: rect.bottom + 4 + 'px', left: rect.left + 'px' }
   } else {
-    popupStyle.value = { top: rect.top + window.scrollY - 294 + 'px', left: rect.left + window.scrollX + 'px' }
+    popupStyle.value = { position: 'fixed', top: rect.top - 294 + 'px', left: rect.left + 'px' }
   }
 }
 
@@ -217,7 +219,14 @@ function onInput(e: Event) {
   emit('update:modelValue', props.modelType === 'iso' ? fmtISO(parsed) : out)
 }
 
-function onOutside(e: MouseEvent) { if (open.value) close() }
+function onOutside(e: MouseEvent) {
+  if (!open.value) return
+  const target = e.target as Node
+  if (popupEl.value?.contains(target)) return
+  if (inputEl.value?.closest('.dp-wrap')?.contains(target)) return
+  close()
+}
+
 onMounted(() => {
   document.addEventListener('mousedown', onOutside)
   window.addEventListener('scroll', calcPosition, true)
@@ -235,23 +244,19 @@ onBeforeUnmount(() => {
 .dp-trigger { position: relative; display: flex; align-items: center; width: 100%; }
 .dp-input { flex: 1; padding-right: 28px !important; min-width: 0; }
 .dp-icon-btn {
-  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-  background: none; border: none; padding: 2px; cursor: pointer;
-  color: #888; opacity: .55; transition: opacity .15s; line-height: 0;
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; font-size: 1rem; color: #bbb;
+  padding: 2px 4px; line-height: 1;
 }
-.dp-icon-btn:hover { opacity: 1; }
-
-/* popup */
+.dp-icon-btn:hover { color: var(--glass-text, #333); }
 .dp-popup {
-  position: absolute;
-  z-index: 9999;
-  width: 252px;
-  background: #1a1a2e;
-  border: 1px solid rgba(255,255,255,.13);
+  position: fixed; z-index: 9999; width: 252px;
+  background: var(--glass-bg, #fff);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
   border-radius: 10px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.55);
-  padding: 10px;
-  user-select: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  padding: 10px; user-select: none;
+  color: var(--glass-text, #1a1a1a);
 }
 .dp-head {
   display: flex; align-items: center; justify-content: space-between;
@@ -259,41 +264,41 @@ onBeforeUnmount(() => {
 }
 .dp-nav {
   background: none; border: none; cursor: pointer;
-  color: #bbb; font-size: 1.3rem; line-height: 1;
+  color: var(--glass-text, #999); font-size: 1.3rem; line-height: 1;
   padding: 2px 7px; border-radius: 5px; transition: background .15s;
 }
-.dp-nav:hover { background: rgba(255,255,255,.1); color: #fff; }
-.dp-month-label { font-size: .8rem; font-weight: 500; color: #ddd; }
+.dp-nav:hover { background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
+.dp-month-label { font-size: .8rem; font-weight: 500; color: var(--glass-text, #1a1a1a); }
 .dp-weekdays {
   display: grid; grid-template-columns: repeat(7, 1fr);
   margin-bottom: 3px;
 }
-.dp-weekdays span {
-  text-align: center; font-size: .65rem; color: #555; padding: 2px 0;
+.dp-weekday {
+  font-size: .62rem; text-align: center; color: var(--glass-text, #999); opacity: .5;
+  text-transform: uppercase; padding: 2px 0;
 }
 .dp-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
 .dp-day {
-  aspect-ratio: 1;
   display: flex; align-items: center; justify-content: center;
   background: none; border: none; cursor: pointer;
-  font-size: .78rem; color: #bbb; border-radius: 5px;
+  font-size: .78rem; color: var(--glass-text, #1a1a1a); border-radius: 5px;
   transition: background .12s, color .12s;
+  height: 30px;
 }
-.dp-day:hover:not(:disabled):not(.dp-day--sel) { background: rgba(255,255,255,.09); color: #fff; }
+.dp-day:hover:not(:disabled):not(.dp-day--sel) { background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
 .dp-day:disabled { cursor: default; }
-.dp-day--other { color: #3a3a5a; }
-.dp-day--other:hover:not(:disabled) { background: rgba(255,255,255,.04); }
-.dp-day--today { color: #7eb8f7; font-weight: 600; }
+.dp-day--other { opacity: .35; }
+.dp-day--today { color: #3b82f6; font-weight: 600; }
 .dp-day--sel { background: #3b82f6 !important; color: #fff !important; font-weight: 600; border-radius: 5px; }
 .dp-footer {
   display: flex; justify-content: space-between; margin-top: 8px;
-  border-top: 1px solid rgba(255,255,255,.07); padding-top: 7px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent); padding-top: 7px;
 }
 .dp-clear, .dp-today {
   background: none; border: none; cursor: pointer;
-  font-size: .72rem; color: #666; padding: 3px 8px;
-  border-radius: 5px; transition: color .15s, background .15s;
+  font-size: .72rem; color: var(--glass-text, #999); opacity: .5;
+  padding: 3px 8px; border-radius: 5px; transition: color .15s, background .15s;
 }
-.dp-clear:hover { color: #e06c6c; background: rgba(224,108,108,.1); }
-.dp-today:hover { color: #7eb8f7; background: rgba(126,184,247,.1); }
+.dp-clear:hover { color: #e06c6c; opacity: 1; background: rgba(224,108,108,.1); }
+.dp-today:hover { color: #3b82f6; opacity: 1; background: rgba(59,130,246,.1); }
 </style>

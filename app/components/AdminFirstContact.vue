@@ -145,6 +145,7 @@
               <span v-if="form.meeting_map_address" style="font-weight:400;color:#444;font-size:.8rem;margin-left:6px">{{ form.meeting_map_address }}</span>
             </label>
             <div ref="mapEl" class="afc-map"></div>
+            <div v-if="mapError" class="afc-map-error">{{ mapError }}</div>
             <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
               <input v-model="mapSearch" class="afc-inp" placeholder="поиск адреса..." style="flex:1" @keydown.enter.prevent="searchAddress">
               <button type="button" class="afc-map-btn" @click="searchAddress">найти</button>
@@ -240,42 +241,60 @@ async function save() {
 // ── Yandex Maps ──────────────────────────────────────
 const mapEl = ref<HTMLElement | null>(null)
 const mapSearch = ref('')
+const mapError = ref('')
 let ymap: any = null
 let placemark: any = null
 
 async function initMap() {
   if (!mapEl.value || typeof window === 'undefined') return
-  if (!(window as any).ymaps) {
-    await new Promise<void>((resolve) => {
-      const s = document.createElement('script')
-      s.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
-      s.onload = () => (window as any).ymaps.ready(resolve)
-      document.head.appendChild(s)
+  mapError.value = ''
+  try {
+    if (!(window as any).ymaps) {
+      await new Promise<void>((resolve, reject) => {
+        const s = document.createElement('script')
+        s.src = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU'
+        s.onload = () => {
+          if ((window as any).ymaps) {
+            (window as any).ymaps.ready(resolve)
+          } else {
+            reject(new Error('ymaps not available after script load'))
+          }
+        }
+        s.onerror = () => reject(new Error('Failed to load Yandex Maps script'))
+        document.head.appendChild(s)
+      })
+    } else {
+      await new Promise<void>(r => (window as any).ymaps.ready(r))
+    }
+    const ymaps = (window as any).ymaps
+    const center = form.meeting_map_lat
+      ? [form.meeting_map_lat, form.meeting_map_lng]
+      : [55.751574, 37.573856]
+    ymap = new ymaps.Map(mapEl.value, {
+      center,
+      zoom: form.meeting_map_lat ? 15 : 10,
+      controls: ['zoomControl', 'geolocationControl'],
     })
-  } else {
-    await new Promise<void>(r => (window as any).ymaps.ready(r))
+    if (form.meeting_map_lat) {
+      placemark = new ymaps.Placemark([form.meeting_map_lat, form.meeting_map_lng], {}, { preset: 'islands#violetDotIcon' })
+      ymap.geoObjects.add(placemark)
+    }
+    ymap.events.add('click', async (e: any) => {
+      const coords = e.get('coords')
+      setPin(coords)
+      try {
+        const res = await ymaps.geocode(coords, { results: 1 })
+        const obj = res.geoObjects.get(0)
+        form.meeting_map_address = obj ? obj.getAddressLine() : `${coords[0].toFixed(5)}, ${coords[1].toFixed(5)}`
+      } catch {
+        form.meeting_map_address = `${coords[0].toFixed(5)}, ${coords[1].toFixed(5)}`
+      }
+      save()
+    })
+  } catch (err: any) {
+    console.warn('[AdminFirstContact] Map init failed:', err)
+    mapError.value = 'Не удалось загрузить карту. Проверьте подключение к интернету.'
   }
-  const ymaps = (window as any).ymaps
-  const center = form.meeting_map_lat
-    ? [form.meeting_map_lat, form.meeting_map_lng]
-    : [55.751574, 37.573856]
-  ymap = new ymaps.Map(mapEl.value, {
-    center,
-    zoom: form.meeting_map_lat ? 15 : 10,
-    controls: ['zoomControl', 'geolocationControl'],
-  })
-  if (form.meeting_map_lat) {
-    placemark = new ymaps.Placemark([form.meeting_map_lat, form.meeting_map_lng], {}, { preset: 'islands#violetDotIcon' })
-    ymap.geoObjects.add(placemark)
-  }
-  ymap.events.add('click', async (e: any) => {
-    const coords = e.get('coords')
-    setPin(coords)
-    const res = await ymaps.geocode(coords, { results: 1 })
-    const obj = res.geoObjects.get(0)
-    form.meeting_map_address = obj ? obj.getAddressLine() : `${coords[0].toFixed(5)}, ${coords[1].toFixed(5)}`
-    save()
-  })
 }
 
 function setPin(coords: [number, number]) {
@@ -298,15 +317,25 @@ function setPin(coords: [number, number]) {
 }
 
 async function searchAddress() {
-  if (!mapSearch.value.trim() || !ymap) return
-  const ymaps = (window as any).ymaps
-  const res = await ymaps.geocode(mapSearch.value, { results: 1 })
-  const obj = res.geoObjects.get(0)
-  if (!obj) return
-  const coords = obj.geometry.getCoordinates()
-  form.meeting_map_address = obj.getAddressLine()
-  setPin(coords)
-  save()
+  if (!mapSearch.value.trim()) return
+  if (!ymap) {
+    mapError.value = 'Карта не загружена — поиск недоступен'
+    return
+  }
+  try {
+    const ymaps = (window as any).ymaps
+    const res = await ymaps.geocode(mapSearch.value, { results: 1 })
+    const obj = res.geoObjects.get(0)
+    if (!obj) { mapError.value = 'Адрес не найден'; return }
+    mapError.value = ''
+    const coords = obj.geometry.getCoordinates()
+    form.meeting_map_address = obj.getAddressLine()
+    setPin(coords)
+    save()
+  } catch (err: any) {
+    console.warn('[AdminFirstContact] geocode failed:', err)
+    mapError.value = 'Ошибка поиска адреса'
+  }
 }
 
 function clearPin() {
@@ -317,7 +346,17 @@ function clearPin() {
   save()
 }
 
-onMounted(() => { nextTick(initMap) })
+onMounted(() => {
+  // If mapEl is already available (data loaded server-side), init immediately
+  if (mapEl.value) {
+    nextTick(initMap)
+  } else {
+    // Otherwise watch for it to become available after data fetches
+    const stop = watch(mapEl, (el) => {
+      if (el) { nextTick(initMap); stop() }
+    })
+  }
+})
 
 function toggleStepDone() {
   form.lead_step_done = !form.lead_step_done
@@ -356,6 +395,7 @@ function toggleStepDone() {
 
 /* Map */
 .afc-map { width: 100%; height: 300px; border: 1px solid var(--border, #e0e0e0); border-radius: 2px; }
+.afc-map-error { margin-top: 6px; padding: 6px 10px; font-size: .78rem; color: #c00; background: rgba(204,0,0,.06); border: 1px solid rgba(204,0,0,.15); border-radius: 3px; }
 .afc-map-btn { padding: 7px 14px; border: 1px solid var(--border, #e0e0e0); background: transparent; font-size: .8rem; cursor: pointer; font-family: inherit; color: #555; white-space: nowrap; }
 .afc-map-btn:hover { border-color: #aaa; color: #1a1a1a; }
 .afc-map-btn--clear { border-color: #f5c0c0; color: #c00; }

@@ -2,7 +2,7 @@
   <div ref="root" class="utp-wrap">
     <!-- trigger: small button with active theme name swatched -->
     <button type="button" class="utp-trigger" @click.stop="open = !open">
-      <span class="utp-swatch" :style="{ background: current?.swatch }" />
+      <span class="utp-swatch" :style="{ background: current ? swatchColor(current) : undefined }" />
       <span class="utp-label">{{ current?.label }}</span>
       <span class="utp-arrow" :class="{ 'utp-arrow--open': open }">›</span>
     </button>
@@ -26,7 +26,7 @@
               :class="{ 'utp-item--active': themeId === t.id }"
               @click="pick(t.id)"
             >
-              <span class="utp-item-swatch" :style="{ background: t.swatch }" />
+              <span class="utp-item-swatch" :style="{ background: swatchColor(t) }" />
               <span class="utp-item-name">{{ t.label }}</span>
               <span class="utp-item-hint">{{ t.btnPreview }}</span>
               <span v-if="themeId === t.id" class="utp-item-tick">✓</span>
@@ -39,13 +39,19 @@
 </template>
 
 <script setup lang="ts">
-const { themeId, applyTheme, UI_THEMES } = useUITheme()
+const { themeId, applyThemeWithTokens, UI_THEMES } = useUITheme()
+const { isDark } = useThemeToggle()
 
 const open   = ref(false)
 const root   = ref<HTMLElement | null>(null)
 const panelStyle = ref<Record<string, string>>({})
 
 const current = computed(() => UI_THEMES.find(t => t.id === themeId.value))
+
+/** Return theme-appropriate swatch color */
+function swatchColor(t: typeof UI_THEMES[number]): string {
+  return isDark.value ? t.swatchDark : t.swatch
+}
 
 watch(open, (v) => {
   if (!v || !root.value) return
@@ -59,7 +65,7 @@ watch(open, (v) => {
 })
 
 function pick(id: string) {
-  applyTheme(id)
+  applyThemeWithTokens(id)
   open.value = false
 }
 

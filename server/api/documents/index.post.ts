@@ -5,7 +5,13 @@ import { z } from 'zod'
 
 const CreateDocumentSchema = z.object({
   title: z.string().min(1).max(500).transform(s => s.trim()),
-  category: z.enum(['contract', 'act', 'invoice', 'template', 'other']).default('other'),
+  category: z.enum([
+    'contract', 'contract_supply', 'contract_work',
+    'act', 'act_defect',
+    'invoice', 'estimate', 'specification', 'tz',
+    'approval', 'warranty', 'photo_report', 'correspondence',
+    'template', 'other',
+  ]).default('other'),
   filename: z.string().max(500).nullable().optional(),
   url: z.string().max(1000).nullable().optional(),
   projectSlug: z.string().max(200).nullable().optional(),

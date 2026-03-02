@@ -691,9 +691,24 @@ export function useDesignSystem() {
     el.style.setProperty('--ds-border-width', `${t.borderWidth}px`)
     el.style.setProperty('--ds-border-style', t.borderStyle)
 
-    // Dark mode
+    // Dark mode — set token-driven CSS variables consumed by html.dark rules
     el.style.setProperty('--ds-dark-elevation', String(t.darkElevation))
     el.style.setProperty('--ds-dark-saturation', `${t.darkSaturation}%`)
+    // Computed dark surface colors for JS-driven inline previews & theme rules
+    const dkSat = t.darkSaturation
+    const dkElev = t.darkElevation
+    el.style.setProperty('--ds-dark-page-bg', `hsl(220, ${(dkSat * 0.15).toFixed(1)}%, ${(4 + dkElev * 0.15).toFixed(1)}%)`)
+    el.style.setProperty('--ds-dark-surface-bg', `hsla(220, ${(dkSat * 0.2).toFixed(1)}%, ${(8 + dkElev * 0.5).toFixed(1)}%, 0.92)`)
+    el.style.setProperty('--ds-dark-text', `hsl(220, ${(dkSat * 0.15).toFixed(1)}%, 90%)`)
+    el.style.setProperty('--ds-dark-text-muted', `hsl(220, ${(dkSat * 0.1).toFixed(1)}%, 65%)`)
+    el.style.setProperty('--ds-dark-border', `hsl(220, ${(dkSat * 0.2).toFixed(1)}%, ${(14 + dkElev * 0.6).toFixed(1)}%)`)
+
+    // Re-apply UI theme's CSS vars on top (they set --btn-bg-base, --glass-* etc.
+    // which must persist after applyToDOM sets --btn-bg = var(--btn-bg-base))
+    try {
+      const { refreshThemeVars } = useUITheme()
+      refreshThemeVars()
+    } catch { /* useUITheme not ready yet */ }
   }
 
   /* ── Setter (push to history, apply, persist) ──────────── */
@@ -839,8 +854,16 @@ export function useDesignSystem() {
     }
   }
 
+  /* ── Batch setter — one undo step for multiple token changes ── */
+  function batchSet(overrides: Partial<DesignTokens>) {
+    pushHistory()
+    Object.assign(tokens.value, overrides)
+    applyToDOM()
+    save()
+  }
+
   return {
-    tokens, set, reset, applyPreset,
+    tokens, set, batchSet, reset, applyPreset,
     undo, redo, canUndo, canRedo,
     exportJSON, importJSON, exportCSS,
     initDesignSystem, applyToDOM, save, load,

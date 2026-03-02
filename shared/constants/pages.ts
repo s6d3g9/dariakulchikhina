@@ -52,13 +52,16 @@ export const PROJECT_PAGES: ProjectPageDef[] = [
   { slug: 'commissioning_act',   title: '5.2 акт приёмки',        icon: '◴', phase: 'commissioning', clientVisible: false },
   { slug: 'client_sign_off',     title: '5.3 подпись клиента',    icon: '◵', phase: 'commissioning', clientVisible: false },
 
-  // Устаревшие / клиентские (без фазы)
+  // Клиентские страницы (без фазы)
   { slug: 'client_contacts',     title: 'контактные данные',      icon: '◌', phase: undefined },
-  { slug: 'design_timeline',     title: 'ход проекта',            icon: '◈', phase: undefined },
-  { slug: 'design_album',        title: 'альбом',                 icon: '▣', phase: undefined },
+  { slug: 'client_brief',        title: 'бриф',                   icon: '◎', phase: undefined },
+  { slug: 'client_tz',           title: 'техническое задание',    icon: '◧', phase: undefined },
   { slug: 'contracts',           title: 'документы',              icon: '◻', phase: undefined },
+  { slug: 'work_progress',       title: 'ход работ',              icon: '◈', phase: undefined },
+  { slug: 'design_timeline',     title: 'таймлайн',               icon: '◷', phase: undefined },
+  { slug: 'design_album',        title: 'альбом',                 icon: '▣', phase: undefined },
   { slug: 'materials',           title: 'материалы',              icon: '◫', phase: undefined },
-  { slug: 'tz',                  title: 'ТЗ',                     icon: '◧', phase: undefined },
+  { slug: 'tz',                  title: 'ТЗ',                     icon: '◧', phase: undefined, clientVisible: false },
 ]
 
 // ── Хелперы фильтрации ─────────────────────────────────────────
@@ -124,4 +127,10 @@ export const CORE_PAGES = [
   'punch_list',
   'commissioning_act',
   'client_sign_off',
+  // Клиентские страницы
+  'client_contacts',
+  'client_brief',
+  'client_tz',
+  'contracts',
+  'work_progress',
 ] as const

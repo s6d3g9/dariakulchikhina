@@ -116,7 +116,7 @@
                     <button v-for="t in UI_THEMES" :key="t.id" type="button"
                       class="dp-swatch-btn" :class="{ 'dp-swatch-btn--active': themeId === t.id }"
                       @click="pickTheme(t.id)">
-                      <span class="dp-swatch" :style="{ background: t.swatch }" />
+                      <span class="dp-swatch" :style="{ background: isDark ? t.swatchDark : t.swatch }" />
                       <span class="dp-swatch-name">{{ t.label }}</span>
                     </button>
                   </div>
@@ -582,6 +582,12 @@
     <!-- ═══ Component Inspector ═══ -->
     <Teleport to="body">
       <div v-if="compMode" class="dp-comp-layer">
+        <!-- Hover highlight box -->
+        <div
+          v-if="compHover.visible && !compResult"
+          class="dp-comp-highlight"
+          :style="compHighlightStyle"
+        />
         <!-- Following hover tooltip (no pointer-events) -->
         <div
           v-if="compHover.visible && !compResult"
@@ -590,6 +596,7 @@
         >
           <span class="dp-comp-tag">{{ compHover.name }}</span>
           <span class="dp-comp-path">{{ compHover.path }}</span>
+          <span v-if="compHover.link" class="dp-comp-link">→ {{ compHover.link }}</span>
           <span class="dp-comp-hint">↵ click to lock</span>
         </div>
         <!-- Locked result card (pointer-events: auto) -->
@@ -601,6 +608,10 @@
             </div>
             <div class="dp-comp-result-name">{{ compResult.name }}</div>
             <div class="dp-comp-result-path">{{ compResult.path }}</div>
+            <div v-if="compResult.link" class="dp-comp-result-link">
+              <span class="dp-comp-result-link-label">навигация:</span>
+              <span class="dp-comp-result-link-value">{{ compResult.link }}</span>
+            </div>
             <button type="button" class="dp-comp-copy-btn" @click="copyCompResult">
               <svg v-if="!compResult.copied" width="11" height="11" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
               <svg v-else width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -626,7 +637,8 @@ const {
   exportJSON, importJSON, exportCSS,
   previewPreset, confirmPreview, cancelPreview, isPreviewActive,
 } = useDesignSystem()
-const { themeId, applyTheme, UI_THEMES } = useUITheme()
+const { themeId, applyThemeWithTokens, UI_THEMES } = useUITheme()
+const { isDark } = useThemeToggle()
 
 const open = ref(false)
 const showExport = ref(false)
@@ -745,7 +757,7 @@ function pickFont(id: string) {
   const f = FONT_OPTIONS.find(o => o.id === id)
   if (f) set('fontFamily', f.value)
 }
-function pickTheme(id: string) { applyTheme(id) }
+function pickTheme(id: string) { applyThemeWithTokens(id) }
 
 function pickPreset(p: DesignPreset) {
   activePresetId.value = p.id
@@ -1114,10 +1126,15 @@ watch(open, (v) => {
    COMPONENT INSPECTOR — hover shows Vue component + path
    ══════════════════════════════════════════════════════ */
 const compMode = ref(false)
-const compHover = reactive({ visible: false, x: 0, y: 0, name: '', path: '' })
+const compHover = reactive({ visible: false, x: 0, y: 0, name: '', path: '', link: '', rect: { x: 0, y: 0, w: 0, h: 0 } })
 
-interface CompResult { name: string; path: string; copied: boolean; x: number; y: number }
+interface CompResult { name: string; path: string; link: string; copied: boolean; x: number; y: number }
 const compResult = ref<CompResult | null>(null)
+
+const compHighlightStyle = computed(() => ({
+  left: `${compHover.rect.x}px`, top: `${compHover.rect.y}px`,
+  width: `${compHover.rect.w}px`, height: `${compHover.rect.h}px`,
+}))
 
 const compTooltipStyle = computed(() => {
   const ox = compHover.x + 18
@@ -1134,6 +1151,42 @@ const compResultStyle = computed(() => {
   const cy = Math.min(compResult.value.y + 20, window.innerHeight - 130)
   return { left: `${Math.max(8, cx)}px`, top: `${cy}px` }
 })
+
+/* ── Detect navigation target (href / to / router-link) ── */
+function getElementLink(el: HTMLElement): string {
+  // 1. Direct <a href>
+  const anchor = el.closest('a[href]') as HTMLAnchorElement | null
+  if (anchor) {
+    const href = anchor.getAttribute('href') || ''
+    if (href && href !== '#') return href
+  }
+  // 2. NuxtLink / RouterLink — check 'to' prop via href on rendered <a>
+  const nuxtLink = el.closest('a.router-link-active, a[href]') as HTMLAnchorElement | null
+  if (nuxtLink && nuxtLink !== anchor) {
+    const href = nuxtLink.getAttribute('href') || ''
+    if (href && href !== '#') return href
+  }
+  // 3. Check for data-href or data-to attributes
+  const dataEl = el.closest('[data-href], [data-to]') as HTMLElement | null
+  if (dataEl) {
+    return dataEl.dataset.href || dataEl.dataset.to || ''
+  }
+  // 4. Button with onclick navigating — check parent links
+  let parent: HTMLElement | null = el
+  while (parent && parent !== document.body) {
+    if (parent.tagName === 'A') {
+      const href = parent.getAttribute('href') || ''
+      if (href && href !== '#') return href
+    }
+    // Vue router-link renders as <a>, check href
+    if (parent.hasAttribute('href')) {
+      const href = parent.getAttribute('href') || ''
+      if (href && href !== '#' && href !== 'javascript:void(0)') return href
+    }
+    parent = parent.parentElement
+  }
+  return ''
+}
 
 function getVueComponent(el: HTMLElement): { name: string; path: string } {
   const SKIP = new Set([
@@ -1177,8 +1230,12 @@ function onCompMove(e: MouseEvent) {
   const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
   if (!el || el.closest('.dp-comp-layer') || el.closest('.dp-topbar')) { compHover.visible = false; return }
   const info = getVueComponent(el)
+  const link = getElementLink(el)
+  const rect = el.getBoundingClientRect()
+  compHover.rect = { x: rect.left, y: rect.top, w: rect.width, h: rect.height }
   compHover.x = e.clientX; compHover.y = e.clientY
   compHover.name = info.name; compHover.path = info.path
+  compHover.link = link
   compHover.visible = true
 }
 
@@ -1187,13 +1244,16 @@ function onCompClick(e: MouseEvent) {
   if (!el || el.closest('.dp-comp-layer') || el.closest('.dp-topbar')) return
   e.preventDefault(); e.stopPropagation()
   const info = getVueComponent(el)
-  compResult.value = { ...info, copied: false, x: e.clientX, y: e.clientY }
+  const link = getElementLink(el)
+  compResult.value = { ...info, link, copied: false, x: e.clientX, y: e.clientY }
   compHover.visible = false
 }
 
 function copyCompResult() {
   if (!compResult.value) return
-  navigator.clipboard.writeText(`${compResult.value.name}\n${compResult.value.path}`)
+  const parts = [compResult.value.name, compResult.value.path]
+  if (compResult.value.link) parts.push(`→ ${compResult.value.link}`)
+  navigator.clipboard.writeText(parts.join('\n'))
   compResult.value.copied = true
   setTimeout(() => { if (compResult.value) compResult.value.copied = false }, 2000)
 }
@@ -1851,6 +1911,16 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
+/* Hover highlight box (like CSS inspector) */
+.dp-comp-highlight {
+  position: fixed; pointer-events: none;
+  border: 2px solid hsl(215, 85%, 60%);
+  background: hsla(215, 85%, 60%, .08);
+  border-radius: 3px;
+  transition: all .08s ease;
+  box-shadow: 0 0 0 1px hsla(215, 85%, 60%, .2), 0 0 12px hsla(215, 85%, 60%, .1);
+}
+
 /* Hover tooltip (follows cursor) */
 .dp-comp-tooltip {
   position: fixed; pointer-events: none;
@@ -1870,6 +1940,11 @@ onBeforeUnmount(() => {
 }
 .dp-comp-hint {
   font-size: .52rem; color: rgba(255,255,255,.3); letter-spacing: .04em;
+}
+.dp-comp-link {
+  font-size: .55rem; color: hsl(145, 65%, 55%); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 300px;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 /* Locked result card */
@@ -1903,7 +1978,21 @@ onBeforeUnmount(() => {
   padding: 0 12px 10px;
   font-size: .56rem; color: hsl(35, 70%, 65%);
   font-family: 'JetBrains Mono', monospace; letter-spacing: .01em;
+}
+.dp-comp-result-link {
+  padding: 8px 12px;
+  border-top: 1px solid rgba(255,255,255,.06);
   border-bottom: 1px solid rgba(255,255,255,.06);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.dp-comp-result-link-label {
+  font-size: .48rem; text-transform: uppercase; letter-spacing: .1em;
+  color: rgba(255,255,255,.3); font-weight: 600;
+}
+.dp-comp-result-link-value {
+  font-size: .58rem; color: hsl(145, 65%, 55%);
+  font-family: 'JetBrains Mono', monospace; letter-spacing: .01em;
+  word-break: break-all;
 }
 .dp-comp-copy-btn {
   display: flex; align-items: center; gap: 6px;
