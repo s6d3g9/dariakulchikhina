@@ -22,28 +22,37 @@
         v-for="p in filteredProjects"
         :key="p.id"
         class="a-card"
-        style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 20px;margin-bottom:8px"
+        style="display:flex;flex-direction:column;gap:10px;padding:16px 20px;margin-bottom:8px"
       >
-        <div style="flex:1;min-width:0">
-          <NuxtLink :to="`/admin/projects/${p.slug}`" class="a-project-link">{{ p.title }}</NuxtLink>
-          <div style="font-size:.76rem;color:#aaa;margin-top:2px;display:flex;align-items:center;gap:8px">
-            <span>{{ p.slug }}</span>
-            <span v-if="p.status" :class="`pi-badge pi-badge--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
-          </div>
-          <div v-if="p.taskTotal > 0" style="display:flex;align-items:center;gap:10px;margin-top:6px">
-            <div class="a-task-mini-bar" :title="`${p.taskDone} из ${p.taskTotal} выполнено`">
-              <div class="a-task-mini-fill" :style="{ width: Math.round(p.taskDone / p.taskTotal * 100) + '%' }" />
+        <!-- Title row -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+          <div style="flex:1;min-width:0">
+            <NuxtLink :to="`/admin/projects/${p.slug}`" class="a-project-link">{{ p.title }}</NuxtLink>
+            <div style="font-size:.76rem;color:#aaa;margin-top:2px;display:flex;align-items:center;gap:8px">
+              <span>{{ p.slug }}</span>
+              <span v-if="p.status" :class="`pi-badge pi-badge--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
             </div>
-            <span style="font-size:.72rem;color:#aaa">{{ p.taskDone }}/{{ p.taskTotal }}</span>
-            <span v-if="p.taskOverdue > 0" style="font-size:.72rem;color:#c00;font-weight:600">⚠ {{ p.taskOverdue }} просрочено</span>
+            <div v-if="p.taskTotal > 0" style="display:flex;align-items:center;gap:10px;margin-top:6px">
+              <div class="a-task-mini-bar" :title="`${p.taskDone} из ${p.taskTotal} выполнено`">
+                <div class="a-task-mini-fill" :style="{ width: Math.round(p.taskDone / p.taskTotal * 100) + '%' }" />
+              </div>
+              <span style="font-size:.72rem;color:#aaa">{{ p.taskDone }}/{{ p.taskTotal }}</span>
+              <span v-if="p.taskOverdue > 0" style="font-size:.72rem;color:#c00;font-weight:600">⚠ {{ p.taskOverdue }} просрочено</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0">
+            <NuxtLink :to="`/admin/projects/${p.slug}`">
+              <button class="a-btn-sm">открыть</button>
+            </NuxtLink>
+            <button class="a-btn-sm a-btn-danger" @click="deleteProject(p.slug)">удалить</button>
           </div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-          <NuxtLink :to="`/admin/projects/${p.slug}`">
-            <button class="a-btn-sm">открыть</button>
-          </NuxtLink>
-          <button class="a-btn-sm a-btn-danger" @click="deleteProject(p.slug)">удалить</button>
-        </div>
+        <!-- Phase pills -->
+        <AdminProjectPhase
+          :slug="p.slug"
+          :status="p.status"
+          @update:status="updateProjectStatus(p.slug, $event)"
+        />
       </div>
     </div>
 
@@ -147,6 +156,13 @@ async function reloadProjects() {
       projectsCache.value = result
     }
   } catch { /* silent */ }
+}
+
+function updateProjectStatus(slug: string, newStatus: string) {
+  if (projects.value) {
+    const p = projects.value.find((x: any) => x.slug === slug)
+    if (p) p.status = newStatus
+  }
 }
 
 // При возврате на страницу и при сохранении роадмапа — обновляем список
