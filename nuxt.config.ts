@@ -33,6 +33,8 @@ export default defineNuxtConfig({
       '~/server': `${process.cwd()}/server`,
       '~/shared': `${process.cwd()}/shared`,
     },
+    // Global error handler — hide internal details in production
+    errorHandler: '~/server/utils/error-handler.ts',
   },
 
   imports: {

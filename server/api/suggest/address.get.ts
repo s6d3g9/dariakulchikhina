@@ -1,4 +1,11 @@
 export default defineEventHandler(async (event) => {
+  // Require at least client or admin auth for address suggestions
+  const adminSession = getAdminSession(event)
+  const clientSession = getClientSession(event)
+  if (!adminSession && !clientSession) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  }
+
   const rawUrl = event.node.req.url || ''
   const qs = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?') + 1) : ''
   const query = new URLSearchParams(qs).get('q') || ''
@@ -7,7 +14,8 @@ export default defineEventHandler(async (event) => {
   try {
     const url = `https://suggest-maps.yandex.ru/suggest-geo?part=${encodeURIComponent(query)}&lang=ru_RU&v=9&n=7&search_type=all&highlight=0`
     const res = await fetch(url, {
-      headers: { 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(5000),
     })
     const text = await res.text()
     // Response is JSONP: suggest.apply({...}) — strip wrapper

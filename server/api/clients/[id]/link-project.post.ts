@@ -1,14 +1,14 @@
 import { useDb } from '~/server/db/index'
 import { clients, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { readNodeBody } from '~/server/utils/body'
+import { z } from 'zod'
+
+const Body = z.object({ projectSlug: z.string().min(1).max(200) })
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const clientId = Number(getRouterParam(event, 'id'))
-  const body = await readNodeBody(event) as any
-  const projectSlug = body.projectSlug as string
-  if (!projectSlug) throw createError({ statusCode: 400, statusMessage: 'projectSlug required' })
+  const { projectSlug } = await readValidatedNodeBody(event, Body)
 
   const db = useDb()
 

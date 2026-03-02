@@ -10,5 +10,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [contractor] = await db.select().from(contractors).where(eq(contractors.id, id)).limit(1)
   if (!contractor) throw createError({ statusCode: 404 })
-  return contractor
+  // Strip sensitive fields — slug is used for contractor auth
+  const { slug: _slug, ...safe } = contractor
+  return safe
 })

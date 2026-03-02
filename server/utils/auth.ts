@@ -13,9 +13,19 @@ const CONTRACTOR_COOKIE = 'daria_contractor_session'
 
 // --- HMAC session signing ---
 
+const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+
 function _getSessionSecret(): string {
-  return process.env.NUXT_SESSION_SECRET || process.env.SESSION_SECRET || 'daria-fallback-secret-change-me'
+  const secret = process.env.NUXT_SESSION_SECRET || process.env.SESSION_SECRET
+  if (!secret) {
+    console.error('[SECURITY] NUXT_SESSION_SECRET is not set! Sessions will not work.')
+    // Use a random per-process secret so the app still starts but sessions don't persist across restarts
+    return _fallbackSecret
+  }
+  return secret
 }
+// Random fallback generated once per process — never predictable
+const _fallbackSecret = require('crypto').randomBytes(32).toString('hex')
 
 function _sign(payload: string): string {
   const secret = _getSessionSecret()
@@ -100,13 +110,13 @@ export function getAdminSession(event: H3Event): { userId: number } | null {
   const raw = _readCookie(event, ADMIN_COOKIE)
   if (!raw) return null
   try {
-    // Try signed format first
     const payload = _verifyAndParse(raw)
-    if (payload) return JSON.parse(Buffer.from(payload, 'base64url').toString())
-    // Fallback: accept old unsigned base64 cookies (migration period)
-    const legacy = JSON.parse(Buffer.from(raw, 'base64').toString())
-    if (legacy && typeof legacy.userId === 'number') return legacy
-    return null
+    if (!payload) return null // Reject unsigned cookies
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString())
+    if (!data || typeof data.userId !== 'number') return null
+    // Check session expiry
+    if (typeof data.ts === 'number' && Date.now() - data.ts > SESSION_MAX_AGE_MS) return null
+    return data
   } catch { return null }
 }
 
@@ -134,12 +144,9 @@ export function setClientSession(event: H3Event, projectSlug: string) {
 export function getClientSession(event: H3Event): string | null {
   const raw = _readCookie(event, CLIENT_COOKIE)
   if (!raw) return null
-  // Try signed format
+  // Only accept signed cookies
   const payload = _verifyAndParse(raw)
-  if (payload) return payload
-  // Fallback: old unsigned cookie (migration period)
-  if (raw && !raw.includes('.')) return raw
-  return null
+  return payload || null
 }
 
 export function clearClientSession(event: H3Event) {
@@ -167,12 +174,11 @@ export function setContractorSession(event: H3Event, contractorId: number) {
 export function getContractorSession(event: H3Event): number | null {
   const raw = _readCookie(event, CONTRACTOR_COOKIE)
   if (!raw) return null
-  // Try signed format
+  // Only accept signed cookies
   const payload = _verifyAndParse(raw)
-  if (payload) { const n = Number(payload); return Number.isFinite(n) ? n : null }
-  // Fallback: old unsigned cookie (migration period)
-  const legacy = Number(raw)
-  return Number.isFinite(legacy) ? legacy : null
+  if (!payload) return null
+  const n = Number(payload)
+  return Number.isFinite(n) ? n : null
 }
 
 export function clearContractorSession(event: H3Event) {

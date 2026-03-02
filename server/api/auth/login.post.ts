@@ -12,11 +12,11 @@ export default defineEventHandler(async (event) => {
   let user: any | undefined
 
   if (preferredEmail) {
-    ;[user] = await db.select().from(users).where(eq(users.email, preferredEmail)).limit(1)
+    ;[user] = await db.select({ id: users.id, email: users.email, name: users.name, passwordHash: users.passwordHash }).from(users).where(eq(users.email, preferredEmail)).limit(1)
   }
 
   if (!user) {
-    ;[user] = await db.select().from(users).orderBy(asc(users.id)).limit(1)
+    ;[user] = await db.select({ id: users.id, email: users.email, name: users.name, passwordHash: users.passwordHash }).from(users).orderBy(asc(users.id)).limit(1)
   }
 
   if (!user) {

@@ -9,12 +9,12 @@ export default defineEventHandler((event) => {
   // Prevent XSS — Content-Security-Policy
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     "connect-src 'self' https: wss:",
-    "frame-ancestors 'self'",
+    "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
   ].join('; '))

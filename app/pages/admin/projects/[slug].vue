@@ -436,31 +436,16 @@ const contentKey = computed(() => {
   if (clientPreviewMode.value)     return `cli-${clientActivePage.value}`
   return `adm-${activePage.value}`
 })
-function scrollToContent() {
-  nextTick(() => {
-    const el = document.querySelector('.proj-layout') as HTMLElement | null
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    // Скроллим только если блок выше видимой области
-    if (rect.top < 0) {
-      window.scrollTo({ top: window.scrollY + rect.top - 16, behavior: 'smooth' })
-    }
-  })
-}
-
 function selectAdminPage(slug: string) {
   activePage.value = slug
-  scrollToContent()
 }
 
 function selectClientPage(slug: string) {
   clientActivePage.value = slug
-  scrollToContent()
 }
 
 function selectContractorSection(key: string) {
   contractorSection.value = key
-  scrollToContent()
 }
 
 const clientPageComponentMap: Record<string, Component> = {

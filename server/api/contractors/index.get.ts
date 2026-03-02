@@ -40,10 +40,14 @@ export default defineEventHandler(async (event) => {
     ? rowsRaw
     : (rowsRaw ? Array.from(rowsRaw as any) : [])
 
-  return rows.map((r: any) => ({
-    ...r.contractor,
-    linkedProjectIds: Array.isArray(r.projectIds) ? r.projectIds : [],
-    linkedProjectTitles: Array.isArray(r.projectTitles) ? r.projectTitles : [],
-    linkedProjectSlugs: Array.isArray(r.projectSlugs) ? r.projectSlugs : [],
-  }))
+  return rows.map((r: any) => {
+    // Strip sensitive fields — slug used for contractor auth
+    const { slug: _slug, ...safeContractor } = r.contractor || {}
+    return {
+      ...safeContractor,
+      linkedProjectIds: Array.isArray(r.projectIds) ? r.projectIds : [],
+      linkedProjectTitles: Array.isArray(r.projectTitles) ? r.projectTitles : [],
+      linkedProjectSlugs: Array.isArray(r.projectSlugs) ? r.projectSlugs : [],
+    }
+  })
 })
