@@ -11,9 +11,9 @@
       <template v-for="(phase, pi) in phases" :key="phase.key">
         <!-- Connector line between phases -->
         <div
-          v-if="pi > 0"
+          v-if="!!pi"
           class="art-connector"
-          :class="{ 'art-connector--done': phases[pi - 1].status === 'done' || phases[pi - 1].status === 'in_progress' }"
+          :class="{ 'art-connector--done': prevPhaseConnectorDone(phases.indexOf(phase)) }"
         />
 
         <!-- Phase node -->
@@ -35,7 +35,7 @@
               :key="si"
               class="art-sdot"
               :class="`art-sdot--${normalizeStatus(s.status)}`"
-              :title="s.title || `этап ${si + 1}`"
+              :title="stageTitle(s, +si)"
             />
           </div>
           <div v-if="phase.total > 0" class="art-node-cnt">
@@ -52,8 +52,24 @@
 <script setup lang="ts">
 import { normalizeRoadmapStatus, roadmapPhaseFromStageKey } from '~~/shared/utils/roadmap'
 
+interface StageSummary {
+  stageKey?: string | null
+  status?: string | null
+  title?: string | null
+}
+
+interface PhaseGroup {
+  key: string
+  label: string
+  short: string
+  total: number
+  done: number
+  status: string
+  stages: StageSummary[]
+}
+
 const props = defineProps<{
-  stages: Array<{ stageKey?: string | null; status?: string | null; title?: string | null }>
+  stages: StageSummary[]
 }>()
 
 const PHASE_ORDER = ['lead', 'concept', 'working_project', 'procurement', 'construction', 'commissioning']
@@ -72,7 +88,7 @@ function normalizeStatus(s: string | null | undefined) {
   return normalizeRoadmapStatus(s)
 }
 
-function phaseStatus(stagesArr: any[]): string {
+function phaseStatus(stagesArr: StageSummary[]): string {
   const sts = stagesArr.map(s => normalizeRoadmapStatus(s.status))
   if (sts.every(s => s === 'done' || s === 'skipped')) return 'done'
   if (sts.some(s => s === 'in_progress')) return 'in_progress'
@@ -80,21 +96,21 @@ function phaseStatus(stagesArr: any[]): string {
   return 'pending'
 }
 
-const phases = computed(() => {
+const phases = computed<PhaseGroup[]>(() => {
   if (!props.stages?.length) return []
-  const map: Record<string, any[]> = {}
+  const map: Record<string, StageSummary[]> = {}
   PHASE_ORDER.forEach(k => { map[k] = [] })
 
-  props.stages.forEach((stage, idx) => {
+  props.stages.forEach((stage: StageSummary, idx: number) => {
     const phKey = roadmapPhaseFromStageKey(stage.stageKey) || PHASE_FALLBACK[idx] || 'lead'
     if (!map[phKey]) map[phKey] = []
     map[phKey].push(stage)
   })
 
   return PHASE_ORDER
-    .filter(k => map[k]?.length)
+    .filter(k => map[k] && map[k].length > 0)
     .map(k => {
-      const arr = map[k]
+      const arr = map[k] || []
       const st = phaseStatus(arr)
       const done = arr.filter(s => {
         const ns = normalizeRoadmapStatus(s.status)
@@ -108,13 +124,13 @@ const phases = computed(() => {
         done,
         status: st,
         stages: arr,
-      }
+      } satisfies PhaseGroup
     })
 })
 
 const totalCnt = computed(() => props.stages?.length ?? 0)
 const doneCnt = computed(() =>
-  (props.stages ?? []).filter(s => {
+  (props.stages ?? []).filter((s: StageSummary) => {
     const ns = normalizeRoadmapStatus(s.status)
     return ns === 'done' || ns === 'skipped'
   }).length
@@ -130,6 +146,13 @@ const progressPct = computed(() => {
   return Math.round((pts / totalCnt.value) * 100)
 })
 
+function prevPhaseConnectorDone(piVal: number): boolean {
+  const prev = phases.value[piVal - 1]
+  return !!prev && (prev.status === 'done' || prev.status === 'in_progress')
+}
+function stageTitle(s: StageSummary, siVal: number): string {
+  return s.title || `этап ${siVal + 1}`
+}
 function nodeIcon(status: string) {
   if (status === 'done') return '✓'
   if (status === 'in_progress' || status === 'partial') return '◉'
