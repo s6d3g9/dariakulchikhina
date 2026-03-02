@@ -14,6 +14,7 @@ export default defineEventHandler((event) => {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https:",
     "connect-src 'self' https: wss:",
+    "frame-src https://yandex.ru https://*.yandex.ru https://yandex.com https://*.yandex.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
