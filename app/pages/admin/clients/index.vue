@@ -22,35 +22,41 @@
 
       <!-- Client has a linked project → show full cabinet inline -->
       <template v-if="selectedClientSlug">
-        <div class="cl-cab-nav">
-          <button
-            class="cl-cab-tab"
-            :class="{ 'cl-cab-tab--active': clientPage === 'overview' }"
-            @click="clientPage = 'overview'"
-          >◈ обзор</button>
-          <button
-            v-for="pg in clientNavPages"
-            :key="pg.slug"
-            class="cl-cab-tab"
-            :class="{ 'cl-cab-tab--active': clientPage === pg.slug }"
-            @click="clientPage = pg.slug"
-          >{{ pg.icon }} {{ pg.title }}</button>
-        </div>
-        <div class="cl-cab-content">
-          <ClientOverview
-            v-if="clientPage === 'overview'"
-            :slug="selectedClientSlug"
-            :project="clientProject"
-            :contractors="[]"
-            :rm-map="{}"
-            @navigate="clientPage = $event"
-          />
-          <component
-            v-else
-            :is="clientActiveComponent"
-            v-bind="clientActiveProps"
-            :key="clientPage"
-          />
+        <div class="cab-body">
+          <aside class="cab-sidebar glass-surface std-sidenav">
+            <nav class="cab-nav std-nav">
+              <button
+                class="cab-nav-item std-nav-item"
+                :class="{ active: clientPage === 'overview', 'std-nav-item--active': clientPage === 'overview' }"
+                @click="clientPage = 'overview'"
+              ><span class="cab-nav-icon">◈</span> обзор</button>
+              <button
+                v-for="pg in clientNavPages"
+                :key="pg.slug"
+                class="cab-nav-item std-nav-item"
+                :class="{ active: clientPage === pg.slug, 'std-nav-item--active': clientPage === pg.slug }"
+                @click="clientPage = pg.slug"
+              ><span class="cab-nav-icon">{{ pg.icon }}</span> {{ pg.title }}</button>
+            </nav>
+          </aside>
+          <main class="cab-main">
+            <div class="cab-inner">
+              <ClientOverview
+                v-if="clientPage === 'overview'"
+                :slug="selectedClientSlug"
+                :project="clientProject"
+                :contractors="[]"
+                :rm-map="{}"
+                @navigate="clientPage = $event"
+              />
+              <component
+                v-else
+                :is="clientActiveComponent"
+                v-bind="clientActiveProps"
+                :key="clientPage"
+              />
+            </div>
+          </main>
         </div>
       </template>
 
@@ -287,34 +293,51 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-filter-link:hover { opacity: 1; }
 .cl-nav-empty { padding: 16px 10px; text-align: center; font-size: .74rem; color: var(--glass-text); opacity: .3; }
 .cl-nav-arrow { margin-left: auto; font-size: .7rem; opacity: .4; flex-shrink: 0; }
-/* ── Embedded cabinet tabs ── */
-.cl-cab-nav {
+/* ── Embedded client cabinet ── */
+.cab-body {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 12px 16px 0;
-  border-bottom: 1px solid var(--glass-border, rgba(180,180,220,0.15));
-  overflow-x: auto;
-  scrollbar-width: none;
+  height: calc(100vh - 140px);
+  min-height: 400px;
+  overflow: hidden;
 }
-.cl-cab-nav::-webkit-scrollbar { display: none; }
-.cl-cab-tab {
-  padding: 6px 14px;
-  border-radius: 8px 8px 0 0;
-  border: 1px solid transparent;
-  border-bottom: none;
+.cab-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  border-radius: 0;
+}
+.cab-nav {
+  flex: 1;
+  padding: 8px 0;
+}
+.cab-nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: none;
   background: transparent;
   cursor: pointer;
-  font-size: .78rem;
+  font-size: .82rem;
   font-family: inherit;
   color: inherit;
-  opacity: .55;
-  transition: background .15s, opacity .15s;
-  white-space: nowrap;
+  text-align: left;
+  border-radius: 8px;
+  transition: background .15s;
+  opacity: .65;
 }
-.cl-cab-tab:hover { background: rgba(255,255,255,.15); opacity: .8; }
-.cl-cab-tab--active { background: rgba(255,255,255,.22); opacity: 1; font-weight: 600; border-color: var(--glass-border, rgba(180,180,220,0.2)); }
-.cl-cab-content { padding: 20px 20px 28px; max-width: 900px; }
+.cab-nav-item:hover { background: rgba(255,255,255,.1); opacity: .9; }
+.cab-nav-item.active { background: rgba(255,255,255,.16); opacity: 1; font-weight: 600; }
+.cab-nav-icon { font-size: .9rem; flex-shrink: 0; }
+.cab-main {
+  flex: 1;
+  overflow-y: auto;
+  background: transparent;
+}
+.cab-inner { padding: 20px 24px 32px; }
 /* ── Modals ── */
 .cl-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.35); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .cl-modal { width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 24px 26px 28px; }
