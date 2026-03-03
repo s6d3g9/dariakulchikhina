@@ -214,6 +214,23 @@ const filteredClients = computed(() => {
 })
 function selectClient(c: any) { selectedClientId.value = c.id; clientPage.value = 'overview' }
 
+// Авто-выбор клиента по query ?clientId=
+const router = useRouter()
+const clientIdFromQuery = computed(() => {
+  const v = route.query.clientId
+  return typeof v === 'string' ? parseInt(v, 10) : null
+})
+function applyClientIdQuery() {
+  const qid = clientIdFromQuery.value
+  if (qid && clients.value?.length) {
+    const found = clients.value.find((c: any) => c.id === qid)
+    if (found) { selectedClientId.value = found.id; clientPage.value = 'overview' }
+    router.replace({ query: { ...route.query, clientId: undefined } })
+  }
+}
+watch(clients, () => applyClientIdQuery(), { immediate: true })
+watch(clientIdFromQuery, () => applyClientIdQuery())
+
 // ── Embedded client cabinet ────────────────────────────
 const { data: clientProject } = useFetch<any>(
   () => selectedClientSlug.value ? `/api/projects/${selectedClientSlug.value}` : null,

@@ -488,17 +488,8 @@ function pickContractor(ct: { id: number; name: string }) {
 }
 function pickClient(cl: any) {
   closeAll()
-  // Если уже в проекте — показываем клиентский просмотр внутри этой же страницы
-  if (activeProjectSlug.value) {
-    navigateTo(`/admin/projects/${activeProjectSlug.value}?view=client`)
-    return
-  }
-  // Если не в проекте, но у клиента есть проект — идём в него с preview
-  if (cl.linkedProjects?.length) {
-    navigateTo(`/admin/projects/${cl.linkedProjects[0].slug}?view=client`)
-    return
-  }
-  navigateTo(clientsTabTo.value)
+  // Всегда открываем кабинет клиента inline в /admin/clients
+  navigateTo(`/admin/clients?clientId=${cl.id}`)
 }
 function pickGallery(slug: string) { closeAll(); navigateTo(withCtx(`/admin/gallery/${slug}`)) }
 function pickDesigner(designer: any) {
