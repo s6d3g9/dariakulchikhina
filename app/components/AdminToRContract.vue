@@ -61,7 +61,7 @@
           </div>
           <div class="u-prop-row">
             <label class="u-prop-label">примечания</label>
-            <textarea v-model="form.contract_notes" class="u-prop-inp u-prop-ta" rows="2" @blur="save" />
+            <input v-model="form.contract_notes" class="u-prop-inp" @blur="save" />
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@
           </div>
           <div class="u-prop-row">
             <label class="u-prop-label">реквизиты оплаты</label>
-            <textarea v-model="form.invoice_payment_details" class="u-prop-inp u-prop-ta" rows="2"
+            <input v-model="form.invoice_payment_details" class="u-prop-inp"
               placeholder="счёт, банк, назначение платежа..." @blur="save" />
           </div>
         </div>
@@ -123,12 +123,12 @@
         <div class="u-prop-rows">
           <div class="u-prop-row">
             <label class="u-prop-label">объём работ</label>
-            <textarea v-model="form.tor_scope" class="u-prop-inp u-prop-ta" rows="3"
+            <input v-model="form.tor_scope" class="u-prop-inp"
               placeholder="что входит в проект: концепция, 3D, РД, авторский надзор..." @blur="save" />
           </div>
           <div class="u-prop-row">
             <label class="u-prop-label">исключения</label>
-            <textarea v-model="form.tor_exclusions" class="u-prop-inp u-prop-ta" rows="2"
+            <input v-model="form.tor_exclusions" class="u-prop-inp"
               placeholder="что не входит..." @blur="save" />
           </div>
           <div class="u-prop-row">
@@ -137,7 +137,7 @@
           </div>
           <div class="u-prop-row">
             <label class="u-prop-label">формат результата</label>
-            <textarea v-model="form.tor_deliverables" class="u-prop-inp u-prop-ta" rows="2"
+            <input v-model="form.tor_deliverables" class="u-prop-inp"
               placeholder="PDF, DWG, 3D-файлы, BIM..." @blur="save" />
           </div>
         </div>

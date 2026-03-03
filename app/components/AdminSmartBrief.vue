@@ -9,12 +9,12 @@
         <div class="u-prop-rows">
           <div v-for="f in familyFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-if="f.multi"
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
+              class="u-prop-inp"
               :placeholder="f.placeholder || ''"
-              rows="2"
+
               @blur="save"
             />
             <div v-else-if="f.options" class="asb-tagsel">
@@ -61,10 +61,10 @@
         <div class="u-prop-rows">
           <div v-for="f in conceptFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
-              rows="2"
+              class="u-prop-inp"
+
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
@@ -78,10 +78,10 @@
         <div class="u-prop-rows">
           <div v-for="f in routineFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
-              rows="2"
+              class="u-prop-inp"
+
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
@@ -95,10 +95,10 @@
         <div class="u-prop-rows">
           <div v-for="f in kitchenFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
-              rows="2"
+              class="u-prop-inp"
+
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
@@ -112,10 +112,10 @@
         <div class="u-prop-rows">
           <div v-for="f in sportFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
-              rows="2"
+              class="u-prop-inp"
+
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
@@ -129,10 +129,10 @@
         <div class="u-prop-rows">
           <div v-for="f in storageFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
-              rows="2"
+              class="u-prop-inp"
+
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
@@ -146,10 +146,10 @@
         <div class="u-prop-rows">
           <div v-for="f in lightingFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
-              rows="2"
+              class="u-prop-inp"
+
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
@@ -163,10 +163,10 @@
         <div class="u-prop-rows">
           <div v-for="f in techFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
-              rows="2"
+              class="u-prop-inp"
+
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
@@ -180,11 +180,11 @@
         <div class="u-prop-rows">
           <div v-for="f in styleFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-if="f.multi"
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
-              rows="2"
+              class="u-prop-inp"
+
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
@@ -231,10 +231,10 @@
         <div class="u-prop-rows">
           <div v-for="f in restrictFields" :key="f.key" class="u-prop-row">
             <label class="u-prop-label">{{ f.label }}</label>
-            <textarea
+            <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp u-prop-ta"
-              rows="2"
+              class="u-prop-inp"
+
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
