@@ -29,6 +29,12 @@
         <div class="ent-detail-foot">
           <button class="a-btn-sm" @click="openLink(selectedClient)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> {{ selectedClient.linkedProjects?.length ? 'сменить проект' : 'привязать' }}</button>
           <button class="a-btn-sm" @click="openDocs(selectedClient)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.8"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.8"/></svg> документы</button>
+          <NuxtLink
+            v-if="selectedClient.linkedProjects?.length"
+            :to="`/client/${selectedClient.linkedProjects[0].slug}`"
+            class="a-btn-sm a-btn-primary"
+            target="_blank"
+          ><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> кабинет клиента ↗</NuxtLink>
         </div>
       </div>
     </div>
@@ -213,5 +219,7 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-doc-title { font-size: .84rem; font-weight: 500; }
 .cl-doc-meta { font-size: .72rem; opacity: .5; }
 .cl-doc-actions { display: flex; align-items: center; gap: 8px; }
+.a-btn-primary { background: var(--glass-accent, rgba(99,120,255,0.18)); color: var(--glass-text); border: 1px solid var(--glass-border); text-decoration: none; }
+.a-btn-primary:hover { background: var(--glass-accent-hover, rgba(99,120,255,0.28)); }
 @media (max-width: 600px) { .cl-row { grid-template-columns: 1fr; } }
 </style>
