@@ -94,8 +94,6 @@
 
 <script setup lang="ts">
 import { PHASE_LABELS, getAdminNavGroups } from '~~/shared/constants/pages'
-import { normalizeRoadmapStatus } from '~~/shared/utils/roadmap'
-import { useRoadmapBus } from '~/composables/useRoadmapBus'
 
 const props = defineProps<{
   slug: string
@@ -103,7 +101,6 @@ const props = defineProps<{
   clients: any[]
   contractors: any[]
   designers: any[]
-  rmMap: Record<string, string>
 }>()
 
 const emit = defineEmits<{ (e: 'navigate', slug: string): void }>()
@@ -117,7 +114,7 @@ const phases = computed(() => {
   const groups = getAdminNavGroups()
   return groups.map(g => {
     const total = g.pages.length
-    const done = g.pages.filter(p => props.rmMap[p.slug] === 'done').length
+    const done = 0
     const pct = total > 0 ? Math.round((done / total) * 100) : 0
     return { key: g.label, label: g.label, pct, done, total }
   })

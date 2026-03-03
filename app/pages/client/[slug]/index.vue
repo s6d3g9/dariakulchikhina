@@ -118,10 +118,8 @@ import ClientContracts     from '~/components/ClientContracts.vue'
 import ClientWorkProgress  from '~/components/ClientWorkProgress.vue'
 import ClientTimeline      from '~/components/ClientTimeline.vue'
 import ClientDesignAlbum   from '~/components/ClientDesignAlbum.vue'
-import ClientRoadmap       from '~/components/ClientRoadmap.vue'
 import ClientPageContent   from '~/components/ClientPageContent.vue'
 import ClientOverview      from '~/components/ClientOverview.vue'
-import { normalizeRoadmapStatus } from '~~/shared/utils/roadmap'
 
 definePageMeta({ middleware: 'client', layout: 'default' })
 
@@ -141,21 +139,11 @@ const { data: project, pending, error, refresh } = await useFetch(
   }
 )
 
-// ── Fetch linked contractors & roadmap for overview ──────────────────────
+// ── Fetch linked contractors ─────────────────────────────────────────────
 const { data: linkedContractors } = await useFetch<any[]>(
   () => `/api/projects/${slug.value}/contractors`,
   { default: () => [], headers: reqHeaders }
 )
-const rmMap = reactive<Record<string, string>>({})
-async function loadRmStatuses() {
-  try {
-    const rows = await $fetch<any[]>(`/api/projects/${slug.value}/roadmap`)
-    for (const row of rows) {
-      if (row.stageKey) rmMap[row.stageKey] = normalizeRoadmapStatus(row.status)
-    }
-  } catch { /* ignore */ }
-}
-onMounted(loadRmStatuses)
 
 // ── Page component map ───────────────────────────────────────────────────
 const PAGE_COMPONENT_MAP: Record<string, Component> = {
@@ -170,7 +158,6 @@ const PAGE_COMPONENT_MAP: Record<string, Component> = {
   work_progress:   ClientWorkProgress,
   design_timeline: ClientTimeline,
   design_album:    ClientDesignAlbum,
-  roadmap:         ClientRoadmap,
 }
 
 // ── Navigation ───────────────────────────────────────────────────────────

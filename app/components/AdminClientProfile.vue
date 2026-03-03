@@ -168,12 +168,10 @@ import {
   CLIENT_TYPE_OPTIONS,
   OBJECT_TYPE_OPTIONS,
   PROJECT_PRIORITY_OPTIONS,
-  ROADMAP_COMPLEXITY_OPTIONS,
   PAYMENT_TYPE_OPTIONS,
   CONTRACT_TYPE_OPTIONS,
   DESIGNER_SERVICE_TYPE_OPTIONS,
   CONTRACTOR_WORK_TYPE_OPTIONS,
-  ROADMAP_STAGE_TYPE_OPTIONS,
 } from '~~/shared/types/catalogs'
 
 interface FieldDef {
@@ -277,10 +275,8 @@ const catalogSelectFields: CatalogFieldDef[] = [
   { key: 'clientType',        label: 'тип клиента',          opts: CLIENT_TYPE_OPTIONS },
   { key: 'objectTypeCode',    label: 'тип объекта (код)',     opts: OBJECT_TYPE_OPTIONS },
   { key: 'projectPriority',   label: 'приоритет проекта',    opts: PROJECT_PRIORITY_OPTIONS },
-  { key: 'roadmapComplexity', label: 'сложность дорожной карты', opts: ROADMAP_COMPLEXITY_OPTIONS },
   { key: 'paymentType',       label: 'тип оплаты',           opts: PAYMENT_TYPE_OPTIONS },
   { key: 'contractType',      label: 'тип договора',         opts: CONTRACT_TYPE_OPTIONS },
-  { key: 'roadmapStageType',  label: 'тип этапов (шаблон)',  opts: ROADMAP_STAGE_TYPE_OPTIONS },
 ]
 
 const chipsFields: ChipsFieldDef[] = [

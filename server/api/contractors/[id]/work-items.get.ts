@@ -1,5 +1,5 @@
 import { useDb } from '~/server/db/index'
-import { workStatusItems, projects, roadmapStages, contractors, workStatusItemPhotos, workStatusItemComments } from '~/server/db/schema'
+import { workStatusItems, projects, contractors, workStatusItemPhotos, workStatusItemComments } from '~/server/db/schema'
 import { eq, inArray, sql } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
@@ -22,8 +22,6 @@ export default defineEventHandler(async (event) => {
       id: workStatusItems.id,
       title: workStatusItems.title,
       workType: workStatusItems.workType,
-      roadmapStageId: workStatusItems.roadmapStageId,
-      roadmapStageTitle: roadmapStages.title,
       status: workStatusItems.status,
       dateStart: workStatusItems.dateStart,
       dateEnd: workStatusItems.dateEnd,
@@ -36,7 +34,6 @@ export default defineEventHandler(async (event) => {
     })
     .from(workStatusItems)
     .innerJoin(projects, eq(workStatusItems.projectId, projects.id))
-    .leftJoin(roadmapStages, eq(workStatusItems.roadmapStageId, roadmapStages.id))
     .where(inArray(workStatusItems.contractorId, allIds))
     .orderBy(workStatusItems.sortOrder)
 

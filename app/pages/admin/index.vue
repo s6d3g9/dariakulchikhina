@@ -82,17 +82,9 @@
               <template v-if="wizardStep === 1">
                 <div class="pj-form-field"><label class="pj-form-label">Название</label><input v-model="newProject.title" class="glass-input" required placeholder="Название проекта" autofocus /></div>
                 <div class="pj-form-field"><label class="pj-form-label">Slug (URL)</label><input v-model="newProject.slug" class="glass-input" required placeholder="project-slug" /></div>
-                <div class="pj-form-field"><label class="pj-form-label">Сценарий дорожной карты</label><select v-model="newProject.roadmapTemplateKey" class="glass-input"><option value="">— без шаблона</option><option v-for="tpl in allTemplates" :key="tpl.key" :value="tpl.key">{{ tpl.title }}{{ tpl.isBuiltIn === false ? ' · пользовательский' : '' }}</option></select></div>
               </template>
               <template v-else>
                 <div class="pj-preview-row"><span class="pj-preview-label">Проект</span><span class="pj-preview-value">{{ newProject.title }} · <span class="pj-preview-dim">{{ newProject.slug }}</span></span></div>
-                <div class="pj-preview-row"><span class="pj-preview-label">Сценарий</span><span class="pj-preview-value">{{ selectedTemplate ? selectedTemplate.title : '— без шаблона' }}</span></div>
-                <div v-if="selectedTemplate?.description" class="pj-preview-desc">{{ selectedTemplate.description }}</div>
-                <div v-if="selectedTemplate" class="pj-preview-stages">
-                  <span class="pj-preview-label">Этапы роадмапа ({{ selectedTemplate.stages.length }})</span>
-                  <div class="pj-stages-list"><div v-for="(s, i) in selectedTemplate.stages" :key="i" class="pj-stage-item"><span class="pj-stage-num">{{ i + 1 }}</span><span>{{ s.title }}</span></div></div>
-                </div>
-                <div v-else class="pj-preview-hint">Роадмап будет пустым — этапы можно добавить вручную</div>
                 <div class="pj-preview-pages"><span class="pj-preview-label">Страницы</span><div class="pj-pages-chips"><span v-for="pg in corePageLabels" :key="pg" class="pj-page-chip">{{ pg }}</span></div></div>
               </template>
               <p v-if="createError" class="pj-form-error">{{ createError }}</p>
@@ -110,7 +102,6 @@
 </template>
 
 <script setup lang="ts">
-import { ROADMAP_TEMPLATES } from '~~/shared/types/roadmap-templates'
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
@@ -125,17 +116,8 @@ watch(projects, (value) => { if (Array.isArray(value)) projectsCache.value = val
 async function reloadProjects() {
   try { const result = await $fetch<any[]>('/api/projects'); if (Array.isArray(result)) { projects.value = result; projectsCache.value = result } } catch { /* silent */ }
 }
-const { lastSaved } = useRoadmapBus()
-watch(lastSaved, reloadProjects)
 onMounted(reloadProjects)
 onActivated(reloadProjects)
-
-const { data: customTemplates } = useFetch<any[]>('/api/roadmap-templates', { server: false, default: () => [] })
-const allTemplates = computed(() =>
-  (customTemplates.value && customTemplates.value.length > 0)
-    ? customTemplates.value
-    : ROADMAP_TEMPLATES.map(t => ({ ...t, isBuiltIn: true }))
-)
 
 const CORE_PAGE_LABELS: Record<string, string> = { materials: 'материалы', tz: 'ТЗ', profile_customer: 'профиль клиента' }
 const corePageLabels = Object.values(CORE_PAGE_LABELS)
@@ -154,16 +136,15 @@ const filteredProjects = computed(() => {
 
 // ── Create wizard ──────────────────────────────────────
 const showCreate = ref(false); const wizardStep = ref(1); const creating = ref(false); const createError = ref('')
-const newProject = reactive({ title: '', slug: '', roadmapTemplateKey: '' })
-const selectedTemplate = computed(() => newProject.roadmapTemplateKey ? allTemplates.value.find(t => t.key === newProject.roadmapTemplateKey) ?? null : null)
+const newProject = reactive({ title: '', slug: '' })
 
-function closeCreate() { showCreate.value = false; wizardStep.value = 1; newProject.title = ''; newProject.slug = ''; newProject.roadmapTemplateKey = ''; createError.value = '' }
+function closeCreate() { showCreate.value = false; wizardStep.value = 1; newProject.title = ''; newProject.slug = ''; createError.value = '' }
 function onWizardSubmit() { if (wizardStep.value === 1) { if (!newProject.title.trim() || !newProject.slug.trim()) return; wizardStep.value = 2; return }; createProject() }
 
 async function createProject() {
   creating.value = true; createError.value = ''
   try {
-    await $fetch('/api/projects', { method: 'POST', body: { title: newProject.title, slug: newProject.slug, roadmapTemplateKey: newProject.roadmapTemplateKey || undefined } })
+    await $fetch('/api/projects', { method: 'POST', body: { title: newProject.title, slug: newProject.slug } })
     closeCreate(); refresh()
   } catch (e: any) { createError.value = e.data?.message || e.data?.statusMessage || e.statusMessage || e.message || 'Ошибка создания проекта'; wizardStep.value = 1 }
   finally { creating.value = false }

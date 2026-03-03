@@ -253,7 +253,6 @@
                           <span class="cab-task-expand-icon">{{ expandedId === item.id ? '▾' : '▸' }}</span>
                           <span class="cab-task-name">{{ item.title }}</span>
                           <span v-if="item.assignedToName" class="cab-task-assigned-badge">→ {{ item.assignedToName }}</span>
-                          <span v-if="item.roadmapStageTitle" class="cab-task-stage-badge">{{ item.roadmapStageTitle }}</span>
                           <select
                             :value="item.status"
                             class="u-status-sel"

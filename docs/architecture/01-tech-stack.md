@@ -1,39 +1,46 @@
 # Архитектура программного стека
 
+> Актуализировано: 2026-03-03. Основной справочник → [ARCHITECTURE.md](../ARCHITECTURE.md)
+
 ## 1) Общая картина
 
-Проект построен как **full-stack Nuxt 3** приложение:
+Проект построен как **full-stack Nuxt 4** приложение:
 
-- `app/*` — клиентский UI (Vue 3 + Nuxt Pages/Layout + Pinia),
-- `server/api/*` — backend-эндпоинты на Nitro/H3,
-- `server/db/*` — доступ к Postgres через Drizzle ORM,
-- `server/utils/*` — инфраструктурная логика (в т.ч. управление шаблонами roadmap),
-- `shared/types/*` — общие типы/схемы для серверной и клиентской частей.
+- `app/*` — клиентский UI (Vue 3 Composition API + Nuxt Pages/Layouts + composables через `useState`),
+- `server/api/*` — 95 backend-эндпоинтов на Nitro/H3,
+- `server/db/*` — доступ к PostgreSQL 16 через Drizzle ORM (19 таблиц),
+- `server/middleware/*` — 4 серверных middleware (CSP, rate-limit, body-size-limit, CSRF),
+- `server/utils/*` — HMAC-авторизация, загрузка файлов, управление шаблонами roadmap,
+- `shared/types/*` — 12 файлов общих типов/Zod-схем для серверной и клиентской частей,
+- `shared/utils/*` — 2 файла утилит (roadmap, work-status) — единый источник истины для статусов.
 
-Таким образом, фронтенд и backend живут в одном репозитории и разворачиваются как единое приложение.
+Фронтенд и backend живут в одном репозитории и разворачиваются как единое приложение.
 
 ## 2) Технологии и их роли
 
 ### UI / Frontend
 
-- **Nuxt 3** (`nuxt`) — SSR/SPA-платформа, маршрутизация через файловую структуру.
-- **Vue 3** — компонентная модель интерфейса.
-- **@nuxt/ui** — UI-библиотека компонентов.
-- **Tailwind CSS v4** — утилитарные стили.
-- **Pinia + @pinia/nuxt** — состояние клиента (например, сессия/роль в `app/stores/auth.ts`).
+- **Nuxt 4.3.x** — SSR/SPA-платформа, маршрутизация через файловую структуру.
+- **Vue 3** (Composition API) — 60 компонентов + 19 страниц.
+- **@nuxt/ui 3** — UI-библиотека компонентов.
+- **Tailwind CSS 4** — утилитарные стили + glassmorphism-система (2 055 строк `main.css`).
+- **Pinia** — подключён через `@pinia/nuxt`, но состояние управляется преимущественно через `useState()` в composables.
 
 ### Backend / API
 
-- **Nitro + H3** — обработчики `server/api/**/*.ts`.
+- **Nitro + H3** — 95 обработчиков в `server/api/**/*.ts`.
 - **Zod** — валидация входящих payload (`readValidatedNodeBody`).
-- **bcryptjs** — проверка/хеширование паролей администратора.
+- **bcryptjs** — хеширование паролей.
+- **HMAC SHA-256** — подписанные cookie-сессии (admin, client, contractor), 30 дней.
+- **Серверные middleware** — CSP, rate-limit, body-size-limit, CSRF (double-submit cookie).
+- **Серверные плагины** — CSP nonce, error-sanitizer.
 
 ### Данные и инфраструктура
 
-- **PostgreSQL** — основное хранилище бизнес-данных.
-- **drizzle-orm + drizzle-kit** — схема, запросы, миграции.
-- **Redis (ioredis)** — подготовлен в конфиге (`redisUrl`), как инфраструктурный сервис.
-- **Локальное файловое хранилище** (`public/uploads`) — загружаемые файлы.
+- **PostgreSQL 16** (Docker, порт 5433) — 19 таблиц бизнес-данных.
+- **drizzle-orm 0.41.x + drizzle-kit** — схема, запросы, миграции.
+- **Redis 7** (Docker, порт 6380) — инфраструктурный сервис.
+- **Локальное файловое хранилище** (`public/uploads`) — загружаемые файлы (валидация MIME + magic bytes, лимит 20 МБ).
 - **JSON-хранилище кастомных шаблонов** (`server/data/roadmap-templates.custom.json`) — пользовательские сценарии roadmap.
 
 ## 3) Конфигурация приложения

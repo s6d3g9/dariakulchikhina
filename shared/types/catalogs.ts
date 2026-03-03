@@ -1,14 +1,3 @@
-export const ROADMAP_STAGE_TYPES = [
-  'brief',
-  'concept',
-  'planning',
-  'engineering',
-  'procurement',
-  'implementation',
-  'supervision',
-  'handover',
-] as const
-
 // ── Project lifecycle phases (BPMN v3.0) ──────────────────────────
 export const PROJECT_STATUSES = [
   'lead',
@@ -204,13 +193,6 @@ export const PROJECT_PRIORITY_TYPES = [
   'critical',
 ] as const
 
-export const ROADMAP_COMPLEXITY_TYPES = [
-  'basic',
-  'standard',
-  'advanced',
-  'premium',
-] as const
-
 export const OBJECT_TYPES = [
   'apartment',
   'house',
@@ -228,17 +210,6 @@ function asOptions<T extends readonly string[]>(
 ): Array<Option<T[number]>> {
   return values.map(value => ({ value, label: labels[value] }))
 }
-
-export const ROADMAP_STAGE_TYPE_OPTIONS = asOptions(ROADMAP_STAGE_TYPES, {
-  brief: 'Бриф и замер',
-  concept: 'Концепция',
-  planning: 'Планировочные решения',
-  engineering: 'Инженерные разделы',
-  procurement: 'Комплектация',
-  implementation: 'Реализация',
-  supervision: 'Авторский надзор',
-  handover: 'Сдача объекта',
-})
 
 export const CLIENT_TYPE_OPTIONS = asOptions(CLIENT_TYPES, {
   physical_person: 'Физлицо',
@@ -409,13 +380,6 @@ export const PROJECT_PRIORITY_OPTIONS = asOptions(PROJECT_PRIORITY_TYPES, {
   medium: 'Средний',
   high: 'Высокий',
   critical: 'Критический',
-})
-
-export const ROADMAP_COMPLEXITY_OPTIONS = asOptions(ROADMAP_COMPLEXITY_TYPES, {
-  basic: 'Базовый',
-  standard: 'Стандартный',
-  advanced: 'Повышенной сложности',
-  premium: 'Премиум',
 })
 
 // ── Этапность выполнения работ по видам ─────────────────────────────────────

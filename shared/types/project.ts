@@ -48,10 +48,8 @@ export const ClientProfileSchema = z.object({
   clientType: z.string().optional(),
   objectTypeCode2: z.string().optional(),
   projectPriority: z.string().optional(),
-  roadmapComplexity: z.string().optional(),
   paymentType: z.string().optional(),
   contractType: z.string().optional(),
-  roadmapStageType: z.string().optional(),
   // chips (multi-select arrays)
   designerServiceTypes: z.array(z.string()).optional(),
   contractorWorkTypes: z.array(z.string()).optional(),
@@ -174,7 +172,6 @@ export const ProjectSchema = z.object({
 export const CreateProjectSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9_-]+$/),
   title: z.string().min(1),
-  roadmapTemplateKey: z.string().optional(),
 })
 export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
   status: z.string().optional(),

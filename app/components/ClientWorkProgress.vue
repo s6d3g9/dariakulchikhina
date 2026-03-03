@@ -1,45 +1,6 @@
 <template>
   <div class="cwp-root">
 
-    <!-- ── Card: Design roadmap ───────────────────────────── -->
-    <div class="cwp-card glass-card">
-      <div class="cwp-card-head">
-        <span class="cwp-card-icon">✦</span>
-        <div>
-          <div class="cwp-card-title">Дизайн-проект</div>
-          <div class="cwp-card-sub">дорожная карта проектирования</div>
-        </div>
-        <span v-if="designProgress !== null" class="cwp-pct">{{ designProgress }}%</span>
-      </div>
-
-      <div v-if="rmPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
-      <div v-else-if="!groupedPhases.length" class="cwp-empty">Этапы ещё не заполнены</div>
-      <div v-else class="cwp-timeline">
-        <div v-for="group in groupedPhases" :key="group.key" class="cwp-phase">
-          <div class="cwp-phase-row">
-            <div class="cwp-dot cwp-dot--phase" :class="`cwp-dot--${group.overallStatus}`">
-              <span class="cwp-dot-icon">{{ phaseIcon(group.overallStatus) }}</span>
-            </div>
-            <div class="cwp-phase-info">
-              <span class="cwp-phase-name">{{ group.label }}</span>
-              <span class="cwp-pill" :class="`cwp-pill--${group.overallStatus}`">{{ statusLabel(group.overallStatus) }}</span>
-            </div>
-          </div>
-          <div class="cwp-stages">
-            <div v-for="stage in group.stages" :key="stage.id" class="cwp-stage">
-              <div class="cwp-dot cwp-dot--stage" :class="`cwp-dot--${normalizeRoadmapStatus(stage.status)}`" />
-              <div class="cwp-stage-info">
-                <span class="cwp-stage-title">{{ stage.title }}</span>
-                <span v-if="stage.dateStart || stage.dateEnd" class="cwp-date">
-                  {{ fmtDate(stage.dateStart) }}<template v-if="stage.dateEnd"> — {{ fmtDate(stage.dateEnd) }}</template>
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- ── Card: Construction work ──────────────────────── -->
     <div class="cwp-card glass-card">
       <div class="cwp-card-head">
@@ -76,11 +37,6 @@
 
 <script setup lang="ts">
 import {
-  normalizeRoadmapStatus,
-  roadmapStatusLabel,
-  roadmapPhaseFromStageKey,
-} from '~~/shared/utils/roadmap'
-import {
   normalizeWorkStatus,
   workStatusLabel,
 } from '~~/shared/utils/work-status'
@@ -88,50 +44,6 @@ import {
 const props = defineProps<{ slug: string }>()
 
 const reqHeaders = useRequestHeaders(['cookie'])
-// ── Roadmap (design) ─────────────────────────────────────────
-const { data: rawStages, pending: rmPending } = await useFetch<any[]>(`/api/projects/${props.slug}/roadmap`, { headers: reqHeaders })
-
-const PHASE_ORDER = ['lead', 'concept', 'working_project', 'procurement', 'construction', 'commissioning']
-const PHASE_BY_IDX = PHASE_ORDER
-const PHASE_LABELS: Record<string, string> = {
-  lead:            'Инициация',
-  concept:         'Концепция',
-  working_project: 'Рабочий проект',
-  procurement:     'Закупки',
-  construction:    'Строительство',
-  commissioning:   'Сдача',
-}
-
-function overallStatus(stages: any[]): string {
-  const statuses = stages.map(s => normalizeRoadmapStatus(s.status))
-  if (statuses.every(s => s === 'done' || s === 'skipped')) return 'done'
-  if (statuses.some(s => s === 'in_progress')) return 'in_progress'
-  if (statuses.some(s => s === 'done')) return 'in_progress'
-  return 'pending'
-}
-
-const groupedPhases = computed(() => {
-  if (!rawStages.value?.length) return []
-  const sorted = [...rawStages.value].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-  const map: Record<string, any[]> = {}
-  sorted.forEach((stage, idx) => {
-    const phase = roadmapPhaseFromStageKey(stage.stageKey) || PHASE_BY_IDX[idx] || 'lead'
-    if (!map[phase]) map[phase] = []
-    map[phase].push(stage)
-  })
-  return PHASE_ORDER.filter(pk => map[pk]?.length).map(pk => ({
-    key: pk,
-    label: PHASE_LABELS[pk] || pk,
-    stages: map[pk],
-    overallStatus: overallStatus(map[pk]),
-  }))
-})
-
-const designProgress = computed(() => {
-  if (!rawStages.value?.length) return null
-  const done = rawStages.value.filter(s => normalizeRoadmapStatus(s.status) === 'done').length
-  return Math.round((done / rawStages.value.length) * 100)
-})
 
 // ── Work status (construction) ──────────────────────────────
 const { data: workItems, pending: wsPending } = await useFetch<any[]>(`/api/projects/${props.slug}/work-status`, { headers: reqHeaders })
@@ -141,21 +53,6 @@ const buildProgress = computed(() => {
   const done = workItems.value.filter(i => normalizeWorkStatus(i.status) === 'done').length
   return Math.round((done / workItems.value.length) * 100)
 })
-
-// ── Helpers ──────────────────────────────────────────────────
-function statusLabel(s: string) { return roadmapStatusLabel(s) }
-
-function phaseIcon(s: string) {
-  const st = normalizeRoadmapStatus(s)
-  return st === 'done' ? '✓' : st === 'in_progress' ? '◉' : st === 'skipped' ? '—' : '○'
-}
-
-function fmtDate(val: string | null | undefined): string {
-  if (!val) return ''
-  const d = new Date(val)
-  if (isNaN(d.getTime())) return val
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-}
 </script>
 
 <style scoped>

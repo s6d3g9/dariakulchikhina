@@ -166,17 +166,6 @@ textarea, select {
   --ds-dark-elevation: 6;
   --ds-dark-saturation: 50%;
 
-  /* ── Roadmap unified color tokens ─────────────────────── */
-  --rm-color-pending:  color-mix(in srgb, var(--glass-text) 55%, transparent);
-  --rm-color-progress: var(--ds-warning);
-  --rm-color-done:     var(--ds-success);
-  --rm-color-skipped:  color-mix(in srgb, var(--glass-text) 25%, transparent);
-
-  --rm-bg-pending:     color-mix(in srgb, var(--glass-text)  8%, transparent);
-  --rm-bg-progress:    color-mix(in srgb, var(--ds-warning) 14%, transparent);
-  --rm-bg-done:        color-mix(in srgb, var(--ds-success) 11%, transparent);
-  --rm-bg-skipped:     color-mix(in srgb, var(--glass-text)  5%, transparent);
-
   /* ── Work-status unified color tokens ──────────────────── */
   --ws-color-pending:    color-mix(in srgb, var(--glass-text) 55%, transparent);
   --ws-color-planned:    var(--ds-accent);
@@ -194,12 +183,6 @@ textarea, select {
   --ws-bg-cancelled:     color-mix(in srgb, var(--ds-error)   12%, transparent);
   --ws-bg-skipped:       color-mix(in srgb, var(--glass-text)  5%, transparent);
 }
-
-/* ── Roadmap global utility classes ──────────────────────── */
-.rm-status--pending  { color: var(--rm-color-pending);  background: var(--rm-bg-pending);  border-radius: var(--status-pill-radius, 999px); }
-.rm-status--progress { color: var(--rm-color-progress); background: var(--rm-bg-progress); border-radius: var(--status-pill-radius, 999px); }
-.rm-status--done     { color: var(--rm-color-done);     background: var(--rm-bg-done);     border-radius: var(--status-pill-radius, 999px); }
-.rm-status--skipped  { color: var(--rm-color-skipped);  background: var(--rm-bg-skipped);  border-radius: var(--status-pill-radius, 999px); opacity: .5; }
 
 /* ── Work-status global utility classes ──────────────────── */
 .ws-status--pending   { color: var(--ws-color-pending);   background: var(--ws-bg-pending);   border-radius: var(--status-pill-radius, 999px); }

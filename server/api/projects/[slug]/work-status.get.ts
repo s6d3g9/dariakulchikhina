@@ -16,7 +16,6 @@ export default defineEventHandler(async (event) => {
       title: workStatusItems.title,
       status: workStatusItems.status,
       workType: workStatusItems.workType,
-      roadmapStageId: workStatusItems.roadmapStageId,
       contractorId: workStatusItems.contractorId,
       contractorName: contractors.name,
       dateStart: workStatusItems.dateStart,

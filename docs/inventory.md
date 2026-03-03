@@ -1,6 +1,7 @@
 # Полная инвентаризация проекта
 
-> Nuxt 3 + Drizzle ORM + PostgreSQL. Дизайн-студия: кабинет admin / client / contractor.
+> Nuxt 4 + Drizzle ORM + PostgreSQL 16. Дизайн-студия: кабинет admin / client / contractor.  
+> **Обновлено: 2026-03-03** — отмечены исправленные проблемы (✅ fixed). Полный справочник → [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ---
 
@@ -13,15 +14,15 @@
 | `AdminClientProfile.vue` | Многосекционная форма профиля клиента (личное/контакты/объект/проект/стиль жизни) + chip-селекторы из каталогов | `acp-` | ⚠ Hardcoded массивы `familyStatus`, `objectType`, `objectCondition`, `hasBalcony`, `parking`, `paymentMethod`, `referralSource` как инлайн-строки вместо shared-констант |
 | `AdminConceptApproval.vue` | Согласование концепции: рендеры, одобрение, блокировка геометрии, переход в фазу `working_project` | `aca-` | ⚠ Locальная `statusColor` карта (hardcoded hex: gray/blue/yellow/red/green) |
 | `AdminContractorsProfile.vue` | Привязка/отвязка подрядчиков к проекту | `acp-` | ⚠ **Коллизия CSS-префикса** с `AdminClientProfile`. Локальная `workTypeLabel()` — **дубликат** |
-| `AdminFirstContact.vue` | Форма первичного контакта/лида с интеграцией Яндекс.Карт | `afc-` | ⚠ Hardcoded инлайн `<option>` (lead source, object type); **значения objectType расходятся** с `AdminClientProfile` |
+| `AdminFirstContact.vue` | Форма первичного контакта/лида с интеграцией Яндекс.Карт | `afc-` | ✅ Исправлено: заменена сломанная логика step-completion на `profile._stepsDone`. ⚠ Hardcoded инлайн `<option>` |
 | `AdminGallery.vue` | CRUD галереи с glass-дизайном, фильтры по тегам | `agal-` | Активно использует glass design system |
 | `AdminMaterials.vue` | Редактор материалов (JSON-структура с вкладками/группами) | `am-` | Glass classes |
 | `AdminMoodboard.vue` | Мудборд: стилевые теги, картинки по категориям, ссылки | `amb-` | ⚠ Hardcoded `STYLE_TAGS`, `IMAGE_CATS` — можно вынести в shared |
 | `AdminPageContent.vue` | Мета-роутер: делегирует в `AdminMaterials` (tabs) или `AdminTZ` (sections) по структуре контента | `apc-` | ⚠ Tailwind-утилиты смешаны со scoped CSS |
-| `AdminPhaseDetail.vue` | Просмотр фазы проекта с навигацией по шагам | `pd-` | ⚠ Hardcoded `stepToSlug` маппинг (номер шага → slug страницы) |
+| `AdminPhaseDetail.vue` | Просмотр фазы проекта с навигацией по шагам | `pd-` | ✅ Исправлено: `stepToSlug` расширен с 7 до 20 записей (фазы 0-5) |
 | `AdminProjectPhase.vue` | Горизонтальный трекер фаз (stepper) | `phase-` | Импортирует `PROJECT_PHASES` из shared catalogs |
 | `AdminRoadmap.vue` | Редактор этапов роадмапа + выбор шаблона | `rm-` | ⚠ Hardcoded `scenarioOptions`; Tailwind + scoped CSS mix |
-| `AdminSiteSurvey.vue` | Обмеры: MEP-чеклист, загрузка файлов по типам | `ass-` | ⚠ Hardcoded `mepChecks`, `fileTypeLabel`; **опечатка** «ДопопционизИнформация»; зелёный цвет `#4caf50` ≠ другие (`#5caa7f`) |
+| `AdminSiteSurvey.vue` | Обмеры: MEP-чеклист, загрузка файлов по типам | `ass-` | ✅ Опечатка исправлена. ⚠ Hardcoded `mepChecks`, `fileTypeLabel`; зелёный цвет `#4caf50` ≠ другие (`#5caa7f`) |
 | `AdminSmartBrief.vue` | Комплексная анкета-бриф с автотегами, требованиями по типу объекта | `asb-` | Импортирует `~/utils/brief-requirements`; ~500 строк — самый большой компонент |
 | `AdminSpacePlanning.vue` | Планировки: загрузка файлов, статус одобрения | `asp-` | — |
 | `AdminToRContract.vue` | ТЗ, договор, инвойс + переход фазы | `ator-` | ⚠ Статусные цвета (`#9e9e9e`, `#2196f3`, `#4caf50`, `#f44336`) — **другая палитра** чем у остальных |

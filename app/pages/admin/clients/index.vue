@@ -175,7 +175,6 @@ import ClientContracts       from '~/components/ClientContracts.vue'
 import ClientWorkProgress    from '~/components/ClientWorkProgress.vue'
 import ClientTimeline        from '~/components/ClientTimeline.vue'
 import ClientDesignAlbum     from '~/components/ClientDesignAlbum.vue'
-import ClientRoadmap         from '~/components/ClientRoadmap.vue'
 import ClientPageContent     from '~/components/ClientPageContent.vue'
 import ClientOverview        from '~/components/ClientOverview.vue'
 
@@ -226,7 +225,6 @@ const PAGE_COMPONENT_MAP: Record<string, Component> = {
   work_progress:   ClientWorkProgress,
   design_timeline: ClientTimeline,
   design_album:    ClientDesignAlbum,
-  roadmap:         ClientRoadmap,
 }
 const allClientPages = getClientPages()
 const clientPage = ref('overview')

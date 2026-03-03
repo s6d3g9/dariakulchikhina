@@ -1,12 +1,13 @@
 # Структура сайта и маршрутов
 
+> Актуализировано: 2026-03-03. Основной справочник → [ARCHITECTURE.md](../ARCHITECTURE.md)
+
 ## 1) Каркас приложения
 
 Сайт разделён по ролям и layout-ам:
 
-- `default` — публичная зона,
-- `admin` — кабинет администратора,
-- `cabinet` — кабинет клиента,
+- `default` — публичная зона + login-страницы + кабинет клиента,
+- `admin` — кабинет администратора (888 строк, полная навигация + UIDesignPanel),
 - `contractor` — кабинет подрядчика.
 
 ## 2) Карта маршрутов
@@ -14,16 +15,23 @@
 ```text
 /
 ├─ /admin/login
-├─ /admin
-│  ├─ /admin/projects/[slug]
-│  ├─ /admin/contractors
-│  ├─ /admin/pages
-│  └─ /admin/roadmap-templates
+├─ /admin                          ← дашборд проектов
+│  ├─ /admin/projects/[slug]       ← workspace проекта (30+ компонентов через pageComponentMap)
+│  ├─ /admin/clients               ← CRM клиентов
+│  ├─ /admin/contractors            ← реестр подрядчиков + кабинеты
+│  ├─ /admin/designers              ← реестр дизайнеров + кабинеты
+│  ├─ /admin/documents              ← документы + шаблоны
+│  ├─ /admin/pages                  ← настройка страниц
+│  ├─ /admin/gallery/furniture      ← галерея мебели
+│  ├─ /admin/gallery/materials      ← галерея материалов
+│  ├─ /admin/gallery/art            ← галерея арт-объектов
+│  ├─ /admin/gallery/interiors      ← галерея интерьеров
+│  ├─ /admin/gallery/moodboards     ← галерея мудбордов
+│  └─ /admin/roadmap-templates      ← шаблоны roadmap
 ├─ /client/login
-├─ /client/[slug]
-│  └─ /client/[slug]/[page]
+├─ /client/[slug]                   ← кабинет клиента (sidebar + динамические компоненты)
 ├─ /contractor/login
-└─ /contractor/[id]
+└─ /contractor/[id]                 ← кабинет подрядчика (профиль, задачи, фото, документы)
 ```
 
 ## 3) Назначение разделов
@@ -53,8 +61,8 @@
 
 ### Зона подрядчика
 
-- `/contractor/login` — вход по PIN.
-- `/contractor/[id]` — профиль подрядчика и назначенные задачи.
+- `/contractor/login` — вход подрядчика (id + slug).
+- `/contractor/[id]` — полный кабинет: профиль, задачи с комментариями/фото, сотрудники, проекты, документы.
 
 ## 4) Сопоставление UI-компонентов
 
@@ -73,10 +81,11 @@
 - `ClientWorkStatus`
 - `ClientRoadmap`
 
-### Общая логика
+### Middleware авторизации
 
-- `app/stores/auth.ts` — клиентское состояние сессии.
-- `app/middleware/*.ts` — контроль доступа на уровне роутов.
+- `app/middleware/admin.ts` — проверка admin-сессии → редирект на `/admin/login`.
+- `app/middleware/client.ts` — проверка client-сессии + slug проекта → редирект на `/client/login`.
+- `app/middleware/contractor.ts` — проверка contractor-сессии → редирект на `/contractor/login`.
 
 ## 5) Навигационная схема
 

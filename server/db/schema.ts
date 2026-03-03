@@ -113,7 +113,6 @@ export const workStatusItems = pgTable('work_status_items', {
   contractorId: integer('contractor_id').references(() => contractors.id, { onDelete: 'set null' }),
   title: text('title').notNull(),
   workType: text('work_type'),
-  roadmapStageId: integer('roadmap_stage_id'),
   status: text('status').default('pending').notNull(),
   dateStart: text('date_start'),
   dateEnd: text('date_end'),
@@ -141,22 +140,6 @@ export const workStatusItemComments = pgTable('work_status_item_comments', {
   authorName: text('author_name').notNull(),
   text: text('text').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-})
-
-export const roadmapStages = pgTable('roadmap_stages', {
-  id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
-  stageKey: text('stage_key'),
-  title: text('title').notNull(),
-  description: text('description'),
-  status: text('status').default('pending').notNull(),
-  dateStart: text('date_start'),
-  dateEnd: text('date_end'),
-  notes: text('notes'),
-  messenger: text('messenger'),
-  messengerNick: text('messenger_nick'),
-  website: text('website'),
-  sortOrder: integer('sort_order').default(0).notNull(),
 })
 
 export const uploads = pgTable('uploads', {
@@ -309,7 +292,6 @@ export const projectsRelations = relations(projects, ({ many, one }) => ({
   pageContents: many(pageContent),
   projectContractors: many(projectContractors),
   workStatusItems: many(workStatusItems),
-  roadmapStages: many(roadmapStages),
   uploads: many(uploads),
 }))
 
@@ -328,6 +310,4 @@ export const workStatusItemsRelations = relations(workStatusItems, ({ one }) => 
   contractor: one(contractors, { fields: [workStatusItems.contractorId], references: [contractors.id] }),
 }))
 
-export const roadmapStagesRelations = relations(roadmapStages, ({ one }) => ({
-  project: one(projects, { fields: [roadmapStages.projectId], references: [projects.id] }),
-}))
+

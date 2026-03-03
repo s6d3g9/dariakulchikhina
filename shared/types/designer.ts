@@ -50,7 +50,6 @@ export interface DesignerServiceTemplate {
   priceRangeMin: number
   priceRangeMax: number
   /** Какие этапы роадмепа генерируются при включении этой услуги */
-  roadmapStages: string[]
 }
 
 export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
@@ -64,7 +63,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 5000,
     priceRangeMin: 3000,
     priceRangeMax: 15000,
-    roadmapStages: ['brief'],
   },
   {
     key: 'measurement',
@@ -75,7 +73,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 150,
     priceRangeMin: 100,
     priceRangeMax: 400,
-    roadmapStages: ['brief'],
   },
   {
     key: 'photo_fixation',
@@ -86,7 +83,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 3000,
     priceRangeMin: 2000,
     priceRangeMax: 8000,
-    roadmapStages: ['brief'],
   },
 
   // ─── Эскизный проект ────────────────────────────────────────
@@ -99,7 +95,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 300,
     priceRangeMin: 150,
     priceRangeMax: 600,
-    roadmapStages: ['concept'],
   },
   {
     key: 'concept_collage',
@@ -110,7 +105,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 500,
     priceRangeMin: 300,
     priceRangeMax: 1000,
-    roadmapStages: ['concept'],
   },
   {
     key: 'space_planning',
@@ -121,7 +115,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 400,
     priceRangeMin: 200,
     priceRangeMax: 800,
-    roadmapStages: ['planning'],
   },
   {
     key: 'color_scheme',
@@ -132,7 +125,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 200,
     priceRangeMin: 100,
     priceRangeMax: 400,
-    roadmapStages: ['concept'],
   },
 
   // ─── Дизайн-проект ──────────────────────────────────────────
@@ -145,7 +137,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 8000,
     priceRangeMin: 5000,
     priceRangeMax: 20000,
-    roadmapStages: ['concept'],
   },
   {
     key: 'wall_elevations',
@@ -156,7 +147,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 350,
     priceRangeMin: 200,
     priceRangeMax: 700,
-    roadmapStages: ['engineering'],
   },
   {
     key: 'material_selection',
@@ -167,7 +157,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 300,
     priceRangeMin: 150,
     priceRangeMax: 600,
-    roadmapStages: ['procurement'],
   },
   {
     key: 'furniture_selection',
@@ -178,7 +167,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 300,
     priceRangeMin: 150,
     priceRangeMax: 500,
-    roadmapStages: ['procurement'],
   },
   {
     key: 'lighting_plan',
@@ -189,7 +177,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 250,
     priceRangeMin: 150,
     priceRangeMax: 500,
-    roadmapStages: ['engineering'],
   },
 
   // ─── Полный дизайн-проект ───────────────────────────────────
@@ -202,7 +189,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 800,
     priceRangeMin: 500,
     priceRangeMax: 1500,
-    roadmapStages: ['engineering'],
   },
   {
     key: 'electrical_plan',
@@ -213,7 +199,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 250,
     priceRangeMin: 150,
     priceRangeMax: 500,
-    roadmapStages: ['engineering'],
   },
   {
     key: 'plumbing_plan',
@@ -224,7 +209,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 200,
     priceRangeMin: 100,
     priceRangeMax: 400,
-    roadmapStages: ['engineering'],
   },
   {
     key: 'ceiling_plan',
@@ -235,7 +219,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 200,
     priceRangeMin: 100,
     priceRangeMax: 400,
-    roadmapStages: ['engineering'],
   },
   {
     key: 'floor_plan',
@@ -246,7 +229,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 200,
     priceRangeMin: 100,
     priceRangeMax: 400,
-    roadmapStages: ['engineering'],
   },
   {
     key: 'specification',
@@ -257,7 +239,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 200,
     priceRangeMin: 100,
     priceRangeMax: 400,
-    roadmapStages: ['procurement'],
   },
 
   // ─── Авторский надзор ───────────────────────────────────────
@@ -270,7 +251,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 15000,
     priceRangeMin: 8000,
     priceRangeMax: 35000,
-    roadmapStages: ['supervision'],
   },
   {
     key: 'supervision_monthly',
@@ -281,7 +261,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 50000,
     priceRangeMin: 25000,
     priceRangeMax: 120000,
-    roadmapStages: ['supervision'],
   },
   {
     key: 'commissioning',
@@ -292,7 +271,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 10000,
     priceRangeMin: 5000,
     priceRangeMax: 25000,
-    roadmapStages: ['handover'],
   },
 
   // ─── Консультации ───────────────────────────────────────────
@@ -305,7 +283,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 5000,
     priceRangeMin: 3000,
     priceRangeMax: 15000,
-    roadmapStages: [],
   },
   {
     key: 'onsite_consultation',
@@ -316,7 +293,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 10000,
     priceRangeMin: 5000,
     priceRangeMax: 25000,
-    roadmapStages: [],
   },
 
   // ─── Дополнительные услуги ──────────────────────────────────
@@ -329,7 +305,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 15,
     priceRangeMin: 10,
     priceRangeMax: 25,
-    roadmapStages: ['procurement'],
   },
   {
     key: 'custom_furniture',
@@ -340,7 +315,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 25000,
     priceRangeMin: 10000,
     priceRangeMax: 80000,
-    roadmapStages: ['engineering'],
   },
   {
     key: 'styling',
@@ -351,7 +325,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 300,
     priceRangeMin: 150,
     priceRangeMax: 600,
-    roadmapStages: ['handover'],
   },
   {
     key: 'photo_shoot',
@@ -362,7 +335,6 @@ export const DESIGNER_SERVICE_TEMPLATES: DesignerServiceTemplate[] = [
     defaultPrice: 30000,
     priceRangeMin: 15000,
     priceRangeMax: 80000,
-    roadmapStages: [],
   },
 ]
 

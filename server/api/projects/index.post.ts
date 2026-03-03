@@ -1,8 +1,6 @@
 import { useDb } from '~/server/db/index'
-import { projects, roadmapStages } from '~/server/db/schema'
+import { projects } from '~/server/db/schema'
 import { CreateProjectSchema } from '~/shared/types/project'
-import { readCustomRoadmapTemplates } from '~/server/utils/roadmap-templates'
-import { ROADMAP_TEMPLATES } from '~/shared/types/roadmap-templates'
 import { CORE_PAGES } from '~/shared/constants/pages'
 
 export default defineEventHandler(async (event) => {
@@ -28,26 +26,6 @@ export default defineEventHandler(async (event) => {
       })
     }
     throw e
-  }
-
-  // Create roadmap stages from selected template
-  if (body.roadmapTemplateKey) {
-    const customTemplates = await readCustomRoadmapTemplates()
-    const allTemplates = [...ROADMAP_TEMPLATES, ...customTemplates]
-    const template = allTemplates.find(t => t.key === body.roadmapTemplateKey)
-    if (template && template.stages.length > 0) {
-      await db.insert(roadmapStages).values(
-        template.stages.map((stage, idx) => ({
-          projectId: project.id,
-          stageKey: stage.stageKey,
-          title: stage.title,
-          description: stage.description ?? null,
-          notes: stage.notes ?? null,
-          status: 'pending',
-          sortOrder: idx,
-        }))
-      )
-    }
   }
 
   return project

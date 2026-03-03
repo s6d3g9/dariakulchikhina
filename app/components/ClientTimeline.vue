@@ -1,55 +1,7 @@
 <template>
   <div class="ctl-root">
-    <div v-if="stagePending || teamPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="teamPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
-
-      <!-- Section: Timeline -->
-      <section class="ctl-section">
-        <div class="ctl-section-header">
-          <span class="ctl-section-title">Этапы проекта</span>
-          <span class="ctl-phase-badge">{{ currentPhaseName }}</span>
-        </div>
-
-        <div class="ctl-timeline" v-if="normalizedStages?.length">
-          <div
-            v-for="(stage, idx) in normalizedStages"
-            :key="stage.id"
-            class="ctl-stage"
-            :class="`ctl-stage--${stage.status}`"
-          >
-            <!-- Left: status dot + line -->
-            <div class="ctl-stage-track">
-              <div class="ctl-track-dot" :class="`ctl-dot--${stage.status}`">
-                <span class="ctl-dot-inner">{{ roadmapStatusIcon(stage.status) }}</span>
-              </div>
-              <div v-if="idx < normalizedStages.length - 1" class="ctl-track-line" :class="stage.status === 'done' ? 'ctl-line--done' : ''"></div>
-            </div>
-
-            <!-- Right: content -->
-            <div class="ctl-stage-content">
-              <div class="ctl-stage-head">
-                <span class="ctl-stage-name">{{ stage.title }}</span>
-                <span class="ctl-status-pill" :class="`ctl-pill--${stage.status}`">
-                  {{ roadmapStatusLabel(stage.status) }}
-                </span>
-              </div>
-
-              <div class="ctl-stage-meta" v-if="stage.dateStart || stage.dateEnd">
-                <span v-if="stage.dateStart" class="ctl-meta-item">
-                  <span class="ctl-meta-icon">◷</span> {{ fmtDate(stage.dateStart) }}
-                </span>
-                <span v-if="stage.dateEnd" class="ctl-meta-item">
-                  — {{ fmtDate(stage.dateEnd) }}
-                </span>
-              </div>
-
-              <p v-if="stage.description" class="ctl-stage-desc">{{ stage.description }}</p>
-              <p v-if="stage.notes && stage.status === 'in_progress'" class="ctl-stage-note">{{ stage.notes }}</p>
-            </div>
-          </div>
-        </div>
-        <div v-else class="ctl-empty">Дорожная карта ещё не заполнена</div>
-      </section>
 
       <!-- Section: Team -->
       <section class="ctl-section" v-if="contractors?.length">
@@ -60,15 +12,12 @@
 
         <div class="ctl-team-grid">
           <div v-for="c in contractors" :key="c.id" class="ctl-team-card">
-            <!-- Avatar -->
             <div class="ctl-avatar">
               <span class="ctl-avatar-letter">{{ c.name?.[0] || '?' }}</span>
             </div>
             <div class="ctl-team-info">
               <div class="ctl-team-name">{{ c.name }}</div>
               <div v-if="c.companyName" class="ctl-team-company">{{ c.companyName }}</div>
-
-              <!-- Work types -->
               <div v-if="c.workTypes?.length" class="ctl-work-types">
                 <span v-for="wt in c.workTypes.slice(0, 3)" :key="wt" class="ctl-wt-chip">
                   {{ workTypeLabel(wt) }}
@@ -77,8 +26,6 @@
                   +{{ c.workTypes.length - 3 }}
                 </span>
               </div>
-
-              <!-- Contacts -->
               <div class="ctl-contacts">
                 <a v-if="c.phone" :href="`tel:${c.phone}`" class="ctl-contact-btn ctl-contact-btn--phone">
                   📞 {{ c.phone }}
@@ -111,8 +58,7 @@
         </div>
       </section>
 
-      <!-- Notice: no team -->
-      <div v-else-if="!stagePending && !teamPending" class="ctl-no-team">
+      <div v-else class="ctl-no-team">
         Специалисты ещё не назначены
       </div>
 
@@ -121,39 +67,16 @@
 </template>
 
 <script setup lang="ts">
-import { PROJECT_PHASES } from '~~/shared/types/catalogs'
-import { deriveProjectPhaseFromRoadmap, normalizeRoadmapStages, roadmapStatusLabel, roadmapStatusIcon } from '~~/shared/utils/roadmap'
 import { workTypeLabel } from '~~/shared/utils/work-status'
 
 const props = defineProps<{ slug: string }>()
 
-const { lastSaved } = useRoadmapBus()
-
 const reqHeaders = useRequestHeaders(['cookie'])
-const { data: stages, pending: stagePending, refresh: refreshStages } = await useFetch<any[]>(
-  () => `/api/projects/${props.slug}/roadmap`,
-  { headers: reqHeaders }
-)
 const { data: contractors, pending: teamPending } = await useFetch<any[]>(
   () => `/api/projects/${props.slug}/contractors`,
   { headers: reqHeaders }
 )
-const { data: project, refresh: refreshProject } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
-watch(lastSaved, () => { refreshStages(); refreshProject() })
-
-const normalizedStages = computed(() => normalizeRoadmapStages(stages.value || []))
-
-const currentPhaseKey = computed(() => deriveProjectPhaseFromRoadmap(normalizedStages.value) || project.value?.status || 'lead')
-const currentPhaseName = computed(() =>
-  PROJECT_PHASES.find(p => p.key === currentPhaseKey.value)?.label || ''
-)
-
-function fmtDate(d: string) {
-  if (!d || d === 'null') return ''
-  try { return new Date(d).toLocaleDateString('ru', { day: 'numeric', month: 'short' }) }
-  catch { return d }
-}
 function noun(n: number, one: string, few: string, many: string) {
   const mod = n % 100 > 10 && n % 100 < 20 ? many : { 1: one, 2: few, 3: few, 4: few }[n % 10] || many
   return mod

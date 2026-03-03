@@ -1,15 +1,19 @@
 # Архитектура хранения данных
 
+> Актуализировано: 2026-03-03. Полный список таблиц и ER-диаграмма → [ARCHITECTURE.md](../ARCHITECTURE.md#2-слой-данных---база-данных)
+
 ## 1) Обзор модели данных
 
-Основное хранилище — PostgreSQL. Схема описана в `server/db/schema.ts` через Drizzle ORM.
+Основное хранилище — PostgreSQL 16 (Docker, порт 5433). Схема описана в `server/db/schema.ts` через Drizzle ORM.
 
-Данные проекта распределены по четырём группам:
+**19 таблиц** распределены по пяти группам:
 
-1. **Identity/Access** — пользователи и ролевые сессии.
-2. **Project Core** — проекты, доступные страницы, профиль проекта.
-3. **Execution Data** — контент страниц, статусы задач, дорожная карта.
-4. **Reference & Files** — подрядчики, связи проект-подрядчик, загрузки файлов.
+1. **Identity/Access** — `users` (админы/дизайнеры).
+2. **Project Core** — `projects`, `page_configs`, `page_content`, `clients`.
+3. **Execution Data** — `work_status_items`, `work_status_item_photos`, `work_status_item_comments`, `roadmap_stages`.
+4. **Contractors** — `contractors` (с self-ref `parentId`: компания → мастера), `project_contractors` (M:N), `contractor_documents`.
+5. **Designers** — `designers`, `designer_projects`, `designer_project_clients`, `designer_project_contractors`.
+6. **Files & Docs** — `uploads`, `documents`, `gallery_items`.
 
 ## 2) Таблицы и назначение
 
@@ -86,13 +90,13 @@ erDiagram
 
 ## 5) Сессии и безопасность данных
 
-Сессии не хранятся в таблицах: используются httpOnly cookies, выставляемые сервером:
+Сессии не хранятся в таблицах: используются **HMAC-подписанные httpOnly cookies** (SHA-256, 30 дней):
 
-- admin-session хранит `userId` (base64 JSON),
-- client-session хранит `projectSlug`,
-- contractor-session хранит `contractorId`.
+- `daria_admin_session` — хранит `userId`,
+- `daria_client_session` — хранит `projectSlug`,
+- `daria_contractor_session` — хранит `contractorId`.
 
-Доступ к данным ограничивается и на UI (middleware), и на API-слое (проверки в endpoint).
+Доступ к данным ограничивается и на UI (middleware), и на API-слое (`requireAdmin()`, `requireAdminOrClient()`, `requireAdminOrContractor()`).
 
 ## 6) Потоки записи данных
 

@@ -1,7 +1,7 @@
 /**
  * shared/utils/work-status.ts
  * Единый источник истины для статусов задач (work status items).
- * Аналог roadmap.ts — все метки, CSS-классы, иконки определены здесь.
+ * Все метки, CSS-классы, иконки определены здесь.
  */
 
 import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
