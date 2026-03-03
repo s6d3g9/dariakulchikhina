@@ -179,6 +179,118 @@
                 </div>
               </div>
 
+              <!-- ═══ Цвета элементов ═══ -->
+              <div v-show="isTabVisible('colors')" class="dp-page dp-page--cols">
+                <!-- Колонка 1: Фоны -->
+                <div class="dp-col">
+                  <div class="dp-col-label">Фоны</div>
+                  <div class="dp-field">
+                    <label class="dp-label">страница <button v-if="tokens.colorPageBg" type="button" class="dp-clr-reset" @click="set('colorPageBg', '')" title="Сбросить">✕</button></label>
+                    <div class="dp-clr-row">
+                      <input type="color" class="dp-color-input" :value="tokens.colorPageBg || '#f3f4f6'" @input="set('colorPageBg', ($event.target as HTMLInputElement).value)">
+                      <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorPageBg }">{{ tokens.colorPageBg || 'авто' }}</span>
+                    </div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">поверхности / панели <button v-if="tokens.colorSurface" type="button" class="dp-clr-reset" @click="set('colorSurface', '')" title="Сбросить">✕</button></label>
+                    <div class="dp-clr-row">
+                      <input type="color" class="dp-color-input" :value="tokens.colorSurface || '#ffffff'" @input="set('colorSurface', ($event.target as HTMLInputElement).value)">
+                      <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorSurface }">{{ tokens.colorSurface || 'авто' }}</span>
+                    </div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">границы / рамки <button v-if="tokens.colorBorder" type="button" class="dp-clr-reset" @click="set('colorBorder', '')" title="Сбросить">✕</button></label>
+                    <div class="dp-clr-row">
+                      <input type="color" class="dp-color-input" :value="tokens.colorBorder || '#ffffff'" @input="set('colorBorder', ($event.target as HTMLInputElement).value)">
+                      <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorBorder }">{{ tokens.colorBorder || 'авто' }}</span>
+                    </div>
+                  </div>
+                  <div class="dp-type-ctx-hint" style="margin-top:4px">Прозрачность поверхностей и&nbsp;границ — вкладка <em>поверхности</em></div>
+                </div>
+
+                <!-- Колонка 2: Текст -->
+                <div class="dp-col">
+                  <div class="dp-col-label">Текст и ссылки</div>
+                  <div class="dp-field">
+                    <label class="dp-label">основной текст <button v-if="tokens.colorText" type="button" class="dp-clr-reset" @click="set('colorText', '')" title="Сбросить">✕</button></label>
+                    <div class="dp-clr-row">
+                      <input type="color" class="dp-color-input" :value="tokens.colorText || '#1f1f1f'" @input="set('colorText', ($event.target as HTMLInputElement).value)">
+                      <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorText }">{{ tokens.colorText || 'авто' }}</span>
+                    </div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">заголовки h1–h6 <button v-if="tokens.colorHeading" type="button" class="dp-clr-reset" @click="set('colorHeading', '')" title="Сбросить">✕</button></label>
+                    <div class="dp-clr-row">
+                      <input type="color" class="dp-color-input" :value="tokens.colorHeading || '#1f1f1f'" @input="set('colorHeading', ($event.target as HTMLInputElement).value)">
+                      <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorHeading }">{{ tokens.colorHeading || 'авто' }}</span>
+                    </div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">ссылки <button v-if="tokens.colorLink" type="button" class="dp-clr-reset" @click="set('colorLink', '')" title="Сбросить">✕</button></label>
+                    <div class="dp-clr-row">
+                      <input type="color" class="dp-color-input" :value="tokens.colorLink || '#3b6bdb'" @input="set('colorLink', ($event.target as HTMLInputElement).value)">
+                      <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorLink }">{{ tokens.colorLink || 'авто' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Колонка 3: Кнопки + превью -->
+                <div class="dp-col">
+                  <div class="dp-col-label">Кнопки</div>
+                  <div class="dp-field">
+                    <label class="dp-label">фон кнопки <button v-if="tokens.colorBtnBg" type="button" class="dp-clr-reset" @click="set('colorBtnBg', '')" title="Сбросить">✕</button></label>
+                    <div class="dp-clr-row">
+                      <input type="color" class="dp-color-input" :value="tokens.colorBtnBg || '#000000'" @input="set('colorBtnBg', ($event.target as HTMLInputElement).value)">
+                      <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorBtnBg }">{{ tokens.colorBtnBg || 'авто' }}</span>
+                    </div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">текст кнопки <button v-if="tokens.colorBtnText" type="button" class="dp-clr-reset" @click="set('colorBtnText', '')" title="Сбросить">✕</button></label>
+                    <div class="dp-clr-row">
+                      <input type="color" class="dp-color-input" :value="tokens.colorBtnText || '#2c2c2a'" @input="set('colorBtnText', ($event.target as HTMLInputElement).value)">
+                      <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorBtnText }">{{ tokens.colorBtnText || 'авто' }}</span>
+                    </div>
+                  </div>
+
+                  <button type="button" class="dp-sm-btn dp-sm-btn--warn" style="margin-top:10px; width:100%"
+                    :disabled="!tokens.colorPageBg && !tokens.colorSurface && !tokens.colorBorder && !tokens.colorText && !tokens.colorHeading && !tokens.colorLink && !tokens.colorBtnBg && !tokens.colorBtnText"
+                    @click="[set('colorPageBg',''), set('colorSurface',''), set('colorBorder',''), set('colorText',''), set('colorHeading',''), set('colorLink',''), set('colorBtnBg',''), set('colorBtnText','')]">
+                    ↺ сбросить все цвета
+                  </button>
+
+                  <div class="dp-col-label" style="margin-top:14px">Превью</div>
+                  <div :style="{
+                    background: tokens.colorPageBg || 'var(--glass-page-bg)',
+                    border: '1px solid color-mix(in srgb, var(--glass-text) 12%, transparent)',
+                    borderRadius: 'var(--card-radius, 14px)',
+                    padding: '10px',
+                    marginTop: '0',
+                  }">
+                    <div :style="{
+                      background: tokens.colorSurface ? `rgba(${clrRgb(tokens.colorSurface)}, ${tokens.glassOpacity})` : 'var(--glass-bg)',
+                      border: tokens.colorBorder ? `1px solid rgba(${clrRgb(tokens.colorBorder)}, ${tokens.glassBorderOpacity})` : '1px solid var(--glass-border)',
+                      borderRadius: 'var(--card-radius-inner, 8px)',
+                      padding: '8px 10px',
+                      marginBottom: '6px',
+                    }">
+                      <div :style="{ fontSize: '.72rem', fontWeight: 700, marginBottom: '3px', color: tokens.colorHeading || 'var(--glass-text)' }">Заголовок</div>
+                      <div :style="{ fontSize: '.65rem', color: tokens.colorText || 'var(--glass-text)', opacity: .85 }">Основной текст страницы</div>
+                      <span :style="{ fontSize: '.65rem', color: tokens.colorLink || 'var(--ds-accent, var(--glass-text))' }">Ссылка →</span>
+                    </div>
+                    <button type="button" :style="{
+                      background: tokens.colorBtnBg || 'var(--btn-bg-base, rgba(0,0,0,0.07))',
+                      color: tokens.colorBtnText || 'var(--btn-color, var(--glass-text))',
+                      border: '1px solid transparent',
+                      borderRadius: 'var(--btn-radius, 4px)',
+                      padding: '4px 10px',
+                      fontSize: '.65rem',
+                      fontFamily: 'inherit',
+                      cursor: 'default',
+                    }">Кнопка</button>
+                  </div>
+                </div>
+              </div>
+
               <!-- ═══ Кнопки ═══ -->
               <div v-show="isTabVisible('buttons')" class="dp-page dp-page--cols">
                 <div class="dp-col">
@@ -1188,6 +1300,7 @@ const activeTab = ref('presets')
 const tabList = [
   { id: 'presets',   label: 'рецепты' },
   { id: 'palette',   label: 'палитра' },
+  { id: 'colors',    label: 'цвета ▸' },
   { id: 'buttons',   label: 'кнопки' },
   { id: 'type',      label: 'типографика' },
   { id: 'surface',   label: 'поверхности' },
@@ -1206,7 +1319,7 @@ const tabList = [
   { id: 'badges',    label: 'значки' },
 ]
 // Tab keying — sections object kept only for inspect-mode quick-jump compatibility
-const sections = reactive({ presets: true, palette: true, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false })
+const sections = reactive({ presets: true, palette: true, colors: false, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false })
 function toggle(key: keyof typeof sections) { activeTab.value = key as string }
 
 /* ── Option lists ────────────────────────────────── */
@@ -1262,6 +1375,7 @@ const currentScaleLabel = computed(() =>
 const sectionSearchMap: Record<string, string[]> = {
   presets:  ['рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal', 'minale', 'bauhaus', 'artdeco', 'cyberpunk', 'zen', 'y2k', 'newspaper', 'pastel', 'tokyo', 'terracotta', 'arctic', 'glow', 'ink', 'bubblegum', 'blueprint'],
   palette:  ['палитра', 'цвет', 'акцент', 'color', 'theme', 'accent', 'hue', 'статусы', 'success', 'успех', 'ошибка', 'error', 'warning', 'предупреждение'],
+  colors:   ['цвета', 'элемент', 'фон', 'кнопк', 'текст', 'ссылк', 'заголовк', 'граница', 'background', 'surface', 'heading', 'link', 'border', 'button', 'colour', 'цвет элементов'],
   buttons:  ['кнопк', 'button', 'стиль', 'размер', 'закругл', 'регистр', 'btn'],
   type:     ['типограф', 'шрифт', 'font', 'размер', 'вес', 'межбукв', 'межстроч', 'letter', 'line-height'],
   typeScale: ['масштаб', 'scale', 'шкала', 'ratio', 'модуляр'],
@@ -1298,6 +1412,15 @@ watch(searchQuery, (q) => {
 })
 
 function pct(v: number) { return `${(v * 100).toFixed(0)}%` }
+
+/** Convert #rrggbb hex to "r, g, b" string for rgba() in templates */
+function clrRgb(hex: string): string {
+  if (!hex || hex.length < 7) return '128, 128, 128'
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `${r}, ${g}, ${b}`
+}
 
 function pickFont(id: string) {
   const f = FONT_OPTIONS.find(o => o.id === id)
@@ -2217,6 +2340,31 @@ onBeforeUnmount(() => {
   font-family: inherit; color: var(--glass-text); transition: all .12s;
 }
 .dp-sm-btn:hover { opacity: 1; }
+.dp-sm-btn--warn { border-color: rgba(220,80,60,.25); color: hsl(10,70%,45%); }
+.dp-sm-btn--warn:hover { background: rgba(220,80,60,.06); opacity: 1; }
+.dp-sm-btn:disabled { opacity: .2; cursor: default; pointer-events: none; }
+
+/* ── Colour-picker controls (цвета ▸ tab) ── */
+.dp-clr-row {
+  display: flex; align-items: center; gap: 8px; margin-top: 4px;
+}
+.dp-color-input {
+  width: 36px; height: 22px; padding: 0 2px; border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  border-radius: 4px; background: none; cursor: pointer; flex-shrink: 0;
+}
+.dp-color-input::-webkit-color-swatch-wrapper { padding: 2px; }
+.dp-color-input::-webkit-color-swatch { border: none; border-radius: 2px; }
+.dp-clr-hex {
+  font-size: .6rem; font-family: inherit; color: var(--glass-text); opacity: .8;
+  letter-spacing: .03em; min-width: 56px;
+}
+.dp-clr-hex--auto { opacity: .35; font-style: italic; }
+.dp-clr-reset {
+  background: none; border: none; cursor: pointer; padding: 0 2px; font-size: .6rem;
+  opacity: .4; color: var(--glass-text); line-height: 1; margin-left: 2px;
+  transition: opacity .1s;
+}
+.dp-clr-reset:hover { opacity: .9; }
 
 /* ── Tab content area ── */
 .dp-tab-content {

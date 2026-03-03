@@ -250,12 +250,18 @@ h1, h2, h3, h4, h5, h6 {
   line-height: var(--ds-heading-line-height, 1.25);
   margin-bottom: var(--ds-paragraph-spacing);
   letter-spacing: var(--ds-heading-letter-spacing, -0.01em);
+  color: var(--ds-heading-color, currentColor);
 }
 h1 { font-size: var(--ds-text-3xl); }
 h2 { font-size: var(--ds-text-2xl); }
 h3 { font-size: var(--ds-text-xl); }
 h4 { font-size: var(--ds-text-lg); }
 h5, h6 { font-size: var(--ds-text-base); }
+/* Link colour — only plain <a> without class, so styled components are unaffected */
+a:not([class]) {
+  color: var(--ds-link-color, var(--ds-accent, var(--glass-text)));
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
 p {
   margin-bottom: var(--ds-paragraph-spacing);
   word-spacing: var(--ds-word-spacing, normal);

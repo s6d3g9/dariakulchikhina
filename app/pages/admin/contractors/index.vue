@@ -178,16 +178,27 @@
                 <div v-if="projectsLoading" class="ct-form-hint">Загрузка проектов...</div>
                 <div v-else-if="projectsError" class="ct-form-error">{{ projectsError }}</div>
                 <div v-else-if="!allProjects.length" class="ct-form-hint">Нет проектов</div>
-                <div v-else class="ct-projects-grid">
-                  <label
-                    v-for="p in allProjects" :key="p.id"
-                    class="ct-project-check"
-                    :class="{ 'ct-project-check--on': selectedProjectIds.includes(p.id) }"
-                    @click.prevent="toggleProject(p.id)"
-                  >
-                    <span class="ct-project-dot" />
-                    <span>{{ p.title }}</span>
-                  </label>
+                <div v-else class="ct-project-pool">
+                  <div class="ct-project-pool-title">Выбрано</div>
+                  <TransitionGroup name="tag-shift" tag="div" class="ct-projects-grid">
+                    <button
+                      v-for="p in allProjects.filter((item) => selectedProjectIds.includes(item.id))"
+                      :key="`project-selected-${p.id}`"
+                      type="button"
+                      class="ct-project-tag ct-project-tag--active"
+                      @click.prevent="toggleProject(p.id)"
+                    >#{{ p.title }}</button>
+                  </TransitionGroup>
+                  <div class="ct-project-pool-title" style="margin-top:8px">Доступно</div>
+                  <TransitionGroup name="tag-shift" tag="div" class="ct-projects-grid">
+                    <button
+                      v-for="p in allProjects.filter((item) => !selectedProjectIds.includes(item.id))"
+                      :key="`project-available-${p.id}`"
+                      type="button"
+                      class="ct-project-tag"
+                      @click.prevent="toggleProject(p.id)"
+                    >#{{ p.title }}</button>
+                  </TransitionGroup>
                 </div>
               </template>
 
@@ -888,27 +899,43 @@ html.dark .ct-badge--master { background: rgba(99, 140, 255, .15); color: #82a5f
 }
 .ct-form-error--bottom { margin-top: 8px; }
 
-/* ── Project checkboxes ── */
+/* ── Project tags picker ── */
+.ct-project-pool-title {
+  font-size: .66rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .48;
+  margin-bottom: 6px;
+}
 .ct-projects-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-.ct-project-check {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 10px; border-radius: 8px; cursor: pointer;
-  font-size: .78rem; color: var(--glass-text); opacity: .5;
-  transition: all .12s; user-select: none;
+.ct-project-tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s ease;
 }
-.ct-project-check:hover { opacity: .8; }
-.ct-project-check--on {
-  background: color-mix(in srgb, var(--ds-accent, #6366f1) 10%, transparent);
-  color: var(--ds-accent, #6366f1); opacity: 1;
+.ct-project-tag:hover { opacity: .9; }
+.ct-project-tag--active {
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 14%, transparent);
+  color: var(--ds-accent, #6366f1);
+  border-color: color-mix(in srgb, var(--ds-accent, #6366f1) 40%, var(--glass-border));
 }
-.ct-project-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  border: 1.5px solid currentColor; flex-shrink: 0;
-  transition: background .12s;
+.tag-shift-move,
+.tag-shift-enter-active,
+.tag-shift-leave-active {
+  transition: all .22s ease;
 }
-.ct-project-check--on .ct-project-dot {
-  background: var(--ds-accent, #6366f1);
-  border-color: var(--ds-accent, #6366f1);
+.tag-shift-enter-from,
+.tag-shift-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(.97);
 }
 
 /* ── Responsive ── */

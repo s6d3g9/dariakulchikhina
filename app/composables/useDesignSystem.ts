@@ -147,6 +147,16 @@ export interface DesignTokens {
   focusRingOffset: number       // px — outline-offset (0..6)
   focusRingStyle: 'solid' | 'dashed' | 'dotted'  // outline-style
   focusRingOpacity: number      // 0..1 — ring visibility
+
+  /* ── Element colour overrides (hex string, '' = auto from theme) ── */
+  colorPageBg:  string   // --glass-page-bg  — page / body background
+  colorSurface: string   // --glass-bg base  — cards, panels (alpha from glassOpacity)
+  colorBorder:  string   // --glass-border base — borders (alpha from glassBorderOpacity)
+  colorText:    string   // --glass-text     — all body text
+  colorHeading: string   // --ds-heading-color — h1–h6
+  colorLink:    string   // --ds-link-color  — links / interactive
+  colorBtnBg:   string   // --btn-bg-base    — button background fill
+  colorBtnText: string   // --btn-color      — button label text
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -256,6 +266,15 @@ export const DEFAULT_TOKENS: DesignTokens = {
   focusRingOffset: 2,
   focusRingStyle: 'solid',
   focusRingOpacity: 0.7,
+
+  colorPageBg:  '',
+  colorSurface: '',
+  colorBorder:  '',
+  colorText:    '',
+  colorHeading: '',
+  colorLink:    '',
+  colorBtnBg:   '',
+  colorBtnText: '',
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1556,6 +1575,34 @@ export function useDesignSystem() {
         }
       }
     } catch { /* useUITheme not ready yet */ }
+
+    // ── Element colour overrides ─────────────────────────────────────
+    // Run LAST so they override both defaults and refreshed theme vars.
+    // Empty string → remove inline override so the theme CSS drives the value.
+    function _setOrDel(prop: string, val: string) {
+      if (val) el.style.setProperty(prop, val)
+      else el.style.removeProperty(prop)
+    }
+    function _hexRgba(hex: string, alpha: number) {
+      const r = parseInt(hex.slice(1, 3), 16)
+      const g = parseInt(hex.slice(3, 5), 16)
+      const b = parseInt(hex.slice(5, 7), 16)
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`
+    }
+
+    _setOrDel('--glass-page-bg',    t.colorPageBg)
+    _setOrDel('--glass-text',        t.colorText)
+    _setOrDel('--btn-bg-base',       t.colorBtnBg)
+    _setOrDel('--btn-color',         t.colorBtnText)
+    _setOrDel('--ds-heading-color',  t.colorHeading)
+    _setOrDel('--ds-link-color',     t.colorLink)
+
+    if (t.colorSurface && /^#[0-9a-f]{6}$/i.test(t.colorSurface)) {
+      el.style.setProperty('--glass-bg', _hexRgba(t.colorSurface, t.glassOpacity))
+    }
+    if (t.colorBorder && /^#[0-9a-f]{6}$/i.test(t.colorBorder)) {
+      el.style.setProperty('--glass-border', _hexRgba(t.colorBorder, t.glassBorderOpacity))
+    }
 
     } catch (e) {
       console.warn('[DesignSystem] applyToDOM error:', e)

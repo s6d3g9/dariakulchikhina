@@ -674,13 +674,24 @@
                 <div class="u-field u-field--full">
                   <div v-for="group in ROLE_GROUPS" :key="group.label" class="u-tag-group">
                     <div class="u-tag-group__label">{{ group.label }}</div>
-                    <div class="u-tags">
+                    <div class="u-tag-subtitle">Выбрано</div>
+                    <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--selected">
                       <button
-                        v-for="r in group.items" :key="r.value" type="button"
-                        class="u-tag" :class="{ active: form.roleTypes.includes(r.value) }"
+                        v-for="r in group.items.filter((item) => form.roleTypes.includes(item.value))"
+                        :key="`role-selected-${group.label}-${r.value}`"
+                        type="button"
+                        class="u-tag u-tag--picker u-tag--active"
                         @click="toggleArr(form.roleTypes, r.value)"
-                      >{{ r.label }}</button>
-                    </div>
+                      >#{{ r.label }}</button>
+                    </TransitionGroup>
+                    <div class="u-tag-subtitle" style="margin-top:8px">Доступно</div>
+                    <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--available">
+                      <button
+                        v-for="r in group.items.filter((item) => !form.roleTypes.includes(item.value))" :key="`role-available-${group.label}-${r.value}`" type="button"
+                        class="u-tag u-tag--picker"
+                        @click="toggleArr(form.roleTypes, r.value)"
+                      >#{{ r.label }}</button>
+                    </TransitionGroup>
                   </div>
                 </div>
               </div>
@@ -690,13 +701,22 @@
                 <div class="u-field u-field--full">
                   <div v-for="group in WORK_GROUPS" :key="group.label" class="u-tag-group">
                     <div class="u-tag-group__label">{{ group.label }}</div>
-                    <div class="u-tags">
+                    <div class="u-tag-subtitle">Выбрано</div>
+                    <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--selected">
                       <button
-                        v-for="w in group.items" :key="w.value" type="button"
-                        class="u-tag" :class="{ active: form.workTypes.includes(w.value) }"
+                        v-for="w in group.items.filter((item) => form.workTypes.includes(item.value))" :key="`work-selected-${group.label}-${w.value}`" type="button"
+                        class="u-tag u-tag--picker u-tag--active"
                         @click="toggleArr(form.workTypes, w.value)"
-                      >{{ w.label }}</button>
-                    </div>
+                      >#{{ w.label }}</button>
+                    </TransitionGroup>
+                    <div class="u-tag-subtitle" style="margin-top:8px">Доступно</div>
+                    <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--available">
+                      <button
+                        v-for="w in group.items.filter((item) => !form.workTypes.includes(item.value))" :key="`work-available-${group.label}-${w.value}`" type="button"
+                        class="u-tag u-tag--picker"
+                        @click="toggleArr(form.workTypes, w.value)"
+                      >#{{ w.label }}</button>
+                    </TransitionGroup>
                   </div>
                 </div>
               </div>
@@ -757,13 +777,22 @@
 
               <div class="u-form-section">
                 <h3>Способы оплаты</h3>
-                <div class="u-tags">
+                <div class="u-tag-subtitle">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--selected">
                   <button
-                    v-for="pm in PAYMENT_METHOD_OPTIONS" :key="pm.value" type="button"
-                    class="u-tag" :class="{ active: form.paymentMethods.includes(pm.value) }"
+                    v-for="pm in PAYMENT_METHOD_OPTIONS.filter((item) => form.paymentMethods.includes(item.value))" :key="`pay-selected-${pm.value}`" type="button"
+                    class="u-tag u-tag--picker u-tag--active"
                     @click="toggleArr(form.paymentMethods, pm.value)"
-                  >{{ pm.label }}</button>
-                </div>
+                  >#{{ pm.label }}</button>
+                </TransitionGroup>
+                <div class="u-tag-subtitle" style="margin-top:8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--available">
+                  <button
+                    v-for="pm in PAYMENT_METHOD_OPTIONS.filter((item) => !form.paymentMethods.includes(item.value))" :key="pm.value" type="button"
+                    class="u-tag u-tag--picker"
+                    @click="toggleArr(form.paymentMethods, pm.value)"
+                  >#{{ pm.label }}</button>
+                </TransitionGroup>
               </div>
 
               <div class="u-form-section">
@@ -2664,6 +2693,41 @@ async function saveProfile() {
   align-items: center;
 }
 .cab-cert-add .glass-input { flex: 1; }
+
+.u-tag-subtitle {
+  font-size: .66rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--glass-text, #1a1a2e);
+  opacity: .5;
+  margin-bottom: 6px;
+}
+.u-tag--picker {
+  border: 1px solid var(--glass-border, rgba(255,255,255,.3));
+  background: var(--glass-bg, rgba(255,255,255,.2));
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.u-tag--picker:hover { opacity: .92; }
+.u-tag--active {
+  background: color-mix(in srgb, var(--ds-accent, #4a80f0) 14%, transparent);
+  border-color: color-mix(in srgb, var(--ds-accent, #4a80f0) 40%, var(--glass-border, rgba(255,255,255,.3)));
+  color: var(--ds-accent, #4a80f0);
+}
+.tag-shift-move,
+.tag-shift-enter-active,
+.tag-shift-leave-active {
+  transition: all .22s ease;
+}
+.tag-shift-enter-from,
+.tag-shift-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(.97);
+}
 
 /* ── Checkbox ────────────────────────────────────────────────── */
 .cab-checkbox-label {
