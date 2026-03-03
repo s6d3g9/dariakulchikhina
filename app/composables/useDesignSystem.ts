@@ -157,6 +157,10 @@ export interface DesignTokens {
   colorLink:    string   // --ds-link-color  — links / interactive
   colorBtnBg:   string   // --btn-bg-base    — button background fill
   colorBtnText: string   // --btn-color      — button label text
+
+  /* ── Button & Card hover animation ── */
+  btnHoverAnim: 'none' | 'lift' | 'scale' | 'glow' | 'fill' | 'sheen'  // kinetic hover style
+  cardHoverAnim: 'none' | 'lift' | 'scale'                               // card hover micromotion
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -275,6 +279,9 @@ export const DEFAULT_TOKENS: DesignTokens = {
   colorLink:    '',
   colorBtnBg:   '',
   colorBtnText: '',
+
+  btnHoverAnim: 'none',
+  cardHoverAnim: 'none',
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1152,6 +1159,170 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       badgeBgOpacity: 0.12, badgeRadius: 999,
     },
   },
+  /* ── Architectural DNA presets ─────────────────────────────
+     Inspired by world-class architecture firm identities.
+     Each one radically changes motion, colour, spacing & type. */
+  {
+    id: 'snohetta',
+    name: 'Snøhetta',
+    description: 'Северное молчание — свет как материал, пространство как тишина',
+    icon: '⧆',
+    tokens: {
+      btnRadius: 0, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 300,
+      btnPaddingH: 28, btnPaddingV: 12,
+      btnHoverAnim: 'lift',
+      fontFamily: '"Manrope", -apple-system, sans-serif',
+      fontWeight: 300, headingWeight: 300, letterSpacing: 0.05, lineHeight: 1.80, typeScale: 1.414,
+      paragraphSpacing: 1.5, wordSpacing: 0.02,
+      headingLetterSpacing: 0.07, headingLineHeight: 1.05,
+      accentHue: 185, accentSaturation: 22, accentLightness: 42,
+      successHue: 165, successSaturation: 25, errorHue: 5, errorSaturation: 40, warningHue: 38, warningSaturation: 30,
+      glassBlur: 52, glassOpacity: 0.07, glassBorderOpacity: 0.00, glassSaturation: 103,
+      shadowOffsetY: 0, shadowBlurRadius: 72, shadowSpread: 0, shadowOpacity: 0.025,
+      cardRadius: 0, inputRadius: 0, chipRadius: 0, modalRadius: 0,
+      animDuration: 420, animEasing: 'cubic-bezier(0.22,1,0.36,1)',
+      borderWidth: 0, borderStyle: 'none', gridGap: 30,
+      cardHoverAnim: 'lift',
+      darkElevation: 3, darkSaturation: 12,
+      inputBgOpacity: 0.00, inputBorderOpacity: 0.05, inputPaddingH: 0, inputPaddingV: 13, inputFontSize: 0,
+      chipBgOpacity: 0.03, chipBorderOpacity: 0.00, chipPaddingH: 14, chipPaddingV: 5,
+      navItemRadius: 0, navItemPaddingH: 20, navItemPaddingV: 12,
+      statusBgOpacity: 0.04, statusPillRadius: 0,
+      modalOverlayOpacity: 0.62, dropdownBlur: 52,
+      scrollbarWidth: 1, scrollbarOpacity: 0.04,
+      tableHeaderOpacity: 0.02, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.03,
+      badgeBgOpacity: 0.06, badgeRadius: 0,
+      colorPageBg: '#f7f6f3',
+    },
+  },
+  {
+    id: 'olsonkundig',
+    name: 'Olson Kundig',
+    description: 'Сырой материал — бетон, сталь, камень; руки, которые строят',
+    icon: '▮',
+    tokens: {
+      btnRadius: 0, btnStyle: 'outline', btnTransform: 'uppercase', btnWeight: 500,
+      btnPaddingH: 22, btnPaddingV: 10,
+      btnHoverAnim: 'lift',
+      fontFamily: '"Outfit", "Helvetica Neue", sans-serif',
+      fontWeight: 400, headingWeight: 700, letterSpacing: 0.04, lineHeight: 1.5, typeScale: 1.333,
+      headingLetterSpacing: -0.01, headingLineHeight: 1.1,
+      accentHue: 22, accentSaturation: 52, accentLightness: 44,
+      successHue: 150, successSaturation: 30, errorHue: 6, errorSaturation: 55, warningHue: 35, warningSaturation: 45,
+      glassBlur: 5, glassOpacity: 0.74, glassBorderOpacity: 0.08, glassSaturation: 100,
+      shadowOffsetY: 1, shadowBlurRadius: 0, shadowSpread: 0, shadowOpacity: 0.22,
+      cardRadius: 0, inputRadius: 0, chipRadius: 0, modalRadius: 0,
+      animDuration: 190, animEasing: 'ease-out',
+      borderWidth: 1, borderStyle: 'solid', gridGap: 18,
+      cardHoverAnim: 'lift',
+      darkElevation: 5, darkSaturation: 20,
+      inputBgOpacity: 0.04, inputBorderOpacity: 0.14, inputPaddingH: 10, inputPaddingV: 8, inputFontSize: 0,
+      chipBgOpacity: 0.05, chipBorderOpacity: 0.12, chipPaddingH: 9, chipPaddingV: 3,
+      navItemRadius: 0, navItemPaddingH: 12, navItemPaddingV: 7,
+      statusBgOpacity: 0.08, statusPillRadius: 0,
+      modalOverlayOpacity: 0.55, dropdownBlur: 5,
+      scrollbarWidth: 3, scrollbarOpacity: 0.12,
+      tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.10,
+      badgeBgOpacity: 0.10, badgeRadius: 0,
+      colorPageBg: '#1c1a16', colorText: '#e2d9cc', colorHeading: '#ede5d8',
+    },
+  },
+  {
+    id: 'mvrdv',
+    name: 'MVRDV',
+    description: 'Данные и форма — параметрические блоки, яркая структура',
+    icon: '⬛',
+    tokens: {
+      btnRadius: 0, btnStyle: 'filled', btnTransform: 'none', btnWeight: 600,
+      btnPaddingH: 14, btnPaddingV: 8,
+      btnHoverAnim: 'scale',
+      fontFamily: '"DM Sans", "Arial", sans-serif',
+      fontWeight: 400, headingWeight: 900, letterSpacing: 0.00, lineHeight: 1.35, typeScale: 1.333,
+      headingLetterSpacing: -0.03, headingLineHeight: 1.0,
+      accentHue: 52, accentSaturation: 100, accentLightness: 48,
+      successHue: 135, successSaturation: 80, errorHue: 0, errorSaturation: 92, warningHue: 52, warningSaturation: 100,
+      glassBlur: 0, glassOpacity: 0.97, glassBorderOpacity: 0.00, glassSaturation: 100,
+      shadowOffsetY: 0, shadowBlurRadius: 0, shadowSpread: 0, shadowOpacity: 0,
+      cardRadius: 0, inputRadius: 0, chipRadius: 0, modalRadius: 0,
+      animDuration: 80, animEasing: 'linear',
+      borderWidth: 2, borderStyle: 'solid', gridGap: 12, gridColumns: 12,
+      cardHoverAnim: 'none',
+      darkElevation: 2, darkSaturation: 12,
+      inputBgOpacity: 0.00, inputBorderOpacity: 0.22, inputPaddingH: 10, inputPaddingV: 8, inputFontSize: 0,
+      chipBgOpacity: 0.00, chipBorderOpacity: 0.22, chipPaddingH: 8, chipPaddingV: 3,
+      navItemRadius: 0, navItemPaddingH: 10, navItemPaddingV: 6,
+      statusBgOpacity: 0.12, statusPillRadius: 0,
+      modalOverlayOpacity: 0.50, dropdownBlur: 0,
+      scrollbarWidth: 6, scrollbarOpacity: 0.22,
+      tableHeaderOpacity: 0.08, tableRowHoverOpacity: 0.05, tableBorderOpacity: 0.14,
+      badgeBgOpacity: 0.16, badgeRadius: 0,
+      colorPageBg: '#ffffff', colorText: '#0a0a0a',
+    },
+  },
+  {
+    id: 'som',
+    name: 'SOM',
+    description: 'Структурная ясность — инженерная точность, системный порядок',
+    icon: '⊟',
+    tokens: {
+      btnRadius: 3, btnStyle: 'filled', btnTransform: 'none', btnWeight: 500,
+      btnPaddingH: 20, btnPaddingV: 9,
+      btnHoverAnim: 'lift',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif',
+      fontWeight: 400, headingWeight: 600, letterSpacing: 0.01, lineHeight: 1.48, typeScale: 1.25,
+      headingLetterSpacing: -0.01, headingLineHeight: 1.2,
+      accentHue: 212, accentSaturation: 77, accentLightness: 45,
+      successHue: 148, successSaturation: 60, errorHue: 2, errorSaturation: 70, warningHue: 38, warningSaturation: 88,
+      glassBlur: 12, glassOpacity: 0.60, glassBorderOpacity: 0.08, glassSaturation: 110,
+      shadowOffsetY: 2, shadowBlurRadius: 12, shadowSpread: 0, shadowOpacity: 0.06,
+      cardRadius: 4, inputRadius: 3, chipRadius: 4, modalRadius: 6,
+      animDuration: 160, animEasing: 'ease',
+      borderWidth: 1, borderStyle: 'solid', gridGap: 16, gridColumns: 12,
+      cardHoverAnim: 'lift',
+      darkElevation: 5, darkSaturation: 42,
+      inputBgOpacity: 0.04, inputBorderOpacity: 0.10, inputPaddingH: 11, inputPaddingV: 8, inputFontSize: 0,
+      chipBgOpacity: 0.05, chipBorderOpacity: 0.08, chipPaddingH: 9, chipPaddingV: 3,
+      navItemRadius: 3, navItemPaddingH: 11, navItemPaddingV: 6,
+      statusBgOpacity: 0.09, statusPillRadius: 3,
+      modalOverlayOpacity: 0.35, dropdownBlur: 12,
+      scrollbarWidth: 3, scrollbarOpacity: 0.10,
+      tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.07,
+      badgeBgOpacity: 0.11, badgeRadius: 3,
+    },
+  },
+  {
+    id: 'mad',
+    name: 'MAD Architects',
+    description: 'Космическая пустота — органические формы плывут в бесконечности',
+    icon: '∞',
+    tokens: {
+      btnRadius: 999, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 300,
+      btnPaddingH: 32, btnPaddingV: 13,
+      btnHoverAnim: 'glow',
+      fontFamily: '"Manrope", "Inter", sans-serif',
+      fontWeight: 300, headingWeight: 200, letterSpacing: 0.20, lineHeight: 1.85, typeScale: 1.25,
+      paragraphSpacing: 1.3, wordSpacing: 0.07,
+      headingLetterSpacing: 0.14, headingLineHeight: 1.12,
+      accentHue: 196, accentSaturation: 55, accentLightness: 68,
+      successHue: 170, successSaturation: 45, errorHue: 350, errorSaturation: 50, warningHue: 38, warningSaturation: 55,
+      glassBlur: 38, glassOpacity: 0.10, glassBorderOpacity: 0.04, glassSaturation: 185,
+      shadowOffsetY: 0, shadowBlurRadius: 60, shadowSpread: 0, shadowOpacity: 0.035,
+      cardRadius: 26, inputRadius: 999, chipRadius: 999, modalRadius: 32,
+      animDuration: 540, animEasing: 'cubic-bezier(0.22,1,0.36,1)',
+      borderWidth: 0, borderStyle: 'none', gridGap: 26,
+      cardHoverAnim: 'scale',
+      darkElevation: 12, darkSaturation: 50,
+      inputBgOpacity: 0.05, inputBorderOpacity: 0.04, inputPaddingH: 18, inputPaddingV: 12, inputFontSize: 0,
+      chipBgOpacity: 0.07, chipBorderOpacity: 0.00, chipPaddingH: 14, chipPaddingV: 5,
+      navItemRadius: 999, navItemPaddingH: 20, navItemPaddingV: 11,
+      statusBgOpacity: 0.06, statusPillRadius: 999,
+      modalOverlayOpacity: 0.72, dropdownBlur: 38,
+      scrollbarWidth: 2, scrollbarOpacity: 0.05,
+      tableHeaderOpacity: 0.03, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.03,
+      badgeBgOpacity: 0.10, badgeRadius: 999,
+      colorPageBg: '#07080c', colorText: '#c5d8e8', colorHeading: '#e0f2ff', colorLink: '#78b8d4',
+    },
+  },
 ]
 
 /* ═══════════════════════════════════════════════════════════
@@ -1536,6 +1707,10 @@ export function useDesignSystem() {
     el.style.setProperty('--ds-focus-ring-color', `hsla(${t.accentHue}, ${t.accentSaturation}%, ${t.accentLightness}%, ${t.focusRingOpacity})`)
     el.style.setProperty('--ds-focus-ring', `${t.focusRingWidth}px ${t.focusRingStyle} hsla(${t.accentHue}, ${t.accentSaturation}%, ${t.accentLightness}%, ${t.focusRingOpacity})`)
 
+    // ── Button & card hover animation ─────────────────────────────
+    el.setAttribute('data-btn-hover', t.btnHoverAnim)
+    el.setAttribute('data-card-hover', t.cardHoverAnim)
+
     // Re-apply UI theme's CSS vars on top (they set --btn-bg-base, --glass-* etc.
     // which must persist after applyToDOM sets --btn-bg = var(--btn-bg-base))
     try {
@@ -1612,7 +1787,12 @@ export function useDesignSystem() {
   /* ── Batch setter (one undo step for preset switch) ───── */
   function applyPreset(preset: DesignPreset) {
     pushHistory()
-    tokens.value = { ...tokens.value, ...preset.tokens }
+    // Reset colour overrides so each preset starts with a clean colour story
+    const colourReset = {
+      colorPageBg: '', colorSurface: '', colorBorder: '', colorText: '',
+      colorHeading: '', colorLink: '', colorBtnBg: '', colorBtnText: '',
+    }
+    tokens.value = { ...tokens.value, ...colourReset, ...preset.tokens }
     applyToDOM()
     save()
   }

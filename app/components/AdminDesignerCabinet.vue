@@ -257,16 +257,26 @@
                 <textarea v-model="pkg.description" class="glass-input pkg-desc-inp" rows="2" placeholder="Описание пакета" />
                 <div class="pkg-services-edit">
                   <strong>Включённые услуги:</strong>
-                  <div class="pkg-svc-tags">
+                  <div class="tag-picker-subtitle">Выбрано</div>
+                  <TransitionGroup name="tag-shift" tag="div" class="pkg-svc-tags">
                     <button
-                      v-for="svc in allServiceKeys"
-                      :key="svc.key"
+                      v-for="svc in allServiceKeys.filter((item) => pkg.serviceKeys.includes(item.key))"
+                      :key="`pkg-selected-${pkg.key}-${svc.key}`"
                       type="button"
-                      class="u-tag"
-                      :class="{ active: pkg.serviceKeys.includes(svc.key) }"
+                      class="pkg-tag-picker pkg-tag-picker--active"
                       @click="togglePkgService(pkg, svc.key)"
-                    >{{ svc.title }}</button>
-                  </div>
+                    >#{{ svc.title }}</button>
+                  </TransitionGroup>
+                  <div class="tag-picker-subtitle" style="margin-top:8px">Доступно</div>
+                  <TransitionGroup name="tag-shift" tag="div" class="pkg-svc-tags">
+                    <button
+                      v-for="svc in allServiceKeys.filter((item) => !pkg.serviceKeys.includes(item.key))"
+                      :key="`pkg-available-${pkg.key}-${svc.key}`"
+                      type="button"
+                      class="pkg-tag-picker"
+                      @click="togglePkgService(pkg, svc.key)"
+                    >#{{ svc.title }}</button>
+                  </TransitionGroup>
                 </div>
               </div>
             </template>
@@ -367,16 +377,26 @@
                 </div>
                 <div class="pkg-services-edit">
                   <strong>Включённые услуги:</strong>
-                  <div class="pkg-svc-tags">
+                  <div class="tag-picker-subtitle">Выбрано</div>
+                  <TransitionGroup name="tag-shift" tag="div" class="pkg-svc-tags">
                     <button
-                      v-for="svc in allServiceKeys"
-                      :key="svc.key"
+                      v-for="svc in allServiceKeys.filter((item) => sub.serviceKeys.includes(item.key))"
+                      :key="`sub-selected-${sub.key}-${svc.key}`"
                       type="button"
-                      class="u-tag"
-                      :class="{ active: sub.serviceKeys.includes(svc.key) }"
+                      class="pkg-tag-picker pkg-tag-picker--active"
                       @click="toggleSubService(sub, svc.key)"
-                    >{{ svc.title }}</button>
-                  </div>
+                    >#{{ svc.title }}</button>
+                  </TransitionGroup>
+                  <div class="tag-picker-subtitle" style="margin-top:8px">Доступно</div>
+                  <TransitionGroup name="tag-shift" tag="div" class="pkg-svc-tags">
+                    <button
+                      v-for="svc in allServiceKeys.filter((item) => !sub.serviceKeys.includes(item.key))"
+                      :key="`sub-available-${sub.key}-${svc.key}`"
+                      type="button"
+                      class="pkg-tag-picker"
+                      @click="toggleSubService(sub, svc.key)"
+                    >#{{ svc.title }}</button>
+                  </TransitionGroup>
                 </div>
               </div>
             </template>
@@ -687,16 +707,26 @@
 
               <div class="u-form-section">
                 <h3>Специализации</h3>
-                <div class="u-tags">
+                <div class="tag-picker-subtitle">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="u-tags">
                   <button
-                    v-for="sp in SPECIALIZATION_OPTIONS"
-                    :key="sp"
+                    v-for="sp in SPECIALIZATION_OPTIONS.filter((item) => form.specializations.includes(item))"
+                    :key="`spec-selected-${sp}`"
                     type="button"
-                    class="u-tag"
-                    :class="{ active: form.specializations.includes(sp) }"
+                    class="pkg-tag-picker pkg-tag-picker--active"
                     @click="toggleSpec(sp)"
-                  >{{ sp }}</button>
-                </div>
+                  >#{{ sp }}</button>
+                </TransitionGroup>
+                <div class="tag-picker-subtitle" style="margin-top:8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="u-tags">
+                  <button
+                    v-for="sp in SPECIALIZATION_OPTIONS.filter((item) => !form.specializations.includes(item))"
+                    :key="`spec-available-${sp}`"
+                    type="button"
+                    class="pkg-tag-picker"
+                    @click="toggleSpec(sp)"
+                  >#{{ sp }}</button>
+                </TransitionGroup>
               </div>
 
               <div class="u-form-foot">
@@ -1564,6 +1594,41 @@ async function saveDesignerProjectEdits() {
 .pkg-services-edit { margin-top: 8px; }
 .pkg-services-edit strong { font-size: .85rem; margin-bottom: 8px; display: block; }
 .pkg-svc-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-picker-subtitle {
+  font-size: .64rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: color-mix(in srgb, var(--glass-text) 52%, transparent);
+  margin-bottom: 6px;
+}
+.pkg-tag-picker {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--glass-text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s ease;
+  font-family: inherit;
+}
+.pkg-tag-picker:hover { opacity: .9; }
+.pkg-tag-picker--active {
+  background: color-mix(in srgb, var(--ds-accent, #646cff) 14%, transparent);
+  color: var(--ds-accent, #646cff);
+  border-color: color-mix(in srgb, var(--ds-accent, #646cff) 40%, var(--glass-border));
+}
+.tag-shift-move,
+.tag-shift-enter-active,
+.tag-shift-leave-active {
+  transition: all .22s ease;
+}
+.tag-shift-enter-from,
+.tag-shift-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(.97);
+}
 
 /* ── Projects ── */
 .proj-card { padding: 22px 24px; border-radius: 14px; margin-bottom: 16px; }

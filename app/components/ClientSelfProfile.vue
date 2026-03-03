@@ -43,9 +43,30 @@
             <div class="csp-field csp-field--full">
               <label>Мессенджер</label>
               <div class="csp-tagsel">
-                <span v-for="o in MESSENGER_OPTIONS" :key="o"
-                  class="csp-tagopt" :class="{ 'csp-tagopt--on': form.messenger === o }"
-                  @click="form.messenger = (form.messenger === o ? '' : o)">{{ o }}</span>
+                <div class="csp-tagpicker-title">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in selectedSingleOption(form.messenger)"
+                    :key="`messenger-selected-${option}`"
+                    type="button"
+                    class="csp-tagopt csp-tagopt--on"
+                    @click="toggleSingleChoice('messenger', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
+                <div class="csp-tagpicker-title" style="margin-top: 8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in availableSingleOptions(MESSENGER_OPTIONS, form.messenger)"
+                    :key="`messenger-available-${option}`"
+                    type="button"
+                    class="csp-tagopt"
+                    @click="toggleSingleChoice('messenger', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
               </div>
             </div>
             <div class="csp-field">
@@ -55,9 +76,30 @@
             <div class="csp-field csp-field--full">
               <label>Удобный способ связи</label>
               <div class="csp-tagsel">
-                <span v-for="o in PREFERRED_CONTACT_OPTIONS" :key="o"
-                  class="csp-tagopt" :class="{ 'csp-tagopt--on': form.preferredContact === o }"
-                  @click="form.preferredContact = (form.preferredContact === o ? '' : o)">{{ o }}</span>
+                <div class="csp-tagpicker-title">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in selectedSingleOption(form.preferredContact)"
+                    :key="`preferred-selected-${option}`"
+                    type="button"
+                    class="csp-tagopt csp-tagopt--on"
+                    @click="toggleSingleChoice('preferredContact', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
+                <div class="csp-tagpicker-title" style="margin-top: 8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in availableSingleOptions(PREFERRED_CONTACT_OPTIONS, form.preferredContact)"
+                    :key="`preferred-available-${option}`"
+                    type="button"
+                    class="csp-tagopt"
+                    @click="toggleSingleChoice('preferredContact', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
               </div>
             </div>
           </div>
@@ -76,9 +118,30 @@
             <div class="csp-field csp-field--full">
               <label>Тип объекта</label>
               <div class="csp-tagsel">
-                <span v-for="o in OBJECT_TYPE_OPTIONS" :key="o"
-                  class="csp-tagopt" :class="{ 'csp-tagopt--on': form.objectType === o }"
-                  @click="form.objectType = (form.objectType === o ? '' : o)">{{ o }}</span>
+                <div class="csp-tagpicker-title">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in selectedSingleOption(form.objectType)"
+                    :key="`object-type-selected-${option}`"
+                    type="button"
+                    class="csp-tagopt csp-tagopt--on"
+                    @click="toggleSingleChoice('objectType', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
+                <div class="csp-tagpicker-title" style="margin-top: 8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in availableSingleOptions(OBJECT_TYPE_OPTIONS, form.objectType)"
+                    :key="`object-type-available-${option}`"
+                    type="button"
+                    class="csp-tagopt"
+                    @click="toggleSingleChoice('objectType', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
               </div>
             </div>
             <div class="csp-field">
@@ -100,17 +163,59 @@
             <div class="csp-field csp-field--full">
               <label>Балкон / лоджия</label>
               <div class="csp-tagsel">
-                <span v-for="o in BALCONY_OPTIONS" :key="o"
-                  class="csp-tagopt" :class="{ 'csp-tagopt--on': form.hasBalcony === o }"
-                  @click="form.hasBalcony = (form.hasBalcony === o ? '' : o)">{{ o }}</span>
+                <div class="csp-tagpicker-title">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in selectedSingleOption(form.hasBalcony)"
+                    :key="`balcony-selected-${option}`"
+                    type="button"
+                    class="csp-tagopt csp-tagopt--on"
+                    @click="toggleSingleChoice('hasBalcony', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
+                <div class="csp-tagpicker-title" style="margin-top: 8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in availableSingleOptions(BALCONY_OPTIONS, form.hasBalcony)"
+                    :key="`balcony-available-${option}`"
+                    type="button"
+                    class="csp-tagopt"
+                    @click="toggleSingleChoice('hasBalcony', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
               </div>
             </div>
             <div class="csp-field csp-field--full">
               <label>Парковка</label>
               <div class="csp-tagsel">
-                <span v-for="o in PARKING_OPTIONS" :key="o"
-                  class="csp-tagopt" :class="{ 'csp-tagopt--on': form.parking === o }"
-                  @click="form.parking = (form.parking === o ? '' : o)">{{ o }}</span>
+                <div class="csp-tagpicker-title">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in selectedSingleOption(form.parking)"
+                    :key="`parking-selected-${option}`"
+                    type="button"
+                    class="csp-tagopt csp-tagopt--on"
+                    @click="toggleSingleChoice('parking', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
+                <div class="csp-tagpicker-title" style="margin-top: 8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in availableSingleOptions(PARKING_OPTIONS, form.parking)"
+                    :key="`parking-available-${option}`"
+                    type="button"
+                    class="csp-tagopt"
+                    @click="toggleSingleChoice('parking', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
               </div>
             </div>
           </div>
@@ -135,17 +240,59 @@
             <div class="csp-field csp-field--full">
               <label>Удалённая работа</label>
               <div class="csp-tagsel">
-                <span v-for="o in BRIEF_REMOTE_WORK_OPTIONS" :key="o"
-                  class="csp-tagopt" :class="{ 'csp-tagopt--on': form.brief_remote_work === o }"
-                  @click="form.brief_remote_work = (form.brief_remote_work === o ? '' : o)">{{ o }}</span>
+                <div class="csp-tagpicker-title">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in selectedSingleOption(form.brief_remote_work)"
+                    :key="`remote-work-selected-${option}`"
+                    type="button"
+                    class="csp-tagopt csp-tagopt--on"
+                    @click="toggleSingleChoice('brief_remote_work', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
+                <div class="csp-tagpicker-title" style="margin-top: 8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in availableSingleOptions(BRIEF_REMOTE_WORK_OPTIONS, form.brief_remote_work)"
+                    :key="`remote-work-available-${option}`"
+                    type="button"
+                    class="csp-tagopt"
+                    @click="toggleSingleChoice('brief_remote_work', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
               </div>
             </div>
             <div class="csp-field csp-field--full">
               <label>Частота гостей</label>
               <div class="csp-tagsel">
-                <span v-for="o in BRIEF_GUESTS_FREQ_OPTIONS" :key="o"
-                  class="csp-tagopt" :class="{ 'csp-tagopt--on': form.brief_guests_freq === o }"
-                  @click="form.brief_guests_freq = (form.brief_guests_freq === o ? '' : o)">{{ o }}</span>
+                <div class="csp-tagpicker-title">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in selectedSingleOption(form.brief_guests_freq)"
+                    :key="`guests-selected-${option}`"
+                    type="button"
+                    class="csp-tagopt csp-tagopt--on"
+                    @click="toggleSingleChoice('brief_guests_freq', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
+                <div class="csp-tagpicker-title" style="margin-top: 8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in availableSingleOptions(BRIEF_GUESTS_FREQ_OPTIONS, form.brief_guests_freq)"
+                    :key="`guests-available-${option}`"
+                    type="button"
+                    class="csp-tagopt"
+                    @click="toggleSingleChoice('brief_guests_freq', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
               </div>
             </div>
             <div class="csp-field csp-field--full">
@@ -163,17 +310,59 @@
             <div class="csp-field csp-field--full">
               <label>Стилевое направление</label>
               <div class="csp-tagsel">
-                <span v-for="o in BRIEF_STYLE_OPTIONS" :key="o"
-                  class="csp-tagopt" :class="{ 'csp-tagopt--on': form.brief_style_prefer === o }"
-                  @click="form.brief_style_prefer = (form.brief_style_prefer === o ? '' : o)">{{ o }}</span>
+                <div class="csp-tagpicker-title">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in selectedSingleOption(form.brief_style_prefer)"
+                    :key="`style-selected-${option}`"
+                    type="button"
+                    class="csp-tagopt csp-tagopt--on"
+                    @click="toggleSingleChoice('brief_style_prefer', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
+                <div class="csp-tagpicker-title" style="margin-top: 8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in availableSingleOptions(BRIEF_STYLE_OPTIONS, form.brief_style_prefer)"
+                    :key="`style-available-${option}`"
+                    type="button"
+                    class="csp-tagopt"
+                    @click="toggleSingleChoice('brief_style_prefer', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
               </div>
             </div>
             <div class="csp-field csp-field--full">
               <label>Цветовая гамма</label>
               <div class="csp-tagsel">
-                <span v-for="o in BRIEF_COLOR_OPTIONS" :key="o"
-                  class="csp-tagopt" :class="{ 'csp-tagopt--on': form.brief_color_mood === o }"
-                  @click="form.brief_color_mood = (form.brief_color_mood === o ? '' : o)">{{ o }}</span>
+                <div class="csp-tagpicker-title">Выбрано</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in selectedSingleOption(form.brief_color_mood)"
+                    :key="`color-selected-${option}`"
+                    type="button"
+                    class="csp-tagopt csp-tagopt--on"
+                    @click="toggleSingleChoice('brief_color_mood', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
+                <div class="csp-tagpicker-title" style="margin-top: 8px">Доступно</div>
+                <TransitionGroup name="tag-shift" tag="div" class="csp-tagpool">
+                  <button
+                    v-for="option in availableSingleOptions(BRIEF_COLOR_OPTIONS, form.brief_color_mood)"
+                    :key="`color-available-${option}`"
+                    type="button"
+                    class="csp-tagopt"
+                    @click="toggleSingleChoice('brief_color_mood', option)"
+                  >
+                    #{{ option }}
+                  </button>
+                </TransitionGroup>
               </div>
             </div>
             <div class="csp-field csp-field--full">
@@ -339,6 +528,18 @@ const steps = [
 
 const form = reactive<Record<string, any>>(createEmptyClientProfileDraft())
 
+function selectedSingleOption(value: string) {
+  return value ? [value] : []
+}
+
+function availableSingleOptions(options: readonly string[], selected: string) {
+  return options.filter(option => option !== selected)
+}
+
+function toggleSingleChoice(field: string, option: string) {
+  form[field] = form[field] === option ? '' : option
+}
+
 watch(project, (p) => {
   if (p?.profile) {
     Object.keys(form).forEach(k => {
@@ -442,17 +643,43 @@ async function saveData() {
 }
 
 /* Tags */
-.csp-tagsel { display: flex; flex-wrap: wrap; gap: 6px; }
+.csp-tagsel { display: flex; flex-direction: column; gap: 6px; }
+.csp-tagpicker-title {
+  font-size: .58rem;
+  text-transform: uppercase;
+  letter-spacing: .75px;
+  color: var(--c-muted, #aaa);
+}
+.csp-tagpool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .csp-tagopt {
   padding: 4px 10px; font-size: .76rem; cursor: pointer; user-select: none;
   border: none; color: #aaa; line-height: 1.4;
   background: color-mix(in srgb, var(--glass-bg, #fff) 88%, transparent);
   border-radius: 999px;
-  transition: background .1s, color .1s, border-color .1s;
+  transition: background .16s, color .16s, border-color .16s, transform .16s;
 }
 .csp-tagopt:hover { color: var(--c-text, #1a1a1a); }
 .csp-tagopt--on {
   background: var(--c-text, #1a1a1a); color: var(--c-bg, #fff);
+}
+
+.tag-shift-enter-active,
+.tag-shift-leave-active {
+  transition: all .2s ease;
+}
+
+.tag-shift-enter-from,
+.tag-shift-leave-to {
+  opacity: 0;
+  transform: translateY(4px) scale(.98);
+}
+
+.tag-shift-move {
+  transition: transform .2s ease;
 }
 
 /* Done */

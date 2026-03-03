@@ -130,14 +130,27 @@
 
         <div v-for="cf in chipsFields" :key="cf.key" class="acp-row acp-chips-row">
           <label class="acp-lbl">{{ cf.label }}:</label>
-          <div class="acp-chips">
-            <label
-              v-for="opt in cf.opts"
-              :key="opt.value"
-              class="acp-chip"
-              :class="{ 'acp-chip--on': getChips(cf.key).includes(opt.value) }"
-              @click.prevent="toggleChip(cf.key, opt.value)"
-            >{{ opt.label }}</label>
+          <div class="acp-chip-pools">
+            <div class="acp-chip-pool-title">Выбрано</div>
+            <TransitionGroup name="tag-shift" tag="div" class="acp-chips">
+              <button
+                v-for="opt in cf.opts.filter((item) => getChips(cf.key).includes(item.value))"
+                :key="`selected-${cf.key}-${opt.value}`"
+                type="button"
+                class="acp-chip acp-chip--on"
+                @click.prevent="toggleChip(cf.key, opt.value)"
+              >#{{ opt.label }}</button>
+            </TransitionGroup>
+            <div class="acp-chip-pool-title" style="margin-top:8px">Доступно</div>
+            <TransitionGroup name="tag-shift" tag="div" class="acp-chips">
+              <button
+                v-for="opt in cf.opts.filter((item) => !getChips(cf.key).includes(item.value))"
+                :key="`available-${cf.key}-${opt.value}`"
+                type="button"
+                class="acp-chip"
+                @click.prevent="toggleChip(cf.key, opt.value)"
+              >#{{ opt.label }}</button>
+            </TransitionGroup>
           </div>
         </div>
       </div>
@@ -479,30 +492,50 @@ async function save() {
 }
 /* chips */
 .acp-chips-row { align-items: flex-start; }
+.acp-chip-pools {
+  flex: 1;
+  padding-top: 4px;
+}
+.acp-chip-pool-title {
+  font-size: .64rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: color-mix(in srgb, var(--glass-text) 52%, transparent);
+  margin-bottom: 6px;
+}
 .acp-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  flex: 1;
-  padding-top: 4px;
 }
 .acp-chip {
   display: inline-block;
-  padding: var(--chip-padding-v, 3px) var(--chip-padding-h, 10px);
-  border-radius: var(--chip-radius, 12px);
-  border: 1px solid var(--chip-border-color, transparent);
-  background: var(--chip-bg, color-mix(in srgb, var(--glass-text) 7%, transparent));
+  padding: var(--chip-padding-v, 5px) var(--chip-padding-h, 12px);
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
   font-size: .78rem;
   cursor: pointer;
   user-select: none;
-  transition: background 0.12s, border-color 0.12s;
+  transition: all .18s ease;
   color: var(--glass-text);
+  font-family: inherit;
 }
 .acp-chip:hover { opacity: .9; }
 .acp-chip--on {
-  background: var(--ds-accent, #6366f1);
-  color: #fff;
-  border-color: transparent;
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 14%, transparent);
+  color: var(--ds-accent, #6366f1);
+  border-color: color-mix(in srgb, var(--ds-accent, #6366f1) 40%, var(--glass-border));
+}
+.tag-shift-move,
+.tag-shift-enter-active,
+.tag-shift-leave-active {
+  transition: all .22s ease;
+}
+.tag-shift-enter-from,
+.tag-shift-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(.97);
 }
 
 /* ── Mobile ── */

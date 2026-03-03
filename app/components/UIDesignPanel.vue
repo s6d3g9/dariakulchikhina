@@ -313,6 +313,18 @@
                       <button v-for="s in textTransforms" :key="s.id" type="button" class="dp-chip" :class="{ 'dp-chip--active': tokens.btnTransform === s.id }" @click="set('btnTransform', s.id)">{{ s.label }}</button>
                     </div>
                   </div>
+                  <div class="dp-field" style="margin-top:8px">
+                    <label class="dp-label">кинетика при наведении</label>
+                    <div class="dp-chips">
+                      <button v-for="s in btnHoverAnims" :key="s.id" type="button" class="dp-chip" :class="{ 'dp-chip--active': tokens.btnHoverAnim === s.id }" @click="set('btnHoverAnim', s.id)">{{ s.label }}</button>
+                    </div>
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">карточки при наведении</label>
+                    <div class="dp-chips">
+                      <button v-for="s in cardHoverAnims" :key="s.id" type="button" class="dp-chip" :class="{ 'dp-chip--active': tokens.cardHoverAnim === s.id }" @click="set('cardHoverAnim', s.id)">{{ s.label }}</button>
+                    </div>
+                  </div>
                 </div>
                 <div class="dp-col">
                   <div class="dp-col-label">Размеры</div>
@@ -1298,7 +1310,7 @@ const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
 /* ── Tab navigation ─────────────────────────────── */
 const activeTab = ref('presets')
 const tabList = [
-  { id: 'presets',   label: 'рецепты' },
+  { id: 'presets',   label: 'образы' },
   { id: 'palette',   label: 'палитра' },
   { id: 'colors',    label: 'цвета ▸' },
   { id: 'buttons',   label: 'кнопки' },
@@ -1340,6 +1352,19 @@ const textTransforms = [
   { id: 'uppercase'  as const, label: 'ВЕРХНИЙ' },
   { id: 'capitalize' as const, label: 'С Заглавной' },
 ]
+const btnHoverAnims = [
+  { id: 'none'  as const, label: 'нет' },
+  { id: 'lift'  as const, label: 'парение' },
+  { id: 'scale' as const, label: 'масштаб' },
+  { id: 'glow'  as const, label: 'свечение' },
+  { id: 'fill'  as const, label: 'заливка' },
+  { id: 'sheen' as const, label: 'блик' },
+]
+const cardHoverAnims = [
+  { id: 'none'  as const, label: 'нет' },
+  { id: 'lift'  as const, label: 'парение' },
+  { id: 'scale' as const, label: 'масштаб' },
+]
 
 /* ── Helpers ─────────────────────────────────────── */
 const currentFontId = computed(() =>
@@ -1373,7 +1398,7 @@ const currentScaleLabel = computed(() =>
 
 /* ── Section search filter ──────────────────────── */
 const sectionSearchMap: Record<string, string[]> = {
-  presets:  ['рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal', 'minale', 'bauhaus', 'artdeco', 'cyberpunk', 'zen', 'y2k', 'newspaper', 'pastel', 'tokyo', 'terracotta', 'arctic', 'glow', 'ink', 'bubblegum', 'blueprint'],
+  presets:  ['образ', 'рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal', 'minale', 'bauhaus', 'artdeco', 'cyberpunk', 'zen', 'y2k', 'newspaper', 'pastel', 'tokyo', 'terracotta', 'arctic', 'glow', 'ink', 'bubblegum', 'blueprint', 'snohetta', 'olsonkundig', 'mvrdv', 'som', 'mad', 'архитектура'],
   palette:  ['палитра', 'цвет', 'акцент', 'color', 'theme', 'accent', 'hue', 'статусы', 'success', 'успех', 'ошибка', 'error', 'warning', 'предупреждение'],
   colors:   ['цвета', 'элемент', 'фон', 'кнопк', 'текст', 'ссылк', 'заголовк', 'граница', 'background', 'surface', 'heading', 'link', 'border', 'button', 'colour', 'цвет элементов'],
   buttons:  ['кнопк', 'button', 'стиль', 'размер', 'закругл', 'регистр', 'btn'],

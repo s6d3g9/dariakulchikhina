@@ -3,19 +3,6 @@
     <div v-if="pending" class="ass-loading">Загрузка...</div>
     <template v-else>
 
-      <!-- Survey Status Header -->
-      <div class="ass-status-row">
-        <span class="ass-status-dot" :class="`ass-dot--${surveyStatusColor}`"></span>
-        <select v-model="form.survey_status" class="u-status-sel" @change="save">
-          <option value="">статус аудита не задан</option>
-          <option value="planned">запланирован</option>
-          <option value="in_progress">выполняется</option>
-          <option value="completed">завершён ✓</option>
-          <option value="revision">на доработке</option>
-        </select>
-        <span v-if="savedAt" class="ass-saved">✓ {{ savedAt }}</span>
-      </div>
-
       <!-- Section: Visit Info -->
       <div class="ass-section">
         <div class="ass-section-title">информация о выезде</div>
@@ -183,8 +170,6 @@ function toggleCheck(key: string) {
   save()
 }
 
-const surveyStatusColor = useStatusColor(form, 'survey_status')
-
 function fileTypeLabel(type: string) {
   const m: Record<string, string> = {
     pointcloud: '3D-скан',
@@ -273,23 +258,6 @@ async function save() {
 .ass-wrap { padding: 4px 0 48px; }
 .ass-loading { font-size: .88rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 
-/* Status row */
-.ass-status-row {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
-  padding: 12px 16px; border: 1px solid var(--border, #e0e0e0);
-  background: var(--surface, #fafafa);
-}
-.ass-status-dot {
-  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-}
-.ass-dot--green  { background: var(--ds-success); }
-.ass-dot--yellow { background: var(--ds-warning); }
-.ass-dot--blue   { background: var(--ds-accent); }
-.ass-dot--red    { background: var(--ds-error); }
-.ass-dot--gray   { background: color-mix(in srgb, var(--glass-text) 40%, transparent); }
-
-.ass-saved { font-size: .76rem; color: var(--ds-success); margin-left: auto; }
-
 /* Sections */
 .ass-section { margin-bottom: 28px; }
 .ass-section-title {
@@ -361,7 +329,6 @@ async function save() {
 /* ── Mobile ── */
 @media (max-width: 768px) {
   .ass-checks-grid { grid-template-columns: 1fr; }
-  .ass-status-row { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
   .ass-upload-row { flex-wrap: wrap; gap: 8px; }
   .ass-file-item { flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
   .ass-footer { padding-top: 16px; }
