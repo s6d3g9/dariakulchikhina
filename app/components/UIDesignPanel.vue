@@ -99,73 +99,12 @@
                 <div class="dp-presets-grid">
                   <button
                     v-for="p in DESIGN_PRESETS" :key="p.id" type="button"
-                    class="dp-preset-card" :class="{ 'dp-preset-card--active': activePresetId === p.id, 'dp-preset-card--hover-preview': hoverActivePreset === p.id }"
-                    @mouseenter="onPresetHoverEnter(p)"
-                    @mouseleave="onPresetHoverLeave()"
-                    @click="onPresetHoverClick(p)"
+                    class="dp-preset-card" :class="{ 'dp-preset-card--active': activePresetId === p.id }"
+                    @click="pickPreset(p)"
                   >
                     <span class="dp-preset-icon">{{ p.icon }}</span>
                     <span class="dp-preset-name">{{ p.name }}</span>
                     <span class="dp-preset-desc">{{ p.description }}</span>
-                  </button>
-                </div>
-
-                <!-- Custom presets section -->
-                <div v-if="customPresets.length || showSavePreset" class="dp-custom-presets-section">
-                  <div class="dp-col-label" style="margin-top:14px; display:flex; align-items:center; justify-content:space-between">
-                    <span>Мои пресеты</span>
-                    <button v-if="!showSavePreset" type="button" class="dp-sm-btn" @click="showSavePreset = true" style="font-size:.52rem">+ сохранить текущий</button>
-                  </div>
-
-                  <!-- Save form -->
-                  <div v-if="showSavePreset" class="dp-save-preset-form">
-                    <div class="dp-save-preset-icons">
-                      <button
-                        v-for="ic in presetIcons" :key="ic" type="button"
-                        class="dp-save-icon-btn" :class="{ 'dp-save-icon-btn--active': newPresetIcon === ic }"
-                        @click="newPresetIcon = ic"
-                      >{{ ic }}</button>
-                    </div>
-                    <div class="dp-save-preset-row">
-                      <input v-model="newPresetName" class="dp-save-preset-input" placeholder="Название пресета…" @keydown.enter="doSaveCustomPreset" />
-                      <button type="button" class="dp-sm-btn" :disabled="!newPresetName.trim()" @click="doSaveCustomPreset">Сохранить</button>
-                      <button type="button" class="dp-sm-btn dp-sm-btn--ghost" @click="showSavePreset = false">✕</button>
-                    </div>
-                  </div>
-
-                  <!-- Custom preset cards -->
-                  <div v-if="customPresets.length" class="dp-presets-grid" style="margin-top:8px">
-                    <div
-                      v-for="cp in customPresets" :key="cp.id"
-                      class="dp-preset-card dp-preset-card--custom"
-                      @click="applyCustomPreset(cp)"
-                    >
-                      <span class="dp-preset-icon">{{ cp.icon }}</span>
-                      <template v-if="editingPresetId === cp.id">
-                        <input
-                          v-model="editingPresetName"
-                          class="dp-save-preset-input dp-save-preset-input--inline"
-                          @keydown.enter="commitRenamePreset"
-                          @blur="commitRenamePreset"
-                          @click.stop
-                        />
-                      </template>
-                      <template v-else>
-                        <span class="dp-preset-name">{{ cp.name }}</span>
-                      </template>
-                      <div class="dp-custom-preset-actions" @click.stop>
-                        <button type="button" class="dp-custom-preset-btn" title="Переименовать" @click="startRenamePreset(cp.id, cp.name)">✎</button>
-                        <button type="button" class="dp-custom-preset-btn dp-custom-preset-btn--del" title="Удалить" @click="doDeleteCustomPreset(cp.id)">✕</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Save button if no custom presets yet -->
-                <div v-if="!customPresets.length && !showSavePreset" class="dp-save-current-hint">
-                  <button type="button" class="dp-sm-btn" @click="showSavePreset = true">
-                    <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M7 3v8M3 7h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                    сохранить текущий как пресет
                   </button>
                 </div>
               </div>
@@ -1040,75 +979,6 @@
                 </div>
               </div>
 
-              </div>
-
-              <!-- ═══ Доступность (a11y) ═══ -->
-              <div v-show="isTabVisible('a11y')" class="dp-page dp-page--cols">
-                <div class="dp-col">
-                  <div class="dp-col-label">Focus Ring</div>
-                  <div class="dp-field">
-                    <label class="dp-label">толщина <span class="dp-val">{{ tokens.focusRingWidth }}px</span></label>
-                    <input type="range" min="1" max="5" step="0.5" :value="tokens.focusRingWidth" class="dp-range" @input="onFloat('focusRingWidth', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">отступ <span class="dp-val">{{ tokens.focusRingOffset }}px</span></label>
-                    <input type="range" min="0" max="6" step="1" :value="tokens.focusRingOffset" class="dp-range" @input="onRange('focusRingOffset', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">видимость <span class="dp-val">{{ pct(tokens.focusRingOpacity) }}</span></label>
-                    <input type="range" min="0" max="1" step="0.05" :value="tokens.focusRingOpacity" class="dp-range" @input="onFloat('focusRingOpacity', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">стиль</label>
-                    <div class="dp-chips">
-                      <button v-for="s in [{id:'solid',label:'сплошной'},{id:'dashed',label:'пунктир'},{id:'dotted',label:'точечный'}]" :key="s.id" type="button" class="dp-chip" :class="{ 'dp-chip--active': tokens.focusRingStyle === s.id }" @click="set('focusRingStyle', s.id as any)">{{ s.label }}</button>
-                    </div>
-                  </div>
-                  <div class="dp-field-hint" style="margin-top:6px">Цвет кольца наследуется от акцентного цвета палитры</div>
-                </div>
-                <div class="dp-col">
-                  <div class="dp-col-label">Превью</div>
-                  <div class="dp-live-preview" style="margin-top:0; flex-direction:column; gap:12px; align-items:flex-start; padding:16px;">
-                    <button type="button" class="dp-a11y-demo-btn" :style="{
-                      outline: `${tokens.focusRingWidth}px ${tokens.focusRingStyle} hsla(${tokens.accentHue}, ${tokens.accentSaturation}%, ${tokens.accentLightness}%, ${tokens.focusRingOpacity})`,
-                      outlineOffset: `${tokens.focusRingOffset}px`,
-                      padding: '6px 18px', borderRadius: tokens.btnRadius + 'px',
-                      border: '1px solid color-mix(in srgb, var(--glass-text) 14%, transparent)',
-                      background: 'color-mix(in srgb, var(--glass-text) 5%, transparent)',
-                      color: 'var(--glass-text)', fontSize: '.72rem', fontFamily: 'inherit', cursor: 'default',
-                    }">Кнопка (focused)</button>
-                    <input type="text" readonly value="Поле ввода (focused)" :style="{
-                      outline: `${tokens.focusRingWidth}px ${tokens.focusRingStyle} hsla(${tokens.accentHue}, ${tokens.accentSaturation}%, ${tokens.accentLightness}%, ${tokens.focusRingOpacity})`,
-                      outlineOffset: `${tokens.focusRingOffset}px`,
-                      padding: `${tokens.inputPaddingV}px ${tokens.inputPaddingH}px`,
-                      borderRadius: tokens.inputRadius + 'px',
-                      border: '1px solid color-mix(in srgb, var(--glass-text) 15%, transparent)',
-                      background: 'color-mix(in srgb, var(--glass-text) 5%, transparent)',
-                      color: 'var(--glass-text)', fontSize: '.72rem', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
-                    }" />
-                    <a href="#" @click.prevent :style="{
-                      outline: `${tokens.focusRingWidth}px ${tokens.focusRingStyle} hsla(${tokens.accentHue}, ${tokens.accentSaturation}%, ${tokens.accentLightness}%, ${tokens.focusRingOpacity})`,
-                      outlineOffset: `${tokens.focusRingOffset}px`,
-                      color: accentColor, fontSize: '.72rem', fontFamily: 'inherit',
-                      textDecoration: 'underline', borderRadius: '2px', padding: '2px 4px',
-                    }">Ссылка (focused)</a>
-                  </div>
-                  <div class="dp-col-label" style="margin-top:12px">Контраст</div>
-                  <div class="dp-a11y-contrast-info">
-                    <div class="dp-a11y-contrast-row">
-                      <span class="dp-a11y-contrast-swatch" :style="{ background: accentColor }" />
-                      <span class="dp-a11y-contrast-label">Акцент на белом</span>
-                      <span class="dp-a11y-contrast-value" :class="contrastRatioWhiteClass">{{ contrastRatioWhite }}</span>
-                    </div>
-                    <div class="dp-a11y-contrast-row">
-                      <span class="dp-a11y-contrast-swatch" :style="{ background: accentColor }" />
-                      <span class="dp-a11y-contrast-label">Акцент на чёрном</span>
-                      <span class="dp-a11y-contrast-value" :class="contrastRatioBlackClass">{{ contrastRatioBlack }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div><!-- /.dp-tab-content -->
 
 
@@ -1224,20 +1094,6 @@
               </div>
             </div>
 
-            <!-- CSS Variables section -->
-            <div v-if="inspectResult.cssVars.length" class="dp-inspect-vars">
-              <div class="dp-inspect-vars-label">CSS-переменные</div>
-              <div class="dp-inspect-vars-list">
-                <div v-for="cv in inspectResult.cssVars.slice(0, showAllVars ? 999 : 6)" :key="cv.name" class="dp-inspect-var-row">
-                  <span class="dp-inspect-var-name" @click="copyPath(cv.name)" :title="'Копировать ' + cv.name">{{ cv.name }}</span>
-                  <span class="dp-inspect-var-value" @click="copyPath(cv.value)" :title="'Копировать значение'">{{ cv.value }}</span>
-                </div>
-              </div>
-              <button v-if="inspectResult.cssVars.length > 6" type="button" class="dp-inspect-vars-toggle" @click="showAllVars = !showAllVars">
-                {{ showAllVars ? 'свернуть' : `ещё ${inspectResult.cssVars.length - 6} переменных…` }}
-              </button>
-            </div>
-
             <div class="dp-inspect-result-info">
               <div class="dp-inspect-result-sections">
                 <span class="dp-inspect-result-label">Открыть секцию:</span>
@@ -1312,7 +1168,6 @@ const {
   undo, redo, canUndo, canRedo,
   exportJSON, importJSON, exportCSS,
   previewPreset, confirmPreview, cancelPreview, isPreviewActive,
-  customPresets, loadCustomPresets, saveCustomPreset, deleteCustomPreset, renameCustomPreset,
 } = useDesignSystem()
 const { themeId, applyThemeWithTokens, UI_THEMES } = useUITheme()
 const { isDark } = useThemeToggle()
@@ -1327,18 +1182,6 @@ const animPlaying = ref(false)
 const searchQuery = ref('')
 const appliedFlash = ref(false)
 const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
-
-/* ── Custom presets state ─────────────────────────── */
-const showSavePreset = ref(false)
-const newPresetName = ref('')
-const newPresetIcon = ref('⭐')
-const presetIcons = ['⭐', '🎨', '💎', '🔥', '🌿', '🌊', '🖤', '🪐', '⚡', '🧊', '🍬', '🎪', '✨', '🌸', '🏛️']
-const editingPresetId = ref<string | null>(null)
-const editingPresetName = ref('')
-
-/* ── Preset hover preview ─────────────────────────── */
-const hoverPreviewTimer = ref<ReturnType<typeof setTimeout> | null>(null)
-const hoverActivePreset = ref<string | null>(null)
 
 /* ── Tab navigation ─────────────────────────────── */
 const activeTab = ref('presets')
@@ -1361,10 +1204,9 @@ const tabList = [
   { id: 'scrollbar', label: 'скролл' },
   { id: 'tables',    label: 'таблицы' },
   { id: 'badges',    label: 'значки' },
-  { id: 'a11y',      label: 'a11y' },
 ]
 // Tab keying — sections object kept only for inspect-mode quick-jump compatibility
-const sections = reactive({ presets: true, palette: true, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false, a11y: false })
+const sections = reactive({ presets: true, palette: true, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false })
 function toggle(key: keyof typeof sections) { activeTab.value = key as string }
 
 /* ── Option lists ────────────────────────────────── */
@@ -1394,41 +1236,6 @@ const currentFontId = computed(() =>
 const accentColor = computed(() =>
   `hsl(${tokens.value.accentHue}, ${tokens.value.accentSaturation}%, ${tokens.value.accentLightness}%)`
 )
-
-/* ── Contrast ratio helpers (WCAG) ─────────────── */
-function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-  s /= 100; l /= 100
-  const a = s * Math.min(l, 1 - l)
-  const f = (n: number) => { const k = (n + h / 30) % 12; return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1) }
-  return [f(0), f(8), f(4)]
-}
-
-function relativeLuminance(r: number, g: number, b: number): number {
-  const [rs, gs, bs] = [r, g, b].map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4))
-  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs
-}
-
-function contrastRatio(l1: number, l2: number): number {
-  const lighter = Math.max(l1, l2)
-  const darker = Math.min(l1, l2)
-  return (lighter + 0.05) / (darker + 0.05)
-}
-
-const accentLuminance = computed(() => {
-  const [r, g, b] = hslToRgb(tokens.value.accentHue, tokens.value.accentSaturation, tokens.value.accentLightness)
-  return relativeLuminance(r, g, b)
-})
-
-const contrastRatioWhite = computed(() => contrastRatio(1, accentLuminance.value).toFixed(1) + ':1')
-const contrastRatioBlack = computed(() => contrastRatio(accentLuminance.value, 0).toFixed(1) + ':1')
-const contrastRatioWhiteClass = computed(() => {
-  const cr = contrastRatio(1, accentLuminance.value)
-  return cr >= 4.5 ? 'dp-a11y-pass' : cr >= 3 ? 'dp-a11y-warn' : 'dp-a11y-fail'
-})
-const contrastRatioBlackClass = computed(() => {
-  const cr = contrastRatio(accentLuminance.value, 0)
-  return cr >= 4.5 ? 'dp-a11y-pass' : cr >= 3 ? 'dp-a11y-warn' : 'dp-a11y-fail'
-})
 
 const activePresetId = ref('')
 
@@ -1471,7 +1278,6 @@ const sectionSearchMap: Record<string, string[]> = {
   scrollbar: ['скроллбар', 'scrollbar', 'полоса прокрутки', 'ширина', 'width', 'прозрач'],
   tables:   ['таблиц', 'table', 'таблетк', 'строка', 'заголовок', 'row', 'header', 'border', 'hover'],
   badges:   ['значок', 'значки', 'badge', 'counter', 'счётчик', 'уведомлени', 'notification'],
-  a11y:     ['доступность', 'accessibility', 'a11y', 'focus', 'фокус', 'кольцо', 'ring', 'outline', 'контраст', 'contrast'],
 }
 
 function isTabVisible(key: string): boolean {
@@ -1523,66 +1329,6 @@ function onFloat<K extends keyof DesignTokens>(key: K, e: Event) {
 }
 
 function resetAll() { cancelPreview(); dsReset(); activePresetId.value = '' }
-
-/* ── Custom preset management ─────────────────────── */
-function doSaveCustomPreset() {
-  const name = newPresetName.value.trim()
-  if (!name) return
-  saveCustomPreset(name, newPresetIcon.value)
-  newPresetName.value = ''
-  newPresetIcon.value = '⭐'
-  showSavePreset.value = false
-}
-
-function doDeleteCustomPreset(id: string) {
-  deleteCustomPreset(id)
-}
-
-function startRenamePreset(id: string, currentName: string) {
-  editingPresetId.value = id
-  editingPresetName.value = currentName
-}
-
-function commitRenamePreset() {
-  if (editingPresetId.value && editingPresetName.value.trim()) {
-    renameCustomPreset(editingPresetId.value, editingPresetName.value.trim())
-  }
-  editingPresetId.value = null
-}
-
-function applyCustomPreset(cp: { tokens: Partial<import('~/composables/useDesignSystem').DesignTokens> }) {
-  activePresetId.value = ''
-  previewPreset({ id: 'custom', name: 'Custom', description: '', icon: '', tokens: cp.tokens })
-}
-
-/* ── Preset hover preview ─────────────────────────── */
-function onPresetHoverEnter(p: import('~/composables/useDesignSystem').DesignPreset) {
-  if (hoverPreviewTimer.value) clearTimeout(hoverPreviewTimer.value)
-  hoverPreviewTimer.value = setTimeout(() => {
-    hoverActivePreset.value = p.id
-    previewPreset(p)
-  }, 300)
-}
-
-function onPresetHoverLeave() {
-  if (hoverPreviewTimer.value) {
-    clearTimeout(hoverPreviewTimer.value)
-    hoverPreviewTimer.value = null
-  }
-  if (hoverActivePreset.value) {
-    hoverActivePreset.value = null
-    cancelPreview()
-  }
-}
-
-function onPresetHoverClick(p: import('~/composables/useDesignSystem').DesignPreset) {
-  if (hoverPreviewTimer.value) {
-    clearTimeout(hoverPreviewTimer.value)
-    hoverPreviewTimer.value = null
-  }
-  hoverActivePreset.value = null
-  pickPreset(p)
-}
 
 function copyExport() {
   const text = exportTab.value === 'json' ? exportJSON() : exportCSS()
@@ -1720,18 +1466,16 @@ interface InspectResult {
   cssPath: string
   cssSelector: string
   fullPath: string[]
-  cssVars: { name: string; value: string }[]
 }
 const inspectResult = ref<InspectResult | null>(null)
 const copiedPath = ref<string | null>(null)
-const showAllVars = ref(false)
 
 const sectionLabels: Record<string, string> = {
   presets: 'Рецепты', palette: 'Палитра', buttons: 'Кнопки',
   type: 'Типографика', typeScale: 'Шкала', surface: 'Поверхности',
   radii: 'Скругления', anim: 'Анимация', grid: 'Сетка', darkMode: 'Тёмная тема',
   inputs: 'Инпуты', tags: 'Теги/чипы', nav: 'Навигация', statuses: 'Статусы', popups: 'Попапы',
-  scrollbar: 'Скроллбар', tables: 'Таблицы', badges: 'Значки', a11y: 'Доступность',
+  scrollbar: 'Скроллбар', tables: 'Таблицы', badges: 'Значки',
 }
 
 /* ─── Quick-edit token controls ─────────────────────────────────────────────
@@ -1807,11 +1551,6 @@ const TOKEN_CONTROLS: Record<string, QEControl[]> = {
   scrollbar: [
     { key: 'scrollbarWidth', label: 'ширина', min: 2, max: 14, step: 1, fmt: v => v + 'px' },
     { key: 'scrollbarOpacity', label: 'видимость', min: 0, max: 0.8, step: 0.01, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
-  ],
-  a11y: [
-    { key: 'focusRingWidth', label: 'толщина', min: 1, max: 5, step: 0.5, isFloat: true, fmt: v => v + 'px' },
-    { key: 'focusRingOffset', label: 'отступ', min: 0, max: 6, step: 1, fmt: v => v + 'px' },
-    { key: 'focusRingOpacity', label: 'видимость', min: 0, max: 1, step: 0.05, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
   ],
 }
 
@@ -1890,39 +1629,6 @@ function copyPath(text: string) {
     copiedPath.value = text
     setTimeout(() => { copiedPath.value = null }, 1500)
   })
-}
-
-/* ── Collect CSS custom properties from an element ── */
-function getElementCssVars(el: HTMLElement): { name: string; value: string }[] {
-  const vars: { name: string; value: string }[] = []
-  const cs = getComputedStyle(el)
-  const dsVarNames = [
-    '--btn-radius', '--btn-py', '--btn-px', '--btn-font-size', '--btn-weight',
-    '--ds-font-family', '--ds-font-size', '--ds-font-weight', '--ds-line-height',
-    '--ds-letter-spacing', '--ds-heading-weight', '--ds-heading-letter-spacing',
-    '--ds-accent', '--ds-success', '--ds-error', '--ds-warning',
-    '--glass-blur', '--glass-bg', '--glass-border', '--glass-shadow',
-    '--ds-shadow', '--ds-shadow-sm', '--ds-shadow-lg',
-    '--card-radius', '--input-radius', '--chip-radius', '--modal-radius',
-    '--ds-anim-duration', '--ds-anim-easing', '--ds-transition',
-    '--ds-container-width', '--ds-sidebar-width', '--ds-grid-gap',
-    '--ds-border-width', '--ds-border-style',
-    '--input-bg', '--input-border-color', '--input-padding-h', '--input-padding-v',
-    '--chip-bg', '--chip-border-color',
-    '--nav-item-radius', '--nav-item-padding-h', '--nav-item-padding-v',
-    '--status-pill-radius', '--badge-bg', '--badge-radius',
-    '--scrollbar-width', '--scrollbar-thumb',
-    '--table-header-bg', '--table-row-hover-bg', '--table-border-color',
-    '--ds-focus-ring', '--ds-focus-ring-color',
-    '--ds-dark-page-bg', '--ds-dark-surface-bg', '--ds-dark-text', '--ds-dark-border',
-    '--dropdown-bg', '--dropdown-border', '--dropdown-blur',
-    '--modal-overlay-opacity',
-  ]
-  for (const name of dsVarNames) {
-    const val = cs.getPropertyValue(name).trim()
-    if (val) vars.push({ name, value: val.length > 50 ? val.slice(0, 47) + '…' : val })
-  }
-  return vars
 }
 
 /* ── Detect which design sections affect an element ── */
@@ -2096,8 +1802,6 @@ function onInspectClick(e: MouseEvent) {
   const cls = el.className?.toString?.() || ''
 
   const fullPath = getCssPath(el)
-  const cssVars = getElementCssVars(el)
-  showAllVars.value = false
   inspectResult.value = {
     tag: el.tagName.toLowerCase(),
     classes: cls.split(/\s+/).filter(c => c && !c.startsWith('dp-')).slice(0, 4).join('.'),
@@ -2107,7 +1811,6 @@ function onInspectClick(e: MouseEvent) {
     cssPath: fullPath.join(' > '),
     cssSelector: getCssSelector(el),
     fullPath,
-    cssVars,
   }
 }
 
@@ -2333,10 +2036,7 @@ function onKey(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && open.value) { e.preventDefault(); undo() }
   if ((e.ctrlKey || e.metaKey) && e.key === 'y' && open.value) { e.preventDefault(); redo() }
 }
-onMounted(() => {
-  document.addEventListener('keydown', onKey)
-  loadCustomPresets()
-})
+onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey)
   document.removeEventListener('mousedown', onOutsideClick, true)
