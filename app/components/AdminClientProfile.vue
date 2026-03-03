@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="pending" style="font-size:.88rem;color:color-mix(in srgb, var(--glass-text) 55%, transparent)">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
       <div class="acp-card" style="margin-bottom:12px">
         <div class="acp-section-title" style="margin-top:0">выбор клиента</div>

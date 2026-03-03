@@ -1,6 +1,6 @@
 <template>
   <div class="asup-wrap">
-    <div v-if="pending" class="asup-loading">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Status -->

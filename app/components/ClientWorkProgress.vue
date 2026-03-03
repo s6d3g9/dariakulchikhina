@@ -12,7 +12,7 @@
         <span v-if="designProgress !== null" class="cwp-pct">{{ designProgress }}%</span>
       </div>
 
-      <div v-if="rmPending" class="cwp-loading">Загрузка...</div>
+      <div v-if="rmPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
       <div v-else-if="!groupedPhases.length" class="cwp-empty">Этапы ещё не заполнены</div>
       <div v-else class="cwp-timeline">
         <div v-for="group in groupedPhases" :key="group.key" class="cwp-phase">
@@ -51,7 +51,7 @@
         <span v-if="buildProgress !== null" class="cwp-pct">{{ buildProgress }}%</span>
       </div>
 
-      <div v-if="wsPending" class="cwp-loading">Загрузка...</div>
+      <div v-if="wsPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
       <div v-else-if="!workItems?.length" class="cwp-empty">Задачи ещё не назначены</div>
       <div v-else class="cwp-tasks">
         <div v-for="item in workItems" :key="item.id" class="cwp-task">

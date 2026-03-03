@@ -1,7 +1,7 @@
 <template>
   <div class="rm-wrap glass-card">
     <h2 class="rm-title">Дорожная карта</h2>
-    <div v-if="pending" class="rm-empty">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <div v-else-if="!groupedPhases.length" class="rm-empty">Этапов пока нет</div>
     <div v-else class="rm-phases">
       <div

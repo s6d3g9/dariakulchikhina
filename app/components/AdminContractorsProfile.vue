@@ -1,6 +1,6 @@
 <template>
   <div class="acnp-wrap">
-    <div v-if="pendingLinked" class="acnp-loading">Загрузка...</div>
+    <div v-if="pendingLinked" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
       <!-- Linked contractors -->
       <div class="acnp-section-title">подрядчики проекта</div>
@@ -30,7 +30,7 @@
 
       <!-- Add contractor section -->
       <div class="acnp-section-title" style="margin-top: 28px">добавить подрядчика к проекту</div>
-      <div v-if="pendingAll" class="acnp-loading">Загрузка...</div>
+      <div v-if="pendingAll" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
       <template v-else>
         <div v-if="!allContractors.length" class="acnp-empty">
           Нет подрядчиков в системе.

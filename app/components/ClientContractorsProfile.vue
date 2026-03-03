@@ -1,6 +1,6 @@
 <template>
   <div class="cc-wrap">
-    <div v-if="pending" class="cc-loading">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <div v-else-if="!contractors?.length" class="cc-empty">Подрядчики не назначены</div>
     <div v-else class="cc-list">
       <div v-for="c in contractors" :key="c.id" class="cc-card glass-surface">

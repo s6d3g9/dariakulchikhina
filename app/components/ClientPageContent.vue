@@ -1,6 +1,6 @@
 <template>
   <div class="content-wrap glass-card">
-    <div v-if="pending" class="content-empty">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else-if="normalizedContent">
       <p class="content-hint">Выбранные пункты сохраняются на сервере и доступны с разных устройств</p>
 

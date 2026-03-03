@@ -1,14 +1,21 @@
 <template>
   <div class="cc-root glass-page">
 
-    <div v-if="pending" class="cc-loading">
-      <span class="cc-loading-dot">◌</span> Загружаем ваш проект…
+    <div v-if="pending" class="ent-page-skeleton">
+      <div class="ent-sk-sidebar"><div class="ent-nav-skeleton" v-for="i in 5" :key="i"/></div>
+      <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     </div>
 
     <div v-else-if="error || !project" class="cc-error glass-surface">
-      <p>Не удалось загрузить данные проекта.</p>
-      <button @click="refresh" class="a-btn-sm">Повторить</button>
-      <NuxtLink to="/client/login" class="a-btn-sm">Выйти</NuxtLink>
+      <template v-if="(error as any)?.statusCode === 401 || (error as any)?.status === 401">
+        <p>Сессия истекла. Войдите снова.</p>
+        <NuxtLink to="/client/login" class="a-btn-save">Войти</NuxtLink>
+      </template>
+      <template v-else>
+        <p>Не удалось загрузить данные проекта.</p>
+        <button @click="refresh" class="a-btn-sm">Повторить</button>
+        <NuxtLink to="/client/login" class="a-btn-sm">Выйти</NuxtLink>
+      </template>
     </div>
 
     <div v-else class="cc-body">
@@ -92,14 +99,20 @@ import ClientPageContent   from '~/components/ClientPageContent.vue'
 
 definePageMeta({ middleware: 'client', layout: 'default' })
 
-const route  = useRoute()
-const router = useRouter()
-const slug   = computed(() => route.params.slug as string)
+const route   = useRoute()
+const router  = useRouter()
+const slug    = computed(() => route.params.slug as string)
+
+// Forward cookies to SSR fetch so requireAdminOrClient can read the session
+const reqHeaders = useRequestHeaders(['cookie'])
 
 // ── Fetch project ────────────────────────────────────────────────────────
 const { data: project, pending, error, refresh } = await useFetch(
   () => `/api/projects/${slug.value}`,
-  { watch: [slug] }
+  {
+    watch: [slug],
+    headers: reqHeaders,
+  }
 )
 
 // ── Page component map ───────────────────────────────────────────────────

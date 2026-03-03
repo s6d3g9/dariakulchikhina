@@ -1,6 +1,6 @@
 <template>
   <div class="glass-card p-3 apc-wrap">
-    <div v-if="pending" class="apc-pending">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
       <!-- материалы/референсы (tabs) -->
       <AdminMaterials v-if="contentType === 'materials'" :slug="slug" :page="page" />

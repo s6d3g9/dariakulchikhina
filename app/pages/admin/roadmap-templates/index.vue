@@ -5,7 +5,7 @@
       <button class="a-btn-save" aria-label="добавить" title="добавить" @click="openCreate" style="padding:7px 14px;font-size:.96rem;line-height:1">+</button>
     </div>
 
-    <div v-if="pending" style="font-size:.88rem;color:#999">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <div v-else-if="!templates?.length" style="font-size:.88rem;color:#999">Нет шаблонов</div>
     <div v-else>
       <div v-for="tpl in templates" :key="tpl.key" class="a-card" style="padding:16px 20px;margin-bottom:8px">

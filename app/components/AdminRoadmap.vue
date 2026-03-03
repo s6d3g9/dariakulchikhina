@@ -36,7 +36,7 @@
     </div>
 
     <!-- ── Loading ── -->
-    <div v-if="pending" class="arm-loading">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
 
     <template v-else>
       <div v-if="!stages.length" class="arm-empty">

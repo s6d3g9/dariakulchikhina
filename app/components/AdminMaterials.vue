@@ -1,6 +1,6 @@
 <template>
   <div class="am-wrap">
-    <div v-if="pending" class="am-pending">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
       <div v-for="(tab, ti) in tabs" :key="ti" class="am-card glass-card">
         <div class="am-card-label">вкладка: {{ tab.title || '(без названия)' }}</div>

@@ -1,6 +1,6 @@
 <template>
   <div class="awl-wrap">
-    <div v-if="pending" class="awl-loading">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <div class="awl-toolbar">

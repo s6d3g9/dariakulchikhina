@@ -1,6 +1,6 @@
 <template>
   <div class="cda-root">
-    <div v-if="pending" class="cda-loading"><div class="cda-loading-bar"></div></div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Albums / categories -->

@@ -1,6 +1,6 @@
 <template>
   <div class="ass-wrap">
-    <div v-if="pending" class="ass-loading">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Section: Visit Info -->

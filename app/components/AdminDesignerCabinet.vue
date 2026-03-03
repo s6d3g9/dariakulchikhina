@@ -1,6 +1,9 @@
 <template>
   <div class="designer-cab" v-if="designerId">
-    <div v-if="pending" class="cab-loading">Загружаем…</div>
+    <div v-if="pending" class="ent-page-skeleton">
+      <div class="ent-sk-sidebar"><div class="ent-nav-skeleton" v-for="i in 6" :key="i"/></div>
+      <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    </div>
 
     <div v-else-if="designer" class="cab-body">
       <aside class="cab-sidebar glass-surface std-sidenav">

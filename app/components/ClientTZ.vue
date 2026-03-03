@@ -1,6 +1,6 @@
 <template>
   <div class="ctz-wrap glass-card">
-    <div v-if="pending" class="ctz-loading">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else-if="hasTZ">
 
       <!-- ── Содержание ТЗ ── -->

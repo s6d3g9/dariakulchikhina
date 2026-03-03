@@ -53,6 +53,45 @@ pnpm deploy:safe
 pnpm deploy:safe:prod
 ```
 
+Ускоренный запуск без preflight-проверок:
+
+```bash
+pnpm deploy:safe:prod:fast
+```
+
+Dry-run для проверки деплоя без перезапуска процесса:
+
+```bash
+pnpm deploy:safe:prod:dry-run
+```
+
+`dry-run` выполняет sync + install + build (и fallback при необходимости), но не делает `pm2 restart` и не запускает health-check.
+
+Во всех режимах скрипт печатает длительность этапов (`[time] ...s`), чтобы быстро видеть узкие места деплоя.
+Также метрики записываются в `logs/deploy-metrics.log` (timestamp, режим, статус, длительности этапов).
+
+Просмотр последних записей:
+
+```bash
+pnpm deploy:metrics
+```
+
+Онлайн-просмотр:
+
+```bash
+pnpm deploy:metrics:follow
+```
+
+Preflight-only (только проверки окружения, без sync/build/restart):
+
+```bash
+pnpm deploy:safe:prod:preflight
+```
+
+Проверяет локальные утилиты, SSH-доступ, наличие `node/pnpm/pm2` на сервере и права на `DEPLOY_PATH`.
+
+Если нужно пропустить preflight в любом сценарии, можно задать `NO_PREFLIGHT=1`.
+
 Переопределяемые переменные окружения:
 
 - `DEPLOY_HOST` (по умолчанию `daria-deploy`)

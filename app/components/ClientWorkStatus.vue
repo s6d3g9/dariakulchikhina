@@ -1,7 +1,7 @@
 <template>
   <div class="cws-wrap glass-card">
     <h2 class="cws-title">Статусы работ</h2>
-    <div v-if="pending" class="cws-empty">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <div v-else-if="!items?.length" class="cws-empty">Нет задач</div>
     <div v-else class="cws-list">
       <div

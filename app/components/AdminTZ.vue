@@ -1,6 +1,6 @@
 <template>
   <div class="atz-wrap">
-    <div v-if="pending" class="atz-pending">Загрузка...</div>
+    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
       <div v-for="(sec, si) in sections" :key="si" class="atz-card glass-card">
         <div class="atz-card-label">раздел: {{ sec.title || '(без названия)' }}</div>

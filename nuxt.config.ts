@@ -49,9 +49,21 @@ export default defineNuxtConfig({
   },
 
   imports: {
-    // Prevent Nuxt auto-import scanner from picking up generic type
-    // tokens like "string" from large Record<string,string> signatures
     collectMeta: false,
+  },
+
+  hooks: {
+    // Nuxt 4 auto-scans the entire shared/ folder (new vs Nuxt 3 default).
+    // shared/types/*.ts use Record<string,…> type annotations; unimport
+    // incorrectly registers the TS built-in "string" as a named auto-import,
+    // producing "Duplicated imports" warnings. Fix: prune shared/types dirs.
+    'imports:dirs'(dirs) {
+      for (let i = dirs.length - 1; i >= 0; i--) {
+        if ((dirs[i] ?? '').replace(/\\/g, '/').includes('shared/types')) {
+          dirs.splice(i, 1)
+        }
+      }
+    },
   },
 
   typescript: {

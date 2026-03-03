@@ -98,10 +98,7 @@
 
           <!-- ── Document list ── -->
           <div v-else key="doc-list">
-            <div v-if="pending" class="docs-empty">
-              <span class="docs-empty-icon">⏳</span>
-              Загрузка...
-            </div>
+            <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
             <div v-else-if="!filteredDocs.length" class="docs-empty">
               <span class="docs-empty-icon">{{ search ? '🔍' : '📂' }}</span>
               <span>{{ search ? 'Ничего не найдено' : 'Нет документов в этой категории' }}</span>

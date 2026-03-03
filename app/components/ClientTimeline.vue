@@ -1,8 +1,6 @@
 <template>
   <div class="ctl-root">
-    <div v-if="stagePending || teamPending" class="ctl-loading">
-      <div class="ctl-loading-bar"></div>
-    </div>
+    <div v-if="stagePending || teamPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Section: Timeline -->

@@ -1,6 +1,9 @@
 <template>
   <div>
-    <div v-if="projectPending" class="ent-empty-detail" style="padding:40px 20px"><span class="ent-empty-icon">⏳</span>Загрузка…</div>
+    <div v-if="projectPending" class="ent-page-skeleton" style="padding:20px">
+      <div class="ent-sk-sidebar"><div class="ent-nav-skeleton" v-for="i in 8" :key="i"/></div>
+      <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    </div>
     <div v-else-if="!project" style="font-size:.88rem;color:#999">Проект не найден</div>
     <template v-else>
       <div style="font-size:.78rem;color:#aaa;margin-bottom:12px">
@@ -145,7 +148,7 @@
             <div :key="contentKey" class="proj-main-inner">
               <!-- contractor preview -->
               <template v-if="contractorPreviewMode">
-                <div v-if="contractorPending" style="font-size:.82rem;color:#aaa;padding:20px 0">Загрузка...</div>
+                <div v-if="contractorPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
                 <template v-else-if="contractorData">
                   <AdminContractorCabinet :contractor-id="contractorPreviewId" />
                 </template>
