@@ -259,21 +259,7 @@ function removeFile(idx: number) {
   display: flex; align-items: center; gap: 8px; font-size: .82rem;
   cursor: pointer; color: var(--glass-text);
 }
-.adaf-check input[type="checkbox"] {
-  -webkit-appearance: none; appearance: none; margin: 0;
-  width: 20px; height: 20px; border-radius: 50%;
-  border: 1.5px solid var(--glass-border); background: none;
-  cursor: pointer; position: relative; flex-shrink: 0;
-  transition: background .15s, border-color .15s;
-}
-.adaf-check input[type="checkbox"]:checked {
-  background: var(--glass-text); border-color: var(--glass-text);
-}
-.adaf-check input[type="checkbox"]:checked::after {
-  content: '✓'; position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .68rem; color: var(--glass-page-bg); font-weight: 700;
-}
+
 
 /* ── Mobile ── */
 @media (max-width: 768px) {

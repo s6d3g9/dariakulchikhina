@@ -461,6 +461,59 @@ html.dark .glass-input::placeholder {
   }
 }
 
+/* ── Circle toggle checkbox (global admin override) ───────────
+   Replaces ALL native checkboxes with round pill-toggle buttons.
+   No component-level changes needed — purely CSS-driven.
+   ─────────────────────────────────────────────────────────── */
+.admin-container input[type="checkbox"],
+.admin-bg input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.8px solid color-mix(in srgb, var(--glass-text) 22%, transparent);
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
+  vertical-align: middle;
+}
+
+.admin-container input[type="checkbox"]:hover,
+.admin-bg input[type="checkbox"]:hover {
+  border-color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 6%, transparent);
+}
+
+.admin-container input[type="checkbox"]:checked,
+.admin-bg input[type="checkbox"]:checked {
+  background: var(--glass-text);
+  border-color: var(--glass-text);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.admin-container input[type="checkbox"]:checked::after,
+.admin-bg input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .62rem;
+  font-weight: 700;
+  color: var(--glass-page-bg);
+  line-height: 1;
+}
+
+.admin-container input[type="checkbox"]:active,
+.admin-bg input[type="checkbox"]:active {
+  transform: scale(.92);
+}
+
 /* ── Entity sidebar layout (admin list pages) ─────────────────
    Master-detail pattern: sidebar listing entities + main content.
    ─────────────────────────────────────────────────────────── */

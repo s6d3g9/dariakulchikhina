@@ -1521,7 +1521,7 @@ async function saveDesignerProjectEdits() {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.04);
 }
-.svc-enable input { accent-color: #646cff; }
+
 .svc-edit-name { flex: 2; }
 .svc-edit-desc { flex: 2; }
 .svc-edit-cat { flex: 1.3; }

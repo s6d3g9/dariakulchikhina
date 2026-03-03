@@ -275,7 +275,7 @@ async function save() {
 .ass-check-item {
   display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 0;
 }
-.ass-checkbox { width: 14px; height: 14px; cursor: pointer; accent-color: var(--text, #1a1a1a); flex-shrink: 0; }
+
 .ass-check-label { font-size: .82rem; color: var(--text, #333); flex: 1; }
 .ass-check-status { font-size: .68rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); }
 .ass-check-ok { color: var(--ds-success); }

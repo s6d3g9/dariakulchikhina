@@ -1108,7 +1108,7 @@ function formatDocDate(value: string) {
 .cab-field-slug { font-family: monospace; letter-spacing: .04em; opacity: .85; }
 .cab-settings-toggles { display: flex; flex-direction: column; gap: 2px; }
 .cab-toggle-row { display: grid; grid-template-columns: 28px 1fr; grid-template-rows: auto auto; column-gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
-.cab-toggle-checkbox { grid-row: 1 / 3; width: 18px; height: 18px; margin-top: 2px; accent-color: #4a80f0; }
+.cab-toggle-checkbox { grid-row: 1 / 3; margin-top: 2px; }
 .cab-toggle-label { font-size: .88rem; font-weight: 600; }
 .cab-toggle-hint { font-size: .76rem; opacity: .45; grid-column: 2; }
 

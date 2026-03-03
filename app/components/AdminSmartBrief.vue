@@ -18,13 +18,30 @@
               @blur="save"
             />
             <div v-else-if="f.options" class="asb-tagsel">
-              <span
-                v-for="o in f.options"
-                :key="o"
-                class="asb-tagopt"
-                :class="{ 'asb-tagopt--on': (form as any)[f.key] === o }"
-                @click="() => { (form as any)[f.key] = ((form as any)[f.key] === o ? '' : o); save() }"
-              >{{ o }}</span>
+              <div class="asb-tagpicker-title">Выбрано</div>
+              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
+                <button
+                  v-for="option in selectedSingleOption((form as any)[f.key])"
+                  :key="`${f.key}-selected-${option}`"
+                  type="button"
+                  class="asb-tagopt asb-tagopt--on"
+                  @click="toggleSingleChoiceAndSave(f.key, option)"
+                >
+                  #{{ option }}
+                </button>
+              </TransitionGroup>
+              <div class="asb-tagpicker-title" style="margin-top: 8px">Доступно</div>
+              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
+                <button
+                  v-for="option in availableSingleOptions(f.options, (form as any)[f.key])"
+                  :key="`${f.key}-available-${option}`"
+                  type="button"
+                  class="asb-tagopt"
+                  @click="toggleSingleChoiceAndSave(f.key, option)"
+                >
+                  #{{ option }}
+                </button>
+              </TransitionGroup>
             </div>
             <input
               v-else
@@ -172,13 +189,30 @@
               @blur="save"
             />
             <div v-else-if="f.options" class="asb-tagsel">
-              <span
-                v-for="o in f.options"
-                :key="o"
-                class="asb-tagopt"
-                :class="{ 'asb-tagopt--on': (form as any)[f.key] === o }"
-                @click="() => { (form as any)[f.key] = ((form as any)[f.key] === o ? '' : o); save() }"
-              >{{ o }}</span>
+              <div class="asb-tagpicker-title">Выбрано</div>
+              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
+                <button
+                  v-for="option in selectedSingleOption((form as any)[f.key])"
+                  :key="`${f.key}-selected-${option}`"
+                  type="button"
+                  class="asb-tagopt asb-tagopt--on"
+                  @click="toggleSingleChoiceAndSave(f.key, option)"
+                >
+                  #{{ option }}
+                </button>
+              </TransitionGroup>
+              <div class="asb-tagpicker-title" style="margin-top: 8px">Доступно</div>
+              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
+                <button
+                  v-for="option in availableSingleOptions(f.options, (form as any)[f.key])"
+                  :key="`${f.key}-available-${option}`"
+                  type="button"
+                  class="asb-tagopt"
+                  @click="toggleSingleChoiceAndSave(f.key, option)"
+                >
+                  #{{ option }}
+                </button>
+              </TransitionGroup>
             </div>
             <input
               v-else
@@ -289,6 +323,19 @@ const autoTags = computed(() =>
 
 function toggle(key: string) {
   form[key] = !form[key]
+  save()
+}
+
+function selectedSingleOption(value: string | null | undefined) {
+  return value ? [value] : []
+}
+
+function availableSingleOptions(options: readonly string[] | undefined, selected: string | null | undefined) {
+  return (options || []).filter(option => option !== selected)
+}
+
+function toggleSingleChoiceAndSave(key: string, option: string) {
+  form[key] = form[key] === option ? '' : option
   save()
 }
 
@@ -449,7 +496,7 @@ async function save() {
 .asb-check-item {
   display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 0;
 }
-.asb-checkbox { width: 14px; height: 14px; cursor: pointer; accent-color: var(--text, #1a1a1a); flex-shrink: 0; }
+
 .asb-check-label { font-size: .82rem; color: var(--text, #333); flex: 1; }
 .asb-check-tag { font-size: .68rem; font-family: monospace; color: color-mix(in srgb, var(--glass-text) 45%, transparent); white-space: nowrap; }
 
@@ -470,16 +517,49 @@ async function save() {
 .asb-btn-save:hover:not(:disabled) { opacity: .85; }
 
 /* Tag-style option selector */
-.asb-tagsel { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+.asb-tagsel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0;
+}
+.asb-tagpicker-title {
+  font-size: .58rem;
+  text-transform: uppercase;
+  letter-spacing: .75px;
+  color: color-mix(in srgb, var(--glass-text) 55%, transparent);
+}
+.asb-tagpool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .asb-tagopt {
   padding: 4px 10px; font-size: .74rem; cursor: pointer; user-select: none;
-  border: 1px solid var(--border, #ddd); color: color-mix(in srgb, var(--glass-text) 55%, transparent);
-  transition: background .12s, color .12s, border-color .12s;
+  border: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--glass-bg, #fff) 88%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 55%, transparent);
+  transition: background .16s, color .16s, transform .16s;
 }
-.asb-tagopt:hover { border-color: var(--text, #1a1a1a); color: var(--text, #1a1a1a); }
+.asb-tagopt:hover { color: var(--text, #1a1a1a); }
 .asb-tagopt--on {
   background: var(--text, #1a1a1a); color: var(--bg, #fff);
-  border-color: var(--text, #1a1a1a);
+}
+
+.tag-shift-enter-active,
+.tag-shift-leave-active {
+  transition: all .2s ease;
+}
+
+.tag-shift-enter-from,
+.tag-shift-leave-to {
+  opacity: 0;
+  transform: translateY(4px) scale(.98);
+}
+
+.tag-shift-move {
+  transition: transform .2s ease;
 }
 
 /* ── Mobile ── */
