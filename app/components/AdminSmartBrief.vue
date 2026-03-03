@@ -261,15 +261,6 @@
         </div>
       </div>
 
-      <!-- Generated tags banner -->
-      <div class="asb-tags-banner" v-if="autoTags.length">
-        <span class="asb-tags-label">теги проекта:</span>
-        <span v-for="tag in autoTags" :key="tag" class="asb-tag">{{ tag }}</span>
-      </div>
-      <div class="asb-tags-banner asb-tags-banner--empty" v-else>
-        <span class="asb-tags-label">теги сформируются автоматически по ответам анкеты</span>
-      </div>
-
       <!-- Footer -->
       <div class="asb-footer">
         <span v-if="savedAt" class="asb-saved">✓ сохранено {{ savedAt }}</span>
@@ -460,21 +451,6 @@ async function save() {
 .asb-wrap { padding: 4px 0 48px; }
 .asb-loading { font-size: .88rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 
-/* Tags banner */
-.asb-tags-banner {
-  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-  padding: 12px 16px; margin-bottom: 24px;
-  border: 1px solid var(--border, #e0e0e0);
-  background: var(--surface, #fafafa);
-}
-.asb-tags-banner--empty { opacity: .55; }
-.asb-tags-label { font-size: .72rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); letter-spacing: .6px; text-transform: uppercase; margin-right: 6px; white-space: nowrap; }
-.asb-tag {
-  font-size: .76rem; padding: 3px 10px;
-  background: var(--text, #1a1a1a); color: var(--bg, #fff);
-  border-radius: 2px; font-family: monospace; letter-spacing: .3px;
-}
-
 /* Sections */
 .asb-section { margin-bottom: 32px; }
 .asb-section-title {
@@ -559,7 +535,6 @@ async function save() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .asb-tags-banner { padding: 10px 12px; gap: 6px; }
   .asb-footer { flex-direction: column; align-items: stretch; gap: 10px; }
   .asb-btn-save { width: 100%; text-align: center; }
   .asb-section-title { flex-direction: column; align-items: flex-start; }
