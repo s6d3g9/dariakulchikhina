@@ -250,16 +250,14 @@
           <span v-else class="asb-type-hint asb-type-hint--warn">⚠ укажите тип объекта в параметрах (0.1) для точных тегов</span>
         </div>
         <div class="asb-checks-grid">
-          <label v-for="req in filteredRequirements" :key="req.key" class="asb-check-item">
-            <input
-              type="checkbox"
-              :checked="!!(form as any)[req.key]"
-              @change="toggle(req.key)"
-              class="asb-checkbox"
-            >
-            <span class="asb-check-label">{{ req.label }}</span>
-            <span class="asb-check-tag">{{ req.tag }}</span>
-          </label>
+          <button
+            v-for="req in filteredRequirements"
+            :key="req.key"
+            type="button"
+            class="asb-tagopt"
+            :class="{ 'asb-tagopt--on': !!(form as any)[req.key] }"
+            @click="toggle(req.key)"
+          >{{ req.label }}</button>
         </div>
       </div>
 
@@ -491,16 +489,11 @@ async function save() {
 }
 .asb-type-hint--warn { background: color-mix(in srgb, var(--ds-warning) 12%, transparent); color: var(--ds-warning); }
 
-/* Checkboxes grid */
+/* Requirements tag cloud */
 .asb-checks-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px 16px;
-}
-.asb-check-item {
-  display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 0;
+  display: flex; flex-wrap: wrap; gap: 6px;
 }
 
-.asb-check-label { font-size: .82rem; color: var(--text, #333); flex: 1; }
-.asb-check-tag { font-size: .68rem; font-family: monospace; color: color-mix(in srgb, var(--glass-text) 45%, transparent); white-space: nowrap; }
 
 /* Form rows */
 
@@ -566,7 +559,6 @@ async function save() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .asb-checks-grid { grid-template-columns: 1fr; }
   .asb-tags-banner { padding: 10px 12px; gap: 6px; }
   .asb-footer { flex-direction: column; align-items: stretch; gap: 10px; }
   .asb-btn-save { width: 100%; text-align: center; }
