@@ -995,7 +995,7 @@ async function unlinkDesigner(designerId: number) {
 /* ── Layout ── */
 .proj-content-area { display: flex; align-items: flex-start; gap: 0; }
 
-/* Nav column — contains nav + roadmap col side by side ── */
+/* Nav column ── */
 .proj-nav-col {
   position: sticky;
   top: 80px;
