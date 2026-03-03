@@ -727,6 +727,51 @@ html.dark .glass-input::placeholder {
   color: var(--ds-error);
 }
 
+/* ── u-status-sel ────────────────────────────────────────────
+   Status <select> — compact inline dropdown used in tables,
+   lists, property rows. Uniform across ALL admin components.
+   Replaces: acso-status-sel, aca-status-sel, aps-status-sel,
+   asup-status-sel, awd-status-sel, amep-status-sel, etc.
+──────────────────────────────────────────────────────────── */
+.u-status-sel {
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: .78rem;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color .15s;
+}
+.u-status-sel:focus { border-color: color-mix(in srgb, var(--glass-text) 45%, transparent); }
+.u-status-sel:hover { border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
+
+/* ── u-inline-inp ────────────────────────────────────────────
+   Transparent inline input for table cells / compact rows.
+   Replaces: aspec-cell-inp, apl-cell input variants, etc.
+──────────────────────────────────────────────────────────── */
+.u-inline-inp {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 15%, transparent);
+  border-radius: 0;
+  padding: 3px 4px;
+  font-size: .82rem;
+  font-family: inherit;
+  color: var(--glass-text, inherit);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color .15s;
+}
+.u-inline-inp:focus { border-bottom-color: var(--glass-text, currentColor); }
+.u-inline-inp--xs { max-width: 56px; }
+.u-inline-inp--sm { max-width: 100px; }
+.u-inline-inp--ta { resize: vertical; min-height: 32px; border: 1px solid color-mix(in srgb, var(--glass-text) 15%, transparent); border-radius: 3px; padding: 4px 6px; }
+.u-inline-inp--ta:focus { border-color: var(--glass-text, currentColor); }
+
 /* ── u-field ─────────────────────────────────────────────────
    Standard form field wrapper (label + input)
 ──────────────────────────────────────────────────────────── */

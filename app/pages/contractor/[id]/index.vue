@@ -253,7 +253,7 @@
                           <span v-if="item.roadmapStageTitle" class="cab-task-stage-badge">{{ item.roadmapStageTitle }}</span>
                           <select
                             :value="item.status"
-                            class="cab-status-select"
+                            class="u-status-sel"
                             :class="`cab-status--${item.status}`"
                             @click.stop
                             @change="updateStatus(item, ($event.target as HTMLSelectElement).value)"
@@ -1985,18 +1985,6 @@ async function saveProfile() {
 .cab-task-cancel:hover { opacity: 0.9; }
 
 /* Status select */
-.cab-status-select {
-  border: none;
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
-  font-family: inherit;
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  font-weight: 600;
-  white-space: nowrap;
-}
 .cab-status--pending     { background: rgba(160,160,170,0.18); color: #888; }
 .cab-status--planned     { background: rgba(80,120,220,0.15);  color: #3b6fd4; }
 .cab-status--in_progress { background: rgba(210,160,30,0.15);  color: #a07a10; }

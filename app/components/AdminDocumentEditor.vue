@@ -47,7 +47,7 @@
       <div class="de-sources">
         <div class="de-source">
           <label class="de-source-label">📁 Проект</label>
-          <select v-model="pickedProjectSlug" class="de-select" @change="loadContext">
+          <select v-model="pickedProjectSlug" class="u-status-sel" @change="loadContext">
             <option value="">— без проекта —</option>
             <option v-for="p in projects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
           </select>
@@ -57,7 +57,7 @@
             👤 Клиент
             <span v-if="ctx?.clients?.length" class="de-badge">{{ ctx.clients.length }}</span>
           </label>
-          <select v-model="pickedClientId" class="de-select" :disabled="loadingCtx" @change="applyClientData">
+          <select v-model="pickedClientId" class="u-status-sel" :disabled="loadingCtx" @change="applyClientData">
             <option :value="0">{{ loadingCtx ? 'загрузка...' : '— не выбран —' }}</option>
             <option v-for="c in ctx?.clients || []" :key="c.id" :value="c.id">
               {{ c.name }}{{ c.phone ? ` · ${c.phone}` : '' }}
@@ -69,7 +69,7 @@
             🏗 Подрядчик
             <span v-if="ctx?.contractors?.length" class="de-badge">{{ ctx.contractors.length }}</span>
           </label>
-          <select v-model="pickedContractorId" class="de-select" :disabled="loadingCtx" @change="applyContractorData">
+          <select v-model="pickedContractorId" class="u-status-sel" :disabled="loadingCtx" @change="applyContractorData">
             <option :value="0">{{ loadingCtx ? 'загрузка...' : '— не выбран —' }}</option>
             <option v-for="c in ctx?.contractors || []" :key="c.id" :value="c.id">
               {{ c.name }}{{ c.companyName ? ` (${c.companyName})` : '' }}
@@ -105,8 +105,8 @@
             {{ field.label }}
             <span v-if="fieldAutoFilled[field.key]" class="de-field-auto" title="заполнено из данных">⚡</span>
           </label>
-          <textarea v-if="field.multiline" v-model="fieldValues[field.key]" rows="3" class="de-field-input de-field-input--ta" :placeholder="field.placeholder || ''"></textarea>
-          <input v-else v-model="fieldValues[field.key]" class="de-field-input" :placeholder="field.placeholder || ''" />
+          <textarea v-if="field.multiline" v-model="fieldValues[field.key]" rows="3" class="glass-input u-ta" :placeholder="field.placeholder || ''"></textarea>
+          <input v-else v-model="fieldValues[field.key]" class="glass-input" :placeholder="field.placeholder || ''" />
         </div>
       </div>
 
@@ -763,21 +763,6 @@ async function saveDocument() {
   background: color-mix(in srgb, var(--ds-accent, #6366f1) 15%, transparent);
   color: var(--ds-accent, #6366f1); opacity: 1;
 }
-.de-select {
-  width: 100%; padding: 7px 10px; border: none;
-  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
-  color: var(--glass-text); border-radius: var(--input-radius, 8px);
-  font-size: var(--ds-text-sm, .8rem); font-family: inherit;
-  appearance: none; cursor: pointer; outline: none;
-}
-.de-select:focus { background: color-mix(in srgb, var(--glass-text) 9%, transparent); }
-.de-select:disabled { opacity: .4; cursor: not-allowed; }
-
-/* Loading bar */
-.de-loading-bar {
-  height: 2px; border-radius: 2px; overflow: hidden;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
-}
 .de-loading-fill {
   height: 100%; width: 30%; border-radius: 2px;
   background: var(--ds-accent, #6366f1);
@@ -820,20 +805,6 @@ async function saveDocument() {
   display: flex; align-items: center; gap: 4px;
 }
 .de-field-auto { color: var(--ds-accent, #6366f1); font-size: .65rem; opacity: 1; }
-.de-field-input {
-  border: none; padding: 7px 10px;
-  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
-  color: var(--glass-text); border-radius: var(--input-radius, 8px);
-  font-size: var(--ds-text-sm, .8rem); font-family: inherit; outline: none;
-  transition: background .15s ease;
-}
-.de-field-input:focus { background: color-mix(in srgb, var(--glass-text) 9%, transparent); }
-.de-field-input--ta { resize: vertical; min-height: 50px; }
-
-/* ── Editor ── */
-.de-editor-toolbar {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-}
 .de-editor-btns { display: flex; gap: 2px; }
 .de-tbtn {
   border: none; background: none; cursor: pointer;

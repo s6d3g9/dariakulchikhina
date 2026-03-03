@@ -239,7 +239,7 @@
                           <span v-if="item.roadmapStageTitle" class="cab-task-stage-badge">{{ item.roadmapStageTitle }}</span>
                           <select
                             :value="item.status"
-                            class="cab-status-select"
+                            class="u-status-sel"
                             :class="`cab-status--${item.status}`"
                             @click.stop
                             @change="updateStatus(item, ($event.target as HTMLSelectElement).value)"
@@ -990,36 +990,6 @@ function formatDocDate(value: string) {
 }
 .cab-task-cancel { background: none; border: none; cursor: pointer; opacity: .6; }
 
-.cab-status-select { border: none; border-radius: 20px; padding: 4px 10px; font-size: .78rem; font-weight: 600; }
-.cab-status--pending { background: rgba(160,160,170,.18); color: #888; }
-.cab-status--planned { background: rgba(80,120,220,.15); color: #3b6fd4; }
-.cab-status--in_progress { background: rgba(210,160,30,.15); color: #a07a10; }
-.cab-status--paused { background: rgba(220,100,40,.15); color: #c05818; }
-.cab-status--done { background: rgba(40,160,100,.15); color: #228855; }
-.cab-status--cancelled { background: rgba(200,50,50,.12); color: #bb3333; }
-
-.cab-stages-inline { margin-top: 12px; border-radius: 12px; padding: 14px 18px; }
-.cab-stages-inline-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.cab-stages-inline-title { font-size: .75rem; text-transform: uppercase; opacity: .5; }
-.cab-stages-inline-pct { font-size: .8rem; font-weight: 700; color: #228855; }
-.cab-stages-inline-bar-wrap { height: 3px; background: rgba(255,255,255,.18); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
-.cab-stages-inline-bar { height: 100%; background: rgba(40,160,100,.6); }
-.cab-stage-check-row { display: flex; align-items: baseline; gap: 10px; padding: 7px 4px; cursor: pointer; border-radius: 6px; }
-.cab-stage-check-row.done { opacity: .55; }
-.cab-stage-check-icon { font-size: .8rem; width: 16px; text-align: center; color: #228855; font-weight: 700; }
-.cab-stage-num { font-size: .68rem; opacity: .35; min-width: 18px; text-align: right; }
-.cab-stage-label { font-size: .85rem; flex: 1; }
-.cab-stage-hint { font-size: .75rem; opacity: .5; }
-
-.cab-task-stage-badge,
-.cab-task-assigned-badge {
-  display: inline-block;
-  font-size: .68rem;
-  font-weight: 600;
-  padding: 2px 9px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
 .cab-task-stage-badge { background: rgba(240,180,30,.14); border: 1px solid rgba(220,160,20,.3); }
 .cab-task-assigned-badge { background: rgba(80,140,255,.1); border: 1px solid rgba(80,140,255,.25); }
 

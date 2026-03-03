@@ -19,7 +19,7 @@
           class="asp2-tag" :class="{ 'asp2-tag--active': activeTag === tag }"
           @click="activeTag = activeTag === tag ? '' : tag"
         >{{ tag }}</button>
-        <input v-model="newTag" class="asp2-new-tag" placeholder="+ тег..." @keydown.enter.prevent="addTagFilter">
+        <input v-model="newTag" class="glass-input" placeholder="+ тег..." @keydown.enter.prevent="addTagFilter">
       </div>
 
       <div v-if="filteredPhotos.length" class="asp2-grid">
@@ -32,10 +32,10 @@
             </div>
           </div>
           <div class="asp2-meta">
-            <input v-model="ph.caption" class="asp2-caption" placeholder="подпись..." @blur="save">
+            <input v-model="ph.caption" class="u-inline-inp" placeholder="подпись..." @blur="save">
             <div class="asp2-tags-row">
               <span v-for="t in ph.tags" :key="t" class="asp2-ph-tag">{{ t }}<button @click="removePhotoTag(ph, t)">×</button></span>
-              <input v-model="ph._newTag" class="asp2-tag-inp" placeholder="тег..." @keydown.enter.prevent="addPhotoTag(ph)">
+              <input v-model="ph._newTag" class="u-inline-inp" placeholder="тег..." @keydown.enter.prevent="addPhotoTag(ph)">
             </div>
           </div>
         </div>
@@ -130,27 +130,4 @@ function removePhotoTag(ph: any, t: string) {
 .asp2-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .asp2-tag { border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .7rem; padding: 3px 8px; border-radius: 999px; cursor: pointer; font-family: inherit; }
 .asp2-tag--active { background: var(--border, #e0e0e0); }
-.asp2-new-tag { border: 1px dashed var(--border, #e0e0e0); background: none; color: inherit; font-size: .7rem; padding: 3px 8px; outline: none; font-family: inherit; width: 100px; }
-.asp2-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-.asp2-card { display: flex; flex-direction: column; border: 1px solid var(--border, #ececec); }
-.asp2-img-wrap { position: relative; aspect-ratio: 4/3; overflow: hidden; background: #f0f0f0; }
-.asp2-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.asp2-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; gap: 10px; opacity: 0; transition: opacity .15s; }
-.asp2-card:hover .asp2-overlay { opacity: 1; }
-.asp2-open { color: #fff; font-size: .9rem; text-decoration: none; }
-.asp2-del { background: none; border: none; cursor: pointer; color: #fff; font-size: 1.2rem; line-height: 1; }
-.asp2-meta { padding: 8px; }
-.asp2-caption { width: 100%; border: none; border-bottom: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .75rem; padding: 3px 0; outline: none; font-family: inherit; }
-.asp2-tags-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; align-items: center; }
-.asp2-ph-tag { font-size: .62rem; padding: 2px 5px; border: 1px solid var(--border, #e0e0e0); border-radius: 3px; display: flex; align-items: center; gap: 3px; }
-.asp2-ph-tag button { background: none; border: none; cursor: pointer; color: #aaa; padding: 0; font-size: .7rem; line-height: 1; }
-.asp2-tag-inp { border: none; border-bottom: 1px dashed var(--border, #ccc); background: none; color: inherit; font-size: .65rem; width: 60px; outline: none; font-family: inherit; }
-.asp2-empty { font-size: .8rem; color: #bbb; padding: 60px 0; text-align: center; border: 1px dashed var(--border, #ececec); }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .asp2-toolbar { gap: 8px; }
-  .asp2-upload-btn { margin-left: 0; width: 100%; justify-content: center; }
-  .asp2-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-}
 </style>

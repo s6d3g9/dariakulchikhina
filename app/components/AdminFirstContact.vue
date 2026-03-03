@@ -5,7 +5,7 @@
       <!-- Step status header -->
       <div class="afc-status-row">
         <span class="afc-dot" :class="`afc-dot--${statusColor}`"></span>
-        <select v-model="form.lead_status" class="afc-status-sel" @change="save">
+        <select v-model="form.lead_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="new">новый лид</option>
           <option value="contacted">контакт установлен</option>
@@ -227,25 +227,6 @@ async function toggleStepCompletion(stepKey: string) {
 .afc-dot--meeting { background: #81c784; }
 .afc-dot--qualified { background: #4caf50; }
 .afc-dot--declined { background: #f44336; }
-.afc-status-sel { flex: 1; padding: 6px 10px; border: 1px solid var(--border, #e0e0e0); border-radius: 2px; font-size: .85rem; font-family: inherit; color: inherit; background: transparent; }
-.afc-saved { font-size: .75rem; color: #666; white-space: nowrap; }
-
-.afc-section { margin-bottom: 32px; }
-.afc-section-title { font-size: .9rem; font-weight: 600; margin-bottom: 16px; color: #333; text-transform: uppercase; letter-spacing: .5px; }
-.afc-rows { display: flex; flex-direction: column; gap: 12px; }
-.afc-row { display: flex; align-items: center; gap: 12px; }
-.afc-row--full { flex-direction: column; align-items: stretch; gap: 6px; }
-.afc-lbl { min-width: 140px; font-size: .8rem; color: #666; flex-shrink: 0; }
-.afc-sel { cursor: pointer; }
-
-.afc-map { width: 100%; height: 300px; border: 1px solid var(--border, #e0e0e0); border-radius: 2px; }
-.afc-map-fields { display: flex; flex-direction: column; gap: 8px; }
-.afc-map-coords { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-.afc-complete-card {
-  display: flex; align-items: flex-start; gap: 16px;
-  padding: 16px 18px; border: 1px solid var(--border, #e0e0e0);
-}
 .afc-complete-card--done { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); background: #f0faf5; }
 .afc-complete-icon { font-size: 1.4rem; flex-shrink: 0; width: 28px; text-align: center; margin-top: 2px; }
 .afc-complete-text { flex: 1; }

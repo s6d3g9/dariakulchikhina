@@ -66,7 +66,7 @@
             </div>
             <!-- Link client to project (if none linked yet) -->
             <div v-if="!linkedClients.length" class="proj-client-link-inline">
-              <select v-model="selectedClientId" class="proj-client-select-sm">
+              <select v-model="selectedClientId" class="u-status-sel">
                 <option value="">— привязать клиента —</option>
                 <option v-for="c in clients" :key="c.id" :value="String(c.id)">
                   {{ c.name }}
@@ -674,10 +674,10 @@ async function linkContractorFromModal(contractorId: number) {
       body: { contractorId },
     })
     await refreshLinkedContractors()
-    contractorLinkSuccess.value = 'Подрядчик добавлен'
+    contractorLinkSuccess.value = 'Подрядчик привязан к проекту'
     setTimeout(() => { contractorLinkSuccess.value = '' }, 3000)
   } catch (e: any) {
-    contractorLinkError.value = e?.data?.message || 'Не удалось добавить подрядчика'
+    contractorLinkError.value = e?.data?.message || 'Не удалось привязать подрядчика'
   }
 }
 
@@ -967,10 +967,10 @@ async function linkClientFromModal(clientId: string) {
       body: { projectSlug: slug.value },
     })
     await refresh()
-    clientLinkSuccess.value = 'Клиент добавлен в проект'
+    clientLinkSuccess.value = 'Клиент привязан к проекту'
     setTimeout(() => { clientLinkSuccess.value = '' }, 3000)
   } catch (e: any) {
-    clientLinkError.value = e?.data?.statusMessage || 'Не удалось добавить клиента'
+    clientLinkError.value = e?.data?.statusMessage || 'Не удалось привязать клиента'
   }
 }
 
@@ -981,10 +981,10 @@ async function unlinkClientFromModal(clientId: string) {
       body: { projectSlug: slug.value },
     })
     await refresh()
-    clientLinkSuccess.value = 'Клиент удален из проекта'
+    clientLinkSuccess.value = 'Клиент отвязан от проекта'
     setTimeout(() => { clientLinkSuccess.value = '' }, 2500)
   } catch (e: any) {
-    clientLinkError.value = e?.data?.statusMessage || 'Не удалось удалить клиента'
+    clientLinkError.value = e?.data?.statusMessage || 'Не удалось отвязать клиента'
   }
 }
 
@@ -999,10 +999,10 @@ async function linkDesignerFromModal(designerId: number) {
       body: { designerId },
     })
     await refreshLinkedDesigners()
-    designerLinkSuccess.value = 'Дизайнер добавлен'
+    designerLinkSuccess.value = 'Дизайнер привязан к проекту'
     setTimeout(() => { designerLinkSuccess.value = '' }, 3000)
   } catch (e: any) {
-    designerLinkError.value = e?.data?.message || 'Не удалось добавить дизайнера'
+    designerLinkError.value = e?.data?.message || 'Не удалось привязать дизайнера'
   } finally {
     linkingDesigner.value = false
   }
@@ -1119,12 +1119,6 @@ async function unlinkDesigner(designerId: number) {
 }
 .proj-client-linked-name {
   font-size: .76rem; color: var(--glass-text); opacity: .7; font-weight: 500;
-}
-.proj-client-select-sm {
-  flex: 1; min-width: 0; font-size: .72rem; font-family: inherit;
-  padding: 4px 6px; border-radius: 6px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg); color: var(--glass-text);
 }
 .proj-client-btn-sm {
   border: none; background: var(--glass-text); color: var(--glass-page-bg);

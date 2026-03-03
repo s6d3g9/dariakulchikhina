@@ -6,7 +6,7 @@
       <!-- Status -->
       <div class="amb-status-row">
         <span class="amb-dot" :class="`amb-dot--${statusColor}`"></span>
-        <select v-model="form.mb_status" class="amb-status-sel" @change="save">
+        <select v-model="form.mb_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="collecting">собираем</option>
           <option value="review">на согласовании</option>
@@ -56,13 +56,13 @@
             <div class="amb-img-wrap">
               <img :src="img.url" :alt="img.label" class="amb-img" loading="lazy">
               <div class="amb-img-actions">
-                <select v-model="img.category" class="amb-img-cat" @change="save">
+                <select v-model="img.category" class="u-inline-inp" @change="save">
                   <option v-for="c in IMAGE_CATS" :key="c.key" :value="c.key">{{ c.label }}</option>
                 </select>
                 <button class="amb-img-del" @click="removeImage(img)" title="удалить">×</button>
               </div>
             </div>
-            <input v-model="img.comment" class="amb-img-comment" placeholder="комментарий к фото..." @blur="save">
+            <input v-model="img.comment" class="u-inline-inp" placeholder="комментарий к фото..." @blur="save">
           </div>
         </div>
         <div v-else class="amb-gallery-empty">
@@ -76,7 +76,7 @@
             {{ uploading ? 'загрузка...' : '+ загрузить изображения' }}
             <input type="file" multiple accept="image/*" style="display:none" @change="onImgInput" :disabled="uploading">
           </label>
-          <select v-model="newCategory" class="amb-new-cat-sel">
+          <select v-model="newCategory" class="u-status-sel">
             <option v-for="c in IMAGE_CATS" :key="c.key" :value="c.key">{{ c.label }}</option>
           </select>
         </div>
@@ -88,8 +88,8 @@
         <div class="amb-links-list" v-if="form.mb_links.length">
           <div v-for="(link, idx) in form.mb_links" :key="idx" class="amb-link-item">
             <span class="amb-link-icon">🔗</span>
-            <input v-model="link.url" class="amb-link-inp amb-link-url" placeholder="https://..." @blur="save">
-            <input v-model="link.label" class="amb-link-inp" placeholder="описание..." @blur="save">
+            <input v-model="link.url" class="glass-input" placeholder="https://..." @blur="save">
+            <input v-model="link.label" class="glass-input" placeholder="описание..." @blur="save">
             <button class="amb-link-del" @click="removeLink(Number(idx))">×</button>
           </div>
         </div>
@@ -232,15 +232,6 @@ function removeLink(idx: number) {
 .amb-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .amb-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
-.amb-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.amb-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-
-.amb-section { margin-bottom: 32px; }
-.amb-section-title {
-  font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: color-mix(in srgb, var(--glass-text) 50%, transparent);
-  margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec);
-  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
-}
 .amb-section-count { font-size: .7rem; color: color-mix(in srgb, var(--glass-text) 45%, transparent); }
 
 /* Style tags */
@@ -286,29 +277,4 @@ function removeLink(idx: number) {
 .amb-upload-btn { display: inline-flex; align-items: center; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); cursor: pointer; user-select: none; }
 .amb-upload-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 50%, transparent); color: inherit; }
 .amb-upload-btn--loading { opacity: .6; cursor: wait; }
-.amb-new-cat-sel { border: 1px solid var(--border, #e0e0e0); background: none; padding: 5px 10px; font-size: .78rem; font-family: inherit; color: inherit; }
-
-/* Links */
-.amb-links-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-.amb-link-item { display: flex; align-items: center; gap: 6px; }
-.amb-link-icon { font-size: 1rem; flex-shrink: 0; }
-.amb-link-inp { flex: 1; border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 8px; font-size: .78rem; font-family: inherit; color: inherit; outline: none; }
-.amb-link-url { flex: 2; }
-.amb-link-del { background: none; border: none; cursor: pointer; color: color-mix(in srgb, var(--glass-text) 50%, transparent); font-size: 1.1rem; }
-.amb-link-del:hover { color: var(--ds-error, #c00); }
-.amb-add-link-btn { background: none; border: 1px dashed var(--border, #e0e0e0); padding: 6px 14px; font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 50%, transparent); cursor: pointer; font-family: inherit; }
-.amb-add-link-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 50%, transparent); color: inherit; }
-
-/* Row form */
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .amb-gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-  .amb-link-item { flex-wrap: wrap; }
-  .amb-link-inp, .amb-link-url { flex: 1 1 100%; min-width: 0; }
-  .amb-status-row { flex-wrap: wrap; gap: 8px; }
-  .amb-section-title { flex-direction: column; align-items: flex-start; gap: 6px; }
-  .amb-cat-filter { margin-left: 0; width: 100%; }
-  .amb-upload-bar { gap: 6px; }
-}
 </style>

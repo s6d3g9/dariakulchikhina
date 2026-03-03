@@ -6,7 +6,7 @@
       <!-- Status -->
       <div class="asup-status-row">
         <span class="asup-dot" :class="`asup-dot--${statusColor}`"></span>
-        <select v-model="form.sup_status" class="asup-status-sel" @change="save">
+        <select v-model="form.sup_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="searching">поиск поставщиков</option>
           <option value="quoting">сбор КП</option>
@@ -141,28 +141,4 @@ function removeSupplier(idx: number) {
 .asup-dot--yellow { background: #e8b84b; }
 .asup-dot--red    { background: #d46b6b; }
 .asup-dot--green  { background: #5caa7f; }
-.asup-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.asup-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-
-.asup-section { margin-bottom: 32px; }
-.asup-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
-
-
-/* Cards */
-.asup-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-.asup-card { border: 1px solid var(--border, #e0e0e0); padding: 14px; }
-.asup-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.asup-card-name { font-weight: 500; }
-.asup-card-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
-.asup-card-row { display: flex; flex-direction: column; }
-.asup-card-row--full { grid-column: 1 / -1; }
-.asup-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1.1rem; }
-.asup-del:hover { color: var(--ds-error, #c00); }
-.asup-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
-.asup-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: #666; cursor: pointer; font-family: inherit; }
-.asup-add-btn:hover { border-color: #aaa; color: inherit; }
-
-@media (max-width: 640px) {
-  .asup-cards { grid-template-columns: 1fr; }
-}
 </style>

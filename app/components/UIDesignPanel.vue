@@ -1791,10 +1791,13 @@ function onInspectMove(e: MouseEvent) {
 }
 
 function onInspectClick(e: MouseEvent) {
+  // Let clicks inside the panel / result / tooltip pass through to Vue handlers
+  const target = e.target as HTMLElement
+  if (target && isInsidePanel(target)) return
   e.preventDefault()
   e.stopPropagation()
   const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
-  if (!el || isInsidePanel(el)) return
+  if (!el) return
 
   const rect = el.getBoundingClientRect()
   const secs = detectSections(el)

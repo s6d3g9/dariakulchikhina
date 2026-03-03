@@ -6,7 +6,7 @@
       <!-- Status row -->
       <div class="asp-status-row">
         <span class="asp-dot" :class="`asp-dot--${statusColor}`"></span>
-        <select v-model="form.sp_status" class="asp-status-sel" @change="save">
+        <select v-model="form.sp_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="in_work">в работе</option>
           <option value="sent_to_client">отправлен клиенту</option>
@@ -53,13 +53,13 @@
             <div class="asp-file-meta">
               <a :href="file.url" target="_blank" class="asp-file-name">{{ file.label || file.filename }}</a>
               <div class="asp-file-row2">
-                <select v-model="file.approval" class="asp-file-approval" @change="save">
+                <select v-model="file.approval" class="u-status-sel" @change="save">
                   <option value="">на рассмотрении</option>
                   <option value="sent">отправлен</option>
                   <option value="approved">согласован ✓</option>
                   <option value="revision">доработка ↩</option>
                 </select>
-                <input v-model="file.comment" class="asp-file-comment" placeholder="комментарий..." @blur="save">
+                <input v-model="file.comment" class="u-inline-inp" placeholder="комментарий..." @blur="save">
               </div>
             </div>
             <button class="asp-file-del" @click="removeFile(Number(idx))" title="удалить">×</button>
@@ -181,36 +181,4 @@ function fileIcon(f: any) {
 .asp-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .asp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
-.asp-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.asp-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-
-.asp-section { margin-bottom: 32px; }
-.asp-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
-
-
-/* Files */
-.asp-files-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.asp-file-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border, #e0e0e0); background: var(--bg2, #f8f8f7); }
-.asp-file-icon { font-size: 1.3rem; flex-shrink: 0; padding-top: 2px; }
-.asp-file-meta { flex: 1; min-width: 0; }
-.asp-file-name { font-size: .8rem; color: inherit; text-decoration: none; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 6px; }
-.asp-file-name:hover { text-decoration: underline; }
-.asp-file-row2 { display: flex; gap: 8px; }
-.asp-file-approval { border: 1px solid var(--border, #e0e0e0); background: none; font-size: .72rem; padding: 3px 6px; font-family: inherit; color: inherit; }
-.asp-file-comment  { flex: 1; border: 1px solid var(--border, #e0e0e0); background: none; font-size: .72rem; padding: 3px 8px; font-family: inherit; color: inherit; outline: none; }
-.asp-file-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1.1rem; line-height: 1; padding: 0 2px; }
-.asp-file-del:hover { color: var(--ds-error, #c00); }
-.asp-files-empty { font-size: .78rem; color: #bbb; margin-bottom: 10px; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); }
-
-.asp-upload-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
-.asp-upload-btn:hover { border-color: #aaa; color: inherit; }
-.asp-upload-btn--loading { opacity: .6; cursor: wait; }
-
-.asp-checks-row { display: flex; flex-wrap: wrap; gap: 16px; }
-.asp-check-item { display: flex; align-items: center; gap: 8px; font-size: .82rem; cursor: pointer; }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .asp-checks-row { gap: 10px; }
-}
 </style>

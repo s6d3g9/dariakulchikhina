@@ -6,7 +6,7 @@
       <!-- Status -->
       <div class="apl-status-row">
         <span class="apl-dot" :class="`apl-dot--${statusColor}`"></span>
-        <select v-model="form.proc_status" class="apl-status-sel" @change="save">
+        <select v-model="form.proc_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="collecting">формирование списка</option>
           <option value="quoting">сбор КП</option>
@@ -48,7 +48,7 @@
               <tr v-for="(item, idx) in form.proc_items" :key="idx" :class="{ 'apl-row--received': item.status === 'received' }">
                 <td class="apl-td-num">{{ Number(idx) + 1 }}</td>
                 <td>
-                  <select v-model="item.category" class="apl-cell" @change="save">
+                  <select v-model="item.category" class="u-inline-inp" @change="save">
                     <option value="finish">отделка</option>
                     <option value="plumbing">сантехника</option>
                     <option value="electrical">электрика</option>
@@ -60,12 +60,12 @@
                     <option value="other">прочее</option>
                   </select>
                 </td>
-                <td><input v-model="item.name" class="apl-cell" @blur="save"></td>
-                <td><input v-model="item.qty" type="number" min="0" class="apl-cell apl-cell-xs" @blur="save"></td>
-                <td><input v-model="item.supplier" class="apl-cell" @blur="save"></td>
-                <td><input v-model="item.price" class="apl-cell apl-cell-sm" @blur="save"></td>
+                <td><input v-model="item.name" class="u-inline-inp" @blur="save"></td>
+                <td><input v-model="item.qty" type="number" min="0" class="u-inline-inp u-inline-inp--xs" @blur="save"></td>
+                <td><input v-model="item.supplier" class="u-inline-inp" @blur="save"></td>
+                <td><input v-model="item.price" class="u-inline-inp u-inline-inp--sm" @blur="save"></td>
                 <td>
-                  <select v-model="item.status" class="apl-cell apl-cell-status" @change="save">
+                  <select v-model="item.status" class="u-status-sel" @change="save">
                     <option value="">—</option>
                     <option value="pending">в ожидании</option>
                     <option value="quoted">КП получено</option>
@@ -76,7 +76,7 @@
                   </select>
                 </td>
                 <td>
-                  <AppDatePicker v-model="item.deadline" model-type="iso" input-class="apl-cell apl-cell-sm" @update:model-value="save" />
+                  <AppDatePicker v-model="item.deadline" model-type="iso" input-class="u-inline-inp u-inline-inp--sm" @update:model-value="save" />
                 </td>
                 <td><button class="apl-del" @click="removeItem(Number(idx))">×</button></td>
               </tr>
@@ -164,44 +164,4 @@ function removeItem(idx: number) {
 .apl-dot--yellow { background: var(--ds-warning); }
 .apl-dot--red    { background: var(--ds-error); }
 .apl-dot--green  { background: var(--ds-success); }
-.apl-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.apl-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-
-.apl-summary { display: flex; gap: 24px; font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); margin-bottom: 24px; padding: 10px 0; border-bottom: 1px solid var(--border, #ececec); }
-
-.apl-section { margin-bottom: 32px; }
-.apl-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: color-mix(in srgb, var(--glass-text) 50%, transparent); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
-
-
-.apl-table-wrap { overflow-x: auto; margin-bottom: 12px; }
-.apl-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
-.apl-table th { font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; color: color-mix(in srgb, var(--glass-text) 50%, transparent); font-weight: 500; text-align: left; padding: 6px 4px 8px; border-bottom: 1px solid var(--border, #e0e0e0); white-space: nowrap; }
-.apl-table td { padding: 4px 4px; border-bottom: 1px solid var(--border, #f0f0f0); vertical-align: middle; }
-.apl-td-num { font-size: .68rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); text-align: center; width: 28px; }
-.apl-cell { width: 100%; border: 1px solid transparent; background: none; padding: 4px 6px; font-size: .78rem; font-family: inherit; color: inherit; outline: none; }
-.apl-cell:focus { border-color: var(--border, #e0e0e0); }
-.apl-cell-sm { max-width: 100px; }
-.apl-cell-xs { max-width: 60px; }
-.apl-cell-status { min-width: 110px; }
-.apl-row--received { opacity: .6; }
-.apl-del { background: none; border: none; cursor: pointer; color: color-mix(in srgb, var(--glass-text) 45%, transparent); font-size: 1rem; }
-.apl-del:hover { color: var(--ds-error, #c00); }
-.apl-empty { font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
-
-.apl-actions { display: flex; gap: 10px; margin-bottom: 12px; }
-.apl-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); cursor: pointer; font-family: inherit; }
-.apl-add-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 50%, transparent); color: inherit; }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .apl-summary { flex-wrap: wrap; gap: 8px 16px; font-size: .74rem; }
-  .apl-table { font-size: .72rem; }
-  .apl-table th { font-size: .6rem; padding: 4px 3px; }
-  .apl-table td { padding: 3px; }
-  .apl-cell { font-size: .72rem; padding: 3px 4px; }
-  .apl-cell-sm { max-width: 80px; }
-  .apl-cell-xs { max-width: 50px; }
-  .apl-actions { flex-wrap: wrap; }
-  .apl-status-row { flex-wrap: wrap; gap: 8px; }
-}
 </style>

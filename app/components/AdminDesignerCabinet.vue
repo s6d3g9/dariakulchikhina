@@ -192,7 +192,7 @@
                       <template v-if="inlinePriceKey === svc.serviceKey">
                         <input
                           v-model.number="inlinePriceVal"
-                          class="svc-price-inline-input"
+                          class="u-inline-inp"
                           type="number"
                           min="0"
                           @blur="commitInlinePrice(svc)"
@@ -1353,7 +1353,6 @@ async function saveDesignerProjectEdits() {
   }
 }
 
-
 </script>
 
 <style scoped>
@@ -1695,12 +1694,6 @@ async function saveDesignerProjectEdits() {
   cursor: pointer; position: relative;
 }
 .svc-price-inline:hover { color: #646cff; }
-.svc-price-inline-input {
-  width: 100px; padding: 3px 8px; font-size: .85rem;
-  border-radius: 4px; border: 1px solid #646cff;
-  background: rgba(100,108,255,.08); color: var(--c-text, #ccc);
-  text-align: right;
-}
 .svc-price-edit-icon {
   opacity: 0; font-size: .7rem; transition: opacity .15s;
 }

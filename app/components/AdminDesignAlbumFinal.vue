@@ -6,7 +6,7 @@
       <!-- Status row -->
       <div class="adaf-status-row">
         <span class="adaf-dot" :class="`adaf-dot--${statusColor}`"></span>
-        <select v-model="form.daf_status" class="adaf-status-sel" @change="save">
+        <select v-model="form.daf_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="assembly">сборка альбома</option>
           <option value="review">внутренняя проверка</option>
@@ -60,7 +60,7 @@
             <div class="adaf-ch-body">
               <input v-model="ch.title" class="glass-input" placeholder="название раздела" @blur="save">
               <div class="adaf-ch-meta">
-                <select v-model="ch.status" class="adaf-ch-status" @change="save">
+                <select v-model="ch.status" class="u-status-sel" @change="save">
                   <option value="">—</option>
                   <option value="draft">черновик</option>
                   <option value="ready">готов</option>
@@ -187,10 +187,6 @@ function removeFile(idx: number) {
 .adaf-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .adaf-dot--gray   { background: color-mix(in srgb, var(--glass-text) 30%, transparent); }
 /* other dot colors: → main.css [class*="-dot--*"] */
-.adaf-status-sel  {
-  background: none; border: 1px solid var(--glass-border); border-radius: 8px;
-  padding: 4px 10px; font-size: .78rem; font-family: inherit; color: var(--glass-text); cursor: pointer;
-}
 .adaf-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
 
 .adaf-section { margin-bottom: 32px; }
@@ -199,7 +195,6 @@ function removeFile(idx: number) {
   color: color-mix(in srgb, var(--glass-text) 45%, transparent);
   margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--glass-border);
 }
-
 
 /* Chapters */
 .adaf-chapters { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
@@ -211,11 +206,6 @@ function removeFile(idx: number) {
 .adaf-ch-num { font-size: .68rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); font-weight: 600; padding-top: 8px; min-width: 20px; }
 .adaf-ch-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .adaf-ch-meta { display: flex; gap: 10px; align-items: center; }
-.adaf-ch-status {
-  border: 1px solid var(--glass-border); border-radius: 8px;
-  background: none; font-size: .72rem; padding: 3px 6px;
-  font-family: inherit; color: var(--glass-text);
-}
 .adaf-ch-pages { font-size: .72rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); }
 
 /* Round delete button */

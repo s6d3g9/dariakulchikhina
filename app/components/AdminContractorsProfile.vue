@@ -40,7 +40,7 @@
           <div v-if="available.length === 0" class="acnp-empty">Все подрядчики уже привязаны</div>
           <template v-else>
             <div class="acnp-search-row">
-              <input v-model="search" class="acnp-search" placeholder="поиск по имени или компании..." />
+              <input v-model="search" class="glass-input" placeholder="поиск по имени или компании..." />
             </div>
             <div v-for="c in filteredAvailable" :key="c.id" class="acnp-card acnp-card--avail">
               <div class="acnp-card-top">
@@ -206,32 +206,9 @@ async function unlink(contractorId: number) {
 .acnp-btn-link:disabled, .acnp-btn-unlink:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .acnp-search-row { margin-bottom: 10px; }
-.acnp-search {
-  width: 100%; max-width: 400px;
-  border: none;
-  border-radius: 4px;
-  padding: 7px 12px;
-  font-size: .84rem;
-  font-family: inherit;
-  outline: none;
-  background: transparent;
-  color: inherit;
-}
-.acnp-search:focus { opacity: .92; }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .acnp-card { padding: 12px; }
-  .acnp-card-top {
-    flex-direction: column;
-    gap: 8px;
-  }
   .acnp-card-actions {
     flex-direction: row;
     width: 100%;
     justify-content: flex-end;
   }
-  .acnp-search { max-width: none; }
-  .acnp-meta-row { gap: 8px; }
-}
 </style>

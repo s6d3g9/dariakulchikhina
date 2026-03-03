@@ -5,7 +5,7 @@
 
       <div class="acp-status-row">
         <span class="acp-dot" :class="`acp-dot--${statusColor}`"></span>
-        <select v-model="form.cp_status" class="acp-status-sel" @change="save">
+        <select v-model="form.cp_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="planning">планирование</option>
           <option value="in_progress">ведётся строительство</option>
@@ -48,12 +48,12 @@
         </div>
         <div v-if="form.cp_tasks.length" class="acp-tasks">
           <div v-for="(t, i) in form.cp_tasks" :key="i" class="acp-task">
-            <select v-model="t.status" class="acp-task-status" @change="save">
+            <select v-model="t.status" class="u-status-sel" @change="save">
               <option value="pending">◯</option>
               <option value="in_progress">◑</option>
               <option value="done">●</option>
             </select>
-            <input v-model="t.title" class="acp-task-inp" placeholder="вид работ..." @blur="save">
+            <input v-model="t.title" class="u-inline-inp" placeholder="вид работ..." @blur="save">
             <AppDatePicker v-model="t.date" model-type="iso" input-class="acp-task-date" @update:model-value="save" />
             <button class="acp-task-del" @click="removeTask(i)">×</button>
           </div>
@@ -113,25 +113,4 @@ function removeTask(i: number) {
 .acp-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .acp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
-.acp-status-sel { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.acp-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-.acp-section { margin-bottom: 32px; }
-.acp-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); display: flex; align-items: center; gap: 10px; }
-.acp-add-btn { margin-left: auto; border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .7rem; padding: 3px 8px; cursor: pointer; font-family: inherit; }
-.acp-add-btn:hover { border-color: #aaa; }
-.acp-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #ececec); }
-.acp-tasks { display: flex; flex-direction: column; gap: 6px; }
-.acp-task { display: flex; align-items: center; gap: 8px; }
-.acp-task-status { border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; padding: 5px 6px; font-size: .78rem; cursor: pointer; width: 48px; flex-shrink: 0; }
-.acp-task-inp { flex: 1; border: 1px solid var(--border, #e0e0e0); padding: 6px 10px; font-size: .8rem; background: none; color: inherit; font-family: inherit; outline: none; }
-.acp-task-date { width: 130px; border: 1px solid var(--border, #e0e0e0); padding: 6px 10px; font-size: .78rem; background: none; color: inherit; font-family: inherit; outline: none; flex-shrink: 0; }
-.acp-task-del { background: none; border: none; cursor: pointer; color: #bbb; font-size: 1.1rem; line-height: 1; padding: 0 3px; flex-shrink: 0; }
-.acp-task-del:hover { color: var(--ds-error, #c00); }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .acp-task-row { flex-direction: column; align-items: stretch; gap: 6px; }
-  .acp-task-date { width: 100%; }
-  .acp-task-input { min-width: 0; }
-}
 </style>

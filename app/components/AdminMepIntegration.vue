@@ -6,7 +6,7 @@
       <!-- Status row -->
       <div class="amep-status-row">
         <span class="amep-dot" :class="`amep-dot--${statusColor}`"></span>
-        <select v-model="form.mep_status" class="amep-status-sel" @change="save">
+        <select v-model="form.mep_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="collecting">сбор данных</option>
           <option value="in_work">проектирование</option>
@@ -26,7 +26,7 @@
             <div class="amep-disc-header">
               <span class="amep-disc-icon">{{ d.icon }}</span>
               <span class="amep-disc-name">{{ d.label }}</span>
-              <select v-model="form[`mep_${d.key}_status`]" class="amep-disc-status" @change="save">
+              <select v-model="form[`mep_${d.key}_status`]" class="u-status-sel" @change="save">
                 <option value="">—</option>
                 <option value="not_needed">не требуется</option>
                 <option value="pending">ожидание</option>
@@ -159,38 +159,4 @@ function removeFile(idx: number) {
 .amep-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .amep-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
-.amep-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.amep-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-
-.amep-section { margin-bottom: 32px; }
-.amep-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
-
-
-/* Disciplines grid */
-.amep-disciplines { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.amep-disc-card { border: 1px solid var(--border, #e0e0e0); padding: 12px; }
-.amep-disc-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-.amep-disc-icon { font-size: 1.1rem; }
-.amep-disc-name { font-size: .8rem; font-weight: 500; flex: 1; }
-.amep-disc-status { border: 1px solid var(--border, #e0e0e0); background: none; font-size: .72rem; padding: 2px 6px; font-family: inherit; color: inherit; }
-.amep-disc-body { display: flex; flex-direction: column; gap: 6px; }
-
-/* Files */
-.amep-files { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-.amep-file { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid var(--border, #e0e0e0); }
-.amep-file-name { font-size: .78rem; color: inherit; text-decoration: none; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.amep-file-name:hover { text-decoration: underline; }
-.amep-file-type { font-size: .68rem; color: #aaa; }
-.amep-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1rem; }
-.amep-del:hover { color: var(--ds-error, #c00); }
-.amep-upload-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
-.amep-upload-btn:hover { border-color: #aaa; color: inherit; }
-.amep-upload-btn--loading { opacity: .6; cursor: wait; }
-
-.amep-checks { display: flex; flex-wrap: wrap; gap: 16px; }
-.amep-check { display: flex; align-items: center; gap: 8px; font-size: .82rem; cursor: pointer; }
-
-@media (max-width: 640px) {
-  .amep-disciplines { grid-template-columns: 1fr; }
-}
 </style>

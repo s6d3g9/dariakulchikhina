@@ -109,10 +109,6 @@
               >{{ isClientLinked(cl.id) ? '-' : '+' }}</button>
             </div>
             <div class="admin-drop-divider"></div>
-            <button type="button" class="admin-drop-add" @click="showAddClientModal = true">
-              <span class="admin-drop-ini">+</span>
-              <span class="admin-drop-lbl">Добавить клиента</span>
-            </button>
             <NuxtLink :to="clientsTabTo" class="admin-drop-all" @click="clientsOpen = false">все клиенты →</NuxtLink>
             <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
           </div>
@@ -144,7 +140,7 @@
 
         <!-- дизайнеры -->
         <div ref="designersTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDesignersTab }">
-          <NuxtLink to="/admin/designers" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDesignersTab }">дизайнеры</NuxtLink>
+          <NuxtLink :to="designersTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDesignersTab }">дизайнеры</NuxtLink>
           <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="designersOpen = !designersOpen">…</button>
           <div v-if="designersOpen" class="admin-dropdown glass-surface" @click.stop>
             <div
@@ -169,7 +165,7 @@
               >{{ isDesignerLinked(d.id) ? '-' : '+' }}</button>
             </div>
             <div class="admin-drop-divider"></div>
-            <NuxtLink to="/admin/designers" class="admin-drop-all" @click="designersOpen = false">все дизайнеры →</NuxtLink>
+            <NuxtLink :to="designersTabTo" class="admin-drop-all" @click="designersOpen = false">все дизайнеры →</NuxtLink>
             <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
           </div>
         </div>
@@ -178,50 +174,6 @@
       </div><!-- /.admin-tabs -->
 
       <slot />
-    </div>
-  </div>
-
-  <!-- Add Client Modal -->
-  <div v-if="showAddClientModal" class="a-modal-backdrop" @click.self="showAddClientModal = false">
-    <div class="a-modal">
-      <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">добавить клиента</h3>
-      <form @submit.prevent="addNewClient">
-        <div style="margin-bottom:16px">
-          <label style="display:block;font-size:.8rem;margin-bottom:6px;color:var(--glass-text)">Имя клиента</label>
-          <input
-            v-model="newClientForm.name"
-            type="text"
-            required
-            class="glass-input"
-            placeholder="Введите имя клиента"
-          />
-        </div>
-        <div style="margin-bottom:16px">
-          <label style="display:block;font-size:.8rem;margin-bottom:6px;color:var(--glass-text)">Email</label>
-          <input
-            v-model="newClientForm.email"
-            type="email"
-            class="glass-input"
-            placeholder="Введите email"
-          />
-        </div>
-        <div style="margin-bottom:16px">
-          <label style="display:block;font-size:.8rem;margin-bottom:6px;color:var(--glass-text)">Телефон</label>
-          <input
-            v-model="newClientForm.phone"
-            type="tel"
-            class="glass-input"
-            placeholder="Введите телефон"
-          />
-        </div>
-        <p v-if="clientActionMessage" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ clientActionMessage }}</p>
-        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
-          <button type="button" class="a-btn-sm" @click="showAddClientModal = false" :disabled="clientActionLoading">отмена</button>
-          <button type="submit" class="a-btn-sm a-btn-sm--primary" :disabled="clientActionLoading || !newClientForm.name">
-            {{ clientActionLoading ? 'добавление...' : 'добавить' }}
-          </button>
-        </div>
-      </form>
     </div>
   </div>
 </template>
@@ -276,6 +228,7 @@ const isDesignersTab   = computed(() => route.path.startsWith('/admin/designers'
 
 const contractorsTabTo    = computed(() => withCtx('/admin/contractors'))
 const clientsTabTo        = computed(() => withCtx('/admin/clients'))
+const designersTabTo      = computed(() => withCtx('/admin/designers'))
 const galleryActiveTabTo  = computed(() => {
   const match = GALLERY_TABS.find(g => route.path === `/admin/gallery/${g.slug}`)
   return withCtx(`/admin/gallery/${match?.slug ?? 'interiors'}`)
@@ -299,7 +252,7 @@ const { data: contractorsData } = useFetch<any[]>('/api/contractors', { server: 
 const quickContractors = computed(() => (contractorsData.value || []).slice(0, 12))
 
 // ── Clients data ────────────────────────────────────────────────
-const { data: clientsData, refresh: refreshClients } = useFetch<any[]>('/api/clients', { server: false, default: () => [] })
+const { data: clientsData } = useFetch<any[]>('/api/clients', { server: false, default: () => [] })
 const quickClients = computed(() => (clientsData.value || []).slice(0, 12))
 
 // ── Designers data ──────────────────────────────────────────────
@@ -309,48 +262,13 @@ const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await use
   () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/designers` : null,
   { watch: [activeProjectSlug], server: false, default: () => [] },
 )
+const { data: linkedContractorsData, refresh: refreshLinkedContractors } = await useFetch<any[]>(
+  () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/contractors` : null,
+  { watch: [activeProjectSlug], server: false, default: () => [] },
+)
 
-// Client management
-const showAddClientModal = ref(false)
-const newClientForm = reactive({
-  name: '',
-  phone: '',
-  email: ''
-})
 const clientActionLoading = ref(false)
 const clientActionMessage = ref('')
-
-async function addNewClient() {
-  if (!newClientForm.name.trim()) return
-  
-  clientActionLoading.value = true
-  clientActionMessage.value = ''
-  try {
-    await $fetch('/api/clients', {
-      method: 'POST',
-      body: {
-        name: newClientForm.name.trim(),
-        phone: newClientForm.phone.trim(),
-        email: newClientForm.email.trim()
-      }
-    })
-    
-    // Reset form
-    newClientForm.name = ''
-    newClientForm.phone = ''
-    newClientForm.email = ''
-    showAddClientModal.value = false
-    
-    // Refresh clients list
-    await refreshClients()
-    clientActionMessage.value = 'Клиент добавлен'
-    setTimeout(() => { clientActionMessage.value = '' }, 2000)
-  } catch (e: any) {
-    clientActionMessage.value = e?.data?.message || 'Ошибка добавления клиента'
-  } finally {
-    clientActionLoading.value = false
-  }
-}
 
 // Get linked clients and contractors for current project
 const linkedClientIds = computed(() => {
@@ -370,8 +288,7 @@ const linkedClientIds = computed(() => {
 
 // Use existing contractor data fetching
 const linkedContractorIds = computed(() => {
-  // For now, return empty set - will be implemented when contractor API is integrated
-  return new Set<string>()
+  return new Set((linkedContractorsData.value || []).map((c: any) => String(c.id)))
 })
 
 const linkedDesignerIds = computed(() => {
@@ -459,7 +376,7 @@ async function toggleContractorLink(contractorId: string, contractorName: string
       clientActionMessage.value = `Подрядчик "${contractorName}" привязан к проекту`
     }
     
-    // Refresh contractor data
+    await refreshLinkedContractors()
     await refreshProjectData()
     
     setTimeout(() => {
@@ -586,7 +503,7 @@ function pickClient(cl: any) {
 function pickGallery(slug: string) { closeAll(); navigateTo(withCtx(`/admin/gallery/${slug}`)) }
 function pickDesigner(designer: any) {
   closeAll()
-  navigateTo('/admin/designers')
+  navigateTo(designersTabTo.value)
 }
 
 // ── Auth ─────────────────────────────────────────────────────────

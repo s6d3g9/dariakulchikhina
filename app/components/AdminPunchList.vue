@@ -5,7 +5,7 @@
 
       <div class="apl-status-row">
         <span class="apl-dot" :class="`apl-dot--${statusColor}`"></span>
-        <select v-model="form.pl_status" class="apl-status-sel" @change="save">
+        <select v-model="form.pl_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="in_progress">идёт проверка</option>
           <option value="revision">устранение замечаний</option>
@@ -25,18 +25,18 @@
           <div v-for="(item, i) in form.pl_items" :key="i" class="apl-item" :class="{ 'apl-item--done': item.status === 'fixed' }">
             <div class="apl-item-head">
               <span class="apl-num">{{ i + 1 }}</span>
-              <input v-model="item.location" class="apl-loc" placeholder="помещение / зона..." @blur="save">
-              <select v-model="item.status" class="apl-item-status" @change="save">
+              <input v-model="item.location" class="u-inline-inp" placeholder="помещение / зона..." @blur="save">
+              <select v-model="item.status" class="u-status-sel" @change="save">
                 <option value="open">открыто</option>
                 <option value="in_progress">устраняется</option>
                 <option value="fixed">устранено ✓</option>
               </select>
               <button class="apl-del" @click="removeItem(i)">×</button>
             </div>
-            <textarea v-model="item.description" class="apl-desc" rows="2" placeholder="описание дефекта..." @blur="save" />
+            <textarea v-model="item.description" class="u-inline-inp u-inline-inp--ta" rows="2" placeholder="описание дефекта..." @blur="save" />
             <div class="apl-item-foot">
               <label class="u-field__label">виновная сторона:</label>
-              <input v-model="item.responsible" class="apl-resp" placeholder="подрядчик / поставщик..." @blur="save">
+              <input v-model="item.responsible" class="u-inline-inp" placeholder="подрядчик / поставщик..." @blur="save">
               <label class="u-field__label">срок устранения:</label>
               <AppDatePicker v-model="item.deadline" model-type="iso" input-class="apl-date" @update:model-value="save" />
             </div>
@@ -117,41 +117,4 @@ function removeItem(i: number) {
 .apl-dot--blue   { background: var(--ds-accent); }
 .apl-dot--yellow { background: var(--ds-warning); }
 .apl-dot--green  { background: var(--ds-success); }
-.apl-status-sel { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.apl-stat { font-size: .72rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); margin-left: 4px; }
-.apl-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-.apl-section { margin-bottom: 32px; }
-.apl-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: color-mix(in srgb, var(--glass-text) 50%, transparent); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); display: flex; align-items: center; gap: 10px; }
-.apl-add-btn { margin-left: auto; border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .7rem; padding: 3px 8px; cursor: pointer; font-family: inherit; }
-.apl-add-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 50%, transparent); }
-.apl-list { display: flex; flex-direction: column; gap: 10px; }
-.apl-item { border: 1px solid var(--border, #ececec); padding: 12px 14px; }
-.apl-item--done { opacity: .55; }
-.apl-item-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.apl-num { font-size: .7rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); width: 18px; flex-shrink: 0; }
-.apl-loc { flex: 1; border: none; border-bottom: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-family: inherit; font-size: .8rem; padding: 3px 0; outline: none; }
-.apl-item-status { border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .74rem; padding: 3px 6px; cursor: pointer; }
-.apl-del { background: none; border: none; cursor: pointer; color: color-mix(in srgb, var(--glass-text) 40%, transparent); font-size: 1.1rem; line-height: 1; flex-shrink: 0; }
-.apl-del:hover { color: var(--ds-error, #c00); }
-.apl-desc { width: 100%; border: 1px solid var(--border, #e0e0e0); padding: 7px 10px; font-size: .82rem; background: none; color: inherit; font-family: inherit; outline: none; resize: vertical; margin-bottom: 8px; box-sizing: border-box; }
-.apl-item-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.apl-lbl { font-size: .7rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); white-space: nowrap; }
-.apl-resp { border: none; border-bottom: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .78rem; padding: 3px 0; outline: none; font-family: inherit; min-width: 120px; flex: 1; }
-.apl-date { border: 1px solid var(--border, #e0e0e0); padding: 4px 8px; font-size: .76rem; background: none; color: inherit; font-family: inherit; outline: none; }
-.apl-empty { font-size: .8rem; color: color-mix(in srgb, var(--glass-text) 40%, transparent); padding: 30px 0; text-align: center; border: 1px dashed var(--border, #ececec); }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .apl-item { padding: 10px; }
-  .apl-item-head { flex-wrap: wrap; }
-  .apl-loc { min-width: 0; }
-  .apl-item-foot {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-  .apl-resp { min-width: 0; width: 100%; }
-  .apl-status-row { gap: 6px; }
-  .apl-stat { font-size: .66rem; }
-}
 </style>

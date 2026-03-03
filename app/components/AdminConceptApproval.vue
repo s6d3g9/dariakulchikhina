@@ -17,7 +17,7 @@
       <!-- Status -->
       <div class="aca-status-row">
         <span class="aca-dot" :class="`aca-dot--${statusColor}`"></span>
-        <select v-model="form.ca_status" class="aca-status-sel" @change="save">
+        <select v-model="form.ca_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="in_work">готовим рендеры</option>
           <option value="sent">отправлено клиенту</option>
@@ -51,9 +51,9 @@
 
             <!-- Info -->
             <div class="aca-render-info">
-              <input v-model="r.room" class="aca-render-room" placeholder="помещение (кухня, спальня...)" @blur="save">
+              <input v-model="r.room" class="u-inline-inp" placeholder="помещение (кухня, спальня...)" @blur="save">
               <div class="aca-render-actions">
-                <select v-model="r.approval" class="aca-render-approval" @change="save">
+                <select v-model="r.approval" class="u-status-sel" @change="save">
                   <option value="">рассматривается</option>
                   <option value="sent">отправлен</option>
                   <option value="approved">согласован ✓</option>
@@ -62,7 +62,7 @@
                 <span v-if="r.approval === 'approved'" class="aca-approval-badge aca-approval-badge--ok">✓</span>
                 <span v-else-if="r.approval === 'revision'" class="aca-approval-badge aca-approval-badge--rev">↩</span>
               </div>
-              <input v-model="r.comment" class="aca-render-comment" placeholder="комментарий..." @blur="save">
+              <input v-model="r.comment" class="u-inline-inp" placeholder="комментарий..." @blur="save">
             </div>
           </div>
         </div>
@@ -276,15 +276,6 @@ async function moveToPhase2() {
 .aca-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .aca-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
-.aca-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.aca-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-
-.aca-section { margin-bottom: 32px; }
-.aca-section-title {
-  font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa;
-  margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec);
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-}
 .aca-stat-pill { font-size: .68rem; padding: 2px 8px; border-radius: 2px; }
 .aca-stat-pill--ok  { background: color-mix(in srgb, var(--ds-success, #5caa7f) 12%, transparent); color: var(--ds-success, #2a7a52); }
 .aca-stat-pill--rev { background: color-mix(in srgb, var(--ds-error, #c00) 8%, transparent); color: var(--ds-error, #c00); }
@@ -310,47 +301,4 @@ async function moveToPhase2() {
 .aca-render-del { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.4); color: #fff; cursor: pointer; width: 24px; height: 24px; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
 
 .aca-render-info { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
-.aca-render-room { border: 1px solid var(--border, #e0e0e0); background: none; padding: 4px 8px; font-size: .75rem; font-family: inherit; color: inherit; outline: none; width: 100%; box-sizing: border-box; }
-.aca-render-actions { display: flex; align-items: center; gap: 6px; }
-.aca-render-approval { flex: 1; border: 1px solid var(--border, #e0e0e0); background: none; font-size: .72rem; padding: 3px 6px; font-family: inherit; color: inherit; }
-.aca-approval-badge { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: .7rem; flex-shrink: 0; border-radius: 50%; }
-.aca-approval-badge--ok  { background: color-mix(in srgb, var(--ds-success, #5caa7f) 12%, transparent); color: var(--ds-success, #2a7a52); }
-.aca-approval-badge--rev { background: color-mix(in srgb, var(--ds-error, #c00) 8%, transparent); color: var(--ds-error, #c00); }
-.aca-render-comment { border: 1px solid var(--border, #e0e0e0); background: none; padding: 4px 8px; font-size: .72rem; font-family: inherit; color: inherit; outline: none; width: 100%; box-sizing: border-box; }
-
-.aca-renders-empty { text-align: center; padding: 32px 0; color: #bbb; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
-.aca-renders-empty span { font-size: 2rem; display: block; margin-bottom: 8px; opacity: .4; }
-.aca-renders-empty p { font-size: .78rem; margin: 0; }
-
-.aca-upload-btn { display: inline-flex; align-items: center; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
-.aca-upload-btn:hover { border-color: #aaa; color: inherit; }
-.aca-upload-btn--loading { opacity: .6; cursor: wait; }
-
-/* Form rows */
-.aca-file-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.aca-file-link { font-size: .8rem; color: inherit; text-decoration: none; opacity: .8; }
-.aca-file-link:hover { text-decoration: underline; }
-.aca-file-upload-btn { border: 1px solid var(--border, #e0e0e0); padding: 5px 12px; font-size: .75rem; cursor: pointer; }
-.aca-uploading { font-size: .72rem; color: #aaa; }
-
-/* Geometry lock */
-.aca-lock-card {
-  display: flex; align-items: flex-start; gap: 16px; padding: 16px 18px;
-  border: 1px solid var(--border, #e0e0e0);
-}
-.aca-lock-card--locked { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); background: #f0faf5; }
-.aca-lock-icon { font-size: 1.8rem; flex-shrink: 0; }
-.aca-lock-text { flex: 1; }
-.aca-lock-text strong { display: block; font-size: .88rem; margin-bottom: 4px; }
-.aca-lock-text p { margin: 0; font-size: .78rem; color: #888; }
-.aca-lock-card--locked .aca-lock-text p { color: var(--ds-success, #2a7a52); }
-.aca-lock-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 7px 16px; font-size: .78rem; cursor: pointer; font-family: inherit; color: #666; align-self: center; white-space: nowrap; }
-.aca-lock-card--locked .aca-lock-btn { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); color: var(--ds-success, #2a7a52); }
-.aca-lock-btn:hover { border-color: #aaa; color: inherit; }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .aca-lock-card { flex-direction: column; gap: 10px; }
-  .aca-lock-btn { align-self: flex-start; }
-}
 </style>

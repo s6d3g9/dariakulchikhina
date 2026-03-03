@@ -6,7 +6,7 @@
       <!-- Survey Status Header -->
       <div class="ass-status-row">
         <span class="ass-status-dot" :class="`ass-dot--${surveyStatusColor}`"></span>
-        <select v-model="form.survey_status" class="ass-status-select" @change="save">
+        <select v-model="form.survey_status" class="u-status-sel" @change="save">
           <option value="">статус аудита не задан</option>
           <option value="planned">запланирован</option>
           <option value="in_progress">выполняется</option>
@@ -288,10 +288,6 @@ async function save() {
 .ass-dot--red    { background: var(--ds-error); }
 .ass-dot--gray   { background: color-mix(in srgb, var(--glass-text) 40%, transparent); }
 
-.ass-status-select {
-  border: none; background: transparent; font-family: inherit;
-  font-size: .88rem; cursor: pointer; outline: none; color: var(--text, inherit);
-}
 .ass-saved { font-size: .76rem; color: var(--ds-success); margin-left: auto; }
 
 /* Sections */

@@ -6,7 +6,7 @@
       <!-- Status row -->
       <div class="awd-status-row">
         <span class="awd-dot" :class="`awd-dot--${statusColor}`"></span>
-        <select v-model="form.wd_status" class="awd-status-sel" @change="save">
+        <select v-model="form.wd_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="in_work">в работе</option>
           <option value="checking">проверка</option>
@@ -54,7 +54,7 @@
             <div class="awd-sheet-body">
               <input v-model="sheet.name" class="glass-input" placeholder="название листа" @blur="save">
               <div class="awd-sheet-row2">
-                <select v-model="sheet.type" class="awd-sheet-type" @change="save">
+                <select v-model="sheet.type" class="u-status-sel" @change="save">
                   <option value="floor_plan">план этажа</option>
                   <option value="ceiling_plan">план потолка</option>
                   <option value="electrical">электрика</option>
@@ -64,7 +64,7 @@
                   <option value="details">узлы / детали</option>
                   <option value="other">прочее</option>
                 </select>
-                <select v-model="sheet.approval" class="awd-sheet-approval" @change="save">
+                <select v-model="sheet.approval" class="u-status-sel" @change="save">
                   <option value="">на рассмотрении</option>
                   <option value="approved">✓ согласован</option>
                   <option value="revision">↩ доработка</option>
@@ -176,35 +176,4 @@ function removeSheet(idx: number) {
 .awd-dot--yellow { background: #e8b84b; }
 .awd-dot--red    { background: #d46b6b; }
 .awd-dot--green  { background: #5caa7f; }
-.awd-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.awd-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-
-.awd-section { margin-bottom: 32px; }
-.awd-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
-
-
-.awd-sheets { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.awd-sheet-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border, #e0e0e0); background: var(--bg2, #f8f8f7); }
-.awd-sheet-num { font-size: .68rem; color: #aaa; font-weight: 600; padding-top: 8px; min-width: 20px; }
-.awd-sheet-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.awd-sheet-name { border: 1px solid var(--border, #e0e0e0); background: none; padding: 5px 8px; font-size: .8rem; font-family: inherit; color: inherit; outline: none; }
-.awd-sheet-row2 { display: flex; gap: 8px; }
-.awd-sheet-type, .awd-sheet-approval { border: 1px solid var(--border, #e0e0e0); background: none; font-size: .72rem; padding: 3px 6px; font-family: inherit; color: inherit; }
-.awd-sheet-link { font-size: .72rem; color: #6b9fd4; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.awd-sheet-link:hover { text-decoration: underline; }
-.awd-sheet-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1.1rem; line-height: 1; padding: 0 2px; }
-.awd-sheet-del:hover { color: var(--ds-error, #c00); }
-.awd-empty { font-size: .78rem; color: #bbb; margin-bottom: 10px; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); }
-
-.awd-upload-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
-.awd-upload-btn:hover { border-color: #aaa; color: inherit; }
-.awd-upload-btn--loading { opacity: .6; cursor: wait; }
-
-.awd-checks { display: flex; flex-wrap: wrap; gap: 16px; }
-.awd-check { display: flex; align-items: center; gap: 8px; font-size: .82rem; cursor: pointer; }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .awd-checks { gap: 10px; }
-}
 </style>

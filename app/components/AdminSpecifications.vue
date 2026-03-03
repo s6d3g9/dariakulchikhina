@@ -6,7 +6,7 @@
       <!-- Status row -->
       <div class="aspec-status-row">
         <span class="aspec-dot" :class="`aspec-dot--${statusColor}`"></span>
-        <select v-model="form.spec_status" class="aspec-status-sel" @change="save">
+        <select v-model="form.spec_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="collecting">сбор данных</option>
           <option value="in_work">составление</option>
@@ -59,7 +59,7 @@
               <tr v-for="(item, idx) in form.spec_items" :key="idx">
                 <td class="aspec-td-num">{{ Number(idx) + 1 }}</td>
                 <td>
-                  <select v-model="item.category" class="aspec-cell-inp" @change="save">
+                  <select v-model="item.category" class="u-inline-inp" @change="save">
                     <option value="finish">отделка</option>
                     <option value="plumbing">сантехника</option>
                     <option value="electrical">электрика</option>
@@ -71,12 +71,12 @@
                     <option value="other">прочее</option>
                   </select>
                 </td>
-                <td><input v-model="item.name" class="aspec-cell-inp" @blur="save"></td>
-                <td><input v-model="item.article" class="aspec-cell-inp aspec-cell-sm" @blur="save"></td>
-                <td><input v-model="item.qty" type="number" min="0" class="aspec-cell-inp aspec-cell-xs" @blur="save"></td>
-                <td><input v-model="item.unit" class="aspec-cell-inp aspec-cell-xs" placeholder="шт" @blur="save"></td>
-                <td><input v-model="item.supplier" class="aspec-cell-inp" @blur="save"></td>
-                <td><input v-model="item.price" class="aspec-cell-inp aspec-cell-sm" @blur="save"></td>
+                <td><input v-model="item.name" class="u-inline-inp" @blur="save"></td>
+                <td><input v-model="item.article" class="u-inline-inp u-inline-inp--sm" @blur="save"></td>
+                <td><input v-model="item.qty" type="number" min="0" class="u-inline-inp u-inline-inp--xs" @blur="save"></td>
+                <td><input v-model="item.unit" class="u-inline-inp u-inline-inp--xs" placeholder="шт" @blur="save"></td>
+                <td><input v-model="item.supplier" class="u-inline-inp" @blur="save"></td>
+                <td><input v-model="item.price" class="u-inline-inp u-inline-inp--sm" @blur="save"></td>
                 <td><button class="aspec-del" @click="removeItem(Number(idx))" title="удалить">×</button></td>
               </tr>
             </tbody>
@@ -201,46 +201,4 @@ function removeFile(idx: number) {
 .aspec-dot--yellow { background: #e8b84b; }
 .aspec-dot--red    { background: #d46b6b; }
 .aspec-dot--green  { background: #5caa7f; }
-.aspec-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.aspec-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-
-.aspec-section { margin-bottom: 32px; }
-.aspec-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
-
-
-/* Table */
-.aspec-table-wrap { overflow-x: auto; margin-bottom: 12px; }
-.aspec-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
-.aspec-table th { font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; color: #aaa; font-weight: 500; text-align: left; padding: 6px 6px 8px; border-bottom: 1px solid var(--border, #e0e0e0); }
-.aspec-table td { padding: 4px 4px; border-bottom: 1px solid var(--border, #f0f0f0); vertical-align: middle; }
-.aspec-td-num { font-size: .68rem; color: #bbb; text-align: center; width: 28px; }
-.aspec-cell-inp { width: 100%; border: 1px solid transparent; background: none; padding: 4px 6px; font-size: .78rem; font-family: inherit; color: inherit; outline: none; }
-.aspec-cell-inp:focus { border-color: var(--border, #e0e0e0); }
-.aspec-cell-sm { max-width: 100px; }
-.aspec-cell-xs { max-width: 60px; }
-.aspec-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1rem; }
-.aspec-del:hover { color: var(--ds-error, #c00); }
-.aspec-empty { font-size: .78rem; color: #bbb; margin-bottom: 10px; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); }
-
-.aspec-actions { display: flex; gap: 10px; margin-bottom: 12px; }
-.aspec-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: #666; cursor: pointer; font-family: inherit; }
-.aspec-add-btn:hover { border-color: #aaa; color: inherit; }
-
-.aspec-summary { display: flex; gap: 24px; font-size: .78rem; color: #888; padding: 10px 0; border-top: 1px solid var(--border, #ececec); }
-
-/* Files */
-.aspec-files { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-.aspec-file { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid var(--border, #e0e0e0); }
-.aspec-file-name { font-size: .78rem; color: inherit; text-decoration: none; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.aspec-file-name:hover { text-decoration: underline; }
-.aspec-upload-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: #666; cursor: pointer; user-select: none; }
-.aspec-upload-btn:hover { border-color: #aaa; color: inherit; }
-.aspec-upload-btn--loading { opacity: .6; cursor: wait; }
-
-/* ── Mobile ── */
-@media (max-width: 768px) {
-  .aspec-table { font-size: .72rem; }
-  .aspec-cell-sm { max-width: 70px; }
-  .aspec-cell-xs { max-width: 45px; }
-}
 </style>

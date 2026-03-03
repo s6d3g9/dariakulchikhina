@@ -6,7 +6,7 @@
       <!-- Status -->
       <div class="aps-status-row">
         <span class="aps-dot" :class="`aps-dot--${statusColor}`"></span>
-        <select v-model="form.ps_status" class="aps-status-sel" @change="save">
+        <select v-model="form.ps_status" class="u-status-sel" @change="save">
           <option value="">статус не задан</option>
           <option value="in_progress">в процессе</option>
           <option value="delayed">задержки</option>
@@ -152,35 +152,4 @@ function removeOrder(idx: number) {
 .aps-dot--yellow { background: #e8b84b; }
 .aps-dot--red    { background: #d46b6b; }
 .aps-dot--green  { background: #5caa7f; }
-.aps-status-sel  { background: none; border: 1px solid var(--border, #e0e0e0); padding: 4px 10px; font-size: .78rem; font-family: inherit; color: inherit; cursor: pointer; }
-.aps-saved       { font-size: .72rem; color: var(--ds-success, #5caa7f); margin-left: auto; }
-
-/* Progress */
-.aps-progress-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-.aps-progress-bar { flex: 1; height: 6px; background: var(--border, #e0e0e0); border-radius: 3px; overflow: hidden; }
-.aps-progress-fill { height: 100%; background: #5caa7f; border-radius: 3px; transition: width .3s; }
-.aps-progress-label { font-size: .72rem; color: #888; white-space: nowrap; }
-
-.aps-section { margin-bottom: 32px; }
-.aps-section-title { font-size: .68rem; text-transform: uppercase; letter-spacing: 1.2px; color: #aaa; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border, #ececec); }
-
-
-/* Orders */
-.aps-orders { display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
-.aps-order { border: 1px solid var(--border, #e0e0e0); padding: 14px; }
-.aps-order--done { opacity: .6; }
-.aps-order-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.aps-order-num { font-size: .72rem; color: #aaa; font-weight: 600; }
-.aps-order-name { font-weight: 500; }
-.aps-order-details { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 12px; margin-bottom: 8px; }
-.aps-order-field { display: flex; flex-direction: column; }
-.aps-del { background: none; border: none; cursor: pointer; color: #aaa; font-size: 1.1rem; margin-left: auto; }
-.aps-del:hover { color: var(--ds-error, #c00); }
-.aps-empty { font-size: .78rem; color: #bbb; padding: 20px 0; text-align: center; border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }
-.aps-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 6px 14px; font-size: .78rem; color: #666; cursor: pointer; font-family: inherit; }
-.aps-add-btn:hover { border-color: #aaa; color: inherit; }
-
-@media (max-width: 640px) {
-  .aps-order-details { grid-template-columns: 1fr 1fr; }
-}
 </style>
