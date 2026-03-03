@@ -1,7 +1,6 @@
 <template>
   <div>
-    <div v-if="pending && !hasProjectsCache" class="ent-empty-detail"><span class="ent-empty-icon">⏳</span>Загрузка…</div>
-    <div v-else class="ent-layout">
+    <div class="ent-layout">
       <!-- ═══ Sidebar ═══ -->
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
@@ -10,13 +9,18 @@
         </div>
         <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
         <div class="std-nav">
-          <button v-for="p in filteredProjects" :key="p.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedSlug === p.slug }" @click="selectProject(p)">
-            <span class="ent-nav-avatar pj-av">{{ p.title?.charAt(0)?.toUpperCase() || '?' }}</span>
-            <span class="ent-nav-name">{{ p.title }}<span v-if="p.status" class="ent-nav-sub">{{ phaseLabel(p.status) }}</span></span>
-            <span v-if="p.status" class="ent-nav-badge pj-phase" :class="`pj-phase--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
-          </button>
-          <div v-if="!filteredProjects.length && searchQuery" class="pj-nav-empty">ничего не найдено</div>
-          <div v-else-if="!projects?.length" class="pj-nav-empty">нет проектов</div>
+          <template v-if="pending && !hasProjectsCache">
+            <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
+          </template>
+          <template v-else>
+            <button v-for="p in filteredProjects" :key="p.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedSlug === p.slug }" @click="selectProject(p)">
+              <span class="ent-nav-avatar pj-av">{{ p.title?.charAt(0)?.toUpperCase() || '?' }}</span>
+              <span class="ent-nav-name">{{ p.title }}<span v-if="p.status" class="ent-nav-sub">{{ phaseLabel(p.status) }}</span></span>
+              <span v-if="p.status" class="ent-nav-badge pj-phase" :class="`pj-phase--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
+            </button>
+            <div v-if="!filteredProjects.length && searchQuery" class="pj-nav-empty">ничего не найдено</div>
+            <div v-else-if="!projects?.length" class="pj-nav-empty">нет проектов</div>
+          </template>
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true; wizardStep = 1">+ создать</button></div>
       </nav>
@@ -109,7 +113,7 @@
 import { ROADMAP_TEMPLATES } from '~~/shared/types/roadmap-templates'
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
+definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const projectsCache = useState<any[]>('cache-admin-projects', () => [])
 const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects', {
@@ -140,7 +144,7 @@ const corePageLabels = Object.values(CORE_PAGE_LABELS)
 const searchQuery = ref('')
 const selectedSlug = ref<string | null>(null)
 const selectedProject = computed(() => projects.value?.find((p: any) => p.slug === selectedSlug.value) || null)
-function selectProject(p: any) { selectedSlug.value = p.slug }
+function selectProject(p: any) { navigateTo(`/admin/projects/${p.slug}`) }
 
 const filteredProjects = computed(() => {
   if (!searchQuery.value.trim()) return projects.value || []

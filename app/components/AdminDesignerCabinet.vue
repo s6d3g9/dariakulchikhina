@@ -1388,33 +1388,40 @@ async function saveDesignerProjectEdits() {
 <style scoped>
 /* ── Layout ── */
 .designer-cab {
+  /* Remap dark-only vars to glass design system */
+  --c-text:       var(--glass-text, #1a1a2e);
+  --c-text-muted: color-mix(in srgb, var(--glass-text, #1a1a2e) 50%, transparent);
+  --c-border:     var(--glass-border, rgba(180,180,220,0.18));
+  --c-hover:      color-mix(in srgb, var(--glass-text, #1a1a2e) 5%, transparent);
+  --c-active:     color-mix(in srgb, var(--glass-text, #1a1a2e) 9%, transparent);
   width: 100%;
-  min-height: 100vh;
 }
 .cab-loading { padding: 48px; text-align: center; color: var(--c-text-muted, #999); }
-.cab-body { display: flex; gap: 0; min-height: 100vh; }
+.cab-body { display: flex; gap: 24px; align-items: flex-start; }
 .cab-sidebar {
-  width: 220px;
-  min-width: 220px;
-  padding: 18px 0;
-  border-right: 1px solid var(--c-border, rgba(255,255,255,.08));
+  width: var(--ds-sidebar-width, 200px);
+  flex-shrink: 0;
+  border-radius: var(--card-radius, 16px);
+  padding: 12px 0;
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: 120px;
+  max-height: calc(100vh - 140px);
   overflow-y: auto;
 }
 .cab-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 8px; }
 .cab-nav-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; border-radius: 8px; border: none;
-  background: transparent; color: var(--c-text, #ccc);
-  cursor: pointer; transition: all .15s; font-size: .92rem; text-align: left;
+  padding: 9px 10px; border-radius: 10px; border: none;
+  background: transparent; color: var(--c-text);
+  cursor: pointer; transition: background .15s, opacity .15s;
+  font-size: .88rem; text-align: left; font-family: inherit;
+  opacity: 0.65; width: 100%;
 }
-.cab-nav-item:hover { background: rgba(255,255,255,.05); }
-.cab-nav-item.active { background: rgba(255,255,255,.1); color: #fff; font-weight: 600; }
-.cab-nav-icon { font-size: 1.1em; width: 22px; text-align: center; }
-.cab-main { flex: 1; padding: 28px 32px; overflow-y: auto; }
-.cab-inner { max-width: 960px; }
+.cab-nav-item:hover { background: var(--c-hover); opacity: 0.9; }
+.cab-nav-item.active { background: var(--c-active); opacity: 1; font-weight: 600; }
+.cab-nav-icon { font-size: 1em; width: 20px; text-align: center; flex-shrink: 0; }
+.cab-main { flex: 1; min-width: 0; padding: 0 4px; }
+.cab-inner { max-width: 920px; }
 
 /* ── Dashboard ── */
 .dash-welcome {
@@ -1448,8 +1455,8 @@ async function saveDesignerProjectEdits() {
 .dash-quick-btn {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 18px 12px; border-radius: 12px; cursor: pointer;
-  border: 1px solid transparent; background: rgba(255,255,255,.03);
-  color: var(--c-text, #ccc); transition: all .15s;
+  border: 1px solid var(--c-border); background: var(--c-hover);
+  color: var(--c-text); transition: all .15s;
 }
 .dash-quick-btn:hover { border-color: rgba(100,108,255,.3); background: rgba(100,108,255,.06); }
 .dash-quick-icon { font-size: 1.4rem; }
@@ -1676,11 +1683,13 @@ async function saveDesignerProjectEdits() {
 @media (max-width: 768px) {
   .cab-body { flex-direction: column; }
   .cab-sidebar {
-    width: 100%; min-width: 100%; position: relative; height: auto;
-    border-right: none; border-bottom: 1px solid var(--c-border, rgba(255,255,255,.08));
+    width: 100%; position: relative; top: auto;
+    max-height: none; border-radius: var(--card-radius, 12px);
+    border-bottom: 1px solid var(--c-border);
   }
-  .cab-nav { flex-direction: row; overflow-x: auto; }
-  .cab-main { padding: 20px 16px; }
+  .cab-nav { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
+  .cab-nav::-webkit-scrollbar { display: none; }
+  .cab-main { padding: 0; }
   .dash-quick-nav { grid-template-columns: repeat(2, 1fr); }
   .dash-stats { grid-template-columns: repeat(2, 1fr); }
   .dash-projects-grid { grid-template-columns: 1fr; }

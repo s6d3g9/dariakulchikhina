@@ -5,9 +5,35 @@
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="cl-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/clients" class="cl-filter-link">показать всех</NuxtLink>
     </div>
-    <div v-if="pending && !hasClientsCache" class="ent-empty-detail"><span class="ent-empty-icon">⏳</span>Загрузка…</div>
+    <div v-if="selectedClient" class="ent-cabinet-wrap">
+      <div class="ent-cabinet-topbar">
+        <button class="ent-back-btn a-btn-sm" @click="selectedClientId = null">← к списку</button>
+        <span class="ent-cabinet-title">{{ selectedClient.name }}</span>
+        <div class="ent-cabinet-actions">
+          <button class="a-btn-sm" @click="openEdit(selectedClient)">✎ редактировать</button>
+          <button class="a-btn-sm a-btn-danger" @click="del(selectedClient.id)">× удалить</button>
+        </div>
+      </div>
+      <div class="ent-detail-card glass-card" style="border-radius: var(--card-radius,14px)">
+        <div class="ent-detail-section">контакты</div>
+        <div v-if="selectedClient.phone" class="ent-detail-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.17 11.91 19.79 19.79 0 0 1 1.1 3.27 2 2 0 0 1 3.07 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z" stroke="currentColor" stroke-width="1.5"/></svg> {{ selectedClient.phone }}</div>
+        <div v-if="selectedClient.email" class="ent-detail-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.5"/><polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="1.5"/></svg> {{ selectedClient.email }}</div>
+        <div v-if="selectedClient.messengerNick" class="ent-detail-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5"/></svg> {{ selectedClient.messenger ? selectedClient.messenger + ' ' : '' }}{{ selectedClient.messengerNick }}</div>
+        <div v-if="selectedClient.address" class="ent-detail-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/></svg> {{ selectedClient.address }}</div>
+        <div v-if="!selectedClient.phone && !selectedClient.email && !selectedClient.messengerNick && !selectedClient.address" class="ent-detail-row" style="opacity:.3">контакты не указаны</div>
+        <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
+        <div v-if="selectedClient.linkedProjects?.length" class="ent-detail-section">проекты</div>
+        <div v-if="selectedClient.linkedProjects?.length" class="ent-detail-chips">
+          <NuxtLink v-for="p in selectedClient.linkedProjects" :key="p.slug" :to="`/admin/projects/${p.slug}`" class="ent-detail-chip">{{ p.title }}</NuxtLink>
+        </div>
+        <div class="ent-detail-foot">
+          <button class="a-btn-sm" @click="openLink(selectedClient)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> {{ selectedClient.linkedProjects?.length ? 'сменить проект' : 'привязать' }}</button>
+          <button class="a-btn-sm" @click="openDocs(selectedClient)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.8"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.8"/></svg> документы</button>
+        </div>
+      </div>
+    </div>
+
     <div v-else class="ent-layout">
-      <!-- ═══ Sidebar ═══ -->
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
           <span class="ent-sidebar-title">клиенты</span>
@@ -15,43 +41,22 @@
         </div>
         <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
         <div class="std-nav">
-          <button v-for="c in filteredClients" :key="c.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedClientId === c.id }" @click="selectClient(c)">
-            <span class="ent-nav-avatar">{{ c.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-            <span class="ent-nav-name">{{ c.name }}<span v-if="c.linkedProjects?.length" class="ent-nav-sub">{{ c.linkedProjects.map((p: any) => p.title).join(', ') }}</span></span>
-          </button>
-          <div v-if="filteredClients.length === 0 && searchQuery" class="cl-nav-empty">ничего не найдено</div>
-          <div v-else-if="!clients?.length" class="cl-nav-empty">нет клиентов</div>
+          <template v-if="pending && !hasClientsCache">
+            <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
+          </template>
+          <template v-else>
+            <button v-for="c in filteredClients" :key="c.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedClientId === c.id }" @click="selectClient(c)">
+              <span class="ent-nav-avatar">{{ c.name?.charAt(0)?.toUpperCase() || '?' }}</span>
+              <span class="ent-nav-name">{{ c.name }}<span v-if="c.linkedProjects?.length" class="ent-nav-sub">{{ c.linkedProjects.map((p: any) => p.title).join(', ') }}</span></span>
+            </button>
+            <div v-if="filteredClients.length === 0 && searchQuery" class="cl-nav-empty">ничего не найдено</div>
+            <div v-else-if="!clients?.length" class="cl-nav-empty">нет клиентов</div>
+          </template>
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openAdd">+ добавить</button></div>
       </nav>
-      <!-- ═══ Detail ═══ -->
       <div class="ent-main">
-        <div v-if="selectedClient" class="ent-detail-card glass-card">
-          <div class="ent-detail-head">
-            <div class="ent-detail-name">{{ selectedClient.name }}</div>
-            <div class="ent-detail-actions">
-              <button class="a-btn-sm" @click="openEdit(selectedClient)">✎ редактировать</button>
-              <button class="a-btn-sm a-btn-danger" @click="del(selectedClient.id)">× удалить</button>
-            </div>
-          </div>
-          <div class="ent-detail-section">контакты</div>
-          <div v-if="selectedClient.phone" class="ent-detail-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.17 11.91 19.79 19.79 0 0 1 1.1 3.27 2 2 0 0 1 3.07 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21 16z" stroke="currentColor" stroke-width="1.5"/></svg> {{ selectedClient.phone }}</div>
-          <div v-if="selectedClient.email" class="ent-detail-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.5"/><polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="1.5"/></svg> {{ selectedClient.email }}</div>
-          <div v-if="selectedClient.messengerNick" class="ent-detail-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5"/></svg> {{ selectedClient.messenger ? selectedClient.messenger + ' ' : '' }}{{ selectedClient.messengerNick }}</div>
-          <div v-if="selectedClient.address" class="ent-detail-row"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/></svg> {{ selectedClient.address }}</div>
-          <div v-if="!selectedClient.phone && !selectedClient.email && !selectedClient.messengerNick && !selectedClient.address" class="ent-detail-row" style="opacity:.3">контакты не указаны</div>
-          <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
-          <div v-if="selectedClient.linkedProjects?.length" class="ent-detail-section">проекты</div>
-          <div v-if="selectedClient.linkedProjects?.length" class="ent-detail-chips">
-            <NuxtLink v-for="p in selectedClient.linkedProjects" :key="p.slug" :to="`/admin/projects/${p.slug}`" class="ent-detail-chip">{{ p.title }}</NuxtLink>
-          </div>
-          <div class="ent-detail-foot">
-            <button class="a-btn-sm" @click="openLink(selectedClient)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> {{ selectedClient.linkedProjects?.length ? 'сменить проект' : 'привязать' }}</button>
-            <button class="a-btn-sm" @click="openDocs(selectedClient)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.8"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.8"/></svg> документы</button>
-            <button class="cl-cabinet-btn" @click="openClientCabinet(selectedClient)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> кабинет</button>
-          </div>
-        </div>
-        <div v-else class="ent-empty-detail">
+        <div class="ent-empty-detail">
           <span class="ent-empty-icon">👤</span>
           <span v-if="clients?.length">Выберите клиента из списка</span>
           <span v-else>Нет клиентов — добавьте первого</span>
@@ -118,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: 'admin' })
+definePageMeta({ layout: 'admin', middleware: 'admin', pageTransition: false })
 
 const route = useRoute()
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
@@ -165,7 +170,6 @@ async function del(id: number) { if (!confirm('Удалить клиента?'))
 const showLink = ref(false); const linkClient = ref<any>(null); const linkProjectSlug = ref(''); const linking = ref(false); const linkError = ref('')
 function openLink(c: any) { linkClient.value = c; linkProjectSlug.value = ''; linkError.value = ''; showLink.value = true }
 async function doLink() { if (!linkProjectSlug.value || !linkClient.value) return; linking.value = true; linkError.value = ''; try { await $fetch(`/api/clients/${linkClient.value.id}/link-project`, { method: 'POST', body: { projectSlug: linkProjectSlug.value } }); await refresh(); showLink.value = false } catch (e: any) { linkError.value = e?.data?.statusMessage || 'Ошибка' } finally { linking.value = false } }
-function openClientCabinet(client: any) { const slug = projectSlugFilter.value || client?.linkedProjects?.[0]?.slug; if (slug) { navigateTo(`/admin/projects/${encodeURIComponent(slug)}?view=client`); return }; openLink(client) }
 
 // ── Docs ───────────────────────────────────────────────
 const showDocs = ref(false); const docsClient = ref<any>(null); const docsClientId = ref<number | null>(null)
@@ -185,8 +189,6 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-filter-link { text-decoration: none; color: var(--glass-text); opacity: .72; }
 .cl-filter-link:hover { opacity: 1; }
 .cl-nav-empty { padding: 16px 10px; text-align: center; font-size: .74rem; color: var(--glass-text); opacity: .3; }
-.cl-cabinet-btn { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; font-family: inherit; color: var(--glass-page-bg); background: var(--glass-text); padding: 5px 10px; border-radius: 7px; border: none; cursor: pointer; opacity: .75; transition: opacity .15s; white-space: nowrap; }
-.cl-cabinet-btn:hover { opacity: 1; }
 .cl-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.35); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .cl-modal { width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 24px 26px 28px; }
 .cl-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }

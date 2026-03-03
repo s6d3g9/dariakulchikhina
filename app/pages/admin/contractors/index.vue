@@ -5,9 +5,19 @@
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
     </div>
-    <div v-if="pending && !hasContractorsCache" class="ent-empty-detail"><span class="ent-empty-icon">⏳</span>Загрузка…</div>
+    <div v-if="selectedId" class="ent-cabinet-wrap">
+      <div class="ent-cabinet-topbar">
+        <button class="ent-back-btn a-btn-sm" @click="selectedId = null">← к списку</button>
+        <span v-if="selected" class="ent-cabinet-title">{{ selected.name }}</span>
+        <div class="ent-cabinet-actions">
+          <button class="a-btn-sm" @click="openEdit(selected)">✎ редактировать</button>
+          <button class="a-btn-sm a-btn-danger" @click="del(selected!.id)">× удалить</button>
+        </div>
+      </div>
+      <AdminContractorCabinet :contractor-id="selectedId" />
+    </div>
+
     <div v-else class="ent-layout">
-      <!-- ═══ Sidebar ═══ -->
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
           <span class="ent-sidebar-title">подрядчики</span>
@@ -15,93 +25,39 @@
         </div>
         <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
         <div class="std-nav">
-          <!-- Companies -->
-          <template v-for="company in filteredCompanies" :key="'c-' + company.id">
-            <div class="ent-group-label">{{ company.name }}</div>
-            <button class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === company.id }" @click="selectContractor(company)">
-              <span class="ent-nav-avatar ct-av--company">{{ company.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-              <span class="ent-nav-name">{{ company.companyName || company.name }}<span class="ent-nav-sub">подрядчик</span></span>
-            </button>
-            <button v-for="m in (mastersByParent.get(company.id) || [])" :key="m.id" class="ent-nav-item ct-nav-master" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
-              <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-              <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
-            </button>
+          <template v-if="pending && !hasContractorsCache">
+            <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
           </template>
-          <!-- Standalone masters -->
-          <template v-if="filteredStandalone.length">
-            <div class="ent-group-label">частные мастера</div>
-            <button v-for="m in filteredStandalone" :key="m.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
-              <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-              <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
-            </button>
+          <template v-else>
+            <!-- Companies -->
+            <template v-for="company in filteredCompanies" :key="'c-' + company.id">
+              <div class="ent-group-label">{{ company.name }}</div>
+              <button class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === company.id }" @click="selectContractor(company)">
+                <span class="ent-nav-avatar ct-av--company">{{ company.name?.charAt(0)?.toUpperCase() || '?' }}</span>
+                <span class="ent-nav-name">{{ company.companyName || company.name }}<span class="ent-nav-sub">подрядчик</span></span>
+              </button>
+              <button v-for="m in (mastersByParent.get(company.id) || [])" :key="m.id" class="ent-nav-item ct-nav-master" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
+                <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
+                <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
+              </button>
+            </template>
+            <!-- Standalone masters -->
+            <template v-if="filteredStandalone.length">
+              <div class="ent-group-label">частные мастера</div>
+              <button v-for="m in filteredStandalone" :key="m.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
+                <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
+                <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
+              </button>
+            </template>
+            <div v-if="searchQuery && !filteredCompanies.length && !filteredStandalone.length" class="ct-nav-empty">ничего не найдено</div>
+            <div v-else-if="!contractors?.length" class="ct-nav-empty">нет подрядчиков</div>
           </template>
-          <div v-if="searchQuery && !filteredCompanies.length && !filteredStandalone.length" class="ct-nav-empty">ничего не найдено</div>
-          <div v-else-if="!contractors?.length" class="ct-nav-empty">нет подрядчиков</div>
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button></div>
       </nav>
 
-      <!-- ═══ Detail ═══ -->
       <div class="ent-main">
-        <div v-if="selected" class="ent-detail-card glass-card">
-          <div class="ent-detail-head">
-            <div>
-              <span class="ct-badge" :class="selected.contractorType === 'company' ? 'ct-badge--company' : 'ct-badge--master'">{{ selected.contractorType === 'company' ? 'подрядчик' : 'мастер' }}</span>
-              <div class="ent-detail-name">{{ selected.name }}</div>
-              <div v-if="selected.companyName" class="ct-detail-sub">{{ selected.companyName }}</div>
-            </div>
-            <div class="ent-detail-actions">
-              <button class="a-btn-sm" @click="openEdit(selected)">✎ редактировать</button>
-              <button class="a-btn-sm a-btn-danger" @click="del(selected.id)">× удалить</button>
-            </div>
-          </div>
-
-          <div class="ent-detail-section">контакты</div>
-          <div v-if="selected.phone" class="ent-detail-row">📞 {{ selected.phone }}</div>
-          <div v-if="selected.email" class="ent-detail-row">✉ {{ selected.email }}</div>
-          <div v-if="selected.messengerNick" class="ent-detail-row">💬 {{ selected.messenger ? selected.messenger + ' ' : '' }}{{ selected.messengerNick }}</div>
-          <div v-if="selected.website" class="ent-detail-row">🌐 <a :href="selected.website" target="_blank" style="color:var(--ds-accent,#6366f1)">{{ selected.website }}</a></div>
-          <div v-if="!selected.phone && !selected.email && !selected.messengerNick" class="ent-detail-row" style="opacity:.3">контакты не указаны</div>
-
-          <div v-if="selected.workTypes?.length" class="ent-detail-section">виды работ</div>
-          <div v-if="selected.workTypes?.length" class="ent-detail-chips">
-            <span v-for="w in selected.workTypes" :key="w" class="ent-detail-chip">{{ w }}</span>
-          </div>
-
-          <div v-if="selected.legalAddress || selected.factAddress" class="ent-detail-section">адреса</div>
-          <div v-if="selected.legalAddress" class="ent-detail-row">юр: {{ selected.legalAddress }}</div>
-          <div v-if="selected.factAddress" class="ent-detail-row">факт: {{ selected.factAddress }}</div>
-
-          <div v-if="selected.inn || selected.ogrn || selected.bankName" class="ent-detail-section">реквизиты</div>
-          <div v-if="selected.inn" class="ent-detail-row">ИНН: {{ selected.inn }}<span v-if="selected.kpp"> / КПП: {{ selected.kpp }}</span></div>
-          <div v-if="selected.ogrn" class="ent-detail-row">ОГРН: {{ selected.ogrn }}</div>
-          <div v-if="selected.bankName" class="ent-detail-row">{{ selected.bankName }}<span v-if="selected.bik"> · БИК {{ selected.bik }}</span></div>
-          <div v-if="selected.settlementAccount" class="ent-detail-row">р/с: {{ selected.settlementAccount }}</div>
-
-          <div v-if="selected.linkedProjectTitles?.length" class="ent-detail-section">проекты</div>
-          <div v-if="selected.linkedProjectTitles?.length" class="ent-detail-chips">
-            <span v-for="t in selected.linkedProjectTitles" :key="t" class="ent-detail-chip">{{ t }}</span>
-          </div>
-
-          <p v-if="selected.notes" class="ent-detail-notes">{{ selected.notes }}</p>
-
-          <!-- Nested masters for company -->
-          <template v-if="selected.contractorType === 'company' && (mastersByParent.get(selected.id) || []).length">
-            <div class="ent-detail-section">мастера ({{ (mastersByParent.get(selected.id) || []).length }})</div>
-            <div class="ct-nested-masters">
-              <button v-for="m in mastersByParent.get(selected.id)" :key="m.id" class="ct-nested-master" @click="selectContractor(m)">
-                <span class="ent-nav-avatar ct-av--master" style="width:20px;height:20px;font-size:.44rem">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                {{ m.name }}
-              </button>
-            </div>
-          </template>
-
-          <div class="ent-detail-foot">
-            <button v-if="selected.contractorType === 'company'" class="a-btn-sm" @click="openCreateMaster(selected.id)">+ мастер</button>
-            <button class="ct-btn-cabinet" @click="openContractorCabinet(selected.id)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> кабинет</button>
-          </div>
-        </div>
-        <div v-else class="ent-empty-detail">
+        <div class="ent-empty-detail">
           <span class="ent-empty-icon">🏗</span>
           <span v-if="contractors?.length">Выберите подрядчика из списка</span>
           <span v-else>Подрядчики не добавлены</span>
@@ -260,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
+definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const route = useRoute()
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
@@ -419,13 +375,7 @@ async function del(id: number) {
   refresh()
 }
 
-function openContractorCabinet(id: number) {
-  if (projectSlugFilter.value) { navigateTo(`/admin/projects/${projectSlugFilter.value}?view=contractor&cid=${id}`); return }
-  const contractor = contractors.value?.find((c: any) => c.id === id)
-  const firstSlug = contractor?.linkedProjectSlugs?.[0]
-  if (firstSlug) { navigateTo(`/admin/projects/${firstSlug}?view=contractor&cid=${id}`); return }
-  navigateTo(`/contractor/${id}`)
-}
+
 </script>
 
 <style scoped>

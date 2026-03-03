@@ -770,6 +770,44 @@ html.dark .glass-input::placeholder {
   padding: 10px 10px 4px;
 }
 
+/* ── Cabinet view (full-width after selecting entity) ── */
+.ent-cabinet-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+
+.ent-cabinet-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent);
+}
+
+.ent-back-btn {
+  flex-shrink: 0;
+}
+
+.ent-cabinet-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--glass-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ent-cabinet-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .ent-layout {
     flex-direction: column;

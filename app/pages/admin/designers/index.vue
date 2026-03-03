@@ -1,8 +1,17 @@
 <template>
   <div>
-    <div v-if="pending" class="ent-empty-detail"><span class="ent-empty-icon">⏳</span>Загрузка…</div>
+    <div v-if="selectedDesignerId" class="ent-cabinet-wrap">
+      <div class="ent-cabinet-topbar">
+        <button class="ent-back-btn a-btn-sm" @click="selectedDesignerId = null">← к списку</button>
+        <span v-if="selectedDesigner" class="ent-cabinet-title">{{ selectedDesigner.name }}</span>
+        <div class="ent-cabinet-actions">
+          <button v-if="selectedDesigner" class="a-btn-sm a-btn-danger" @click="deleteDesigner(selectedDesigner.id)">× удалить</button>
+        </div>
+      </div>
+      <AdminDesignerCabinet :designer-id="selectedDesignerId" />
+    </div>
+
     <div v-else class="ent-layout">
-      <!-- ═══ Sidebar ═══ -->
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
           <span class="ent-sidebar-title">дизайнеры</span>
@@ -10,19 +19,22 @@
         </div>
         <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
         <div class="std-nav">
-          <button v-for="d in filteredDesigners" :key="d.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedDesignerId === d.id }" @click="selectedDesignerId = d.id">
-            <span class="ent-nav-avatar">{{ d.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-            <span class="ent-nav-name">{{ d.name }}<span v-if="d.city" class="ent-nav-sub">{{ d.city }}</span></span>
-          </button>
-          <div v-if="!filteredDesigners.length && searchQuery" class="ds-nav-empty">ничего не найдено</div>
-          <div v-else-if="!allDesigners?.length" class="ds-nav-empty">нет дизайнеров</div>
+          <template v-if="pending">
+            <div class="ent-nav-skeleton" v-for="i in 3" :key="i" />
+          </template>
+          <template v-else>
+            <button v-for="d in filteredDesigners" :key="d.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedDesignerId === d.id }" @click="selectedDesignerId = d.id">
+              <span class="ent-nav-avatar">{{ d.name?.charAt(0)?.toUpperCase() || '?' }}</span>
+              <span class="ent-nav-name">{{ d.name }}<span v-if="d.city" class="ent-nav-sub">{{ d.city }}</span></span>
+            </button>
+            <div v-if="!filteredDesigners.length && searchQuery" class="ds-nav-empty">ничего не найдено</div>
+            <div v-else-if="!allDesigners?.length" class="ds-nav-empty">нет дизайнеров</div>
+          </template>
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true">+ добавить</button></div>
       </nav>
 
-      <!-- ═══ Main ═══ -->
       <div class="ent-main">
-        <!-- Create panel (inline) -->
         <div v-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
           <div class="ent-detail-head">
             <div class="ent-detail-name">Новый дизайнер</div>
@@ -35,26 +47,7 @@
           </div>
         </div>
 
-        <!-- Selected designer detail -->
-        <template v-if="selectedDesignerId">
-          <div v-if="selectedDesigner" class="ent-detail-card glass-card" style="margin-bottom:12px">
-            <div class="ent-detail-head">
-              <div class="ent-detail-name">{{ selectedDesigner.name }}</div>
-              <div class="ent-detail-actions">
-                <button class="a-btn-sm" @click="selectedDesignerId = null">← к списку</button>
-                <button class="a-btn-sm a-btn-danger" @click="deleteDesigner(selectedDesigner.id)">× удалить</button>
-              </div>
-            </div>
-            <div class="ent-detail-section">контакты</div>
-            <div v-if="selectedDesigner.city" class="ent-detail-row">🏙 {{ selectedDesigner.city }}</div>
-            <div v-if="selectedDesigner.phone" class="ent-detail-row">📞 {{ selectedDesigner.phone }}</div>
-            <div v-if="selectedDesigner.email" class="ent-detail-row">✉ {{ selectedDesigner.email }}</div>
-            <div v-if="!selectedDesigner.city && !selectedDesigner.phone && !selectedDesigner.email" class="ent-detail-row" style="opacity:.3">контакты не указаны</div>
-          </div>
-          <AdminDesignerCabinet :designer-id="selectedDesignerId" />
-        </template>
-
-        <div v-else-if="!showCreate" class="ent-empty-detail">
+        <div v-else class="ent-empty-detail">
           <span class="ent-empty-icon">🎨</span>
           <span v-if="allDesigners?.length">Выберите дизайнера из списка</span>
           <span v-else>Дизайнеры не добавлены</span>
@@ -64,9 +57,8 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
+definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const { data: allDesigners, pending, refresh } = useFetch<any[]>('/api/designers', { default: () => [] })
 

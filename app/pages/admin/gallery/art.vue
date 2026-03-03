@@ -2,5 +2,5 @@
   <AdminGallery category="art" title="галерея арт-объектов" />
 </template>
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: 'admin' })
+definePageMeta({ layout: 'admin', middleware: 'admin', pageTransition: false })
 </script>

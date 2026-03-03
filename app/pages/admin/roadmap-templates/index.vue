@@ -113,7 +113,7 @@ import {
   ROADMAP_STAGE_TYPE_OPTIONS,
 } from '~~/shared/types/catalogs'
 
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
+definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const { data: templates, pending, refresh } = await useFetch<any[]>('/api/roadmap-templates')
 

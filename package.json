@@ -7,6 +7,8 @@
     "build": "nuxt build",
     "preview": "nuxt preview",
     "start": "node .output/server/index.mjs",
+    "deploy:safe": "bash scripts/deploy-safe.sh",
+    "deploy:safe:prod": "DEPLOY_HOST=daria-deploy DEPLOY_PATH=/opt/daria-nuxt APP_NAME=daria-nuxt HEALTHCHECK_URL=http://152.53.176.165:3000/admin bash scripts/deploy-safe.sh",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
