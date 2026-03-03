@@ -141,6 +141,12 @@ export interface DesignTokens {
   /* ── Badges / Counters ── */
   badgeBgOpacity: number        // 0..0.5  — notification badge fill
   badgeRadius: number           // px (999 = pill)
+
+  /* ── Accessibility / Focus ── */
+  focusRingWidth: number        // px — focus outline width (1..5)
+  focusRingOffset: number       // px — outline-offset (0..6)
+  focusRingStyle: 'solid' | 'dashed' | 'dotted'  // outline-style
+  focusRingOpacity: number      // 0..1 — ring visibility
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -245,6 +251,11 @@ export const DEFAULT_TOKENS: DesignTokens = {
 
   badgeBgOpacity: 0.12,
   badgeRadius: 999,
+
+  focusRingWidth: 2,
+  focusRingOffset: 2,
+  focusRingStyle: 'solid',
+  focusRingOpacity: 0.7,
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1498,6 +1509,14 @@ export function useDesignSystem() {
     el.style.setProperty('--badge-bg', `color-mix(in srgb, var(--ds-accent) ${bdgPct}%, transparent)`)
     el.style.setProperty('--badge-radius', `${t.badgeRadius}px`)
 
+    // Accessibility / Focus ring
+    el.style.setProperty('--ds-focus-ring-width', `${t.focusRingWidth}px`)
+    el.style.setProperty('--ds-focus-ring-offset', `${t.focusRingOffset}px`)
+    el.style.setProperty('--ds-focus-ring-style', t.focusRingStyle)
+    el.style.setProperty('--ds-focus-ring-opacity', String(t.focusRingOpacity))
+    el.style.setProperty('--ds-focus-ring-color', `hsla(${t.accentHue}, ${t.accentSaturation}%, ${t.accentLightness}%, ${t.focusRingOpacity})`)
+    el.style.setProperty('--ds-focus-ring', `${t.focusRingWidth}px ${t.focusRingStyle} hsla(${t.accentHue}, ${t.accentSaturation}%, ${t.accentLightness}%, ${t.focusRingOpacity})`)
+
     // Re-apply UI theme's CSS vars on top (they set --btn-bg-base, --glass-* etc.
     // which must persist after applyToDOM sets --btn-bg = var(--btn-bg-base))
     try {
@@ -1692,6 +1711,14 @@ export function useDesignSystem() {
       `  /* ── Badges ── */`,
       `  --badge-bg: color-mix(in srgb, var(--ds-accent) ${bdgPct}%, transparent);`,
       `  --badge-radius: ${t.badgeRadius}px;`,
+      ``,
+      `  /* ── Accessibility / Focus Ring ── */`,
+      `  --ds-focus-ring-width: ${t.focusRingWidth}px;`,
+      `  --ds-focus-ring-offset: ${t.focusRingOffset}px;`,
+      `  --ds-focus-ring-style: ${t.focusRingStyle};`,
+      `  --ds-focus-ring-opacity: ${t.focusRingOpacity};`,
+      `  --ds-focus-ring-color: hsla(${t.accentHue}, ${t.accentSaturation}%, ${t.accentLightness}%, ${t.focusRingOpacity});`,
+      `  --ds-focus-ring: ${t.focusRingWidth}px ${t.focusRingStyle} hsla(${t.accentHue}, ${t.accentSaturation}%, ${t.accentLightness}%, ${t.focusRingOpacity});`,
       `}`,
     ]
     return lines.join('\n')
@@ -1742,11 +1769,70 @@ export function useDesignSystem() {
     save()
   }
 
+  /* ══════════════════════════════════════════════════════
+     CUSTOM PRESETS — user-saved favorites
+     ══════════════════════════════════════════════════════ */
+  const CUSTOM_LS_KEY = 'design-custom-presets'
+
+  interface CustomPreset {
+    id: string
+    name: string
+    icon: string
+    createdAt: number
+    tokens: Partial<DesignTokens>
+  }
+
+  const customPresets = useState<CustomPreset[]>('dsCustomPresets', () => [])
+
+  function loadCustomPresets() {
+    if (!import.meta.client) return
+    try {
+      const raw = localStorage.getItem(CUSTOM_LS_KEY)
+      if (raw) customPresets.value = JSON.parse(raw)
+    } catch { /* corrupt data */ }
+  }
+
+  function saveCustomPresetsToLS() {
+    if (!import.meta.client) return
+    try {
+      localStorage.setItem(CUSTOM_LS_KEY, JSON.stringify(customPresets.value))
+    } catch { /* */ }
+  }
+
+  function saveCustomPreset(name: string, icon: string = '⭐') {
+    const id = 'custom_' + Date.now()
+    const preset: CustomPreset = {
+      id,
+      name,
+      icon,
+      createdAt: Date.now(),
+      tokens: { ...tokens.value },
+    }
+    customPresets.value = [...customPresets.value, preset]
+    saveCustomPresetsToLS()
+    return preset
+  }
+
+  function deleteCustomPreset(id: string) {
+    customPresets.value = customPresets.value.filter(p => p.id !== id)
+    saveCustomPresetsToLS()
+  }
+
+  function renameCustomPreset(id: string, newName: string) {
+    const p = customPresets.value.find(cp => cp.id === id)
+    if (p) {
+      p.name = newName
+      customPresets.value = [...customPresets.value]
+      saveCustomPresetsToLS()
+    }
+  }
+
   return {
     tokens, set, batchSet, reset, applyPreset,
     undo, redo, canUndo, canRedo,
     exportJSON, importJSON, exportCSS,
     initDesignSystem, applyToDOM, save, load,
     previewPreset, confirmPreview, cancelPreview, isPreviewActive,
+    customPresets, loadCustomPresets, saveCustomPreset, deleteCustomPreset, renameCustomPreset,
   }
 }

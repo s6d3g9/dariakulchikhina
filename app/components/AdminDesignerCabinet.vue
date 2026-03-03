@@ -435,6 +435,13 @@
                   <option v-for="dc in DESIGNER_DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
                 </select>
               </div>
+              <div class="u-field">
+                <label class="u-field__label">Сортировка</label>
+                <select v-model="designerDocSort" class="glass-input">
+                  <option value="new">Сначала новые</option>
+                  <option value="old">Сначала старые</option>
+                </select>
+              </div>
             </div>
 
             <div class="u-form-section">
@@ -471,6 +478,7 @@
                   <div class="cab-doc-meta">
                     <span class="cab-doc-cat">{{ DESIGNER_DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}</span>
                     <span v-if="doc.notes" class="cab-doc-notes">{{ doc.notes }}</span>
+                    <span v-if="doc.createdAt" class="cab-doc-notes">{{ formatDocDate(doc.createdAt) }}</span>
                   </div>
                 </div>
                 <div class="cab-doc-actions">
@@ -796,6 +804,7 @@ const newDesignerDocCategory = ref('other')
 const newDesignerDocNotes = ref('')
 const designerDocSearch = ref('')
 const designerDocFilter = ref('')
+const designerDocSort = ref<'new' | 'old'>('new')
 
 const filteredDesignerDocs = computed(() => {
   const rows = designerDocs.value || []
@@ -806,8 +815,18 @@ const filteredDesignerDocs = computed(() => {
     if (!q) return true
     const hay = `${doc.title || ''} ${doc.notes || ''} ${doc.category || ''}`.toLowerCase()
     return hay.includes(q)
+  }).slice().sort((a: any, b: any) => {
+    const at = new Date(a.createdAt || 0).getTime()
+    const bt = new Date(b.createdAt || 0).getTime()
+    return designerDocSort.value === 'new' ? bt - at : at - bt
   })
 })
+
+function formatDocDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('ru-RU')
+}
 
 function toggleSpec(sp: string) {
   const idx = form.specializations.indexOf(sp)

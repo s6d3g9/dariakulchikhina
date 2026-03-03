@@ -198,6 +198,13 @@
                 <option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
               </select>
             </div>
+            <div class="cl-field">
+              <label>Сортировка</label>
+              <select v-model="docsSort" class="cl-input glass-input cl-select">
+                <option value="new">Сначала новые</option>
+                <option value="old">Сначала старые</option>
+              </select>
+            </div>
           </div>
 
           <div class="cl-row">
@@ -227,7 +234,11 @@
             <div v-for="doc in filteredClientDocs" :key="doc.id" class="cl-doc-item glass-surface">
               <div>
                 <div class="cl-doc-title">{{ doc.title }}</div>
-                <div class="cl-doc-meta">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}<span v-if="doc.notes"> · {{ doc.notes }}</span></div>
+                <div class="cl-doc-meta">
+                  {{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}
+                  <span v-if="doc.notes"> · {{ doc.notes }}</span>
+                  <span v-if="doc.createdAt"> · {{ formatDocDate(doc.createdAt) }}</span>
+                </div>
               </div>
               <div class="cl-doc-actions">
                 <a v-if="doc.url" :href="doc.url" target="_blank" class="cl-linked-chip glass-chip">скачать</a>
@@ -359,6 +370,7 @@ const docsNotes = ref('')
 const docsUploading = ref(false)
 const docsSearch = ref('')
 const docsFilter = ref('')
+const docsSort = ref<'new' | 'old'>('new')
 
 const { data: clientDocs, refresh: refreshClientDocs } = await useFetch<any[]>(
   () => docsClientId.value ? `/api/clients/${docsClientId.value}/documents` : null,
@@ -374,8 +386,18 @@ const filteredClientDocs = computed(() => {
     if (!q) return true
     const hay = `${doc.title || ''} ${doc.notes || ''} ${doc.category || ''}`.toLowerCase()
     return hay.includes(q)
+  }).slice().sort((a: any, b: any) => {
+    const at = new Date(a.createdAt || 0).getTime()
+    const bt = new Date(b.createdAt || 0).getTime()
+    return docsSort.value === 'new' ? bt - at : at - bt
   })
 })
+
+function formatDocDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('ru-RU')
+}
 
 function openDocs(client: any) {
   docsClient.value = client
@@ -385,6 +407,7 @@ function openDocs(client: any) {
   docsNotes.value = ''
   docsSearch.value = ''
   docsFilter.value = ''
+  docsSort.value = 'new'
   showDocs.value = true
   refreshClientDocs()
 }

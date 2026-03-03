@@ -601,6 +601,13 @@
                   <option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option>
                 </select>
               </div>
+              <div class="u-field">
+                <label>Сортировка</label>
+                <select v-model="docsSort" class="glass-input cab-select">
+                  <option value="new">Сначала новые</option>
+                  <option value="old">Сначала старые</option>
+                </select>
+              </div>
             </div>
 
             <div class="u-form-section">
@@ -640,6 +647,7 @@
                     <span class="cab-doc-cat">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}</span>
                     <span v-if="doc.notes" class="cab-doc-notes">{{ doc.notes }}</span>
                     <span v-if="doc.expiresAt" class="cab-doc-expires">до {{ doc.expiresAt }}</span>
+                    <span v-if="doc.createdAt" class="cab-doc-notes">{{ formatDocDate(doc.createdAt) }}</span>
                   </div>
                 </div>
                 <div class="cab-doc-actions">
@@ -1108,6 +1116,7 @@ const newDocCategory = ref('other')
 const newDocNotes = ref('')
 const docsSearch = ref('')
 const docsFilter = ref('')
+const docsSort = ref<'new' | 'old'>('new')
 
 const DOC_CATEGORIES = [
   { value: 'passport',    label: 'Паспорт' },
@@ -1131,8 +1140,18 @@ const filteredContractorDocs = computed(() => {
     if (!q) return true
     const hay = `${doc.title || ''} ${doc.notes || ''} ${doc.category || ''}`.toLowerCase()
     return hay.includes(q)
+  }).slice().sort((a: any, b: any) => {
+    const at = new Date(a.createdAt || 0).getTime()
+    const bt = new Date(b.createdAt || 0).getTime()
+    return docsSort.value === 'new' ? bt - at : at - bt
   })
 })
+
+function formatDocDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('ru-RU')
+}
 
 async function uploadDoc(ev: Event) {
   const files = (ev.target as HTMLInputElement).files
