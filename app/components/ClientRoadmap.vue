@@ -65,7 +65,8 @@ import {
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 
 const props = defineProps<{ slug: string }>()
-const { data: rawStages, pending } = await useFetch<any[]>(`/api/projects/${props.slug}/roadmap`)
+const reqHeaders = useRequestHeaders(['cookie'])
+const { data: rawStages, pending } = await useFetch<any[]>(`/api/projects/${props.slug}/roadmap`, { headers: reqHeaders })
 
 // Порядок фаз
 const PHASE_ORDER = ['lead', 'concept', 'working_project', 'procurement', 'construction', 'commissioning']

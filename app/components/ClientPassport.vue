@@ -60,7 +60,8 @@
 <script setup lang="ts">
 const props = defineProps<{ slug: string }>()
 
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`)
+const reqHeaders = useRequestHeaders(['cookie'])
+const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
 const form = reactive<Record<string, any>>({
   passport_series: '',

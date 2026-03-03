@@ -117,7 +117,8 @@ import { BRIEF_COMPLETION_KEYS } from '~~/shared/constants/profile-fields'
 const props = defineProps<{ slug: string }>()
 const route = useRoute()
 
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`)
+const reqHeaders = useRequestHeaders(['cookie'])
+const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
 const pf = computed<any>(() => project.value?.profile || {})
 

@@ -109,8 +109,10 @@
 <script setup lang="ts">
 const props = defineProps<{ slug: string; page: string }>()
 
+const reqHeaders = useRequestHeaders(['cookie'])
 const { data: payload, pending, refresh } = await useFetch<any>(
-  () => `/api/projects/${props.slug}/page-content?page=${props.page}`
+  () => `/api/projects/${props.slug}/page-content?page=${props.page}`,
+  { headers: reqHeaders }
 )
 
 const normalizedContent = computed(() => payload.value?.content ?? payload.value ?? null)

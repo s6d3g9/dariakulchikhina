@@ -512,7 +512,8 @@ import {
 } from '~~/shared/constants/profile-fields'
 const props = defineProps<{ slug: string }>()
 
-const { data: project } = await useFetch<any>(() => `/api/projects/${props.slug}`)
+const reqHeaders = useRequestHeaders(['cookie'])
+const { data: project } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
 const currentStep = ref(0)
 const saving = ref(false)

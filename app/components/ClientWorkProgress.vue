@@ -87,8 +87,9 @@ import {
 
 const props = defineProps<{ slug: string }>()
 
+const reqHeaders = useRequestHeaders(['cookie'])
 // ── Roadmap (design) ─────────────────────────────────────────
-const { data: rawStages, pending: rmPending } = await useFetch<any[]>(`/api/projects/${props.slug}/roadmap`)
+const { data: rawStages, pending: rmPending } = await useFetch<any[]>(`/api/projects/${props.slug}/roadmap`, { headers: reqHeaders })
 
 const PHASE_ORDER = ['lead', 'concept', 'working_project', 'procurement', 'construction', 'commissioning']
 const PHASE_BY_IDX = PHASE_ORDER
@@ -133,7 +134,7 @@ const designProgress = computed(() => {
 })
 
 // ── Work status (construction) ──────────────────────────────
-const { data: workItems, pending: wsPending } = await useFetch<any[]>(`/api/projects/${props.slug}/work-status`)
+const { data: workItems, pending: wsPending } = await useFetch<any[]>(`/api/projects/${props.slug}/work-status`, { headers: reqHeaders })
 
 const buildProgress = computed(() => {
   if (!workItems.value?.length) return null

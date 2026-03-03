@@ -72,7 +72,8 @@
 <script setup lang="ts">
 const props = defineProps<{ slug: string }>()
 
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`)
+const reqHeaders = useRequestHeaders(['cookie'])
+const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
 // All files from various profile sources + dedicated album_files field
 const allFiles = computed<any[]>(() => {

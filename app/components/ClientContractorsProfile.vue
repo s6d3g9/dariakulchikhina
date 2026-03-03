@@ -36,8 +36,10 @@ import { workTypeLabel } from '~~/shared/utils/work-status'
 
 const props = defineProps<{ slug: string }>()
 
+const reqHeaders = useRequestHeaders(['cookie'])
 const { data: contractors, pending } = await useFetch<any[]>(
-  () => `/api/projects/${props.slug}/contractors`
+  () => `/api/projects/${props.slug}/contractors`,
+  { headers: reqHeaders }
 )
 </script>
 

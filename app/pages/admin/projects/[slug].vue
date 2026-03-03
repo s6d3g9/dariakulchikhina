@@ -41,6 +41,11 @@
         <!-- Admin mode: phase groups as scrollable tabs -->
         <template v-else>
           <div class="proj-mobile-bar-scroll">
+            <button
+              class="proj-mobile-bar-btn"
+              :class="{ 'proj-mobile-bar-btn--active': activePage === 'overview' }"
+              @click="selectAdminPage('overview')"
+            >◈ обзор</button>
             <template v-for="group in navGroups" :key="'mob-' + group.label">
               <button
                 v-for="pg in group.pages" :key="pg.slug"
@@ -96,6 +101,12 @@
 
           <!-- ADMIN NAV with roadmap dots -->
           <template v-else-if="!contractorPreviewMode">
+            <button
+              class="proj-sidenav-item std-nav-item"
+              :class="{ 'proj-sidenav-item--active': activePage === 'overview', 'std-nav-item--active': activePage === 'overview' }"
+              @click="selectAdminPage('overview')"
+              style="margin-bottom:8px"
+            ><span class="proj-sidenav-icon">◈</span> обзор</button>
             <template v-for="(group, gi) in navGroups" :key="group.label">
               <div class="proj-sidenav-group" v-if="group.pages.length">
                 <div class="proj-sidenav-group-label std-nav-group-label">{{ group.label }}</div>
@@ -160,6 +171,17 @@
                 v-bind="clientActiveComponentProps"
               />
               <!-- admin view -->
+              <template v-else-if="activePage === 'overview'">
+                <AdminProjectOverview
+                  :slug="slug"
+                  :project="project"
+                  :clients="linkedClients"
+                  :contractors="linkedContractorsList"
+                  :designers="linkedDesignersList"
+                  :rm-map="rmMap"
+                  @navigate="selectAdminPage"
+                />
+              </template>
               <component
                 v-else
                 :is="activeComponent"
@@ -423,6 +445,7 @@ import {
   ClientTZ,
   ClientWorkProgress,
   ClientPassport,
+  AdminProjectOverview,
 } from '#components'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
@@ -467,7 +490,7 @@ const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await use
   `/api/projects/${slug.value}/designers`,
   { default: () => [] },
 )
-const activePage = ref('first_contact')
+const activePage = ref('overview')
 const showEdit = ref(false)
 const saving = ref(false)
 const editError = ref('')
@@ -915,7 +938,7 @@ watch(project, async (p) => {
 watch(availablePages, (pages) => {
   const normalized = normalizedActivePage.value
   if (!pages.length) {
-    activePage.value = 'first_contact'
+    activePage.value = 'overview'
     return
   }
   if (!pages.some(p => p.slug === normalized)) {

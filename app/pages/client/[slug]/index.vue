@@ -25,6 +25,13 @@
         <div class="cc-mobile-title">{{ project.title }}</div>
         <div class="cc-mobile-nav">
           <button
+            class="cc-mobile-btn"
+            :class="{ 'cc-mobile-btn--active': activePage === 'overview' }"
+            @click="setPage('overview')"
+          >
+            <span>◈</span>
+          </button>
+          <button
             v-for="pg in navPages"
             :key="pg.slug"
             class="cc-mobile-btn"
@@ -48,6 +55,14 @@
 
         <nav class="cc-nav std-nav">
           <button
+            class="cc-nav-item std-nav-item"
+            :class="{ active: activePage === 'overview', 'std-nav-item--active': activePage === 'overview' }"
+            @click="setPage('overview')"
+          >
+            <span class="cc-nav-icon">◈</span>
+            <span class="cc-nav-label">обзор</span>
+          </button>
+          <button
             v-for="pg in navPages"
             :key="pg.slug"
             class="cc-nav-item std-nav-item"
@@ -67,7 +82,16 @@
       <!-- Main content -->
       <main class="cc-main">
         <div class="cc-content">
+          <ClientOverview
+            v-if="activePage === 'overview'"
+            :slug="slug"
+            :project="project"
+            :contractors="linkedContractors || []"
+            :rm-map="rmMap"
+            @navigate="setPage"
+          />
           <component
+            v-else
             :is="activeComponent"
             v-bind="activeProps"
             :key="activePage"
@@ -96,6 +120,8 @@ import ClientTimeline      from '~/components/ClientTimeline.vue'
 import ClientDesignAlbum   from '~/components/ClientDesignAlbum.vue'
 import ClientRoadmap       from '~/components/ClientRoadmap.vue'
 import ClientPageContent   from '~/components/ClientPageContent.vue'
+import ClientOverview      from '~/components/ClientOverview.vue'
+import { normalizeRoadmapStatus } from '~~/shared/utils/roadmap'
 
 definePageMeta({ middleware: 'client', layout: 'default' })
 
@@ -114,6 +140,22 @@ const { data: project, pending, error, refresh } = await useFetch(
     headers: reqHeaders,
   }
 )
+
+// ── Fetch linked contractors & roadmap for overview ──────────────────────
+const { data: linkedContractors } = await useFetch<any[]>(
+  () => `/api/projects/${slug.value}/contractors`,
+  { default: () => [], headers: reqHeaders }
+)
+const rmMap = reactive<Record<string, string>>({})
+async function loadRmStatuses() {
+  try {
+    const rows = await $fetch<any[]>(`/api/projects/${slug.value}/roadmap`)
+    for (const row of rows) {
+      if (row.stageKey) rmMap[row.stageKey] = normalizeRoadmapStatus(row.status)
+    }
+  } catch { /* ignore */ }
+}
+onMounted(loadRmStatuses)
 
 // ── Page component map ───────────────────────────────────────────────────
 const PAGE_COMPONENT_MAP: Record<string, Component> = {
@@ -144,12 +186,11 @@ const navPages = computed(() => {
 })
 
 // ── Active page state ────────────────────────────────────────────────────
-const activePage = ref('')
+const activePage = ref('overview')
 
 watch(navPages, (pages) => {
-  if (!activePage.value && pages.length) {
-    activePage.value = pages[0].slug
-  } else if (activePage.value && !pages.some(p => p.slug === activePage.value) && pages.length) {
+  if (!activePage.value || activePage.value === 'overview') return
+  if (!pages.some(p => p.slug === activePage.value) && pages.length) {
     activePage.value = pages[0].slug
   }
 }, { immediate: true })

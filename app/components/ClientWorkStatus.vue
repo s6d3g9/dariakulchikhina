@@ -29,7 +29,8 @@
 import { workStatusLabel, workStatusCssClass } from '~~/shared/utils/work-status'
 
 const props = defineProps<{ slug: string }>()
-const { data: items, pending } = await useFetch<any[]>(`/api/projects/${props.slug}/work-status`)
+const reqHeaders = useRequestHeaders(['cookie'])
+const { data: items, pending } = await useFetch<any[]>(`/api/projects/${props.slug}/work-status`, { headers: reqHeaders })
 </script>
 
 <style scoped>

@@ -129,13 +129,16 @@ const props = defineProps<{ slug: string }>()
 
 const { lastSaved } = useRoadmapBus()
 
+const reqHeaders = useRequestHeaders(['cookie'])
 const { data: stages, pending: stagePending, refresh: refreshStages } = await useFetch<any[]>(
-  () => `/api/projects/${props.slug}/roadmap`
+  () => `/api/projects/${props.slug}/roadmap`,
+  { headers: reqHeaders }
 )
 const { data: contractors, pending: teamPending } = await useFetch<any[]>(
-  () => `/api/projects/${props.slug}/contractors`
+  () => `/api/projects/${props.slug}/contractors`,
+  { headers: reqHeaders }
 )
-const { data: project, refresh: refreshProject } = await useFetch<any>(() => `/api/projects/${props.slug}`)
+const { data: project, refresh: refreshProject } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
 watch(lastSaved, () => { refreshStages(); refreshProject() })
 
