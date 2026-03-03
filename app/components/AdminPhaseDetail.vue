@@ -81,13 +81,32 @@ const props = defineProps<{ phaseKey: string | null }>()
 defineEmits<{ (e: 'close'): void; (e: 'navigate', page: string): void }>()
 
 const stepToSlug: Record<string, string> = {
+  // Фаза 0 — Инициация
   '0.1': 'first_contact',
   '0.2': 'brief',
   '0.3': 'site_survey',
   '0.4': 'tor_contract',
+  // Фаза 1 — Концепция
   '1.1': 'space_planning',
   '1.2': 'moodboard',
   '1.3': 'concept_approval',
+  // Фаза 2 — Рабочий проект
+  '2.1': 'working_drawings',
+  '2.2': 'specifications',
+  '2.3': 'mep_integration',
+  '2.4': 'design_album_final',
+  // Фаза 3 — Закупки
+  '3.1': 'procurement_list',
+  '3.2': 'suppliers',
+  '3.3': 'procurement_status',
+  // Фаза 4 — Стройка
+  '4.1': 'construction_plan',
+  '4.2': 'work_log',
+  '4.3': 'site_photos',
+  // Фаза 5 — Сдача
+  '5.1': 'punch_list',
+  '5.2': 'commissioning_act',
+  '5.3': 'client_sign_off',
 }
 
 const phase = computed(() =>

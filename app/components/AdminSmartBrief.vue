@@ -292,7 +292,9 @@ const props = withDefaults(defineProps<{ slug: string; clientMode?: boolean }>()
   clientMode: false,
 })
 
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`)
+// Forward cookies so SSR works both in admin context and when embedded in client cabinet via ClientBrief.vue
+const reqHeaders = useRequestHeaders(['cookie'])
+const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
 const form = reactive<Record<string, any>>({})
 

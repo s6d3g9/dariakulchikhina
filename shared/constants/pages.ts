@@ -44,8 +44,9 @@ export const PROJECT_PAGES: ProjectPageDef[] = [
 
   // Фаза 4 – Стройка
   { slug: 'construction_plan',   title: '4.1 план работ',         icon: '◰', phase: 'construction', clientVisible: false },
-  { slug: 'work_log',            title: '4.2 журнал работ',       icon: '◱', phase: 'construction', clientVisible: false },
-  { slug: 'site_photos',         title: '4.3 фото объекта',       icon: '◲', phase: 'construction', clientVisible: false },
+  { slug: 'work_status',         title: '4.2 ход работ',          icon: '◱', phase: 'construction', clientVisible: false },
+  { slug: 'work_log',            title: '4.3 журнал работ',       icon: '◲', phase: 'construction', clientVisible: false },
+  { slug: 'site_photos',         title: '4.4 фото объекта',       icon: '◳', phase: 'construction', clientVisible: false },
 
   // Фаза 5 – Сдача
   { slug: 'punch_list',          title: '5.1 дефектная ведомость', icon: '◳', phase: 'commissioning', clientVisible: false },
@@ -123,6 +124,7 @@ export const CORE_PAGES = [
   'suppliers',
   'procurement_status',
   'construction_plan',
+  'work_status',
   'work_log',
   'site_photos',
   'punch_list',

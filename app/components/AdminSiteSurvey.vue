@@ -104,7 +104,7 @@
               placeholder="что необходимо сделать до начала проектирования..." @blur="save"/>
           </div>
           <div class="u-prop-row">
-            <label class="u-prop-label">ДопопционизИнформация</label>
+            <label class="u-prop-label">Дополнительная информация</label>
             <textarea v-model="form.survey_notes" class="glass-input u-ta" rows="2" @blur="save"/>
           </div>
         </div>

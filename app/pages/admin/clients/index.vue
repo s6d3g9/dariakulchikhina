@@ -54,6 +54,7 @@
             <button v-for="c in filteredClients" :key="c.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedClientId === c.id }" @click="selectClient(c)">
               <span class="ent-nav-avatar">{{ c.name?.charAt(0)?.toUpperCase() || '?' }}</span>
               <span class="ent-nav-name">{{ c.name }}<span v-if="c.linkedProjects?.length" class="ent-nav-sub">{{ c.linkedProjects.map((p: any) => p.title).join(', ') }}</span></span>
+              <span v-if="c.linkedProjects?.length" class="cl-nav-arrow" title="открыть кабинет">→</span>
             </button>
             <div v-if="filteredClients.length === 0 && searchQuery" class="cl-nav-empty">ничего не найдено</div>
             <div v-else-if="!clients?.length" class="cl-nav-empty">нет клиентов</div>
@@ -156,7 +157,15 @@ const filteredClients = computed(() => {
   const q = searchQuery.value.toLowerCase()
   return all.filter((c: any) => c.name?.toLowerCase().includes(q) || c.phone?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q))
 })
-function selectClient(c: any) { selectedClientId.value = c.id }
+const router = useRouter()
+function selectClient(c: any) {
+  // If client has a linked project → go straight to their cabinet (same as contractors/designers)
+  if (c.linkedProjects?.length) {
+    router.push(`/client/${c.linkedProjects[0].slug}`)
+  } else {
+    selectedClientId.value = c.id
+  }
+}
 
 // ── CRUD ───────────────────────────────────────────────
 const showModal = ref(false); const editingId = ref<number | null>(null); const saving = ref(false); const saveError = ref('')
@@ -195,6 +204,7 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-filter-link { text-decoration: none; color: var(--glass-text); opacity: .72; }
 .cl-filter-link:hover { opacity: 1; }
 .cl-nav-empty { padding: 16px 10px; text-align: center; font-size: .74rem; color: var(--glass-text); opacity: .3; }
+.cl-nav-arrow { margin-left: auto; font-size: .7rem; opacity: .4; flex-shrink: 0; }
 .cl-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.35); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .cl-modal { width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 24px 26px 28px; }
 .cl-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }

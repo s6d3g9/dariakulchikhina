@@ -129,13 +129,13 @@
 
       <!-- Section: Step completion -->
       <div class="afc-section">
-        <div class="afc-complete-card" :class="{ 'afc-complete-card--done': project?.isStepDone?.first_contact }">
+        <div class="afc-complete-card" :class="{ 'afc-complete-card--done': isStepDone.first_contact }">
           <div class="afc-complete-icon">
-            {{ project?.isStepDone?.first_contact ? '✓' : '○' }}
+            {{ isStepDone.first_contact ? '✓' : '○' }}
           </div>
           <div class="afc-complete-text">
             <strong>первичный контакт</strong>
-            <p v-if="project?.isStepDone?.first_contact">этап завершен</p>
+            <p v-if="isStepDone.first_contact">этап завершен</p>
             <p v-else>заполните основную информацию и отметьте как завершенный</p>
           </div>
           <button
@@ -143,7 +143,7 @@
             class="afc-complete-btn"
             @click="toggleStepCompletion('first_contact')"
           >
-            {{ project?.isStepDone?.first_contact ? 'пометить незавершенным' : 'завершить этап' }}
+            {{ isStepDone.first_contact ? 'пометить незавершенным' : 'завершить этап' }}
           </button>
         </div>
       </div>
@@ -206,13 +206,19 @@ const fallbackMapSrc = computed(() => {
   return `https://yandex.ru/map-widget/v1/?ll=${lng}%2C${lat}&z=${form.meeting_map_lat ? 15 : 10}`
 })
 
-// ── Step completion ──────────────────────────────────────
+// ── Step completion (stored in profile._stepsDone) ──────────────
+const isStepDone = computed(() => project.value?.profile?._stepsDone ?? {})
+
 async function toggleStepCompletion(stepKey: string) {
-  await $fetch(`/api/projects/${slug}/step-completion`, {
-    method: 'POST',
-    body: { stepKey, completed: !project.value?.isStepDone?.[stepKey] },
+  if (!project.value) return
+  const done = { ...(project.value.profile?._stepsDone || {}) }
+  done[stepKey] = !done[stepKey]
+  await $fetch(`/api/projects/${slug}`, {
+    method: 'PUT',
+    body: { profile: { ...(project.value.profile || {}), _stepsDone: done } },
   })
-  await refreshCookie('project')
+  project.value = { ...project.value, profile: { ...(project.value.profile || {}), _stepsDone: done } }
+  markSaved()
 }
 </script>
 

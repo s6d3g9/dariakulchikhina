@@ -1027,7 +1027,7 @@ const PAYMENT_METHOD_OPTIONS = [
   { value: 'crypto', label: 'Криптовалюта' },
 ]
 
-definePageMeta({ layout: 'contractor' })
+definePageMeta({ layout: 'contractor', middleware: ['contractor'] })
 const route = useRoute()
 const contractorId = Number(route.params.id)
 
