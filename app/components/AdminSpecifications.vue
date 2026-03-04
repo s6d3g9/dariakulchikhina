@@ -192,13 +192,13 @@ function removeFile(idx: number) {
 
 <style scoped>
 .aspec-wrap { padding: 4px 0 40px; }
-.aspec-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
+.aspec-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
 
 .aspec-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .aspec-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.aspec-dot--gray   { background: var(--ds-muted, #ccc); }
-.aspec-dot--blue   { background: var(--phase-blue, #6b9fd4); }
-.aspec-dot--yellow { background: var(--ds-warning, #e8b84b); }
-.aspec-dot--red    { background: var(--ds-error, #d46b6b); }
-.aspec-dot--green  { background: var(--ds-success, #5caa7f); }
+.aspec-dot--gray   { background: #ccc; }
+.aspec-dot--blue   { background: #6b9fd4; }
+.aspec-dot--yellow { background: #e8b84b; }
+.aspec-dot--red    { background: #d46b6b; }
+.aspec-dot--green  { background: #5caa7f; }
 </style>

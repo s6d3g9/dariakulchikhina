@@ -1395,8 +1395,8 @@ async function saveDesignerProjectEdits() {
 
 <style scoped>
 /* ── Inline feedback ── */
-.cab-inline-error  { margin: -10px 0 12px; color: var(--ds-error, #f87171); font-size: .82rem; }
-.cab-inline-success { margin: -10px 0 12px; color: var(--ds-success, #34d399); font-size: .82rem; }
+.cab-inline-error  { margin: -10px 0 12px; color: #f87171; font-size: .82rem; }
+.cab-inline-success { margin: -10px 0 12px; color: #34d399; font-size: .82rem; }
 
 /* ── Form accent ── */
 .cab-form { display: flex; flex-direction: column; gap: 24px; }
@@ -1404,7 +1404,7 @@ async function saveDesignerProjectEdits() {
 
 /* ── Designer-specific dashboard extras ── */
 .dash-project-status { font-size: .75rem; padding: 2px 8px; border-radius: 6px; width: fit-content; }
-.dash-project-price  { font-size: .82rem; color: var(--ds-success, #34d399); }
+.dash-project-price  { font-size: .82rem; color: #34d399; }
 .dash-project-area   { font-size: .78rem; opacity: .55; }
 
 /* ── Services ── */
@@ -1420,7 +1420,7 @@ async function saveDesignerProjectEdits() {
 .svc-row.disabled { opacity: .4; }
 .svc-name  { font-weight: 500; font-size: .92rem; }
 .svc-desc  { font-size: .82rem; opacity: .55; }
-.svc-price { font-weight: 600; color: var(--ds-success, #34d399); text-align: right; white-space: nowrap; }
+.svc-price { font-weight: 600; color: #34d399; text-align: right; white-space: nowrap; }
 
 .svc-edit-row  { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--glass-border); }
 .svc-edit-name  { flex: 2; }
@@ -1434,7 +1434,7 @@ async function saveDesignerProjectEdits() {
   background: var(--glass-bg); color: var(--glass-text);
 }
 .svc-inp--num { max-width: 120px; }
-.svc-del { background: none; border: none; color: var(--ds-error, #f87171); cursor: pointer; font-size: 1.1rem; padding: 4px 8px; }
+.svc-del { background: none; border: none; color: #f87171; cursor: pointer; font-size: 1.1rem; padding: 4px 8px; }
 .edit-actions { display: flex; gap: 4px; margin-left: 2px; }
 .svc-mini {
   border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--glass-text);
@@ -1502,7 +1502,7 @@ async function saveDesignerProjectEdits() {
 .proj-card-title { font-size: 1.1rem; font-weight: 600; }
 .proj-card-meta { display: flex; gap: 16px; font-size: .82rem; opacity: .55; }
 .proj-card-pkg   { color: var(--ds-accent-light, #a0a8ff); }
-.proj-card-total { color: var(--ds-success, #34d399); font-weight: 600; }
+.proj-card-total { color: #34d399; font-weight: 600; }
 .proj-section { margin-bottom: 14px; }
 .proj-section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: .88rem; font-weight: 500; }
 .proj-section-title { opacity: .55; }
@@ -1524,7 +1524,7 @@ async function saveDesignerProjectEdits() {
 .proj-empty-mini { font-size: .82rem; opacity: .45; font-style: italic; }
 .proj-notes { font-size: .85rem; opacity: .55; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--glass-border); }
 .proj-total { display: flex; justify-content: space-between; padding: 14px 16px; border-radius: 10px; margin: 10px 0; font-size: 1.05rem; }
-.proj-total strong { color: var(--ds-success, #34d399); font-size: 1.15rem; }
+.proj-total strong { color: #34d399; font-size: 1.15rem; }
 
 /* ── Subscriptions ── */
 .sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
@@ -1537,8 +1537,8 @@ async function saveDesignerProjectEdits() {
 .sub-card-price-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
 .sub-card-price { font-size: 1.3rem; font-weight: 700; color: var(--ds-accent, #646cff); }
 .sub-card-price small { font-size: .7rem; font-weight: 400; opacity: .55; }
-.sub-card-discount { font-size: .8rem; font-weight: 600; color: var(--ds-success, #34d399); background: rgba(52,211,153,.1); padding: 2px 8px; border-radius: 6px; }
-.sub-card-effective { font-size: .82rem; color: var(--ds-success, #34d399); margin-bottom: 8px; }
+.sub-card-discount { font-size: .8rem; font-weight: 600; color: #34d399; background: rgba(52,211,153,.1); padding: 2px 8px; border-radius: 6px; }
+.sub-card-effective { font-size: .82rem; color: #34d399; margin-bottom: 8px; }
 .sub-card-desc { font-size: .85rem; opacity: .55; margin-bottom: 14px; line-height: 1.4; }
 .sub-card-limits { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .sub-limit-chip { display: flex; align-items: center; gap: 4px; font-size: .75rem; padding: 3px 10px; border-radius: 6px; background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
@@ -1554,7 +1554,7 @@ async function saveDesignerProjectEdits() {
 .sub-edit-pricing { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; align-items: end; }
 .sub-effective-price { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: rgba(52,211,153,.06); font-size: .85rem; }
 .sub-eff-label { opacity: .55; }
-.sub-eff-val { font-weight: 600; color: var(--ds-success, #34d399); }
+.sub-eff-val { font-weight: 600; color: #34d399; }
 .sub-edit-limits { margin-bottom: 14px; }
 .sub-edit-limits strong { font-size: .85rem; margin-bottom: 8px; display: block; }
 .sub-limits-grid { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }

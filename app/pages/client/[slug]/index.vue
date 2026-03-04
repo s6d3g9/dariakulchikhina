@@ -371,12 +371,12 @@ async function logout() {
   background: currentColor;
   flex-shrink: 0;
 }
-.cc-status--lead         { color: var(--ds-muted, #9e9e9e); }
-.cc-status--concept      { color: var(--phase-violet, #7c3aed); }
-.cc-status--working_project { color: var(--phase-blue, #2563eb); }
-.cc-status--procurement  { color: var(--ds-warning, #d97706); }
-.cc-status--construction { color: var(--phase-orange, #ea580c); }
-.cc-status--commissioning { color: var(--ds-success, #16a34a); }
+.cc-status--lead         { color: #9e9e9e; }
+.cc-status--concept      { color: #7c3aed; }
+.cc-status--working_project { color: #2563eb; }
+.cc-status--procurement  { color: #d97706; }
+.cc-status--construction { color: #ea580c; }
+.cc-status--commissioning { color: #16a34a; }
 
 .cc-nav {
   flex: 1;

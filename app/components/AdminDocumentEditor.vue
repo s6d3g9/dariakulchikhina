@@ -24,7 +24,7 @@
         <button v-for="tpl in templates" :key="tpl.key"
           class="de-tpl-card glass-card"
           :class="{ 'de-tpl-card--active': selectedTpl?.key === tpl.key }"
-          @click="selectTemplate(tpl); step = 1"
+          @click="selectTemplate(tpl); goToStep(1)"
         >
           <span class="de-tpl-icon">{{ tpl.icon }}</span>
           <div class="de-tpl-info">
@@ -54,7 +54,18 @@
         </div>
         <div class="de-source">
           <label class="de-source-label">
-            👤 Клиент
+            🎨 Исполнитель
+            <span v-if="designersList.length" class="de-badge">{{ designersList.length }}</span>
+          </label>
+          <select v-model="pickedDesignerId" class="u-status-sel" @change="applyDesignerData">
+            <option :value="0">— не выбран —</option>
+            <option v-for="d in designersList" :key="d.id" :value="d.id">
+              {{ d.name }}{{ d.companyName ? ` (${d.companyName})` : '' }}
+            </option>
+          </select>
+        </div>
+        <div class="de-source">
+          <label class="de-source-label">👤 Клиент
             <span v-if="ctx?.clients?.length" class="de-badge">{{ ctx.clients.length }}</span>
           </label>
           <select v-model="pickedClientId" class="u-status-sel" :disabled="loadingCtx" @change="applyClientData">
@@ -82,7 +93,15 @@
       </div>
 
       <!-- Entity previews -->
-      <div v-if="pickedClient || pickedContractor" class="de-preview-row">
+      <div v-if="pickedDesigner || pickedClient || pickedContractor" class="de-preview-row">
+        <div v-if="pickedDesigner" class="de-preview-chip de-preview-chip--executor">
+          🎨 {{ pickedDesigner.name }}
+          <span v-if="pickedDesigner.phone"> · {{ pickedDesigner.phone }}</span>
+          <span v-if="pickedDesigner.email"> · {{ pickedDesigner.email }}</span>
+          <button class="de-save-executor-btn" :class="{ 'de-save-executor-btn--saved': executorSaved }" @click="saveExecutorToStorage" :title="'Сохранить реквизиты исполнителя для автозаполнения'">
+            {{ executorSaved ? '✓ сохранено' : '💾 запомнить реквизиты' }}
+          </button>
+        </div>
         <div v-if="pickedClient" class="de-preview-chip">
           👤 {{ pickedClient.name }}
           <span v-if="pickedClient.phone"> · {{ pickedClient.phone }}</span>
@@ -133,7 +152,8 @@
 
       <div class="de-actions">
         <button class="a-btn-sm" @click="step = 0">← шаблоны</button>
-        <button class="a-btn-save" @click="step = 2">редактор →</button>
+        <button class="a-btn-ai" @click="goGenerateAndEdit" title="Перейти в редактор и сразу запустить AI-генерацию">🤖 сгенерировать →</button>
+        <button class="a-btn-save" @click="goToStep(2)">редактор →</button>
       </div>
     </div>
 
@@ -169,6 +189,14 @@
           <button class="de-tbtn" :class="{ 'de-tbtn--ai-active': chatVisible }" @click="chatVisible = !chatVisible" title="Показать/скрыть чат с ИИ">
             💬 чат
           </button>
+          <button class="de-tbtn de-tbtn--docx" :disabled="!editorContent || docxLoading" @click="downloadDocx" title="Скачать как Word (.docx)">
+            {{ docxLoading ? '⏳...' : '📄 .docx' }}
+          </button>
+          <span v-if="autoSaveStatus" class="de-autosave-status" :class="'de-autosave-status--' + autoSaveStatus">
+            <span v-if="autoSaveStatus === 'saving'">⏳ сохранение...</span>
+            <span v-else-if="autoSaveStatus === 'saved'">✓ сохранено</span>
+            <span v-else-if="autoSaveStatus === 'error'">⚠️ ошибка автосохранения</span>
+          </span>
           <span class="de-ai-sep">|</span>
           <select v-model="selectedAiModel" class="de-model-sel" title="Выбрать AI-модель">
             <optgroup label="Локальные (бесплатно)">
@@ -440,9 +468,12 @@ const STEPS = ['Шаблон', 'Данные', 'Редактор']
 // ── State ──
 const step = ref(0)
 const selectedTpl = ref<typeof props.templates[number] | null>(null)
-const pickedProjectSlug = ref('')
-const pickedClientId = ref(0)
+const pickedProjectSlug  = ref('')
+const pickedClientId     = ref(0)
 const pickedContractorId = ref(0)
+const pickedDesignerId   = ref(0)
+const designersList      = ref<any[]>([])
+const executorSaved      = ref(false)
 const fieldValues = ref<Record<string, string>>({})
 const fieldAutoFilled = ref<Record<string, boolean>>({})
 const editorContent = ref('')
@@ -507,6 +538,28 @@ const allVars = computed(() => {
       result.push({ key, label, value, group: 'Данные проекта' })
     }
   }
+
+  // 3. Реквизиты исполнителя
+  const executorVars: Array<[string, string]> = [
+    ['executor_name',            'ФИО исполнителя'],
+    ['executor_inn',             'ИНН исполнителя'],
+    ['executor_passport',        'Паспорт исполнителя'],
+    ['executor_passport_issued', 'Паспорт выдан'],
+    ['executor_passport_date',   'Дата выдачи'],
+    ['executor_registration',    'Прописка исполнителя'],
+    ['executor_phone',           'Телефон исполнителя'],
+    ['executor_email',           'Email исполнителя'],
+    ['executor_bank',            'Банк'],
+    ['executor_bik',             'БИК'],
+    ['executor_account',         'Расчётный счёт'],
+    ['executor_corr_account',    'Корреспондентский счёт'],
+  ]
+  for (const [key, label] of executorVars) {
+    if (!result.find(r => r.key === key)) {
+      result.push({ key, label, value: vals[key] || EXECUTOR_DEFAULTS[key] || '', group: 'Исполнитель' })
+    }
+  }
+
   return result
 })
 
@@ -608,6 +661,9 @@ const pickedClient = computed(() =>
 const pickedContractor = computed(() =>
   ctx.value?.contractors?.find((c: any) => c.id === pickedContractorId.value) || null
 )
+const pickedDesigner = computed(() =>
+  designersList.value.find((d: any) => d.id === pickedDesignerId.value) || null
+)
 
 // ── Navigation ──
 function handleBack() {
@@ -616,8 +672,29 @@ function handleBack() {
 }
 
 // ── Template selection ──
+// ── Реквизиты исполнителя (Кульчихина Дария Андреевна) — дефолты
+// Заполните один раз — будут подставляться во все шаблоны автоматически
+const EXECUTOR_DEFAULTS: Record<string, string> = {
+  executor_name:            'Кульчихина Дария Андреевна',
+  executor_inn:             '',   // ← заполнить ИНН
+  executor_passport:        '',
+  executor_passport_issued: '',
+  executor_passport_date:   '',
+  executor_registration:    '',
+  executor_phone:           '',
+  executor_email:           'daria@kulchikhina.ru',
+  executor_bank:            '',
+  executor_bik:             '',
+  executor_account:         '',
+  executor_corr_account:    '',
+}
+
 function selectTemplate(tpl: typeof props.templates[number]) {
   selectedTpl.value = tpl
+  // Сбрасываем ID сохранённого документа — новый шаблон = новый документ
+  savedDocId.value = null
+  autoSaveStatus.value = ''
+  if (_autoSaveTimer) { clearTimeout(_autoSaveTimer); _autoSaveTimer = null }
   const vals: Record<string, string> = {}
   const auto: Record<string, boolean> = {}
   for (const f of tpl.fields) {
@@ -633,18 +710,55 @@ function selectTemplate(tpl: typeof props.templates[number]) {
   }
   fieldValues.value = vals
   fieldAutoFilled.value = auto
+  // Авто-заполняем поля исполнителя: сначала localStorage, потом дефолты
+  const storedExecutor = loadExecutorFromStorage()
+  for (const f of tpl.fields) {
+    if (f.key.startsWith('executor_') && !vals[f.key]) {
+      const val = storedExecutor[f.key] || EXECUTOR_DEFAULTS[f.key] || ''
+      if (val) { vals[f.key] = val; auto[f.key] = true }
+    }
+  }
 }
 
 function goToStep(i: number) {
   if (i === 0) { step.value = 0; return }
   if (i >= 1 && !selectedTpl.value) return
-  if (i === 2) syncEditorContent()
+  // Загружаем дизайнеров при переходе на шаг 1 (даже без проекта)
+  if (i === 1 && !designersList.value.length) {
+    $fetch<any[]>('/api/designers').then(ds => {
+      designersList.value = ds || []
+      if (designersList.value.length === 1 && !pickedDesignerId.value) {
+        pickedDesignerId.value = designersList.value[0].id
+        applyDesignerData()
+      }
+    }).catch(() => {})
+  }
+  // syncEditorContent вызовет watch(step) ниже — не дублируем
   step.value = i
+}
+
+// Перейти в редактор и сразу запустить AI-генерацию (кнопка «🤖 сгенерировать →»)
+async function goGenerateAndEdit() {
+  goToStep(2)
+  await nextTick()
+  onAiGenerate()
 }
 
 // ── Load context from API ──
 async function loadContext() {
   loadingCtx.value = true
+  // Загружаем список дизайнеров при первом обращении
+  if (!designersList.value.length) {
+    try {
+      const ds = await $fetch<any[]>('/api/designers')
+      designersList.value = ds || []
+      // Авто-выбор первого дизайнера если только один
+      if (designersList.value.length === 1 && !pickedDesignerId.value) {
+        pickedDesignerId.value = designersList.value[0].id
+        applyDesignerData()
+      }
+    } catch { /* ignore */ }
+  }
   try {
     ctx.value = await $fetch('/api/documents/context', {
       query: { projectSlug: pickedProjectSlug.value || '' },
@@ -717,6 +831,42 @@ function applyContractorData() {
     contractor_bik: c.bik || '',
     contractor_account: c.settlementAccount || '',
   })
+}
+
+function applyDesignerData() {
+  const d = pickedDesigner.value
+  if (!selectedTpl.value) return
+  // Берём сохранённые реквизиты из localStorage
+  const stored = loadExecutorFromStorage()
+  const map: Record<string, string> = {
+    ...stored,
+    executor_name:  d?.name  || stored.executor_name  || EXECUTOR_DEFAULTS.executor_name,
+    executor_phone: d?.phone || stored.executor_phone || EXECUTOR_DEFAULTS.executor_phone,
+    executor_email: d?.email || stored.executor_email || EXECUTOR_DEFAULTS.executor_email,
+  }
+  applyMap(map)
+}
+
+const EXECUTOR_STORAGE_KEY = 'de_executor_defaults'
+
+function loadExecutorFromStorage(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(EXECUTOR_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch { return {} }
+}
+
+function saveExecutorToStorage() {
+  const vals = fieldValues.value
+  const data: Record<string, string> = {}
+  for (const key of Object.keys(EXECUTOR_DEFAULTS)) {
+    if (vals[key]) data[key] = vals[key]
+  }
+  try {
+    localStorage.setItem(EXECUTOR_STORAGE_KEY, JSON.stringify(data))
+    executorSaved.value = true
+    setTimeout(() => { executorSaved.value = false }, 2500)
+  } catch { /* ignore */ }
 }
 
 function applyMap(map: Record<string, string>) {
@@ -1016,6 +1166,13 @@ function onEditorInput() {
 
 watch(step, (v) => { if (v === 2) syncEditorContent() })
 
+// При смене проекта — сбрасываем ID автосохранения, чтобы новый документ
+// привязался к правильному проекту
+watch(pickedProjectSlug, () => {
+  savedDocId.value = null
+  autoSaveStatus.value = ''
+})
+
 // ── Actions ──
 function downloadTxt() {
   const text = editorContent.value || generateText()
@@ -1304,6 +1461,25 @@ async function onSendChatMessage() {
     return
   }
 
+  // ── Детект «продолжай» — перенаправляем в continue action ──────
+  const CONTINUE_RE = /^(продолжай|продолжи|продолжить|continue|дальше|допиши|дописать|продолжение)\W*$/i
+  if (CONTINUE_RE.test(text)) {
+    const chatMsg2 = _chatPushGemma()
+    chatMsg2.text = ''
+    let acc2 = ''
+    await streamDocument('continue', { ...buildAiPayload(), currentText: editorContent.value }, (token) => {
+      editorContent.value += token
+      if (editorEl.value) editorEl.value.innerText = editorContent.value
+      acc2 += token
+      chatMsg2.text = `▶ Дописываю... (${acc2.length} симв.)`
+      chatMsg2.charCount = acc2.length
+    })
+    chatMsg2.text = `✓ Дописано (${acc2.length} символов добавлено)`
+    chatMsg2.charCount = acc2.length
+    _chatDone(chatMsg2)
+    return
+  }
+
   // ── Иначе — вызываем AI ───────────────────────────────────────
   const chatMsg = _chatPushGemma()
 
@@ -1386,6 +1562,86 @@ function buildAiPayload() {
   }
 }
 
+// ── Скачивание DOCX ──────────────────────────────────────────────────────────
+const docxLoading = ref(false)
+
+// ── Автосохранение ──────────────────────────────────────────────────
+const savedDocId   = ref<number | null>(null)
+const autoSaveStatus = ref<'' | 'saving' | 'saved' | 'error'>('')
+let _autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+async function autoSave() {
+  if (!editorContent.value || !selectedTpl.value) return
+  autoSaveStatus.value = 'saving'
+  try {
+    const title       = selectedTpl.value.name
+    const category    = (selectedTpl.value as any).category || 'other'
+    const templateKey = selectedTpl.value.key
+    const projectSlug = pickedProjectSlug.value || undefined
+    const content     = editorContent.value
+    if (!savedDocId.value) {
+      const doc = await $fetch<any>('/api/documents', {
+        method: 'POST',
+        body: { title, category, templateKey, projectSlug, content },
+      })
+      savedDocId.value = doc.id
+      // НЕ emit('saved') здесь — автосохранение не должно закрывать редактор
+    } else {
+      await $fetch(`/api/documents/${savedDocId.value}`, {
+        method: 'PUT',
+        body: { content, title },
+      })
+    }
+    autoSaveStatus.value = 'saved'
+    setTimeout(() => { if (autoSaveStatus.value === 'saved') autoSaveStatus.value = '' }, 3500)
+  } catch {
+    autoSaveStatus.value = 'error'
+  }
+}
+
+// Дебоунсед автосохранение при каждом изменении документа
+watch(editorContent, (val) => {
+  if (!val || !selectedTpl.value) return
+  if (_autoSaveTimer) clearTimeout(_autoSaveTimer)
+  // НЕ ставим статус 'saving' здесь — это делает сама функция autoSave()
+  // чтобы не мигать при каждом нажатии клавиши
+  _autoSaveTimer = setTimeout(autoSave, 2000)
+})
+
+async function downloadDocx() {
+  if (!editorContent.value || docxLoading.value) return
+  docxLoading.value = true
+  try {
+    const title = selectedTpl.value?.name || 'Документ'
+    // Читаем CSRF-токен из куки напрямую
+    const csrfToken = document.cookie
+      .split(';')
+      .map(c => c.trim())
+      .find(c => c.startsWith('csrf_token='))
+      ?.split('=')[1] ?? ''
+    const resp = await fetch('/api/documents/export-docx', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-csrf-token': decodeURIComponent(csrfToken),
+      },
+      body: JSON.stringify({ text: editorContent.value, title }),
+    })
+    if (!resp.ok) throw new Error(await resp.text())
+    const blob = await resp.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${title}.docx`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
+  } catch (e: any) {
+    alert('Ошибка создания DOCX: ' + (e?.message || e))
+  } finally {
+    docxLoading.value = false
+  }
+}
+
 async function onContinueGeneration() {
   if (aiLoading.value) return
   clearCitations()
@@ -1423,6 +1679,7 @@ async function onAiGenerate() {
   editorContent.value = stripMarkdown(editorContent.value)
   if (editorEl.value) editorEl.value.innerText = editorContent.value
   _chatDone(chatMsg)
+  autoSave() // сразу сохраняем после генерации
 }
 
 async function onAiImprove() {
@@ -1477,33 +1734,34 @@ async function onAiReview() {
 async function saveDocument() {
   if (!selectedTpl.value) return
   saving.value = true
+  // Отменяем pending автосохранение — сохраним сами
+  if (_autoSaveTimer) { clearTimeout(_autoSaveTimer); _autoSaveTimer = null }
   try {
-    const text = editorContent.value || generateText()
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
-    const file = new File([blob], `${selectedTpl.value.name}.txt`, { type: 'text/plain' })
-    const fd = new FormData()
-    fd.append('file', file)
-    const { url, filename } = await $fetch<any>('/api/upload', { method: 'POST', body: fd })
+    const content     = editorContent.value || generateText()
+    const title       = selectedTpl.value.name
+    const category    = (selectedTpl.value as any).category || 'other'
+    const templateKey = selectedTpl.value.key
+    const projectSlug = pickedProjectSlug.value || undefined
 
-    const project = props.projects.find(p => p.slug === pickedProjectSlug.value)
-    await $fetch('/api/documents', {
-      method: 'POST',
-      body: {
-        title: selectedTpl.value.name + (project ? ` · ${project.title}` : ''),
-        category: selectedTpl.value.category,
-        projectSlug: pickedProjectSlug.value || undefined,
-        url,
-        filename,
-        notes: `Создан из шаблона · ${new Date().toLocaleDateString('ru-RU')}` +
-          (pickedClient.value ? ` · Клиент: ${pickedClient.value.name}` : '') +
-          (pickedContractor.value ? ` · Подрядчик: ${pickedContractor.value.name || pickedContractor.value.companyName}` : ''),
-      },
-    })
+    if (savedDocId.value) {
+      // Документ уже создан автосохранением — просто обновляем его
+      await $fetch(`/api/documents/${savedDocId.value}`, {
+        method: 'PUT',
+        body: { content, title },
+      })
+    } else {
+      // Первое сохранение — создаём документ
+      const doc = await $fetch<any>('/api/documents', {
+        method: 'POST',
+        body: { title, category, templateKey, projectSlug, content },
+      })
+      savedDocId.value = doc.id
+    }
 
-    emit('saved')
     saveMsg.value = '✓ документ сохранён'
     saveMsgType.value = 'ok'
-    setTimeout(() => { saveMsg.value = '' }, 3000)
+    autoSaveStatus.value = 'saved'
+    setTimeout(() => { saveMsg.value = ''; autoSaveStatus.value = '' }, 3000)
   } catch (e: any) {
     console.error('Save failed', e)
     saveMsg.value = '✗ ошибка сохранения'
@@ -1841,6 +2099,24 @@ async function saveDocument() {
   padding: 3px 10px; border-radius: 999px;
   background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
+.de-preview-chip--executor {
+  opacity: .8;
+  border: 1px solid color-mix(in srgb, var(--ds-accent, #6366f1) 30%, transparent);
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 6%, transparent);
+}
+.de-save-executor-btn {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent, #6366f1) 30%, transparent);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-size: .65rem;
+  color: color-mix(in srgb, var(--ds-accent, #6366f1) 80%, white);
+  transition: background .12s;
+}
+.de-save-executor-btn:hover { background: color-mix(in srgb, var(--ds-accent, #6366f1) 12%, transparent); }
+.de-save-executor-btn--saved { color: #22c55e; border-color: rgba(34,197,94,.3); }
 
 /* ── Fields ── */
 .de-fields-divider {
@@ -1909,6 +2185,26 @@ async function saveDocument() {
   animation: de-continue-pulse 1.8s ease-in-out infinite;
 }
 .de-tbtn--continue:hover { background: color-mix(in srgb, var(--ds-success, #22c55e) 10%, transparent) !important; animation: none; }
+
+/* ── Кнопка скачать DOCX ── */
+.de-tbtn--docx {
+  color: color-mix(in srgb, #3b82f6 80%, var(--glass-text));
+  border: 1px solid color-mix(in srgb, #3b82f6 30%, transparent);
+  opacity: .7;
+}
+.de-tbtn--docx:hover:not(:disabled) { opacity: 1; background: color-mix(in srgb, #3b82f6 10%, transparent) !important; }
+.de-tbtn--docx:disabled { opacity: .3; cursor: not-allowed; }
+
+/* ── Авто-сохранение ── */
+.de-autosave-status {
+  font-size: var(--ds-text-xs, .68rem);
+  padding: 2px 8px;
+  border-radius: 999px;
+  transition: opacity .3s;
+}
+.de-autosave-status--saving { color: var(--glass-text); opacity: .5; }
+.de-autosave-status--saved  { color: #22c55e; opacity: .85; }
+.de-autosave-status--error  { color: #f87171; opacity: .85; }
 @keyframes de-continue-pulse { 0%,100%{opacity:.75} 50%{opacity:1} }
 
 /* ── Панель переменных (шаг 2 — поля шаблона) ── */

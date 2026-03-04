@@ -143,13 +143,13 @@ function removeOrder(idx: number) {
 
 <style scoped>
 .aps-wrap { padding: 4px 0 40px; }
-.aps-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
+.aps-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
 
 .aps-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .aps-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.aps-dot--gray   { background: var(--ds-muted, #ccc); }
-.aps-dot--blue   { background: var(--phase-blue, #6b9fd4); }
-.aps-dot--yellow { background: var(--ds-warning, #e8b84b); }
-.aps-dot--red    { background: var(--ds-error, #d46b6b); }
-.aps-dot--green  { background: var(--ds-success, #5caa7f); }
+.aps-dot--gray   { background: #ccc; }
+.aps-dot--blue   { background: #6b9fd4; }
+.aps-dot--yellow { background: #e8b84b; }
+.aps-dot--red    { background: #d46b6b; }
+.aps-dot--green  { background: #5caa7f; }
 </style>

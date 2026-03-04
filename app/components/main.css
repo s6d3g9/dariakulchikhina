@@ -1435,22 +1435,21 @@ html.dark .glass-input::placeholder {
 .a-btn-save {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--glass-text);
-  color: var(--glass-page-bg);
-  border: 1px solid var(--glass-text);
-  border-radius: 0;
-  padding: 12px 24px;
-  font-size: .85rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  gap: 6px;
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  border: var(--ds-border-width, 1px) var(--ds-border-style, solid) var(--btn-border);
+  border-radius: var(--btn-radius);
+  padding: var(--btn-padding-v, var(--btn-py, 9px)) var(--btn-padding-h, var(--btn-px, 22px));
+  font-size: var(--btn-font-size, .8rem);
+  font-weight: var(--btn-weight, 500);
+  letter-spacing: var(--btn-tracking);
+  text-transform: var(--btn-transform);
   cursor: pointer;
-  font-family: inherit;
-  transition: all .2s ease;
+  font-family: var(--ds-font-family, inherit);
+  transition: opacity var(--ds-transition, 180ms ease), background var(--ds-transition, 180ms ease);
 }
-.a-btn-save:hover   { opacity: 1; background: var(--glass-page-bg); color: var(--glass-text); }
+.a-btn-save:hover   { opacity: .85; background: var(--ds-accent-dark, var(--btn-bg)); }
 .a-btn-save:active  { opacity: .55; }
 .a-btn-save:disabled { opacity: .28; cursor: default; }
 
@@ -1458,41 +1457,42 @@ html.dark .glass-input::placeholder {
 .a-btn-ai {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: var(--glass-text);
-  color: var(--glass-page-bg);
-  border: 1px solid var(--glass-text);
-  border-radius: 0;
-  padding: 12px 24px;
-  font-size: .85rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  gap: 6px;
+  background: var(--ds-accent, #7c6ef6);
+  color: #fff;
+  border: var(--ds-border-width, 1px) var(--ds-border-style, solid) transparent;
+  border-radius: var(--btn-radius);
+  padding: var(--btn-padding-v, var(--btn-py, 9px)) var(--btn-padding-h, var(--btn-px, 22px));
+  font-size: var(--btn-font-size, .8rem);
+  font-weight: var(--btn-weight, 500);
+  letter-spacing: var(--btn-tracking);
+  text-transform: var(--btn-transform);
   cursor: pointer;
-  font-family: inherit;
-  transition: all .2s ease;
+  font-family: var(--ds-font-family, inherit);
+  transition: opacity var(--ds-transition, 180ms ease), background var(--ds-transition, 180ms ease);
 }
-.a-btn-ai:hover  { opacity: 1; background: var(--glass-page-bg); color: var(--glass-text); }
+.a-btn-ai:hover  { opacity: .88; }
 .a-btn-ai:active { opacity: .6; }
 
 .a-btn-sm {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: transparent;
-  color: var(--glass-text);
-  border: 1px solid var(--glass-border);
-  border-radius: 0;
-  padding: 8px 16px;
-  font-size: .75rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  gap: 5px;
+  background: var(--btn-sm-bg);
+  color: var(--btn-color);
+  border: var(--ds-border-width, 1px) var(--ds-border-style, solid) var(--btn-sm-border);
+  border-radius: var(--btn-radius);
+  padding: calc(var(--btn-padding-v, var(--btn-py, 5px)) * 0.6) calc(var(--btn-padding-h, var(--btn-px, 12px)) * 0.6);
+  font-size: calc(var(--btn-font-size, .76rem) * 0.95);
+  font-weight: var(--btn-weight, 500);
+  letter-spacing: var(--btn-tracking);
+  text-transform: var(--btn-transform);
   cursor: pointer;
-  font-family: inherit;
-  transition: all .2s ease;
+  font-family: var(--ds-font-family, inherit);
+  opacity: .68;
+  transition: opacity var(--ds-transition, 180ms ease), background var(--ds-transition, 180ms ease);
 }
-.a-btn-sm:hover  { opacity: 1; background: var(--glass-text); color: var(--glass-page-bg); border-color: var(--glass-text); }
+.a-btn-sm:hover  { opacity: .95; background: color-mix(in srgb, var(--btn-sm-border) 40%, transparent); }
 .a-btn-sm:active { opacity: 1; }
 .a-btn-sm:disabled { opacity: .28; cursor: default; }
 
@@ -4815,48 +4815,12 @@ html[data-concept="grand"] { --phase-violet: #b89060 !important; --phase-blue: #
    monumental heading spacing, cinematic pace.
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Override CSS variables for dark theme ── */
+/* Hide scrollbars for clean aesthetic */
 html[data-concept="minale"] {
   scrollbar-width: none !important;
-  --glass-page-bg:  #000000;
-  --glass-bg:       #0a0a0a;
-  --glass-text:     #ffffff;
-  --glass-border:   rgba(255,255,255,0.20);
-  --glass-shadow:   none;
-  --btn-bg:         transparent;
-  --btn-color:      #ffffff;
-  --btn-border:     rgba(255,255,255,0.25);
-  --btn-sm-bg:      transparent;
-  --btn-sm-border:  rgba(255,255,255,0.20);
 }
 html[data-concept="minale"]::-webkit-scrollbar {
   display: none !important;
-}
-
-/* Page, body, layout background — full black */
-html[data-concept="minale"],
-html[data-concept="minale"] body,
-html[data-concept="minale"] .page-wrapper,
-html[data-concept="minale"] .page-bg,
-html[data-concept="minale"] .ws-layout,
-html[data-concept="minale"] .ent-layout,
-html[data-concept="minale"] .admin-layout,
-html[data-concept="minale"] .std-layout {
-  background: #000000 !important;
-  color: #ffffff !important;
-}
-
-/* All text pure white */
-html[data-concept="minale"] * {
-  color: #ffffff;
-}
-
-/* Muted / secondary text */
-html[data-concept="minale"] .text-muted,
-html[data-concept="minale"] .u-label,
-html[data-concept="minale"] .a-field-label,
-html[data-concept="minale"] small {
-  color: rgba(255,255,255,0.55) !important;
 }
 
 /* All borders are ultra-thin hairlines */
@@ -4868,30 +4832,28 @@ html[data-concept="minale"] .cab-doc-card,
 html[data-concept="minale"] .ws-card,
 html[data-concept="minale"] .dash-stat,
 html[data-concept="minale"] .dash-project-card {
-  background: #0a0a0a !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
 }
 
 /* Navigation: pure text, no background decoration */
 html[data-concept="minale"] .ent-sidebar,
 html[data-concept="minale"] .std-sidebar,
 html[data-concept="minale"] .cab-nav {
-  background: #000000 !important;
+  background: transparent !important;
   border: none !important;
 }
 
-/* Nav items: uppercase, tracked, white */
+/* Nav items: ultra-light, uppercase, tracked out */
 html[data-concept="minale"] .ent-nav-item,
 html[data-concept="minale"] .cab-nav-item,
 html[data-concept="minale"] .std-nav-item {
-  color: #ffffff !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.15em !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.20em !important;
   text-transform: uppercase !important;
-  font-size: 0.78rem !important;
-  opacity: 0.6;
-  transition: opacity 200ms ease !important;
+  font-size: 0.7rem !important;
+  opacity: 0.5;
+  transition: opacity 900ms cubic-bezier(0.22,0.61,0.36,1) !important;
 }
 html[data-concept="minale"] .ent-nav-item:hover,
 html[data-concept="minale"] .cab-nav-item:hover,
@@ -4903,138 +4865,102 @@ html[data-concept="minale"] .ent-nav-item.active,
 html[data-concept="minale"] .cab-nav-item.active {
   opacity: 1 !important;
   background: transparent !important;
-  border-bottom: 2px solid rgba(255,255,255,0.6) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.3) !important;
 }
 
-/* Buttons: ghost white hairline */
+/* Buttons: no bg, just text + hairline */
 html[data-concept="minale"] .a-btn-save {
   background: transparent !important;
   color: #ffffff !important;
-  border: 1px solid rgba(255,255,255,0.30) !important;
-  font-weight: 400 !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  font-weight: 200 !important;
   letter-spacing: 0.20em !important;
   text-transform: uppercase !important;
-  font-size: 0.82rem !important;
-  padding: 10px 24px !important;
-  transition: all 200ms ease !important;
+  font-size: 0.72rem !important;
+  padding: 16px 40px !important;
+  transition: all 900ms cubic-bezier(0.22,0.61,0.36,1) !important;
 }
 html[data-concept="minale"] .a-btn-save:hover {
-  background: rgba(255,255,255,0.08) !important;
-  border-color: rgba(255,255,255,0.60) !important;
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.30) !important;
 }
 html[data-concept="minale"] .a-btn-sm {
   background: transparent !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255,255,255,0.25) !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.12em !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.15em !important;
   text-transform: uppercase !important;
-  font-size: 0.75rem !important;
-}
-html[data-concept="minale"] .a-btn-sm:hover {
-  background: rgba(255,255,255,0.06) !important;
-  border-color: rgba(255,255,255,0.50) !important;
+  font-size: 0.65rem !important;
 }
 
-/* Inputs: clearly visible white bottom border, with glowing focus */
-html[data-concept="minale"] .glass-input,
-html[data-concept="minale"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]),
-html[data-concept="minale"] textarea,
-html[data-concept="minale"] select {
+/* Inputs: invisible outline, just bottom border */
+html[data-concept="minale"] .glass-input {
   background: transparent !important;
-  color: #ffffff !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.30) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
   border-radius: 0 !important;
-  padding: 10px 0 10px 0 !important;
-  font-weight: 400 !important;
+  padding-left: 0 !important;
+  font-weight: 200 !important;
   letter-spacing: 0.05em !important;
-  transition: border-color 200ms ease !important;
-  caret-color: #ffffff !important;
+  transition: border-color 900ms !important;
 }
-html[data-concept="minale"] .glass-input::placeholder,
-html[data-concept="minale"] input::placeholder,
-html[data-concept="minale"] textarea::placeholder {
-  color: rgba(255,255,255,0.28) !important;
-}
-html[data-concept="minale"] .glass-input:focus,
-html[data-concept="minale"] input:focus,
-html[data-concept="minale"] textarea:focus,
-html[data-concept="minale"] select:focus {
-  outline: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.90) !important;
-  box-shadow: 0 1px 0 0 rgba(255,255,255,0.90) !important;
-}
-/* Field label above input */
-html[data-concept="minale"] label,
-html[data-concept="minale"] .a-field-label,
-html[data-concept="minale"] .u-label {
-  color: rgba(255,255,255,0.50) !important;
-  font-size: 0.68rem !important;
-  letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
+html[data-concept="minale"] .glass-input:focus {
+  border-bottom-color: rgba(255,255,255,0.30) !important;
+  box-shadow: none !important;
 }
 
-/* Tabs: white, uppercase */
+/* Tabs: ultra minimal */
 html[data-concept="minale"] .admin-tab {
-  color: #ffffff !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.12em !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.18em !important;
   text-transform: uppercase !important;
-  font-size: 0.78rem !important;
-  opacity: 0.5;
+  font-size: 0.68rem !important;
+  opacity: 0.4;
   border: none !important;
-  transition: opacity 200ms ease !important;
-}
-html[data-concept="minale"] .admin-tab:hover {
-  opacity: 0.85 !important;
+  transition: opacity 900ms !important;
 }
 html[data-concept="minale"] .admin-tab.active,
 html[data-concept="minale"] .admin-tab--active {
   opacity: 1 !important;
-  border-bottom: 2px solid rgba(255,255,255,0.70) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.3) !important;
 }
 
-/* Modals: dark overlay, black modal */
+/* Modals: full-screen black overlay, centered */
 html[data-concept="minale"] .u-modal,
 html[data-concept="minale"] .cab-modal {
-  background: #0a0a0a !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.90) !important;
-  color: #ffffff !important;
+  background: #000000 !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  box-shadow: none !important;
 }
 html[data-concept="minale"] .u-modal-overlay,
 html[data-concept="minale"] .cab-modal-overlay {
-  background: rgba(0,0,0,0.80) !important;
-  backdrop-filter: blur(4px) !important;
+  background: rgba(0,0,0,0.95) !important;
+  backdrop-filter: none !important;
 }
 
-/* Table: white on black */
+/* Table: invisible structure */
 html[data-concept="minale"] thead th {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.12) !important;
-  font-weight: 400 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  font-weight: 200 !important;
   letter-spacing: 0.15em !important;
   text-transform: uppercase !important;
-  font-size: 0.72rem !important;
-  color: rgba(255,255,255,0.45) !important;
-}
-html[data-concept="minale"] tbody td {
-  color: #ffffff !important;
+  font-size: 0.65rem !important;
+  color: rgba(255,255,255,0.4) !important;
 }
 html[data-concept="minale"] tbody tr {
-  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
 }
 html[data-concept="minale"] tbody tr:hover {
-  background: rgba(255,255,255,0.03) !important;
+  background: rgba(255,255,255,0.02) !important;
 }
 
 /* Topbar: seamless */
 html[data-concept="minale"] .u-topbar {
-  background: #000000 !important;
+  background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
 }
 
 /* All section titles — extreme tracking */
@@ -5042,28 +4968,26 @@ html[data-concept="minale"] h1,
 html[data-concept="minale"] h2,
 html[data-concept="minale"] h3,
 html[data-concept="minale"] .u-section-title {
-  color: #ffffff !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.22em !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.25em !important;
   text-transform: uppercase !important;
 }
 
-/* Chips: white ghost */
+/* Chips: transparent with subtle border */
 html[data-concept="minale"] .glass-chip {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.18) !important;
-  color: rgba(255,255,255,0.75) !important;
-  font-weight: 400 !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.6) !important;
+  font-weight: 200 !important;
   letter-spacing: 0.10em !important;
   text-transform: uppercase !important;
-  font-size: 0.62rem !important;
+  font-size: 0.6rem !important;
 }
 
-/* Design panel: stays dark */
+/* Design panel stays usable but black */
 html[data-concept="minale"] .dp-panel {
-  background: #0a0a0a !important;
-  border-color: rgba(255,255,255,0.10) !important;
-  color: #ffffff !important;
+  background: #000000 !important;
+  border-color: rgba(255,255,255,0.04) !important;
 }
 
 
@@ -5084,21 +5008,21 @@ html[data-concept="silence"] .dash-project-card,
 html[data-concept="silence"] .ws-card,
 html[data-concept="silence"] .svc-card,
 html[data-concept="silence"] .cab-task {
-  background: rgba(0,0,0,0.02) !important;
-  border: 1px solid rgba(0,0,0,0.04) !important;
+  background: rgba(255,255,255,0.02) !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
   box-shadow: none !important;
 }
 html[data-concept="silence"] .glass-card:hover,
 html[data-concept="silence"] .glass-surface:hover {
-  background: rgba(0,0,0,0.035) !important;
-  border-color: rgba(0,0,0,0.07) !important;
+  background: rgba(255,255,255,0.035) !important;
+  border-color: rgba(255,255,255,0.07) !important;
 }
 
 /* chips */
 html[data-concept="silence"] .glass-chip {
   background: transparent !important;
-  color: rgba(0,0,0,0.30) !important;
-  border: 1px solid rgba(0,0,0,0.06) !important;
+  color: rgba(255,255,255,0.30) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
 }
 
 /* inputs */
@@ -5108,21 +5032,21 @@ html[data-concept="silence"] textarea,
 html[data-concept="silence"] select {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(0,0,0,0.10) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
   border-radius: 0 !important;
-  color: rgba(0,0,0,0.65) !important;
-  padding: 10px 14px !important;
+  color: rgba(255,255,255,0.65) !important;
+  padding-left: 0 !important;
   padding-right: 0 !important;
 }
 html[data-concept="silence"] .glass-input:focus,
 html[data-concept="silence"] input:focus,
 html[data-concept="silence"] textarea:focus {
-  border-bottom-color: rgba(0,0,0,0.35) !important;
+  border-bottom-color: rgba(255,255,255,0.35) !important;
   outline: none !important;
 }
 html[data-concept="silence"] .glass-input::placeholder,
 html[data-concept="silence"] input::placeholder {
-  color: rgba(0,0,0,0.15) !important;
+  color: rgba(255,255,255,0.15) !important;
 }
 
 /* dropdown */
@@ -5130,28 +5054,28 @@ html[data-concept="silence"] .glass-dropdown,
 html[data-concept="silence"] .u-modal,
 html[data-concept="silence"] .cab-modal {
   background: #0c0c0c !important;
-  border: 1px solid rgba(0,0,0,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
   box-shadow: 0 24px 80px rgba(0,0,0,0.9) !important;
 }
 
 /* buttons */
 html[data-concept="silence"] .a-btn-save {
   background: transparent !important;
-  color: rgba(0,0,0,0.45) !important;
-  border: 1px solid rgba(0,0,0,0.08) !important;
-  font-weight: 400 !important;
+  color: rgba(255,255,255,0.45) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  font-weight: 200 !important;
   letter-spacing: 0.12em !important;
   text-transform: uppercase !important;
   transition: all 600ms !important;
 }
 html[data-concept="silence"] .a-btn-save:hover {
-  color: rgba(0,0,0,0.80) !important;
-  border-color: rgba(0,0,0,0.20) !important;
+  color: rgba(255,255,255,0.80) !important;
+  border-color: rgba(255,255,255,0.20) !important;
 }
 html[data-concept="silence"] .a-btn-sm {
   background: transparent !important;
-  color: rgba(0,0,0,0.30) !important;
-  border: 1px solid rgba(0,0,0,0.06) !important;
+  color: rgba(255,255,255,0.30) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
 }
 
 /* sidebar/nav: invisible background, whisper text */
@@ -5160,37 +5084,37 @@ html[data-concept="silence"] .std-sidebar,
 html[data-concept="silence"] .cab-nav {
   background: transparent !important;
   border: none !important;
-  border-right: 1px solid rgba(0,0,0,0.03) !important;
+  border-right: 1px solid rgba(255,255,255,0.03) !important;
 }
 html[data-concept="silence"] .ent-nav-item,
 html[data-concept="silence"] .cab-nav-item,
 html[data-concept="silence"] .std-nav-item {
-  color: rgba(0,0,0,0.22) !important;
+  color: rgba(255,255,255,0.22) !important;
   transition: color 500ms !important;
 }
 html[data-concept="silence"] .ent-nav-item:hover,
 html[data-concept="silence"] .cab-nav-item:hover {
-  color: rgba(0,0,0,0.55) !important;
+  color: rgba(255,255,255,0.55) !important;
   background: transparent !important;
 }
 html[data-concept="silence"] .ent-nav-item.active,
 html[data-concept="silence"] .cab-nav-item.active {
-  color: rgba(0,0,0,0.75) !important;
+  color: rgba(255,255,255,0.75) !important;
   background: transparent !important;
   border: none !important;
 }
 
 /* tabs */
 html[data-concept="silence"] .admin-tab {
-  color: rgba(0,0,0,0.20) !important;
+  color: rgba(255,255,255,0.20) !important;
   border: none !important;
   transition: color 500ms, opacity 500ms !important;
 }
-html[data-concept="silence"] .admin-tab:hover { color: rgba(0,0,0,0.45) !important; }
+html[data-concept="silence"] .admin-tab:hover { color: rgba(255,255,255,0.45) !important; }
 html[data-concept="silence"] .admin-tab.active,
 html[data-concept="silence"] .admin-tab--active {
-  color: rgba(0,0,0,0.70) !important;
-  border-bottom: 1px solid rgba(0,0,0,0.25) !important;
+  color: rgba(255,255,255,0.70) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.25) !important;
 }
 
 /* typography */
@@ -5198,35 +5122,35 @@ html[data-concept="silence"] h1,
 html[data-concept="silence"] h2,
 html[data-concept="silence"] h3,
 html[data-concept="silence"] h4 {
-  font-weight: 400 !important;
+  font-weight: 200 !important;
   letter-spacing: 0.06em !important;
-  color: rgba(0,0,0,0.65) !important;
+  color: rgba(255,255,255,0.65) !important;
 }
 
 /* topbar */
 html[data-concept="silence"] .u-topbar {
   background: transparent !important;
-  border-bottom: 1px solid rgba(0,0,0,0.03) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
 }
 
 /* tables */
 html[data-concept="silence"] thead th {
   background: transparent !important;
-  border-bottom: 1px solid rgba(0,0,0,0.05) !important;
-  color: rgba(0,0,0,0.25) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  color: rgba(255,255,255,0.25) !important;
   text-transform: uppercase !important;
   letter-spacing: 0.12em !important;
   font-weight: 300 !important;
 }
 html[data-concept="silence"] tbody tr {
-  border-bottom: 1px solid rgba(0,0,0,0.03) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
 }
 
 /* phase colors: all become barely visible greys */
-html[data-concept="silence"] { --phase-violet: rgba(0,0,0,0.35) !important; --phase-blue: rgba(0,0,0,0.35) !important; --phase-amber: rgba(0,0,0,0.35) !important; --phase-orange: rgba(0,0,0,0.35) !important; --phase-green: rgba(0,0,0,0.35) !important; --phase-teal: rgba(0,0,0,0.35) !important; }
+html[data-concept="silence"] { --phase-violet: rgba(255,255,255,0.35) !important; --phase-blue: rgba(255,255,255,0.35) !important; --phase-amber: rgba(255,255,255,0.35) !important; --phase-orange: rgba(255,255,255,0.35) !important; --phase-green: rgba(255,255,255,0.35) !important; --phase-teal: rgba(255,255,255,0.35) !important; }
 
 /* hr */
-html[data-concept="silence"] hr { border-color: rgba(0,0,0,0.04) !important; }
+html[data-concept="silence"] hr { border-color: rgba(255,255,255,0.04) !important; }
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -5418,7 +5342,7 @@ html[data-concept="editorial"] select {
   border-radius: 0 !important;
   color: rgba(30,22,12,0.85) !important;
   font-family: Georgia, "Times New Roman", serif !important;
-  padding: 10px 14px !important;
+  padding-left: 0 !important;
 }
 html[data-concept="editorial"] .glass-input:focus,
 html[data-concept="editorial"] input:focus {

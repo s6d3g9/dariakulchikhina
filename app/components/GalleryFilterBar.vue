@@ -320,13 +320,13 @@ html.dark .gfb-sort-opt:hover { background: rgba(255, 255, 255, 0.08); }
 .gfb-featured-btn:hover { opacity: .8; }
 .gfb-featured-btn--active {
   opacity: 1;
-  background: color-mix(in srgb, var(--ds-star, #fbbf24) 15%, transparent);
-  color: var(--ds-star-dark, #b45309);
+  background: rgba(251, 191, 36, 0.15);
+  color: #b45309;
 }
 html.dark .gfb-featured-btn { background: rgba(255, 255, 255, 0.06); }
 html.dark .gfb-featured-btn--active {
-  background: color-mix(in srgb, var(--ds-star, #fbbf24) 18%, transparent);
-  color: var(--ds-star, #fbbf24);
+  background: rgba(251, 191, 36, 0.18);
+  color: #fbbf24;
 }
 
 /* ── Tags ────────────────────────────────────────────────── */

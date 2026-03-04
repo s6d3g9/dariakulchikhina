@@ -101,11 +101,11 @@ function pluralRu(n: number) {
 
 <style scoped>
 .awl-wrap { padding: 4px 0 40px; }
-.awl-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
+.awl-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
 .awl-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-.awl-count { font-size: .74rem; color: var(--ds-muted, #999); }
+.awl-count { font-size: .74rem; color: #999; }
 .awl-add-btn { border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .76rem; padding: 5px 12px; cursor: pointer; font-family: inherit; margin-left: auto; }
-.awl-add-btn:hover { border-color: var(--ds-muted, #aaa); }
+.awl-add-btn:hover { border-color: #aaa; }
 .awl-saved { font-size: .72rem; color: var(--ds-success, #5caa7f); }
 .awl-list { display: flex; flex-direction: column; gap: 12px; }
 .awl-entry { border: 1px solid var(--border, #ececec); padding: 12px 14px; }

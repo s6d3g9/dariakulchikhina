@@ -347,7 +347,7 @@ async function save() {
   gap: 14px;
   margin-top: 10px;
 }
-.ccd-saved { font-size: .75rem; color: var(--ds-success, #8bbf8b); }
+.ccd-saved { font-size: .75rem; color: #8bbf8b; }
 .ccd-btn {
   border: none;
   background: var(--glass-bg);

@@ -89,7 +89,7 @@
           <div v-if="hasMapCoords" class="afc-row afc-row--full">
             <label class="afc-lbl">
               карта
-              <span v-if="form.meeting_map_address" class="afc-map-addr">{{ form.meeting_map_address }}</span>
+              <span v-if="form.meeting_map_address" style="font-weight:400;color:#444;font-size:.8rem;margin-left:6px">{{ form.meeting_map_address }}</span>
             </label>
             <iframe
               :key="mapKey"
@@ -121,7 +121,7 @@
               </div>
             </div>
           </div>
-          <div v-else-if="geocoding" class="afc-row afc-row--full afc-geocoding">определяю координаты…</div>
+          <div v-else-if="geocoding" class="afc-row afc-row--full" style="text-align:center;padding:12px;color:#888;font-size:.82rem;">определяю координаты…</div>
           <div class="afc-row afc-row--full">
             <label class="afc-lbl">заметки о встрече / первое впечатление</label>
             <textarea v-model="form.lead_meeting_notes" class="glass-input u-ta" rows="3" @blur="save"></textarea>
@@ -264,26 +264,24 @@ async function toggleStepCompletion(stepKey: string) {
 
 <style scoped>
 .afc-wrap { max-width: 900px; }
-.afc-loading { text-align: center; padding: 40px; color: var(--ds-muted, #999); }
+.afc-loading { text-align: center; padding: 40px; color: #999; }
 
 .afc-status-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 .afc-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-.afc-dot--new { background: var(--ds-muted, #ddd); }
-.afc-dot--contacted { background: var(--ds-warning, #ffb74d); }
-.afc-dot--meeting { background: color-mix(in srgb, var(--ds-success, #81c784) 70%, transparent); }
-.afc-dot--qualified { background: var(--ds-success, #4caf50); }
-.afc-dot--declined { background: var(--ds-error, #f44336); }
-.afc-complete-card--done { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); background: color-mix(in srgb, var(--ds-success, #5caa7f) 8%, transparent); }
+.afc-dot--new { background: #ddd; }
+.afc-dot--contacted { background: #ffb74d; }
+.afc-dot--meeting { background: #81c784; }
+.afc-dot--qualified { background: #4caf50; }
+.afc-dot--declined { background: #f44336; }
+.afc-complete-card--done { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); background: #f0faf5; }
 .afc-complete-icon { font-size: 1.4rem; flex-shrink: 0; width: 28px; text-align: center; margin-top: 2px; }
 .afc-complete-text { flex: 1; }
 .afc-complete-text strong { display: block; font-size: .88rem; margin-bottom: 4px; }
-.afc-complete-text p { margin: 0; font-size: .78rem; color: var(--ds-muted, #888); }
+.afc-complete-text p { margin: 0; font-size: .78rem; color: #888; }
 .afc-complete-card--done .afc-complete-text p { color: var(--ds-success, #2a7a52); }
-.afc-complete-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 7px 16px; font-size: .78rem; cursor: pointer; font-family: inherit; color: var(--ds-muted, #666); align-self: center; white-space: nowrap; }
+.afc-complete-btn { border: 1px solid var(--border, #e0e0e0); background: none; padding: 7px 16px; font-size: .78rem; cursor: pointer; font-family: inherit; color: #666; align-self: center; white-space: nowrap; }
 .afc-complete-card--done .afc-complete-btn { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); color: var(--ds-success, #2a7a52); }
-.afc-complete-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 40%, transparent); color: inherit; }
-.afc-map-addr { font-weight: 400; color: var(--ds-muted, #444); font-size: .8rem; margin-left: 6px; }
-.afc-geocoding { text-align: center; padding: 12px; color: var(--ds-muted, #888); font-size: .82rem; }
+.afc-complete-btn:hover { border-color: #aaa; color: inherit; }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {

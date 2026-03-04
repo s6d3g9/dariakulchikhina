@@ -1,7 +1,8 @@
 /**
  * POST /api/ai/document-stream
- * SSE-стриминг генерации документа через Gemma 3 27B / Qwen 3 / Claude Haiku
- * provider авто-определяется по имени модели: claude-* → Anthropic, остальные → Ollama
+ * SSE-стриминг генерации документа через Gemma 3 27B / Qwen 3 14B
+ * Отдаёт токены по одному: data: {"token":"..."}\n\n
+ * Завершает: data: [DONE]\n\n
  */
 
 import { useDb } from '~/server/db/index'
@@ -10,11 +11,10 @@ import { eq, inArray } from 'drizzle-orm'
 import { retrieveLegalContextWithChunks, type LegalChunkWithScore } from '~/server/utils/rag'
 import { GEMMA_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from '~/server/utils/gemma-prompts'
 
-// Локальные модели по умолчанию
+// chat использует qwen3:14b — вдвое меньше, вдвое быстрее для коротких ответов
 const MODEL_HEAVY  = process.env.OLLAMA_MODEL_HEAVY  || 'gemma3:27b'
-const MODEL_CHAT   = process.env.OLLAMA_MODEL_CHAT   || 'qwen3:4b'
+const MODEL_CHAT   = process.env.OLLAMA_MODEL_CHAT   || 'qwen3:14b'
 const DEFAULT_GEMMA_URL = 'http://localhost:11434'
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages'
 const TIMEOUT_MS = 900_000 // 15 минут
 
 export default defineEventHandler(async (event) => {
@@ -31,7 +31,6 @@ export default defineEventHandler(async (event) => {
     projectSlug,
     clientId,
     contractorId,
-    aiModel,         // выбранная пользователем модель (или undefined → авто)
   } = body || {}
 
   if (!action || !['generate', 'improve', 'review', 'chat', 'continue'].includes(action)) {
@@ -64,6 +63,15 @@ export default defineEventHandler(async (event) => {
     ? await retrieveLegalContextWithChunks(`${templateName} ${userPrompt.slice(0, 400)}`)
     : { context: '', chunks: [] }
 
+  const isChat = action === 'chat'
+  // system промпт всегда одинаковый — Ollama кэширует KV
+  // chat использует облегчённый промпт без документных правил
+  const systemPrompt = isChat ? CHAT_SYSTEM_PROMPT : GEMMA_SYSTEM_PROMPT
+  // RAG переносим в user-часть чтобы system не менялся
+  const userPromptFinal = legalCtx
+    ? `${userPrompt}\n\n[ПРАВОВАЯ БАЗА]\n${legalCtx}`
+    : userPrompt
+
   // ── SSE-заголовки ─────────────────────────────────────────────
   const res = event.node.res
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
@@ -72,30 +80,60 @@ export default defineEventHandler(async (event) => {
   res.setHeader('X-Accel-Buffering', 'no') // отключить nginx буфер
   res.flushHeaders()
 
-  // ── Определяем провайдера по имени модели ─────────────────────
-  const isAnthropicModel = typeof aiModel === 'string' && aiModel.startsWith('claude-')
-  const isChat = action === 'chat'
+  // ── Вызов Ollama native API ───────────────────────────────────
+  const gemmaUrl = process.env.GEMMA_URL || DEFAULT_GEMMA_URL
+  // chat → qwen3:14b (быстрее), тяжёлые документы → gemma3:27b
+  const model = isChat ? MODEL_CHAT : MODEL_HEAVY
 
-  // Итоговая модель:
-  // - если выбрана явно → используем её
-  // - иначе → авто по типу действия (chat → лёгкая, остальное → тяжёлая)
-  const chosenModel = isAnthropicModel
-    ? aiModel
-    : (aiModel || (isChat ? MODEL_CHAT : MODEL_HEAVY))
+  const ollamaRes = await fetch(`${gemmaUrl}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPromptFinal },
+      ],
+      stream: true,
+      keep_alive: -1,
+      think: false, // отключить COT у qwen3 (иначе добавляет <think>...</think>)
+      options: {
+        temperature:  0.3,
+        num_predict:  isChat ? 1024 : 4096, // лимит токенов
+        num_ctx:      isChat ? 2048 : 8192, // контекстное окно: меньше → быстрее prefill
+        num_thread:   12,                   // явно все доступные CPU ядра
+      },
+    }),
+  })
 
-  const systemPrompt = isChat ? CHAT_SYSTEM_PROMPT : GEMMA_SYSTEM_PROMPT
-  const userPromptFinal = legalCtx
-    ? `${userPrompt}\n\n[ПРАВОВАЯ БАЗА]\n${legalCtx}`
-    : userPrompt
+  if (!ollamaRes.ok) {
+    const errText = await ollamaRes.text().catch(() => '')
+    res.write(`data: ${JSON.stringify({ error: `Gemma error ${ollamaRes.status}: ${errText.slice(0, 200)}` })}\n\n`)
+    res.end()
+    return null
+  }
+
+  // ── Читаем NDJSON-поток от Ollama и пишем SSE ─────────────────
+  const reader = ollamaRes.body?.getReader()
+  if (!reader) {
+    res.write(`data: ${JSON.stringify({ error: 'Нет потока от Ollama' })}\n\n`)
+    res.end()
+    return null
+  }
 
   const decoder = new TextDecoder()
-  let fullText = ''
+  let buffer = ''
+  let fullText = '' // для парсинга notes в review
 
+  // Вспомогательная функция: отправить мета-данные и [DONE]
   function sendDone(truncated = false) {
+    // review → парсим замечания из накопленного текста
     if (action === 'review') {
       const notes = parseStreamReviewNotes(fullText)
       res.write(`data: ${JSON.stringify({ notes })}\n\n`)
     }
+    // generate/improve/continue → отправляем цитаты из RAG
     if (!['review', 'chat'].includes(action) && legalChunks.length) {
       const citations = legalChunks.map((c: LegalChunkWithScore) => ({
         source_name:   c.source_name,
@@ -107,139 +145,19 @@ export default defineEventHandler(async (event) => {
       }))
       res.write(`data: ${JSON.stringify({ citations })}\n\n`)
     }
-    if (truncated) res.write(`data: ${JSON.stringify({ truncated: true })}\n\n`)
+    if (truncated) {
+      res.write(`data: ${JSON.stringify({ truncated: true })}\n\n`)
+    }
     res.write('data: [DONE]\n\n')
     res.end()
   }
 
+  // Отправляем ping сразу чтобы браузер не оборвал соединение
   res.write(': ping\n\n')
 
-  // ── Маршрутизация: Anthropic vs Ollama ────────────────────────
-  if (isAnthropicModel) {
-    // ── Anthropic Claude API ──────────────────────────────────
-    const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) {
-      res.write(`data: ${JSON.stringify({ error: 'ANTHROPIC_API_KEY не настроен на сервере' })}\n\n`)
-      res.end()
-      return null
-    }
-
-    let anthropicRes: Response
-    try {
-      anthropicRes = await fetch(ANTHROPIC_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-        body: JSON.stringify({
-          model: chosenModel,
-          max_tokens: isChat ? 1024 : 4096,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userPromptFinal }],
-          stream: true,
-        }),
-      })
-    } catch (err: any) {
-      res.write(`data: ${JSON.stringify({ error: 'Ошибка соединения с Anthropic: ' + err?.message })}\n\n`)
-      res.end()
-      return null
-    }
-
-    if (!anthropicRes.ok) {
-      const errText = await anthropicRes.text().catch(() => '')
-      res.write(`data: ${JSON.stringify({ error: `Anthropic ${anthropicRes.status}: ${errText.slice(0, 300)}` })}\n\n`)
-      res.end()
-      return null
-    }
-
-    // Anthropic SSE: event: content_block_delta + data: {delta:{type:"text_delta",text:"..."}}
-    //               event: message_delta + data: {delta:{stop_reason:"end_turn"|"max_tokens"}}
-    const aReader = anthropicRes.body?.getReader()
-    if (!aReader) { res.write('data: {"error":"no stream"}\n\n'); res.end(); return null }
-
-    let aBuf = ''
-    let currentEvt = ''
-    try {
-      while (true) {
-        const { done, value } = await aReader.read()
-        if (done) break
-        aBuf += decoder.decode(value, { stream: true })
-        const lines = aBuf.split('\n')
-        aBuf = lines.pop() ?? ''
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            currentEvt = line.slice(7).trim()
-          } else if (line.startsWith('data: ')) {
-            try {
-              const d = JSON.parse(line.slice(6))
-              if (currentEvt === 'content_block_delta' && d?.delta?.type === 'text_delta') {
-                const token: string = d.delta.text ?? ''
-                if (token) {
-                  fullText += token
-                  res.write(`data: ${JSON.stringify({ token })}\n\n`)
-                }
-              } else if (currentEvt === 'message_delta') {
-                sendDone(d?.delta?.stop_reason === 'max_tokens')
-                return null
-              }
-            } catch { /* ignore partial */ }
-          }
-        }
-      }
-    } catch (err: any) {
-      res.write(`data: ${JSON.stringify({ error: err?.message || 'Ошибка стриминга Anthropic' })}\n\n`)
-    } finally {
-      aReader.cancel().catch(() => {})
-      res.end()
-    }
-    return null
-  }
-
-  // ── Ollama native API ─────────────────────────────────────────
-  const gemmaUrl = process.env.GEMMA_URL || DEFAULT_GEMMA_URL
-
-  const ollamaRes = await fetch(`${gemmaUrl}/api/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-    body: JSON.stringify({
-      model: chosenModel,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPromptFinal },
-      ],
-      stream: true,
-      keep_alive: -1,
-      think: false,
-      options: {
-        temperature:  0.3,
-        num_predict:  isChat ? 2048 : 4096,
-        num_ctx:      8192,
-        num_batch:    512,
-        num_thread:   12,
-      },
-    }),
-  })
-
-  if (!ollamaRes.ok) {
-    const errText = await ollamaRes.text().catch(() => '')
-    res.write(`data: ${JSON.stringify({ error: `Ollama error ${ollamaRes.status}: ${errText.slice(0, 200)}` })}\n\n`)
-    res.end()
-    return null
-  }
-
-  const reader = ollamaRes.body?.getReader()
-  if (!reader) {
-    res.write(`data: ${JSON.stringify({ error: 'Нет потока от Ollama' })}\n\n`)
-    res.end()
-    return null
-  }
-
-  let buffer = ''
-
+  // ── Читаем NDJSON-поток от Ollama native API ──────────────────
+  // Каждая строка — отдельный JSON: {message:{content:"..."}, done:false}
+  // Последняя строка: {done:true, done_reason:"stop"|"length", ...}
   try {
     while (true) {
       const { done, value } = await reader.read()
@@ -252,19 +170,24 @@ export default defineEventHandler(async (event) => {
       for (const line of lines) {
         const trimmed = line.trim()
         if (!trimmed) continue
+
         try {
           const data = JSON.parse(trimmed)
+          // токены контента (qwen3 с think:false не даёт <think>, но на всякий случай фильтруем)
           const token: string = data?.message?.content ?? ''
           if (token) {
             fullText += token
             res.write(`data: ${JSON.stringify({ token })}\n\n`)
           }
+          // финишная строка
           if (data?.done === true) {
             const reason = data?.done_reason ?? 'stop'
             sendDone(reason === 'length')
             return null
           }
-        } catch { /* неполный JSON */ }
+        } catch {
+          // неполный JSON — пропускаем
+        }
       }
     }
   } catch (err: any) {
@@ -439,45 +362,11 @@ ${tail}
 }
 
 function buildStreamChatPrompt(opts: { templateName: string; currentText?: string; customInstruction?: string; ctx: Record<string, any> }): string {
-  // Передаём ПОЛНЫЙ документ — иначе модель не может делать точечные правки
-  const doc = opts.currentText || ''
-  const hasDoc = doc.length > 0
+  // Передаём только хвост документа чтобы не раздувать контекст
+  const docSnippet = opts.currentText ? opts.currentText.slice(-1200) : ''
+  return `Ты помогаешь редактировать документ «${opts.templateName}».
 
-  if (!hasDoc) {
-    // Нет документа — просто отвечаем на вопрос
-    return `ВОПРОС: ${opts.customInstruction || ''}`
-  }
+${docSnippet ? 'ТЕКУЩИЙ ДОКУМЕНТ (фрагмент):\n---\n' + docSnippet + '\n---\n\n' : ''}ИНСТРУКЦИЯ ПОЛЬЗОВАТЕЛЯ: ${opts.customInstruction || ''}
 
-  // Передаём документ целиком (до 8000 символов — влезает в num_ctx=8192)
-  // Если длиннее — берём начало+конец, сообщаем модели об обрезке
-  let docSnippet = doc
-  let truncNote = ''
-  if (doc.length > 8000) {
-    const half = 3800
-    docSnippet = doc.slice(0, half) + '\n\n[...фрагмент скрыт — здесь середина документа...]\n\n' + doc.slice(-half)
-    truncNote = '\n(Документ длинный, середина скрыта. Работай только с видимыми фрагментами.)'
-  }
-
-  return `Ты помогаешь редактировать документ «${opts.templateName}».${truncNote}
-
-ДОКУМЕНТ (читай внимательно — тебе нужно найти в нём точный текст для замены):
----
-${docSnippet}
----
-
-ИНСТРУКЦИЯ ПОЛЬЗОВАТЕЛЯ: ${opts.customInstruction || ''}
-
-ПРАВИЛА ОТВЕТА (строго соблюдай):
-1. Найди в документе выше ТОЧНЫЙ текст, который нужно изменить
-2. Выдай ТОЛЬКО патч-блок(и) — ничего больше
-3. В <<<REPLACE>>> — скопируй текст из документа ДОСЛОВНО (символ в символ, с пробелами и знаками препинания)
-4. В <<<WITH>>> — замену
-5. ЗАПРЕЩЕНО: переписывать весь документ, добавлять пояснения
-
-ПРИМЕР (когда просят "замени Иванов на Петров"):
-<<<REPLACE>>>
-Иванов
-<<<WITH>>>
-Петров
-<<<END>>>`
+Выполни инструкцию пользователя. Если нужно изменить документ — верни только полный обновлённый документ. Если пользователь задаёт вопрос — ответь кратко.`
 }

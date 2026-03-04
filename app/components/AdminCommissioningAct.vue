@@ -131,7 +131,7 @@ async function uploadFile(e: Event) {
 
 <style scoped>
 .aca2-wrap { padding: 4px 0 40px; }
-.aca2-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
+.aca2-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
 .aca2-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .aca2-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */

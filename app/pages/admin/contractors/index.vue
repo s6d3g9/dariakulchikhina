@@ -407,14 +407,14 @@ async function del(id: number) {
 .ct-filter-link { text-decoration: none; color: var(--glass-text); opacity: .5; transition: opacity .15s; }
 .ct-filter-link:hover { opacity: 1; }
 .ct-nav-master { padding-left: 22px; }
-.ct-av--company { background: color-mix(in srgb, var(--phase-amber, #a06e1e) 12%, transparent); color: var(--phase-amber, #a06e1e); }
+.ct-av--company { background: color-mix(in srgb, #a06e1e 12%, transparent); color: #a06e1e; }
 html.dark .ct-av--company { background: color-mix(in srgb, #c8a03c 15%, transparent); color: #c8a03c; }
-.ct-av--master { background: color-mix(in srgb, var(--phase-blue, #3b82f6) 12%, transparent); color: var(--phase-blue, #3b82f6); }
+.ct-av--master { background: color-mix(in srgb, #3b82f6 12%, transparent); color: #3b82f6; }
 html.dark .ct-av--master { background: color-mix(in srgb, #82a5ff 15%, transparent); color: #82a5ff; }
 .ct-badge { display: inline-block; font-size: .56rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; padding: 2px 8px; border-radius: var(--chip-radius, 999px); margin-bottom: 4px; }
-.ct-badge--company { background: color-mix(in srgb, var(--phase-amber, #a06e1e) 10%, transparent); color: var(--phase-amber, #a06e1e); }
+.ct-badge--company { background: rgba(160,110,30,.1); color: #a06e1e; }
 html.dark .ct-badge--company { background: rgba(200,160,60,.15); color: #c8a03c; }
-.ct-badge--master { background: color-mix(in srgb, var(--phase-blue, #3b82f6) 10%, transparent); color: var(--phase-blue, #3b82f6); }
+.ct-badge--master { background: rgba(59,130,246,.1); color: #3b82f6; }
 html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; }
 .ct-detail-sub { font-size: .78rem; color: var(--glass-text); opacity: .5; margin-top: 2px; }
 .ct-nested-masters { display: flex; flex-direction: column; gap: 4px; }

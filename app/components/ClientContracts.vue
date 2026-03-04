@@ -144,9 +144,9 @@ function fmtDate(d: string) {
   text-transform: uppercase; border-radius: 999px; opacity: 1;
 }
 .cct-badge--gray   { background: color-mix(in srgb, var(--glass-text) 8%, transparent); color: color-mix(in srgb, var(--glass-text) 50%, transparent); }
-.cct-badge--blue   { background: color-mix(in srgb, var(--phase-blue, #2563eb) 8%, transparent); color: var(--phase-blue, #2563eb); }
-.cct-badge--green  { background: color-mix(in srgb, var(--ds-success, #16a34a) 8%, transparent); color: var(--ds-success, #16a34a); }
-.cct-badge--yellow { background: color-mix(in srgb, var(--ds-warning, #c87400) 8%, transparent); color: var(--ds-warning, #c87400); }
+.cct-badge--blue   { background: rgba(37,99,235,.08); color: #2563eb; }
+.cct-badge--green  { background: rgba(22,163,74,.08); color: #16a34a; }
+.cct-badge--yellow { background: rgba(200,116,0,.08); color: #c87400; }
 .cct-badge--red    { background: color-mix(in srgb, var(--ds-error, #dc2626) 8%, transparent); color: var(--ds-error, #dc2626); }
 
 /* Download */

@@ -16,7 +16,7 @@ async function warmModel(model: string, systemPrompt: string, numCtx: number) {
       stream: false,
       keep_alive: -1,
       think: false,
-      options: { num_predict: 3, num_ctx: numCtx, num_thread: 12, num_batch: 512 },
+      options: { num_predict: 3, num_ctx: numCtx, num_thread: 12 },
     }),
   })
   return res.ok
@@ -25,9 +25,9 @@ async function warmModel(model: string, systemPrompt: string, numCtx: number) {
 export default defineNitroPlugin(() => {
   setTimeout(async () => {
     try {
-      console.log('[Ollama warmup] Прогреваем qwen3:4b (chat)...')
-      const ok1 = await warmModel('qwen3:4b', CHAT_SYSTEM_PROMPT, 2048)
-      console.log(ok1 ? '[Ollama warmup] ✓ qwen3:4b готов' : '[Ollama warmup] ⚠ qwen3:4b не ответил')
+      console.log('[Ollama warmup] Прогреваем qwen3:14b (chat)...')
+      const ok1 = await warmModel('qwen3:14b', CHAT_SYSTEM_PROMPT, 2048)
+      console.log(ok1 ? '[Ollama warmup] ✓ qwen3:14b готов' : '[Ollama warmup] ⚠ qwen3:14b не ответил')
     } catch (e: any) {
       console.warn('[Ollama warmup] qwen3:14b:', e?.message)
     }

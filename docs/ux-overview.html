@@ -1,0 +1,2293 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UX Overview — Daria Project (dev)</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8f8f7;
+      --surface: #ffffff;
+      --border: #e8e8e6;
+      --border-light: #f0f0ee;
+      --text: #1a1a1a;
+      --muted: #888;
+      --accent: #1a1a1a;
+      --admin: #6366f1;
+      --client: #059669;
+      --contractor: #d97706;
+      --tag-bg: #f3f3f1;
+      --tag-color: #555;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    /* ── LAYOUT ── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 28px 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 0 20px 24px;
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 16px;
+    }
+    .sidebar-logo span {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .sidebar-section {
+      padding: 0 12px;
+      margin-bottom: 6px;
+    }
+    .sidebar-section-label {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #bbb;
+      padding: 10px 8px 4px;
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 13px;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .sidebar-link:hover, .sidebar-link.active {
+      background: var(--bg);
+      color: var(--text);
+    }
+    .sidebar-link .icon { font-size: 14px; width: 18px; text-align: center; }
+    .sidebar-role-badge {
+      display: inline-block;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: auto;
+    }
+    .badge-admin { background: #ede9ff; color: var(--admin); }
+    .badge-client { background: #d1fae5; color: var(--client); }
+    .badge-contractor { background: #fef3c7; color: var(--contractor); }
+
+    /* ── MAIN ── */
+    .main {
+      flex: 1;
+      padding: 40px 48px;
+      max-width: 960px;
+    }
+
+    /* ── HEADER ── */
+    .page-header {
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: -0.3px;
+      margin-bottom: 6px;
+    }
+    .page-header p { color: var(--muted); font-size: 13px; }
+
+    /* ── ROLE SECTION ── */
+    .role-section { margin-bottom: 56px; }
+    .role-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .role-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-admin { background: var(--admin); }
+    .dot-client { background: var(--client); }
+    .dot-contractor { background: var(--contractor); }
+
+    .role-header h2 {
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+    .role-path {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--tag-bg);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    /* ── SIDEBAR PREVIEW ── */
+    .sidebar-preview {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .sidebar-preview-title {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 16px 8px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .sidebar-preview-body {
+      display: flex;
+    }
+    .sidebar-mock {
+      width: 180px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border-light);
+      padding: 12px 0;
+    }
+    .sidebar-mock-group { margin-bottom: 8px; }
+    .sidebar-mock-label {
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #ccc;
+      padding: 4px 14px;
+    }
+    .sidebar-mock-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .sidebar-mock-item.active-item {
+      color: var(--text);
+      background: var(--bg);
+      font-weight: 500;
+    }
+    .sidebar-mock-item .s-icon { font-size: 12px; width: 16px; }
+    .sidebar-preview-desc {
+      flex: 1;
+      padding: 16px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ── PAGE CARDS ── */
+    .pages-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 720px) { .pages-grid { grid-template-columns: 1fr; } }
+
+    .page-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .page-card.full { grid-column: 1 / -1; }
+    .page-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      gap: 8px;
+    }
+    .page-card-title {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .page-card-path {
+      font-size: 10px;
+      color: var(--muted);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      background: var(--tag-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    /* ── FIELD LIST ── */
+    .field-sections { margin-top: 10px; }
+    .field-section { margin-bottom: 12px; }
+    .field-section-title {
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-bottom: 6px;
+    }
+    .field-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .field-tag {
+      font-size: 11px;
+      background: var(--tag-bg);
+      color: var(--tag-color);
+      padding: 3px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--border-light);
+    }
+    .field-tag.highlight {
+      background: #ede9ff;
+      color: var(--admin);
+      border-color: #c4b5fd;
+    }
+    .field-tag.green {
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+    .field-tag.amber {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+    .field-tag.red {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fca5a5;
+    }
+
+    /* ── TABLE ── */
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .info-table th {
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #bbb;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border-light);
+      font-weight: 500;
+    }
+    .info-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: top;
+    }
+    .info-table tr:last-child td { border-bottom: none; }
+    .info-table td:first-child { font-weight: 500; color: var(--text); white-space: nowrap; }
+    .info-table td:last-child { color: var(--muted); }
+
+    /* ── TABS MOCK ── */
+    .tabs-mock {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0;
+    }
+    .tab-mock {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--tag-bg);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .tab-mock.active { background: var(--text); color: #fff; border-color: var(--text); }
+    .tab-mock.has-badge { position: relative; }
+    .tab-mock .badge {
+      display: inline-block;
+      background: #ef4444;
+      color: #fff;
+      font-size: 9px;
+      border-radius: 999px;
+      padding: 0 4px;
+      margin-left: 3px;
+    }
+
+    /* ── KPI MOCK ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 10px 0;
+    }
+    @media (max-width: 720px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+    .kpi-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+    .kpi-val { font-size: 20px; font-weight: 400; color: var(--text); }
+    .kpi-sub { font-size: 10px; color: #aaa; margin-top: 2px; }
+
+    /* ── DIVIDER ── */
+    .divider { height: 1px; background: var(--border-light); margin: 32px 0; }
+
+    /* ── FLOW DIAGRAM ── */
+    .flow-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 8px;
+    }
+    .flow-title {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .flow-roles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .flow-roles { grid-template-columns: 1fr; } }
+
+    .flow-col { }
+    .flow-col-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .flow-item {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 9px 12px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .flow-item-path {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .flow-item-desc { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span>UX Overview · dev</span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Роли</div>
+      <a class="sidebar-link active" href="#admin">
+        <span class="icon">⬡</span> Администратор
+        <span class="sidebar-role-badge badge-admin">Admin</span>
+      </a>
+      <a class="sidebar-link" href="#client">
+        <span class="icon">◯</span> Клиент
+        <span class="sidebar-role-badge badge-client">Client</span>
+      </a>
+      <a class="sidebar-link" href="#contractor">
+        <span class="icon">◫</span> Подрядчик
+        <span class="sidebar-role-badge badge-contractor">Contractor</span>
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Страницы admin</div>
+      <a class="sidebar-link" href="#admin-dashboard"><span class="icon">📊</span> Dashboard KPI</a>
+      <a class="sidebar-link" href="#admin-project"><span class="icon">📁</span> Карточка проекта</a>
+      <a class="sidebar-link" href="#admin-phases"><span class="icon">🗂</span> Фазы (6 фаз, 20+ стр.)</a>
+      <a class="sidebar-link" href="#admin-payments"><span class="icon">💳</span> Платежи <span class="sidebar-role-badge badge-admin" style="font-size:8px">NEW</span></a>
+      <a class="sidebar-link" href="#admin-contractors"><span class="icon">👷</span> Подрядчики + поиск</a>
+      <a class="sidebar-link" href="#admin-notifications"><span class="icon">🔔</span> Уведомления <span class="sidebar-role-badge badge-admin" style="font-size:8px">NEW</span></a>
+      <a class="sidebar-link" href="#admin-pdf"><span class="icon">📄</span> PDF-экспорт <span class="sidebar-role-badge badge-admin" style="font-size:8px">NEW</span></a>
+      <a class="sidebar-link" href="#admin-pages"><span class="icon">⚙</span> Конфигуратор страниц</a>
+      <a class="sidebar-link" href="#admin-templates"><span class="icon">📋</span> Шаблоны роадмапов</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Страницы client</div>
+      <a class="sidebar-link" href="#client-home"><span class="icon">🏠</span> Главная</a>
+      <a class="sidebar-link" href="#client-pages"><span class="icon">📄</span> Подстраницы</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Страницы contractor</div>
+      <a class="sidebar-link" href="#contractor-page"><span class="icon">🔨</span> Задачи</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Архитектура</div>
+      <a class="sidebar-link" href="#modules"><span class="icon">🧩</span> Модули</a>
+      <a class="sidebar-link" href="#api-map"><span class="icon">🔌</span> API-маршруты</a>
+      <a class="sidebar-link" href="#sitemap"><span class="icon">🗺</span> Схема сайта</a>
+      <a class="sidebar-link" href="#database"><span class="icon">🗄</span> База данных</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <div class="page-header">
+      <h1>UX-описание интерфейса · dev</h1>
+      <p>Полная карта страниц, API, модулей и содержимого — по каждой роли и разделу. Обновлено 2026-03-04.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════ ADMIN ═══════════════════════════════ -->
+    <section class="role-section" id="admin">
+      <div class="role-header">
+        <div class="role-dot dot-admin"></div>
+        <h2>Администратор</h2>
+        <span class="role-path">/admin/*</span>
+      </div>
+
+      <!-- Sidebar preview admin -->
+      <div class="sidebar-preview">
+        <div class="sidebar-preview-title">Левое меню — Администратор (реализовано)</div>
+        <div class="sidebar-preview-body">
+          <div class="sidebar-mock">
+            <div class="sidebar-mock-group">
+              <div class="sidebar-mock-label">Панель</div>
+              <div class="sidebar-mock-item active-item"><span class="s-icon">📊</span> Дашборд KPI</div>
+              <div class="sidebar-mock-item"><span class="s-icon">📁</span> Проекты</div>
+              <div class="sidebar-mock-item"><span class="s-icon">👷</span> Подрядчики</div>
+              <div class="sidebar-mock-item"><span class="s-icon">👥</span> Клиенты</div>
+            </div>
+            <div class="sidebar-mock-group">
+              <div class="sidebar-mock-label">Настройки</div>
+              <div class="sidebar-mock-item"><span class="s-icon">⚙</span> Страницы</div>
+              <div class="sidebar-mock-item"><span class="s-icon">📋</span> Шаблоны</div>
+            </div>
+            <div class="sidebar-mock-group" style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0ee">
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">🔔 уведомления</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">● тема</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">→ выйти</div>
+            </div>
+          </div>
+          <div class="sidebar-preview-desc">
+            Фиксированное левое меню (layout: <code>admin.vue</code>).<br>
+            <strong>Панель</strong> — дашборд KPI + список проектов, подрядчики, клиенты.<br>
+            <strong>Настройки</strong> — конфигуратор страниц и шаблоны роадмапов.<br>
+            Контекст активного проекта (<code>activeProjectSlug</code>) передаётся между вкладками через query-параметр.<br><br>
+            <strong>Уведомления</strong> — колокольчик в шапке, показывает непрочитанные (role = admin | all). Реализован API.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Dashboard KPI ── -->
+      <div class="pages-grid" id="admin-dashboard">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">📊 Dashboard KPI + Список проектов</div>
+            <span class="page-card-path">/admin</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Компонент: <code>AdminKPIDashboard.vue</code> · API: <code>GET /api/admin/kpi</code></div>
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-label">Сроки</div>
+              <div class="kpi-val">%</div>
+              <div class="kpi-sub">в срок · просрочено N из M</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Просрочки</div>
+              <div class="kpi-val">N</div>
+              <div class="kpi-sub">ближайшие 7 дней: N</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Деньги</div>
+              <div class="kpi-val">sum</div>
+              <div class="kpi-sub">закрыто % · сумма</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Загрузка</div>
+              <div class="kpi-val">N</div>
+              <div class="kpi-sub">открытых задач · без подрядчика N</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted)">
+            + блок «загрузка подрядчиков»: имя · открыто · всего · просрочено<br>
+            Опциональный фильтр по projectSlug (<code>?projectSlug=</code>). Кнопка «обновить».
+          </div>
+          <div style="border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Список проектов (на той же странице)</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border-light)">
+                <div>
+                  <span style="font-size:13px;font-weight:500">Квартира Иванова</span>
+                  <span style="font-size:10px;color:var(--muted);margin-left:10px;font-family:monospace">ivanova-apt</span>
+                  <span class="field-tag green" style="margin-left:8px;font-size:10px">в работе</span>
+                </div>
+                <div class="field-tags">
+                  <span class="field-tag">готовые страницы ↗</span>
+                  <span class="field-tag">открыть</span>
+                  <span class="field-tag red">удалить</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <span class="field-tag highlight">+ новый проект → 2-шаговый wizard (slug + набор страниц из CORE_PAGES)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Project card ── -->
+      <div class="pages-grid" id="admin-project">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">📁 Карточка проекта</div>
+            <span class="page-card-path">/admin/projects/[slug]</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Страница: <code>pages/admin/projects/[slug].vue</code> · Layout: admin · Middleware: admin</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Переключатель статуса проекта (верхняя строка):</div>
+          <div class="field-tags" style="margin-bottom:12px">
+            <span class="field-tag">лид</span>
+            <span class="field-tag">замер</span>
+            <span class="field-tag highlight">концепция</span>
+            <span class="field-tag">рабочий проект</span>
+            <span class="field-tag">комплектация</span>
+            <span class="field-tag">строительство</span>
+            <span class="field-tag green">сдача</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Боковая навигация по фазам и страницам (sidebar внутри страницы):</div>
+          <div class="tabs-mock">
+            <div class="tab-mock active">◎ обзор</div>
+            <div class="tab-mock">🗺 дорожная карта</div>
+            <div class="tab-mock has-badge">✅ статусы работ <span class="badge">3</span></div>
+            <div class="tab-mock">💳 платежи</div>
+            <div class="tab-mock">──</div>
+            <div class="tab-mock">0.1 первичный контакт</div>
+            <div class="tab-mock">0.2 брифинг</div>
+            <div class="tab-mock">… (все фазы)</div>
+            <div class="tab-mock" style="margin-left:auto;border-style:dashed">⚙ настройки проекта</div>
+          </div>
+          <div class="field-sections" style="margin-top:12px">
+            <table class="info-table">
+              <thead><tr><th>Вкладка</th><th>Компонент</th><th>Содержимое</th></tr></thead>
+              <tbody>
+                <tr><td>Обзор</td><td><code>AdminProjectOverview</code></td><td>Сводка по клиенту, подрядчикам, прогрессу фаз; кнопки «клиент»/«подрядчики»/«дизайнеры» — модальные окна привязки</td></tr>
+                <tr><td>Дорожная карта</td><td><code>AdminRoadmap</code></td><td>Этапы + выбор шаблона; статусы: ожидание / в работе / выполнено / пропущено</td></tr>
+                <tr><td>Статусы работ</td><td><code>AdminWorkStatus</code></td><td>Задачи: название, статус, даты, бюджет, подрядчик; значок badge с кол-вом «на проверке»</td></tr>
+                <tr><td>Платежи</td><td><code>AdminPayments</code></td><td>Список платежей + история статусов + итоги + PDF-экспорт; API: GET/PUT /api/projects/[slug]/payments</td></tr>
+                <tr><td>Страницы фаз</td><td>Роутер по <code>pageComponentMap</code></td><td>Каждая из 20+ страниц проекта через специализированный компонент (см. раздел «Фазы»)</td></tr>
+                <tr><td>⚙ Настройки</td><td>inline-форма</td><td>Переименовать проект, переключить видимые страницы (чекбоксы), назначить/отвязать клиента/подрядчика/дизайнера</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Phases ── -->
+      <div class="pages-grid" id="admin-phases">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">🗂 Фазы проекта — 6 фаз, 20+ страниц</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Источник истины: <code>shared/constants/pages.ts</code> — массив <code>PROJECT_PAGES</code>. Каждая страница: slug, фаза, icon, видимость для admin/client. Расположение в сайдбаре сгруппировано по фазам (<code>getAdminNavGroups()</code>).</div>
+          <table class="info-table">
+            <thead><tr><th>Фаза</th><th>Slug</th><th>Компонент (Admin)</th><th>Видно клиенту</th></tr></thead>
+            <tbody>
+              <tr><td colspan="4" style="background:var(--bg);font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#888">Фаза 0 — Инициация (lead)</td></tr>
+              <tr><td>0.1 первичный контакт</td><td><code>first_contact</code></td><td><code>AdminFirstContact</code></td><td>—</td></tr>
+              <tr><td>0.2 брифинг</td><td><code>self_profile</code> / <code>brief</code></td><td><code>AdminSmartBrief</code></td><td>—</td></tr>
+              <tr><td>0.3 выезд на замер</td><td><code>site_survey</code></td><td><code>AdminSiteSurvey</code></td><td>—</td></tr>
+              <tr><td>0.4 тз и договор</td><td><code>tor_contract</code></td><td><code>AdminToRContract</code></td><td>—</td></tr>
+              <tr><td colspan="4" style="background:var(--bg);font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#888">Фаза 1 — Концепция (concept)</td></tr>
+              <tr><td>1.1 планировочное решение</td><td><code>space_planning</code></td><td><code>AdminSpacePlanning</code></td><td>—</td></tr>
+              <tr><td>1.2 мудборд</td><td><code>moodboard</code></td><td><code>AdminMoodboard</code></td><td>—</td></tr>
+              <tr><td>1.3 согласование концепции</td><td><code>concept_approval</code></td><td><code>AdminConceptApproval</code></td><td>—</td></tr>
+              <tr><td colspan="4" style="background:var(--bg);font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#888">Фаза 2 — Рабочий проект (working_project)</td></tr>
+              <tr><td>2.1 рабочие чертежи</td><td><code>working_drawings</code></td><td><code>AdminWorkingDrawings</code></td><td>—</td></tr>
+              <tr><td>2.2 спецификации</td><td><code>specifications</code></td><td><code>AdminSpecifications</code></td><td>—</td></tr>
+              <tr><td>2.3 инженерные согласования</td><td><code>mep_integration</code></td><td><code>AdminMepIntegration</code></td><td>—</td></tr>
+              <tr><td>2.4 финальный альбом</td><td><code>design_album_final</code></td><td><code>AdminDesignAlbumFinal</code></td><td>—</td></tr>
+              <tr><td colspan="4" style="background:var(--bg);font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#888">Фаза 3 — Комплектация (procurement)</td></tr>
+              <tr><td>3.1 список закупок</td><td><code>procurement_list</code></td><td><code>AdminProcurementList</code></td><td>—</td></tr>
+              <tr><td>3.2 поставщики</td><td><code>suppliers</code></td><td><code>AdminSuppliers</code></td><td>—</td></tr>
+              <tr><td>3.3 статус закупок</td><td><code>procurement_status</code></td><td><code>AdminProcurementStatus</code></td><td>—</td></tr>
+              <tr><td colspan="4" style="background:var(--bg);font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#888">Фаза 4 — Строительство (construction)</td></tr>
+              <tr><td>4.1 план строительства</td><td><code>construction_plan</code></td><td><code>AdminConstructionPlan</code></td><td>—</td></tr>
+              <tr><td>4.2 статусы работ</td><td><code>work_status</code></td><td><code>AdminWorkStatus</code></td><td>✓</td></tr>
+              <tr><td>4.3 журнал работ</td><td><code>work_log</code></td><td><code>AdminWorkLog</code></td><td>—</td></tr>
+              <tr><td>4.4 фотоотчёт</td><td><code>site_photos</code></td><td><code>AdminSitePhotos</code></td><td>—</td></tr>
+              <tr><td>4.5 список замечаний</td><td><code>punch_list</code></td><td><code>AdminPunchList</code></td><td>—</td></tr>
+              <tr><td colspan="4" style="background:var(--bg);font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#888">Фаза 5 — Сдача (commissioning)</td></tr>
+              <tr><td>5.1 акт сдачи</td><td><code>commissioning_act</code></td><td><code>AdminCommissioningAct</code></td><td>—</td></tr>
+              <tr><td>5.2 подписание клиентом</td><td><code>client_sign_off</code></td><td><code>AdminClientSignOff</code></td><td>—</td></tr>
+              <tr><td colspan="4" style="background:var(--bg);font-weight:600;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#888">Устаревшие (legacy) — поддерживаются, не в основном списке</td></tr>
+              <tr><td>Материалы (legacy)</td><td><code>materials</code></td><td><code>AdminMaterials</code> / <code>AdminPageContent</code></td><td>✓</td></tr>
+              <tr><td>ТЗ (legacy)</td><td><code>tz</code></td><td><code>AdminTZ</code> / <code>AdminPageContent</code></td><td>✓</td></tr>
+              <tr><td>Профиль клиента (legacy)</td><td><code>profile_customer</code></td><td><code>AdminClientProfile</code></td><td>—</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:10px;font-size:11px;color:var(--muted)">
+            Диспетчер: <code>pageComponentMap</code> в <code>[slug].vue</code>. Если slug не в карте → <code>AdminPageContent</code> (JSON-редактор). Legacy-страницы определяются через <code>LEGACY_PROJECT_PAGES</code> Set.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Payments ── -->
+      <div class="pages-grid" id="admin-payments">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">💳 Платежи <span class="field-tag green" style="font-size:10px">реализовано</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Компонент: <code>AdminPayments.vue</code> · API: <code>GET /api/projects/[slug]/payments</code>, <code>PUT /api/projects/[slug]/payments</code></div>
+          <table class="info-table">
+            <thead><tr><th>Поле платежа</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>string (uuid)</td><td>Уникальный идентификатор</td></tr>
+              <tr><td>title</td><td>string</td><td>Название платежа</td></tr>
+              <tr><td>amount</td><td>number</td><td>Сумма</td></tr>
+              <tr><td>status</td><td>in_progress / passed / rejected</td><td>Текущий статус</td></tr>
+              <tr><td>dueDate</td><td>date | null</td><td>Дата ожидаемой оплаты</td></tr>
+              <tr><td>paidAt</td><td>date | null</td><td>Дата фактической оплаты</td></tr>
+              <tr><td>notes</td><td>string</td><td>Комментарий</td></tr>
+              <tr><td>history[]</td><td>array</td><td>История: { id, status, changedAt, comment } — автоматически обновляется при смене статуса</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:10px">
+            <span class="field-tag highlight">Итого: Всего / Оплачено / Осталось / Отклонено</span>
+            <span class="field-tag">+ платёж</span>
+            <span class="field-tag">сохранить</span>
+            <span class="field-tag green">PDF-экспорт → POST /api/pdf/[projectId] { type: "payment" }</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Work Status ── -->
+      <div class="pages-grid">
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">✅ Статусы работ</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Компонент: <code>AdminWorkStatus.vue</code> · API: <code>GET/PUT /api/projects/[slug]/work-status</code></div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Каждая задача содержит</div>
+              <div class="field-tags">
+                <span class="field-tag">id (uuid)</span>
+                <span class="field-tag">Название задачи</span>
+                <span class="field-tag">contractorId (привязка)</span>
+                <span class="field-tag amber">ожидание</span>
+                <span class="field-tag highlight">в работе</span>
+                <span class="field-tag red">на проверке ← badge</span>
+                <span class="field-tag green">принято</span>
+                <span class="field-tag">пропущено</span>
+                <span class="field-tag">Дата начала</span>
+                <span class="field-tag">Дата конца</span>
+                <span class="field-tag">Бюджет (строка с парсингом)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Roadmap -->
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">🗺 Дорожная карта</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Компонент: <code>AdminRoadmap.vue</code> · API: <code>GET/PUT /api/projects/[slug]/roadmap</code></div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Каждый этап содержит</div>
+              <div class="field-tags">
+                <span class="field-tag">id (uuid)</span>
+                <span class="field-tag">Сценарий (тип этапа)</span>
+                <span class="field-tag">Название</span>
+                <span class="field-tag amber">ожидание</span>
+                <span class="field-tag highlight">в работе</span>
+                <span class="field-tag green">выполнено</span>
+                <span class="field-tag">пропущено</span>
+                <span class="field-tag">Дата начала</span>
+                <span class="field-tag">Дата конца</span>
+                <span class="field-tag">Заметки</span>
+              </div>
+            </div>
+            <div class="field-section">
+              <div class="field-section-title">Пикер шаблонов</div>
+              <div class="field-tags">
+                <span class="field-tag">GET /api/roadmap-templates → список → превью этапов → применить</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Notifications ── -->
+      <div class="pages-grid" id="admin-notifications">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">🔔 Система уведомлений <span class="field-tag green" style="font-size:10px">реализовано</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+            API: <code>GET /api/notifications</code> · <code>POST /api/notifications/[id]/read</code> · <code>POST /api/notifications/read-all</code><br>
+            Уведомления хранятся в таблице <code>notifications</code> в PostgreSQL.
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Параметр / поле</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>role</td><td>admin | customer | contractor | all — кому показывается</td></tr>
+              <tr><td>projectId</td><td>Привязка к проекту (для клиентских уведомлений)</td></tr>
+              <tr><td>contractorId</td><td>Привязка к подрядчику (для уведомлений подрядчику)</td></tr>
+              <tr><td>isRead</td><td>boolean — прочитано</td></tr>
+              <tr><td>GET ?page=&limit=&unread=1</td><td>Пагинация, фильтр только непрочитанных</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:10px">
+            <span class="field-tag highlight">Каждая роль видит только свои уведомления (middleware-фильтр в API)</span>
+            <span class="field-tag">«Отметить все прочитанными»</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PDF Export ── -->
+      <div class="pages-grid" id="admin-pdf">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">📄 PDF-экспорт <span class="field-tag green" style="font-size:10px">реализовано</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+            API: <code>POST /api/pdf/[projectId]</code> body: <code>{ type: "tz" | "roadmap" | "payment" }</code><br>
+            Генерация через PDFKit (Node.js). Файл сохраняется в <code>public/uploads/pdf/</code> и отдаётся URL.
+          </div>
+          <table class="info-table">
+            <thead><tr><th>type</th><th>Содержимое PDF</th></tr></thead>
+            <tbody>
+              <tr><td>tz</td><td>Техническое задание проекта — разделы, вопросы, ответы из page_content</td></tr>
+              <tr><td>roadmap</td><td>Дорожная карта — все этапы с датами, статусами, заметками</td></tr>
+              <tr><td>payment</td><td>Список платежей с историей статусов и итогами</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:10px">
+            <span class="field-tag">Лог экспорта сохраняется в <code>project.profile.exportLog</code></span>
+            <span class="field-tag highlight">Кнопка «pdf» в AdminPayments сразу вызывает POST</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Contractors + matching ── -->
+      <div class="pages-grid" id="admin-contractors">
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">👷 Подрядчики / Sellers</div>
+            <span class="page-card-path">/admin/contractors</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">API: <code>GET/POST/PUT/DELETE /api/contractors/[id]</code></div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Карточка подрядчика</div>
+              <div class="field-tags">
+                <span class="field-tag">name / slug</span>
+                <span class="field-tag">companyName</span>
+                <span class="field-tag">contactPerson</span>
+                <span class="field-tag">PIN (для входа)</span>
+                <span class="field-tag">workTypes[]</span>
+                <span class="field-tag">phone / email</span>
+                <span class="field-tag">messenger / messengerHandle</span>
+                <span class="field-tag">website</span>
+                <span class="field-tag">city / district</span>
+                <span class="field-tag">legalAddress / actualAddress</span>
+                <span class="field-tag">inn / ogrn / bankDetails</span>
+                <span class="field-tag">rating (0–5)</span>
+                <span class="field-tag">notes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contractor matching -->
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">🔍 Умный поиск подрядчиков <span class="field-tag green" style="font-size:10px">реализовано</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">API: <code>GET /api/contractors/match</code></div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Параметры запроса</div>
+              <div class="field-tags">
+                <span class="field-tag">search — текстовый поиск (name, company)</span>
+                <span class="field-tag">city</span>
+                <span class="field-tag">workType</span>
+                <span class="field-tag">minRating</span>
+                <span class="field-tag">page / limit</span>
+              </div>
+            </div>
+            <div class="field-section">
+              <div class="field-section-title">Ответ — ScoredContractor[]</div>
+              <div class="field-tags">
+                <span class="field-tag highlight">score — взвешенная оценка (search + city + workType + rating)</span>
+                <span class="field-tag">scoreBreakdown — разбивка по критериям</span>
+                <span class="field-tag">reasons[] — объяснение почему выбран</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pages config -->
+        <div class="page-card" id="admin-pages">
+          <div class="page-card-header">
+            <div class="page-card-title">⚙ Конфигуратор страниц</div>
+            <span class="page-card-path">/admin/pages</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Управляет мета-данными страниц: slug, заголовок, порядок, размер шрифта. API: <code>GET/PUT /api/page-configs</code></div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Каждая запись</div>
+              <div class="field-tags">
+                <span class="field-tag">slug</span>
+                <span class="field-tag">Название в меню</span>
+                <span class="field-tag">Заголовок страницы</span>
+                <span class="field-tag">Размер шрифта (px)</span>
+                <span class="field-tag">Порядок сортировки</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Templates -->
+        <div class="page-card" id="admin-templates">
+          <div class="page-card-header">
+            <div class="page-card-title">📋 Шаблоны роадмапов</div>
+            <span class="page-card-path">/admin/roadmap-templates</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">API: <code>GET/POST/PUT/DELETE /api/roadmap-templates/[id]</code></div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>name</td><td>Название сценария</td></tr>
+              <tr><td>objectType</td><td>квартира / дом / апартаменты / …</td></tr>
+              <tr><td>clientType</td><td>категория заказчика</td></tr>
+              <tr><td>complexity</td><td>уровень</td></tr>
+              <tr><td>description</td><td>свободный текст</td></tr>
+              <tr><td>stages[]</td><td>Название · Тип · Описание</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag">встроенные — только просмотр / клонирование</span>
+            <span class="field-tag highlight">пользовательские — полное редактирование и удаление</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ CLIENT ═══════════════════════════════ -->
+    <section class="role-section" id="client">
+      <div class="role-header">
+        <div class="role-dot dot-client"></div>
+        <h2>Клиент (личный кабинет)</h2>
+        <span class="role-path">/client/[slug]/*</span>
+      </div>
+
+      <div class="sidebar-preview">
+        <div class="sidebar-preview-title">Навигация клиента — боковой сайдбар (реализовано)</div>
+        <div class="sidebar-preview-body">
+          <div class="sidebar-mock">
+            <div class="sidebar-mock-group" style="padding-top:8px">
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;letter-spacing:1px;text-transform:uppercase">Мой проект</div>
+              <div class="sidebar-mock-item active-item"><span class="s-icon">◈</span> обзор</div>
+              <div class="sidebar-mock-item"><span class="s-icon">📦</span> Материалы</div>
+              <div class="sidebar-mock-item"><span class="s-icon">📝</span> Тех. задание</div>
+              <div class="sidebar-mock-item"><span class="s-icon">👤</span> Мой профиль</div>
+              <div class="sidebar-mock-item"><span class="s-icon">👷</span> Подрядчики</div>
+              <div class="sidebar-mock-item"><span class="s-icon">✅</span> Статусы работ</div>
+              <div class="sidebar-mock-item"><span class="s-icon">🗺</span> Дорожная карта</div>
+            </div>
+            <div style="margin-top:auto;padding-top:12px;border-top:1px solid #f0f0ee;margin:12px 0 0">
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">🔔 уведомления</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">● тема</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">→ выйти</div>
+            </div>
+          </div>
+          <div class="sidebar-preview-desc">
+            Клиент видит только разделы, включённые для его проекта (<code>project.pages[]</code>).<br>
+            Все данные — <strong>только для чтения</strong>, редактирование недоступно.<br><br>
+            Вход — по slug проекта + PIN-коду (<code>/client/login</code>).<br>
+            После входа → <code>/client/[slug]</code> — главная с обзором фаз и подрядчиков.<br><br>
+            <strong>Уведомления</strong> — только для своего проекта (role = customer | all, projectId = свой).
+          </div>
+        </div>
+      </div>
+
+      <div class="pages-grid">
+        <div class="page-card" id="client-home">
+          <div class="page-card-header">
+            <div class="page-card-title">🏠 Обзор проекта</div>
+            <span class="page-card-path">/client/[slug]</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Компонент: <code>ClientOverview.vue</code></div>
+          <div class="field-tags">
+            <span class="field-tag green">Название + статус проекта</span>
+            <span class="field-tag">Прогресс по фазам (группы + выполнено/всего)</span>
+            <span class="field-tag">Список команды (подрядчики)</span>
+            <span class="field-tag">Быстрые ссылки на разделы</span>
+          </div>
+        </div>
+
+        <div class="page-card" id="client-pages">
+          <div class="page-card-header">
+            <div class="page-card-title">📄 Страницы проекта (чтение)</div>
+            <span class="page-card-path">/client/[slug] → activePage</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Диспетчер: <code>PAGE_COMPONENT_MAP</code> в <code>client/[slug]/index.vue</code></div>
+          <table class="info-table">
+            <thead><tr><th>Slug</th><th>Компонент</th><th>Содержимое</th></tr></thead>
+            <tbody>
+              <tr><td>phase_init</td><td><code>ClientInitiation</code></td><td>Инициация проекта</td></tr>
+              <tr><td>self_profile / brief</td><td><code>ClientSelfProfile</code></td><td>Профиль клиента (только чтение)</td></tr>
+              <tr><td>client_contacts</td><td><code>ClientContactDetails</code></td><td>Контакты</td></tr>
+              <tr><td>client_passport</td><td><code>ClientPassport</code></td><td>Паспортные данные</td></tr>
+              <tr><td>client_brief</td><td><code>ClientBrief</code></td><td>Бриф</td></tr>
+              <tr><td>client_tz</td><td><code>ClientTZ</code></td><td>ТЗ (только чтение)</td></tr>
+              <tr><td>contracts</td><td><code>ClientContracts</code></td><td>Договор + счёт + ТЗ (read-only)</td></tr>
+              <tr><td>work_progress</td><td><code>ClientWorkProgress</code></td><td>Ход работ</td></tr>
+              <tr><td>design_timeline</td><td><code>ClientTimeline</code></td><td>Таймлайн</td></tr>
+              <tr><td>design_album</td><td><code>ClientDesignAlbum</code></td><td>Дизайн-альбом</td></tr>
+              <tr><td>work_status</td><td><code>ClientWorkStatus</code></td><td>Статусы задач (только чтение)</td></tr>
+              <tr><td>roadmap / project_roadmap</td><td><code>ClientRoadmap</code></td><td>Дорожная карта (только чтение)</td></tr>
+              <tr><td>остальные</td><td><code>ClientPageContent</code></td><td>Контент страницы из page_content</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ CONTRACTOR ═══════════════════════════ -->
+    <section class="role-section" id="contractor">
+      <div class="role-header">
+        <div class="role-dot dot-contractor"></div>
+        <h2>Подрядчик</h2>
+        <span class="role-path">/contractor/[id]</span>
+      </div>
+
+      <div class="sidebar-preview">
+        <div class="sidebar-preview-title">Интерфейс подрядчика — минималистичный</div>
+        <div class="sidebar-preview-body">
+          <div class="sidebar-mock" style="width:140px">
+            <div class="sidebar-mock-group" style="padding-top:8px">
+              <div class="sidebar-mock-item active-item"><span class="s-icon">🔨</span> Мои задачи</div>
+            </div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0ee">
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">🔔 уведомления</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">● тема</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">→ выйти</div>
+            </div>
+          </div>
+          <div class="sidebar-preview-desc">
+            Вход по PIN-коду (<code>/contractor/login</code>).<br>
+            Подрядчик видит только свои назначенные задачи.<br>
+            Задачи: только просмотр (без редактирования).<br><br>
+            Планируется: подрядчик может менять статус задачи («на проверке»).<br>
+            <strong>Уведомления</strong> — role = contractor | all, contractorId = свой.
+          </div>
+        </div>
+      </div>
+
+      <div class="pages-grid" id="contractor-page">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">🔨 Задачи подрядчика</div>
+            <span class="page-card-path">/contractor/[id]</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Имя + название компании в заголовке. API: <code>GET /api/contractors/[id]/work-status</code></div>
+          <table class="info-table">
+            <thead><tr><th>Поле задачи</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>title</td><td>Название</td></tr>
+              <tr><td>status</td><td>pending / planned / in_progress / done / paused / cancelled</td></tr>
+              <tr><td>startDate / endDate</td><td>Период</td></tr>
+              <tr><td>budget</td><td>Сумма проекта по задаче</td></tr>
+              <tr><td>notes</td><td>Заметки</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:10px">
+            <span class="field-tag amber">Только просмотр — без редактирования</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ MODULES ═══════════════════════════════ -->
+    <section id="modules">
+      <div class="role-header">
+        <h2>🧩 Модули — план рефакторинга</h2>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:20px">
+        Текущий проект: единый монолит (~60 компонентов, ~95 API-маршрутов). Ниже — предложение разбивки по логическим модулям для упрощения поддержки.
+      </div>
+      <div class="pages-grid">
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">📦 Модуль: auth</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Аутентификация всех ролей</div>
+          <div class="field-tags">
+            <span class="field-tag">server/api/auth/ (login, logout, session)</span>
+            <span class="field-tag">server/utils/auth.ts</span>
+            <span class="field-tag">app/stores/auth.ts</span>
+            <span class="field-tag">app/middleware/ (admin, client, contractor)</span>
+            <span class="field-tag">pages/admin/login, client/login, contractor/login</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">📁 Модуль: projects</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Ядро: CRUD проектов + фазы</div>
+          <div class="field-tags">
+            <span class="field-tag">server/api/projects/</span>
+            <span class="field-tag">server/db/schema.ts (projects, pageContent)</span>
+            <span class="field-tag">shared/constants/pages.ts</span>
+            <span class="field-tag">pages/admin/projects/[slug].vue</span>
+            <span class="field-tag">AdminProjectOverview, AdminProjectPhase, AdminPhaseDetail</span>
+            <span class="field-tag">все AdminXxx-страницы фаз</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">✅ Модуль: work-status</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Задачи / статусы работ</div>
+          <div class="field-tags">
+            <span class="field-tag">server/api/projects/[slug]/work-status.put.ts</span>
+            <span class="field-tag">AdminWorkStatus.vue</span>
+            <span class="field-tag">ClientWorkStatus.vue</span>
+            <span class="field-tag">shared/types/work_status.ts</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">💳 Модуль: payments</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Платежи + история + PDF</div>
+          <div class="field-tags">
+            <span class="field-tag">server/api/projects/[slug]/payments.get.ts</span>
+            <span class="field-tag">server/api/projects/[slug]/payments.put.ts</span>
+            <span class="field-tag">server/api/pdf/[projectId].post.ts</span>
+            <span class="field-tag">AdminPayments.vue</span>
+            <span class="field-tag">server/db/schema.ts (payments, paymentHistory)</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">🗺 Модуль: roadmap</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Дорожная карта + шаблоны</div>
+          <div class="field-tags">
+            <span class="field-tag">server/api/projects/[slug]/roadmap.*</span>
+            <span class="field-tag">server/api/roadmap-templates/</span>
+            <span class="field-tag">server/utils/roadmap-templates.ts</span>
+            <span class="field-tag">AdminRoadmap.vue</span>
+            <span class="field-tag">ClientRoadmap.vue</span>
+            <span class="field-tag">pages/admin/roadmap-templates/</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">👷 Модуль: contractors</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Справочник + matching + кабинет</div>
+          <div class="field-tags">
+            <span class="field-tag">server/api/contractors/</span>
+            <span class="field-tag">server/api/contractors/match.get.ts</span>
+            <span class="field-tag">AdminContractorsProfile.vue</span>
+            <span class="field-tag">pages/admin/contractors/</span>
+            <span class="field-tag">pages/contractor/</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">📊 Модуль: kpi</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Аналитика и дашборд</div>
+          <div class="field-tags">
+            <span class="field-tag">server/api/admin/kpi.get.ts</span>
+            <span class="field-tag">AdminKPIDashboard.vue</span>
+            <span class="field-tag">parseBudget (утилита в kpi.get.ts)</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">🔔 Модуль: notifications</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Уведомления всех ролей</div>
+          <div class="field-tags">
+            <span class="field-tag">server/api/notifications/index.get.ts</span>
+            <span class="field-tag">server/api/notifications/[id]/read.post.ts</span>
+            <span class="field-tag">server/api/notifications/read-all.post.ts</span>
+            <span class="field-tag">server/utils/notify.ts</span>
+            <span class="field-tag">server/db/schema.ts (notifications)</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">👤 Модуль: clients</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Кабинет клиента + профиль</div>
+          <div class="field-tags">
+            <span class="field-tag">pages/client/[slug]/</span>
+            <span class="field-tag">pages/admin/clients/</span>
+            <span class="field-tag">AdminClientProfile.vue</span>
+            <span class="field-tag">Client*.vue (13 компонентов)</span>
+            <span class="field-tag">server/api/public/ (public project data)</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">📄 Модуль: pdf-export</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Генерация PDFKit</div>
+          <div class="field-tags">
+            <span class="field-tag">server/api/pdf/[projectId].post.ts</span>
+            <span class="field-tag">PDFKit (pdfkit npm)</span>
+            <span class="field-tag">public/uploads/pdf/ (хранилище)</span>
+            <span class="field-tag">types: tz | roadmap | payment</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">🎨 Модуль: ui-primitives</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Переиспользуемые UI-компоненты</div>
+          <div class="field-tags">
+            <span class="field-tag">AppAutocomplete.vue</span>
+            <span class="field-tag">AppDatePicker.vue</span>
+            <span class="field-tag">AppAddressInput.vue</span>
+            <span class="field-tag">UIThemeToggle.vue</span>
+            <span class="field-tag">app/assets/css/main.css (~2055 строк)</span>
+          </div>
+        </div>
+        <div class="page-card">
+          <div class="page-card-header"><div class="page-card-title">🗄 Модуль: db / shared</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">БД и типы</div>
+          <div class="field-tags">
+            <span class="field-tag">server/db/schema.ts (Drizzle ORM)</span>
+            <span class="field-tag">server/db/index.ts (connection)</span>
+            <span class="field-tag">server/db/types.ts</span>
+            <span class="field-tag">shared/types/ (auth, catalogs, phase-steps, work_status)</span>
+            <span class="field-tag">shared/constants/pages.ts</span>
+            <span class="field-tag">drizzle.config.ts + ecosystem.config.cjs</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ API MAP ═══════════════════════════════ -->
+    <section id="api-map">
+      <div class="role-header">
+        <h2>🔌 API-маршруты (краткая карта)</h2>
+      </div>
+      <div class="pages-grid">
+        <div class="page-card full">
+          <table class="info-table">
+            <thead><tr><th>Группа</th><th>Маршруты</th><th>Роль</th></tr></thead>
+            <tbody>
+              <tr><td>auth</td><td>POST /api/auth/login · POST /api/auth/logout · GET /api/auth/session</td><td>all</td></tr>
+              <tr><td>projects</td><td>GET/POST /api/projects · GET/PUT/DELETE /api/projects/[slug]</td><td>admin</td></tr>
+              <tr><td>page-content</td><td>GET/PUT /api/projects/[slug]/page-content?page=</td><td>admin</td></tr>
+              <tr><td>work-status</td><td>PUT /api/projects/[slug]/work-status</td><td>admin</td></tr>
+              <tr><td>payments</td><td>GET/PUT /api/projects/[slug]/payments</td><td>admin</td></tr>
+              <tr><td>roadmap</td><td>GET/PUT /api/projects/[slug]/roadmap</td><td>admin + client (read)</td></tr>
+              <tr><td>contractors (on project)</td><td>GET/POST/DELETE /api/projects/[slug]/contractors</td><td>admin</td></tr>
+              <tr><td>clients (on project)</td><td>GET/POST/DELETE /api/projects/[slug]/clients</td><td>admin</td></tr>
+              <tr><td>contractors</td><td>GET/POST/PUT/DELETE /api/contractors/[id] · GET /api/contractors/match</td><td>admin</td></tr>
+              <tr><td>kpi</td><td>GET /api/admin/kpi?projectSlug=</td><td>admin</td></tr>
+              <tr><td>notifications</td><td>GET /api/notifications · POST /api/notifications/[id]/read · POST /api/notifications/read-all</td><td>all</td></tr>
+              <tr><td>pdf</td><td>POST /api/pdf/[projectId] { type }</td><td>admin</td></tr>
+              <tr><td>page-configs</td><td>GET/PUT /api/page-configs</td><td>admin</td></tr>
+              <tr><td>roadmap-templates</td><td>GET/POST/PUT/DELETE /api/roadmap-templates/[id]</td><td>admin</td></tr>
+              <tr><td>public</td><td>GET /api/public/project/[slug] · GET /api/public/roadmap/[slug]</td><td>client (no auth)</td></tr>
+              <tr><td>upload</td><td>POST /api/upload</td><td>admin</td></tr>
+              <tr><td>suggestions</td><td>GET /api/suggestions?q= · GET /api/suggest/address</td><td>admin</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ SITEMAP ═══════════════════════════════ -->
+    <section id="sitemap">
+      <div class="role-header">
+        <h2>Схема навигации</h2>
+      </div>
+      <div class="flow-wrap">
+        <div class="flow-title">Полная карта маршрутов по ролям</div>
+        <div class="flow-roles">
+          <div class="flow-col">
+            <div class="flow-col-title">
+              <div class="role-dot dot-admin"></div>
+              Администратор
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin/login</div>
+              <div class="flow-item-desc">Вход (login + password)</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--admin)">
+              <div class="flow-item-path">/admin</div>
+              <div class="flow-item-desc">Dashboard KPI + Список проектов</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--admin)">
+              <div class="flow-item-path">/admin/projects/[slug]</div>
+              <div class="flow-item-desc">Карточка проекта (фазы + платежи + подрядчики)</div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin/contractors</div>
+              <div class="flow-item-desc">Справочник подрядчиков + умный поиск</div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin/clients</div>
+              <div class="flow-item-desc">Список клиентов + карточка</div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin/pages</div>
+              <div class="flow-item-desc">⚙ Конфигуратор страниц</div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin/roadmap-templates</div>
+              <div class="flow-item-desc">⚙ Шаблоны роадмапов</div>
+            </div>
+          </div>
+
+          <div class="flow-col">
+            <div class="flow-col-title">
+              <div class="role-dot dot-client"></div>
+              Клиент
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/client/login</div>
+              <div class="flow-item-desc">Вход по slug + PIN</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--client)">
+              <div class="flow-item-path">/client/[slug]</div>
+              <div class="flow-item-desc">Обзор проекта + навигация по разделам</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--client)">
+              <div class="flow-item-path">activePage = work_status</div>
+              <div class="flow-item-desc">Статусы работ (read-only)</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--client)">
+              <div class="flow-item-path">activePage = roadmap</div>
+              <div class="flow-item-desc">Дорожная карта (read-only)</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--client)">
+              <div class="flow-item-path">activePage = contracts</div>
+              <div class="flow-item-desc">Договор (read-only)</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--client)">
+              <div class="flow-item-path">activePage = …</div>
+              <div class="flow-item-desc">Любой разрешённый раздел из project.pages[]</div>
+            </div>
+          </div>
+
+          <div class="flow-col">
+            <div class="flow-col-title">
+              <div class="role-dot dot-contractor"></div>
+              Подрядчик
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/contractor/login</div>
+              <div class="flow-item-desc">Вход по PIN</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--contractor)">
+              <div class="flow-item-path">/contractor/[id]</div>
+              <div class="flow-item-desc">Список назначенных задач (чтение)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ══════════════════════════════════════ DATABASE ══════════════════════════════ -->
+    <section class="role-section" id="database">
+      <div class="role-header">
+        <div class="role-dot" style="background:#64748b"></div>
+        <h2>База данных</h2>
+        <span class="role-path">PostgreSQL · Drizzle ORM · UUID · JSONB</span>
+      </div>
+
+      <div style="font-size:12px;color:var(--muted);margin-bottom:20px">
+        Файл: <code>server/db/schema.ts</code>. 15 таблиц. Первичные ключи — UUID (<code>gen_random_uuid()</code>). Гибкие поля — JSONB. Все relation-связи описаны через Drizzle <code>relations()</code>.
+      </div>
+
+      <!-- users + contractors -->
+      <div class="pages-grid">
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">👤 users</div>
+            <span class="page-card-path">роли пользователей</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td>gen_random_uuid()</td></tr>
+              <tr><td>role</td><td><code>enum</code></td><td>admin | customer | contractor</td></tr>
+              <tr><td>email</td><td><code>text unique</code></td><td>Основной логин</td></tr>
+              <tr><td>login</td><td><code>text unique</code></td><td>Альтернативный логин</td></tr>
+              <tr><td>passwordHash</td><td><code>text</code></td><td>bcryptjs, rounds=12</td></tr>
+              <tr><td>name, phone</td><td><code>text</code></td><td>Отображаемые данные</td></tr>
+              <tr><td>lastLoginAt</td><td><code>timestamptz</code></td><td>Последний вход</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag">idx_users_role</span>
+            <span class="field-tag">idx_users_email</span>
+            <span class="field-tag highlight">→ projects (many) · contractorProfile (one)</span>
+          </div>
+        </div>
+
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">🔨 contractors</div>
+            <span class="page-card-path">профиль подрядчика</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>userId</td><td><code>uuid FK→users</code></td><td>SET NULL при удалении</td></tr>
+              <tr><td>slug</td><td><code>text unique</code></td><td>URL: /contractor/ivan-petrov</td></tr>
+              <tr><td>name</td><td><code>text</code></td><td>Имя / псевдоним</td></tr>
+              <tr><td>companyName, inn, kpp, ogrn</td><td><code>text</code></td><td>Юридические данные</td></tr>
+              <tr><td>bankName, bik, settlementAccount, correspondentAccount</td><td><code>text</code></td><td>Банковские реквизиты</td></tr>
+              <tr><td>legalAddress, factAddress</td><td><code>text</code></td><td>Адреса</td></tr>
+              <tr><td>city, district</td><td><code>text</code></td><td>Гео (будущий PostGIS)</td></tr>
+              <tr><td>workTypes</td><td><code>text[]</code></td><td>Массив типов работ</td></tr>
+              <tr><td>rating</td><td><code>numeric(3,2)</code></td><td>0.00–5.00</td></tr>
+              <tr><td>pin</td><td><code>text</code></td><td>Вход по QR/ссылке без пароля</td></tr>
+              <tr><td>messenger, messengerNick, website</td><td><code>text</code></td><td>Контакты</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag">idx_contractors_city</span>
+            <span class="field-tag">idx_contractors_user_id</span>
+            <span class="field-tag amber">→ specialties (M2M) · projectContractors (M2M)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- specialties + contractor_specialties + project_contractors -->
+      <div class="pages-grid">
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">🏷 specialties</div>
+            <span class="page-card-path">справочник специальностей</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td></tr>
+              <tr><td>slug</td><td><code>text unique</code></td></tr>
+              <tr><td>name</td><td><code>text unique</code></td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:10px">
+            <div class="page-card" style="border:none;padding:0;margin-top:8px">
+              <div style="font-size:11px;font-weight:500;margin-bottom:6px">🔗 contractor_specialties <span style="color:var(--muted);font-weight:400">(M2M)</span></div>
+              <div class="field-tags">
+                <span class="field-tag">contractorId FK</span>
+                <span class="field-tag">specialtyId FK</span>
+                <span class="field-tag green">UNIQUE(contractorId, specialtyId)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">🔗 project_contractors</div>
+            <span class="page-card-path">M2M: проект ↔ подрядчик</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>projectId</td><td><code>uuid FK→projects</code></td><td>CASCADE</td></tr>
+              <tr><td>contractorId</td><td><code>uuid FK→contractors</code></td><td>CASCADE</td></tr>
+              <tr><td>role</td><td><code>text</code></td><td>Роль в проекте</td></tr>
+              <tr><td>assignedAt</td><td><code>timestamptz</code></td><td></td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag green">UNIQUE(projectId, contractorId)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- projects -->
+      <div class="pages-grid">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">📁 projects</div>
+            <span class="page-card-path">проекты заказчиков</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>customerId</td><td><code>uuid FK→users</code></td><td>SET NULL при удалении клиента</td></tr>
+              <tr><td>slug</td><td><code>text unique</code></td><td>URL: /client/my-apartment</td></tr>
+              <tr><td>title</td><td><code>text</code></td><td>Название проекта</td></tr>
+              <tr><td>status</td><td><code>enum</code></td><td>lead | active | paused | done | cancelled</td></tr>
+              <tr><td>clientPin</td><td><code>text</code></td><td>Доступ по ссылке без пароля</td></tr>
+              <tr><td>pages</td><td><code>text[]</code></td><td>Slug'и подключённых страниц (порядок = меню)</td></tr>
+              <tr><td>profile</td><td><code>jsonb</code></td><td>Профиль клиента (имя, бюджет, сроки и т.д.) — структура ClientProfile</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag">idx_projects_customer_id</span>
+            <span class="field-tag">idx_projects_status</span>
+            <span class="field-tag highlight">→ pageContent · projectContractors · workStatusItems · roadmapStages · uploads · questionnaires · materials · notifications</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- page_configs + page_content -->
+      <div class="pages-grid">
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">⚙ page_configs</div>
+            <span class="page-card-path">глобальные настройки CMS-страниц</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td></tr>
+              <tr><td>slug</td><td><code>text unique</code></td></tr>
+              <tr><td>title, pageTitle</td><td><code>text</code></td></tr>
+              <tr><td>fontSize</td><td><code>int default 16</code></td></tr>
+              <tr><td>sortOrder</td><td><code>int default 0</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">📄 page_content</div>
+            <span class="page-card-path">контент CMS-страниц на проект</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>projectId</td><td><code>uuid FK→projects</code></td><td>CASCADE</td></tr>
+              <tr><td>pageSlug</td><td><code>text</code></td><td>Идентификатор страницы</td></tr>
+              <tr><td>content</td><td><code>jsonb</code></td><td>Гибкий контент (структура зависит от страницы)</td></tr>
+              <tr><td>updatedAt</td><td><code>timestamptz</code></td><td></td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag green">UNIQUE(projectId, pageSlug)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- questionnaires + roadmap_stages -->
+      <div class="pages-grid">
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">📋 questionnaires</div>
+            <span class="page-card-path">анкеты клиентов и подрядчиков</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>projectId</td><td><code>uuid FK→projects</code></td><td>CASCADE</td></tr>
+              <tr><td>userId</td><td><code>uuid FK→users</code></td><td>Чья анкета</td></tr>
+              <tr><td>type</td><td><code>enum</code></td><td>client_brief | contractor_profile</td></tr>
+              <tr><td>data</td><td><code>jsonb GIN</code></td><td>Все поля анкеты (поиск: data @&gt; '{"city":"Москва"}')</td></tr>
+              <tr><td>status</td><td><code>enum</code></td><td>draft | submitted | approved | rejected</td></tr>
+              <tr><td>reviewComment</td><td><code>text</code></td><td>Комментарий при ревью</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag">idx_questionnaires_data_gin</span>
+            <span class="field-tag">idx_questionnaires_status</span>
+          </div>
+        </div>
+
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">🗺 roadmap_stages</div>
+            <span class="page-card-path">этапы дорожной карты</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>projectId</td><td><code>uuid FK→projects</code></td><td>CASCADE</td></tr>
+              <tr><td>stageKey</td><td><code>text</code></td><td>Ключ шаблона (design, demolition…)</td></tr>
+              <tr><td>title, description, notes</td><td><code>text</code></td><td></td></tr>
+              <tr><td>status</td><td><code>enum</code></td><td>pending | in_progress | done | skipped | delayed</td></tr>
+              <tr><td>dateStart, dateEnd</td><td><code>text ISO</code></td><td>YYYY-MM-DD (без TZ)</td></tr>
+              <tr><td>sortOrder</td><td><code>int</code></td><td>Порядок в UI</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- work_status_items + materials -->
+      <div class="pages-grid">
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">✅ work_status_items</div>
+            <span class="page-card-path">задания подрядчикам</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>projectId</td><td><code>uuid FK→projects</code></td><td>CASCADE</td></tr>
+              <tr><td>contractorId</td><td><code>uuid FK→contractors</code></td><td>SET NULL (задание без исполнителя)</td></tr>
+              <tr><td>title</td><td><code>text</code></td><td>Название задания</td></tr>
+              <tr><td>status</td><td><code>enum</code></td><td>pending | in_progress | done | cancelled | blocked</td></tr>
+              <tr><td>dateStart, dateEnd</td><td><code>text ISO</code></td><td></td></tr>
+              <tr><td>budget</td><td><code>text</code></td><td>Может быть диапазоном: «50 000–80 000 ₽»</td></tr>
+              <tr><td>notes</td><td><code>text</code></td><td></td></tr>
+              <tr><td>sortOrder</td><td><code>int</code></td><td></td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag">idx_work_status_items_project_id</span>
+            <span class="field-tag">idx_work_status_items_contractor_id</span>
+          </div>
+        </div>
+
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">🎨 materials</div>
+            <span class="page-card-path">материалы и отделка проекта</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>projectId</td><td><code>uuid FK→projects</code></td><td>CASCADE</td></tr>
+              <tr><td>category</td><td><code>text</code></td><td>цвет / ткань / мебель / плитка…</td></tr>
+              <tr><td>name</td><td><code>text</code></td><td>Название</td></tr>
+              <tr><td>description</td><td><code>text</code></td><td></td></tr>
+              <tr><td>meta</td><td><code>jsonb</code></td><td>Цена, поставщик, артикул, цвет…</td></tr>
+              <tr><td>approved</td><td><code>boolean</code></td><td>Одобрено клиентом</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- uploads + audit_logs + notifications -->
+      <div class="pages-grid">
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">📎 uploads</div>
+            <span class="page-card-path">загруженные файлы и фото</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>uploadedBy</td><td><code>uuid FK→users</code></td><td>SET NULL</td></tr>
+              <tr><td>projectId</td><td><code>uuid FK→projects</code></td><td>CASCADE</td></tr>
+              <tr><td>filename</td><td><code>text</code></td><td>Имя на диске (уникальное, с timestamp)</td></tr>
+              <tr><td>originalName</td><td><code>text</code></td><td>Оригинальное имя при загрузке</td></tr>
+              <tr><td>mimeType, sizeBytes</td><td><code>text / int</code></td><td></td></tr>
+              <tr><td>context</td><td><code>text</code></td><td>material_photo | work_photo | avatar…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">🔔 notifications</div>
+            <span class="page-card-path">уведомления системы</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>role</td><td><code>enum</code></td><td>admin | customer | contractor | all</td></tr>
+              <tr><td>projectId</td><td><code>uuid FK</code></td><td>SET NULL</td></tr>
+              <tr><td>contractorId</td><td><code>uuid FK</code></td><td>SET NULL</td></tr>
+              <tr><td>title, message</td><td><code>text</code></td><td></td></tr>
+              <tr><td>source, entityType, entityId</td><td><code>text</code></td><td>Источник и сущность события</td></tr>
+              <tr><td>isRead</td><td><code>boolean</code></td><td>default false</td></tr>
+              <tr><td>readAt</td><td><code>timestamptz</code></td><td></td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag">idx_notifications_role</span>
+            <span class="field-tag">idx_notifications_is_read</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- audit_logs -->
+      <div class="pages-grid">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">📋 audit_logs</div>
+            <span class="page-card-path">журнал действий</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td><code>uuid PK</code></td><td></td></tr>
+              <tr><td>userId</td><td><code>uuid FK→users</code></td><td>SET NULL — кто совершил (NULL = system/anonymous)</td></tr>
+              <tr><td>action</td><td><code>text</code></td><td>Машинное имя: project.create · contractor.assign · questionnaire.approve</td></tr>
+              <tr><td>entityType</td><td><code>text</code></td><td>Тип сущности (project, contractor…)</td></tr>
+              <tr><td>entityId</td><td><code>text</code></td><td>UUID затронутой сущности</td></tr>
+              <tr><td>details</td><td><code>jsonb</code></td><td>Старое/новое значение, IP и т.д.</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:8px">
+            <span class="field-tag">idx_audit_logs_user_id</span>
+            <span class="field-tag">idx_audit_logs_entity (entityType, entityId)</span>
+            <span class="field-tag">idx_audit_logs_action</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ER-схема связей -->
+      <div class="pages-grid">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">🔗 Связи между таблицами</div>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Таблица</th><th>Связи</th></tr></thead>
+            <tbody>
+              <tr><td>users</td><td>→ projects (1:M) · → contractors (1:1) · → uploads · → audit_logs · → questionnaires</td></tr>
+              <tr><td>contractors</td><td>→ users (1:1) · ↔ specialties (M2M) · ↔ projects (M2M через project_contractors) · → work_status_items</td></tr>
+              <tr><td>projects</td><td>→ users (M:1) · → page_content (1:M) · ↔ contractors (M2M) · → work_status_items · → roadmap_stages · → uploads · → questionnaires · → materials · → notifications</td></tr>
+              <tr><td>page_content</td><td>→ projects (M:1) · UNIQUE(projectId, pageSlug)</td></tr>
+              <tr><td>questionnaires</td><td>→ projects · → users · jsonb data с GIN-индексом</td></tr>
+              <tr><td>work_status_items</td><td>→ projects · → contractors (nullable)</td></tr>
+              <tr><td>notifications</td><td>→ projects · → contractors · фильтр по role</td></tr>
+              <tr><td>audit_logs</td><td>→ users · индекс по (entityType, entityId) для истории любой сущности</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+    <section class="role-section" id="admin">
+      <div class="role-header">
+        <div class="role-dot dot-admin"></div>
+        <h2>Администратор</h2>
+        <span class="role-path">/admin/*</span>
+      </div>
+
+      <!-- Sidebar preview admin -->
+      <div class="sidebar-preview">
+        <div class="sidebar-preview-title">Предлагаемое левое меню — Администратор</div>
+        <div class="sidebar-preview-body">
+          <div class="sidebar-mock">
+            <div class="sidebar-mock-group">
+              <div class="sidebar-mock-label">Панель</div>
+              <div class="sidebar-mock-item active-item"><span class="s-icon">📊</span> Дашборд KPI</div>
+              <div class="sidebar-mock-item"><span class="s-icon">📁</span> Проекты</div>
+              <div class="sidebar-mock-item"><span class="s-icon">👷</span> Подрядчики</div>
+            </div>
+            <div class="sidebar-mock-group">
+              <div class="sidebar-mock-label">Настройки</div>
+              <div class="sidebar-mock-item"><span class="s-icon">⚙</span> Страницы</div>
+              <div class="sidebar-mock-item"><span class="s-icon">📋</span> Шаблоны</div>
+            </div>
+            <div class="sidebar-mock-group" style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0ee">
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">● тема</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">↗ сайт</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">→ выйти</div>
+            </div>
+          </div>
+          <div class="sidebar-preview-desc">
+            Фиксированное левое меню с двумя группами:<br>
+            <strong>Панель</strong> — основные рабочие разделы (дашборд + список проектов на одной странице, справочник подрядчиков).<br>
+            <strong>Настройки</strong> — конфигуратор страниц проекта и управление шаблонами дорожных карт.<br><br>
+            При открытии конкретного проекта в основном контенте появляются горизонтальные вкладки по разделам этого проекта.
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard KPI -->
+      <div class="pages-grid" id="admin-dashboard">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">📊 Dashboard KPI + Список проектов</div>
+            <span class="page-card-path">/admin</span>
+          </div>
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-label">Сроки</div>
+              <div class="kpi-val">87%</div>
+              <div class="kpi-sub">в срок · просрочено 2 из 16</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Просрочки</div>
+              <div class="kpi-val">2</div>
+              <div class="kpi-sub">ближайшие 7 дней: 3</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Деньги</div>
+              <div class="kpi-val">980k</div>
+              <div class="kpi-sub">закрыто 64% · 628k</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Загрузка</div>
+              <div class="kpi-val">14</div>
+              <div class="kpi-sub">открытых задач · без подрядчика 3</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--muted)">
+            + таблица загрузки подрядчиков: имя · открыто · всего · просрочено
+          </div>
+          <div style="border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">Список проектов</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border-light)">
+                <div>
+                  <span style="font-size:13px;font-weight:500">Квартира Иванова</span>
+                  <span style="font-size:10px;color:var(--muted);margin-left:10px;font-family:monospace">ivanova-apt</span>
+                  <span class="field-tag green" style="margin-left:8px;font-size:10px">в работе</span>
+                </div>
+                <div class="field-tags">
+                  <span class="field-tag">готовые страницы ↗</span>
+                  <span class="field-tag">открыть</span>
+                  <span class="field-tag red">удалить</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <span class="field-tag highlight">+ новый проект → 2-шаговый wizard</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project card -->
+      <div class="pages-grid" id="admin-project">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">📁 Карточка проекта</div>
+            <span class="page-card-path">/admin/projects/[slug]</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Переключатель фазы проекта:</div>
+          <div class="field-tags" style="margin-bottom:12px">
+            <span class="field-tag">лид</span>
+            <span class="field-tag">замер</span>
+            <span class="field-tag highlight">проектирование</span>
+            <span class="field-tag">реализация</span>
+            <span class="field-tag">завершён</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Вкладки проекта:</div>
+          <div class="tabs-mock">
+            <div class="tab-mock active">материалы</div>
+            <div class="tab-mock">тех. задание</div>
+            <div class="tab-mock">профиль клиента</div>
+            <div class="tab-mock">профиль подрядчиков</div>
+            <div class="tab-mock has-badge">статусы работ <span class="badge">3</span></div>
+            <div class="tab-mock">дорожная карта</div>
+            <div class="tab-mock">платежи</div>
+            <div class="tab-mock" style="margin-left:auto;border-style:dashed">⚙ проект</div>
+          </div>
+          <div class="field-sections">
+            <table class="info-table">
+              <thead><tr><th>Вкладка</th><th>Содержимое</th></tr></thead>
+              <tbody>
+                <tr><td>Материалы</td><td>JSON-контент страницы с кастомными полями — редактирование</td></tr>
+                <tr><td>Тех. задание</td><td>Разделы с id / заголовком / изображением → вопросы с типом (текст, выбор, число, да/нет) и фото; автодополнение по категориям</td></tr>
+                <tr><td>Профиль клиента</td><td>5 секций: личные данные, контакты, объект, проект, образ жизни (подробно ниже)</td></tr>
+                <tr><td>Профиль подрядчиков</td><td>Список исполнителей, закреплённых за проектом</td></tr>
+                <tr><td>Статусы работ</td><td>Задачи: название, статус, даты, бюджет — значок с кол-вом задач «на проверке»</td></tr>
+                <tr><td>Дорожная карта</td><td>Этапы: сценарий, название, статус, даты, заметки + выбор шаблона</td></tr>
+                <tr><td>Платежи</td><td>Платежи: название, сумма, статус, даты, комментарий, история статусов + итоги + PDF</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Profile detail -->
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">👤 Профиль клиента — разбивка по секциям</div>
+          </div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Личные данные</div>
+              <div class="field-tags">
+                <span class="field-tag">Фото (загрузка)</span>
+                <span class="field-tag">ФИО</span>
+                <span class="field-tag">Дата рождения</span>
+                <span class="field-tag">Возраст</span>
+                <span class="field-tag">Семейное положение</span>
+                <span class="field-tag">Дети</span>
+                <span class="field-tag">Питомцы</span>
+              </div>
+            </div>
+            <div class="field-section">
+              <div class="field-section-title">Контакты</div>
+              <div class="field-tags">
+                <span class="field-tag">Телефон</span>
+                <span class="field-tag">Доп. телефон</span>
+                <span class="field-tag">Email</span>
+                <span class="field-tag">Мессенджер</span>
+                <span class="field-tag">Ник / номер мессенджера</span>
+                <span class="field-tag">Предпочтительная связь</span>
+                <span class="field-tag">Адрес проживания</span>
+              </div>
+            </div>
+            <div class="field-section">
+              <div class="field-section-title">Объект</div>
+              <div class="field-tags">
+                <span class="field-tag">Адрес объекта</span>
+                <span class="field-tag">Тип объекта</span>
+                <span class="field-tag">Состояние</span>
+                <span class="field-tag">Площадь (м²)</span>
+                <span class="field-tag">Кол-во комнат</span>
+                <span class="field-tag">Этаж</span>
+                <span class="field-tag">Высота потолков</span>
+                <span class="field-tag">Балкон / лоджия</span>
+                <span class="field-tag">Парковка</span>
+              </div>
+            </div>
+            <div class="field-section">
+              <div class="field-section-title">Проект</div>
+              <div class="field-tags">
+                <span class="field-tag">Бюджет</span>
+                <span class="field-tag">Что входит в бюджет</span>
+                <span class="field-tag">Желаемые сроки</span>
+                <span class="field-tag">Способ оплаты</span>
+                <span class="field-tag">Откуда узнали</span>
+                <span class="field-tag">Опыт ремонта / работы с дизайнером</span>
+              </div>
+            </div>
+            <div class="field-section">
+              <div class="field-section-title">Образ жизни</div>
+              <div class="field-tags">
+                <span class="field-tag">Образ жизни</span>
+                <span class="field-tag">Хобби и увлечения</span>
+                <span class="field-tag">Предпочтения по стилю</span>
+                <span class="field-tag">Предпочтения по цветам</span>
+                <span class="field-tag">Аллергии / ограничения</span>
+                <span class="field-tag">Приоритеты в интерьере</span>
+                <span class="field-tag">Что не нравится / антипримеры</span>
+                <span class="field-tag">Дополнительные заметки</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Work status -->
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">✅ Статусы работ</div>
+          </div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Каждая задача содержит</div>
+              <div class="field-tags">
+                <span class="field-tag">Название задачи</span>
+                <span class="field-tag amber">ожидание</span>
+                <span class="field-tag highlight">в работе</span>
+                <span class="field-tag red">на проверке ← значок</span>
+                <span class="field-tag green">принято</span>
+                <span class="field-tag">пропущено</span>
+                <span class="field-tag">Дата начала</span>
+                <span class="field-tag">Дата конца</span>
+                <span class="field-tag">Бюджет</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Roadmap -->
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">🗺 Дорожная карта</div>
+          </div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Каждый этап содержит</div>
+              <div class="field-tags">
+                <span class="field-tag">Сценарий (тип этапа)</span>
+                <span class="field-tag">Название</span>
+                <span class="field-tag amber">ожидание</span>
+                <span class="field-tag highlight">в работе</span>
+                <span class="field-tag green">выполнено</span>
+                <span class="field-tag">пропущено</span>
+                <span class="field-tag">Дата начала</span>
+                <span class="field-tag">Дата конца</span>
+                <span class="field-tag">Заметки</span>
+              </div>
+            </div>
+            <div class="field-section">
+              <div class="field-section-title">Пикер шаблонов</div>
+              <div class="field-tags">
+                <span class="field-tag">Список шаблонов → превью этапов → применить</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payments -->
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">💳 Платежи</div>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Поле платежа</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>Название</td><td>Текстовое описание платежа</td></tr>
+              <tr><td>Сумма</td><td>Числовое значение</td></tr>
+              <tr><td>Статус</td><td>в работе / прошёл / отклонён</td></tr>
+              <tr><td>Дата ожидания / оплаты</td><td>date-поля</td></tr>
+              <tr><td>Комментарий</td><td>Свободный текст</td></tr>
+              <tr><td>История статусов</td><td>Статус · Дата изменения · Комментарий</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:10px">
+            <span class="field-tag highlight">Итого: Всего / Оплачено / Осталось / Отклонено</span>
+            <span class="field-tag">Экспорт PDF</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contractors -->
+      <div class="pages-grid" id="admin-contractors">
+        <div class="page-card">
+          <div class="page-card-header">
+            <div class="page-card-title">👷 Подрядчики</div>
+            <span class="page-card-path">/admin/contractors</span>
+          </div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Карточка подрядчика</div>
+              <div class="field-tags">
+                <span class="field-tag">Имя / компания</span>
+                <span class="field-tag">Телефон · Email</span>
+                <span class="field-tag">PIN для входа</span>
+                <span class="field-tag">Виды работ</span>
+              </div>
+            </div>
+            <div class="field-section">
+              <div class="field-section-title">В форме добавления/редактирования</div>
+              <div class="field-tags">
+                <span class="field-tag">Имя, slug, компания, контактное лицо</span>
+                <span class="field-tag">PIN, виды работ</span>
+                <span class="field-tag">Телефон, email, мессенджер, сайт</span>
+                <span class="field-tag">Юр. / факт. адрес</span>
+                <span class="field-tag">ИНН, ОГРН и реквизиты</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pages config -->
+        <div class="page-card" id="admin-pages">
+          <div class="page-card-header">
+            <div class="page-card-title">⚙ Конфигуратор страниц</div>
+            <span class="page-card-path">/admin/pages</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Управляет набором страниц, доступных во всех проектах.</div>
+          <div class="field-sections">
+            <div class="field-section">
+              <div class="field-section-title">Каждая страница</div>
+              <div class="field-tags">
+                <span class="field-tag">Slug (URL)</span>
+                <span class="field-tag">Название в меню</span>
+                <span class="field-tag">Заголовок страницы</span>
+                <span class="field-tag">Размер шрифта (px)</span>
+                <span class="field-tag">Порядок сортировки</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Templates -->
+        <div class="page-card full" id="admin-templates">
+          <div class="page-card-header">
+            <div class="page-card-title">📋 Шаблоны и сценарии дорожных карт</div>
+            <span class="page-card-path">/admin/roadmap-templates</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Что хранит шаблон</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>Название</td><td>Заголовок сценария</td></tr>
+              <tr><td>Тип объекта</td><td>квартира / дом / апартаменты / …</td></tr>
+              <tr><td>Тип клиента</td><td>категория заказчика</td></tr>
+              <tr><td>Сложность</td><td>уровень проекта</td></tr>
+              <tr><td>Описание</td><td>свободный текст</td></tr>
+              <tr><td>Этапы</td><td>Название · Тип этапа · Описание этапа</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:10px">
+            <span class="field-tag">встроенные — только просмотр / клонирование</span>
+            <span class="field-tag highlight">пользовательские — полное редактирование и удаление</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════════ CLIENT ═══════════════════════════ -->
+    <section class="role-section" id="client">
+      <div class="role-header">
+        <div class="role-dot dot-client"></div>
+        <h2>Клиент (личный кабинет)</h2>
+        <span class="role-path">/client/[slug]/*</span>
+      </div>
+
+      <!-- Sidebar preview client -->
+      <div class="sidebar-preview">
+        <div class="sidebar-preview-title">Навигация клиента — горизонтальная лента (предлагается вынести в левый сайдбар на десктопе)</div>
+        <div class="sidebar-preview-body">
+          <div class="sidebar-mock">
+            <div class="sidebar-mock-group" style="padding-top:8px">
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;letter-spacing:1px;text-transform:uppercase">Мой проект</div>
+              <div class="sidebar-mock-item active-item"><span class="s-icon">📦</span> Материалы</div>
+              <div class="sidebar-mock-item"><span class="s-icon">📝</span> Тех. задание</div>
+              <div class="sidebar-mock-item"><span class="s-icon">👤</span> Мой профиль</div>
+              <div class="sidebar-mock-item"><span class="s-icon">👷</span> Подрядчики</div>
+              <div class="sidebar-mock-item"><span class="s-icon">✅</span> Статусы работ</div>
+              <div class="sidebar-mock-item"><span class="s-icon">🗺</span> Дорожная карта</div>
+            </div>
+            <div style="margin-top:auto;padding-top:12px;border-top:1px solid #f0f0ee;margin:12px 0 0">
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">● тема</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">→ выйти</div>
+            </div>
+          </div>
+          <div class="sidebar-preview-desc">
+            Клиент видит только разделы, включённые для его проекта.<br>
+            Все данные — <strong>только для чтения</strong>, без формы редактирования.<br><br>
+            Вход — по slug проекта + PIN-коду.<br>
+            После входа клиент попадает на главную своего проекта с заголовком и навигацией.
+          </div>
+        </div>
+      </div>
+
+      <div class="pages-grid">
+        <div class="page-card" id="client-home">
+          <div class="page-card-header">
+            <div class="page-card-title">🏠 Главная клиента</div>
+            <span class="page-card-path">/client/[slug]</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Стартовая страница после входа.</div>
+          <div class="field-tags">
+            <span class="field-tag green">Название проекта (заголовок)</span>
+            <span class="field-tag">Горизонтальная навигация по доступным разделам</span>
+          </div>
+        </div>
+
+        <div class="page-card" id="client-pages">
+          <div class="page-card-header">
+            <div class="page-card-title">📄 Страницы проекта (чтение)</div>
+            <span class="page-card-path">/client/[slug]/[page]</span>
+          </div>
+          <table class="info-table">
+            <thead><tr><th>Раздел</th><th>Что видит клиент</th></tr></thead>
+            <tbody>
+              <tr><td>Материалы</td><td>Контент страницы (только чтение)</td></tr>
+              <tr><td>Тех. задание</td><td>Разделы, вопросы, изображения — только просмотр</td></tr>
+              <tr><td>Профиль клиента</td><td>Заполненная карточка своего профиля</td></tr>
+              <tr><td>Профиль подрядчиков</td><td>Список исполнителей</td></tr>
+              <tr><td>Статусы работ</td><td>Задачи со статусами — только чтение</td></tr>
+              <tr><td>Дорожная карта</td><td>Этапы с датами и статусами — только чтение</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════════ CONTRACTOR ═══════════════════════════ -->
+    <section class="role-section" id="contractor">
+      <div class="role-header">
+        <div class="role-dot dot-contractor"></div>
+        <h2>Подрядчик</h2>
+        <span class="role-path">/contractor/[id]</span>
+      </div>
+
+      <div class="sidebar-preview">
+        <div class="sidebar-preview-title">Интерфейс подрядчика — минималистичный, без сайдбара</div>
+        <div class="sidebar-preview-body">
+          <div class="sidebar-mock" style="width:140px">
+            <div class="sidebar-mock-group" style="padding-top:8px">
+              <div class="sidebar-mock-item active-item"><span class="s-icon">🔨</span> Мои задачи</div>
+            </div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0ee">
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">● тема</div>
+              <div class="sidebar-mock-item" style="font-size:10px;color:#ccc;">→ выйти</div>
+            </div>
+          </div>
+          <div class="sidebar-preview-desc">
+            Вход по PIN-коду.<br>
+            Подрядчик видит только свои назначенные задачи.<br>
+            Интерфейс намеренно упрощён — только нужная информация без возможности редактирования.<br><br>
+            Возможное развитие: подрядчик меняет статус задачи (например, ставит «на проверке»).
+          </div>
+        </div>
+      </div>
+
+      <div class="pages-grid" id="contractor-page">
+        <div class="page-card full">
+          <div class="page-card-header">
+            <div class="page-card-title">🔨 Задачи подрядчика</div>
+            <span class="page-card-path">/contractor/[id]</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Имя + название компании в заголовке.</div>
+          <table class="info-table">
+            <thead><tr><th>Поле задачи</th><th>Описание</th></tr></thead>
+            <tbody>
+              <tr><td>Название</td><td>Текст задачи</td></tr>
+              <tr><td>Статус</td><td>ожидание / запланировано / в работе / выполнено / на паузе / отменено</td></tr>
+              <tr><td>Период</td><td>Дата начала — дата конца</td></tr>
+              <tr><td>Бюджет</td><td>Сумма по задаче</td></tr>
+              <tr><td>Заметки</td><td>Дополнительные комментарии</td></tr>
+            </tbody>
+          </table>
+          <div class="field-tags" style="margin-top:10px">
+            <span class="field-tag amber">Только просмотр — без редактирования</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════════ SITEMAP ═══════════════════════════ -->
+    <section id="sitemap">
+      <div class="role-header">
+        <h2>Схема навигации</h2>
+      </div>
+      <div class="flow-wrap">
+        <div class="flow-title">Полная карта маршрутов по ролям</div>
+        <div class="flow-roles">
+          <div class="flow-col">
+            <div class="flow-col-title">
+              <div class="role-dot dot-admin"></div>
+              Администратор
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin/login</div>
+              <div class="flow-item-desc">Вход</div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin</div>
+              <div class="flow-item-desc">Dashboard KPI + Проекты</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--admin)">
+              <div class="flow-item-path">/admin/projects/[slug]</div>
+              <div class="flow-item-desc">Карточка проекта<br>→ 7 вкладок</div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin/contractors</div>
+              <div class="flow-item-desc">Справочник подрядчиков</div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin/pages</div>
+              <div class="flow-item-desc">⚙ Конфигуратор страниц</div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/admin/roadmap-templates</div>
+              <div class="flow-item-desc">⚙ Шаблоны роадмапов</div>
+            </div>
+          </div>
+
+          <div class="flow-col">
+            <div class="flow-col-title">
+              <div class="role-dot dot-client"></div>
+              Клиент
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/client/login</div>
+              <div class="flow-item-desc">Вход по slug + PIN</div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/client/[slug]</div>
+              <div class="flow-item-desc">Главная проекта + навигация</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--client)">
+              <div class="flow-item-path">/client/[slug]/materials</div>
+              <div class="flow-item-desc">Материалы</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--client)">
+              <div class="flow-item-path">/client/[slug]/tz</div>
+              <div class="flow-item-desc">Тех. задание</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--client)">
+              <div class="flow-item-path">/client/[slug]/work_status</div>
+              <div class="flow-item-desc">Статусы работ</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--client)">
+              <div class="flow-item-path">/client/[slug]/project_roadmap</div>
+              <div class="flow-item-desc">Дорожная карта</div>
+            </div>
+          </div>
+
+          <div class="flow-col">
+            <div class="flow-col-title">
+              <div class="role-dot dot-contractor"></div>
+              Подрядчик
+            </div>
+            <div class="flow-item">
+              <div class="flow-item-path">/contractor/login</div>
+              <div class="flow-item-desc">Вход по PIN</div>
+            </div>
+            <div class="flow-item" style="border-left:2px solid var(--contractor)">
+              <div class="flow-item-path">/contractor/[id]</div>
+              <div class="flow-item-desc">Список назначенных задач (чтение)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // Smooth scroll + active sidebar
+  document.querySelectorAll('.sidebar-link[href^="#"]').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault()
+      const id = link.getAttribute('href').slice(1)
+      const el = document.getElementById(id)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'))
+      link.classList.add('active')
+    })
+  })
+</script>
+</body>
+</html>

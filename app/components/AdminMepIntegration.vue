@@ -154,7 +154,7 @@ function removeFile(idx: number) {
 
 <style scoped>
 .amep-wrap { padding: 4px 0 40px; }
-.amep-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
+.amep-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
 
 .amep-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .amep-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }

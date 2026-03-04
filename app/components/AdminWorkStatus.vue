@@ -323,7 +323,7 @@ function fmtTime(isoStr: string): string {
 <style scoped>
 .ws-admin { padding: 4px 0; }
 .ws-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.ws-count { font-size: .78rem; color: var(--ds-muted, #999); text-transform: uppercase; letter-spacing: .5px; }
+.ws-count { font-size: .78rem; color: #999; text-transform: uppercase; letter-spacing: .5px; }
 .ws-header-actions { display: flex; gap: 8px; }
 .ws-loading { font-size: .86rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); padding: 12px 0; }
 .ws-error { font-size: .8rem; color: var(--ds-error, #c00); margin-top: 12px; }

@@ -129,15 +129,15 @@ async function unlink(contractorId: number) {
 
 <style scoped>
 .acnp-wrap { padding: 4px 0; }
-.acnp-loading { font-size: .86rem; color: var(--ds-muted, #999); padding: 12px 0; }
-.acnp-empty  { font-size: .84rem; color: var(--ds-muted, #bbb); padding: 10px 0; }
+.acnp-loading { font-size: .86rem; color: #999; padding: 12px 0; }
+.acnp-empty  { font-size: .84rem; color: #bbb; padding: 10px 0; }
 .acnp-error  { font-size: .8rem; color: var(--ds-error, #c00); margin-top: 12px; }
 
 .acnp-section-title {
   font-size: .68rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--ds-muted, #aaa);
+  color: #aaa;
   margin-bottom: 10px;
   padding-bottom: 6px;
   border-bottom: 1px solid #e8e8e8;

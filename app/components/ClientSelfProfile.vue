@@ -658,7 +658,7 @@ async function saveData() {
 }
 .csp-tagopt {
   padding: 4px 10px; font-size: .76rem; cursor: pointer; user-select: none;
-  border: none; color: var(--ds-muted, #aaa); line-height: 1.4;
+  border: none; color: #aaa; line-height: 1.4;
   background: color-mix(in srgb, var(--glass-bg, #fff) 88%, transparent);
   border-radius: 999px;
   transition: background .16s, color .16s, border-color .16s, transform .16s;

@@ -13,6 +13,7 @@ module.exports = {
         "DESIGNER_INITIAL_PASSWORD": "admin123",
         "UPLOAD_DIR": "/opt/daria-nuxt/public/uploads",
         "NODE_ENV": "production",
+        "ANTHROPIC_API_KEY": process.env.ANTHROPIC_API_KEY || "",
         "PORT": "3000",
         "HOST": "0.0.0.0"
       }

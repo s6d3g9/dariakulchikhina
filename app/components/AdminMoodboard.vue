@@ -266,7 +266,7 @@ function removeLink(idx: number) {
 }
 .amb-img-card:hover .amb-img-actions { opacity: 1; }
 .amb-img-cat { flex: 1; background: transparent; border: 1px solid rgba(255,255,255,.3); color: #fff; font-size: .68rem; padding: 2px 4px; font-family: inherit; }
-.amb-img-cat option { background: var(--dropdown-bg, #222); }
+.amb-img-cat option { background: #222; }
 .amb-img-del { background: none; border: 1px solid rgba(255,255,255,.3); color: #fff; cursor: pointer; font-size: .9rem; line-height: 1; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
 .amb-img-comment { border: 1px solid var(--border, #e0e0e0); background: none; padding: 4px 8px; font-size: .72rem; font-family: inherit; color: inherit; outline: none; }
 .amb-gallery-empty { text-align: center; padding: 32px 0; color: color-mix(in srgb, var(--glass-text) 45%, transparent); border: 1px dashed var(--border, #e0e0e0); margin-bottom: 12px; }

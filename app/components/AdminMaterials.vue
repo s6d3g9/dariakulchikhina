@@ -251,7 +251,7 @@ async function save() {
 }
 .am-btn-sm:hover { opacity: .9; }
 .am-btn-sm.danger { color: var(--ds-error, #c00); border-color: var(--ds-error, #c00); }
-.am-btn-sm.danger:hover { background: var(--ds-error, #cc0000); color: #fff; }
+.am-btn-sm.danger:hover { background: #c00; color: #fff; }
 .am-btn-add {
   border: none;
   background: var(--glass-bg);

@@ -176,7 +176,7 @@ function fileIcon(f: any) {
 
 <style scoped>
 .asp-wrap { padding: 4px 0 40px; }
-.asp-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
+.asp-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
 
 .asp-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .asp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
