@@ -8,7 +8,7 @@
     <template v-else>
       <div class="proj-header-bar">
         <div class="proj-breadcrumb">
-          <NuxtLink to="/admin" class="proj-bc-link">проекты</NuxtLink>
+          <NuxtLink to="/admin" class="proj-bc-link proj-bc-back">← Доска</NuxtLink>
           <span class="proj-bc-sep">/</span>
           <span class="proj-bc-title">{{ project.title }}</span>
         </div>
@@ -144,6 +144,52 @@
                 </button>
               </div>
             </template>
+
+            <!-- ── Visit / Payment / Follow-up widget ── -->
+            <div class="proj-visit-widget">
+              <div class="proj-visit-widget-title" @click="visitWidgetOpen = !visitWidgetOpen">
+                <span>📅 выезд · оплата · follow-up</span>
+                <span class="proj-visit-widget-caret">{{ visitWidgetOpen ? '▲' : '▼' }}</span>
+              </div>
+              <div v-if="visitWidgetOpen" class="proj-visit-widget-body">
+                <div class="proj-vw-group">
+                  <div class="proj-vw-label">Выезд</div>
+                  <input v-model="visitForm.visit_contractor_name" class="proj-vw-input" placeholder="Подрядчик / дизайнер" />
+                  <div class="proj-vw-row">
+                    <input v-model="visitForm.visit_date" type="date" class="proj-vw-input proj-vw-input--half" />
+                    <input v-model="visitForm.visit_time" type="time" class="proj-vw-input proj-vw-input--half" />
+                  </div>
+                  <input v-model="visitForm.visit_services" class="proj-vw-input" placeholder="Описание услуг" />
+                  <select v-model="visitForm.visit_status" class="proj-vw-input">
+                    <option value="">— статус —</option>
+                    <option value="scheduled">запланирован</option>
+                    <option value="done">проведён</option>
+                    <option value="noshow">не явился</option>
+                    <option value="postponed">перенесён</option>
+                    <option value="cancelled">отменён</option>
+                  </select>
+                  <input v-if="visitForm.visit_status === 'postponed'" v-model="visitForm.visit_postponed_date" type="date" class="proj-vw-input" placeholder="Новая дата" />
+                </div>
+                <div class="proj-vw-group">
+                  <div class="proj-vw-label">Оплата</div>
+                  <div class="proj-vw-row">
+                    <input v-model="visitForm.contract_paid" class="proj-vw-input proj-vw-input--half" placeholder="Оплачено ₽" />
+                    <input v-model="visitForm.contract_total" class="proj-vw-input proj-vw-input--half" placeholder="Итого ₽" />
+                  </div>
+                </div>
+                <div class="proj-vw-group">
+                  <div class="proj-vw-label">Follow-up</div>
+                  <input v-model="visitForm.follow_up_date" type="date" class="proj-vw-input" />
+                  <input v-model="visitForm.follow_up_note" class="proj-vw-input" placeholder="Заметка" />
+                </div>
+                <button class="proj-vw-save" :disabled="savingVisitForm" @click="saveVisitData">
+                  {{ savingVisitForm ? '...' : 'сохранить' }}
+                </button>
+                <p v-if="visitSaveError" class="proj-vw-error">{{ visitSaveError }}</p>
+                <p v-if="visitSaveOk" class="proj-vw-ok">✓ сохранено</p>
+              </div>
+            </div>
+
           </template>
 
         </nav>
@@ -493,7 +539,57 @@ const editError = ref('')
 const projectStatus = ref(project.value?.status || 'lead')
 const savingStatus = ref(false)
 
-// Первая страница каждой фазы — куда переходить при смене статуса
+// ── Visit / Payment / Follow-up widget ──────────────────────────
+const visitWidgetOpen = ref(false)
+const savingVisitForm = ref(false)
+const visitSaveError = ref('')
+const visitSaveOk = ref(false)
+const visitForm = reactive({
+  visit_contractor_name: '',
+  visit_date: '',
+  visit_time: '',
+  visit_services: '',
+  visit_status: '',
+  visit_postponed_date: '',
+  contract_total: '',
+  contract_paid: '',
+  follow_up_date: '',
+  follow_up_note: '',
+})
+
+watch(project, (p) => {
+  if (!p?.profile) return
+  const pr = p.profile as Record<string, any>
+  visitForm.visit_contractor_name = pr.visit_contractor_name || ''
+  visitForm.visit_date            = pr.visit_date            || ''
+  visitForm.visit_time            = pr.visit_time            || ''
+  visitForm.visit_services        = pr.visit_services        || ''
+  visitForm.visit_status          = pr.visit_status          || ''
+  visitForm.visit_postponed_date  = pr.visit_postponed_date  || ''
+  visitForm.contract_total        = pr.contract_total        || ''
+  visitForm.contract_paid         = pr.contract_paid         || ''
+  visitForm.follow_up_date        = pr.follow_up_date        || ''
+  visitForm.follow_up_note        = pr.follow_up_note        || ''
+}, { immediate: true })
+
+async function saveVisitData() {
+  savingVisitForm.value = true
+  visitSaveError.value = ''
+  visitSaveOk.value = false
+  try {
+    await $fetch(`/api/projects/${slug.value}/visit-data`, {
+      method: 'PUT',
+      body: { ...visitForm },
+    })
+    visitSaveOk.value = true
+    setTimeout(() => { visitSaveOk.value = false }, 3000)
+    await refresh()
+  } catch (e: any) {
+    visitSaveError.value = e?.data?.message || 'Ошибка сохранения'
+  } finally {
+    savingVisitForm.value = false
+  }
+}
 const STATUS_TO_FIRST_PAGE: Record<string, string> = {
   lead:            'first_contact',
   concept:         'space_planning',
@@ -1111,6 +1207,60 @@ async function unlinkDesigner(designerId: number) {
   vertical-align: middle; position: relative; top: -1px;
 }
 
+/* ── Visit / Payment / Follow-up sidebar widget ── */
+.proj-visit-widget {
+  margin: 12px 10px 6px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  padding-top: 10px;
+}
+.proj-visit-widget-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--glass-text);
+  opacity: .45;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0;
+  transition: opacity .12s;
+}
+.proj-visit-widget-title:hover { opacity: .7; }
+.proj-visit-widget-caret { font-size: .55rem; }
+.proj-visit-widget-body { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.proj-vw-group { display: flex; flex-direction: column; gap: 4px; }
+.proj-vw-label {
+  font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--glass-text); opacity: .4; margin-bottom: 2px;
+}
+.proj-vw-input {
+  width: 100%; padding: 5px 8px;
+  font-size: .72rem; font-family: inherit;
+  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 6px; color: var(--glass-text);
+  outline: none; box-sizing: border-box;
+  transition: border-color .12s;
+}
+.proj-vw-input:focus { border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
+.proj-vw-row { display: flex; gap: 5px; }
+.proj-vw-input--half { flex: 1; min-width: 0; }
+.proj-vw-save {
+  margin-top: 4px; padding: 5px 12px;
+  font-size: .72rem; font-family: inherit; font-weight: 600;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
+  border-radius: 7px; cursor: pointer; color: var(--glass-text);
+  transition: background .12s; align-self: flex-start;
+}
+.proj-vw-save:hover:not(:disabled) { background: color-mix(in srgb, var(--glass-text) 18%, transparent); }
+.proj-vw-save:disabled { opacity: .4; cursor: default; }
+.proj-vw-error { font-size: .67rem; color: #ef4444; margin: 2px 0 0; }
+.proj-vw-ok { font-size: .67rem; color: #22c55e; margin: 2px 0 0; }
+
 /* ── Project header bar ── */
 .proj-header-bar {
   display: flex; align-items: center; justify-content: space-between;
@@ -1119,6 +1269,14 @@ async function unlinkDesigner(designerId: number) {
 .proj-breadcrumb { font-size: .78rem; color: #aaa; display: flex; align-items: center; gap: 4px; }
 .proj-bc-link { color: #888; text-decoration: none; }
 .proj-bc-link:hover { color: var(--glass-text); }
+.proj-bc-back {
+  font-weight: 500;
+  font-size: .78rem;
+  color: var(--glass-text);
+  opacity: .6;
+  transition: opacity .14s;
+}
+.proj-bc-back:hover { opacity: 1; color: var(--glass-text); }
 .proj-bc-sep { margin: 0 2px; }
 .proj-bc-title { color: var(--glass-text); opacity: .7; }
 .proj-phase-sel-wrap { display: flex; align-items: center; gap: 6px; }

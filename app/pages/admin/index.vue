@@ -52,20 +52,45 @@
               <div
                 v-for="p in projectsByPhase[phase.key]"
                 :key="p.id"
-                class="kb-card"
-                @click="navigateTo(`/admin/projects/${p.slug}`)"
+                class="kb-card-wrap"
               >
-                <div class="kb-card-title">{{ p.title }}</div>
-                <div class="kb-card-slug">{{ p.slug }}</div>
-                <div v-if="p.taskTotal > 0" class="kb-card-progress">
-                  <div class="kb-prog-track">
-                    <div class="kb-prog-fill" :style="{ width: Math.round(p.taskDone / p.taskTotal * 100) + '%' }"></div>
+                <div
+                  class="kb-card"
+                  @click="navigateTo(`/admin/projects/${p.slug}`)"
+                >
+                  <div class="kb-card-title">{{ p.title }}</div>
+                  <div v-if="p.profile?.fio" class="kb-card-fio">{{ p.profile.fio }}</div>
+                  <div class="kb-card-meta">
+                    <span class="kb-card-date">{{ fmtDate(p.createdAt) }}</span>
+                    <span v-if="p.profile?.contract_paid || p.profile?.contract_total" class="kb-card-payment">
+                      <span v-if="p.profile?.contract_paid" class="kb-payment-paid">{{ fmtMoney(p.profile.contract_paid) }}</span>
+                      <span v-if="p.profile?.contract_paid && p.profile?.contract_total" class="kb-payment-sep"> / </span>
+                      <span v-if="p.profile?.contract_total" class="kb-payment-total">{{ fmtMoney(p.profile.contract_total) }}</span>
+                    </span>
                   </div>
-                  <span class="kb-prog-label">{{ p.taskDone }}/{{ p.taskTotal }}</span>
-                  <span v-if="p.taskOverdue > 0" class="kb-prog-overdue">⚠ {{ p.taskOverdue }}</span>
+                  <div v-if="p.profile?.visit_date" class="kb-card-visit">
+                    <span v-if="p.profile?.visit_contractor_name" class="kb-visit-contractor">{{ p.profile.visit_contractor_name }}</span>
+                    <span v-if="p.profile?.visit_contractor_name" class="kb-visit-arrow"> → </span>
+                    <span class="kb-visit-when">{{ p.profile.visit_date }}<template v-if="p.profile?.visit_time"> {{ p.profile.visit_time }}</template></span>
+                    <span v-if="p.profile?.visit_status && p.profile?.visit_status !== 'scheduled'" :class="`kb-visit-status kb-visit-status--${p.profile.visit_status}`">{{ visitLabel(p.profile.visit_status) }}</span>
+                  </div>
+                  <div v-if="p.taskTotal > 0" class="kb-card-progress">
+                    <div class="kb-prog-track">
+                      <div class="kb-prog-fill" :style="{ width: Math.round(p.taskDone / p.taskTotal * 100) + '%' }"></div>
+                    </div>
+                    <span class="kb-prog-label">{{ p.taskDone }}/{{ p.taskTotal }}</span>
+                    <span v-if="p.taskOverdue > 0" class="kb-prog-overdue">⚠ {{ p.taskOverdue }}</span>
+                  </div>
+                  <div class="kb-card-foot">
+                    <NuxtLink :to="`/admin/projects/${p.slug}`" class="kb-card-link" @click.stop>открыть →</NuxtLink>
+                  </div>
                 </div>
-                <div class="kb-card-foot">
-                  <NuxtLink :to="`/admin/projects/${p.slug}`" class="kb-card-link" @click.stop>открыть →</NuxtLink>
+                <!-- Follow-up alert below card -->
+                <div v-if="followUpUrgency(p.profile) === 'red'" class="kb-followup kb-followup--red">
+                  🔴 {{ p.profile?.follow_up_note || 'Follow-up!' }} · {{ p.profile?.follow_up_date }}
+                </div>
+                <div v-else-if="followUpUrgency(p.profile) === 'yellow'" class="kb-followup kb-followup--yellow">
+                  🟡 {{ p.profile?.follow_up_note || 'Follow-up' }} · {{ p.profile?.follow_up_date }}
                 </div>
               </div>
             </template>
@@ -294,6 +319,44 @@ async function createProject() {
 
 function phaseLabel(status: string) { return PROJECT_PHASES.find(p => p.key === status)?.label || status }
 function phaseColor(status: string) { return PROJECT_PHASES.find(p => p.key === status)?.color || 'gray' }
+
+// ── Card helpers ───────────────────────────────────────
+function fmtDate(d: string | Date | null | undefined): string {
+  if (!d) return ''
+  const dt = typeof d === 'string' ? new Date(d) : d
+  if (isNaN(dt.getTime())) return ''
+  return dt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
+}
+
+function fmtMoney(v: string | number | null | undefined): string {
+  if (!v) return ''
+  const n = typeof v === 'string' ? parseFloat(v.replace(/\s/g, '').replace(',', '.')) : Number(v)
+  if (isNaN(n)) return String(v)
+  return new Intl.NumberFormat('ru-RU', { style: 'decimal', maximumFractionDigits: 0 }).format(n) + ' ₽'
+}
+
+const VISIT_STATUS_LABELS: Record<string, string> = {
+  scheduled: 'запланирован',
+  done:      'проведён',
+  noshow:    'не явился',
+  postponed: 'перенесён',
+  cancelled: 'отменён',
+}
+function visitLabel(status: string): string {
+  return VISIT_STATUS_LABELS[status] || status
+}
+
+function followUpUrgency(profile: any): 'red' | 'yellow' | null {
+  const d = profile?.follow_up_date
+  if (!d) return null
+  const dt = new Date(d)
+  if (isNaN(dt.getTime())) return null
+  const today = new Date(); today.setHours(0, 0, 0, 0); dt.setHours(0, 0, 0, 0)
+  const diff = (dt.getTime() - today.getTime()) / 86400000
+  if (diff <= 0) return 'red'
+  if (diff <= 3) return 'yellow'
+  return null
+}
 </script>
 
 <style scoped>
@@ -506,12 +569,97 @@ function phaseColor(status: string) { return PROJECT_PHASES.find(p => p.key === 
   line-height: 1.35;
   margin-bottom: 3px;
 }
-.kb-card-slug {
+/* ── Card wrap (card + follow-up alert) ── */
+.kb-card-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+/* FIO */
+.kb-card-fio {
+  font-size: .72rem;
+  color: var(--glass-text);
+  opacity: .55;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Meta row: date + payment */
+.kb-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+.kb-card-date {
   font-size: .67rem;
   color: var(--glass-text);
   opacity: .3;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  margin-bottom: 8px;
+}
+.kb-card-payment {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: .7rem;
+}
+.kb-payment-paid {
+  color: #22c55e;
+  font-weight: 600;
+}
+.kb-payment-sep {
+  color: var(--glass-text);
+  opacity: .35;
+}
+.kb-payment-total {
+  color: #242424;
+  font-weight: 500;
+}
+/* Visit row */
+.kb-card-visit {
+  font-size: .68rem;
+  color: var(--glass-text);
+  opacity: .55;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.kb-visit-contractor { font-weight: 500; opacity: .8; }
+.kb-visit-arrow { opacity: .35; }
+.kb-visit-when { font-variant-numeric: tabular-nums; }
+.kb-visit-status {
+  font-size: .62rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+.kb-visit-status--done      { background: #dcfce7; color: #15803d; }
+.kb-visit-status--noshow    { background: #fee2e2; color: #b91c1c; }
+.kb-visit-status--postponed { background: #fef9c3; color: #854d0e; }
+.kb-visit-status--cancelled { background: #f4f4f5; color: #71717a; }
+/* Follow-up alerts */
+.kb-followup {
+  font-size: .67rem;
+  padding: 5px 10px;
+  border-radius: 0 0 10px 10px;
+  border: 1px solid transparent;
+  border-top: none;
+  margin-top: -1px;
+  line-height: 1.3;
+}
+.kb-followup--red {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+.kb-followup--yellow {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fde047;
 }
 .kb-card-progress {
   display: flex;

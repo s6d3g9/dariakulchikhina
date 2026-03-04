@@ -75,6 +75,24 @@
         </nav>
 
         <div class="cc-sidebar-footer">
+          <!-- Visit info + status change -->
+          <div v-if="project?.profile?.visit_date" class="cc-visit-widget">
+            <div class="cc-visit-heading">Выезд</div>
+            <div v-if="project.profile.visit_contractor_name" class="cc-visit-who">{{ project.profile.visit_contractor_name }}</div>
+            <div class="cc-visit-when">
+              {{ project.profile.visit_date }}<template v-if="project.profile.visit_time"> · {{ project.profile.visit_time }}</template>
+            </div>
+            <div v-if="project.profile.visit_services" class="cc-visit-services">{{ project.profile.visit_services }}</div>
+            <div v-if="project.profile.visit_status" :class="`cc-visit-badge cc-visit-badge--${project.profile.visit_status}`">
+              {{ visitStatusLabel(project.profile.visit_status) }}
+            </div>
+            <div v-if="project.profile.visit_status === 'scheduled'" class="cc-visit-actions">
+              <button :disabled="changingVisitStatus" class="cc-va-btn cc-va-btn--done" @click="updateVisitStatus('done')">✓ проведён</button>
+              <button :disabled="changingVisitStatus" class="cc-va-btn cc-va-btn--noshow" @click="updateVisitStatus('noshow')">✗ не явился</button>
+              <button :disabled="changingVisitStatus" class="cc-va-btn cc-va-btn--postponed" @click="updateVisitStatus('postponed')">↷ перенесён</button>
+              <button :disabled="changingVisitStatus" class="cc-va-btn cc-va-btn--cancel" @click="updateVisitStatus('cancelled')">— отменён</button>
+            </div>
+          </div>
           <button @click="logout" class="cc-logout">выйти</button>
         </div>
       </aside>
@@ -220,6 +238,36 @@ function statusLabel(s: string) {
 async function logout() {
   await $fetch('/api/auth/client-id-logout', { method: 'POST' }).catch(() => {})
   router.push('/client/login')
+}
+
+// ── Visit status ──────────────────────────────────────────────────
+const changingVisitStatus = ref(false)
+
+const VISIT_STATUS_LABELS: Record<string, string> = {
+  scheduled: 'запланирован',
+  done:      'проведён',
+  noshow:    'не явился',
+  postponed: 'перенесён',
+  cancelled: 'отменён',
+}
+function visitStatusLabel(status: string): string {
+  return VISIT_STATUS_LABELS[status] || status
+}
+
+async function updateVisitStatus(status: string) {
+  changingVisitStatus.value = true
+  try {
+    await $fetch(`/api/projects/${slug.value}/visit-status`, {
+      method: 'PUT',
+      body: { visit_status: status },
+      headers: reqHeaders,
+    })
+    await refresh()
+  } catch (e: any) {
+    console.error('Не удалось обновить статус выезда', e)
+  } finally {
+    changingVisitStatus.value = false
+  }
 }
 </script>
 
@@ -413,6 +461,72 @@ async function logout() {
   border-top: 1px solid var(--glass-border, rgba(180,180,220,0.12));
   margin-top: auto;
 }
+
+/* ── Visit widget in sidebar ── */
+.cc-visit-widget {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--glass-border, rgba(180,180,220,0.12));
+}
+.cc-visit-heading {
+  font-size: .6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  opacity: .35;
+  margin-bottom: 5px;
+}
+.cc-visit-who {
+  font-size: .73rem;
+  font-weight: 500;
+  opacity: .75;
+  margin-bottom: 2px;
+}
+.cc-visit-when {
+  font-size: .72rem;
+  opacity: .6;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 3px;
+}
+.cc-visit-services {
+  font-size: .68rem;
+  opacity: .45;
+  margin-bottom: 5px;
+  line-height: 1.3;
+}
+.cc-visit-badge {
+  display: inline-block;
+  font-size: .62rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.cc-visit-badge--scheduled { background: #dbeafe; color: #1d4ed8; }
+.cc-visit-badge--done      { background: #dcfce7; color: #15803d; }
+.cc-visit-badge--noshow    { background: #fee2e2; color: #b91c1c; }
+.cc-visit-badge--postponed { background: #fef9c3; color: #854d0e; }
+.cc-visit-badge--cancelled { background: #f4f4f5; color: #71717a; }
+.cc-visit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cc-va-btn {
+  padding: 5px 8px;
+  font-size: .68rem;
+  font-family: inherit;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s, opacity .12s;
+}
+.cc-va-btn:disabled { opacity: .35; cursor: default; }
+.cc-va-btn--done      { background: #f0fdf4; color: #15803d; border-color: #86efac; }
+.cc-va-btn--noshow    { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+.cc-va-btn--postponed { background: #fefce8; color: #854d0e; border-color: #fde047; }
+.cc-va-btn--cancel    { background: #f9fafb; color: #6b7280; border-color: #d1d5db; }
 
 .cc-logout {
   font-size: 0.72rem;
