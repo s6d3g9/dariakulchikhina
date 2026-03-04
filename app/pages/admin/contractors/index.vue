@@ -236,6 +236,10 @@ const selectedId = ref<number | null>(null)
 const selected = computed(() => contractors.value?.find((c: any) => c.id === selectedId.value) || null)
 function selectContractor(c: any) { selectedId.value = c.id }
 
+// Deselect when layout sends "все подрядчики" signal
+const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
+watch(entityDeselectSignal, () => { selectedId.value = null })
+
 // Auto-select contractor from ?contractorId= query
 const router = useRouter()
 const contractorIdFromQuery = computed(() => {

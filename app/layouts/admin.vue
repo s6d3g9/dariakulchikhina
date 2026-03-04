@@ -77,7 +77,7 @@
               >{{ isContractorLinked(ct.id) ? '-' : '+' }}</button>
             </div>
             <div class="admin-drop-divider"></div>
-            <NuxtLink :to="contractorsTabTo" class="admin-drop-all" @click="contractorsOpen = false">все подрядчики →</NuxtLink>
+            <button type="button" class="admin-drop-all" @click="goToAllContractors">все подрядчики →</button>
             <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
           </div>
         </div>
@@ -109,7 +109,7 @@
               >{{ isClientLinked(cl.id) ? '-' : '+' }}</button>
             </div>
             <div class="admin-drop-divider"></div>
-            <NuxtLink :to="clientsTabTo" class="admin-drop-all" @click="clientsOpen = false">все клиенты →</NuxtLink>
+            <button type="button" class="admin-drop-all" @click="goToAllClients">все клиенты →</button>
             <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
           </div>
         </div>
@@ -165,7 +165,7 @@
               >{{ isDesignerLinked(d.id) ? '-' : '+' }}</button>
             </div>
             <div class="admin-drop-divider"></div>
-            <NuxtLink :to="designersTabTo" class="admin-drop-all" @click="designersOpen = false">все дизайнеры →</NuxtLink>
+            <button type="button" class="admin-drop-all" @click="goToAllDesigners">все дизайнеры →</button>
             <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
           </div>
         </div>
@@ -495,6 +495,34 @@ function pickGallery(slug: string) { closeAll(); navigateTo(withCtx(`/admin/gall
 function pickDesigner(designer: any) {
   closeAll()
   navigateTo(`/admin/designers?designerId=${designer.id}`)
+}
+
+// ── "All entities" navigation (works even if already on the page) ──
+const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
+
+function goToAllContractors() {
+  closeAll()
+  if (isContractorsTab.value) {
+    entityDeselectSignal.value++
+  } else {
+    navigateTo(contractorsTabTo.value)
+  }
+}
+function goToAllClients() {
+  closeAll()
+  if (isClientsTab.value) {
+    entityDeselectSignal.value++
+  } else {
+    navigateTo(clientsTabTo.value)
+  }
+}
+function goToAllDesigners() {
+  closeAll()
+  if (isDesignersTab.value) {
+    entityDeselectSignal.value++
+  } else {
+    navigateTo(designersTabTo.value)
+  }
 }
 
 // ── Auth ─────────────────────────────────────────────────────────

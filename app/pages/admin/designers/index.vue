@@ -70,6 +70,10 @@ const route = useRoute()
 const router = useRouter()
 const selectedDesignerId = ref<number | null>(null)
 
+// Deselect when layout sends "все дизайнеры" signal
+const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
+watch(entityDeselectSignal, () => { selectedDesignerId.value = null })
+
 const selectedDesigner = computed(() => allDesigners.value?.find((d: any) => d.id === selectedDesignerId.value) || null)
 
 // Auto-select designer from ?designerId= query

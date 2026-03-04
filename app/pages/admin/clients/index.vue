@@ -206,6 +206,11 @@ const searchQuery = ref('')
 const selectedClientId = ref<number | null>(null)
 const selectedClient = computed(() => clients.value?.find((c: any) => c.id === selectedClientId.value) || null)
 const selectedClientSlug = computed(() => selectedClient.value?.linkedProjects?.[0]?.slug || null)
+
+// Deselect when layout sends "все клиенты" signal
+const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
+watch(entityDeselectSignal, () => { selectedClientId.value = null })
+
 const filteredClients = computed(() => {
   const all = clients.value || []
   if (!searchQuery.value.trim()) return all
