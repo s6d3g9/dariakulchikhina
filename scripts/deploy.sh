@@ -172,52 +172,47 @@ fi
 # ── 6. nginx config ────────────────────────────────────────────────
 line
 info "Nginx config for ${SUBDOMAIN}..."
-$SSH_CMD bash << 'REMOTE_NGINX'
-cat > /tmp/lizzz_nginx.conf << 'NGINX'
-server {
-    listen 8082;
-    server_name lizzz.dariakulchikhina.com;
-    charset utf-8;
-    client_max_body_size 32m;
 
-    location /_nuxt/ {
-        alias /home/lichu/daria-liza/.output/public/_nuxt/;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
+# Write nginx config on server via printf (avoids nested heredoc issues)
+$SSH_CMD "printf '%s\n' \
+'server {' \
+'    listen 8082;' \
+'    server_name lizzz.dariakulchikhina.com;' \
+'    charset utf-8;' \
+'    client_max_body_size 32m;' \
+'' \
+'    location /_nuxt/ {' \
+'        alias /home/lichu/daria-liza/.output/public/_nuxt/;' \
+'        expires 1y;' \
+'        add_header Cache-Control \"public, immutable\";' \
+'    }' \
+'' \
+'    location /uploads/ {' \
+'        alias /opt/daria-nuxt/public/uploads/;' \
+'        expires 30d;' \
+'        add_header Cache-Control \"public\";' \
+'    }' \
+'' \
+'    location / {' \
+'        proxy_pass http://127.0.0.1:3002;' \
+'        proxy_http_version 1.1;' \
+'        proxy_set_header Upgrade \$http_upgrade;' \
+'        proxy_set_header Connection \"upgrade\";' \
+'        proxy_set_header Host \$host;' \
+'        proxy_set_header X-Real-IP \$remote_addr;' \
+'        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;' \
+'        proxy_set_header X-Forwarded-Proto \$scheme;' \
+'        proxy_read_timeout 120s;' \
+'        client_max_body_size 32m;' \
+'    }' \
+'}' \
+> /tmp/lizzz_nginx.conf"
 
-    location /uploads/ {
-        alias /opt/daria-nuxt/public/uploads/;
-        expires 30d;
-        add_header Cache-Control "public";
-    }
-
-    location / {
-        proxy_pass http://127.0.0.1:3002;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 120s;
-        client_max_body_size 32m;
-    }
-}
-NGINX
-
-# try to install (needs root)
-if cp /tmp/lizzz_nginx.conf /etc/nginx/conf.d/lizzz.conf 2>/dev/null && nginx -t 2>/dev/null && nginx -s reload 2>/dev/null; then
-  echo "NGINX_OK"
-else
-  echo "NGINX_MANUAL"
-fi
-REMOTE_NGINX
-) 2>/dev/null || NGINX_RESULT="NGINX_MANUAL"
-
-NGINX_RESULT=$($SSH_CMD "cat /tmp/lizzz_nginx.conf > /dev/null 2>&1 && \
-  (cp /tmp/lizzz_nginx.conf /etc/nginx/conf.d/lizzz.conf 2>/dev/null && nginx -s reload 2>/dev/null && echo NGINX_OK) || echo NGINX_MANUAL")
+# Try to install (needs root — will succeed if oxo/root runs later)
+NGINX_RESULT=$($SSH_CMD "cp /tmp/lizzz_nginx.conf /etc/nginx/conf.d/lizzz.conf 2>/dev/null \
+  && nginx -t 2>/dev/null \
+  && nginx -s reload 2>/dev/null \
+  && echo NGINX_OK || echo NGINX_MANUAL")
 
 if echo "${NGINX_RESULT}" | grep -q "NGINX_OK"; then
   ok "Nginx config installed and reloaded — ${SUBDOMAIN} is live"
