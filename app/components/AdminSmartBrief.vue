@@ -298,7 +298,6 @@ const familyFields = [
   { key: 'brief_handed',          label: 'Доп. параметры',               placeholder: 'левша, физ. ограничения, инвалидное кресло...', multi: true },
   { key: 'brief_pets_desc',       label: 'Питомцы',                      placeholder: 'порода, размер' },
   { key: 'brief_pets_zone_detail',label: 'Зона питомца (детали)',        placeholder: 'лапомойка, миски, лоток, будка...', multi: true },
-  { key: 'brief_remote_work',     label: 'Удалённая работа',             options: BRIEF_REMOTE_WORK_OPTIONS },
   { key: 'brief_guests_freq',     label: 'Частота гостей',               options: BRIEF_GUESTS_FREQ_OPTIONS },
   { key: 'brief_hobbies',         label: 'Хобби и увлечения',            placeholder: 'музыка, живопись, спорт...', multi: true },
 ]
@@ -464,8 +463,10 @@ async function save() {
 }
 .asb-btnopt:hover { color: var(--text, #1a1a1a); border-color: var(--text, #1a1a1a); }
 .asb-btnopt--on {
-  background: var(--text, #1a1a1a); color: var(--bg, #fff);
-  border-color: var(--text, #1a1a1a);
+  background: transparent;
+  color: var(--glass-text, #1a1a1a);
+  border: 2px solid var(--glass-text, #1a1a1a);
+  font-weight: 600;
 }
 
 /* ── Mobile ── */

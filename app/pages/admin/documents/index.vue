@@ -57,11 +57,12 @@
       <div class="docs-main">
         <Transition name="tab-fade" mode="out-in">
 
-          <!-- ── EDITOR VIEW (inline) ── -->
+                <!-- ── EDITOR VIEW (inline) ── -->
           <div v-if="viewMode === 'editor'" key="editor">
             <AdminDocumentEditor
               :templates="DOC_TEMPLATES"
               :projects="allProjects"
+              :existingDoc="existingDocToEdit"
               @close="viewMode = 'list'"
               @saved="onEditorSaved"
             />
@@ -72,9 +73,10 @@
             <div class="docs-view">
               <div class="docs-view-head">
                 <button class="docs-back" @click="activeDoc = null">← назад к списку</button>
-                <div class="docs-view-actions">
+                              <div class="docs-view-actions">
                   <a v-if="activeDoc.url" :href="activeDoc.url" target="_blank" class="a-btn-sm">↗ открыть файл</a>
-                  <button class="a-btn-sm" @click="editDoc">✎ редактировать</button>
+                  <button v-if="activeDoc.content" class="a-btn-save" @click="openInEditor(activeDoc)">✏️ открыть в редакторе</button>
+                  <button class="a-btn-sm" @click="editDoc">✎ реквизиты</button>
                   <button class="a-btn-sm a-btn-danger" @click="deleteDoc(activeDoc.id)">удалить</button>
                 </div>
               </div>
@@ -93,7 +95,10 @@
                 <div v-if="activeDoc.notes" class="docs-view-notes">{{ activeDoc.notes }}</div>
 
                 <!-- Inline preview for text files -->
-                <div v-if="previewText" class="docs-view-preview">
+                <div v-if="activeDoc.content" class="docs-view-preview docs-view-preview--content">
+                  <pre class="docs-view-pre">{{ activeDoc.content }}</pre>
+                </div>
+                <div v-else-if="previewText" class="docs-view-preview">
                   <pre class="docs-view-pre">{{ previewText }}</pre>
                 </div>
                 <div v-else-if="activeDoc.url && isImage(activeDoc.url)" class="docs-view-preview">
@@ -121,7 +126,9 @@
                 @click="openDoc(doc)"
               >
                 <div class="doc-card-head">
-                  <span class="doc-file-icon">{{ fileIcon(doc.url) }}</span>
+                  <span class="doc-file-icon" :class="{ 'doc-file-icon--ai': doc.content && !doc.url }">
+                    {{ doc.content && !doc.url ? '✦' : fileIcon(doc.url) }}
+                  </span>
                   <span class="doc-badge" :class="`doc-badge--${doc.category}`">
                     {{ catLabel(doc.category) }}
                   </span>
@@ -131,6 +138,7 @@
                   <span class="doc-date">{{ formatDate(doc.createdAt) }}</span>
                   <div class="doc-actions" @click.stop>
                     <a v-if="doc.url" :href="doc.url" target="_blank" class="doc-btn-ico" title="открыть">↗</a>
+                    <button v-if="doc.content" class="doc-btn-ico" title="открыть в редакторе" @click="openInEditor(doc)">✎</button>
                     <button class="doc-btn-ico doc-btn-ico--del" title="удалить" @click="deleteDoc(doc.id)">×</button>
                   </div>
                 </div>
@@ -755,9 +763,16 @@ const search = ref('')
 const activeDoc = ref<any>(null)
 const editingDoc = ref<any>(null)
 const previewText = ref('')
+// Существующий документ для редактирования в AdminDocumentEditor
+const existingDocToEdit = ref<{ id: number; content: string; templateKey?: string | null; projectSlug?: string | null } | null>(null)
 
 // Обновляем список документов при возврате из редактора
-watch(viewMode, (v, prev) => { if (v === 'list' && prev === 'editor') refresh() })
+watch(viewMode, (v, prev) => {
+  if (v === 'list' && prev === 'editor') {
+    existingDocToEdit.value = null
+    refresh()
+  }
+})
 
 // При уходе со страницы сбрасываем, чтобы при возврате не открывался редактор
 onBeforeRouteLeave(() => { viewMode.value = 'list' })
@@ -816,13 +831,24 @@ async function openDoc(doc: any) {
   viewMode.value = 'list'
   activeDoc.value = doc
   previewText.value = ''
-  // Try to load text preview
-  if (doc.url && isTextFile(doc.url)) {
+  // Загружаем текст только если нет content, но есть url
+  if (!doc.content && doc.url && isTextFile(doc.url)) {
     try {
       const text = await $fetch<string>(doc.url, { responseType: 'text' } as any)
       previewText.value = typeof text === 'string' ? text : ''
     } catch { /* no preview */ }
   }
+}
+
+function openInEditor(doc: any) {
+  existingDocToEdit.value = {
+    id: doc.id,
+    content: doc.content || '',
+    templateKey: doc.templateKey || null,
+    projectSlug: doc.projectSlug || null,
+  }
+  activeDoc.value = null
+  viewMode.value = 'editor'
 }
 
 function editDoc() {
@@ -1050,6 +1076,9 @@ function onEditorSaved() {
 .doc-file-icon {
   font-size: .9rem; flex-shrink: 0; line-height: 1; opacity: .6;
 }
+.doc-file-icon--ai {
+  opacity: 1; color: var(--ds-accent, #6366f1); font-size: .8rem; font-weight: 700;
+}
 .doc-badge--contract,
 .doc-badge--contract_supply,
 .doc-badge--contract_work { background: color-mix(in srgb, var(--ds-accent, #6366f1) 12%, transparent); color: var(--ds-accent, #6366f1); }
@@ -1149,6 +1178,12 @@ html.dark .doc-badge--estimate { background: rgba(168,85,247,.15); color: #c4b5f
   margin-top: 16px; padding: 16px; border-radius: var(--input-radius, 8px);
   background: color-mix(in srgb, var(--glass-text) 3%, transparent);
   max-height: 500px; overflow-y: auto;
+}
+/* Превью текста сгенерированного документа — шрифт как в редакторе */
+.docs-view-preview--content .docs-view-pre {
+  font-family: inherit;
+  font-size: var(--ds-text-sm, .82rem);
+  line-height: 1.7;
 }
 .docs-view-pre {
   margin: 0; font-family: 'JetBrains Mono', 'Courier New', monospace;

@@ -5048,15 +5048,121 @@ html[data-concept="minale"] .u-section-title {
   text-transform: uppercase !important;
 }
 
-/* Chips: white ghost */
+/* Chips: white ghost, square */
 html[data-concept="minale"] .glass-chip {
   background: transparent !important;
   border: 1px solid rgba(255,255,255,0.18) !important;
+  border-radius: 0 !important;
   color: rgba(255,255,255,0.75) !important;
   font-weight: 400 !important;
   letter-spacing: 0.10em !important;
   text-transform: uppercase !important;
   font-size: 0.62rem !important;
+}
+
+/* ── Editorial typographic scale ──────────────────────────── */
+/* h1: large display headline */
+html[data-concept="minale"] h1 {
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem) !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.18em !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase !important;
+  color: #ffffff !important;
+  margin-bottom: 0.5em !important;
+}
+/* h2: section headline */
+html[data-concept="minale"] h2 {
+  font-size: 1.15rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.20em !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+  color: #ffffff !important;
+  margin-bottom: 0.4em !important;
+}
+/* h3: subsection */
+html[data-concept="minale"] h3 {
+  font-size: 0.88rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,0.78) !important;
+}
+/* Section divider label — caption-size, generous breathing room */
+html[data-concept="minale"] .u-section-title {
+  font-size: 0.68rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.26em !important;
+  color: rgba(255,255,255,0.38) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  padding-bottom: 14px !important;
+  margin-top: 48px !important;
+  margin-bottom: 28px !important;
+  text-transform: uppercase !important;
+}
+html[data-concept="minale"] .u-section-title:first-child { margin-top: 0 !important; }
+
+/* ── Body & content text: comfortable reading size ────────── */
+html[data-concept="minale"] p,
+html[data-concept="minale"] li,
+html[data-concept="minale"] td,
+html[data-concept="minale"] th {
+  font-size: 0.9rem !important;
+  line-height: 1.65 !important;
+}
+/* Table header cells */
+html[data-concept="minale"] thead th {
+  font-size: 0.68rem !important;
+  line-height: 1.4 !important;
+}
+/* Table body rows */
+html[data-concept="minale"] tbody td {
+  font-size: 0.875rem !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+/* Input/textarea comfortable reading */
+html[data-concept="minale"] .glass-input,
+html[data-concept="minale"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]),
+html[data-concept="minale"] textarea,
+html[data-concept="minale"] select {
+  font-size: 0.9rem !important;
+}
+/* Field labels — stay small, pure caption style */
+html[data-concept="minale"] label,
+html[data-concept="minale"] .u-field__label,
+html[data-concept="minale"] .a-field-label,
+html[data-concept="minale"] .u-label {
+  font-size: 0.65rem !important;
+  letter-spacing: 0.18em !important;
+  line-height: 2 !important;
+}
+
+/* ── Navigation tabs: legible not microscopic ─────────────── */
+html[data-concept="minale"] .admin-tab {
+  font-size: 0.75rem !important;
+}
+/* Admin links in header */
+html[data-concept="minale"] .admin-link,
+html[data-concept="minale"] .admin-search-label,
+html[data-concept="minale"] .admin-theme-btn,
+html[data-concept="minale"] .admin-brand {
+  font-size: 0.72rem !important;
+  letter-spacing: 0.16em !important;
+}
+
+/* ── Cards: more editorial spacing ───────────────────────── */
+html[data-concept="minale"] .glass-card {
+  padding: 28px 32px !important;
+}
+/* Status badges: readable size */
+html[data-concept="minale"] .u-status,
+html[data-concept="minale"] [class*="-status"],
+html[data-concept="minale"] [class*="-badge"] {
+  font-size: 0.72rem !important;
+  letter-spacing: 0.10em !important;
+  padding: 3px 8px !important;
 }
 
 /* Design panel: stays dark */

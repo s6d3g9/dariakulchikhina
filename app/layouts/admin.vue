@@ -19,10 +19,10 @@
 
         <button
           type="button"
-          class="theme-dot"
+          class="admin-theme-btn"
           :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
           @click="toggleTheme"
-        ></button>
+        >{{ isDark ? 'светло' : 'темно' }}</button>
         <NuxtLink to="/" class="admin-link">сайт</NuxtLink>
         <a href="#" class="admin-link" @click.prevent="logout">выйти</a>
       </div>
@@ -34,7 +34,7 @@
 
         <!-- проекты + chip текущего проекта -->
         <div ref="projectsTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isProjectsTab }">
-          <NuxtLink to="/admin" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isProjectsTab }">проекты</NuxtLink>
+          <NuxtLink to="/admin" class="admin-tab-label admin-tab" :class="{ 'admin-tab--active': isProjectsTab }">проекты</NuxtLink>
           <button
             v-if="activeProjectSlug"
             type="button"
@@ -65,7 +65,7 @@
 
         <!-- подрядчики + chip -->
         <div ref="contractorsTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isContractorsTab }">
-          <NuxtLink :to="contractorsTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isContractorsTab }">подрядчики</NuxtLink>
+          <NuxtLink :to="contractorsTabTo" class="admin-tab-label admin-tab" :class="{ 'admin-tab--active': isContractorsTab }">подрядчики</NuxtLink>
           <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="contractorsOpen = !contractorsOpen">…</button>
           <div v-if="contractorsOpen" class="admin-dropdown glass-surface" @click.stop>
             <div
@@ -97,7 +97,7 @@
 
         <!-- клиенты + chip -->
         <div ref="clientsTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isClientsTab }">
-          <NuxtLink :to="clientsTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isClientsTab }">клиенты</NuxtLink>
+          <NuxtLink :to="clientsTabTo" class="admin-tab-label admin-tab" :class="{ 'admin-tab--active': isClientsTab }">клиенты</NuxtLink>
           <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="clientsOpen = !clientsOpen">…</button>
           <div v-if="clientsOpen" class="admin-dropdown glass-surface" @click.stop>
             <div
@@ -129,7 +129,7 @@
 
         <!-- галерея — одна кнопка с дропдауном категорий -->
         <div ref="galleryTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isGalleryTab }">
-          <NuxtLink :to="galleryActiveTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isGalleryTab }">галерея</NuxtLink>
+          <NuxtLink :to="galleryActiveTabTo" class="admin-tab-label admin-tab" :class="{ 'admin-tab--active': isGalleryTab }">галерея</NuxtLink>
           <button type="button" class="admin-mini-chip" :class="galleryCurrentChip ? 'admin-mini-chip' : 'admin-mini-chip--dim'" @click.stop="galleryOpen = !galleryOpen">
             {{ galleryCurrentChip || '…' }}
           </button>
@@ -148,12 +148,12 @@
 
         <!-- документы -->
         <div class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDocumentsTab }">
-          <NuxtLink to="/admin/documents" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDocumentsTab }">документы</NuxtLink>
+          <NuxtLink to="/admin/documents" class="admin-tab-label admin-tab" :class="{ 'admin-tab--active': isDocumentsTab }">документы</NuxtLink>
         </div>
 
         <!-- дизайнеры -->
         <div ref="designersTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDesignersTab }">
-          <NuxtLink :to="designersTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDesignersTab }">дизайнеры</NuxtLink>
+          <NuxtLink :to="designersTabTo" class="admin-tab-label admin-tab" :class="{ 'admin-tab--active': isDesignersTab }">дизайнеры</NuxtLink>
           <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="designersOpen = !designersOpen">…</button>
           <div v-if="designersOpen" class="admin-dropdown glass-surface" @click.stop>
             <div
@@ -185,7 +185,7 @@
 
         <!-- поставщики -->
         <div ref="sellersTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isSellersTab }">
-          <NuxtLink :to="sellersTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isSellersTab }">поставщики</NuxtLink>
+          <NuxtLink :to="sellersTabTo" class="admin-tab-label admin-tab" :class="{ 'admin-tab--active': isSellersTab }">поставщики</NuxtLink>
           <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="sellersOpen = !sellersOpen">…</button>
           <div v-if="sellersOpen" class="admin-dropdown glass-surface" @click.stop>
             <div
@@ -254,11 +254,11 @@ const { data: projectData, refresh: refreshProjectData } = await useFetch(() =>
 
 // ── Gallery tabs config ─────────────────────────────────────────
 const GALLERY_TABS = [
-  { slug: 'interiors',  label: 'интерьеры',    icon: '🏠' },
-  { slug: 'furniture',  label: 'мебель',        icon: '🪑' },
-  { slug: 'materials',  label: 'материалы',     icon: '🪵' },
-  { slug: 'art',        label: 'арт-объекты',   icon: '🎨' },
-  { slug: 'moodboards', label: 'мудборды',      icon: '🖼' },
+  { slug: 'interiors',  label: 'интерьеры',    icon: 'ин' },
+  { slug: 'furniture',  label: 'мебель',        icon: 'мб' },
+  { slug: 'materials',  label: 'материалы',     icon: 'мт' },
+  { slug: 'art',        label: 'арт-объекты',   icon: 'ар' },
+  { slug: 'moodboards', label: 'мудборды',      icon: 'мд' },
 ]
 
 function withCtx(path: string) {
@@ -679,177 +679,203 @@ async function logout() {
 
 /* ── Header ── */
 .admin-header {
-  padding: 13px 24px;
+  padding: 12px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 0 0 var(--card-radius) var(--card-radius);
+  border-radius: 0;
+  border-bottom: 1px solid rgba(var(--glass-text-rgb, 0,0,0), 0.08);
+  background: transparent;
 }
 .admin-brand {
-  font-size: .68rem;
-  letter-spacing: 2px;
+  font-size: .72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--glass-text);
+  opacity: .40;
+  font-weight: 400;
+}
+.admin-header-links { display: flex; gap: 20px; align-items: center; }
+.admin-link {
+  font-size: .75rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--glass-text);
   opacity: .45;
-}
-.admin-header-links { display: flex; gap: 14px; align-items: center; }
-.admin-link {
-  font-size: .78rem;
-  color: var(--glass-text);
-  opacity: .5;
   text-decoration: none;
+  transition: opacity .15s;
 }
 .admin-link:hover { opacity: 1; }
 
-/* ── Search button ── */
+/* ── Search button: flat hairline ── */
 .admin-search-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-radius: 8px;
-  padding: 4px 10px 4px 8px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  border-radius: 0;
+  padding: 4px 12px;
   cursor: pointer;
-  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
-  font-size: .72rem;
-  transition: background .14s, border-color .14s, color .14s;
+  color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+  font-size: .75rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  transition: border-color .15s, color .15s;
   font-family: inherit;
 }
+.admin-search-btn svg { display: none; }
 .admin-search-btn:hover {
-  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-color: color-mix(in srgb, var(--glass-text) 18%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 50%, transparent);
   color: var(--glass-text);
 }
 .admin-search-label {
-  font-size: .7rem;
+  font-size: .68rem;
+  letter-spacing: 0.10em;
 }
 .admin-search-kbd {
   font-size: .58rem;
-  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
-  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  border-radius: 0;
   padding: 1px 5px;
   font-family: inherit;
-  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 35%, transparent);
+  background: transparent;
 }
 
-.theme-dot {
-  width: 18px; height: 18px;
-  border-radius: 999px;
-  border: none;
-  background: color-mix(in srgb, var(--glass-bg) 80%, transparent);
-  box-shadow: inset 0 0 0 1px var(--glass-border);
+/* ── Theme toggle: flat text link ── */
+.admin-theme-btn {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  border-radius: 0;
+  padding: 4px 12px;
   cursor: pointer;
-  padding: 0;
+  color: var(--glass-text);
+  opacity: .45;
+  font-size: .68rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  font-family: inherit;
+  transition: opacity .15s, border-color .15s;
 }
+.admin-theme-btn:hover { opacity: 1; border-color: var(--glass-text); }
 
 /* ── Container / tabs ── */
-.admin-container { max-width: var(--ds-container-width, 1140px); margin: 22px auto; padding: 0 16px; transition: max-width var(--ds-transition, 180ms ease); }
+.admin-container { max-width: var(--ds-container-width, 1140px); margin: 22px auto; padding: 0 24px; transition: max-width var(--ds-transition, 180ms ease); }
 .admin-tabs {
   display: flex;
-  gap: 6px;
-  margin-bottom: 20px;
+  gap: 0;
+  margin-bottom: 28px;
   flex-wrap: wrap;
   align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
 }
 
-/* ── Generic tab pill ── */
+/* ── Generic tab — flat text, underline active ── */
 .admin-tab {
-  height: 32px;
-  padding: 0 14px;
+  height: 38px;
+  padding: 0 18px;
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;
   text-decoration: none;
   color: var(--glass-text);
   font-family: var(--ds-font-family);
-  font-size: var(--ds-text-sm, .78rem);
+  font-size: .75rem;
   line-height: 1;
-  letter-spacing: var(--ds-letter-spacing);
-  opacity: .62;
-  border-radius: 999px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: .45;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   white-space: nowrap;
-  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
+  background: transparent;
+  border-left: none; border-right: none; border-top: none;
+  transition: opacity .15s ease, border-bottom-color .15s ease;
 }
-.admin-tab:hover  { opacity: .9; }
-.admin-tab--active { opacity: 1; font-weight: 600; }
+.admin-tab:hover  { opacity: .80; }
+.admin-tab--active { opacity: 1; border-bottom-color: var(--glass-text); font-weight: 400; }
 
-/* ── Chip-tab wrapper (label + mini chip) ── */
+/* ── Chip-tab wrapper ── */
 .admin-chip-tab {
   position: relative;
   display: inline-flex;
   align-items: center;
-  height: 32px;
-  gap: 4px;
+  height: 38px;
+  gap: 2px;
 }
 .admin-tab-label { /* NuxtLink inheriting .admin-tab */ }
 
-/* Small circle chip — matches tab height */
+/* Small square indicator chip ── */
 .admin-mini-chip {
-  width: 24px; height: 24px;
-  border-radius: 999px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
+  width: 20px; height: 20px;
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 22%, transparent);
+  background: transparent;
   color: var(--glass-text);
-  font-size: .6rem;
-  font-weight: var(--ds-heading-weight, 700);
+  font-size: .52rem;
+  font-weight: 400;
+  letter-spacing: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   flex-shrink: 0;
-  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
+  opacity: .55;
+  transition: opacity .15s ease;
 }
 .admin-mini-chip--dim {
   background: transparent;
-  opacity: .38;
+  opacity: .30;
 }
-.admin-mini-chip:hover { opacity: 1; background: var(--glass-bg); }
+.admin-mini-chip:hover { opacity: 1; background: transparent; }
 
-/* ── Dropdown ── */
+/* ── Dropdown: flat, no radius ── */
 .admin-dropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 2px);
   left: 0;
-  min-width: 240px;
+  min-width: 220px;
   max-height: 320px;
   overflow: auto;
-  border-radius: var(--card-radius, 12px);
-  border: 1px solid var(--glass-border);
-  padding: 6px;
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  padding: 4px 0;
   z-index: 80;
-  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.10));
-  transition: box-shadow var(--ds-transition, 180ms ease);
+  background: var(--glass-page-bg);
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
 }
 .admin-drop-item {
   width: 100%; border: none; background: transparent;
-  color: var(--glass-text); border-radius: calc(var(--card-radius, 12px) * 0.65);
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px; text-align: left; cursor: pointer;
-  font-family: var(--ds-font-family); font-size: var(--ds-text-sm, .76rem);
-  transition: background var(--ds-transition, 150ms ease);
+  color: var(--glass-text); border-radius: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px; text-align: left; cursor: pointer;
+  font-family: var(--ds-font-family); font-size: .72rem;
+  letter-spacing: 0.06em;
+  transition: background .12s ease;
 }
-.admin-drop-item:hover { background: color-mix(in srgb, var(--glass-bg) 85%, transparent); }
-.admin-drop-item--active { background: color-mix(in srgb, var(--glass-bg) 94%, transparent); font-weight: 600; }
+.admin-drop-item:hover { background: color-mix(in srgb, var(--glass-text) 5%, transparent); }
+.admin-drop-item--active { background: color-mix(in srgb, var(--glass-text) 8%, transparent); font-weight: 500; }
 .admin-drop-item--flex { flex: 1; }
 .admin-drop-item-with-actions {
   display: flex; align-items: center; gap: 4px;
 }
 .admin-drop-action-btn {
-  width: 24px; height: 24px; border: none; border-radius: 4px;
+  width: 20px; height: 20px; border-radius: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: all var(--ds-transition, 150ms ease);
-  background: var(--glass-bg); color: var(--glass-text);
-  border: 1px solid var(--glass-border);
+  font-size: 11px; font-weight: 500; cursor: pointer;
+  transition: all .15s ease;
+  background: transparent; color: var(--glass-text);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 20%, transparent);
+  opacity: .5;
 }
 .admin-drop-action-btn--add:hover {
-  background: var(--ds-success, #10b981); color: white; border-color: color-mix(in srgb, var(--ds-success, #10b981) 80%, #000);
+  background: transparent; color: var(--glass-text); border-color: var(--glass-text); opacity: 1;
 }
 .admin-drop-action-btn--remove:hover {
-  background: var(--ds-error, #ef4444); color: white; border-color: color-mix(in srgb, var(--ds-error, #ef4444) 80%, #000);
+  background: transparent; color: var(--glass-text); border-color: var(--glass-text); opacity: 1;
 }
 .admin-drop-action-btn:disabled {
   opacity: 0.4; cursor: not-allowed;
@@ -930,20 +956,27 @@ async function logout() {
   opacity: .4;
 }
 .admin-drop-ini {
-  width: 22px; height: 22px; border-radius: 999px;
+  width: 20px; height: 20px; border-radius: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  font-size: .58rem; font-weight: 700; flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  background: transparent;
+  font-size: .52rem; font-weight: 400; flex-shrink: 0;
+  letter-spacing: 0;
+  opacity: .7;
 }
-.admin-drop-lbl { font-size: .76rem; }
-.admin-drop-empty { font-size: .74rem; opacity: .4; padding: 8px; }
+.admin-drop-lbl { font-size: .72rem; letter-spacing: 0.02em; }
+.admin-drop-empty { font-size: .68rem; opacity: .35; padding: 8px 16px; }
 .admin-drop-all {
-  display: block; padding: 8px 10px;
-  font-size: .72rem; color: var(--glass-text); opacity: .5;
-  text-decoration: none; border-top: 1px solid var(--glass-border); margin-top: 4px;
+  display: block; padding: 8px 16px;
+  font-size: .66rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--glass-text); opacity: .40;
+  text-decoration: none;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  margin-top: 4px;
+  background: none; border-left: none; border-right: none; border-bottom: none;
+  cursor: pointer; width: 100%; text-align: left; font-family: inherit;
 }
-.admin-drop-all:hover { opacity: 1; }
+.admin-drop-all:hover { opacity: .90; }
 
 /* ══════════════════════════════════════════════════════════════
    MOBILE RESPONSIVE — admin layout

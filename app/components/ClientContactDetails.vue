@@ -306,8 +306,10 @@ async function save() {
 }
 .ccd-btnopt:hover { opacity: .95; border-color: var(--glass-text); }
 .ccd-btnopt--on {
-  background: var(--glass-text, #1a1a1a); color: var(--glass-bg, #fff);
-  border-color: var(--glass-text, #1a1a1a);
+  background: transparent;
+  color: var(--glass-text, #1a1a1a);
+  border: 2px solid var(--glass-text, #1a1a1a);
+  font-weight: 600;
   opacity: 1;
 }
 

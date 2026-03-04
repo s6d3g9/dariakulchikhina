@@ -456,6 +456,8 @@ const props = defineProps<{
     template: string
   }>
   projects: Array<{ slug: string; title: string }>
+  /** Если передан — редактор открывается с готовым содержимым существующего документа */
+  existingDoc?: { id: number; content: string; templateKey?: string | null; projectSlug?: string | null } | null
 }>()
 
 const emit = defineEmits<{
@@ -1171,6 +1173,27 @@ watch(step, (v) => { if (v === 2) syncEditorContent() })
 watch(pickedProjectSlug, () => {
   savedDocId.value = null
   autoSaveStatus.value = ''
+})
+
+// Если передан existingDoc — сразу открываем редактор с его содержимым
+onMounted(() => {
+  const doc = props.existingDoc
+  if (!doc) return
+  savedDocId.value = doc.id
+  editorContent.value = doc.content
+  if (doc.projectSlug) pickedProjectSlug.value = doc.projectSlug
+  // Пробуем найти шаблон по templateKey
+  if (doc.templateKey) {
+    const tpl = props.templates.find(t => t.key === doc.templateKey)
+    if (tpl) {
+      selectTemplate(tpl)
+    }
+  }
+  // Переходим сразу в редактор
+  step.value = 2
+  nextTick(() => {
+    if (editorEl.value) editorEl.value.innerText = doc.content
+  })
 })
 
 // ── Actions ──

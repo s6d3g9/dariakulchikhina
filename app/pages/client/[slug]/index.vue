@@ -115,6 +115,7 @@ import ClientPassport      from '~/components/ClientPassport.vue'
 import ClientBrief         from '~/components/ClientBrief.vue'
 import ClientTZ            from '~/components/ClientTZ.vue'
 import ClientContracts     from '~/components/ClientContracts.vue'
+import ClientExtraServices  from '~/components/ClientExtraServices.vue'
 import ClientWorkProgress  from '~/components/ClientWorkProgress.vue'
 import ClientTimeline      from '~/components/ClientTimeline.vue'
 import ClientDesignAlbum   from '~/components/ClientDesignAlbum.vue'
@@ -155,6 +156,7 @@ const PAGE_COMPONENT_MAP: Record<string, Component> = {
   client_brief:    ClientBrief,
   client_tz:       ClientTZ,
   contracts:       ClientContracts,
+  extra_services:  ClientExtraServices,
   work_progress:   ClientWorkProgress,
   design_timeline: ClientTimeline,
   design_album:    ClientDesignAlbum,

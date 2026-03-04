@@ -5,10 +5,9 @@
         <span class="default-title">Daria Kulchikhina</span>
         <button
           type="button"
-          class="theme-dot"
-          :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
+          class="default-theme-btn"
           @click="toggleTheme"
-        ></button>
+        >{{ isDark ? 'светло' : 'темно' }}</button>
       </div>
     </header>
     <slot />
@@ -52,20 +51,21 @@ const { isDark, toggleTheme } = useThemeToggle()
   color: var(--title);
 }
 
-.theme-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: none;
-  background: color-mix(in srgb, var(--header-bg) 72%, var(--bg) 28%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  backdrop-filter: blur(10px) saturate(140%);
+.default-theme-btn {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  color: var(--title);
   cursor: pointer;
-  padding: 0;
+  font-size: .62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 3px 8px;
   appearance: none;
   -webkit-appearance: none;
+  transition: opacity .15s;
 }
+.default-theme-btn:hover { opacity: .7; }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {

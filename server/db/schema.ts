@@ -199,6 +199,27 @@ export const documents = pgTable('documents', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// ── Дополнительные услуги по проекту ───────────────────────────
+export const projectExtraServices = pgTable('project_extra_services', {
+  id:             serial('id').primaryKey(),
+  projectId:      integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  requestedBy:    text('requested_by').notNull().default('client'), // 'client' | 'admin'
+  serviceKey:     text('service_key'),                               // из каталога EXTRA_SERVICE_CATALOG
+  title:          text('title').notNull(),
+  description:    text('description'),
+  quantity:       text('quantity').notNull().default('1'),
+  unit:           text('unit').notNull().default('услуга'),
+  unitPrice:      integer('unit_price'),                             // цена за единицу, руб
+  totalPrice:     integer('total_price'),                            // итоговая сумма, руб
+  status:         text('status').notNull().default('requested'),     // см. EXTRA_SERVICE_STATUSES
+  clientNotes:    text('client_notes'),
+  adminNotes:     text('admin_notes'),
+  contractDocId:  integer('contract_doc_id').references(() => documents.id, { onDelete: 'set null' }),
+  invoiceDocId:   integer('invoice_doc_id').references(() => documents.id, { onDelete: 'set null' }),
+  createdAt:      timestamp('created_at').defaultNow().notNull(),
+  updatedAt:      timestamp('updated_at').defaultNow().notNull(),
+})
+
 export const contractorDocuments = pgTable('contractor_documents', {
   id: serial('id').primaryKey(),
   contractorId: integer('contractor_id').notNull().references(() => contractors.id, { onDelete: 'cascade' }),
@@ -339,6 +360,12 @@ export const sellersRelations = relations(sellers, ({ many }) => ({
 export const sellerProjectsRelations = relations(sellerProjects, ({ one }) => ({
   seller: one(sellers, { fields: [sellerProjects.sellerId], references: [sellers.id] }),
   project: one(projects, { fields: [sellerProjects.projectId], references: [projects.id] }),
+}))
+
+export const projectExtraServicesRelations = relations(projectExtraServices, ({ one }) => ({
+  project:     one(projects,   { fields: [projectExtraServices.projectId],     references: [projects.id] }),
+  contractDoc: one(documents,  { fields: [projectExtraServices.contractDocId], references: [documents.id] }),
+  invoiceDoc:  one(documents,  { fields: [projectExtraServices.invoiceDocId],  references: [documents.id] }),
 }))
 
 export const projectsRelations = relations(projects, ({ many, one }) => ({
