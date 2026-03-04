@@ -6,13 +6,13 @@
       <!-- Section: Family -->
       <div class="asb-section">
         <div class="asb-section-title">состав семьи и образ жизни</div>
-        <div class="u-prop-rows">
-          <div v-for="f in familyFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in familyFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-if="f.multi"
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
               :placeholder="f.placeholder || ''"
 
               @blur="save"
@@ -46,7 +46,7 @@
             <input
               v-else
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
               type="text"
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -58,12 +58,12 @@
       <!-- Section: Concept -->
       <div class="asb-section">
         <div class="asb-section-title">концепция и атмосфера</div>
-        <div class="u-prop-rows">
-          <div v-for="f in conceptFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in conceptFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
 
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -75,12 +75,12 @@
       <!-- Section: Routines -->
       <div class="asb-section">
         <div class="asb-section-title">ритуалы и распорядок</div>
-        <div class="u-prop-rows">
-          <div v-for="f in routineFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in routineFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
 
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -92,12 +92,12 @@
       <!-- Section: Kitchen -->
       <div class="asb-section">
         <div class="asb-section-title">кухня и гастрономия</div>
-        <div class="u-prop-rows">
-          <div v-for="f in kitchenFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in kitchenFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
 
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -109,12 +109,12 @@
       <!-- Section: Sport -->
       <div class="asb-section">
         <div class="asb-section-title">спорт и домашняя активность</div>
-        <div class="u-prop-rows">
-          <div v-for="f in sportFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in sportFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
 
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -126,12 +126,12 @@
       <!-- Section: Storage -->
       <div class="asb-section">
         <div class="asb-section-title">хранение и хозяйство</div>
-        <div class="u-prop-rows">
-          <div v-for="f in storageFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in storageFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
 
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -143,12 +143,12 @@
       <!-- Section: Lighting -->
       <div class="asb-section">
         <div class="asb-section-title">световые сценарии</div>
-        <div class="u-prop-rows">
-          <div v-for="f in lightingFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in lightingFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
 
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -160,12 +160,12 @@
       <!-- Section: Tech -->
       <div class="asb-section">
         <div class="asb-section-title">умный дом и технологии</div>
-        <div class="u-prop-rows">
-          <div v-for="f in techFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in techFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
 
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -177,13 +177,13 @@
       <!-- Section: Style -->
       <div class="asb-section">
         <div class="asb-section-title">стиль и эстетика</div>
-        <div class="u-prop-rows">
-          <div v-for="f in styleFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in styleFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-if="f.multi"
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
 
               :placeholder="f.placeholder || ''"
               @blur="save"
@@ -217,7 +217,7 @@
             <input
               v-else
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
               type="text"
               @blur="save"
             >
@@ -228,12 +228,12 @@
       <!-- Section: Restrictions -->
       <div class="asb-section">
         <div class="asb-section-title">ограничения и особые условия</div>
-        <div class="u-prop-rows">
-          <div v-for="f in restrictFields" :key="f.key" class="u-prop-row">
-            <label class="u-prop-label">{{ f.label }}</label>
+        <div class="ass-upload-zone">
+          <div v-for="f in restrictFields" :key="f.key" class="ass-upload-row">
+            <label class="ass-field-label">{{ f.label }}</label>
             <input
               v-model="(form as any)[f.key]"
-              class="u-prop-inp"
+              class="glass-input"
 
               :placeholder="f.placeholder || ''"
               @blur="save"

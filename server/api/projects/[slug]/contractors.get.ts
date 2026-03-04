@@ -17,5 +17,15 @@ export default defineEventHandler(async (event) => {
     .where(eq(projectContractors.projectId, project.id))
     .orderBy(contractors.name)
 
-  return rows.map(r => r.contractor)
+  // Strip sensitive fields: slug (auth secret), passport/financial PII
+  return rows.map(r => {
+    const {
+      slug: _slug,
+      passportSeries, passportNumber, passportIssuedBy, passportIssuedDate,
+      snils, inn,
+      bankName, bankBik, bankAccount, bankCorrAccount,
+      ...safe
+    } = r.contractor as Record<string, any>
+    return safe
+  })
 })

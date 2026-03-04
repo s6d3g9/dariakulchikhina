@@ -8,7 +8,7 @@ const ReorderSchema = z.object({
   items: z.array(z.object({
     id: z.number(),
     sortOrder: z.number(),
-  })),
+  })).max(1000),
 })
 
 export default defineEventHandler(async (event) => {
@@ -16,12 +16,14 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const body = await readValidatedNodeBody(event, ReorderSchema)
 
-  // Batch update sort orders
-  for (const item of body.items) {
-    await db.update(galleryItems)
-      .set({ sortOrder: item.sortOrder })
-      .where(eq(galleryItems.id, item.id))
-  }
+  // Wrap in transaction for consistency
+  await db.transaction(async (tx) => {
+    for (const item of body.items) {
+      await tx.update(galleryItems)
+        .set({ sortOrder: item.sortOrder })
+        .where(eq(galleryItems.id, item.id))
+    }
+  })
 
   return { ok: true, updated: body.items.length }
 })

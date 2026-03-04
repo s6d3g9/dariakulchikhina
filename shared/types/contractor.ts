@@ -56,5 +56,5 @@ export const CreateContractorSchema = z.object({
   contractorType: z.enum(['master', 'company']).default('master'),
   parentId: z.number().optional().nullable(),
 })
-export const UpdateContractorSchema = ContractorSchema.omit({ id: true }).partial()
+export const UpdateContractorSchema = ContractorSchema.omit({ id: true, slug: true }).partial()
 export type Contractor = z.infer<typeof ContractorSchema>

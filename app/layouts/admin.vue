@@ -494,7 +494,7 @@ function pickClient(cl: any) {
 function pickGallery(slug: string) { closeAll(); navigateTo(withCtx(`/admin/gallery/${slug}`)) }
 function pickDesigner(designer: any) {
   closeAll()
-  navigateTo(designersTabTo.value)
+  navigateTo(`/admin/designers?designerId=${designer.id}`)
 }
 
 // ── Auth ─────────────────────────────────────────────────────────

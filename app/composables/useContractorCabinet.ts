@@ -194,6 +194,9 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
   // ── Section nav ──
   const section = ref('dashboard')
 
+  // Reset section when switching contractors
+  watch(cid, () => { section.value = 'dashboard' })
+
   const nav = computed(() => {
     const items: { key: string; icon: string; label: string }[] = [
       { key: 'dashboard', icon: '◈', label: 'Обзор' },
@@ -202,7 +205,7 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
       { key: 'passport', icon: '◑', label: 'Паспортные данные' },
       { key: 'requisites', icon: '◒', label: 'Реквизиты' },
       { key: 'documents', icon: '◓', label: 'Документы' },
-      { key: 'specialization', icon: '◔', label: 'Специализации' },
+      { key: 'specialization', icon: '◐', label: 'Специализации' },
       { key: 'finances', icon: '◕', label: 'Финансы' },
       { key: 'portfolio', icon: '◖', label: 'Портфолио' },
       { key: 'settings', icon: '⚙', label: 'Настройки' },
@@ -639,14 +642,14 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
   }
 
   async function createTask() {
-    if (!cid.value || !newTask.masterContractorId || !newTask.projectSlug || !newTask.title.trim()) return
+    if (!cid.value || !newTask.projectSlug || !newTask.title.trim()) return
     creatingTask.value = true
     try {
       await $fetch(`/api/contractors/${cid.value}/work-items`, {
         method: 'POST',
         body: {
           projectSlug: newTask.projectSlug,
-          masterContractorId: newTask.masterContractorId,
+          contractorId: newTask.masterContractorId || cid.value,
           title: newTask.title.trim(),
           workType: newTask.workType || null,
           dateStart: newTask.dateStart || null,

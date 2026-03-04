@@ -3,6 +3,7 @@ import { contractorDocuments } from '~/server/db/schema'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { join, extname } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { validateUploadedFile } from '~/server/utils/upload-validation'
 
 export default defineEventHandler(async (event) => {
   const contractorId = Number(getRouterParam(event, 'id'))
@@ -18,6 +19,9 @@ export default defineEventHandler(async (event) => {
   const expiresAt = form.find(f => f.name === 'expiresAt')?.data?.toString() || null
 
   if (!fileField?.data) throw createError({ statusCode: 400, message: 'File required' })
+
+  const validation = validateUploadedFile(fileField.data, fileField.filename, fileField.type)
+  if (!validation.valid) throw createError({ statusCode: 400, message: validation.error })
 
   const ext = extname(fileField.filename || '.pdf')
   const filename = `contractor_${contractorId}_${randomUUID()}${ext}`

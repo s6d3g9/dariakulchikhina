@@ -10,5 +10,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const [updated] = await db.update(contractors).set(body).where(eq(contractors.id, id)).returning()
   if (!updated) throw createError({ statusCode: 404 })
-  return updated
+  // Strip auth-sensitive slug from response
+  const { slug: _slug, ...safe } = updated as Record<string, any>
+  return safe
 })

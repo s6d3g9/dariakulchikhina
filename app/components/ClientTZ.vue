@@ -6,7 +6,7 @@
       <!-- ── Содержание ТЗ ── -->
       <div class="ctz-section">
         <div class="ctz-section-title">содержание технического задания</div>
-        <div class="u-prop-rows">
+        <div class="ass-upload-zone">
           <div v-if="profile.tor_scope" class="u-field">
             <span class="u-field__label">Объём работ</span>
             <span class="ctz-val ctz-val--pre">{{ profile.tor_scope }}</span>
@@ -29,7 +29,7 @@
       <!-- ── Договор (если есть) ── -->
       <div v-if="hasContract" class="ctz-section">
         <div class="ctz-section-title">договор</div>
-        <div class="u-prop-rows">
+        <div class="ass-upload-zone">
           <div v-if="profile.contract_number" class="u-field">
             <span class="u-field__label">Номер</span>
             <span class="ctz-val">{{ profile.contract_number }}</span>

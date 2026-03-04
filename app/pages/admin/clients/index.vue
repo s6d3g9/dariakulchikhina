@@ -27,8 +27,8 @@
             <nav class="cab-nav std-nav">
               <button
                 class="cab-nav-item std-nav-item"
-                :class="{ active: clientPage === 'overview', 'std-nav-item--active': clientPage === 'overview' }"
-                @click="clientPage = 'overview'"
+                :class="{ active: clientPage === 'dashboard', 'std-nav-item--active': clientPage === 'dashboard' }"
+                @click="clientPage = 'dashboard'"
               ><span class="cab-nav-icon">◈</span> обзор</button>
               <button
                 v-for="pg in clientNavPages"
@@ -42,7 +42,7 @@
           <main class="cab-main">
             <div class="cab-inner">
               <ClientOverview
-                v-if="clientPage === 'overview'"
+                v-if="clientPage === 'dashboard'"
                 :slug="selectedClientSlug"
                 :project="clientProject"
                 :contractors="[]"
@@ -95,8 +95,8 @@
               <span class="ent-nav-name">{{ c.name }}<span v-if="c.linkedProjects?.length" class="ent-nav-sub">{{ c.linkedProjects.map((p: any) => p.title).join(', ') }}</span></span>
               <span v-if="c.linkedProjects?.length" class="cl-nav-arrow">→</span>
             </button>
-            <div v-if="filteredClients.length === 0 && searchQuery" class="cl-nav-empty">ничего не найдено</div>
-            <div v-else-if="!clients?.length" class="cl-nav-empty">нет клиентов</div>
+            <div v-if="filteredClients.length === 0 && searchQuery" class="ent-nav-empty">ничего не найдено</div>
+            <div v-else-if="!clients?.length" class="ent-nav-empty">нет клиентов</div>
           </template>
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openAdd">+ добавить</button></div>
@@ -212,7 +212,7 @@ const filteredClients = computed(() => {
   const q = searchQuery.value.toLowerCase()
   return all.filter((c: any) => c.name?.toLowerCase().includes(q) || c.phone?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q))
 })
-function selectClient(c: any) { selectedClientId.value = c.id; clientPage.value = 'overview' }
+function selectClient(c: any) { selectedClientId.value = c.id; clientPage.value = 'dashboard' }
 
 // Авто-выбор клиента по query ?clientId=
 const router = useRouter()
@@ -224,7 +224,7 @@ function applyClientIdQuery() {
   const qid = clientIdFromQuery.value
   if (qid && clients.value?.length) {
     const found = clients.value.find((c: any) => c.id === qid)
-    if (found) { selectedClientId.value = found.id; clientPage.value = 'overview' }
+    if (found) { selectedClientId.value = found.id; clientPage.value = 'dashboard' }
     router.replace({ query: { ...route.query, clientId: undefined } })
   }
 }
@@ -250,7 +250,7 @@ const PAGE_COMPONENT_MAP: Record<string, Component> = {
   design_album:    ClientDesignAlbum,
 }
 const allClientPages = getClientPages()
-const clientPage = ref('overview')
+const clientPage = ref('dashboard')
 const clientNavPages = computed(() => {
   const pages = clientProject.value?.pages || []
   return allClientPages.filter(p => {
@@ -259,7 +259,7 @@ const clientNavPages = computed(() => {
     return pages.includes(p.slug)
   })
 })
-watch(selectedClientId, () => { clientPage.value = 'overview' })
+watch(selectedClientId, () => { clientPage.value = 'dashboard' })
 const clientNormalizedPage = computed(() =>
   clientPage.value === 'brief' ? 'self_profile' : clientPage.value
 )
@@ -308,53 +308,8 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-filter-info { margin-bottom: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: .76rem; color: var(--glass-text); }
 .cl-filter-link { text-decoration: none; color: var(--glass-text); opacity: .72; }
 .cl-filter-link:hover { opacity: 1; }
-.cl-nav-empty { padding: 16px 10px; text-align: center; font-size: .74rem; color: var(--glass-text); opacity: .3; }
 .cl-nav-arrow { margin-left: auto; font-size: .7rem; opacity: .4; flex-shrink: 0; }
-/* ── Embedded client cabinet ── */
-.cab-body {
-  display: flex;
-  height: calc(100vh - 140px);
-  min-height: 400px;
-  overflow: hidden;
-}
-.cab-sidebar {
-  width: 200px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  border-radius: 0;
-}
-.cab-nav {
-  flex: 1;
-  padding: 8px 0;
-}
-.cab-nav-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: .82rem;
-  font-family: inherit;
-  color: inherit;
-  text-align: left;
-  border-radius: 8px;
-  transition: background .15s;
-  opacity: .65;
-}
-.cab-nav-item:hover { background: rgba(255,255,255,.1); opacity: .9; }
-.cab-nav-item.active { background: rgba(255,255,255,.16); opacity: 1; font-weight: 600; }
-.cab-nav-icon { font-size: .9rem; flex-shrink: 0; }
-.cab-main {
-  flex: 1;
-  overflow-y: auto;
-  background: transparent;
-}
-.cab-inner { padding: 20px 24px 32px; }
+
 /* ── Modals ── */
 .cl-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.35); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .cl-modal { width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 24px 26px 28px; }

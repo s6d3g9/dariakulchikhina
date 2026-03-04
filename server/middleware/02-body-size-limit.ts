@@ -38,10 +38,12 @@ export default defineEventHandler((event) => {
         received += Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(String(chunk))
         if (received > maxBytes) {
           req.destroy()
-          throw createError({
-            statusCode: 413,
-            statusMessage: `Payload Too Large — лимит ${Math.round(maxBytes / 1024 / 1024)} MB`,
-          })
+          // Send 413 directly — throw inside event listener won't propagate to H3
+          const res = event.node?.res ?? (event as any).res
+          if (res && !res.headersSent) {
+            res.writeHead(413, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ statusCode: 413, statusMessage: `Payload Too Large — лимит ${Math.round(maxBytes / 1024 / 1024)} MB` }))
+          }
         }
       }
       req.prependListener?.('data', onData)

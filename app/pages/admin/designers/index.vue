@@ -27,8 +27,8 @@
               <span class="ent-nav-avatar">{{ d.name?.charAt(0)?.toUpperCase() || '?' }}</span>
               <span class="ent-nav-name">{{ d.name }}<span v-if="d.city" class="ent-nav-sub">{{ d.city }}</span></span>
             </button>
-            <div v-if="!filteredDesigners.length && searchQuery" class="ds-nav-empty">ничего не найдено</div>
-            <div v-else-if="!allDesigners?.length" class="ds-nav-empty">нет дизайнеров</div>
+            <div v-if="!filteredDesigners.length && searchQuery" class="ent-nav-empty">ничего не найдено</div>
+            <div v-else-if="!allDesigners?.length" class="ent-nav-empty">нет дизайнеров</div>
           </template>
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true">+ добавить</button></div>
@@ -42,15 +42,15 @@
           </div>
           <input v-model="newName" class="glass-input ds-create-inp" placeholder="Имя / Студия" @keydown.enter="doCreate" />
           <div class="ent-detail-foot">
-            <button class="a-btn-save" :disabled="!newName.trim() || creating" @click="doCreate">{{ creating ? 'Создание…' : 'Создать' }}</button>
-            <button class="a-btn-sm" @click="showCreate = false">Отмена</button>
+            <button class="a-btn-save" :disabled="!newName.trim() || creating" @click="doCreate">{{ creating ? '…' : 'создать' }}</button>
+            <button class="a-btn-sm" @click="showCreate = false">отмена</button>
           </div>
         </div>
 
         <div v-else class="ent-empty-detail">
           <span class="ent-empty-icon">🎨</span>
           <span v-if="allDesigners?.length">Выберите дизайнера из списка</span>
-          <span v-else>Дизайнеры не добавлены</span>
+          <span v-else>Нет дизайнеров — добавьте первого</span>
           <button v-if="!allDesigners?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true">+ добавить первого</button>
         </div>
       </div>
@@ -66,9 +66,27 @@ const searchQuery = ref('')
 const showCreate = ref(false)
 const newName = ref('')
 const creating = ref(false)
+const route = useRoute()
+const router = useRouter()
 const selectedDesignerId = ref<number | null>(null)
 
 const selectedDesigner = computed(() => allDesigners.value?.find((d: any) => d.id === selectedDesignerId.value) || null)
+
+// Auto-select designer from ?designerId= query
+const designerIdFromQuery = computed(() => {
+  const v = route.query.designerId
+  return typeof v === 'string' ? parseInt(v, 10) : null
+})
+function applyDesignerIdQuery() {
+  const qid = designerIdFromQuery.value
+  if (qid && allDesigners.value?.length) {
+    const found = allDesigners.value.find((d: any) => d.id === qid)
+    if (found) selectedDesignerId.value = found.id
+    router.replace({ query: { ...route.query, designerId: undefined } })
+  }
+}
+watch(() => allDesigners.value, () => applyDesignerIdQuery(), { immediate: true })
+watch(designerIdFromQuery, () => applyDesignerIdQuery())
 
 const filteredDesigners = computed(() => {
   if (!searchQuery.value) return allDesigners.value
@@ -96,6 +114,5 @@ async function deleteDesigner(id: number) {
 </script>
 
 <style scoped>
-.ds-nav-empty { padding: 16px 10px; text-align: center; font-size: .74rem; color: var(--glass-text); opacity: .3; }
 .ds-create-inp { width: 100%; margin-bottom: 12px; }
 </style>

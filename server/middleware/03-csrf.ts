@@ -17,6 +17,7 @@ const TOKEN_LENGTH = 32
 const EXEMPT_ROUTES = new Set([
   '/api/auth/login',
   '/api/auth/contractor-login',
+  '/api/auth/client-login',
 ])
 
 function readCsrfCookie(event: any): string | undefined {

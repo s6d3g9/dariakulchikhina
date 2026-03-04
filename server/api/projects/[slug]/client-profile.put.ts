@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   // Auth: admin or client for this project
   requireAdminOrClient(event, slug)
 
-  const body = await readValidatedBody(event, (raw) => profileSchema.parse(raw))
+  const body = await readValidatedNodeBody(event, profileSchema)
   const db = useDb()
 
   const [current] = await db.select().from(projects).where(eq(projects.slug, slug)).limit(1)

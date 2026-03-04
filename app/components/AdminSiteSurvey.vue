@@ -6,25 +6,25 @@
       <!-- Section: Visit Info -->
       <div class="ass-section">
         <div class="ass-section-title">информация о выезде</div>
-        <div class="u-prop-rows">
-          <div class="u-prop-row">
-            <label class="u-prop-label">дата выезда</label>
+        <div class="ass-upload-zone">
+          <div class="ass-upload-row">
+            <label class="ass-field-label">дата выезда</label>
             <AppDatePicker v-model="form.survey_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">инженер / замерщик</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">инженер / замерщик</label>
             <input v-model="form.survey_engineer" type="text" class="glass-input" placeholder="ФИО" @blur="save">
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">адрес объекта</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">адрес объекта</label>
             <AppAddressInput v-model="form.survey_address" input-class="glass-input" @blur="save" />
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">площадь (м²)</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">площадь (м²)</label>
             <input v-model="form.survey_area" type="text" class="glass-input" placeholder="например: 87.4" @blur="save">
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">высота потолков</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">высота потолков</label>
             <input v-model="form.survey_ceiling" type="text" class="glass-input" placeholder="например: 3.1 м / на разных участках" @blur="save">
           </div>
         </div>
@@ -47,8 +47,8 @@
             </span>
           </label>
         </div>
-        <div class="u-prop-row" style="margin-top:14px">
-          <label class="u-prop-label">заметки по инженерии</label>
+        <div class="ass-upload-row" style="margin-top:14px">
+          <label class="ass-field-label">заметки по инженерии</label>
           <textarea v-model="form.survey_mep_notes" class="glass-input u-ta" rows="3" @blur="save" />
         </div>
       </div>
@@ -92,19 +92,19 @@
       <!-- Section: Notes -->
       <div class="ass-section">
         <div class="ass-section-title">итоги обследования</div>
-        <div class="u-prop-rows">
-          <div class="u-prop-row">
-            <label class="u-prop-label">выявленные проблемы</label>
+        <div class="ass-upload-zone">
+          <div class="ass-upload-row">
+            <label class="ass-field-label">выявленные проблемы</label>
             <textarea v-model="form.survey_issues" class="glass-input u-ta" rows="3"
               placeholder="нарушение несущих конструкций, аварийные трубы, демонтаж..." @blur="save"/>
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">рекомендации</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">рекомендации</label>
             <textarea v-model="form.survey_recommendations" class="glass-input u-ta" rows="3"
               placeholder="что необходимо сделать до начала проектирования..." @blur="save"/>
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">Дополнительная информация</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">Дополнительная информация</label>
             <textarea v-model="form.survey_notes" class="glass-input u-ta" rows="2" @blur="save"/>
           </div>
         </div>

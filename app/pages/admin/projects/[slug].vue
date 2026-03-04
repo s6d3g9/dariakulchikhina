@@ -1007,7 +1007,7 @@ async function unlinkDesigner(designerId: number) {
 
 /* ── Left sidebar nav ── */
 .proj-sidenav {
-  width: var(--ds-sidebar-width, 190px); flex-shrink: 0;
+  width: var(--ds-sidebar-width, 200px); flex-shrink: 0;
   padding: 10px;
 }
 

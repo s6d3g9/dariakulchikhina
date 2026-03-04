@@ -49,8 +49,8 @@
                 <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
               </button>
             </template>
-            <div v-if="searchQuery && !filteredCompanies.length && !filteredStandalone.length" class="ct-nav-empty">ничего не найдено</div>
-            <div v-else-if="!contractors?.length" class="ct-nav-empty">нет подрядчиков</div>
+            <div v-if="searchQuery && !filteredCompanies.length && !filteredStandalone.length" class="ent-nav-empty">ничего не найдено</div>
+            <div v-else-if="!contractors?.length" class="ent-nav-empty">нет подрядчиков</div>
           </template>
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button></div>
@@ -60,7 +60,7 @@
         <div class="ent-empty-detail">
           <span class="ent-empty-icon">🏗</span>
           <span v-if="contractors?.length">Выберите подрядчика из списка</span>
-          <span v-else>Подрядчики не добавлены</span>
+          <span v-else>Нет подрядчиков — добавьте первого</span>
           <button v-if="!contractors?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить первого</button>
         </div>
       </div>
@@ -236,6 +236,23 @@ const selectedId = ref<number | null>(null)
 const selected = computed(() => contractors.value?.find((c: any) => c.id === selectedId.value) || null)
 function selectContractor(c: any) { selectedId.value = c.id }
 
+// Auto-select contractor from ?contractorId= query
+const router = useRouter()
+const contractorIdFromQuery = computed(() => {
+  const v = route.query.contractorId
+  return typeof v === 'string' ? parseInt(v, 10) : null
+})
+function applyContractorIdQuery() {
+  const qid = contractorIdFromQuery.value
+  if (qid && contractors.value?.length) {
+    const found = contractors.value.find((c: any) => c.id === qid)
+    if (found) selectedId.value = found.id
+    router.replace({ query: { ...route.query, contractorId: undefined } })
+  }
+}
+watch(contractors, () => applyContractorIdQuery(), { immediate: true })
+watch(contractorIdFromQuery, () => applyContractorIdQuery())
+
 const companies = computed(() => (contractors.value || []).filter((c: any) => c.contractorType === 'company'))
 const mastersByParent = computed(() => {
   const map = new Map<number, any[]>()
@@ -382,7 +399,6 @@ async function del(id: number) {
 .ct-filter-info { margin-bottom: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: .76rem; color: var(--glass-text); }
 .ct-filter-link { text-decoration: none; color: var(--glass-text); opacity: .5; transition: opacity .15s; }
 .ct-filter-link:hover { opacity: 1; }
-.ct-nav-empty { padding: 16px 10px; text-align: center; font-size: .74rem; color: var(--glass-text); opacity: .3; }
 .ct-nav-master { padding-left: 22px; }
 .ct-av--company { background: color-mix(in srgb, #a06e1e 12%, transparent); color: #a06e1e; }
 html.dark .ct-av--company { background: color-mix(in srgb, #c8a03c 15%, transparent); color: #c8a03c; }

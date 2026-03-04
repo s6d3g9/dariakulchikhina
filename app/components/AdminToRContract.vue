@@ -18,17 +18,17 @@
       <div class="ator-section">
         <div class="ator-section-title">договор и ТЗ</div>
 
-        <div class="u-prop-rows">
-          <div class="u-prop-row">
-            <label class="u-prop-label">номер договора</label>
-            <input v-model="form.contract_number" class="u-prop-inp" placeholder="ДОГ-2025-001" @blur="save">
+        <div class="ass-upload-zone">
+          <div class="ass-upload-row">
+            <label class="ass-field-label">номер договора</label>
+            <input v-model="form.contract_number" class="glass-input" placeholder="ДОГ-2025-001" @blur="save">
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">дата договора</label>
-            <AppDatePicker v-model="form.contract_date" model-type="iso" input-class="u-prop-inp" @update:model-value="save" />
+          <div class="ass-upload-row">
+            <label class="ass-field-label">дата договора</label>
+            <AppDatePicker v-model="form.contract_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">статус</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">статус</label>
             <div class="ator-status-wrap">
               <div class="ator-status-flow">
                 <button
@@ -42,12 +42,12 @@
               </div>
             </div>
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">стороны договора</label>
-            <input v-model="form.contract_parties" class="u-prop-inp" placeholder="ИП Иванова — ООО Заказчик" @blur="save">
+          <div class="ass-upload-row">
+            <label class="ass-field-label">стороны договора</label>
+            <input v-model="form.contract_parties" class="glass-input" placeholder="ИП Иванова — ООО Заказчик" @blur="save">
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">файл договора</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">файл договора</label>
             <div class="ator-file-row">
               <a v-if="form.contract_file" :href="form.contract_file" target="_blank" class="ator-file-link">
                 📄 {{ form.contract_filename || 'открыть' }}
@@ -59,9 +59,9 @@
               <span v-if="uploading === 'contract'" class="ator-uploading">загрузка...</span>
             </div>
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">примечания</label>
-            <input v-model="form.contract_notes" class="u-prop-inp" @blur="save" />
+          <div class="ass-upload-row">
+            <label class="ass-field-label">примечания</label>
+            <input v-model="form.contract_notes" class="glass-input" @blur="save" />
           </div>
         </div>
       </div>
@@ -70,21 +70,21 @@
       <div class="ator-section">
         <div class="ator-section-title">инвойс · аванс (этап 1)</div>
 
-        <div class="u-prop-rows">
-          <div class="u-prop-row">
-            <label class="u-prop-label">сумма инвойса</label>
-            <input v-model="form.invoice_amount" class="u-prop-inp" type="text" placeholder="₽ 250 000" @blur="save">
+        <div class="ass-upload-zone">
+          <div class="ass-upload-row">
+            <label class="ass-field-label">сумма инвойса</label>
+            <input v-model="form.invoice_amount" class="glass-input" type="text" placeholder="₽ 250 000" @blur="save">
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">% аванса</label>
-            <input v-model="form.invoice_advance_pct" class="u-prop-inp" type="text" placeholder="50%" @blur="save">
+          <div class="ass-upload-row">
+            <label class="ass-field-label">% аванса</label>
+            <input v-model="form.invoice_advance_pct" class="glass-input" type="text" placeholder="50%" @blur="save">
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">дата выставления</label>
-            <AppDatePicker v-model="form.invoice_date" model-type="iso" input-class="u-prop-inp" @update:model-value="save" />
+          <div class="ass-upload-row">
+            <label class="ass-field-label">дата выставления</label>
+            <AppDatePicker v-model="form.invoice_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">статус оплаты</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">статус оплаты</label>
             <div class="ator-status-flow">
               <button
                 v-for="s in paymentStatuses"
@@ -96,8 +96,8 @@
               >{{ s.label }}</button>
             </div>
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">файл инвойса</label>
+          <div class="ass-upload-row">
+            <label class="ass-field-label">файл инвойса</label>
             <div class="ator-file-row">
               <a v-if="form.invoice_file" :href="form.invoice_file" target="_blank" class="ator-file-link">
                 📄 {{ form.invoice_filename || 'открыть' }}
@@ -109,9 +109,9 @@
               <span v-if="uploading === 'invoice'" class="ator-uploading">загрузка...</span>
             </div>
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">реквизиты оплаты</label>
-            <input v-model="form.invoice_payment_details" class="u-prop-inp"
+          <div class="ass-upload-row">
+            <label class="ass-field-label">реквизиты оплаты</label>
+            <input v-model="form.invoice_payment_details" class="glass-input"
               placeholder="счёт, банк, назначение платежа..." @blur="save" />
           </div>
         </div>
@@ -120,24 +120,24 @@
       <!-- ── ToR Scope ───────────────────────────────────────────── -->
       <div class="ator-section">
         <div class="ator-section-title">содержание ТЗ (Terms of Reference)</div>
-        <div class="u-prop-rows">
-          <div class="u-prop-row">
-            <label class="u-prop-label">объём работ</label>
-            <input v-model="form.tor_scope" class="u-prop-inp"
+        <div class="ass-upload-zone">
+          <div class="ass-upload-row">
+            <label class="ass-field-label">объём работ</label>
+            <input v-model="form.tor_scope" class="glass-input"
               placeholder="что входит в проект: концепция, 3D, РД, авторский надзор..." @blur="save" />
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">исключения</label>
-            <input v-model="form.tor_exclusions" class="u-prop-inp"
+          <div class="ass-upload-row">
+            <label class="ass-field-label">исключения</label>
+            <input v-model="form.tor_exclusions" class="glass-input"
               placeholder="что не входит..." @blur="save" />
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">сроки проектирования</label>
-            <input v-model="form.tor_timeline" class="u-prop-inp" placeholder="например: 8 недель от старта" @blur="save">
+          <div class="ass-upload-row">
+            <label class="ass-field-label">сроки проектирования</label>
+            <input v-model="form.tor_timeline" class="glass-input" placeholder="например: 8 недель от старта" @blur="save">
           </div>
-          <div class="u-prop-row">
-            <label class="u-prop-label">формат результата</label>
-            <input v-model="form.tor_deliverables" class="u-prop-inp"
+          <div class="ass-upload-row">
+            <label class="ass-field-label">формат результата</label>
+            <input v-model="form.tor_deliverables" class="glass-input"
               placeholder="PDF, DWG, 3D-файлы, BIM..." @blur="save" />
           </div>
         </div>

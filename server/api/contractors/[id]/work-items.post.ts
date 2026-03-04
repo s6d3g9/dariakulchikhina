@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 const Body = z.object({
   projectSlug: z.string(),
-  masterContractorId: z.number(),
+  contractorId: z.number(),
   title: z.string().min(1),
   workType: z.string().optional().nullable(),
   dateStart: z.string().optional().nullable(),
@@ -21,17 +21,19 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedNodeBody(event, Body)
   const db = useDb()
 
-  // Проверяем, что мастер принадлежит этой компании
-  const [master] = await db
-    .select({ id: contractors.id })
-    .from(contractors)
-    .where(and(
-      eq(contractors.id, body.masterContractorId),
-      eq(contractors.parentId, companyId),
-    ))
-    .limit(1)
-
-  if (!master) throw createError({ statusCode: 403, statusMessage: 'Master not in staff' })
+  // Разрешаем назначить задачу самому подрядчику или его сотруднику
+  const targetId = body.contractorId
+  if (targetId !== companyId) {
+    const [master] = await db
+      .select({ id: contractors.id })
+      .from(contractors)
+      .where(and(
+        eq(contractors.id, targetId),
+        eq(contractors.parentId, companyId),
+      ))
+      .limit(1)
+    if (!master) throw createError({ statusCode: 403, statusMessage: 'Contractor not in staff' })
+  }
 
   // Ищем проект по slug
   const [project] = await db
@@ -44,7 +46,7 @@ export default defineEventHandler(async (event) => {
 
   const [item] = await db.insert(workStatusItems).values({
     projectId: project.id,
-    contractorId: body.masterContractorId,
+    contractorId: targetId,
     title: body.title,
     workType: body.workType || null,
     status: 'pending',

@@ -2,7 +2,7 @@ import { useDb } from '~/server/db/index'
 import { designerProjects, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { DESIGNER_SERVICE_TEMPLATES, DESIGNER_PACKAGE_TEMPLATES } from '~~/shared/types/designer'
+import { CORE_PAGES } from '~/shared/constants/pages'
 
 const CreateDesignerProjectSchema = z.object({
   designerId: z.number(),
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
     ;[project] = await db.insert(projects).values({
       slug: body.slug,
       title: body.title,
-      pages: [],
+      pages: [...CORE_PAGES],
       profile: {},
     }).returning()
   } catch (e: any) {
@@ -36,6 +36,11 @@ export default defineEventHandler(async (event) => {
       const [existing] = await db.select().from(projects).where(eq(projects.slug, body.slug)).limit(1)
       if (existing) {
         project = existing
+        // Backfill pages if project was created with empty pages
+        if (!existing.pages || existing.pages.length === 0) {
+          await db.update(projects).set({ pages: [...CORE_PAGES] }).where(eq(projects.id, existing.id))
+          project = { ...existing, pages: [...CORE_PAGES] }
+        }
       } else {
         throw createError({ statusCode: 400, statusMessage: `Slug «${body.slug}» уже занят` })
       }

@@ -73,6 +73,9 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
   // ── Section navigation ──
   const section = ref('dashboard')
 
+  // Reset section when switching designers
+  watch(did, () => { section.value = 'dashboard' })
+
   const nav = computed(() => {
     const items = [
       { key: 'dashboard', icon: '◈', label: 'Обзор' },

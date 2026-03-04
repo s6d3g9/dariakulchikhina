@@ -42,7 +42,7 @@ const RATE_CONFIGS: Record<string, RateConfig> = {
 }
 
 function getRouteGroup(path: string): string | null {
-  if (path.startsWith('/api/auth/login') || path.startsWith('/api/auth/contractor-login')) return 'auth'
+  if (path.startsWith('/api/auth/login') || path.startsWith('/api/auth/contractor-login') || path.startsWith('/api/auth/client-login')) return 'auth'
   if (path.includes('/upload') || path.includes('/photos')) return 'upload'
   if (path.startsWith('/api/')) return 'api'
   return null // No rate limit for static assets / pages
