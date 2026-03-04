@@ -141,6 +141,9 @@
           <button v-if="aiLoading" class="de-tbtn de-tbtn--abort" @click="abortAi">
             ✕ стоп
           </button>
+          <button class="de-tbtn" :class="{ 'de-tbtn--ai-active': chatVisible }" @click="chatVisible = !chatVisible" title="Показать/скрыть чат с Gemma">
+            💬 чат
+          </button>
         </div>
         <div v-if="aiProgress" class="de-ai-progress">
           <span class="de-ai-dot"></span> {{ aiProgress }}
@@ -151,6 +154,10 @@
       <div v-if="aiLoading" class="de-ai-bar">
         <div class="de-ai-bar-fill"></div>
       </div>
+
+      <!-- ══ Двухколоночный layout: редактор + чат ══ -->
+      <div class="de-editor-body" :class="{ 'de-editor-body--with-chat': chatVisible }">
+        <div class="de-editor-col">
       <div class="de-editor-wrap glass-card">
         <div
           ref="editorEl"
@@ -160,6 +167,50 @@
           @input="onEditorInput"
         ></div>
       </div>
+        </div><!-- /de-editor-col -->
+
+        <!-- ══ Чат-панель Gemma ══ -->
+        <Transition name="de-chat-slide">
+          <div v-if="chatVisible" class="de-chat-panel glass-surface">
+            <div class="de-chat-header">
+              <div class="de-chat-header-left">
+                <span class="de-chat-avatar">🤖</span>
+                <div>
+                  <div class="de-chat-title">Gemma 3 · 27B</div>
+                  <div class="de-chat-subtitle">локальная модель · {{ aiLoading ? 'печатает...' : 'онлайн' }}</div>
+                </div>
+              </div>
+              <button class="de-tbtn" @click="clearChat" title="Очистить историю">🗑</button>
+            </div>
+            <div ref="chatEl" class="de-chat-messages">
+              <div v-if="!chatMessages.length" class="de-chat-empty">
+                <div class="de-chat-empty-icon">🤖</div>
+                <div class="de-chat-empty-text">Нажми <strong>🤖 сгенерировать</strong>, <strong>✨ улучшить</strong> или <strong>📋 проверить</strong> — я напишу результат сюда в реальном времени.</div>
+              </div>
+              <div v-for="msg in chatMessages" :key="msg.id" class="de-chat-msg" :class="'de-chat-msg--' + msg.role">
+                <div v-if="msg.role === 'user'" class="de-chat-bubble de-chat-bubble--user">
+                  <span class="de-chat-action-badge">{{ msg.actionLabel }}</span>
+                  <span class="de-chat-time">{{ msg.time }}</span>
+                </div>
+                <div v-else class="de-chat-bubble de-chat-bubble--gemma">
+                  <div class="de-chat-bubble-content">
+                    <span v-if="msg.streaming && !msg.text" class="de-chat-typing">
+                      <span></span><span></span><span></span>
+                    </span>
+                    <span v-else class="de-chat-text">{{ msg.text }}</span><span v-if="msg.streaming" class="de-chat-cursor">▌</span>
+                  </div>
+                  <div class="de-chat-bubble-meta">
+                    <span v-if="msg.done" class="de-chat-done">✓ {{ msg.charCount }} симв.</span>
+                    <span v-else-if="msg.streaming" class="de-chat-writing">{{ msg.charCount > 0 ? msg.charCount + ' симв.' : '' }}</span>
+                    <span class="de-chat-time">{{ msg.time }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </div><!-- /de-editor-body -->
+
       <!-- AI: панель замечаний (review) -->
       <Transition name="de-slide">
         <div v-if="aiReviewNotes.length" class="de-ai-review glass-card">
@@ -695,6 +746,52 @@ async function copyToClipboard() {
 // ── AI (Gemma 3 27B) ──────────────────────────────────────────────────────
 const { aiLoading, aiError, aiAction, aiProgress, aiReviewNotes, aiCitations, streamDocument, reviewDocument, abortAi, clearReview, clearCitations } = useAiDocument()
 
+// ── Чат-панель ────────────────────────────────────────────────────────────
+interface ChatMsg {
+  id: number
+  role: 'user' | 'gemma'
+  actionLabel: string
+  text: string
+  streaming: boolean
+  done: boolean
+  time: string
+  charCount: number
+}
+const chatVisible = ref(true)
+const chatMessages = ref<ChatMsg[]>([])
+const chatEl = ref<HTMLElement | null>(null)
+let _chatIdSeq = 0
+
+function _chatNow() {
+  return new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+function _chatScroll() {
+  nextTick(() => { if (chatEl.value) chatEl.value.scrollTop = chatEl.value.scrollHeight })
+}
+function _chatPushUser(actionLabel: string) {
+  chatMessages.value.push({ id: ++_chatIdSeq, role: 'user', actionLabel, text: '', streaming: false, done: true, time: _chatNow(), charCount: 0 })
+  _chatScroll()
+}
+function _chatPushGemma(): ChatMsg {
+  const msg: ChatMsg = { id: ++_chatIdSeq, role: 'gemma', actionLabel: '', text: '', streaming: true, done: false, time: _chatNow(), charCount: 0 }
+  chatMessages.value.push(msg)
+  _chatScroll()
+  return msg
+}
+function _chatToken(msg: ChatMsg, token: string) {
+  msg.text += token
+  msg.charCount = msg.text.length
+  _chatScroll()
+}
+function _chatDone(msg: ChatMsg) {
+  msg.streaming = false
+  msg.done = true
+  _chatScroll()
+}
+function clearChat() {
+  chatMessages.value = []
+}
+
 function buildAiPayload() {
   return {
     templateKey:    selectedTpl.value?.key      || '',
@@ -714,13 +811,18 @@ async function onAiGenerate() {
   clearCitations()
   editorContent.value = ''
   if (editorEl.value) editorEl.value.innerText = ''
+  chatVisible.value = true
+  _chatPushUser('🤖 Сгенерировать документ')
+  const chatMsg = _chatPushGemma()
   await streamDocument('generate', buildAiPayload(), (token) => {
     editorContent.value += token
     if (editorEl.value) {
       editorEl.value.innerText = editorContent.value
       editorEl.value.scrollTop = editorEl.value.scrollHeight
     }
+    _chatToken(chatMsg, token)
   })
+  _chatDone(chatMsg)
 }
 
 async function onAiImprove() {
@@ -730,13 +832,18 @@ async function onAiImprove() {
   const originalText = editorContent.value || generateText()
   editorContent.value = ''
   if (editorEl.value) editorEl.value.innerText = ''
+  chatVisible.value = true
+  _chatPushUser('✨ Улучшить текст')
+  const chatMsg = _chatPushGemma()
   const ok = await streamDocument('improve', { ...buildAiPayload(), currentText: originalText }, (token) => {
     editorContent.value += token
     if (editorEl.value) {
       editorEl.value.innerText = editorContent.value
       editorEl.value.scrollTop = editorEl.value.scrollHeight
     }
+    _chatToken(chatMsg, token)
   })
+  _chatDone(chatMsg)
   if (!ok && !editorContent.value) {
     editorContent.value = originalText
     if (editorEl.value) editorEl.value.innerText = originalText
@@ -745,8 +852,19 @@ async function onAiImprove() {
 
 async function onAiReview() {
   if (!selectedTpl.value) return
+  chatVisible.value = true
+  _chatPushUser('📋 Проверить документ')
+  const chatMsg = _chatPushGemma()
   const notes = await reviewDocument(buildAiPayload())
-  if (notes) aiReviewNotes.value = notes
+  if (notes) {
+    aiReviewNotes.value = notes
+    chatMsg.text = notes.map(n => `${n.type === 'error' ? '⚠️' : '💡'} ${n.text}`).join('\n')
+    chatMsg.charCount = chatMsg.text.length
+  } else {
+    chatMsg.text = 'Анализ завершён. Замечаний нет.'
+    chatMsg.charCount = chatMsg.text.length
+  }
+  _chatDone(chatMsg)
 }
 
 // ── Сохранение ────────────────────────────────────────────────────────────
@@ -841,6 +959,160 @@ async function saveDocument() {
 /* ── Panel ── */
 .de-panel { display: flex; flex-direction: column; gap: 12px; }
 .de-panel--editor { gap: 8px; }
+
+/* ── Editor body: двухколоночный layout ── */
+.de-editor-body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.de-editor-col {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Чат-панель ── */
+.de-chat-panel {
+  width: 320px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  max-height: 520px;
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+}
+.de-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--glass-border);
+  gap: 8px;
+}
+.de-chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.de-chat-avatar {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.de-chat-title {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--glass-text);
+}
+.de-chat-subtitle {
+  font-size: .7rem;
+  opacity: .45;
+}
+.de-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scrollbar-width: thin;
+}
+.de-chat-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 12px;
+  text-align: center;
+  opacity: .45;
+}
+.de-chat-empty-icon { font-size: 2rem; }
+.de-chat-empty-text { font-size: .78rem; line-height: 1.5; }
+.de-chat-msg { display: flex; flex-direction: column; }
+.de-chat-msg--user { align-items: flex-end; }
+.de-chat-msg--gemma { align-items: flex-start; }
+.de-chat-bubble {
+  max-width: 90%;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: .78rem;
+  line-height: 1.5;
+}
+.de-chat-bubble--user {
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ds-accent, #6366f1) 25%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.de-chat-action-badge {
+  font-weight: 600;
+  font-size: .76rem;
+  color: var(--ds-accent, #6366f1);
+}
+.de-chat-bubble--gemma {
+  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+  border: 1px solid var(--glass-border);
+  width: 100%;
+}
+.de-chat-bubble-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--glass-text);
+  font-size: .76rem;
+  line-height: 1.55;
+  max-height: 340px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.de-chat-bubble-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid var(--glass-border);
+  gap: 6px;
+}
+.de-chat-time { font-size: .65rem; opacity: .35; white-space: nowrap; }
+.de-chat-done { font-size: .65rem; color: #34d399; }
+.de-chat-writing { font-size: .65rem; opacity: .5; }
+.de-chat-text { display: inline; }
+.de-chat-cursor {
+  display: inline-block;
+  color: var(--ds-accent, #6366f1);
+  opacity: .8;
+  animation: de-blink .7s step-end infinite;
+  margin-left: 1px;
+}
+@keyframes de-blink { 0%,100%{opacity:.8} 50%{opacity:0} }
+/* Анимация «печатает» три точки */
+.de-chat-typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 2px;
+}
+.de-chat-typing span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ds-accent, #6366f1);
+  opacity: .5;
+  animation: de-typing 1.2s ease-in-out infinite;
+}
+.de-chat-typing span:nth-child(2) { animation-delay: .2s; }
+.de-chat-typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes de-typing { 0%,80%,100%{transform:scale(1);opacity:.35} 40%{transform:scale(1.3);opacity:1} }
+
+/* Анимация появления чата */
+.de-chat-slide-enter-active, .de-chat-slide-leave-active {
+  transition: all .25s ease;
+}
+.de-chat-slide-enter-from, .de-chat-slide-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
+  width: 0;
+}
 
 /* ── Template grid ── */
 .de-tpl-grid {
