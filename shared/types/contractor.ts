@@ -41,6 +41,7 @@ export const ContractorSchema = z.object({
   city: z.string().optional().nullable(),
   workRadius: z.string().optional().nullable(),
   // Финансовые / организационные
+  legalForm: z.string().optional().nullable(),
   taxSystem: z.string().optional().nullable(),
   paymentMethods: z.array(z.string()).optional().default([]),
   hourlyRate: z.string().optional().nullable(),

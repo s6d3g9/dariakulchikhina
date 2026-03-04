@@ -129,20 +129,19 @@
                 <div class="u-field"><label class="u-field__label">Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">—</option><option value="telegram">telegram</option><option value="whatsapp">whatsapp</option><option value="viber">viber</option></select></div>
                 <div class="u-field"><label class="u-field__label">Ник / номер мессенджера</label><input v-model="form.messengerNick" class="glass-input" /></div>
               </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Сайт / портфолио</label><input v-model="form.website" class="glass-input" placeholder="https://" /></div>
-                <div class="u-field"></div>
-              </div>
               <div class="ct-form-section">адреса</div>
               <div class="u-grid-2">
                 <div class="u-field"><label class="u-field__label">Юридический адрес</label><AppAddressInput v-model="form.legalAddress" input-class="glass-input" /></div>
                 <div class="u-field"><label class="u-field__label">Фактический адрес</label><AppAddressInput v-model="form.factAddress" input-class="glass-input" /></div>
               </div>
               <div class="ct-form-section">реквизиты</div>
+              <div class="u-grid-2">
+                <div class="u-field u-field--full"><label class="u-field__label">Форма собственности</label><select v-model="form.legalForm" class="glass-input"><option value="">— не указана —</option><option value="self_employed">Самозанятый (физлицо / НПД)</option><option value="ip">ИП</option><option value="ooo">ООО</option><option value="other_legal">Другое юрлицо (АО, ПАО…)</option></select></div>
+              </div>
               <div class="u-grid-3">
-                <div class="u-field"><label class="u-field__label">ИНН</label><input v-model="form.inn" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">КПП</label><input v-model="form.kpp" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">ОГРН / ОГРНИП</label><input v-model="form.ogrn" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">ИНН</label><input v-model="form.inn" class="glass-input" :placeholder="(form.legalForm === 'ooo' || form.legalForm === 'other_legal') ? '0000000000 (10)' : '000000000000 (12)'" :maxlength="(form.legalForm === 'ooo' || form.legalForm === 'other_legal') ? 10 : 12" /></div>
+                <div v-if="form.legalForm === 'ooo' || form.legalForm === 'other_legal' || !form.legalForm" class="u-field"><label class="u-field__label">КПП</label><input v-model="form.kpp" class="glass-input" placeholder="000000000" maxlength="9" /></div>
+                <div v-if="form.legalForm !== 'self_employed'" class="u-field"><label class="u-field__label">{{ form.legalForm === 'ip' ? 'ОГРНИП' : 'ОГРН / ОГРНИП' }}</label><input v-model="form.ogrn" class="glass-input" :placeholder="form.legalForm === 'ip' ? '000000000000000' : '0000000000000'" :maxlength="form.legalForm === 'ip' ? 15 : 13" /></div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field"><label class="u-field__label">Банк</label><input v-model="form.bankName" class="glass-input" /></div>
@@ -311,7 +310,7 @@ const emptyForm = () => ({
   name: '', slug: '', companyName: '', contactPerson: '',
   phone: '', email: '', messenger: '', messengerNick: '', website: '',
   legalAddress: '', factAddress: '',
-  inn: '', kpp: '', ogrn: '', bankName: '', bik: '', settlementAccount: '', correspondentAccount: '',
+  inn: '', kpp: '', ogrn: '', legalForm: '', bankName: '', bik: '', settlementAccount: '', correspondentAccount: '',,
   notes: '', workTypes: [] as string[],
   contractorType: 'master' as 'master' | 'company', parentId: null as number | null,
 })

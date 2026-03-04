@@ -420,19 +420,33 @@
               <div class="u-form-section">
                 <h3>Юридические данные</h3>
                 <div class="u-grid-2">
-                  <div class="u-field">
-                    <label>ИНН</label>
-                    <input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" />
+                  <div class="u-field u-field--full">
+                    <label>Форма собственности</label>
+                    <select v-model="form.legalForm" class="glass-input">
+                      <option value="">— не указана —</option>
+                      <option value="self_employed">Самозанятый (физлицо / НПД)</option>
+                      <option value="ip">ИП (индивидуальный предприниматель)</option>
+                      <option value="ooo">ООО</option>
+                      <option value="other_legal">Другое юрлицо (АО, ПАО, ЗАО…)</option>
+                    </select>
                   </div>
                   <div class="u-field">
+                    <label>ИНН</label>
+                    <input v-model="form.inn" class="glass-input"
+                      :placeholder="(form.legalForm === 'ooo' || form.legalForm === 'other_legal') ? '0000000000 (10 цифр)' : '000000000000 (12 цифр)'"
+                      :maxlength="(form.legalForm === 'ooo' || form.legalForm === 'other_legal') ? 10 : 12" />
+                  </div>
+                  <div v-if="form.legalForm === 'ooo' || form.legalForm === 'other_legal' || !form.legalForm" class="u-field">
                     <label>КПП</label>
                     <input v-model="form.kpp" class="glass-input" placeholder="000000000" maxlength="9" />
                   </div>
-                  <div class="u-field">
-                    <label>ОГРН / ОГРНИП</label>
-                    <input v-model="form.ogrn" class="glass-input" placeholder="0000000000000" maxlength="15" />
+                  <div v-if="form.legalForm !== 'self_employed'" class="u-field">
+                    <label>{{ form.legalForm === 'ip' ? 'ОГРНИП' : 'ОГРН / ОГРНИП' }}</label>
+                    <input v-model="form.ogrn" class="glass-input"
+                      :placeholder="form.legalForm === 'ip' ? '000000000000000 (15)' : '0000000000000 (13)'"
+                      :maxlength="form.legalForm === 'ip' ? 15 : 13" />
                   </div>
-                  <div class="u-field u-field--full">
+                  <div v-if="form.legalForm !== 'self_employed'" class="u-field u-field--full">
                     <label>Юридический адрес</label>
                     <input v-model="form.legalAddress" class="glass-input" placeholder="Адрес регистрации ИП / ООО" />
                   </div>

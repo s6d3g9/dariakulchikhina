@@ -90,6 +90,7 @@ export const contractors = pgTable('contractors', {
   city: text('city'),
   workRadius: text('work_radius'),
   // Финансовые / организационные
+  legalForm: text('legal_form'),
   taxSystem: text('tax_system'),
   paymentMethods: text('payment_methods').array().default([]),
   hourlyRate: text('hourly_rate'),

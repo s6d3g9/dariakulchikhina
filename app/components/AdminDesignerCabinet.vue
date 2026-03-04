@@ -691,10 +691,6 @@
                     <input v-model="form.telegram" class="glass-input" placeholder="@username" />
                   </div>
                   <div class="u-field">
-                    <label class="u-field__label">Сайт / портфолио</label>
-                    <input v-model="form.website" class="glass-input" placeholder="https://…" />
-                  </div>
-                  <div class="u-field">
                     <label class="u-field__label">Город</label>
                     <input v-model="form.city" class="glass-input" placeholder="Москва" />
                   </div>

@@ -50,10 +50,6 @@
                 <input v-model="s.email" type="email" class="glass-input" @blur="save">
               </div>
               <div class="asup-card-row">
-                <label class="asup-lbl">сайт</label>
-                <input v-model="s.website" class="glass-input" placeholder="https://..." @blur="save">
-              </div>
-              <div class="asup-card-row">
                 <label class="asup-lbl">статус</label>
                 <select v-model="s.status" class="glass-input" @change="save">
                   <option value="">—</option>

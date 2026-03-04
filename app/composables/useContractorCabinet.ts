@@ -141,6 +141,7 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
     inn: '', kpp: '', ogrn: '', bankName: '', bik: '',
     settlementAccount: '', correspondentAccount: '',
     legalAddress: '', factAddress: '',
+    legalForm: '',
     taxSystem: '', paymentMethods: [] as string[], hourlyRate: '',
     hasInsurance: false, insuranceDetails: '',
     education: '', certifications: [] as string[],
@@ -181,6 +182,7 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
     form.correspondentAccount = c.correspondentAccount || ''
     form.legalAddress = c.legalAddress || ''
     form.factAddress = c.factAddress || ''
+    form.legalForm = c.legalForm || ''
     form.taxSystem = c.taxSystem || ''
     form.paymentMethods = Array.isArray(c.paymentMethods) ? [...c.paymentMethods] : []
     form.hourlyRate = c.hourlyRate || ''
