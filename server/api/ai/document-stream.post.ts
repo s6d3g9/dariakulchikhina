@@ -12,7 +12,7 @@ import { retrieveLegalContextWithChunks, type LegalChunkWithScore } from '~/serv
 
 const MODEL = 'gemma3:27b'
 const DEFAULT_GEMMA_URL = 'http://localhost:11434'
-const TIMEOUT_MS = 300_000 // 5 минут для стриминга
+const TIMEOUT_MS = 900_000 // 15 минут для стриминга
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -24,13 +24,14 @@ export default defineEventHandler(async (event) => {
     templateText,
     fields,
     currentText,
+    customInstruction,
     projectSlug,
     clientId,
     contractorId,
   } = body || {}
 
-  if (!action || !['generate', 'improve'].includes(action)) {
-    throw createError({ statusCode: 400, statusMessage: 'action должен быть generate или improve' })
+  if (!action || !['generate', 'improve', 'review', 'chat'].includes(action)) {
+    throw createError({ statusCode: 400, statusMessage: 'action должен быть generate, improve, review или chat' })
   }
 
   // ── Собираем контекст ──────────────────────────────────────────
@@ -40,8 +41,12 @@ export default defineEventHandler(async (event) => {
   let userPrompt = ''
   if (action === 'generate') {
     userPrompt = buildStreamGeneratePrompt({ templateName, templateText, fields, ctx })
-  } else {
+  } else if (action === 'improve') {
     userPrompt = buildStreamImprovePrompt({ templateName, currentText, ctx })
+  } else if (action === 'chat') {
+    userPrompt = buildStreamChatPrompt({ templateName, currentText, customInstruction, ctx })
+  } else {
+    userPrompt = buildStreamReviewPrompt({ templateName, currentText })
   }
 
   // ── RAG: правовая база ────────────────────────────────────────
@@ -92,16 +97,23 @@ export default defineEventHandler(async (event) => {
 
   const decoder = new TextDecoder()
   let buffer = ''
+  let fullText = '' // для парсинга notes в review
 
-  // Вспомогательная функция: отправить цитаты (если есть) и [DONE]
+  // Вспомогательная функция: отправить мета-данные и [DONE]
   function sendDone() {
-    if (legalChunks.length) {
+    // review → парсим замечания из накопленного текста
+    if (action === 'review') {
+      const notes = parseStreamReviewNotes(fullText)
+      res.write(`data: ${JSON.stringify({ notes })}\n\n`)
+    }
+    // generate/improve → отправляем цитаты из RAG
+    if (action !== 'review' && legalChunks.length) {
       const citations = legalChunks.map((c: LegalChunkWithScore) => ({
         source_name:   c.source_name,
         article_num:   c.article_num,
         article_title: c.article_title,
         chapter:       c.chapter,
-        text:          c.text.slice(0, 300), // краткое превью
+        text:          c.text.slice(0, 300),
         similarity:    Math.round(Number(c.similarity) * 100) / 100,
       }))
       res.write(`data: ${JSON.stringify({ citations })}\n\n`)
@@ -136,6 +148,7 @@ export default defineEventHandler(async (event) => {
           const data = JSON.parse(raw)
           const token = data?.choices?.[0]?.delta?.content ?? ''
           if (token) {
+            fullText += token
             res.write(`data: ${JSON.stringify({ token })}\n\n`)
           }
           const finishReason = data?.choices?.[0]?.finish_reason
@@ -157,6 +170,27 @@ export default defineEventHandler(async (event) => {
 
   return null
 })
+
+// ── Парсинг замечаний review из стримингового текста ────────────────────────
+function parseStreamReviewNotes(text: string): Array<{ type: 'error' | 'info'; text: string }> {
+  const notes: Array<{ type: 'error' | 'info'; text: string }> = []
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+  for (const line of lines) {
+    if (line.startsWith('⚠️') || line.startsWith('❌')) {
+      notes.push({ type: 'error', text: line.replace(/^[⚠️❌]\s*/, '') })
+    } else if (line.startsWith('💡') || line.startsWith('✅') || line.startsWith('ℹ️')) {
+      notes.push({ type: 'info', text: line.replace(/^[💡✅ℹ️]\s*/, '') })
+    } else if (line.length > 10 && !line.startsWith('---') && !line.startsWith('ДОКУМЕНТ')) {
+      notes.push({ type: 'info', text: line })
+    }
+  }
+  return notes.length ? notes : [{ type: 'info', text: text.slice(0, 500) }]
+}
+
+// ── Промпт для review ─────────────────────────────────────────────────────
+function buildStreamReviewPrompt(opts: { templateName: string; currentText?: string }): string {
+  return `Проверь следующий документ «${opts.templateName}» и составь список замечаний.\n\nДОКУМЕНТ:\n---\n${opts.currentText || '(пустой документ)'}\n---\n\nПроверь и перечисли замечания в формате:\n⚠️ [описание проблемы]\n💡 [предложение по улучшению]\n\nПроверяй:\n- Незаполненные поля (__________)\n- Отсутствующие обязательные разделы\n- Юридические риски и неточности\n- Несоответствия в данных (суммы, даты, ФИО)\n- Отсутствие подписей, реквизитов, печатей\n- Некорректные формулировки по ГК РФ\n\nЕсли документ в порядке, напиши: ✅ Документ составлен корректно.`
+}
 
 // ── Системный промпт ──────────────────────────────────────────────────────
 const STREAM_SYSTEM_PROMPT = `Ты — профессиональный юрист-ассистент и бизнес-редактор, специализирующийся на договорах и документах в сфере дизайна интерьеров.
@@ -299,4 +333,13 @@ ${opts.currentText || ''}
 ---
 
 Заполни пропуски, исправь формулировки, добавь недостающие пункты. Верни только готовый документ.`
+}
+
+function buildStreamChatPrompt(opts: { templateName: string; currentText?: string; customInstruction?: string; ctx: Record<string, any> }): string {
+  const ctxText = formatStreamCtx(opts.ctx)
+  return `Ты помогаешь редактировать документ «${opts.templateName}».
+
+${ctxText ? 'КОНТЕКСТ ПРОЕКТА:\n' + ctxText + '\n' : ''}${opts.currentText ? 'ТЕКУЩИЙ ДОКУМЕНТ:\n---\n' + opts.currentText + '\n---\n\n' : ''}ИНСТРУКЦИЯ ПОЛЬЗОВАТЕЛЯ: ${opts.customInstruction || ''}
+
+Выполни инструкцию пользователя. Если нужно изменить документ — верни только полный обновлённый документ. Если пользователь задаёт вопрос — ответь кратко.`
 }

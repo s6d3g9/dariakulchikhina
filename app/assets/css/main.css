@@ -3127,3 +3127,213 @@ html.dark .a-modal label {
   text-decoration-color: currentColor;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   CONTENT REVEAL SYSTEM  (data-content-reveal on <html>)
+   Animates sections/cards/panels when they appear.
+   Uses CSS @keyframes + animation on universal selectors.
+   ═══════════════════════════════════════════════════════════ */
+@keyframes arch-fade-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes arch-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes arch-slide-up {
+  from { opacity: 0; transform: translateY(48px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes arch-blur-reveal {
+  from { opacity: 0; filter: blur(12px); transform: translateY(16px); }
+  to   { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+/* fade-up: gentle rise */
+[data-content-reveal="fade-up"] .asb-section,
+[data-content-reveal="fade-up"] .acp-form-section,
+[data-content-reveal="fade-up"] .u-form-section,
+[data-content-reveal="fade-up"] .ent-detail-card,
+[data-content-reveal="fade-up"] .cab-task,
+[data-content-reveal="fade-up"] .cab-doc-card,
+[data-content-reveal="fade-up"] .dash-welcome,
+[data-content-reveal="fade-up"] .dash-quick-btn,
+[data-content-reveal="fade-up"] .dash-stat,
+[data-content-reveal="fade-up"] .dash-project-card,
+[data-content-reveal="fade-up"] .glass-card,
+[data-content-reveal="fade-up"] .u-topbar,
+[data-content-reveal="fade-up"] [class*="-section"]:not(.u-section-title):not(.ent-detail-section),
+[data-content-reveal="fade-up"] [class*="-wrap"] {
+  animation: arch-fade-up calc(var(--ds-anim-duration, 250ms) * 1.8) var(--ds-anim-easing, ease) both;
+}
+/* Stagger children for cinematic cascade */
+[data-content-reveal="fade-up"] .cab-body > *:nth-child(1) { animation-delay: 0ms; }
+[data-content-reveal="fade-up"] .cab-body > *:nth-child(2) { animation-delay: 80ms; }
+[data-content-reveal="fade-up"] .cab-body > *:nth-child(3) { animation-delay: 160ms; }
+[data-content-reveal="fade-up"] .cab-body > *:nth-child(4) { animation-delay: 240ms; }
+[data-content-reveal="fade-up"] .cab-body > *:nth-child(5) { animation-delay: 320ms; }
+[data-content-reveal="fade-up"] .cab-body > *:nth-child(n+6) { animation-delay: 400ms; }
+[data-content-reveal="fade-up"] .ent-main > *:nth-child(1) { animation-delay: 0ms; }
+[data-content-reveal="fade-up"] .ent-main > *:nth-child(2) { animation-delay: 100ms; }
+[data-content-reveal="fade-up"] .ent-main > *:nth-child(3) { animation-delay: 200ms; }
+[data-content-reveal="fade-up"] .proj-main-inner > *:nth-child(1) { animation-delay: 0ms; }
+[data-content-reveal="fade-up"] .proj-main-inner > *:nth-child(2) { animation-delay: 100ms; }
+[data-content-reveal="fade-up"] .proj-main-inner > *:nth-child(3) { animation-delay: 200ms; }
+[data-content-reveal="fade-up"] .proj-main-inner > *:nth-child(4) { animation-delay: 300ms; }
+[data-content-reveal="fade-up"] .proj-main-inner > *:nth-child(n+5) { animation-delay: 400ms; }
+
+/* fade: simple opacity emerge */
+[data-content-reveal="fade"] .asb-section,
+[data-content-reveal="fade"] .acp-form-section,
+[data-content-reveal="fade"] .u-form-section,
+[data-content-reveal="fade"] .ent-detail-card,
+[data-content-reveal="fade"] .glass-card,
+[data-content-reveal="fade"] .u-topbar,
+[data-content-reveal="fade"] .dash-welcome,
+[data-content-reveal="fade"] [class*="-section"]:not(.u-section-title):not(.ent-detail-section) {
+  animation: arch-fade calc(var(--ds-anim-duration, 250ms) * 2) var(--ds-anim-easing, ease) both;
+}
+
+/* slide-up: dramatic vertical entrance */
+[data-content-reveal="slide-up"] .asb-section,
+[data-content-reveal="slide-up"] .acp-form-section,
+[data-content-reveal="slide-up"] .u-form-section,
+[data-content-reveal="slide-up"] .ent-detail-card,
+[data-content-reveal="slide-up"] .glass-card,
+[data-content-reveal="slide-up"] .u-topbar,
+[data-content-reveal="slide-up"] .dash-welcome,
+[data-content-reveal="slide-up"] [class*="-section"]:not(.u-section-title):not(.ent-detail-section) {
+  animation: arch-slide-up calc(var(--ds-anim-duration, 250ms) * 2) var(--ds-anim-easing, ease) both;
+}
+
+/* blur: elements emerge from blur cloud (most Minale+Mann-like) */
+[data-content-reveal="blur"] .asb-section,
+[data-content-reveal="blur"] .acp-form-section,
+[data-content-reveal="blur"] .u-form-section,
+[data-content-reveal="blur"] .ent-detail-card,
+[data-content-reveal="blur"] .glass-card,
+[data-content-reveal="blur"] .u-topbar,
+[data-content-reveal="blur"] .dash-welcome,
+[data-content-reveal="blur"] [class*="-section"]:not(.u-section-title):not(.ent-detail-section) {
+  animation: arch-blur-reveal calc(var(--ds-anim-duration, 250ms) * 2.5) var(--ds-anim-easing, ease) both;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TEXT REVEAL SYSTEM  (data-text-reveal on <html>)
+   Animates text elements — headings, titles, paragraphs.
+   ═══════════════════════════════════════════════════════════ */
+@keyframes text-clip-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+@keyframes text-blur-in {
+  from { opacity: 0; filter: blur(8px); letter-spacing: 0.3em; }
+  to   { opacity: 1; filter: blur(0); letter-spacing: var(--ds-heading-letter-spacing, 0.02em); }
+}
+@keyframes text-letter-fade {
+  from { opacity: 0; letter-spacing: 0.5em; }
+  to   { opacity: 1; letter-spacing: var(--ds-heading-letter-spacing, 0.02em); }
+}
+
+/* clip: text sweeps in from left — editorial curtain reveal */
+[data-text-reveal="clip"] h1,
+[data-text-reveal="clip"] h2,
+[data-text-reveal="clip"] h3,
+[data-text-reveal="clip"] .u-section-title,
+[data-text-reveal="clip"] .u-topbar__title,
+[data-text-reveal="clip"] .ent-detail-name,
+[data-text-reveal="clip"] .dash-welcome-name {
+  animation: text-clip-reveal calc(var(--ds-anim-duration, 250ms) * 2) var(--ds-anim-easing, ease) both;
+}
+[data-text-reveal="clip"] p,
+[data-text-reveal="clip"] .u-field__label {
+  animation: arch-fade calc(var(--ds-anim-duration, 250ms) * 2.5) var(--ds-anim-easing, ease) both;
+  animation-delay: calc(var(--ds-anim-duration, 250ms) * 0.4);
+}
+
+/* blur-in: headings converge from wide blur — the M+M signature */
+[data-text-reveal="blur-in"] h1,
+[data-text-reveal="blur-in"] h2,
+[data-text-reveal="blur-in"] h3,
+[data-text-reveal="blur-in"] .u-section-title,
+[data-text-reveal="blur-in"] .u-topbar__title,
+[data-text-reveal="blur-in"] .ent-detail-name,
+[data-text-reveal="blur-in"] .dash-welcome-name {
+  animation: text-blur-in calc(var(--ds-anim-duration, 250ms) * 2.5) var(--ds-anim-easing, ease) both;
+}
+[data-text-reveal="blur-in"] p,
+[data-text-reveal="blur-in"] .u-field__label,
+[data-text-reveal="blur-in"] .ent-nav-name,
+[data-text-reveal="blur-in"] label {
+  animation: arch-fade calc(var(--ds-anim-duration, 250ms) * 3) var(--ds-anim-easing, ease) both;
+  animation-delay: calc(var(--ds-anim-duration, 250ms) * 0.6);
+}
+
+/* letter-fade: characters emerge with contracting letter-spacing */
+[data-text-reveal="letter-fade"] h1,
+[data-text-reveal="letter-fade"] h2,
+[data-text-reveal="letter-fade"] h3,
+[data-text-reveal="letter-fade"] .u-section-title,
+[data-text-reveal="letter-fade"] .u-topbar__title,
+[data-text-reveal="letter-fade"] .ent-detail-name,
+[data-text-reveal="letter-fade"] .dash-welcome-name {
+  animation: text-letter-fade calc(var(--ds-anim-duration, 250ms) * 2) var(--ds-anim-easing, ease) both;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CINEMATIC HOVER STATE SYSTEM
+   Ultra-slow, theatrical hover transitions for Minale+Mann-style.
+   Auto-enabled when animation duration > 500ms.
+   ═══════════════════════════════════════════════════════════ */
+
+/* All interactive elements get slow, elegant transitions */
+[data-content-reveal] a,
+[data-content-reveal] button,
+[data-content-reveal] .ent-nav-item,
+[data-content-reveal] .cab-nav-item,
+[data-content-reveal] .std-nav-item,
+[data-content-reveal] .dash-quick-btn,
+[data-content-reveal] .a-btn-save,
+[data-content-reveal] .a-btn-sm,
+[data-content-reveal] .glass-chip,
+[data-content-reveal] .admin-tab,
+[data-content-reveal] .admin-link {
+  transition-duration: var(--ds-anim-duration, 250ms) !important;
+  transition-timing-function: var(--ds-anim-easing, ease) !important;
+}
+
+/* Slow opacity transitions on all text when data-text-reveal is active */
+[data-text-reveal]:not([data-text-reveal="none"]) .ent-nav-item {
+  transition: opacity var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease),
+              background var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease),
+              transform var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease);
+}
+
+/* Nav items slide slightly on hover when content-reveal is active */
+[data-content-reveal]:not([data-content-reveal="none"]) .ent-nav-item:hover,
+[data-content-reveal]:not([data-content-reveal="none"]) .cab-nav-item:hover,
+[data-content-reveal]:not([data-content-reveal="none"]) .std-nav-item:hover {
+  transform: translateX(4px);
+}
+
+/* Buttons lift very gently */
+[data-content-reveal]:not([data-content-reveal="none"]) .a-btn-save:hover,
+[data-content-reveal]:not([data-content-reveal="none"]) .a-btn-sm:hover {
+  transform: translateY(-1px);
+}
+
+/* Admin tabs: slow morph between states */
+[data-content-reveal]:not([data-content-reveal="none"]) .admin-tab {
+  transition: all var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease) !important;
+}
+
+/* Cards inherit the cinematic transition speed */
+[data-content-reveal]:not([data-content-reveal="none"]) .glass-card,
+[data-content-reveal]:not([data-content-reveal="none"]) .glass-surface,
+[data-content-reveal]:not([data-content-reveal="none"]) .ent-detail-card,
+[data-content-reveal]:not([data-content-reveal="none"]) .cab-task,
+[data-content-reveal]:not([data-content-reveal="none"]) .dash-quick-btn {
+  transition: all var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease);
+}
+
+

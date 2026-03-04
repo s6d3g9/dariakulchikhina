@@ -1514,6 +1514,36 @@
                     <div class="dp-field-hint">компактный — минимальный заголовок, кинематограф — огромный</div>
                   </div>
 
+                  <!-- Content Reveal -->
+                  <div class="dp-field">
+                    <label class="dp-label">появление контента <span class="dp-val">{{ tokens.archContentReveal || 'none' }}</span></label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archContentReveals" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': (tokens.archContentReveal || 'none') === opt.id }"
+                        @click="set('archContentReveal', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                    <div class="dp-field-hint">плавный подъём — секции всплывают снизу, размытие — выходят из блюра (Minale+Mann-стиль)</div>
+                  </div>
+
+                  <!-- Text Reveal -->
+                  <div class="dp-field">
+                    <label class="dp-label">появление текста <span class="dp-val">{{ tokens.archTextReveal || 'none' }}</span></label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archTextReveals" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': (tokens.archTextReveal || 'none') === opt.id }"
+                        @click="set('archTextReveal', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                    <div class="dp-field-hint">обрезка — текст выезжает слева, из размытия — заголовки конденсируются из блюра (Minale+Mann), побуквенно — буквы собираются</div>
+                  </div>
+
                   <div class="dp-col-label" style="margin-top:12px">Поведение</div>
 
                   <!-- Card hover -->
@@ -1901,6 +1931,19 @@ const archHeroScales = [
   { id: 'large'      as const, label: 'крупный' },
   { id: 'cinematic'  as const, label: 'кинематограф' },
 ]
+const archContentReveals = [
+  { id: 'none'     as const, label: 'нет' },
+  { id: 'fade-up'  as const, label: 'плавный подъём' },
+  { id: 'fade'     as const, label: 'плавно' },
+  { id: 'slide-up' as const, label: 'подъём' },
+  { id: 'blur'     as const, label: 'размытие' },
+]
+const archTextReveals = [
+  { id: 'none'        as const, label: 'нет' },
+  { id: 'clip'        as const, label: 'обрезка' },
+  { id: 'blur-in'     as const, label: 'из размытия' },
+  { id: 'letter-fade' as const, label: 'побуквенно' },
+]
 const BORDER_STYLE_OPTIONS = [
   { id: 'solid' as const, label: 'solid' },
   { id: 'dashed' as const, label: 'dashed' },
@@ -1976,7 +2019,7 @@ const sectionSearchMap: Record<string, string[]> = {
   scrollbar: ['скроллбар', 'scrollbar', 'полоса прокрутки', 'ширина', 'width', 'прозрач'],
   tables:   ['таблиц', 'table', 'таблетк', 'строка', 'заголовок', 'row', 'header', 'border', 'hover'],
   badges:   ['значок', 'значки', 'badge', 'counter', 'счётчик', 'уведомлени', 'notification'],
-  arch:     ['архитектура', 'плотность', 'трекинг', 'заголовок', 'кейс', 'эффект', 'hover', 'анимация', 'ссылка', 'разделитель', 'секция', 'density', 'heading', 'tracking', 'card hover', 'divider', 'page enter', 'link anim', 'editorial', 'spatial', 'навигация', 'хром', 'карточка', 'масштаб', 'герой', 'ритм', 'nav style', 'card chrome', 'hero scale', 'vertical rhythm', 'ghost', 'cinematic', 'minimal', 'hidden'],
+  arch:     ['архитектура', 'плотность', 'трекинг', 'заголовок', 'кейс', 'эффект', 'hover', 'анимация', 'ссылка', 'разделитель', 'секция', 'density', 'heading', 'tracking', 'card hover', 'divider', 'page enter', 'link anim', 'editorial', 'spatial', 'навигация', 'хром', 'карточка', 'масштаб', 'герой', 'ритм', 'nav style', 'card chrome', 'hero scale', 'vertical rhythm', 'ghost', 'cinematic', 'minimal', 'hidden', 'появление', 'контент', 'текст', 'content reveal', 'text reveal', 'fade-up', 'blur-in', 'clip', 'letter-fade', 'размытие', 'minale', 'mann'],
 }
 
 function isTabVisible(key: string): boolean {

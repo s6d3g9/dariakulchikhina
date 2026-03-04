@@ -180,6 +180,8 @@ export interface DesignTokens {
   archCardChrome:     'visible' | 'subtle' | 'ghost'                     // card border / shadow visibility
   archHeroScale:      'compact' | 'normal' | 'large' | 'cinematic'       // page title scale
   archVerticalRhythm: number                                             // 0.5..3.0 — vertical spacing multiplier
+  archContentReveal:  'none' | 'fade-up' | 'fade' | 'slide-up' | 'blur'  // section enter animation
+  archTextReveal:     'none' | 'clip' | 'blur-in' | 'letter-fade'         // text reveal animation style
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -932,34 +934,39 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   {
     id: 'minale',
     name: 'Minale + Mann',
-    description: 'Стримлайн-минимализм — свет как материал, кинематографичные переходы',
+    description: 'minaleandmann.com — свет как материал, кинематографичные переходы, Ultra-wide трекинг, ghost-хром, blur-in текст',
     icon: '▯',
     tokens: {
-      btnRadius: 0, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 400,
-      btnPaddingH: 24, btnPaddingV: 12,
+      btnRadius: 0, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 200,
+      btnPaddingH: 32, btnPaddingV: 14, btnSize: 'lg',
+      btnHoverAnim: 'lift', cardHoverAnim: 'dim',
       fontFamily: '"Helvetica Neue", "Arial", "Segoe UI", sans-serif',
-      fontWeight: 300, headingWeight: 300, letterSpacing: 0.10, lineHeight: 1.75, typeScale: 1.333,
-      paragraphSpacing: 1.2, wordSpacing: 0.04,
-      headingLetterSpacing: 0.08, headingLineHeight: 1.15, textAlign: 'left',
-      accentHue: 30, accentSaturation: 6, accentLightness: 22,
-      successHue: 160, successSaturation: 20, errorHue: 0, errorSaturation: 35, warningHue: 42, warningSaturation: 30,
-      glassBlur: 40, glassOpacity: 0.12, glassBorderOpacity: 0.00, glassSaturation: 105,
-      shadowOffsetY: 0, shadowBlurRadius: 48, shadowSpread: 0, shadowOpacity: 0.03,
+      fontSize: 1, fontWeight: 200, headingWeight: 200, letterSpacing: 0.14, lineHeight: 2.0, typeScale: 1.414,
+      paragraphSpacing: 2.0, wordSpacing: 0.06, textIndent: 0,
+      headingLetterSpacing: 0.22, headingLineHeight: 1.05, paragraphMaxWidth: 50, textAlign: 'left',
+      accentHue: 35, accentSaturation: 5, accentLightness: 45,
+      successHue: 160, successSaturation: 10, errorHue: 0, errorSaturation: 20, warningHue: 42, warningSaturation: 15,
+      glassBlur: 64, glassOpacity: 0.02, glassBorderOpacity: 0.00, glassSaturation: 100,
+      shadowOffsetY: 0, shadowBlurRadius: 0, shadowSpread: 0, shadowOpacity: 0.00,
+      spacingBase: 8, spacingScale: 1.4,
       cardRadius: 0, inputRadius: 0, chipRadius: 0, modalRadius: 0,
-      animDuration: 600, animEasing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
-      borderWidth: 0, borderStyle: 'none', gridGap: 24,
-      darkElevation: 2, darkSaturation: 15,
-      inputBgOpacity: 0.00, inputBorderOpacity: 0.06, inputPaddingH: 0, inputPaddingV: 10, inputFontSize: 0,
-      chipBgOpacity: 0.03, chipBorderOpacity: 0.00, chipPaddingH: 12, chipPaddingV: 4,
-      navItemRadius: 0, navItemPaddingH: 16, navItemPaddingV: 10,
-      statusBgOpacity: 0.04, statusPillRadius: 0,
-      modalOverlayOpacity: 0.65, dropdownBlur: 40,
-      scrollbarWidth: 2, scrollbarOpacity: 0.04,
-      tableHeaderOpacity: 0.02, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.03,
-      badgeBgOpacity: 0.06, badgeRadius: 0,
-      btnHoverAnim: 'none', cardHoverAnim: 'dim',
-      archDensity: 'grand', archHeadingTracking: 8, archHeadingCase: 'uppercase',
-      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'arrow', archSectionStyle: 'flat',
+      animDuration: 900, animEasing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+      containerWidth: 860, sidebarWidth: 200, gridGap: 48, gridColumns: 12,
+      borderWidth: 0, borderStyle: 'none',
+      darkElevation: 1, darkSaturation: 5,
+      inputBgOpacity: 0.00, inputBorderOpacity: 0.00, inputPaddingH: 0, inputPaddingV: 16, inputFontSize: 0,
+      chipBgOpacity: 0.00, chipBorderOpacity: 0.00, chipPaddingH: 16, chipPaddingV: 6,
+      navItemRadius: 0, navItemPaddingH: 24, navItemPaddingV: 14,
+      statusBgOpacity: 0.02, statusPillRadius: 0,
+      modalOverlayOpacity: 0.75, dropdownBlur: 64,
+      scrollbarWidth: 0, scrollbarOpacity: 0.00,
+      tableHeaderOpacity: 0.01, tableRowHoverOpacity: 0.01, tableBorderOpacity: 0.01,
+      badgeBgOpacity: 0.03, badgeRadius: 0,
+      focusRingWidth: 1, focusRingOffset: 6, focusRingStyle: 'solid', focusRingOpacity: 0.12,
+      archDensity: 'grand', archHeadingTracking: 22, archHeadingCase: 'uppercase',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'flat',
+      archNavStyle: 'minimal', archCardChrome: 'ghost', archHeroScale: 'cinematic', archVerticalRhythm: 2.8,
+      archContentReveal: 'fade-up', archTextReveal: 'blur-in',
     },
   },
   /* ── New wave presets ────────────────────────────── */
@@ -1507,6 +1514,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDensity: 'grand', archHeadingTracking: 20, archHeadingCase: 'uppercase',
       archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'flat',
       archNavStyle: 'minimal', archCardChrome: 'ghost', archHeroScale: 'cinematic', archVerticalRhythm: 2.5,
+      archContentReveal: 'fade-up', archTextReveal: 'blur-in',
     },
   },
   /* ─── 2. Функция — mission control dashboard: ultra-dense, zero waste ──── */
@@ -1545,6 +1553,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDensity: 'dense', archHeadingTracking: -3, archHeadingCase: 'none',
       archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'underline', archSectionStyle: 'flat',
       archNavStyle: 'full', archCardChrome: 'visible', archHeroScale: 'compact', archVerticalRhythm: 0.5,
+      archContentReveal: 'none', archTextReveal: 'none',
     },
   },
   /* ─── 3. Ремесло — Scandinavian warmth: organic, tactile, round ────────── */
@@ -1583,6 +1592,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDensity: 'airy', archHeadingTracking: 2, archHeadingCase: 'none',
       archDivider: 'gradient', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
       archNavStyle: 'full', archCardChrome: 'subtle', archHeroScale: 'large', archVerticalRhythm: 1.8,
+      archContentReveal: 'fade', archTextReveal: 'none',
     },
   },
   /* ─── 4. Футуризм — cyberpunk neon: glass, glow, deep black ───────────── */
@@ -1621,6 +1631,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDensity: 'normal', archHeadingTracking: 6, archHeadingCase: 'uppercase',
       archDivider: 'gradient', archPageEnter: 'slide', archLinkAnim: 'arrow', archSectionStyle: 'card',
       archNavStyle: 'minimal', archCardChrome: 'subtle', archHeroScale: 'large', archVerticalRhythm: 1.2,
+      archContentReveal: 'slide-up', archTextReveal: 'none',
       colorPageBg: '#06090f', colorText: '#94c8e0', colorHeading: '#d8f0ff',
     },
   },
@@ -1660,6 +1671,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDensity: 'grand', archHeadingTracking: 15, archHeadingCase: 'uppercase',
       archDivider: 'gradient', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
       archNavStyle: 'minimal', archCardChrome: 'ghost', archHeroScale: 'cinematic', archVerticalRhythm: 2.2,
+      archContentReveal: 'fade-up', archTextReveal: 'clip',
     },
   },
   /* ─── 6. Манифест — brutalist expressive: raw, aggressive, zero decor ──── */
@@ -1698,6 +1710,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDensity: 'dense', archHeadingTracking: -5, archHeadingCase: 'uppercase',
       archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'arrow', archSectionStyle: 'striped',
       archNavStyle: 'hidden', archCardChrome: 'ghost', archHeroScale: 'compact', archVerticalRhythm: 0.6,
+      archContentReveal: 'none', archTextReveal: 'none',
     },
   },
   /* ─── 7. Витрина — deep glass morphism: blurred layers, translucent ────── */
@@ -1736,6 +1749,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDensity: 'airy', archHeadingTracking: 1, archHeadingCase: 'none',
       archDivider: 'none', archPageEnter: 'slide', archLinkAnim: 'underline', archSectionStyle: 'card',
       archNavStyle: 'full', archCardChrome: 'visible', archHeroScale: 'large', archVerticalRhythm: 1.4,
+      archContentReveal: 'slide-up', archTextReveal: 'none',
     },
   },
   /* ─── 8. Грандиозность — cinematic luxury: gold, serif, vast spacing ───── */
@@ -1774,6 +1788,46 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDensity: 'grand', archHeadingTracking: 12, archHeadingCase: 'uppercase',
       archDivider: 'gradient', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
       archNavStyle: 'minimal', archCardChrome: 'ghost', archHeroScale: 'cinematic', archVerticalRhythm: 2.4,
+      archContentReveal: 'fade-up', archTextReveal: 'clip',
+    },
+  },
+  /* ─── 9. Minale + Mann — the definitive minaleandmann.com style ─────── */
+  {
+    id: 'concept-minale',
+    name: 'Minale + Mann',
+    description: 'minaleandmann.com: Ultra-wide спейсинг 0.22em, вес 200, кинематографичные переходы 900ms, blur-in текст, fade-up контент, ghost-хром, ритм ×3.0, UPPERCASE.',
+    icon: '▯',
+    tokens: {
+      btnRadius: 0, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 200,
+      btnPaddingH: 36, btnPaddingV: 16, btnSize: 'lg',
+      btnHoverAnim: 'lift', cardHoverAnim: 'dim',
+      fontFamily: '"Helvetica Neue", "Arial", "Segoe UI", sans-serif',
+      fontSize: 1, fontWeight: 200, headingWeight: 200, letterSpacing: 0.14, lineHeight: 2.1, typeScale: 1.5,
+      paragraphSpacing: 2.2, wordSpacing: 0.08, textIndent: 0,
+      headingLetterSpacing: 0.25, headingLineHeight: 1.0, paragraphMaxWidth: 45, textAlign: 'left',
+      accentHue: 32, accentSaturation: 4, accentLightness: 50,
+      successHue: 160, successSaturation: 8, errorHue: 0, errorSaturation: 15, warningHue: 40, warningSaturation: 10,
+      glassBlur: 80, glassOpacity: 0.01, glassBorderOpacity: 0.00, glassSaturation: 100,
+      shadowOffsetY: 0, shadowBlurRadius: 0, shadowSpread: 0, shadowOpacity: 0.00,
+      spacingBase: 10, spacingScale: 1.5,
+      cardRadius: 0, inputRadius: 0, chipRadius: 0, modalRadius: 0,
+      animDuration: 900, animEasing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+      containerWidth: 800, sidebarWidth: 180, gridGap: 56, gridColumns: 12,
+      borderWidth: 0, borderStyle: 'none',
+      darkElevation: 1, darkSaturation: 3,
+      inputBgOpacity: 0.00, inputBorderOpacity: 0.00, inputPaddingH: 0, inputPaddingV: 18, inputFontSize: 0,
+      chipBgOpacity: 0.00, chipBorderOpacity: 0.00, chipPaddingH: 18, chipPaddingV: 7,
+      navItemRadius: 0, navItemPaddingH: 28, navItemPaddingV: 16,
+      statusBgOpacity: 0.01, statusPillRadius: 0,
+      modalOverlayOpacity: 0.80, dropdownBlur: 80,
+      scrollbarWidth: 0, scrollbarOpacity: 0.00,
+      tableHeaderOpacity: 0.01, tableRowHoverOpacity: 0.005, tableBorderOpacity: 0.01,
+      badgeBgOpacity: 0.02, badgeRadius: 0,
+      focusRingWidth: 1, focusRingOffset: 8, focusRingStyle: 'solid', focusRingOpacity: 0.10,
+      archDensity: 'grand', archHeadingTracking: 25, archHeadingCase: 'uppercase',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'flat',
+      archNavStyle: 'minimal', archCardChrome: 'ghost', archHeroScale: 'cinematic', archVerticalRhythm: 3.0,
+      archContentReveal: 'fade-up', archTextReveal: 'blur-in',
     },
   },
 ]
@@ -2176,6 +2230,8 @@ export function useDesignSystem() {
     el.setAttribute('data-card-chrome',   t.archCardChrome   || 'visible')
     el.setAttribute('data-hero-scale',    t.archHeroScale    || 'normal')
     el.style.setProperty('--arch-vertical-rhythm', String(t.archVerticalRhythm ?? 1))
+    el.setAttribute('data-content-reveal', t.archContentReveal || 'none')
+    el.setAttribute('data-text-reveal',   t.archTextReveal   || 'none')
 
     // Re-apply UI theme's CSS vars on top (they set --btn-bg-base, --glass-* etc.
     // which must persist after applyToDOM sets --btn-bg = var(--btn-bg-base))

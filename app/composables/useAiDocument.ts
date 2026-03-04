@@ -67,7 +67,7 @@ export function useAiDocument() {
 
   // ── СТРИМИНГ (generate / improve) ─────────────────────────────────────
   async function streamDocument(
-    action: 'generate' | 'improve',
+    action: 'generate' | 'improve' | 'review' | 'chat',
     payload: AiPayload,
     onToken: (token: string) => void,
   ): Promise<boolean> {
@@ -75,7 +75,11 @@ export function useAiDocument() {
     aiError.value = ''
     aiAction.value = action
     aiCitations.value = []
-    aiProgress.value = action === 'generate' ? 'Gemma генерирует документ...' : 'Gemma улучшает текст...'
+    aiProgress.value = action === 'generate'
+      ? 'Gemma генерирует документ...'
+      : action === 'review'
+        ? 'Gemma анализирует документ...'
+        : 'Gemma улучшает текст...'
     _startTimer()
     _abortCtrl = new AbortController()
 
@@ -125,6 +129,9 @@ export function useAiDocument() {
             if (data.citations) {
               aiCitations.value = data.citations
             }
+            if (data.notes) {
+              aiReviewNotes.value = data.notes
+            }
             if (data.token) {
               onToken(data.token)
               aiTokenCount.value += data.token.length
@@ -149,33 +156,16 @@ export function useAiDocument() {
     }
   }
 
-  // ── REVIEW (обычный fetch) ─────────────────────────────────────────────
+  // ── REVIEW (теперь тоже SSE) ────────────────────────────────────────
   async function reviewDocument(
     payload: AiPayload,
+    onToken: (token: string) => void = () => {},
   ): Promise<AiReviewNote[] | null> {
-    aiLoading.value = true
-    aiError.value = ''
-    aiAction.value = 'review'
+    aiReviewNotes.value = []
     aiProgress.value = 'Gemma анализирует документ...'
-    _startTimer()
-    try {
-      const result = await $fetch<{ notes: AiReviewNote[] }>('/api/ai/document', {
-        method: 'POST',
-        body: { action: 'review', ...payload },
-      })
-      _stopTimer()
-      aiProgress.value = `✓ Анализ готов за ${aiElapsed.value}с`
-      setTimeout(() => { aiProgress.value = '' }, 3000)
-      return result?.notes ?? null
-    } catch (e: any) {
-      _stopTimer()
-      _setError(e?.data?.statusMessage || e?.message || 'Ошибка анализа')
-      return null
-    } finally {
-      _stopTimer()
-      aiLoading.value = false
-      aiAction.value = ''
-    }
+    const ok = await streamDocument('review', payload, onToken)
+    if (!ok && !aiReviewNotes.value.length) return null
+    return aiReviewNotes.value.length ? aiReviewNotes.value : null
   }
 
   function abortAi() {

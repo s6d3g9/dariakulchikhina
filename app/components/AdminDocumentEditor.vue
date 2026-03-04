@@ -183,15 +183,55 @@
       <!-- ══ Двухколоночный layout: редактор + чат ══ -->
       <div class="de-editor-body" :class="{ 'de-editor-body--with-chat': chatVisible }">
         <div class="de-editor-col">
-      <div class="de-editor-wrap glass-card">
-        <div
-          ref="editorEl"
-          class="de-editor"
-          contenteditable="true"
-          spellcheck="true"
-          @input="onEditorInput"
-        ></div>
-      </div>
+
+          <!-- ─ Режим split: слева оригинал, справа стрим ─ -->
+          <div v-if="diffMode === 'streaming'" class="de-diff-split">
+            <div class="de-diff-pane de-diff-pane--orig">
+              <div class="de-diff-pane-label">Оригинал</div>
+              <div class="de-editor-wrap glass-card">
+                <div class="de-editor de-editor--readonly">{{ diffOriginal }}</div>
+              </div>
+            </div>
+            <div class="de-diff-pane de-diff-pane--new">
+              <div class="de-diff-pane-label">Генерируется<span class="de-diff-cursor">█</span></div>
+              <div class="de-editor-wrap glass-card">
+                <div ref="diffNewEl" class="de-editor de-editor--readonly">{{ diffNew }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─ Режим diff-review: inline diff ─ -->
+          <div v-else-if="diffMode === 'review'" class="de-diff-review">
+            <div class="de-diff-controls glass-card">
+              <span class="de-diff-stat">
+                <span class="de-diff-stat-add">+{{ diffStats.added }} слов</span>
+                <span class="de-diff-stat-del">−{{ diffStats.removed }} слов</span>
+              </span>
+              <button class="de-btn-accept" @click="acceptDiff">✓ Принять изменения</button>
+              <button class="de-btn-reject" @click="rejectDiff">× Отменить</button>
+            </div>
+            <div class="de-editor-wrap glass-card">
+              <div class="de-editor de-editor--readonly de-editor--diff">
+                <template v-for="(seg, i) in diffResult" :key="i">
+                  <del v-if="seg.type === 'del'" class="de-diff-del">{{ seg.text }}</del>
+                  <ins v-else-if="seg.type === 'ins'" class="de-diff-ins">{{ seg.text }}</ins>
+                  <span v-else>{{ seg.text }}</span>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <!-- ─ Обычный режим ─ -->
+          <div v-else class="de-editor-wrap glass-card">
+            <div
+              ref="editorEl"
+              class="de-editor"
+              contenteditable="true"
+              spellcheck="true"
+              @input="onEditorInput"
+            ></div>
+          </div>
+
         </div><!-- /de-editor-col -->
 
         <!-- ══ Чат-панель Gemma ══ -->
@@ -210,7 +250,7 @@
             <div ref="chatEl" class="de-chat-messages">
               <div v-if="!chatMessages.length" class="de-chat-empty">
                 <div class="de-chat-empty-icon">🤖</div>
-                <div class="de-chat-empty-text">Нажми <strong>🤖 сгенерировать</strong>, <strong>✨ улучшить</strong> или <strong>📋 проверить</strong> — я напишу результат сюда в реальном времени.</div>
+                <div class="de-chat-empty-text">Нажми <strong>🤖 сгенерировать</strong>, <strong>✨ улучшить</strong> или <strong>📋 проверить</strong> — или напиши своё пожелание в поле ниже.</div>
               </div>
               <div v-for="msg in chatMessages" :key="msg.id" class="de-chat-msg" :class="'de-chat-msg--' + msg.role">
                 <div v-if="msg.role === 'user'" class="de-chat-bubble de-chat-bubble--user">
@@ -231,6 +271,19 @@
                   </div>
                 </div>
               </div>
+            </div>
+            <!-- ── Поле ввода ── -->
+            <div class="de-chat-input-bar">
+              <textarea
+                v-model="chatInput"
+                class="de-chat-input"
+                :placeholder="aiLoading ? 'Gemma печатает...' : 'Напишите пожелание или вопрос...' "
+                :disabled="aiLoading"
+                rows="1"
+                @keydown.enter.exact.prevent="onSendChatMessage"
+                @input="(e: Event) => { const t = e.target as HTMLTextAreaElement; t.style.height='auto'; t.style.height=Math.min(t.scrollHeight,120)+'px' }"
+              />
+              <button class="de-chat-send" :disabled="aiLoading || !chatInput.trim()" title="Отправить (Enter)" @click="onSendChatMessage">➤</button>
             </div>
           </div>
         </Transition>
@@ -323,13 +376,64 @@ const pickedContractorId = ref(0)
 const fieldValues = ref<Record<string, string>>({})
 const fieldAutoFilled = ref<Record<string, boolean>>({})
 const editorContent = ref('')
-const editorEl = ref<HTMLDivElement | null>(null)
-const saving = ref(false)
-const copyMsg = ref('')
-const saveMsg = ref('')
-const saveMsgType = ref<'ok' | 'err'>('ok')
-const ctx = ref<any>(null)
-const loadingCtx = ref(false)
+const editorEl      = ref<HTMLDivElement | null>(null)
+const diffNewEl     = ref<HTMLDivElement | null>(null)
+const saving        = ref(false)
+const copyMsg       = ref('')
+const saveMsg       = ref('')
+const saveMsgType   = ref<'ok' | 'err'>('ok')
+const ctx           = ref<any>(null)
+const loadingCtx    = ref(false)
+// ── Diff-состояние (для «улучшить») ──
+const diffMode     = ref<'' | 'streaming' | 'review'>('')
+const diffOriginal = ref('')
+const diffNew      = ref('')
+
+type DiffSeg = { type: 'equal' | 'del' | 'ins'; text: string }
+
+function computeWordDiff(oldText: string, newText: string): DiffSeg[] {
+  const tok = (s: string) => s.match(/[^\s]+|\s+/g) ?? []
+  const a = tok(oldText), b = tok(newText)
+  if (a.length * b.length > 150_000) {
+    return [{ type: 'del', text: oldText }, { type: 'ins', text: newText }]
+  }
+  const m = a.length, n = b.length
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
+  for (let i = m - 1; i >= 0; i--)
+    for (let j = n - 1; j >= 0; j--)
+      dp[i][j] = a[i] === b[j] ? dp[i+1][j+1] + 1 : Math.max(dp[i+1][j], dp[i][j+1])
+  const segs: DiffSeg[] = []
+  let i = 0, j = 0
+  while (i < m || j < n) {
+    if (i < m && j < n && a[i] === b[j]) { segs.push({ type: 'equal', text: a[i++] }); j++ }
+    else if (j < n && (i >= m || dp[i][j+1] >= (dp[i+1]?.[j] ?? 0))) { segs.push({ type: 'ins', text: b[j++] }) }
+    else { segs.push({ type: 'del', text: a[i++] }) }
+  }
+  return segs.reduce<DiffSeg[]>((acc, s) => {
+    const last = acc[acc.length - 1]
+    if (last && last.type === s.type) { last.text += s.text; return acc }
+    acc.push({ ...s }); return acc
+  }, [])
+}
+
+const diffResult = computed<DiffSeg[]>(() =>
+  diffMode.value === 'review' ? computeWordDiff(diffOriginal.value, diffNew.value) : []
+)
+const diffStats = computed(() => ({
+  added:   diffResult.value.filter(s => s.type === 'ins').reduce((n, s) => n + s.text.split(/\s+/).filter(Boolean).length, 0),
+  removed: diffResult.value.filter(s => s.type === 'del').reduce((n, s) => n + s.text.split(/\s+/).filter(Boolean).length, 0),
+}))
+
+function acceptDiff() {
+  editorContent.value = diffNew.value
+  if (editorEl.value) editorEl.value.innerText = editorContent.value
+  diffMode.value = ''; diffOriginal.value = ''; diffNew.value = ''
+}
+function rejectDiff() {
+  editorContent.value = diffOriginal.value
+  if (editorEl.value) editorEl.value.innerText = editorContent.value
+  diffMode.value = ''; diffOriginal.value = ''; diffNew.value = ''
+}
 
 // ── Утилита: убрать markdown-разметку из текста ──
 function stripMarkdown(text: string): string {
@@ -828,6 +932,7 @@ interface ChatMsg {
 const chatVisible = ref(true)
 const chatMessages = ref<ChatMsg[]>([])
 const chatEl = ref<HTMLElement | null>(null)
+const chatInput = ref('')
 let _chatIdSeq = 0
 
 function _chatNow() {
@@ -856,6 +961,41 @@ function _chatDone(msg: ChatMsg) {
   msg.done = true
   _chatScroll()
 }
+async function onSendChatMessage() {
+  const text = chatInput.value.trim()
+  if (!text || aiLoading.value) return
+  chatInput.value = ''
+  // сбросить высоту textarea
+  await nextTick()
+  const ta = document.querySelector('.de-chat-input') as HTMLTextAreaElement | null
+  if (ta) { ta.style.height = 'auto' }
+  _chatPushUser(text)
+  const chatMsg = _chatPushGemma()
+  const payload = { ...buildAiPayload(), currentText: editorContent.value, customInstruction: text }
+  const ok = await streamDocument('chat', payload, (token) => {
+    _chatToken(chatMsg, token)
+  })
+  const result = chatMsg.text
+  _chatDone(chatMsg)
+  // если ответ выглядит как документ (длиннее 200 симв.) — предложить применить
+  if (ok && result && result.length > 200) {
+    const applyMsg: ChatMsg = {
+      id: Date.now() + 1,
+      role: 'gemma',
+      text: '✅ Применить изменения в редактор?',
+      actionLabel: '',
+      time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
+      streaming: false,
+      done: true,
+      charCount: 0,
+      _applyText: result,
+    }
+    chatMessages.value.push(applyMsg)
+    await nextTick()
+    if (chatEl.value) chatEl.value.scrollTop = chatEl.value.scrollHeight
+  }
+}
+
 function clearChat() {
   chatMessages.value = []
 }
@@ -929,12 +1069,15 @@ async function onAiReview() {
   chatVisible.value = true
   _chatPushUser('📋 Проверить документ')
   const chatMsg = _chatPushGemma()
-  const notes = await reviewDocument(buildAiPayload())
-  if (notes) {
-    aiReviewNotes.value = notes
+  // review теперь тоже стримит — токены идут в чат, notes приходят в конце
+  const notes = await reviewDocument(buildAiPayload(), (token) => {
+    _chatToken(chatMsg, token)
+  })
+  if (notes?.length) {
+    // Заменяем chat-пузырь структурированным списком замечаний
     chatMsg.text = notes.map(n => `${n.type === 'error' ? '⚠️' : '💡'} ${n.text}`).join('\n')
     chatMsg.charCount = chatMsg.text.length
-  } else {
+  } else if (!chatMsg.text) {
     chatMsg.text = 'Анализ завершён. Замечаний нет.'
     chatMsg.charCount = chatMsg.text.length
   }
