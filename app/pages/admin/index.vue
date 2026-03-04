@@ -1,90 +1,150 @@
 <template>
   <div>
-    <div class="ent-layout ent-layout--with-stats">
-      <!-- ═══ Sidebar ═══ -->
-      <nav class="ent-sidebar std-sidenav">
-        <div class="ent-sidebar-head">
-          <span class="ent-sidebar-title">проекты</span>
-          <span class="ent-sidebar-count">{{ projects?.length ?? 0 }}</span>
+
+    <!-- ── Top bar ── -->
+    <div class="kb-topbar">
+      <div class="kb-topbar-left">
+        <h1 class="kb-title">Проекты</h1>
+        <span class="kb-total-badge">{{ projects?.length ?? 0 }}</span>
+      </div>
+      <div class="kb-topbar-right">
+        <div class="kb-search-wrap">
+          <svg class="kb-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input v-model="searchQuery" class="kb-search" placeholder="поиск проектов..." />
         </div>
-        <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
-        <div class="std-nav">
-          <template v-if="pending && !hasProjectsCache">
-            <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
-          </template>
-          <template v-else>
-            <button v-for="p in filteredProjects" :key="p.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedSlug === p.slug }" @click="selectProject(p)">
-              <span class="ent-nav-avatar pj-av">{{ p.title?.charAt(0)?.toUpperCase() || '?' }}</span>
-              <span class="ent-nav-name">{{ p.title }}<span v-if="p.status" class="ent-nav-sub">{{ phaseLabel(p.status) }}</span></span>
-              <span v-if="p.status" class="ent-nav-badge pj-phase" :class="`pj-phase--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
-            </button>
-            <div v-if="!filteredProjects.length && searchQuery" class="pj-nav-empty">ничего не найдено</div>
-            <div v-else-if="!projects?.length" class="pj-nav-empty">нет проектов</div>
-          </template>
+        <div class="kb-view-toggle">
+          <button class="kb-view-btn" :class="{ 'kb-view-btn--active': view === 'kanban' }" @click="setView('kanban')" title="Канбан-доска">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="16" width="7" height="5" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>
+          </button>
+          <button class="kb-view-btn" :class="{ 'kb-view-btn--active': view === 'list' }" @click="setView('list')" title="Список">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="8" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="3.5" cy="6" r="1.5" fill="currentColor"/><circle cx="3.5" cy="12" r="1.5" fill="currentColor"/><circle cx="3.5" cy="18" r="1.5" fill="currentColor"/></svg>
+          </button>
         </div>
-        <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true; wizardStep = 1">+ создать</button></div>
-      </nav>
+        <button class="kb-btn-add" @click="showCreate = true; wizardStep = 1">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+          Новый проект
+        </button>
+      </div>
+    </div>
 
-      <!-- ═══ Detail ═══ -->
-      <div class="ent-main">
-        <div v-if="selectedProject" class="ent-detail-card glass-card">
-          <div class="ent-detail-head">
-            <div>
-              <div class="ent-detail-name">{{ selectedProject.title }}</div>
-              <div class="pj-detail-slug">{{ selectedProject.slug }}</div>
-            </div>
-            <div class="ent-detail-actions">
-              <NuxtLink :to="`/admin/projects/${selectedProject.slug}`" class="a-btn-sm pj-open-btn">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                открыть
-              </NuxtLink>
-            </div>
-          </div>
-
-          <div v-if="selectedProject.status" class="ent-detail-section">статус</div>
-          <div v-if="selectedProject.status" class="ent-detail-row">
-            <span class="pj-phase-pill" :class="`pj-phase--${phaseColor(selectedProject.status)}`">{{ phaseLabel(selectedProject.status) }}</span>
-          </div>
-
-          <div v-if="selectedProject.taskTotal > 0" class="ent-detail-section">прогресс</div>
-          <div v-if="selectedProject.taskTotal > 0" class="pj-progress-row">
-            <div class="pj-progress-bar"><div class="pj-progress-fill" :style="{ width: Math.round(selectedProject.taskDone / selectedProject.taskTotal * 100) + '%' }" /></div>
-            <span class="pj-progress-text">{{ selectedProject.taskDone }}/{{ selectedProject.taskTotal }}</span>
-            <span v-if="selectedProject.taskOverdue > 0" class="pj-overdue">⚠ {{ selectedProject.taskOverdue }} просрочено</span>
-          </div>
-
-          <div class="ent-detail-foot">
-            <NuxtLink :to="`/admin/projects/${selectedProject.slug}`" class="a-btn-sm">управление</NuxtLink>
-            <NuxtLink :to="`/admin/contractors?projectSlug=${selectedProject.slug}`" class="a-btn-sm">подрядчики</NuxtLink>
-            <NuxtLink :to="`/admin/clients?projectSlug=${selectedProject.slug}`" class="a-btn-sm">клиенты</NuxtLink>
-          </div>
+    <!-- ── Loading skeleton ── -->
+    <template v-if="pending && !hasProjectsCache">
+      <div class="kb-skeleton-row">
+        <div class="kb-skeleton-col" v-for="i in 4" :key="i">
+          <div class="kb-skel-head"></div>
+          <div class="kb-skel-card" v-for="j in 2" :key="j"></div>
         </div>
-        <div v-else class="ent-empty-detail">
-          <span class="ent-empty-icon">📁</span>
-          <span v-if="projects?.length">Выберите проект из списка</span>
-          <span v-else>Нет проектов — создайте первый</span>
-          <button v-if="!projects?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true; wizardStep = 1">+ создать проект</button>
+      </div>
+    </template>
+
+    <template v-else>
+
+      <!-- ── Kanban board ── -->
+      <div v-if="view === 'kanban'" class="kb-board">
+        <div v-for="phase in PHASES" :key="phase.key" class="kb-col">
+          <div class="kb-col-head">
+            <span class="kb-col-dot" :style="{ background: phase.dotColor }"></span>
+            <span class="kb-col-title">{{ phase.label }}</span>
+            <span class="kb-col-count">{{ projectsByPhase[phase.key]?.length ?? 0 }}</span>
+          </div>
+          <div class="kb-col-body">
+            <template v-if="projectsByPhase[phase.key]?.length">
+              <div
+                v-for="p in projectsByPhase[phase.key]"
+                :key="p.id"
+                class="kb-card"
+                @click="navigateTo(`/admin/projects/${p.slug}`)"
+              >
+                <div class="kb-card-title">{{ p.title }}</div>
+                <div class="kb-card-slug">{{ p.slug }}</div>
+                <div v-if="p.taskTotal > 0" class="kb-card-progress">
+                  <div class="kb-prog-track">
+                    <div class="kb-prog-fill" :style="{ width: Math.round(p.taskDone / p.taskTotal * 100) + '%' }"></div>
+                  </div>
+                  <span class="kb-prog-label">{{ p.taskDone }}/{{ p.taskTotal }}</span>
+                  <span v-if="p.taskOverdue > 0" class="kb-prog-overdue">⚠ {{ p.taskOverdue }}</span>
+                </div>
+                <div class="kb-card-foot">
+                  <NuxtLink :to="`/admin/projects/${p.slug}`" class="kb-card-link" @click.stop>открыть →</NuxtLink>
+                </div>
+              </div>
+            </template>
+            <div v-else class="kb-col-empty">—</div>
+          </div>
         </div>
       </div>
 
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
-    </div>
+      <!-- ── List view ── -->
+      <div v-else class="kb-listview">
+        <table class="kb-table">
+          <thead>
+            <tr>
+              <th>Проект</th>
+              <th>Фаза</th>
+              <th>Прогресс задач</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-if="filteredProjects.length">
+              <tr
+                v-for="p in filteredProjects"
+                :key="p.id"
+                class="kb-table-row"
+                @click="navigateTo(`/admin/projects/${p.slug}`)"
+              >
+                <td class="kb-trow-name">
+                  <span class="kb-av">{{ p.title?.charAt(0)?.toUpperCase() || '?' }}</span>
+                  <div>
+                    <div class="kb-trow-title">{{ p.title }}</div>
+                    <div class="kb-trow-slug">{{ p.slug }}</div>
+                  </div>
+                </td>
+                <td>
+                  <span v-if="p.status" class="kb-phase-chip" :data-color="phaseColor(p.status)">{{ phaseLabel(p.status) }}</span>
+                  <span v-else class="kb-phase-chip" data-color="gray">—</span>
+                </td>
+                <td class="kb-trow-prog">
+                  <template v-if="p.taskTotal > 0">
+                    <div class="kb-prog-track kb-prog-track--sm">
+                      <div class="kb-prog-fill" :style="{ width: Math.round(p.taskDone / p.taskTotal * 100) + '%' }"></div>
+                    </div>
+                    <span class="kb-prog-label">{{ p.taskDone }}/{{ p.taskTotal }}</span>
+                    <span v-if="p.taskOverdue > 0" class="kb-prog-overdue">⚠ {{ p.taskOverdue }}</span>
+                  </template>
+                  <span v-else class="kb-prog-label">—</span>
+                </td>
+                <td class="kb-trow-action">
+                  <NuxtLink :to="`/admin/projects/${p.slug}`" class="kb-action-btn" @click.stop>открыть</NuxtLink>
+                </td>
+              </tr>
+            </template>
+            <tr v-else>
+              <td colspan="4" class="kb-table-empty">
+                <span v-if="searchQuery">Ничего не найдено по «{{ searchQuery }}»</span>
+                <span v-else>Нет проектов — <button class="kb-inline-link" @click.stop="showCreate = true; wizardStep = 1">создайте первый</button></span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </template>
 
     <!-- ══ Create modal ══ -->
     <Teleport to="body">
       <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
-        <div class="pj-modal glass-surface">
+        <div class="pj-modal">
           <div class="pj-modal-head">
-            <span>новый проект</span>
+            <span>Новый проект</span>
             <span class="pj-modal-step">шаг {{ wizardStep }} из 2</span>
             <button class="pj-modal-close" @click="closeCreate">✕</button>
           </div>
           <div class="pj-modal-body">
             <form @submit.prevent="onWizardSubmit">
               <template v-if="wizardStep === 1">
-                <div class="pj-form-field"><label class="pj-form-label">Название</label><input v-model="newProject.title" class="glass-input" required placeholder="Название проекта" autofocus /></div>
-                <div class="pj-form-field"><label class="pj-form-label">Slug (URL)</label><input v-model="newProject.slug" class="glass-input" required placeholder="project-slug" /></div>
+                <div class="pj-form-field"><label class="pj-form-label">Название проекта</label><input v-model="newProject.title" class="pj-input" required placeholder="Например: Квартира Смирновых" autofocus /></div>
+                <div class="pj-form-field"><label class="pj-form-label">Slug (адрес в URL)</label><input v-model="newProject.slug" class="pj-input" required placeholder="smirnov-apt" /></div>
               </template>
               <template v-else>
                 <div class="pj-preview-row"><span class="pj-preview-label">Проект</span><span class="pj-preview-value">{{ newProject.title }} · <span class="pj-preview-dim">{{ newProject.slug }}</span></span></div>
@@ -92,9 +152,9 @@
               </template>
               <p v-if="createError" class="pj-form-error">{{ createError }}</p>
               <div class="pj-modal-foot">
-                <button type="button" class="a-btn-sm" @click="closeCreate">отмена</button>
-                <button v-if="wizardStep === 2" type="button" class="a-btn-sm" @click="wizardStep = 1">← назад</button>
-                <button type="submit" class="a-btn-save" :disabled="creating">{{ wizardStep === 1 ? 'далее →' : (creating ? '...' : 'создать проект') }}</button>
+                <button type="button" class="pj-btn-cancel" @click="closeCreate">Отмена</button>
+                <button v-if="wizardStep === 2" type="button" class="pj-btn-cancel" @click="wizardStep = 1">← Назад</button>
+                <button type="submit" class="pj-btn-save" :disabled="creating">{{ wizardStep === 1 ? 'Далее →' : (creating ? '...' : 'Создать проект') }}</button>
               </div>
             </form>
           </div>
@@ -125,12 +185,49 @@ onActivated(reloadProjects)
 const CORE_PAGE_LABELS: Record<string, string> = { materials: 'материалы', tz: 'ТЗ', profile_customer: 'профиль клиента' }
 const corePageLabels = Object.values(CORE_PAGE_LABELS)
 
-// ── Search & selection ─────────────────────────────────
-const searchQuery = ref('')
-const selectedSlug = ref<string | null>(null)
-const selectedProject = computed(() => projects.value?.find((p: any) => p.slug === selectedSlug.value) || null)
-function selectProject(p: any) { navigateTo(`/admin/projects/${p.slug}`) }
+// ── View toggle (kanban / list) ────────────────────────
+type ViewMode = 'kanban' | 'list'
+const view = ref<ViewMode>('kanban')
+function setView(v: ViewMode) {
+  view.value = v
+  if (process.client) localStorage.setItem('admin-projects-view', v)
+}
+onMounted(() => {
+  const saved = localStorage.getItem('admin-projects-view') as ViewMode | null
+  if (saved === 'list' || saved === 'kanban') view.value = saved
+})
 
+// ── Kanban config ──────────────────────────────────────
+const PHASE_DOT_COLORS: Record<string, string> = {
+  lead:            '#a1a1aa',
+  concept:         '#8b5cf6',
+  working_project: '#3b82f6',
+  procurement:     '#f59e0b',
+  construction:    '#f97316',
+  commissioning:   '#22c55e',
+  completed:       '#14b8a6',
+}
+
+const PHASES = PROJECT_PHASES.map(p => ({
+  key: p.key,
+  label: p.label,
+  dotColor: PHASE_DOT_COLORS[p.key] || '#a1a1aa',
+}))
+
+const projectsByPhase = computed(() => {
+  const all = filteredProjects.value
+  const map: Record<string, any[]> = {}
+  for (const ph of PHASES) map[ph.key] = []
+  for (const p of all) {
+    const key = p.status || 'lead'
+    if (map[key]) map[key].push(p)
+    else map['lead'].push(p)
+  }
+  return map
+})
+
+// ── Search ─────────────────────────────────────────────
+const searchQuery = ref('')
 const filteredProjects = computed(() => {
   if (!searchQuery.value.trim()) return projects.value || []
   const q = searchQuery.value.toLowerCase()
@@ -158,58 +255,532 @@ function phaseColor(status: string) { return PROJECT_PHASES.find(p => p.key === 
 </script>
 
 <style scoped>
-.pj-nav-empty { padding: 16px 10px; text-align: center; font-size: .74rem; color: var(--glass-text); opacity: .3; }
-.pj-av { background: color-mix(in srgb, var(--ds-accent, #6366f1) 10%, transparent); color: var(--ds-accent, #6366f1); }
-.pj-detail-slug { font-size: .74rem; color: var(--glass-text); opacity: .35; margin-top: 2px; }
-.pj-open-btn { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; color: var(--glass-page-bg); background: var(--glass-text); opacity: .75; }
-.pj-open-btn:hover { opacity: 1; }
-.pj-phase { font-size: .5rem; font-weight: 500; padding: 1px 6px; white-space: nowrap; }
-.pj-phase-pill { font-size: .66rem; font-weight: 500; padding: 2px 10px; border-radius: var(--chip-radius, 999px); white-space: nowrap; }
-.pj-phase--gray    { color: var(--glass-text); opacity: .35; background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
-.pj-phase--violet  { color: #7c3aed; background: rgba(124,58,237,.08); }
-.pj-phase--blue    { color: #2563eb; background: rgba(37,99,235,.08); }
-.pj-phase--amber   { color: #b45309; background: rgba(180,83,9,.07); }
-.pj-phase--orange  { color: #c2410c; background: rgba(194,65,12,.07); }
-.pj-phase--green   { color: #15803d; background: rgba(21,128,61,.08); }
-.pj-phase--teal    { color: #0f766e; background: rgba(15,118,110,.08); }
-html.dark .pj-phase--violet { color: #a78bfa; background: rgba(167,139,250,.12); }
-html.dark .pj-phase--blue   { color: #93c5fd; background: rgba(147,197,253,.12); }
-html.dark .pj-phase--amber  { color: #fcd34d; background: rgba(252,211,77,.1); }
-html.dark .pj-phase--orange { color: #fdba74; background: rgba(253,186,116,.1); }
-html.dark .pj-phase--green  { color: #86efac; background: rgba(134,239,172,.1); }
-html.dark .pj-phase--teal   { color: #5eead4; background: rgba(94,234,212,.1); }
 
-.pj-progress-row { display: flex; align-items: center; gap: 10px; }
-.pj-progress-bar { width: 100px; height: 5px; border-radius: 3px; overflow: hidden; background: color-mix(in srgb, var(--glass-text) 8%, transparent); flex-shrink: 0; }
-.pj-progress-fill { height: 100%; border-radius: 3px; background: #15803d; transition: width .3s; }
-.pj-progress-text { font-size: .72rem; color: var(--glass-text); opacity: .35; }
-.pj-overdue { font-size: .72rem; color: var(--ds-error, #dc2626); font-weight: 600; }
+/* ══════════════════════════════════════════════
+   TOKENS — override glass vars for clean look
+══════════════════════════════════════════════ */
+/* ── Top bar ── */
+.kb-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.kb-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.kb-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--glass-text);
+}
+.kb-total-badge {
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--glass-text);
+  opacity: .4;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  border-radius: 999px;
+  padding: 1px 8px;
+  min-width: 24px;
+  text-align: center;
+}
+.kb-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-/* ══ Modal ══ */
-.pj-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
-.pj-modal { width: 520px; max-width: 100%; max-height: 90vh; border-radius: var(--modal-radius, 16px); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,.18); }
-.pj-modal-head { display: flex; align-items: center; gap: 8px; padding: 16px 20px; border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent); font-size: var(--ds-text-sm, .84rem); font-weight: 500; color: var(--glass-text); flex-shrink: 0; }
-.pj-modal-step { font-size: var(--ds-text-xs, .7rem); color: var(--glass-text); opacity: .35; margin-left: auto; }
-.pj-modal-close { background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--glass-text); opacity: .45; padding: 2px 6px; margin-left: 8px; }
+/* ── Search ── */
+.kb-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.kb-search-icon {
+  position: absolute;
+  left: 9px;
+  color: var(--glass-text);
+  opacity: .35;
+  pointer-events: none;
+}
+.kb-search {
+  width: 220px;
+  height: 32px;
+  padding: 0 10px 0 28px;
+  font-size: .8rem;
+  font-family: inherit;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--glass-bg) 70%, transparent);
+  color: var(--glass-text);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.kb-search:focus {
+  border-color: color-mix(in srgb, var(--glass-text) 30%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 5%, transparent);
+}
+.kb-search::placeholder { color: var(--glass-text); opacity: .3; }
+
+/* ── View toggle ── */
+.kb-view-toggle {
+  display: flex;
+  gap: 2px;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
+  border-radius: 8px;
+  padding: 2px;
+}
+.kb-view-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--glass-text);
+  opacity: .45;
+  transition: opacity .14s, background .14s;
+}
+.kb-view-btn:hover { opacity: .75; }
+.kb-view-btn--active {
+  background: var(--glass-bg);
+  opacity: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+
+/* ── Add button ── */
+.kb-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  font-size: .8rem;
+  font-family: inherit;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--glass-text);
+  color: var(--glass-page-bg);
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+.kb-btn-add:hover { opacity: .85; }
+
+/* ═══════════════════════════════════
+   KANBAN BOARD
+═══════════════════════════════════ */
+.kb-board {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+  align-items: flex-start;
+}
+.kb-board::-webkit-scrollbar { height: 5px; }
+.kb-board::-webkit-scrollbar-track { background: transparent; }
+.kb-board::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--glass-text) 15%, transparent); border-radius: 3px; }
+
+/* Column */
+.kb-col {
+  flex: 0 0 220px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kb-col-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 4px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  margin-bottom: 0;
+}
+.kb-col-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.kb-col-title {
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--glass-text);
+  flex: 1;
+}
+.kb-col-count {
+  font-size: .68rem;
+  font-weight: 600;
+  color: var(--glass-text);
+  opacity: .35;
+  background: color-mix(in srgb, var(--glass-text) 7%, transparent);
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+.kb-col-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.kb-col-empty {
+  font-size: .72rem;
+  color: var(--glass-text);
+  opacity: .2;
+  padding: 10px 4px;
+  text-align: center;
+}
+
+/* Card */
+.kb-card {
+  background: var(--glass-bg);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 9%, transparent);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: box-shadow .15s, border-color .15s, transform .1s;
+}
+.kb-card:hover {
+  border-color: color-mix(in srgb, var(--glass-text) 18%, transparent);
+  box-shadow: 0 4px 16px rgba(0,0,0,.07);
+  transform: translateY(-1px);
+}
+.kb-card-title {
+  font-size: .84rem;
+  font-weight: 500;
+  color: var(--glass-text);
+  line-height: 1.35;
+  margin-bottom: 3px;
+}
+.kb-card-slug {
+  font-size: .67rem;
+  color: var(--glass-text);
+  opacity: .3;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  margin-bottom: 8px;
+}
+.kb-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.kb-prog-track {
+  flex: 1;
+  height: 4px;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.kb-prog-track--sm {
+  width: 80px;
+  flex: none;
+}
+.kb-prog-fill {
+  height: 100%;
+  background: #22c55e;
+  border-radius: 2px;
+  transition: width .3s;
+}
+.kb-prog-label {
+  font-size: .68rem;
+  color: var(--glass-text);
+  opacity: .4;
+  white-space: nowrap;
+}
+.kb-prog-overdue {
+  font-size: .65rem;
+  color: #ef4444;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.kb-card-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+.kb-card-link {
+  font-size: .68rem;
+  color: var(--glass-text);
+  opacity: .4;
+  text-decoration: none;
+  transition: opacity .12s;
+}
+.kb-card-link:hover { opacity: .9; }
+
+/* ═══════════════════════════════════
+   LIST VIEW
+═══════════════════════════════════ */
+.kb-listview {
+  background: var(--glass-bg);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 9%, transparent);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.kb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .82rem;
+}
+.kb-table th {
+  text-align: left;
+  font-size: .65rem;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--glass-text);
+  opacity: .35;
+  padding: 10px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.kb-table-row {
+  cursor: pointer;
+  transition: background .12s;
+}
+.kb-table-row:hover td {
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+.kb-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent);
+  color: var(--glass-text);
+  vertical-align: middle;
+}
+.kb-table tr:last-child td { border-bottom: none; }
+
+.kb-trow-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.kb-av {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: color-mix(in srgb, #6366f1 12%, transparent);
+  color: #6366f1;
+}
+.kb-trow-title { font-weight: 500; font-size: .85rem; }
+.kb-trow-slug {
+  font-size: .68rem;
+  color: var(--glass-text);
+  opacity: .3;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  margin-top: 1px;
+}
+.kb-trow-prog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.kb-trow-action { text-align: right; }
+
+/* Phase chip */
+.kb-phase-chip {
+  display: inline-block;
+  font-size: .7rem;
+  font-weight: 500;
+  padding: 2px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.kb-phase-chip[data-color="gray"]   { background: color-mix(in srgb, var(--glass-text) 7%, transparent); color: var(--glass-text); opacity: .5; }
+.kb-phase-chip[data-color="violet"] { background: rgba(139,92,246,.1); color: #7c3aed; }
+.kb-phase-chip[data-color="blue"]   { background: rgba(59,130,246,.1); color: #2563eb; }
+.kb-phase-chip[data-color="amber"]  { background: rgba(245,158,11,.1); color: #b45309; }
+.kb-phase-chip[data-color="orange"] { background: rgba(249,115,22,.1); color: #c2410c; }
+.kb-phase-chip[data-color="green"]  { background: rgba(34,197,94,.1); color: #15803d; }
+.kb-phase-chip[data-color="teal"]   { background: rgba(20,184,166,.1); color: #0f766e; }
+html.dark .kb-phase-chip[data-color="violet"] { background: rgba(167,139,250,.12); color: #a78bfa; }
+html.dark .kb-phase-chip[data-color="blue"]   { background: rgba(147,197,253,.12); color: #93c5fd; }
+html.dark .kb-phase-chip[data-color="amber"]  { background: rgba(252,211,77,.1); color: #fcd34d; }
+html.dark .kb-phase-chip[data-color="orange"] { background: rgba(253,186,116,.1); color: #fdba74; }
+html.dark .kb-phase-chip[data-color="green"]  { background: rgba(134,239,172,.1); color: #86efac; }
+html.dark .kb-phase-chip[data-color="teal"]   { background: rgba(94,234,212,.1); color: #5eead4; }
+
+.kb-action-btn {
+  display: inline-block;
+  font-size: .74rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--glass-text);
+  background: color-mix(in srgb, var(--glass-text) 7%, transparent);
+  transition: background .12s;
+  white-space: nowrap;
+}
+.kb-action-btn:hover { background: color-mix(in srgb, var(--glass-text) 14%, transparent); }
+
+.kb-table-empty {
+  text-align: center;
+  padding: 36px 16px !important;
+  color: var(--glass-text);
+  opacity: .35;
+  font-size: .82rem;
+}
+.kb-inline-link {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--glass-text);
+  text-decoration: underline;
+  opacity: .6;
+  padding: 0;
+}
+.kb-inline-link:hover { opacity: 1; }
+
+/* ═══════════════════════════════════
+   SKELETON LOADER
+═══════════════════════════════════ */
+.kb-skeleton-row {
+  display: flex;
+  gap: 14px;
+}
+.kb-skeleton-col {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@keyframes kb-shimmer {
+  from { opacity: .5; } to { opacity: 1; }
+}
+.kb-skel-head {
+  height: 24px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--glass-text) 7%, transparent);
+  animation: kb-shimmer 1.2s ease-in-out infinite alternate;
+}
+.kb-skel-card {
+  height: 72px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  animation: kb-shimmer 1.2s ease-in-out infinite alternate;
+}
+
+/* ═══════════════════════════════════
+   MODAL
+═══════════════════════════════════ */
+.pj-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 16px;
+}
+.pj-modal {
+  width: 480px; max-width: 100%;
+  background: var(--glass-bg);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 14px;
+  box-shadow: 0 16px 60px rgba(0,0,0,.16);
+  overflow: hidden;
+}
+.pj-modal-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  font-size: .9rem; font-weight: 500; color: var(--glass-text);
+}
+.pj-modal-step {
+  font-size: .7rem; color: var(--glass-text); opacity: .35; margin-left: auto;
+}
+.pj-modal-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 1rem; color: var(--glass-text); opacity: .4; padding: 2px 4px; margin-left: 4px;
+}
 .pj-modal-close:hover { opacity: 1; }
-.pj-modal-body { overflow-y: auto; flex: 1; padding: 16px 20px; }
-.pj-modal-foot { display: flex; gap: 8px; justify-content: flex-end; padding-top: 14px; margin-top: 12px; border-top: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent); }
+.pj-modal-body { padding: 20px; }
+.pj-modal-foot {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding-top: 16px; margin-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent);
+}
 
-.pj-form-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-.pj-form-label { font-size: .6rem; text-transform: uppercase; letter-spacing: .06em; color: var(--glass-text); opacity: .4; font-weight: 600; }
-.pj-form-error { font-size: .78rem; color: var(--ds-error, #dc2626); margin-bottom: 8px; }
+.pj-form-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.pj-form-label {
+  font-size: .65rem; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--glass-text); opacity: .4; font-weight: 600;
+}
+.pj-input {
+  height: 36px; padding: 0 12px; font-size: .85rem;
+  font-family: inherit;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+  color: var(--glass-text); outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.pj-input:focus {
+  border-color: color-mix(in srgb, var(--glass-text) 30%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 5%, transparent);
+}
+.pj-input::placeholder { color: var(--glass-text); opacity: .3; }
+.pj-form-error { font-size: .78rem; color: #dc2626; margin-bottom: 10px; }
 
-.pj-preview-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
-.pj-preview-label { font-size: .58rem; text-transform: uppercase; letter-spacing: .06em; color: var(--glass-text); opacity: .35; font-weight: 600; }
-.pj-preview-value { font-size: .86rem; color: var(--glass-text); }
-.pj-preview-dim { color: var(--glass-text); opacity: .4; }
-.pj-preview-desc { font-size: .74rem; color: var(--glass-text); opacity: .4; margin-bottom: 10px; }
-.pj-preview-hint { font-size: .78rem; color: var(--glass-text); opacity: .35; margin-bottom: 12px; }
-.pj-preview-stages { margin-bottom: 12px; }
-.pj-stages-list { margin-top: 6px; max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-.pj-stage-item { display: flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--glass-text); opacity: .6; }
-.pj-stage-num { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .55rem; font-weight: 600; flex-shrink: 0; background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
-.pj-preview-pages { margin-bottom: 8px; }
-.pj-pages-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-.pj-page-chip { font-size: .68rem; padding: 2px 8px; border-radius: var(--chip-radius, 999px); background: color-mix(in srgb, var(--glass-text) 5%, transparent); color: var(--glass-text); opacity: .5; }
+.pj-preview-row { display: flex; flex-direction: column; gap: 3px; margin-bottom: 14px; }
+.pj-preview-label { font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; color: var(--glass-text); opacity: .35; font-weight: 600; }
+.pj-preview-value { font-size: .88rem; color: var(--glass-text); }
+.pj-preview-dim { opacity: .4; }
+.pj-preview-pages { margin-bottom: 12px; }
+.pj-pages-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.pj-page-chip {
+  font-size: .7rem; padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
+  color: var(--glass-text); opacity: .55;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.pj-btn-cancel {
+  height: 34px; padding: 0 14px; font-size: .82rem;
+  font-family: inherit; border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 8px; background: transparent;
+  color: var(--glass-text); cursor: pointer; opacity: .7; transition: opacity .12s;
+}
+.pj-btn-cancel:hover { opacity: 1; }
+.pj-btn-save {
+  height: 34px; padding: 0 18px; font-size: .82rem;
+  font-family: inherit; font-weight: 500;
+  border: none; border-radius: 8px;
+  background: var(--glass-text); color: var(--glass-page-bg);
+  cursor: pointer; transition: opacity .14s;
+}
+.pj-btn-save:hover { opacity: .85; }
+.pj-btn-save:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ═══════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════ */
+@media (max-width: 768px) {
+  .kb-search { width: 150px; }
+  .kb-col { flex: 0 0 175px; min-width: 165px; }
+}
+@media (max-width: 480px) {
+  .kb-topbar { gap: 8px; }
+  .kb-search { width: 120px; }
+  .kb-view-toggle { display: none; }
+  .kb-board { gap: 10px; }
+  .kb-col { flex: 0 0 160px; min-width: 150px; }
+}
 </style>
