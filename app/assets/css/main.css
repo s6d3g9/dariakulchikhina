@@ -4601,66 +4601,169 @@ html[data-concept="brutal"] .dp-panel {
 
 /* ═══════════════════════════════════════════════════════════
    GOLD LUXURY OVERRIDE — concept-grand (Грандиозность)
-   Dark surface with warm gold accents.
+   Dark near-black (#0a0908), warm gold (#c8a96e) accents, luxurious
    ═══════════════════════════════════════════════════════════ */
 
-html[data-concept="grand"] .glass-chip {
-  background: rgba(200,169,110,0.10) !important;
-  color: #c8a96e !important;
-  border-color: rgba(200,169,110,0.25) !important;
+/* page */
+html[data-concept="grand"] .glass-page::before { background: none !important; }
+
+/* cards */
+html[data-concept="grand"] .glass-card,
+html[data-concept="grand"] .glass-surface,
+html[data-concept="grand"] .dash-stat,
+html[data-concept="grand"] .dash-project-card,
+html[data-concept="grand"] .ws-card,
+html[data-concept="grand"] .svc-card,
+html[data-concept="grand"] .cab-task,
+html[data-concept="grand"] .docs-card,
+html[data-concept="grand"] .ent-detail-card {
+  background: rgba(18,14,10,0.80) !important;
+  border: 1px solid rgba(200,169,110,0.08) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5) !important;
 }
+html[data-concept="grand"] .glass-card:hover,
+html[data-concept="grand"] .glass-surface:hover {
+  border-color: rgba(200,169,110,0.18) !important;
+  box-shadow: 0 6px 36px rgba(0,0,0,0.6) !important;
+}
+
+/* chips */
+html[data-concept="grand"] .glass-chip {
+  background: rgba(200,169,110,0.07) !important;
+  color: #c8a96e !important;
+  border: 1px solid rgba(200,169,110,0.22) !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  font-size: 0.65em !important;
+}
+
+/* inputs */
+html[data-concept="grand"] .glass-input,
+html[data-concept="grand"] input,
+html[data-concept="grand"] textarea,
+html[data-concept="grand"] select {
+  background: rgba(10,9,8,0.70) !important;
+  border: 1px solid rgba(200,169,110,0.12) !important;
+  color: rgba(235,220,195,0.85) !important;
+  border-radius: 2px !important;
+}
+html[data-concept="grand"] .glass-input:focus,
+html[data-concept="grand"] input:focus {
+  border-color: rgba(200,169,110,0.45) !important;
+  box-shadow: 0 0 0 3px rgba(200,169,110,0.07) !important;
+  outline: none !important;
+}
+html[data-concept="grand"] .glass-input::placeholder,
+html[data-concept="grand"] input::placeholder {
+  color: rgba(200,169,110,0.25) !important;
+}
+
+/* dropdown / modal */
+html[data-concept="grand"] .glass-dropdown,
+html[data-concept="grand"] .u-modal,
+html[data-concept="grand"] .cab-modal {
+  background: #0a0908 !important;
+  border: 1px solid rgba(200,169,110,0.15) !important;
+  box-shadow: 0 32px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(200,169,110,0.06) !important;
+}
+
+/* buttons */
 html[data-concept="grand"] .a-btn-save {
   background: transparent !important;
   color: #c8a96e !important;
   border: 1px solid #c8a96e !important;
   letter-spacing: 0.18em !important;
   text-transform: uppercase !important;
+  transition: all 300ms !important;
 }
 html[data-concept="grand"] .a-btn-save:hover {
   background: rgba(200,169,110,0.10) !important;
+  box-shadow: 0 0 16px rgba(200,169,110,0.15) !important;
 }
 html[data-concept="grand"] .a-btn-sm {
-  color: #c8a96e !important;
-  border-color: rgba(200,169,110,0.20) !important;
+  color: rgba(200,169,110,0.65) !important;
+  border: 1px solid rgba(200,169,110,0.20) !important;
+  letter-spacing: 0.06em !important;
 }
 
+/* sidebar/nav */
+html[data-concept="grand"] .ent-sidebar,
+html[data-concept="grand"] .std-sidebar,
+html[data-concept="grand"] .cab-nav {
+  background: rgba(8,7,5,0.95) !important;
+  border-right: 1px solid rgba(200,169,110,0.08) !important;
+}
+html[data-concept="grand"] .ent-nav-item,
+html[data-concept="grand"] .cab-nav-item,
+html[data-concept="grand"] .std-nav-item {
+  color: rgba(200,169,110,0.40) !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  font-size: 0.72em !important;
+}
+html[data-concept="grand"] .ent-nav-item:hover,
+html[data-concept="grand"] .cab-nav-item:hover {
+  color: rgba(200,169,110,0.75) !important;
+  background: rgba(200,169,110,0.05) !important;
+}
 html[data-concept="grand"] .ent-nav-item.active,
 html[data-concept="grand"] .cab-nav-item.active {
   color: #c8a96e !important;
-  border-color: #c8a96e !important;
+  background: rgba(200,169,110,0.07) !important;
+  border-left: 2px solid #c8a96e !important;
 }
 
+/* tabs */
+html[data-concept="grand"] .admin-tab {
+  color: rgba(200,169,110,0.30) !important;
+  border: none !important;
+  letter-spacing: 0.08em !important;
+}
 html[data-concept="grand"] .admin-tab.active,
 html[data-concept="grand"] .admin-tab--active {
   color: #c8a96e !important;
-  border-color: #c8a96e !important;
+  border-bottom: 2px solid #c8a96e !important;
 }
 
-html[data-concept="grand"] thead th {
-  background: rgba(200,169,110,0.06) !important;
-  color: #e8dcc8 !important;
-  border-color: rgba(200,169,110,0.12) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.12em !important;
+/* headings */
+html[data-concept="grand"] h1,
+html[data-concept="grand"] h2,
+html[data-concept="grand"] h3 {
+  color: rgba(235,220,195,0.85) !important;
+  letter-spacing: 0.10em !important;
+  font-weight: 300 !important;
 }
 
+/* topbar */
 html[data-concept="grand"] .u-topbar {
-  border-bottom-color: rgba(200,169,110,0.15) !important;
+  background: rgba(8,7,5,0.97) !important;
+  border-bottom: 1px solid rgba(200,169,110,0.12) !important;
 }
 
-html[data-concept="grand"] hr {
-  border-color: rgba(200,169,110,0.10) !important;
+/* tables */
+html[data-concept="grand"] thead th {
+  background: rgba(200,169,110,0.04) !important;
+  color: #d4b880 !important;
+  border-bottom: 1px solid rgba(200,169,110,0.12) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.14em !important;
+  font-weight: 400 !important;
+}
+html[data-concept="grand"] tbody tr {
+  border-bottom: 1px solid rgba(200,169,110,0.05) !important;
 }
 
-html[data-concept="grand"] .glass-card,
-html[data-concept="grand"] .glass-surface {
-  border-color: rgba(200,169,110,0.08) !important;
-}
+/* hr */
+html[data-concept="grand"] hr { border-color: rgba(200,169,110,0.08) !important; }
 
+/* arch chip active */
 html[data-concept="grand"] .dp-arch-chip--active {
-  border-color: rgba(200,169,110,0.30) !important;
+  border-color: rgba(200,169,110,0.35) !important;
   color: #c8a96e !important;
 }
+
+/* phase palette: gold/warm versions */
+html[data-concept="grand"] { --phase-violet: #b89060 !important; --phase-blue: #b89060 !important; --phase-amber: #d4a840 !important; --phase-orange: #c8845c !important; --phase-green: #80a860 !important; --phase-teal: #70a8a0 !important; }
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -4850,140 +4953,651 @@ html[data-concept="minale"] .dp-panel {
    Dark charcoal (#080808), muted, barely-there UI, hushed
    ═══════════════════════════════════════════════════════════ */
 
+/* page */
+html[data-concept="silence"] .glass-page::before { background: none !important; }
+
+/* cards: no border, no shadow, just whisper of bg */
 html[data-concept="silence"] .glass-card,
 html[data-concept="silence"] .glass-surface,
-html[data-concept="silence"] .ent-detail-card {
-  border: none !important;
+html[data-concept="silence"] .ent-detail-card,
+html[data-concept="silence"] .dash-stat,
+html[data-concept="silence"] .dash-project-card,
+html[data-concept="silence"] .ws-card,
+html[data-concept="silence"] .svc-card,
+html[data-concept="silence"] .cab-task {
+  background: rgba(255,255,255,0.02) !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  box-shadow: none !important;
 }
+html[data-concept="silence"] .glass-card:hover,
+html[data-concept="silence"] .glass-surface:hover {
+  background: rgba(255,255,255,0.035) !important;
+  border-color: rgba(255,255,255,0.07) !important;
+}
+
+/* chips */
+html[data-concept="silence"] .glass-chip {
+  background: transparent !important;
+  color: rgba(255,255,255,0.30) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* inputs */
+html[data-concept="silence"] .glass-input,
+html[data-concept="silence"] input,
+html[data-concept="silence"] textarea,
+html[data-concept="silence"] select {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+  border-radius: 0 !important;
+  color: rgba(255,255,255,0.65) !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+html[data-concept="silence"] .glass-input:focus,
+html[data-concept="silence"] input:focus,
+html[data-concept="silence"] textarea:focus {
+  border-bottom-color: rgba(255,255,255,0.35) !important;
+  outline: none !important;
+}
+html[data-concept="silence"] .glass-input::placeholder,
+html[data-concept="silence"] input::placeholder {
+  color: rgba(255,255,255,0.15) !important;
+}
+
+/* dropdown */
+html[data-concept="silence"] .glass-dropdown,
+html[data-concept="silence"] .u-modal,
+html[data-concept="silence"] .cab-modal {
+  background: #0c0c0c !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.9) !important;
+}
+
+/* buttons */
 html[data-concept="silence"] .a-btn-save {
   background: transparent !important;
-  color: rgba(255,255,255,0.5) !important;
+  color: rgba(255,255,255,0.45) !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
-  font-weight: 300 !important;
-  letter-spacing: 0.10em !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  transition: all 600ms !important;
 }
 html[data-concept="silence"] .a-btn-save:hover {
-  color: rgba(255,255,255,0.8) !important;
-  border-color: rgba(255,255,255,0.15) !important;
+  color: rgba(255,255,255,0.80) !important;
+  border-color: rgba(255,255,255,0.20) !important;
 }
-html[data-concept="silence"] h1,
-html[data-concept="silence"] h2,
-html[data-concept="silence"] h3 {
-  font-weight: 300 !important;
+html[data-concept="silence"] .a-btn-sm {
+  background: transparent !important;
+  color: rgba(255,255,255,0.30) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
 }
+
+/* sidebar/nav: invisible background, whisper text */
+html[data-concept="silence"] .ent-sidebar,
+html[data-concept="silence"] .std-sidebar,
+html[data-concept="silence"] .cab-nav {
+  background: transparent !important;
+  border: none !important;
+  border-right: 1px solid rgba(255,255,255,0.03) !important;
+}
+html[data-concept="silence"] .ent-nav-item,
+html[data-concept="silence"] .cab-nav-item,
+html[data-concept="silence"] .std-nav-item {
+  color: rgba(255,255,255,0.22) !important;
+  transition: color 500ms !important;
+}
+html[data-concept="silence"] .ent-nav-item:hover,
+html[data-concept="silence"] .cab-nav-item:hover {
+  color: rgba(255,255,255,0.55) !important;
+  background: transparent !important;
+}
+html[data-concept="silence"] .ent-nav-item.active,
+html[data-concept="silence"] .cab-nav-item.active {
+  color: rgba(255,255,255,0.75) !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* tabs */
 html[data-concept="silence"] .admin-tab {
-  opacity: 0.4 !important;
-  transition: opacity 600ms !important;
+  color: rgba(255,255,255,0.20) !important;
+  border: none !important;
+  transition: color 500ms, opacity 500ms !important;
 }
+html[data-concept="silence"] .admin-tab:hover { color: rgba(255,255,255,0.45) !important; }
 html[data-concept="silence"] .admin-tab.active,
 html[data-concept="silence"] .admin-tab--active {
-  opacity: 0.8 !important;
+  color: rgba(255,255,255,0.70) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.25) !important;
 }
+
+/* typography */
+html[data-concept="silence"] h1,
+html[data-concept="silence"] h2,
+html[data-concept="silence"] h3,
+html[data-concept="silence"] h4 {
+  font-weight: 200 !important;
+  letter-spacing: 0.06em !important;
+  color: rgba(255,255,255,0.65) !important;
+}
+
+/* topbar */
+html[data-concept="silence"] .u-topbar {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+}
+
+/* tables */
+html[data-concept="silence"] thead th {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  color: rgba(255,255,255,0.25) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+  font-weight: 300 !important;
+}
+html[data-concept="silence"] tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+}
+
+/* phase colors: all become barely visible greys */
+html[data-concept="silence"] { --phase-violet: rgba(255,255,255,0.35) !important; --phase-blue: rgba(255,255,255,0.35) !important; --phase-amber: rgba(255,255,255,0.35) !important; --phase-orange: rgba(255,255,255,0.35) !important; --phase-green: rgba(255,255,255,0.35) !important; --phase-teal: rgba(255,255,255,0.35) !important; }
+
+/* hr */
+html[data-concept="silence"] hr { border-color: rgba(255,255,255,0.04) !important; }
 
 
 /* ═══════════════════════════════════════════════════════════
    CRAFT CONCEPT — concept-craft (Ремесло)
-   Warm parchment, artisanal feel, slightly rounded, textured
+   Warm parchment (#f8f4ee), artisanal textures, rounded, earthy
    ═══════════════════════════════════════════════════════════ */
 
+/* cards */
 html[data-concept="craft"] .glass-card,
-html[data-concept="craft"] .glass-surface {
-  border: 1px solid rgba(80,60,30,0.12) !important;
-  box-shadow: 0 2px 12px rgba(80,60,30,0.06) !important;
+html[data-concept="craft"] .glass-surface,
+html[data-concept="craft"] .dash-stat,
+html[data-concept="craft"] .dash-project-card,
+html[data-concept="craft"] .ws-card,
+html[data-concept="craft"] .svc-card,
+html[data-concept="craft"] .cab-task,
+html[data-concept="craft"] .docs-card {
+  background: rgba(248,244,238,0.85) !important;
+  border: 1px solid rgba(80,60,30,0.10) !important;
+  box-shadow: 0 2px 12px rgba(80,60,30,0.06), 0 0 0 0 transparent !important;
 }
+html[data-concept="craft"] .glass-card:hover {
+  box-shadow: 0 4px 20px rgba(80,60,30,0.10) !important;
+  transform: translateY(-1px);
+}
+
+/* chip */
+html[data-concept="craft"] .glass-chip {
+  background: rgba(120,90,50,0.08) !important;
+  color: rgba(90,65,35,0.80) !important;
+  border: 1px solid rgba(120,90,50,0.15) !important;
+  border-radius: 4px !important;
+}
+
+/* inputs */
+html[data-concept="craft"] .glass-input,
+html[data-concept="craft"] input,
+html[data-concept="craft"] textarea,
+html[data-concept="craft"] select {
+  background: rgba(255,253,248,0.9) !important;
+  border: 1px solid rgba(120,90,50,0.18) !important;
+  border-radius: 6px !important;
+  color: rgba(50,35,20,0.85) !important;
+}
+html[data-concept="craft"] .glass-input:focus,
+html[data-concept="craft"] input:focus {
+  border-color: rgba(120,90,50,0.45) !important;
+  box-shadow: 0 0 0 3px rgba(120,90,50,0.08) !important;
+}
+
+/* dropdown */
+html[data-concept="craft"] .glass-dropdown,
+html[data-concept="craft"] .u-modal,
+html[data-concept="craft"] .cab-modal {
+  background: #faf7f2 !important;
+  border: 1px solid rgba(120,90,50,0.15) !important;
+  box-shadow: 0 8px 40px rgba(80,60,30,0.15) !important;
+}
+
+/* buttons */
 html[data-concept="craft"] .a-btn-save {
-  background: var(--ds-btn-bg, #3a352c) !important;
-  color: var(--ds-btn-text, #f8f4ee) !important;
+  background: rgba(80,58,35,0.85) !important;
+  color: #f8f4ee !important;
+  border: none !important;
   border-radius: 6px !important;
   font-weight: 500 !important;
+  letter-spacing: 0.04em !important;
 }
-html[data-concept="craft"] thead th {
-  background: rgba(80,60,30,0.04) !important;
-  font-weight: 600 !important;
+html[data-concept="craft"] .a-btn-save:hover {
+  background: rgba(60,42,22,0.95) !important;
 }
+html[data-concept="craft"] .a-btn-sm {
+  background: transparent !important;
+  color: rgba(80,58,35,0.65) !important;
+  border: 1px solid rgba(120,90,50,0.20) !important;
+  border-radius: 5px !important;
+}
+
+/* sidebar/nav */
+html[data-concept="craft"] .ent-sidebar,
+html[data-concept="craft"] .std-sidebar,
+html[data-concept="craft"] .cab-nav {
+  background: rgba(240,234,224,0.95) !important;
+  border-right: 1px solid rgba(120,90,50,0.12) !important;
+}
+html[data-concept="craft"] .ent-nav-item,
+html[data-concept="craft"] .cab-nav-item,
+html[data-concept="craft"] .std-nav-item {
+  color: rgba(70,50,28,0.65) !important;
+}
+html[data-concept="craft"] .ent-nav-item:hover,
+html[data-concept="craft"] .cab-nav-item:hover {
+  background: rgba(120,90,50,0.07) !important;
+  color: rgba(60,40,18,0.90) !important;
+}
+html[data-concept="craft"] .ent-nav-item.active,
+html[data-concept="craft"] .cab-nav-item.active {
+  background: rgba(120,90,50,0.10) !important;
+  color: rgba(55,35,15,0.95) !important;
+  border-left: 3px solid rgba(120,90,50,0.50) !important;
+}
+
+/* tabs */
+html[data-concept="craft"] .admin-tab { color: rgba(70,50,28,0.45) !important; }
 html[data-concept="craft"] .admin-tab.active,
 html[data-concept="craft"] .admin-tab--active {
-  border-bottom: 2px solid var(--ds-link-color, #7a6848) !important;
+  color: rgba(55,35,15,0.90) !important;
+  border-bottom: 2px solid rgba(120,90,50,0.55) !important;
 }
+
+/* typography */
+html[data-concept="craft"] h1,
+html[data-concept="craft"] h2,
+html[data-concept="craft"] h3 {
+  color: rgba(60,42,22,0.85) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* topbar */
+html[data-concept="craft"] .u-topbar {
+  background: rgba(240,234,224,0.95) !important;
+  border-bottom: 1px solid rgba(120,90,50,0.10) !important;
+}
+
+/* tables */
+html[data-concept="craft"] thead th {
+  background: rgba(120,90,50,0.05) !important;
+  color: rgba(70,50,28,0.80) !important;
+  border-bottom: 2px solid rgba(120,90,50,0.12) !important;
+  font-weight: 600 !important;
+}
+html[data-concept="craft"] tbody tr:nth-child(even) {
+  background: rgba(120,90,50,0.025) !important;
+}
+
+/* hr */
+html[data-concept="craft"] hr {
+  border-color: rgba(120,90,50,0.12) !important;
+  border-width: 1px !important;
+}
+
+/* phase palette: warm earthy version */
+html[data-concept="craft"] { --phase-violet: #8b5e52 !important; --phase-blue: #5c7c8a !important; --phase-amber: #a0722a !important; --phase-orange: #b85e35 !important; --phase-green: #4a7a5a !important; --phase-teal: #3a7070 !important; }
 
 
 /* ═══════════════════════════════════════════════════════════
    EDITORIAL CONCEPT — concept-editorial (Классика)
-   Cream, serif accents, refined editorial feel
+   Cream (#f5f0e8), serifs, refined newspaper feel
    ═══════════════════════════════════════════════════════════ */
 
-html[data-concept="editorial"] h1,
-html[data-concept="editorial"] h2,
-html[data-concept="editorial"] h3,
-html[data-concept="editorial"] .u-section-title {
+/* page */
+html[data-concept="editorial"] .glass-page::before { background: none !important; }
+
+/* cards */
+html[data-concept="editorial"] .glass-card,
+html[data-concept="editorial"] .glass-surface,
+html[data-concept="editorial"] .dash-stat,
+html[data-concept="editorial"] .dash-project-card,
+html[data-concept="editorial"] .ws-card,
+html[data-concept="editorial"] .svc-card,
+html[data-concept="editorial"] .cab-task,
+html[data-concept="editorial"] .docs-card,
+html[data-concept="editorial"] .ent-detail-card {
+  background: rgba(245,240,232,0.9) !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(80,60,30,0.12) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* chip */
+html[data-concept="editorial"] .glass-chip {
+  background: transparent !important;
+  color: rgba(40,28,18,0.60) !important;
+  border: 1px solid rgba(80,60,30,0.20) !important;
+  border-radius: 0 !important;
   font-family: Georgia, "Times New Roman", serif !important;
   font-style: italic !important;
-  letter-spacing: 0.02em !important;
-  text-transform: none !important;
 }
+
+/* inputs */
+html[data-concept="editorial"] .glass-input,
+html[data-concept="editorial"] input,
+html[data-concept="editorial"] textarea,
+html[data-concept="editorial"] select {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(80,60,30,0.20) !important;
+  border-radius: 0 !important;
+  color: rgba(30,22,12,0.85) !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  padding-left: 0 !important;
+}
+html[data-concept="editorial"] .glass-input:focus,
+html[data-concept="editorial"] input:focus {
+  outline: none !important;
+  border-bottom-color: rgba(80,60,30,0.60) !important;
+}
+
+/* dropdown / modal */
+html[data-concept="editorial"] .glass-dropdown,
+html[data-concept="editorial"] .u-modal,
+html[data-concept="editorial"] .cab-modal {
+  background: #f5f0e8 !important;
+  border: 1px solid rgba(80,60,30,0.15) !important;
+  box-shadow: 0 8px 40px rgba(80,60,30,0.12) !important;
+  border-radius: 0 !important;
+}
+
+/* buttons */
+html[data-concept="editorial"] .a-btn-save {
+  background: rgba(30,22,12,0.88) !important;
+  color: #f5f0e8 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-style: italic !important;
+  letter-spacing: 0.06em !important;
+}
+html[data-concept="editorial"] .a-btn-sm {
+  background: transparent !important;
+  color: rgba(30,22,12,0.55) !important;
+  border: 1px solid rgba(80,60,30,0.18) !important;
+  border-radius: 0 !important;
+}
+
+/* sidebar */
+html[data-concept="editorial"] .ent-sidebar,
+html[data-concept="editorial"] .std-sidebar,
+html[data-concept="editorial"] .cab-nav {
+  background: rgba(240,236,228,0.95) !important;
+  border-right: 1px solid rgba(80,60,30,0.10) !important;
+}
+html[data-concept="editorial"] .ent-nav-item,
+html[data-concept="editorial"] .cab-nav-item {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-style: italic !important;
+  color: rgba(40,28,18,0.55) !important;
+  letter-spacing: 0.01em !important;
+}
+html[data-concept="editorial"] .ent-nav-item:hover,
+html[data-concept="editorial"] .cab-nav-item:hover {
+  background: rgba(80,60,30,0.05) !important;
+  color: rgba(20,14,8,0.80) !important;
+}
+html[data-concept="editorial"] .ent-nav-item.active,
+html[data-concept="editorial"] .cab-nav-item.active {
+  background: transparent !important;
+  color: rgba(20,14,8,0.90) !important;
+  border-left: 2px solid rgba(80,60,30,0.40) !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+}
+
+/* tabs */
 html[data-concept="editorial"] .admin-tab {
   font-family: Georgia, "Times New Roman", serif !important;
   font-style: italic !important;
+  color: rgba(40,28,18,0.40) !important;
+  border: none !important;
+}
+html[data-concept="editorial"] .admin-tab.active,
+html[data-concept="editorial"] .admin-tab--active {
+  color: rgba(20,14,8,0.85) !important;
+  border-bottom: 2px solid rgba(80,60,30,0.40) !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+}
+
+/* headings: serif + italic for h1-h2, serif normal for h3+ */
+html[data-concept="editorial"] h1,
+html[data-concept="editorial"] h2 {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-style: italic !important;
+  letter-spacing: 0.01em !important;
+  font-weight: 400 !important;
+  color: rgba(20,14,8,0.90) !important;
+}
+html[data-concept="editorial"] h3,
+html[data-concept="editorial"] h4,
+html[data-concept="editorial"] .u-section-title {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
   letter-spacing: 0.02em !important;
+  color: rgba(20,14,8,0.80) !important;
 }
-html[data-concept="editorial"] .glass-card,
-html[data-concept="editorial"] .glass-surface {
-  border: 1px solid rgba(80,60,30,0.10) !important;
-  box-shadow: none !important;
+
+/* topbar */
+html[data-concept="editorial"] .u-topbar {
+  background: rgba(240,236,228,0.95) !important;
+  border-bottom: 2px solid rgba(80,60,30,0.12) !important;
 }
+
+/* tables */
+html[data-concept="editorial"] thead th {
+  background: transparent !important;
+  border-bottom: 2px solid rgba(80,60,30,0.20) !important;
+  color: rgba(40,28,18,0.70) !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+}
+html[data-concept="editorial"] tbody tr {
+  border-bottom: 1px solid rgba(80,60,30,0.07) !important;
+}
+
+/* hr */
 html[data-concept="editorial"] hr {
-  border-style: double !important;
-  border-width: 3px !important;
-  border-color: rgba(80,60,30,0.15) !important;
+  border-style: solid !important;
+  border-width: 1px !important;
+  border-color: rgba(80,60,30,0.14) !important;
 }
 html[data-concept="editorial"] blockquote {
-  border-left: 3px solid rgba(80,60,30,0.20) !important;
+  border-left: 2px solid rgba(80,60,30,0.25) !important;
   font-style: italic !important;
   padding-left: 1.5em !important;
-}
-html[data-concept="editorial"] .a-btn-save {
-  background: var(--ds-btn-bg, #1a1610) !important;
-  color: var(--ds-btn-text, #f5f0e8) !important;
-  border-radius: 2px !important;
   font-family: Georgia, "Times New Roman", serif !important;
-  letter-spacing: 0.08em !important;
-  text-transform: none !important;
 }
+
+/* phase palette: editorial warm-dark tones */
+html[data-concept="editorial"] { --phase-violet: #7a5c8e !important; --phase-blue: #3d5a80 !important; --phase-amber: #8a6318 !important; --phase-orange: #8a4520 !important; --phase-green: #2e6b42 !important; --phase-teal: #2a5f5a !important; }
 
 
 /* ═══════════════════════════════════════════════════════════
    FUTURISM CONCEPT — concept-future (Футуризм)
-   Dark blue-ink, electric accents, wide heading tracking
+   Deep blue-ink (#06090f), electric blue accents, wide tracking
    ═══════════════════════════════════════════════════════════ */
 
+/* page */
+html[data-concept="future"] .glass-page::before { background: none !important; }
+
+/* cards */
+html[data-concept="future"] .glass-card,
+html[data-concept="future"] .glass-surface,
+html[data-concept="future"] .dash-stat,
+html[data-concept="future"] .dash-project-card,
+html[data-concept="future"] .ws-card,
+html[data-concept="future"] .svc-card,
+html[data-concept="future"] .cab-task,
+html[data-concept="future"] .docs-card,
+html[data-concept="future"] .ent-detail-card {
+  background: rgba(8,14,30,0.75) !important;
+  border: 1px solid rgba(80,120,255,0.12) !important;
+  box-shadow: 0 0 0 0 transparent, inset 0 1px 0 rgba(80,120,255,0.08) !important;
+}
+html[data-concept="future"] .glass-card:hover,
+html[data-concept="future"] .glass-surface:hover {
+  border-color: rgba(80,120,255,0.28) !important;
+  box-shadow: 0 0 20px rgba(80,120,255,0.08) !important;
+}
+
+/* chips */
 html[data-concept="future"] .glass-chip {
   background: rgba(80,120,255,0.08) !important;
-  color: #6090ff !important;
-  border-color: rgba(80,120,255,0.20) !important;
+  color: #7aabff !important;
+  border: 1px solid rgba(80,120,255,0.20) !important;
+  border-radius: 2px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  font-size: 0.65em !important;
 }
+
+/* inputs */
+html[data-concept="future"] .glass-input,
+html[data-concept="future"] input,
+html[data-concept="future"] textarea,
+html[data-concept="future"] select {
+  background: rgba(6,9,15,0.8) !important;
+  border: 1px solid rgba(80,120,255,0.15) !important;
+  border-radius: 2px !important;
+  color: rgba(180,210,255,0.85) !important;
+  letter-spacing: 0.04em !important;
+}
+html[data-concept="future"] .glass-input:focus,
+html[data-concept="future"] input:focus {
+  border-color: rgba(80,120,255,0.50) !important;
+  box-shadow: 0 0 0 3px rgba(80,120,255,0.08), 0 0 12px rgba(80,120,255,0.12) !important;
+  outline: none !important;
+}
+html[data-concept="future"] .glass-input::placeholder,
+html[data-concept="future"] input::placeholder {
+  color: rgba(80,120,255,0.25) !important;
+}
+
+/* dropdown / modal */
+html[data-concept="future"] .glass-dropdown,
+html[data-concept="future"] .u-modal,
+html[data-concept="future"] .cab-modal {
+  background: #080e1e !important;
+  border: 1px solid rgba(80,120,255,0.20) !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.8), 0 0 40px rgba(80,120,255,0.06) !important;
+  border-radius: 4px !important;
+}
+
+/* buttons */
 html[data-concept="future"] .a-btn-save {
   background: transparent !important;
   color: #6090ff !important;
-  border: 1px solid rgba(80,120,255,0.30) !important;
-  letter-spacing: 0.12em !important;
+  border: 1px solid rgba(80,120,255,0.35) !important;
+  border-radius: 2px !important;
+  letter-spacing: 0.14em !important;
   text-transform: uppercase !important;
+  transition: all 200ms !important;
 }
 html[data-concept="future"] .a-btn-save:hover {
-  background: rgba(80,120,255,0.08) !important;
+  background: rgba(80,120,255,0.10) !important;
+  box-shadow: 0 0 12px rgba(80,120,255,0.20) !important;
 }
-html[data-concept="future"] .admin-tab.active,
-html[data-concept="future"] .admin-tab--active {
-  color: #6090ff !important;
-  border-color: #6090ff !important;
-}
-html[data-concept="future"] thead th {
-  background: rgba(80,120,255,0.04) !important;
-  color: #97b0e8 !important;
+html[data-concept="future"] .a-btn-sm {
+  color: rgba(80,120,255,0.60) !important;
+  border: 1px solid rgba(80,120,255,0.15) !important;
+  border-radius: 2px !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.12em !important;
+}
+
+/* sidebar/nav */
+html[data-concept="future"] .ent-sidebar,
+html[data-concept="future"] .std-sidebar,
+html[data-concept="future"] .cab-nav {
+  background: rgba(4,7,18,0.95) !important;
+  border-right: 1px solid rgba(80,120,255,0.08) !important;
+}
+html[data-concept="future"] .ent-nav-item,
+html[data-concept="future"] .cab-nav-item,
+html[data-concept="future"] .std-nav-item {
+  color: rgba(120,160,255,0.45) !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  font-size: 0.72em !important;
+}
+html[data-concept="future"] .ent-nav-item:hover,
+html[data-concept="future"] .cab-nav-item:hover {
+  color: rgba(120,160,255,0.80) !important;
+  background: rgba(80,120,255,0.06) !important;
 }
 html[data-concept="future"] .ent-nav-item.active,
 html[data-concept="future"] .cab-nav-item.active {
   color: #6090ff !important;
+  background: rgba(80,120,255,0.08) !important;
+  border-left: 2px solid #6090ff !important;
 }
+
+/* tabs */
+html[data-concept="future"] .admin-tab {
+  color: rgba(80,120,255,0.35) !important;
+  border: none !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+}
+html[data-concept="future"] .admin-tab:hover { color: rgba(80,120,255,0.65) !important; }
+html[data-concept="future"] .admin-tab.active,
+html[data-concept="future"] .admin-tab--active {
+  color: #6090ff !important;
+  border-bottom: 2px solid #6090ff !important;
+}
+
+/* typography */
+html[data-concept="future"] h1,
+html[data-concept="future"] h2,
+html[data-concept="future"] h3 {
+  color: rgba(180,210,255,0.90) !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  font-weight: 300 !important;
+}
+
+/* topbar */
+html[data-concept="future"] .u-topbar {
+  background: rgba(4,7,18,0.97) !important;
+  border-bottom: 1px solid rgba(80,120,255,0.10) !important;
+}
+
+/* tables */
+html[data-concept="future"] thead th {
+  background: rgba(80,120,255,0.06) !important;
+  color: #7aabff !important;
+  border-bottom: 1px solid rgba(80,120,255,0.15) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+  font-weight: 400 !important;
+}
+html[data-concept="future"] tbody tr {
+  border-bottom: 1px solid rgba(80,120,255,0.05) !important;
+}
+
+/* hr */
+html[data-concept="future"] hr { border-color: rgba(80,120,255,0.08) !important; }
+
+/* phase palette: electric variants */
+html[data-concept="future"] { --phase-violet: #b060ff !important; --phase-blue: #4a90ff !important; --phase-amber: #ffb040 !important; --phase-orange: #ff7040 !important; --phase-green: #40e090 !important; --phase-teal: #30d0d0 !important; }
 

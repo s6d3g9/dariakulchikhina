@@ -259,12 +259,24 @@ const DOC_TEMPLATES = [
       { key: 'remaining_amount',        label: 'Остаток к доплате',        placeholder: '175 000 руб.' },
       { key: 'deadline',               label: 'Срок выполнения',         placeholder: '90 календарных дней' },
       { key: 'penalty_pct',            label: 'Неустойка за просрочку',  placeholder: '0,1% от суммы за каждый день' },
+      { key: 'executor_name',            label: '— ФИО исполнителя',         placeholder: 'Кульчихина Дария Андреевна' },
+      { key: 'executor_inn',             label: '— ИНН исполнителя',          placeholder: '770112345678' },
+      { key: 'executor_passport',        label: '— Паспорт исполнителя',      placeholder: '45 09 123456' },
+      { key: 'executor_passport_issued', label: '— Паспорт выдан',            placeholder: 'ГУ МВД России по г. Москве' },
+      { key: 'executor_passport_date',   label: '— Дата выдачи паспорта',     placeholder: '01.01.2015' },
+      { key: 'executor_registration',    label: '— Прописка исполнителя',     placeholder: 'г. Москва, ул. ...' },
+      { key: 'executor_phone',           label: '— Телефон исполнителя',      placeholder: '+7 (___) ___-__-__' },
+      { key: 'executor_email',           label: '— Email исполнителя',        placeholder: 'daria@kulchikhina.ru' },
+      { key: 'executor_bank',            label: '— Банк исполнителя',         placeholder: 'Сбербанк России' },
+      { key: 'executor_bik',             label: '— БИК',                      placeholder: '044525225' },
+      { key: 'executor_account',         label: '— Расчётный счёт',           placeholder: '40802810938000012345' },
+      { key: 'executor_corr_account',    label: '— Корреспондентский счёт',   placeholder: '30101810400000000225' },
     ],
     template: `ДОГОВОР НА ВЫПОЛНЕНИЕ ДИЗАЙН-ПРОЕКТА ИНТЕРЬЕРА {{contract_number}}
 
 г. Москва                                                        «{{contract_date}}»
 
-Кульчихина Дария Андреевна, именуемая в дальнейшем «Исполнитель», с одной стороны,
+{{executor_name}}, именуемая в дальнейшем «Исполнитель», с одной стороны,
 и {{client_name}}, паспорт серия {{client_passport}}, выдан {{client_passport_issued}}
 {{client_passport_date}}, зарегистрированный(ая) по адресу: {{client_registration}},
 именуемый(ая) в дальнейшем «Заказчик», с другой стороны,
@@ -452,12 +464,18 @@ const DOC_TEMPLATES = [
 13. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН
 
 ИСПОЛНИТЕЛЬ:                                    ЗАКАЗЧИК:
-Кульчихина Дария Андреевна                      {{client_name}}
-ИНН: _______________                            Паспорт: {{client_passport}}
-Тел.: +7 (___) ___-__-__                        Выдан: {{client_passport_issued}} {{client_passport_date}}
-E-mail: daria@kulchikhina.ru                    Зарег.: {{client_registration}}
-                                                Тел.: {{client_phone}}
-                                                E-mail: {{client_email}}
+{{executor_name}}                               {{client_name}}
+Паспорт: {{executor_passport}}                  Паспорт: {{client_passport}}
+Выдан: {{executor_passport_issued}}             Выдан: {{client_passport_issued}} {{client_passport_date}}
+{{executor_passport_date}}                      Зарег.: {{client_registration}}
+Прописка: {{executor_registration}}             Тел.: {{client_phone}}
+ИНН: {{executor_inn}}                           E-mail: {{client_email}}
+Тел.: {{executor_phone}}
+E-mail: {{executor_email}}
+Банк: {{executor_bank}}
+БИК: {{executor_bik}}
+Р/с: {{executor_account}}
+К/с: {{executor_corr_account}}
 
 Подпись: _______________________                Подпись: _______________________
 
@@ -477,13 +495,14 @@ E-mail: daria@kulchikhina.ru                    Зарег.: {{client_registrati
       { key: 'amount',          label: 'Сумма',           placeholder: '250 000 руб.' },
       { key: 'delivery_date',   label: 'Срок поставки',   placeholder: '30 календарных дней' },
       { key: 'delivery_address',label: 'Адрес доставки',  placeholder: 'г. Москва, ул. ...' },
+      { key: 'executor_name',   label: '— Исполнитель',    placeholder: 'Кульчихина Д.А.' },
     ],
     template: `ДОГОВОР ПОСТАВКИ {{contract_number}}
 
 г. Москва                                                        {{contract_date}}
 
 {{supplier_name}}, именуемый(ая) далее «Поставщик», с одной стороны,
-и Кульчихина Д.А. (от лица Заказчика), именуемая далее «Покупатель»,
+и {{executor_name}} (от лица Заказчика), именуемая далее «Покупатель»,
 с другой стороны, заключили настоящий договор:
 
 1. ПРЕДМЕТ ДОГОВОРА
@@ -498,7 +517,7 @@ E-mail: daria@kulchikhina.ru                    Зарег.: {{client_registrati
 Срок: {{delivery_date}}.
 Адрес доставки: {{delivery_address}}.
 
-Поставщик: {{supplier_name}}            Покупатель: Кульчихина Д.А.
+Поставщик: {{supplier_name}}            Покупатель: {{executor_name}}
 
 _______________________                _______________________`,
   },
@@ -516,13 +535,14 @@ _______________________                _______________________`,
       { key: 'work_scope',      label: 'Перечень работ',  placeholder: 'Демонтаж, штукатурка, ...',  multiline: true },
       { key: 'amount',          label: 'Сумма',           placeholder: '800 000 руб.' },
       { key: 'deadline',        label: 'Сроки',           placeholder: '60 рабочих дней' },
+      { key: 'executor_name',   label: '— Заказчик (исполнитель)', placeholder: 'Кульчихина Д.А.' },
     ],
     template: `ДОГОВОР ПОДРЯДА {{contract_number}}
 
 г. Москва                                                        {{contract_date}}
 
 {{contractor_name}}, именуемый(ая) далее «Подрядчик»,
-и Кульчихина Д.А. (от лица Заказчика), именуемая далее «Заказчик»,
+и {{executor_name}} (от лица Заказчика), именуемая далее «Заказчик»,
 заключили договор:
 
 1. ПРЕДМЕТ ДОГОВОРА
@@ -536,7 +556,7 @@ _______________________                _______________________`,
 3. СРОКИ
 Срок выполнения: {{deadline}}.
 
-Подрядчик: {{contractor_name}}            Заказчик: Кульчихина Д.А.
+Подрядчик: {{contractor_name}}            Заказчик: {{executor_name}}
 
 _______________________                  _______________________`,
   },
@@ -553,6 +573,7 @@ _______________________                  _______________________`,
       { key: 'client_name',     label: 'ФИО клиента',     placeholder: 'Иванов Иван Иванович' },
       { key: 'work_description',label: 'Перечень работ',  placeholder: 'Разработка дизайн-проекта интерьера...', multiline: true },
       { key: 'price',           label: 'Сумма',           placeholder: '350 000 руб.' },
+      { key: 'executor_name',   label: '— Исполнитель',    placeholder: 'Кульчихина Д.А.' },
     ],
     template: `АКТ ВЫПОЛНЕННЫХ РАБОТ {{act_number}}
 
@@ -560,7 +581,7 @@ _______________________                  _______________________`,
 
 К договору {{contract_number}}
 
-Дария Кульчихина (Исполнитель) и {{client_name}} (Заказчик)
+{{executor_name}} (Исполнитель) и {{client_name}} (Заказчик)
 составили настоящий акт о том, что:
 
 ИСПОЛНИТЕЛЬ ВЫПОЛНИЛ СЛЕДУЮЩИЕ РАБОТЫ:
@@ -571,7 +592,7 @@ _______________________                  _______________________`,
 Заказчик претензий к качеству и срокам выполнения работ не имеет.
 Работы выполнены в полном объёме.
 
-Исполнитель: Кульчихина Д.А.         Заказчик: {{client_name}}
+Исполнитель: {{executor_name}}        Заказчик: {{client_name}}
 
 _______________________              _______________________`,
   },
@@ -588,6 +609,7 @@ _______________________              _______________________`,
       { key: 'object_address',label: 'Адрес объекта', placeholder: 'г. Москва ...' },
       { key: 'defects',       label: 'Описание дефектов', placeholder: '1. Неровная штукатурка\n2. ...', multiline: true },
       { key: 'deadline_fix',  label: 'Срок устранения', placeholder: '10 рабочих дней' },
+      { key: 'executor_name',   label: '— Заказчик (исполнитель)', placeholder: 'Кульчихина Д.А.' },
     ],
     template: `АКТ О ВЫЯВЛЕННЫХ ДЕФЕКТАХ {{act_number}}
 
@@ -602,7 +624,7 @@ _______________________              _______________________`,
 
 Подрядчик обязуется устранить дефекты в срок: {{deadline_fix}}.
 
-Заказчик: Кульчихина Д.А.             Подрядчик: {{contractor}}
+Заказчик: {{executor_name}}            Подрядчик: {{contractor}}
 
 _______________________              _______________________`,
   },
@@ -619,11 +641,17 @@ _______________________              _______________________`,
       { key: 'description',    label: 'Назначение',   placeholder: 'Аванс по договору № ...', multiline: true },
       { key: 'amount',         label: 'Сумма',        placeholder: '175 000 руб.' },
       { key: 'due_date',       label: 'Оплатить до',  placeholder: '15.03.2026' },
+      { key: 'executor_name',   label: '— Исполнитель',  placeholder: 'Кульчихина Дария Андреевна' },
+      { key: 'executor_inn',    label: '— ИНН',          placeholder: '770112345678' },
+      { key: 'executor_bank',   label: '— Банк',         placeholder: 'Сбербанк России' },
+      { key: 'executor_bik',    label: '— БИК',          placeholder: '044525225' },
+      { key: 'executor_account',label: '— Расчётный счёт',placeholder: '40802810938000012345' },
     ],
     template: `СЧЁТ НА ОПЛАТУ {{invoice_number}}
 от {{invoice_date}}
 
-Исполнитель: Кульчихина Дария Александровна
+Исполнитель: {{executor_name}}
+ИНН: {{executor_inn}}
 Получатель: {{client_name}}
 
 НАЗНАЧЕНИЕ ПЛАТЕЖА:
@@ -633,7 +661,10 @@ _______________________              _______________________`,
 
 Оплатить до: {{due_date}}
 
-Реквизиты для оплаты уточняйте у исполнителя.`,
+РЕКВИЗИТЫ ДЛЯ ОПЛАТЫ:
+Банк: {{executor_bank}}
+БИК: {{executor_bik}}
+Р/с: {{executor_account}}`,
   },
   {
     key: 'estimate',
@@ -647,6 +678,7 @@ _______________________              _______________________`,
       { key: 'object',       label: 'Объект',        placeholder: 'Квартира 120 кв.м, ул. ...' },
       { key: 'items',        label: 'Позиции',       placeholder: '1. Демонтаж — 50 000 руб.\n2. Штукатурка — 120 000 руб.\n...', multiline: true },
       { key: 'total',        label: 'Итого',         placeholder: '850 000 руб.' },
+      { key: 'executor_name',label: '— Составил',    placeholder: 'Кульчихина Д.А.' },
     ],
     template: `СМЕТА {{estimate_no}}
 от {{date}}
@@ -659,7 +691,7 @@ _______________________              _______________________`,
 ══════════════════════════════════
 ИТОГО: {{total}}
 
-Составил: Кульчихина Д.А.`,
+Составил: {{executor_name}}`,
   },
   {
     key: 'tz_doc',
@@ -676,6 +708,7 @@ _______________________              _______________________`,
       { key: 'requirements',   label: 'Требования',      placeholder: '1. Зонирование гостиной\n2. ...', multiline: true },
       { key: 'style',          label: 'Стиль',           placeholder: 'современный минимализм' },
       { key: 'budget',         label: 'Бюджет',          placeholder: 'до 1 500 000 руб.' },
+      { key: 'executor_name',  label: '— Составил',       placeholder: 'Кульчихина Д.А.' },
     ],
     template: `ТЕХНИЧЕСКОЕ ЗАДАНИЕ {{tz_no}}
 от {{date}}
@@ -688,7 +721,7 @@ _______________________              _______________________`,
 ТРЕБОВАНИЯ К ПРОЕКТУ:
 {{requirements}}
 
-Составил: Кульчихина Д.А.
+Составил: {{executor_name}}
 Согласовал: {{client_name}}`,
   },
 ]

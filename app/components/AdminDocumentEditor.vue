@@ -507,6 +507,28 @@ const allVars = computed(() => {
       result.push({ key, label, value, group: 'Данные проекта' })
     }
   }
+
+  // 3. Реквизиты исполнителя
+  const executorVars: Array<[string, string]> = [
+    ['executor_name',            'ФИО исполнителя'],
+    ['executor_inn',             'ИНН исполнителя'],
+    ['executor_passport',        'Паспорт исполнителя'],
+    ['executor_passport_issued', 'Паспорт выдан'],
+    ['executor_passport_date',   'Дата выдачи'],
+    ['executor_registration',    'Прописка исполнителя'],
+    ['executor_phone',           'Телефон исполнителя'],
+    ['executor_email',           'Email исполнителя'],
+    ['executor_bank',            'Банк'],
+    ['executor_bik',             'БИК'],
+    ['executor_account',         'Расчётный счёт'],
+    ['executor_corr_account',    'Корреспондентский счёт'],
+  ]
+  for (const [key, label] of executorVars) {
+    if (!result.find(r => r.key === key)) {
+      result.push({ key, label, value: vals[key] || EXECUTOR_DEFAULTS[key] || '', group: 'Исполнитель' })
+    }
+  }
+
   return result
 })
 
@@ -616,6 +638,23 @@ function handleBack() {
 }
 
 // ── Template selection ──
+// ── Реквизиты исполнителя (Кульчихина Дария Андреевна) — дефолты
+// Заполните один раз — будут подставляться во все шаблоны автоматически
+const EXECUTOR_DEFAULTS: Record<string, string> = {
+  executor_name:            'Кульчихина Дария Андреевна',
+  executor_inn:             '',   // ← заполнить ИНН
+  executor_passport:        '',
+  executor_passport_issued: '',
+  executor_passport_date:   '',
+  executor_registration:    '',
+  executor_phone:           '',
+  executor_email:           'daria@kulchikhina.ru',
+  executor_bank:            '',
+  executor_bik:             '',
+  executor_account:         '',
+  executor_corr_account:    '',
+}
+
 function selectTemplate(tpl: typeof props.templates[number]) {
   selectedTpl.value = tpl
   const vals: Record<string, string> = {}
@@ -633,6 +672,13 @@ function selectTemplate(tpl: typeof props.templates[number]) {
   }
   fieldValues.value = vals
   fieldAutoFilled.value = auto
+  // Авто-заполняем поля исполнителя дефолтными реквизитами
+  for (const f of tpl.fields) {
+    if (f.key.startsWith('executor_') && !vals[f.key] && EXECUTOR_DEFAULTS[f.key]) {
+      vals[f.key] = EXECUTOR_DEFAULTS[f.key]
+      auto[f.key] = true
+    }
+  }
 }
 
 function goToStep(i: number) {
