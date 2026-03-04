@@ -1492,6 +1492,22 @@ html.dark .glass-input::placeholder {
   transform: scale(1.015);
   box-shadow: 0 8px 28px rgba(0,0,0,0.09);
 }
+[data-card-hover="dim"]:not([data-card-hover="none"]) .glass {
+  transition: opacity var(--ds-anim-duration, 180ms) var(--ds-anim-easing, ease);
+}
+[data-card-hover="dim"] .glass:hover    { opacity: .72; }
+[data-card-hover="border"] .glass       { transition: box-shadow var(--ds-anim-duration, 180ms) ease, border-color var(--ds-anim-duration, 180ms) ease; }
+[data-card-hover="border"] .glass:hover { box-shadow: 0 0 0 2px currentColor; }
+[data-card-hover="reveal"] .glass       { overflow: hidden; position: relative; }
+[data-card-hover="reveal"] .glass::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,.06) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity var(--ds-anim-duration, 180ms) var(--ds-anim-easing, ease);
+  pointer-events: none;
+}
+[data-card-hover="reveal"] .glass:hover::after { opacity: 1; }
 
 /* ════════════════════════════════════════════════════════════
    UNIFIED COMPONENT LIBRARY (u-*)
@@ -2481,4 +2497,100 @@ html.dark .a-modal label {
     padding: 10px;
     border-radius: 10px;
   }
+}
+
+/* ════════════════════════════════════════════════════════════
+   DESIGN ARCHITECTURE SYSTEM
+   Controls spatial layout, typography, hover effects etc.
+   All driven by data-* attrs on <html>.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Density ── */
+:root { --arch-space: 1; }
+[data-density="dense"]  { --arch-space: .6; }
+[data-density="normal"] { --arch-space: 1; }
+[data-density="airy"]   { --arch-space: 1.5; }
+[data-density="grand"]  { --arch-space: 2.2; }
+
+/* Sections and page gaps scale with density */
+[data-density="dense"]  .asb-section,
+[data-density="dense"]  .acp-form-section { margin-bottom: calc(12px * var(--arch-space)); }
+[data-density="airy"]   .asb-section,
+[data-density="airy"]   .acp-form-section { margin-bottom: calc(28px * var(--arch-space)); }
+[data-density="grand"]  .asb-section,
+[data-density="grand"]  .acp-form-section { margin-bottom: calc(48px * var(--arch-space)); }
+
+/* ── Heading text-transform ── */
+[data-heading-case="uppercase"]  h1,[data-heading-case="uppercase"]  h2,[data-heading-case="uppercase"]  h3,
+[data-heading-case="uppercase"]  h4,[data-heading-case="uppercase"]  h5,[data-heading-case="uppercase"]  h6,
+[data-heading-case="uppercase"]  .u-section-title { text-transform: uppercase; }
+[data-heading-case="lowercase"]  h1,[data-heading-case="lowercase"]  h2,[data-heading-case="lowercase"]  h3,
+[data-heading-case="lowercase"]  h4,[data-heading-case="lowercase"]  h5,[data-heading-case="lowercase"]  h6,
+[data-heading-case="lowercase"]  .u-section-title { text-transform: lowercase; }
+[data-heading-case="capitalize"] h1,[data-heading-case="capitalize"] h2,[data-heading-case="capitalize"] h3,
+[data-heading-case="capitalize"] h4,[data-heading-case="capitalize"] h5,[data-heading-case="capitalize"] h6,
+[data-heading-case="capitalize"] .u-section-title { text-transform: capitalize; }
+
+/* ── Section dividers ── */
+[data-divider="line"]     .u-section-title { border-bottom: 1px solid rgba(var(--glass-border-rgb, 255,255,255), .18); padding-bottom: 6px; }
+[data-divider="gradient"] .u-section-title {
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, rgba(255,255,255,.35), transparent) 1;
+  padding-bottom: 6px;
+}
+
+/* ── Page-enter transitions ── */
+/* Applied to .page-enter-active / .page-leave-active via Nuxt page transition */
+[data-page-enter="fade"]  .page-enter-active,
+[data-page-enter="fade"]  .page-leave-active  { transition: opacity .25s ease; }
+[data-page-enter="fade"]  .page-enter-from,
+[data-page-enter="fade"]  .page-leave-to      { opacity: 0; }
+[data-page-enter="slide"] .page-enter-active,
+[data-page-enter="slide"] .page-leave-active  { transition: opacity .25s ease, transform .25s ease; }
+[data-page-enter="slide"] .page-enter-from    { opacity: 0; transform: translateY(14px); }
+[data-page-enter="slide"] .page-leave-to      { opacity: 0; transform: translateY(-8px); }
+
+/* ── Link animation ── */
+[data-link-anim="underline"] a:not(.a-btn):not(.nav-link) {
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--ds-anim-duration, 180ms) ease;
+}
+[data-link-anim="underline"] a:not(.a-btn):not(.nav-link):hover {
+  text-decoration-color: currentColor;
+}
+[data-link-anim="arrow"] a:not(.a-btn):not(.nav-link) {
+  display: inline-flex; align-items: center; gap: 2px;
+}
+[data-link-anim="arrow"] a:not(.a-btn):not(.nav-link)::after {
+  content: '→';
+  display: inline-block;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity .18s, transform .18s;
+  font-size: .85em;
+}
+[data-link-anim="arrow"] a:not(.a-btn):not(.nav-link):hover::after {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* ── Section style ── */
+/* card: each asb-section / acp-form-section gets glass card look */
+[data-section-style="card"] .asb-section,
+[data-section-style="card"] .acp-form-section {
+  background: var(--ds-card-bg, var(--glass-bg));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--ds-radius-card, 10px);
+  padding: 16px;
+  backdrop-filter: blur(var(--glass-blur, 12px));
+}
+/* striped: alternating background tint */
+[data-section-style="striped"] .asb-section:nth-child(even),
+[data-section-style="striped"] .acp-form-section:nth-child(even) {
+  background: rgba(255,255,255,.03);
+}
+[data-section-style="striped"] .asb-section:nth-child(odd),
+[data-section-style="striped"] .acp-form-section:nth-child(odd) {
+  background: transparent;
 }

@@ -1386,6 +1386,133 @@
                 </div>
               </div>
 
+              <!-- ═══════════════════════ АРХИТЕКТУРА ДИЗАЙНА ═══════════════════════ -->
+              <div v-show="isTabVisible('arch')" class="dp-page dp-page--cols">
+                <div class="dp-col">
+                  <div class="dp-col-label">Пространство</div>
+                  <!-- Density -->
+                  <div class="dp-field">
+                    <label class="dp-label">плотность <span class="dp-val">{{ tokens.archDensity }}</span></label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archDensities" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': tokens.archDensity === opt.id }"
+                        @click="set('archDensity', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                    <div class="dp-field-hint">управляет отступами секций и расстоянием между элементами</div>
+                  </div>
+
+                  <!-- Heading Tracking -->
+                  <div class="dp-field">
+                    <label class="dp-label">межбуквенный трекинг заголовков <span class="dp-val">{{ ((tokens.archHeadingTracking ?? -1) * 0.01).toFixed(2) }}em</span></label>
+                    <input type="range" min="-5" max="30" step="1" :value="tokens.archHeadingTracking ?? -1" class="dp-range" @input="onRange('archHeadingTracking', $event)">
+                    <div class="dp-field-hint">отрицательный — сжатие, высокий — editorial / архитектурный стиль</div>
+                  </div>
+
+                  <!-- Heading Case -->
+                  <div class="dp-field">
+                    <label class="dp-label">регистр заголовков</label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archHeadingCases" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': tokens.archHeadingCase === opt.id }"
+                        @click="set('archHeadingCase', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                  </div>
+
+                  <!-- Divider -->
+                  <div class="dp-field">
+                    <label class="dp-label">разделители секций</label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archDividers" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': tokens.archDivider === opt.id }"
+                        @click="set('archDivider', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="dp-col">
+                  <div class="dp-col-label">Поведение</div>
+
+                  <!-- Card hover -->
+                  <div class="dp-field">
+                    <label class="dp-label">эффект наведения на карточку</label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in cardHoverAnims" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': tokens.cardHoverAnim === opt.id }"
+                        @click="set('cardHoverAnim', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                  </div>
+
+                  <!-- Link anim -->
+                  <div class="dp-field">
+                    <label class="dp-label">анимация ссылок</label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archLinkAnims" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': tokens.archLinkAnim === opt.id }"
+                        @click="set('archLinkAnim', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                  </div>
+
+                  <!-- Page enter -->
+                  <div class="dp-field">
+                    <label class="dp-label">переход между страницами</label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archPageEnters" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': tokens.archPageEnter === opt.id }"
+                        @click="set('archPageEnter', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                  </div>
+
+                  <!-- Section style -->
+                  <div class="dp-field">
+                    <label class="dp-label">стиль секций страницы</label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archSectionStyles" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': tokens.archSectionStyle === opt.id }"
+                        @click="set('archSectionStyle', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                  </div>
+
+                  <!-- Preview -->
+                  <div class="dp-field">
+                    <div class="dp-col-label" style="margin-bottom:8px">Превью трекинга</div>
+                    <div class="dp-arch-preview-heading" :style="{ letterSpacing: ((tokens.archHeadingTracking ?? -1) * 0.01).toFixed(3) + 'em', textTransform: tokens.archHeadingCase === 'none' ? undefined : tokens.archHeadingCase }">
+                      Архитектура пространства
+                    </div>
+                    <div class="dp-arch-preview-heading dp-arch-preview-heading--sm" :style="{ letterSpacing: ((tokens.archHeadingTracking ?? -1) * 0.01).toFixed(3) + 'em', textTransform: tokens.archHeadingCase === 'none' ? undefined : tokens.archHeadingCase }">
+                      Design&nbsp;Architecture
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div><!-- /.dp-tab-content -->
 
 
@@ -1612,9 +1739,10 @@ const tabList = [
   { id: 'scrollbar', label: 'скролл' },
   { id: 'tables',    label: 'таблицы' },
   { id: 'badges',    label: 'значки' },
+  { id: 'arch',      label: 'архитектура' },
 ]
 // Tab keying — sections object kept only for inspect-mode quick-jump compatibility
-const sections = reactive({ presets: true, palette: true, colors: false, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false })
+const sections = reactive({ presets: true, palette: true, colors: false, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false, arch: false })
 function toggle(key: keyof typeof sections) { activeTab.value = key as string }
 
 /* ── Option lists ────────────────────────────────── */
@@ -1644,9 +1772,44 @@ const btnHoverAnims = [
   { id: 'sheen' as const, label: 'блик' },
 ]
 const cardHoverAnims = [
+  { id: 'none'   as const, label: 'нет' },
+  { id: 'lift'   as const, label: 'парение' },
+  { id: 'scale'  as const, label: 'масштаб' },
+  { id: 'dim'    as const, label: 'затемнение' },
+  { id: 'border' as const, label: 'рамка' },
+  { id: 'reveal' as const, label: 'открытие' },
+]
+const archDensities = [
+  { id: 'dense'  as const, label: 'плотно' },
+  { id: 'normal' as const, label: 'норма' },
+  { id: 'airy'   as const, label: 'просторно' },
+  { id: 'grand'  as const, label: 'гранд' },
+]
+const archHeadingCases = [
+  { id: 'none'       as const, label: 'обычный' },
+  { id: 'uppercase'  as const, label: 'КАПС' },
+  { id: 'lowercase'  as const, label: 'строчные' },
+  { id: 'capitalize' as const, label: 'С Заглавной' },
+]
+const archDividers = [
+  { id: 'none'     as const, label: 'нет' },
+  { id: 'line'     as const, label: 'линия' },
+  { id: 'gradient' as const, label: 'градиент' },
+]
+const archPageEnters = [
   { id: 'none'  as const, label: 'нет' },
-  { id: 'lift'  as const, label: 'парение' },
-  { id: 'scale' as const, label: 'масштаб' },
+  { id: 'fade'  as const, label: 'плавно' },
+  { id: 'slide' as const, label: 'слайд' },
+]
+const archLinkAnims = [
+  { id: 'none'      as const, label: 'нет' },
+  { id: 'underline' as const, label: 'подчёркивание' },
+  { id: 'arrow'     as const, label: 'стрелка' },
+]
+const archSectionStyles = [
+  { id: 'flat'    as const, label: 'плоский' },
+  { id: 'card'    as const, label: 'карточки' },
+  { id: 'striped' as const, label: 'полосы' },
 ]
 const BORDER_STYLE_OPTIONS = [
   { id: 'solid' as const, label: 'solid' },
@@ -1723,6 +1886,7 @@ const sectionSearchMap: Record<string, string[]> = {
   scrollbar: ['скроллбар', 'scrollbar', 'полоса прокрутки', 'ширина', 'width', 'прозрач'],
   tables:   ['таблиц', 'table', 'таблетк', 'строка', 'заголовок', 'row', 'header', 'border', 'hover'],
   badges:   ['значок', 'значки', 'badge', 'counter', 'счётчик', 'уведомлени', 'notification'],
+  arch:     ['архитектура', 'плотность', 'трекинг', 'заголовок', 'кейс', 'эффект', 'hover', 'анимация', 'ссылка', 'разделитель', 'секция', 'density', 'heading', 'tracking', 'card hover', 'divider', 'page enter', 'link anim', 'editorial', 'spatial'],
 }
 
 function isTabVisible(key: string): boolean {
@@ -1929,7 +2093,7 @@ const sectionLabels: Record<string, string> = {
   type: 'Типографика', typeScale: 'Шкала', surface: 'Поверхности',
   radii: 'Скругления', anim: 'Анимация', grid: 'Сетка', darkMode: 'Тёмная тема',
   inputs: 'Инпуты', tags: 'Теги/чипы', nav: 'Навигация', statuses: 'Статусы', popups: 'Попапы',
-  scrollbar: 'Скроллбар', tables: 'Таблицы', badges: 'Значки',
+  scrollbar: 'Скроллбар', tables: 'Таблицы', badges: 'Значки', arch: 'Архитектура',
 }
 
 /* ─── Quick-edit token controls ─────────────────────────────────────────────
@@ -2861,6 +3025,48 @@ onBeforeUnmount(() => {
 :global(html.dark) .dp-range { background: rgba(255,255,255,.1); }
 :global(html.dark) .dp-range::-webkit-slider-thumb { background: #ddd; border-color: #111; }
 :global(html.dark) .dp-range::-moz-range-thumb { background: #ddd; border-color: #111; }
+
+/* ── Architecture chips ── */
+.dp-arch-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.dp-arch-chip {
+  padding: 3px 9px;
+  font-size: .62rem;
+  letter-spacing: .5px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 3px;
+  background: rgba(255,255,255,.04);
+  color: var(--glass-text);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.dp-arch-chip:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.3); }
+.dp-arch-chip--active {
+  background: rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.55);
+  color: #fff;
+  font-weight: 600;
+}
+:global(html.dark) .dp-arch-chip { border-color: rgba(255,255,255,.1); color: #ccc; }
+:global(html.dark) .dp-arch-chip--active { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.5); color: #fff; }
+.dp-arch-preview-heading {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--glass-text);
+  line-height: 1.2;
+  margin-bottom: 8px;
+  transition: letter-spacing .2s, text-transform .2s;
+}
+.dp-arch-preview-heading--sm {
+  font-size: .85rem;
+  font-weight: 400;
+  opacity: .6;
+  margin-bottom: 0;
+}
 
 /* ── Chips ── */
 .dp-chips { display: flex; flex-wrap: wrap; gap: 4px; }
