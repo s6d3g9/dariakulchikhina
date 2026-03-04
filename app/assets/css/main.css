@@ -2781,3 +2781,349 @@ html.dark .a-modal label {
   line-height: var(--ds-heading-line-height, 1.1);
   opacity: .7;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   DEEP ARCHITECTURE CASCADE
+   Makes ALL layout areas respond to design tokens.
+   This section targets EVERY real DOM class, not just a few.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Density: every container, every sidebar, every panel ── */
+[data-density] .ent-layout,
+[data-density] .ent-layout--with-stats { gap: calc(20px * var(--arch-space, 1)); }
+
+[data-density] .ent-sidebar { padding: calc(10px * var(--arch-space, 1)); }
+[data-density] .ent-main { gap: calc(16px * var(--arch-space, 1)); }
+
+[data-density] .ent-detail-card { padding: calc(16px * var(--arch-space, 1)); }
+[data-density] .ent-detail-section { margin-bottom: calc(14px * var(--arch-vertical-rhythm, 1)); }
+[data-density] .ent-detail-row { padding: calc(6px * var(--arch-space, 1)) 0; }
+
+[data-density] .proj-main-inner { padding: calc(16px * var(--arch-space, 1)); }
+
+[data-density] .cab-inner { padding: calc(18px * var(--arch-space, 1)); }
+[data-density] .cab-sidebar { padding: calc(8px * var(--arch-space, 1)); gap: calc(4px * var(--arch-space, 1)); }
+[data-density] .cab-nav { gap: calc(2px * var(--arch-space, 1)); }
+
+[data-density] .u-form-section { padding: calc(18px * var(--arch-space, 1)); margin-bottom: calc(14px * var(--arch-vertical-rhythm, 1)); }
+[data-density] .u-field { margin-bottom: calc(10px * var(--arch-vertical-rhythm, 1)); }
+
+[data-density] .dash-welcome { padding: calc(18px * var(--arch-space, 1)); margin-bottom: calc(16px * var(--arch-vertical-rhythm, 1)); }
+[data-density] .dash-quick-nav { gap: calc(10px * var(--arch-space, 1)); margin-bottom: calc(18px * var(--arch-vertical-rhythm, 1)); }
+[data-density] .dash-quick-btn { padding: calc(16px * var(--arch-space, 1)); }
+
+/* Grand: heroic spacing everywhere */
+[data-density="grand"] .ent-layout,
+[data-density="grand"] .ent-layout--with-stats { gap: calc(36px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] .ent-sidebar { padding: calc(18px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] .ent-detail-card { padding: calc(28px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] .cab-inner { padding: calc(32px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] .proj-main-inner { padding: calc(28px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] .u-form-section { padding: calc(28px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] .u-field { margin-bottom: calc(18px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] .dash-quick-btn { padding: calc(28px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] h3, [data-density="grand"] h4 { font-size: calc(var(--ds-text-lg, 1.2rem) * 1.15); }
+
+/* Dense: tight, aggressive */
+[data-density="dense"] .ent-layout,
+[data-density="dense"] .ent-layout--with-stats { gap: 8px; }
+[data-density="dense"] .ent-sidebar { padding: 4px; }
+[data-density="dense"] .ent-detail-card { padding: 10px; }
+[data-density="dense"] .cab-inner { padding: 8px; }
+[data-density="dense"] .proj-main-inner { padding: 8px; }
+[data-density="dense"] .u-form-section { padding: 10px; }
+[data-density="dense"] .u-field { margin-bottom: 4px; }
+[data-density="dense"] .dash-quick-btn { padding: 8px; }
+[data-density="dense"] h3, [data-density="dense"] h4 { font-size: var(--ds-text-sm, .833rem); }
+
+/* ── Vertical rhythm: universal margins/gaps ── */
+[data-density] .ent-detail-head { margin-bottom: calc(12px * var(--arch-vertical-rhythm, 1)); }
+[data-density] .ent-detail-foot { margin-top: calc(12px * var(--arch-vertical-rhythm, 1)); }
+[data-density] .u-form-foot    { margin-top: calc(14px * var(--arch-vertical-rhythm, 1)); }
+[data-density] .u-grid-2,
+[data-density] .u-grid-3       { gap: calc(var(--ds-grid-gap, 16px) * var(--arch-vertical-rhythm, 1)); }
+[data-density] .std-nav         { gap: calc(2px * var(--arch-vertical-rhythm, 1)); }
+[data-density] .ent-nav-item   { padding: calc(7px * var(--arch-space, 1)) calc(10px * var(--arch-space, 1)); }
+[data-density] .cab-nav-item   { padding: calc(8px * var(--arch-space, 1)) calc(12px * var(--arch-space, 1)); }
+[data-density] .std-nav-item   { padding: calc(8px * var(--arch-space, 1)) calc(12px * var(--arch-space, 1)); }
+
+/* ── Nav Chrome: expand to ALL sidebar types ── */
+[data-nav-style="minimal"] .ent-sidebar,
+[data-nav-style="minimal"] .cab-sidebar,
+[data-nav-style="minimal"] .proj-sidenav,
+[data-nav-style="minimal"] .docs-nav {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+[data-nav-style="minimal"] .ent-nav-item,
+[data-nav-style="minimal"] .cab-nav-item,
+[data-nav-style="minimal"] .std-nav-item,
+[data-nav-style="minimal"] .proj-sidenav-item,
+[data-nav-style="minimal"] .docs-nav-item {
+  background: transparent !important;
+  border: none !important;
+  opacity: .5;
+  transition: opacity var(--ds-anim-duration, 180ms) ease;
+}
+[data-nav-style="minimal"] .ent-nav-item:hover,
+[data-nav-style="minimal"] .cab-nav-item:hover,
+[data-nav-style="minimal"] .std-nav-item:hover,
+[data-nav-style="minimal"] .proj-sidenav-item:hover,
+[data-nav-style="minimal"] .docs-nav-item:hover { opacity: .85; }
+[data-nav-style="minimal"] .ent-nav-item--active,
+[data-nav-style="minimal"] .cab-nav-item--active,
+[data-nav-style="minimal"] .std-nav-item--active,
+[data-nav-style="minimal"] .proj-sidenav-item.router-link-active,
+[data-nav-style="minimal"] .docs-nav-item--active {
+  opacity: 1 !important;
+  font-weight: var(--ds-heading-weight, 600);
+  background: transparent !important;
+}
+/* Minimal: admin header also becomes transparent */
+[data-nav-style="minimal"] .admin-header {
+  background: transparent !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+[data-nav-style="minimal"] .admin-header::before { display: none !important; }
+
+/* Hidden: ALL sidebars collapse to icon-only */
+[data-nav-style="hidden"] .ent-sidebar,
+[data-nav-style="hidden"] .cab-sidebar,
+[data-nav-style="hidden"] .proj-sidenav,
+[data-nav-style="hidden"] .docs-nav {
+  width: 52px !important;
+  min-width: 52px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+[data-nav-style="hidden"] .ent-sidebar span:not(.icon),
+[data-nav-style="hidden"] .cab-sidebar span:not(.icon),
+[data-nav-style="hidden"] .ent-nav-name,
+[data-nav-style="hidden"] .ent-nav-sub,
+[data-nav-style="hidden"] .ent-nav-badge,
+[data-nav-style="hidden"] .cab-nav-item span,
+[data-nav-style="hidden"] .ent-sidebar-head,
+[data-nav-style="hidden"] .ent-search,
+[data-nav-style="hidden"] .ent-sidebar-foot,
+[data-nav-style="hidden"] .proj-sidenav-group-label,
+[data-nav-style="hidden"] .std-nav-group-label,
+[data-nav-style="hidden"] .ent-sidebar-title { display: none !important; }
+/* Hidden: admin header shrinks */
+[data-nav-style="hidden"] .admin-header {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 4px 12px;
+}
+[data-nav-style="hidden"] .admin-tabs { gap: 2px; }
+
+/* ── Card Chrome: expand to ALL card/panel/surface types ── */
+[data-card-chrome="subtle"] .ent-detail-card,
+[data-card-chrome="subtle"] .u-form-section,
+[data-card-chrome="subtle"] .cab-task,
+[data-card-chrome="subtle"] .cab-doc-card,
+[data-card-chrome="subtle"] .cab-staff-card,
+[data-card-chrome="subtle"] .dash-quick-btn,
+[data-card-chrome="subtle"] .dash-welcome,
+[data-card-chrome="subtle"] .dash-stat,
+[data-card-chrome="subtle"] .dash-project-card,
+[data-card-chrome="subtle"] .admin-header,
+[data-card-chrome="subtle"] .std-sidenav {
+  box-shadow: none !important;
+  border-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
+  backdrop-filter: blur(calc(var(--glass-blur, 12px) * 0.3)) !important;
+}
+
+[data-card-chrome="ghost"] .ent-detail-card,
+[data-card-chrome="ghost"] .u-form-section,
+[data-card-chrome="ghost"] .cab-task,
+[data-card-chrome="ghost"] .cab-doc-card,
+[data-card-chrome="ghost"] .cab-staff-card,
+[data-card-chrome="ghost"] .dash-quick-btn,
+[data-card-chrome="ghost"] .dash-welcome,
+[data-card-chrome="ghost"] .dash-stat,
+[data-card-chrome="ghost"] .dash-project-card,
+[data-card-chrome="ghost"] .admin-header,
+[data-card-chrome="ghost"] .std-sidenav {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+[data-card-chrome="ghost"] .admin-header::before,
+[data-card-chrome="ghost"] .admin-header::after { display: none !important; }
+
+/* Ghost: remove backgrounds from ALL section variants, not just asb/acp */
+[data-card-chrome="ghost"] [class*="-section"],
+[data-card-chrome="ghost"] [class*="-card"],
+[data-card-chrome="ghost"] [class*="-wrap"] {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ── Hero Scale: expand to more title elements ── */
+[data-hero-scale="compact"] .ent-detail-head { padding: 6px 0; }
+[data-hero-scale="compact"] .ent-detail-name,
+[data-hero-scale="compact"] .dash-welcome-name { font-size: var(--ds-text-sm, .833rem); }
+[data-hero-scale="compact"] .u-section-title { font-size: var(--ds-text-xs, .694rem); }
+
+[data-hero-scale="large"] .ent-detail-name,
+[data-hero-scale="large"] .dash-welcome-name {
+  font-size: var(--ds-text-lg, 1.2rem);
+  font-weight: var(--ds-heading-weight, 600);
+  letter-spacing: var(--ds-heading-letter-spacing, .01em);
+}
+[data-hero-scale="large"] .u-section-title {
+  font-size: var(--ds-text-base, 1rem);
+  letter-spacing: var(--ds-heading-letter-spacing, .01em);
+}
+
+[data-hero-scale="cinematic"] .ent-detail-name,
+[data-hero-scale="cinematic"] .dash-welcome-name {
+  font-size: var(--ds-text-xl, 1.44rem);
+  font-weight: var(--ds-heading-weight, 300);
+  letter-spacing: var(--ds-heading-letter-spacing, .06em);
+  line-height: var(--ds-heading-line-height, 1.1);
+}
+[data-hero-scale="cinematic"] .u-section-title {
+  font-size: var(--ds-text-lg, 1.2rem);
+  letter-spacing: var(--ds-heading-letter-spacing, .06em);
+  font-weight: var(--ds-heading-weight, 300);
+  margin-top: calc(32px * var(--arch-vertical-rhythm, 1));
+  margin-bottom: calc(18px * var(--arch-vertical-rhythm, 1));
+  opacity: .65;
+}
+[data-hero-scale="cinematic"] .ent-detail-head {
+  padding: calc(24px * var(--arch-vertical-rhythm, 1)) 0;
+}
+
+/* ── Section style: expand to ALL section types ── */
+[data-section-style="card"] .u-form-section,
+[data-section-style="card"] [class*="-section"]:not(.u-section-title):not(.ent-detail-section) {
+  background: var(--ds-card-bg, var(--glass-bg));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius, 10px);
+  padding: 16px;
+  backdrop-filter: blur(var(--glass-blur, 12px));
+}
+[data-section-style="striped"] .u-form-section:nth-child(even),
+[data-section-style="striped"] [class*="-section"]:nth-child(even):not(.u-section-title):not(.ent-detail-section) {
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+/* ── Dividers: widen to all heading-like elements ── */
+[data-divider="line"] .ent-sidebar-title,
+[data-divider="line"] .std-nav-group-label,
+[data-divider="line"] .proj-sidenav-group-label {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  padding-bottom: 4px;
+}
+[data-divider="gradient"] .ent-sidebar-title,
+[data-divider="gradient"] .std-nav-group-label,
+[data-divider="gradient"] .proj-sidenav-group-label {
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, color-mix(in srgb, var(--glass-text) 16%, transparent), transparent) 1;
+  padding-bottom: 4px;
+}
+
+/* ── Heading tracking: apply to ALL heading-like elements ── */
+[data-heading-case] .ent-sidebar-title,
+[data-heading-case] .std-nav-group-label,
+[data-heading-case] .proj-sidenav-group-label,
+[data-heading-case] .ent-detail-name,
+[data-heading-case] .dash-welcome-name {
+  letter-spacing: var(--ds-heading-letter-spacing, inherit);
+}
+[data-heading-case="uppercase"] .ent-sidebar-title,
+[data-heading-case="uppercase"] .ent-detail-name,
+[data-heading-case="uppercase"] .dash-welcome-name,
+[data-heading-case="uppercase"] .cab-nav-item,
+[data-heading-case="uppercase"] .std-nav-group-label { text-transform: uppercase; }
+
+/* ── Admin header / tabs: respond to density + vertical rhythm ── */
+[data-density="grand"] .admin-header { padding: calc(12px * var(--arch-vertical-rhythm, 1)) calc(20px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] .admin-tabs { gap: calc(6px * var(--arch-vertical-rhythm, 1)); }
+[data-density="dense"] .admin-header { padding: 4px 10px; }
+[data-density="dense"] .admin-tabs { gap: 2px; }
+
+/* ── Glass inputs/chips: respond to card chrome ── */
+[data-card-chrome="ghost"] .glass-input,
+[data-card-chrome="ghost"] .glass-chip {
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+[data-card-chrome="subtle"] .glass-input,
+[data-card-chrome="subtle"] .glass-chip {
+  box-shadow: none;
+  backdrop-filter: blur(calc(var(--glass-blur, 12px) * 0.2));
+}
+
+/* ── Buttons: respond to density ── */
+[data-density="grand"] .a-btn-save,
+[data-density="grand"] .a-btn-sm {
+  padding-top: calc(var(--ds-btn-py) * var(--arch-vertical-rhythm, 1));
+  padding-bottom: calc(var(--ds-btn-py) * var(--arch-vertical-rhythm, 1));
+  letter-spacing: var(--ds-letter-spacing, 0);
+}
+[data-density="dense"] .a-btn-save,
+[data-density="dense"] .a-btn-sm { padding: 4px 8px; font-size: var(--ds-text-xs, .694rem); }
+
+/* ── Entity detail card: respond to card chrome ── */
+[data-card-chrome="ghost"] .ent-detail-card {
+  padding: 0 !important;
+}
+[data-card-chrome="ghost"] .ent-detail-head {
+  border-bottom: none;
+}
+[data-card-chrome="ghost"] .ent-detail-foot {
+  border-top: none;
+  background: transparent;
+}
+
+/* ── Tables/data: respond to density ── */
+[data-density="grand"] table { margin-bottom: calc(20px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] td, [data-density="grand"] th { padding: calc(10px * var(--arch-space, 1)) calc(14px * var(--arch-space, 1)); }
+[data-density="dense"] td, [data-density="dense"] th { padding: 3px 6px; font-size: var(--ds-text-xs, .694rem); }
+
+/* ── Modals: respond to card chrome + density ── */
+[data-card-chrome="ghost"] .u-modal {
+  background: color-mix(in srgb, var(--glass-bg) 80%, transparent) !important;
+  backdrop-filter: blur(48px) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
+  box-shadow: none !important;
+}
+[data-density="grand"] .u-modal {
+  padding: calc(28px * var(--arch-vertical-rhythm, 1));
+}
+[data-density="dense"] .u-modal { padding: 10px; }
+
+/* ── Status pills: respond to card chrome ── */
+[data-card-chrome="ghost"] .u-status { background: transparent; border: 1px solid currentColor; }
+[data-card-chrome="ghost"] .u-counter { background: transparent; border: 1px solid color-mix(in srgb, var(--glass-text) 15%, transparent); }
+
+/* ── Scrollbar: respond to nav style ── */
+[data-nav-style="minimal"] ::-webkit-scrollbar-thumb,
+[data-nav-style="hidden"]  ::-webkit-scrollbar-thumb { background: transparent; }
+
+/* ── Link animation: wider target for arrow/underline ── */
+[data-link-anim="underline"] .ent-nav-name,
+[data-link-anim="underline"] .dash-quick-label {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--ds-anim-duration, 180ms) ease;
+}
+[data-link-anim="underline"] .ent-nav-item:hover .ent-nav-name,
+[data-link-anim="underline"] .dash-quick-btn:hover .dash-quick-label {
+  text-decoration-color: currentColor;
+}
+

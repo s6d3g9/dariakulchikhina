@@ -164,7 +164,8 @@ export function useAiDocument() {
         body: { action: 'review', ...payload },
       })
       _stopTimer()
-      aiProgress.value = ''
+      aiProgress.value = `✓ Анализ готов за ${aiElapsed.value}с`
+      setTimeout(() => { aiProgress.value = '' }, 3000)
       return result?.notes ?? null
     } catch (e: any) {
       _stopTimer()

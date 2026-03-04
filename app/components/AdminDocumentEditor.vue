@@ -331,6 +331,23 @@ const saveMsgType = ref<'ok' | 'err'>('ok')
 const ctx = ref<any>(null)
 const loadingCtx = ref(false)
 
+// ── Утилита: убрать markdown-разметку из текста ──
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/^#{1,6}\s+/gm, '')          // # заголовки
+    .replace(/\*\*\*(.+?)\*\*\*/g, '$1')  // ***bold italic***
+    .replace(/\*\*(.+?)\*\*/g, '$1')      // **bold**
+    .replace(/\*(.+?)\*/g, '$1')          // *italic*
+    .replace(/~~(.+?)~~/g, '$1')          // ~~strike~~
+    .replace(/`{1,3}[^`]*`{1,3}/g, (m) => m.replace(/`/g, '')) // `code`
+    .replace(/^[-*_]{3,}\s*$/gm, '──────────────────────────────') // --- → читаемый разделитель
+    .replace(/^[ \t]*[>][ \t]?/gm, '')   // > цитаты
+    .replace(/^[ \t]*[-*+]\s+/gm, '• ')  // - list → bullet
+    .replace(/^\d+\.\s+/gm, (m, o, s) => m) // нумерованные списки оставляем
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [text](url)
+    .trim()
+}
+
 // ── Computed ──
 const pickedClient = computed(() =>
   ctx.value?.clients?.find((c: any) => c.id === pickedClientId.value) || null
@@ -775,6 +792,13 @@ const { aiLoading, aiError, aiAction, aiProgress, aiElapsed, aiTokenCount, aiRev
 const aiPhaseHint = computed(() => {
   if (!aiLoading.value || aiTokenCount.value > 0) return ''
   const s = aiElapsed.value
+  if (aiAction.value === 'review') {
+    if (s < 5)  return 'отправляет документ на анализ...'
+    if (s < 20) return 'читает и оценивает содержимое...'
+    if (s < 45) return 'проверяет юридические формулировки...'
+    if (s < 80) return 'формулирует замечания... обычно 1–2 минуты'
+    return 'почти готово — большой документ требует времени'
+  }
   if (s < 5)  return 'инициализирует запрос...'
   if (s < 15) return 'загружает контекст в память...'
   if (s < 30) return 'оценивает данные проекта...'
@@ -783,10 +807,11 @@ const aiPhaseHint = computed(() => {
   return 'большой документ — продолжает, не останавливайся'
 })
 
-// Прогресс 0–100 до первого токена (базовый эстимейт 90с на prefill)
+// Прогресс 0–100 до первого токена (базовый эстимейт)
 const aiPrefillPct = computed(() => {
   if (aiTokenCount.value > 0 || !aiLoading.value) return 100
-  return Math.min(95, Math.round((aiElapsed.value / 90) * 100))
+  const estimate = aiAction.value === 'review' ? 120 : 90
+  return Math.min(95, Math.round((aiElapsed.value / estimate) * 100))
 })
 
 // ── Чат-панель ────────────────────────────────────────────────────────────
@@ -860,11 +885,14 @@ async function onAiGenerate() {
   await streamDocument('generate', buildAiPayload(), (token) => {
     editorContent.value += token
     if (editorEl.value) {
-      editorEl.value.innerText = editorContent.value
+      editorEl.value.innerText = stripMarkdown(editorContent.value)
       editorEl.value.scrollTop = editorEl.value.scrollHeight
     }
     _chatToken(chatMsg, token)
   })
+  // Чистим markdown из накопленного текста (сохраняем чистый вариант)
+  editorContent.value = stripMarkdown(editorContent.value)
+  if (editorEl.value) editorEl.value.innerText = editorContent.value
   _chatDone(chatMsg)
 }
 
@@ -881,11 +909,14 @@ async function onAiImprove() {
   const ok = await streamDocument('improve', { ...buildAiPayload(), currentText: originalText }, (token) => {
     editorContent.value += token
     if (editorEl.value) {
-      editorEl.value.innerText = editorContent.value
+      editorEl.value.innerText = stripMarkdown(editorContent.value)
       editorEl.value.scrollTop = editorEl.value.scrollHeight
     }
     _chatToken(chatMsg, token)
   })
+  // Чистим markdown
+  editorContent.value = stripMarkdown(editorContent.value)
+  if (editorEl.value) editorEl.value.innerText = editorContent.value
   _chatDone(chatMsg)
   if (!ok && !editorContent.value) {
     editorContent.value = originalText

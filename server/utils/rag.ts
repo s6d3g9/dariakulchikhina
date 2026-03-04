@@ -66,7 +66,7 @@ export async function retrieveLegalContextWithChunks(
       LIMIT ${topK}
     `)
 
-    const rows = result.rows as Array<LegalChunk & { similarity: number }>
+    const rows = result as unknown as Array<LegalChunk & { similarity: number }>
     if (!rows.length) return { context: '', chunks: [] }
 
     // Фильтруем: берём только достаточно релевантные (similarity > 0.5)
@@ -97,7 +97,7 @@ export async function legalBaseReady(): Promise<{ ready: boolean; count: number 
   try {
     const db     = useDb()
     const result = await db.execute(sql`SELECT COUNT(*) AS cnt FROM legal_chunks`)
-    const count  = Number((result.rows[0] as any).cnt)
+    const count  = Number((result[0] as any).cnt)
     return { ready: count > 0, count }
   } catch {
     return { ready: false, count: 0 }
