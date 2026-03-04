@@ -1522,6 +1522,13 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'flat',
       archNavStyle: 'minimal', archCardChrome: 'ghost', archHeroScale: 'cinematic', archVerticalRhythm: 2.5,
       archContentReveal: 'fade-up', archTextReveal: 'blur-in',
+      /* ── Dark charcoal palette — deep void ── */
+      colorPageBg: '#080808', colorSurface: '#0e0e0e', colorBorder: '#ffffff',
+      colorText: '#c8c8c8', colorHeading: '#f0f0f0', colorLink: '#e0e0e0',
+      colorBtnBg: '#080808', colorBtnText: '#e0e0e0',
+      colorNavBg: '#050505', colorMuted: '#666666',
+      colorInputBg: '#080808', colorTagBg: '#0e0e0e', colorTagText: '#c8c8c8',
+      colorCardBg: '#0e0e0e',
     },
   },
   /* ─── 2. Функция — mission control dashboard: ultra-dense, zero waste ──── */
@@ -1600,6 +1607,13 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDivider: 'gradient', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
       archNavStyle: 'full', archCardChrome: 'subtle', archHeroScale: 'large', archVerticalRhythm: 1.8,
       archContentReveal: 'fade', archTextReveal: 'none',
+      /* ── Warm parchment palette ── */
+      colorPageBg: '#f8f4ee', colorSurface: '#ede8e0', colorBorder: '#c4b8a4',
+      colorText: '#3a352c', colorHeading: '#2a2520', colorLink: '#7a6848',
+      colorBtnBg: '#3a352c', colorBtnText: '#f8f4ee',
+      colorNavBg: '#ede8e0', colorMuted: '#8a7e6e',
+      colorInputBg: '#f8f4ee', colorTagBg: '#ede8e0', colorTagText: '#3a352c',
+      colorCardBg: '#ede8e0',
     },
   },
   /* ─── 4. Футуризм — cyberpunk neon: glass, glow, deep black ───────────── */
@@ -1639,7 +1653,10 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDivider: 'gradient', archPageEnter: 'slide', archLinkAnim: 'arrow', archSectionStyle: 'card',
       archNavStyle: 'minimal', archCardChrome: 'subtle', archHeroScale: 'large', archVerticalRhythm: 1.2,
       archContentReveal: 'slide-up', archTextReveal: 'none',
-      colorPageBg: '#06090f', colorText: '#94c8e0', colorHeading: '#d8f0ff',
+      colorPageBg: '#06090f', colorSurface: '#0c1018', colorText: '#94c8e0', colorHeading: '#d8f0ff',
+      colorLink: '#6090ff', colorBtnBg: '#6090ff', colorBtnText: '#ffffff',
+      colorNavBg: '#040608', colorMuted: '#4a6878', colorCardBg: '#0c1018',
+      colorInputBg: '#06090f', colorTagBg: '#0c1018', colorTagText: '#6090ff',
     },
   },
   /* ─── 5. Классика — haute editorial: serif, vast whitespace ────────────── */
@@ -1679,6 +1696,13 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDivider: 'gradient', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
       archNavStyle: 'minimal', archCardChrome: 'ghost', archHeroScale: 'cinematic', archVerticalRhythm: 2.2,
       archContentReveal: 'fade-up', archTextReveal: 'clip',
+      /* ── Cream editorial palette — aged paper ── */
+      colorPageBg: '#f5f0e8', colorSurface: '#ebe5da', colorBorder: '#1a1a1a',
+      colorText: '#2c2820', colorHeading: '#1a1610', colorLink: '#5a4830',
+      colorBtnBg: '#1a1610', colorBtnText: '#f5f0e8',
+      colorNavBg: '#ebe5da', colorMuted: '#8a8070',
+      colorInputBg: '#f5f0e8', colorTagBg: '#ebe5da', colorTagText: '#2c2820',
+      colorCardBg: '#ebe5da',
     },
   },
   /* ─── 6. Манифест — brutalist expressive: raw, aggressive, zero decor ──── */
@@ -1718,6 +1742,13 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'arrow', archSectionStyle: 'striped',
       archNavStyle: 'hidden', archCardChrome: 'ghost', archHeroScale: 'compact', archVerticalRhythm: 0.6,
       archContentReveal: 'none', archTextReveal: 'none',
+      /* ── Stark B&W — no middle ground ── */
+      colorPageBg: '#ffffff', colorSurface: '#ffffff', colorBorder: '#000000',
+      colorText: '#000000', colorHeading: '#000000', colorLink: '#000000',
+      colorBtnBg: '#000000', colorBtnText: '#ffffff',
+      colorNavBg: '#000000', colorMuted: '#555555',
+      colorInputBg: '#ffffff', colorTagBg: '#000000', colorTagText: '#ffffff',
+      colorCardBg: '#ffffff',
     },
   },
   /* ─── 7. Витрина — deep glass morphism: blurred layers, translucent ────── */
@@ -1796,6 +1827,13 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       archDivider: 'gradient', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
       archNavStyle: 'minimal', archCardChrome: 'ghost', archHeroScale: 'cinematic', archVerticalRhythm: 2.4,
       archContentReveal: 'fade-up', archTextReveal: 'clip',
+      /* ── Dark gold luxury palette ── */
+      colorPageBg: '#0a0908', colorSurface: '#12100e', colorBorder: '#c8a96e',
+      colorText: '#bfb7a8', colorHeading: '#e8dcc8', colorLink: '#c8a96e',
+      colorBtnBg: '#0a0908', colorBtnText: '#c8a96e',
+      colorNavBg: '#080706', colorMuted: '#6e6558',
+      colorInputBg: '#0a0908', colorTagBg: '#12100e', colorTagText: '#c8a96e',
+      colorCardBg: '#12100e',
     },
   },
   /* ─── 9. Minale + Mann — the definitive minaleandmann.com style ─────── */
@@ -2247,6 +2285,28 @@ export function useDesignSystem() {
     el.setAttribute('data-content-reveal', t.archContentReveal || 'none')
     el.setAttribute('data-text-reveal',   t.archTextReveal   || 'none')
 
+    // Set data-dark-surface when page bg is very dark (for CSS dark-surface cascade)
+    if (t.colorPageBg && /^#[0-1][0-9a-f]/i.test(t.colorPageBg)) {
+      el.setAttribute('data-dark-surface', 'true')
+    } else {
+      el.removeAttribute('data-dark-surface')
+    }
+
+    // Set data-warm-surface when page bg is a warm off-white (for warm concept cascade)
+    if (t.colorPageBg) {
+      const r = parseInt(t.colorPageBg.slice(1, 3), 16)
+      const g = parseInt(t.colorPageBg.slice(3, 5), 16)
+      const b = parseInt(t.colorPageBg.slice(5, 7), 16)
+      // Warm off-white: bright (r>200), warm shift (r > b + 10)
+      if (r > 200 && g > 200 && r > b + 10) {
+        el.setAttribute('data-warm-surface', 'true')
+      } else {
+        el.removeAttribute('data-warm-surface')
+      }
+    } else {
+      el.removeAttribute('data-warm-surface')
+    }
+
     // Re-apply UI theme's CSS vars on top (they set --btn-bg-base, --glass-* etc.
     // which must persist after applyToDOM sets --btn-bg = var(--btn-bg-base))
     try {
@@ -2303,7 +2363,11 @@ export function useDesignSystem() {
 
     _setOrDel('--glass-page-bg',    t.colorPageBg)
     _setOrDel('--glass-text',        t.colorText)
+    _setOrDel('--ds-text-color',     t.colorText)
+    _setOrDel('--ds-surface-bg',     t.colorSurface)
     _setOrDel('--btn-bg-base',       t.colorBtnBg)
+    _setOrDel('--ds-btn-bg',         t.colorBtnBg)
+    _setOrDel('--ds-btn-text',       t.colorBtnText)
     _setOrDel('--btn-color',         t.colorBtnText)
     _setOrDel('--ds-heading-color',  t.colorHeading)
     _setOrDel('--ds-link-color',     t.colorLink)
@@ -2327,10 +2391,15 @@ export function useDesignSystem() {
   }
 
   /* ── Batch setter (one undo step for preset switch) ───── */
+  const activeConceptSlug = useState<string>('dsConceptSlug', () => '')
+  
   function applyPreset(preset: DesignPreset) {
     pushHistory()
     // Start from DEFAULT_TOKENS — complete reset, no residue from prev presets
     tokens.value = { ...DEFAULT_TOKENS, ...preset.tokens }
+    // Track active concept slug for CSS selectors like html[data-concept="brutal"]
+    activeConceptSlug.value = preset.id.startsWith('concept-') ? preset.id.replace('concept-', '') : ''
+    _syncConceptAttr()
     applyToDOM()
     save()
   }
@@ -2489,6 +2558,18 @@ export function useDesignSystem() {
     return lines.join('\n')
   }
 
+  /* ── Concept slug helper ────────────────────────────────── */
+  function _syncConceptAttr() {
+    if (import.meta.server) return
+    const el = document.documentElement
+    const slug = activeConceptSlug.value
+    if (slug) {
+      el.setAttribute('data-concept', slug)
+    } else {
+      el.removeAttribute('data-concept')
+    }
+  }
+
   /* ── Init ──────────────────────────────────────────────── */
   function initDesignSystem() {
     load()
@@ -2503,6 +2584,9 @@ export function useDesignSystem() {
     if (!snapshotBeforePreview.value) {
       snapshotBeforePreview.value = { ...tokens.value }
     }
+    // Track active concept slug for CSS selectors
+    activeConceptSlug.value = preset.id.startsWith('concept-') ? preset.id.replace('concept-', '') : ''
+    _syncConceptAttr()
     // Always start from DEFAULT_TOKENS so no residue leaks between presets
     tokens.value = { ...DEFAULT_TOKENS, ...preset.tokens }
     applyToDOM()
@@ -2523,6 +2607,8 @@ export function useDesignSystem() {
     if (snapshotBeforePreview.value) {
       tokens.value = { ...snapshotBeforePreview.value }
       snapshotBeforePreview.value = null
+      activeConceptSlug.value = ''
+      _syncConceptAttr()
       applyToDOM()
     }
   }

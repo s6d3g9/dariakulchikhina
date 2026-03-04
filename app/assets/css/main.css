@@ -3348,16 +3348,13 @@ html.dark .a-modal label {
    ═══════════════════════════════════════════════════════════ */
 
 /* --- Kill the light-mode radial gradient on .glass-page --- */
-html[style*="--glass-page-bg: #000"] .glass-page::before,
-html[style*="--glass-page-bg: #0a"] .glass-page::before {
+[data-dark-surface] .glass-page::before {
   background: none !important;
 }
 
 /* --- Modals: black surface + hairline white border --- */
-html[style*="--glass-page-bg: #000"] .u-modal,
-html[style*="--glass-page-bg: #0a"] .u-modal,
-html[style*="--glass-page-bg: #000"] .cab-modal,
-html[style*="--glass-page-bg: #0a"] .cab-modal {
+[data-dark-surface] .u-modal,
+[data-dark-surface] .cab-modal {
   background: var(--ds-card-bg, #0a0a0a) !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
   box-shadow: 0 24px 80px rgba(0,0,0,0.6) !important;
@@ -3365,28 +3362,21 @@ html[style*="--glass-page-bg: #0a"] .cab-modal {
   -webkit-backdrop-filter: none !important;
   color: var(--glass-text, #e0e0e0);
 }
-html[style*="--glass-page-bg: #000"] .u-modal__head,
-html[style*="--glass-page-bg: #0a"] .u-modal__head,
-html[style*="--glass-page-bg: #000"] .cab-modal-head,
-html[style*="--glass-page-bg: #0a"] .cab-modal-head {
+[data-dark-surface] .u-modal__head,
+[data-dark-surface] .cab-modal-head {
   border-bottom-color: rgba(255,255,255,0.06) !important;
 }
-html[style*="--glass-page-bg: #000"] .u-modal__foot,
-html[style*="--glass-page-bg: #0a"] .u-modal__foot,
-html[style*="--glass-page-bg: #000"] .cab-modal-foot,
-html[style*="--glass-page-bg: #0a"] .cab-modal-foot {
+[data-dark-surface] .u-modal__foot,
+[data-dark-surface] .cab-modal-foot {
   border-top-color: rgba(255,255,255,0.06) !important;
 }
-html[style*="--glass-page-bg: #000"] .u-modal-overlay,
-html[style*="--glass-page-bg: #0a"] .u-modal-overlay,
-html[style*="--glass-page-bg: #000"] .cab-modal-overlay,
-html[style*="--glass-page-bg: #0a"] .cab-modal-overlay {
+[data-dark-surface] .u-modal-overlay,
+[data-dark-surface] .cab-modal-overlay {
   background: rgba(0,0,0,var(--modal-overlay-opacity, 0.85)) !important;
 }
 
 /* --- Dropdown / popup surfaces --- */
-html[style*="--glass-page-bg: #000"] .glass-dropdown,
-html[style*="--glass-page-bg: #0a"] .glass-dropdown {
+[data-dark-surface] .glass-dropdown {
   background: #0a0a0a !important;
   border-color: rgba(255,255,255,0.08) !important;
   box-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
@@ -3394,10 +3384,8 @@ html[style*="--glass-page-bg: #0a"] .glass-dropdown {
 }
 
 /* --- Glass cards / surfaces: black opaque, no glass effect --- */
-html[style*="--glass-page-bg: #000"] .glass-card,
-html[style*="--glass-page-bg: #000"] .glass-surface,
-html[style*="--glass-page-bg: #0a"] .glass-card,
-html[style*="--glass-page-bg: #0a"] .glass-surface {
+[data-dark-surface] .glass-card,
+[data-dark-surface] .glass-surface {
   background: var(--ds-card-bg, #0a0a0a) !important;
   border: 1px solid rgba(255,255,255,0.05) !important;
   box-shadow: none !important;
@@ -3406,16 +3394,14 @@ html[style*="--glass-page-bg: #0a"] .glass-surface {
 }
 
 /* --- Glass chips --- */
-html[style*="--glass-page-bg: #000"] .glass-chip,
-html[style*="--glass-page-bg: #0a"] .glass-chip {
+[data-dark-surface] .glass-chip {
   background: transparent !important;
   border-color: rgba(255,255,255,0.10) !important;
   color: var(--glass-text, #e0e0e0);
 }
 
 /* --- Inputs: transparent bg, subtle bottom border (underline inputs) --- */
-html[style*="--glass-page-bg: #000"] .glass-input,
-html[style*="--glass-page-bg: #0a"] .glass-input {
+[data-dark-surface] .glass-input {
   background: transparent !important;
   border: none !important;
   border-bottom: 1px solid rgba(255,255,255,0.12) !important;
@@ -3423,242 +3409,1113 @@ html[style*="--glass-page-bg: #0a"] .glass-input {
   backdrop-filter: none !important;
   color: var(--glass-text, #e0e0e0);
 }
-html[style*="--glass-page-bg: #000"] .glass-input:focus,
-html[style*="--glass-page-bg: #0a"] .glass-input:focus {
+[data-dark-surface] .glass-input:focus {
   border-bottom-color: rgba(255,255,255,0.35) !important;
   box-shadow: none !important;
   outline: none !important;
 }
-html[style*="--glass-page-bg: #000"] .glass-input::placeholder,
-html[style*="--glass-page-bg: #0a"] .glass-input::placeholder {
+[data-dark-surface] .glass-input::placeholder {
   color: rgba(255,255,255,0.25) !important;
 }
 
 /* --- Textareas --- */
-html[style*="--glass-page-bg: #000"] textarea.glass-input,
-html[style*="--glass-page-bg: #0a"] textarea.glass-input {
+[data-dark-surface] textarea.glass-input {
   border: 1px solid rgba(255,255,255,0.08) !important;
   border-radius: 0 !important;
 }
 
 /* --- Buttons: ghost = transparent with hairline border --- */
-html[style*="--glass-page-bg: #000"] .a-btn-save,
-html[style*="--glass-page-bg: #0a"] .a-btn-save {
+[data-dark-surface] .a-btn-save {
   background: transparent !important;
   color: #ffffff !important;
   border: 1px solid rgba(255,255,255,0.18) !important;
 }
-html[style*="--glass-page-bg: #000"] .a-btn-save:hover,
-html[style*="--glass-page-bg: #0a"] .a-btn-save:hover {
+[data-dark-surface] .a-btn-save:hover {
   background: rgba(255,255,255,0.06) !important;
   border-color: rgba(255,255,255,0.35) !important;
 }
-html[style*="--glass-page-bg: #000"] .a-btn-sm,
-html[style*="--glass-page-bg: #0a"] .a-btn-sm {
+[data-dark-surface] .a-btn-sm {
   background: transparent !important;
   color: rgba(255,255,255,0.7) !important;
   border: 1px solid rgba(255,255,255,0.10) !important;
 }
-html[style*="--glass-page-bg: #000"] .a-btn-sm:hover,
-html[style*="--glass-page-bg: #0a"] .a-btn-sm:hover {
+[data-dark-surface] .a-btn-sm:hover {
   background: rgba(255,255,255,0.05) !important;
   color: #ffffff !important;
   border-color: rgba(255,255,255,0.25) !important;
 }
 
 /* --- Navigation sidebar --- */
-html[style*="--glass-page-bg: #000"] .ent-sidebar,
-html[style*="--glass-page-bg: #0a"] .ent-sidebar,
-html[style*="--glass-page-bg: #000"] .std-sidebar,
-html[style*="--glass-page-bg: #0a"] .std-sidebar,
-html[style*="--glass-page-bg: #000"] .cab-nav,
-html[style*="--glass-page-bg: #0a"] .cab-nav {
+[data-dark-surface] .ent-sidebar,
+[data-dark-surface] .std-sidebar,
+[data-dark-surface] .cab-nav {
   background: #000000 !important;
   border-right: 1px solid rgba(255,255,255,0.04) !important;
 }
 
 /* --- Nav items --- */
-html[style*="--glass-page-bg: #000"] .ent-nav-item,
-html[style*="--glass-page-bg: #0a"] .ent-nav-item,
-html[style*="--glass-page-bg: #000"] .cab-nav-item,
-html[style*="--glass-page-bg: #0a"] .cab-nav-item,
-html[style*="--glass-page-bg: #000"] .std-nav-item,
-html[style*="--glass-page-bg: #0a"] .std-nav-item {
+[data-dark-surface] .ent-nav-item,
+[data-dark-surface] .cab-nav-item,
+[data-dark-surface] .std-nav-item {
   color: rgba(255,255,255,0.5) !important;
 }
-html[style*="--glass-page-bg: #000"] .ent-nav-item:hover,
-html[style*="--glass-page-bg: #0a"] .ent-nav-item:hover,
-html[style*="--glass-page-bg: #000"] .cab-nav-item:hover,
-html[style*="--glass-page-bg: #0a"] .cab-nav-item:hover {
+[data-dark-surface] .ent-nav-item:hover,
+[data-dark-surface] .cab-nav-item:hover {
   color: #ffffff !important;
   background: rgba(255,255,255,0.03) !important;
 }
-html[style*="--glass-page-bg: #000"] .ent-nav-item.active,
-html[style*="--glass-page-bg: #0a"] .ent-nav-item.active,
-html[style*="--glass-page-bg: #000"] .ent-nav-item.router-link-active,
-html[style*="--glass-page-bg: #0a"] .ent-nav-item.router-link-active,
-html[style*="--glass-page-bg: #000"] .cab-nav-item.active,
-html[style*="--glass-page-bg: #0a"] .cab-nav-item.active {
+[data-dark-surface] .ent-nav-item.active,
+[data-dark-surface] .ent-nav-item.router-link-active,
+[data-dark-surface] .cab-nav-item.active {
   color: #ffffff !important;
   background: rgba(255,255,255,0.06) !important;
 }
 
 /* --- Dashboard cards and quick buttons --- */
-html[style*="--glass-page-bg: #000"] .dash-quick-btn,
-html[style*="--glass-page-bg: #0a"] .dash-quick-btn {
+[data-dark-surface] .dash-quick-btn {
   background: transparent !important;
   border: 1px solid rgba(255,255,255,0.06) !important;
   color: rgba(255,255,255,0.7) !important;
 }
-html[style*="--glass-page-bg: #000"] .dash-quick-btn:hover,
-html[style*="--glass-page-bg: #0a"] .dash-quick-btn:hover {
+[data-dark-surface] .dash-quick-btn:hover {
   border-color: rgba(255,255,255,0.15) !important;
   color: #ffffff !important;
 }
-html[style*="--glass-page-bg: #000"] .dash-welcome,
-html[style*="--glass-page-bg: #0a"] .dash-welcome {
+[data-dark-surface] .dash-welcome {
   background: transparent !important;
 }
 
 /* --- Admin tabs --- */
-html[style*="--glass-page-bg: #000"] .admin-tab,
-html[style*="--glass-page-bg: #0a"] .admin-tab {
+[data-dark-surface] .admin-tab {
   background: transparent !important;
   color: rgba(255,255,255,0.4) !important;
   border-color: transparent !important;
 }
-html[style*="--glass-page-bg: #000"] .admin-tab:hover,
-html[style*="--glass-page-bg: #0a"] .admin-tab:hover {
+[data-dark-surface] .admin-tab:hover {
   color: rgba(255,255,255,0.7) !important;
 }
-html[style*="--glass-page-bg: #000"] .admin-tab.active,
-html[style*="--glass-page-bg: #0a"] .admin-tab.active,
-html[style*="--glass-page-bg: #000"] .admin-tab--active,
-html[style*="--glass-page-bg: #0a"] .admin-tab--active {
+[data-dark-surface] .admin-tab.active,
+[data-dark-surface] .admin-tab--active {
   color: #ffffff !important;
   border-bottom: 1px solid rgba(255,255,255,0.25) !important;
   background: transparent !important;
 }
 
 /* --- Tables --- */
-html[style*="--glass-page-bg: #000"] table,
-html[style*="--glass-page-bg: #0a"] table {
+[data-dark-surface] table {
   color: var(--glass-text, #e0e0e0);
 }
-html[style*="--glass-page-bg: #000"] thead th,
-html[style*="--glass-page-bg: #0a"] thead th {
+[data-dark-surface] thead th {
   background: rgba(255,255,255,0.02) !important;
   color: rgba(255,255,255,0.5) !important;
   border-bottom: 1px solid rgba(255,255,255,0.06) !important;
 }
-html[style*="--glass-page-bg: #000"] tbody tr,
-html[style*="--glass-page-bg: #0a"] tbody tr {
+[data-dark-surface] tbody tr {
   border-bottom-color: rgba(255,255,255,0.03) !important;
 }
-html[style*="--glass-page-bg: #000"] tbody tr:hover,
-html[style*="--glass-page-bg: #0a"] tbody tr:hover {
+[data-dark-surface] tbody tr:hover {
   background: rgba(255,255,255,0.02) !important;
 }
 
 /* --- u-form-section, asb-section, acp-form-section --- */
-html[style*="--glass-page-bg: #000"] .u-form-section,
-html[style*="--glass-page-bg: #0a"] .u-form-section,
-html[style*="--glass-page-bg: #000"] .asb-section,
-html[style*="--glass-page-bg: #0a"] .asb-section,
-html[style*="--glass-page-bg: #000"] .acp-form-section,
-html[style*="--glass-page-bg: #0a"] .acp-form-section {
+[data-dark-surface] .u-form-section,
+[data-dark-surface] .asb-section,
+[data-dark-surface] .acp-form-section {
   background: transparent !important;
   border-color: rgba(255,255,255,0.04) !important;
 }
 
 /* --- Labels, field labels --- */
-html[style*="--glass-page-bg: #000"] .u-field__label,
-html[style*="--glass-page-bg: #0a"] .u-field__label,
-html[style*="--glass-page-bg: #000"] label,
-html[style*="--glass-page-bg: #0a"] label {
+[data-dark-surface] .u-field__label,
+[data-dark-surface] label {
   color: rgba(255,255,255,0.45) !important;
 }
 
 /* --- Detail cards --- */
-html[style*="--glass-page-bg: #000"] .ent-detail-card,
-html[style*="--glass-page-bg: #0a"] .ent-detail-card {
+[data-dark-surface] .ent-detail-card {
   background: transparent !important;
   border: 1px solid rgba(255,255,255,0.04) !important;
   box-shadow: none !important;
 }
 
 /* --- Cab task cards --- */
-html[style*="--glass-page-bg: #000"] .cab-task,
-html[style*="--glass-page-bg: #0a"] .cab-task,
-html[style*="--glass-page-bg: #000"] .cab-doc-card,
-html[style*="--glass-page-bg: #0a"] .cab-doc-card {
+[data-dark-surface] .cab-task,
+[data-dark-surface] .cab-doc-card {
   background: transparent !important;
   border: 1px solid rgba(255,255,255,0.04) !important;
 }
 
 /* --- Status bar, topbar --- */
-html[style*="--glass-page-bg: #000"] .u-topbar,
-html[style*="--glass-page-bg: #0a"] .u-topbar {
+[data-dark-surface] .u-topbar {
   background: transparent !important;
   border-bottom: 1px solid rgba(255,255,255,0.04) !important;
 }
 
 /* --- Section titles emphasize white --- */
-html[style*="--glass-page-bg: #000"] .u-section-title,
-html[style*="--glass-page-bg: #0a"] .u-section-title {
+[data-dark-surface] .u-section-title {
   color: #ffffff !important;
 }
 
 /* --- Progress bars --- */
-html[style*="--glass-page-bg: #000"] .cab-stages-inline-bar-wrap,
-html[style*="--glass-page-bg: #0a"] .cab-stages-inline-bar-wrap {
+[data-dark-surface] .cab-stages-inline-bar-wrap {
   background: rgba(255,255,255,0.06) !important;
 }
 
 /* --- Toggle rows --- */
-html[style*="--glass-page-bg: #000"] .cab-toggle-row:hover,
-html[style*="--glass-page-bg: #0a"] .cab-toggle-row:hover {
+[data-dark-surface] .cab-toggle-row:hover {
   background: rgba(255,255,255,0.03) !important;
 }
 
 /* --- Select elements --- */
-html[style*="--glass-page-bg: #000"] select.glass-input,
-html[style*="--glass-page-bg: #0a"] select.glass-input {
+[data-dark-surface] select.glass-input {
   background: transparent !important;
   color: var(--glass-text, #e0e0e0) !important;
 }
 
 /* --- Status pills and badges --- */
-html[style*="--glass-page-bg: #000"] [class*="status-pill"],
-html[style*="--glass-page-bg: #0a"] [class*="status-pill"],
-html[style*="--glass-page-bg: #000"] [class*="badge"],
-html[style*="--glass-page-bg: #0a"] [class*="badge"] {
+[data-dark-surface] [class*="status-pill"],
+[data-dark-surface] [class*="badge"] {
   background: rgba(255,255,255,0.04) !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
 }
 
 /* --- Danger button on dark surface --- */
-html[style*="--glass-page-bg: #000"] .a-btn-danger,
-html[style*="--glass-page-bg: #0a"] .a-btn-danger {
+[data-dark-surface] .a-btn-danger {
   color: #cc4444 !important;
   border-color: rgba(204,68,68,0.25) !important;
 }
 
 /* --- Scrollbar hidden on dark minale --- */
-html[style*="--glass-page-bg: #000"]::-webkit-scrollbar,
-html[style*="--glass-page-bg: #0a"]::-webkit-scrollbar {
+[data-dark-surface]::-webkit-scrollbar {
   width: 0 !important;
   display: none !important;
 }
 
+/* --- Force CSS variable overrides on dark surface --- */
+[data-dark-surface] {
+  --glass-text: var(--glass-text, #e0e0e0) !important;
+  --btn-color: #ffffff !important;
+  --dropdown-bg: #0a0a0a !important;
+  --dropdown-border: rgba(255,255,255,0.08) !important;
+  --dropdown-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
+}
+
 /* --- Ensure body and #__nuxt use the right bg --- */
-html[style*="--glass-page-bg: #000"],
-html[style*="--glass-page-bg: #000"] body,
-html[style*="--glass-page-bg: #000"] #__nuxt,
-html[style*="--glass-page-bg: #0a"],
-html[style*="--glass-page-bg: #0a"] body,
-html[style*="--glass-page-bg: #0a"] #__nuxt {
+[data-dark-surface],
+[data-dark-surface] body,
+[data-dark-surface] #__nuxt {
   background: var(--glass-page-bg, #000000) !important;
   color: var(--glass-text, #e0e0e0) !important;
+}
+
+/* --- WorkStatus component (ws-*) --- */
+[data-dark-surface] .ws-card {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+}
+[data-dark-surface] .ws-header {
+  border-bottom-color: rgba(255,255,255,0.04) !important;
+}
+[data-dark-surface] .ws-btn {
+  background: transparent !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.6) !important;
+}
+[data-dark-surface] .ws-filter-btn {
+  background: transparent !important;
+  color: rgba(255,255,255,0.4) !important;
+}
+[data-dark-surface] .ws-filter-btn.active {
+  background: rgba(255,255,255,0.08) !important;
+  color: #ffffff !important;
+}
+[data-dark-surface] .ws-detail-panel {
+  background: #050505 !important;
+  border-left: 1px solid rgba(255,255,255,0.06) !important;
+}
+[data-dark-surface] .ws-detail-overlay {
+  background: rgba(0,0,0,0.75) !important;
+}
+[data-dark-surface] .ws-detail-section {
+  border-bottom-color: rgba(255,255,255,0.04) !important;
+}
+[data-dark-surface] .ws-comment-form {
+  border-top-color: rgba(255,255,255,0.04) !important;
+}
+[data-dark-surface] .ws-lbl {
+  color: rgba(255,255,255,0.35) !important;
+}
+
+/* --- Project pages (proj-*) --- */
+[data-dark-surface] .proj-main-inner {
+  background: transparent !important;
+}
+[data-dark-surface] .proj-card,
+[data-dark-surface] .pj-card {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* --- Documents (docs-*) --- */
+[data-dark-surface] .docs-card {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+}
+[data-dark-surface] .docs-upload {
+  background: transparent !important;
+  border: 1px dashed rgba(255,255,255,0.10) !important;
+  color: rgba(255,255,255,0.4) !important;
+}
+
+/* --- Design (de-*) album --- */
+[data-dark-surface] .de-card,
+[data-dark-surface] .de-section {
+  background: transparent !important;
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+/* --- Status pills/bars: keep functional colors but adapt --- */
+[data-dark-surface] .sb-cell {
+  background: rgba(255,255,255,0.02) !important;
+  border-color: rgba(255,255,255,0.04) !important;
+}
+[data-dark-surface] .sb-label {
+  color: rgba(255,255,255,0.4) !important;
+}
+
+/* --- Dashboard stat cards and project cards --- */
+[data-dark-surface] .dash-stat {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+}
+[data-dark-surface] .dash-project-card {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* --- Upload/file areas across all components --- */
+[data-dark-surface] [class*="-upload"] {
+  background: transparent !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.4) !important;
+}
+[data-dark-surface] [class*="-file-row"] {
+  border-bottom-color: rgba(255,255,255,0.04) !important;
+}
+
+/* --- Admin Search (as-*) --- */
+[data-dark-surface] .as-results {
+  background: #0a0a0a !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* --- Roadmap components --- */
+[data-dark-surface] [class*="roadmap"] {
+  color: var(--glass-text, #e0e0e0);
+}
+
+/* --- Service/Contractor cards (svc-*, co-*) --- */
+[data-dark-surface] .svc-card,
+[data-dark-surface] .co-card {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* --- Misc: afc- (first contact), aca- (concept approval), acnp- (contractors) --- */
+[data-dark-surface] .afc-complete-card,
+[data-dark-surface] .aca-render-card,
+[data-dark-surface] .acnp-card {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+}
+[data-dark-surface] .afc-complete-card--done {
+  background: rgba(46,168,106,0.08) !important;
+  border-color: rgba(46,168,106,0.20) !important;
+}
+[data-dark-surface] .afc-complete-btn {
+  border-color: rgba(255,255,255,0.10) !important;
+  color: rgba(255,255,255,0.5) !important;
+}
+
+/* --- Material panels (mpe-*, mpp-*) --- */
+[data-dark-surface] .mpe-panel,
+[data-dark-surface] .mpp-panel {
+  background: #050505 !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* --- Gallery components --- */
+[data-dark-surface] .agal-wrap {
+  background: transparent !important;
+}
+[data-dark-surface] .agal-card {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* --- Smart brief (asb-*) --- */
+[data-dark-surface] .asb-wrap {
+  background: transparent !important;
+}
+
+/* --- Client components on dark bg --- */
+[data-dark-surface] .csp-step-num {
+  border-color: rgba(255,255,255,0.15) !important;
+  color: rgba(255,255,255,0.5) !important;
+}
+[data-dark-surface] .csp-step--done .csp-step-num {
+  background: rgba(255,255,255,0.9) !important;
+  color: #000 !important;
+}
+
+/* --- Any remaining section-like class --- */
+[data-dark-surface] [class*="-section"]:not([class*="title"]):not([class*="grow"]) {
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+/* --- Any remaining wrap-like class --- */
+[data-dark-surface] [class*="-wrap"] {
+  background: transparent !important;
+}
+
+/* --- Skeleton loaders: dark shimmer --- */
+[data-dark-surface] [class*="skeleton"],
+[data-dark-surface] [class*="loading"] {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+/* --- Highlight search matches on dark --- */
+[data-dark-surface] mark {
+  background: rgba(255,255,255,0.12) !important;
+  color: #ffffff !important;
+}
+
+/* --- Muted text universal --- */
+[data-dark-surface] [class*="--muted"],
+[data-dark-surface] .text-muted {
+  color: rgba(255,255,255,0.35) !important;
+}
+
+/* --- Link colors on dark surface --- */
+[data-dark-surface] [class*="-link"] {
+  color: rgba(255,255,255,0.7) !important;
+}
+[data-dark-surface] [class*="-link"]:hover {
+  color: #ffffff !important;
+}
+
+/* --- Empty states --- */
+[data-dark-surface] .u-empty,
+[data-dark-surface] [class*="-empty"] {
+  color: rgba(255,255,255,0.25) !important;
+}
+
+/* --- Timeline specific (ct-*) --- */
+[data-dark-surface] [class*="ct-line"],
+[data-dark-surface] [class*="ct-connector"] {
+  background: rgba(255,255,255,0.08) !important;
+}
+
+/* --- Divider / separator lines --- */
+[data-dark-surface] hr {
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* --- Design panel itself should stay usable --- */
+[data-dark-surface] .dp-panel {
+  background: #080808 !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+[data-dark-surface] .dp-tab {
+  color: rgba(255,255,255,0.4) !important;
+}
+[data-dark-surface] .dp-tab--active {
+  color: #ffffff !important;
+}
+[data-dark-surface] .dp-label {
+  color: rgba(255,255,255,0.5) !important;
+}
+[data-dark-surface] .dp-arch-chip {
+  background: transparent !important;
+  border-color: rgba(255,255,255,0.10) !important;
+  color: rgba(255,255,255,0.5) !important;
+}
+[data-dark-surface] .dp-arch-chip--active {
+  background: rgba(255,255,255,0.10) !important;
+  color: #ffffff !important;
+  border-color: rgba(255,255,255,0.25) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   WARM SURFACE OVERRIDE SYSTEM
+   For concepts with warm off-white backgrounds (Ремесло, Классика).
+   Uses [data-warm-surface] attribute set by applyToDOM.
+   ═══════════════════════════════════════════════════════════ */
+
+[data-warm-surface] .glass-page::before {
+  background: none !important;
+}
+[data-warm-surface] .glass-card,
+[data-warm-surface] .glass-surface {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 80%, transparent) !important;
+  border-color: rgba(80,60,30,0.10) !important;
+}
+[data-warm-surface] .glass-chip {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 50%, transparent) !important;
+  color: var(--ds-text-color, #3a352c) !important;
+  border-color: rgba(80,60,30,0.15) !important;
+}
+[data-warm-surface] .glass-input {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 60%, transparent) !important;
+  color: var(--ds-text-color, #3a352c) !important;
+  border-color: rgba(80,60,30,0.15) !important;
+}
+[data-warm-surface] .glass-dropdown {
+  background: var(--ds-surface-bg, #ede8e0) !important;
+  border-color: rgba(80,60,30,0.15) !important;
+}
+
+[data-warm-surface] .u-modal,
+[data-warm-surface] .cab-modal {
+  background: var(--ds-card-bg, #ede8e0) !important;
+  border: 1px solid rgba(80,60,30,0.10) !important;
+  box-shadow: 0 24px 80px rgba(60,40,10,0.12) !important;
+}
+
+[data-warm-surface] .a-btn-save {
+  background: var(--ds-btn-bg, #3a352c) !important;
+  color: var(--ds-btn-text, #f8f4ee) !important;
+  border: 1px solid rgba(80,60,30,0.15) !important;
+}
+[data-warm-surface] .a-btn-sm {
+  background: transparent !important;
+  color: var(--ds-text-color, #3a352c) !important;
+  border: 1px solid rgba(80,60,30,0.20) !important;
+}
+
+[data-warm-surface] .ent-sidebar,
+[data-warm-surface] .std-sidebar,
+[data-warm-surface] .cab-nav {
+  background: var(--ds-nav-bg, #ede8e0) !important;
+  border-color: rgba(80,60,30,0.10) !important;
+}
+[data-warm-surface] .ent-nav-item,
+[data-warm-surface] .cab-nav-item,
+[data-warm-surface] .std-nav-item {
+  color: var(--ds-text-color, #3a352c) !important;
+}
+
+[data-warm-surface] .dash-stat,
+[data-warm-surface] .dash-project-card,
+[data-warm-surface] .dash-welcome {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 80%, transparent) !important;
+  border-color: rgba(80,60,30,0.10) !important;
+  color: var(--ds-text-color, #3a352c) !important;
+}
+
+[data-warm-surface] thead th {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 80%, transparent) !important;
+  color: var(--ds-heading-color, #2a2520) !important;
+  border-color: rgba(80,60,30,0.10) !important;
+}
+[data-warm-surface] tbody tr {
+  border-color: rgba(80,60,30,0.06) !important;
+}
+
+[data-warm-surface] .u-form-section,
+[data-warm-surface] .asb-section,
+[data-warm-surface] .acp-form-section {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 50%, transparent) !important;
+  border-color: rgba(80,60,30,0.08) !important;
+}
+
+[data-warm-surface] .ent-detail-card {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 80%, transparent) !important;
+  border-color: rgba(80,60,30,0.10) !important;
+}
+[data-warm-surface] .u-topbar {
+  background: var(--ds-nav-bg, #ede8e0) !important;
+  border-color: rgba(80,60,30,0.08) !important;
+}
+
+[data-warm-surface] .cab-task,
+[data-warm-surface] .cab-doc-card {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 60%, transparent) !important;
+  border-color: rgba(80,60,30,0.08) !important;
+}
+[data-warm-surface] .cab-stages-inline-bar-wrap {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 40%, transparent) !important;
+}
+
+[data-warm-surface] .admin-tab {
+  color: var(--ds-text-color, #3a352c) !important;
+  border-color: transparent !important;
+}
+[data-warm-surface] .admin-tab.active,
+[data-warm-surface] .admin-tab--active {
+  color: var(--ds-heading-color, #2a2520) !important;
+  border-color: var(--ds-link-color, #7a6848) !important;
+}
+
+[data-warm-surface] .ws-card,
+[data-warm-surface] .proj-card,
+[data-warm-surface] .pj-card,
+[data-warm-surface] .docs-card,
+[data-warm-surface] .de-card,
+[data-warm-surface] .svc-card,
+[data-warm-surface] .co-card {
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 80%, transparent) !important;
+  border-color: rgba(80,60,30,0.10) !important;
+}
+
+[data-warm-surface] .dp-panel {
+  background: var(--ds-surface-bg, #ede8e0) !important;
+  border-color: rgba(80,60,30,0.10) !important;
+}
+[data-warm-surface] .dp-tab {
+  color: rgba(58,53,44,0.5) !important;
+}
+[data-warm-surface] .dp-tab--active {
+  color: var(--ds-heading-color, #2a2520) !important;
+}
+[data-warm-surface] .dp-label {
+  color: rgba(58,53,44,0.6) !important;
+}
+[data-warm-surface] .dp-arch-chip {
+  background: transparent !important;
+  border-color: rgba(80,60,30,0.15) !important;
+  color: rgba(58,53,44,0.6) !important;
+}
+[data-warm-surface] .dp-arch-chip--active {
+  background: rgba(80,60,30,0.08) !important;
+  color: var(--ds-heading-color, #2a2520) !important;
+  border-color: rgba(80,60,30,0.30) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STARK B&W OVERRIDE SYSTEM  — concept-brutal (Манифест)
+   Pure #000 on #fff — no glass, no gradients, stark contrast.
+   ═══════════════════════════════════════════════════════════ */
+
+html[data-concept="brutal"] .glass-page::before {
+  background: none !important;
+}
+html[data-concept="brutal"] .glass-card,
+html[data-concept="brutal"] .glass-surface {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+html[data-concept="brutal"] .glass-chip {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+html[data-concept="brutal"] .glass-input {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0 !important;
+}
+html[data-concept="brutal"] .glass-input::placeholder {
+  color: #999 !important;
+}
+html[data-concept="brutal"] .glass-dropdown {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0 !important;
+}
+
+html[data-concept="brutal"] .u-modal,
+html[data-concept="brutal"] .cab-modal {
+  background: #ffffff !important;
+  border: 3px solid #000000 !important;
+  box-shadow: 8px 8px 0 #000000 !important;
+  border-radius: 0 !important;
+}
+
+html[data-concept="brutal"] .a-btn-save {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 0 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.15em !important;
+  font-weight: 700 !important;
+}
+html[data-concept="brutal"] .a-btn-sm {
+  background: transparent !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.10em !important;
+}
+
+html[data-concept="brutal"] .ent-sidebar,
+html[data-concept="brutal"] .std-sidebar,
+html[data-concept="brutal"] .cab-nav {
+  background: #000000 !important;
+  border: none !important;
+}
+html[data-concept="brutal"] .ent-nav-item,
+html[data-concept="brutal"] .cab-nav-item,
+html[data-concept="brutal"] .std-nav-item {
+  color: #ffffff !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.10em !important;
+}
+html[data-concept="brutal"] .ent-nav-item.active,
+html[data-concept="brutal"] .cab-nav-item.active {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+html[data-concept="brutal"] .admin-tab {
+  color: #000000 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+}
+html[data-concept="brutal"] .admin-tab.active,
+html[data-concept="brutal"] .admin-tab--active {
+  border-bottom: 3px solid #000000 !important;
+}
+
+html[data-concept="brutal"] .dash-stat,
+html[data-concept="brutal"] .dash-project-card,
+html[data-concept="brutal"] .dash-welcome,
+html[data-concept="brutal"] .ws-card,
+html[data-concept="brutal"] .proj-card,
+html[data-concept="brutal"] .docs-card,
+html[data-concept="brutal"] .de-card,
+html[data-concept="brutal"] .svc-card,
+html[data-concept="brutal"] .co-card,
+html[data-concept="brutal"] .ent-detail-card,
+html[data-concept="brutal"] .cab-task,
+html[data-concept="brutal"] .cab-doc-card {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-concept="brutal"] thead th {
+  background: #000000 !important;
+  color: #ffffff !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.10em !important;
+}
+html[data-concept="brutal"] tbody tr {
+  border-bottom: 1px solid #000000 !important;
+}
+
+html[data-concept="brutal"] hr {
+  border-color: #000000 !important;
+  border-width: 2px !important;
+}
+
+html[data-concept="brutal"] .u-topbar {
+  background: #ffffff !important;
+  border-bottom: 3px solid #000000 !important;
+}
+
+html[data-concept="brutal"] .dp-panel {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   GOLD LUXURY OVERRIDE — concept-grand (Грандиозность)
+   Dark surface with warm gold accents.
+   ═══════════════════════════════════════════════════════════ */
+
+html[data-concept="grand"] .glass-chip {
+  background: rgba(200,169,110,0.10) !important;
+  color: #c8a96e !important;
+  border-color: rgba(200,169,110,0.25) !important;
+}
+html[data-concept="grand"] .a-btn-save {
+  background: transparent !important;
+  color: #c8a96e !important;
+  border: 1px solid #c8a96e !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+}
+html[data-concept="grand"] .a-btn-save:hover {
+  background: rgba(200,169,110,0.10) !important;
+}
+html[data-concept="grand"] .a-btn-sm {
+  color: #c8a96e !important;
+  border-color: rgba(200,169,110,0.20) !important;
+}
+
+html[data-concept="grand"] .ent-nav-item.active,
+html[data-concept="grand"] .cab-nav-item.active {
+  color: #c8a96e !important;
+  border-color: #c8a96e !important;
+}
+
+html[data-concept="grand"] .admin-tab.active,
+html[data-concept="grand"] .admin-tab--active {
+  color: #c8a96e !important;
+  border-color: #c8a96e !important;
+}
+
+html[data-concept="grand"] thead th {
+  background: rgba(200,169,110,0.06) !important;
+  color: #e8dcc8 !important;
+  border-color: rgba(200,169,110,0.12) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+}
+
+html[data-concept="grand"] .u-topbar {
+  border-bottom-color: rgba(200,169,110,0.15) !important;
+}
+
+html[data-concept="grand"] hr {
+  border-color: rgba(200,169,110,0.10) !important;
+}
+
+html[data-concept="grand"] .glass-card,
+html[data-concept="grand"] .glass-surface {
+  border-color: rgba(200,169,110,0.08) !important;
+}
+
+html[data-concept="grand"] .dp-arch-chip--active {
+  border-color: rgba(200,169,110,0.30) !important;
+  color: #c8a96e !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   MINALE+MANN EXTREME — concept-minale
+   Full-bleed black, ultra-thin hairlines, hidden scrollbars,
+   monumental heading spacing, cinematic pace.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Hide scrollbars for clean aesthetic */
+html[data-concept="minale"] {
+  scrollbar-width: none !important;
+}
+html[data-concept="minale"]::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* All borders are ultra-thin hairlines */
+html[data-concept="minale"] .glass-card,
+html[data-concept="minale"] .glass-surface,
+html[data-concept="minale"] .ent-detail-card,
+html[data-concept="minale"] .cab-task,
+html[data-concept="minale"] .cab-doc-card,
+html[data-concept="minale"] .ws-card,
+html[data-concept="minale"] .dash-stat,
+html[data-concept="minale"] .dash-project-card {
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* Navigation: pure text, no background decoration */
+html[data-concept="minale"] .ent-sidebar,
+html[data-concept="minale"] .std-sidebar,
+html[data-concept="minale"] .cab-nav {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Nav items: ultra-light, uppercase, tracked out */
+html[data-concept="minale"] .ent-nav-item,
+html[data-concept="minale"] .cab-nav-item,
+html[data-concept="minale"] .std-nav-item {
+  font-weight: 200 !important;
+  letter-spacing: 0.20em !important;
+  text-transform: uppercase !important;
+  font-size: 0.7rem !important;
+  opacity: 0.5;
+  transition: opacity 900ms cubic-bezier(0.22,0.61,0.36,1) !important;
+}
+html[data-concept="minale"] .ent-nav-item:hover,
+html[data-concept="minale"] .cab-nav-item:hover,
+html[data-concept="minale"] .std-nav-item:hover {
+  opacity: 1 !important;
+  background: transparent !important;
+}
+html[data-concept="minale"] .ent-nav-item.active,
+html[data-concept="minale"] .cab-nav-item.active {
+  opacity: 1 !important;
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,0.3) !important;
+}
+
+/* Buttons: no bg, just text + hairline */
+html[data-concept="minale"] .a-btn-save {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.20em !important;
+  text-transform: uppercase !important;
+  font-size: 0.72rem !important;
+  padding: 16px 40px !important;
+  transition: all 900ms cubic-bezier(0.22,0.61,0.36,1) !important;
+}
+html[data-concept="minale"] .a-btn-save:hover {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.30) !important;
+}
+html[data-concept="minale"] .a-btn-sm {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  font-size: 0.65rem !important;
+}
+
+/* Inputs: invisible outline, just bottom border */
+html[data-concept="minale"] .glass-input {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+  border-radius: 0 !important;
+  padding-left: 0 !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.05em !important;
+  transition: border-color 900ms !important;
+}
+html[data-concept="minale"] .glass-input:focus {
+  border-bottom-color: rgba(255,255,255,0.30) !important;
+  box-shadow: none !important;
+}
+
+/* Tabs: ultra minimal */
+html[data-concept="minale"] .admin-tab {
+  font-weight: 200 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  font-size: 0.68rem !important;
+  opacity: 0.4;
+  border: none !important;
+  transition: opacity 900ms !important;
+}
+html[data-concept="minale"] .admin-tab.active,
+html[data-concept="minale"] .admin-tab--active {
+  opacity: 1 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.3) !important;
+}
+
+/* Modals: full-screen black overlay, centered */
+html[data-concept="minale"] .u-modal,
+html[data-concept="minale"] .cab-modal {
+  background: #000000 !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  box-shadow: none !important;
+}
+html[data-concept="minale"] .u-modal-overlay,
+html[data-concept="minale"] .cab-modal-overlay {
+  background: rgba(0,0,0,0.95) !important;
+  backdrop-filter: none !important;
+}
+
+/* Table: invisible structure */
+html[data-concept="minale"] thead th {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  font-size: 0.65rem !important;
+  color: rgba(255,255,255,0.4) !important;
+}
+html[data-concept="minale"] tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.03) !important;
+}
+html[data-concept="minale"] tbody tr:hover {
+  background: rgba(255,255,255,0.02) !important;
+}
+
+/* Topbar: seamless */
+html[data-concept="minale"] .u-topbar {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* All section titles — extreme tracking */
+html[data-concept="minale"] h1,
+html[data-concept="minale"] h2,
+html[data-concept="minale"] h3,
+html[data-concept="minale"] .u-section-title {
+  font-weight: 200 !important;
+  letter-spacing: 0.25em !important;
+  text-transform: uppercase !important;
+}
+
+/* Chips: transparent with subtle border */
+html[data-concept="minale"] .glass-chip {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.6) !important;
+  font-weight: 200 !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+  font-size: 0.6rem !important;
+}
+
+/* Design panel stays usable but black */
+html[data-concept="minale"] .dp-panel {
+  background: #000000 !important;
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   SILENCE CONCEPT — concept-silence (Тишина)
+   Dark charcoal (#080808), muted, barely-there UI, hushed
+   ═══════════════════════════════════════════════════════════ */
+
+html[data-concept="silence"] .glass-card,
+html[data-concept="silence"] .glass-surface,
+html[data-concept="silence"] .ent-detail-card {
+  border: none !important;
+}
+html[data-concept="silence"] .a-btn-save {
+  background: transparent !important;
+  color: rgba(255,255,255,0.5) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.10em !important;
+}
+html[data-concept="silence"] .a-btn-save:hover {
+  color: rgba(255,255,255,0.8) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+html[data-concept="silence"] h1,
+html[data-concept="silence"] h2,
+html[data-concept="silence"] h3 {
+  font-weight: 300 !important;
+}
+html[data-concept="silence"] .admin-tab {
+  opacity: 0.4 !important;
+  transition: opacity 600ms !important;
+}
+html[data-concept="silence"] .admin-tab.active,
+html[data-concept="silence"] .admin-tab--active {
+  opacity: 0.8 !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   CRAFT CONCEPT — concept-craft (Ремесло)
+   Warm parchment, artisanal feel, slightly rounded, textured
+   ═══════════════════════════════════════════════════════════ */
+
+html[data-concept="craft"] .glass-card,
+html[data-concept="craft"] .glass-surface {
+  border: 1px solid rgba(80,60,30,0.12) !important;
+  box-shadow: 0 2px 12px rgba(80,60,30,0.06) !important;
+}
+html[data-concept="craft"] .a-btn-save {
+  background: var(--ds-btn-bg, #3a352c) !important;
+  color: var(--ds-btn-text, #f8f4ee) !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+}
+html[data-concept="craft"] thead th {
+  background: rgba(80,60,30,0.04) !important;
+  font-weight: 600 !important;
+}
+html[data-concept="craft"] .admin-tab.active,
+html[data-concept="craft"] .admin-tab--active {
+  border-bottom: 2px solid var(--ds-link-color, #7a6848) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   EDITORIAL CONCEPT — concept-editorial (Классика)
+   Cream, serif accents, refined editorial feel
+   ═══════════════════════════════════════════════════════════ */
+
+html[data-concept="editorial"] h1,
+html[data-concept="editorial"] h2,
+html[data-concept="editorial"] h3,
+html[data-concept="editorial"] .u-section-title {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-style: italic !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+}
+html[data-concept="editorial"] .admin-tab {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-style: italic !important;
+  letter-spacing: 0.02em !important;
+}
+html[data-concept="editorial"] .glass-card,
+html[data-concept="editorial"] .glass-surface {
+  border: 1px solid rgba(80,60,30,0.10) !important;
+  box-shadow: none !important;
+}
+html[data-concept="editorial"] hr {
+  border-style: double !important;
+  border-width: 3px !important;
+  border-color: rgba(80,60,30,0.15) !important;
+}
+html[data-concept="editorial"] blockquote {
+  border-left: 3px solid rgba(80,60,30,0.20) !important;
+  font-style: italic !important;
+  padding-left: 1.5em !important;
+}
+html[data-concept="editorial"] .a-btn-save {
+  background: var(--ds-btn-bg, #1a1610) !important;
+  color: var(--ds-btn-text, #f5f0e8) !important;
+  border-radius: 2px !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  letter-spacing: 0.08em !important;
+  text-transform: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   FUTURISM CONCEPT — concept-future (Футуризм)
+   Dark blue-ink, electric accents, wide heading tracking
+   ═══════════════════════════════════════════════════════════ */
+
+html[data-concept="future"] .glass-chip {
+  background: rgba(80,120,255,0.08) !important;
+  color: #6090ff !important;
+  border-color: rgba(80,120,255,0.20) !important;
+}
+html[data-concept="future"] .a-btn-save {
+  background: transparent !important;
+  color: #6090ff !important;
+  border: 1px solid rgba(80,120,255,0.30) !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+html[data-concept="future"] .a-btn-save:hover {
+  background: rgba(80,120,255,0.08) !important;
+}
+html[data-concept="future"] .admin-tab.active,
+html[data-concept="future"] .admin-tab--active {
+  color: #6090ff !important;
+  border-color: #6090ff !important;
+}
+html[data-concept="future"] thead th {
+  background: rgba(80,120,255,0.04) !important;
+  color: #97b0e8 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+}
+html[data-concept="future"] .ent-nav-item.active,
+html[data-concept="future"] .cab-nav-item.active {
+  color: #6090ff !important;
 }
 

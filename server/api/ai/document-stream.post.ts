@@ -1,6 +1,6 @@
 /**
  * POST /api/ai/document-stream
- * SSE-стриминг генерации документа через Gemma 3 27B
+ * SSE-стриминг генерации документа через Gemma 3 27B / Qwen 3 14B
  * Отдаёт токены по одному: data: {"token":"..."}\n\n
  * Завершает: data: [DONE]\n\n
  */
@@ -9,11 +9,13 @@ import { useDb } from '~/server/db/index'
 import { projects, clients, contractors, pageContent } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 import { retrieveLegalContextWithChunks, type LegalChunkWithScore } from '~/server/utils/rag'
-import { GEMMA_SYSTEM_PROMPT } from '~/server/utils/gemma-prompts'
+import { GEMMA_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from '~/server/utils/gemma-prompts'
 
-const MODEL = 'gemma3:27b'
+// chat использует qwen3:14b — вдвое меньше, вдвое быстрее для коротких ответов
+const MODEL_HEAVY  = process.env.OLLAMA_MODEL_HEAVY  || 'gemma3:27b'
+const MODEL_CHAT   = process.env.OLLAMA_MODEL_CHAT   || 'qwen3:14b'
 const DEFAULT_GEMMA_URL = 'http://localhost:11434'
-const TIMEOUT_MS = 900_000 // 15 минут для стриминга
+const TIMEOUT_MS = 900_000 // 15 минут
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -61,8 +63,10 @@ export default defineEventHandler(async (event) => {
     ? await retrieveLegalContextWithChunks(`${templateName} ${userPrompt.slice(0, 400)}`)
     : { context: '', chunks: [] }
 
+  const isChat = action === 'chat'
   // system промпт всегда одинаковый — Ollama кэширует KV
-  const systemPrompt = GEMMA_SYSTEM_PROMPT
+  // chat использует облегчённый промпт без документных правил
+  const systemPrompt = isChat ? CHAT_SYSTEM_PROMPT : GEMMA_SYSTEM_PROMPT
   // RAG переносим в user-часть чтобы system не менялся
   const userPromptFinal = legalCtx
     ? `${userPrompt}\n\n[ПРАВОВАЯ БАЗА]\n${legalCtx}`
@@ -76,23 +80,30 @@ export default defineEventHandler(async (event) => {
   res.setHeader('X-Accel-Buffering', 'no') // отключить nginx буфер
   res.flushHeaders()
 
-  // ── Вызов Ollama с stream: true ───────────────────────────────
+  // ── Вызов Ollama native API ───────────────────────────────────
   const gemmaUrl = process.env.GEMMA_URL || DEFAULT_GEMMA_URL
-  const controller = new AbortController()
-  const ollamaRes = await fetch(`${gemmaUrl}/v1/chat/completions`, {
+  // chat → qwen3:14b (быстрее), тяжёлые документы → gemma3:27b
+  const model = isChat ? MODEL_CHAT : MODEL_HEAVY
+
+  const ollamaRes = await fetch(`${gemmaUrl}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     signal: AbortSignal.timeout(TIMEOUT_MS),
     body: JSON.stringify({
-      model: MODEL,
+      model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPromptFinal },
       ],
-      temperature: 0.3,
-      max_tokens: action === 'chat' ? 1024 : 4096,
       stream: true,
       keep_alive: -1,
+      think: false, // отключить COT у qwen3 (иначе добавляет <think>...</think>)
+      options: {
+        temperature:  0.3,
+        num_predict:  isChat ? 1024 : 4096, // лимит токенов
+        num_ctx:      isChat ? 2048 : 8192, // контекстное окно: меньше → быстрее prefill
+        num_thread:   12,                   // явно все доступные CPU ядра
+      },
     }),
   })
 
@@ -144,6 +155,9 @@ export default defineEventHandler(async (event) => {
   // Отправляем ping сразу чтобы браузер не оборвал соединение
   res.write(': ping\n\n')
 
+  // ── Читаем NDJSON-поток от Ollama native API ──────────────────
+  // Каждая строка — отдельный JSON: {message:{content:"..."}, done:false}
+  // Последняя строка: {done:true, done_reason:"stop"|"length", ...}
   try {
     while (true) {
       const { done, value } = await reader.read()
@@ -155,32 +169,24 @@ export default defineEventHandler(async (event) => {
 
       for (const line of lines) {
         const trimmed = line.trim()
-        if (!trimmed || !trimmed.startsWith('data: ')) continue
-
-        const raw = trimmed.slice(6)
-        if (raw === '[DONE]') {
-          sendDone()
-          return null
-        }
+        if (!trimmed) continue
 
         try {
-          const data = JSON.parse(raw)
-          const token = data?.choices?.[0]?.delta?.content ?? ''
+          const data = JSON.parse(trimmed)
+          // токены контента (qwen3 с think:false не даёт <think>, но на всякий случай фильтруем)
+          const token: string = data?.message?.content ?? ''
           if (token) {
             fullText += token
             res.write(`data: ${JSON.stringify({ token })}\n\n`)
           }
-          const finishReason = data?.choices?.[0]?.finish_reason
-          if (finishReason === 'stop') {
-            sendDone(false)
-            return null
-          }
-          if (finishReason === 'length') {
-            sendDone(true)
+          // финишная строка
+          if (data?.done === true) {
+            const reason = data?.done_reason ?? 'stop'
+            sendDone(reason === 'length')
             return null
           }
         } catch {
-          // ignore parse errors for incomplete chunks
+          // неполный JSON — пропускаем
         }
       }
     }

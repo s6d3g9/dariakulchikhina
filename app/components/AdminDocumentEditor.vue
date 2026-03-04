@@ -262,17 +262,21 @@
                 </div>
                 <div v-else class="de-chat-bubble de-chat-bubble--gemma">
                   <div class="de-chat-bubble-content">
-                    <span v-if="msg.streaming && !msg.text" class="de-chat-typing">
+                    <span v-if="msg.streaming && !msg.text && msg.charCount === 0" class="de-chat-typing">
                       <span></span><span></span><span></span>
                     </span>
-                    <span v-else class="de-chat-text">{{ msg.text }}</span><span v-if="msg.streaming" class="de-chat-cursor">▌</span>
+                    <span v-else-if="msg.streaming && !msg.text && msg.charCount > 0" class="de-chat-editing">
+                      ✏️ редактирую... ({{ msg.charCount }} симв.)
+                    </span>
+                    <span v-else class="de-chat-text">{{ msg.text }}</span><span v-if="msg.streaming && msg.text" class="de-chat-cursor">▌</span>
                   </div>
                   <div class="de-chat-bubble-meta">
                     <span v-if="msg.done" class="de-chat-done">✓ {{ msg.charCount }} симв.</span>
                     <span v-else-if="msg.streaming" class="de-chat-writing">{{ msg.charCount > 0 ? msg.charCount + ' симв.' : '' }}</span>
+                    <span v-if="msg.elapsed != null" class="de-chat-elapsed">⏱ {{ msg.elapsed }}с</span>
                     <span class="de-chat-time">{{ msg.time }}</span>
                   </div>
-                  <button v-if="msg._applyText && !aiLoading" class="de-chat-apply-btn" @click="applyFromChat(msg._applyText!)">✓ Применить в редактор</button>
+                  <button v-if="false" class="de-chat-apply-btn" @click="applyFromChat(msg._applyText!)">✓ Применить в редактор</button>
                 </div>
               </div>
             </div>
@@ -932,6 +936,8 @@ interface ChatMsg {
   done: boolean
   time: string
   charCount: number
+  elapsed?: number   // секунды на генерацию ответа
+  _startedAt?: number
   _applyText?: string
 }
 const chatVisible = ref(true)
@@ -951,7 +957,7 @@ function _chatPushUser(actionLabel: string) {
   _chatScroll()
 }
 function _chatPushGemma(): ChatMsg {
-  const msg: ChatMsg = { id: ++_chatIdSeq, role: 'gemma', actionLabel: '', text: '', streaming: true, done: false, time: _chatNow(), charCount: 0 }
+  const msg: ChatMsg = { id: ++_chatIdSeq, role: 'gemma', actionLabel: '', text: '', streaming: true, done: false, time: _chatNow(), charCount: 0, _startedAt: Date.now() }
   chatMessages.value.push(msg)
   _chatScroll()
   return msg
@@ -964,41 +970,53 @@ function _chatToken(msg: ChatMsg, token: string) {
 function _chatDone(msg: ChatMsg) {
   msg.streaming = false
   msg.done = true
+  if (msg._startedAt) msg.elapsed = Math.round((Date.now() - msg._startedAt) / 1000)
   _chatScroll()
 }
 async function onSendChatMessage() {
   const text = chatInput.value.trim()
   if (!text || aiLoading.value) return
   chatInput.value = ''
-  // сбросить высоту textarea
   await nextTick()
   const ta = document.querySelector('.de-chat-input') as HTMLTextAreaElement | null
   if (ta) { ta.style.height = 'auto' }
   _chatPushUser(text)
   const chatMsg = _chatPushGemma()
+
+  // Показываем "редактирую..." пока нет токенов
+  chatMsg.text = ''
+
+  let accumulated = ''
   const payload = { ...buildAiPayload(), currentText: editorContent.value, customInstruction: text }
   const ok = await streamDocument('chat', payload, (token) => {
-    _chatToken(chatMsg, token)
-  })
-  const result = chatMsg.text
-  _chatDone(chatMsg)
-  // если ответ выглядит как документ (длиннее 200 симв.) — предложить применить
-  if (ok && result && result.length > 200) {
-    const applyMsg: ChatMsg = {
-      id: Date.now() + 1,
-      role: 'gemma',
-      text: '✅ Применить изменения в редактор?',
-      actionLabel: '',
-      time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }),
-      streaming: false,
-      done: true,
-      charCount: 0,
-      _applyText: result,
+    accumulated += token
+    // Показываем короткий превью в пузыре (до 120 симв.)
+    if (accumulated.length <= 120) {
+      chatMsg.text = accumulated
+      chatMsg.charCount = accumulated.length
+    } else {
+      // длинный ответ — прячем контент, показываем статус
+      chatMsg.text = ''
+      chatMsg.charCount = accumulated.length
     }
-    chatMessages.value.push(applyMsg)
-    await nextTick()
-    if (chatEl.value) chatEl.value.scrollTop = chatEl.value.scrollHeight
+  })
+
+  const result = stripMarkdown(accumulated)
+  const isDocResult = ok && result.length > 200
+
+  if (isDocResult) {
+    // Автоматически применяем в редактор
+    editorContent.value = result
+    if (editorEl.value) editorEl.value.innerText = result
+    // В пузыре — короткое подтверждение
+    chatMsg.text = `✓ Изменения применены в редактор (${result.length} симв.)`
+    chatMsg.charCount = result.length
+  } else {
+    // Короткий ответ — показываем как обычно
+    chatMsg.text = result || accumulated
+    chatMsg.charCount = chatMsg.text.length
   }
+  _chatDone(chatMsg)
 }
 
 function applyFromChat(text: string) {
@@ -1321,7 +1339,9 @@ async function saveDocument() {
 }
 .de-chat-time { font-size: .65rem; opacity: .35; white-space: nowrap; }
 .de-chat-done { font-size: .65rem; color: #34d399; }
+.de-chat-elapsed { font-size: .65rem; opacity: .45; }
 .de-chat-writing { font-size: .65rem; opacity: .5; }
+.de-chat-editing { font-size: .8rem; opacity: .7; font-style: italic; }
 .de-chat-text { display: inline; }
 .de-chat-cursor {
   display: inline-block;
