@@ -16,7 +16,7 @@
       </div>
 
       <div class="acp-section">
-        <div class="acp-section-title">общая информация</div>
+        <div class="u-section-title">общая информация</div>
         <div class="u-grid-2">
           <div class="u-field">
             <label class="u-field__label">дата начала работ</label>
@@ -42,7 +42,7 @@
       </div>
 
       <div class="acp-section">
-        <div class="acp-section-title">
+        <div class="u-section-title">
           план работ
           <button class="acp-add-btn" @click="addTask">+ добавить</button>
         </div>

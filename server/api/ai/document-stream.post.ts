@@ -125,6 +125,13 @@ export default defineEventHandler(async (event) => {
     }
 
     let anthropicRes: Response
+    // Sonnet поддерживает до 64K через beta-заголовок output-128k-2025-02-19
+    const isSonnet = typeof chosenModel === 'string' && chosenModel.includes('sonnet')
+    const maxTok = action === 'continue'
+      ? (isSonnet ? 16000 : 8192)
+      : isChat
+      ? (isSonnet ? 8000 : 3000)
+      : (isSonnet ? 12000 : 6000)
     try {
       anthropicRes = await fetch(ANTHROPIC_URL, {
         method: 'POST',
@@ -132,11 +139,12 @@ export default defineEventHandler(async (event) => {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
+          ...(isSonnet ? { 'anthropic-beta': 'output-128k-2025-02-19' } : {}),
         },
         signal: AbortSignal.timeout(TIMEOUT_MS),
         body: JSON.stringify({
           model: chosenModel,
-          max_tokens: isChat ? 1024 : 4096,
+          max_tokens: maxTok,
           system: systemPrompt,
           messages: [{ role: 'user', content: userPromptFinal }],
           stream: true,
@@ -216,8 +224,8 @@ export default defineEventHandler(async (event) => {
       think: false,
       options: {
         temperature:  0.3,
-        num_predict:  isChat ? 2048 : 4096,
-        num_ctx:      8192,
+        num_predict:  action === 'continue' ? 16384 : isChat ? 4096 : 8192,
+        num_ctx:      16384,
         num_batch:    512,
         num_thread:   12,
       },
@@ -425,14 +433,23 @@ ${opts.currentText || ''}
 }
 
 function buildStreamContinuePrompt(opts: { templateName: string; currentText?: string; ctx: Record<string, any> }): string {
-  const tail = (opts.currentText || '').slice(-800)
+  const text = opts.currentText || ''
+  // Начало документа для контекста структуры + хвост для точки продолжения
+  const head = text.slice(0, 600)
+  const tail = text.slice(-1200)
+  const hasGap = text.length > 1800
+  const contextBlock = hasGap
+    ? `${head}\n\n[...середина документа...]\n\n${tail}`
+    : text
+
   return `ПРОДОЛЖИ документ «${opts.templateName}» с того места, где он прервался.
 
 НЕ ПОВТОРЯЙ уже написанное — пиши ТОЛЬКО продолжение, начиная буквально со следующего слова после конца.
+Доведи документ до полного завершения, включая все разделы, подписи и реквизиты.
 
-КОНЕЦ УЖЕ НАПИСАННОГО:
+ДОКУМЕНТ (начало + конец):
 ---
-${tail}
+${contextBlock}
 ---
 
 Продолжай:`

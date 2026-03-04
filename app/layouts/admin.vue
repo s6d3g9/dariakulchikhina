@@ -183,6 +183,38 @@
           </div>
         </div>
 
+        <!-- поставщики -->
+        <div ref="sellersTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isSellersTab }">
+          <NuxtLink :to="sellersTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isSellersTab }">поставщики</NuxtLink>
+          <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="sellersOpen = !sellersOpen">…</button>
+          <div v-if="sellersOpen" class="admin-dropdown glass-surface" @click.stop>
+            <div
+              v-for="s in quickSellers" :key="s.id"
+              class="admin-drop-item-with-actions"
+            >
+              <button
+                type="button" class="admin-drop-item admin-drop-item--flex"
+                @click="pickSeller(s)"
+              >
+                <span class="admin-drop-ini">{{ nameInitials(s.name) }}</span>
+                <span class="admin-drop-lbl">{{ s.name }}</span>
+              </button>
+              <button
+                v-if="activeProjectSlug"
+                type="button"
+                class="admin-drop-action-btn"
+                :class="isSellerLinked(s.id) ? 'admin-drop-action-btn--remove' : 'admin-drop-action-btn--add'"
+                :disabled="clientActionLoading"
+                @click.stop="toggleSellerLink(s.id, s.name)"
+                :title="isSellerLinked(s.id) ? 'Отвязать от проекта' : 'Привязать к проекту'"
+              >{{ isSellerLinked(s.id) ? '-' : '+' }}</button>
+            </div>
+            <div class="admin-drop-divider"></div>
+            <button type="button" class="admin-drop-all" @click="goToAllSellers">все поставщики →</button>
+            <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
+          </div>
+        </div>
+
 
       </div><!-- /.admin-tabs -->
 
@@ -241,10 +273,12 @@ const isClientsTab     = computed(() => route.path.startsWith('/admin/clients'))
 const isGalleryTab     = computed(() => route.path.startsWith('/admin/gallery'))
 const isDocumentsTab   = computed(() => route.path.startsWith('/admin/documents'))
 const isDesignersTab   = computed(() => route.path.startsWith('/admin/designers'))
+const isSellersTab     = computed(() => route.path.startsWith('/admin/sellers'))
 
 const contractorsTabTo    = computed(() => withCtx('/admin/contractors'))
 const clientsTabTo        = computed(() => withCtx('/admin/clients'))
 const designersTabTo      = computed(() => withCtx('/admin/designers'))
+const sellersTabTo        = computed(() => withCtx('/admin/sellers'))
 const galleryActiveTabTo  = computed(() => {
   const match = GALLERY_TABS.find(g => route.path === `/admin/gallery/${g.slug}`)
   return withCtx(`/admin/gallery/${match?.slug ?? 'interiors'}`)
@@ -274,6 +308,15 @@ const quickClients = computed(() => (clientsData.value || []).slice(0, 12))
 // ── Designers data ──────────────────────────────────────────────
 const { data: designersData } = useFetch<any[]>('/api/designers', { server: false, default: () => [] })
 const quickDesigners = computed(() => (designersData.value || []).slice(0, 12))
+
+// ── Sellers data ────────────────────────────────────────────────
+const { data: sellersData } = useFetch<any[]>('/api/sellers', { server: false, default: () => [] })
+const quickSellers = computed(() => (sellersData.value || []).slice(0, 12))
+const { data: linkedSellersData, refresh: refreshLinkedSellers } = await useFetch<any[]>(
+  () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/sellers` : null,
+  { watch: [activeProjectSlug], server: false, default: () => [] },
+)
+
 const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await useFetch<any[]>(
   () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/designers` : null,
   { watch: [activeProjectSlug], server: false, default: () => [] },
@@ -311,6 +354,10 @@ const linkedDesignerIds = computed(() => {
   return new Set((linkedDesignersData.value || []).map((d: any) => String(d.id)))
 })
 
+const linkedSellerIds = computed(() => {
+  return new Set((linkedSellersData.value || []).map((s: any) => String(s.id)))
+})
+
 // Check if client/contractor is linked to current project
 function isClientLinked(clientId: string): boolean {
   return linkedClientIds.value.has(String(clientId))
@@ -322,6 +369,10 @@ function isContractorLinked(contractorId: string): boolean {
 
 function isDesignerLinked(designerId: string): boolean {
   return linkedDesignerIds.value.has(String(designerId))
+}
+
+function isSellerLinked(sellerId: string): boolean {
+  return linkedSellerIds.value.has(String(sellerId))
 }
 
 // Toggle client link to current project
@@ -444,6 +495,44 @@ async function toggleDesignerLink(designerId: string, designerName: string) {
   }
 }
 
+async function toggleSellerLink(sellerId: string, sellerName: string) {
+  if (!activeProjectSlug.value) {
+    clientActionMessage.value = 'Нет активного проекта'
+    return
+  }
+
+  clientActionLoading.value = true
+  clientActionMessage.value = ''
+
+  const isLinked = isSellerLinked(sellerId)
+
+  try {
+    if (isLinked) {
+      await $fetch(`/api/projects/${activeProjectSlug.value}/sellers`, {
+        method: 'DELETE',
+        body: { sellerId: Number(sellerId) },
+      })
+      clientActionMessage.value = `Поставщик "${sellerName}" отвязан от проекта`
+    } else {
+      await $fetch(`/api/projects/${activeProjectSlug.value}/sellers`, {
+        method: 'POST',
+        body: { sellerId: Number(sellerId) },
+      })
+      clientActionMessage.value = `Поставщик "${sellerName}" привязан к проекту`
+    }
+
+    await refreshLinkedSellers()
+
+    setTimeout(() => {
+      clientActionMessage.value = ''
+    }, 2000)
+  } catch (error: any) {
+    clientActionMessage.value = error?.data?.message || 'Ошибка при изменении связи поставщика'
+  } finally {
+    clientActionLoading.value = false
+  }
+}
+
 // ── Initials helpers ────────────────────────────────────────────
 function projectInitials(title: string) {
   const s = String(title || '').trim()
@@ -461,19 +550,21 @@ const contractorsOpen = ref(false)
 const clientsOpen     = ref(false)
 const galleryOpen     = ref(false)
 const designersOpen   = ref(false)
+const sellersOpen     = ref(false)
 
 const projectsTabRef    = ref<HTMLElement | null>(null)
 const contractorsTabRef = ref<HTMLElement | null>(null)
 const clientsTabRef     = ref<HTMLElement | null>(null)
 const galleryTabRef     = ref<HTMLElement | null>(null)
 const designersTabRef   = ref<HTMLElement | null>(null)
+const sellersTabRef     = ref<HTMLElement | null>(null)
 
 function closeAll() {
-  projectsOpen.value = contractorsOpen.value = clientsOpen.value = galleryOpen.value = designersOpen.value = false
+  projectsOpen.value = contractorsOpen.value = clientsOpen.value = galleryOpen.value = designersOpen.value = sellersOpen.value = false
 }
 
 function onDocClick(e: MouseEvent) {
-  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value]
+  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value, sellersTabRef.value]
   if (refs.every(r => !r || !r.contains(e.target as Node))) closeAll()
 }
 
@@ -526,6 +617,10 @@ function pickDesigner(designer: any) {
   closeAll()
   navigateTo(`/admin/designers?designerId=${designer.id}`)
 }
+function pickSeller(seller: any) {
+  closeAll()
+  navigateTo(`/admin/sellers?sellerId=${seller.id}`)
+}
 
 // ── "All entities" navigation (works even if already on the page) ──
 const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
@@ -552,6 +647,14 @@ function goToAllDesigners() {
     entityDeselectSignal.value++
   } else {
     navigateTo(designersTabTo.value)
+  }
+}
+function goToAllSellers() {
+  closeAll()
+  if (isSellersTab.value) {
+    entityDeselectSignal.value++
+  } else {
+    navigateTo(sellersTabTo.value)
   }
 }
 

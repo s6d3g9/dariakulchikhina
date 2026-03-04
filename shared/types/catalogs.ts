@@ -347,6 +347,49 @@ export const DESIGNER_SERVICE_TYPE_OPTIONS = asOptions(DESIGNER_SERVICE_TYPES, {
   decoration: 'Декорирование',
 })
 
+// ── Designer tariffs (service packages) ──────────────────────────────────────
+export const DESIGNER_TARIFFS: {
+  key: string
+  label: string
+  description: string
+  services: (typeof DESIGNER_SERVICE_TYPES[number])[]
+  color: string
+  priceHint: string
+}[] = [
+  {
+    key: 'light',
+    label: 'Лайт',
+    description: 'Планировочные решения и базовая концепция интерьера',
+    services: ['measurement', 'layout_solution', 'style_collage'],
+    color: '#78909c',
+    priceHint: 'от 3 000 ₽/м²',
+  },
+  {
+    key: 'standard',
+    label: 'Стандарт',
+    description: 'Полный дизайн-проект с 3D-визуализацией и рабочими чертежами',
+    services: ['measurement', 'layout_solution', 'concept_design', 'style_collage', 'visualization_3d', 'working_drawings'],
+    color: '#5c6bc0',
+    priceHint: 'от 5 000 ₽/м²',
+  },
+  {
+    key: 'full',
+    label: 'Полный',
+    description: 'Дизайн-проект + авторский надзор за реализацией',
+    services: ['measurement', 'layout_solution', 'concept_design', 'visualization_3d', 'working_drawings', 'budgeting', 'author_supervision'],
+    color: '#26a69a',
+    priceHint: 'от 7 000 ₽/м²',
+  },
+  {
+    key: 'turnkey',
+    label: 'Под ключ',
+    description: 'Полное сопровождение — от концепции до декорирования',
+    services: ['measurement', 'technical_task', 'layout_solution', 'concept_design', 'visualization_3d', 'working_drawings', 'budgeting', 'author_supervision', 'procurement_support', 'decoration'],
+    color: '#66bb6a',
+    priceHint: 'от 10 000 ₽/м²',
+  },
+]
+
 export const PAYMENT_TYPE_OPTIONS = asOptions(PAYMENT_TYPES, {
   cash: 'Наличные',
   sbp: 'СБП',

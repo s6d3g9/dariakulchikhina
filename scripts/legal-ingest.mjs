@@ -1,12 +1,13 @@
 /**
  * Индексация российских правовых текстов для RAG.
- * Основной источник: scripts/legal-data/seed-articles.json (статьи проверенных кодексов)
- * Дополнительно: попытка дозагрузки с consultant.ru (опционально, может упасть).
+ * Источник 1: scripts/legal-data/seed-articles.json (базовые статьи кодексов)
+ * Источник 2: scripts/legal-data/seed-design-extra.json (расширенные: ИС, авторство, ФЗ)
+ * Источник 3: scripts/legal-data/seed-design-glossary.json (глоссарий дизайна и архитектуры)
  *
  * Запуск:
- *   node scripts/legal-ingest.mjs            # индексирует весь seed
- *   node scripts/legal-ingest.mjs gk_rf      # только ГК РФ из seed
- *   node scripts/legal-ingest.mjs --web      # только веб-источники (может не работать)
+ *   node scripts/legal-ingest.mjs            # индексирует все файлы
+ *   node scripts/legal-ingest.mjs gk_rf      # только ГК РФ
+ *   node scripts/legal-ingest.mjs design_glossary  # только глоссарий
  */
 import postgres from 'postgres'
 import { readFileSync } from 'fs'
@@ -42,8 +43,14 @@ async function embed(text) {
 const db = postgres(DATABASE_URL)
 
 async function ingestFromSeed(filterSource = null) {
-  const seedPath = resolve(__dirname, 'legal-data/seed-articles.json')
-  const articles = JSON.parse(readFileSync(seedPath, 'utf8'))
+  const seedPath     = resolve(__dirname, 'legal-data/seed-articles.json')
+  const extraPath    = resolve(__dirname, 'legal-data/seed-design-extra.json')
+  const glossaryPath = resolve(__dirname, 'legal-data/seed-design-glossary.json')
+  const articles  = [
+    ...JSON.parse(readFileSync(seedPath,     'utf8')),
+    ...JSON.parse(readFileSync(extraPath,    'utf8')),
+    ...JSON.parse(readFileSync(glossaryPath, 'utf8')),
+  ]
 
   const filtered = filterSource
     ? articles.filter(a => a.source === filterSource || a.source.startsWith(filterSource + '_'))

@@ -555,26 +555,16 @@
                 <div class="u-field u-field--full">
                   <div v-for="group in ROLE_GROUPS" :key="group.label" class="u-tag-group">
                     <div class="u-tag-group__label">{{ group.label }}</div>
-                    <div class="u-tag-subtitle">Выбрано</div>
-                    <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--selected">
+                    <div class="u-tags">
                       <button
-                        v-for="r in group.items.filter((item) => form.roleTypes.includes(item.value))"
-                        :key="`role-selected-${group.label}-${r.value}`"
-                        type="button"
-                        class="u-tag u-tag--picker u-tag--active"
-                        @click="toggleArr(form.roleTypes, r.value)"
-                      >#{{ r.label }}</button>
-                    </TransitionGroup>
-                    <div class="u-tag-subtitle" style="margin-top:8px">Доступно</div>
-                    <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--available">
-                      <button
-                        v-for="r in group.items.filter((item) => !form.roleTypes.includes(item.value))"
-                        :key="`role-available-${group.label}-${r.value}`"
+                        v-for="r in group.items"
+                        :key="`role-${group.label}-${r.value}`"
                         type="button"
                         class="u-tag u-tag--picker"
+                        :class="{ 'u-tag--active': form.roleTypes.includes(r.value) }"
                         @click="toggleArr(form.roleTypes, r.value)"
-                      >#{{ r.label }}</button>
-                    </TransitionGroup>
+                      >{{ r.label }}</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -584,26 +574,16 @@
                 <div class="u-field u-field--full">
                   <div v-for="group in WORK_GROUPS" :key="group.label" class="u-tag-group">
                     <div class="u-tag-group__label">{{ group.label }}</div>
-                    <div class="u-tag-subtitle">Выбрано</div>
-                    <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--selected">
+                    <div class="u-tags">
                       <button
-                        v-for="w in group.items.filter((item) => form.workTypes.includes(item.value))"
-                        :key="`work-selected-${group.label}-${w.value}`"
-                        type="button"
-                        class="u-tag u-tag--picker u-tag--active"
-                        @click="toggleArr(form.workTypes, w.value)"
-                      >#{{ w.label }}</button>
-                    </TransitionGroup>
-                    <div class="u-tag-subtitle" style="margin-top:8px">Доступно</div>
-                    <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--available">
-                      <button
-                        v-for="w in group.items.filter((item) => !form.workTypes.includes(item.value))"
-                        :key="`work-available-${group.label}-${w.value}`"
+                        v-for="w in group.items"
+                        :key="`work-${group.label}-${w.value}`"
                         type="button"
                         class="u-tag u-tag--picker"
+                        :class="{ 'u-tag--active': form.workTypes.includes(w.value) }"
                         @click="toggleArr(form.workTypes, w.value)"
-                      >#{{ w.label }}</button>
-                    </TransitionGroup>
+                      >{{ w.label }}</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -641,26 +621,16 @@
 
               <div class="u-form-section">
                 <h3>Способы оплаты</h3>
-                <div class="u-tag-subtitle">Выбрано</div>
-                <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--selected">
+                <div class="u-tags">
                   <button
-                    v-for="pm in PAYMENT_METHOD_OPTIONS.filter((item) => form.paymentMethods.includes(item.value))"
-                    :key="`pay-selected-${pm.value}`"
-                    type="button"
-                    class="u-tag u-tag--picker u-tag--active"
-                    @click="toggleArr(form.paymentMethods, pm.value)"
-                  >#{{ pm.label }}</button>
-                </TransitionGroup>
-                <div class="u-tag-subtitle" style="margin-top:8px">Доступно</div>
-                <TransitionGroup name="tag-shift" tag="div" class="u-tags u-tags--available">
-                  <button
-                    v-for="pm in PAYMENT_METHOD_OPTIONS.filter((item) => !form.paymentMethods.includes(item.value))"
-                    :key="pm.value"
+                    v-for="pm in PAYMENT_METHOD_OPTIONS"
+                    :key="`pay-${pm.value}`"
                     type="button"
                     class="u-tag u-tag--picker"
+                    :class="{ 'u-tag--active': form.paymentMethods.includes(pm.value) }"
                     @click="toggleArr(form.paymentMethods, pm.value)"
-                  >#{{ pm.label }}</button>
-                </TransitionGroup>
+                  >{{ pm.label }}</button>
+                </div>
               </div>
 
               <div class="u-form-section">

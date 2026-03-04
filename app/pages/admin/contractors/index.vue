@@ -97,14 +97,9 @@
                 <div v-else-if="projectsError" class="ct-form-error">{{ projectsError }}</div>
                 <div v-else-if="!allProjects.length" class="ct-form-hint">Нет проектов</div>
                 <div v-else class="ct-project-pool">
-                  <div class="ct-project-pool-title">Выбрано</div>
-                  <TransitionGroup name="tag-shift" tag="div" class="ct-projects-grid">
-                    <button v-for="p in allProjects.filter((item) => selectedProjectIds.includes(item.id))" :key="`project-selected-${p.id}`" type="button" class="ct-project-tag ct-project-tag--active" @click.prevent="toggleProject(p.id)">#{{ p.title }}</button>
-                  </TransitionGroup>
-                  <div class="ct-project-pool-title" style="margin-top:8px">Доступно</div>
-                  <TransitionGroup name="tag-shift" tag="div" class="ct-projects-grid">
-                    <button v-for="p in allProjects.filter((item) => !selectedProjectIds.includes(item.id))" :key="`project-available-${p.id}`" type="button" class="ct-project-tag" @click.prevent="toggleProject(p.id)">#{{ p.title }}</button>
-                  </TransitionGroup>
+                  <div class="ct-projects-grid">
+                    <button v-for="p in allProjects" :key="`project-${p.id}`" type="button" class="ct-project-tag" :class="{ 'ct-project-tag--active': selectedProjectIds.includes(p.id) }" @click.prevent="toggleProject(p.id)">{{ p.title }}</button>
+                  </div>
                 </div>
               </template>
               <div class="ct-form-section">основное</div>

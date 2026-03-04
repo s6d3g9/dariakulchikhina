@@ -263,26 +263,16 @@
                 <textarea v-model="pkg.description" class="glass-input pkg-desc-inp" rows="2" placeholder="Описание пакета" />
                 <div class="pkg-services-edit">
                   <strong>Включённые услуги:</strong>
-                  <div class="tag-picker-subtitle">Выбрано</div>
-                  <TransitionGroup name="tag-shift" tag="div" class="pkg-svc-tags">
+                  <div class="pkg-svc-tags">
                     <button
-                      v-for="svc in allServiceKeys.filter((item) => pkg.serviceKeys.includes(item.key))"
-                      :key="`pkg-selected-${pkg.key}-${svc.key}`"
-                      type="button"
-                      class="pkg-tag-picker pkg-tag-picker--active"
-                      @click="togglePkgService(pkg, svc.key)"
-                    >#{{ svc.title }}</button>
-                  </TransitionGroup>
-                  <div class="tag-picker-subtitle" style="margin-top:8px">Доступно</div>
-                  <TransitionGroup name="tag-shift" tag="div" class="pkg-svc-tags">
-                    <button
-                      v-for="svc in allServiceKeys.filter((item) => !pkg.serviceKeys.includes(item.key))"
-                      :key="`pkg-available-${pkg.key}-${svc.key}`"
+                      v-for="svc in allServiceKeys"
+                      :key="`pkg-${pkg.key}-${svc.key}`"
                       type="button"
                       class="pkg-tag-picker"
+                      :class="{ 'pkg-tag-picker--active': pkg.serviceKeys.includes(svc.key) }"
                       @click="togglePkgService(pkg, svc.key)"
-                    >#{{ svc.title }}</button>
-                  </TransitionGroup>
+                    >{{ svc.title }}</button>
+                  </div>
                 </div>
               </div>
             </template>
@@ -383,26 +373,16 @@
                 </div>
                 <div class="pkg-services-edit">
                   <strong>Включённые услуги:</strong>
-                  <div class="tag-picker-subtitle">Выбрано</div>
-                  <TransitionGroup name="tag-shift" tag="div" class="pkg-svc-tags">
+                  <div class="pkg-svc-tags">
                     <button
-                      v-for="svc in allServiceKeys.filter((item) => sub.serviceKeys.includes(item.key))"
-                      :key="`sub-selected-${sub.key}-${svc.key}`"
-                      type="button"
-                      class="pkg-tag-picker pkg-tag-picker--active"
-                      @click="toggleSubService(sub, svc.key)"
-                    >#{{ svc.title }}</button>
-                  </TransitionGroup>
-                  <div class="tag-picker-subtitle" style="margin-top:8px">Доступно</div>
-                  <TransitionGroup name="tag-shift" tag="div" class="pkg-svc-tags">
-                    <button
-                      v-for="svc in allServiceKeys.filter((item) => !sub.serviceKeys.includes(item.key))"
-                      :key="`sub-available-${sub.key}-${svc.key}`"
+                      v-for="svc in allServiceKeys"
+                      :key="`sub-${sub.key}-${svc.key}`"
                       type="button"
                       class="pkg-tag-picker"
+                      :class="{ 'pkg-tag-picker--active': sub.serviceKeys.includes(svc.key) }"
                       @click="toggleSubService(sub, svc.key)"
-                    >#{{ svc.title }}</button>
-                  </TransitionGroup>
+                    >{{ svc.title }}</button>
+                  </div>
                 </div>
               </div>
             </template>
@@ -714,26 +694,16 @@
 
               <div class="u-form-section">
                 <h3>Специализации</h3>
-                <div class="tag-picker-subtitle">Выбрано</div>
-                <TransitionGroup name="tag-shift" tag="div" class="u-tags">
+                <div class="u-tags">
                   <button
-                    v-for="sp in SPECIALIZATION_OPTIONS.filter((item) => form.specializations.includes(item))"
-                    :key="`spec-selected-${sp}`"
-                    type="button"
-                    class="pkg-tag-picker pkg-tag-picker--active"
-                    @click="toggleSpec(sp)"
-                  >#{{ sp }}</button>
-                </TransitionGroup>
-                <div class="tag-picker-subtitle" style="margin-top:8px">Доступно</div>
-                <TransitionGroup name="tag-shift" tag="div" class="u-tags">
-                  <button
-                    v-for="sp in SPECIALIZATION_OPTIONS.filter((item) => !form.specializations.includes(item))"
-                    :key="`spec-available-${sp}`"
+                    v-for="sp in SPECIALIZATION_OPTIONS"
+                    :key="`spec-${sp}`"
                     type="button"
                     class="pkg-tag-picker"
+                    :class="{ 'pkg-tag-picker--active': form.specializations.includes(sp) }"
                     @click="toggleSpec(sp)"
-                  >#{{ sp }}</button>
-                </TransitionGroup>
+                  >{{ sp }}</button>
+                </div>
               </div>
 
               <div class="u-form-foot">

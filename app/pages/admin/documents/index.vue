@@ -729,7 +729,12 @@ _______________________              _______________________`,
 // ══════════════════════════════════════════════════════════════════
 // DATA
 // ══════════════════════════════════════════════════════════════════
-const { data: allDocs, pending, refresh } = await useFetch<any[]>('/api/documents', { default: () => [] })
+// lazy: true + server: false — без await, нет Suspense-границы, refresh() не пересоздаёт страницу
+const { data: allDocs, pending, refresh } = useFetch<any[]>('/api/documents', {
+  default: () => [],
+  lazy: true,
+  server: false,
+})
 const { data: projectsData } = useFetch<any[]>('/api/projects', { server: false, default: () => [] })
 const { data: legalStatus } = useFetch<{ ready: boolean; totalChunks: number; sources: any[] }>('/api/ai/legal-status', { server: false })
 
@@ -742,12 +747,20 @@ const allProjects = computed(() => (projectsData.value || []).map((p: any) => ({
 // ══════════════════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════════════════
-const viewMode = ref<'list' | 'editor'>('list')
+// useState вместо ref — Nuxt сохраняет это значение при любых ре-рендерах
+// и клиентских рефетчах (useFetch), поэтому редактор не сбрасывается
+const viewMode = useState<'list' | 'editor'>('docs-viewMode', () => 'list')
 const activeCategory = ref('all')
 const search = ref('')
 const activeDoc = ref<any>(null)
 const editingDoc = ref<any>(null)
 const previewText = ref('')
+
+// Обновляем список документов при возврате из редактора
+watch(viewMode, (v, prev) => { if (v === 'list' && prev === 'editor') refresh() })
+
+// При уходе со страницы сбрасываем, чтобы при возврате не открывался редактор
+onBeforeRouteLeave(() => { viewMode.value = 'list' })
 
 const countByCategory = computed(() => {
   const r: Record<string, number> = {}
@@ -926,9 +939,9 @@ function openGenerate() {
   activeDoc.value = null
 }
 
-async function onEditorSaved() {
-  viewMode.value = 'list'
-  await refresh()
+function onEditorSaved() {
+  // Ничего не делаем — редактор остаётся открытым.
+  // Список обновится автоматически когда пользователь вернётся через @close
 }
 </script>
 

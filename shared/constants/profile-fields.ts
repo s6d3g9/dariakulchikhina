@@ -39,7 +39,11 @@ export const CLIENT_PROFILE_BRIEF_KEYS = [
   'brief_budget_limits', 'brief_deadlines_hard', 'brief_special_notes', 'brief_allergies',
 ] as const
 
-export const CLIENT_PROFILE_EDITABLE_KEYS = [...CLIENT_PROFILE_BASE_KEYS, ...CLIENT_PROFILE_PASSPORT_KEYS, ...CLIENT_PROFILE_BRIEF_KEYS] as const
+export const CLIENT_PROFILE_SERVICE_KEYS = [
+  'service_tariff_request',
+] as const
+
+export const CLIENT_PROFILE_EDITABLE_KEYS = [...CLIENT_PROFILE_BASE_KEYS, ...CLIENT_PROFILE_PASSPORT_KEYS, ...CLIENT_PROFILE_BRIEF_KEYS, ...CLIENT_PROFILE_SERVICE_KEYS] as const
 
 export type ClientProfileEditableKey = (typeof CLIENT_PROFILE_EDITABLE_KEYS)[number]
 

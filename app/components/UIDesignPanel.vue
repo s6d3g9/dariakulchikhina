@@ -432,126 +432,76 @@
                   <div class="dp-field">
                     <label class="dp-label">стиль</label>
                     <div class="dp-chip-picker">
-                      <div class="dp-chip-picker-title">Выбрано</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
+                      <div class="dp-chip-pool">
                         <button
-                          v-for="s in selectedDesignOptions(btnStyles, tokens.btnStyle)"
-                          :key="`btn-style-selected-${s.id}`"
-                          type="button"
-                          class="dp-chip dp-chip--active"
-                          @click="set('btnStyle', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
-                      <div class="dp-chip-picker-title" style="margin-top: 8px">Доступно</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
-                        <button
-                          v-for="s in availableDesignOptions(btnStyles, tokens.btnStyle)"
-                          :key="`btn-style-available-${s.id}`"
+                          v-for="s in btnStyles"
+                          :key="`btn-style-${s.id}`"
                           type="button"
                           class="dp-chip"
+                          :class="{ 'dp-chip--active': String(tokens.btnStyle) === String(s.id) }"
                           @click="set('btnStyle', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
+                        >{{ s.label }}</button>
+                      </div>
                     </div>
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">размер</label>
                     <div class="dp-chip-picker">
-                      <div class="dp-chip-picker-title">Выбрано</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
+                      <div class="dp-chip-pool">
                         <button
-                          v-for="s in selectedDesignOptions(btnSizes, tokens.btnSize)"
-                          :key="`btn-size-selected-${s.id}`"
-                          type="button"
-                          class="dp-chip dp-chip--active"
-                          @click="set('btnSize', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
-                      <div class="dp-chip-picker-title" style="margin-top: 8px">Доступно</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
-                        <button
-                          v-for="s in availableDesignOptions(btnSizes, tokens.btnSize)"
-                          :key="`btn-size-available-${s.id}`"
+                          v-for="s in btnSizes"
+                          :key="`btn-size-${s.id}`"
                           type="button"
                           class="dp-chip"
+                          :class="{ 'dp-chip--active': String(tokens.btnSize) === String(s.id) }"
                           @click="set('btnSize', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
+                        >{{ s.label }}</button>
+                      </div>
                     </div>
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">регистр</label>
                     <div class="dp-chip-picker">
-                      <div class="dp-chip-picker-title">Выбрано</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
+                      <div class="dp-chip-pool">
                         <button
-                          v-for="s in selectedDesignOptions(textTransforms, tokens.btnTransform)"
-                          :key="`btn-transform-selected-${s.id}`"
-                          type="button"
-                          class="dp-chip dp-chip--active"
-                          @click="set('btnTransform', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
-                      <div class="dp-chip-picker-title" style="margin-top: 8px">Доступно</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
-                        <button
-                          v-for="s in availableDesignOptions(textTransforms, tokens.btnTransform)"
-                          :key="`btn-transform-available-${s.id}`"
+                          v-for="s in textTransforms"
+                          :key="`btn-transform-${s.id}`"
                           type="button"
                           class="dp-chip"
+                          :class="{ 'dp-chip--active': String(tokens.btnTransform) === String(s.id) }"
                           @click="set('btnTransform', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
+                        >{{ s.label }}</button>
+                      </div>
                     </div>
                   </div>
                   <div class="dp-field" style="margin-top:8px">
                     <label class="dp-label">кинетика при наведении</label>
                     <div class="dp-chip-picker">
-                      <div class="dp-chip-picker-title">Выбрано</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
+                      <div class="dp-chip-pool">
                         <button
-                          v-for="s in selectedDesignOptions(btnHoverAnims, tokens.btnHoverAnim)"
-                          :key="`btn-hover-selected-${s.id}`"
-                          type="button"
-                          class="dp-chip dp-chip--active"
-                          @click="set('btnHoverAnim', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
-                      <div class="dp-chip-picker-title" style="margin-top: 8px">Доступно</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
-                        <button
-                          v-for="s in availableDesignOptions(btnHoverAnims, tokens.btnHoverAnim)"
-                          :key="`btn-hover-available-${s.id}`"
+                          v-for="s in btnHoverAnims"
+                          :key="`btn-hover-${s.id}`"
                           type="button"
                           class="dp-chip"
+                          :class="{ 'dp-chip--active': String(tokens.btnHoverAnim) === String(s.id) }"
                           @click="set('btnHoverAnim', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
+                        >{{ s.label }}</button>
+                      </div>
                     </div>
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">карточки при наведении</label>
                     <div class="dp-chip-picker">
-                      <div class="dp-chip-picker-title">Выбрано</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
+                      <div class="dp-chip-pool">
                         <button
-                          v-for="s in selectedDesignOptions(cardHoverAnims, tokens.cardHoverAnim)"
-                          :key="`card-hover-selected-${s.id}`"
-                          type="button"
-                          class="dp-chip dp-chip--active"
-                          @click="set('cardHoverAnim', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
-                      <div class="dp-chip-picker-title" style="margin-top: 8px">Доступно</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
-                        <button
-                          v-for="s in availableDesignOptions(cardHoverAnims, tokens.cardHoverAnim)"
-                          :key="`card-hover-available-${s.id}`"
+                          v-for="s in cardHoverAnims"
+                          :key="`card-hover-${s.id}`"
                           type="button"
                           class="dp-chip"
+                          :class="{ 'dp-chip--active': String(tokens.cardHoverAnim) === String(s.id) }"
                           @click="set('cardHoverAnim', s.id)"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
+                        >{{ s.label }}</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -674,26 +624,16 @@
                     <div class="dp-field">
                       <label class="dp-label">регистр</label>
                       <div class="dp-chip-picker">
-                        <div class="dp-chip-picker-title">Выбрано</div>
-                        <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
+                        <div class="dp-chip-pool">
                           <button
-                            v-for="s in selectedDesignOptions(textTransforms, tokens.btnTransform)"
-                            :key="`type-btn-transform-selected-${s.id}`"
-                            type="button"
-                            class="dp-chip dp-chip--active"
-                            @click="set('btnTransform', s.id)"
-                          >#{{ s.label }}</button>
-                        </TransitionGroup>
-                        <div class="dp-chip-picker-title" style="margin-top: 8px">Доступно</div>
-                        <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
-                          <button
-                            v-for="s in availableDesignOptions(textTransforms, tokens.btnTransform)"
-                            :key="`type-btn-transform-available-${s.id}`"
+                            v-for="s in textTransforms"
+                            :key="`type-btn-transform-${s.id}`"
                             type="button"
                             class="dp-chip"
+                            :class="{ 'dp-chip--active': String(tokens.btnTransform) === String(s.id) }"
                             @click="set('btnTransform', s.id)"
-                          >#{{ s.label }}</button>
-                        </TransitionGroup>
+                          >{{ s.label }}</button>
+                        </div>
                       </div>
                     </div>
                   </template>
@@ -881,26 +821,16 @@
                   <div class="dp-field">
                     <label class="dp-label">easing</label>
                     <div class="dp-chip-picker">
-                      <div class="dp-chip-picker-title">Выбрано</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
+                      <div class="dp-chip-pool">
                         <button
-                          v-for="e in selectedDesignOptions(EASING_OPTIONS, tokens.animEasing)"
-                          :key="`anim-easing-selected-${e.id}`"
-                          type="button"
-                          class="dp-chip dp-chip--active"
-                          @click="set('animEasing', e.id)"
-                        >#{{ e.label }}</button>
-                      </TransitionGroup>
-                      <div class="dp-chip-picker-title" style="margin-top: 8px">Доступно</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
-                        <button
-                          v-for="e in availableDesignOptions(EASING_OPTIONS, tokens.animEasing)"
-                          :key="`anim-easing-available-${e.id}`"
+                          v-for="e in EASING_OPTIONS"
+                          :key="`anim-easing-${e.id}`"
                           type="button"
                           class="dp-chip"
+                          :class="{ 'dp-chip--active': String(tokens.animEasing) === String(e.id) }"
                           @click="set('animEasing', e.id)"
-                        >#{{ e.label }}</button>
-                      </TransitionGroup>
+                        >{{ e.label }}</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -943,26 +873,16 @@
                   <div class="dp-field">
                     <label class="dp-label">стиль</label>
                     <div class="dp-chip-picker">
-                      <div class="dp-chip-picker-title">Выбрано</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
+                      <div class="dp-chip-pool">
                         <button
-                          v-for="s in selectedDesignOptions(BORDER_STYLE_OPTIONS, tokens.borderStyle)"
-                          :key="`border-style-selected-${s.id}`"
-                          type="button"
-                          class="dp-chip dp-chip--active"
-                          @click="set('borderStyle', s.id as 'none' | 'solid' | 'dashed')"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
-                      <div class="dp-chip-picker-title" style="margin-top: 8px">Доступно</div>
-                      <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
-                        <button
-                          v-for="s in availableDesignOptions(BORDER_STYLE_OPTIONS, tokens.borderStyle)"
-                          :key="`border-style-available-${s.id}`"
+                          v-for="s in BORDER_STYLE_OPTIONS"
+                          :key="`border-style-${s.id}`"
                           type="button"
                           class="dp-chip"
+                          :class="{ 'dp-chip--active': String(tokens.borderStyle) === String(s.id) }"
                           @click="set('borderStyle', s.id as 'none' | 'solid' | 'dashed')"
-                        >#{{ s.label }}</button>
-                      </TransitionGroup>
+                        >{{ s.label }}</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -973,26 +893,16 @@
                 <div class="dp-col">
                   <div class="dp-col-label">Ratio: <strong>{{ currentScaleLabel }}</strong></div>
                   <div class="dp-chip-picker" style="margin-top:8px">
-                    <div class="dp-chip-picker-title">Выбрано</div>
-                    <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
+                    <div class="dp-chip-pool">
                       <button
-                        v-for="s in selectedScaleOptions"
-                        :key="`type-scale-selected-${s.ratio}`"
-                        type="button"
-                        class="dp-chip dp-chip--active"
-                        @click="set('typeScale', s.ratio)"
-                      >#{{ s.label }}</button>
-                    </TransitionGroup>
-                    <div class="dp-chip-picker-title" style="margin-top: 8px">Доступно</div>
-                    <TransitionGroup name="dp-chip-shift" tag="div" class="dp-chip-pool">
-                      <button
-                        v-for="s in availableScaleOptions"
-                        :key="`type-scale-available-${s.ratio}`"
+                        v-for="s in TYPE_SCALE_OPTIONS"
+                        :key="`type-scale-${s.ratio}`"
                         type="button"
                         class="dp-chip"
+                        :class="{ 'dp-chip--active': Math.abs(tokens.typeScale - s.ratio) < 0.005 }"
                         @click="set('typeScale', s.ratio)"
-                      >#{{ s.label }}</button>
-                    </TransitionGroup>
+                      >{{ s.label }}</button>
+                    </div>
                   </div>
                 </div>
                 <div class="dp-col dp-col--wide">
