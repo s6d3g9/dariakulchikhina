@@ -28,6 +28,8 @@ export default defineNuxtConfig({
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,
     sessionSecret: process.env.NUXT_SESSION_SECRET,
+    // AI: Gemma 3 27B через Ollama (можно переопределить через GEMMA_URL в .env)
+    gemmaUrl: process.env.GEMMA_URL || 'http://localhost:11434',
     // Public
     public: {
       appName: 'Daria Kulchikhina',

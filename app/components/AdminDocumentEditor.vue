@@ -128,6 +128,16 @@
           <button class="de-tbtn" @click="printDocument">🖨 PDF</button>
           <button class="de-tbtn" @click="downloadTxt">⬇ .txt</button>
           <button class="de-tbtn" @click="copyToClipboard">📋 копировать</button>
+          <span class="de-ai-sep">|</span>
+          <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'generate' }" @click="onAiGenerate">
+            {{ aiAction === 'generate' ? '⏳ генерация...' : '🤖 сгенерировать' }}
+          </button>
+          <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'improve' }" @click="onAiImprove">
+            {{ aiAction === 'improve' ? '⏳ улучшение...' : '✨ улучшить' }}
+          </button>
+          <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'review' }" @click="onAiReview">
+            {{ aiAction === 'review' ? '⏳ анализ...' : '📋 проверить' }}
+          </button>
         </div>
         <div v-if="copyMsg" class="de-copy-msg">{{ copyMsg }}</div>
       </div>
@@ -140,6 +150,25 @@
           @input="onEditorInput"
         ></div>
       </div>
+      <!-- AI: панель замечаний (review) -->
+      <Transition name="de-slide">
+        <div v-if="aiReviewNotes.length" class="de-ai-review glass-card">
+          <div class="de-ai-review-head">
+            <span class="de-ai-review-title">📋 Gemma 27B — анализ документа</span>
+            <button class="de-tbtn" @click="clearReview">✕</button>
+          </div>
+          <div v-for="(note, i) in aiReviewNotes" :key="i" class="de-ai-note" :class="'de-ai-note--' + note.type">
+            <span class="de-ai-note-icon">{{ note.type === 'error' ? '⚠️' : '💡' }}</span>
+            <span class="de-ai-note-text">{{ note.text }}</span>
+          </div>
+        </div>
+      </Transition>
+
+      <!-- AI: ошибка -->
+      <Transition name="de-toast">
+        <div v-if="aiError" class="de-toast de-toast--err">✗ {{ aiError }}</div>
+      </Transition>
+
       <div class="de-actions">
         <button class="a-btn-sm" @click="step = 1">← поля</button>
         <button class="a-btn-sm" @click="printDocument">🖨 PDF</button>
@@ -633,6 +662,49 @@ async function copyToClipboard() {
   }
 }
 
+// ── AI (Gemma 3 27B) ──────────────────────────────────────────────────────
+const { aiLoading, aiError, aiAction, aiReviewNotes, callAiDocument, clearReview } = useAiDocument()
+
+function buildAiPayload() {
+  return {
+    templateKey:    selectedTpl.value?.key     || '',
+    templateName:   selectedTpl.value?.name    || '',
+    templateText:   selectedTpl.value?.template || '',
+    fields:         { ...fieldValues.value },
+    currentText:    editorContent.value        || generateText(),
+    projectSlug:    pickedProjectSlug.value    || '',
+    clientId:       pickedClientId.value       || 0,
+    contractorId:   pickedContractorId.value   || 0,
+  }
+}
+
+async function onAiGenerate() {
+  if (!selectedTpl.value) return
+  clearReview()
+  const res = await callAiDocument('generate', buildAiPayload())
+  if (res?.text) {
+    editorContent.value = res.text
+    nextTick(() => { if (editorEl.value) editorEl.value.innerText = res.text! })
+  }
+}
+
+async function onAiImprove() {
+  if (!selectedTpl.value) return
+  clearReview()
+  const res = await callAiDocument('improve', buildAiPayload())
+  if (res?.text) {
+    editorContent.value = res.text
+    nextTick(() => { if (editorEl.value) editorEl.value.innerText = res.text! })
+  }
+}
+
+async function onAiReview() {
+  if (!selectedTpl.value) return
+  const res = await callAiDocument('review', buildAiPayload())
+  if (res?.notes) aiReviewNotes.value = res.notes
+}
+
+// ── Сохранение ────────────────────────────────────────────────────────────
 async function saveDocument() {
   if (!selectedTpl.value) return
   saving.value = true
@@ -814,6 +886,55 @@ async function saveDocument() {
 }
 .de-tbtn:hover { opacity: .8; background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
 .de-copy-msg { font-size: var(--ds-text-xs, .7rem); color: var(--ds-accent, #6366f1); }
+
+/* ── AI кнопки ── */
+.de-ai-sep {
+  color: var(--glass-text); opacity: .15; margin: 0 4px; font-size: .8rem; user-select: none;
+}
+.de-tbtn--ai {
+  color: color-mix(in srgb, var(--ds-accent, #6366f1) 80%, var(--glass-text));
+  opacity: .55;
+}
+.de-tbtn--ai:hover:not(:disabled) { opacity: 1; }
+.de-tbtn--ai-active {
+  opacity: 1 !important;
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 12%, transparent) !important;
+  animation: de-ai-pulse 1.2s ease-in-out infinite;
+}
+.de-tbtn--ai:disabled { cursor: not-allowed; opacity: .25; }
+@keyframes de-ai-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+
+/* ── AI панель замечаний ── */
+.de-ai-review {
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent, #6366f1) 20%, transparent);
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 4%, transparent) !important;
+}
+.de-ai-review-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.de-ai-review-title {
+  font-size: var(--ds-text-xs, .72rem); font-weight: 600;
+  color: var(--ds-accent, #6366f1); text-transform: uppercase; letter-spacing: .05em;
+}
+.de-ai-note {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 5px 0;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent);
+  font-size: var(--ds-text-xs, .72rem);
+}
+.de-ai-note--error .de-ai-note-text { color: var(--ds-error, #dc2626); }
+.de-ai-note--info  .de-ai-note-text { color: var(--glass-text); opacity: .75; }
+.de-ai-note-icon { flex-shrink: 0; }
+.de-ai-note-text  { line-height: 1.5; }
+
+/* transitions */
+.de-slide-enter-active, .de-slide-leave-active { transition: all .25s ease; }
+.de-slide-enter-from, .de-slide-leave-to { opacity: 0; transform: translateY(-8px); }
 
 .de-editor-wrap {
   padding: 0; overflow: hidden;
