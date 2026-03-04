@@ -25,7 +25,7 @@
           <div v-for="(item, i) in form.pl_items" :key="i" class="apl-item" :class="{ 'apl-item--done': item.status === 'fixed' }">
             <div class="apl-item-head">
               <span class="apl-num">{{ i + 1 }}</span>
-              <input v-model="item.location" class="u-inline-inp" placeholder="помещение / зона..." @blur="save">
+              <input v-model="item.location" class="glass-input glass-input--inline" placeholder="помещение / зона..." @blur="save">
               <select v-model="item.status" class="u-status-sel" @change="save">
                 <option value="open">открыто</option>
                 <option value="in_progress">устраняется</option>
@@ -33,10 +33,10 @@
               </select>
               <button class="apl-del" @click="removeItem(i)">×</button>
             </div>
-            <textarea v-model="item.description" class="u-inline-inp u-inline-inp--ta" rows="2" placeholder="описание дефекта..." @blur="save" />
+            <textarea v-model="item.description" class="glass-input glass-input--inline u-ta" rows="2" placeholder="описание дефекта..." @blur="save" />
             <div class="apl-item-foot">
               <label class="u-field__label">виновная сторона:</label>
-              <input v-model="item.responsible" class="u-inline-inp" placeholder="подрядчик / поставщик..." @blur="save">
+              <input v-model="item.responsible" class="glass-input glass-input--inline" placeholder="подрядчик / поставщик..." @blur="save">
               <label class="u-field__label">срок устранения:</label>
               <AppDatePicker v-model="item.deadline" model-type="iso" input-class="apl-date" @update:model-value="save" />
             </div>

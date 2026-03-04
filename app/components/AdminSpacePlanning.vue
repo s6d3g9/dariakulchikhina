@@ -59,7 +59,7 @@
                   <option value="approved">согласован ✓</option>
                   <option value="revision">доработка ↩</option>
                 </select>
-                <input v-model="file.comment" class="u-inline-inp" placeholder="комментарий..." @blur="save">
+                <input v-model="file.comment" class="glass-input glass-input--inline" placeholder="комментарий..." @blur="save">
               </div>
             </div>
             <button class="asp-file-del" @click="removeFile(Number(idx))" title="удалить">×</button>

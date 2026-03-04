@@ -7,31 +7,31 @@
       <div class="cpp-rows">
         <div class="cpp-row">
           <label class="cpp-lbl">Серия паспорта</label>
-          <input v-model="form.passport_series" class="cpp-inp" type="text" placeholder="45 09" maxlength="5" @blur="save" />
+          <input v-model="form.passport_series" class="glass-input" type="text" placeholder="45 09" maxlength="5" @blur="save" />
         </div>
         <div class="cpp-row">
           <label class="cpp-lbl">Номер паспорта</label>
-          <input v-model="form.passport_number" class="cpp-inp" type="text" placeholder="123456" maxlength="6" @blur="save" />
+          <input v-model="form.passport_number" class="glass-input" type="text" placeholder="123456" maxlength="6" @blur="save" />
         </div>
         <div class="cpp-row cpp-row--full">
           <label class="cpp-lbl">Кем выдан</label>
-          <input v-model="form.passport_issued_by" class="cpp-inp" type="text" placeholder="ГУ МВД России по г. Москве" @blur="save" />
+          <input v-model="form.passport_issued_by" class="glass-input" type="text" placeholder="ГУ МВД России по г. Москве" @blur="save" />
         </div>
         <div class="cpp-row">
           <label class="cpp-lbl">Дата выдачи</label>
-          <input v-model="form.passport_issue_date" class="cpp-inp" type="text" placeholder="01.03.2020" @blur="save" />
+          <input v-model="form.passport_issue_date" class="glass-input" type="text" placeholder="01.03.2020" @blur="save" />
         </div>
         <div class="cpp-row">
           <label class="cpp-lbl">Код подразделения</label>
-          <input v-model="form.passport_department_code" class="cpp-inp" type="text" placeholder="770-001" maxlength="7" @blur="save" />
+          <input v-model="form.passport_department_code" class="glass-input" type="text" placeholder="770-001" maxlength="7" @blur="save" />
         </div>
         <div class="cpp-row cpp-row--full">
           <label class="cpp-lbl">Место рождения</label>
-          <input v-model="form.passport_birth_place" class="cpp-inp" type="text" placeholder="г. Москва" @blur="save" />
+          <input v-model="form.passport_birth_place" class="glass-input" type="text" placeholder="г. Москва" @blur="save" />
         </div>
         <div class="cpp-row cpp-row--full">
           <label class="cpp-lbl">Адрес регистрации (прописка)</label>
-          <input v-model="form.passport_registration_address" class="cpp-inp" type="text" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5" @blur="save" />
+          <input v-model="form.passport_registration_address" class="glass-input" type="text" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5" @blur="save" />
         </div>
       </div>
     </div>
@@ -41,11 +41,11 @@
       <div class="cpp-rows">
         <div class="cpp-row">
           <label class="cpp-lbl">ИНН</label>
-          <input v-model="form.passport_inn" class="cpp-inp" type="text" placeholder="770000000000" maxlength="12" @blur="save" />
+          <input v-model="form.passport_inn" class="glass-input" type="text" placeholder="770000000000" maxlength="12" @blur="save" />
         </div>
         <div class="cpp-row">
           <label class="cpp-lbl">СНИЛС</label>
-          <input v-model="form.passport_snils" class="cpp-inp" type="text" placeholder="000-000-000 00" maxlength="14" @blur="save" />
+          <input v-model="form.passport_snils" class="glass-input" type="text" placeholder="000-000-000 00" maxlength="14" @blur="save" />
         </div>
       </div>
     </div>
@@ -150,21 +150,7 @@ async function save() {
   text-align: right;
   padding-right: 6px;
 }
-.cpp-inp {
-  border: none;
-  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
-  color: var(--glass-text);
-  padding: 8px 10px;
-  border-radius: var(--input-radius, 8px);
-  font-size: .82rem;
-  font-family: inherit;
-  outline: none;
-  transition: background .15s ease;
-}
-.cpp-inp:focus {
-  background: color-mix(in srgb, var(--glass-text) 9%, transparent);
-}
-.cpp-inp::placeholder { opacity: .3; }
+/* Input styles unified → glass-input */
 .cpp-footer {
   display: flex;
   align-items: center;

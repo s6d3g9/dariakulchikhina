@@ -53,7 +53,7 @@
               <option value="in_progress">◑</option>
               <option value="done">●</option>
             </select>
-            <input v-model="t.title" class="u-inline-inp" placeholder="вид работ..." @blur="save">
+            <input v-model="t.title" class="glass-input glass-input--inline" placeholder="вид работ..." @blur="save">
             <AppDatePicker v-model="t.date" model-type="iso" input-class="acp-task-date" @update:model-value="save" />
             <button class="acp-task-del" @click="removeTask(i)">×</button>
           </div>

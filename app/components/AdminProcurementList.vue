@@ -48,7 +48,7 @@
               <tr v-for="(item, idx) in form.proc_items" :key="idx" :class="{ 'apl-row--received': item.status === 'received' }">
                 <td class="apl-td-num">{{ Number(idx) + 1 }}</td>
                 <td>
-                  <select v-model="item.category" class="u-inline-inp" @change="save">
+                  <select v-model="item.category" class="glass-input glass-input--inline" @change="save">
                     <option value="finish">отделка</option>
                     <option value="plumbing">сантехника</option>
                     <option value="electrical">электрика</option>
@@ -60,10 +60,10 @@
                     <option value="other">прочее</option>
                   </select>
                 </td>
-                <td><input v-model="item.name" class="u-inline-inp" @blur="save"></td>
-                <td><input v-model="item.qty" type="number" min="0" class="u-inline-inp u-inline-inp--xs" @blur="save"></td>
-                <td><input v-model="item.supplier" class="u-inline-inp" @blur="save"></td>
-                <td><input v-model="item.price" class="u-inline-inp u-inline-inp--sm" @blur="save"></td>
+                <td><input v-model="item.name" class="glass-input glass-input--inline" @blur="save"></td>
+                <td><input v-model="item.qty" type="number" min="0" class="glass-input glass-input--inline glass-input--xs" @blur="save"></td>
+                <td><input v-model="item.supplier" class="glass-input glass-input--inline" @blur="save"></td>
+                <td><input v-model="item.price" class="glass-input glass-input--inline glass-input--sm" @blur="save"></td>
                 <td>
                   <select v-model="item.status" class="u-status-sel" @change="save">
                     <option value="">—</option>
@@ -76,7 +76,7 @@
                   </select>
                 </td>
                 <td>
-                  <AppDatePicker v-model="item.deadline" model-type="iso" input-class="u-inline-inp u-inline-inp--sm" @update:model-value="save" />
+                  <AppDatePicker v-model="item.deadline" model-type="iso" input-class="glass-input glass-input--inline glass-input--sm" @update:model-value="save" />
                 </td>
                 <td><button class="apl-del" @click="removeItem(Number(idx))">×</button></td>
               </tr>

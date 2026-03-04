@@ -197,7 +197,7 @@
                       <template v-if="inlinePriceKey === svc.serviceKey">
                         <input
                           v-model.number="inlinePriceVal"
-                          class="u-inline-inp"
+                          class="glass-input glass-input--inline"
                           type="number"
                           min="0"
                           @blur="commitInlinePrice(svc)"

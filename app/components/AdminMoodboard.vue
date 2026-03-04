@@ -56,13 +56,13 @@
             <div class="amb-img-wrap">
               <img :src="img.url" :alt="img.label" class="amb-img" loading="lazy">
               <div class="amb-img-actions">
-                <select v-model="img.category" class="u-inline-inp" @change="save">
+                <select v-model="img.category" class="glass-input glass-input--inline" @change="save">
                   <option v-for="c in IMAGE_CATS" :key="c.key" :value="c.key">{{ c.label }}</option>
                 </select>
                 <button class="amb-img-del" @click="removeImage(img)" title="удалить">×</button>
               </div>
             </div>
-            <input v-model="img.comment" class="u-inline-inp" placeholder="комментарий к фото..." @blur="save">
+            <input v-model="img.comment" class="glass-input glass-input--inline" placeholder="комментарий к фото..." @blur="save">
           </div>
         </div>
         <div v-else class="amb-gallery-empty">

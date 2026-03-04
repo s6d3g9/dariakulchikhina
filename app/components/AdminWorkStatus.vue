@@ -25,11 +25,11 @@
         <div class="ws-row">
           <div class="ws-field ws-field--wide">
             <label class="ws-lbl">задача</label>
-            <input v-model="item.title" class="ws-inp" placeholder="название задачи" />
+            <input v-model="item.title" class="glass-input" placeholder="название задачи" />
           </div>
           <div class="ws-field ws-field--sm">
             <label class="ws-lbl">статус</label>
-            <select v-model="item.status" class="ws-inp ws-select">
+            <select v-model="item.status" class="glass-input">
               <option value="pending">ожидание</option>
               <option value="planned">запланировано</option>
               <option value="in_progress">в работе</option>
@@ -58,7 +58,7 @@
         <div class="ws-row">
           <div class="ws-field">
             <label class="ws-lbl">вид работ</label>
-            <select v-model="item.workType" class="ws-inp ws-select">
+            <select v-model="item.workType" class="glass-input">
               <option :value="null">— не указан —</option>
               <option v-for="w in WORK_TYPE_OPTIONS" :key="w.value" :value="w.value">{{ w.label }}</option>
             </select>
@@ -68,19 +68,19 @@
         <div class="ws-row">
           <div class="ws-field">
             <label class="ws-lbl">начало</label>
-            <AppDatePicker v-model="item.dateStart" input-class="ws-inp" />
+            <AppDatePicker v-model="item.dateStart" input-class="glass-input" />
           </div>
           <div class="ws-field">
             <label class="ws-lbl">конец</label>
-            <AppDatePicker v-model="item.dateEnd" input-class="ws-inp" />
+            <AppDatePicker v-model="item.dateEnd" input-class="glass-input" />
           </div>
           <div class="ws-field">
             <label class="ws-lbl">бюджет</label>
-            <input v-model="item.budget" class="ws-inp" placeholder="0 руб." />
+            <input v-model="item.budget" class="glass-input" placeholder="0 руб." />
           </div>
           <div class="ws-field">
             <label class="ws-lbl">подрядчик</label>
-            <select v-model="item.contractorId" class="ws-inp ws-select">
+            <select v-model="item.contractorId" class="glass-input">
               <option :value="null">—</option>
               <option v-for="c in contractors" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
@@ -90,7 +90,7 @@
         <div class="ws-row">
           <div class="ws-field ws-field--full">
             <label class="ws-lbl">примечание</label>
-            <textarea v-model="item.notes" class="ws-inp ws-ta" rows="2" placeholder="комментарий к задаче"></textarea>
+            <textarea v-model="item.notes" class="glass-input u-ta" rows="2" placeholder="комментарий к задаче"></textarea>
           </div>
         </div>
         <div class="ws-del-row">
@@ -145,7 +145,7 @@
             <div class="ws-comment-form">
               <textarea
                 v-model="newComment"
-                class="ws-inp ws-comment-input"
+                class="glass-input u-ta"
                 rows="2"
                 placeholder="Напишите сообщение подрядчику… (Ctrl+Enter — отправить)"
                 @keydown.ctrl.enter.prevent="postComment"
@@ -383,19 +383,7 @@ function fmtTime(isoStr: string): string {
 .ws-field--auto { flex: 0 0 auto; min-width: unset; }
 
 .ws-lbl { font-size: .68rem; color: color-mix(in srgb, var(--glass-text) 50%, transparent); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
-.ws-inp {
-  border: none; border-radius: 8px;
-  background: color-mix(in srgb, var(--glass-bg, #fff) 90%, transparent);
-  padding: 6px 8px; font-size: .86rem; font-family: inherit;
-  color: inherit; outline: none;
-}
-.ws-inp:focus { opacity: .92; }
-.ws-select {
-  cursor: pointer; -webkit-appearance: none; appearance: none; padding-right: 22px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 6px center;
-}
-.ws-ta { resize: vertical; line-height: 1.5; }
+/* Input styles unified → glass-input */
 .ws-del-row { text-align: right; margin-top: 8px; }
 .ws-del { background: none; border: none; font-size: .76rem; color: var(--ds-error, #c00); cursor: pointer; font-family: inherit; }
 .ws-del:hover { text-decoration: underline; }

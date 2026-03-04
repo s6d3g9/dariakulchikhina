@@ -51,7 +51,7 @@
 
             <!-- Info -->
             <div class="aca-render-info">
-              <input v-model="r.room" class="u-inline-inp" placeholder="помещение (кухня, спальня...)" @blur="save">
+              <input v-model="r.room" class="glass-input glass-input--inline" placeholder="помещение (кухня, спальня...)" @blur="save">
               <div class="aca-render-actions">
                 <select v-model="r.approval" class="u-status-sel" @change="save">
                   <option value="">рассматривается</option>
@@ -62,7 +62,7 @@
                 <span v-if="r.approval === 'approved'" class="aca-approval-badge aca-approval-badge--ok">✓</span>
                 <span v-else-if="r.approval === 'revision'" class="aca-approval-badge aca-approval-badge--rev">↩</span>
               </div>
-              <input v-model="r.comment" class="u-inline-inp" placeholder="комментарий..." @blur="save">
+              <input v-model="r.comment" class="glass-input glass-input--inline" placeholder="комментарий..." @blur="save">
             </div>
           </div>
         </div>

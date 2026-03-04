@@ -32,10 +32,10 @@
             </div>
           </div>
           <div class="asp2-meta">
-            <input v-model="ph.caption" class="u-inline-inp" placeholder="подпись..." @blur="save">
+            <input v-model="ph.caption" class="glass-input glass-input--inline" placeholder="подпись..." @blur="save">
             <div class="asp2-tags-row">
               <span v-for="t in ph.tags" :key="t" class="asp2-ph-tag">{{ t }}<button @click="removePhotoTag(ph, t)">×</button></span>
-              <input v-model="ph._newTag" class="u-inline-inp" placeholder="тег..." @keydown.enter.prevent="addPhotoTag(ph)">
+              <input v-model="ph._newTag" class="glass-input glass-input--inline" placeholder="тег..." @keydown.enter.prevent="addPhotoTag(ph)">
             </div>
           </div>
         </div>

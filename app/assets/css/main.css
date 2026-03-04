@@ -354,6 +354,26 @@ html.dark .glass-card {
   border-color: color-mix(in srgb, var(--glass-border) 75%, var(--glass-text) 25%);
 }
 
+/* ── glass-input size / context modifiers ────────────────── */
+/* Inline: transparent, bottom-border only (table cells, compact rows) */
+.glass-input--inline {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 15%, transparent);
+  border-radius: 0;
+  padding: 3px 4px;
+  font-size: .82rem;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.glass-input--inline:focus { border-bottom-color: var(--glass-text, currentColor); }
+
+/* Width constraints */
+.glass-input--xs  { max-width: 56px; }
+.glass-input--sm  { max-width: 100px; }
+.glass-input--md  { max-width: 200px; }
+.glass-input--full { width: 100%; }
+
 html.dark .glass-chip {
   /* token-based: var(--chip-bg) and var(--chip-border-color) handle dark mode automatically */
   border-color: var(--chip-border-color, rgba(255, 255, 255, 0.12));
@@ -1712,28 +1732,11 @@ html.dark .glass-input::placeholder {
 .u-status-sel:focus { border-color: color-mix(in srgb, var(--glass-text) 45%, transparent); }
 .u-status-sel:hover { border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
 
-/* ── u-inline-inp ────────────────────────────────────────────
-   Transparent inline input for table cells / compact rows.
-   Replaces: aspec-cell-inp, apl-cell input variants, etc.
-──────────────────────────────────────────────────────────── */
-.u-inline-inp {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 15%, transparent);
-  border-radius: 0;
-  padding: 3px 4px;
-  font-size: .82rem;
-  font-family: inherit;
-  color: var(--glass-text, inherit);
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border-color .15s;
-}
-.u-inline-inp:focus { border-bottom-color: var(--glass-text, currentColor); }
+/* ── u-inline-inp (DEPRECATED → use glass-input glass-input--inline) ── */
+.u-inline-inp { /* alias */ }
 .u-inline-inp--xs { max-width: 56px; }
 .u-inline-inp--sm { max-width: 100px; }
-.u-inline-inp--ta { resize: vertical; min-height: 32px; border: 1px solid color-mix(in srgb, var(--glass-text) 15%, transparent); border-radius: 3px; padding: 4px 6px; }
+.u-inline-inp--ta { resize: vertical; min-height: 32px; }
 .u-inline-inp--ta:focus { border-color: var(--glass-text, currentColor); }
 
 /* ── u-field ─────────────────────────────────────────────────

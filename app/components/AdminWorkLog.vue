@@ -22,7 +22,7 @@
             <span class="awl-type-badge" :class="`awl-tb--${e.type || 'note'}`">{{ typeLabel(e.type) }}</span>
             <button class="awl-del" @click="removeEntry(i)">×</button>
           </div>
-          <textarea v-model="e.text" class="u-inline-inp u-inline-inp--ta" rows="2" placeholder="описание..." @blur="save" />
+          <textarea v-model="e.text" class="glass-input glass-input--inline u-ta" rows="2" placeholder="описание..." @blur="save" />
           <div class="awl-photos-row" v-if="e.photos?.length">
             <a v-for="(ph, pi) in e.photos" :key="pi" :href="ph" target="_blank" class="awl-photo-thumb">
               <img :src="ph" alt="">

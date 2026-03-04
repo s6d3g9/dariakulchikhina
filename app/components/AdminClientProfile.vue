@@ -6,7 +6,7 @@
         <div class="acp-section-title" style="margin-top:0">выбор клиента</div>
         <div class="acp-row">
           <label class="acp-lbl">клиент из CRM:</label>
-          <select v-model="selectedClientId" class="acp-inp acp-select">
+          <select v-model="selectedClientId" class="glass-input">
             <option value="">— выберите клиента —</option>
             <option v-for="c in clients" :key="c.id" :value="String(c.id)">
               {{ c.name }}
@@ -26,7 +26,7 @@
         <!-- photo upload -->
         <div class="acp-upload-row" style="margin-bottom:20px">
           <label class="acp-lbl" style="width:140px">фото клиента:</label>
-          <input v-model="form.photo" class="acp-inp" type="text" placeholder="имя файла">
+          <input v-model="form.photo" class="glass-input" type="text" placeholder="имя файла">
           <label class="acp-btn-upload">
             загрузить
             <input type="file" accept="image/*" style="display:none" @change="uploadPhoto">
@@ -39,17 +39,17 @@
 
         <div v-for="field in personalFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
-          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="acp-inp acp-ta" rows="2" />
+          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="glass-input u-ta" rows="2" />
           <AppDatePicker
             v-else-if="field.date"
             v-model="(form as any)[field.key]"
-            input-class="acp-inp"
+            input-class="glass-input"
           />
-          <select v-else-if="field.options" v-model="(form as any)[field.key]" class="acp-inp acp-select">
+          <select v-else-if="field.options" v-model="(form as any)[field.key]" class="glass-input">
             <option value="">—</option>
             <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
           </select>
-          <input v-else v-model="(form as any)[field.key]" class="acp-inp" type="text">
+          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
         </div>
 
         <!-- section: contacts -->
@@ -57,9 +57,9 @@
 
         <div v-for="field in contactFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
-          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="acp-inp acp-ta" rows="2" />
-          <AppAddressInput v-else-if="field.address" v-model="(form as any)[field.key]" input-class="acp-inp" @blur="save" />
-          <input v-else v-model="(form as any)[field.key]" class="acp-inp" type="text">
+          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="glass-input u-ta" rows="2" />
+          <AppAddressInput v-else-if="field.address" v-model="(form as any)[field.key]" input-class="glass-input" @blur="save" />
+          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
         </div>
 
         <!-- section: object -->
@@ -67,13 +67,13 @@
 
         <div v-for="field in objectFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
-          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="acp-inp acp-ta" rows="2" />
-          <select v-else-if="field.options" v-model="(form as any)[field.key]" class="acp-inp acp-select">
+          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="glass-input u-ta" rows="2" />
+          <select v-else-if="field.options" v-model="(form as any)[field.key]" class="glass-input">
             <option value="">—</option>
             <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
           </select>
-          <AppAddressInput v-else-if="field.address" v-model="(form as any)[field.key]" input-class="acp-inp" @blur="save" />
-          <input v-else v-model="(form as any)[field.key]" class="acp-inp" type="text">
+          <AppAddressInput v-else-if="field.address" v-model="(form as any)[field.key]" input-class="glass-input" @blur="save" />
+          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
         </div>
 
         <!-- section: project -->
@@ -81,17 +81,17 @@
 
         <div v-for="field in projectFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
-          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="acp-inp acp-ta" rows="2" />
+          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="glass-input u-ta" rows="2" />
           <AppDatePicker
             v-else-if="field.date"
             v-model="(form as any)[field.key]"
-            input-class="acp-inp"
+            input-class="glass-input"
           />
-          <select v-else-if="field.options" v-model="(form as any)[field.key]" class="acp-inp acp-select">
+          <select v-else-if="field.options" v-model="(form as any)[field.key]" class="glass-input">
             <option value="">—</option>
             <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
           </select>
-          <input v-else v-model="(form as any)[field.key]" class="acp-inp" type="text">
+          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
         </div>
 
         <!-- section: lifestyle -->
@@ -99,8 +99,8 @@
 
         <div v-for="field in lifestyleFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
-          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="acp-inp acp-ta" rows="2" />
-          <input v-else v-model="(form as any)[field.key]" class="acp-inp" type="text">
+          <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="glass-input u-ta" rows="2" />
+          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
         </div>
 
         <!-- section: passport -->
@@ -111,7 +111,7 @@
 
         <div v-for="field in passportFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
-          <input v-model="(form as any)[field.key]" class="acp-inp" type="text">
+          <input v-model="(form as any)[field.key]" class="glass-input" type="text">
         </div>
 
         <!-- section: project params catalog -->
@@ -119,7 +119,7 @@
 
         <div v-for="field in catalogSelectFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
-          <select v-model="(form as any)[field.key]" class="acp-inp acp-select">
+          <select v-model="(form as any)[field.key]" class="glass-input">
             <option value="">—</option>
             <option v-for="opt in field.opts" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
@@ -370,17 +370,8 @@ async function save() {
 .acp-row :deep(.aai-wrap) { flex: 1; min-width: 0; }
 .acp-row :deep(.aai-wrap input) {
   flex: 1;
-  border: none;
-  border-bottom: 1px solid var(--acp-inp-border);
-  padding: 6px 0;
-  font-size: .88rem;
-  outline: none;
-  font-family: inherit;
-  background: transparent;
-  color: var(--acp-inp-color);
   width: 100%;
 }
-.acp-row :deep(.aai-wrap input:focus) { border-bottom-color: var(--acp-inp-focus); }
 
 .acp-card {
   --acp-bg: var(--glass-page-bg, #fff);
@@ -431,36 +422,7 @@ async function save() {
   flex-shrink: 0;
   padding-top: 6px;
 }
-.acp-inp {
-  flex: 1;
-  border: none;
-  border-bottom: 1px solid var(--acp-inp-border);
-  padding: 6px 0;
-  font-size: .88rem;
-  outline: none;
-  font-family: inherit;
-  background: transparent;
-  color: var(--acp-inp-color);
-}
-.acp-inp:focus { border-bottom-color: var(--acp-inp-focus); }
-.acp-select {
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-  border-radius: var(--input-radius, 6px);
-  padding-right: 20px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0 center;
-}
-.acp-ta {
-  resize: vertical;
-  border: 1px solid var(--acp-ta-border);
-  padding: 6px 8px;
-  border-radius: var(--input-radius, 6px);
-  line-height: 1.5;
-  color: var(--acp-inp-color);
-}
+/* Input styles unified → glass-input */
 .acp-upload-row {
   display: flex;
   align-items: center;

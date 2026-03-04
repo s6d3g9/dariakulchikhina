@@ -130,16 +130,26 @@
           <button class="de-tbtn" @click="copyToClipboard">📋 копировать</button>
           <span class="de-ai-sep">|</span>
           <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'generate' }" @click="onAiGenerate">
-            {{ aiAction === 'generate' ? '⏳ генерация...' : '🤖 сгенерировать' }}
+            🤖 сгенерировать
           </button>
           <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'improve' }" @click="onAiImprove">
-            {{ aiAction === 'improve' ? '⏳ улучшение...' : '✨ улучшить' }}
+            ✨ улучшить
           </button>
           <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'review' }" @click="onAiReview">
-            {{ aiAction === 'review' ? '⏳ анализ...' : '📋 проверить' }}
+            📋 проверить
+          </button>
+          <button v-if="aiLoading" class="de-tbtn de-tbtn--abort" @click="abortAi">
+            ✕ стоп
           </button>
         </div>
-        <div v-if="copyMsg" class="de-copy-msg">{{ copyMsg }}</div>
+        <div v-if="aiProgress" class="de-ai-progress">
+          <span class="de-ai-dot"></span> {{ aiProgress }}
+        </div>
+        <div v-else-if="copyMsg" class="de-copy-msg">{{ copyMsg }}</div>
+      </div>
+      <!-- AI: прогресс-бар -->
+      <div v-if="aiLoading" class="de-ai-bar">
+        <div class="de-ai-bar-fill"></div>
       </div>
       <div class="de-editor-wrap glass-card">
         <div
@@ -663,45 +673,58 @@ async function copyToClipboard() {
 }
 
 // ── AI (Gemma 3 27B) ──────────────────────────────────────────────────────
-const { aiLoading, aiError, aiAction, aiReviewNotes, callAiDocument, clearReview } = useAiDocument()
+const { aiLoading, aiError, aiAction, aiProgress, aiReviewNotes, streamDocument, reviewDocument, abortAi, clearReview } = useAiDocument()
 
 function buildAiPayload() {
   return {
-    templateKey:    selectedTpl.value?.key     || '',
-    templateName:   selectedTpl.value?.name    || '',
+    templateKey:    selectedTpl.value?.key      || '',
+    templateName:   selectedTpl.value?.name     || '',
     templateText:   selectedTpl.value?.template || '',
     fields:         { ...fieldValues.value },
-    currentText:    editorContent.value        || generateText(),
-    projectSlug:    pickedProjectSlug.value    || '',
-    clientId:       pickedClientId.value       || 0,
-    contractorId:   pickedContractorId.value   || 0,
+    currentText:    editorContent.value         || generateText(),
+    projectSlug:    pickedProjectSlug.value     || '',
+    clientId:       pickedClientId.value        || 0,
+    contractorId:   pickedContractorId.value    || 0,
   }
 }
 
 async function onAiGenerate() {
   if (!selectedTpl.value) return
   clearReview()
-  const res = await callAiDocument('generate', buildAiPayload())
-  if (res?.text) {
-    editorContent.value = res.text
-    nextTick(() => { if (editorEl.value) editorEl.value.innerText = res.text! })
-  }
+  editorContent.value = ''
+  if (editorEl.value) editorEl.value.innerText = ''
+  await streamDocument('generate', buildAiPayload(), (token) => {
+    editorContent.value += token
+    if (editorEl.value) {
+      editorEl.value.innerText = editorContent.value
+      editorEl.value.scrollTop = editorEl.value.scrollHeight
+    }
+  })
 }
 
 async function onAiImprove() {
   if (!selectedTpl.value) return
   clearReview()
-  const res = await callAiDocument('improve', buildAiPayload())
-  if (res?.text) {
-    editorContent.value = res.text
-    nextTick(() => { if (editorEl.value) editorEl.value.innerText = res.text! })
+  const originalText = editorContent.value || generateText()
+  editorContent.value = ''
+  if (editorEl.value) editorEl.value.innerText = ''
+  const ok = await streamDocument('improve', { ...buildAiPayload(), currentText: originalText }, (token) => {
+    editorContent.value += token
+    if (editorEl.value) {
+      editorEl.value.innerText = editorContent.value
+      editorEl.value.scrollTop = editorEl.value.scrollHeight
+    }
+  })
+  if (!ok && !editorContent.value) {
+    editorContent.value = originalText
+    if (editorEl.value) editorEl.value.innerText = originalText
   }
 }
 
 async function onAiReview() {
   if (!selectedTpl.value) return
-  const res = await callAiDocument('review', buildAiPayload())
-  if (res?.notes) aiReviewNotes.value = res.notes
+  const notes = await reviewDocument(buildAiPayload())
+  if (notes) aiReviewNotes.value = notes
 }
 
 // ── Сохранение ────────────────────────────────────────────────────────────
@@ -905,6 +928,55 @@ async function saveDocument() {
 @keyframes de-ai-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: .5; }
+}
+
+/* ── AI кнопка стоп ── */
+.de-tbtn--abort {
+  color: #f87171;
+  opacity: .85;
+  border: 1px solid rgba(248,113,113,.3);
+}
+.de-tbtn--abort:hover { opacity: 1; background: rgba(248,113,113,.12) !important; }
+
+/* ── AI строка прогресса ── */
+.de-ai-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .75rem;
+  color: color-mix(in srgb, var(--ds-accent, #6366f1) 60%, var(--glass-text));
+  opacity: .8;
+  padding: 2px 4px 0;
+}
+.de-ai-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ds-accent, #6366f1);
+  animation: de-dot-pulse 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes de-dot-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: .5; }
+}
+
+/* ── AI загрузочная полоса ── */
+.de-ai-bar {
+  height: 2px;
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 15%, transparent);
+  overflow: hidden;
+  border-radius: 1px;
+}
+.de-ai-bar-fill {
+  height: 100%;
+  width: 40%;
+  background: var(--ds-accent, #6366f1);
+  border-radius: 1px;
+  animation: de-bar-slide 1.4s ease-in-out infinite;
+}
+@keyframes de-bar-slide {
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(350%); }
 }
 
 /* ── AI панель замечаний ── */

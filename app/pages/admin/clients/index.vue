@@ -117,11 +117,11 @@
       <div class="cl-modal glass-surface glass-card">
         <div class="cl-modal-head"><span>{{ editingId ? 'редактировать клиента' : 'новый клиент' }}</span><button class="cl-close" @click="closeModal">✕</button></div>
         <form class="cl-form" @submit.prevent="save">
-          <div class="cl-field"><label>Имя / Название *</label><input v-model="form.name" class="cl-input glass-input" required placeholder="Иванова Анна Сергеевна" autofocus></div>
-          <div class="cl-row"><div class="cl-field"><label>Телефон</label><input v-model="form.phone" class="cl-input glass-input" placeholder="+7 999 000 00 00"></div><div class="cl-field"><label>Email</label><input v-model="form.email" class="cl-input glass-input" type="email" placeholder="client@mail.ru"></div></div>
-          <div class="cl-row"><div class="cl-field"><label>Мессенджер</label><select v-model="form.messenger" class="cl-input glass-input cl-select"><option value="">— не указан</option><option value="Telegram">Telegram</option><option value="WhatsApp">WhatsApp</option><option value="Viber">Viber</option></select></div><div class="cl-field"><label>Ник / номер</label><input v-model="form.messengerNick" class="cl-input glass-input" placeholder="@username"></div></div>
-          <div class="cl-field"><label>Адрес</label><AppAddressInput v-model="form.address" input-class="cl-input glass-input" placeholder="г. Москва, ул. ..." /></div>
-          <div class="cl-field"><label>Заметки</label><textarea v-model="form.notes" class="cl-input cl-ta glass-input" rows="3" placeholder="Любые пометки"></textarea></div>
+          <div class="cl-field"><label>Имя / Название *</label><input v-model="form.name" class="glass-input" required placeholder="Иванова Анна Сергеевна" autofocus></div>
+          <div class="cl-row"><div class="cl-field"><label>Телефон</label><input v-model="form.phone" class="glass-input" placeholder="+7 999 000 00 00"></div><div class="cl-field"><label>Email</label><input v-model="form.email" class="glass-input" type="email" placeholder="client@mail.ru"></div></div>
+          <div class="cl-row"><div class="cl-field"><label>Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">— не указан</option><option value="Telegram">Telegram</option><option value="WhatsApp">WhatsApp</option><option value="Viber">Viber</option></select></div><div class="cl-field"><label>Ник / номер</label><input v-model="form.messengerNick" class="glass-input" placeholder="@username"></div></div>
+          <div class="cl-field"><label>Адрес</label><AppAddressInput v-model="form.address" input-class="glass-input" placeholder="г. Москва, ул. ..." /></div>
+          <div class="cl-field"><label>Заметки</label><textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="Любые пометки"></textarea></div>
           <p v-if="saveError" class="cl-error">{{ saveError }}</p>
           <div class="cl-modal-foot"><button type="button" class="a-btn-sm" @click="closeModal">отмена</button><button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : (editingId ? 'сохранить' : 'добавить') }}</button></div>
         </form>
@@ -135,7 +135,7 @@
       <div class="cl-modal glass-surface glass-card">
         <div class="cl-modal-head"><span>привязать «{{ linkClient?.name }}» к проекту</span><button class="cl-close" @click="showLink = false">✕</button></div>
         <div class="cl-form">
-          <div class="cl-field"><label>Выберите проект</label><select v-model="linkProjectSlug" class="cl-input glass-input cl-select"><option value="">— выберите проект —</option><option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option></select></div>
+          <div class="cl-field"><label>Выберите проект</label><select v-model="linkProjectSlug" class="glass-input"><option value="">— выберите проект —</option><option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option></select></div>
           <div v-if="linkProjectSlug" class="cl-link-preview glass-surface"><p class="cl-link-preview-title">Будет заполнено в профиле проекта:</p><ul class="cl-link-list"><li><b>Имя клиента</b> → {{ linkClient?.name }}</li><li v-if="linkClient?.phone"><b>Телефон</b> → {{ linkClient?.phone }}</li><li v-if="linkClient?.email"><b>Email</b> → {{ linkClient?.email }}</li></ul></div>
           <p v-if="linkError" class="cl-error">{{ linkError }}</p>
           <div class="cl-modal-foot"><button type="button" class="a-btn-sm" @click="showLink = false">отмена</button><button class="a-btn-save" :disabled="!linkProjectSlug || linking" @click="doLink">{{ linking ? '...' : 'привязать' }}</button></div>
@@ -150,9 +150,9 @@
       <div class="cl-modal glass-surface glass-card" style="max-width:600px">
         <div class="cl-modal-head"><span>документы «{{ docsClient?.name }}»</span><button class="cl-close" @click="closeDocs">✕</button></div>
         <div class="cl-form">
-          <div class="cl-row"><div class="cl-field"><label>Поиск</label><input v-model="docsSearch" class="cl-input glass-input" placeholder="Название" /></div><div class="cl-field"><label>Категория</label><select v-model="docsFilter" class="cl-input glass-input cl-select"><option value="">Все</option><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
-          <div class="cl-row"><div class="cl-field"><label>Название</label><input v-model="docsTitle" class="cl-input glass-input" placeholder="Название документа" /></div><div class="cl-field"><label>Категория</label><select v-model="docsCategory" class="cl-input glass-input cl-select"><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
-          <div class="cl-field"><label>Примечание</label><input v-model="docsNotes" class="cl-input glass-input" placeholder="Необязательно" /></div>
+          <div class="cl-row"><div class="cl-field"><label>Поиск</label><input v-model="docsSearch" class="glass-input" placeholder="Название" /></div><div class="cl-field"><label>Категория</label><select v-model="docsFilter" class="glass-input"><option value="">Все</option><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
+          <div class="cl-row"><div class="cl-field"><label>Название</label><input v-model="docsTitle" class="glass-input" placeholder="Название документа" /></div><div class="cl-field"><label>Категория</label><select v-model="docsCategory" class="glass-input"><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
+          <div class="cl-field"><label>Примечание</label><input v-model="docsNotes" class="glass-input" placeholder="Необязательно" /></div>
           <div style="margin-bottom:14px"><label class="a-btn-save" style="display:inline-flex;align-items:center;cursor:pointer"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadClientDoc" />{{ docsUploading ? 'загрузка…' : '＋ выбрать файл' }}</label></div>
           <div v-if="filteredClientDocs.length" class="cl-docs-list">
             <div v-for="doc in filteredClientDocs" :key="doc.id" class="cl-doc-item glass-surface">
@@ -326,9 +326,7 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .cl-field { display: flex; flex-direction: column; gap: 5px; }
 .cl-field label { font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; color: var(--glass-text); opacity: .45; }
-.cl-input { padding: 8px 12px; border-radius: 8px; font-size: .88rem; font-family: inherit; width: 100%; box-sizing: border-box; }
-.cl-ta { resize: vertical; min-height: 72px; }
-.cl-select { cursor: pointer; }
+/* Input styles unified → glass-input */
 .cl-error { font-size: .78rem; color: var(--ds-error, #dc2626); margin: 0; padding: 7px 12px; background: color-mix(in srgb, var(--ds-error, #dc2626) 8%, transparent); border-radius: 6px; }
 .cl-link-preview { padding: 12px 14px; border-radius: 10px; font-size: .8rem; }
 .cl-link-preview-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .5px; opacity: .45; margin: 0 0 8px; }

@@ -59,7 +59,7 @@
               <tr v-for="(item, idx) in form.spec_items" :key="idx">
                 <td class="aspec-td-num">{{ Number(idx) + 1 }}</td>
                 <td>
-                  <select v-model="item.category" class="u-inline-inp" @change="save">
+                  <select v-model="item.category" class="glass-input glass-input--inline" @change="save">
                     <option value="finish">отделка</option>
                     <option value="plumbing">сантехника</option>
                     <option value="electrical">электрика</option>
@@ -71,12 +71,12 @@
                     <option value="other">прочее</option>
                   </select>
                 </td>
-                <td><input v-model="item.name" class="u-inline-inp" @blur="save"></td>
-                <td><input v-model="item.article" class="u-inline-inp u-inline-inp--sm" @blur="save"></td>
-                <td><input v-model="item.qty" type="number" min="0" class="u-inline-inp u-inline-inp--xs" @blur="save"></td>
-                <td><input v-model="item.unit" class="u-inline-inp u-inline-inp--xs" placeholder="шт" @blur="save"></td>
-                <td><input v-model="item.supplier" class="u-inline-inp" @blur="save"></td>
-                <td><input v-model="item.price" class="u-inline-inp u-inline-inp--sm" @blur="save"></td>
+                <td><input v-model="item.name" class="glass-input glass-input--inline" @blur="save"></td>
+                <td><input v-model="item.article" class="glass-input glass-input--inline glass-input--sm" @blur="save"></td>
+                <td><input v-model="item.qty" type="number" min="0" class="glass-input glass-input--inline glass-input--xs" @blur="save"></td>
+                <td><input v-model="item.unit" class="glass-input glass-input--inline glass-input--xs" placeholder="шт" @blur="save"></td>
+                <td><input v-model="item.supplier" class="glass-input glass-input--inline" @blur="save"></td>
+                <td><input v-model="item.price" class="glass-input glass-input--inline glass-input--sm" @blur="save"></td>
                 <td><button class="aspec-del" @click="removeItem(Number(idx))" title="удалить">×</button></td>
               </tr>
             </tbody>
