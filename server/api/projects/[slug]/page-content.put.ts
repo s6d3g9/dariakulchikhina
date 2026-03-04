@@ -7,7 +7,7 @@ const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 
 /** Strip prototype-pollution keys from an object recursively */
 function sanitizeContent(obj: Record<string, unknown>): Record<string, unknown> {
-  const clean: Record<string, unknown> = Object.create(null)
+  const clean: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(obj)) {
     if (DANGEROUS_KEYS.has(k)) continue
     clean[k] = v && typeof v === 'object' && !Array.isArray(v)
