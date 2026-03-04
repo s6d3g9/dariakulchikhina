@@ -1,18 +1,6 @@
 <template>
   <div>
-    <div v-if="selectedSellerId" class="ent-cabinet-wrap">
-      <div class="ent-cabinet-topbar">
-        <button class="ent-back-btn a-btn-sm" @click="selectedSellerId = null">← к списку</button>
-        <span v-if="selectedSeller" class="ent-cabinet-title">{{ selectedSeller.name }}</span>
-        <div class="ent-cabinet-actions">
-          <button v-if="selectedSeller" class="a-btn-sm" @click="openEdit(selectedSeller)">✎ редактировать</button>
-          <button v-if="selectedSeller" class="a-btn-sm a-btn-danger" @click="del(selectedSeller.id)">× удалить</button>
-        </div>
-      </div>
-      <AdminSellerCabinet :seller-id="selectedSellerId" />
-    </div>
-
-    <div v-else class="ent-layout ent-layout--with-stats">
+    <div class="ent-layout ent-layout--with-stats">
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
           <span class="ent-sidebar-title">поставщики</span>
@@ -36,7 +24,14 @@
       </nav>
 
       <div class="ent-main">
-        <div v-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
+        <template v-if="selectedSellerId">
+          <div class="ent-entity-hd">
+            <span class="ent-entity-hd-name">{{ selectedSeller?.name }}</span>
+            <button class="ent-entity-hd-action" @click="openEdit(selectedSeller)">ред.</button>
+          </div>
+          <AdminSellerCabinet :key="selectedSellerId" :seller-id="selectedSellerId" />
+        </template>
+        <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
           <div class="ent-detail-head">
             <div class="ent-detail-name">Новый поставщик</div>
             <button class="a-btn-sm" @click="showCreate = false">✕</button>
@@ -47,7 +42,6 @@
             <button class="a-btn-sm" @click="showCreate = false">отмена</button>
           </div>
         </div>
-
         <div v-else class="ent-empty-detail">
           <span class="ent-empty-icon">🏪</span>
           <span v-if="allSellers?.length">Выберите поставщика из списка</span>

@@ -5,19 +5,7 @@
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
     </div>
-    <div v-if="selectedId" class="ent-cabinet-wrap">
-      <div class="ent-cabinet-topbar">
-        <button class="ent-back-btn a-btn-sm" @click="selectedId = null">← к списку</button>
-        <span v-if="selected" class="ent-cabinet-title">{{ selected.name }}</span>
-        <div class="ent-cabinet-actions">
-          <button class="a-btn-sm" @click="openEdit(selected)">✎ редактировать</button>
-          <button class="a-btn-sm a-btn-danger" @click="del(selected!.id)">× удалить</button>
-        </div>
-      </div>
-      <AdminContractorCabinet :contractor-id="selectedId" />
-    </div>
-
-    <div v-else class="ent-layout ent-layout--with-stats">
+    <div class="ent-layout ent-layout--with-stats">
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
           <span class="ent-sidebar-title">подрядчики</span>
@@ -57,7 +45,14 @@
       </nav>
 
       <div class="ent-main">
-        <div class="ent-empty-detail">
+        <template v-if="selectedId">
+          <div class="ent-entity-hd">
+            <span class="ent-entity-hd-name">{{ selected?.name }}</span>
+            <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
+          </div>
+          <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" />
+        </template>
+        <div v-else class="ent-empty-detail">
           <span class="ent-empty-icon">🏗</span>
           <span v-if="contractors?.length">Выберите подрядчика из списка</span>
           <span v-else>Нет подрядчиков — добавьте первого</span>

@@ -887,6 +887,56 @@ html.dark .glass-input::placeholder {
   flex-shrink: 0;
 }
 
+/* ── Minimal entity context strip (replaces topbar) ── */
+.ent-entity-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 7%, transparent);
+  flex-wrap: wrap;
+}
+.ent-entity-hd-name {
+  font-size: .72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--glass-text);
+  opacity: .75;
+  font-weight: 400;
+}
+.ent-entity-hd-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ent-entity-hd-action {
+  font-size: .65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: none;
+  border: none;
+  color: var(--glass-text);
+  opacity: .35;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: opacity .15s;
+  font-family: inherit;
+}
+.ent-entity-hd-action:hover { opacity: .85; }
+
+/* ent-entity-hd before cab-body: add breathing room */
+.ent-entity-hd + .cab-body {
+  margin-top: 20px;
+}
+/* ent-entity-hd inside ent-main: stretch full width */
+.ent-main > .ent-entity-hd {
+  width: 100%;
+}
+
 /* ── Empty state for sidebar nav ── */
 .ent-nav-empty {
   padding: 16px 10px;
@@ -5163,6 +5213,51 @@ html[data-concept="minale"] [class*="-badge"] {
   font-size: 0.72rem !important;
   letter-spacing: 0.10em !important;
   padding: 3px 8px !important;
+}
+
+/* ── ator (ToR contract) component — dark bg ────────────── */
+html[data-concept="minale"] .ent-entity-hd {
+  border-bottom-color: rgba(255,255,255,0.07) !important;
+}
+html[data-concept="minale"] .ent-entity-hd-name {
+  color: #ffffff !important;
+  opacity: 0.65 !important;
+  letter-spacing: 0.22em !important;
+}
+html[data-concept="minale"] .ent-entity-hd-action {
+  color: #ffffff !important;
+  opacity: 0.28 !important;
+  letter-spacing: 0.14em !important;
+}
+html[data-concept="minale"] .ent-entity-hd-action:hover {
+  opacity: 0.80 !important;
+}
+html[data-concept="minale"] .ator-transition-banner {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+}
+html[data-concept="minale"] .ator-banner-text {
+  color: rgba(255,255,255,0.65) !important;
+}
+html[data-concept="minale"] .ator-btn-save {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.35) !important;
+  color: #ffffff !important;
+}
+html[data-concept="minale"] .ator-btn-save:hover:not(:disabled) {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.70) !important;
+}
+html[data-concept="minale"] .ator-btn-transition {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.30) !important;
+  color: #ffffff !important;
+}
+html[data-concept="minale"] .ator-section-title {
+  border-bottom-color: rgba(255,255,255,0.08) !important;
+}
+html[data-concept="minale"] .ator-footer {
+  border-top-color: rgba(255,255,255,0.08) !important;
 }
 
 /* Design panel: stays dark */

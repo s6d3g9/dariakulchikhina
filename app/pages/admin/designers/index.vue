@@ -1,17 +1,6 @@
 <template>
   <div>
-    <div v-if="selectedDesignerId" class="ent-cabinet-wrap">
-      <div class="ent-cabinet-topbar">
-        <button class="ent-back-btn a-btn-sm" @click="selectedDesignerId = null">← к списку</button>
-        <span v-if="selectedDesigner" class="ent-cabinet-title">{{ selectedDesigner.name }}</span>
-        <div class="ent-cabinet-actions">
-          <button v-if="selectedDesigner" class="a-btn-sm a-btn-danger" @click="deleteDesigner(selectedDesigner.id)">× удалить</button>
-        </div>
-      </div>
-      <AdminDesignerCabinet :designer-id="selectedDesignerId" />
-    </div>
-
-    <div v-else class="ent-layout ent-layout--with-stats">
+    <div class="ent-layout ent-layout--with-stats">
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
           <span class="ent-sidebar-title">дизайнеры</span>
@@ -35,7 +24,13 @@
       </nav>
 
       <div class="ent-main">
-        <div v-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
+        <template v-if="selectedDesignerId">
+          <div class="ent-entity-hd">
+            <span class="ent-entity-hd-name">{{ selectedDesigner?.name }}</span>
+          </div>
+          <AdminDesignerCabinet :key="selectedDesignerId" :designer-id="selectedDesignerId" />
+        </template>
+        <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
           <div class="ent-detail-head">
             <div class="ent-detail-name">Новый дизайнер</div>
             <button class="a-btn-sm" @click="showCreate = false">✕</button>
@@ -46,7 +41,6 @@
             <button class="a-btn-sm" @click="showCreate = false">отмена</button>
           </div>
         </div>
-
         <div v-else class="ent-empty-detail">
           <span class="ent-empty-icon">🎨</span>
           <span v-if="allDesigners?.length">Выберите дизайнера из списка</span>

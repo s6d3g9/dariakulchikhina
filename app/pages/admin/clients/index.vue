@@ -6,79 +6,8 @@
       <NuxtLink to="/admin/clients" class="cl-filter-link">показать всех</NuxtLink>
     </div>
 
-    <!-- ═══ Cabinet view (selected client) ═══ -->
-    <div v-if="selectedClient" class="ent-cabinet-wrap">
-      <div class="ent-cabinet-topbar">
-        <button class="ent-back-btn a-btn-sm" @click="selectedClientId = null">← к списку</button>
-        <span class="ent-cabinet-title">{{ selectedClient.name }}</span>
-        <div class="ent-cabinet-actions">
-          <button class="a-btn-sm" @click="openEdit(selectedClient)">✎ редактировать</button>
-          <button class="a-btn-sm" @click="openLink(selectedClient)">⊕ {{ selectedClient.linkedProjects?.length ? 'проект' : 'привязать' }}</button>
-          <button class="a-btn-sm" @click="openDocs(selectedClient)">📄 документы</button>
-          <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" target="_blank" class="a-btn-sm">↗ открыть внешне</a>
-          <button class="a-btn-sm a-btn-danger" @click="del(selectedClient.id)">× удалить</button>
-        </div>
-      </div>
-
-      <!-- Client has a linked project → show full cabinet inline -->
-      <template v-if="selectedClientSlug">
-        <div class="cab-body">
-          <aside class="cab-sidebar glass-surface std-sidenav">
-            <nav class="cab-nav std-nav">
-              <button
-                class="cab-nav-item std-nav-item"
-                :class="{ active: clientPage === 'dashboard', 'std-nav-item--active': clientPage === 'dashboard' }"
-                @click="clientPage = 'dashboard'"
-              ><span class="cab-nav-icon">◈</span> обзор</button>
-              <button
-                v-for="pg in clientNavPages"
-                :key="pg.slug"
-                class="cab-nav-item std-nav-item"
-                :class="{ active: clientPage === pg.slug, 'std-nav-item--active': clientPage === pg.slug }"
-                @click="clientPage = pg.slug"
-              ><span class="cab-nav-icon">{{ pg.icon }}</span> {{ pg.title }}</button>
-            </nav>
-          </aside>
-          <main class="cab-main">
-            <div class="cab-inner">
-              <ClientOverview
-                v-if="clientPage === 'dashboard'"
-                :slug="selectedClientSlug"
-                :project="clientProject"
-                :contractors="[]"
-                :rm-map="{}"
-                @navigate="clientPage = $event"
-              />
-              <component
-                v-else
-                :is="clientActiveComponent"
-                v-bind="clientActiveProps"
-                :key="clientPage"
-              />
-            </div>
-          </main>
-        </div>
-      </template>
-
-      <!-- No project linked → show contact card -->
-      <template v-else>
-        <div class="ent-detail-card glass-card" style="border-radius: var(--card-radius,14px); margin: 16px">
-          <div class="ent-detail-section">контакты</div>
-          <div v-if="selectedClient.phone" class="ent-detail-row">☎ {{ selectedClient.phone }}</div>
-          <div v-if="selectedClient.email" class="ent-detail-row">✉ {{ selectedClient.email }}</div>
-          <div v-if="selectedClient.messengerNick" class="ent-detail-row">💬 {{ selectedClient.messenger ? selectedClient.messenger + ' ' : '' }}{{ selectedClient.messengerNick }}</div>
-          <div v-if="selectedClient.address" class="ent-detail-row">📍 {{ selectedClient.address }}</div>
-          <div v-if="!selectedClient.phone && !selectedClient.email && !selectedClient.messengerNick && !selectedClient.address" class="ent-detail-row" style="opacity:.3">контакты не указаны</div>
-          <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
-          <div class="ent-detail-foot" style="margin-top:16px">
-            <button class="a-btn-save" @click="openLink(selectedClient)">⊕ привязать к проекту</button>
-          </div>
-        </div>
-      </template>
-    </div>
-
-    <!-- ═══ List view ═══ -->
-    <div v-else class="ent-layout ent-layout--with-stats">
+    <!-- ═══ Unified layout: sidebar always visible ═══ -->
+    <div class="ent-layout ent-layout--with-stats">
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
           <span class="ent-sidebar-title">клиенты</span>
@@ -101,8 +30,76 @@
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openAdd">+ добавить</button></div>
       </nav>
+
+      <!-- Content area: selected client or empty state -->
       <div class="ent-main">
-        <div class="ent-empty-detail">
+        <template v-if="selectedClient">
+          <!-- Minimal context strip -->
+          <div class="ent-entity-hd">
+            <span class="ent-entity-hd-name">{{ selectedClient.name }}</span>
+            <div class="ent-entity-hd-actions">
+              <button class="ent-entity-hd-action" @click="openEdit(selectedClient)">ред.</button>
+              <button class="ent-entity-hd-action" @click="openLink(selectedClient)">{{ selectedClient.linkedProjects?.length ? 'проект' : 'привязать' }}</button>
+              <button class="ent-entity-hd-action" @click="openDocs(selectedClient)">документы</button>
+              <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" target="_blank" class="ent-entity-hd-action">↗</a>
+            </div>
+          </div>
+
+          <!-- Client has a linked project → sections cabinet -->
+          <div v-if="selectedClientSlug" class="cab-body">
+            <aside class="cab-sidebar glass-surface std-sidenav">
+              <nav class="cab-nav std-nav">
+                <button
+                  class="cab-nav-item std-nav-item"
+                  :class="{ active: clientPage === 'dashboard', 'std-nav-item--active': clientPage === 'dashboard' }"
+                  @click="clientPage = 'dashboard'"
+                ><span class="cab-nav-icon">◈</span> обзор</button>
+                <button
+                  v-for="pg in clientNavPages"
+                  :key="pg.slug"
+                  class="cab-nav-item std-nav-item"
+                  :class="{ active: clientPage === pg.slug, 'std-nav-item--active': clientPage === pg.slug }"
+                  @click="clientPage = pg.slug"
+                ><span class="cab-nav-icon">{{ pg.icon }}</span> {{ pg.title }}</button>
+              </nav>
+            </aside>
+            <main class="cab-main">
+              <div class="cab-inner">
+                <ClientOverview
+                  v-if="clientPage === 'dashboard'"
+                  :slug="selectedClientSlug"
+                  :project="clientProject"
+                  :contractors="[]"
+                  :rm-map="{}"
+                  @navigate="clientPage = $event"
+                />
+                <component
+                  v-else
+                  :is="clientActiveComponent"
+                  v-bind="clientActiveProps"
+                  :key="clientPage"
+                />
+              </div>
+            </main>
+          </div>
+
+          <!-- No project linked → contact card -->
+          <div v-else class="ent-detail-card glass-card" style="margin-top: 16px">
+            <div class="ent-detail-section">контакты</div>
+            <div v-if="selectedClient.phone" class="ent-detail-row">{{ selectedClient.phone }}</div>
+            <div v-if="selectedClient.email" class="ent-detail-row">{{ selectedClient.email }}</div>
+            <div v-if="selectedClient.messengerNick" class="ent-detail-row">{{ selectedClient.messenger ? selectedClient.messenger + ' ' : '' }}{{ selectedClient.messengerNick }}</div>
+            <div v-if="selectedClient.address" class="ent-detail-row">{{ selectedClient.address }}</div>
+            <div v-if="!selectedClient.phone && !selectedClient.email && !selectedClient.messengerNick && !selectedClient.address" class="ent-detail-row" style="opacity:.3">контакты не указаны</div>
+            <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
+            <div class="ent-detail-foot" style="margin-top:16px">
+              <button class="a-btn-save" @click="openLink(selectedClient)">привязать к проекту</button>
+            </div>
+          </div>
+        </template>
+
+        <!-- Nothing selected -->
+        <div v-else class="ent-empty-detail">
           <span class="ent-empty-icon">👤</span>
           <span v-if="clients?.length">Выберите клиента из списка</span>
           <span v-else>Нет клиентов — добавьте первого</span>
