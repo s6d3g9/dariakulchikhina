@@ -1,0 +1,40 @@
+{
+  // Используем TypeScript из node_modules проекта (а не встроенный VS Code)
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // Volar Hybrid Mode: Volar обслуживает .vue, встроенный TS обслуживает .ts
+  // Это убирает конфликт между двумя TS серверами
+  "vue.server.hybridMode": true,
+
+  // Ограничиваем память TS сервера — главная причина крашей
+  "typescript.tsserver.maxTsServerMemory": 4096,
+
+  // Отключаем фоновую диагностику всего проекта (очень дорого)
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+
+  // Исключаем авто-генерируемые папки из отслеживания файлов
+  // Без этого .nuxt/** постоянно пересоздаётся и перегружает TS сервер
+  "files.watcherExclude": {
+    "**/.nuxt/**": true,
+    "**/.output/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true
+  },
+  "search.exclude": {
+    "**/.nuxt": true,
+    "**/.output": true,
+    "**/node_modules": true
+  },
+
+  // Не показывать ошибки в node_modules
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+
+  // Форматирование
+  "[vue]": {
+    "editor.defaultFormatter": "Vue.volar"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "Vue.volar"
+  }
+}
