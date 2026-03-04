@@ -292,7 +292,7 @@
                 <div v-for="pkg in packages" :key="pkg.key" class="pkg-card glass-surface" :class="{ disabled: !pkg.enabled }">
                   <div class="pkg-card-head">
                     <h3 class="pkg-card-title">{{ pkg.title }}</h3>
-                    <div class="pkg-card-price">{{ pkg.pricePerSqm.toLocaleString('ru-RU') }} <span>₽/м²</span></div>
+                    <div class="pkg-card-price">{{ (pkg.pricePerSqm ?? 0).toLocaleString('ru-RU') }} <span>₽/м²</span></div>
                   </div>
                   <p class="pkg-card-desc">{{ pkg.description }}</p>
                   <div class="pkg-card-services">
@@ -302,7 +302,7 @@
                   </div>
                   <div class="pkg-card-example">
                     <span class="pkg-example-label">Пример: 80 м²</span>
-                    <span class="pkg-example-price">{{ (pkg.pricePerSqm * 80).toLocaleString('ru-RU') }} ₽</span>
+                    <span class="pkg-example-price">{{ ((pkg.pricePerSqm || 0) * 80).toLocaleString('ru-RU') }} ₽</span>
                   </div>
                 </div>
               </div>
@@ -416,11 +416,11 @@
                     <span class="sub-period-badge">{{ getBillingLabel(sub.billingPeriod) }}</span>
                   </div>
                   <div class="sub-card-price-row">
-                    <span class="sub-card-price">{{ sub.price.toLocaleString('ru-RU') }} <small>₽</small></span>
+                    <span class="sub-card-price">{{ (Number(sub.price) || 0).toLocaleString('ru-RU') }} <small>₽</small></span>
                     <span v-if="sub.discount > 0" class="sub-card-discount">−{{ sub.discount }}%</span>
                   </div>
                   <div v-if="sub.discount > 0" class="sub-card-effective">
-                    Итого: {{ Math.round(sub.price * (1 - sub.discount / 100)).toLocaleString('ru-RU') }} ₽
+                    Итого: {{ Math.round((Number(sub.price) || 0) * (1 - (sub.discount || 0) / 100)).toLocaleString('ru-RU') }} ₽
                   </div>
                   <p class="sub-card-desc">{{ sub.description }}</p>
                   <div v-if="Object.keys(sub.limits || {}).length" class="sub-card-limits">
@@ -552,7 +552,7 @@
                   <select v-model="newProject.packageKey" class="glass-input">
                     <option value="">— без пакета —</option>
                     <option v-for="pkg in availablePackages" :key="pkg.key" :value="pkg.key">
-                      {{ pkg.title }} ({{ pkg.pricePerSqm.toLocaleString('ru-RU') }} ₽/м²)
+                      {{ pkg.title }} ({{ (pkg.pricePerSqm ?? 0).toLocaleString('ru-RU') }} ₽/м²)
                     </option>
                   </select>
                 </div>
@@ -1252,7 +1252,8 @@ function getBillingLabel(bp: string): string {
 }
 function getMonthlyPrice(sub: DesignerSubscription): number {
   const months = BILLING_PERIOD_MONTHS[sub.billingPeriod as BillingPeriod] || 1
-  const effectivePrice = sub.discount > 0 ? sub.price * (1 - sub.discount / 100) : sub.price
+  const price = Number(sub.price) || 0
+  const effectivePrice = sub.discount > 0 ? price * (1 - (sub.discount || 0) / 100) : price
   return Math.round(effectivePrice / months)
 }
 function formatLimitKey(key: string): string {
