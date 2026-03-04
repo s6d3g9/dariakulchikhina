@@ -44,6 +44,7 @@ export function useAiDocument() {
   const aiProgress     = ref('')   // текущий статус-текст для пользователя
   const aiElapsed      = ref(0)    // секунды с момента старта
   const aiTokenCount   = ref(0)    // кол-во символов от модели
+  const aiTruncated    = ref(false) // true когда модель остановилась по max_tokens
   const aiReviewNotes  = ref<AiReviewNote[]>([])
   const aiCitations    = ref<LegalCitation[]>([])
 
@@ -67,12 +68,13 @@ export function useAiDocument() {
 
   // ── СТРИМИНГ (generate / improve) ─────────────────────────────────────
   async function streamDocument(
-    action: 'generate' | 'improve' | 'review' | 'chat',
+    action: 'generate' | 'improve' | 'review' | 'chat' | 'continue',
     payload: AiPayload,
     onToken: (token: string) => void,
   ): Promise<boolean> {
     aiLoading.value = true
     aiError.value = ''
+    aiTruncated.value = false
     aiAction.value = action
     aiCitations.value = []
     aiProgress.value = action === 'generate'
@@ -126,6 +128,9 @@ export function useAiDocument() {
           try {
             const data = JSON.parse(raw)
             if (data.error) { _setError(data.error); return false }
+            if (data.truncated) {
+              aiTruncated.value = true
+            }
             if (data.citations) {
               aiCitations.value = data.citations
             }
@@ -198,5 +203,6 @@ export function useAiDocument() {
     abortAi,
     clearReview,
     clearCitations,
+    aiTruncated,
   }
 }

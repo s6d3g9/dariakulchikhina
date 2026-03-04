@@ -9,6 +9,7 @@ import { useDb } from '~/server/db/index'
 import { projects, clients, contractors, pageContent } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 import { retrieveLegalContextWithChunks, type LegalChunkWithScore } from '~/server/utils/rag'
+import { GEMMA_SYSTEM_PROMPT } from '~/server/utils/gemma-prompts'
 
 const MODEL = 'gemma3:27b'
 const DEFAULT_GEMMA_URL = 'http://localhost:11434'
@@ -30,12 +31,15 @@ export default defineEventHandler(async (event) => {
     contractorId,
   } = body || {}
 
-  if (!action || !['generate', 'improve', 'review', 'chat'].includes(action)) {
-    throw createError({ statusCode: 400, statusMessage: 'action должен быть generate, improve, review или chat' })
+  if (!action || !['generate', 'improve', 'review', 'chat', 'continue'].includes(action)) {
+    throw createError({ statusCode: 400, statusMessage: 'action должен быть generate, improve, review, chat или continue' })
   }
 
-  // ── Собираем контекст ──────────────────────────────────────────
-  const ctx = await buildStreamContext(projectSlug, clientId, contractorId)
+  // ── Собираем контекст (не нужен для простого чата) ──────────────
+  const needsCtx = action !== 'chat'
+  const ctx = needsCtx
+    ? await buildStreamContext(projectSlug, clientId, contractorId)
+    : {}
 
   // ── Формируем промпты ─────────────────────────────────────────
   let userPrompt = ''
@@ -45,13 +49,24 @@ export default defineEventHandler(async (event) => {
     userPrompt = buildStreamImprovePrompt({ templateName, currentText, ctx })
   } else if (action === 'chat') {
     userPrompt = buildStreamChatPrompt({ templateName, currentText, customInstruction, ctx })
+  } else if (action === 'continue') {
+    userPrompt = buildStreamContinuePrompt({ templateName, currentText, ctx })
   } else {
     userPrompt = buildStreamReviewPrompt({ templateName, currentText })
   }
 
-  // ── RAG: правовая база ────────────────────────────────────────
-  const { context: legalCtx, chunks: legalChunks } = await retrieveLegalContextWithChunks(`${templateName} ${userPrompt.slice(0, 400)}`)
-  const systemPrompt = STREAM_SYSTEM_PROMPT + legalCtx
+  // ── RAG: правовая база (пропускаем для chat — не нужно) ───────
+  const needsRag = action !== 'chat'
+  const { context: legalCtx, chunks: legalChunks } = needsRag
+    ? await retrieveLegalContextWithChunks(`${templateName} ${userPrompt.slice(0, 400)}`)
+    : { context: '', chunks: [] }
+
+  // system промпт всегда одинаковый — Ollama кэширует KV
+  const systemPrompt = GEMMA_SYSTEM_PROMPT
+  // RAG переносим в user-часть чтобы system не менялся
+  const userPromptFinal = legalCtx
+    ? `${userPrompt}\n\n[ПРАВОВАЯ БАЗА]\n${legalCtx}`
+    : userPrompt
 
   // ── SSE-заголовки ─────────────────────────────────────────────
   const res = event.node.res
@@ -72,11 +87,12 @@ export default defineEventHandler(async (event) => {
       model: MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: userPromptFinal },
       ],
       temperature: 0.3,
-      max_tokens: 4096,
+      max_tokens: action === 'chat' ? 1024 : 4096,
       stream: true,
+      keep_alive: -1,
     }),
   })
 
@@ -100,14 +116,14 @@ export default defineEventHandler(async (event) => {
   let fullText = '' // для парсинга notes в review
 
   // Вспомогательная функция: отправить мета-данные и [DONE]
-  function sendDone() {
+  function sendDone(truncated = false) {
     // review → парсим замечания из накопленного текста
     if (action === 'review') {
       const notes = parseStreamReviewNotes(fullText)
       res.write(`data: ${JSON.stringify({ notes })}\n\n`)
     }
-    // generate/improve → отправляем цитаты из RAG
-    if (action !== 'review' && legalChunks.length) {
+    // generate/improve/continue → отправляем цитаты из RAG
+    if (!['review', 'chat'].includes(action) && legalChunks.length) {
       const citations = legalChunks.map((c: LegalChunkWithScore) => ({
         source_name:   c.source_name,
         article_num:   c.article_num,
@@ -117,6 +133,9 @@ export default defineEventHandler(async (event) => {
         similarity:    Math.round(Number(c.similarity) * 100) / 100,
       }))
       res.write(`data: ${JSON.stringify({ citations })}\n\n`)
+    }
+    if (truncated) {
+      res.write(`data: ${JSON.stringify({ truncated: true })}\n\n`)
     }
     res.write('data: [DONE]\n\n')
     res.end()
@@ -152,8 +171,12 @@ export default defineEventHandler(async (event) => {
             res.write(`data: ${JSON.stringify({ token })}\n\n`)
           }
           const finishReason = data?.choices?.[0]?.finish_reason
-          if (finishReason === 'stop' || finishReason === 'length') {
-            sendDone()
+          if (finishReason === 'stop') {
+            sendDone(false)
+            return null
+          }
+          if (finishReason === 'length') {
+            sendDone(true)
             return null
           }
         } catch {
@@ -193,23 +216,6 @@ function buildStreamReviewPrompt(opts: { templateName: string; currentText?: str
 }
 
 // ── Системный промпт ──────────────────────────────────────────────────────
-const STREAM_SYSTEM_PROMPT = `Ты — профессиональный юрист-ассистент и бизнес-редактор, специализирующийся на договорах и документах в сфере дизайна интерьеров.
-
-Ты работаешь для «Студии дизайна Дарии Кульчихиной» (г. Москва).
-Исполнитель по всем договорам — Кульчихина Дария Андреевна.
-
-ПРАВИЛА:
-1. Используй только российское законодательство (ГК РФ)
-2. Язык — русский, официально-деловой стиль
-3. Все денежные суммы дублируй: цифрами и прописью
-4. Даты в формате ДД.ММ.ГГГГ
-5. НЕ придумывай данные — используй только то, что есть в контексте
-6. Незаполненные данные оставляй как «__________»
-7. СТРОГО ЗАПРЕЩЕНО любое markdown-форматирование: никаких **, *, #, ---, \`, []. Названия разделов — только ЗАГЛАВНЫМИ БУКВАМИ.
-8. Сохраняй юридически корректную структуру документа
-9. Нумеруй разделы (1. НАЗВАНИЕ РАЗДЕЛА, 1.1. Подпункт)
-10. Выводи ТОЛЬКО текст документа — никаких вступлений, пояснений и комментариев перед или после документа`
-
 // ── Контекст из БД ────────────────────────────────────────────────────────
 async function buildStreamContext(projectSlug: string, clientId: number, contractorId: number) {
   const db = useDb()
@@ -335,11 +341,26 @@ ${opts.currentText || ''}
 Заполни пропуски, исправь формулировки, добавь недостающие пункты. Верни только готовый документ.`
 }
 
+function buildStreamContinuePrompt(opts: { templateName: string; currentText?: string; ctx: Record<string, any> }): string {
+  const tail = (opts.currentText || '').slice(-800)
+  return `ПРОДОЛЖИ документ «${opts.templateName}» с того места, где он прервался.
+
+НЕ ПОВТОРЯЙ уже написанное — пиши ТОЛЬКО продолжение, начиная буквально со следующего слова после конца.
+
+КОНЕЦ УЖЕ НАПИСАННОГО:
+---
+${tail}
+---
+
+Продолжай:`
+}
+
 function buildStreamChatPrompt(opts: { templateName: string; currentText?: string; customInstruction?: string; ctx: Record<string, any> }): string {
-  const ctxText = formatStreamCtx(opts.ctx)
+  // Передаём только хвост документа чтобы не раздувать контекст
+  const docSnippet = opts.currentText ? opts.currentText.slice(-1200) : ''
   return `Ты помогаешь редактировать документ «${opts.templateName}».
 
-${ctxText ? 'КОНТЕКСТ ПРОЕКТА:\n' + ctxText + '\n' : ''}${opts.currentText ? 'ТЕКУЩИЙ ДОКУМЕНТ:\n---\n' + opts.currentText + '\n---\n\n' : ''}ИНСТРУКЦИЯ ПОЛЬЗОВАТЕЛЯ: ${opts.customInstruction || ''}
+${docSnippet ? 'ТЕКУЩИЙ ДОКУМЕНТ (фрагмент):\n---\n' + docSnippet + '\n---\n\n' : ''}ИНСТРУКЦИЯ ПОЛЬЗОВАТЕЛЯ: ${opts.customInstruction || ''}
 
 Выполни инструкцию пользователя. Если нужно изменить документ — верни только полный обновлённый документ. Если пользователь задаёт вопрос — ответь кратко.`
 }

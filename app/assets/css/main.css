@@ -3336,4 +3336,329 @@ html.dark .a-modal label {
   transition: all var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease);
 }
 
+/* ═══════════════════════════════════════════════════════════
+   DARK SURFACE OVERRIDE SYSTEM
+   When colorPageBg sets --glass-page-bg to a true-dark value,
+   the color tokens (colorSurface, colorText, colorCardBg etc.)
+   already propagate via CSS vars. But many components have
+   hard-coded light assumptions: white dropdown bg, light modal bg,
+   faint borders, radial gradients. This section forces EVERY
+   surface/popup/modal/input to match a total-dark environment
+   (Minale+Mann style) by using the same CSS custom properties.
+   ═══════════════════════════════════════════════════════════ */
+
+/* --- Kill the light-mode radial gradient on .glass-page --- */
+html[style*="--glass-page-bg: #000"] .glass-page::before,
+html[style*="--glass-page-bg: #0a"] .glass-page::before {
+  background: none !important;
+}
+
+/* --- Modals: black surface + hairline white border --- */
+html[style*="--glass-page-bg: #000"] .u-modal,
+html[style*="--glass-page-bg: #0a"] .u-modal,
+html[style*="--glass-page-bg: #000"] .cab-modal,
+html[style*="--glass-page-bg: #0a"] .cab-modal {
+  background: var(--ds-card-bg, #0a0a0a) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: var(--glass-text, #e0e0e0);
+}
+html[style*="--glass-page-bg: #000"] .u-modal__head,
+html[style*="--glass-page-bg: #0a"] .u-modal__head,
+html[style*="--glass-page-bg: #000"] .cab-modal-head,
+html[style*="--glass-page-bg: #0a"] .cab-modal-head {
+  border-bottom-color: rgba(255,255,255,0.06) !important;
+}
+html[style*="--glass-page-bg: #000"] .u-modal__foot,
+html[style*="--glass-page-bg: #0a"] .u-modal__foot,
+html[style*="--glass-page-bg: #000"] .cab-modal-foot,
+html[style*="--glass-page-bg: #0a"] .cab-modal-foot {
+  border-top-color: rgba(255,255,255,0.06) !important;
+}
+html[style*="--glass-page-bg: #000"] .u-modal-overlay,
+html[style*="--glass-page-bg: #0a"] .u-modal-overlay,
+html[style*="--glass-page-bg: #000"] .cab-modal-overlay,
+html[style*="--glass-page-bg: #0a"] .cab-modal-overlay {
+  background: rgba(0,0,0,var(--modal-overlay-opacity, 0.85)) !important;
+}
+
+/* --- Dropdown / popup surfaces --- */
+html[style*="--glass-page-bg: #000"] .glass-dropdown,
+html[style*="--glass-page-bg: #0a"] .glass-dropdown {
+  background: #0a0a0a !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
+  backdrop-filter: none !important;
+}
+
+/* --- Glass cards / surfaces: black opaque, no glass effect --- */
+html[style*="--glass-page-bg: #000"] .glass-card,
+html[style*="--glass-page-bg: #000"] .glass-surface,
+html[style*="--glass-page-bg: #0a"] .glass-card,
+html[style*="--glass-page-bg: #0a"] .glass-surface {
+  background: var(--ds-card-bg, #0a0a0a) !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* --- Glass chips --- */
+html[style*="--glass-page-bg: #000"] .glass-chip,
+html[style*="--glass-page-bg: #0a"] .glass-chip {
+  background: transparent !important;
+  border-color: rgba(255,255,255,0.10) !important;
+  color: var(--glass-text, #e0e0e0);
+}
+
+/* --- Inputs: transparent bg, subtle bottom border (underline inputs) --- */
+html[style*="--glass-page-bg: #000"] .glass-input,
+html[style*="--glass-page-bg: #0a"] .glass-input {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  color: var(--glass-text, #e0e0e0);
+}
+html[style*="--glass-page-bg: #000"] .glass-input:focus,
+html[style*="--glass-page-bg: #0a"] .glass-input:focus {
+  border-bottom-color: rgba(255,255,255,0.35) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+html[style*="--glass-page-bg: #000"] .glass-input::placeholder,
+html[style*="--glass-page-bg: #0a"] .glass-input::placeholder {
+  color: rgba(255,255,255,0.25) !important;
+}
+
+/* --- Textareas --- */
+html[style*="--glass-page-bg: #000"] textarea.glass-input,
+html[style*="--glass-page-bg: #0a"] textarea.glass-input {
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 0 !important;
+}
+
+/* --- Buttons: ghost = transparent with hairline border --- */
+html[style*="--glass-page-bg: #000"] .a-btn-save,
+html[style*="--glass-page-bg: #0a"] .a-btn-save {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+}
+html[style*="--glass-page-bg: #000"] .a-btn-save:hover,
+html[style*="--glass-page-bg: #0a"] .a-btn-save:hover {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.35) !important;
+}
+html[style*="--glass-page-bg: #000"] .a-btn-sm,
+html[style*="--glass-page-bg: #0a"] .a-btn-sm {
+  background: transparent !important;
+  color: rgba(255,255,255,0.7) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+}
+html[style*="--glass-page-bg: #000"] .a-btn-sm:hover,
+html[style*="--glass-page-bg: #0a"] .a-btn-sm:hover {
+  background: rgba(255,255,255,0.05) !important;
+  color: #ffffff !important;
+  border-color: rgba(255,255,255,0.25) !important;
+}
+
+/* --- Navigation sidebar --- */
+html[style*="--glass-page-bg: #000"] .ent-sidebar,
+html[style*="--glass-page-bg: #0a"] .ent-sidebar,
+html[style*="--glass-page-bg: #000"] .std-sidebar,
+html[style*="--glass-page-bg: #0a"] .std-sidebar,
+html[style*="--glass-page-bg: #000"] .cab-nav,
+html[style*="--glass-page-bg: #0a"] .cab-nav {
+  background: #000000 !important;
+  border-right: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* --- Nav items --- */
+html[style*="--glass-page-bg: #000"] .ent-nav-item,
+html[style*="--glass-page-bg: #0a"] .ent-nav-item,
+html[style*="--glass-page-bg: #000"] .cab-nav-item,
+html[style*="--glass-page-bg: #0a"] .cab-nav-item,
+html[style*="--glass-page-bg: #000"] .std-nav-item,
+html[style*="--glass-page-bg: #0a"] .std-nav-item {
+  color: rgba(255,255,255,0.5) !important;
+}
+html[style*="--glass-page-bg: #000"] .ent-nav-item:hover,
+html[style*="--glass-page-bg: #0a"] .ent-nav-item:hover,
+html[style*="--glass-page-bg: #000"] .cab-nav-item:hover,
+html[style*="--glass-page-bg: #0a"] .cab-nav-item:hover {
+  color: #ffffff !important;
+  background: rgba(255,255,255,0.03) !important;
+}
+html[style*="--glass-page-bg: #000"] .ent-nav-item.active,
+html[style*="--glass-page-bg: #0a"] .ent-nav-item.active,
+html[style*="--glass-page-bg: #000"] .ent-nav-item.router-link-active,
+html[style*="--glass-page-bg: #0a"] .ent-nav-item.router-link-active,
+html[style*="--glass-page-bg: #000"] .cab-nav-item.active,
+html[style*="--glass-page-bg: #0a"] .cab-nav-item.active {
+  color: #ffffff !important;
+  background: rgba(255,255,255,0.06) !important;
+}
+
+/* --- Dashboard cards and quick buttons --- */
+html[style*="--glass-page-bg: #000"] .dash-quick-btn,
+html[style*="--glass-page-bg: #0a"] .dash-quick-btn {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  color: rgba(255,255,255,0.7) !important;
+}
+html[style*="--glass-page-bg: #000"] .dash-quick-btn:hover,
+html[style*="--glass-page-bg: #0a"] .dash-quick-btn:hover {
+  border-color: rgba(255,255,255,0.15) !important;
+  color: #ffffff !important;
+}
+html[style*="--glass-page-bg: #000"] .dash-welcome,
+html[style*="--glass-page-bg: #0a"] .dash-welcome {
+  background: transparent !important;
+}
+
+/* --- Admin tabs --- */
+html[style*="--glass-page-bg: #000"] .admin-tab,
+html[style*="--glass-page-bg: #0a"] .admin-tab {
+  background: transparent !important;
+  color: rgba(255,255,255,0.4) !important;
+  border-color: transparent !important;
+}
+html[style*="--glass-page-bg: #000"] .admin-tab:hover,
+html[style*="--glass-page-bg: #0a"] .admin-tab:hover {
+  color: rgba(255,255,255,0.7) !important;
+}
+html[style*="--glass-page-bg: #000"] .admin-tab.active,
+html[style*="--glass-page-bg: #0a"] .admin-tab.active,
+html[style*="--glass-page-bg: #000"] .admin-tab--active,
+html[style*="--glass-page-bg: #0a"] .admin-tab--active {
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(255,255,255,0.25) !important;
+  background: transparent !important;
+}
+
+/* --- Tables --- */
+html[style*="--glass-page-bg: #000"] table,
+html[style*="--glass-page-bg: #0a"] table {
+  color: var(--glass-text, #e0e0e0);
+}
+html[style*="--glass-page-bg: #000"] thead th,
+html[style*="--glass-page-bg: #0a"] thead th {
+  background: rgba(255,255,255,0.02) !important;
+  color: rgba(255,255,255,0.5) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+}
+html[style*="--glass-page-bg: #000"] tbody tr,
+html[style*="--glass-page-bg: #0a"] tbody tr {
+  border-bottom-color: rgba(255,255,255,0.03) !important;
+}
+html[style*="--glass-page-bg: #000"] tbody tr:hover,
+html[style*="--glass-page-bg: #0a"] tbody tr:hover {
+  background: rgba(255,255,255,0.02) !important;
+}
+
+/* --- u-form-section, asb-section, acp-form-section --- */
+html[style*="--glass-page-bg: #000"] .u-form-section,
+html[style*="--glass-page-bg: #0a"] .u-form-section,
+html[style*="--glass-page-bg: #000"] .asb-section,
+html[style*="--glass-page-bg: #0a"] .asb-section,
+html[style*="--glass-page-bg: #000"] .acp-form-section,
+html[style*="--glass-page-bg: #0a"] .acp-form-section {
+  background: transparent !important;
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+/* --- Labels, field labels --- */
+html[style*="--glass-page-bg: #000"] .u-field__label,
+html[style*="--glass-page-bg: #0a"] .u-field__label,
+html[style*="--glass-page-bg: #000"] label,
+html[style*="--glass-page-bg: #0a"] label {
+  color: rgba(255,255,255,0.45) !important;
+}
+
+/* --- Detail cards --- */
+html[style*="--glass-page-bg: #000"] .ent-detail-card,
+html[style*="--glass-page-bg: #0a"] .ent-detail-card {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+  box-shadow: none !important;
+}
+
+/* --- Cab task cards --- */
+html[style*="--glass-page-bg: #000"] .cab-task,
+html[style*="--glass-page-bg: #0a"] .cab-task,
+html[style*="--glass-page-bg: #000"] .cab-doc-card,
+html[style*="--glass-page-bg: #0a"] .cab-doc-card {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* --- Status bar, topbar --- */
+html[style*="--glass-page-bg: #000"] .u-topbar,
+html[style*="--glass-page-bg: #0a"] .u-topbar {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* --- Section titles emphasize white --- */
+html[style*="--glass-page-bg: #000"] .u-section-title,
+html[style*="--glass-page-bg: #0a"] .u-section-title {
+  color: #ffffff !important;
+}
+
+/* --- Progress bars --- */
+html[style*="--glass-page-bg: #000"] .cab-stages-inline-bar-wrap,
+html[style*="--glass-page-bg: #0a"] .cab-stages-inline-bar-wrap {
+  background: rgba(255,255,255,0.06) !important;
+}
+
+/* --- Toggle rows --- */
+html[style*="--glass-page-bg: #000"] .cab-toggle-row:hover,
+html[style*="--glass-page-bg: #0a"] .cab-toggle-row:hover {
+  background: rgba(255,255,255,0.03) !important;
+}
+
+/* --- Select elements --- */
+html[style*="--glass-page-bg: #000"] select.glass-input,
+html[style*="--glass-page-bg: #0a"] select.glass-input {
+  background: transparent !important;
+  color: var(--glass-text, #e0e0e0) !important;
+}
+
+/* --- Status pills and badges --- */
+html[style*="--glass-page-bg: #000"] [class*="status-pill"],
+html[style*="--glass-page-bg: #0a"] [class*="status-pill"],
+html[style*="--glass-page-bg: #000"] [class*="badge"],
+html[style*="--glass-page-bg: #0a"] [class*="badge"] {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+/* --- Danger button on dark surface --- */
+html[style*="--glass-page-bg: #000"] .a-btn-danger,
+html[style*="--glass-page-bg: #0a"] .a-btn-danger {
+  color: #cc4444 !important;
+  border-color: rgba(204,68,68,0.25) !important;
+}
+
+/* --- Scrollbar hidden on dark minale --- */
+html[style*="--glass-page-bg: #000"]::-webkit-scrollbar,
+html[style*="--glass-page-bg: #0a"]::-webkit-scrollbar {
+  width: 0 !important;
+  display: none !important;
+}
+
+/* --- Ensure body and #__nuxt use the right bg --- */
+html[style*="--glass-page-bg: #000"],
+html[style*="--glass-page-bg: #000"] body,
+html[style*="--glass-page-bg: #000"] #__nuxt,
+html[style*="--glass-page-bg: #0a"],
+html[style*="--glass-page-bg: #0a"] body,
+html[style*="--glass-page-bg: #0a"] #__nuxt {
+  background: var(--glass-page-bg, #000000) !important;
+  color: var(--glass-text, #e0e0e0) !important;
+}
 

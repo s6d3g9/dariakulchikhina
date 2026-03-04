@@ -141,6 +141,9 @@
           <button v-if="aiLoading" class="de-tbtn de-tbtn--abort" @click="abortAi">
             ✕ стоп
           </button>
+          <button v-if="!aiLoading && aiTruncated" class="de-tbtn de-tbtn--continue" @click="onContinueGeneration" title="Модель остановилась по лимиту — догенерировать">
+            ▶ продолжить
+          </button>
           <button class="de-tbtn" :class="{ 'de-tbtn--ai-active': chatVisible }" @click="chatVisible = !chatVisible" title="Показать/скрыть чат с Gemma">
             💬 чат
           </button>
@@ -269,6 +272,7 @@
                     <span v-else-if="msg.streaming" class="de-chat-writing">{{ msg.charCount > 0 ? msg.charCount + ' симв.' : '' }}</span>
                     <span class="de-chat-time">{{ msg.time }}</span>
                   </div>
+                  <button v-if="msg._applyText && !aiLoading" class="de-chat-apply-btn" @click="applyFromChat(msg._applyText!)">✓ Применить в редактор</button>
                 </div>
               </div>
             </div>
@@ -890,7 +894,7 @@ async function copyToClipboard() {
 }
 
 // ── AI (Gemma 3 27B) ──────────────────────────────────────────────────────
-const { aiLoading, aiError, aiAction, aiProgress, aiElapsed, aiTokenCount, aiReviewNotes, aiCitations, streamDocument, reviewDocument, abortAi, clearReview, clearCitations } = useAiDocument()
+const { aiLoading, aiError, aiAction, aiProgress, aiElapsed, aiTokenCount, aiTruncated, aiReviewNotes, aiCitations, streamDocument, reviewDocument, abortAi, clearReview, clearCitations } = useAiDocument()
 
 // Фазовые подсказки пока нет ни одного токена
 const aiPhaseHint = computed(() => {
@@ -928,6 +932,7 @@ interface ChatMsg {
   done: boolean
   time: string
   charCount: number
+  _applyText?: string
 }
 const chatVisible = ref(true)
 const chatMessages = ref<ChatMsg[]>([])
@@ -996,6 +1001,13 @@ async function onSendChatMessage() {
   }
 }
 
+function applyFromChat(text: string) {
+  editorContent.value = text
+  if (editorEl.value) editorEl.value.innerText = text
+  // убираем кнопку применения с всех сообщений
+  chatMessages.value.forEach(m => { m._applyText = undefined })
+}
+
 function clearChat() {
   chatMessages.value = []
 }
@@ -1011,6 +1023,22 @@ function buildAiPayload() {
     clientId:       pickedClientId.value        || 0,
     contractorId:   pickedContractorId.value    || 0,
   }
+}
+
+async function onContinueGeneration() {
+  if (aiLoading.value) return
+  clearCitations()
+  const existingText = editorContent.value
+  _chatPushUser('▶ Продолжить генерацию')
+  const chatMsg = _chatPushGemma()
+  chatVisible.value = true
+  await streamDocument('continue', { ...buildAiPayload(), currentText: existingText }, (token) => {
+    // добавляем продолжение прямо в редактор
+    editorContent.value += token
+    if (editorEl.value) editorEl.value.innerText = editorContent.value
+    _chatToken(chatMsg, token)
+  })
+  _chatDone(chatMsg)
 }
 
 async function onAiGenerate() {
@@ -1321,6 +1349,43 @@ async function saveDocument() {
 .de-chat-typing span:nth-child(3) { animation-delay: .4s; }
 @keyframes de-typing { 0%,80%,100%{transform:scale(1);opacity:.35} 40%{transform:scale(1.3);opacity:1} }
 
+/* ── Chat apply кнопка ── */
+.de-chat-apply-btn {
+  display: block; margin-top: 8px; width: 100%;
+  padding: 6px 12px; border-radius: 7px; border: none; cursor: pointer;
+  font-size: .74rem; font-weight: 600;
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  color: #16a34a; transition: background .15s;
+}
+.de-chat-apply-btn:hover { background: color-mix(in srgb, #22c55e 28%, transparent); }
+
+/* ── Chat input bar ── */
+.de-chat-panel { display: flex; flex-direction: column; }
+.de-chat-messages { flex: 1; min-height: 0; }
+.de-chat-input-bar {
+  display: flex; align-items: flex-end; gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+.de-chat-input {
+  flex: 1; resize: none; overflow: hidden; min-height: 36px; max-height: 120px;
+  padding: 8px 10px; border-radius: 10px; border: 1px solid var(--glass-border);
+  background: color-mix(in srgb, var(--glass-bg, #fff) 60%, transparent);
+  color: var(--glass-text); font-family: inherit; font-size: .82rem;
+  line-height: 1.45; outline: none; transition: border-color .15s;
+}
+.de-chat-input:focus { border-color: var(--ds-accent, #6366f1); }
+.de-chat-input:disabled { opacity: .5; cursor: not-allowed; }
+.de-chat-send {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; border: none;
+  background: var(--ds-accent, #6366f1); color: #fff; font-size: 1rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: opacity .15s, transform .1s;
+}
+.de-chat-send:hover:not(:disabled) { opacity: .85; transform: scale(1.08); }
+.de-chat-send:disabled { opacity: .35; cursor: not-allowed; }
+
 /* Анимация появления чата */
 .de-chat-slide-enter-active, .de-chat-slide-leave-active {
   transition: all .25s ease;
@@ -1447,7 +1512,19 @@ async function saveDocument() {
   opacity: .85;
   border: 1px solid rgba(248,113,113,.3);
 }
+.de-tbtn--abort {
+  color: #f87171;
+  opacity: .85;
+  border: 1px solid rgba(248,113,113,.3);
+}
 .de-tbtn--abort:hover { opacity: 1; background: rgba(248,113,113,.12) !important; }
+.de-tbtn--continue {
+  color: #22c55e !important;
+  border: 1px solid rgba(34,197,94,.3);
+  animation: de-continue-pulse 1.8s ease-in-out infinite;
+}
+.de-tbtn--continue:hover { background: rgba(34,197,94,.1) !important; animation: none; }
+@keyframes de-continue-pulse { 0%,100%{opacity:.75} 50%{opacity:1} }
 
 /* ── AI строка прогресса ── */
 .de-ai-progress {
