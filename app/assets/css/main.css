@@ -333,6 +333,7 @@ html.dark .glass-card {
 }
 
 .glass-input {
+  width: 100%;
   border: none;
   background: color-mix(in srgb, var(--glass-bg) 86%, transparent);
   color: var(--glass-text);
@@ -368,11 +369,10 @@ html.dark .glass-card {
 }
 .glass-input--inline:focus { border-bottom-color: var(--glass-text, currentColor); }
 
-/* Width constraints */
-.glass-input--xs  { max-width: 56px; }
-.glass-input--sm  { max-width: 100px; }
-.glass-input--md  { max-width: 200px; }
-.glass-input--full { width: 100%; }
+/* Width constraints (used only inside tables / compact rows) */
+.glass-input--xs  { width: auto; max-width: 56px; }
+.glass-input--sm  { width: auto; max-width: 100px; }
+.glass-input--md  { width: auto; max-width: 200px; }
 
 html.dark .glass-chip {
   /* token-based: var(--chip-bg) and var(--chip-border-color) handle dark mode automatically */
@@ -1940,12 +1940,19 @@ html.dark .glass-input::placeholder {
 .u-prop-select { appearance: none; cursor: pointer; }
 
 /* ── u-ta ────────────────────────────────────────────────────
-   Textarea resize utility (pair with glass-input)
+   Textarea auto-expand utility (pair with glass-input).
+   Height grows automatically via autosize plugin;
+   user can still drag-resize vertically.
 ──────────────────────────────────────────────────────────── */
-.u-ta          { resize: vertical; }
-.u-ta--sm      { resize: vertical; min-height: 36px; }
-.u-ta--md      { resize: vertical; min-height: 72px; }
-.u-ta--lg      { resize: vertical; min-height: 120px; }
+.u-ta {
+  resize: none;
+  overflow-y: hidden;
+  min-height: 2.4em;
+  field-sizing: content;          /* Chrome 123+, progressive */
+}
+.u-ta--sm      { min-height: 36px; }
+.u-ta--md      { min-height: 72px; }
+.u-ta--lg      { min-height: 120px; }
 
 /* ── Dark mode for unified components ────────────────────── */
 html.dark .u-modal-overlay {

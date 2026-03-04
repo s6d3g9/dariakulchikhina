@@ -8,7 +8,7 @@
 import { useDb } from '~/server/db/index'
 import { projects, clients, contractors, pageContent } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
-import { retrieveLegalContextWithChunks } from '~/server/utils/rag'
+import { retrieveLegalContextWithChunks, type LegalChunkWithScore } from '~/server/utils/rag'
 
 const MODEL = 'gemma3:27b'
 const DEFAULT_GEMMA_URL = 'http://localhost:11434'
@@ -96,7 +96,7 @@ export default defineEventHandler(async (event) => {
   // Вспомогательная функция: отправить цитаты (если есть) и [DONE]
   function sendDone() {
     if (legalChunks.length) {
-      const citations = legalChunks.map(c => ({
+      const citations = legalChunks.map((c: LegalChunkWithScore) => ({
         source_name:   c.source_name,
         article_num:   c.article_num,
         article_title: c.article_title,

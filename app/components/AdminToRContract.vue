@@ -155,6 +155,11 @@
 </template>
 
 <script setup lang="ts">
+import { CONTRACT_STATUSES, PAYMENT_STATUSES } from '~~/shared/utils/status-maps'
+
+// template aliases
+const contractStatuses = CONTRACT_STATUSES
+const paymentStatuses  = PAYMENT_STATUSES
 const props = defineProps<{ slug: string }>()
 
 const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`)
@@ -190,18 +195,6 @@ watch(project, (p) => {
 }, { immediate: true })
 
 // ── Status choices ────────────────────────────────────────────────
-const contractStatuses = [
-  { value: 'draft',  label: 'черновик',  color: '#9e9e9e' },
-  { value: 'sent',   label: 'отправлен', color: '#2196f3' },
-  { value: 'signed', label: 'подписан ✓', color: '#4caf50' },
-  { value: 'rejected', label: 'отклонён', color: '#f44336' },
-]
-const paymentStatuses = [
-  { value: 'pending',  label: 'ожидает',   color: '#9e9e9e' },
-  { value: 'partial',  label: 'частично',  color: '#ffb300' },
-  { value: 'paid',     label: 'оплачен ✓', color: '#4caf50' },
-]
-
 function setContractStatus(v: string) { form.contract_status = v; save() }
 function setPaymentStatus(v: string)  { form.payment_status = v; save() }
 

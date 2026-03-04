@@ -88,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+import { CONTRACT_STATUS_MAP, PAYMENT_STATUS_MAP } from '~~/shared/utils/status-maps'
 const props = defineProps<{ slug: string }>()
 const reqHeaders = useRequestHeaders(['cookie'])
 const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
@@ -102,22 +103,10 @@ const hasInvoice = computed(() => !!(
   profile.value.invoice_amount || profile.value.invoice_date || profile.value.invoice_payment_details
 ))
 
-const contractStatusMap: Record<string, { label: string; color: string }> = {
-  draft:    { label: 'черновик',   color: 'gray'  },
-  sent:     { label: 'отправлен',  color: 'blue'  },
-  signed:   { label: 'подписан',   color: 'green' },
-  rejected: { label: 'отклонён',   color: 'red'   },
-}
-const paymentStatusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: 'ожидает оплаты',  color: 'gray'   },
-  partial: { label: 'частично оплачен', color: 'yellow' },
-  paid:    { label: 'оплачен',         color: 'green'  },
-}
-
-const contractStatusLabel = computed(() => contractStatusMap[profile.value.contract_status]?.label || 'не заполнен')
-const contractStatusColor = computed(() => contractStatusMap[profile.value.contract_status]?.color || 'gray')
-const paymentStatusLabel  = computed(() => paymentStatusMap[profile.value.payment_status]?.label   || 'не выставлен')
-const paymentStatusColor  = computed(() => paymentStatusMap[profile.value.payment_status]?.color   || 'gray')
+const contractStatusLabel = computed(() => CONTRACT_STATUS_MAP[profile.value.contract_status]?.label || 'не заполнен')
+const contractStatusColor = computed(() => CONTRACT_STATUS_MAP[profile.value.contract_status]?.token || 'gray')
+const paymentStatusLabel  = computed(() => PAYMENT_STATUS_MAP[profile.value.payment_status]?.label   || 'не выставлен')
+const paymentStatusColor  = computed(() => PAYMENT_STATUS_MAP[profile.value.payment_status]?.token   || 'gray')
 
 function fmtDate(d: string) {
   if (!d) return ''
