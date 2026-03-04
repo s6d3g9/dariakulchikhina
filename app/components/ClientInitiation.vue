@@ -290,7 +290,7 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
   border: none;
   border-radius: 14px;
 }
-.ci-step--done .ci-step-body  { background: color-mix(in srgb, #d9f5e6 46%, transparent); }
+.ci-step--done .ci-step-body  { background: color-mix(in srgb, var(--ds-success, #d9f5e6) 46%, transparent); }
 .ci-step--active .ci-step-body { background: color-mix(in srgb, var(--glass-bg, #fff) 94%, transparent); }
 .ci-step--pending .ci-step-body { opacity: .55; }
 
@@ -303,16 +303,16 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
 }
 .ci-step-badge--done    { background: color-mix(in srgb, var(--ds-success, #5caa7f) 15%, transparent); color: var(--ds-success, #2a7a52); }
 .ci-step-badge--active  { background: #e8e8e4; color: var(--c-text, #333); }
-.ci-step-badge--waiting { background: #fff8e1; color: #b8860b; }
-.ci-step-badge--pending { background: var(--c-bg2, #f8f8f7); color: #bbb; }
+.ci-step-badge--waiting { background: color-mix(in srgb, var(--ds-warning, #fff8e1) 60%, transparent); color: var(--ds-warning, #b8860b); }
+.ci-step-badge--pending { background: var(--c-bg2, #f8f8f7); color: var(--ds-muted, #bbb); }
 
 .ci-step-title { font-size: 1rem; font-weight: 400; margin: 0 0 6px; letter-spacing: -.2px; }
 .ci-step-desc  { font-size: .78rem; color: var(--c-muted, #888); margin: 0 0 16px; line-height: 1.6; }
 
 /* Blocks */
 .ci-step-block { display: flex; gap: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--c-bg2, #f8f8f7); border: none; border-radius: 10px; }
-.ci-step-block--biz { background: color-mix(in srgb, #fff0d5 54%, transparent); }
-.ci-step-block--sys { background: color-mix(in srgb, #e8f1ff 54%, transparent); }
+.ci-step-block--biz { background: color-mix(in srgb, var(--ds-warning, #fff0d5) 54%, transparent); }
+.ci-step-block--sys { background: color-mix(in srgb, var(--ds-accent, #e8f1ff) 54%, transparent); }
 .ci-block-label { font-size: .7rem; flex-shrink: 0; width: 80px; color: var(--c-muted, #aaa); padding-top: 1px; }
 .ci-block-text  { font-size: .78rem; color: var(--c-text, #444); line-height: 1.55; }
 
@@ -355,7 +355,7 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
 .ci-phase-done {
   display: flex; gap: 16px; align-items: flex-start;
   padding: 20px 22px; margin-top: 8px;
-  background: color-mix(in srgb, #e5f7ee 58%, transparent);
+  background: color-mix(in srgb, var(--ds-success, #e5f7ee) 58%, transparent);
   border: none;
   border-radius: 14px;
 }

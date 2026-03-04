@@ -412,7 +412,7 @@ function close() {
   text-transform: lowercase;
 }
 /* status badge tints */
-.as-badge--lead       { background: color-mix(in srgb, #9e9e9e 18%, transparent); color: #888; }
+.as-badge--lead       { background: color-mix(in srgb, #9e9e9e 18%, transparent); color: var(--ds-muted, #888); }
 .as-badge--initiation { background: color-mix(in srgb, #2196f3 15%, transparent); color: #1976d2; }
 .as-badge--tor        { background: color-mix(in srgb, #ff9800 15%, transparent); color: #e65100; }
 .as-badge--concept    { background: color-mix(in srgb, #9c27b0 15%, transparent); color: #7b1fa2; }

@@ -26,6 +26,7 @@ export type AiPayload = {
   projectSlug?: string
   clientId?: number
   contractorId?: number
+  aiModel?: string         // 'gemma3:27b' | 'qwen3:4b' | 'claude-3-5-haiku-20241022' | ...
 }
 
 function getCsrfToken(): string {

@@ -3348,6 +3348,70 @@ html.dark .a-modal label {
    ═══════════════════════════════════════════════════════════ */
 
 /* --- Kill the light-mode radial gradient on .glass-page --- */
+
+/* --- Wire component-specific CSS vars to design system tokens on dark surface --- */
+[data-dark-surface] .content-wrap {
+  --c-muted: var(--ds-muted, #a8a8a8);
+  --c-border: rgba(255,255,255,0.08);
+  --c-border-strong: rgba(255,255,255,0.14);
+  --c-text: var(--ds-text-color, #f2f2f2);
+  --c-text-soft: var(--ds-muted, #b1b1b1);
+  --c-text-body: var(--ds-text-color, #d5d5d5);
+  --c-bg-soft: rgba(255,255,255,0.03);
+  --c-input-bg: rgba(255,255,255,0.03);
+  --c-bg2: rgba(255,255,255,0.03);
+}
+[data-dark-surface] .rm-wrap {
+  --r-title: var(--ds-muted, #b1b1b1);
+  --r-muted: var(--ds-muted, #a8a8a8);
+  --r-line: rgba(255,255,255,0.08);
+  --r-dot-border: rgba(255,255,255,0.15);
+  --r-dot-bg: rgba(255,255,255,0.03);
+  --r-text: var(--ds-text-color, #f2f2f2);
+  --r-soft: var(--ds-muted, #b8b8b8);
+  --r-status-pending: var(--ds-muted, #777);
+}
+[data-dark-surface] .ws-wrap {
+  --w-title: var(--ds-muted, #b1b1b1);
+  --w-muted: var(--ds-muted, #a8a8a8);
+  --w-card-bg: var(--ds-card-bg, #181818);
+  --w-card-border: rgba(255,255,255,0.08);
+  --w-text: var(--ds-text-color, #f2f2f2);
+  --w-text-soft: var(--ds-muted, #b9b9b9);
+  --w-badge-border: rgba(255,255,255,0.10);
+}
+[data-dark-surface] .atz-card {
+  --atz-border: rgba(255,255,255,0.08);
+  --atz-text: var(--ds-text-color, #f1f1f1);
+  --atz-muted: var(--ds-muted, #a8a8a8);
+}
+[data-dark-surface] .am-card {
+  --am-border: rgba(255,255,255,0.08);
+  --am-text: var(--ds-text-color, #f1f1f1);
+  --am-muted: var(--ds-muted, #a8a8a8);
+}
+[data-dark-surface] .a-card {
+  --card-bg: var(--ds-card-bg, #151517);
+  --card-border: rgba(255,255,255,0.08);
+  --card-text: var(--ds-text-color, #f2f2f2);
+  --card-muted: var(--ds-muted, #777);
+  --link-color: var(--ds-link-color, #f2f2f2);
+  --btn-border: rgba(255,255,255,0.10);
+  --btn-color: var(--ds-text-color, #bbb);
+  --label-color: var(--ds-muted, #a8a8a8);
+  --modal-bg: var(--ds-card-bg, #151517);
+  --modal-border: rgba(255,255,255,0.08);
+  --input-border: rgba(255,255,255,0.10);
+  --input-color: var(--ds-text-color, #f2f2f2);
+}
+[data-dark-surface] .acp-card {
+  --acp-bg: var(--ds-card-bg, #151517);
+  --acp-border: rgba(255,255,255,0.08);
+  --acp-lbl: var(--ds-muted, #a8a8a8);
+  --acp-btn-border: var(--ds-text-color, #f2f2f2);
+  --acp-btn-color: var(--ds-text-color, #f2f2f2);
+}
+
 [data-dark-surface] .glass-page::before {
   background: none !important;
 }
@@ -3846,6 +3910,306 @@ html.dark .a-modal label {
   border-color: rgba(255,255,255,0.25) !important;
 }
 
+/* --- NEUTRALISE HARDCODED GRAY TEXT COLORS ON DARK SURFACES --- */
+/* Loading / muted / placeholder states — all use #888–#ccc which are invisible on dark */
+[data-dark-surface] [class*="-loading"],
+[data-dark-surface] [class*="-empty"],
+[data-dark-surface] [class*="-count"],
+[data-dark-surface] [class*="-hint"],
+[data-dark-surface] [class*="-placeholder"],
+[data-dark-surface] [class*="-muted"],
+[data-dark-surface] .text-muted {
+  color: rgba(255,255,255,0.45) !important;
+}
+
+/* --- NEUTRALISE SEMANTIC STATUS COLORS — green/red/yellow/violet/blue --- */
+/* On dark surfaces, these hardcoded light-mode colors need to be lighter */
+[data-dark-surface] .pj-phase--violet  { color: #a78bfa !important; background: rgba(167,139,250,.12) !important; }
+[data-dark-surface] .pj-phase--blue    { color: #93c5fd !important; background: rgba(147,197,253,.12) !important; }
+[data-dark-surface] .pj-phase--amber   { color: #fcd34d !important; background: rgba(252,211,77,.10) !important; }
+[data-dark-surface] .pj-phase--orange  { color: #fdba74 !important; background: rgba(253,186,116,.10) !important; }
+[data-dark-surface] .pj-phase--green   { color: #86efac !important; background: rgba(134,239,172,.10) !important; }
+[data-dark-surface] .pj-phase--teal    { color: #5eead4 !important; background: rgba(94,234,212,.10) !important; }
+
+/* Green success / price colors — force lighter in dark mode */
+[data-dark-surface] .cab-inline-success,
+[data-dark-surface] .dash-project-price,
+[data-dark-surface] .svc-price,
+[data-dark-surface] .proj-card-total,
+[data-dark-surface] .proj-total strong,
+[data-dark-surface] .sub-card-discount,
+[data-dark-surface] .sub-card-effective,
+[data-dark-surface] .sub-eff-val,
+[data-dark-surface] .de-chat-done,
+[data-dark-surface] [class*="--done"] {
+  color: rgba(134,239,172,0.85) !important;
+}
+[data-dark-surface] .sub-card-discount {
+  background: rgba(134,239,172,0.08) !important;
+}
+
+/* Red error / danger / delete colors */
+[data-dark-surface] .cab-inline-error,
+[data-dark-surface] .svc-del,
+[data-dark-surface] [class*="-error"],
+[data-dark-surface] [class*="-danger"],
+[data-dark-surface] .de-warn-text {
+  color: rgba(252,165,165,0.85) !important;
+}
+
+/* Yellow / star / highlight */
+[data-dark-surface] .agal-icon-btn--star,
+[data-dark-surface] .agal-list-star,
+[data-dark-surface] [class*="-star"] {
+  color: #fbbf24 !important;
+}
+
+/* Progress bars */
+[data-dark-surface] .pj-progress-fill,
+[data-dark-surface] [class*="-progress-fill"] {
+  background: rgba(134,239,172,0.5) !important;
+}
+
+/* Inline style overrides — these use style="color:#444" etc. Force via specificity */
+[data-dark-surface] span[style*="color:#444"],
+[data-dark-surface] span[style*="color: #444"],
+[data-dark-surface] div[style*="color:#888"],
+[data-dark-surface] div[style*="color: #888"],
+[data-dark-surface] div[style*="color:#999"],
+[data-dark-surface] span[style*="color:#999"],
+[data-dark-surface] [style*="color:#aaa"],
+[data-dark-surface] [style*="color: #aaa"],
+[data-dark-surface] [style*="color:#bbb"],
+[data-dark-surface] [style*="color:#666"],
+[data-dark-surface] [style*="color:#777"],
+[data-dark-surface] [style*="color:#555"] {
+  color: rgba(255,255,255,0.45) !important;
+}
+
+/* Step number badges — green done, neutral pending */
+[data-dark-surface] [class*="-step--done"] [class*="-step-num"] {
+  background: rgba(134,239,172,0.15) !important;
+  color: #86efac !important;
+}
+
+/* Citation/source badges */
+[data-dark-surface] .de-citations {
+  background: rgba(134,239,172,0.06) !important;
+  border-color: rgba(134,239,172,0.12) !important;
+}
+[data-dark-surface] .de-citations-title,
+[data-dark-surface] .de-citations-count {
+  color: #86efac !important;
+}
+[data-dark-surface] .de-citation-article {
+  color: #86efac !important;
+  background: rgba(134,239,172,0.08) !important;
+}
+
+/* Toast notifications */
+[data-dark-surface] .de-toast--ok {
+  background: rgba(34,197,94,0.12) !important;
+  color: #86efac !important;
+}
+[data-dark-surface] .de-toast--err {
+  background: rgba(220,38,38,0.12) !important;
+  color: #fca5a5 !important;
+}
+
+/* --- FONT CONTRAST & READABILITY --- */
+/* All body text on dark surfaces should have proper contrast */
+[data-dark-surface] p,
+[data-dark-surface] li,
+[data-dark-surface] td,
+[data-dark-surface] dd,
+[data-dark-surface] span:not([class*="icon"]):not([class*="badge"]):not([style]) {
+  color: var(--ds-text-color, rgba(255,255,255,0.75));
+}
+
+/* Section titles / labels */
+[data-dark-surface] [class*="-title"]:not([class*="section"]),
+[data-dark-surface] [class*="-label"],
+[data-dark-surface] [class*="-name"],
+[data-dark-surface] [class*="-heading"] {
+  color: var(--ds-heading-color, #ffffff) !important;
+}
+
+/* Descriptions / subtitles */
+[data-dark-surface] [class*="-desc"],
+[data-dark-surface] [class*="-subtitle"],
+[data-dark-surface] [class*="-meta"],
+[data-dark-surface] [class*="-info"],
+[data-dark-surface] [class*="-sub"] {
+  color: var(--ds-muted, rgba(255,255,255,0.45)) !important;
+}
+
+/* All inputs and textareas */
+[data-dark-surface] input:not([type="checkbox"]):not([type="radio"]),
+[data-dark-surface] textarea,
+[data-dark-surface] select {
+  color: var(--ds-text-color, rgba(255,255,255,0.85)) !important;
+  background: rgba(255,255,255,0.03) !important;
+  border-color: rgba(255,255,255,0.10) !important;
+}
+[data-dark-surface] input::placeholder,
+[data-dark-surface] textarea::placeholder {
+  color: rgba(255,255,255,0.25) !important;
+}
+[data-dark-surface] select option {
+  background: #0a0a0a !important;
+  color: rgba(255,255,255,0.8) !important;
+}
+
+/* Links */
+[data-dark-surface] a:not([class]) {
+  color: var(--ds-link-color, rgba(255,255,255,0.7)) !important;
+}
+[data-dark-surface] a:not([class]):hover {
+  color: var(--ds-link-color, #ffffff) !important;
+}
+
+/* --- EMOJI ICONS — desaturate on dark surfaces for monochrome feel --- */
+[data-dark-surface] .ent-empty-icon,
+[data-dark-surface] .ent-nav-avatar,
+[data-dark-surface] [class*="-icon"]:not(svg):not(button),
+[data-dark-surface] [class*="-emoji"] {
+  filter: grayscale(1) brightness(1.5) !important;
+  opacity: 0.6 !important;
+}
+/* For Minale concept — even more desaturated */
+html[data-concept="minale"] .ent-empty-icon,
+html[data-concept="minale"] [class*="-icon"]:not(svg):not(button),
+html[data-concept="minale"] [class*="-emoji"] {
+  filter: grayscale(1) brightness(2) contrast(0.4) !important;
+  opacity: 0.35 !important;
+}
+/* For Brutal concept — stark black/white emoji */
+html[data-concept="brutal"] .ent-empty-icon,
+html[data-concept="brutal"] [class*="-icon"]:not(svg):not(button),
+html[data-concept="brutal"] [class*="-emoji"] {
+  filter: grayscale(1) contrast(3) !important;
+}
+
+/* --- CONTRAST ENFORCEMENT: Force all headings on dark bg to be bright --- */
+[data-dark-surface] h1, [data-dark-surface] h2, [data-dark-surface] h3,
+[data-dark-surface] h4, [data-dark-surface] h5, [data-dark-surface] h6 {
+  color: var(--ds-heading-color, #ffffff) !important;
+}
+
+/* --- LAYOUT FIXES: Prevent elements bleeding outside container --- */
+[data-dark-surface] .ent-layout,
+[data-warm-surface] .ent-layout {
+  gap: var(--ds-grid-gap, 24px);
+}
+
+/* Ensure nav badges/pills don't overflow on narrow screens */
+.ent-nav-badge {
+  font-size: 0.62rem !important;
+  padding: 1px 6px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 80px !important;
+}
+
+/* Fix status bar spacing */
+[data-dark-surface] .sb-cell {
+  padding: 6px 10px !important;
+}
+
+/* --- CLIENT TIMELINE GRAY FIXES --- */
+[data-dark-surface] .ct-date,
+[data-dark-surface] .ct-time,
+[data-dark-surface] .ct-status,
+[data-dark-surface] .ct-label {
+  color: rgba(255,255,255,0.5) !important;
+}
+[data-dark-surface] .ct-card,
+[data-dark-surface] .ct-event {
+  background: rgba(255,255,255,0.03) !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* --- ADMIN DETAIL PAGE POSITIONING --- */
+[data-dark-surface] .ent-detail-head {
+  border-bottom-color: rgba(255,255,255,0.06) !important;
+}
+[data-dark-surface] .ent-detail-section {
+  color: rgba(255,255,255,0.35) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem !important;
+}
+[data-dark-surface] .ent-detail-name {
+  color: #ffffff !important;
+}
+[data-dark-surface] .ent-detail-foot {
+  border-top-color: rgba(255,255,255,0.06) !important;
+}
+
+/* --- SIDEBAR POSITIONING --- */
+[data-dark-surface] .ent-sidebar-head {
+  border-bottom-color: rgba(255,255,255,0.06) !important;
+}
+[data-dark-surface] .ent-sidebar-title {
+  color: rgba(255,255,255,0.55) !important;
+}
+[data-dark-surface] .ent-sidebar-count {
+  color: rgba(255,255,255,0.3) !important;
+}
+[data-dark-surface] .ent-sidebar-foot {
+  border-top-color: rgba(255,255,255,0.06) !important;
+}
+
+/* --- NAV ITEM TEXT COLORS --- */
+[data-dark-surface] .ent-nav-name {
+  color: rgba(255,255,255,0.7) !important;
+}
+[data-dark-surface] .ent-nav-sub {
+  color: rgba(255,255,255,0.3) !important;
+}
+[data-dark-surface] .ent-nav-item--active .ent-nav-name {
+  color: #ffffff !important;
+}
+
+/* --- FIX AVATAR CIRCLES ON DARK SURFACE --- */
+[data-dark-surface] .pj-av,
+[data-dark-surface] .ent-nav-avatar {
+  background: rgba(255,255,255,0.06) !important;
+  color: rgba(255,255,255,0.5) !important;
+}
+
+/* --- SEARCH INPUT --- */
+[data-dark-surface] .ent-search {
+  background: rgba(255,255,255,0.03) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.8) !important;
+}
+[data-dark-surface] .ent-search::placeholder {
+  color: rgba(255,255,255,0.25) !important;
+}
+
+/* --- MODAL IMPROVEMENTS --- */
+[data-dark-surface] .pj-modal,
+[data-dark-surface] .pj-backdrop {
+  backdrop-filter: blur(8px) !important;
+}
+[data-dark-surface] .pj-modal {
+  background: var(--ds-card-bg, #0a0a0a) !important;
+  border-color: rgba(255,255,255,0.08) !important;
+}
+[data-dark-surface] .pj-modal-head {
+  color: #ffffff !important;
+  border-bottom-color: rgba(255,255,255,0.06) !important;
+}
+[data-dark-surface] .pj-modal-step {
+  color: rgba(255,255,255,0.35) !important;
+}
+
+/* --- CHECKBOX AND TOGGLE COLORS --- */
+[data-dark-surface] input[type="checkbox"] {
+  accent-color: rgba(255,255,255,0.5) !important;
+}
 
 /* ═══════════════════════════════════════════════════════════
    WARM SURFACE OVERRIDE SYSTEM
@@ -3991,6 +4355,74 @@ html.dark .a-modal label {
   background: rgba(80,60,30,0.08) !important;
   color: var(--ds-heading-color, #2a2520) !important;
   border-color: rgba(80,60,30,0.30) !important;
+}
+
+/* --- WARM SURFACE: Emoji desaturation --- */
+[data-warm-surface] .ent-empty-icon,
+[data-warm-surface] [class*="-icon"]:not(svg):not(button),
+[data-warm-surface] [class*="-emoji"] {
+  filter: sepia(0.3) saturate(0.6) !important;
+}
+
+/* --- WARM SURFACE: Semantic colors muted --- */
+[data-warm-surface] .pj-phase--violet  { color: #6d28d9 !important; background: rgba(109,40,217,.06) !important; }
+[data-warm-surface] .pj-phase--blue    { color: #1d4ed8 !important; background: rgba(29,78,216,.06) !important; }
+[data-warm-surface] .pj-phase--amber   { color: #92400e !important; background: rgba(146,64,14,.06) !important; }
+[data-warm-surface] .pj-phase--orange  { color: #9a3412 !important; background: rgba(154,52,18,.06) !important; }
+[data-warm-surface] .pj-phase--green   { color: #166534 !important; background: rgba(22,101,52,.06) !important; }
+[data-warm-surface] .pj-phase--teal    { color: #115e59 !important; background: rgba(17,94,89,.06) !important; }
+
+/* --- WARM SURFACE: Gray text mapping --- */
+[data-warm-surface] [class*="-loading"],
+[data-warm-surface] [class*="-empty"],
+[data-warm-surface] [class*="-muted"] {
+  color: rgba(58,53,44,0.45) !important;
+}
+
+/* --- WARM SURFACE: Inputs --- */
+[data-warm-surface] input:not([type="checkbox"]):not([type="radio"]),
+[data-warm-surface] textarea,
+[data-warm-surface] select {
+  color: var(--ds-text-color, #3a352c) !important;
+  background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 50%, transparent) !important;
+  border-color: rgba(80,60,30,0.12) !important;
+}
+[data-warm-surface] input::placeholder,
+[data-warm-surface] textarea::placeholder {
+  color: rgba(58,53,44,0.35) !important;
+}
+
+/* --- WARM SURFACE: Headings --- */
+[data-warm-surface] h1, [data-warm-surface] h2, [data-warm-surface] h3,
+[data-warm-surface] h4, [data-warm-surface] h5, [data-warm-surface] h6 {
+  color: var(--ds-heading-color, #2a2520) !important;
+}
+
+/* --- WARM SURFACE: Nav item text --- */
+[data-warm-surface] .ent-nav-name {
+  color: var(--ds-text-color, #3a352c) !important;
+}
+[data-warm-surface] .ent-nav-sub {
+  color: rgba(58,53,44,0.4) !important;
+}
+[data-warm-surface] .ent-sidebar-title {
+  color: rgba(58,53,44,0.6) !important;
+}
+[data-warm-surface] .ent-sidebar-count {
+  color: rgba(58,53,44,0.35) !important;
+}
+
+/* --- WARM SURFACE: Link colors --- */
+[data-warm-surface] a:not([class]) {
+  color: var(--ds-link-color, #6b5a3e) !important;
+}
+
+/* --- WARM SURFACE: Detail sections --- */
+[data-warm-surface] .ent-detail-section {
+  color: rgba(58,53,44,0.45) !important;
+}
+[data-warm-surface] .ent-detail-name {
+  color: var(--ds-heading-color, #2a2520) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════

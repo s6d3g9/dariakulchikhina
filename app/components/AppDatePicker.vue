@@ -245,7 +245,7 @@ onBeforeUnmount(() => {
 .dp-input { flex: 1; padding-right: 28px !important; min-width: 0; }
 .dp-icon-btn {
   position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-  background: none; border: none; cursor: pointer; font-size: 1rem; color: #bbb;
+  background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--ds-muted, #bbb);
   padding: 2px 4px; line-height: 1;
 }
 .dp-icon-btn:hover { color: var(--glass-text, #333); }
@@ -290,7 +290,7 @@ onBeforeUnmount(() => {
 .dp-day:hover:not(:disabled):not(.dp-day--sel) { background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
 .dp-day:disabled { cursor: default; }
 .dp-day--other { opacity: .35; }
-.dp-day--today { color: #3b82f6; font-weight: 600; }
+.dp-day--today { color: var(--ds-accent, #3b82f6); font-weight: 600; }
 .dp-day--sel { background: var(--ds-accent) !important; color: #fff !important; font-weight: 600; border-radius: 5px; }
 .dp-footer {
   display: flex; justify-content: space-between; margin-top: 8px;
@@ -301,6 +301,6 @@ onBeforeUnmount(() => {
   font-size: .72rem; color: var(--glass-text, #999); opacity: .5;
   padding: 3px 8px; border-radius: 5px; transition: color .15s, background .15s;
 }
-.dp-clear:hover { color: #e06c6c; opacity: 1; background: rgba(224,108,108,.1); }
-.dp-today:hover { color: #3b82f6; opacity: 1; background: rgba(59,130,246,.1); }
+.dp-clear:hover { color: var(--ds-error, #e06c6c); opacity: 1; background: color-mix(in srgb, var(--ds-error, #e06c6c) 10%, transparent); }
+.dp-today:hover { color: var(--ds-accent, #3b82f6); opacity: 1; background: color-mix(in srgb, var(--ds-accent, #3b82f6) 10%, transparent); }
 </style>

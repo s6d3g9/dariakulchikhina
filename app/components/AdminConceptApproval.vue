@@ -256,7 +256,7 @@ async function moveToPhase2() {
 
 <style scoped>
 .aca-wrap { padding: 4px 0 40px; }
-.aca-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
+.aca-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
 
 /* Transition banner */
 .aca-transition-banner {

@@ -120,9 +120,9 @@ function removePhotoTag(ph: any, t: string) {
 
 <style scoped>
 .asp2-wrap { padding: 4px 0 40px; }
-.asp2-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
+.asp2-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
 .asp2-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-.asp2-count { font-size: .74rem; color: #999; }
+.asp2-count { font-size: .74rem; color: var(--ds-muted, #999); }
 .asp2-upload-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border, #e0e0e0); padding: 6px 14px; font-size: .78rem; color: inherit; cursor: pointer; user-select: none; margin-left: auto; }
 .asp2-upload-btn:hover { border-color: #aaa; }
 .asp2-upload-btn--loading { opacity: .6; cursor: wait; }

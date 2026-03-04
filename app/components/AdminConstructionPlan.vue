@@ -109,7 +109,7 @@ function removeTask(i: number) {
 
 <style scoped>
 .acp-wrap { padding: 4px 0 40px; }
-.acp-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
+.acp-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
 .acp-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .acp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */

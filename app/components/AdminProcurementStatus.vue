@@ -143,7 +143,7 @@ function removeOrder(idx: number) {
 
 <style scoped>
 .aps-wrap { padding: 4px 0 40px; }
-.aps-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
+.aps-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
 
 .aps-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .aps-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }

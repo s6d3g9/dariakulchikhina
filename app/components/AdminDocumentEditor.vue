@@ -110,6 +110,27 @@
         </div>
       </div>
 
+      <!-- Переменные проекта -->
+      <div class="de-vars-section">
+        <button class="de-vars-toggle" @click="varsOpen = !varsOpen">
+          <span class="de-vars-icon">{{ '{' }}{{ '{' }}</span> переменные проекта
+          <span class="de-vars-hint">(клик → вставить в шаблон)</span>
+          <span class="de-vars-arrow">{{ varsOpen ? '▴' : '▾' }}</span>
+        </button>
+        <div v-if="varsOpen" class="de-vars-grid">
+          <div
+            v-for="v in allVars" :key="v.key"
+            class="de-var-row"
+            :class="{ 'de-var-row--empty': !v.value }"
+            :title="'Клик → вставить \u0432 редактор'"
+            @click="insertVar(v.key)"
+          >
+            <code class="de-var-key">{{ '{' }}{{ '{' }}{{ v.key }}{{ '}' }}{{ '}' }}</code>
+            <span class="de-var-val">{{ v.value || '— не заполнено' }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="de-actions">
         <button class="a-btn-sm" @click="step = 0">← шаблоны</button>
         <button class="a-btn-save" @click="step = 2">редактор →</button>
@@ -128,6 +149,7 @@
           <button class="de-tbtn" @click="printDocument">🖨 PDF</button>
           <button class="de-tbtn" @click="downloadTxt">⬇ .txt</button>
           <button class="de-tbtn" @click="copyToClipboard">📋 копировать</button>
+          <button class="de-tbtn" :class="{ 'de-tbtn--ai-active': varsOpen }" title="Переменные шаблона {{...}}" @click="varsOpen = !varsOpen">&#123;&#123;&thinsp;&#125;&#125;</button>
           <span class="de-ai-sep">|</span>
           <button class="de-tbtn de-tbtn--ai" :disabled="aiLoading" :class="{ 'de-tbtn--ai-active': aiAction === 'generate' }" @click="onAiGenerate">
             🤖 сгенерировать
@@ -144,9 +166,21 @@
           <button v-if="!aiLoading && aiTruncated" class="de-tbtn de-tbtn--continue" @click="onContinueGeneration" title="Модель остановилась по лимиту — догенерировать">
             ▶ продолжить
           </button>
-          <button class="de-tbtn" :class="{ 'de-tbtn--ai-active': chatVisible }" @click="chatVisible = !chatVisible" title="Показать/скрыть чат с Gemma">
+          <button class="de-tbtn" :class="{ 'de-tbtn--ai-active': chatVisible }" @click="chatVisible = !chatVisible" title="Показать/скрыть чат с ИИ">
             💬 чат
           </button>
+          <span class="de-ai-sep">|</span>
+          <select v-model="selectedAiModel" class="de-model-sel" title="Выбрать AI-модель">
+            <optgroup label="Локальные (бесплатно)">
+              <option value="">🏠 Авто (локальная)</option>
+              <option value="gemma3:27b">🏠 Gemma 3 27B (документы)</option>
+              <option value="qwen3:4b">🏠 Qwen3 4B (чат, быстро)</option>
+            </optgroup>
+            <optgroup label="Anthropic Claude">
+              <option value="claude-3-5-haiku-20241022">☁️ Claude Haiku 3.5 (рек.)</option>
+              <option value="claude-3-haiku-20240307">☁️ Claude Haiku 3 (дешевле)</option>
+            </optgroup>
+          </select>
         </div>
         <div v-if="aiProgress" class="de-ai-progress">
           <div class="de-ai-progress-row">
@@ -182,6 +216,28 @@
       <div v-if="aiLoading" class="de-ai-bar">
         <div class="de-ai-bar-fill"></div>
       </div>
+
+      <!-- ══ Панель переменных ══ -->
+      <Transition name="de-vars-slide">
+        <div v-if="varsOpen" class="de-vars-panel glass-card">
+          <div class="de-vars-panel-head">
+            <span class="de-vars-panel-title">&#123;&#123;&thinsp;&#125;&#125; Переменные шаблона</span>
+            <span class="de-vars-panel-hint">Кликните — вставить в позицию курсора · или скопировать</span>
+            <button class="de-tbtn" @click="varsOpen = false">✕</button>
+          </div>
+          <div class="de-vars-panel-grid">
+            <div
+              v-for="v in allVars" :key="v.key"
+              class="de-var-item"
+              :class="{ 'de-var-item--empty': !v.value }"
+              @click="insertVar(v.key)"
+            >
+              <code class="de-var-key">{{ '{' }}{{ '{' }}{{ v.key }}{{ '}' }}{{ '}' }}</code>
+              <span class="de-var-val">{{ v.value || '—' }}</span>
+            </div>
+          </div>
+        </div>
+      </Transition>
 
       <!-- ══ Двухколоночный layout: редактор + чат ══ -->
       <div class="de-editor-body" :class="{ 'de-editor-body--with-chat': chatVisible }">
@@ -245,7 +301,7 @@
                 <span class="de-chat-avatar">🤖</span>
                 <div>
                   <div class="de-chat-title">Gemma 3 · 27B</div>
-                  <div class="de-chat-subtitle">локальная модель · {{ aiLoading ? 'печатает...' : 'онлайн' }}</div>
+                  <div class="de-chat-subtitle">{{ selectedAiModel.startsWith('claude-') ? '☁️ Anthropic' : '🏠 локальная' }} · {{ selectedAiModelLabel.replace(/^[🏠☁️]+\s*/,'') }} · {{ aiLoading ? 'печатает...' : 'онлайн' }}</div>
                 </div>
               </div>
               <button class="de-tbtn" @click="clearChat" title="Очистить историю">🗑</button>
@@ -280,12 +336,17 @@
                 </div>
               </div>
             </div>
+            <!-- ── Быстрые команды ── -->
+            <div class="de-chat-chips">
+              <button v-for="chip in chatChips" :key="chip.label" class="de-chip" :disabled="aiLoading" @click="applyChip(chip.tpl)">{{ chip.label }}</button>
+            </div>
             <!-- ── Поле ввода ── -->
             <div class="de-chat-input-bar">
               <textarea
+                ref="chatInputEl"
                 v-model="chatInput"
                 class="de-chat-input"
-                :placeholder="aiLoading ? 'Gemma печатает...' : 'Напишите пожелание или вопрос...' "
+                :placeholder="aiLoading ? 'Модель печатает...' : 'замени [старое] на [новое] · или задайте вопрос...'"
                 :disabled="aiLoading"
                 rows="1"
                 @keydown.enter.exact.prevent="onSendChatMessage"
@@ -396,6 +457,85 @@ const loadingCtx    = ref(false)
 const diffMode     = ref<'' | 'streaming' | 'review'>('')
 const diffOriginal = ref('')
 const diffNew      = ref('')
+
+// ── Панель переменных {{...}} ──
+const varsOpen = ref(false)
+
+// Все доступные переменные: поля шаблона + проектные мета-данные
+const allVars = computed(() => {
+  const result: Array<{ key: string; label: string; value: string; group: string }> = []
+  const vals = fieldValues.value
+
+  // 1. Поля текущего шаблона
+  if (selectedTpl.value) {
+    for (const f of selectedTpl.value.fields) {
+      result.push({ key: f.key, label: f.label, value: vals[f.key] || '', group: 'Поля шаблона' })
+    }
+  }
+
+  // 2. Проектные данные (автозаполнение из проекта/клиента)
+  const p = ctx.value?.project
+  const projectVars: Array<[string, string, string]> = [
+    ['client_name',          'ФИО клиента',              p?.client_name || vals.client_name || ''],
+    ['client_phone',         'Телефон клиента',           p?.phone || vals.client_phone || ''],
+    ['client_email',         'Email клиента',             p?.email || vals.client_email || ''],
+    ['client_passport',      'Паспорт (серия номер)',     vals.client_passport || ''],
+    ['client_passport_issued','Паспорт выдан',            vals.client_passport_issued || ''],
+    ['client_passport_date', 'Дата выдачи паспорта',      vals.client_passport_date || ''],
+    ['client_registration',  'Адрес регистрации',         vals.client_registration || ''],
+    ['client_inn',           'ИНН клиента',               vals.client_inn || ''],
+    ['client_address',       'Адрес клиента',             vals.client_address || ''],
+    ['object_address',       'Адрес объекта',             p?.objectAddress || vals.object_address || ''],
+    ['object_type',          'Тип объекта',               p?.objectType || vals.object_type || ''],
+    ['area',                 'Площадь (кв.м)',            p?.objectArea || vals.area || ''],
+    ['budget',               'Бюджет',                    p?.budget || vals.budget || ''],
+    ['deadline',             'Срок выполнения',           p?.deadline || vals.deadline || ''],
+    ['style',                'Стиль интерьера',           p?.style || vals.style || ''],
+    ['contractor_name',      'Подрядчик',                 vals.contractor_name || ''],
+    ['contractor_inn',       'ИНН подрядчика',            vals.contractor_inn || ''],
+    ['contractor_address',   'Адрес подрядчика',          vals.contractor_address || ''],
+    ['contractor_phone',     'Телефон подрядчика',        vals.contractor_phone || ''],
+    ['contractor_account',   'Расчётный счёт',            vals.contractor_account || ''],
+    ['contractor_bik',       'БИК',                       vals.contractor_bik || ''],
+    ['contractor_bank',      'Банк',                      vals.contractor_bank || ''],
+    ['remaining_amount',     'Остаток суммы',             computedRemaining.value || ''],
+  ]
+  for (const [key, label, value] of projectVars) {
+    // Не дублируем поля шаблона
+    if (!result.find(r => r.key === key)) {
+      result.push({ key, label, value, group: 'Данные проекта' })
+    }
+  }
+  return result
+})
+
+function insertVar(key: string) {
+  const token = `{{${key}}}`
+  if (step.value === 2 && editorEl.value) {
+    // Вставляем в позицию курсора редактора
+    editorEl.value.focus()
+    const sel = window.getSelection()
+    if (sel && sel.rangeCount) {
+      const range = sel.getRangeAt(0)
+      range.deleteContents()
+      range.insertNode(document.createTextNode(token))
+      range.collapse(false)
+      sel.removeAllRanges()
+      sel.addRange(range)
+      // Синхронизируем с моделью
+      editorContent.value = editorEl.value.innerText
+    } else {
+      // Нет курсора — добавляем в конец
+      editorContent.value += token
+      editorEl.value.innerText = editorContent.value
+    }
+  } else {
+    // На шаге 2 или вне редактора — копируем в буфер
+    navigator.clipboard.writeText(token).catch(() => {})
+    copyMsg.value = `✓ скопировано: ${token}`
+    setTimeout(() => { copyMsg.value = '' }, 2000)
+  }
+}
 
 type DiffSeg = { type: 'equal' | 'del' | 'ins'; text: string }
 
@@ -897,8 +1037,19 @@ async function copyToClipboard() {
   }
 }
 
-// ── AI (Gemma 3 27B) ──────────────────────────────────────────────────────
+// ── AI ──────────────────────────────────────────────────────────────────────
 const { aiLoading, aiError, aiAction, aiProgress, aiElapsed, aiTokenCount, aiTruncated, aiReviewNotes, aiCitations, streamDocument, reviewDocument, abortAi, clearReview, clearCitations } = useAiDocument()
+
+// Выбранная AI-модель
+const AI_MODELS = [
+  { value: '',                          label: '🏠 Авто (локальная)',         group: 'Локальные (бесплатно)' },
+  { value: 'gemma3:27b',                label: '🏠 Gemma 3 27B (документы)',  group: 'Локальные (бесплатно)' },
+  { value: 'qwen3:4b',                  label: '🏠 Qwen3 4B (чат, быстро)',   group: 'Локальные (бесплатно)' },
+  { value: 'claude-3-5-haiku-20241022', label: '☁️ Claude Haiku 3.5 (рек.)', group: 'Anthropic Claude' },
+  { value: 'claude-3-haiku-20240307',   label: '☁️ Claude Haiku 3 (дешевле)', group: 'Anthropic Claude' },
+]
+const selectedAiModel = ref('')
+const selectedAiModelLabel = computed(() => AI_MODELS.find(m => m.value === selectedAiModel.value)?.label || '🤖 модель')
 
 // Фазовые подсказки пока нет ни одного токена
 const aiPhaseHint = computed(() => {
@@ -943,8 +1094,38 @@ interface ChatMsg {
 const chatVisible = ref(true)
 const chatMessages = ref<ChatMsg[]>([])
 const chatEl = ref<HTMLElement | null>(null)
+const chatInputEl = ref<HTMLTextAreaElement | null>(null)
 const chatInput = ref('')
 let _chatIdSeq = 0
+
+// ── Быстрые команды-заготовки ─────────────────────────────────────────────
+const chatChips = [
+  { label: '✏️ замени слово',      tpl: 'замени [старый текст] на [новый текст]' },
+  { label: '💰 изменить сумму',    tpl: 'замени [старая сумма] на [новая сумма]' },
+  { label: '📅 изменить дату',     tpl: 'замени [старая дата] на [новая дата]' },
+  { label: '👤 изменить ФИО',      tpl: 'замени [старое ФИО] на [новое ФИО]' },
+  { label: '📍 изменить адрес',    tpl: 'замени [старый адрес] на [новый адрес]' },
+  { label: '➕ добавить пункт',    tpl: 'добавь пункт: [текст нового пункта]' },
+  { label: '🗑 удалить фрагмент',  tpl: 'удали фрагмент: [точный текст для удаления]' },
+  { label: '🔢 изменить номер',    tpl: 'замени [старый номер/срок] на [новый номер/срок]' },
+]
+
+function applyChip(tpl: string) {
+  chatInput.value = tpl
+  nextTick(() => {
+    const el = chatInputEl.value
+    if (!el) return
+    el.focus()
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+    // Выделяем первый [плейсхолдер]
+    const start = tpl.indexOf('[')
+    const end = tpl.indexOf(']') + 1
+    if (start !== -1 && end > start) {
+      el.setSelectionRange(start, end)
+    }
+  })
+}
 
 function _chatNow() {
   return new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -973,6 +1154,105 @@ function _chatDone(msg: ChatMsg) {
   if (msg._startedAt) msg.elapsed = Math.round((Date.now() - msg._startedAt) / 1000)
   _chatScroll()
 }
+function applyPatches(original: string, response: string): { result: string; count: number; failed: number } {
+  const patchRegex = /<<<REPLACE>>>\n?([\s\S]*?)<<<WITH>>>\n?([\s\S]*?)<<<END>>>/g
+  let result = original
+  let count = 0
+  let failed = 0
+  let match: RegExpExecArray | null
+
+  // Нормализация: сжимаем множественные пробелы/переносы для нечёткого поиска
+  function norm(s: string) {
+    return s.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim()
+  }
+
+  function findAndReplace(doc: string, oldText: string, newText: string): { doc: string; found: boolean } {
+    // 1. Точное совпадение
+    if (doc.includes(oldText)) {
+      return { doc: doc.replace(oldText, newText), found: true }
+    }
+    // 2. Совпадение после нормализации пробелов
+    const normOld = norm(oldText)
+    if (normOld.length < 3) return { doc, found: false }
+    const lines = doc.split('\n')
+    const oldLines = normOld.split('\n').filter(Boolean)
+    if (oldLines.length === 1) {
+      // Одна строка — ищем подстроку в каждой строке
+      for (let i = 0; i < lines.length; i++) {
+        if (norm(lines[i]).includes(normOld)) {
+          // Заменяем только совпавшую часть внутри строки
+          lines[i] = lines[i].replace(lines[i].trim(), newText.trim())
+          return { doc: lines.join('\n'), found: true }
+        }
+      }
+    } else {
+      // Несколько строк — ищем по первой строке, затем проверяем блок
+      const firstNorm = oldLines[0]
+      for (let i = 0; i <= lines.length - oldLines.length; i++) {
+        if (norm(lines[i]).includes(firstNorm)) {
+          const chunk = lines.slice(i, i + oldLines.length)
+          if (norm(chunk.join('\n')).includes(norm(oldLines.join('\n')))) {
+            lines.splice(i, oldLines.length, ...newText.split('\n'))
+            return { doc: lines.join('\n'), found: true }
+          }
+        }
+      }
+    }
+    return { doc, found: false }
+  }
+
+  while ((match = patchRegex.exec(response)) !== null) {
+    const oldText = match[1].trim()
+    const newText = match[2].trim()
+    if (!oldText) { failed++; continue }
+    const { doc: patched, found } = findAndReplace(result, oldText, newText)
+    if (found) { result = patched; count++ }
+    else { failed++ }
+  }
+  return { result, count, failed }
+}
+
+// ── Мгновенная замена без вызова AI ───────────────────────────────────────
+// Распознаёт паттерны: "замени X на Y", "X → Y", '"X" → "Y"' и т.п.
+function tryInstantEdit(instruction: string, doc: string): { applied: boolean; result: string; oldText: string; newText: string } {
+  const none = { applied: false, result: doc, oldText: '', newText: '' }
+  if (!doc.trim()) return none
+
+  // Паттерны замены с кавычками или без
+  const patterns = [
+    // замени «X» на «Y» / замени "X" на "Y" / замени 'X' на 'Y'
+    /^(?:замени(?:те)?|поменяй(?:те)?|измени(?:те)?|replace)\s+[«"'"](.+?)[»"'"]\s+на\s+[«"'"](.+?)[»"'"]/i,
+    // замени X на Y (без кавычек, до конца строки)
+    /^(?:замени(?:те)?|поменяй(?:те)?|измени(?:те)?)\s+(.+?)\s+на\s+(.+)$/i,
+    // "X" → "Y" или "X" -> "Y"
+    /^[«"'"](.+?)[»"'"]\s*[→\->]+\s*[«"'"](.+?)[»"'"]/,
+    // X → Y (без кавычек)
+    /^(.+?)\s*→\s*(.+)$/,
+  ]
+
+  for (const pattern of patterns) {
+    const m = instruction.trim().match(pattern)
+    if (m) {
+      const oldText = m[1].trim()
+      const newText = m[2].trim()
+      if (!oldText || oldText === newText) continue
+      // Ищем в документе (нормализуем пробелы)
+      if (doc.includes(oldText)) {
+        return { applied: true, result: doc.replace(oldText, newText), oldText, newText }
+      }
+      // Нечёткий поиск: игнорируем регистр первой буквы
+      const lower = oldText[0].toLowerCase() + oldText.slice(1)
+      const upper = oldText[0].toUpperCase() + oldText.slice(1)
+      for (const variant of [lower, upper]) {
+        if (doc.includes(variant)) {
+          return { applied: true, result: doc.replace(variant, newText), oldText: variant, newText }
+        }
+      }
+    }
+  }
+  return none
+}
+
 async function onSendChatMessage() {
   const text = chatInput.value.trim()
   if (!text || aiLoading.value) return
@@ -981,6 +1261,24 @@ async function onSendChatMessage() {
   const ta = document.querySelector('.de-chat-input') as HTMLTextAreaElement | null
   if (ta) { ta.style.height = 'auto' }
   _chatPushUser(text)
+
+  // ── Сначала пробуем мгновенную замену без AI ──────────────────
+  const instant = tryInstantEdit(text, editorContent.value)
+  if (instant.applied) {
+    const clean = stripMarkdown(instant.result)
+    editorContent.value = clean
+    if (editorEl.value) editorEl.value.innerText = clean
+    const msg = _chatPushGemma()
+    msg.streaming = false
+    msg.done = true
+    msg.elapsed = 0
+    msg.text = `⚡ Заменено мгновенно: «${instant.oldText.slice(0, 40)}» → «${instant.newText.slice(0, 40)}»`
+    msg.charCount = msg.text.length
+    _chatScroll()
+    return
+  }
+
+  // ── Иначе — вызываем AI ───────────────────────────────────────
   const chatMsg = _chatPushGemma()
 
   // Показываем "редактирую..." пока нет токенов
@@ -1001,19 +1299,25 @@ async function onSendChatMessage() {
     }
   })
 
-  const result = stripMarkdown(accumulated)
-  const isDocResult = ok && result.length > 200
+  const result = accumulated // НЕ трогаем — патчи должны содержать <<< маркеры
+  const hasPatch = /<<<REPLACE>>>/.test(result)
 
-  if (isDocResult) {
-    // Автоматически применяем в редактор
-    editorContent.value = result
-    if (editorEl.value) editorEl.value.innerText = result
-    // В пузыре — короткое подтверждение
-    chatMsg.text = `✓ Изменения применены в редактор (${result.length} симв.)`
-    chatMsg.charCount = result.length
+  if (hasPatch) {
+    // Патч-режим: передаём сырой ответ с <<< маркерами в applyPatches
+    const { result: patched, count, failed } = applyPatches(editorContent.value, result)
+    if (count > 0) {
+      const clean = stripMarkdown(patched)
+      editorContent.value = clean
+      if (editorEl.value) editorEl.value.innerText = clean
+      chatMsg.text = `✓ Изменено фрагментов: ${count}${failed ? ` (не найдено: ${failed})` : ''}`
+    } else {
+      // Патч не сработал — сообщаем, не трогаем документ
+      chatMsg.text = `⚠️ Не удалось найти указанный текст в документе (${failed} патч(ей) не совпали). Попробуйте процитировать точнее.`
+    }
+    chatMsg.charCount = chatMsg.text.length
   } else {
-    // Короткий ответ — показываем как обычно
-    chatMsg.text = result || accumulated
+    // Обычный текстовый ответ — показываем в пузыре
+    chatMsg.text = stripMarkdown(result) || result
     chatMsg.charCount = chatMsg.text.length
   }
   _chatDone(chatMsg)
@@ -1040,6 +1344,7 @@ function buildAiPayload() {
     projectSlug:    pickedProjectSlug.value     || '',
     clientId:       pickedClientId.value        || 0,
     contractorId:   pickedContractorId.value    || 0,
+    aiModel:        selectedAiModel.value       || undefined,
   }
 }
 
@@ -1210,7 +1515,7 @@ async function saveDocument() {
   background: color-mix(in srgb, var(--glass-text) 10%, transparent);
 }
 .de-step--active .de-step-num { background: var(--ds-accent, #6366f1); color: #fff; }
-.de-step--done .de-step-num { background: rgba(34, 197, 94, .2); color: #16a34a; }
+.de-step--done .de-step-num { background: color-mix(in srgb, var(--ds-success, #22c55e) 20%, transparent); color: var(--ds-success, #16a34a); }
 
 /* ── Section title ── */
 .de-section-title {
@@ -1338,7 +1643,7 @@ async function saveDocument() {
   gap: 6px;
 }
 .de-chat-time { font-size: .65rem; opacity: .35; white-space: nowrap; }
-.de-chat-done { font-size: .65rem; color: #34d399; }
+.de-chat-done { font-size: .65rem; color: var(--ds-success, #34d399); }
 .de-chat-elapsed { font-size: .65rem; opacity: .45; }
 .de-chat-writing { font-size: .65rem; opacity: .5; }
 .de-chat-editing { font-size: .8rem; opacity: .7; font-style: italic; }
@@ -1374,14 +1679,41 @@ async function saveDocument() {
   display: block; margin-top: 8px; width: 100%;
   padding: 6px 12px; border-radius: 7px; border: none; cursor: pointer;
   font-size: .74rem; font-weight: 600;
-  background: color-mix(in srgb, #22c55e 18%, transparent);
-  color: #16a34a; transition: background .15s;
+  background: color-mix(in srgb, var(--ds-success, #22c55e) 18%, transparent);
+  color: var(--ds-success, #16a34a); transition: background .15s;
 }
-.de-chat-apply-btn:hover { background: color-mix(in srgb, #22c55e 28%, transparent); }
+.de-chat-apply-btn:hover { background: color-mix(in srgb, var(--ds-success, #22c55e) 28%, transparent); }
 
 /* ── Chat input bar ── */
 .de-chat-panel { display: flex; flex-direction: column; }
 .de-chat-messages { flex: 1; min-height: 0; }
+
+/* ── Быстрые команды-чипы ── */
+.de-chat-chips {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 6px 10px 0;
+  flex-shrink: 0;
+}
+.de-chip {
+  border: 1px solid var(--glass-border);
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 6%, transparent);
+  color: color-mix(in srgb, var(--ds-accent, #6366f1) 80%, var(--glass-text));
+  border-radius: 20px;
+  padding: 3px 9px;
+  font-size: .68rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, transform .1s, opacity .15s;
+  white-space: nowrap;
+  opacity: .7;
+}
+.de-chip:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 16%, transparent);
+  opacity: 1;
+  transform: translateY(-1px);
+}
+.de-chip:active:not(:disabled) { transform: scale(.96); }
+.de-chip:disabled { opacity: .25; cursor: not-allowed; }
 .de-chat-input-bar {
   display: flex; align-items: flex-end; gap: 6px;
   padding: 8px 10px;
@@ -1528,23 +1860,151 @@ async function saveDocument() {
 
 /* ── AI кнопка стоп ── */
 .de-tbtn--abort {
-  color: #f87171;
+  color: var(--ds-error, #f87171);
   opacity: .85;
-  border: 1px solid rgba(248,113,113,.3);
+  border: 1px solid color-mix(in srgb, var(--ds-error, #f87171) 30%, transparent);
 }
-.de-tbtn--abort {
-  color: #f87171;
-  opacity: .85;
-  border: 1px solid rgba(248,113,113,.3);
-}
-.de-tbtn--abort:hover { opacity: 1; background: rgba(248,113,113,.12) !important; }
+.de-tbtn--abort:hover { opacity: 1; background: color-mix(in srgb, var(--ds-error, #f87171) 12%, transparent) !important; }
 .de-tbtn--continue {
-  color: #22c55e !important;
-  border: 1px solid rgba(34,197,94,.3);
+  color: var(--ds-success, #22c55e) !important;
+  border: 1px solid color-mix(in srgb, var(--ds-success, #22c55e) 30%, transparent);
   animation: de-continue-pulse 1.8s ease-in-out infinite;
 }
-.de-tbtn--continue:hover { background: rgba(34,197,94,.1) !important; animation: none; }
+.de-tbtn--continue:hover { background: color-mix(in srgb, var(--ds-success, #22c55e) 10%, transparent) !important; animation: none; }
 @keyframes de-continue-pulse { 0%,100%{opacity:.75} 50%{opacity:1} }
+
+/* ── Панель переменных (шаг 2 — поля шаблона) ── */
+.de-vars-section {
+  border: 1px solid color-mix(in srgb, var(--ds-accent, #6366f1) 18%, transparent);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.de-vars-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 6%, transparent);
+  border: none;
+  cursor: pointer;
+  font-size: var(--ds-text-xs, .7rem);
+  color: var(--glass-text);
+  text-align: left;
+  transition: background .15s;
+}
+.de-vars-toggle:hover { background: color-mix(in srgb, var(--ds-accent, #6366f1) 12%, transparent); }
+.de-vars-icon { font-family: monospace; opacity: .7; }
+.de-vars-hint { opacity: .5; font-size: .65rem; }
+.de-vars-arrow { margin-left: auto; opacity: .6; }
+.de-vars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 2px;
+  padding: 4px 6px 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.de-var-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background .12s;
+  font-size: .7rem;
+}
+.de-var-row:hover { background: color-mix(in srgb, var(--ds-accent, #6366f1) 14%, transparent); }
+.de-var-row--empty { opacity: .45; }
+.de-var-key {
+  font-family: monospace;
+  font-size: .68rem;
+  color: color-mix(in srgb, var(--ds-accent, #6366f1) 85%, white);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.de-var-val {
+  color: var(--glass-text);
+  opacity: .75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Панель переменных (шаг 3 — тулбар редактора) ── */
+.de-vars-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 200;
+  width: min(520px, 92vw);
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent, #6366f1) 25%, transparent);
+  background: var(--glass-bg, #1a1a2e);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0,0,0,.35);
+}
+.de-vars-panel-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.de-vars-panel-title {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--glass-text);
+}
+.de-vars-panel-hint {
+  font-size: .65rem;
+  opacity: .5;
+  color: var(--glass-text);
+}
+.de-vars-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 2px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.de-var-item {
+  display: flex;
+  flex-direction: column;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background .12s;
+}
+.de-var-item:hover { background: color-mix(in srgb, var(--ds-accent, #6366f1) 14%, transparent); }
+.de-var-item--empty { opacity: .4; }
+.de-var-item .de-var-key { font-size: .67rem; }
+.de-var-item .de-var-lbl { font-size: .64rem; opacity: .55; color: var(--glass-text); margin-top: 1px; }
+.de-var-item .de-var-val { font-size: .68rem; opacity: .8; color: var(--glass-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Анимация появления панели переменных ── */
+.de-vars-slide-enter-active, .de-vars-slide-leave-active { transition: opacity .18s, transform .18s; }
+.de-vars-slide-enter-from, .de-vars-slide-leave-to { opacity: 0; transform: translateY(-6px); }
+
+/* ── Селектор AI-модели ── */
+.de-model-sel {
+  border: none;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ds-accent, #6366f1) 8%, transparent);
+  color: color-mix(in srgb, var(--ds-accent, #6366f1) 90%, var(--glass-text));
+  font-size: var(--ds-text-xs, .7rem);
+  font-family: inherit;
+  padding: 4px 6px;
+  cursor: pointer;
+  opacity: .75;
+  outline: none;
+  max-width: 180px;
+  transition: opacity .15s;
+}
+.de-model-sel:hover { opacity: 1; }
+.de-model-sel:focus { opacity: 1; outline: 1px solid color-mix(in srgb, var(--ds-accent, #6366f1) 40%, transparent); }
 
 /* ── AI строка прогресса ── */
 .de-ai-progress {
@@ -1570,7 +2030,7 @@ async function saveDocument() {
 }
 .de-ai-done-icon {
   font-size: .7rem;
-  color: #22c55e;
+  color: var(--ds-success, #22c55e);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -1676,22 +2136,22 @@ async function saveDocument() {
 /* ── Правовые цитаты (RAG) ── */
 .de-citations {
   padding: 12px 14px; margin-top: 8px;
-  border: 1px solid rgba(22, 163, 74, .2);
-  background: rgba(22, 163, 74, .04) !important;
+  border: 1px solid color-mix(in srgb, var(--ds-success, #16a34a) 20%, transparent);
+  background: color-mix(in srgb, var(--ds-success, #16a34a) 4%, transparent) !important;
 }
 .de-citations-head {
   display: flex; align-items: center; gap: 8px; justify-content: space-between;
   margin-bottom: 10px;
 }
 .de-citations-title {
-  font-size: var(--ds-text-xs, .72rem); font-weight: 600; color: #16a34a;
+  font-size: var(--ds-text-xs, .72rem); font-weight: 600; color: var(--ds-success, #16a34a);
   text-transform: uppercase; letter-spacing: .05em;
 }
 .de-citations-count {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 999px;
-  background: rgba(22, 163, 74, .15); color: #16a34a;
+  background: color-mix(in srgb, var(--ds-success, #16a34a) 15%, transparent); color: var(--ds-success, #16a34a);
   font-size: .62rem; font-weight: 700;
   margin-right: auto;
 }
@@ -1711,7 +2171,7 @@ html.dark .de-citations-count { background: rgba(134, 239, 172, .15); color: #86
 }
 .de-citation-article {
   font-size: .65rem; font-weight: 700;
-  color: #16a34a; background: rgba(22, 163, 74, .1);
+  color: var(--ds-success, #16a34a); background: color-mix(in srgb, var(--ds-success, #16a34a) 10%, transparent);
   padding: 1px 5px; border-radius: 3px;
 }
 html.dark .de-citation-article { color: #86efac; background: rgba(134, 239, 172, .1); }
@@ -1761,8 +2221,8 @@ html.dark .de-citation-article { color: #86efac; background: rgba(134, 239, 172,
   text-align: center;
 }
 .de-toast--ok {
-  background: rgba(34, 197, 94, .1); color: #16a34a;
-  border: 1px solid rgba(34, 197, 94, .2);
+  background: color-mix(in srgb, var(--ds-success, #22c55e) 10%, transparent); color: var(--ds-success, #16a34a);
+  border: 1px solid color-mix(in srgb, var(--ds-success, #22c55e) 20%, transparent);
 }
 .de-toast--err {
   background: color-mix(in srgb, var(--ds-error, #dc2626) 10%, transparent); color: var(--ds-error, #dc2626);
