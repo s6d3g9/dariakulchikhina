@@ -17,7 +17,7 @@
       <AdminContractorCabinet :contractor-id="selectedId" />
     </div>
 
-    <div v-else class="ent-layout">
+    <div v-else class="ent-layout ent-layout--with-stats">
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
           <span class="ent-sidebar-title">подрядчики</span>
@@ -64,6 +64,9 @@
           <button v-if="!contractors?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить первого</button>
         </div>
       </div>
+
+      <!-- ═══ Status bar ═══ -->
+      <AdminProjectStatusBar />
     </div>
 
     <!-- ══ Modal ══ -->

@@ -30,9 +30,9 @@ export default defineEventHandler(async (event) => {
 
   // Aggregate totals
   const totalProjects = projectRows.length
-  const totalTasks = projectRows.reduce((s, r) => s + (r.taskTotal || 0), 0)
-  const totalDone = projectRows.reduce((s, r) => s + (r.taskDone || 0), 0)
-  const totalOverdue = projectRows.reduce((s, r) => s + (r.taskOverdue || 0), 0)
+  const totalTasks = projectRows.reduce((s: number, r: any) => s + (r.taskTotal || 0), 0)
+  const totalDone = projectRows.reduce((s: number, r: any) => s + (r.taskDone || 0), 0)
+  const totalOverdue = projectRows.reduce((s: number, r: any) => s + (r.taskOverdue || 0), 0)
 
   // Phase distribution
   const phaseMap: Record<string, number> = {}

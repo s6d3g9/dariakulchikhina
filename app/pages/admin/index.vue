@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="ent-layout">
+    <div class="ent-layout ent-layout--with-stats">
       <!-- ═══ Sidebar ═══ -->
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
@@ -66,6 +66,9 @@
           <button v-if="!projects?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true; wizardStep = 1">+ создать проект</button>
         </div>
       </div>
+
+      <!-- ═══ Status bar ═══ -->
+      <AdminProjectStatusBar />
     </div>
 
     <!-- ══ Create modal ══ -->

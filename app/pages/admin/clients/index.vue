@@ -78,7 +78,7 @@
     </div>
 
     <!-- ═══ List view ═══ -->
-    <div v-else class="ent-layout">
+    <div v-else class="ent-layout ent-layout--with-stats">
       <nav class="ent-sidebar std-sidenav">
         <div class="ent-sidebar-head">
           <span class="ent-sidebar-title">клиенты</span>
@@ -109,6 +109,9 @@
           <button v-if="!clients?.length" class="a-btn-sm" style="margin-top:6px" @click="openAdd">+ добавить</button>
         </div>
       </div>
+
+      <!-- ═══ Status bar ═══ -->
+      <AdminProjectStatusBar />
     </div>
 
     <!-- ══ Add/Edit modal ══ -->

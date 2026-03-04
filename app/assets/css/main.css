@@ -572,6 +572,13 @@ html.dark .glass-input::placeholder {
   gap: 20px;
 }
 
+/* 3-column variant: sidebar + main + status bar */
+.ent-layout--with-stats {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
 .ent-sidebar {
   width: var(--ds-sidebar-width, 220px);
   flex-shrink: 0;
@@ -928,7 +935,8 @@ html.dark .glass-input::placeholder {
 }
 
 @media (max-width: 768px) {
-  .ent-layout {
+  .ent-layout,
+  .ent-layout--with-stats {
     flex-direction: column;
   }
   .ent-sidebar {
