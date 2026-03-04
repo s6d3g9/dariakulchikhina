@@ -310,7 +310,7 @@ const emptyForm = () => ({
   name: '', slug: '', companyName: '', contactPerson: '',
   phone: '', email: '', messenger: '', messengerNick: '', website: '',
   legalAddress: '', factAddress: '',
-  inn: '', kpp: '', ogrn: '', legalForm: '', bankName: '', bik: '', settlementAccount: '', correspondentAccount: '',,
+  inn: '', kpp: '', ogrn: '', legalForm: '', bankName: '', bik: '', settlementAccount: '', correspondentAccount: '',
   notes: '', workTypes: [] as string[],
   contractorType: 'master' as 'master' | 'company', parentId: null as number | null,
 })
