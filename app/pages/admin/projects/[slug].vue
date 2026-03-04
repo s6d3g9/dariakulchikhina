@@ -924,8 +924,8 @@ async function unlinkDesigner(designerId: number) {
 }
 .proj-client-btn {
   border: none;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--glass-text, #1a1a1a);
+  color: var(--glass-page-bg, #fff);
   padding: 8px 12px;
   border-radius: 8px;
   font-size: .8rem;
@@ -963,9 +963,9 @@ async function unlinkDesigner(designerId: number) {
   user-select: none;
 }
 .proj-client-linked-chip--removable:hover {
-  background: rgba(200,50,50,.10);
-  color: #c0392b;
-  border-color: rgba(200,50,50,.25);
+  background: color-mix(in srgb, var(--ds-error, #c83232) 10%, transparent);
+  color: var(--ds-error, #c0392b);
+  border-color: color-mix(in srgb, var(--ds-error, #c83232) 25%, transparent);
 }
 .proj-client-btn:disabled { opacity: .6; cursor: default; }
 .proj-client-error { margin: 8px 0 0; color: var(--ds-error, #c00); font-size: .78rem; }
@@ -1048,16 +1048,16 @@ async function unlinkDesigner(designerId: number) {
 /* ── Contractor preview card ── */
 .ctr-card { padding: 4px 0 32px; }
 .ctr-name { font-size: 1rem; font-weight: 500; margin-bottom: 3px; }
-.ctr-sub  { font-size: .76rem; color: #999; margin-bottom: 14px; }
+.ctr-sub  { font-size: .76rem; color: var(--ds-muted, #999); margin-bottom: 14px; }
 .ctr-rows { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
 .ctr-row  { display: flex; align-items: baseline; gap: 10px; }
-.ctr-lbl  { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: #aaa; width: 52px; flex-shrink: 0; }
+.ctr-lbl  { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ds-muted, #aaa); width: 52px; flex-shrink: 0; }
 .ctr-val  { font-size: .82rem; color: inherit; text-decoration: none; }
 .ctr-val:hover { text-decoration: underline; }
 .ctr-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
 .ctr-chip  { font-size: .7rem; padding: 3px 8px; border: 1px solid var(--border, #e0e0e0); border-radius: 999px; }
-.ctr-notes { font-size: .8rem; color: #888; margin-bottom: 14px; line-height: 1.5; }
-.ctr-link-full { font-size: .72rem; color: #999; text-decoration: none; border-bottom: 1px dashed currentColor; }
+.ctr-notes { font-size: .8rem; color: var(--ds-muted, #888); margin-bottom: 14px; line-height: 1.5; }
+.ctr-link-full { font-size: .72rem; color: var(--ds-muted, #999); text-decoration: none; border-bottom: 1px dashed currentColor; }
 .ctr-link-full:hover { color: inherit; }
 .proj-preview-banner {
   display: flex; align-items: center; gap: 6px;
@@ -1077,11 +1077,11 @@ async function unlinkDesigner(designerId: number) {
 }
 .proj-preview-exit:hover { opacity: .9; }
 .proj-sidenav-icon { margin-right: 4px; font-size: .8rem; }
-.proj-sidenav-empty { font-size: .76rem; color: #bbb; padding: 10px; }
+.proj-sidenav-empty { font-size: .76rem; color: var(--ds-muted, #bbb); padding: 10px; }
 
 /* ── Modal ── */
 .a-field { margin-bottom: 14px; }
-.a-field label { display: block; font-size: .76rem; color: #888; margin-bottom: 5px; }
+.a-field label { display: block; font-size: .76rem; color: var(--ds-muted, #888); margin-bottom: 5px; }
 .a-modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,.3);
   display: flex; align-items: center; justify-content: center; z-index: 100;
@@ -1177,7 +1177,7 @@ async function unlinkDesigner(designerId: number) {
 }
 
 .modal-action-btn--add:hover {
-  background: #218838;
+  background: color-mix(in srgb, var(--ds-success, #28a745) 80%, #000);
   transform: scale(1.05);
 }
 
@@ -1187,7 +1187,7 @@ async function unlinkDesigner(designerId: number) {
 }
 
 .modal-action-btn--remove:hover {
-  background: #c82333;
+  background: color-mix(in srgb, var(--ds-error, #dc3545) 80%, #000);
   transform: scale(1.05);
 }
 

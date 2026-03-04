@@ -2016,9 +2016,9 @@ async function saveProfile() {
 .cab-task-cancel:hover { opacity: 0.9; }
 
 /* Status select */
-.cab-status--pending     { background: rgba(160,160,170,0.18); color: #888; }
-.cab-status--planned     { background: rgba(80,120,220,0.15);  color: #3b6fd4; }
-.cab-status--in_progress { background: rgba(210,160,30,0.15);  color: #a07a10; }
+.cab-status--pending     { background: rgba(160,160,170,0.18); color: var(--ds-muted, #888); }
+.cab-status--planned     { background: color-mix(in srgb, var(--phase-blue, #3b6fd4) 15%, transparent);  color: var(--phase-blue, #3b6fd4); }
+.cab-status--in_progress { background: color-mix(in srgb, var(--ds-warning, #a07a10) 15%, transparent);  color: var(--ds-warning, #a07a10); }
 .cab-status--paused      { background: color-mix(in srgb, var(--ds-warning, #dc6428) 15%, transparent);  color: var(--ds-warning, #c05818); }
 .cab-status--done        { background: rgba(40,160,100,0.15);  color: var(--ds-success, #228855); }
 .cab-status--cancelled   { background: color-mix(in srgb, var(--ds-error, #c83232) 12%, transparent);   color: var(--ds-error, #bb3333); }

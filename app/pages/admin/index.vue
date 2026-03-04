@@ -166,12 +166,12 @@ function phaseColor(status: string) { return PROJECT_PHASES.find(p => p.key === 
 .pj-phase { font-size: .5rem; font-weight: 500; padding: 1px 6px; white-space: nowrap; }
 .pj-phase-pill { font-size: .66rem; font-weight: 500; padding: 2px 10px; border-radius: var(--chip-radius, 999px); white-space: nowrap; }
 .pj-phase--gray    { color: var(--glass-text); opacity: .35; background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
-.pj-phase--violet  { color: #7c3aed; background: rgba(124,58,237,.08); }
-.pj-phase--blue    { color: #2563eb; background: rgba(37,99,235,.08); }
-.pj-phase--amber   { color: #b45309; background: rgba(180,83,9,.07); }
-.pj-phase--orange  { color: #c2410c; background: rgba(194,65,12,.07); }
-.pj-phase--green   { color: #15803d; background: rgba(21,128,61,.08); }
-.pj-phase--teal    { color: #0f766e; background: rgba(15,118,110,.08); }
+.pj-phase--violet  { color: var(--phase-violet, #7c3aed); background: color-mix(in srgb, var(--phase-violet, #7c3aed) 8%, transparent); }
+.pj-phase--blue    { color: var(--phase-blue, #2563eb); background: color-mix(in srgb, var(--phase-blue, #2563eb) 8%, transparent); }
+.pj-phase--amber   { color: var(--phase-amber, #b45309); background: color-mix(in srgb, var(--phase-amber, #b45309) 7%, transparent); }
+.pj-phase--orange  { color: var(--phase-orange, #c2410c); background: color-mix(in srgb, var(--phase-orange, #c2410c) 7%, transparent); }
+.pj-phase--green   { color: var(--phase-green, #15803d); background: color-mix(in srgb, var(--phase-green, #15803d) 8%, transparent); }
+.pj-phase--teal    { color: var(--phase-teal, #0f766e); background: color-mix(in srgb, var(--phase-teal, #0f766e) 8%, transparent); }
 html.dark .pj-phase--violet { color: #a78bfa; background: rgba(167,139,250,.12); }
 html.dark .pj-phase--blue   { color: #93c5fd; background: rgba(147,197,253,.12); }
 html.dark .pj-phase--amber  { color: #fcd34d; background: rgba(252,211,77,.1); }
@@ -181,7 +181,7 @@ html.dark .pj-phase--teal   { color: #5eead4; background: rgba(94,234,212,.1); }
 
 .pj-progress-row { display: flex; align-items: center; gap: 10px; }
 .pj-progress-bar { width: 100px; height: 5px; border-radius: 3px; overflow: hidden; background: color-mix(in srgb, var(--glass-text) 8%, transparent); flex-shrink: 0; }
-.pj-progress-fill { height: 100%; border-radius: 3px; background: #15803d; transition: width .3s; }
+.pj-progress-fill { height: 100%; border-radius: 3px; background: var(--phase-green, #15803d); transition: width .3s; }
 .pj-progress-text { font-size: .72rem; color: var(--glass-text); opacity: .35; }
 .pj-overdue { font-size: .72rem; color: var(--ds-error, #dc2626); font-weight: 600; }
 

@@ -177,9 +177,9 @@
               <option value="qwen3:4b">🏠 Qwen3 4B (чат, быстро)</option>
             </optgroup>
             <optgroup label="Anthropic Claude">
-              <option value="claude-haiku-4-5">☁️ Claude Haiku 4.5 (быстро)</option>
-              <option value="claude-3-5-haiku-latest">☁️ Claude Haiku 3.5 (рек.)</option>
-              <option value="claude-3-5-sonnet-latest">☁️ Claude Sonnet 3.5 (умнее)</option>
+              <option value="claude-haiku-4-5-20251001">☁️ Claude Haiku 4.5 (дешевле)</option>
+              <option value="claude-sonnet-4-5-20250929">☁️ Claude Sonnet 4.5 (рек.)</option>
+              <option value="claude-sonnet-4-6">☁️ Claude Sonnet 4.6 (новинка)</option>
             </optgroup>
           </select>
         </div>
@@ -1046,9 +1046,9 @@ const AI_MODELS = [
   { value: '',                          label: '🏠 Авто (локальная)',         group: 'Локальные (бесплатно)' },
   { value: 'gemma3:27b',                label: '🏠 Gemma 3 27B (документы)',  group: 'Локальные (бесплатно)' },
   { value: 'qwen3:4b',                  label: '🏠 Qwen3 4B (чат, быстро)',   group: 'Локальные (бесплатно)' },
-  { value: 'claude-haiku-4-5',          label: '☁️ Claude Haiku 4.5 (быстро)', group: 'Anthropic Claude' },
-  { value: 'claude-3-5-haiku-latest',    label: '☁️ Claude Haiku 3.5 (рек.)',  group: 'Anthropic Claude' },
-  { value: 'claude-3-5-sonnet-latest',   label: '☁️ Claude Sonnet 3.5 (умнее)', group: 'Anthropic Claude' },
+  { value: 'claude-haiku-4-5-20251001',  label: '☁️ Claude Haiku 4.5 (дешевле)', group: 'Anthropic Claude' },
+  { value: 'claude-sonnet-4-5-20250929', label: '☁️ Claude Sonnet 4.5 (рек.)', group: 'Anthropic Claude' },
+  { value: 'claude-sonnet-4-6',          label: '☁️ Claude Sonnet 4.6 (новинка)', group: 'Anthropic Claude' },
 ]
 const selectedAiModel = ref('')
 const selectedAiModelLabel = computed(() => AI_MODELS.find(m => m.value === selectedAiModel.value)?.label || '🤖 модель')

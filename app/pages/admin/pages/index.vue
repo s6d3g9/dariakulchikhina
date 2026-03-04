@@ -107,30 +107,29 @@ async function save() {
 
 <style scoped>
 .pg-root {
-  --pg-bg: #fff;
-  --pg-border: #e0e0e0;
-  --pg-lbl: #888;
-  --pg-inp-border: #ddd;
-  --pg-inp-focus: #1a1a1a;
+  --pg-bg: var(--glass-bg, #fff);
+  --pg-border: var(--glass-border, #e0e0e0);
+  --pg-lbl: var(--ds-muted, #888);
+  --pg-inp-border: color-mix(in srgb, var(--glass-text) 15%, transparent);
+  --pg-inp-focus: var(--glass-text, #1a1a1a);
   --pg-inp-color: inherit;
-  --pg-add-border: #ccc;
-  --pg-add-color: #888;
-  --pg-add-hover-border: #1a1a1a;
-  --pg-add-hover-color: #1a1a1a;
+  --pg-add-border: color-mix(in srgb, var(--glass-text) 20%, transparent);
+  --pg-add-color: var(--ds-muted, #888);
+  --pg-add-hover-color: var(--glass-text, #1a1a1a);
   --danger-color: var(--ds-error, #c00);
-  --pg-h1-color: #666;
+  --pg-h1-color: var(--ds-muted, #666);
 }
 .pg-card {
-  --pg-bg: #fff;
-  --pg-border: #e0e0e0;
-  --pg-lbl: #888;
-  --pg-inp-border: #ddd;
-  --pg-inp-focus: #1a1a1a;
+  --pg-bg: var(--glass-bg, #fff);
+  --pg-border: var(--glass-border, #e0e0e0);
+  --pg-lbl: var(--ds-muted, #888);
+  --pg-inp-border: color-mix(in srgb, var(--glass-text) 15%, transparent);
+  --pg-inp-focus: var(--glass-text, #1a1a1a);
   --pg-inp-color: inherit;
-  --pg-add-border: #ccc;
-  --pg-add-color: #888;
-  --pg-add-hover-border: #1a1a1a;
-  --pg-add-hover-color: #1a1a1a;
+  --pg-add-border: color-mix(in srgb, var(--glass-text) 20%, transparent);
+  --pg-add-color: var(--ds-muted, #888);
+  --pg-add-hover-border: var(--glass-text, #1a1a1a);
+  --pg-add-hover-color: var(--glass-text, #1a1a1a);
   --danger-color: var(--ds-error, #c00);
 
   background: color-mix(in srgb, var(--glass-bg) 90%, transparent);
