@@ -11,6 +11,7 @@ const UpdateClientSchema = z.object({
   messengerNick: z.string().max(100).nullable().optional().transform(v => v?.trim() || null),
   address: z.string().max(500).nullable().optional().transform(v => v?.trim() || null),
   notes: z.string().max(5000).nullable().optional().transform(v => v?.trim() || null),
+  brief: z.record(z.unknown()).nullable().optional(),
 })
 
 export default defineEventHandler(async (event) => {
