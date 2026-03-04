@@ -8,7 +8,7 @@
 import { useDb } from '~/server/db/index'
 import { projects, clients, contractors, pageContent } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
-import { retrieveLegalContext } from '~/server/utils/rag'
+import { retrieveLegalContextWithChunks } from '~/server/utils/rag'
 
 const MODEL = 'gemma3:27b'
 const DEFAULT_GEMMA_URL = 'http://localhost:11434'
@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // ── RAG: правовая база ────────────────────────────────────────
-  const legalCtx    = await retrieveLegalContext(`${templateName} ${userPrompt.slice(0, 400)}`)
+  const { context: legalCtx, chunks: legalChunks } = await retrieveLegalContextWithChunks(`${templateName} ${userPrompt.slice(0, 400)}`)
   const systemPrompt = STREAM_SYSTEM_PROMPT + legalCtx
 
   // ── SSE-заголовки ─────────────────────────────────────────────
@@ -93,6 +93,23 @@ export default defineEventHandler(async (event) => {
   const decoder = new TextDecoder()
   let buffer = ''
 
+  // Вспомогательная функция: отправить цитаты (если есть) и [DONE]
+  function sendDone() {
+    if (legalChunks.length) {
+      const citations = legalChunks.map(c => ({
+        source_name:   c.source_name,
+        article_num:   c.article_num,
+        article_title: c.article_title,
+        chapter:       c.chapter,
+        text:          c.text.slice(0, 300), // краткое превью
+        similarity:    Math.round(Number(c.similarity) * 100) / 100,
+      }))
+      res.write(`data: ${JSON.stringify({ citations })}\n\n`)
+    }
+    res.write('data: [DONE]\n\n')
+    res.end()
+  }
+
   // Отправляем ping сразу чтобы браузер не оборвал соединение
   res.write(': ping\n\n')
 
@@ -111,8 +128,7 @@ export default defineEventHandler(async (event) => {
 
         const raw = trimmed.slice(6)
         if (raw === '[DONE]') {
-          res.write('data: [DONE]\n\n')
-          res.end()
+          sendDone()
           return null
         }
 
@@ -124,8 +140,7 @@ export default defineEventHandler(async (event) => {
           }
           const finishReason = data?.choices?.[0]?.finish_reason
           if (finishReason === 'stop' || finishReason === 'length') {
-            res.write('data: [DONE]\n\n')
-            res.end()
+            sendDone()
             return null
           }
         } catch {

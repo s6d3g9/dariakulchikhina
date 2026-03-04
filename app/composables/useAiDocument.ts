@@ -8,6 +8,15 @@ export interface AiReviewNote {
   text: string
 }
 
+export interface LegalCitation {
+  source_name:   string
+  article_num:   string | null
+  article_title: string | null
+  chapter:       string | null
+  text:          string
+  similarity:    number
+}
+
 export type AiPayload = {
   templateKey?: string
   templateName: string
@@ -25,6 +34,7 @@ export function useAiDocument() {
   const aiAction    = ref<'generate' | 'improve' | 'review' | ''>('')
   const aiProgress  = ref('')   // текущий статус-текст для пользователя
   const aiReviewNotes = ref<AiReviewNote[]>([])
+  const aiCitations = ref<LegalCitation[]>([])
 
   let _abortCtrl: AbortController | null = null
 
@@ -42,6 +52,7 @@ export function useAiDocument() {
     aiLoading.value = true
     aiError.value = ''
     aiAction.value = action
+    aiCitations.value = []
     aiProgress.value = action === 'generate' ? 'Gemma генерирует документ...' : 'Gemma улучшает текст...'
     _abortCtrl = new AbortController()
 
@@ -85,6 +96,9 @@ export function useAiDocument() {
           try {
             const data = JSON.parse(raw)
             if (data.error) { _setError(data.error); return false }
+            if (data.citations) {
+              aiCitations.value = data.citations
+            }
             if (data.token) {
               onToken(data.token)
               tokenCount += data.token.length
@@ -141,15 +155,21 @@ export function useAiDocument() {
     aiReviewNotes.value = []
   }
 
+  function clearCitations() {
+    aiCitations.value = []
+  }
+
   return {
     aiLoading,
     aiError,
     aiAction,
     aiProgress,
     aiReviewNotes,
+    aiCitations,
     streamDocument,
     reviewDocument,
     abortAi,
     clearReview,
+    clearCitations,
   }
 }

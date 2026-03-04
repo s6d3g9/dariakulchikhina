@@ -174,6 +174,26 @@
         </div>
       </Transition>
 
+      <!-- AI: правовые источники (RAG citations) -->
+      <Transition name="de-slide">
+        <div v-if="aiCitations.length" class="de-citations glass-card">
+          <div class="de-citations-head">
+            <span class="de-citations-title">⚖️ Правовая база — использованные нормы</span>
+            <span class="de-citations-count">{{ aiCitations.length }}</span>
+            <button class="de-tbtn" @click="clearCitations">✕</button>
+          </div>
+          <div v-for="(c, i) in aiCitations" :key="i" class="de-citation-row">
+            <div class="de-citation-ref">
+              <span class="de-citation-source">{{ c.source_name }}</span>
+              <span v-if="c.article_num" class="de-citation-article">ст.&nbsp;{{ c.article_num }}</span>
+              <span v-if="c.article_title" class="de-citation-title">{{ c.article_title }}</span>
+              <span class="de-citation-sim">{{ Math.round(c.similarity * 100) }}% совпадение</span>
+            </div>
+            <p class="de-citation-text">{{ c.text }}</p>
+          </div>
+        </div>
+      </Transition>
+
       <!-- AI: ошибка -->
       <Transition name="de-toast">
         <div v-if="aiError" class="de-toast de-toast--err">✗ {{ aiError }}</div>
@@ -673,7 +693,7 @@ async function copyToClipboard() {
 }
 
 // ── AI (Gemma 3 27B) ──────────────────────────────────────────────────────
-const { aiLoading, aiError, aiAction, aiProgress, aiReviewNotes, streamDocument, reviewDocument, abortAi, clearReview } = useAiDocument()
+const { aiLoading, aiError, aiAction, aiProgress, aiReviewNotes, aiCitations, streamDocument, reviewDocument, abortAi, clearReview, clearCitations } = useAiDocument()
 
 function buildAiPayload() {
   return {
@@ -691,6 +711,7 @@ function buildAiPayload() {
 async function onAiGenerate() {
   if (!selectedTpl.value) return
   clearReview()
+  clearCitations()
   editorContent.value = ''
   if (editorEl.value) editorEl.value.innerText = ''
   await streamDocument('generate', buildAiPayload(), (token) => {
@@ -705,6 +726,7 @@ async function onAiGenerate() {
 async function onAiImprove() {
   if (!selectedTpl.value) return
   clearReview()
+  clearCitations()
   const originalText = editorContent.value || generateText()
   editorContent.value = ''
   if (editorEl.value) editorEl.value.innerText = ''
@@ -1003,6 +1025,61 @@ async function saveDocument() {
 .de-ai-note--info  .de-ai-note-text { color: var(--glass-text); opacity: .75; }
 .de-ai-note-icon { flex-shrink: 0; }
 .de-ai-note-text  { line-height: 1.5; }
+
+/* ── Правовые цитаты (RAG) ── */
+.de-citations {
+  padding: 12px 14px; margin-top: 8px;
+  border: 1px solid rgba(22, 163, 74, .2);
+  background: rgba(22, 163, 74, .04) !important;
+}
+.de-citations-head {
+  display: flex; align-items: center; gap: 8px; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.de-citations-title {
+  font-size: var(--ds-text-xs, .72rem); font-weight: 600; color: #16a34a;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.de-citations-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, .15); color: #16a34a;
+  font-size: .62rem; font-weight: 700;
+  margin-right: auto;
+}
+html.dark .de-citations { border-color: rgba(134, 239, 172, .15); background: rgba(22, 163, 74, .07) !important; }
+html.dark .de-citations-title { color: #86efac; }
+html.dark .de-citations-count { background: rgba(134, 239, 172, .15); color: #86efac; }
+.de-citation-row {
+  padding: 7px 0;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent);
+}
+.de-citation-ref {
+  display: flex; flex-wrap: wrap; gap: 5px; align-items: baseline;
+  margin-bottom: 3px;
+}
+.de-citation-source {
+  font-size: .65rem; font-weight: 600; color: var(--glass-text); opacity: .7;
+}
+.de-citation-article {
+  font-size: .65rem; font-weight: 700;
+  color: #16a34a; background: rgba(22, 163, 74, .1);
+  padding: 1px 5px; border-radius: 3px;
+}
+html.dark .de-citation-article { color: #86efac; background: rgba(134, 239, 172, .1); }
+.de-citation-title {
+  font-size: .65rem; color: var(--glass-text); opacity: .6;
+}
+.de-citation-sim {
+  font-size: .58rem; color: var(--glass-text); opacity: .4; margin-left: auto;
+}
+.de-citation-text {
+  font-size: .68rem; line-height: 1.55; color: var(--glass-text); opacity: .7;
+  margin: 0;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 /* transitions */
 .de-slide-enter-active, .de-slide-leave-active { transition: all .25s ease; }

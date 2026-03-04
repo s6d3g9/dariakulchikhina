@@ -30,11 +30,27 @@ export interface LegalChunk {
   text:          string
 }
 
+export interface LegalChunkWithScore extends LegalChunk {
+  similarity: number
+}
+
 /** Найти релевантные правовые нормы по семантическому сходству */
 export async function retrieveLegalContext(
   query: string,
   topK  = 6,
 ): Promise<string> {
+  const { context } = await retrieveLegalContextWithChunks(query, topK)
+  return context
+}
+
+/**
+ * Найти релевантные нормы и вернуть и строку для промпта, и сырые чанки.
+ * Используется в document-stream для последующей отправки цитат клиенту.
+ */
+export async function retrieveLegalContextWithChunks(
+  query: string,
+  topK  = 6,
+): Promise<{ context: string; chunks: LegalChunkWithScore[] }> {
   try {
     const db        = useDb()
     const embedding = await getEmbedding(query)
@@ -51,11 +67,11 @@ export async function retrieveLegalContext(
     `)
 
     const rows = result.rows as Array<LegalChunk & { similarity: number }>
-    if (!rows.length) return ''
+    if (!rows.length) return { context: '', chunks: [] }
 
     // Фильтруем: берём только достаточно релевантные (similarity > 0.5)
     const relevant = rows.filter(r => Number(r.similarity) > 0.50)
-    if (!relevant.length) return ''
+    if (!relevant.length) return { context: '', chunks: [] }
 
     const ctx = relevant.map(r => {
       const ref = [
@@ -67,11 +83,12 @@ export async function retrieveLegalContext(
       return `[${ref}]\n${r.text}`
     }).join('\n\n---\n\n')
 
-    return `\n\n### ПРИМЕНИМЫЕ НОРМЫ ПРАВА ###\n${ctx}\n### КОНЕЦ ПРАВОВОЙ СПРАВКИ ###\n`
+    const context = `\n\n### ПРИМЕНИМЫЕ НОРМЫ ПРАВА ###\n${ctx}\n### КОНЕЦ ПРАВОВОЙ СПРАВКИ ###\n`
+    return { context, chunks: relevant as LegalChunkWithScore[] }
   } catch (err) {
     // RAG не критичен — если упал, работаем без него
     console.warn('[RAG] Ошибка retrieval:', (err as Error).message)
-    return ''
+    return { context: '', chunks: [] }
   }
 }
 

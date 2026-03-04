@@ -41,6 +41,16 @@
             <span v-if="countByCategory[cat.key]" class="docs-nav-count">{{ countByCategory[cat.key] }}</span>
           </button>
         </div>
+
+        <!-- RAG правовая база -->
+        <div class="docs-rag-status" :class="legalStatus?.ready ? 'docs-rag-status--ok' : 'docs-rag-status--off'">
+          <span class="docs-rag-dot"></span>
+          <div class="docs-rag-info">
+            <span class="docs-rag-label">правовая база</span>
+            <span v-if="legalStatus?.ready" class="docs-rag-count">{{ legalStatus.totalChunks }} норм</span>
+            <span v-else class="docs-rag-count">не загружена</span>
+          </div>
+        </div>
       </nav>
 
       <!-- ══ Right: content area ══ -->
@@ -688,6 +698,7 @@ _______________________              _______________________`,
 // ══════════════════════════════════════════════════════════════════
 const { data: allDocs, pending, refresh } = await useFetch<any[]>('/api/documents', { default: () => [] })
 const { data: projectsData } = useFetch<any[]>('/api/projects', { server: false, default: () => [] })
+const { data: legalStatus } = useFetch<{ ready: boolean; totalChunks: number; sources: any[] }>('/api/ai/legal-status', { server: false })
 
 const allProjects = computed(() => (projectsData.value || []).map((p: any) => ({
   slug: p.slug, title: p.title,
@@ -941,6 +952,25 @@ async function onEditorSaved() {
   margin-bottom: 4px; padding-bottom: 8px !important;
   font-weight: 500 !important;
 }
+
+/* ── RAG status widget ── */
+.docs-rag-status {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 8px; padding: 8px 10px;
+  border-radius: var(--chip-radius, 8px);
+  border: 1px solid transparent;
+  font-size: .62rem;
+}
+.docs-rag-status--ok  { background: rgba(22, 163, 74, .08); border-color: rgba(22, 163, 74, .18); }
+.docs-rag-status--off { background: rgba(128,128,128, .06); border-color: rgba(128,128,128, .12); }
+.docs-rag-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.docs-rag-status--ok  .docs-rag-dot { background: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,.25); }
+.docs-rag-status--off .docs-rag-dot { background: #9ca3af; }
+.docs-rag-info { display: flex; flex-direction: column; gap: 1px; }
+.docs-rag-label { font-weight: 600; text-transform: uppercase; letter-spacing: .07em; opacity: .45; color: var(--glass-text); }
+.docs-rag-count { opacity: .65; color: var(--glass-text); }
 
 /* ── Main content ── */
 .docs-main { flex: 1; min-width: 0; }
