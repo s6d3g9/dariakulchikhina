@@ -15,19 +15,40 @@ const DB_URL = process.env.DATABASE_URL || 'postgresql://daria:daria_secret_2026
 
 // ─── Простой API-клиент с куки ────────────────────────────────────────────────
 let cookie = ''
+let csrfToken = ''
 
 async function api(method, path, body) {
+  const isMutating = ['POST','PUT','PATCH','DELETE'].includes(method)
   const opts = {
     method,
-    headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(cookie ? { Cookie: cookie } : {}),
+      ...(isMutating && csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+    },
     ...(body ? { body: JSON.stringify(body) } : {}),
   }
   const res = await fetch(`${BASE}${path}`, opts)
-  // Сохраняем куки сессии (admin_session)
-  const setCookie = res.headers.get('set-cookie')
-  if (setCookie) {
-    const match = setCookie.match(/(admin_session=[^;]+)/)
-    if (match) cookie = match[1]
+  // Сохраняем куки сессии — admin_session и csrf_token
+  const allCookies = res.headers.getSetCookie?.() ?? []
+  const setCookieHeader = res.headers.get('set-cookie')
+  const cookieLines = allCookies.length > 0 ? allCookies : (setCookieHeader ? [setCookieHeader] : [])
+  for (const line of cookieLines) {
+    const adminMatch = line.match(/(daria_admin_session=[^;]+)/)
+    if (adminMatch) {
+      cookie = cookie.includes('daria_admin_session=')
+        ? cookie.replace(/daria_admin_session=[^;]+/, adminMatch[1])
+        : (cookie ? cookie + '; ' + adminMatch[1] : adminMatch[1])
+    }
+    const csrfMatch = line.match(/csrf_token=([^;]+)/)
+    if (csrfMatch) {
+      csrfToken = decodeURIComponent(csrfMatch[1])
+      // Сохраняем в cookie-строку для двойной отправки (Double Submit Cookie pattern)
+      const csrfCookiePart = `csrf_token=${csrfMatch[1]}`
+      cookie = cookie.includes('csrf_token=')
+        ? cookie.replace(/csrf_token=[^;]+/, csrfCookiePart)
+        : (cookie ? cookie + '; ' + csrfCookiePart : csrfCookiePart)
+    }
   }
   if (!res.ok) {
     const text = await res.text()
