@@ -470,7 +470,7 @@ const MpeArray = defineComponent({
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #4ade80;
+  background: var(--ds-success, #4ade80);
 }
 
 /* ── Поля ──────────────────────────────────────── */
@@ -508,7 +508,7 @@ const MpeArray = defineComponent({
 .mpe-checkbox {
   width: 16px;
   height: 16px;
-  accent-color: #4ade80;
+  accent-color: var(--ds-success, #4ade80);
 }
 
 .mpe-input {
@@ -576,7 +576,7 @@ const MpeArray = defineComponent({
   flex-shrink: 0;
   transition: background .1s;
 }
-.mpe-del-btn:hover { background: #f8717120; }
+.mpe-del-btn:hover { background: color-mix(in srgb, var(--ds-error, #f87171) 13%, transparent); }
 
 .mpe-add-btn {
   grid-column: 1 / -1;

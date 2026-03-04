@@ -45,7 +45,7 @@ const { data: contractors, pending } = await useFetch<any[]>(
 
 <style scoped>
 .cc-wrap { padding: 4px 0; }
-.cc-loading { font-size: .86rem; color: #999; padding: 12px 0; }
+.cc-loading { font-size: .86rem; color: var(--ds-muted, #999); padding: 12px 0; }
 .cc-empty  { font-size: .86rem; color: var(--secondary, #999); padding: 12px 0; }
 
 .cc-list { display: grid; gap: 12px; }

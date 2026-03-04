@@ -127,7 +127,7 @@ async function uploadFile(e: Event) {
 .acso-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
 .acso-banner { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border, #ececec); margin-bottom: 28px; }
 .acso-banner--signed { border-color: var(--ds-success, #5caa7f); background: color-mix(in srgb, var(--ds-success, #5caa7f) 8%, transparent); }
-.acso-banner--disputed { border-color: #e8b84b; background: color-mix(in srgb, #e8b84b 8%, transparent); }
+.acso-banner--disputed { border-color: var(--ds-warning, #e8b84b); background: color-mix(in srgb, var(--ds-warning, #e8b84b) 8%, transparent); }
 .acso-banner-icon { font-size: 1.6rem; }
 .acso-banner-body { display: flex; align-items: center; gap: 12px; flex: 1; flex-wrap: wrap; }
 </style>

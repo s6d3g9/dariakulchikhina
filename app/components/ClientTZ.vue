@@ -93,8 +93,8 @@ function fmtDate(val: string | null | undefined): string {
 
 <style scoped>
 .ctz-wrap { padding: 16px; }
-.ctz-loading { font-size: .85rem; color: #999; }
-.ctz-empty { font-size: .85rem; color: #999; padding: 20px 0; }
+.ctz-loading { font-size: .85rem; color: var(--ds-muted, #999); }
+.ctz-empty { font-size: .85rem; color: var(--ds-muted, #999); padding: 20px 0; }
 
 .ctz-section { margin-bottom: 24px; }
 .ctz-section-title {
@@ -111,8 +111,8 @@ function fmtDate(val: string | null | undefined): string {
   padding: 2px 10px; border-radius: 999px; width: fit-content;
   background: var(--glass-bg); color: var(--glass-text); opacity: .6;
 }
-.ctz-badge--signed { color: #16a34a; background: rgba(22,163,74,.08); opacity: 1; }
-.ctz-badge--sent   { color: #2563eb; background: rgba(37,99,235,.08); opacity: 1; }
+.ctz-badge--signed { color: var(--ds-success, #16a34a); background: color-mix(in srgb, var(--ds-success, #16a34a) 8%, transparent); opacity: 1; }
+.ctz-badge--sent   { color: var(--phase-blue, #2563eb); background: color-mix(in srgb, var(--phase-blue, #2563eb) 8%, transparent); opacity: 1; }
 .ctz-badge--rejected { color: var(--ds-error, #dc2626); background: color-mix(in srgb, var(--ds-error, #dc2626) 8%, transparent); opacity: 1; }
 
 .ctz-download { margin-top: 12px; }

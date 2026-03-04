@@ -102,8 +102,8 @@ const buildProgress = computed(() => {
   font-size: .6rem; font-weight: 700; line-height: 1;
   color: var(--glass-text);
 }
-.cwp-dot--done .cwp-dot-icon        { color: #16a34a; }
-.cwp-dot--in_progress .cwp-dot-icon { color: #a16207; }
+.cwp-dot--done .cwp-dot-icon        { color: var(--ds-success, #16a34a); }
+.cwp-dot--in_progress .cwp-dot-icon { color: var(--ds-warning, #a16207); }
 
 /* ── Pill badge ── */
 .cwp-pill {

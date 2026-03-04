@@ -497,7 +497,7 @@ onUnmounted(() => {
   margin: 0;
 }
 .lb-featured-badge {
-  font-size: .8rem; color: #fbbf24;
+  font-size: .8rem; color: var(--ds-star, #fbbf24);
 }
 .lb-desc {
   font-size: .78rem; color: rgba(255, 255, 255, 0.5);

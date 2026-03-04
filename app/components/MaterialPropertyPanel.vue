@@ -283,7 +283,7 @@ const groupIcons: Record<string, string> = {
 .mpp-field-value--bool { display: flex; gap: 6px; align-items: center; }
 
 .mpp-bool-yes {
-  color: #4ade80;
+  color: var(--ds-success, #4ade80);
   font-weight: 500;
 }
 .mpp-bool-no {
@@ -404,8 +404,8 @@ const groupIcons: Record<string, string> = {
   font-size: .72rem;
   font-weight: 500;
 }
-.mpp-comm-avail--in-stock { background: #16a34a20; color: #4ade80; }
-.mpp-comm-avail--to-order { background: #eab30820; color: #fbbf24; }
+.mpp-comm-avail--in-stock { background: color-mix(in srgb, var(--ds-success, #16a34a) 13%, transparent); color: var(--ds-success, #4ade80); }
+.mpp-comm-avail--to-order { background: color-mix(in srgb, var(--ds-warning, #eab308) 13%, transparent); color: var(--ds-warning, #fbbf24); }
 .mpp-comm-avail--discontinued { background: color-mix(in srgb, var(--ds-error, #ef4444) 13%, transparent); color: var(--ds-error, #f87171); }
 
 /* ── Переходы ─────────────────────────────────────── */

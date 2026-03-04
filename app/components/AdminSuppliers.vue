@@ -132,13 +132,13 @@ function removeSupplier(idx: number) {
 
 <style scoped>
 .asup-wrap { padding: 4px 0 40px; }
-.asup-loading { padding: 40px 0; font-size: .82rem; color: #aaa; }
+.asup-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
 
 .asup-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .asup-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.asup-dot--gray   { background: #ccc; }
-.asup-dot--blue   { background: #6b9fd4; }
-.asup-dot--yellow { background: #e8b84b; }
-.asup-dot--red    { background: #d46b6b; }
-.asup-dot--green  { background: #5caa7f; }
+.asup-dot--gray   { background: var(--ds-muted, #ccc); }
+.asup-dot--blue   { background: var(--phase-blue, #6b9fd4); }
+.asup-dot--yellow { background: var(--ds-warning, #e8b84b); }
+.asup-dot--red    { background: var(--ds-error, #d46b6b); }
+.asup-dot--green  { background: var(--ds-success, #5caa7f); }
 </style>

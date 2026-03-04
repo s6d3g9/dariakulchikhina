@@ -138,6 +138,18 @@ textarea, select {
   --ds-warning:     hsl(38, 92%, 50%);
   --ds-warning-light: hsl(38, 92%, 92%);
 
+  /* ── Phase/status palette ── */
+  --phase-violet: #7c3aed;
+  --phase-blue:   #2563eb;
+  --phase-amber:  #b45309;
+  --phase-orange: #c2410c;
+  --phase-green:  #15803d;
+  --phase-teal:   #0f766e;
+
+  /* ── Star/favourite ── */
+  --ds-star:      #fbbf24;
+  --ds-star-dark: #b45309;
+
   /* ── Shadows ── */
   --ds-shadow:      0 8px 24px 0px rgba(0,0,0,0.06);
   --ds-shadow-sm:   0 2px 10px rgba(0,0,0,0.042);
@@ -3662,6 +3674,18 @@ html.dark .a-modal label {
   --dropdown-bg: #0a0a0a !important;
   --dropdown-border: rgba(255,255,255,0.08) !important;
   --dropdown-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
+
+  /* phase palette → lighter versions for dark bg */
+  --phase-violet: #a78bfa !important;
+  --phase-blue:   #93c5fd !important;
+  --phase-amber:  #fcd34d !important;
+  --phase-orange: #fdba74 !important;
+  --phase-green:  #86efac !important;
+  --phase-teal:   #5eead4 !important;
+
+  /* star */
+  --ds-star:      #fbbf24 !important;
+  --ds-star-dark: #fbbf24 !important;
 }
 
 /* --- Ensure body and #__nuxt use the right bg --- */
@@ -4216,6 +4240,18 @@ html[data-concept="brutal"] [class*="-emoji"] {
    For concepts with warm off-white backgrounds (Ремесло, Классика).
    Uses [data-warm-surface] attribute set by applyToDOM.
    ═══════════════════════════════════════════════════════════ */
+
+/* warm surface CSS variables — slightly desaturated for warmth */
+[data-warm-surface] {
+  --phase-violet: #6d28d9;
+  --phase-blue:   #1d4ed8;
+  --phase-amber:  #92400e;
+  --phase-orange: #9a3412;
+  --phase-green:  #166534;
+  --phase-teal:   #115e59;
+  --ds-star:      #d97706;
+  --ds-star-dark: #92400e;
+}
 
 [data-warm-surface] .glass-page::before {
   background: none !important;

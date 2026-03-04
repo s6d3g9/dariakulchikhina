@@ -264,16 +264,16 @@ async function toggleStepCompletion(stepKey: string) {
 
 <style scoped>
 .afc-wrap { max-width: 900px; }
-.afc-loading { text-align: center; padding: 40px; color: #999; }
+.afc-loading { text-align: center; padding: 40px; color: var(--ds-muted, #999); }
 
 .afc-status-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 .afc-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-.afc-dot--new { background: #ddd; }
-.afc-dot--contacted { background: #ffb74d; }
-.afc-dot--meeting { background: #81c784; }
-.afc-dot--qualified { background: #4caf50; }
-.afc-dot--declined { background: #f44336; }
-.afc-complete-card--done { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); background: #f0faf5; }
+.afc-dot--new { background: var(--ds-muted, #ddd); }
+.afc-dot--contacted { background: var(--ds-warning, #ffb74d); }
+.afc-dot--meeting { background: color-mix(in srgb, var(--ds-success, #81c784) 70%, transparent); }
+.afc-dot--qualified { background: var(--ds-success, #4caf50); }
+.afc-dot--declined { background: var(--ds-error, #f44336); }
+.afc-complete-card--done { border-color: color-mix(in srgb, var(--ds-success, #5caa7f) 50%, transparent); background: color-mix(in srgb, var(--ds-success, #5caa7f) 8%, transparent); }
 .afc-complete-icon { font-size: 1.4rem; flex-shrink: 0; width: 28px; text-align: center; margin-top: 2px; }
 .afc-complete-text { flex: 1; }
 .afc-complete-text strong { display: block; font-size: .88rem; margin-bottom: 4px; }

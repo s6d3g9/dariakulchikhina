@@ -171,9 +171,9 @@ function removeSheet(idx: number) {
 
 .awd-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .awd-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.awd-dot--gray   { background: #ccc; }
-.awd-dot--blue   { background: #6b9fd4; }
-.awd-dot--yellow { background: #e8b84b; }
-.awd-dot--red    { background: #d46b6b; }
-.awd-dot--green  { background: #5caa7f; }
+.awd-dot--gray   { background: var(--ds-muted, #ccc); }
+.awd-dot--blue   { background: var(--phase-blue, #6b9fd4); }
+.awd-dot--yellow { background: var(--ds-warning, #e8b84b); }
+.awd-dot--red    { background: var(--ds-error, #d46b6b); }
+.awd-dot--green  { background: var(--ds-success, #5caa7f); }
 </style>

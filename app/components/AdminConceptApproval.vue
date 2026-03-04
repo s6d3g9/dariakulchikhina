@@ -261,15 +261,15 @@ async function moveToPhase2() {
 /* Transition banner */
 .aca-transition-banner {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-  background: #f0faf5; border: 1px solid #a8d8bc; padding: 14px 18px; margin-bottom: 28px;
+  background: color-mix(in srgb, var(--ds-success, #5caa7f) 8%, transparent); border: 1px solid color-mix(in srgb, var(--ds-success, #5caa7f) 40%, transparent); padding: 14px 18px; margin-bottom: 28px;
 }
 .aca-banner-text { font-size: .82rem; color: var(--ds-success, #2a7a52); }
 .aca-banner-text strong { display: block; margin-bottom: 2px; }
 .aca-btn-transition {
-  background: #2a7a52; color: #fff; border: none; padding: 8px 18px;
+  background: var(--ds-success, #2a7a52); color: #fff; border: none; padding: 8px 18px;
   font-size: .78rem; cursor: pointer; font-family: inherit; white-space: nowrap;
 }
-.aca-btn-transition:hover { background: #1e5c3e; }
+.aca-btn-transition:hover { background: color-mix(in srgb, var(--ds-success, #2a7a52) 80%, #000); }
 .aca-btn-transition:disabled { opacity: .6; cursor: wait; }
 
 /* Status */

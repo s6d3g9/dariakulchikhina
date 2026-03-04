@@ -264,28 +264,28 @@ async function save() {
 
 <style scoped>
 .ator-wrap { padding: 4px 0 48px; }
-.ator-loading { font-size: .88rem; color: #999; }
+.ator-loading { font-size: .88rem; color: var(--ds-muted, #999); }
 
 /* Transition banner */
 .ator-transition-banner {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 14px 18px; margin-bottom: 24px;
-  border: 1px solid #4caf50; background: #f1f8f1;
+  border: 1px solid color-mix(in srgb, var(--ds-success, #4caf50) 50%, transparent); background: color-mix(in srgb, var(--ds-success, #4caf50) 6%, transparent);
   flex-wrap: wrap;
 }
-.ator-banner-text { font-size: .85rem; color: #2e7d32; }
+.ator-banner-text { font-size: .85rem; color: var(--ds-success, #2e7d32); }
 .ator-btn-transition {
-  border: 1px solid #2e7d32; background: #2e7d32; color: #fff;
+  border: 1px solid var(--ds-success, #2e7d32); background: var(--ds-success, #2e7d32); color: #fff;
   padding: 8px 18px; font-size: .82rem; cursor: pointer; font-family: inherit;
   white-space: nowrap;
 }
-.ator-btn-transition:hover { background: #1b5e20; }
+.ator-btn-transition:hover { background: color-mix(in srgb, var(--ds-success, #2e7d32) 80%, #000); }
 .ator-btn-transition:disabled { opacity: .55; cursor: default; }
 
 /* Sections */
 .ator-section { margin-bottom: 28px; }
 .ator-section-title {
-  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: #999;
+  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--ds-muted, #999);
   margin-bottom: 14px; padding-bottom: 8px;
   border-bottom: 1px solid var(--border, #ececec);
 }
@@ -315,14 +315,14 @@ async function save() {
   font-size: .78rem; cursor: pointer; color: var(--text, #555);
 }
 .ator-upload-btn:hover { border-color: var(--text, #1a1a1a); }
-.ator-uploading { font-size: .76rem; color: #999; }
+.ator-uploading { font-size: .76rem; color: var(--ds-muted, #999); }
 
 /* Footer */
 .ator-footer {
   display: flex; align-items: center; justify-content: flex-end; gap: 16px;
   padding-top: 20px; border-top: 1px solid var(--border, #ececec);
 }
-.ator-saved { font-size: .76rem; color: #9d9; }
+.ator-saved { font-size: .76rem; color: var(--ds-success, #99dd99); }
 .ator-btn-save {
   border: 1px solid var(--text, #1a1a1a); background: var(--text, #1a1a1a);
   color: var(--bg, #fff); padding: 10px 24px; font-size: .85rem;

@@ -177,9 +177,9 @@ function noun(n: number, one: string, few: string, many: string) {
 }
 .ctl-contact-btn:hover { border-color: var(--c-text, #1a1a1a); }
 .ctl-contact-btn--wa  { border-color: #25d366; color: #25d366; }
-.ctl-contact-btn--wa:hover  { background: #25d36616; }
+.ctl-contact-btn--wa:hover  { background: rgba(37,211,102,.09); }
 .ctl-contact-btn--tg  { border-color: #229ed9; color: #229ed9; }
-.ctl-contact-btn--tg:hover  { background: #229ed916; }
+.ctl-contact-btn--tg:hover  { background: rgba(34,158,217,.09); }
 .ctl-contact-btn--phone { }
 
 .ctl-empty, .ctl-no-team { font-size: .82rem; color: var(--c-muted, #aaa); padding: 24px 0; }

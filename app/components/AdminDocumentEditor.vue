@@ -177,8 +177,9 @@
               <option value="qwen3:4b">🏠 Qwen3 4B (чат, быстро)</option>
             </optgroup>
             <optgroup label="Anthropic Claude">
-              <option value="claude-3-5-haiku-20241022">☁️ Claude Haiku 3.5 (рек.)</option>
-              <option value="claude-3-haiku-20240307">☁️ Claude Haiku 3 (дешевле)</option>
+              <option value="claude-haiku-4-5">☁️ Claude Haiku 4.5 (быстро)</option>
+              <option value="claude-3-5-haiku-latest">☁️ Claude Haiku 3.5 (рек.)</option>
+              <option value="claude-3-5-sonnet-latest">☁️ Claude Sonnet 3.5 (умнее)</option>
             </optgroup>
           </select>
         </div>
@@ -1045,8 +1046,9 @@ const AI_MODELS = [
   { value: '',                          label: '🏠 Авто (локальная)',         group: 'Локальные (бесплатно)' },
   { value: 'gemma3:27b',                label: '🏠 Gemma 3 27B (документы)',  group: 'Локальные (бесплатно)' },
   { value: 'qwen3:4b',                  label: '🏠 Qwen3 4B (чат, быстро)',   group: 'Локальные (бесплатно)' },
-  { value: 'claude-3-5-haiku-20241022', label: '☁️ Claude Haiku 3.5 (рек.)', group: 'Anthropic Claude' },
-  { value: 'claude-3-haiku-20240307',   label: '☁️ Claude Haiku 3 (дешевле)', group: 'Anthropic Claude' },
+  { value: 'claude-haiku-4-5',          label: '☁️ Claude Haiku 4.5 (быстро)', group: 'Anthropic Claude' },
+  { value: 'claude-3-5-haiku-latest',    label: '☁️ Claude Haiku 3.5 (рек.)',  group: 'Anthropic Claude' },
+  { value: 'claude-3-5-sonnet-latest',   label: '☁️ Claude Sonnet 3.5 (умнее)', group: 'Anthropic Claude' },
 ]
 const selectedAiModel = ref('')
 const selectedAiModelLabel = computed(() => AI_MODELS.find(m => m.value === selectedAiModel.value)?.label || '🤖 модель')
@@ -1161,9 +1163,17 @@ function applyPatches(original: string, response: string): { result: string; cou
   let failed = 0
   let match: RegExpExecArray | null
 
-  // Нормализация: сжимаем множественные пробелы/переносы для нечёткого поиска
-  function norm(s: string) {
+  // Нормализация пробелов
+  function normWs(s: string) {
     return s.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim()
+  }
+  // Агрессивная нормализация: убираем пунктуацию и лишние пробелы
+  function normAggressive(s: string) {
+    return s.replace(/\r\n/g, '\n')
+            .replace(/[^\p{L}\p{N}\n]+/gu, ' ')
+            .replace(/[ \t]+/g, ' ')
+            .trim()
+            .toLowerCase()
   }
 
   function findAndReplace(doc: string, oldText: string, newText: string): { doc: string; found: boolean } {
@@ -1171,17 +1181,24 @@ function applyPatches(original: string, response: string): { result: string; cou
     if (doc.includes(oldText)) {
       return { doc: doc.replace(oldText, newText), found: true }
     }
-    // 2. Совпадение после нормализации пробелов
-    const normOld = norm(oldText)
+    // 2. Нормализация пробелов (убираем двойные пробелы/переносы)
+    const normOld = normWs(oldText)
     if (normOld.length < 3) return { doc, found: false }
     const lines = doc.split('\n')
     const oldLines = normOld.split('\n').filter(Boolean)
     if (oldLines.length === 1) {
-      // Одна строка — ищем подстроку в каждой строке
+      // Одна строка — ищем подстроку в каждой строке документа
       for (let i = 0; i < lines.length; i++) {
-        if (norm(lines[i]).includes(normOld)) {
-          // Заменяем только совпавшую часть внутри строки
+        if (normWs(lines[i]).includes(normOld)) {
           lines[i] = lines[i].replace(lines[i].trim(), newText.trim())
+          return { doc: lines.join('\n'), found: true }
+        }
+      }
+      // 3. Агрессивный поиск: без пунктуации (для случаев «—» vs «-», «"» vs «"» и т.п.)
+      const normOldAgg = normAggressive(oldText)
+      for (let i = 0; i < lines.length; i++) {
+        if (normAggressive(lines[i]).includes(normOldAgg)) {
+          lines[i] = newText.trim()
           return { doc: lines.join('\n'), found: true }
         }
       }
@@ -1189,12 +1206,21 @@ function applyPatches(original: string, response: string): { result: string; cou
       // Несколько строк — ищем по первой строке, затем проверяем блок
       const firstNorm = oldLines[0]
       for (let i = 0; i <= lines.length - oldLines.length; i++) {
-        if (norm(lines[i]).includes(firstNorm)) {
+        if (normWs(lines[i]).includes(firstNorm)) {
           const chunk = lines.slice(i, i + oldLines.length)
-          if (norm(chunk.join('\n')).includes(norm(oldLines.join('\n')))) {
+          if (normWs(chunk.join('\n')).includes(normWs(oldLines.join('\n')))) {
             lines.splice(i, oldLines.length, ...newText.split('\n'))
             return { doc: lines.join('\n'), found: true }
           }
+        }
+      }
+      // 3. Агрессивный многострочный: сравниваем блоки без пунктуации
+      const normOldAgg = normAggressive(oldLines.join(' '))
+      for (let i = 0; i <= lines.length - oldLines.length; i++) {
+        const chunk = lines.slice(i, i + oldLines.length)
+        if (normAggressive(chunk.join(' ')).includes(normOldAgg)) {
+          lines.splice(i, oldLines.length, ...newText.split('\n'))
+          return { doc: lines.join('\n'), found: true }
         }
       }
     }
@@ -1301,6 +1327,18 @@ async function onSendChatMessage() {
 
   const result = accumulated // НЕ трогаем — патчи должны содержать <<< маркеры
   const hasPatch = /<<<REPLACE>>>/.test(result)
+
+  // Guard: модель вернула весь документ вместо патча
+  // Признак: ответ длиннее 60% оригинала И нет патч-маркеров
+  const docLen = editorContent.value.length
+  const isFullDocResponse = !hasPatch && docLen > 200 && result.length > docLen * 0.6
+
+  if (isFullDocResponse) {
+    chatMsg.text = `⚠️ Модель написала весь документ целиком вместо точечной правки. Попробуйте:\n• Выбрать Claude в селекторе модели (☁️ Claude Haiku) — он надёжнее\n• Или сформулируй точнее: «замени [точный текст] на [новый текст]»`
+    chatMsg.charCount = chatMsg.text.length
+    _chatDone(chatMsg)
+    return
+  }
 
   if (hasPatch) {
     // Патч-режим: передаём сырой ответ с <<< маркерами в applyPatches

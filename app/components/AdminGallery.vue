@@ -787,7 +787,7 @@ async function del(id: number) {
   transition: background .13s, transform .13s, color .13s;
 }
 .agal-icon-btn:hover { background: var(--glass-bg, #fff); transform: scale(1.08); }
-.agal-icon-btn--del { background: rgba(220,38,38,.8); color: #fff; }
+.agal-icon-btn--del { background: color-mix(in srgb, var(--ds-error, #dc2626) 80%, transparent); color: #fff; }
 .agal-icon-btn--del:hover { background: rgba(220,38,38,.97); }
 
 .agal-icon-btn--star {
@@ -795,10 +795,10 @@ async function del(id: number) {
   background: rgba(255,255,255,.7);
 }
 .agal-icon-btn--starred {
-  color: #fbbf24 !important;
-  background: rgba(251,191,36,.15);
+  color: var(--ds-star, #fbbf24) !important;
+  background: color-mix(in srgb, var(--ds-star, #fbbf24) 15%, transparent);
 }
-.agal-icon-btn--star:hover { color: #f59e0b; }
+.agal-icon-btn--star:hover { color: var(--ds-star, #f59e0b); }
 
 /* ─── Info zone ────────────────────────────────────────── */
 .agal-info {
@@ -860,7 +860,7 @@ async function del(id: number) {
   color: var(--glass-text, #1a1a1a);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.agal-list-star { color: #fbbf24; font-size: .74rem; }
+.agal-list-star { color: var(--ds-star, #fbbf24); font-size: .74rem; }
 .agal-list-desc {
   font-size: .72rem; opacity: .45; margin: 2px 0 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -1019,11 +1019,11 @@ async function del(id: number) {
   position: absolute; top: 6px; right: 6px;
   width: 22px; height: 22px; border-radius: 6px;
   border: none; cursor: pointer;
-  background: rgba(220,38,38,.85); color: #fff;
+  background: color-mix(in srgb, var(--ds-error, #dc2626) 85%, transparent); color: #fff;
   font-size: .8rem; display: flex; align-items: center; justify-content: center;
   transition: background .13s;
 }
-.agal-preview-del:hover { background: rgba(220,38,38,1); }
+.agal-preview-del:hover { background: var(--ds-error, #dc2626); }
 
 /* ─── Multi-image upload grid ──────────────────────────── */
 .agal-multi-images {
@@ -1041,7 +1041,7 @@ async function del(id: number) {
   position: absolute; top: 3px; right: 3px;
   width: 18px; height: 18px; border-radius: 5px;
   border: none; cursor: pointer;
-  background: rgba(220,38,38,.85); color: #fff;
+  background: color-mix(in srgb, var(--ds-error, #dc2626) 85%, transparent); color: #fff;
   font-size: .65rem; display: flex; align-items: center; justify-content: center;
 }
 .agal-multi-add {

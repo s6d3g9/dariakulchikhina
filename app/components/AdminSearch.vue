@@ -413,12 +413,12 @@ function close() {
 }
 /* status badge tints */
 .as-badge--lead       { background: color-mix(in srgb, #9e9e9e 18%, transparent); color: var(--ds-muted, #888); }
-.as-badge--initiation { background: color-mix(in srgb, #2196f3 15%, transparent); color: #1976d2; }
-.as-badge--tor        { background: color-mix(in srgb, #ff9800 15%, transparent); color: #e65100; }
-.as-badge--concept    { background: color-mix(in srgb, #9c27b0 15%, transparent); color: #7b1fa2; }
-.as-badge--working_project { background: color-mix(in srgb, #00bcd4 15%, transparent); color: #00838f; }
-.as-badge--realization { background: color-mix(in srgb, #4caf50 15%, transparent); color: #2e7d32; }
-.as-badge--done       { background: color-mix(in srgb, #4caf50 15%, transparent); color: #2e7d32; }
+.as-badge--initiation { background: color-mix(in srgb, var(--phase-blue, #2196f3) 15%, transparent); color: var(--phase-blue, #1976d2); }
+.as-badge--tor        { background: color-mix(in srgb, var(--phase-amber, #ff9800) 15%, transparent); color: var(--phase-amber, #e65100); }
+.as-badge--concept    { background: color-mix(in srgb, var(--phase-violet, #9c27b0) 15%, transparent); color: var(--phase-violet, #7b1fa2); }
+.as-badge--working_project { background: color-mix(in srgb, var(--phase-teal, #00bcd4) 15%, transparent); color: var(--phase-teal, #00838f); }
+.as-badge--realization { background: color-mix(in srgb, var(--ds-success, #4caf50) 15%, transparent); color: var(--ds-success, #2e7d32); }
+.as-badge--done       { background: color-mix(in srgb, var(--ds-success, #4caf50) 15%, transparent); color: var(--ds-success, #2e7d32); }
 
 .as-res-arrow {
   flex-shrink: 0;

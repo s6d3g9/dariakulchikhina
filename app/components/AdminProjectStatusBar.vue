@@ -232,12 +232,12 @@ function projectPercent(p: any) {
   border-radius: 50%;
 }
 .sb-dot--gray    { background: color-mix(in srgb, var(--glass-text) 25%, transparent); }
-.sb-dot--violet  { background: #7c3aed; }
-.sb-dot--blue    { background: #2563eb; }
-.sb-dot--amber   { background: #b45309; }
-.sb-dot--orange  { background: #c2410c; }
-.sb-dot--green   { background: #15803d; }
-.sb-dot--teal    { background: #0f766e; }
+.sb-dot--violet  { background: var(--phase-violet, #7c3aed); }
+.sb-dot--blue    { background: var(--phase-blue, #2563eb); }
+.sb-dot--amber   { background: var(--phase-amber, #b45309); }
+.sb-dot--orange  { background: var(--phase-orange, #c2410c); }
+.sb-dot--green   { background: var(--phase-green, #15803d); }
+.sb-dot--teal    { background: var(--phase-teal, #0f766e); }
 html.dark .sb-dot--violet { background: #a78bfa; }
 html.dark .sb-dot--blue   { background: #93c5fd; }
 html.dark .sb-dot--amber  { background: #fcd34d; }
@@ -260,12 +260,12 @@ html.dark .sb-dot--teal   { background: #5eead4; }
   transition: width .4s ease;
 }
 .sb-bar--gray    { background: color-mix(in srgb, var(--glass-text) 25%, transparent); }
-.sb-bar--violet  { background: #7c3aed; }
-.sb-bar--blue    { background: #2563eb; }
-.sb-bar--amber   { background: #b45309; }
-.sb-bar--orange  { background: #c2410c; }
-.sb-bar--green   { background: #15803d; }
-.sb-bar--teal    { background: #0f766e; }
+.sb-bar--violet  { background: var(--phase-violet, #7c3aed); }
+.sb-bar--blue    { background: var(--phase-blue, #2563eb); }
+.sb-bar--amber   { background: var(--phase-amber, #b45309); }
+.sb-bar--orange  { background: var(--phase-orange, #c2410c); }
+.sb-bar--green   { background: var(--phase-green, #15803d); }
+.sb-bar--teal    { background: var(--phase-teal, #0f766e); }
 html.dark .sb-bar--violet { background: #a78bfa; }
 html.dark .sb-bar--blue   { background: #93c5fd; }
 html.dark .sb-bar--amber  { background: #fcd34d; }
@@ -328,7 +328,7 @@ html.dark .sb-bar--teal   { background: #5eead4; }
   border-radius: 50%;
   flex-shrink: 0;
 }
-.sb-tasks-dot--done { background: #15803d; }
+.sb-tasks-dot--done { background: var(--phase-green, #15803d); }
 html.dark .sb-tasks-dot--done { background: #86efac; }
 .sb-tasks-dot--total { background: color-mix(in srgb, var(--glass-text) 15%, transparent); }
 .sb-tasks-dot--overdue { background: var(--ds-error, #dc2626); }
@@ -394,7 +394,7 @@ html.dark .sb-tasks-dot--done { background: #86efac; }
 .sb-project-bar-fill {
   height: 100%;
   border-radius: 2px;
-  background: #15803d;
+  background: var(--phase-green, #15803d);
   transition: width .3s;
 }
 html.dark .sb-project-bar-fill { background: #86efac; }
@@ -427,12 +427,12 @@ html.dark .sb-project-bar-fill { background: #86efac; }
 
 /* ── Phase chip colors (reuse from parent) ── */
 .pj-phase--gray    { color: var(--glass-text); opacity: .35; background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
-.pj-phase--violet  { color: #7c3aed; background: rgba(124,58,237,.08); }
-.pj-phase--blue    { color: #2563eb; background: rgba(37,99,235,.08); }
-.pj-phase--amber   { color: #b45309; background: rgba(180,83,9,.07); }
-.pj-phase--orange  { color: #c2410c; background: rgba(194,65,12,.07); }
-.pj-phase--green   { color: #15803d; background: rgba(21,128,61,.08); }
-.pj-phase--teal    { color: #0f766e; background: rgba(15,118,110,.08); }
+.pj-phase--violet  { color: var(--phase-violet, #7c3aed); background: color-mix(in srgb, var(--phase-violet, #7c3aed) 8%, transparent); }
+.pj-phase--blue    { color: var(--phase-blue, #2563eb); background: color-mix(in srgb, var(--phase-blue, #2563eb) 8%, transparent); }
+.pj-phase--amber   { color: var(--phase-amber, #b45309); background: color-mix(in srgb, var(--phase-amber, #b45309) 7%, transparent); }
+.pj-phase--orange  { color: var(--phase-orange, #c2410c); background: color-mix(in srgb, var(--phase-orange, #c2410c) 7%, transparent); }
+.pj-phase--green   { color: var(--phase-green, #15803d); background: color-mix(in srgb, var(--phase-green, #15803d) 8%, transparent); }
+.pj-phase--teal    { color: var(--phase-teal, #0f766e); background: color-mix(in srgb, var(--phase-teal, #0f766e) 8%, transparent); }
 html.dark .pj-phase--violet { color: #a78bfa; background: rgba(167,139,250,.12); }
 html.dark .pj-phase--blue   { color: #93c5fd; background: rgba(147,197,253,.12); }
 html.dark .pj-phase--amber  { color: #fcd34d; background: rgba(252,211,77,.1); }
