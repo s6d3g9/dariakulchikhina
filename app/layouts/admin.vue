@@ -4,6 +4,19 @@
     <header class="admin-header glass-surface">
       <span class="admin-brand">админ-панель</span>
       <div class="admin-header-links">
+        <!-- Search trigger -->
+        <button
+          type="button"
+          class="admin-search-btn"
+          title="Поиск  Ctrl+K / ⌘K"
+          aria-label="Поиск"
+          @click="searchOpen = true"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span class="admin-search-label">поиск</span>
+          <kbd class="admin-search-kbd">Ctrl+K</kbd>
+        </button>
+
         <button
           type="button"
           class="theme-dot"
@@ -175,6 +188,9 @@
 
       <slot />
     </div>
+
+    <!-- ── Global search palette ── -->
+    <AdminSearch :open="searchOpen" @close="searchOpen = false" />
   </div>
 </template>
 
@@ -461,12 +477,26 @@ function onDocClick(e: MouseEvent) {
   if (refs.every(r => !r || !r.contains(e.target as Node))) closeAll()
 }
 
+// ── Global search ─────────────────────────────────────────────
+const searchOpen = ref(false)
+
+function onSearchKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    searchOpen.value = !searchOpen.value
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', onDocClick)
+  document.addEventListener('keydown', onSearchKeydown)
   useUITheme().initTheme()
   useDesignSystem().initDesignSystem()
 })
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+  document.removeEventListener('keydown', onSearchKeydown)
+})
 watch(() => route.fullPath, closeAll)
 
 // ── Pickers ─────────────────────────────────────────────────────
@@ -567,6 +597,39 @@ async function logout() {
   text-decoration: none;
 }
 .admin-link:hover { opacity: 1; }
+
+/* ── Search button ── */
+.admin-search-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 8px;
+  padding: 4px 10px 4px 8px;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
+  font-size: .72rem;
+  transition: background .14s, border-color .14s, color .14s;
+  font-family: inherit;
+}
+.admin-search-btn:hover {
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 18%, transparent);
+  color: var(--glass-text);
+}
+.admin-search-label {
+  font-size: .7rem;
+}
+.admin-search-kbd {
+  font-size: .58rem;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: inherit;
+  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+}
 
 .theme-dot {
   width: 18px; height: 18px;
@@ -810,6 +873,14 @@ async function logout() {
   }
   .admin-link {
     font-size: .7rem;
+  }
+  .admin-search-label,
+  .admin-search-kbd {
+    display: none;
+  }
+  .admin-search-btn {
+    padding: 5px 7px;
+    border-radius: 7px;
   }
 
   .admin-container {
