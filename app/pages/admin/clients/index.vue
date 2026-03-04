@@ -121,7 +121,7 @@
         <div class="cl-modal-head"><span>{{ editingId ? 'редактировать клиента' : 'новый клиент' }}</span><button class="cl-close" @click="closeModal">✕</button></div>
         <form class="cl-form" @submit.prevent="save">
           <div class="cl-field"><label>Имя / Название *</label><input v-model="form.name" class="glass-input" required placeholder="Иванова Анна Сергеевна" autofocus></div>
-          <div class="cl-row"><div class="cl-field"><label>Телефон</label><input v-model="form.phone" class="glass-input" placeholder="+7 999 000 00 00"></div><div class="cl-field"><label>Email</label><input v-model="form.email" class="glass-input" type="email" placeholder="client@mail.ru"></div></div>
+          <div class="cl-row"><div class="cl-field"><label>Телефон</label><AppPhoneInput v-model="form.phone" /></div><div class="cl-field"><label>Email</label><input v-model="form.email" class="glass-input" type="email" placeholder="client@mail.ru"></div></div>
           <div class="cl-row"><div class="cl-field"><label>Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">— не указан</option><option value="Telegram">Telegram</option><option value="WhatsApp">WhatsApp</option><option value="Viber">Viber</option></select></div><div class="cl-field"><label>Ник / номер</label><input v-model="form.messengerNick" class="glass-input" placeholder="@username"></div></div>
           <div class="cl-field"><label>Адрес</label><AppAddressInput v-model="form.address" input-class="glass-input" placeholder="г. Москва, ул. ..." /></div>
           <div class="cl-field"><label>Заметки</label><textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="Любые пометки"></textarea></div>

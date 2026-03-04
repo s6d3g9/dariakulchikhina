@@ -34,7 +34,7 @@
             </div>
             <div class="csp-field">
               <label>Телефон</label>
-              <input class="glass-input" v-model="form.phone" type="tel" placeholder="+7 900 000 00 00">
+              <AppPhoneInput v-model="form.phone" />
             </div>
             <div class="csp-field">
               <label>Email</label>

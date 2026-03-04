@@ -43,7 +43,7 @@
           </div>
           <div class="afc-row">
             <label class="afc-lbl">телефон</label>
-            <input v-model="form.phone" class="glass-input" placeholder="+7 (___) ___-__-__" @blur="save">
+            <AppPhoneInput v-model="form.phone" @blur="save" />
           </div>
           <div class="afc-row">
             <label class="afc-lbl">email</label>

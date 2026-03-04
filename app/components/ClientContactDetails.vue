@@ -10,7 +10,7 @@
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Телефон</label>
-          <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" @blur="save" />
+          <AppPhoneInput v-model="form.phone" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Email</label>

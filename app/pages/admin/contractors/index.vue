@@ -122,7 +122,7 @@
               </div>
               <div class="ct-form-section">контакты</div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Телефон</label><input v-model="form.phone" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">Телефон</label><AppPhoneInput v-model="form.phone" /></div>
                 <div class="u-field"><label class="u-field__label">Email</label><input v-model="form.email" class="glass-input" /></div>
               </div>
               <div class="u-grid-2">

@@ -404,7 +404,7 @@
                   </div>
                   <div class="u-field">
                     <label>Телефон</label>
-                    <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" />
+                    <AppPhoneInput v-model="form.phone" />
                   </div>
                   <div class="u-field">
                     <label>Email</label>
