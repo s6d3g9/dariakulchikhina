@@ -1,7 +1,7 @@
 # Полная инвентаризация проекта
 
 > Nuxt 4 + Drizzle ORM + PostgreSQL 16. Дизайн-студия: кабинет admin / client / contractor.  
-> **Обновлено: 2026-03-03** — отмечены исправленные проблемы (✅ fixed). Полный справочник → [ARCHITECTURE.md](ARCHITECTURE.md)
+> **Обновлено: 2026-03-04** — добавлены AdminSearch, AdminProjectStatusBar. Отмечены исправленные проблемы (✅ fixed). Полный справочник → [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ---
 
@@ -16,6 +16,8 @@
 | `AdminContractorsProfile.vue` | Привязка/отвязка подрядчиков к проекту | `acp-` | ⚠ **Коллизия CSS-префикса** с `AdminClientProfile`. Локальная `workTypeLabel()` — **дубликат** |
 | `AdminFirstContact.vue` | Форма первичного контакта/лида с интеграцией Яндекс.Карт | `afc-` | ✅ Исправлено: заменена сломанная логика step-completion на `profile._stepsDone`. ⚠ Hardcoded инлайн `<option>` |
 | `AdminGallery.vue` | CRUD галереи с glass-дизайном, фильтры по тегам | `agal-` | Активно использует glass design system |
+| `AdminProjectStatusBar.vue` | Сайдбар-инфографика для admin/designers страниц: сводные метрики, фазы, ring chart задач, per-project прогресс | `sb-` | Использует `/api/admin/stats`; sticky sidebar 220px |
+| `AdminSearch.vue` | Command-palette глобального поиска: дебаунс-ILIKE по проектам/клиентам/подрядчикам, Teleport overlay, клавиатурная навигация ↑↓↵, триггер Ctrl+K / ⌘K | `as-` | Монтируется в admin layout через Teleport; API `/api/admin/search` |
 | `AdminMaterials.vue` | Редактор материалов (JSON-структура с вкладками/группами) | `am-` | Glass classes |
 | `AdminMoodboard.vue` | Мудборд: стилевые теги, картинки по категориям, ссылки | `amb-` | ⚠ Hardcoded `STYLE_TAGS`, `IMAGE_CATS` — можно вынести в shared |
 | `AdminPageContent.vue` | Мета-роутер: делегирует в `AdminMaterials` (tabs) или `AdminTZ` (sections) по структуре контента | `apc-` | ⚠ Tailwind-утилиты смешаны со scoped CSS |
@@ -182,6 +184,10 @@
 
 ### `public/` (1 маршрут)
 - `projects.get` — Публичный список проектов
+
+### `admin/` (3 маршрута)
+- `stats.get` — Агрегированная статистика проектов/задач/фаз/сущностей для `AdminProjectStatusBar`
+- `search.get` — Глобальный поиск `?q=...` ILIKE по projects+clients+contractors, лимит 6 на группу
 
 ### Прочее (3 маршрута)
 - `suggestions.get` — JSON-подсказки
