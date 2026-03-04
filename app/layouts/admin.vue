@@ -19,10 +19,28 @@
 
         <button
           type="button"
-          class="theme-dot"
-          :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
+          class="theme-toggle"
+          :aria-label="isDark ? 'Светлая тема' : 'Тёмная тема'"
+          :title="isDark ? 'Светлая тема' : 'Тёмная тема'"
           @click="toggleTheme"
-        ></button>
+        >
+          <!-- Sun icon (light mode — click to go dark) -->
+          <svg v-if="!isDark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <!-- Moon icon (dark mode — click to go light) -->
+          <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
         <NuxtLink to="/" class="admin-link">сайт</NuxtLink>
         <a href="#" class="admin-link" @click.prevent="logout">выйти</a>
       </div>
@@ -631,14 +649,25 @@ async function logout() {
   color: color-mix(in srgb, var(--glass-text) 38%, transparent);
 }
 
-.theme-dot {
-  width: 18px; height: 18px;
-  border-radius: 999px;
-  border: none;
-  background: color-mix(in srgb, var(--glass-bg) 80%, transparent);
-  box-shadow: inset 0 0 0 1px var(--glass-border);
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  color: var(--glass-text);
+  opacity: .65;
   cursor: pointer;
   padding: 0;
+  transition: opacity .15s, background .15s, border-color .15s;
+}
+.theme-toggle:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 22%, transparent);
 }
 
 /* ── Container / tabs ── */

@@ -218,16 +218,37 @@ textarea, select {
 [class*="-dot--red"]    { background: var(--ds-error, #d46b6b); }
 [class*="-dot--green"]  { background: var(--ds-success, #5caa7f); }
 
-/* ── Generic dark fallback (when no data-theme set) ── */
+/* ── Dark mode — charcoal palette (not pure black) ── */
 html.dark {
-  --glass-bg:       var(--ds-dark-surface-bg, #000000);
-  --glass-border:   var(--ds-dark-border, rgba(255, 255, 255, 0.15));
-  --glass-shadow:   none;
-  --glass-text:     var(--ds-dark-text, #ffffff);
-  --glass-page-bg:  var(--ds-dark-page-bg, #000000);
-  --dropdown-bg:    #000000;
-  --dropdown-border: rgba(255, 255, 255, 0.15);
-  --dropdown-shadow: none;
+  --glass-bg:        #1e1e20;
+  --glass-border:    rgba(255, 255, 255, 0.09);
+  --glass-shadow:    0 4px 24px rgba(0, 0, 0, 0.35);
+  --glass-text:      #f0f0f2;
+  --glass-page-bg:   #141416;
+
+  --dropdown-bg:     #252528;
+  --dropdown-border: rgba(255, 255, 255, 0.11);
+  --dropdown-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+
+  /* Phase colors — slightly brightened for dark bg */
+  --phase-violet: #a78bfa;
+  --phase-blue:   #60a5fa;
+  --phase-amber:  #fcd34d;
+  --phase-orange: #fdba74;
+  --phase-green:  #86efac;
+  --phase-teal:   #5eead4;
+
+  /* Design system overrides */
+  --ds-accent:       hsl(220, 50%, 65%);
+  --ds-accent-light: hsl(220, 50%, 80%);
+  --ds-accent-dark:  hsl(220, 50%, 45%);
+  --ds-success:      hsl(142, 60%, 50%);
+  --ds-error:        hsl(0, 70%, 60%);
+  --ds-warning:      hsl(38, 90%, 60%);
+
+  --ds-shadow:    0 8px 32px rgba(0,0,0,0.28);
+  --ds-shadow-sm: 0 2px 12px rgba(0,0,0,0.2);
+  --ds-shadow-lg: 0 16px 56px rgba(0,0,0,0.38);
 }
 
 body {
@@ -305,8 +326,8 @@ html.dark #__nuxt {
 
 html.dark .glass-page::before {
   background:
-    radial-gradient(70% 55% at 0% 0%, rgba(72, 84, 120, 0.16), transparent 62%),
-    radial-gradient(70% 50% at 100% 100%, rgba(28, 34, 54, 0.2), transparent 65%);
+    radial-gradient(70% 55% at 0% 0%, rgba(99, 102, 241, 0.07), transparent 62%),
+    radial-gradient(70% 50% at 100% 100%, rgba(139, 92, 246, 0.05), transparent 65%);
 }
 
 .glass-surface,
@@ -394,12 +415,12 @@ html.dark .glass-chip {
 }
 
 html.dark .glass-input {
-  background: var(--ds-dark-surface-bg, rgba(13, 14, 18, 0.94));
-  border-color: var(--ds-dark-border, rgba(255, 255, 255, 0.16));
+  background: color-mix(in srgb, var(--glass-bg) 80%, transparent);
+  border-color: var(--glass-border);
 }
 
 html.dark .glass-input::placeholder {
-  color: var(--ds-dark-text-muted, rgba(198, 202, 214, 0.74));
+  color: color-mix(in srgb, var(--glass-text) 40%, transparent);
 }
 
 /* ── Unified cabinet/menu primitives (0.2 briefing style) ── */
