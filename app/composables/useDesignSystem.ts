@@ -157,6 +157,12 @@ export interface DesignTokens {
   colorLink:    string   // --ds-link-color  — links / interactive
   colorBtnBg:   string   // --btn-bg-base    — button background fill
   colorBtnText: string   // --btn-color      — button label text
+  colorNavBg:   string   // --ds-nav-bg      — navigation / sidebar background
+  colorMuted:   string   // --ds-muted       — secondary / muted text
+  colorInputBg: string   // --ds-input-bg-custom — input / field background
+  colorTagBg:   string   // --ds-tag-bg      — tag / chip background
+  colorTagText: string   // --ds-tag-color   — tag / chip text
+  colorCardBg:  string   // --ds-card-bg     — card / modal background override
 
   /* ── Button & Card hover animation ── */
   btnHoverAnim: 'none' | 'lift' | 'scale' | 'glow' | 'fill' | 'sheen'  // kinetic hover style
@@ -279,6 +285,12 @@ export const DEFAULT_TOKENS: DesignTokens = {
   colorLink:    '',
   colorBtnBg:   '',
   colorBtnText: '',
+  colorNavBg:   '',
+  colorMuted:   '',
+  colorInputBg: '',
+  colorTagBg:   '',
+  colorTagText: '',
+  colorCardBg:  '',
 
   btnHoverAnim: 'none',
   cardHoverAnim: 'none',
@@ -1771,6 +1783,12 @@ export function useDesignSystem() {
     _setOrDel('--btn-color',         t.colorBtnText)
     _setOrDel('--ds-heading-color',  t.colorHeading)
     _setOrDel('--ds-link-color',     t.colorLink)
+    _setOrDel('--ds-nav-bg',         t.colorNavBg)
+    _setOrDel('--ds-muted',          t.colorMuted)
+    _setOrDel('--ds-input-bg-custom',t.colorInputBg)
+    _setOrDel('--ds-tag-bg',         t.colorTagBg)
+    _setOrDel('--ds-tag-color',      t.colorTagText)
+    _setOrDel('--ds-card-bg',        t.colorCardBg)
 
     if (t.colorSurface && /^#[0-9a-f]{6}$/i.test(t.colorSurface)) {
       el.style.setProperty('--glass-bg', _hexRgba(t.colorSurface, t.glassOpacity))
@@ -1791,6 +1809,8 @@ export function useDesignSystem() {
     const colourReset = {
       colorPageBg: '', colorSurface: '', colorBorder: '', colorText: '',
       colorHeading: '', colorLink: '', colorBtnBg: '', colorBtnText: '',
+      colorNavBg: '', colorMuted: '', colorInputBg: '', colorTagBg: '',
+      colorTagText: '', colorCardBg: '',
     }
     tokens.value = { ...tokens.value, ...colourReset, ...preset.tokens }
     applyToDOM()

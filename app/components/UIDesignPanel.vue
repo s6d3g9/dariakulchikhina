@@ -179,6 +179,122 @@
                 </div>
               </div>
 
+              <!-- ═══ Палитра — цвета всех элементов ═══ -->
+              <div v-show="isTabVisible('palette')" class="dp-page dp-palette-colors">
+                <div class="dp-palette-colors-title">Цвета элементов</div>
+
+                <!-- Строка 1: Фоны -->
+                <div class="dp-clr-group">
+                  <div class="dp-clr-group-label">Фоны</div>
+                  <div class="dp-clr-chips">
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorPageBg || 'var(--glass-page-bg, #f3f4f6)' }" />
+                      <label class="dp-clr-chip-label">страница</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorPageBg || '#f3f4f6'" @input="set('colorPageBg', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorPageBg" type="button" class="dp-clr-chip-reset" @click="set('colorPageBg', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorSurface || 'var(--glass-bg, rgba(255,255,255,.5))' }" />
+                      <label class="dp-clr-chip-label">карточки</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorSurface || '#ffffff'" @input="set('colorSurface', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorSurface" type="button" class="dp-clr-chip-reset" @click="set('colorSurface', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorNavBg || 'var(--ds-nav-bg, var(--glass-bg, rgba(255,255,255,.4)))' }" />
+                      <label class="dp-clr-chip-label">навигация</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorNavBg || '#ffffff'" @input="set('colorNavBg', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorNavBg" type="button" class="dp-clr-chip-reset" @click="set('colorNavBg', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorCardBg || 'var(--ds-card-bg, var(--glass-bg, rgba(255,255,255,.5)))' }" />
+                      <label class="dp-clr-chip-label">модальные</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorCardBg || '#ffffff'" @input="set('colorCardBg', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorCardBg" type="button" class="dp-clr-chip-reset" @click="set('colorCardBg', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorBorder || 'var(--glass-border, rgba(180,180,220,.2))' }" />
+                      <label class="dp-clr-chip-label">границы</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorBorder || '#b4b4dc'" @input="set('colorBorder', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorBorder" type="button" class="dp-clr-chip-reset" @click="set('colorBorder', '')">✕</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Строка 2: Текст -->
+                <div class="dp-clr-group">
+                  <div class="dp-clr-group-label">Текст</div>
+                  <div class="dp-clr-chips">
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorText || 'var(--glass-text, #1f1f1f)' }" />
+                      <label class="dp-clr-chip-label">основной</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorText || '#1f1f1f'" @input="set('colorText', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorText" type="button" class="dp-clr-chip-reset" @click="set('colorText', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorHeading || 'var(--ds-heading-color, var(--glass-text, #1f1f1f))' }" />
+                      <label class="dp-clr-chip-label">заголовки</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorHeading || '#1f1f1f'" @input="set('colorHeading', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorHeading" type="button" class="dp-clr-chip-reset" @click="set('colorHeading', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorMuted || 'var(--ds-muted, #888)' }" />
+                      <label class="dp-clr-chip-label">второстепенный</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorMuted || '#888888'" @input="set('colorMuted', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorMuted" type="button" class="dp-clr-chip-reset" @click="set('colorMuted', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorLink || 'var(--ds-link-color, #3b6bdb)' }" />
+                      <label class="dp-clr-chip-label">ссылки</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorLink || '#3b6bdb'" @input="set('colorLink', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorLink" type="button" class="dp-clr-chip-reset" @click="set('colorLink', '')">✕</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Строка 3: Интерактивные элементы -->
+                <div class="dp-clr-group">
+                  <div class="dp-clr-group-label">Интерактивные элементы</div>
+                  <div class="dp-clr-chips">
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorBtnBg || 'var(--btn-bg-base, rgba(0,0,0,.07))' }" />
+                      <label class="dp-clr-chip-label">кнопка (фон)</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorBtnBg || '#000000'" @input="set('colorBtnBg', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorBtnBg" type="button" class="dp-clr-chip-reset" @click="set('colorBtnBg', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorBtnText || 'var(--btn-color, var(--glass-text, #1f1f1f))' }" />
+                      <label class="dp-clr-chip-label">кнопка (текст)</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorBtnText || '#1f1f1f'" @input="set('colorBtnText', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorBtnText" type="button" class="dp-clr-chip-reset" @click="set('colorBtnText', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorInputBg || 'var(--input-bg, rgba(0,0,0,.04))' }" />
+                      <label class="dp-clr-chip-label">поле ввода</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorInputBg || '#f5f5f5'" @input="set('colorInputBg', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorInputBg" type="button" class="dp-clr-chip-reset" @click="set('colorInputBg', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorTagBg || 'var(--ds-tag-bg, var(--chip-bg, rgba(0,0,0,.06)))' }" />
+                      <label class="dp-clr-chip-label">тег (фон)</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorTagBg || '#e5e7eb'" @input="set('colorTagBg', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorTagBg" type="button" class="dp-clr-chip-reset" @click="set('colorTagBg', '')">✕</button>
+                    </div>
+                    <div class="dp-clr-chip">
+                      <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorTagText || 'var(--ds-tag-color, var(--glass-text, #1f1f1f))' }" />
+                      <label class="dp-clr-chip-label">тег (текст)</label>
+                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorTagText || '#374151'" @input="set('colorTagText', ($event.target as HTMLInputElement).value)">
+                      <button v-if="tokens.colorTagText" type="button" class="dp-clr-chip-reset" @click="set('colorTagText', '')">✕</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Кнопка сброса всех цветов -->
+                <button type="button" class="dp-sm-btn dp-sm-btn--warn" style="margin-top:8px"
+                  @click="[set('colorPageBg',''), set('colorSurface',''), set('colorBorder',''), set('colorText',''), set('colorHeading',''), set('colorLink',''), set('colorBtnBg',''), set('colorBtnText',''), set('colorNavBg',''), set('colorMuted',''), set('colorInputBg',''), set('colorTagBg',''), set('colorTagText',''), set('colorCardBg','')]">
+                  ↺ сбросить все цвета элементов
+                </button>
+              </div>
+
               <!-- ═══ Цвета элементов ═══ -->
               <div v-show="isTabVisible('colors')" class="dp-page dp-page--cols">
                 <!-- Колонка 1: Фоны -->
@@ -253,8 +369,8 @@
                   </div>
 
                   <button type="button" class="dp-sm-btn dp-sm-btn--warn" style="margin-top:10px; width:100%"
-                    :disabled="!tokens.colorPageBg && !tokens.colorSurface && !tokens.colorBorder && !tokens.colorText && !tokens.colorHeading && !tokens.colorLink && !tokens.colorBtnBg && !tokens.colorBtnText"
-                    @click="[set('colorPageBg',''), set('colorSurface',''), set('colorBorder',''), set('colorText',''), set('colorHeading',''), set('colorLink',''), set('colorBtnBg',''), set('colorBtnText','')]">
+                    :disabled="!tokens.colorPageBg && !tokens.colorSurface && !tokens.colorBorder && !tokens.colorText && !tokens.colorHeading && !tokens.colorLink && !tokens.colorBtnBg && !tokens.colorBtnText && !tokens.colorNavBg && !tokens.colorMuted && !tokens.colorInputBg && !tokens.colorTagBg && !tokens.colorTagText && !tokens.colorCardBg"
+                    @click="[set('colorPageBg',''), set('colorSurface',''), set('colorBorder',''), set('colorText',''), set('colorHeading',''), set('colorLink',''), set('colorBtnBg',''), set('colorBtnText',''), set('colorNavBg',''), set('colorMuted',''), set('colorInputBg',''), set('colorTagBg',''), set('colorTagText',''), set('colorCardBg','')]">
                     ↺ сбросить все цвета
                   </button>
 
@@ -1589,7 +1705,7 @@ const currentScaleLabel = computed(() =>
 /* ── Section search filter ──────────────────────── */
 const sectionSearchMap: Record<string, string[]> = {
   presets:  ['образ', 'рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal', 'minale', 'bauhaus', 'artdeco', 'cyberpunk', 'zen', 'y2k', 'newspaper', 'pastel', 'tokyo', 'terracotta', 'arctic', 'glow', 'ink', 'bubblegum', 'blueprint', 'snohetta', 'olsonkundig', 'mvrdv', 'som', 'mad', 'архитектура'],
-  palette:  ['палитра', 'цвет', 'акцент', 'color', 'theme', 'accent', 'hue', 'статусы', 'success', 'успех', 'ошибка', 'error', 'warning', 'предупреждение'],
+  palette:  ['палитра', 'цвет', 'акцент', 'color', 'theme', 'accent', 'hue', 'статусы', 'success', 'успех', 'ошибка', 'error', 'warning', 'предупреждение', 'фон', 'навигация', 'карточка', 'кнопка', 'поле', 'тег', 'ссылка', 'заголовок', 'мьютед', 'мутед', 'background', 'nav', 'input', 'tag', 'heading', 'muted', 'link', 'элементы'],
   colors:   ['цвета', 'элемент', 'фон', 'кнопк', 'текст', 'ссылк', 'заголовк', 'граница', 'background', 'surface', 'heading', 'link', 'border', 'button', 'colour', 'цвет элементов'],
   buttons:  ['кнопк', 'button', 'стиль', 'размер', 'закругл', 'регистр', 'btn'],
   type:     ['типограф', 'шрифт', 'font', 'размер', 'вес', 'межбукв', 'межстроч', 'letter', 'line-height'],
@@ -2647,6 +2763,60 @@ onBeforeUnmount(() => {
 .dp-status-name {
   font-size: .6rem; color: var(--glass-text); opacity: .55; letter-spacing: .04em;
 }
+
+/* ── Palette — element colours section ── */
+.dp-palette-colors {
+  padding: 12px 16px 4px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+.dp-palette-colors-title {
+  font-size: .64rem; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--glass-text); opacity: .4; margin-bottom: 12px; font-weight: 600;
+}
+.dp-clr-group { margin-bottom: 14px; }
+.dp-clr-group-label {
+  font-size: .6rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--glass-text); opacity: .35; margin-bottom: 6px;
+}
+.dp-clr-chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.dp-clr-chip {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  width: 58px;
+}
+.dp-clr-chip-swatch {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,.1);
+  cursor: pointer; flex-shrink: 0;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.08);
+  transition: transform .1s;
+}
+.dp-clr-chip:hover .dp-clr-chip-swatch { transform: scale(1.08); }
+.dp-clr-chip-label {
+  font-size: .52rem; color: var(--glass-text); opacity: .5;
+  text-align: center; white-space: nowrap; overflow: hidden;
+  max-width: 58px; text-overflow: ellipsis;
+  letter-spacing: .01em;
+}
+.dp-clr-chip-input {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 36px; height: 36px; opacity: 0; cursor: pointer;
+  padding: 0; border: none;
+}
+.dp-clr-chip-reset {
+  position: absolute; top: -4px; right: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: rgba(0,0,0,.18); border: none;
+  color: #fff; font-size: .5rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1; padding: 0;
+  opacity: 0; transition: opacity .15s;
+}
+.dp-clr-chip:hover .dp-clr-chip-reset { opacity: 1; }
+:global(html.dark) .dp-clr-chip-swatch { border-color: rgba(255,255,255,.12); }
+:global(html.dark) .dp-clr-chip-reset { background: rgba(255,255,255,.25); color: #111; }
 
 /* ── Swatch grid in palette tab ── */
 .dp-swatch-grid {
