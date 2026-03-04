@@ -8,6 +8,7 @@ import { useDb } from '~/server/db/index'
 import { projects, clients, contractors, projectContractors, pageContent } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 import { callGemma, DOCUMENT_SYSTEM_PROMPT } from '~/server/utils/gemma'
+import { retrieveLegalContext } from '~/server/utils/rag'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -46,8 +47,12 @@ export default defineEventHandler(async (event) => {
     userPrompt = buildReviewPrompt({ templateName, currentText })
   }
 
+  // ── RAG: правовая база ────────────────────────────────────────────
+  const legalCtx    = await retrieveLegalContext(`${templateName} ${userPrompt.slice(0, 400)}`)
+  const systemPrompt = DOCUMENT_SYSTEM_PROMPT + legalCtx
+
   // ── Вызов Gemma 27B ────────────────────────────────────────────
-  const result = await callGemma(DOCUMENT_SYSTEM_PROMPT, userPrompt)
+  const result = await callGemma(systemPrompt, userPrompt)
 
   if (action === 'review') {
     // Парсим замечания из ответа в структуру

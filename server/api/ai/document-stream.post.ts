@@ -8,6 +8,7 @@
 import { useDb } from '~/server/db/index'
 import { projects, clients, contractors, pageContent } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
+import { retrieveLegalContext } from '~/server/utils/rag'
 
 const MODEL = 'gemma3:27b'
 const DEFAULT_GEMMA_URL = 'http://localhost:11434'
@@ -36,13 +37,16 @@ export default defineEventHandler(async (event) => {
   const ctx = await buildStreamContext(projectSlug, clientId, contractorId)
 
   // ── Формируем промпты ─────────────────────────────────────────
-  const systemPrompt = STREAM_SYSTEM_PROMPT
   let userPrompt = ''
   if (action === 'generate') {
     userPrompt = buildStreamGeneratePrompt({ templateName, templateText, fields, ctx })
   } else {
     userPrompt = buildStreamImprovePrompt({ templateName, currentText, ctx })
   }
+
+  // ── RAG: правовая база ────────────────────────────────────────
+  const legalCtx    = await retrieveLegalContext(`${templateName} ${userPrompt.slice(0, 400)}`)
+  const systemPrompt = STREAM_SYSTEM_PROMPT + legalCtx
 
   // ── SSE-заголовки ─────────────────────────────────────────────
   const res = event.node.res
