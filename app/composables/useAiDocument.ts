@@ -28,6 +28,15 @@ export type AiPayload = {
   contractorId?: number
 }
 
+function getCsrfToken(): string {
+  return document.cookie
+    .split('; ')
+    .find(c => c.startsWith('csrf_token='))
+    ?.split('=')[1]
+    ? decodeURIComponent(document.cookie.split('; ').find(c => c.startsWith('csrf_token='))!.split('=')[1])
+    : ''
+}
+
 export function useAiDocument() {
   const aiLoading   = ref(false)
   const aiError     = ref('')
@@ -59,7 +68,10 @@ export function useAiDocument() {
     try {
       const resp = await fetch('/api/ai/document-stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': getCsrfToken(),
+        },
         signal: _abortCtrl.signal,
         body: JSON.stringify({ action, ...payload }),
       })
