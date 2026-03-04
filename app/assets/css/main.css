@@ -4896,8 +4896,17 @@ html[data-concept="minale"] .std-layout {
   color: #ffffff !important;
 }
 
-/* All text pure white */
-html[data-concept="minale"] * {
+/* ── Base text: all standard text-bearing elements white ──── */
+/* NO wildcard * - it bleeds into icons, SVGs, placeholders etc. */
+html[data-concept="minale"] body,
+html[data-concept="minale"] div,
+html[data-concept="minale"] span:not([class*="dot"]):not([class*="badge"]):not([class*="icon"]):not([class*="emoji"]),
+html[data-concept="minale"] p,
+html[data-concept="minale"] a,
+html[data-concept="minale"] td,
+html[data-concept="minale"] th,
+html[data-concept="minale"] li,
+html[data-concept="minale"] button {
   color: #ffffff;
 }
 
@@ -5266,6 +5275,220 @@ html[data-concept="minale"] .dp-panel {
   border-color: rgba(255,255,255,0.10) !important;
   color: #ffffff !important;
 }
+
+/* ── Phase badges: monochrome tonal scale ──────────────── */
+html[data-concept="minale"] [class*="pj-phase--"],
+html[data-concept="minale"] [class*="-phase--"] {
+  color: rgba(255,255,255,0.70) !important;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
+/* Phase CSS variables — all neutralised */
+html[data-concept="minale"] {
+  --phase-violet:  rgba(255,255,255,0.65) !important;
+  --phase-blue:    rgba(255,255,255,0.60) !important;
+  --phase-amber:   rgba(255,255,255,0.55) !important;
+  --phase-orange:  rgba(255,255,255,0.50) !important;
+  --phase-green:   rgba(255,255,255,0.65) !important;
+  --phase-teal:    rgba(255,255,255,0.58) !important;
+  --ds-success:    rgba(255,255,255,0.50) !important;
+  --ds-error:      rgba(255,255,255,0.45) !important;
+  --ds-warning:    rgba(255,255,255,0.45) !important;
+}
+
+/* ── Danger button: white hairline not red ─────────────── */
+html[data-concept="minale"] .a-btn-danger {
+  color: rgba(255,255,255,0.35) !important;
+  border-color: rgba(255,255,255,0.14) !important;
+  opacity: 1 !important;
+}
+html[data-concept="minale"] .a-btn-danger:hover {
+  color: rgba(255,255,255,0.80) !important;
+  border-color: rgba(255,255,255,0.40) !important;
+  background: transparent !important;
+}
+
+/* ── Status dots: monochrome ───────────────────────────── */
+html[data-concept="minale"] [class*="-dot--green"],
+html[data-concept="minale"] [class*="-dot--blue"],
+html[data-concept="minale"] [class*="-dot--yellow"],
+html[data-concept="minale"] [class*="-dot--red"],
+html[data-concept="minale"] [class*="-dot--amber"],
+html[data-concept="minale"] [class*="-dot--violet"],
+html[data-concept="minale"] [class*="-dot--teal"],
+html[data-concept="minale"] [class*="-dot--orange"] {
+  background: rgba(255,255,255,0.50) !important;
+}
+html[data-concept="minale"] [class*="-dot--red"] {
+  background: rgba(255,255,255,0.25) !important;
+}
+
+/* ── Status progress bar ───────────────────────────────── */
+html[data-concept="minale"] .cab-proj-progress-bar {
+  background: rgba(255,255,255,0.45) !important;
+}
+html[data-concept="minale"] [class*="-bar--"] {
+  background: rgba(255,255,255,0.40) !important;
+}
+
+/* ── Inline success/error messages ────────────────────── */
+html[data-concept="minale"] .cab-inline-error,
+html[data-concept="minale"] .cab-task-overdue {
+  color: rgba(255,255,255,0.50) !important;
+}
+html[data-concept="minale"] .cab-inline-success,
+html[data-concept="minale"] .cab-portfolio-item-check {
+  color: rgba(255,255,255,0.55) !important;
+}
+
+/* ── ator-status-btn: grey monochrome ─────────────────── */
+html[data-concept="minale"] .ator-status-btn {
+  --accent: rgba(255,255,255,0.35) !important;
+  border-color: rgba(255,255,255,0.20) !important;
+  color: rgba(255,255,255,0.45) !important;
+}
+html[data-concept="minale"] .ator-status-btn--active {
+  background: rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.90) !important;
+  border-color: rgba(255,255,255,0.50) !important;
+}
+
+/* ── Delete buttons in lists ───────────────────────────── */
+html[data-concept="minale"] .cab-doc-del {
+  background: transparent !important;
+  border-color: rgba(255,255,255,0.14) !important;
+  color: rgba(255,255,255,0.35) !important;
+  border-radius: 0 !important;
+}
+html[data-concept="minale"] .cab-doc-del:hover {
+  color: rgba(255,255,255,0.80) !important;
+  border-color: rgba(255,255,255,0.40) !important;
+}
+
+/* ── Empty state icons: muted, no emoji colour ─────────── */
+html[data-concept="minale"] .ent-empty-icon,
+html[data-concept="minale"] [class*="-empty-icon"],
+html[data-concept="minale"] [class*="-icon--empty"] {
+  font-size: 1.2rem !important;
+  opacity: 0.15 !important;
+  filter: grayscale(1) !important;
+}
+html[data-concept="minale"] .ent-empty-detail {
+  gap: 18px !important;
+}
+html[data-concept="minale"] .ent-empty-detail span:not(.ent-empty-icon):not([class*="-icon"]) {
+  font-size: 0.72rem !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,0.28) !important;
+}
+
+/* ── Status select dropdown ───────────────────────────── */
+html[data-concept="minale"] .u-status-sel {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.18) !important;
+  color: rgba(255,255,255,0.70) !important;
+  border-radius: 0 !important;
+  padding: 4px 0 !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 0.08em !important;
+}
+
+/* ── Project status bar ────────────────────────────────── */
+html[data-concept="minale"] .admin-status-bar,
+html[data-concept="minale"] [class*="status-bar"] {
+  background: transparent !important;
+  border: none !important;
+  border-top: 1px solid rgba(255,255,255,0.06) !important;
+}
+html[data-concept="minale"] .sb-section-title,
+html[data-concept="minale"] [class*="-sb-"] {
+  color: rgba(255,255,255,0.40) !important;
+}
+
+/* ── Modal close button ────────────────────────────────── */
+html[data-concept="minale"] .cl-close,
+html[data-concept="minale"] .ct-modal-close,
+html[data-concept="minale"] [class*="modal-close"] {
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 0 !important;
+  color: rgba(255,255,255,0.50) !important;
+}
+html[data-concept="minale"] .cl-close:hover,
+html[data-concept="minale"] .ct-modal-close:hover {
+  border-color: rgba(255,255,255,0.40) !important;
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+/* ── Backdrop ──────────────────────────────────────────── */
+html[data-concept="minale"] .cl-backdrop,
+html[data-concept="minale"] .ct-backdrop,
+html[data-concept="minale"] [class*="-backdrop"] {
+  background: rgba(0,0,0,0.75) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+/* ── Modal body ────────────────────────────────────────── */
+html[data-concept="minale"] .cl-modal,
+html[data-concept="minale"] .ct-modal,
+html[data-concept="minale"] [class*="modal"]:not([class*="modal-head"]):not([class*="modal-foot"]):not([class*="modal-body"]):not([class*="modal-close"]):not([class*="modal-tab"]) {
+  background: #050505 !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+}
+
+/* ── Modal section headings ────────────────────────────── */
+html[data-concept="minale"] .ct-form-section {
+  font-size: 0.62rem !important;
+  letter-spacing: 0.22em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,0.28) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  padding-bottom: 6px !important;
+  margin-bottom: 16px !important;
+}
+
+/* ── Detail cards: match dark page ─────────────────────── */
+html[data-concept="minale"] .ent-detail-card,
+html[data-concept="minale"] .ent-detail-section {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 0 !important;
+}
+html[data-concept="minale"] .ent-detail-section {
+  font-size: 0.62rem !important;
+  letter-spacing: 0.22em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,0.28) !important;
+}
+html[data-concept="minale"] .ent-detail-row {
+  font-size: 0.875rem !important;
+  color: rgba(255,255,255,0.70) !important;
+  padding: 6px 0 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+}
+
+/* ── Nav group labels ──────────────────────────────────── */
+html[data-concept="minale"] .ent-group-label {
+  font-size: 0.58rem !important;
+  letter-spacing: 0.24em !important;
+  text-transform: uppercase !important;
+  color: rgba(255,255,255,0.22) !important;
+  padding: 14px 10px 4px !important;
+}
+
+/* ── Filter info bars ──────────────────────────────────── */
+html[data-concept="minale"] .cl-filter-info,
+html[data-concept="minale"] .ct-filter-info {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 0 !important;
+}
+
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -5921,3 +6144,226 @@ html[data-concept="future"] hr { border-color: rgba(80,120,255,0.08) !important;
 /* phase palette: electric variants */
 html[data-concept="future"] { --phase-violet: #b060ff !important; --phase-blue: #4a90ff !important; --phase-amber: #ffb040 !important; --phase-orange: #ff7040 !important; --phase-green: #40e090 !important; --phase-teal: #30d0d0 !important; }
 
+
+
+/* ═══════════════════════════════════════════════════════════
+   ВИТРИНА / LIQUID GLASS — concept-glass
+   Apple HIG glassmorphism: blur, saturation, pill shapes,
+   translucent chrome, soft depth, colour accents.
+   STRICTLY ISOLATED from concept-minale and other concepts.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Restore glass CSS variables — canonical values ──────── */
+html[data-concept="glass"] {
+  --glass-page-bg:   linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 50%, #e1f5fe 100%);
+  --glass-bg:        rgba(255,255,255,0.18);
+  --glass-text:      #1a1a2e;
+  --glass-border:    rgba(255,255,255,0.45);
+  --glass-shadow:    0 8px 32px rgba(31,38,135,0.12);
+  --btn-bg:          rgba(255,255,255,0.22);
+  --btn-color:       #1a1a2e;
+  --btn-border:      rgba(255,255,255,0.50);
+  --card-radius:     28px;
+}
+
+/* ── Page: gradient backdrop ──────────────────────────────── */
+html[data-concept="glass"] .glass-page,
+html[data-concept="glass"] .page-bg,
+html[data-concept="glass"] .admin-bg {
+  background: var(--glass-page-bg) !important;
+  min-height: 100vh;
+}
+html[data-concept="glass"] .glass-page::before {
+  display: none !important;
+}
+
+/* ── Cards: frosted glass ─────────────────────────────────── */
+html[data-concept="glass"] .glass-card,
+html[data-concept="glass"] .glass-surface,
+html[data-concept="glass"] .ent-detail-card,
+html[data-concept="glass"] .cab-task,
+html[data-concept="glass"] .cab-doc-card,
+html[data-concept="glass"] .ws-card,
+html[data-concept="glass"] .dash-stat,
+html[data-concept="glass"] .dash-project-card {
+  background: rgba(255,255,255,0.20) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255,255,255,0.50) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 8px 32px rgba(31,38,135,0.10), inset 0 1px 0 rgba(255,255,255,0.60) !important;
+}
+html[data-concept="glass"] .glass-card:hover {
+  background: rgba(255,255,255,0.28) !important;
+  box-shadow: 0 12px 40px rgba(31,38,135,0.15) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* ── Input / select: glass pill ────────────────────────────── */
+html[data-concept="glass"] .glass-input,
+html[data-concept="glass"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]),
+html[data-concept="glass"] textarea,
+html[data-concept="glass"] select {
+  background: rgba(255,255,255,0.25) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255,255,255,0.55) !important;
+  border-radius: 18px !important;
+  color: #1a1a2e !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.04) !important;
+  padding: 10px 16px !important;
+}
+html[data-concept="glass"] .glass-input:focus,
+html[data-concept="glass"] input:focus,
+html[data-concept="glass"] textarea:focus {
+  outline: none !important;
+  border-color: rgba(100,120,255,0.60) !important;
+  box-shadow: 0 0 0 3px rgba(100,120,255,0.18) !important;
+}
+
+/* ── Buttons: glass pill ────────────────────────────────── */
+html[data-concept="glass"] .a-btn-save {
+  background: rgba(100,120,255,0.85) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 10px 28px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 4px 16px rgba(100,120,255,0.35) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+html[data-concept="glass"] .a-btn-save:hover {
+  background: rgba(80,100,240,0.95) !important;
+  box-shadow: 0 6px 20px rgba(100,120,255,0.50) !important;
+  transform: translateY(-1px) !important;
+}
+html[data-concept="glass"] .a-btn-sm {
+  background: rgba(255,255,255,0.30) !important;
+  color: #1a1a2e !important;
+  border: 1px solid rgba(255,255,255,0.55) !important;
+  border-radius: 999px !important;
+  backdrop-filter: blur(8px) !important;
+}
+html[data-concept="glass"] .a-btn-sm:hover {
+  background: rgba(255,255,255,0.45) !important;
+}
+
+/* ── Chip: glass pill ─────────────────────────────────────── */
+html[data-concept="glass"] .glass-chip {
+  background: rgba(255,255,255,0.30) !important;
+  border: 1px solid rgba(255,255,255,0.55) !important;
+  border-radius: 999px !important;
+  color: #1a1a2e !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+/* ── Sidebar/nav: translucent ──────────────────────────────── */
+html[data-concept="glass"] .ent-sidebar,
+html[data-concept="glass"] .std-sidebar,
+html[data-concept="glass"] .cab-nav {
+  background: rgba(255,255,255,0.15) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-right: 1px solid rgba(255,255,255,0.35) !important;
+}
+
+/* ── Nav items: coloured accents ────────────────────────── */
+html[data-concept="glass"] .ent-nav-item,
+html[data-concept="glass"] .cab-nav-item,
+html[data-concept="glass"] .std-nav-item {
+  color: rgba(30,30,80,0.65) !important;
+  border-radius: 999px !important;
+}
+html[data-concept="glass"] .ent-nav-item:hover,
+html[data-concept="glass"] .cab-nav-item:hover {
+  background: rgba(100,120,255,0.10) !important;
+  color: rgba(30,30,80,0.95) !important;
+}
+html[data-concept="glass"] .ent-nav-item.active,
+html[data-concept="glass"] .cab-nav-item.active {
+  background: rgba(100,120,255,0.15) !important;
+  color: #4060e0 !important;
+  border: none !important;
+  border-bottom: none !important;
+}
+
+/* ── Admin tabs: glass ──────────────────────────────────── */
+html[data-concept="glass"] .admin-tab {
+  color: rgba(30,30,80,0.50) !important;
+  border: none !important;
+  border-radius: 999px !important;
+}
+html[data-concept="glass"] .admin-tab:hover { color: rgba(30,30,80,0.80) !important; }
+html[data-concept="glass"] .admin-tab.active,
+html[data-concept="glass"] .admin-tab--active {
+  color: #4060e0 !important;
+  background: rgba(100,120,255,0.12) !important;
+  border-bottom: none !important;
+}
+
+/* ── Header: glass surface ──────────────────────────────── */
+html[data-concept="glass"] .admin-header,
+html[data-concept="glass"] .u-topbar {
+  background: rgba(255,255,255,0.25) !important;
+  backdrop-filter: blur(24px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.40) !important;
+  box-shadow: 0 1px 20px rgba(31,38,135,0.07) !important;
+}
+
+/* ── Dropdown: glass pill ───────────────────────────────── */
+html[data-concept="glass"] .glass-dropdown,
+html[data-concept="glass"] .admin-dropdown {
+  background: rgba(255,255,255,0.70) !important;
+  backdrop-filter: blur(32px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+  border: 1px solid rgba(255,255,255,0.60) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 16px 48px rgba(31,38,135,0.18) !important;
+}
+
+/* ── Typography: dark on light glass ───────────────────── */
+html[data-concept="glass"] h1,
+html[data-concept="glass"] h2,
+html[data-concept="glass"] h3 {
+  color: #1a1a2e !important;
+}
+html[data-concept="glass"] body,
+html[data-concept="glass"] p,
+html[data-concept="glass"] td,
+html[data-concept="glass"] li {
+  color: #1a1a2e !important;
+}
+
+/* ── Modal: glass ───────────────────────────────────────── */
+html[data-concept="glass"] .u-modal,
+html[data-concept="glass"] .cab-modal {
+  background: rgba(255,255,255,0.70) !important;
+  backdrop-filter: blur(40px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  border: 1px solid rgba(255,255,255,0.60) !important;
+  border-radius: 32px !important;
+  box-shadow: 0 20px 60px rgba(31,38,135,0.18) !important;
+  color: #1a1a2e !important;
+}
+html[data-concept="glass"] .u-modal-overlay,
+html[data-concept="glass"] .cab-modal-overlay {
+  background: rgba(148,163,230,0.25) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* ── Phase badges: keep colour on glass ─────────────────── */
+html[data-concept="glass"] [class*="pj-phase--"],
+html[data-concept="glass"] [class*="-phase--"] {
+  border-radius: 999px !important;
+}
+
+/* ── Design panel: glass surface ───────────────────────── */
+html[data-concept="glass"] .dp-panel {
+  background: rgba(255,255,255,0.65) !important;
+  backdrop-filter: blur(32px) !important;
+  -webkit-backdrop-filter: blur(32px) !important;
+  border: 1px solid rgba(255,255,255,0.55) !important;
+  color: #1a1a2e !important;
+}
