@@ -20,7 +20,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="8" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="3.5" cy="6" r="1.5" fill="currentColor"/><circle cx="3.5" cy="12" r="1.5" fill="currentColor"/><circle cx="3.5" cy="18" r="1.5" fill="currentColor"/></svg>
           </button>
         </div>
-        <button class="kb-btn-add" @click="showCreate = true; wizardStep = 1">
+        <button class="kb-btn-add" @click="showCreate = true">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
           Новый проект
         </button>
@@ -122,7 +122,7 @@
             <tr v-else>
               <td colspan="4" class="kb-table-empty">
                 <span v-if="searchQuery">Ничего не найдено по «{{ searchQuery }}»</span>
-                <span v-else>Нет проектов — <button class="kb-inline-link" @click.stop="showCreate = true; wizardStep = 1">создайте первый</button></span>
+                <span v-else>Нет проектов — <button class="kb-inline-link" @click.stop="showCreate = true">создайте первый</button></span>
               </td>
             </tr>
           </tbody>
@@ -137,24 +137,29 @@
         <div class="pj-modal">
           <div class="pj-modal-head">
             <span>Новый проект</span>
-            <span class="pj-modal-step">шаг {{ wizardStep }} из 2</span>
             <button class="pj-modal-close" @click="closeCreate">✕</button>
           </div>
           <div class="pj-modal-body">
-            <form @submit.prevent="onWizardSubmit">
-              <template v-if="wizardStep === 1">
-                <div class="pj-form-field"><label class="pj-form-label">Название проекта</label><input v-model="newProject.title" class="pj-input" required placeholder="Например: Квартира Смирновых" autofocus /></div>
-                <div class="pj-form-field"><label class="pj-form-label">Slug (адрес в URL)</label><input v-model="newProject.slug" class="pj-input" required placeholder="smirnov-apt" /></div>
-              </template>
-              <template v-else>
-                <div class="pj-preview-row"><span class="pj-preview-label">Проект</span><span class="pj-preview-value">{{ newProject.title }} · <span class="pj-preview-dim">{{ newProject.slug }}</span></span></div>
-                <div class="pj-preview-pages"><span class="pj-preview-label">Страницы</span><div class="pj-pages-chips"><span v-for="pg in corePageLabels" :key="pg" class="pj-page-chip">{{ pg }}</span></div></div>
-              </template>
+            <form @submit.prevent="createProject">
+              <div class="pj-form-field">
+                <label class="pj-form-label">Название проекта</label>
+                <input v-model="newProject.title" class="pj-input" required placeholder="Например: Квартира Смирновых" autofocus @input="onTitleInput" />
+              </div>
+              <div class="pj-form-field">
+                <label class="pj-form-label">URL клиента</label>
+                <div class="pj-slug-row">
+                  <input v-model="newProject.slug" class="pj-input pj-slug-input" required placeholder="smirnov-apt" />
+                  <button type="button" class="pj-slug-gen" :class="{ spinning: slugGenerating }" title="Сформировать URL клиента" @click="generateSlug">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+                    <span>сформировать</span>
+                  </button>
+                </div>
+                <div v-if="newProject.slug" class="pj-slug-preview">/client/{{ newProject.slug }}</div>
+              </div>
               <p v-if="createError" class="pj-form-error">{{ createError }}</p>
               <div class="pj-modal-foot">
                 <button type="button" class="pj-btn-cancel" @click="closeCreate">Отмена</button>
-                <button v-if="wizardStep === 2" type="button" class="pj-btn-cancel" @click="wizardStep = 1">← Назад</button>
-                <button type="submit" class="pj-btn-save" :disabled="creating">{{ wizardStep === 1 ? 'Далее →' : (creating ? '...' : 'Создать проект') }}</button>
+                <button type="submit" class="pj-btn-save" :disabled="creating">{{ creating ? '...' : 'Создать проект' }}</button>
               </div>
             </form>
           </div>
@@ -181,9 +186,6 @@ async function reloadProjects() {
 }
 onMounted(reloadProjects)
 onActivated(reloadProjects)
-
-const CORE_PAGE_LABELS: Record<string, string> = { materials: 'материалы', tz: 'ТЗ', profile_customer: 'профиль клиента' }
-const corePageLabels = Object.values(CORE_PAGE_LABELS)
 
 // ── View toggle (kanban / list) ────────────────────────
 type ViewMode = 'kanban' | 'list'
@@ -235,18 +237,58 @@ const filteredProjects = computed(() => {
 })
 
 // ── Create wizard ──────────────────────────────────────
-const showCreate = ref(false); const wizardStep = ref(1); const creating = ref(false); const createError = ref('')
+const showCreate = ref(false); const creating = ref(false); const createError = ref('')
+const slugGenerating = ref(false)
 const newProject = reactive({ title: '', slug: '' })
 
-function closeCreate() { showCreate.value = false; wizardStep.value = 1; newProject.title = ''; newProject.slug = ''; createError.value = '' }
-function onWizardSubmit() { if (wizardStep.value === 1) { if (!newProject.title.trim() || !newProject.slug.trim()) return; wizardStep.value = 2; return }; createProject() }
+function closeCreate() { showCreate.value = false; newProject.title = ''; newProject.slug = ''; createError.value = '' }
+
+// Transliteration table RU → EN
+const TRANSLIT: Record<string, string> = {
+  а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'yo',ж:'zh',з:'z',и:'i',й:'y',к:'k',
+  л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'kh',ц:'ts',
+  ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
+  ' ':'-','_':'-',
+}
+function toSlug(str: string): string {
+  return str.toLowerCase()
+    .split('').map(c => TRANSLIT[c] ?? (/[a-z0-9]/.test(c) ? c : '-'))
+    .join('').replace(/-{2,}/g, '-').replace(/^-|-$/g, '')
+}
+function makeUnique(base: string, taken: Set<string>): string {
+  if (!taken.has(base)) return base
+  let i = 2
+  while (taken.has(`${base}-${i}`)) i++
+  return `${base}-${i}`
+}
+
+async function generateSlug() {
+  const title = newProject.title.trim()
+  if (!title) return
+  slugGenerating.value = true
+  try {
+    const existing = (projects.value || []).map((p: any) => p.slug as string)
+    const taken = new Set(existing)
+    newProject.slug = makeUnique(toSlug(title), taken)
+  } finally {
+    slugGenerating.value = false
+  }
+}
+
+function onTitleInput() {
+  // auto-generate only if slug is empty or was previously auto-generated
+  if (!newProject.slug || newProject.slug === toSlug(newProject.title.slice(0, -1).trim())) {
+    generateSlug()
+  }
+}
 
 async function createProject() {
+  if (!newProject.title.trim() || !newProject.slug.trim()) return
   creating.value = true; createError.value = ''
   try {
     await $fetch('/api/projects', { method: 'POST', body: { title: newProject.title, slug: newProject.slug } })
     closeCreate(); refresh()
-  } catch (e: any) { createError.value = e.data?.message || e.data?.statusMessage || e.statusMessage || e.message || 'Ошибка создания проекта'; wizardStep.value = 1 }
+  } catch (e: any) { createError.value = e.data?.message || e.data?.statusMessage || e.statusMessage || e.message || 'Ошибка создания проекта' }
   finally { creating.value = false }
 }
 
@@ -702,9 +744,6 @@ html.dark .kb-phase-chip[data-color="teal"]   { background: rgba(94,234,212,.1);
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
   font-size: .9rem; font-weight: 500; color: var(--glass-text);
 }
-.pj-modal-step {
-  font-size: .7rem; color: var(--glass-text); opacity: .35; margin-left: auto;
-}
 .pj-modal-close {
   background: none; border: none; cursor: pointer;
   font-size: 1rem; color: var(--glass-text); opacity: .4; padding: 2px 4px; margin-left: 4px;
@@ -737,6 +776,22 @@ html.dark .kb-phase-chip[data-color="teal"]   { background: rgba(94,234,212,.1);
 }
 .pj-input::placeholder { color: var(--glass-text); opacity: .3; }
 .pj-form-error { font-size: .78rem; color: #dc2626; margin-bottom: 10px; }
+
+.pj-slug-row { display: flex; gap: 8px; align-items: center; }
+.pj-slug-input { flex: 1; min-width: 0; }
+.pj-slug-gen {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 0 12px; height: 36px; border-radius: 8px; border: none;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  color: var(--glass-text); opacity: .6; font-size: .75rem; font-family: inherit;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: opacity .15s, background .15s;
+}
+.pj-slug-gen:hover { opacity: 1; background: color-mix(in srgb, var(--glass-text) 14%, transparent); }
+.pj-slug-gen svg { flex-shrink: 0; transition: transform .4s ease; }
+.pj-slug-gen.spinning svg { animation: spin .5s linear; }
+@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+.pj-slug-preview { font-size: .72rem; color: var(--glass-text); opacity: .35; margin-top: 4px; font-family: monospace; }
 
 .pj-preview-row { display: flex; flex-direction: column; gap: 3px; margin-bottom: 14px; }
 .pj-preview-label { font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; color: var(--glass-text); opacity: .35; font-weight: 600; }

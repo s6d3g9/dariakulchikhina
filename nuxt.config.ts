@@ -2,6 +2,8 @@
 export default defineNuxtConfig({
   devtools: { enabled: false },
 
+  srcDir: './app',
+
   modules: ['@nuxt/ui', '@pinia/nuxt'],
 
   ui: {

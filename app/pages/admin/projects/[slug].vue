@@ -6,10 +6,24 @@
     </div>
     <div v-else-if="!project" style="font-size:.88rem;color:#999">Проект не найден</div>
     <template v-else>
-      <div style="font-size:.78rem;color:#aaa;margin-bottom:12px">
-        <NuxtLink to="/admin" style="color:#888;text-decoration:none">проекты</NuxtLink>
-        <span style="margin:0 6px">/</span>
-        <span>{{ project.title }}</span>
+      <div class="proj-header-bar">
+        <div class="proj-breadcrumb">
+          <NuxtLink to="/admin" class="proj-bc-link">проекты</NuxtLink>
+          <span class="proj-bc-sep">/</span>
+          <span class="proj-bc-title">{{ project.title }}</span>
+        </div>
+        <div class="proj-phase-sel-wrap">
+          <span class="proj-phase-dot" :class="`pj-phase--${phaseColor(projectStatus)}`"></span>
+          <select
+            v-model="projectStatus"
+            class="u-status-sel proj-phase-sel"
+            :disabled="savingStatus"
+            @change="setProjectStatus(projectStatus)"
+          >
+            <option v-for="ph in PROJECT_PHASES" :key="ph.key" :value="ph.key">{{ ph.label }}</option>
+          </select>
+          <span v-if="savingStatus" class="proj-phase-saving">...</span>
+        </div>
       </div>
       <p v-if="clientLinkError" class="proj-client-error" style="margin-bottom:6px">{{ clientLinkError }}</p>
       <p v-else-if="clientLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ clientLinkSuccess }}</p>
@@ -114,9 +128,20 @@
                   v-for="pg in group.pages"
                   :key="pg.slug"
                   class="proj-sidenav-item std-nav-item"
-                  :class="{ 'proj-sidenav-item--active': activePage === pg.slug, 'std-nav-item--active': activePage === pg.slug }"
+                  :class="{
+                    'proj-sidenav-item--active': activePage === pg.slug,
+                    'std-nav-item--active': activePage === pg.slug,
+                    'proj-sidenav-item--current-phase': STATUS_TO_FIRST_PAGE[projectStatus] === pg.slug,
+                  }"
                   @click="selectAdminPage(pg.slug)"
-                >{{ pg.title }}</button>
+                >
+                  <span
+                    v-if="STATUS_TO_FIRST_PAGE[projectStatus] === pg.slug"
+                    class="proj-sidenav-phase-dot"
+                    :class="`pj-phase--${phaseColor(projectStatus)}`"
+                  ></span>
+                  {{ pg.title }}
+                </button>
               </div>
             </template>
           </template>
@@ -377,6 +402,7 @@
 
 <script setup lang="ts">
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
+import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -465,6 +491,47 @@ const showEdit = ref(false)
 const saving = ref(false)
 const editError = ref('')
 const projectStatus = ref(project.value?.status || 'lead')
+const savingStatus = ref(false)
+
+// Первая страница каждой фазы — куда переходить при смене статуса
+const STATUS_TO_FIRST_PAGE: Record<string, string> = {
+  lead:            'first_contact',
+  concept:         'space_planning',
+  working_project: 'working_drawings',
+  procurement:     'procurement_list',
+  construction:    'construction_plan',
+  commissioning:   'punch_list',
+  done:            'overview',
+}
+
+function phaseLabel(status: string) {
+  return PROJECT_PHASES.find(p => p.key === status)?.label || status
+}
+function phaseColor(status: string) {
+  return PROJECT_PHASES.find(p => p.key === status)?.color || 'gray'
+}
+
+async function setProjectStatus(newStatus: string) {
+  if (newStatus === project.value?.status) return
+  savingStatus.value = true
+  try {
+    await $fetch(`/api/projects/${slug.value}/status`, {
+      method: 'PUT',
+      body: { status: newStatus },
+    })
+    await refresh()
+    const firstPage = STATUS_TO_FIRST_PAGE[newStatus]
+    if (firstPage && firstPage !== 'overview') {
+      selectAdminPage(firstPage)
+    }
+  } catch (e: any) {
+    // revert selector on error
+    projectStatus.value = project.value?.status || 'lead'
+    console.error('Ошибка смены фазы:', e)
+  } finally {
+    savingStatus.value = false
+  }
+}
 
 const selectedClientId = ref('')
 const linkingClient = ref(false)
@@ -1034,6 +1101,32 @@ async function unlinkDesigner(designerId: number) {
   opacity: 1;
   font-weight: 600;
 }
+.proj-sidenav-item--current-phase {
+  font-weight: 600;
+}
+.proj-sidenav-phase-dot {
+  display: inline-block;
+  width: 6px; height: 6px; border-radius: 50%;
+  margin-right: 6px; flex-shrink: 0;
+  vertical-align: middle; position: relative; top: -1px;
+}
+
+/* ── Project header bar ── */
+.proj-header-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.proj-breadcrumb { font-size: .78rem; color: #aaa; display: flex; align-items: center; gap: 4px; }
+.proj-bc-link { color: #888; text-decoration: none; }
+.proj-bc-link:hover { color: var(--glass-text); }
+.proj-bc-sep { margin: 0 2px; }
+.proj-bc-title { color: var(--glass-text); opacity: .7; }
+.proj-phase-sel-wrap { display: flex; align-items: center; gap: 6px; }
+.proj-phase-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.proj-phase-sel { font-size: .75rem !important; padding: 0 8px !important; height: 28px !important; }
+.proj-phase-saving { font-size: .7rem; color: #aaa; }
 
 /* ── Right content ── */
 .proj-main { flex: 1; min-width: 0; }
