@@ -166,7 +166,16 @@ export interface DesignTokens {
 
   /* ── Button & Card hover animation ── */
   btnHoverAnim: 'none' | 'lift' | 'scale' | 'glow' | 'fill' | 'sheen'  // kinetic hover style
-  cardHoverAnim: 'none' | 'lift' | 'scale'                               // card hover micromotion
+  cardHoverAnim: 'none' | 'lift' | 'scale' | 'dim' | 'border' | 'reveal' // card hover micromotion
+
+  /* ── Design Architecture tokens ── */
+  archDensity:        'dense' | 'normal' | 'airy' | 'grand'              // spatial density preset
+  archHeadingTracking: number                                             // ×0.01em, range -5..30
+  archHeadingCase:    'none' | 'uppercase' | 'lowercase' | 'capitalize'  // heading text-transform
+  archDivider:        'none' | 'line' | 'gradient'                       // section divider style
+  archPageEnter:      'none' | 'fade' | 'slide'                          // page-enter transition
+  archLinkAnim:       'none' | 'underline' | 'arrow'                     // link hover animation
+  archSectionStyle:   'flat' | 'card' | 'striped'                        // section background style
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -294,6 +303,14 @@ export const DEFAULT_TOKENS: DesignTokens = {
 
   btnHoverAnim: 'none',
   cardHoverAnim: 'none',
+
+  archDensity:         'normal',
+  archHeadingTracking: -1,
+  archHeadingCase:     'none',
+  archDivider:         'none',
+  archPageEnter:       'none',
+  archLinkAnim:        'none',
+  archSectionStyle:    'flat',
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1720,8 +1737,17 @@ export function useDesignSystem() {
     el.style.setProperty('--ds-focus-ring', `${t.focusRingWidth}px ${t.focusRingStyle} hsla(${t.accentHue}, ${t.accentSaturation}%, ${t.accentLightness}%, ${t.focusRingOpacity})`)
 
     // ── Button & card hover animation ─────────────────────────────
-    el.setAttribute('data-btn-hover', t.btnHoverAnim)
+    el.setAttribute('data-btn-hover',  t.btnHoverAnim)
     el.setAttribute('data-card-hover', t.cardHoverAnim)
+
+    // ── Design Architecture tokens ────────────────────────────────
+    el.style.setProperty('--ds-heading-letter-spacing', `${((t.archHeadingTracking ?? -1) * 0.01).toFixed(3)}em`)
+    el.setAttribute('data-density',       t.archDensity      || 'normal')
+    el.setAttribute('data-heading-case',  t.archHeadingCase  || 'none')
+    el.setAttribute('data-divider',       t.archDivider      || 'none')
+    el.setAttribute('data-page-enter',    t.archPageEnter    || 'none')
+    el.setAttribute('data-link-anim',     t.archLinkAnim     || 'none')
+    el.setAttribute('data-section-style', t.archSectionStyle || 'flat')
 
     // Re-apply UI theme's CSS vars on top (they set --btn-bg-base, --glass-* etc.
     // which must persist after applyToDOM sets --btn-bg = var(--btn-bg-base))
