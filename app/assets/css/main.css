@@ -2562,19 +2562,42 @@ html.dark .a-modal label {
    ════════════════════════════════════════════════════════════ */
 
 /* ── Density ── */
-:root { --arch-space: 1; }
+:root { --arch-space: 1; --arch-vertical-rhythm: 1; }
 [data-density="dense"]  { --arch-space: .6; }
 [data-density="normal"] { --arch-space: 1; }
 [data-density="airy"]   { --arch-space: 1.5; }
 [data-density="grand"]  { --arch-space: 2.2; }
 
-/* Sections and page gaps scale with density */
+/* Density applies to ALL main layout containers, not just specific components */
+[data-density] .cab-body,
+[data-density] .cab-page,
+[data-density] .glass,
+[data-density] .glass-card,
+[data-density] .asb-section,
+[data-density] .acp-form-section {
+  --section-gap: calc(var(--ds-grid-gap, 16px) * var(--arch-space) * var(--arch-vertical-rhythm, 1));
+}
+
 [data-density="dense"]  .asb-section,
 [data-density="dense"]  .acp-form-section { margin-bottom: calc(12px * var(--arch-space)); }
 [data-density="airy"]   .asb-section,
 [data-density="airy"]   .acp-form-section { margin-bottom: calc(28px * var(--arch-space)); }
 [data-density="grand"]  .asb-section,
 [data-density="grand"]  .acp-form-section { margin-bottom: calc(48px * var(--arch-space)); }
+
+/* Vertical rhythm multiplier — all gaps, margins, paddings scale */
+[data-density] .cab-body { gap: calc(var(--ds-grid-gap, 16px) * var(--arch-vertical-rhythm, 1)); }
+[data-density] .u-section-title { margin-top: calc(18px * var(--arch-vertical-rhythm, 1)); margin-bottom: calc(10px * var(--arch-vertical-rhythm, 1)); }
+[data-density] p { margin-bottom: calc(var(--ds-paragraph-spacing, .75rem) * var(--arch-vertical-rhythm, 1)); }
+
+/* Grand density — cinematic spacing, larger text sizes */
+[data-density="grand"] .cab-body { padding: calc(28px * var(--arch-vertical-rhythm, 1)) calc(24px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] h1, [data-density="grand"] h2 { font-size: calc(var(--ds-text-2xl, 1.728rem) * 1.2); }
+[data-density="grand"] .u-section-title { margin-top: calc(40px * var(--arch-vertical-rhythm, 1)); }
+
+/* Dense density — compact everything */
+[data-density="dense"] .cab-body { padding: 12px 14px; }
+[data-density="dense"] h1, [data-density="dense"] h2 { font-size: var(--ds-text-lg, 1.2rem); }
 
 /* ── Heading text-transform ── */
 [data-heading-case="uppercase"]  h1,[data-heading-case="uppercase"]  h2,[data-heading-case="uppercase"]  h3,
@@ -2588,21 +2611,20 @@ html.dark .a-modal label {
 [data-heading-case="capitalize"] .u-section-title { text-transform: capitalize; }
 
 /* ── Section dividers ── */
-[data-divider="line"]     .u-section-title { border-bottom: 1px solid rgba(var(--glass-border-rgb, 255,255,255), .18); padding-bottom: 6px; }
+[data-divider="line"]     .u-section-title { border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent); padding-bottom: 6px; }
 [data-divider="gradient"] .u-section-title {
   border-bottom: 1px solid transparent;
-  border-image: linear-gradient(to right, rgba(255,255,255,.35), transparent) 1;
+  border-image: linear-gradient(to right, color-mix(in srgb, var(--glass-text) 22%, transparent), transparent) 1;
   padding-bottom: 6px;
 }
 
 /* ── Page-enter transitions ── */
-/* Applied to .page-enter-active / .page-leave-active via Nuxt page transition */
 [data-page-enter="fade"]  .page-enter-active,
-[data-page-enter="fade"]  .page-leave-active  { transition: opacity .25s ease; }
+[data-page-enter="fade"]  .page-leave-active  { transition: opacity var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease); }
 [data-page-enter="fade"]  .page-enter-from,
 [data-page-enter="fade"]  .page-leave-to      { opacity: 0; }
 [data-page-enter="slide"] .page-enter-active,
-[data-page-enter="slide"] .page-leave-active  { transition: opacity .25s ease, transform .25s ease; }
+[data-page-enter="slide"] .page-leave-active  { transition: opacity var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease), transform var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease); }
 [data-page-enter="slide"] .page-enter-from    { opacity: 0; transform: translateY(14px); }
 [data-page-enter="slide"] .page-leave-to      { opacity: 0; transform: translateY(-8px); }
 
@@ -2619,7 +2641,7 @@ html.dark .a-modal label {
   display: inline-flex; align-items: center; gap: 2px;
 }
 [data-link-anim="arrow"] a:not(.a-btn):not(.nav-link)::after {
-  content: '→';
+  content: '\u2192';
   display: inline-block;
   opacity: 0;
   transform: translateX(-6px);
@@ -2632,21 +2654,130 @@ html.dark .a-modal label {
 }
 
 /* ── Section style ── */
-/* card: each asb-section / acp-form-section gets glass card look */
 [data-section-style="card"] .asb-section,
 [data-section-style="card"] .acp-form-section {
   background: var(--ds-card-bg, var(--glass-bg));
   border: 1px solid var(--glass-border);
-  border-radius: var(--ds-radius-card, 10px);
+  border-radius: var(--card-radius, 10px);
   padding: 16px;
   backdrop-filter: blur(var(--glass-blur, 12px));
 }
-/* striped: alternating background tint */
 [data-section-style="striped"] .asb-section:nth-child(even),
 [data-section-style="striped"] .acp-form-section:nth-child(even) {
-  background: rgba(255,255,255,.03);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 [data-section-style="striped"] .asb-section:nth-child(odd),
 [data-section-style="striped"] .acp-form-section:nth-child(odd) {
   background: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAV CHROME SYSTEM  (data-nav-style on <html>)
+   Dramatically changes the sidebar/navigation appearance.
+   ═══════════════════════════════════════════════════════════ */
+/* minimal: transparent nav, borderless, floating */
+[data-nav-style="minimal"] .std-sidenav,
+[data-nav-style="minimal"] .admin-sidebar,
+[data-nav-style="minimal"] .a-side {
+  background: transparent !important;
+  border-right: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+[data-nav-style="minimal"] .nav-link,
+[data-nav-style="minimal"] .std-sidenav a {
+  background: transparent !important;
+  border: none !important;
+  opacity: .55;
+  transition: opacity var(--ds-anim-duration, 180ms) ease;
+}
+[data-nav-style="minimal"] .nav-link:hover,
+[data-nav-style="minimal"] .std-sidenav a:hover { opacity: 1; }
+[data-nav-style="minimal"] .nav-link.router-link-active,
+[data-nav-style="minimal"] .std-sidenav a.router-link-active { opacity: 1; font-weight: var(--ds-heading-weight, 600); }
+
+/* hidden: nav collapses to icon-only */
+[data-nav-style="hidden"] .std-sidenav,
+[data-nav-style="hidden"] .admin-sidebar,
+[data-nav-style="hidden"] .a-side {
+  width: 52px !important;
+  min-width: 52px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+[data-nav-style="hidden"] .std-sidenav span:not(.icon),
+[data-nav-style="hidden"] .admin-sidebar span:not(.icon),
+[data-nav-style="hidden"] .a-side span:not(.icon),
+[data-nav-style="hidden"] .nav-link span,
+[data-nav-style="hidden"] .a-side-label { display: none; }
+
+/* ═══════════════════════════════════════════════════════════
+   CARD CHROME SYSTEM  (data-card-chrome on <html>)
+   Controls how visible card boundaries are.
+   ═══════════════════════════════════════════════════════════ */
+/* subtle: very faint borders, reduced shadows */
+[data-card-chrome="subtle"] .glass,
+[data-card-chrome="subtle"] .glass-card,
+[data-card-chrome="subtle"] .glass-surface {
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--glass-text) 4%, transparent);
+  backdrop-filter: blur(calc(var(--glass-blur, 12px) * 0.4));
+}
+[data-card-chrome="subtle"] .glass-surface,
+[data-card-chrome="subtle"] .glass-card {
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+/* ghost: completely invisible cards — content floats in whitespace */
+[data-card-chrome="ghost"] .glass,
+[data-card-chrome="ghost"] .glass-card,
+[data-card-chrome="ghost"] .glass-surface {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+[data-card-chrome="ghost"] .glass::before,
+[data-card-chrome="ghost"] .glass-card::before,
+[data-card-chrome="ghost"] .glass-surface::before {
+  display: none !important;
+}
+/* Ghost cards: remove inner padding to let content breathe */
+[data-card-chrome="ghost"] .asb-section,
+[data-card-chrome="ghost"] .acp-form-section {
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO SCALE SYSTEM  (data-hero-scale on <html>)
+   Controls the page title / header sizing.
+   ═══════════════════════════════════════════════════════════ */
+[data-hero-scale="compact"] .u-topbar { padding: 8px 14px; margin-bottom: 8px; }
+[data-hero-scale="compact"] .u-topbar__title { font-size: var(--ds-text-xs, .694rem); }
+
+[data-hero-scale="large"] .u-topbar { padding: 24px 22px 20px; margin-bottom: 24px; }
+[data-hero-scale="large"] .u-topbar__title {
+  font-size: var(--ds-text-xl, 1.44rem);
+  letter-spacing: var(--ds-heading-letter-spacing, .01em);
+  text-transform: inherit;
+  font-weight: var(--ds-heading-weight, 600);
+}
+
+[data-hero-scale="cinematic"] .u-topbar {
+  padding: calc(40px * var(--arch-vertical-rhythm, 1)) 28px calc(36px * var(--arch-vertical-rhythm, 1));
+  margin-bottom: calc(32px * var(--arch-vertical-rhythm, 1));
+}
+[data-hero-scale="cinematic"] .u-topbar__title {
+  font-size: var(--ds-text-2xl, 1.728rem);
+  letter-spacing: var(--ds-heading-letter-spacing, .06em);
+  text-transform: inherit;
+  font-weight: var(--ds-heading-weight, 300);
+  line-height: var(--ds-heading-line-height, 1.1);
+  opacity: .7;
 }

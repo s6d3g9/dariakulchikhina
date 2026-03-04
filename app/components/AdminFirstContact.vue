@@ -74,14 +74,25 @@
               <option value="cafe">кафе</option>
             </select>
           </div>
+          <div class="afc-row afc-row--full">
+            <label class="afc-lbl">адрес встречи</label>
+            <AppAddressInput
+              v-model="form.meeting_map_address"
+              input-class="glass-input"
+              placeholder="Начните вводить адрес…"
+              @update:model-value="onAddressChange"
+              @blur="save"
+            />
+          </div>
 
           <!-- Yandex Map -->
-          <div class="afc-row afc-row--full">
+          <div v-if="hasMapCoords" class="afc-row afc-row--full">
             <label class="afc-lbl">
               карта
               <span v-if="form.meeting_map_address" style="font-weight:400;color:#444;font-size:.8rem;margin-left:6px">{{ form.meeting_map_address }}</span>
             </label>
             <iframe
+              :key="mapKey"
               class="afc-map"
               style="border:0"
               :src="fallbackMapSrc"
@@ -90,12 +101,6 @@
               title="Карта"
             />
             <div class="afc-map-fields">
-              <input
-                v-model="form.meeting_map_address"
-                class="glass-input"
-                placeholder="Адрес точки встречи"
-                @blur="save"
-              >
               <div class="afc-map-coords">
                 <input
                   v-model.number="form.meeting_map_lat"
@@ -116,6 +121,7 @@
               </div>
             </div>
           </div>
+          <div v-else-if="geocoding" class="afc-row afc-row--full" style="text-align:center;padding:12px;color:#888;font-size:.82rem;">определяю координаты…</div>
           <div class="afc-row afc-row--full">
             <label class="afc-lbl">заметки о встрече / первое впечатление</label>
             <textarea v-model="form.lead_meeting_notes" class="glass-input u-ta" rows="3" @blur="save"></textarea>
@@ -198,13 +204,47 @@ async function save() {
   markSaved()
 }
 
-// ── Map (simple iframe mode) ─────────────────────────
+// ── Map (with geocoding + marker) ─────────────────────────
+
+const geocoding = ref(false)
+const mapKey = ref(0)
+
+const hasMapCoords = computed(() =>
+  typeof form.meeting_map_lat === 'number' && typeof form.meeting_map_lng === 'number',
+)
 
 const fallbackMapSrc = computed(() => {
   const lat = typeof form.meeting_map_lat === 'number' ? form.meeting_map_lat : 55.751574
   const lng = typeof form.meeting_map_lng === 'number' ? form.meeting_map_lng : 37.573856
-  return `https://yandex.ru/map-widget/v1/?ll=${lng}%2C${lat}&z=${form.meeting_map_lat ? 15 : 10}`
+  const z = form.meeting_map_lat ? 16 : 10
+  const pt = form.meeting_map_lat ? `&pt=${lng}%2C${lat}%2Cpm2rdm` : ''
+  return `https://yandex.ru/map-widget/v1/?ll=${lng}%2C${lat}&z=${z}${pt}`
 })
+
+let geocodeTimer: ReturnType<typeof setTimeout> | null = null
+
+function onAddressChange(val: string) {
+  if (geocodeTimer) clearTimeout(geocodeTimer)
+  if (!val || val.trim().length < 5) return
+  geocodeTimer = setTimeout(() => geocodeAddress(val), 600)
+}
+
+async function geocodeAddress(address: string) {
+  geocoding.value = true
+  try {
+    const { lat, lng } = await $fetch<{ lat: number | null; lng: number | null }>(
+      '/api/geocode/address',
+      { query: { address } },
+    )
+    if (lat != null && lng != null) {
+      form.meeting_map_lat = lat
+      form.meeting_map_lng = lng
+      mapKey.value++
+      await save()
+    }
+  } catch { /* ignore */ }
+  geocoding.value = false
+}
 
 // ── Step completion (stored in profile._stepsDone) ──────────────
 const isStepDone = computed(() => project.value?.profile?._stepsDone ?? {})

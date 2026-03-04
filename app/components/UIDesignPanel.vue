@@ -1457,10 +1457,64 @@
                       >{{ opt.label }}</button>
                     </div>
                   </div>
+
+                  <!-- Vertical Rhythm -->
+                  <div class="dp-field">
+                    <label class="dp-label">вертикальный ритм <span class="dp-val">×{{ (tokens.archVerticalRhythm ?? 1).toFixed(1) }}</span></label>
+                    <input type="range" min="0.3" max="3.0" step="0.1" :value="tokens.archVerticalRhythm ?? 1" class="dp-range" @input="onRange('archVerticalRhythm', $event)">
+                    <div class="dp-field-hint">множитель вертикальных отступов между секциями (0.3 — сжато, 3.0 — кинематограф)</div>
+                  </div>
                 </div>
 
                 <div class="dp-col">
-                  <div class="dp-col-label">Поведение</div>
+                  <div class="dp-col-label">Хром и масштаб</div>
+
+                  <!-- Nav Style -->
+                  <div class="dp-field">
+                    <label class="dp-label">стиль навигации <span class="dp-val">{{ tokens.archNavStyle || 'full' }}</span></label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archNavStyles" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': (tokens.archNavStyle || 'full') === opt.id }"
+                        @click="set('archNavStyle', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                    <div class="dp-field-hint">полный — видимый хром, минимальный — прозрачный, скрытый — только иконки</div>
+                  </div>
+
+                  <!-- Card Chrome -->
+                  <div class="dp-field">
+                    <label class="dp-label">хром карточек <span class="dp-val">{{ tokens.archCardChrome || 'visible' }}</span></label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archCardChromes" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': (tokens.archCardChrome || 'visible') === opt.id }"
+                        @click="set('archCardChrome', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                    <div class="dp-field-hint">видимый — тени+рамки, тонкий — минимальные, призрак — контент без обёртки</div>
+                  </div>
+
+                  <!-- Hero Scale -->
+                  <div class="dp-field">
+                    <label class="dp-label">масштаб героя <span class="dp-val">{{ tokens.archHeroScale || 'normal' }}</span></label>
+                    <div class="dp-arch-chips">
+                      <button
+                        v-for="opt in archHeroScales" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': (tokens.archHeroScale || 'normal') === opt.id }"
+                        @click="set('archHeroScale', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                    <div class="dp-field-hint">компактный — минимальный заголовок, кинематограф — огромный</div>
+                  </div>
+
+                  <div class="dp-col-label" style="margin-top:12px">Поведение</div>
 
                   <!-- Card hover -->
                   <div class="dp-field">
@@ -1831,6 +1885,22 @@ const archSectionStyles = [
   { id: 'card'    as const, label: 'карточки' },
   { id: 'striped' as const, label: 'полосы' },
 ]
+const archNavStyles = [
+  { id: 'full'    as const, label: 'полный' },
+  { id: 'minimal' as const, label: 'минимальный' },
+  { id: 'hidden'  as const, label: 'скрытый' },
+]
+const archCardChromes = [
+  { id: 'visible' as const, label: 'видимый' },
+  { id: 'subtle'  as const, label: 'тонкий' },
+  { id: 'ghost'   as const, label: 'призрак' },
+]
+const archHeroScales = [
+  { id: 'compact'    as const, label: 'компактный' },
+  { id: 'normal'     as const, label: 'нормальный' },
+  { id: 'large'      as const, label: 'крупный' },
+  { id: 'cinematic'  as const, label: 'кинематограф' },
+]
 const BORDER_STYLE_OPTIONS = [
   { id: 'solid' as const, label: 'solid' },
   { id: 'dashed' as const, label: 'dashed' },
@@ -1906,7 +1976,7 @@ const sectionSearchMap: Record<string, string[]> = {
   scrollbar: ['скроллбар', 'scrollbar', 'полоса прокрутки', 'ширина', 'width', 'прозрач'],
   tables:   ['таблиц', 'table', 'таблетк', 'строка', 'заголовок', 'row', 'header', 'border', 'hover'],
   badges:   ['значок', 'значки', 'badge', 'counter', 'счётчик', 'уведомлени', 'notification'],
-  arch:     ['архитектура', 'плотность', 'трекинг', 'заголовок', 'кейс', 'эффект', 'hover', 'анимация', 'ссылка', 'разделитель', 'секция', 'density', 'heading', 'tracking', 'card hover', 'divider', 'page enter', 'link anim', 'editorial', 'spatial'],
+  arch:     ['архитектура', 'плотность', 'трекинг', 'заголовок', 'кейс', 'эффект', 'hover', 'анимация', 'ссылка', 'разделитель', 'секция', 'density', 'heading', 'tracking', 'card hover', 'divider', 'page enter', 'link anim', 'editorial', 'spatial', 'навигация', 'хром', 'карточка', 'масштаб', 'герой', 'ритм', 'nav style', 'card chrome', 'hero scale', 'vertical rhythm', 'ghost', 'cinematic', 'minimal', 'hidden'],
 }
 
 function isTabVisible(key: string): boolean {

@@ -146,7 +146,32 @@
           </button>
         </div>
         <div v-if="aiProgress" class="de-ai-progress">
-          <span class="de-ai-dot"></span> {{ aiProgress }}
+          <div class="de-ai-progress-row">
+            <span v-if="aiLoading" class="de-ai-dot"></span>
+            <span v-else class="de-ai-done-icon">✓</span>
+            <span class="de-ai-text">{{ aiProgress }}</span>
+            <template v-if="aiLoading">
+              <span class="de-ai-sep">·</span>
+              <span class="de-ai-elapsed">⏱ {{ aiElapsed }}с</span>
+              <template v-if="aiTokenCount > 0">
+                <span class="de-ai-sep">·</span>
+                <span class="de-ai-chars">{{ aiTokenCount.toLocaleString('ru') }} симв</span>
+              </template>
+            </template>
+          </div>
+          <!-- Фазовый блок: пока нет токенов -->
+          <div v-if="aiLoading && aiTokenCount === 0" class="de-ai-phase">
+            <div class="de-ai-phase-track">
+              <div class="de-ai-phase-fill" :style="{ width: aiPrefillPct + '%' }"></div>
+              <div class="de-ai-phase-labels">
+                <span :class="{ active: aiElapsed >= 0 }">&#x25cf; инит</span>
+                <span :class="{ active: aiElapsed >= 5 }">&#x25cf; контекст</span>
+                <span :class="{ active: aiElapsed >= 15 }">&#x25cf; обработка</span>
+                <span :class="{ active: aiElapsed >= 30 }">&#x25cf; генерация</span>
+              </div>
+            </div>
+            <div v-if="aiPhaseHint" class="de-ai-phase-hint">{{ aiPhaseHint }}</div>
+          </div>
         </div>
         <div v-else-if="copyMsg" class="de-copy-msg">{{ copyMsg }}</div>
       </div>
@@ -744,7 +769,25 @@ async function copyToClipboard() {
 }
 
 // ── AI (Gemma 3 27B) ──────────────────────────────────────────────────────
-const { aiLoading, aiError, aiAction, aiProgress, aiReviewNotes, aiCitations, streamDocument, reviewDocument, abortAi, clearReview, clearCitations } = useAiDocument()
+const { aiLoading, aiError, aiAction, aiProgress, aiElapsed, aiTokenCount, aiReviewNotes, aiCitations, streamDocument, reviewDocument, abortAi, clearReview, clearCitations } = useAiDocument()
+
+// Фазовые подсказки пока нет ни одного токена
+const aiPhaseHint = computed(() => {
+  if (!aiLoading.value || aiTokenCount.value > 0) return ''
+  const s = aiElapsed.value
+  if (s < 5)  return 'инициализирует запрос...'
+  if (s < 15) return 'загружает контекст в память...'
+  if (s < 30) return 'оценивает данные проекта...'
+  if (s < 50) return 'формирует структуру документа... обычно 30–60с'
+  if (s < 80) return 'работает над деталями... почти готово'
+  return 'большой документ — продолжает, не останавливайся'
+})
+
+// Прогресс 0–100 до первого токена (базовый эстимейт 90с на prefill)
+const aiPrefillPct = computed(() => {
+  if (aiTokenCount.value > 0 || !aiLoading.value) return 100
+  return Math.min(95, Math.round((aiElapsed.value / 90) * 100))
+})
 
 // ── Чат-панель ────────────────────────────────────────────────────────────
 interface ChatMsg {
@@ -1235,12 +1278,17 @@ async function saveDocument() {
 /* ── AI строка прогресса ── */
 .de-ai-progress {
   display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: .75rem;
+  color: color-mix(in srgb, var(--ds-accent, #6366f1) 70%, var(--glass-text));
+  padding: 3px 4px 2px;
+}
+.de-ai-progress-row {
+  display: flex;
   align-items: center;
   gap: 6px;
-  font-size: .75rem;
-  color: color-mix(in srgb, var(--ds-accent, #6366f1) 60%, var(--glass-text));
-  opacity: .8;
-  padding: 2px 4px 0;
+  flex-wrap: wrap;
 }
 .de-ai-dot {
   width: 6px; height: 6px;
@@ -1248,6 +1296,62 @@ async function saveDocument() {
   background: var(--ds-accent, #6366f1);
   animation: de-dot-pulse 1s ease-in-out infinite;
   flex-shrink: 0;
+}
+.de-ai-done-icon {
+  font-size: .7rem;
+  color: #22c55e;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.de-ai-text { font-weight: 500; }
+.de-ai-sep  { opacity: .35; flex-shrink: 0; }
+.de-ai-elapsed { font-variant-numeric: tabular-nums; opacity: .75; }
+.de-ai-chars   { font-variant-numeric: tabular-nums; opacity: .75; }
+/* ── фазовый блок ── */
+.de-ai-phase {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.de-ai-phase-track {
+  position: relative;
+  height: 18px;
+}
+.de-ai-phase-fill {
+  position: absolute;
+  top: 6px; left: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ds-accent, #6366f1);
+  transition: width 1s linear;
+  opacity: .6;
+}
+.de-ai-phase-labels {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  font-size: .63rem;
+  opacity: .4;
+  pointer-events: none;
+  padding-top: 1px;
+}
+.de-ai-phase-labels span {
+  transition: opacity .4s, color .4s;
+}
+.de-ai-phase-labels span.active {
+  opacity: 1;
+  color: var(--ds-accent, #6366f1);
+}
+.de-ai-phase-hint {
+  font-size: .7rem;
+  font-style: italic;
+  opacity: .6;
+  padding-left: 12px;
+  animation: de-hint-fade 0.5s ease;
+}
+@keyframes de-hint-fade {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: .6; transform: translateY(0); }
 }
 @keyframes de-dot-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }

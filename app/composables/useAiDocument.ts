@@ -38,14 +38,27 @@ function getCsrfToken(): string {
 }
 
 export function useAiDocument() {
-  const aiLoading   = ref(false)
-  const aiError     = ref('')
-  const aiAction    = ref<'generate' | 'improve' | 'review' | ''>('')
-  const aiProgress  = ref('')   // текущий статус-текст для пользователя
-  const aiReviewNotes = ref<AiReviewNote[]>([])
-  const aiCitations = ref<LegalCitation[]>([])
+  const aiLoading      = ref(false)
+  const aiError        = ref('')
+  const aiAction       = ref<'generate' | 'improve' | 'review' | ''>('')
+  const aiProgress     = ref('')   // текущий статус-текст для пользователя
+  const aiElapsed      = ref(0)    // секунды с момента старта
+  const aiTokenCount   = ref(0)    // кол-во символов от модели
+  const aiReviewNotes  = ref<AiReviewNote[]>([])
+  const aiCitations    = ref<LegalCitation[]>([])
 
   let _abortCtrl: AbortController | null = null
+  let _timer: ReturnType<typeof setInterval> | null = null
+
+  function _startTimer() {
+    aiElapsed.value = 0
+    aiTokenCount.value = 0
+    _timer = setInterval(() => { aiElapsed.value++ }, 1000)
+  }
+
+  function _stopTimer() {
+    if (_timer) { clearInterval(_timer); _timer = null }
+  }
 
   function _setError(msg: string) {
     aiError.value = msg
@@ -63,6 +76,7 @@ export function useAiDocument() {
     aiAction.value = action
     aiCitations.value = []
     aiProgress.value = action === 'generate' ? 'Gemma генерирует документ...' : 'Gemma улучшает текст...'
+    _startTimer()
     _abortCtrl = new AbortController()
 
     try {
@@ -87,7 +101,6 @@ export function useAiDocument() {
 
       const decoder = new TextDecoder()
       let buffer = ''
-      let tokenCount = 0
 
       while (true) {
         const { done, value } = await reader.read()
@@ -101,8 +114,9 @@ export function useAiDocument() {
           if (!line.startsWith('data: ')) continue
           const raw = line.slice(6).trim()
           if (raw === '[DONE]') {
-            aiProgress.value = `✓ Готово (${tokenCount} символов)`
-            setTimeout(() => { aiProgress.value = '' }, 2000)
+            _stopTimer()
+            aiProgress.value = `✓ Готово за ${aiElapsed.value}с (${aiTokenCount.value} симв)`
+            setTimeout(() => { aiProgress.value = '' }, 4000)
             return true
           }
           try {
@@ -113,19 +127,22 @@ export function useAiDocument() {
             }
             if (data.token) {
               onToken(data.token)
-              tokenCount += data.token.length
-              if (tokenCount % 200 === 0) aiProgress.value = `Gemma пишет... ${tokenCount} символов`
+              aiTokenCount.value += data.token.length
+              // обновляем статус каждые 50 симв
+              if (aiTokenCount.value % 50 === 0) aiProgress.value = `Gemma пишет...`
             }
           } catch { /* ignore incomplete JSON */ }
         }
       }
       return true
     } catch (e: any) {
+      _stopTimer()
       if (e?.name !== 'AbortError') {
         _setError(e?.message || 'Ошибка соединения с Gemma')
       }
       return false
     } finally {
+      _stopTimer()
       aiLoading.value = false
       aiAction.value = ''
       _abortCtrl = null
@@ -140,17 +157,21 @@ export function useAiDocument() {
     aiError.value = ''
     aiAction.value = 'review'
     aiProgress.value = 'Gemma анализирует документ...'
+    _startTimer()
     try {
       const result = await $fetch<{ notes: AiReviewNote[] }>('/api/ai/document', {
         method: 'POST',
         body: { action: 'review', ...payload },
       })
+      _stopTimer()
       aiProgress.value = ''
       return result?.notes ?? null
     } catch (e: any) {
+      _stopTimer()
       _setError(e?.data?.statusMessage || e?.message || 'Ошибка анализа')
       return null
     } finally {
+      _stopTimer()
       aiLoading.value = false
       aiAction.value = ''
     }
@@ -158,6 +179,7 @@ export function useAiDocument() {
 
   function abortAi() {
     _abortCtrl?.abort()
+    _stopTimer()
     aiLoading.value = false
     aiAction.value = ''
     aiProgress.value = ''
@@ -176,6 +198,8 @@ export function useAiDocument() {
     aiError,
     aiAction,
     aiProgress,
+    aiElapsed,
+    aiTokenCount,
     aiReviewNotes,
     aiCitations,
     streamDocument,
