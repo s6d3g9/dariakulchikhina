@@ -433,6 +433,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.15,
       tableHeaderOpacity: 0.05, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.08,
       badgeBgOpacity: 0.12, badgeRadius: 999,
+      btnHoverAnim: 'lift', cardHoverAnim: 'lift',
+      archDensity: 'normal', archHeadingTracking: 1, archHeadingCase: 'none',
+      archDivider: 'line', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'card',
     },
   },
   {
@@ -490,6 +493,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 5, scrollbarOpacity: 0.10,
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.00,
       badgeBgOpacity: 0.12, badgeRadius: 14,
+      btnHoverAnim: 'scale', cardHoverAnim: 'lift',
+      archDensity: 'airy', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   /* ── New presets ─────────────────────────────────── */
@@ -517,6 +523,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.12,
       tableHeaderOpacity: 0.06, tableRowHoverOpacity: 0.04, tableBorderOpacity: 0.08,
       badgeBgOpacity: 0.15, badgeRadius: 999,
+      btnHoverAnim: 'sheen', cardHoverAnim: 'reveal',
+      archDensity: 'normal', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'slide', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -545,6 +554,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 3, scrollbarOpacity: 0.08,
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.08,
       badgeBgOpacity: 0.12, badgeRadius: 2,
+      btnHoverAnim: 'fill', cardHoverAnim: 'dim',
+      archDensity: 'grand', archHeadingTracking: 4, archHeadingCase: 'uppercase',
+      archDivider: 'gradient', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
     },
   },
   {
@@ -571,6 +583,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 6, scrollbarOpacity: 0.15,
       tableHeaderOpacity: 0.05, tableRowHoverOpacity: 0.04, tableBorderOpacity: 0.04,
       badgeBgOpacity: 0.18, badgeRadius: 999,
+      btnHoverAnim: 'scale', cardHoverAnim: 'lift',
+      archDensity: 'normal', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'slide', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -599,6 +614,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.20,
       tableHeaderOpacity: 0.06, tableRowHoverOpacity: 0.04, tableBorderOpacity: 0.12,
       badgeBgOpacity: 0.14, badgeRadius: 0,
+      btnHoverAnim: 'fill', cardHoverAnim: 'border',
+      archDensity: 'normal', archHeadingTracking: 4, archHeadingCase: 'uppercase',
+      archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'arrow', archSectionStyle: 'flat',
     },
   },
   {
@@ -625,6 +643,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 3, scrollbarOpacity: 0.12,
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.08,
       badgeBgOpacity: 0.10, badgeRadius: 6,
+      btnHoverAnim: 'none', cardHoverAnim: 'dim',
+      archDensity: 'normal', archHeadingTracking: 2, archHeadingCase: 'none',
+      archDivider: 'line', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'flat',
     },
   },
   {
@@ -652,6 +673,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.10,
       tableHeaderOpacity: 0.03, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.04,
       badgeBgOpacity: 0.10, badgeRadius: 10,
+      btnHoverAnim: 'lift', cardHoverAnim: 'lift',
+      archDensity: 'airy', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
     },
   },
   {
@@ -681,6 +705,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 3, scrollbarOpacity: 0.12,
       tableHeaderOpacity: 0.05, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.08,
       badgeBgOpacity: 0.12, badgeRadius: 4,
+      btnHoverAnim: 'none', cardHoverAnim: 'border',
+      archDensity: 'dense', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -707,6 +734,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.12,
       tableHeaderOpacity: 0.05, tableRowHoverOpacity: 0.04, tableBorderOpacity: 0.00,
       badgeBgOpacity: 0.16, badgeRadius: 999,
+      btnHoverAnim: 'lift', cardHoverAnim: 'lift',
+      archDensity: 'normal', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'slide', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -734,6 +764,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.10,
       tableHeaderOpacity: 0.03, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.06,
       badgeBgOpacity: 0.12, badgeRadius: 999,
+      btnHoverAnim: 'scale', cardHoverAnim: 'lift',
+      archDensity: 'airy', archHeadingTracking: -1, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
     },
   },
   {
@@ -762,6 +795,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 6, scrollbarOpacity: 0.25,
       tableHeaderOpacity: 0.06, tableRowHoverOpacity: 0.04, tableBorderOpacity: 0.12,
       badgeBgOpacity: 0.14, badgeRadius: 0,
+      btnHoverAnim: 'none', cardHoverAnim: 'border',
+      archDensity: 'dense', archHeadingTracking: 3, archHeadingCase: 'uppercase',
+      archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'none', archSectionStyle: 'striped',
     },
   },
   /* ── Effect-focused presets ─────────────────────────── */
@@ -789,6 +825,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.18,
       tableHeaderOpacity: 0.06, tableRowHoverOpacity: 0.05, tableBorderOpacity: 0.10,
       badgeBgOpacity: 0.20, badgeRadius: 999,
+      btnHoverAnim: 'glow', cardHoverAnim: 'reveal',
+      archDensity: 'normal', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'slide', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -817,6 +856,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 2, scrollbarOpacity: 0.08,
       tableHeaderOpacity: 0.00, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.10,
       badgeBgOpacity: 0.08, badgeRadius: 0,
+      btnHoverAnim: 'none', cardHoverAnim: 'none',
+      archDensity: 'airy', archHeadingTracking: 4, archHeadingCase: 'none',
+      archDivider: 'line', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
     },
   },
   {
@@ -843,6 +885,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 8, scrollbarOpacity: 0.20,
       tableHeaderOpacity: 0.06, tableRowHoverOpacity: 0.05, tableBorderOpacity: 0.06,
       badgeBgOpacity: 0.20, badgeRadius: 999,
+      btnHoverAnim: 'scale', cardHoverAnim: 'lift',
+      archDensity: 'airy', archHeadingTracking: -2, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'slide', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -870,6 +915,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 3, scrollbarOpacity: 0.15,
       tableHeaderOpacity: 0.05, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.12,
       badgeBgOpacity: 0.12, badgeRadius: 2,
+      btnHoverAnim: 'none', cardHoverAnim: 'border',
+      archDensity: 'dense', archHeadingTracking: 3, archHeadingCase: 'uppercase',
+      archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'arrow', archSectionStyle: 'striped',
     },
   },
   /* ── Architectural / Award-winning site presets ───── */
@@ -901,6 +949,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 2, scrollbarOpacity: 0.04,
       tableHeaderOpacity: 0.02, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.03,
       badgeBgOpacity: 0.06, badgeRadius: 0,
+      btnHoverAnim: 'none', cardHoverAnim: 'dim',
+      archDensity: 'grand', archHeadingTracking: 8, archHeadingCase: 'uppercase',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'arrow', archSectionStyle: 'flat',
     },
   },
   /* ── New wave presets ────────────────────────────── */
@@ -932,6 +983,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 6, scrollbarOpacity: 0.25,
       tableHeaderOpacity: 0.08, tableRowHoverOpacity: 0.05, tableBorderOpacity: 0.15,
       badgeBgOpacity: 0.18, badgeRadius: 0,
+      btnHoverAnim: 'fill', cardHoverAnim: 'border',
+      archDensity: 'normal', archHeadingTracking: 2, archHeadingCase: 'uppercase',
+      archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'arrow', archSectionStyle: 'striped',
     },
   },
   {
@@ -962,6 +1016,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 3, scrollbarOpacity: 0.10,
       tableHeaderOpacity: 0.05, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.10,
       badgeBgOpacity: 0.12, badgeRadius: 0,
+      btnHoverAnim: 'fill', cardHoverAnim: 'dim',
+      archDensity: 'grand', archHeadingTracking: 10, archHeadingCase: 'uppercase',
+      archDivider: 'gradient', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
     },
   },
   {
@@ -991,6 +1048,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.30,
       tableHeaderOpacity: 0.08, tableRowHoverOpacity: 0.06, tableBorderOpacity: 0.14,
       badgeBgOpacity: 0.22, badgeRadius: 2,
+      btnHoverAnim: 'glow', cardHoverAnim: 'reveal',
+      archDensity: 'dense', archHeadingTracking: 3, archHeadingCase: 'uppercase',
+      archDivider: 'line', archPageEnter: 'slide', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -1021,6 +1081,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 2, scrollbarOpacity: 0.06,
       tableHeaderOpacity: 0.02, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.03,
       badgeBgOpacity: 0.08, badgeRadius: 6,
+      btnHoverAnim: 'none', cardHoverAnim: 'dim',
+      archDensity: 'airy', archHeadingTracking: 2, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
     },
   },
   {
@@ -1050,6 +1113,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 6, scrollbarOpacity: 0.18,
       tableHeaderOpacity: 0.06, tableRowHoverOpacity: 0.05, tableBorderOpacity: 0.06,
       badgeBgOpacity: 0.20, badgeRadius: 999,
+      btnHoverAnim: 'scale', cardHoverAnim: 'lift',
+      archDensity: 'normal', archHeadingTracking: -2, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'slide', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -1081,6 +1147,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 3, scrollbarOpacity: 0.10,
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.10,
       badgeBgOpacity: 0.08, badgeRadius: 0,
+      btnHoverAnim: 'none', cardHoverAnim: 'none',
+      archDensity: 'dense', archHeadingTracking: -2, archHeadingCase: 'uppercase',
+      archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'underline', archSectionStyle: 'flat',
     },
   },
   {
@@ -1110,6 +1179,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 5, scrollbarOpacity: 0.10,
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.04,
       badgeBgOpacity: 0.14, badgeRadius: 999,
+      btnHoverAnim: 'lift', cardHoverAnim: 'lift',
+      archDensity: 'airy', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -1139,6 +1211,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 3, scrollbarOpacity: 0.15,
       tableHeaderOpacity: 0.06, tableRowHoverOpacity: 0.04, tableBorderOpacity: 0.10,
       badgeBgOpacity: 0.16, badgeRadius: 6,
+      btnHoverAnim: 'glow', cardHoverAnim: 'reveal',
+      archDensity: 'dense', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'line', archPageEnter: 'slide', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   {
@@ -1169,6 +1244,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.12,
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.07,
       badgeBgOpacity: 0.12, badgeRadius: 10,
+      btnHoverAnim: 'lift', cardHoverAnim: 'dim',
+      archDensity: 'airy', archHeadingTracking: 1, archHeadingCase: 'none',
+      archDivider: 'gradient', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'flat',
     },
   },
   {
@@ -1198,6 +1276,9 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.10,
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.05,
       badgeBgOpacity: 0.12, badgeRadius: 999,
+      btnHoverAnim: 'sheen', cardHoverAnim: 'lift',
+      archDensity: 'normal', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },
   /* ── Architectural DNA presets ─────────────────────────────
@@ -1234,6 +1315,8 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       tableHeaderOpacity: 0.02, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.03,
       badgeBgOpacity: 0.06, badgeRadius: 0,
       colorPageBg: '#f7f6f3',
+      archDensity: 'grand', archHeadingTracking: 7, archHeadingCase: 'uppercase',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'arrow', archSectionStyle: 'flat',
     },
   },
   {
@@ -1266,6 +1349,8 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.10,
       badgeBgOpacity: 0.10, badgeRadius: 0,
       colorPageBg: '#1c1a16', colorText: '#e2d9cc', colorHeading: '#ede5d8',
+      archDensity: 'normal', archHeadingTracking: -1, archHeadingCase: 'uppercase',
+      archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'underline', archSectionStyle: 'flat',
     },
   },
   {
@@ -1298,6 +1383,8 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       tableHeaderOpacity: 0.08, tableRowHoverOpacity: 0.05, tableBorderOpacity: 0.14,
       badgeBgOpacity: 0.16, badgeRadius: 0,
       colorPageBg: '#ffffff', colorText: '#0a0a0a',
+      archDensity: 'dense', archHeadingTracking: -3, archHeadingCase: 'none',
+      archDivider: 'line', archPageEnter: 'none', archLinkAnim: 'none', archSectionStyle: 'striped',
     },
   },
   {
@@ -1329,6 +1416,8 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 3, scrollbarOpacity: 0.10,
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.03, tableBorderOpacity: 0.07,
       badgeBgOpacity: 0.11, badgeRadius: 3,
+      archDensity: 'normal', archHeadingTracking: -1, archHeadingCase: 'none',
+      archDivider: 'line', archPageEnter: 'fade', archLinkAnim: 'underline', archSectionStyle: 'card',
     },
   },
   {
@@ -1362,6 +1451,8 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       tableHeaderOpacity: 0.03, tableRowHoverOpacity: 0.02, tableBorderOpacity: 0.03,
       badgeBgOpacity: 0.10, badgeRadius: 999,
       colorPageBg: '#07080c', colorText: '#c5d8e8', colorHeading: '#e0f2ff', colorLink: '#78b8d4',
+      archDensity: 'grand', archHeadingTracking: 14, archHeadingCase: 'uppercase',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'arrow', archSectionStyle: 'flat',
     },
   },
 ]

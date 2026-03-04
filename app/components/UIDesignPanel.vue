@@ -109,6 +109,24 @@
                 </div>
               </div>
 
+              <!-- ═══ Концепция дизайна ═══ -->
+              <div v-show="isTabVisible('concept')" class="dp-page">
+                <p class="dp-concept-intro">Целостная концепция — меняет всё: цвета, типографику, анимацию, плотность, архитектуру UI.</p>
+                <div class="dp-concepts-grid">
+                  <button
+                    v-for="c in DESIGN_CONCEPTS" :key="c.id" type="button"
+                    class="dp-concept-card" :class="{ 'dp-concept-card--active': activePresetId === c.id }"
+                    @click="pickPreset(c)"
+                  >
+                    <span class="dp-concept-icon">{{ c.icon }}</span>
+                    <div class="dp-concept-body">
+                      <span class="dp-concept-name">{{ c.name }}</span>
+                      <span class="dp-concept-desc">{{ c.description }}</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               <!-- ═══ Палитра ═══ -->
               <div v-show="isTabVisible('palette')" class="dp-page dp-page--cols">
                 <div class="dp-col">
@@ -1693,6 +1711,7 @@
 <script setup lang="ts">
 import {
   useDesignSystem, FONT_OPTIONS, BTN_SIZE_MAP, EASING_OPTIONS, DESIGN_PRESETS,
+  DESIGN_CONCEPTS,
   TYPE_SCALE_OPTIONS,
   type DesignTokens, type DesignPreset,
 } from '~/composables/useDesignSystem'
@@ -1721,6 +1740,7 @@ const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
 const activeTab = ref('presets')
 const tabList = [
   { id: 'presets',   label: 'образы' },
+  { id: 'concept',   label: 'концепция' },
   { id: 'palette',   label: 'палитра' },
   { id: 'colors',    label: 'цвета ▸' },
   { id: 'buttons',   label: 'кнопки' },
@@ -1742,7 +1762,7 @@ const tabList = [
   { id: 'arch',      label: 'архитектура' },
 ]
 // Tab keying — sections object kept only for inspect-mode quick-jump compatibility
-const sections = reactive({ presets: true, palette: true, colors: false, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false, arch: false })
+const sections = reactive({ presets: true, concept: false, palette: true, colors: false, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false, arch: false })
 function toggle(key: keyof typeof sections) { activeTab.value = key as string }
 
 /* ── Option lists ────────────────────────────────── */
@@ -2907,6 +2927,31 @@ onBeforeUnmount(() => {
 .dp-preset-desc { font-size: .54rem; opacity: .4; line-height: 1.3; }
 :global(html.dark) .dp-preset-card:hover { background: rgba(255,255,255,.03); }
 :global(html.dark) .dp-preset-card--active { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.04); }
+
+/* ── Design concepts grid ── */
+.dp-concept-intro {
+  font-size: .62rem; line-height: 1.5; color: var(--glass-text); opacity: .45;
+  margin: 0 0 12px; padding: 0;
+}
+.dp-concepts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.dp-concept-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; border-radius: 10px; border: 1px solid transparent;
+  background: transparent; cursor: pointer; font-family: inherit;
+  color: var(--glass-text); transition: all .15s; text-align: left; width: 100%;
+}
+.dp-concept-card:hover { background: rgba(0,0,0,.025); border-color: rgba(0,0,0,.06); }
+.dp-concept-card--active { border-color: rgba(0,0,0,.18); background: rgba(0,0,0,.04); box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+.dp-concept-icon { font-size: 1.3rem; opacity: .5; flex-shrink: 0; margin-top: 2px; }
+.dp-concept-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dp-concept-name { font-size: .72rem; font-weight: 600; letter-spacing: .02em; }
+.dp-concept-desc { font-size: .56rem; opacity: .45; line-height: 1.45; }
+:global(html.dark) .dp-concept-card:hover { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.06); }
+:global(html.dark) .dp-concept-card--active { border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
 
 /* ── Accent color big preview ── */
 .dp-accent-preview-big {
