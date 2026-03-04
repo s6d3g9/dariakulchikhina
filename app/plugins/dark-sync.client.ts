@@ -6,6 +6,17 @@
 export default defineNuxtPlugin(() => {
   if (!import.meta.client) return
 
+  // Remove old cookie/storage keys that may have stored 'dark' from a previous session
+  try {
+    localStorage.removeItem('nuxt-color-mode')
+    document.cookie = 'nuxt-color-mode=; Max-Age=0; path=/'
+    // If new key has no stored value yet, force light
+    if (!localStorage.getItem('daria-color-mode')) {
+      localStorage.setItem('daria-color-mode', 'light')
+      document.cookie = 'daria-color-mode=light; path=/; SameSite=Lax'
+    }
+  } catch { /* storage may be blocked */ }
+
   const syncClasses = () => {
     const htmlHasDark = document.documentElement.classList.contains('dark')
     document.body.classList.toggle('dark-theme', htmlHasDark)

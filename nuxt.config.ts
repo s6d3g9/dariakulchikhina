@@ -21,6 +21,8 @@ export default defineNuxtConfig({
   colorMode: {
     preference: 'light',
     fallback: 'light',
+    classSuffix: '',
+    storageKey: 'daria-color-mode',
   },
 
   css: ['~/assets/css/main.css'],
