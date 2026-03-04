@@ -156,6 +156,7 @@
                 <div v-for="(svc, idx) in catServices" :key="svc.serviceKey" class="svc-edit-row">
                   <label class="svc-enable">
                     <input type="checkbox" v-model="svc.enabled" />
+                    <span>{{ svc.enabled ? 'вкл' : 'выкл' }}</span>
                   </label>
                   <div class="svc-edit-name">
                     <input v-model="svc.title" class="glass-input svc-inp" placeholder="Название" />
@@ -246,7 +247,7 @@
             <template v-if="editingPackages">
               <div v-for="pkg in editPackagesList" :key="pkg.key" class="pkg-edit glass-surface">
                 <div class="pkg-edit-head">
-                  <label class="svc-enable"><input type="checkbox" v-model="pkg.enabled" /></label>
+                  <label class="svc-enable"><input type="checkbox" v-model="pkg.enabled" /><span>{{ pkg.enabled ? 'вкл' : 'выкл' }}</span></label>
                   <input v-model="pkg.title" class="glass-input pkg-title-inp" placeholder="Название пакета" />
                   <div class="pkg-price-edit">
                     <input v-model.number="pkg.pricePerSqm" class="glass-input svc-inp svc-inp--num" type="number" min="0" />
@@ -338,7 +339,7 @@
             <template v-if="editingSubscriptions">
               <div v-for="sub in editSubscriptionsList" :key="sub.key" class="sub-edit glass-surface">
                 <div class="sub-edit-head">
-                  <label class="svc-enable"><input type="checkbox" v-model="sub.enabled" /></label>
+                  <label class="svc-enable"><input type="checkbox" v-model="sub.enabled" /><span>{{ sub.enabled ? 'вкл' : 'выкл' }}</span></label>
                   <input v-model="sub.title" class="glass-input pkg-title-inp" placeholder="Название подписки" />
                   <div class="edit-actions">
                     <button type="button" class="svc-mini" title="Дублировать" @click="duplicateEditSubscription(sub.key)">⎘</button>

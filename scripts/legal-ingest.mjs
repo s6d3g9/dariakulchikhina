@@ -26,69 +26,53 @@ if (!DATABASE_URL) {
 }
 
 // ─── Источники ──────────────────────────────────────────────────────────────
+// consultant.ru /document/ — отдаёт полный статический HTML с текстами статей
+const BASE = 'https://www.consultant.ru/document'
 const SOURCES = [
   {
     key:  'gk_rf_1',
     name: 'Гражданский кодекс РФ (ч.1)',
-    urls: [
-      'https://www.consultant.ru/popular/gkrf1/',
-    ],
+    urls: [`${BASE}/cons_doc_LAW_5142/`],
   },
   {
     key:  'gk_rf_2',
     name: 'Гражданский кодекс РФ (ч.2)',
-    urls: [
-      'https://www.consultant.ru/popular/gkrf2/',
-    ],
+    urls: [`${BASE}/cons_doc_LAW_9027/`],
   },
   {
     key:  'gk_rf_3',
     name: 'Гражданский кодекс РФ (ч.3)',
-    urls: [
-      'https://www.consultant.ru/popular/gkrf3/',
-    ],
+    urls: [`${BASE}/cons_doc_LAW_34154/`],
   },
   {
     key:  'gk_rf_4',
     name: 'Гражданский кодекс РФ (ч.4)',
-    urls: [
-      'https://www.consultant.ru/popular/gkrf4/',
-    ],
+    urls: [`${BASE}/cons_doc_LAW_64629/`],
   },
   {
     key:  'gradko',
     name: 'Градостроительный кодекс РФ',
-    urls: [
-      'https://www.consultant.ru/popular/gradkodeks/',
-    ],
+    urls: [`${BASE}/cons_doc_LAW_51040/`],
   },
   {
     key:  'zpz',
     name: 'Закон РФ «О защите прав потребителей»',
-    urls: [
-      'https://www.consultant.ru/popular/consumerism/',
-    ],
+    urls: [`${BASE}/cons_doc_LAW_305/`],
   },
   {
     key:  'uk_rf',
     name: 'Уголовный кодекс РФ',
-    urls: [
-      'https://www.consultant.ru/popular/ukrf/',
-    ],
+    urls: [`${BASE}/cons_doc_LAW_10699/`],
   },
   {
     key:  'nk_rf_1',
     name: 'Налоговый кодекс РФ (ч.1)',
-    urls: [
-      'https://www.consultant.ru/popular/nalog1/',
-    ],
+    urls: [`${BASE}/cons_doc_LAW_19671/`],
   },
   {
     key:  'nk_rf_2',
     name: 'Налоговый кодекс РФ (ч.2)',
-    urls: [
-      'https://www.consultant.ru/popular/nalog2/',
-    ],
+    urls: [`${BASE}/cons_doc_LAW_28165/`],
   },
 ]
 
