@@ -68,6 +68,44 @@
               </div>
             </div>
 
+            <!-- ── Mode Bar: Liquid Glass ↔ Minale+Mann ── -->
+            <div class="dp-mode-bar">
+              <span class="dp-mode-label">режим</span>
+              <button
+                type="button"
+                class="dp-mode-btn"
+                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-glass' }"
+                @click="switchMode('concept-glass')"
+                title="Витрина — glassmorphism, blur, pill-формы, цветные акценты"
+              >
+                <span class="dp-mode-icon">❖</span>
+                <span class="dp-mode-name">Liquid Glass</span>
+                <span class="dp-mode-hint">витрина · blur · pill</span>
+              </button>
+              <button
+                type="button"
+                class="dp-mode-btn"
+                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-minale' }"
+                @click="switchMode('concept-minale')"
+                title="Minale+Mann — чёрный фон, белый текст, uppercase, hairlines"
+              >
+                <span class="dp-mode-icon">◼</span>
+                <span class="dp-mode-name">Minale + Mann</span>
+                <span class="dp-mode-hint">editorial · black · tracked</span>
+              </button>
+              <button
+                type="button"
+                class="dp-mode-btn dp-mode-btn--reset"
+                :class="{ 'dp-mode-btn--active': !activeModeSlug || (activeModeSlug !== 'concept-glass' && activeModeSlug !== 'concept-minale') }"
+                @click="clearMode()"
+                title="Сбросить режим — вернуть переменные из дизайн-системы"
+              >
+                <span class="dp-mode-icon">○</span>
+                <span class="dp-mode-name">Системный</span>
+                <span class="dp-mode-hint">токены · дефолт</span>
+              </button>
+            </div>
+
             <!-- ── Export/Import drawer ── -->
             <Transition name="dp-drawer">
               <div v-if="showExport" class="dp-export">
@@ -1889,6 +1927,29 @@ const accentColor = computed(() =>
 
 const activePresetId = ref('')
 
+/* ── Mode switcher: Liquid Glass ↔ Minale+Mann ─── */
+const activeModeSlug = computed(() => {
+  if (!import.meta.client) return ''
+  return document.documentElement.getAttribute('data-concept')
+    ? 'concept-' + document.documentElement.getAttribute('data-concept')
+    : (activePresetId.value.startsWith('concept-') ? activePresetId.value : '')
+})
+
+function switchMode(conceptId: 'concept-glass' | 'concept-minale') {
+  const concept = DESIGN_CONCEPTS.find(c => c.id === conceptId)
+  if (concept) {
+    activePresetId.value = concept.id
+    previewPreset(concept)
+    confirmPreview()
+  }
+}
+
+function clearMode() {
+  cancelPreview()
+  activePresetId.value = ''
+  if (import.meta.client) document.documentElement.removeAttribute('data-concept')
+}
+
 /* ── Type scale computed sizes ──────────────────── */
 const typeScaleSizes = computed(() => {
   const r = tokens.value.typeScale
@@ -2777,6 +2838,93 @@ onBeforeUnmount(() => {
 :global(html.dark) .dp-panel { background: #111113; border-bottom-color: rgba(255,255,255,.08); }
 
 /* ── Panel top row: tabs + actions ── */
+/* ── Mode Bar ───────────────────────────────────── */
+.dp-mode-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(10,10,10,.70);
+}
+.dp-mode-label {
+  display: flex;
+  align-items: center;
+  padding-right: 14px;
+  font-size: 0.60rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.28);
+  white-space: nowrap;
+  border-right: 1px solid rgba(255,255,255,.07);
+  margin-right: 12px;
+}
+.dp-mode-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 160ms ease;
+  min-width: 0;
+  position: relative;
+}
+.dp-mode-btn + .dp-mode-btn {
+  margin-left: 6px;
+}
+.dp-mode-btn:hover {
+  background: rgba(255,255,255,.05);
+  border-color: rgba(255,255,255,.12);
+}
+.dp-mode-btn--active {
+  background: rgba(255,255,255,.08) !important;
+  border-color: rgba(255,255,255,.30) !important;
+}
+.dp-mode-btn--active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: rgba(255,255,255,.70);
+  border-radius: 0;
+}
+.dp-mode-btn--reset {
+  flex: 0 0 auto;
+  min-width: 80px;
+}
+.dp-mode-icon {
+  font-size: 0.85rem;
+  opacity: 0.65;
+  line-height: 1;
+}
+.dp-mode-btn--active .dp-mode-icon {
+  opacity: 1;
+}
+.dp-mode-name {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,.65);
+  white-space: nowrap;
+}
+.dp-mode-btn--active .dp-mode-name {
+  color: #ffffff;
+}
+.dp-mode-hint {
+  font-size: 0.56rem;
+  letter-spacing: 0.10em;
+  color: rgba(255,255,255,.28);
+  text-transform: lowercase;
+}
+
 .dp-panel-toprow {
   display: flex; align-items: stretch; justify-content: space-between;
   border-bottom: 1px solid rgba(0,0,0,.06); flex-shrink: 0;
