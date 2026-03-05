@@ -735,7 +735,8 @@ html.dark .glass-input::placeholder {
 /* ── proj-* layout: sidebar + main area ──────────────────────────── */
 /* Used by admin/index, clients, contractors, designers, sellers, [slug] */
 
-.proj-content-area {
+.proj-content-area,
+.admin-with-nav {
   /* space for the fixed sidebar column */
   padding-left: calc(var(--ds-sidebar-width, 200px) + 24px);
 }

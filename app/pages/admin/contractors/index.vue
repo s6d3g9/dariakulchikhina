@@ -5,46 +5,23 @@
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
     </div>
-    <div class="proj-content-area">
-
-      <div class="proj-nav-col">
-        <AdminNestedNav
-          :node="currentNode"
-          :direction="slideDir"
-          :can-go-back="navDepth > 0"
-          :back-label="navDepth > 0 ? 'разделы' : ''"
-          :active-key="selectedId ? String(selectedId) : undefined"
-          @back="onBack"
-          @drill="onDrill"
-          @select="onSelect"
-        >
-          <template v-if="navDepth === 1" #footer>
-            <button class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button>
-          </template>
-        </AdminNestedNav>
-      </div><!-- /.proj-nav-col -->
-
-    <div class="proj-main">
-        <template v-if="selectedId">
-          <div class="ent-entity-hd">
-            <span class="ent-entity-hd-name">{{ selected?.name }}</span>
-            <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
-          </div>
-          <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" />
-        </template>
-        <div v-else class="ent-empty-detail">
-          <span class="ent-empty-icon">🏗</span>
-          <span v-if="contractors?.length">Выберите подрядчика из списка</span>
-          <span v-else>Нет подрядчиков — добавьте первого</span>
-          <button v-if="!contractors?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить первого</button>
-        </div>
+    <!-- Content: selected contractor or empty state -->
+    <template v-if="selectedId">
+      <div class="ent-entity-hd">
+        <span class="ent-entity-hd-name">{{ selected?.name }}</span>
+        <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
       </div>
+      <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" />
+    </template>
+    <div v-else class="ent-empty-detail">
+      <span class="ent-empty-icon">🏗</span>
+      <span v-if="contractors?.length">Выберите подрядчика из списка</span>
+      <span v-else>Нет подрядчиков — добавьте первого</span>
+      <button class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить</button>
+    </div>
 
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
-
-    <!-- ══ Modal ══ -->
-    </div><!-- /.proj-content-area -->
+    <!-- ═══ Status bar ═══ -->
+    <AdminProjectStatusBar />
     <Teleport to="body">
       <div v-if="showModal" class="ct-backdrop" @click.self="closeModal">
         <div class="ct-modal glass-surface">
@@ -189,73 +166,15 @@
 </template>
 
 <script setup lang="ts">
-import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
-
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
-// ── Nav state ──
-const ADMIN_ROUTES: Record<string, string> = {
-  projects: '/admin',
-  clients: '/admin/clients',
-  designers: '/admin/designers',
-  sellers: '/admin/sellers',
-}
 
-const navDepth = ref<0 | 1>(1)
-const slideDir = ref<'fwd' | 'back'>('fwd')
+const adminNav = useAdminNav()
+onMounted(() => adminNav.ensureSection('contractors'))
 
-const allContractorItems = computed(() => {
-  const items: NavItem[] = []
-  for (const c of companies.value) {
-    items.push({ key: String(c.id), label: c.companyName || c.name, sub: 'подрядчик' })
-    for (const m of mastersByParent.value.get(c.id) || []) {
-      items.push({ key: String(m.id), label: m.name, sub: m.workTypes?.join(', ') || c.name })
-    }
-  }
-  for (const m of standaloneMasters.value) {
-    items.push({ key: String(m.id), label: m.name, sub: m.workTypes?.join(', ') || 'частный мастер' })
-  }
-  return items
+// Sync from global nav contentSpec
+watch(() => adminNav.contentSpec.value.contractorId, (id) => {
+  if (id) selectedId.value = id
 })
-
-const nodes = computed((): NavNode[] => [
-  {
-    key: 'root',
-    title: 'разделы',
-    items: [
-      { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
-      { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
-      { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
-      { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
-      { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
-    ],
-  },
-  {
-    key: 'contractors',
-    title: 'подрядчики',
-    count: contractors.value?.length,
-    emptyText: 'нет подрядчиков',
-    items: allContractorItems.value,
-  },
-])
-
-const currentNode = computed(() => nodes.value[navDepth.value])
-
-function onDrill(item: NavItem) {
-  if (navDepth.value === 0) {
-    if (item.key === 'contractors') { slideDir.value = 'fwd'; navDepth.value = 1 }
-    else if (ADMIN_ROUTES[item.key]) navigateTo(ADMIN_ROUTES[item.key])
-  }
-}
-
-function onSelect(item: NavItem) {
-  const c = contractors.value?.find((x: any) => String(x.id) === item.key)
-  if (c) selectContractor(c)
-}
-
-function onBack() {
-  slideDir.value = 'back'
-  if (navDepth.value === 1) navDepth.value = 0
-}
 
 const route = useRoute()
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
@@ -273,10 +192,6 @@ watch(contractors, (value) => { if (Array.isArray(value)) contractorsCacheByProj
 const selectedId = ref<number | null>(null)
 const selected = computed(() => contractors.value?.find((c: any) => c.id === selectedId.value) || null)
 function selectContractor(c: any) { selectedId.value = c.id }
-
-// Deselect when layout sends "все подрядчики" signal
-const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
-watch(entityDeselectSignal, () => { selectedId.value = null })
 
 // Auto-select contractor from ?contractorId= query
 const router = useRouter()

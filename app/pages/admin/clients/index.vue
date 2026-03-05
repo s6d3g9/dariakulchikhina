@@ -6,29 +6,8 @@
       <NuxtLink to="/admin/clients" class="cl-filter-link">показать всех</NuxtLink>
     </div>
 
-    <!-- ═══ Unified layout: sidebar always visible ═══ -->
-    <div class="proj-content-area">
-
-      <div class="proj-nav-col">
-        <AdminNestedNav
-          :node="currentNode"
-          :direction="slideDir"
-          :can-go-back="navDepth > 0"
-          :back-label="navDepth > 0 ? 'разделы' : ''"
-          :active-key="selectedClientId ? String(selectedClientId) : undefined"
-          @back="onBack"
-          @drill="onDrill"
-          @select="onSelect"
-        >
-          <template v-if="navDepth === 1" #footer>
-            <button class="ent-sidebar-add a-btn-sm" @click="openAdd">+ добавить</button>
-          </template>
-        </AdminNestedNav>
-      </div><!-- /.proj-nav-col -->
-
-    <!-- Content area: selected client or empty state -->
-    <div class="proj-main">
-        <template v-if="selectedClient">
+    <!-- Content: selected client or empty state -->
+    <template v-if="selectedClient">
           <!-- Minimal context strip -->
           <div class="ent-entity-hd">
             <span class="ent-entity-hd-name">{{ selectedClient.name }}</span>
@@ -98,15 +77,11 @@
           <span class="ent-empty-icon">👤</span>
           <span v-if="clients?.length">Выберите клиента из списка</span>
           <span v-else>Нет клиентов — добавьте первого</span>
-          <button v-if="!clients?.length" class="a-btn-sm" style="margin-top:6px" @click="openAdd">+ добавить</button>
+          <button class="a-btn-sm" style="margin-top:6px" @click="openAdd">+ добавить</button>
         </div>
-      </div>
 
       <!-- ═══ Status bar ═══ -->
       <AdminProjectStatusBar />
-
-    <!-- ══ Add/Edit modal ══ -->
-    </div><!-- /.proj-content-area -->
     <Teleport to="body">
     <div v-if="showModal" class="cl-backdrop" @click.self="closeModal">
       <div class="cl-modal glass-surface glass-card">
@@ -165,7 +140,6 @@
 
 <script setup lang="ts">
 import type { Component } from 'vue'
-import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
 import { getClientPages } from '~~/shared/constants/pages'
 import ClientInitiation      from '~/components/ClientInitiation.vue'
 import ClientSelfProfile     from '~/components/ClientSelfProfile.vue'
@@ -182,60 +156,13 @@ import ClientOverview        from '~/components/ClientOverview.vue'
 
 definePageMeta({ layout: 'admin', middleware: 'admin', pageTransition: false })
 
-// ── Nav state ──
-const ADMIN_ROUTES: Record<string, string> = {
-  projects: '/admin',
-  contractors: '/admin/contractors',
-  designers: '/admin/designers',
-  sellers: '/admin/sellers',
-}
+const adminNav = useAdminNav()
+onMounted(() => adminNav.ensureSection('clients'))
 
-const navDepth = ref<0 | 1>(1)
-const slideDir = ref<'fwd' | 'back'>('fwd')
-
-const nodes = computed((): NavNode[] => [
-  {
-    key: 'root',
-    title: 'разделы',
-    items: [
-      { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
-      { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
-      { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
-      { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
-      { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
-    ],
-  },
-  {
-    key: 'clients',
-    title: 'клиенты',
-    count: clients.value?.length,
-    emptyText: 'нет клиентов',
-    items: (clients.value ?? []).map((c: any) => ({
-      key: String(c.id),
-      label: c.name,
-      sub: c.linkedProjects?.map((p: any) => p.title).join(', '),
-    })),
-  },
-])
-
-const currentNode = computed(() => nodes.value[navDepth.value])
-
-function onDrill(item: NavItem) {
-  if (navDepth.value === 0) {
-    if (item.key === 'clients') { slideDir.value = 'fwd'; navDepth.value = 1 }
-    else if (ADMIN_ROUTES[item.key]) navigateTo(ADMIN_ROUTES[item.key])
-  }
-}
-
-function onSelect(item: NavItem) {
-  const c = clients.value?.find((x: any) => String(x.id) === item.key)
-  if (c) selectClient(c)
-}
-
-function onBack() {
-  slideDir.value = 'back'
-  if (navDepth.value === 1) navDepth.value = 0
-}
+// Sync selected client from global nav contentSpec
+watch(() => adminNav.contentSpec.value.clientId, (id) => {
+  if (id) { selectedClientId.value = id; clientPage.value = 'dashboard' }
+})
 
 const route = useRoute()
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')

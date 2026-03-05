@@ -67,9 +67,22 @@
       </div>
     </header>
 
-    <!-- ── App shell body: sidebar portal + main ── -->
+    <!-- ── App shell body: global nav sidebar + main ── -->
     <div class="adm-body">
-      <main class="adm-main">
+      <!-- Global navigation sidebar — persists across all admin routes -->
+      <aside class="proj-nav-col">
+        <AdminNestedNav
+          :node="adminNav.currentNode.value"
+          :direction="adminNav.slideDir.value"
+          :can-go-back="adminNav.canGoBack.value"
+          :back-label="adminNav.backLabel.value"
+          :active-key="adminNav.activeKey.value"
+          @drill="adminNav.drill"
+          @back="adminNav.back"
+          @select="adminNav.select"
+        />
+      </aside>
+      <main class="adm-main admin-with-nav">
         <div class="admin-container">
           <slot />
         </div>
@@ -85,6 +98,9 @@
 const router = useRouter()
 const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
+
+// ── Global nav ──────────────────────────────────────────
+const adminNav = useAdminNav()
 
 // ── Notifications ─────────────────────────────────────────────
 const { data: notifData, refresh: refreshNotif } = useFetch<any>('/api/admin/notifications', {

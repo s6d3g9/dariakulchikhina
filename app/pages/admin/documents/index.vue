@@ -1,22 +1,16 @@
 <template>
   <div>
-    <div class="proj-content-area">
-
-      <div class="proj-nav-col">
-        <AdminNestedNav
-          :node="currentNode"
-          :direction="slideDir"
-          :can-go-back="navDepth > 0"
-          :back-label="navDepth > 0 ? 'разделы' : ''"
-          :active-key="navDepth === 1 ? activeCategory : undefined"
-          @back="onBack"
-          @drill="onDrill"
-          @select="onSelect"
-        >
-          <template #footer>
+    <!-- ══ Content area ══ -->
+    <div class="docs-topbar glass-card" style="margin-bottom:14px">
+          <div class="docs-topbar-left">
+            <span class="docs-topbar-title">документы</span>
+            <span class="docs-count">{{ allDocs.length }}</span>
+          </div>
+          <div class="docs-topbar-right">
+            <input v-model="search" class="docs-search glass-input" placeholder="поиск..." />
             <button class="ent-sidebar-add a-btn-sm" @click="openGenerate">✦ из шаблона</button>
-            <button class="ent-sidebar-add a-btn-sm" style="margin-top:4px" @click="openUpload">+ загрузить</button>
-            <div class="docs-rag-status" :class="legalStatus?.ready ? 'docs-rag-status--ok' : 'docs-rag-status--off'" style="margin-top:8px">
+            <button class="ent-sidebar-add a-btn-sm" @click="openUpload">+ загрузить</button>
+            <div class="docs-rag-status" :class="legalStatus?.ready ? 'docs-rag-status--ok' : 'docs-rag-status--off'">
               <span class="docs-rag-dot"></span>
               <div class="docs-rag-info">
                 <span class="docs-rag-label">правовая база</span>
@@ -24,19 +18,6 @@
                 <span v-else class="docs-rag-count">не загружена</span>
               </div>
             </div>
-          </template>
-        </AdminNestedNav>
-      </div><!-- /.proj-nav-col -->
-
-      <!-- ══ Right: content area ══ -->
-      <div class="proj-main">
-        <div class="docs-topbar glass-card" style="margin-bottom:14px">
-          <div class="docs-topbar-left">
-            <span class="docs-topbar-title">документы</span>
-            <span class="docs-count">{{ allDocs.length }}</span>
-          </div>
-          <div class="docs-topbar-right">
-            <input v-model="search" class="docs-search glass-input" placeholder="поиск..." />
           </div>
         </div>
         <Transition name="tab-fade" mode="out-in">
@@ -133,8 +114,6 @@
           </div>
 
         </Transition>
-      </div><!-- /.proj-main -->
-    </div><!-- /.proj-content-area -->
 
     <!-- ═══ Upload modal ═══ -->
     <Teleport to="body">
@@ -193,7 +172,13 @@
 
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
-import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
+
+// ── Global nav integration ──
+const adminNav = useAdminNav()
+onMounted(() => adminNav.ensureSection('documents'))
+watch(() => adminNav.contentSpec.value.documentCategory, (cat) => {
+  if (cat) selectCategory(cat)
+})
 
 // ══════════════════════════════════════════════════════════════════
 // CATEGORIES — numbered, professional
@@ -770,45 +755,6 @@ const countByCategory = computed(() => {
   }
   return r
 })
-
-// ── Nav state (AdminNestedNav) ──
-const navDepth = ref<0 | 1>(1)
-const slideDir = ref<'fwd' | 'back'>('fwd')
-const NAV_ROUTES: Record<string, string> = {
-  projects: '/admin', clients: '/admin/clients',
-  contractors: '/admin/contractors', designers: '/admin/designers', sellers: '/admin/sellers',
-}
-const currentNode = computed((): NavNode => navDepth.value === 0
-  ? {
-      key: 'root', title: 'разделы',
-      items: [
-        { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
-        { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
-        { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
-        { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
-        { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
-        { key: 'documents',   icon: '○', label: 'документы',  isNode: true },
-      ],
-    }
-  : {
-      key: 'documents',
-      title: 'документы',
-      count: allDocs.value?.length,
-      items: CATEGORIES.map(cat => ({
-        key: cat.key,
-        label: cat.num ? `${cat.num} ${cat.label}` : cat.label,
-        count: countByCategory.value[cat.key],
-      })),
-    }
-)
-function onDrill(item: NavItem) {
-  if (navDepth.value === 0) {
-    if (item.key === 'documents') { slideDir.value = 'fwd'; navDepth.value = 1 }
-    else if (NAV_ROUTES[item.key]) navigateTo(NAV_ROUTES[item.key])
-  }
-}
-function onSelect(item: NavItem) { selectCategory(item.key) }
-function onBack() { slideDir.value = 'back'; if (navDepth.value === 1) navDepth.value = 0 }
 
 const filteredDocs = computed(() => {
   let list = allDocs.value || []

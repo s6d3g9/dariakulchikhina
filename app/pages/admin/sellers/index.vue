@@ -1,56 +1,32 @@
 <template>
   <div>
-    <div class="proj-content-area">
-
-      <div class="proj-nav-col">
-        <AdminNestedNav
-          :node="currentNode"
-          :direction="slideDir"
-          :can-go-back="navDepth > 0"
-          :back-label="navDepth > 0 ? 'разделы' : ''"
-          :active-key="selectedSellerId ? String(selectedSellerId) : undefined"
-          @back="onBack"
-          @drill="onDrill"
-          @select="onSelect"
-        >
-          <template v-if="navDepth === 1" #footer>
-            <button class="ent-sidebar-add a-btn-sm" @click="showCreate = true">+ добавить</button>
-          </template>
-        </AdminNestedNav>
-      </div><!-- /.proj-nav-col -->
-
-    <div class="proj-main">
-        <template v-if="selectedSellerId">
-          <div class="ent-entity-hd">
-            <span class="ent-entity-hd-name">{{ selectedSeller?.name }}</span>
-            <button class="ent-entity-hd-action" @click="openEdit(selectedSeller)">ред.</button>
-          </div>
-          <AdminSellerCabinet :key="selectedSellerId" :seller-id="selectedSellerId" />
-        </template>
-        <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
-          <div class="ent-detail-head">
-            <div class="ent-detail-name">Новый поставщик</div>
-            <button class="a-btn-sm" @click="showCreate = false">✕</button>
-          </div>
-          <input v-model="newName" class="glass-input" style="margin-bottom:8px" placeholder="Название компании / ИП" @keydown.enter="doCreate" />
-          <div class="ent-detail-foot">
-            <button class="a-btn-save" :disabled="!newName.trim() || creating" @click="doCreate">{{ creating ? '…' : 'создать' }}</button>
-            <button class="a-btn-sm" @click="showCreate = false">отмена</button>
-          </div>
+    <template v-if="selectedSellerId">
+        <div class="ent-entity-hd">
+          <span class="ent-entity-hd-name">{{ selectedSeller?.name }}</span>
+          <button class="ent-entity-hd-action" @click="openEdit(selectedSeller)">ред.</button>
         </div>
-        <div v-else class="ent-empty-detail">
-          <span class="ent-empty-icon">🏪</span>
-          <span v-if="allSellers?.length">Выберите поставщика из списка</span>
-          <span v-else>Нет поставщиков — добавьте первого</span>
-          <button v-if="!allSellers?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true">+ добавить первого</button>
+        <AdminSellerCabinet :key="selectedSellerId" :seller-id="selectedSellerId" />
+      </template>
+      <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
+        <div class="ent-detail-head">
+          <div class="ent-detail-name">Новый поставщик</div>
+          <button class="a-btn-sm" @click="showCreate = false">✕</button>
         </div>
+        <input v-model="newName" class="glass-input" style="margin-bottom:8px" placeholder="Название компании / ИП" @keydown.enter="doCreate" />
+        <div class="ent-detail-foot">
+          <button class="a-btn-save" :disabled="!newName.trim() || creating" @click="doCreate">{{ creating ? '…' : 'создать' }}</button>
+          <button class="a-btn-sm" @click="showCreate = false">отмена</button>
+        </div>
+      </div>
+      <div v-else class="ent-empty-detail">
+        <span class="ent-empty-icon">🏪</span>
+        <span v-if="allSellers?.length">Выберите поставщика из списка</span>
+        <span v-else>Нет поставщиков — добавьте первого</span>
+        <button class="a-btn-sm" style="margin-top:6px" @click="showCreate = true">+ добавить</button>
       </div>
 
       <!-- ═══ Status bar ═══ -->
       <AdminProjectStatusBar />
-
-    <!-- ══ Edit Modal ══ -->
-    </div><!-- /.proj-content-area -->
     <Teleport to="body">
       <div v-if="showEditModal" class="ct-backdrop" @click.self="closeEdit">
         <div class="ct-modal glass-surface">
@@ -91,63 +67,15 @@
 </template>
 
 <script setup lang="ts">
-import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
-
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
-// ── Nav state ──
-const ADMIN_ROUTES: Record<string, string> = {
-  projects: '/admin',
-  clients: '/admin/clients',
-  contractors: '/admin/contractors',
-  designers: '/admin/designers',
-}
 
-const navDepth = ref<0 | 1>(1)
-const slideDir = ref<'fwd' | 'back'>('fwd')
+const adminNav = useAdminNav()
+onMounted(() => adminNav.ensureSection('sellers'))
 
-const nodes = computed((): NavNode[] => [
-  {
-    key: 'root',
-    title: 'разделы',
-    items: [
-      { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
-      { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
-      { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
-      { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
-      { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
-    ],
-  },
-  {
-    key: 'sellers',
-    title: 'продавцы',
-    count: allSellers.value?.length,
-    emptyText: 'нет поставщиков',
-    items: (allSellers.value ?? []).map((s: any) => ({
-      key: String(s.id),
-      label: s.name,
-      sub: s.city,
-    })),
-  },
-])
-
-const currentNode = computed(() => nodes.value[navDepth.value])
-
-function onDrill(item: NavItem) {
-  if (navDepth.value === 0) {
-    if (item.key === 'sellers') { slideDir.value = 'fwd'; navDepth.value = 1 }
-    else if (ADMIN_ROUTES[item.key]) navigateTo(ADMIN_ROUTES[item.key])
-  }
-}
-
-function onSelect(item: NavItem) {
-  const s = allSellers.value?.find((x: any) => String(x.id) === item.key)
-  if (s) selectedSellerId.value = s.id
-}
-
-function onBack() {
-  slideDir.value = 'back'
-  if (navDepth.value === 1) navDepth.value = 0
-}
+// Sync selected seller from global nav contentSpec
+watch(() => adminNav.contentSpec.value.sellerId, (id) => {
+  if (id) selectedSellerId.value = id
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -158,10 +86,6 @@ const showCreate = ref(false)
 const newName = ref('')
 const creating = ref(false)
 const selectedSellerId = ref<number | null>(null)
-
-// Deselect when layout sends signal
-const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
-watch(entityDeselectSignal, () => { selectedSellerId.value = null })
 
 const selectedSeller = computed(() => allSellers.value?.find((s: any) => s.id === selectedSellerId.value) || null)
 

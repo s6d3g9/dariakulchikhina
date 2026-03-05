@@ -1,39 +1,12 @@
 <template>
   <div>
-    <div class="proj-content-area">
-
-      <div class="proj-nav-col">
-        <AdminNestedNav
-          :node="currentNode"
-          :direction="slideDir"
-          :can-go-back="navDepth > 0"
-          :back-label="navDepth > 0 ? 'разделы' : ''"
-          :active-key="selectedSlug ?? undefined"
-          @back="onBack"
-          @drill="onDrill"
-          @select="onSelect"
-        >
-          <template v-if="navDepth === 1" #footer>
-            <button class="ent-sidebar-add a-btn-sm" @click="showCreate = true; wizardStep = 1">+ создать</button>
-          </template>
-        </AdminNestedNav>
-      </div><!-- /.proj-nav-col -->
-
-    <!-- ═══ Main ═══ -->
-    <div class="proj-main">
-        <div class="ent-empty-detail">
-          <span class="ent-empty-icon">📁</span>
-          <span v-if="projects?.length">Выберите проект из списка</span>
-          <span v-else>Нет проектов — создайте первый</span>
-          <button v-if="!projects?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true; wizardStep = 1">+ создать проект</button>
-        </div>
-      </div>
-
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
-
-    <!-- ══ Create modal ══ -->
-    </div><!-- /.proj-content-area -->
+    <div class="ent-empty-detail">
+      <span class="ent-empty-icon">📁</span>
+      <span v-if="projects?.length">Выберите проект из списка</span>
+      <span v-else>Нет проектов — создайте первый</span>
+      <button v-if="!projects?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true; wizardStep = 1">+ создать проект</button>
+    </div>
+    <AdminProjectStatusBar />
     <Teleport to="body">
       <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
         <div class="pj-modal glass-surface">
@@ -68,66 +41,10 @@
 
 <script setup lang="ts">
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
-import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
-// ── Nav state ──
-const ADMIN_ROUTES: Record<string, string> = {
-  clients: '/admin/clients',
-  contractors: '/admin/contractors',
-  designers: '/admin/designers',
-  sellers: '/admin/sellers',
-}
-
-const navDepth = ref<0 | 1>(1)
-const slideDir = ref<'fwd' | 'back'>('fwd')
-
-const nodes = computed((): NavNode[] => [
-  {
-    key: 'root',
-    title: 'разделы',
-    items: [
-      { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
-      { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
-      { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
-      { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
-      { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
-    ],
-  },
-  {
-    key: 'projects',
-    title: 'проекты',
-    count: projects.value?.length,
-    emptyText: 'нет проектов',
-    items: (projects.value ?? []).map((p: any) => ({
-      key: p.slug,
-      label: p.title,
-      sub: phaseLabel(p.status),
-    })),
-  },
-])
-
-const currentNode = computed(() => nodes.value[navDepth.value])
-
-function onDrill(item: NavItem) {
-  if (navDepth.value === 0) {
-    if (item.key === 'projects') {
-      slideDir.value = 'fwd'; navDepth.value = 1
-    } else if (ADMIN_ROUTES[item.key]) {
-      navigateTo(ADMIN_ROUTES[item.key])
-    }
-  }
-}
-
-function onSelect(item: NavItem) {
-  navigateTo(`/admin/projects/${item.key}`)
-}
-
-function onBack() {
-  slideDir.value = 'back'
-  if (navDepth.value === 1) navDepth.value = 0
-}
+const adminNav = useAdminNav()
 
 const projectsCache = useState<any[]>('cache-admin-projects', () => [])
 const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects', {
@@ -139,8 +56,8 @@ watch(projects, (value) => { if (Array.isArray(value)) projectsCache.value = val
 async function reloadProjects() {
   try { const result = await $fetch<any[]>('/api/projects'); if (Array.isArray(result)) { projects.value = result; projectsCache.value = result } } catch { /* silent */ }
 }
-onMounted(reloadProjects)
-onActivated(reloadProjects)
+onMounted(async () => { await adminNav.ensureSection('projects'); reloadProjects() })
+onActivated(async () => { await adminNav.ensureSection('projects'); reloadProjects() })
 
 const CORE_PAGE_LABELS: Record<string, string> = { materials: 'материалы', tz: 'ТЗ', profile_customer: 'профиль клиента' }
 const corePageLabels = Object.values(CORE_PAGE_LABELS)
