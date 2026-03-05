@@ -385,7 +385,7 @@ async function save() {
   cursor: pointer;
   user-select: none;
   border: none;
-  border-radius: 999px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--glass-bg, #fff) 88%, transparent);
   color: var(--glass-text);
   opacity: .7;

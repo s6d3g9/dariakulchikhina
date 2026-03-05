@@ -226,7 +226,7 @@ function removeFile(idx: number) {
 
 /* Round action buttons */
 .adaf-add-btn {
-  border: 1px solid var(--glass-border); border-radius: 999px;
+  border: 1px solid var(--glass-border); border-radius: 10px;
   background: none; padding: 6px 18px; font-size: .78rem;
   color: color-mix(in srgb, var(--glass-text) 60%, transparent);
   cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s;
@@ -245,7 +245,7 @@ function removeFile(idx: number) {
 
 .adaf-upload-btn {
   display: inline-flex; align-items: center; gap: 6px;
-  border: 1px solid var(--glass-border); border-radius: 999px;
+  border: 1px solid var(--glass-border); border-radius: 10px;
   padding: 7px 18px; font-size: .78rem;
   color: color-mix(in srgb, var(--glass-text) 60%, transparent);
   cursor: pointer; user-select: none; transition: border-color .15s, color .15s;

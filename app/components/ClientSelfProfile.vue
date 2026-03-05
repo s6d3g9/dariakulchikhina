@@ -660,7 +660,7 @@ async function saveData() {
   padding: 4px 10px; font-size: .76rem; cursor: pointer; user-select: none;
   border: none; color: #aaa; line-height: 1.4;
   background: color-mix(in srgb, var(--glass-bg, #fff) 88%, transparent);
-  border-radius: 999px;
+  border-radius: 10px;
   transition: background .16s, color .16s, border-color .16s, transform .16s;
 }
 .csp-tagopt:hover { color: var(--c-text, #1a1a1a); }
@@ -720,7 +720,7 @@ async function saveData() {
   background: transparent; color: var(--c-text, #1a1a1a);
   border: none;
   background: color-mix(in srgb, var(--glass-bg, #fff) 90%, transparent);
-  border-radius: 999px;
+  border-radius: 10px;
 }
 .csp-btn--outline:hover { opacity: .9; }
 

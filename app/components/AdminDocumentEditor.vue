@@ -2078,7 +2078,7 @@ async function saveDocument() {
   display: flex; align-items: center; gap: 4px;
 }
 .de-badge {
-  font-size: .5rem; padding: 0 4px; border-radius: 999px; line-height: 1.5;
+  font-size: .5rem; padding: 0 4px; border-radius: 10px; line-height: 1.5;
   background: color-mix(in srgb, var(--ds-accent, #6366f1) 15%, transparent);
   color: var(--ds-accent, #6366f1); opacity: 1;
 }
@@ -2096,7 +2096,7 @@ async function saveDocument() {
 .de-preview-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .de-preview-chip {
   font-size: var(--ds-text-xs, .7rem); color: var(--glass-text); opacity: .5;
-  padding: 3px 10px; border-radius: 999px;
+  padding: 3px 10px; border-radius: 10px;
   background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
 .de-preview-chip--executor {
@@ -2199,7 +2199,7 @@ async function saveDocument() {
 .de-autosave-status {
   font-size: var(--ds-text-xs, .68rem);
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 10px;
   transition: opacity .3s;
 }
 .de-autosave-status--saving { color: var(--glass-text); opacity: .5; }
@@ -2484,7 +2484,7 @@ async function saveDocument() {
 .de-citations-count {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: 999px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--ds-success, #16a34a) 15%, transparent); color: var(--ds-success, #16a34a);
   font-size: .62rem; font-weight: 700;
   margin-right: auto;

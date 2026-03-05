@@ -2707,7 +2707,7 @@ async function saveProfile() {
 .u-tag--picker {
   border: 1px solid var(--glass-border, rgba(255,255,255,.3));
   background: var(--glass-bg, rgba(255,255,255,.2));
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 6px 12px;
   font-size: .8rem;
   font-weight: 600;

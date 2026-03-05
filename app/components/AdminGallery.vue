@@ -596,7 +596,7 @@ async function del(id: number) {
 .agal-badge {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 20px; padding: 0 5px;
-  border-radius: 999px; font-size: .62rem;
+  border-radius: 10px; font-size: .62rem;
   background: color-mix(in srgb, var(--glass-text) 9%, transparent); color: var(--glass-text, #1a1a1a);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }

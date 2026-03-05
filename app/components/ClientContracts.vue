@@ -141,7 +141,7 @@ function fmtDate(d: string) {
 /* Badge */
 .cct-badge {
   font-size: .62rem; padding: 2px 10px; letter-spacing: .4px;
-  text-transform: uppercase; border-radius: 999px; opacity: 1;
+  text-transform: uppercase; border-radius: 10px; opacity: 1;
 }
 .cct-badge--gray   { background: color-mix(in srgb, var(--glass-text) 8%, transparent); color: color-mix(in srgb, var(--glass-text) 50%, transparent); }
 .cct-badge--blue   { background: rgba(37,99,235,.08); color: #2563eb; }

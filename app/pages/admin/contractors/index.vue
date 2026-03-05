@@ -439,7 +439,7 @@ html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; 
 
 .ct-project-pool-title { font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; opacity: .48; margin-bottom: 6px; }
 .ct-projects-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-.ct-project-tag { display: inline-flex; align-items: center; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--glass-text); border-radius: 999px; padding: 6px 12px; font-size: .78rem; font-weight: 600; cursor: pointer; transition: all .18s ease; }
+.ct-project-tag { display: inline-flex; align-items: center; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--glass-text); border-radius: 10px; padding: 6px 12px; font-size: .78rem; font-weight: 600; cursor: pointer; transition: all .18s ease; }
 .ct-project-tag:hover { opacity: .9; }
 .ct-project-tag--active { background: color-mix(in srgb, var(--ds-accent, #6366f1) 14%, transparent); color: var(--ds-accent, #6366f1); border-color: color-mix(in srgb, var(--ds-accent, #6366f1) 40%, var(--glass-border)); }
 .tag-shift-move, .tag-shift-enter-active, .tag-shift-leave-active { transition: all .22s ease; }

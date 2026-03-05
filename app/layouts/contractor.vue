@@ -146,7 +146,7 @@ async function logout() {
 .contractor-logout-btn {
   font-size: .78rem;
   padding: 5px 14px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid var(--glass-border, rgba(255,255,255,0.3));
   background: none;
   cursor: pointer;
@@ -164,7 +164,7 @@ async function logout() {
 .theme-dot {
   width: 18px;
   height: 18px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: none;
   background: color-mix(in srgb, var(--bg) 72%, var(--glass-page-bg, #f7f7f7) 28%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);

@@ -108,7 +108,7 @@ const buildProgress = computed(() => {
 /* ── Pill badge ── */
 .cwp-pill {
   font-size: .6rem; letter-spacing: .4px; text-transform: uppercase;
-  padding: 1px 7px; border-radius: 999px;
+  padding: 1px 7px; border-radius: 10px;
   background: var(--glass-bg); white-space: nowrap;
   color: var(--glass-text); opacity: .4;
 }

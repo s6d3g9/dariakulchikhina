@@ -108,7 +108,7 @@ function fmtDate(val: string | null | undefined): string {
 
 .ctz-badge {
   display: inline-block; font-size: .66rem; letter-spacing: .4px; text-transform: uppercase;
-  padding: 2px 10px; border-radius: 999px; width: fit-content;
+  padding: 2px 10px; border-radius: 10px; width: fit-content;
   background: var(--glass-bg); color: var(--glass-text); opacity: .6;
 }
 .ctz-badge--signed { color: #16a34a; background: rgba(22,163,74,.08); opacity: 1; }

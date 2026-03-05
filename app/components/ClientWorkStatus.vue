@@ -62,7 +62,7 @@ const { data: items, pending } = await useFetch<any[]>(`/api/projects/${props.sl
 /* Badges */
 .cws-badge {
   font-size: .65rem; letter-spacing: .4px; text-transform: uppercase;
-  padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+  padding: 3px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;
   border: none;
   background: var(--glass-bg);
   color: var(--glass-text); opacity: .5;

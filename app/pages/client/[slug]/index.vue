@@ -498,7 +498,7 @@ async function updateVisitStatus(status: string) {
   display: inline-block;
   font-size: .62rem;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: 10px;
   font-weight: 600;
   margin-bottom: 8px;
 }

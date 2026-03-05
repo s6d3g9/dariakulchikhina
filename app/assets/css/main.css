@@ -21,7 +21,7 @@ button, a, input, select, textarea, summary {
 /* ── Border-radius bridge — maps component patterns to tokens */
 .glass-surface, .glass-card, .glass-chip,
 .a-modal, .admin-dropdown, .std-sidenav {
-  border-radius: var(--card-radius, 14px);
+  border-radius: var(--card-radius, 10px);
 }
 /* ── Global form-control base ────────────────────────────────
    Sets token-based bg/color/border on ALL inputs so they never
@@ -56,7 +56,7 @@ select:focus {
 .glass-input, input[type="text"], input[type="email"],
 input[type="password"], input[type="search"], input[type="number"],
 textarea, select {
-  border-radius: var(--input-radius, 0px);
+  border-radius: var(--input-radius, 10px);
 }
 
 :root {
@@ -72,7 +72,7 @@ textarea, select {
   --btn-color:      #ffffff;
   --btn-border:     rgba(0, 0, 0, 0.14);
   --btn-border-base: rgba(0, 0, 0, 0.14);
-  --btn-radius:     0px;
+  --btn-radius: 10px;
   --btn-sm-bg:      transparent;
   --btn-sm-border:  rgba(0, 0, 0, 0.12);
   --btn-transform:  none;
@@ -102,8 +102,8 @@ textarea, select {
   --glass-border-alpha: 0.1;
   --glass-shadow-alpha: 0;
   --glass-saturation: 100%;
-  --card-radius:    0px;
-  --input-radius:   0px;
+  --card-radius: 10px;
+  --input-radius: 10px;
   --input-padding-h: 16px;
   --input-padding-v: 12px;
   --input-font-size: var(--ds-text-sm, .833rem);
@@ -113,8 +113,8 @@ textarea, select {
   --dropdown-bg:     rgba(255, 255, 255, 0.97);
   --dropdown-border: rgba(0, 0, 0, 0.10);
   --dropdown-shadow: 0 4px 24px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.02);
-  --chip-radius:    0px;
-  --modal-radius:   0px;
+  --chip-radius: 10px;
+  --modal-radius: 10px;
   --btn-weight:     400;
 
   /* ── Type scale (modular ratio 1.25) ── */
@@ -200,13 +200,13 @@ textarea, select {
 }
 
 /* ── Work-status global utility classes ──────────────────── */
-.ws-status--pending   { color: var(--ws-color-pending);   background: var(--ws-bg-pending);   border-radius: var(--status-pill-radius, 999px); }
-.ws-status--planned   { color: var(--ws-color-planned);   background: var(--ws-bg-planned);   border-radius: var(--status-pill-radius, 999px); }
-.ws-status--progress  { color: var(--ws-color-progress);  background: var(--ws-bg-progress);  border-radius: var(--status-pill-radius, 999px); }
-.ws-status--done      { color: var(--ws-color-done);      background: var(--ws-bg-done);      border-radius: var(--status-pill-radius, 999px); }
-.ws-status--paused    { color: var(--ws-color-paused);    background: var(--ws-bg-paused);    border-radius: var(--status-pill-radius, 999px); }
-.ws-status--cancelled { color: var(--ws-color-cancelled); background: var(--ws-bg-cancelled); border-radius: var(--status-pill-radius, 999px); }
-.ws-status--skipped   { color: var(--ws-color-skipped);   background: var(--ws-bg-skipped);   border-radius: var(--status-pill-radius, 999px); opacity: .5; }
+.ws-status--pending   { color: var(--ws-color-pending);   background: var(--ws-bg-pending);   border-radius: var(--status-pill-radius, 10px); }
+.ws-status--planned   { color: var(--ws-color-planned);   background: var(--ws-bg-planned);   border-radius: var(--status-pill-radius, 10px); }
+.ws-status--progress  { color: var(--ws-color-progress);  background: var(--ws-bg-progress);  border-radius: var(--status-pill-radius, 10px); }
+.ws-status--done      { color: var(--ws-color-done);      background: var(--ws-bg-done);      border-radius: var(--status-pill-radius, 10px); }
+.ws-status--paused    { color: var(--ws-color-paused);    background: var(--ws-bg-paused);    border-radius: var(--status-pill-radius, 10px); }
+.ws-status--cancelled { color: var(--ws-color-cancelled); background: var(--ws-bg-cancelled); border-radius: var(--status-pill-radius, 10px); }
+.ws-status--skipped   { color: var(--ws-color-skipped);   background: var(--ws-bg-skipped);   border-radius: var(--status-pill-radius, 10px); opacity: .5; }
 
 /* ── Universal status-indicator dots ———————————————————
    Matches any BEM modifier: .xxx-dot--gray, .yyy-dot--blue, etc.
@@ -338,7 +338,7 @@ html.dark .glass-page::before {
 }
 
 .glass-card {
-  border-radius: var(--card-radius, 0px);
+  border-radius: var(--card-radius, 10px);
 }
 
 html.dark .glass-surface,
@@ -353,7 +353,7 @@ html.dark .glass-card {
   background: var(--chip-bg, var(--glass-bg));
   color: var(--glass-text);
   padding: var(--chip-padding-v, 3px) var(--chip-padding-h, 9px);
-  border-radius: var(--chip-radius, 999px); /* override the card-radius bridge */
+  border-radius: var(--chip-radius, 10px); /* override the card-radius bridge */
   -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
   backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
 }
@@ -426,7 +426,7 @@ html.dark .glass-input::placeholder {
 /* ── Unified cabinet/menu primitives (0.2 briefing style) ── */
 .std-sidenav {
   border: none;
-  border-radius: var(--card-radius, 14px);
+  border-radius: var(--card-radius, 10px);
   background: var(--glass-bg);
   box-shadow: var(--ds-shadow, var(--glass-shadow));
   -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
@@ -460,7 +460,7 @@ html.dark .glass-input::placeholder {
   text-decoration: none;
   text-align: left;
   padding: var(--nav-item-padding-v, 9px) var(--nav-item-padding-h, 10px);
-  border-radius: var(--nav-item-radius, 9px);
+  border-radius: var(--nav-item-radius, 10px);
   background: transparent;
   color: var(--glass-text);
   font-family: var(--ds-font-family);
@@ -493,7 +493,7 @@ html.dark .glass-input::placeholder {
   .std-nav-item {
     width: auto;
     flex-shrink: 0;
-    border-radius: 999px;
+    border-radius: 10px;
     padding: 7px 12px;
     font-size: var(--ds-text-xs, .74rem);
   }
@@ -644,7 +644,7 @@ html.dark .glass-input::placeholder {
 .ent-sidebar-count {
   font-size: .58rem;
   padding: 1px 7px;
-  border-radius: var(--chip-radius, 999px);
+  border-radius: var(--chip-radius, 10px);
   background: color-mix(in srgb, var(--glass-text) 8%, transparent);
   color: var(--glass-text);
   opacity: .5;
@@ -736,7 +736,7 @@ html.dark .glass-input::placeholder {
   letter-spacing: .04em;
   font-weight: 600;
   padding: 1px 5px;
-  border-radius: var(--chip-radius, 999px);
+  border-radius: var(--chip-radius, 10px);
   flex-shrink: 0;
 }
 
@@ -836,7 +836,7 @@ html.dark .glass-input::placeholder {
 .ent-detail-chip {
   font-size: var(--ds-text-xs, .7rem);
   padding: 2px 9px;
-  border-radius: var(--chip-radius, 999px);
+  border-radius: var(--chip-radius, 10px);
   text-decoration: none;
   color: var(--ds-accent, #6366f1);
   background: color-mix(in srgb, var(--ds-accent, #6366f1) 8%, transparent);
@@ -921,7 +921,7 @@ html.dark .glass-input::placeholder {
 .ent-nav-skeleton {
   height: 36px;
   margin: 4px 8px;
-  border-radius: 0px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--glass-text) 5%, transparent);
   animation: ent-pulse 1.2s ease-in-out infinite;
 }
@@ -941,7 +941,7 @@ html.dark .glass-input::placeholder {
 }
 .ent-skeleton-line {
   height: 14px;
-  border-radius: 0px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--glass-text) 6%, transparent);
   animation: ent-pulse 1.2s ease-in-out infinite;
 }
@@ -1005,7 +1005,7 @@ html.dark .glass-input::placeholder {
 .cab-sidebar {
   width: var(--ds-sidebar-width, 200px);
   flex-shrink: 0;
-  border-radius: var(--card-radius, 14px);
+  border-radius: var(--card-radius, 10px);
   padding: 12px 0;
   position: sticky;
   top: 80px;
@@ -1091,7 +1091,7 @@ html.dark .glass-input::placeholder {
   text-align: center;
   opacity: .55;
   border: 1px dashed color-mix(in srgb, var(--glass-text) 12%, transparent);
-  border-radius: var(--card-radius, 14px);
+  border-radius: var(--card-radius, 10px);
 }
 .cab-empty-icon { font-size: 2rem; margin-bottom: 10px; }
 
@@ -1116,7 +1116,7 @@ html.dark .glass-input::placeholder {
   align-items: center;
   justify-content: space-between;
   padding: 32px;
-  border-radius: var(--card-radius, 0px);
+  border-radius: var(--card-radius, 10px);
   margin-bottom: 24px;
   gap: 16px;
   flex-wrap: wrap;
@@ -1157,7 +1157,7 @@ html.dark .glass-input::placeholder {
 }
 .dash-quick-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 24px 16px; border-radius: var(--card-radius, 0px);
+  padding: 24px 16px; border-radius: var(--card-radius, 10px);
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
   color: var(--glass-text); cursor: pointer; gap: 12px;
@@ -1180,14 +1180,14 @@ html.dark .glass-input::placeholder {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 16px; margin-bottom: 24px;
 }
-.dash-stat      { padding: 24px 20px; border-radius: var(--card-radius, 0px); text-align: left; border: 1px solid var(--glass-border); }
+.dash-stat      { padding: 24px 20px; border-radius: var(--card-radius, 10px); text-align: left; border: 1px solid var(--glass-border); }
 .dash-stat-val  { font-size: 2rem; font-weight: 500; line-height: 1; letter-spacing: -0.02em; }
 .dash-stat-label { font-size: .75rem; opacity: .7; margin-top: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
 .dash-stat--blue  .dash-stat-val { color: var(--glass-text); }
 .dash-stat--green .dash-stat-val { color: var(--glass-text); }
 .dash-stat--red   .dash-stat-val { color: var(--glass-text); }
 
-.dash-progress { padding: 32px 24px; border-radius: var(--card-radius, 0px); margin-bottom: 24px; border: 1px solid var(--glass-border); }
+.dash-progress { padding: 32px 24px; border-radius: var(--card-radius, 10px); margin-bottom: 24px; border: 1px solid var(--glass-border); }
 .dash-progress-head { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: .85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; }
 .dash-progress-bar-wrap { height: 2px; background: color-mix(in srgb, var(--glass-text) 15%, transparent); border-radius: 0; overflow: hidden; }
 .dash-progress-bar { height: 100%; background: var(--glass-text); border-radius: 0; }
@@ -1198,7 +1198,7 @@ html.dark .glass-input::placeholder {
 }
 
 .dash-projects, .dash-deadlines, .dash-nodue {
-  padding: 32px 24px; border-radius: var(--card-radius, 0px); margin-bottom: 24px; border: 1px solid var(--glass-border);
+  padding: 32px 24px; border-radius: var(--card-radius, 10px); margin-bottom: 24px; border: 1px solid var(--glass-border);
 }
 .dash-projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 .dash-project-card {
@@ -1209,7 +1209,7 @@ html.dark .glass-input::placeholder {
 }
 .dash-project-name   { font-size: 1rem; font-weight: 500; text-transform: uppercase; }
 .dash-project-slug   { font-size: .8rem; opacity: .5; margin-top: 4px; letter-spacing: 0.1em; }
-.dash-project-status { font-size: .75rem; padding: 2px 8px; border-radius: 0px; width: fit-content; border: 1px solid var(--glass-border); text-transform: uppercase; margin-top: 8px;}
+.dash-project-status { font-size: .75rem; padding: 2px 8px; border-radius: 10px; width: fit-content; border: 1px solid var(--glass-border); text-transform: uppercase; margin-top: 8px;}
 .dash-project-price  { font-size: .85rem; color: var(--glass-text); margin-top: 4px;}
 .dash-project-area   { font-size: .8rem; opacity: .7; }
 
@@ -1239,7 +1239,7 @@ html.dark .glass-input::placeholder {
 .cab-cta-btn {
   margin-left: auto; white-space: nowrap;
   background: var(--ds-accent, #4a80f0); color: #fff; border: none;
-  padding: 10px 20px; border-radius: 0px; cursor: pointer; font-size: .88rem;
+  padding: 10px 20px; border-radius: 10px; cursor: pointer; font-size: .88rem;
 }
 .cab-cta-btn:hover { opacity: .85; }
 
@@ -1350,7 +1350,7 @@ html.dark .glass-input::placeholder {
 
 /* ── Cabinet staff (contractor) ── */
 .cab-staff-list { display: flex; flex-direction: column; gap: 10px; }
-.cab-staff-card { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-radius: var(--card-radius, 14px); text-decoration: none; color: var(--glass-text); }
+.cab-staff-card { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-radius: var(--card-radius, 10px); text-decoration: none; color: var(--glass-text); }
 .cab-staff-avatar { width: 42px; height: 42px; border-radius: 50%; background: color-mix(in srgb, var(--ds-accent, #4a80f0) 12%, transparent); border: 1px solid color-mix(in srgb, var(--ds-accent, #4a80f0) 20%, transparent); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
 .cab-staff-info  { flex: 1; min-width: 0; }
 .cab-staff-name  { font-size: .92rem; font-weight: 600; margin-bottom: 3px; }
@@ -1369,7 +1369,7 @@ html.dark .glass-input::placeholder {
 .cab-portfolio-stat-val { font-size: 1.8rem; font-weight: 800; line-height: 1; color: var(--ds-accent, #4a80f0); display: block; }
 .cab-portfolio-stat-label { font-size: .72rem; opacity: .5; margin-top: 4px; display: block; }
 .cab-portfolio-grid { display: flex; flex-direction: column; gap: 14px; }
-.cab-portfolio-proj { padding: 14px 18px; border-radius: var(--card-radius, 14px); }
+.cab-portfolio-proj { padding: 14px 18px; border-radius: var(--card-radius, 10px); }
 .cab-portfolio-proj-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .cab-portfolio-proj-title { font-size: .92rem; font-weight: 700; }
 .cab-portfolio-proj-progress { font-size: .78rem; font-weight: 600; opacity: .5; }
@@ -1403,7 +1403,7 @@ html.dark .glass-input::placeholder {
 .cab-stages-inline-pct { font-size: .82rem; font-weight: 700; color: var(--ds-accent, #4a80f0); }
 .cab-stages-inline-bar-wrap { height: 6px; background: color-mix(in srgb, var(--glass-text) 8%, transparent); border-radius: 99px; overflow: hidden; margin-bottom: 12px; }
 .cab-stages-inline-bar { height: 100%; background: var(--ds-accent, #4a80f0); border-radius: 99px; }
-.cab-stage-check-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 0px; cursor: pointer; transition: all .15s; }
+.cab-stage-check-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; cursor: pointer; transition: all .15s; }
 .cab-stage-check-row:hover { background: color-mix(in srgb, var(--glass-text) 4%, transparent); }
 .cab-stage-check-row.done { opacity: .55; }
 .cab-stage-check-icon { font-size: .85rem; width: 18px; text-align: center; }
@@ -1763,7 +1763,7 @@ html.dark .glass-input::placeholder {
   color: var(--glass-text);
   opacity: .45;
   padding: 2px 6px;
-  border-radius: 0px;
+  border-radius: 10px;
   transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
 }
 .u-modal__close:hover {
@@ -1832,7 +1832,7 @@ html.dark .glass-input::placeholder {
   font-size: var(--ds-text-xs, .65rem);
   font-weight: 600;
   letter-spacing: .03em;
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 2px 8px;
 }
 .u-status--draft {
@@ -1983,7 +1983,7 @@ html.dark .glass-input::placeholder {
   display: inline-flex;
   align-items: center;
   padding: 5px 13px;
-  border-radius: 0px;
+  border-radius: 10px;
   font-size: .82rem;
   border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
   background: color-mix(in srgb, var(--glass-text) 3%, transparent);
@@ -2527,7 +2527,7 @@ html.dark .a-modal label {
 * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb, rgba(127,127,127,.15)) transparent; }
 ::-webkit-scrollbar { width: var(--scrollbar-width, 4px); height: var(--scrollbar-width, 4px); }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb, rgba(127,127,127,.15)); border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb, rgba(127,127,127,.15)); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { filter: brightness(1.2); }
 
 /* ── Tables ──────────────────────────────────────────────────── */
@@ -5288,7 +5288,7 @@ html[data-concept="craft"] textarea,
 html[data-concept="craft"] select {
   background: rgba(255,253,248,0.9) !important;
   border: 1px solid rgba(120,90,50,0.18) !important;
-  border-radius: 0px !important;
+  border-radius: 10px !important;
   color: rgba(50,35,20,0.85) !important;
 }
 html[data-concept="craft"] .glass-input:focus,
@@ -5311,7 +5311,7 @@ html[data-concept="craft"] .a-btn-save {
   background: rgba(80,58,35,0.85) !important;
   color: #f8f4ee !important;
   border: none !important;
-  border-radius: 0px !important;
+  border-radius: 10px !important;
   font-weight: 500 !important;
   letter-spacing: 0.04em !important;
 }

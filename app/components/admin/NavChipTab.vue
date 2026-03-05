@@ -119,7 +119,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onOutside, true))
 .nct-chip {
   width: 22px;
   height: 22px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid var(--glass-border);
   background: transparent;
   color: var(--glass-text);
@@ -171,7 +171,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onOutside, true))
 .nct-option-ini {
   width: 22px;
   height: 22px;
-  border-radius: 999px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -923,7 +923,7 @@ function formatDocDate(value: string) {
 }
 .u-tag--picker {
   border: 1px solid var(--glass-border); background: var(--glass-bg);
-  border-radius: 999px; padding: 6px 12px; font-size: .8rem;
+  border-radius: 10px; padding: 6px 12px; font-size: .8rem;
   font-weight: 600; cursor: pointer; transition: all .18s ease;
 }
 .u-tag--picker:hover { opacity: .92; }

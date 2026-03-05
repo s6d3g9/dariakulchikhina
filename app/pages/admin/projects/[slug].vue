@@ -1115,7 +1115,7 @@ async function unlinkDesigner(designerId: number) {
 .proj-client-linked-chip {
   font-size: .7rem;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--glass-bg);
   color: var(--glass-text);
   border: 1px solid var(--glass-border);
@@ -1306,7 +1306,7 @@ async function unlinkDesigner(designerId: number) {
 .ctr-val  { font-size: .82rem; color: inherit; text-decoration: none; }
 .ctr-val:hover { text-decoration: underline; }
 .ctr-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
-.ctr-chip  { font-size: .7rem; padding: 3px 8px; border: 1px solid var(--border, #e0e0e0); border-radius: 999px; }
+.ctr-chip  { font-size: .7rem; padding: 3px 8px; border: 1px solid var(--border, #e0e0e0); border-radius: 10px; }
 .ctr-notes { font-size: .8rem; color: #888; margin-bottom: 14px; line-height: 1.5; }
 .ctr-link-full { font-size: .72rem; color: #999; text-decoration: none; border-bottom: 1px dashed currentColor; }
 .ctr-link-full:hover { color: inherit; }
@@ -1346,7 +1346,7 @@ async function unlinkDesigner(designerId: number) {
 /* Small circle chip — matches admin layout style */
 .admin-mini-chip {
   width: 24px; height: 24px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
   color: var(--glass-text);
@@ -1475,7 +1475,7 @@ async function unlinkDesigner(designerId: number) {
   height: 30px;
   padding: 0 10px;
   border: 1px solid var(--glass-border);
-  border-radius: 999px;
+  border-radius: 10px;
   background: var(--glass-bg);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);

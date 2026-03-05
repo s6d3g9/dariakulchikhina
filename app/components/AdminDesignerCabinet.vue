@@ -1479,7 +1479,7 @@ async function saveDesignerProjectEdits() {
 }
 .pkg-tag-picker {
   border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--glass-text);
-  border-radius: 999px; padding: 6px 12px; font-size: .78rem; font-weight: 600;
+  border-radius: 10px; padding: 6px 12px; font-size: .78rem; font-weight: 600;
   cursor: pointer; transition: all .18s ease; font-family: inherit;
 }
 .pkg-tag-picker:hover { opacity: .9; }

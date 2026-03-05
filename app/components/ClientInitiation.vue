@@ -324,7 +324,7 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
   display: flex; align-items: center; gap: 7px;
   border: none; padding: 6px 12px;
   background: color-mix(in srgb, var(--glass-bg, #fff) 86%, transparent);
-  border-radius: 999px;
+  border-radius: 10px;
   font-size: .76rem; text-decoration: none; color: inherit;
 }
 .ci-artifact--available { cursor: pointer; }
@@ -340,7 +340,7 @@ const progressPct = computed(() => Math.round((doneCount.value / steps.value.len
 .ci-action-btn {
   border: none; padding: 8px 18px;
   background: color-mix(in srgb, var(--glass-bg, #fff) 90%, transparent);
-  border-radius: 999px;
+  border-radius: 10px;
   font-size: .78rem; text-decoration: none; color: var(--c-text, #333);
   display: inline-flex; align-items: center;
 }

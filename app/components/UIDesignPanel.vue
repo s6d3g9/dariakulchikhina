@@ -3246,7 +3246,7 @@ onBeforeUnmount(() => {
   gap: 4px;
 }
 .dp-chip {
-  padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(0,0,0,.08);
+  padding: 3px 10px; border-radius: 10px; border: 1px solid rgba(0,0,0,.08);
   background: transparent; color: var(--glass-text); font-size: .62rem;
   letter-spacing: .02em; cursor: pointer; font-family: inherit;
   opacity: .5; transition: all .16s;

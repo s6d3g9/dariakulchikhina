@@ -465,7 +465,7 @@ async function save() {
 .acp-chip {
   display: inline-block;
   padding: var(--chip-padding-v, 5px) var(--chip-padding-h, 12px);
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
   font-size: .78rem;

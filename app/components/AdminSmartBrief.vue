@@ -3,244 +3,48 @@
     <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
-      <!-- Section: Family -->
-      <div class="asb-section">
-        <div class="asb-section-title">состав семьи и образ жизни</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in familyFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-if="f.multi"
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-              :placeholder="f.placeholder || ''"
+      <!-- Universal section renderer -->
+      <template v-for="section in allSections" :key="section.title">
+        <div class="asb-section">
+          <div class="asb-section-title">
+            {{ section.title }}
+            <template v-if="section.title === 'требования к проекту'">
+              <span v-if="form.objectType" class="asb-type-hint">{{ objectTypeLabel }}</span>
+              <span v-else class="asb-type-hint asb-type-hint--warn">⚠ укажите тип объекта в параметрах (0.1)</span>
+            </template>
+          </div>
 
-              @blur="save"
-            />
-            <div v-else-if="f.options" class="asb-tagsel">
-              <div class="asb-tagpicker-title">Выбрано</div>
-              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
-                <button
-                  v-for="option in selectedSingleOption((form as any)[f.key])"
-                  :key="`${f.key}-selected-${option}`"
-                  type="button"
-                  class="asb-tagopt asb-tagopt--on"
-                  @click="toggleSingleChoiceAndSave(f.key, option)"
-                >
-                  #{{ option }}
-                </button>
-              </TransitionGroup>
-              <div class="asb-tagpicker-title" style="margin-top: 8px">Доступно</div>
-              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
-                <button
-                  v-for="option in availableSingleOptions(f.options, (form as any)[f.key])"
-                  :key="`${f.key}-available-${option}`"
-                  type="button"
-                  class="asb-tagopt"
-                  @click="toggleSingleChoiceAndSave(f.key, option)"
-                >
-                  #{{ option }}
-                </button>
-              </TransitionGroup>
+          <!-- Requirements section (checkboxes) -->
+          <template v-if="section.title === 'требования к проекту'">
+            <div class="asb-checks-grid">
+              <button
+                v-for="req in filteredRequirements"
+                :key="req.key"
+                type="button"
+                class="asb-tagopt"
+                :class="{ 'asb-tagopt--on': !!(form as any)[req.key] }"
+                @click="toggle(req.key)"
+              >{{ req.label }}</button>
             </div>
-            <input
-              v-else
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-              type="text"
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            >
-          </div>
-        </div>
-      </div>
+          </template>
 
-      <!-- Section: Concept -->
-      <div class="asb-section">
-        <div class="asb-section-title">концепция и атмосфера</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in conceptFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Section: Routines -->
-      <div class="asb-section">
-        <div class="asb-section-title">ритуалы и распорядок</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in routineFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Section: Kitchen -->
-      <div class="asb-section">
-        <div class="asb-section-title">кухня и гастрономия</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in kitchenFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Section: Sport -->
-      <div class="asb-section">
-        <div class="asb-section-title">спорт и домашняя активность</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in sportFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Section: Storage -->
-      <div class="asb-section">
-        <div class="asb-section-title">хранение и хозяйство</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in storageFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Section: Lighting -->
-      <div class="asb-section">
-        <div class="asb-section-title">световые сценарии</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in lightingFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Section: Tech -->
-      <div class="asb-section">
-        <div class="asb-section-title">умный дом и технологии</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in techFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Section: Style -->
-      <div class="asb-section">
-        <div class="asb-section-title">стиль и эстетика</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in styleFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-if="f.multi"
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            />
-            <div v-else-if="f.options" class="asb-tagsel">
-              <div class="asb-tagpicker-title">Выбрано</div>
-              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
-                <button
-                  v-for="option in selectedSingleOption((form as any)[f.key])"
-                  :key="`${f.key}-selected-${option}`"
-                  type="button"
-                  class="asb-tagopt asb-tagopt--on"
-                  @click="toggleSingleChoiceAndSave(f.key, option)"
-                >
-                  #{{ option }}
-                </button>
-              </TransitionGroup>
-              <div class="asb-tagpicker-title" style="margin-top: 8px">Доступно</div>
-              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
-                <button
-                  v-for="option in availableSingleOptions(f.options, (form as any)[f.key])"
-                  :key="`${f.key}-available-${option}`"
-                  type="button"
-                  class="asb-tagopt"
-                  @click="toggleSingleChoiceAndSave(f.key, option)"
-                >
-                  #{{ option }}
-                </button>
-              </TransitionGroup>
+          <!-- Regular fields -->
+          <template v-else>
+            <div class="ass-upload-zone">
+              <div v-for="f in section.fields" :key="f.key" class="ass-upload-row">
+                <label class="ass-field-label">{{ f.label }}</label>
+                <AppComboTags
+                  :model-value="(form as any)[f.key] || ''"
+                  :options="f.options || []"
+                  :placeholder="f.placeholder || ''"
+                  @update:model-value="(v: string) => { (form as any)[f.key] = v }"
+                  @change="save"
+                />
+              </div>
             </div>
-            <input
-              v-else
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-              type="text"
-              @blur="save"
-            >
-          </div>
+          </template>
         </div>
-      </div>
-
-      <!-- Section: Restrictions -->
-      <div class="asb-section">
-        <div class="asb-section-title">ограничения и особые условия</div>
-        <div class="ass-upload-zone">
-          <div v-for="f in restrictFields" :key="f.key" class="ass-upload-row">
-            <label class="ass-field-label">{{ f.label }}</label>
-            <input
-              v-model="(form as any)[f.key]"
-              class="glass-input"
-
-              :placeholder="f.placeholder || ''"
-              @blur="save"
-            />
-          </div>
-        </div>
-      </div>
+      </template>
 
       <!-- Section: Requirements -->
       <div class="asb-section">
@@ -317,102 +121,104 @@ function toggle(key: string) {
   save()
 }
 
-function selectedSingleOption(value: string | null | undefined) {
-  return value ? [value] : []
-}
-
-function availableSingleOptions(options: readonly string[] | undefined, selected: string | null | undefined) {
-  return (options || []).filter(option => option !== selected)
-}
-
-function toggleSingleChoiceAndSave(key: string, option: string) {
-  form[key] = form[key] === option ? '' : option
-  save()
-}
-
 // ── Form field definitions ────────────────────────────────────────
 const familyFields = [
-  { key: 'brief_adults_count',    label: 'Взрослых в семье',            placeholder: 'например: 2' },
-  { key: 'brief_kids_ages',       label: 'Дети (возраст)',               placeholder: 'например: 4 и 8 лет' },
-  { key: 'brief_ergonomics',      label: 'Эргономика (рост, особенности)', placeholder: 'высокий рост, адаптация столешниц...', multi: true },
-  { key: 'brief_handed',          label: 'Доп. параметры',               placeholder: 'левша, физ. ограничения, инвалидное кресло...', multi: true },
-  { key: 'brief_pets_desc',       label: 'Питомцы',                      placeholder: 'порода, размер' },
-  { key: 'brief_pets_zone_detail',label: 'Зона питомца (детали)',        placeholder: 'лапомойка, миски, лоток, будка...', multi: true },
-  { key: 'brief_remote_work',     label: 'Удалённая работа',             options: BRIEF_REMOTE_WORK_OPTIONS },
-  { key: 'brief_guests_freq',     label: 'Частота гостей',               options: BRIEF_GUESTS_FREQ_OPTIONS },
-  { key: 'brief_hobbies',         label: 'Хобби и увлечения',            placeholder: 'музыка, живопись, спорт...', multi: true },
+  { key: 'brief_adults_count',    label: 'Взрослых в семье',            options: ['1', '2', '3', '4', '5+'] },
+  { key: 'brief_kids_ages',       label: 'Дети (возраст)',               options: ['нет детей', 'до 3 лет', '3–7 лет', '7–12 лет', '12–17 лет', 'совершеннолетние'] },
+  { key: 'brief_ergonomics',      label: 'Эргономика (рост, особенности)', options: ['стандартный рост', 'высокий рост (185+)', 'низкий рост', 'адаптация мебели под рост', 'особые потребности'] },
+  { key: 'brief_handed',          label: 'Доп. параметры',               options: ['правша', 'левша', 'физические ограничения', 'инвалидное кресло', 'слабое зрение', 'пожилые жильцы'] },
+  { key: 'brief_pets_desc',       label: 'Питомцы',                      options: ['нет питомцев', 'собака малая', 'собака крупная', 'кошка', 'птица', 'грызуны', 'рыбки'] },
+  { key: 'brief_pets_zone_detail',label: 'Зона питомца (детали)',        options: ['лапомойка', 'встроенные миски', 'скрытый лоток', 'будка / домик', 'когтеточка', 'вольер'] },
+  { key: 'brief_remote_work',     label: 'Удалённая работа',             options: [...BRIEF_REMOTE_WORK_OPTIONS] },
+  { key: 'brief_guests_freq',     label: 'Частота гостей',               options: [...BRIEF_GUESTS_FREQ_OPTIONS] },
+  { key: 'brief_hobbies',         label: 'Хобби и увлечения',            options: ['музыка', 'живопись / рисование', 'спорт', 'йога', 'кулинария', 'коллекционирование', 'рукоделие', 'чтение', 'gaming', 'садоводство', 'фото / видео', 'танцы'] },
 ]
 
 const routineFields = [
-  { key: 'brief_morning_routine', label: 'Утренний ритуал',           placeholder: 'кофе в тишине, утренняя пробежка, завтрак всей семьёй...' },
-  { key: 'brief_evening_routine', label: 'Вечерний ритуал',           placeholder: 'кино, ужин с гостями, чтение, йога...' },
-  { key: 'brief_cooking_role',    label: 'Роль кухни',                placeholder: 'готовим сами, заказываем, профессиональная готовка...' },
-  { key: 'brief_bedroom_needs',   label: 'Спальня / сон',             placeholder: 'раздельные спальни, звукоизоляция, электрошторы...' },
-  { key: 'brief_acoustic_zones',  label: 'Акустика между зонами',     placeholder: 'нужна изоляция кабинета от детской, спальни от кухни...' },
-  { key: 'brief_flex_zones',      label: 'Гибкость / многофункциональность', placeholder: 'зона-трансформер, гостевая = кабинет...' },
-  { key: 'brief_future_changes',  label: 'Будущие изменения',         placeholder: 'планируем ребёнка, родители переедут, расширение...' },
+  { key: 'brief_morning_routine', label: 'Утренний ритуал',    options: ['ранний подъём', 'медленное утро', 'кофе в тишине', 'активная зарядка', 'завтрак всей семьёй', 'работа из дома с утра'] },
+  { key: 'brief_evening_routine', label: 'Вечерний ритуал',    options: ['ужин дома', 'ужин с гостями', 'кино / сериал', 'чтение', 'йога / медитация', 'спорт вечером', 'тихий отдых'] },
+  { key: 'brief_cooking_role',    label: 'Роль кухни',         options: ['готовим каждый день', 'только завтраки', 'по выходным', 'почти не готовим', 'профессиональная готовка', 'заказываем доставку'] },
+  { key: 'brief_bedroom_needs',   label: 'Спальня / сон',      options: ['раздельные спальни', 'большая кровать king-size', 'звукоизоляция', 'электрошторы', 'минимум мебели', 'много хранения в спальне', 'гардеробная'] },
+  { key: 'brief_acoustic_zones',  label: 'Акустика между зонами', options: ['изоляция кабинета', 'изоляция спальни', 'изоляция детской', 'шумоизоляция от соседей', 'не критично'] },
+  { key: 'brief_flex_zones',      label: 'Гибкость / многофункциональность', options: ['гостевая = кабинет', 'зона-трансформер', 'офис дома', 'детская = игровая + учёба', 'столовая = конференц-зона'] },
+  { key: 'brief_future_changes',  label: 'Будущие изменения',  options: ['планируем ребёнка', 'родители переедут', 'расширение жилья', 'ремонт через 5–10 лет', 'не планируем изменений'] },
 ]
 
 const styleFields = [
-  { key: 'brief_style_prefer',    label: 'Стиль',                        options: BRIEF_STYLE_OPTIONS },
-  { key: 'brief_color_mood',      label: 'Цветовая гамма',               options: BRIEF_COLOR_OPTIONS },
-  { key: 'brief_color_palette',   label: 'Цветовая палитра (подробно)', placeholder: 'любимые сочетания, акцентные цвета, табу-цвета...' },
-  { key: 'brief_like_refs',       label: 'Нравится (ссылки / описание)', multi: true, placeholder: 'ссылки на Pinterest, описание...' },
-  { key: 'brief_dislike_refs',    label: 'Не нравится',                  multi: true, placeholder: 'что точно нельзя...' },
-  { key: 'brief_material_prefs',  label: 'Материалы',                    multi: true, placeholder: 'натуральный камень, дерево, металл...' },
-  { key: 'brief_textures',        label: 'Фактуры и текстуры',           placeholder: 'матовое, глянцевое, рельефное, шероховатое...' },
-  { key: 'brief_prints',          label: 'Принты / орнаменты',           placeholder: 'отношение к узорам, паттернам, геометрии...' },
-  { key: 'brief_art',             label: 'Искусство / арт-объекты',      placeholder: 'картины, скульптура, инсталляция, принт...' },
+  { key: 'brief_style_prefer',    label: 'Стиль',                        options: [...BRIEF_STYLE_OPTIONS] },
+  { key: 'brief_color_mood',      label: 'Цветовая гамма',               options: [...BRIEF_COLOR_OPTIONS] },
+  { key: 'brief_color_palette',   label: 'Цветовая палитра (подробно)',  options: ['нейтральные / бежевые', 'чёрно-белое', 'оттенки серого', 'тёплые', 'холодные', 'терракота / охра', 'сине-зелёные', 'пастельные', 'яркие акценты', 'монохром'] },
+  { key: 'brief_like_refs',       label: 'Нравится (ссылки / описание)', placeholder: 'ссылки на Pinterest, описание...', options: [] },
+  { key: 'brief_dislike_refs',    label: 'Не нравится',                  placeholder: 'что точно нельзя...', options: [] },
+  { key: 'brief_material_prefs',  label: 'Материалы',                    options: ['натуральный камень', 'мрамор', 'массив дерева', 'шпон', 'металл', 'стекло', 'бетон', 'кожа', 'ткань / велюр', 'керамика', 'акрил', 'ламинат'] },
+  { key: 'brief_textures',        label: 'Фактуры и текстуры',           options: ['матовое', 'глянцевое', 'рельефное', 'шероховатое', 'бархатное', 'полированное', 'состаренное', 'натуральная фактура'] },
+  { key: 'brief_prints',          label: 'Принты / орнаменты',           options: ['без принтов', 'геометрия', 'флора / ботаника', 'анималистик', 'абстракция', 'ретро-паттерны', 'этнические мотивы'] },
+  { key: 'brief_art',             label: 'Искусство / арт-объекты',      options: ['картины / принты', 'скульптура', 'инсталляция', 'фотоарт', 'зеркала как арт-объект', 'минималистичные акценты', 'без арт-объектов'] },
 ]
 
 const conceptFields = [
-  { key: 'brief_home_mood',        label: 'Настроение дома',           placeholder: 'как выглядит идеальное пространство, ощущения...' },
-  { key: 'brief_return_emotion',   label: 'Эмоция при возвращении',    placeholder: 'что хочется чувствовать, открывая дверь...' },
-  { key: 'brief_space_image',      label: 'Ассоциативный образ',       placeholder: 'это пространство как... (отель, лес, галерея...)' },
+  { key: 'brief_home_mood',        label: 'Настроение дома',        options: ['уют и тепло', 'строгость и чистота', 'лёгкость и воздух', 'роскошь и статус', 'натуральность / эко', 'городской лофт', 'отель-бутик', 'загородная резиденция'] },
+  { key: 'brief_return_emotion',   label: 'Эмоция при возвращении', options: ['покой и тишина', 'радость и энергия', 'вдохновение', 'безопасность', 'свобода', 'уединение'] },
+  { key: 'brief_space_image',      label: 'Ассоциативный образ',    options: ['пятизвёздочный отель', 'скандинавский домик', 'японский минимализм', 'лесная усадьба', 'художественная галерея', 'парижская квартира', 'пентхаус NYC'] },
 ]
 
 const kitchenFields = [
-  { key: 'brief_kitchen_intensity', label: 'Интенсивность кухни',     placeholder: 'готовим каждый день, каждые выходные, профессиональная готовка...' },
-  { key: 'brief_kitchen_surfaces',  label: 'Рабочие поверхности',     placeholder: 'длина, материал, остров, ниша под технику...' },
-  { key: 'brief_kitchen_cabinets',  label: 'Конфигурация гарнитура',  placeholder: 'шкафы до потолка, открытые полки, витрины...' },
-  { key: 'brief_kitchen_hardware',  label: 'Фурнитура и ручки',       placeholder: 'тип открывания (push-to-open, ручки, профиль), материал...' },
-  { key: 'brief_kitchen_cooktop',   label: 'Варочная панель + вытяжка',placeholder: 'газ/индукция, встраиваемая/островная вытяжка...' },
-  { key: 'brief_kitchen_oven',      label: 'Духовой шкаф и СВЧ',      placeholder: 'встроенные, высота расположения, паровая функция...' },
-  { key: 'brief_kitchen_appliances',label: 'Доп. техника',            placeholder: 'винный шкаф, кофемашина, холодильник для напитков...' },
-  { key: 'brief_kitchen_sink',      label: 'Оборудование мойки',      placeholder: 'измельчитель, фильтр питьевой воды, тип крана...' },
+  { key: 'brief_kitchen_intensity', label: 'Интенсивность кухни',     options: ['готовим каждый день', 'только завтраки', 'по выходным', 'почти не готовим', 'профессиональная готовка'] },
+  { key: 'brief_kitchen_surfaces',  label: 'Рабочие поверхности',     options: ['прямая столешница', 'угловая планировка', 'П-образная', 'с островом', 'остров = обеденный стол', 'ниша под технику', 'XL рабочая зона'] },
+  { key: 'brief_kitchen_cabinets',  label: 'Конфигурация гарнитура',  options: ['шкафы до потолка', 'нижний ряд только', 'открытые полки', 'витрины со стеклом', 'смешанная конфигурация', 'встроенная ниша', 'лифтовые фасады'] },
+  { key: 'brief_kitchen_hardware',  label: 'Фурнитура и ручки',       options: ['push-to-open', 'ручки-скобы', 'профиль-рейлинг', 'J-pull профиль', 'точечные ручки', 'фрезерованный паз', 'встроенная подсветка'] },
+  { key: 'brief_kitchen_cooktop',   label: 'Варочная панель + вытяжка', options: ['индукция', 'газ', 'газ + электро (комби)', 'встраиваемая вытяжка', 'островная вытяжка', 'телескопическая вытяжка', 'вытяжка в столешницу'] },
+  { key: 'brief_kitchen_oven',      label: 'Духовой шкаф и СВЧ',      options: ['встроенный духовой шкаф', 'пиролиз', 'паровая функция', 'комбипароварка', 'СВЧ встроенная', '2 духовки', 'на уровне глаз'] },
+  { key: 'brief_kitchen_appliances',label: 'Доп. техника',            options: ['кофемашина встроенная', 'винный шкаф', 'холодильник для напитков', 'льдогенератор', 'тепловой ящик', 'подогрев тарелок', 'вакуумный упаковщик'] },
+  { key: 'brief_kitchen_sink',      label: 'Оборудование мойки',      options: ['измельчитель', 'фильтр питьевой воды', 'смеситель pull-out', 'мойка с крылом', 'смеситель с цифровой температурой', 'встроенный дозатор мыла'] },
 ]
 
 const sportFields = [
-  { key: 'brief_sport_zone',         label: 'Зона спорта и тренажёры', placeholder: 'кардио, силовые, коврик, зеркала...' },
-  { key: 'brief_sport_storage',      label: 'Хранение инвентаря',      placeholder: 'велосипеды, лыжи, мячи, коврики, гантели...' },
-  { key: 'brief_sport_tech',         label: 'Техусловия',              placeholder: 'усиленный пол, вентиляция, розетки, TV-точка...' },
+  { key: 'brief_sport_zone',    label: 'Зона спорта и тренажёры', options: ['беговая дорожка', 'велотренажёр', 'силовые тренажёры', 'коврик для йоги', 'зеркала на стену', 'боксёрская груша', 'теннисный стол'] },
+  { key: 'brief_sport_storage', label: 'Хранение инвентаря',      options: ['крючки для велосипедов', 'лыжи / сноуборды', 'напольные гантели', 'встроенные стойки', 'закрытые шкафы под инвентарь', 'полки-стеллажи'] },
+  { key: 'brief_sport_tech',    label: 'Техусловия',              options: ['усиленный пол', 'резиновое покрытие', 'вентиляция / приток', 'TV-точка на стену', 'розетки 220 В', 'водостойкое покрытие'] },
 ]
 
 const storageFields = [
-  { key: 'brief_storage_volume',     label: 'Объём вещей',             placeholder: 'сколько людей, много сезонного, коллекции, оборудование...' },
-  { key: 'brief_storage_hidden',     label: 'Скрытое хранение',        placeholder: 'чемоданы, инвентарь, «неприкосновенный запас»...' },
-  { key: 'brief_utility_zone',       label: 'Хозяйственная зона',      placeholder: 'стирка, сушка, база пылесоса, глажка...' },
+  { key: 'brief_storage_volume',  label: 'Объём вещей',        options: ['минимальный', 'средний', 'большой (семья)', 'коллекции обуви / одежды', 'сезонное хранение', 'хранение оборудования'] },
+  { key: 'brief_storage_hidden',  label: 'Скрытое хранение',   options: ['чемоданы под кроватью', 'стеллаж в кладовой', 'встроенные шкафы', 'антресоли', 'гардеробная комната'] },
+  { key: 'brief_utility_zone',    label: 'Хозяйственная зона', options: ['стиральная машина', 'сушильная машина', 'встроенная гладильная доска', 'база робота-пылесоса', 'отдельная хозяйственная комната', 'встроенная в ванную'] },
 ]
 
 const lightingFields = [
-  { key: 'brief_light_modes',        label: 'Световые режимы',         placeholder: 'общий, рабочий, уютный, ночной, праздничный...' },
-  { key: 'brief_light_dimming',      label: 'Диммирование',            placeholder: 'зоны с регулировкой яркости, предпочтения...' },
-  { key: 'brief_light_automation',   label: 'Автоматизация',           placeholder: 'датчики движения, мастер-выключатель, расписание...' },
+  { key: 'brief_light_modes',      label: 'Световые режимы',  options: ['общий свет', 'рабочий свет', 'уютный / приглушённый', 'ночник', 'праздничный / динамика', 'акцентный на арт'] },
+  { key: 'brief_light_dimming',    label: 'Диммирование',     options: ['все зоны с диммером', 'только спальня', 'только гостиная', 'без диммирования', 'умные сцены освещения'] },
+  { key: 'brief_light_automation', label: 'Автоматизация',    options: ['датчики движения', 'мастер-выключатель', 'расписание', 'голосовое управление', 'синхронизация со смартфоном', 'без автоматики'] },
 ]
 
 const techFields = [
-  { key: 'brief_smart_control',      label: 'Система управления',      placeholder: 'климат, шторы, безопасность, голосовое управление...' },
-  { key: 'brief_acoustics_type',     label: 'Акустика',                placeholder: 'встроенная (потолочная), напольная, мультирум...' },
-  { key: 'brief_tech_equipment',     label: 'Оборудование',            placeholder: 'центр управления, кабель-каналы, ИБП, NAS...' },
+  { key: 'brief_smart_control',   label: 'Система управления', options: ['климат (тёплый пол / кондей)', 'электрошторы', 'охранная система', 'голосовое управление', 'централизованный хаб', 'умные замки'] },
+  { key: 'brief_acoustics_type',  label: 'Акустика',           options: ['встроенная потолочная', 'напольные колонки', 'настенные колонки', 'мультирум-система', 'домашний кинотеатр', 'компактная Bluetooth'] },
+  { key: 'brief_tech_equipment',  label: 'Оборудование',       options: ['NAS / серверный шкаф', 'ИБП', 'скрытые кабель-каналы', 'зарядные станции', 'центр управления умным домом', 'скрытые розетки в полу'] },
 ]
 
 const restrictFields = [
-  { key: 'brief_allergies',       label: 'Аллергии / чувствительность', placeholder: 'на запахи, пыль, материалы...' },
-  { key: 'brief_deadlines_hard',  label: 'Жёсткие сроки',               placeholder: 'дата заезда, мероприятие...' },
-  { key: 'brief_budget_limits',   label: 'Бюджет',                       placeholder: 'общий бюджет на реализацию...' },
-  { key: 'brief_budget_priorities',label: 'Приоритеты и компромиссы',   placeholder: 'на чём не экономить, где допустим компромисс...' },
-  { key: 'brief_special_notes',   label: 'Особые пожелания',            placeholder: 'любые важные детали...' },
+  { key: 'brief_allergies',        label: 'Аллергии / чувствительность', options: ['на пыль', 'на синтетику', 'на запахи / ЛКМ', 'на формальдегид', 'на латекс', 'нет аллергий', 'астма в анамнезе'] },
+  { key: 'brief_deadlines_hard',   label: 'Жёсткие сроки',               options: ['нет жёсткого дедлайна', 'свадьба / мероприятие', 'рождение ребёнка', 'дата заезда в квартиру', 'сдача объекта'] },
+  { key: 'brief_budget_limits',    label: 'Бюджет',                       options: ['до 1 млн ₽', '1–2 млн ₽', '2–5 млн ₽', '5–10 млн ₽', 'от 10 млн ₽', 'не регламентирован'] },
+  { key: 'brief_budget_priorities',label: 'Приоритеты и компромиссы',    options: ['не экономить: кухня', 'не экономить: сантехника', 'не экономить: освещение', 'компромисс: декор', 'компромисс: бытовая техника', 'компромисс: коридор'] },
+  { key: 'brief_special_notes',    label: 'Особые пожелания',            options: [] },
 ]
+
+// ── Unified section list ─────────────────────────────────────────
+const allSections = computed(() => [
+  { title: 'состав семьи и образ жизни',    fields: familyFields },
+  { title: 'концепция и атмосфера',         fields: conceptFields },
+  { title: 'ритуалы и распорядок',          fields: routineFields },
+  { title: 'кухня и гастрономия',           fields: kitchenFields },
+  { title: 'спорт и домашняя активность',   fields: sportFields },
+  { title: 'хранение и хозяйство',          fields: storageFields },
+  { title: 'световые сценарии',             fields: lightingFields },
+  { title: 'умный дом и технологии',        fields: techFields },
+  { title: 'стиль и эстетика',              fields: styleFields },
+  { title: 'ограничения и особые условия',  fields: restrictFields },
+  { title: 'требования к проекту',          fields: [] },
+])
 
 // ── Save ──────────────────────────────────────────────────────────
 const saving = ref(false)
@@ -508,7 +314,7 @@ async function save() {
 .asb-tagopt {
   padding: 4px 10px; font-size: .74rem; cursor: pointer; user-select: none;
   border: none;
-  border-radius: 999px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--glass-bg, #fff) 88%, transparent);
   color: color-mix(in srgb, var(--glass-text) 55%, transparent);
   transition: background .16s, color .16s, transform .16s;

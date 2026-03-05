@@ -55,7 +55,7 @@ const { isDark, toggleTheme } = useThemeToggle()
 .theme-dot {
   width: 18px;
   height: 18px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: none;
   background: color-mix(in srgb, var(--header-bg) 72%, var(--bg) 28%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);

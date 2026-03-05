@@ -694,7 +694,7 @@ async function logout() {
   line-height: 1;
   letter-spacing: var(--ds-letter-spacing);
   opacity: .62;
-  border-radius: 999px;
+  border-radius: 10px;
   white-space: nowrap;
   transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
 }
@@ -714,7 +714,7 @@ async function logout() {
 /* Small circle chip — matches tab height */
 .admin-mini-chip {
   width: 24px; height: 24px;
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
   color: var(--glass-text);
@@ -856,7 +856,7 @@ async function logout() {
   opacity: .4;
 }
 .admin-drop-ini {
-  width: 22px; height: 22px; border-radius: 999px;
+  width: 22px; height: 22px; border-radius: 10px;
   display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);

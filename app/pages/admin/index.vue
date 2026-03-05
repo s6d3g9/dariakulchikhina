@@ -390,7 +390,7 @@ function followUpUrgency(profile: any): 'red' | 'yellow' | null {
   color: var(--glass-text);
   opacity: .4;
   background: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 1px 8px;
   min-width: 24px;
   text-align: center;
@@ -532,7 +532,7 @@ function followUpUrgency(profile: any): 'red' | 'yellow' | null {
   color: var(--glass-text);
   opacity: .35;
   background: color-mix(in srgb, var(--glass-text) 7%, transparent);
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 1px 6px;
 }
 .kb-col-body {
@@ -633,7 +633,7 @@ function followUpUrgency(profile: any): 'red' | 'yellow' | null {
 .kb-visit-status {
   font-size: .62rem;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: 10px;
   font-weight: 600;
   margin-left: 4px;
 }
@@ -790,7 +790,7 @@ function followUpUrgency(profile: any): 'red' | 'yellow' | null {
   font-size: .7rem;
   font-weight: 500;
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: 10px;
   white-space: nowrap;
 }
 .kb-phase-chip[data-color="gray"]   { background: color-mix(in srgb, var(--glass-text) 7%, transparent); color: var(--glass-text); opacity: .5; }
@@ -949,7 +949,7 @@ html.dark .kb-phase-chip[data-color="teal"]   { background: rgba(94,234,212,.1);
 .pj-pages-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .pj-page-chip {
   font-size: .7rem; padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--glass-text) 6%, transparent);
   color: var(--glass-text); opacity: .55;
   border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);

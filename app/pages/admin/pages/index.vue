@@ -154,7 +154,7 @@ async function save() {
 .pg-btn-add {
   border: none;
   background: color-mix(in srgb, var(--glass-bg) 92%, transparent);
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 8px 16px;
   font-size: .82rem;
   cursor: pointer;
