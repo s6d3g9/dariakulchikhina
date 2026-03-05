@@ -23,8 +23,15 @@
           <span class="ent-sidebar-title">подрядчики</span>
           <span class="ent-sidebar-count">{{ contractors?.length ?? 0 }}</span>
         </div>
-        <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
-        <div class="std-nav">
+        <!-- Intake toggle -->
+        <div class="ct-view-tabs">
+          <button class="ct-view-tab" :class="{ 'ct-view-tab--active': !showIntakes }" @click="showIntakes = false">Список</button>
+          <button class="ct-view-tab" :class="{ 'ct-view-tab--active': showIntakes }" @click="showIntakes = true">
+            Заявки<span v-if="newIntakesCount" class="ct-intake-badge">{{ newIntakesCount }}</span>
+          </button>
+        </div>
+        <input v-if="!showIntakes" v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
+        <div v-if="!showIntakes" class="std-nav">
           <template v-if="pending && !hasContractorsCache">
             <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
           </template>
@@ -53,17 +60,88 @@
             <div v-else-if="!contractors?.length" class="ent-nav-empty">нет подрядчиков</div>
           </template>
         </div>
-        <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button></div>
+
+        <!-- Intakes sidebar list -->
+        <div v-if="showIntakes" class="ct-intake-sidebar">
+          <div v-if="intakesPending" class="ent-nav-skeleton" v-for="i in 4" :key="i" />
+          <template v-else>
+            <button
+              v-for="intake in intakes" :key="intake.id"
+              class="ct-intake-nav-item"
+              :class="{ 'ct-intake-nav-item--active': selectedIntakeId === intake.id }"
+              @click="selectedIntakeId = intake.id"
+            >
+              <span class="ct-intake-name">{{ intake.name }}</span>
+              <span class="ct-intake-status-dot" :class="`ct-intake-dot--${intake.status}`" />
+            </button>
+            <div v-if="!intakes?.length" class="ent-nav-empty">нет заявок</div>
+          </template>
+        </div>
+
+        <div class="ent-sidebar-foot">
+          <button v-if="!showIntakes" class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button>
+        </div>
       </nav>
 
-      <div class="ent-main">
-        <div class="ent-empty-detail">
-          <span class="ent-empty-icon">🏗</span>
-          <span v-if="contractors?.length">Выберите подрядчика из списка</span>
-          <span v-else>Нет подрядчиков — добавьте первого</span>
-          <button v-if="!contractors?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить первого</button>
+        <!-- Intake detail -->
+        <div v-if="showIntakes" class="ent-main">
+          <div v-if="selectedIntake" class="ct-intake-detail glass-surface glass-card">
+            <div class="ct-intake-dhead">
+              <div class="ct-intake-dtitle">{{ selectedIntake.name }}</div>
+              <select v-model="selectedIntake.status" class="ct-intake-status-sel glass-input" @change="updateIntakeStatus(selectedIntake.id, ($event.target as HTMLSelectElement).value)">
+                <option value="new">Новая</option>
+                <option value="reviewed">Рассмотрена</option>
+                <option value="added">Добавлен</option>
+                <option value="rejected">Отклонена</option>
+              </select>
+            </div>
+            <div class="ct-intake-grid">
+              <div class="ct-intake-field" v-if="selectedIntake.companyName">
+                <span class="ct-intake-label">Компания</span>
+                <span class="ct-intake-val">{{ selectedIntake.companyName }}</span>
+              </div>
+              <div class="ct-intake-field">
+                <span class="ct-intake-label">Телефон</span>
+                <a :href="`tel:${selectedIntake.phone}`" class="ct-intake-val ct-intake-link">{{ selectedIntake.phone }}</a>
+              </div>
+              <div class="ct-intake-field" v-if="selectedIntake.email">
+                <span class="ct-intake-label">Email</span>
+                <a :href="`mailto:${selectedIntake.email}`" class="ct-intake-val ct-intake-link">{{ selectedIntake.email }}</a>
+              </div>
+              <div class="ct-intake-field" v-if="selectedIntake.city">
+                <span class="ct-intake-label">Город</span>
+                <span class="ct-intake-val">{{ selectedIntake.city }}</span>
+              </div>
+              <div class="ct-intake-field" v-if="selectedIntake.createdAt">
+                <span class="ct-intake-label">Дата заявки</span>
+                <span class="ct-intake-val">{{ fmtIntakeDate(selectedIntake.createdAt) }}</span>
+              </div>
+            </div>
+            <div v-if="selectedIntake.workTypes?.length" class="ct-intake-wt">
+              <div class="ct-intake-label">Виды работ</div>
+              <div class="ct-intake-chips">
+                <span v-for="wt in selectedIntake.workTypes" :key="wt" class="ct-intake-chip">{{ wt }}</span>
+              </div>
+            </div>
+            <div v-if="selectedIntake.notes" class="ct-intake-notes">
+              <div class="ct-intake-label">Примечания</div>
+              <p class="ct-intake-notes-text">{{ selectedIntake.notes }}</p>
+            </div>
+          </div>
+          <div v-else class="ent-empty-detail">
+            <span class="ent-empty-icon">📋</span>
+            <span>Выберите заявку из списка</span>
+          </div>
         </div>
-      </div>
+
+        <div v-if="!showIntakes" class="ent-main">
+          <div class="ent-empty-detail">
+            <span class="ent-empty-icon">🏗</span>
+            <span v-if="contractors?.length">Выберите подрядчика из списка</span>
+            <span v-else>Нет подрядчиков — добавьте первого</span>
+            <button v-if="!contractors?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить первого</button>
+          </div>
+        </div>
 
       <!-- ═══ Status bar ═══ -->
       <AdminProjectStatusBar />
@@ -398,6 +476,27 @@ async function del(id: number) {
   refresh()
 }
 
+// ── Contractor Intakes ─────────────────────────────────
+const showIntakes = ref(false)
+const selectedIntakeId = ref<number | null>(null)
+const { data: intakes, pending: intakesPending, refresh: refreshIntakes } = await useFetch<any[]>(
+  '/api/contractor-intake',
+  { server: false, default: () => [] }
+)
+const newIntakesCount = computed(() => (intakes.value || []).filter((i: any) => i.status === 'new').length)
+const selectedIntake = computed(() => (intakes.value || []).find((i: any) => i.id === selectedIntakeId.value) || null)
+
+async function updateIntakeStatus(id: number, status: string) {
+  try {
+    await $fetch(`/api/contractor-intake/${id}`, { method: 'PUT', body: { status } })
+    refreshIntakes()
+  } catch (e) { console.error(e) }
+}
+function fmtIntakeDate(d: string) {
+  try { return new Date(d).toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }) }
+  catch { return d }
+}
+
 
 </script>
 
@@ -466,4 +565,59 @@ html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; 
 .ct-cert-chip { display: inline-block; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--ds-accent, #6366f1) 10%, transparent); color: var(--ds-accent, #6366f1); font-size: .75rem; font-weight: 500; margin-right: 4px; margin-bottom: 2px; }
 
 @media (max-width: 640px) { .ct-nav-master { padding-left: 10px; } }
+
+/* ── View tabs ── */
+.ct-view-tabs { display: flex; gap: 0; padding: 0 10px 8px; }
+.ct-view-tab {
+  flex: 1; background: none; border: none; padding: 6px 10px;
+  font-size: .72rem; font-weight: 600; cursor: pointer; color: var(--glass-text);
+  opacity: .4; border-bottom: 2px solid transparent; transition: all .12s; font-family: inherit;
+}
+.ct-view-tab:hover { opacity: .7; }
+.ct-view-tab--active { opacity: 1; border-bottom-color: var(--ds-accent, #6366f1); color: var(--ds-accent, #6366f1); }
+.ct-intake-badge {
+  display: inline-block; margin-left: 5px; background: #ef4444; color: #fff;
+  font-size: .55rem; font-weight: 700; border-radius: 20px; padding: 1px 5px; vertical-align: middle;
+}
+
+/* ── Intake sidebar ── */
+.ct-intake-sidebar { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; flex: 1; overflow-y: auto; }
+.ct-intake-nav-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 12px; border-radius: 8px; border: none; background: none;
+  cursor: pointer; font-family: inherit; color: var(--glass-text); text-align: left;
+  transition: background .1s;
+}
+.ct-intake-nav-item:hover { background: color-mix(in srgb, var(--glass-text) 5%, transparent); }
+.ct-intake-nav-item--active { background: color-mix(in srgb, var(--ds-accent, #6366f1) 10%, transparent); }
+.ct-intake-name { font-size: .8rem; }
+.ct-intake-status-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.ct-intake-dot--new      { background: #3b82f6; }
+.ct-intake-dot--reviewed { background: #f59e0b; }
+.ct-intake-dot--added    { background: #16a34a; }
+.ct-intake-dot--rejected { background: #9ca3af; }
+
+/* ── Intake detail ── */
+.ct-intake-detail { padding: 24px 28px; border-radius: 14px; }
+.ct-intake-dhead { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+.ct-intake-dtitle { font-size: 1.1rem; font-weight: 700; flex: 1; }
+.ct-intake-status-sel { max-width: 160px; font-size: .78rem; padding: 5px 10px; }
+.ct-intake-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+@media (max-width: 640px) { .ct-intake-grid { grid-template-columns: 1fr; } }
+.ct-intake-field { display: flex; flex-direction: column; gap: 2px; }
+.ct-intake-label { font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; opacity: .4; font-weight: 600; }
+.ct-intake-val { font-size: .88rem; font-weight: 500; }
+.ct-intake-link { color: var(--ds-accent, #6366f1); text-decoration: none; }
+.ct-intake-link:hover { text-decoration: underline; }
+.ct-intake-wt { margin-bottom: 14px; }
+.ct-intake-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ct-intake-chip {
+  font-size: .72rem; padding: 2px 10px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 12px; opacity: .7;
+}
+.ct-intake-notes { margin-top: 4px; }
+.ct-intake-notes-text { font-size: .84rem; opacity: .6; white-space: pre-line; margin-top: 4px; line-height: 1.5; }
 </style>

@@ -187,6 +187,13 @@
                 </button>
                 <p v-if="visitSaveError" class="proj-vw-error">{{ visitSaveError }}</p>
                 <p v-if="visitSaveOk" class="proj-vw-ok">✓ сохранено</p>
+                <!-- Contact request from client -->
+                <div v-if="project?.profile?.contact_request_slot" class="proj-contact-req" :class="project?.profile?.contact_request_status === 'pending' ? 'proj-contact-req--pending' : ''">
+                  <div class="proj-contact-req-title">📞 Клиент просит перезвонить</div>
+                  <div class="proj-contact-req-slot">{{ project.profile.contact_request_slot }}</div>
+                  <div v-if="project?.profile?.contact_request_msg" class="proj-contact-req-msg">{{ project.profile.contact_request_msg }}</div>
+                  <div class="proj-contact-req-meta">{{ fmtContactReqDate(project.profile.contact_request_at) }}</div>
+                </div>
               </div>
             </div>
 
@@ -590,6 +597,13 @@ async function saveVisitData() {
     savingVisitForm.value = false
   }
 }
+
+function fmtContactReqDate(d: string | undefined) {
+  if (!d) return ''
+  try { return new Date(d).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }
+  catch { return d }
+}
+
 const STATUS_TO_FIRST_PAGE: Record<string, string> = {
   lead:            'first_contact',
   concept:         'space_planning',
@@ -1260,6 +1274,17 @@ async function unlinkDesigner(designerId: number) {
 .proj-vw-save:disabled { opacity: .4; cursor: default; }
 .proj-vw-error { font-size: .67rem; color: #ef4444; margin: 2px 0 0; }
 .proj-vw-ok { font-size: .67rem; color: #22c55e; margin: 2px 0 0; }
+.proj-contact-req {
+  margin-top: 10px; padding: 10px 12px; border-radius: 8px;
+  background: color-mix(in srgb, #3b82f6 8%, transparent);
+  border: 1px solid color-mix(in srgb, #3b82f6 20%, transparent);
+}
+.proj-contact-req--pending { border-color: color-mix(in srgb, #f59e0b 30%, transparent); background: color-mix(in srgb, #f59e0b 8%, transparent); }
+.proj-contact-req-title { font-size: .72rem; font-weight: 700; color: #2563eb; margin-bottom: 3px; }
+.proj-contact-req--pending .proj-contact-req-title { color: #d97706; }
+.proj-contact-req-slot { font-size: .8rem; font-weight: 600; }
+.proj-contact-req-msg { font-size: .75rem; opacity: .65; margin-top: 3px; font-style: italic; }
+.proj-contact-req-meta { font-size: .62rem; opacity: .4; margin-top: 4px; }
 
 /* ── Project header bar ── */
 .proj-header-bar {

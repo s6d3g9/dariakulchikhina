@@ -92,7 +92,36 @@
               <button :disabled="changingVisitStatus" class="cc-va-btn cc-va-btn--postponed" @click="updateVisitStatus('postponed')">↷ перенесён</button>
               <button :disabled="changingVisitStatus" class="cc-va-btn cc-va-btn--cancel" @click="updateVisitStatus('cancelled')">— отменён</button>
             </div>
+            <!-- Rating widget after visit done -->
+            <div v-if="project.profile.visit_status === 'done' && !project.profile.visit_rating && !ratingDone" class="cc-rating-widget">
+              <div class="cc-rating-heading">Оцените выезд</div>
+              <div class="cc-stars">
+                <button v-for="s in 5" :key="s" type="button"
+                  class="cc-star"
+                  :class="{ 'cc-star--active': s <= ratingHover || s <= ratingValue }"
+                  @mouseenter="ratingHover = s"
+                  @mouseleave="ratingHover = 0"
+                  @click="ratingValue = s"
+                >★</button>
+              </div>
+              <textarea v-model="ratingComment" class="cc-rating-textarea" placeholder="Комментарий (необязательно)" rows="2" />
+              <button :disabled="!ratingValue || sendingRating" class="cc-rating-submit" @click="submitRating">
+                {{ sendingRating ? '...' : 'Отправить оценку' }}
+              </button>
+            </div>
+            <div v-else-if="project.profile.visit_status === 'done' && (project.profile.visit_rating || ratingDone)" class="cc-rating-done">
+              <span>Ваша оценка: </span>
+              <span class="cc-stars-given">{{ '★'.repeat(project.profile.visit_rating || ratingValue) }}{{ '☆'.repeat(5 - (project.profile.visit_rating || ratingValue)) }}</span>
+            </div>
           </div>
+          <!-- "Связаться со мной" -->
+          <div v-if="project?.profile?.contact_request_status === 'pending'" class="cc-contact-sent">
+            ✔ Запрос отправлен — свяжемся с вами
+          </div>
+          <button v-else class="cc-contact-btn" @click="showContactModal = true">
+            📞 Связаться со мной
+          </button>
+
           <button @click="logout" class="cc-logout">выйти</button>
         </div>
       </aside>
@@ -118,6 +147,41 @@
       </main>
 
     </div>
+
+    <!-- ── Contact request modal ── -->
+    <Teleport to="body">
+      <div v-if="showContactModal" class="cc-modal-bg" @click.self="showContactModal = false">
+        <div class="cc-modal glass-surface">
+          <div class="cc-modal-head">
+            <span>Выберите удобное время</span>
+            <button class="cc-modal-close" @click="showContactModal = false">✕</button>
+          </div>
+          <div class="cc-modal-body">
+            <div class="cc-slot-grid">
+              <button
+                class="cc-slot"
+                :class="{ 'cc-slot--active': selectedSlot === 'asap' }"
+                @click="selectedSlot = 'asap'"
+              >🚀 Как можно раньше</button>
+              <button
+                v-for="slot in contactSlots" :key="slot.value"
+                class="cc-slot"
+                :class="{ 'cc-slot--active': selectedSlot === slot.value }"
+                @click="selectedSlot = slot.value"
+              >{{ slot.label }}</button>
+            </div>
+            <textarea v-model="contactMessage" class="cc-modal-text" rows="2" placeholder="Вопрос или уточнение (необязательно)" />
+            <p v-if="contactError" class="cc-modal-err">{{ contactError }}</p>
+            <div class="cc-modal-foot">
+              <button class="cc-modal-cancel" @click="showContactModal = false">Отмена</button>
+              <button class="cc-modal-submit" :disabled="!selectedSlot || sendingContact" @click="submitContactRequest">
+                {{ sendingContact ? '...' : 'Отправить' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -267,6 +331,72 @@ async function updateVisitStatus(status: string) {
     console.error('Не удалось обновить статус выезда', e)
   } finally {
     changingVisitStatus.value = false
+  }
+}
+
+// ── Visit rating ─────────────────────────────────────────────────
+const ratingValue   = ref(0)
+const ratingHover   = ref(0)
+const ratingComment = ref('')
+const sendingRating = ref(false)
+const ratingDone    = ref(false)
+
+async function submitRating() {
+  if (!ratingValue.value) return
+  sendingRating.value = true
+  try {
+    await $fetch(`/api/projects/${slug.value}/visit-rating`, {
+      method: 'PUT',
+      body: { visit_rating: ratingValue.value, visit_comment: ratingComment.value },
+      headers: reqHeaders,
+    })
+    ratingDone.value = true
+    await refresh()
+  } catch (e: any) { console.error(e) }
+  finally { sendingRating.value = false }
+}
+
+// ── Contact request ───────────────────────────────────────────────
+const showContactModal = ref(false)
+const selectedSlot     = ref('')
+const contactMessage   = ref('')
+const sendingContact   = ref(false)
+const contactError     = ref('')
+
+// 3 days × 3 slots
+const contactSlots = computed(() => {
+  const slots: Array<{ value: string; label: string }> = []
+  for (let d = 1; d <= 3; d++) {
+    const date = new Date()
+    date.setDate(date.getDate() + d)
+    const label = date.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })
+    const iso   = date.toISOString().slice(0, 10)
+    slots.push(
+      { value: `${iso}T09:00`, label: `${label}, 9:00 – 11:00` },
+      { value: `${iso}T13:00`, label: `${label}, 13:00 – 15:00` },
+      { value: `${iso}T18:00`, label: `${label}, 18:00 – 20:00` },
+    )
+  }
+  return slots
+})
+
+async function submitContactRequest() {
+  if (!selectedSlot.value) return
+  sendingContact.value = true; contactError.value = ''
+  try {
+    await $fetch(`/api/projects/${slug.value}/contact-request`, {
+      method: 'PUT',
+      body: { slot: selectedSlot.value, message: contactMessage.value },
+      headers: reqHeaders,
+    })
+    await refresh()
+    showContactModal.value = false
+    selectedSlot.value = ''
+    contactMessage.value = ''
+  } catch (e: any) {
+    contactError.value = e.data?.message || 'Ошибка отправки'
+  } finally {
+    sendingContact.value = false
   }
 }
 </script>
@@ -542,6 +672,126 @@ async function updateVisitStatus(status: string) {
   transition: opacity 0.15s;
 }
 .cc-logout:hover { opacity: 0.6; }
+
+/* ── Rating widget ──────────────────────────────────────────── */
+.cc-rating-widget {
+  margin-bottom: 10px;
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--glass-border, rgba(180,180,220,0.12));
+}
+.cc-rating-heading {
+  font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em;
+  opacity: .35; margin-bottom: 6px;
+}
+.cc-stars {
+  display: flex; gap: 3px; margin-bottom: 7px;
+}
+.cc-star {
+  font-size: 1.4rem; background: none; border: none; cursor: pointer;
+  padding: 0; color: var(--glass-text); opacity: .2; transition: opacity .1s, color .1s;
+  line-height: 1;
+}
+.cc-star--active { opacity: 1; color: #f59e0b; }
+.cc-rating-textarea {
+  width: 100%; box-sizing: border-box;
+  font-size: .76rem; font-family: inherit;
+  padding: 6px 8px; border-radius: 7px; resize: none;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+  color: var(--glass-text); outline: none; margin-bottom: 7px;
+}
+.cc-rating-submit {
+  width: 100%; padding: 7px; font-size: .74rem; font-family: inherit;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 8px; cursor: pointer; color: var(--glass-text);
+  transition: background .15s;
+}
+.cc-rating-submit:hover:not(:disabled) { background: color-mix(in srgb, var(--glass-text) 18%, transparent); }
+.cc-rating-submit:disabled { opacity: .35; cursor: default; }
+.cc-rating-done {
+  font-size: .72rem; opacity: .6; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 5px;
+}
+.cc-stars-given { color: #f59e0b; letter-spacing: 1px; }
+
+/* ── Contact-me button ──────────────────────────────────────── */
+.cc-contact-btn {
+  width: 100%; padding: 8px 10px; margin-bottom: 10px;
+  font-size: .76rem; font-family: inherit; text-align: left;
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
+  border: 1px solid color-mix(in srgb, #3b82f6 25%, transparent);
+  border-radius: 8px; cursor: pointer; color: var(--glass-text);
+  transition: background .15s;
+}
+.cc-contact-btn:hover { background: color-mix(in srgb, #3b82f6 20%, transparent); }
+.cc-contact-sent {
+  font-size: .72rem; color: #16a34a; margin-bottom: 10px;
+  padding: 6px 8px; border-radius: 7px;
+  background: color-mix(in srgb, #16a34a 10%, transparent);
+  border: 1px solid color-mix(in srgb, #16a34a 20%, transparent);
+}
+
+/* ── Contact modal ──────────────────────────────────────────── */
+.cc-modal-bg {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.4); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.cc-modal {
+  width: 100%; max-width: 420px; border-radius: 14px;
+  padding: 0; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.cc-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; font-size: .84rem; font-weight: 500;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+.cc-modal-close {
+  background: none; border: none; cursor: pointer;
+  font-size: .85rem; opacity: .5; color: var(--glass-text);
+}
+.cc-modal-body { padding: 16px 18px; }
+.cc-slot-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 14px;
+}
+.cc-slot {
+  padding: 9px 6px; font-size: .74rem; font-family: inherit;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  border-radius: 9px; cursor: pointer; text-align: center;
+  background: color-mix(in srgb, var(--glass-bg) 40%, transparent);
+  color: var(--glass-text); transition: background .12s, border-color .12s;
+}
+.cc-slot--active {
+  background: color-mix(in srgb, #3b82f6 15%, transparent);
+  border-color: #3b82f6; font-weight: 600;
+}
+/* "Как можно раньше" span full width */
+.cc-slot-grid .cc-slot:first-child { grid-column: 1 / -1; }
+.cc-modal-text {
+  width: 100%; box-sizing: border-box; resize: none;
+  padding: 8px 10px; font-size: .8rem; font-family: inherit;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  border-radius: 8px; background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+  color: var(--glass-text); outline: none; margin-bottom: 12px;
+}
+.cc-modal-err { font-size: .76rem; color: #dc2626; margin-bottom: 8px; }
+.cc-modal-foot { display: flex; gap: 8px; justify-content: flex-end; }
+.cc-modal-cancel {
+  padding: 8px 18px; font-size: .8rem; font-family: inherit;
+  background: none; border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 8px; cursor: pointer; color: var(--glass-text); opacity: .6;
+}
+.cc-modal-cancel:hover { opacity: 1; }
+.cc-modal-submit {
+  padding: 8px 18px; font-size: .8rem; font-family: inherit;
+  background: #3b82f6; border: none; border-radius: 8px;
+  cursor: pointer; color: #fff; font-weight: 500;
+  transition: opacity .15s;
+}
+.cc-modal-submit:hover:not(:disabled) { opacity: .88; }
+.cc-modal-submit:disabled { opacity: .35; cursor: default; }
 
 /* ── Main content ────────────────────────────────────────────── */
 .cc-main {

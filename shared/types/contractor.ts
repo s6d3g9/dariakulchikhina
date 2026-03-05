@@ -50,6 +50,10 @@ export const ContractorSchema = z.object({
   education: z.string().optional().nullable(),
   certifications: z.array(z.string()).optional().default([]),
   experienceYears: z.number().optional().nullable(),
+  // Оценка и верификация
+  rating:            z.coerce.number().min(0).max(5).optional().nullable(),
+  verified:          z.boolean().optional().default(false),
+  nextAvailableDate: z.string().optional().nullable(),
 })
 export const CreateContractorSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9_-]+$/),

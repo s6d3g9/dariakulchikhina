@@ -8,6 +8,7 @@ import {
   jsonb,
   unique,
   boolean,
+  numeric,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -99,6 +100,10 @@ export const contractors = pgTable('contractors', {
   education: text('education'),
   certifications: text('certifications').array().default([]),
   experienceYears: integer('experience_years'),
+  // Оценка и верификация (для фильтрации клиентом)
+  rating: numeric('rating', { precision: 3, scale: 2 }),
+  verified: boolean('verified').default(false).notNull(),
+  nextAvailableDate: text('next_available_date'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
@@ -312,6 +317,22 @@ export const workStatusItemsRelations = relations(workStatusItems, ({ one }) => 
 }))
 
 // ── Audit log (M5 security) ──────────────────────────────────────────────────
+
+// ── Contractor intake (публичные заявки подрядчиков) ────────────────────────
+
+export const contractorIntakes = pgTable('contractor_intakes', {
+  id:          serial('id').primaryKey(),
+  name:        text('name').notNull(),
+  companyName: text('company_name'),
+  phone:       text('phone').notNull(),
+  email:       text('email'),
+  workTypes:   text('work_types').array().default([]).notNull(),
+  city:        text('city'),
+  notes:       text('notes'),
+  /** 'new' | 'reviewed' | 'added' | 'rejected' */
+  status:      text('status').default('new').notNull(),
+  createdAt:   timestamp('created_at').defaultNow().notNull(),
+})
 
 export const auditLogs = pgTable('audit_logs', {
   id:         serial('id').primaryKey(),
