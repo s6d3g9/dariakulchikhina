@@ -1,101 +1,112 @@
 <template>
-  <div>
-    <div class="ent-layout ent-layout--with-stats">
-      <nav class="ent-sidebar std-sidenav">
-        <div class="ent-sidebar-head">
-          <span class="ent-sidebar-title">поставщики</span>
-          <span class="ent-sidebar-count">{{ allSellers?.length ?? 0 }}</span>
-        </div>
-        <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
-        <div class="std-nav">
-          <template v-if="pending">
-            <div class="ent-nav-skeleton" v-for="i in 3" :key="i" />
-          </template>
-          <template v-else>
-            <button v-for="s in filteredSellers" :key="s.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedSellerId === s.id }" @click="selectedSellerId = s.id">
-              <span class="ent-nav-avatar">{{ s.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-              <span class="ent-nav-name">{{ s.name }}<span v-if="s.city" class="ent-nav-sub">{{ s.city }}</span></span>
-            </button>
-            <div v-if="!filteredSellers.length && searchQuery" class="ent-nav-empty">ничего не найдено</div>
-            <div v-else-if="!allSellers?.length" class="ent-nav-empty">нет поставщиков</div>
-          </template>
-        </div>
-        <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true">+ добавить</button></div>
-      </nav>
+  <Teleport v-if="sidebarActive" to="#admin-sidebar-portal">
+      <!-- ── Layer 1: seller list ── -->
+      <template v-if="!selectedSellerId">
+        <AdminSidebarSwitcher title="поставщики" :count="allSellers?.length ?? 0">
+          <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
+          <div class="std-nav">
+            <template v-if="pending">
+              <div class="ent-nav-skeleton" v-for="i in 3" :key="i" />
+            </template>
+            <template v-else>
+              <button v-for="s in filteredSellers" :key="s.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedSellerId === s.id }" @click="selectSeller(s)">{{ s.name }}</button>
+              <div v-if="!filteredSellers.length && searchQuery" class="ent-nav-empty">ничего не найдено</div>
+              <div v-else-if="!allSellers?.length" class="ent-nav-empty">нет поставщиков</div>
+            </template>
+          </div>
+        </AdminSidebarSwitcher>
+      </template>
 
-      <div class="ent-main">
-        <template v-if="selectedSellerId">
-          <div class="ent-entity-hd">
-            <span class="ent-entity-hd-name">{{ selectedSeller?.name }}</span>
-            <button class="ent-entity-hd-action" @click="openEdit(selectedSeller)">ред.</button>
-          </div>
-          <AdminSellerCabinet :key="selectedSellerId" :seller-id="selectedSellerId" />
-        </template>
-        <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
-          <div class="ent-detail-head">
-            <div class="ent-detail-name">Новый поставщик</div>
-            <button class="a-btn-sm" @click="showCreate = false">✕</button>
-          </div>
-          <input v-model="newName" class="glass-input" style="margin-bottom:8px" placeholder="Название компании / ИП" @keydown.enter="doCreate" />
-          <div class="ent-detail-foot">
-            <button class="a-btn-save" :disabled="!newName.trim() || creating" @click="doCreate">{{ creating ? '…' : 'создать' }}</button>
-            <button class="a-btn-sm" @click="showCreate = false">отмена</button>
-          </div>
+      <!-- ── Layer 2: section nav ── -->
+      <template v-else>
+        <AdminSidebarSwitcher title="поставщики">
+          <button class="ent-back-btn" @click="selectedSellerId = null; pageSection = 'dashboard'">← все поставщики</button>
+          <div class="ent-layer2-name">{{ selectedSeller?.name }}</div>
+          <div class="std-nav">
+          <button
+            v-for="item in SELLER_NAV"
+            :key="item.key"
+            class="ent-nav-item std-nav-item"
+            :class="{ 'ent-nav-item--active': pageSection === item.key }"
+            @click="pageSection = item.key"
+          >{{ item.label }}</button>
         </div>
-        <div v-else class="ent-empty-detail">
-          <span class="ent-empty-icon">🏪</span>
-          <span v-if="allSellers?.length">Выберите поставщика из списка</span>
-          <span v-else>Нет поставщиков — добавьте первого</span>
-          <button v-if="!allSellers?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true">+ добавить первого</button>
+        </AdminSidebarSwitcher>
+      </template>
+  </Teleport>
+
+    <div>
+      <Transition name="tab-fade" mode="out-in">
+      <AdminSellerCabinet
+        v-if="selectedSellerId"
+        :key="selectedSellerId"
+        :seller-id="selectedSellerId"
+        hide-nav
+        :model-section="pageSection"
+        @update:section="pageSection = $event"
+      />
+      <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
+        <div class="ent-detail-head">
+          <div class="ent-detail-name">Новый поставщик</div>
+          <button class="a-btn-sm" @click="showCreate = false">✕</button>
+        </div>
+        <input v-model="newName" class="glass-input" style="margin-bottom:8px" placeholder="Название компании / ИП" @keydown.enter="doCreate" />
+        <div class="ent-detail-foot">
+          <button class="a-btn-save" :disabled="!newName.trim() || creating" @click="doCreate">{{ creating ? '…' : 'создать' }}</button>
+          <button class="a-btn-sm" @click="showCreate = false">отмена</button>
         </div>
       </div>
-
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
+      <div v-else class="ent-empty-detail">
+        <span class="ent-empty-icon">🏪</span>
+        <span v-if="allSellers?.length">Выберите поставщика из списка</span>
+        <span v-else>Нет поставщиков — добавьте первого</span>
+        <button v-if="!allSellers?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true">+ добавить первого</button>
+      </div>
+      </Transition>
     </div>
 
-    <!-- ══ Edit Modal ══ -->
-    <Teleport to="body">
-      <div v-if="showEditModal" class="ct-backdrop" @click.self="closeEdit">
-        <div class="ct-modal glass-surface">
-          <div class="ct-modal-head">
-            <span>редактировать поставщика</span>
-            <button class="ct-modal-close" @click="closeEdit">✕</button>
-          </div>
-          <div class="ct-modal-body">
-            <form @submit.prevent="saveEdit">
-              <div class="ct-form-section">основное</div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Название *</label><input v-model="editForm.name" class="glass-input" required /></div>
-                <div class="u-field"><label class="u-field__label">Компания</label><input v-model="editForm.companyName" class="glass-input" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Контактное лицо</label><input v-model="editForm.contactPerson" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Город</label><input v-model="editForm.city" class="glass-input" /></div>
-              </div>
-              <div class="ct-form-section">контакты</div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Телефон</label><input v-model="editForm.phone" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Email</label><input v-model="editForm.email" class="glass-input" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Telegram</label><input v-model="editForm.telegram" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Сайт</label><input v-model="editForm.website" class="glass-input" placeholder="https://…" /></div>
-              </div>
-              <div class="ct-form-section">примечания</div>
-              <div class="u-field"><textarea v-model="editForm.notes" class="glass-input u-ta" rows="3" placeholder="заметки о поставщике"></textarea></div>
-              <p v-if="editError" class="ct-form-error ct-form-error--bottom">{{ editError }}</p>
-              <div class="ct-modal-foot"><button type="button" class="a-btn-sm" @click="closeEdit">отмена</button><button type="submit" class="a-btn-save" :disabled="editSaving">{{ editSaving ? '...' : 'сохранить' }}</button></div>
-            </form>
-          </div>
+  <!-- ══ Edit Modal ══ -->
+  <Teleport to="body">
+    <div v-if="showEditModal" class="ct-backdrop" @click.self="closeEdit">
+      <div class="ct-modal glass-surface">
+        <div class="ct-modal-head">
+          <span>редактировать поставщика</span>
+          <button class="ct-modal-close" @click="closeEdit">✕</button>
+        </div>
+        <div class="ct-modal-body">
+          <form @submit.prevent="saveEdit">
+            <div class="ct-form-section">основное</div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Название *</label><input v-model="editForm.name" class="glass-input" required /></div>
+              <div class="u-field"><label class="u-field__label">Компания</label><input v-model="editForm.companyName" class="glass-input" /></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Контактное лицо</label><input v-model="editForm.contactPerson" class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">Город</label><input v-model="editForm.city" class="glass-input" /></div>
+            </div>
+            <div class="ct-form-section">контакты</div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Телефон</label><input v-model="editForm.phone" class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">Email</label><input v-model="editForm.email" class="glass-input" /></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Telegram</label><input v-model="editForm.telegram" class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">Сайт</label><input v-model="editForm.website" class="glass-input" placeholder="https://…" /></div>
+            </div>
+            <div class="ct-form-section">примечания</div>
+            <div class="u-field"><textarea v-model="editForm.notes" class="glass-input u-ta" rows="3" placeholder="заметки о поставщике"></textarea></div>
+            <p v-if="editError" class="ct-form-error ct-form-error--bottom">{{ editError }}</p>
+            <div class="ct-modal-foot"><button type="button" class="a-btn-sm" @click="closeEdit">отмена</button><button type="submit" class="a-btn-save" :disabled="editSaving">{{ editSaving ? '...' : 'сохранить' }}</button></div>
+          </form>
         </div>
       </div>
-    </Teleport>
-  </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
+definePageMeta({ layout: 'admin', middleware: ['admin'] })
+const sidebarActive = useSidebarActive()
 
 const route = useRoute()
 const router = useRouter()
@@ -107,10 +118,24 @@ const showCreate = ref(false)
 const newName = ref('')
 const creating = ref(false)
 const selectedSellerId = ref<number | null>(null)
+const pageSection = ref('dashboard')
+
+const SELLER_NAV = [
+  { key: 'dashboard',  icon: '◑', label: 'Обзор' },
+  { key: 'profile',    icon: '◓', label: 'Профиль' },
+  { key: 'requisites', icon: '◎', label: 'Реквизиты' },
+  { key: 'terms',      icon: '⟳', label: 'Условия' },
+  { key: 'projects',   icon: '◒', label: 'Проекты' },
+]
+
+function selectSeller(s: any) {
+  selectedSellerId.value = s.id
+  pageSection.value = 'dashboard'
+}
 
 // Deselect when layout sends signal
 const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
-watch(entityDeselectSignal, () => { selectedSellerId.value = null })
+watch(entityDeselectSignal, () => { selectedSellerId.value = null; pageSection.value = 'dashboard' })
 
 const selectedSeller = computed(() => allSellers.value?.find((s: any) => s.id === selectedSellerId.value) || null)
 

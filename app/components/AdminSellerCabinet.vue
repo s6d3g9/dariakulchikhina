@@ -6,7 +6,7 @@
     </div>
 
     <div v-else-if="seller" class="cab-body">
-      <aside class="cab-sidebar glass-surface std-sidenav">
+      <aside v-if="!props.hideNav" class="cab-sidebar glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav"
@@ -272,7 +272,8 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ sellerId: number }>()
+const props = defineProps<{ sellerId: number; hideNav?: boolean; modelSection?: string }>()
+const emit = defineEmits<{ 'update:section': [string] }>()
 
 const CATEGORY_OPTIONS = [
   'finish', 'plumbing', 'electrical', 'lighting',
@@ -307,6 +308,11 @@ const nav = [
 const section = ref('dashboard')
 const saving = ref(false)
 const saveMsg = ref('')
+
+// ── 2-layer sidebar: accept section from parent page ──
+watch(() => props.modelSection, v => { if (v && v !== section.value) section.value = v })
+watch(section, v => emit('update:section', v))
+watch(() => props.sellerId, () => { section.value = 'dashboard' })
 
 const { data: seller, pending, refresh } = useFetch<any>(() => `/api/sellers/${props.sellerId}`, {
   server: false,

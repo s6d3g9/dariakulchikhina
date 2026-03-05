@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
+definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 type PageCfg = {
   slug: string

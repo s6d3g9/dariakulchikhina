@@ -1,176 +1,160 @@
 <template>
-  <div>
-    <div v-if="projectSlugFilter" class="cl-filter-info glass-surface glass-card">
-      <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
-      <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="cl-filter-link">← к проекту</NuxtLink>
-      <NuxtLink to="/admin/clients" class="cl-filter-link">показать всех</NuxtLink>
-    </div>
+  <div v-if="projectSlugFilter" class="cl-filter-info glass-surface glass-card">
+    <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
+    <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="cl-filter-link">← к проекту</NuxtLink>
+    <NuxtLink to="/admin/clients" class="cl-filter-link">показать всех</NuxtLink>
+  </div>
 
-    <!-- ═══ Unified layout: sidebar always visible ═══ -->
-    <div class="ent-layout ent-layout--with-stats">
-      <nav class="ent-sidebar std-sidenav">
-        <div class="ent-sidebar-head">
-          <span class="ent-sidebar-title">клиенты</span>
-          <span class="ent-sidebar-count">{{ clients?.length ?? 0 }}</span>
+  <!-- ═══ Unified layout: sidebar always visible ═══ -->
+  <Teleport v-if="sidebarActive" to="#admin-sidebar-portal">
+      <!-- Layer 1: client list -->
+      <template v-if="!selectedClientId">
+        <AdminSidebarSwitcher title="клиенты" :count="clients?.length ?? 0">
+          <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
+          <div class="std-nav">
+            <template v-if="pending && !hasClientsCache">
+              <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
+            </template>
+            <template v-else>
+              <button v-for="c in filteredClients" :key="c.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedClientId === c.id }" @click="selectClient(c)">{{ c.name }}</button>
+              <div v-if="filteredClients.length === 0 && searchQuery" class="ent-nav-empty">ничего не найдено</div>
+              <div v-else-if="!clients?.length" class="ent-nav-empty">нет клиентов</div>
+            </template>
+          </div>
+        </AdminSidebarSwitcher>
+      </template>
+
+      <!-- Layer 2: section nav for selected client -->
+      <template v-else>
+        <AdminSidebarSwitcher title="клиенты">
+          <button class="ent-back-btn" @click="selectedClientId = null; clientPage = 'dashboard'">← все клиенты</button>
+          <div class="ent-layer2-name">{{ selectedClient?.name }}</div>
+          <div class="std-nav" v-if="selectedClientSlug">
+          <button
+            class="ent-nav-item std-nav-item"
+            :class="{ 'ent-nav-item--active': clientPage === 'dashboard' }"
+            @click="clientPage = 'dashboard'"
+          >обзор</button>
+          <button
+            v-for="pg in clientNavPages"
+            :key="pg.slug"
+            class="ent-nav-item std-nav-item"
+            :class="{ 'ent-nav-item--active': clientPage === pg.slug }"
+            @click="clientPage = pg.slug"
+          >{{ pg.title }}</button>
         </div>
-        <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
-        <div class="std-nav">
-          <template v-if="pending && !hasClientsCache">
-            <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
-          </template>
-          <template v-else>
-            <button v-for="c in filteredClients" :key="c.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedClientId === c.id }" @click="selectClient(c)">
-              <span class="ent-nav-avatar">{{ c.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-              <span class="ent-nav-name">{{ c.name }}<span v-if="c.linkedProjects?.length" class="ent-nav-sub">{{ c.linkedProjects.map((p: any) => p.title).join(', ') }}</span></span>
-              <span v-if="c.linkedProjects?.length" class="cl-nav-arrow">→</span>
-            </button>
-            <div v-if="filteredClients.length === 0 && searchQuery" class="ent-nav-empty">ничего не найдено</div>
-            <div v-else-if="!clients?.length" class="ent-nav-empty">нет клиентов</div>
-          </template>
-        </div>
-        <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openAdd">+ добавить</button></div>
-      </nav>
+        </AdminSidebarSwitcher>
+      </template>
+  </Teleport>
 
-      <!-- Content area: selected client or empty state -->
-      <div class="ent-main">
-        <template v-if="selectedClient">
-          <!-- Minimal context strip -->
-          <div class="ent-entity-hd">
-            <span class="ent-entity-hd-name">{{ selectedClient.name }}</span>
-            <div class="ent-entity-hd-actions">
-              <button class="ent-entity-hd-action" @click="openEdit(selectedClient)">ред.</button>
-              <button class="ent-entity-hd-action" @click="openLink(selectedClient)">{{ selectedClient.linkedProjects?.length ? 'проект' : 'привязать' }}</button>
-              <button class="ent-entity-hd-action" @click="openDocs(selectedClient)">документы</button>
-              <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" target="_blank" class="ent-entity-hd-action">↗</a>
-            </div>
-          </div>
-
-          <!-- Client has a linked project → sections cabinet -->
-          <div v-if="selectedClientSlug" class="cab-body">
-            <aside class="cab-sidebar glass-surface std-sidenav">
-              <nav class="cab-nav std-nav">
-                <button
-                  class="cab-nav-item std-nav-item"
-                  :class="{ active: clientPage === 'dashboard', 'std-nav-item--active': clientPage === 'dashboard' }"
-                  @click="clientPage = 'dashboard'"
-                ><span class="cab-nav-icon">◈</span> обзор</button>
-                <button
-                  v-for="pg in clientNavPages"
-                  :key="pg.slug"
-                  class="cab-nav-item std-nav-item"
-                  :class="{ active: clientPage === pg.slug, 'std-nav-item--active': clientPage === pg.slug }"
-                  @click="clientPage = pg.slug"
-                ><span class="cab-nav-icon">{{ pg.icon }}</span> {{ pg.title }}</button>
-              </nav>
-            </aside>
-            <main class="cab-main">
-              <div class="cab-inner">
-                <ClientOverview
-                  v-if="clientPage === 'dashboard'"
-                  :slug="selectedClientSlug"
-                  :project="clientProject"
-                  :contractors="[]"
-                  :rm-map="{}"
-                  @navigate="clientPage = $event"
-                />
-                <component
-                  v-else
-                  :is="clientActiveComponent"
-                  v-bind="clientActiveProps"
-                  :key="clientPage"
-                />
-              </div>
-            </main>
-          </div>
-
-          <!-- No project linked → contact card -->
-          <div v-else class="ent-detail-card glass-card" style="margin-top: 16px">
-            <div class="ent-detail-section">контакты</div>
-            <div v-if="selectedClient.phone" class="ent-detail-row">{{ selectedClient.phone }}</div>
-            <div v-if="selectedClient.email" class="ent-detail-row">{{ selectedClient.email }}</div>
-            <div v-if="selectedClient.messengerNick" class="ent-detail-row">{{ selectedClient.messenger ? selectedClient.messenger + ' ' : '' }}{{ selectedClient.messengerNick }}</div>
-            <div v-if="selectedClient.address" class="ent-detail-row">{{ selectedClient.address }}</div>
-            <div v-if="!selectedClient.phone && !selectedClient.email && !selectedClient.messengerNick && !selectedClient.address" class="ent-detail-row" style="opacity:.3">контакты не указаны</div>
-            <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
-            <div class="ent-detail-foot" style="margin-top:16px">
-              <button class="a-btn-save" @click="openLink(selectedClient)">привязать к проекту</button>
-            </div>
-          </div>
+    <!-- Content area -->
+    <div>
+      <Transition name="tab-fade" mode="out-in">
+      <template v-if="selectedClient">
+        <!-- Client has a linked project → sections cabinet -->
+        <template v-if="selectedClientSlug">
+          <ClientOverview
+            v-if="clientPage === 'dashboard'"
+            :slug="selectedClientSlug"
+            :project="clientProject"
+            :contractors="[]"
+            :rm-map="{}"
+            @navigate="clientPage = $event"
+          />
+          <component
+            v-else
+            :is="clientActiveComponent"
+            v-bind="clientActiveProps"
+            :key="clientPage"
+          />
         </template>
 
-        <!-- Nothing selected -->
-        <div v-else class="ent-empty-detail">
-          <span class="ent-empty-icon">👤</span>
-          <span v-if="clients?.length">Выберите клиента из списка</span>
-          <span v-else>Нет клиентов — добавьте первого</span>
-          <button v-if="!clients?.length" class="a-btn-sm" style="margin-top:6px" @click="openAdd">+ добавить</button>
-        </div>
-      </div>
-
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
-    </div>
-
-    <!-- ══ Add/Edit modal ══ -->
-    <Teleport to="body">
-    <div v-if="showModal" class="cl-backdrop" @click.self="closeModal">
-      <div class="cl-modal glass-surface glass-card">
-        <div class="cl-modal-head"><span>{{ editingId ? 'редактировать клиента' : 'новый клиент' }}</span><button class="cl-close" @click="closeModal">✕</button></div>
-        <form class="cl-form" @submit.prevent="save">
-          <div class="cl-field"><label>Имя / Название *</label><input v-model="form.name" class="glass-input" required placeholder="Иванова Анна Сергеевна" autofocus></div>
-          <div class="cl-row"><div class="cl-field"><label>Телефон</label><input v-model="form.phone" class="glass-input" placeholder="+7 999 000 00 00"></div><div class="cl-field"><label>Email</label><input v-model="form.email" class="glass-input" type="email" placeholder="client@mail.ru"></div></div>
-          <div class="cl-row"><div class="cl-field"><label>Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">— не указан</option><option value="Telegram">Telegram</option><option value="WhatsApp">WhatsApp</option><option value="Viber">Viber</option></select></div><div class="cl-field"><label>Ник / номер</label><input v-model="form.messengerNick" class="glass-input" placeholder="@username"></div></div>
-          <div class="cl-field"><label>Адрес</label><AppAddressInput v-model="form.address" input-class="glass-input" placeholder="г. Москва, ул. ..." /></div>
-          <div class="cl-field"><label>Заметки</label><textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="Любые пометки"></textarea></div>
-          <p v-if="saveError" class="cl-error">{{ saveError }}</p>
-          <div class="cl-modal-foot"><button type="button" class="a-btn-sm" @click="closeModal">отмена</button><button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : (editingId ? 'сохранить' : 'добавить') }}</button></div>
-        </form>
-      </div>
-    </div>
-    </Teleport>
-
-    <!-- ══ Link-to-project modal ══ -->
-    <Teleport to="body">
-    <div v-if="showLink" class="cl-backdrop" @click.self="showLink = false">
-      <div class="cl-modal glass-surface glass-card">
-        <div class="cl-modal-head"><span>привязать «{{ linkClient?.name }}» к проекту</span><button class="cl-close" @click="showLink = false">✕</button></div>
-        <div class="cl-form">
-          <div class="cl-field"><label>Выберите проект</label><select v-model="linkProjectSlug" class="glass-input"><option value="">— выберите проект —</option><option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option></select></div>
-          <div v-if="linkProjectSlug" class="cl-link-preview glass-surface"><p class="cl-link-preview-title">Будет заполнено в профиле проекта:</p><ul class="cl-link-list"><li><b>Имя клиента</b> → {{ linkClient?.name }}</li><li v-if="linkClient?.phone"><b>Телефон</b> → {{ linkClient?.phone }}</li><li v-if="linkClient?.email"><b>Email</b> → {{ linkClient?.email }}</li></ul></div>
-          <p v-if="linkError" class="cl-error">{{ linkError }}</p>
-          <div class="cl-modal-foot"><button type="button" class="a-btn-sm" @click="showLink = false">отмена</button><button class="a-btn-save" :disabled="!linkProjectSlug || linking" @click="doLink">{{ linking ? '...' : 'привязать' }}</button></div>
-        </div>
-      </div>
-    </div>
-    </Teleport>
-
-    <!-- ══ Documents modal ══ -->
-    <Teleport to="body">
-    <div v-if="showDocs" class="cl-backdrop" @click.self="closeDocs">
-      <div class="cl-modal glass-surface glass-card" style="max-width:600px">
-        <div class="cl-modal-head"><span>документы «{{ docsClient?.name }}»</span><button class="cl-close" @click="closeDocs">✕</button></div>
-        <div class="cl-form">
-          <div class="cl-row"><div class="cl-field"><label>Поиск</label><input v-model="docsSearch" class="glass-input" placeholder="Название" /></div><div class="cl-field"><label>Категория</label><select v-model="docsFilter" class="glass-input"><option value="">Все</option><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
-          <div class="cl-row"><div class="cl-field"><label>Название</label><input v-model="docsTitle" class="glass-input" placeholder="Название документа" /></div><div class="cl-field"><label>Категория</label><select v-model="docsCategory" class="glass-input"><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
-          <div class="cl-field"><label>Примечание</label><input v-model="docsNotes" class="glass-input" placeholder="Необязательно" /></div>
-          <div style="margin-bottom:14px"><label class="a-btn-save" style="display:inline-flex;align-items:center;cursor:pointer"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadClientDoc" />{{ docsUploading ? 'загрузка…' : '＋ выбрать файл' }}</label></div>
-          <div v-if="filteredClientDocs.length" class="cl-docs-list">
-            <div v-for="doc in filteredClientDocs" :key="doc.id" class="cl-doc-item glass-surface">
-              <div><div class="cl-doc-title">{{ doc.title }}</div><div class="cl-doc-meta">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}<span v-if="doc.notes"> · {{ doc.notes }}</span><span v-if="doc.createdAt"> · {{ formatDocDate(doc.createdAt) }}</span></div></div>
-              <div class="cl-doc-actions"><a v-if="doc.url" :href="doc.url" target="_blank" class="ent-detail-chip">скачать</a><button class="a-btn-sm a-btn-danger" @click="deleteClientDoc(doc.id)">✕</button></div>
-            </div>
+        <!-- No project linked → contact card -->
+        <div v-else class="ent-detail-card glass-card" style="margin-top: 16px">
+          <div class="ent-detail-section">контакты</div>
+          <div v-if="selectedClient.phone" class="ent-detail-row">{{ selectedClient.phone }}</div>
+          <div v-if="selectedClient.email" class="ent-detail-row">{{ selectedClient.email }}</div>
+          <div v-if="selectedClient.messengerNick" class="ent-detail-row">{{ selectedClient.messenger ? selectedClient.messenger + ' ' : '' }}{{ selectedClient.messengerNick }}</div>
+          <div v-if="selectedClient.address" class="ent-detail-row">{{ selectedClient.address }}</div>
+          <div v-if="!selectedClient.phone && !selectedClient.email && !selectedClient.messengerNick && !selectedClient.address" class="ent-detail-row" style="opacity:.3">контакты не указаны</div>
+          <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
+          <div class="ent-detail-foot" style="margin-top:16px">
+            <button class="a-btn-save" @click="openLink(selectedClient)">привязать к проекту</button>
           </div>
-          <div v-else class="ent-empty-detail" style="padding:20px">{{ clientDocs?.length ? 'Ничего не найдено' : 'Документов пока нет' }}</div>
         </div>
+      </template>
+
+      <!-- Nothing selected -->
+      <div v-else class="ent-empty-detail">
+        <span class="ent-empty-icon">👤</span>
+        <span v-if="clients?.length">Выберите клиента из списка</span>
+        <span v-else>Нет клиентов — добавьте первого</span>
+        <button v-if="!clients?.length" class="a-btn-sm" style="margin-top:6px" @click="openAdd">+ добавить</button>
+      </div>
+      </Transition>
+    </div>
+
+  <!-- ══ Add/Edit modal ══ -->
+  <Teleport to="body">
+  <div v-if="showModal" class="cl-backdrop" @click.self="closeModal">
+    <div class="cl-modal glass-surface glass-card">
+      <div class="cl-modal-head"><span>{{ editingId ? 'редактировать клиента' : 'новый клиент' }}</span><button class="cl-close" @click="closeModal">✕</button></div>
+      <form class="cl-form" @submit.prevent="save">
+        <div class="cl-field"><label>Имя / Название *</label><input v-model="form.name" class="glass-input" required placeholder="Иванова Анна Сергеевна" autofocus></div>
+        <div class="cl-row"><div class="cl-field"><label>Телефон</label><input v-model="form.phone" class="glass-input" placeholder="+7 999 000 00 00"></div><div class="cl-field"><label>Email</label><input v-model="form.email" class="glass-input" type="email" placeholder="client@mail.ru"></div></div>
+        <div class="cl-row"><div class="cl-field"><label>Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">— не указан</option><option value="Telegram">Telegram</option><option value="WhatsApp">WhatsApp</option><option value="Viber">Viber</option></select></div><div class="cl-field"><label>Ник / номер</label><input v-model="form.messengerNick" class="glass-input" placeholder="@username"></div></div>
+        <div class="cl-field"><label>Адрес</label><AppAddressInput v-model="form.address" input-class="glass-input" placeholder="г. Москва, ул. ..." /></div>
+        <div class="cl-field"><label>Заметки</label><textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="Любые пометки"></textarea></div>
+        <p v-if="saveError" class="cl-error">{{ saveError }}</p>
+        <div class="cl-modal-foot"><button type="button" class="a-btn-sm" @click="closeModal">отмена</button><button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : (editingId ? 'сохранить' : 'добавить') }}</button></div>
+      </form>
+    </div>
+  </div>
+  </Teleport>
+
+  <!-- ══ Link-to-project modal ══ -->
+  <Teleport to="body">
+  <div v-if="showLink" class="cl-backdrop" @click.self="showLink = false">
+    <div class="cl-modal glass-surface glass-card">
+      <div class="cl-modal-head"><span>привязать «{{ linkClient?.name }}» к проекту</span><button class="cl-close" @click="showLink = false">✕</button></div>
+      <div class="cl-form">
+        <div class="cl-field"><label>Выберите проект</label><select v-model="linkProjectSlug" class="glass-input"><option value="">— выберите проект —</option><option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option></select></div>
+        <div v-if="linkProjectSlug" class="cl-link-preview glass-surface"><p class="cl-link-preview-title">Будет заполнено в профиле проекта:</p><ul class="cl-link-list"><li><b>Имя клиента</b> → {{ linkClient?.name }}</li><li v-if="linkClient?.phone"><b>Телефон</b> → {{ linkClient?.phone }}</li><li v-if="linkClient?.email"><b>Email</b> → {{ linkClient?.email }}</li></ul></div>
+        <p v-if="linkError" class="cl-error">{{ linkError }}</p>
+        <div class="cl-modal-foot"><button type="button" class="a-btn-sm" @click="showLink = false">отмена</button><button class="a-btn-save" :disabled="!linkProjectSlug || linking" @click="doLink">{{ linking ? '...' : 'привязать' }}</button></div>
       </div>
     </div>
-    </Teleport>
   </div>
+  </Teleport>
+
+  <!-- ══ Documents modal ══ -->
+  <Teleport to="body">
+  <div v-if="showDocs" class="cl-backdrop" @click.self="closeDocs">
+    <div class="cl-modal glass-surface glass-card" style="max-width:600px">
+      <div class="cl-modal-head"><span>документы «{{ docsClient?.name }}»</span><button class="cl-close" @click="closeDocs">✕</button></div>
+      <div class="cl-form">
+        <div class="cl-row"><div class="cl-field"><label>Поиск</label><input v-model="docsSearch" class="glass-input" placeholder="Название" /></div><div class="cl-field"><label>Категория</label><select v-model="docsFilter" class="glass-input"><option value="">Все</option><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
+        <div class="cl-row"><div class="cl-field"><label>Название</label><input v-model="docsTitle" class="glass-input" placeholder="Название документа" /></div><div class="cl-field"><label>Категория</label><select v-model="docsCategory" class="glass-input"><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
+        <div class="cl-field"><label>Примечание</label><input v-model="docsNotes" class="glass-input" placeholder="Необязательно" /></div>
+        <div style="margin-bottom:14px"><label class="a-btn-save" style="display:inline-flex;align-items:center;cursor:pointer"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadClientDoc" />{{ docsUploading ? 'загрузка…' : '＋ выбрать файл' }}</label></div>
+        <div v-if="filteredClientDocs.length" class="cl-docs-list">
+          <div v-for="doc in filteredClientDocs" :key="doc.id" class="cl-doc-item glass-surface">
+            <div><div class="cl-doc-title">{{ doc.title }}</div><div class="cl-doc-meta">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}<span v-if="doc.notes"> · {{ doc.notes }}</span><span v-if="doc.createdAt"> · {{ formatDocDate(doc.createdAt) }}</span></div></div>
+            <div class="cl-doc-actions"><a v-if="doc.url" :href="doc.url" target="_blank" class="ent-detail-chip">скачать</a><button class="a-btn-sm a-btn-danger" @click="deleteClientDoc(doc.id)">✕</button></div>
+          </div>
+        </div>
+        <div v-else class="ent-empty-detail" style="padding:20px">{{ clientDocs?.length ? 'Ничего не найдено' : 'Документов пока нет' }}</div>
+      </div>
+    </div>
+  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import type { Component } from 'vue'
 import { getClientPages } from '~~/shared/constants/pages'
+
+const sidebarActive = useSidebarActive()
 import ClientInitiation      from '~/components/ClientInitiation.vue'
 import ClientSelfProfile     from '~/components/ClientSelfProfile.vue'
 import ClientContactDetails  from '~/components/ClientContactDetails.vue'
@@ -184,7 +168,7 @@ import ClientDesignAlbum     from '~/components/ClientDesignAlbum.vue'
 import ClientPageContent     from '~/components/ClientPageContent.vue'
 import ClientOverview        from '~/components/ClientOverview.vue'
 
-definePageMeta({ layout: 'admin', middleware: 'admin', pageTransition: false })
+definePageMeta({ layout: 'admin', middleware: 'admin' })
 
 const route = useRoute()
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
@@ -209,7 +193,7 @@ const selectedClientSlug = computed(() => selectedClient.value?.linkedProjects?.
 
 // Deselect when layout sends "все клиенты" signal
 const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
-watch(entityDeselectSignal, () => { selectedClientId.value = null })
+watch(entityDeselectSignal, () => { selectedClientId.value = null; clientPage.value = 'dashboard' })
 
 const filteredClients = computed(() => {
   const all = clients.value || []

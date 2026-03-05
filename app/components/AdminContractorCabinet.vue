@@ -6,7 +6,7 @@
     </div>
 
     <div v-else-if="contractor" class="cab-body">
-      <aside class="cab-sidebar glass-surface std-sidenav">
+      <aside v-if="!props.hideNav" class="cab-sidebar glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav"
@@ -780,7 +780,10 @@ import {
 
 const props = defineProps<{
   contractorId: number | null
+  hideNav?: boolean
+  modelSection?: string
 }>()
+const emit = defineEmits<{ 'update:section': [string] }>()
 
 const contractorIdRef = computed(() => props.contractorId)
 
@@ -841,6 +844,11 @@ const {
   openNewTaskModal,
   createTask,
 } = useContractorCabinet(contractorIdRef)
+
+// ── 2-layer sidebar: accept section from parent page ──
+watch(() => props.modelSection, v => { if (v && v !== section.value) section.value = v })
+watch(section, v => emit('update:section', v))
+defineExpose({ nav, section, activeCount, staffCount: computed(() => staff.value?.length ?? 0), docsCount: computed(() => (contractorDocs.value ?? []).length) })
 
 const docsSearch = ref('')
 const docsFilter = ref('')

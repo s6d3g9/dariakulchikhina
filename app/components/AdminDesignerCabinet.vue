@@ -6,7 +6,7 @@
     </div>
 
     <div v-else-if="designer" class="cab-body">
-      <aside class="cab-sidebar glass-surface std-sidenav">
+      <aside v-if="!props.hideNav" class="cab-sidebar glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav"
@@ -738,7 +738,8 @@ import {
   PRICE_UNITS,
 } from '~~/shared/types/designer'
 
-const props = defineProps<{ designerId: number }>()
+const props = defineProps<{ designerId: number; hideNav?: boolean; modelSection?: string }>()
+const emit = defineEmits<{ 'update:section': [string] }>()
 
 const designerIdRef = computed(() => props.designerId)
 
@@ -776,6 +777,10 @@ const {
   autoSlug,
   refresh,
 } = useDesignerCabinet(designerIdRef)
+
+// ── 2-layer sidebar: accept section from parent page ──
+watch(() => props.modelSection, v => { if (v && v !== section.value) section.value = v })
+watch(section, v => emit('update:section', v))
 
 // ── Local state ──
 

@@ -1,10 +1,7 @@
 <template>
   <UApp>
     <NuxtLayout>
-      <NuxtPage
-        keepalive
-        :transition="{ name: 'fade-page', mode: 'out-in' }"
-      />
+      <NuxtPage :keepalive="{ max: 10 }" />
     </NuxtLayout>
   </UApp>
 </template>

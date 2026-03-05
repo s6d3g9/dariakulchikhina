@@ -1,235 +1,224 @@
 <template>
-  <div>
-    <div v-if="projectPending" class="ent-page-skeleton" style="padding:20px">
-      <div class="ent-sk-sidebar"><div class="ent-nav-skeleton" v-for="i in 8" :key="i"/></div>
-      <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+  <div v-if="projectPending" class="ent-page-skeleton" style="padding:20px">
+    <div class="ent-sk-sidebar"><div class="ent-nav-skeleton" v-for="i in 8" :key="i"/></div>
+    <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+  </div>
+  <div v-else-if="!project" style="font-size:.88rem;color:#999">Проект не найден</div>
+  <template v-else>
+    <div style="font-size:.78rem;color:#aaa;margin-bottom:12px">
+      <NuxtLink to="/admin" style="color:#888;text-decoration:none">проекты</NuxtLink>
+      <span style="margin:0 6px">/</span>
+      <span>{{ project.title }}</span>
     </div>
-    <div v-else-if="!project" style="font-size:.88rem;color:#999">Проект не найден</div>
-    <template v-else>
-      <div style="font-size:.78rem;color:#aaa;margin-bottom:12px">
-        <NuxtLink to="/admin" style="color:#888;text-decoration:none">проекты</NuxtLink>
-        <span style="margin:0 6px">/</span>
-        <span>{{ project.title }}</span>
-      </div>
-      <p v-if="clientLinkError" class="proj-client-error" style="margin-bottom:6px">{{ clientLinkError }}</p>
-      <p v-else-if="clientLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ clientLinkSuccess }}</p>
-      <p v-if="contractorLinkError" class="proj-client-error" style="margin-bottom:6px">{{ contractorLinkError }}</p>
-      <p v-else-if="contractorLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ contractorLinkSuccess }}</p>
-      <p v-if="designerLinkError" class="proj-client-error" style="margin-bottom:6px">{{ designerLinkError }}</p>
-      <p v-else-if="designerLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ designerLinkSuccess }}</p>
+    <p v-if="clientLinkError" class="proj-client-error" style="margin-bottom:6px">{{ clientLinkError }}</p>
+    <p v-else-if="clientLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ clientLinkSuccess }}</p>
+    <p v-if="contractorLinkError" class="proj-client-error" style="margin-bottom:6px">{{ contractorLinkError }}</p>
+    <p v-else-if="contractorLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ contractorLinkSuccess }}</p>
+    <p v-if="designerLinkError" class="proj-client-error" style="margin-bottom:6px">{{ designerLinkError }}</p>
+    <p v-else-if="designerLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ designerLinkSuccess }}</p>
 
-      <!-- ═══ Mobile top horizontal nav bar ═══ -->
-      <div v-if="!contractorPreviewMode" class="proj-mobile-nav">
-        <!-- Client preview mode -->
-        <template v-if="clientPreviewMode">
-          <div class="proj-mobile-bar-header">
-            <span class="proj-mobile-bar-label">👁 клиент</span>
-            <NuxtLink :to="`/admin/projects/${slug}`" class="proj-preview-exit" style="font-size:.72rem">× выйти</NuxtLink>
-          </div>
-          <div class="proj-mobile-bar-scroll">
-            <button
-              v-for="pg in clientNavPages" :key="pg.slug"
-              class="proj-mobile-bar-btn"
-              :class="{ 'proj-mobile-bar-btn--active': clientActivePage === pg.slug }"
-              @click="selectClientPage(pg.slug)"
-            >
-              <span v-if="pg.icon" class="proj-mobile-bar-icon">{{ pg.icon }}</span>
-              {{ pg.title }}
-            </button>
-          </div>
-        </template>
-        <!-- Admin mode: phase groups as scrollable tabs -->
-        <template v-else>
-          <div class="proj-mobile-bar-scroll">
-            <button
-              class="proj-mobile-bar-btn"
-              :class="{ 'proj-mobile-bar-btn--active': activePage === 'overview' }"
-              @click="selectAdminPage('overview')"
-            >◈ обзор</button>
-            <template v-for="group in navGroups" :key="'mob-' + group.label">
-              <button
-                v-for="pg in group.pages" :key="pg.slug"
-                class="proj-mobile-bar-btn"
-                :class="{ 'proj-mobile-bar-btn--active': activePage === pg.slug }"
-                @click="selectAdminPage(pg.slug)"
-              >{{ pg.title }}</button>
-            </template>
-          </div>
-        </template>
-      </div>
-
-      <div class="proj-content-area">
-
-        <!-- Nav column + sidebar, sticky together -->
-        <div v-if="!contractorPreviewMode" class="proj-nav-col">
-
-        <!-- Left sidebar: vertical nav -->
-        <nav class="proj-sidenav std-sidenav">
-
-          <!-- CLIENT PREVIEW MODE -->
-          <template v-if="clientPreviewMode">
-            <div class="proj-preview-banner">
-              <span class="proj-preview-label">👁 клиент</span>
-              <NuxtLink :to="`/admin/projects/${slug}`" class="proj-preview-exit">× выйти</NuxtLink>
-            </div>
-            <!-- Link client to project (if none linked yet) -->
-            <div v-if="!linkedClients.length" class="proj-client-link-inline">
-              <select v-model="selectedClientId" class="u-status-sel">
-                <option value="">— привязать клиента —</option>
-                <option v-for="c in clients" :key="c.id" :value="String(c.id)">
-                  {{ c.name }}
-                </option>
-              </select>
-              <button class="proj-client-btn-sm" :disabled="!selectedClientId || linkingClient" @click="linkClientToProject">
-                {{ linkingClient ? '...' : '✓' }}
-              </button>
-            </div>
-            <div v-else class="proj-client-link-inline proj-client-link-inline--name">
-              <span class="proj-client-linked-name">{{ linkedClients.map(c => c.name).join(', ') }}</span>
-            </div>
-            <button
-              v-for="pg in clientNavPages" :key="pg.slug"
-              class="proj-sidenav-item std-nav-item"
-              :class="{ 'proj-sidenav-item--active': clientActivePage === pg.slug, 'std-nav-item--active': clientActivePage === pg.slug }"
-              @click="selectClientPage(pg.slug)"
-            >
-              <span v-if="pg.icon" class="proj-sidenav-icon">{{ pg.icon }}</span>
-              {{ pg.title }}
-            </button>
-            <div v-if="!clientNavPages.length" class="proj-sidenav-empty">Нет страниц для клиента</div>
-          </template>
-
-          <!-- ADMIN NAV -->
-          <template v-else-if="!contractorPreviewMode">
-            <button
-              class="proj-sidenav-item std-nav-item"
-              :class="{ 'proj-sidenav-item--active': activePage === 'overview', 'std-nav-item--active': activePage === 'overview' }"
-              @click="selectAdminPage('overview')"
-              style="margin-bottom:8px"
-            ><span class="proj-sidenav-icon">◈</span> обзор</button>
-            <template v-for="(group, gi) in navGroups" :key="group.label">
-              <div class="proj-sidenav-group" v-if="group.pages.length">
-                <div class="proj-sidenav-group-label std-nav-group-label">{{ group.label }}</div>
-                <button
-                  v-for="pg in group.pages"
-                  :key="pg.slug"
-                  class="proj-sidenav-item std-nav-item"
-                  :class="{ 'proj-sidenav-item--active': activePage === pg.slug, 'std-nav-item--active': activePage === pg.slug }"
-                  @click="selectAdminPage(pg.slug)"
-                >{{ pg.title }}</button>
-              </div>
-            </template>
-          </template>
-
-        </nav>
-        </div><!-- /.proj-nav-col -->
-
-        <!-- Right content -->
-        <div class="proj-main">
-          <Transition name="tab-fade" mode="out-in">
-            <div :key="contentKey" class="proj-main-inner">
-              <!-- contractor preview -->
-              <template v-if="contractorPreviewMode">
-                <div v-if="contractorPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
-                <template v-else-if="contractorData">
-                  <AdminContractorCabinet :contractor-id="contractorPreviewId" />
-                </template>
-              </template>
-              <!-- client preview -->
-              <component
-                v-else-if="clientPreviewMode"
-                :is="clientActiveComponent"
-                v-bind="clientActiveComponentProps"
-              />
-              <!-- admin view -->
-              <template v-else-if="activePage === 'overview'">
-                <AdminProjectOverview
-                  :slug="slug"
-                  :project="project"
-                  :clients="linkedClients"
-                  :contractors="linkedContractorsList"
-                  :designers="linkedDesignersList"
-                  @navigate="selectAdminPage"
-                />
-              </template>
-              <component
-                v-else
-                :is="activeComponent"
-                v-bind="activeComponentProps"
-              />
-            </div>
-          </Transition>
+    <!-- ═══ Mobile top horizontal nav bar ═══ -->
+    <div v-if="!contractorPreviewMode" class="proj-mobile-nav">
+      <!-- Client preview mode -->
+      <template v-if="clientPreviewMode">
+        <div class="proj-mobile-bar-header">
+          <span class="proj-mobile-bar-label">👁 клиент</span>
+          <NuxtLink :to="`/admin/projects/${slug}`" class="proj-preview-exit" style="font-size:.72rem">× выйти</NuxtLink>
         </div>
-      </div>
-    </template>
-
-    <div v-if="showEdit" class="a-modal-backdrop" @click.self="showEdit = false">
-      <div class="a-modal">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">редактировать проект</h3>
-        <form @submit.prevent="saveProject">
-          <div class="a-field">
-            <label>Название</label>
-            <input v-model="editForm.title" class="glass-input" required>
-          </div>
-          <div class="a-field">
-            <label style="margin-bottom:10px;display:block">Видимые страницы</label>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
-              <label
-                v-for="pg in allPageSlugs"
-                :key="pg.slug"
-                style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:inherit;cursor:pointer"
-              >
-                <input
-                  type="checkbox"
-                  :checked="editForm.pages.includes(pg.slug)"
-                  @change="togglePage(pg.slug)"
-                  style="cursor:pointer"
-                >
-                {{ pg.title }}
-              </label>
-            </div>
-          </div>
-          <p v-if="editError" style="color:var(--ds-error, #c00);font-size:.8rem;margin-bottom:10px">{{ editError }}</p>
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-            <button type="button" class="a-btn-sm" @click="showEdit = false">отмена</button>
-            <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Client Selection Modal -->
-    <div v-if="showClientModal" class="a-modal-backdrop" @click.self="showClientModal = false">
-      <div class="a-modal">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">клиенты проекта</h3>
-
-        <div v-if="linkedClients.length" style="margin-bottom:14px">
-          <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
-          <div class="modal-clients-list">
-            <div v-for="client in linkedClients" :key="`linked-${client.id}`" class="modal-client-item modal-client-item--linked">
-              <div class="modal-client-info">
-                <div class="modal-client-name">{{ client.name }}</div>
-                <div class="modal-client-details">
-                  <template v-if="client.phone">{{ client.phone }}</template>
-                  <template v-else-if="client.email">{{ client.email }}</template>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="modal-action-btn modal-action-btn--remove"
-                @click="unlinkClientFromModal(String(client.id))"
-              >-</button>
-            </div>
-          </div>
-        </div>
-
-        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
-        <div class="modal-clients-list">
-          <div
-            v-for="client in availableClientsForModal"
-            :key="client.id"
-            class="modal-client-item"
+        <div class="proj-mobile-bar-scroll">
+          <button
+            v-for="pg in clientNavPages" :key="pg.slug"
+            class="proj-mobile-bar-btn"
+            :class="{ 'proj-mobile-bar-btn--active': clientActivePage === pg.slug }"
+            @click="selectClientPage(pg.slug)"
           >
+            <span v-if="pg.icon" class="proj-mobile-bar-icon">{{ pg.icon }}</span>
+            {{ pg.title }}
+          </button>
+        </div>
+      </template>
+      <!-- Admin mode: phase groups as scrollable tabs -->
+      <template v-else>
+        <div class="proj-mobile-bar-scroll">
+          <button
+            class="proj-mobile-bar-btn"
+            :class="{ 'proj-mobile-bar-btn--active': activePage === 'overview' }"
+            @click="selectAdminPage('overview')"
+          >◈ обзор</button>
+          <template v-for="group in navGroups" :key="'mob-' + group.label">
+            <button
+              v-for="pg in group.pages" :key="pg.slug"
+              class="proj-mobile-bar-btn"
+              :class="{ 'proj-mobile-bar-btn--active': activePage === pg.slug }"
+              @click="selectAdminPage(pg.slug)"
+            >{{ pg.title }}</button>
+          </template>
+        </div>
+      </template>
+    </div>
+
+    <div class="proj-content-area">
+
+      <!-- Nav column + sidebar, sticky together -->
+      <div v-if="!contractorPreviewMode" class="proj-nav-col">
+
+      <!-- Left sidebar: vertical nav -->
+      <nav class="proj-sidenav std-sidenav">
+        <AdminSidebarSwitcher title="проекты">
+
+        <!-- CLIENT PREVIEW MODE -->
+        <template v-if="clientPreviewMode">
+          <div class="proj-preview-banner">
+            <span class="proj-preview-label">👁 клиент</span>
+            <NuxtLink :to="`/admin/projects/${slug}`" class="proj-preview-exit">× выйти</NuxtLink>
+          </div>
+          <!-- Link client to project (if none linked yet) -->
+          <div v-if="!linkedClients.length" class="proj-client-link-inline">
+            <select v-model="selectedClientId" class="u-status-sel">
+              <option value="">— привязать клиента —</option>
+              <option v-for="c in clients" :key="c.id" :value="String(c.id)">
+                {{ c.name }}
+              </option>
+            </select>
+            <button class="proj-client-btn-sm" :disabled="!selectedClientId || linkingClient" @click="linkClientToProject">
+              {{ linkingClient ? '...' : '✓' }}
+            </button>
+          </div>
+          <div v-else class="proj-client-link-inline proj-client-link-inline--name">
+            <span class="proj-client-linked-name">{{ linkedClients.map(c => c.name).join(', ') }}</span>
+          </div>
+          <button
+            v-for="pg in clientNavPages" :key="pg.slug"
+            class="proj-sidenav-item std-nav-item"
+            :class="{ 'proj-sidenav-item--active': clientActivePage === pg.slug, 'std-nav-item--active': clientActivePage === pg.slug }"
+            @click="selectClientPage(pg.slug)"
+          >
+            <span v-if="pg.icon" class="proj-sidenav-icon">{{ pg.icon }}</span>
+            {{ pg.title }}
+          </button>
+          <div v-if="!clientNavPages.length" class="proj-sidenav-empty">Нет страниц для клиента</div>
+        </template>
+
+        <!-- ADMIN NAV -->
+        <template v-else-if="!contractorPreviewMode">
+          <button
+            class="proj-sidenav-item std-nav-item"
+            :class="{ 'proj-sidenav-item--active': activePage === 'overview', 'std-nav-item--active': activePage === 'overview' }"
+            @click="selectAdminPage('overview')"
+            style="margin-bottom:8px"
+          ><span class="proj-sidenav-icon">◈</span> обзор</button>
+          <template v-for="(group, gi) in navGroups" :key="group.label">
+            <div class="proj-sidenav-group" v-if="group.pages.length">
+              <button
+                class="proj-sidenav-group-btn"
+                :class="{ 'proj-sidenav-group-btn--open': expandedGroups.has(group.label) }"
+                @click="toggleGroup(group.label)"
+              >
+                <span class="proj-group-label-text">{{ group.label }}</span>
+                <span class="proj-group-chevron">›</span>
+              </button>
+              <Transition name="proj-group-slide">
+                <div v-show="expandedGroups.has(group.label)" class="proj-sidenav-group-items">
+                  <button
+                    v-for="pg in group.pages"
+                    :key="pg.slug"
+                    class="proj-sidenav-item std-nav-item"
+                    :class="{ 'proj-sidenav-item--active': activePage === pg.slug, 'std-nav-item--active': activePage === pg.slug }"
+                    @click="selectAdminPage(pg.slug)"
+                  >{{ pg.title }}</button>
+                </div>
+              </Transition>
+            </div>
+          </template>
+        </template>
+
+        </AdminSidebarSwitcher>
+      </nav>
+      </div><!-- /.proj-nav-col -->
+
+      <!-- Right content -->
+      <div class="proj-main">
+        <Transition name="tab-fade" mode="out-in">
+          <div :key="contentKey" class="proj-main-inner">
+            <!-- contractor preview -->
+            <template v-if="contractorPreviewMode">
+              <div v-if="contractorPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+              <template v-else-if="contractorData">
+                <AdminContractorCabinet :contractor-id="contractorPreviewId" />
+              </template>
+            </template>
+            <!-- client preview -->
+            <component
+              v-else-if="clientPreviewMode"
+              :is="clientActiveComponent"
+              v-bind="clientActiveComponentProps"
+            />
+            <!-- admin view -->
+            <template v-else-if="activePage === 'overview'">
+              <AdminProjectOverview
+                :slug="slug"
+                :project="project"
+                :clients="linkedClients"
+                :contractors="linkedContractorsList"
+                :designers="linkedDesignersList"
+                @navigate="selectAdminPage"
+              />
+            </template>
+            <component
+              v-else
+              :is="activeComponent"
+              v-bind="activeComponentProps"
+            />
+          </div>
+        </Transition>
+      </div>
+    </div>
+  </template>
+
+  <div v-if="showEdit" class="a-modal-backdrop" @click.self="showEdit = false">
+    <div class="a-modal">
+      <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">редактировать проект</h3>
+      <form @submit.prevent="saveProject">
+        <div class="a-field">
+          <label>Название</label>
+          <input v-model="editForm.title" class="glass-input" required>
+        </div>
+        <div class="a-field">
+          <label style="margin-bottom:10px;display:block">Видимые страницы</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
+            <label
+              v-for="pg in allPageSlugs"
+              :key="pg.slug"
+              style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:inherit;cursor:pointer"
+            >
+              <input
+                type="checkbox"
+                :checked="editForm.pages.includes(pg.slug)"
+                @change="togglePage(pg.slug)"
+                style="cursor:pointer"
+              >
+              {{ pg.title }}
+            </label>
+          </div>
+        </div>
+        <p v-if="editError" style="color:var(--ds-error, #c00);font-size:.8rem;margin-bottom:10px">{{ editError }}</p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="a-btn-sm" @click="showEdit = false">отмена</button>
+          <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Client Selection Modal -->
+  <div v-if="showClientModal" class="a-modal-backdrop" @click.self="showClientModal = false">
+    <div class="a-modal">
+      <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">клиенты проекта</h3>
+
+      <div v-if="linkedClients.length" style="margin-bottom:14px">
+        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
+        <div class="modal-clients-list">
+          <div v-for="client in linkedClients" :key="`linked-${client.id}`" class="modal-client-item modal-client-item--linked">
             <div class="modal-client-info">
               <div class="modal-client-name">{{ client.name }}</div>
               <div class="modal-client-details">
@@ -239,55 +228,55 @@
             </div>
             <button
               type="button"
-              class="modal-action-btn modal-action-btn--add"
-              @click="linkClientFromModal(String(client.id))"
-            >+</button>
+              class="modal-action-btn modal-action-btn--remove"
+              @click="unlinkClientFromModal(String(client.id))"
+            >-</button>
           </div>
-        </div>
-        <div v-if="!linkedClients.length && !availableClientsForModal.length" style="font-size:.82rem;color:#888">Нет клиентов в системе</div>
-        <p v-if="clientLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ clientLinkError }}</p>
-        <p v-if="clientLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ clientLinkSuccess }}</p>
-        <div style="display:flex;justify-content:flex-end;margin-top:20px">
-          <button type="button" class="a-btn-sm" @click="showClientModal = false">закрыть</button>
         </div>
       </div>
-    </div>
 
-    <!-- Contractor Selection Modal -->
-    <div v-if="showContractorModal" class="a-modal-backdrop" @click.self="showContractorModal = false">
-      <div class="a-modal">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">подрядчики проекта</h3>
-
-        <div v-if="linkedContractorsList.length" style="margin-bottom:14px">
-          <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
-          <div class="modal-contractors-list">
-            <div
-              v-for="contractor in linkedContractorsList"
-              :key="`linked-${contractor.id}`"
-              class="modal-contractor-item modal-contractor-item--linked"
-            >
-              <div class="modal-contractor-info">
-                <div class="modal-contractor-name">{{ contractor.name }}</div>
-                <div class="modal-contractor-details">
-                  <template v-if="contractor.companyName">{{ contractor.companyName }}</template>
-                  <template v-else-if="contractor.phone">{{ contractor.phone }}</template>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="modal-action-btn modal-action-btn--remove"
-                @click="unlinkContractor(contractor.id)"
-              >-</button>
+      <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
+      <div class="modal-clients-list">
+        <div
+          v-for="client in availableClientsForModal"
+          :key="client.id"
+          class="modal-client-item"
+        >
+          <div class="modal-client-info">
+            <div class="modal-client-name">{{ client.name }}</div>
+            <div class="modal-client-details">
+              <template v-if="client.phone">{{ client.phone }}</template>
+              <template v-else-if="client.email">{{ client.email }}</template>
             </div>
           </div>
+          <button
+            type="button"
+            class="modal-action-btn modal-action-btn--add"
+            @click="linkClientFromModal(String(client.id))"
+          >+</button>
         </div>
+      </div>
+      <div v-if="!linkedClients.length && !availableClientsForModal.length" style="font-size:.82rem;color:#888">Нет клиентов в системе</div>
+      <p v-if="clientLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ clientLinkError }}</p>
+      <p v-if="clientLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ clientLinkSuccess }}</p>
+      <div style="display:flex;justify-content:flex-end;margin-top:20px">
+        <button type="button" class="a-btn-sm" @click="showClientModal = false">закрыть</button>
+      </div>
+    </div>
+  </div>
 
-        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
+  <!-- Contractor Selection Modal -->
+  <div v-if="showContractorModal" class="a-modal-backdrop" @click.self="showContractorModal = false">
+    <div class="a-modal">
+      <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">подрядчики проекта</h3>
+
+      <div v-if="linkedContractorsList.length" style="margin-bottom:14px">
+        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
         <div class="modal-contractors-list">
           <div
-            v-for="contractor in availableContractorsForModal"
-            :key="contractor.id"
-            class="modal-contractor-item"
+            v-for="contractor in linkedContractorsList"
+            :key="`linked-${contractor.id}`"
+            class="modal-contractor-item modal-contractor-item--linked"
           >
             <div class="modal-contractor-info">
               <div class="modal-contractor-name">{{ contractor.name }}</div>
@@ -298,56 +287,55 @@
             </div>
             <button
               type="button"
-              class="modal-action-btn modal-action-btn--add"
-              @click="linkContractorFromModal(contractor.id)"
-            >+</button>
+              class="modal-action-btn modal-action-btn--remove"
+              @click="unlinkContractor(contractor.id)"
+            >-</button>
           </div>
-        </div>
-        <div v-if="!linkedContractorsList.length && !availableContractorsForModal.length" style="font-size:.82rem;color:#888">Нет подрядчиков в системе</div>
-        <p v-if="contractorLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ contractorLinkError }}</p>
-        <p v-if="contractorLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ contractorLinkSuccess }}</p>
-        <div style="display:flex;justify-content:flex-end;margin-top:20px">
-          <button type="button" class="a-btn-sm" @click="showContractorModal = false">закрыть</button>
         </div>
       </div>
-    </div>
 
-    <!-- Designer Selection Modal -->
-    <div v-if="showDesignerModal" class="a-modal-backdrop" @click.self="showDesignerModal = false">
-      <div class="a-modal">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">дизайнеры проекта</h3>
-
-        <div v-if="linkedDesignersList.length" style="margin-bottom:14px">
-          <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
-          <div class="modal-designers-list">
-            <div
-              v-for="designer in linkedDesignersList"
-              :key="`linked-${designer.id}`"
-              class="modal-designer-item modal-designer-item--linked"
-            >
-              <div class="modal-designer-info">
-                <div class="modal-designer-name">{{ designer.name }}</div>
-                <div class="modal-designer-details">
-                  <template v-if="designer.companyName">{{ designer.companyName }}</template>
-                  <template v-else-if="designer.phone">{{ designer.phone }}</template>
-                  <template v-else-if="designer.email">{{ designer.email }}</template>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="modal-action-btn modal-action-btn--remove"
-                @click="unlinkDesigner(designer.id)"
-              >-</button>
+      <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
+      <div class="modal-contractors-list">
+        <div
+          v-for="contractor in availableContractorsForModal"
+          :key="contractor.id"
+          class="modal-contractor-item"
+        >
+          <div class="modal-contractor-info">
+            <div class="modal-contractor-name">{{ contractor.name }}</div>
+            <div class="modal-contractor-details">
+              <template v-if="contractor.companyName">{{ contractor.companyName }}</template>
+              <template v-else-if="contractor.phone">{{ contractor.phone }}</template>
             </div>
           </div>
+          <button
+            type="button"
+            class="modal-action-btn modal-action-btn--add"
+            @click="linkContractorFromModal(contractor.id)"
+          >+</button>
         </div>
+      </div>
+      <div v-if="!linkedContractorsList.length && !availableContractorsForModal.length" style="font-size:.82rem;color:#888">Нет подрядчиков в системе</div>
+      <p v-if="contractorLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ contractorLinkError }}</p>
+      <p v-if="contractorLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ contractorLinkSuccess }}</p>
+      <div style="display:flex;justify-content:flex-end;margin-top:20px">
+        <button type="button" class="a-btn-sm" @click="showContractorModal = false">закрыть</button>
+      </div>
+    </div>
+  </div>
 
-        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
+  <!-- Designer Selection Modal -->
+  <div v-if="showDesignerModal" class="a-modal-backdrop" @click.self="showDesignerModal = false">
+    <div class="a-modal">
+      <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">дизайнеры проекта</h3>
+
+      <div v-if="linkedDesignersList.length" style="margin-bottom:14px">
+        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
         <div class="modal-designers-list">
           <div
-            v-for="designer in availableDesignersForModal"
-            :key="designer.id"
-            class="modal-designer-item"
+            v-for="designer in linkedDesignersList"
+            :key="`linked-${designer.id}`"
+            class="modal-designer-item modal-designer-item--linked"
           >
             <div class="modal-designer-info">
               <div class="modal-designer-name">{{ designer.name }}</div>
@@ -359,17 +347,40 @@
             </div>
             <button
               type="button"
-              class="modal-action-btn modal-action-btn--add"
-              @click="linkDesignerFromModal(designer.id)"
-            >+</button>
+              class="modal-action-btn modal-action-btn--remove"
+              @click="unlinkDesigner(designer.id)"
+            >-</button>
           </div>
         </div>
-        <div v-if="!linkedDesignersList.length && !availableDesignersForModal.length" style="font-size:.82rem;color:#888">Нет дизайнеров в системе</div>
-        <p v-if="designerLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ designerLinkError }}</p>
-        <p v-if="designerLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ designerLinkSuccess }}</p>
-        <div style="display:flex;justify-content:flex-end;margin-top:20px">
-          <button type="button" class="a-btn-sm" @click="showDesignerModal = false">закрыть</button>
+      </div>
+
+      <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
+      <div class="modal-designers-list">
+        <div
+          v-for="designer in availableDesignersForModal"
+          :key="designer.id"
+          class="modal-designer-item"
+        >
+          <div class="modal-designer-info">
+            <div class="modal-designer-name">{{ designer.name }}</div>
+            <div class="modal-designer-details">
+              <template v-if="designer.companyName">{{ designer.companyName }}</template>
+              <template v-else-if="designer.phone">{{ designer.phone }}</template>
+              <template v-else-if="designer.email">{{ designer.email }}</template>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="modal-action-btn modal-action-btn--add"
+            @click="linkDesignerFromModal(designer.id)"
+          >+</button>
         </div>
+      </div>
+      <div v-if="!linkedDesignersList.length && !availableDesignersForModal.length" style="font-size:.82rem;color:#888">Нет дизайнеров в системе</div>
+      <p v-if="designerLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ designerLinkError }}</p>
+      <p v-if="designerLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ designerLinkSuccess }}</p>
+      <div style="display:flex;justify-content:flex-end;margin-top:20px">
+        <button type="button" class="a-btn-sm" @click="showDesignerModal = false">закрыть</button>
       </div>
     </div>
   </div>
@@ -419,7 +430,7 @@ import {
   AdminProjectOverview,
 } from '#components'
 
-definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
+definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -750,6 +761,34 @@ const navGroups = computed(() => {
     .filter(group => group.pages.length > 0)
 })
 
+// ── Accordion state ─────────────────────────────────────────────
+const expandedGroups = reactive(new Set<string>())
+
+function toggleGroup(label: string) {
+  if (expandedGroups.has(label)) expandedGroups.delete(label)
+  else expandedGroups.add(label)
+}
+
+// Auto-expand group that contains the active page, collapse others
+function expandActiveGroup() {
+  const active = activePage.value
+  const group = navGroups.value.find(g => g.pages.some(p => p.slug === active))
+  if (group) {
+    // keep others, add this one
+    expandedGroups.add(group.label)
+  } else {
+    // overview or no match — expand first group
+    const first = navGroups.value[0]
+    if (first) expandedGroups.add(first.label)
+  }
+}
+
+watch(navGroups, () => { expandActiveGroup() }, { immediate: true })
+watch(activePage, (page) => {
+  const group = navGroups.value.find(g => g.pages.some(p => p.slug === page))
+  if (group) expandedGroups.add(group.label)
+})
+
 const pagesMigrationInProgress = ref(false)
 
 watch(project, async (p) => {
@@ -1005,7 +1044,11 @@ async function unlinkDesigner(designerId: number) {
   top: 80px;
   align-self: flex-start;
   flex-shrink: 0;
-  overflow: visible;
+  /* never overflow the viewport — expand only downward */
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
   margin-right: 20px;
 }
 
@@ -1015,17 +1058,53 @@ async function unlinkDesigner(designerId: number) {
   padding: 10px;
 }
 
-.proj-sidenav-group { margin-bottom: 18px; }
-.proj-sidenav-group-label {
-  font-size: .62rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .07em;
-  color: var(--glass-text); opacity: .48; margin-bottom: 6px; padding-left: 10px;
+.proj-sidenav-group { margin-bottom: 4px; }
+
+/* Group button (replaces static label) */
+.proj-sidenav-group-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px 6px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
+.proj-group-label-text {
+  font-size: .64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--glass-text);
+  opacity: .45;
+  transition: opacity .15s;
+}
+.proj-group-chevron {
+  font-size: .85rem;
+  color: var(--glass-text);
+  opacity: .2;
+  transition: transform .2s ease, opacity .15s;
+  transform: rotate(0deg);
+  display: block;
+}
+.proj-sidenav-group-btn--open .proj-group-chevron { transform: rotate(90deg); opacity: .5; }
+.proj-sidenav-group-btn:hover .proj-group-label-text { opacity: .8; }
+.proj-sidenav-group-btn:hover .proj-group-chevron { opacity: .4; }
+
+.proj-sidenav-group-items { overflow: hidden; }
+
+/* Group slide transition */
+.proj-group-slide-enter-active { transition: max-height .22s ease, opacity .18s ease; max-height: 600px; }
+.proj-group-slide-leave-active { transition: max-height .16s ease, opacity .12s ease; }
+.proj-group-slide-enter-from   { max-height: 0 !important; opacity: 0; }
+.proj-group-slide-leave-to     { max-height: 0 !important; opacity: 0; }
 
 .proj-sidenav-item {
   display: block; width: 100%; text-align: left;
-  padding: 9px 10px; border: none; background: transparent;
-  font-size: .8rem; color: var(--glass-text); cursor: pointer;
+  padding: 9px 14px; border: none; background: transparent;
+  font-size: .78rem; letter-spacing: .04em; color: var(--glass-text); cursor: pointer;
   border-radius: 9px; font-family: inherit; line-height: 1.3;
   opacity: .64;
   transition: background .12s, color .12s, opacity .12s, border-color .12s;
@@ -1044,10 +1123,20 @@ async function unlinkDesigner(designerId: number) {
 .proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
 
 /* ── Section switch fade ── */
-.tab-fade-enter-active { transition: opacity .35s ease-in-out; }
-.tab-fade-leave-active { transition: opacity .25s ease-in-out; }
-.tab-fade-enter-from  { opacity: 0; }
-.tab-fade-leave-to    { opacity: 0; }
+.tab-fade-enter-active {
+  transition: opacity .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.4,0,.2,1);
+}
+.tab-fade-leave-active {
+  transition: opacity .14s cubic-bezier(.4,0,.2,1), transform .14s cubic-bezier(.4,0,.2,1);
+}
+.tab-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.tab-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
 
 /* ── Contractor preview card ── */
 .ctr-card { padding: 4px 0 32px; }

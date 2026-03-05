@@ -55,7 +55,7 @@
             <circle cx="40" cy="40" r="34" fill="none" stroke-width="7"
               stroke="color-mix(in srgb, var(--glass-text) 8%, transparent)" />
             <circle cx="40" cy="40" r="34" fill="none" stroke-width="7"
-              :stroke="overduePercent > 0 ? 'var(--ds-error, #dc2626)' : '#15803d'"
+              :stroke="'color-mix(in srgb, var(--glass-text) 18%, transparent)'" />
               stroke-linecap="round"
               :stroke-dasharray="ringDash"
               :stroke-dashoffset="ringOffset"
@@ -231,19 +231,10 @@ function projectPercent(p: any) {
   height: 7px;
   border-radius: 50%;
 }
-.sb-dot--gray    { background: color-mix(in srgb, var(--glass-text) 25%, transparent); }
-.sb-dot--violet  { background: var(--phase-violet, #7c3aed); }
-.sb-dot--blue    { background: var(--phase-blue, #2563eb); }
-.sb-dot--amber   { background: var(--phase-amber, #b45309); }
-.sb-dot--orange  { background: var(--phase-orange, #c2410c); }
-.sb-dot--green   { background: var(--phase-green, #15803d); }
-.sb-dot--teal    { background: var(--phase-teal, #0f766e); }
-html.dark .sb-dot--violet { background: #a78bfa; }
-html.dark .sb-dot--blue   { background: #93c5fd; }
-html.dark .sb-dot--amber  { background: #fcd34d; }
-html.dark .sb-dot--orange { background: #fdba74; }
-html.dark .sb-dot--green  { background: #86efac; }
-html.dark .sb-dot--teal   { background: #5eead4; }
+.sb-dot--gray, .sb-dot--violet, .sb-dot--blue, .sb-dot--amber,
+.sb-dot--orange, .sb-dot--green, .sb-dot--teal {
+  background: color-mix(in srgb, var(--glass-text) 30%, transparent);
+}
 
 .sb-phase-label { opacity: .6; white-space: nowrap; }
 .sb-phase-count { font-weight: 600; text-align: right; opacity: .5; }
@@ -259,19 +250,10 @@ html.dark .sb-dot--teal   { background: #5eead4; }
   border-radius: 2px;
   transition: width .4s ease;
 }
-.sb-bar--gray    { background: color-mix(in srgb, var(--glass-text) 25%, transparent); }
-.sb-bar--violet  { background: var(--phase-violet, #7c3aed); }
-.sb-bar--blue    { background: var(--phase-blue, #2563eb); }
-.sb-bar--amber   { background: var(--phase-amber, #b45309); }
-.sb-bar--orange  { background: var(--phase-orange, #c2410c); }
-.sb-bar--green   { background: var(--phase-green, #15803d); }
-.sb-bar--teal    { background: var(--phase-teal, #0f766e); }
-html.dark .sb-bar--violet { background: #a78bfa; }
-html.dark .sb-bar--blue   { background: #93c5fd; }
-html.dark .sb-bar--amber  { background: #fcd34d; }
-html.dark .sb-bar--orange { background: #fdba74; }
-html.dark .sb-bar--green  { background: #86efac; }
-html.dark .sb-bar--teal   { background: #5eead4; }
+.sb-bar--gray, .sb-bar--violet, .sb-bar--blue, .sb-bar--amber,
+.sb-bar--orange, .sb-bar--green, .sb-bar--teal {
+  background: color-mix(in srgb, var(--glass-text) 35%, transparent);
+}
 
 /* ── Tasks ring ── */
 .sb-tasks-ring-wrap {
@@ -318,9 +300,9 @@ html.dark .sb-bar--teal   { background: #5eead4; }
   opacity: .6;
 }
 .sb-tasks-row--overdue {
-  color: var(--ds-error, #dc2626);
-  opacity: 1;
-  font-weight: 600;
+  color: var(--glass-text);
+  opacity: .55;
+  font-weight: 500;
 }
 .sb-tasks-dot {
   width: 6px;
@@ -328,10 +310,9 @@ html.dark .sb-bar--teal   { background: #5eead4; }
   border-radius: 50%;
   flex-shrink: 0;
 }
-.sb-tasks-dot--done { background: var(--phase-green, #15803d); }
-html.dark .sb-tasks-dot--done { background: #86efac; }
-.sb-tasks-dot--total { background: color-mix(in srgb, var(--glass-text) 15%, transparent); }
-.sb-tasks-dot--overdue { background: var(--ds-error, #dc2626); }
+.sb-tasks-dot--done    { background: color-mix(in srgb, var(--glass-text) 45%, transparent); }
+.sb-tasks-dot--total   { background: color-mix(in srgb, var(--glass-text) 15%, transparent); }
+.sb-tasks-dot--overdue { background: color-mix(in srgb, var(--glass-text) 25%, transparent); }
 .sb-tasks-num {
   margin-left: auto;
   font-weight: 600;
@@ -394,10 +375,9 @@ html.dark .sb-tasks-dot--done { background: #86efac; }
 .sb-project-bar-fill {
   height: 100%;
   border-radius: 2px;
-  background: var(--phase-green, #15803d);
+  background: color-mix(in srgb, var(--glass-text) 35%, transparent);
   transition: width .3s;
 }
-html.dark .sb-project-bar-fill { background: #86efac; }
 .sb-project-progress-text {
   font-size: .56rem;
   opacity: .4;
@@ -405,8 +385,8 @@ html.dark .sb-project-bar-fill { background: #86efac; }
 }
 .sb-project-overdue {
   font-size: .56rem;
-  color: var(--ds-error, #dc2626);
-  font-weight: 600;
+  color: var(--glass-text);
+  opacity: .4;
 }
 
 /* ── Skeleton ── */
@@ -425,25 +405,13 @@ html.dark .sb-project-bar-fill { background: #86efac; }
   50% { opacity: .15; }
 }
 
-/* ── Phase chip colors (reuse from parent) ── */
-.pj-phase--gray    { color: var(--glass-text); opacity: .35; background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
-.pj-phase--violet  { color: var(--phase-violet, #7c3aed); background: color-mix(in srgb, var(--phase-violet, #7c3aed) 8%, transparent); }
-.pj-phase--blue    { color: var(--phase-blue, #2563eb); background: color-mix(in srgb, var(--phase-blue, #2563eb) 8%, transparent); }
-.pj-phase--amber   { color: var(--phase-amber, #b45309); background: color-mix(in srgb, var(--phase-amber, #b45309) 7%, transparent); }
-.pj-phase--orange  { color: var(--phase-orange, #c2410c); background: color-mix(in srgb, var(--phase-orange, #c2410c) 7%, transparent); }
-.pj-phase--green   { color: var(--phase-green, #15803d); background: color-mix(in srgb, var(--phase-green, #15803d) 8%, transparent); }
-.pj-phase--teal    { color: var(--phase-teal, #0f766e); background: color-mix(in srgb, var(--phase-teal, #0f766e) 8%, transparent); }
-html.dark .pj-phase--violet { color: #a78bfa; background: rgba(167,139,250,.12); }
-html.dark .pj-phase--blue   { color: #93c5fd; background: rgba(147,197,253,.12); }
-html.dark .pj-phase--amber  { color: #fcd34d; background: rgba(252,211,77,.1); }
-html.dark .pj-phase--orange { color: #fdba74; background: rgba(253,186,116,.1); }
-html.dark .pj-phase--green  { color: #86efac; background: rgba(134,239,172,.1); }
-html.dark .pj-phase--teal   { color: #5eead4; background: rgba(94,234,212,.1); }
-
-/* ── Responsive ── */
-@media (max-width: 1100px) {
-  .sb-status-bar {
-    display: none;
-  }
+/* ── Phase chip colors — monochrome ── */
+.pj-phase--gray, .pj-phase--violet, .pj-phase--blue,
+.pj-phase--amber, .pj-phase--orange, .pj-phase--green, .pj-phase--teal {
+  color: var(--glass-text);
+  opacity: .45;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
 }
+
+/* ── Responsive (sidebar mode only — inline mode overrides via parent) ── */
 </style>

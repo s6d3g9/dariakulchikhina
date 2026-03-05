@@ -16,6 +16,7 @@
             <option value="done">завершено ✓</option>
           </select>
           <span v-if="savedAt" class="acp2-saved">✓ {{ savedAt }}</span>
+          <span v-if="saveError" class="acp2-save-error">{{ saveError }}</span>
         </div>
 
         <!-- Общий прогресс -->
@@ -150,6 +151,10 @@
             <!-- Заголовок этапа -->
             <div class="acp2-stage-head" @click="toggleStage(stage.id)">
               <div class="acp2-stage-head-left">
+                <div class="acp2-stage-move" @click.stop>
+                  <button class="acp2-move-btn" :disabled="si === 0" @click="moveStage(si, -1)" title="вверх">↑</button>
+                  <button class="acp2-move-btn" :disabled="si === form.cp_stages.length - 1" @click="moveStage(si, 1)" title="вниз">↓</button>
+                </div>
                 <span class="acp2-stage-dot" :class="`acp2-dot--${stageStatusColor(stage.status)}`"/>
                 <input
                   v-model="stage.title"
@@ -168,11 +173,12 @@
                   <div class="acp2-stage-mini-fill" :style="`width:${stage.progress || 0}%`"/>
                 </div>
                 <span class="acp2-stage-chevron">{{ expandedStages.has(stage.id) ? '▲' : '▼' }}</span>
+              <!-- reactive Set → has() is tracked via reactive() -->
               </div>
             </div>
 
             <!-- Тело этапа (expandable) -->
-            <div v-show="expandedStages.has(stage.id)" class="acp2-stage-body">
+            <div v-show="expandedStages.has(stage.id)" class="acp2-stage-body" @click.stop>
               <div class="u-grid-2" style="margin-bottom:12px">
                 <div class="u-field">
                   <label class="u-field__label">статус</label>
@@ -195,8 +201,12 @@
                   <input v-model="stage.contractor" class="glass-input" placeholder="компания / ФИО" @blur="save">
                 </div>
                 <div class="u-field">
-                  <label class="u-field__label">бюджет этапа ₽</label>
+                  <label class="u-field__label">бюджет (план) ₽</label>
                   <input v-model.number="stage.budget" type="number" min="0" class="glass-input" placeholder="0" @blur="save">
+                </div>
+                <div class="u-field">
+                  <label class="u-field__label">факт (расходы) ₽</label>
+                  <input v-model.number="stage.spent" type="number" min="0" class="glass-input" placeholder="0" @blur="save">
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">дата начала</label>
@@ -251,11 +261,14 @@
 
 <script setup lang="ts">
 const props = defineProps<{ slug: string }>()
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`)
+const { data: project, pending } = useFetch<any>(() => `/api/projects/${props.slug}`, {
+  lazy: true,
+  server: false,
+})
 const { savedAt, touch: markSaved } = useTimestamp()
 
 const showInfo = ref(true)
-const expandedStages = ref<Set<string>>(new Set())
+const expandedStages = reactive(new Set<string>())
 
 const form = reactive<any>({
   cp_status: '',
@@ -280,17 +293,23 @@ watch(project, (p) => {
   }
 }, { immediate: true })
 
+const saveError = ref('')
 async function save() {
+  saveError.value = ''
   const payload: Record<string, any> = {}
   ;['cp_status','cp_start_date','cp_end_date','cp_contractor','cp_supervisor','cp_budget_total','cp_budget_spent','cp_notes'].forEach(k => {
     payload[k] = form[k]
   })
   payload.cp_stages = form.cp_stages
-  await $fetch(`/api/projects/${props.slug}`, {
-    method: 'PUT',
-    body: { profile: { ...(project.value?.profile || {}), ...payload } },
-  })
-  markSaved()
+  try {
+    await $fetch(`/api/projects/${props.slug}`, {
+      method: 'PUT',
+      body: { profile: { ...(project.value?.profile || {}), ...payload } },
+    })
+    markSaved()
+  } catch {
+    saveError.value = '⚠ ошибка сохранения'
+  }
 }
 
 const daysLeft = computed(() => {
@@ -306,7 +325,10 @@ const overallProgress = computed(() => {
 
 const budgetSpentTotal = computed(() => {
   if (form.cp_budget_spent) return form.cp_budget_spent
-  return form.cp_stages.reduce((s: number, st: any) => st.status === 'done' ? s + (st.budget || 0) : s, 0)
+  return form.cp_stages.reduce((s: number, st: any) => {
+    if (st.spent) return s + st.spent
+    return st.status === 'done' ? s + (st.budget || 0) : s
+  }, 0)
 })
 const budgetRemainder = computed(() => (form.cp_budget_total || 0) - budgetSpentTotal.value)
 const budgetPercent   = computed(() => {
@@ -356,10 +378,10 @@ function addStage() {
   const id = `s_${Date.now()}`
   form.cp_stages.push({
     id, title: 'Новый этап', status: 'pending', progress: 0,
-    startDate: '', endDate: '', contractor: '', budget: null, notes: '',
+    startDate: '', endDate: '', contractor: '', budget: null, spent: null, notes: '',
     tasks: [],
   })
-  expandedStages.value.add(id)
+  expandedStages.add(id)
   save()
 }
 
@@ -369,9 +391,17 @@ function removeStage(i: number) {
   save()
 }
 
+function moveStage(i: number, dir: number) {
+  const j = i + dir
+  if (j < 0 || j >= form.cp_stages.length) return
+  const tmp = form.cp_stages.splice(i, 1)[0]
+  form.cp_stages.splice(j, 0, tmp)
+  save()
+}
+
 function toggleStage(id: string) {
-  if (expandedStages.value.has(id)) expandedStages.value.delete(id)
-  else expandedStages.value.add(id)
+  if (expandedStages.has(id)) expandedStages.delete(id)
+  else expandedStages.add(id)
 }
 
 function addTask(stage: any) {
@@ -528,4 +558,10 @@ function taskStatusLabel(s: string) {
 .acp2-range-val { font-size:.78rem; color:#8ab4f8; min-width:36px; }
 
 .acp2-empty { text-align:center; padding:40px 20px; color:#444; font-size:.84rem; }
+
+.acp2-save-error { font-size:.72rem; color:#e57373; }
+.acp2-stage-move { display:flex; flex-direction:column; gap:1px; flex-shrink:0; }
+.acp2-move-btn   { background:none; border:none; color:#444; cursor:pointer; font-size:.65rem; padding:0 2px; line-height:1.2; }
+.acp2-move-btn:hover:not(:disabled) { color:#aaa; }
+.acp2-move-btn:disabled { opacity:.2; cursor:default; }
 </style>
