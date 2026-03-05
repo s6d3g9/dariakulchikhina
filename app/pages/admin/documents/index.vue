@@ -1,60 +1,44 @@
 <template>
-  <div class="docs-root">
+  <div>
+    <div class="proj-content-area">
 
-    <!-- Header bar -->
-    <div class="docs-topbar glass-card">
-      <div class="docs-topbar-left">
-        <span class="docs-topbar-title">документы</span>
-        <span class="docs-count">{{ allDocs.length }}</span>
-      </div>
-      <div class="docs-topbar-right">
-        <input v-model="search" class="docs-search glass-input" placeholder="поиск..." />
-        <button class="a-btn-sm" @click="openUpload">+ загрузить</button>
-        <button class="a-btn-sm" @click="openGenerate">✦ из шаблона</button>
-      </div>
-    </div>
-
-    <div class="docs-layout">
-
-      <!-- ══ Left: category sidebar ══ -->
-      <nav class="docs-nav std-sidenav">
-        <div class="std-nav">
-          <!-- Create from template button -->
-          <button
-            class="docs-nav-item docs-nav-create std-nav-item"
-            :class="{ 'std-nav-item--active': viewMode === 'editor' }"
-            @click="openGenerate"
-          >
-            <span class="docs-nav-num">✦</span>
-            <span class="docs-nav-label">создать из шаблона</span>
-          </button>
-
-          <!-- Category nav items -->
-          <button
-            v-for="cat in CATEGORIES" :key="cat.key"
-            class="docs-nav-item std-nav-item"
-            :class="{ 'std-nav-item--active': activeCategory === cat.key && viewMode === 'list' && !activeDoc }"
-            @click="selectCategory(cat.key)"
-          >
-            <span class="docs-nav-num">{{ cat.num }}</span>
-            <span class="docs-nav-label">{{ cat.label }}</span>
-            <span v-if="countByCategory[cat.key]" class="docs-nav-count">{{ countByCategory[cat.key] }}</span>
-          </button>
-        </div>
-
-        <!-- RAG правовая база -->
-        <div class="docs-rag-status" :class="legalStatus?.ready ? 'docs-rag-status--ok' : 'docs-rag-status--off'">
-          <span class="docs-rag-dot"></span>
-          <div class="docs-rag-info">
-            <span class="docs-rag-label">правовая база</span>
-            <span v-if="legalStatus?.ready" class="docs-rag-count">{{ legalStatus.totalChunks }} норм</span>
-            <span v-else class="docs-rag-count">не загружена</span>
-          </div>
-        </div>
-      </nav>
+      <div class="proj-nav-col">
+        <AdminNestedNav
+          :node="currentNode"
+          :direction="slideDir"
+          :can-go-back="navDepth > 0"
+          :back-label="navDepth > 0 ? 'разделы' : ''"
+          :active-key="navDepth === 1 ? activeCategory : undefined"
+          @back="onBack"
+          @drill="onDrill"
+          @select="onSelect"
+        >
+          <template #footer>
+            <button class="ent-sidebar-add a-btn-sm" @click="openGenerate">✦ из шаблона</button>
+            <button class="ent-sidebar-add a-btn-sm" style="margin-top:4px" @click="openUpload">+ загрузить</button>
+            <div class="docs-rag-status" :class="legalStatus?.ready ? 'docs-rag-status--ok' : 'docs-rag-status--off'" style="margin-top:8px">
+              <span class="docs-rag-dot"></span>
+              <div class="docs-rag-info">
+                <span class="docs-rag-label">правовая база</span>
+                <span v-if="legalStatus?.ready" class="docs-rag-count">{{ legalStatus.totalChunks }} норм</span>
+                <span v-else class="docs-rag-count">не загружена</span>
+              </div>
+            </div>
+          </template>
+        </AdminNestedNav>
+      </div><!-- /.proj-nav-col -->
 
       <!-- ══ Right: content area ══ -->
-      <div class="docs-main">
+      <div class="proj-main">
+        <div class="docs-topbar glass-card" style="margin-bottom:14px">
+          <div class="docs-topbar-left">
+            <span class="docs-topbar-title">документы</span>
+            <span class="docs-count">{{ allDocs.length }}</span>
+          </div>
+          <div class="docs-topbar-right">
+            <input v-model="search" class="docs-search glass-input" placeholder="поиск..." />
+          </div>
+        </div>
         <Transition name="tab-fade" mode="out-in">
 
                 <!-- ── EDITOR VIEW (inline) ── -->
@@ -149,8 +133,8 @@
           </div>
 
         </Transition>
-      </div>
-    </div>
+      </div><!-- /.proj-main -->
+    </div><!-- /.proj-content-area -->
 
     <!-- ═══ Upload modal ═══ -->
     <Teleport to="body">
@@ -209,6 +193,7 @@
 
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
+import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
 
 // ══════════════════════════════════════════════════════════════════
 // CATEGORIES — numbered, professional
@@ -785,6 +770,45 @@ const countByCategory = computed(() => {
   }
   return r
 })
+
+// ── Nav state (AdminNestedNav) ──
+const navDepth = ref<0 | 1>(1)
+const slideDir = ref<'fwd' | 'back'>('fwd')
+const NAV_ROUTES: Record<string, string> = {
+  projects: '/admin', clients: '/admin/clients',
+  contractors: '/admin/contractors', designers: '/admin/designers', sellers: '/admin/sellers',
+}
+const currentNode = computed((): NavNode => navDepth.value === 0
+  ? {
+      key: 'root', title: 'разделы',
+      items: [
+        { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
+        { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
+        { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
+        { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
+        { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
+        { key: 'documents',   icon: '○', label: 'документы',  isNode: true },
+      ],
+    }
+  : {
+      key: 'documents',
+      title: 'документы',
+      count: allDocs.value?.length,
+      items: CATEGORIES.map(cat => ({
+        key: cat.key,
+        label: cat.num ? `${cat.num} ${cat.label}` : cat.label,
+        count: countByCategory.value[cat.key],
+      })),
+    }
+)
+function onDrill(item: NavItem) {
+  if (navDepth.value === 0) {
+    if (item.key === 'documents') { slideDir.value = 'fwd'; navDepth.value = 1 }
+    else if (NAV_ROUTES[item.key]) navigateTo(NAV_ROUTES[item.key])
+  }
+}
+function onSelect(item: NavItem) { selectCategory(item.key) }
+function onBack() { slideDir.value = 'back'; if (navDepth.value === 1) navDepth.value = 0 }
 
 const filteredDocs = computed(() => {
   let list = allDocs.value || []
