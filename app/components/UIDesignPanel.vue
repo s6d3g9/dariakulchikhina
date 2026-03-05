@@ -2589,7 +2589,8 @@ watch(open, (v) => {
       if (panelEl.value) {
         panelRO = new ResizeObserver((entries) => {
           const h = entries[0]?.contentRect.height ?? 0
-          document.documentElement.style.setProperty('--dp-panel-h', h + 'px')
+          // 28px топбар + высота раскрытой панели
+          document.documentElement.style.setProperty('--dp-panel-h', (28 + h) + 'px')
         })
         panelRO.observe(panelEl.value)
       }
@@ -2598,7 +2599,8 @@ watch(open, (v) => {
   } else {
     panelRO?.disconnect()
     panelRO = null
-    document.documentElement.style.setProperty('--dp-panel-h', '0px')
+    // При закрытии — топбар остаётся, возвращаем 28px
+    document.documentElement.style.setProperty('--dp-panel-h', '28px')
     document.removeEventListener('mousedown', onOutsideClick, true)
   }
 })
@@ -2761,7 +2763,11 @@ function onKey(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && open.value) { e.preventDefault(); undo() }
   if ((e.ctrlKey || e.metaKey) && e.key === 'y' && open.value) { e.preventDefault(); redo() }
 }
-onMounted(() => document.addEventListener('keydown', onKey))
+onMounted(() => {
+  document.addEventListener('keydown', onKey)
+  // Топбар всегда занимает 28px → header должен учитывать это сразу
+  document.documentElement.style.setProperty('--dp-panel-h', '28px')
+})
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey)
   document.removeEventListener('mousedown', onOutsideClick, true)
