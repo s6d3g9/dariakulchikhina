@@ -3,97 +3,102 @@
  * Эта схема описывает самоподобный алгоритм интерфейса.
  * Любой экран в системе описывается интерфейсом `NavigationNode`.
  *
- * !!! СТРОГИЕ ГЛОБАЛЬНЫЕ ПРАВИЛА UI (ОГРАНИЧЕНИЯ) !!!
- *
- * 1. СТРОГОЕ РАЗДЕЛЕНИЕ ЭКРАНА: Навигация находится ТОЛЬКО СЛЕВА (в сайдбаре).
- *    Информация и контент — ТОЛЬКО СПРАВА (в основной области).
- * 2. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО располагать элементы навигации где-либо, кроме
- *    левого вертикального меню сайдбара.
- * 3. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО создавать любые горизонтальные меню
- *    (header nav, top bar links, горизонтальные табы для навигации).
- * 4. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО выносить ветки или элементы навигации за пределы
- *    левого сайдбара.
- * 5. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО создавать разную структуру для субъектов
- *    (клиенты, дизайнеры, подрядчики) и объектов (документы, галереи).
- *    Структура меню ВСЕГДА 100% идентична и подчиняется единому интерфейсу NavigationNode.
- * 6. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО открывать меню, страницы или документы в другом
- *    окне или новой вкладке браузера.
- * 7. ВСЕ взаимодействие должно происходить строго внутри ОДНОГО окна и
- *    динамически рендериться ТОЛЬКО на ОДНОЙ странице (чистая SPA-архитектура).
- * 8. Центральная/правая часть экрана (Main Content) используется ТОЛЬКО для:
- *    - отображения конечного контента (leaf/документов),
- *    - дашбордов и форм редактирования,
- *    - предпросмотра файлов.
- *    В центральной/правой части экрана НЕ должно быть переходов на другие узлы
- *    (за исключением компонента "хлебных крошек" для возврата назад).
- * 9. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать всплывающие окна (модалки, попапы,
- *    dropdowns, оверлеи) для меню навигации.
- * 10. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать иконки, эмодзи, аватарки и
- *    дополнительные текстовые пояснения (описания/субтитры) в пунктах меню.
- *    Только строгий, минималистичный, текстовый стиль. Ничего лишнего.
+ * =========================================================================
+ * [ АРХИТЕКТУРНЫЕ ПРАВИЛА И ОГРАНИЧЕНИЯ (RU) ]
+ * =========================================================================
+ * 1. РАЗДЕЛЕНИЕ ЭКРАНА: Навигация ТОЛЬКО слева (сайдбар). Контент ТОЛЬКО справа.
+ * 2. ЕДИНОЕ ОКНО (SPA): Никаких новых вкладок (target="_blank" запрещен). Всё рендерится на одной странице.
+ * 3. ЕДИНАЯ СТРУКТУРА: Структура меню 100% идентична для любых сущностей (клиенты, проекты, документы).
+ * 4. ЛЕВЫЙ САЙДБАР (НАВИГАЦИЯ):
+ *    - Никаких горизонтальных меню или табов.
+ *    - Никаких всплывающих окон (модалок, дропдаунов) для навигации.
+ *    - Никаких иконок, эмодзи или аватарок. Только строгий текстовый минимализм (брутализм).
+ * 5. ПРАВАЯ ОБЛАСТЬ (КОНТЕНТ):
+ *    - Жесткая привязка к выбранному пункту слева.
+ *    - Внутри правой области навигация ЗАПРЕЩЕНА (разрешены только "хлебные крошки" для возврата).
+ *    - Если слева выбран Узел (node) -> справа показываем дашборд/сводную статистику.
+ *    - Если слева выбран Лист (leaf) -> справа показываем сам документ, файл или форму редактирования.
+ * 6. СЕТКА И ДИЗАЙН (ПРАВАЯ ОБЛАСТЬ):
+ *    - Строгий лимит сетки: максимум 2 элемента по горизонтали (колонки) и 8 по вертикали (строки) на видимом экране (2x8).
+ *    - Всё, что не влезает — рендерится ниже по той же строгой сетке и доступно только по скроллу/свайпу.
+ *    - Строгое визуальное разделение "Название пункта (Label)" и "Поле ввода (Control)". Смешивание недопустимо.
+ *    - Абсолютный минимализм: без теней, градиентов и визуального мусора.
  *
  * =========================================================================
- * *** SENIOR UI/UX NEGATIVE PROMPT (CRITICAL AI DIRECTIVES) ***
+ * *** SENIOR UI/UX SYSTEM DIRECTIVES & NEGATIVE PROMPTS FOR AI (EN) ***
  * =========================================================================
- * - DO NOT render ANY horizontal navigation (no top-bars, no horizontal tabs).
+ *
+ * [ 1. GLOBAL LAYOUT & ARCHITECTURE ]
+ * - STRICT SCREEN SPLIT: Navigation MUST be exclusively on the LEFT (Sidebar). Content/Data MUST be exclusively on the RIGHT (Main Area).
+ * - PURE SPA: ALL interactions must happen within a SINGLE window and render dynamically on a SINGLE page.
+ * - DO NOT open menus, pages, or documents in another window or new browser tab (target="_blank" is FORBIDDEN).
+ * - DO NOT create different layout structures for different entities. 100% structural uniformity is MANDATORY for all nodes (clients, designers, documents, etc.).
+ *
+ * [ 2. NAVIGATION RULES (LEFT SIDEBAR) ]
+ * - DO NOT render ANY horizontal navigation (no header nav, no top-bar links, no horizontal tabs).
  * - DO NOT place navigation elements outside the left vertical sidebar.
  * - DO NOT use modals, popups, dropdowns, or overlays for routing/navigation.
- * - DO NOT create different layout structures for different entities.
- *   100% structural uniformity is mandatory.
- * - DO NOT open links in new windows/tabs (target="_blank" is FORBIDDEN).
- * - DO NOT use icons, emojis, avatars, or helper text in the nav menu.
- *   Strictly minimalist, text-only brutalism.
- * - DO NOT render navigation nodes in the main content area.
- *   Main view is strictly for leaf payloads, data, and forms.
+ * - DO NOT use icons, emojis, avatars, or helper text in the nav menu. Use strictly minimalist, text-only brutalism.
+ *
+ * [ 3. MAIN CONTENT RULES (RIGHT AREA) ]
+ * - STRICT CONTENT BINDING: The right area's content is ALWAYS strictly bound to the active state of the left menu.
+ * - NO NAVIGATION ON THE RIGHT: The right area is ONLY for reading data (view) and filling forms (edit). Navigation inside the right area is FORBIDDEN. Changing entity context MUST only happen via the left sidebar.
+ * - NODE BEHAVIOR: Selecting a "node" (type: "node") in the sidebar renders only summary info/dashboards in the right area.
+ * - LEAF BEHAVIOR: Selecting a "leaf" (type: "leaf") in the sidebar renders the actual document, file, or editing form.
+ * - BREADCRUMBS: The ONLY acceptable navigation element in the right area is a breadcrumb trail for returning.
+ *
+ * [ 4. UI/UX DESIGN & GRID LIMITS (MAIN AREA) ]
+ * - STRICT GRID LIMITS: The main content area MUST use a strict 2-column grid. The visible viewport MUST fit a MAXIMUM of 2x8 elements (2 columns, 8 rows). Additional items MUST continue on this exact same grid and be accessible ONLY via vertical scrolling or swiping.
+ * - ABSOLUTE MINIMALISM: All UI elements MUST be strictly minimalist. DO NOT use decorative UI elements (no complex shadows, no gradients, no visual noise).
+ * - LABEL/CONTROL SEPARATION: Any forms, lists, and settings MUST have strict visual separation between the "Label" (item name) and "Control" (input, checkbox, select). DO NOT mix them chaotically. Enforce clear visual grid alignments.
+ * - INHERITANCE: ALL navigation restrictions (no popups, no icons, text-only minimal brutalism) apply 100% to the right content area as well.
  */
 
-// ─── 1. Типизация ────────────────────────────────────────────────────────────
-
-export type NodeType = 'system_root' | 'registry' | 'cabinet' | 'project_root'
-export type PayloadItemType = 'node' | 'leaf'
+// 1. Описание типов (Типизация для ИИ)
+export type NodeType = 'system_root' | 'registry' | 'cabinet' | 'project_root';
+export type PayloadItemType = 'node' | 'leaf';
 
 export interface FilterParams {
-  placeholder: string
-  value: string // Текущий запрос пользователя
+  placeholder: string;
+  value: string; // Текущий запрос пользователя для поиска
 }
 
 export interface PayloadItem {
-  id: string
-  name: string
-  type: PayloadItemType // 'node' — можно провалиться глубже, 'leaf' — конечный документ/форма
-  action?: string       // Подсказка для ИИ о следующем действии
+  id: string;
+  name: string;
+  type: PayloadItemType; // 'node' - можно провалиться глубже, 'leaf' - конечный документ/форма
+  action?: string; // Подсказка для ИИ о следующем действии (нажатие, открытие)
 }
 
 export interface NavigationNode {
-  step: string           // Буквенный идентификатор шага (A, B, C...)
-  nodeId: string         // Уникальный ID текущего узла
-  nodeType: NodeType     // Тип узла для системной логики (без визуальных иконок)
+  step: string;          // Буквенный идентификатор шага (A, B, C...)
+  nodeId: string;        // Уникальный ID текущего узла
+  nodeType: NodeType;    // Тип узла для системной логики
   context: {
-    title: string        // Заголовок текущего экрана
-    breadcrumbs: string[] // Путь к текущему экрану
-  }
-  filter: FilterParams   // Параметры локального поиска
-  payload: PayloadItem[] // Содержимое узла (дочерние узлы или листы)
+    title: string;       // Заголовок текущего экрана
+    breadcrumbs: string[]; // Путь к текущему экрану (хлебные крошки)
+  };
+  filter: FilterParams;  // Параметры локального поиска
+  payload: PayloadItem[]; // Содержимое узла (дочерние узлы или листы)
 }
 
-// ─── 2. State Flow: A → B → C → D → E → F ───────────────────────────────────
+// 2. Снимок состояний (State Flow) от Главного меню до конкретного документа
 //
 //   A  system_root  — Главное меню (корень)
 //   B  registry     — Реестр дизайнеров (список сущностей)
 //   C  cabinet      — Кабинет дизайнера (смешанные узлы: листья-секции + узлы-реестры)
 //   D  registry     — Реестр проектов дизайнера
-//   E  project_root — Кабинет проекта (ТОЛЬКО фазы/секции проекта — НЕ субъекты)
+//   E  project_root — Кабинет проекта (фазы/секции проекта — НЕ субъекты)
 //                     leaf = секция открывается справа
 //                     node = drill в под-реестр (документы / галерея)
 //   F  registry     — Реестр документов проекта (листья-категории)
 //
 // ВАЖНО: В project_root ЗАПРЕЩЕНО показывать субъекты (клиентов, дизайнеров,
-// подрядчиков). Это снова создаёт меню выбора субъектов — нарушает правило 5.
-// Связанные субъекты выводятся ТОЛЬКО в секции «Обзор» справа как inline-блоки.
+// подрядчиков). Это снова создаёт меню выбора субъектов — нарушает правило 3.
+// Связанные субъекты отображаются ТОЛЬКО в секции «Обзор» справа как inline-блоки.
 //
 // Тот же путь применяется к ЛЮБОЙ сущности:
 //   Клиенты, Подрядчики, Поставщики, Документы, Галереи — ИДЕНТИЧНАЯ структура.
-
 export const UserJourneyFlow: NavigationNode[] = [
   {
     step: 'A',
@@ -150,18 +155,15 @@ export const UserJourneyFlow: NavigationNode[] = [
       value: '',
     },
     payload: [
-      // leaf-секции профиля (открываются справа, не drill)
-      { id: 'dar_services',    name: 'Услуги и цены', type: 'node' },
-      { id: 'dar_packages',    name: 'Пакеты',        type: 'node' },
-      { id: 'dar_subs',        name: 'Подписки',      type: 'node' },
-      { id: 'dar_profile',     name: 'Профиль',       type: 'node' },
-      // node-реестры связанных сущностей (drill deeper)
+      { id: 'dar_services',    name: 'Услуги и цены', type: 'leaf' },
+      { id: 'dar_packages',    name: 'Пакеты',        type: 'leaf' },
+      { id: 'dar_subs',        name: 'Подписки',      type: 'leaf' },
+      { id: 'dar_profile',     name: 'Профиль',       type: 'leaf' },
       { id: 'dar_projects',    name: 'Проекты',       type: 'node', action: 'CLICK' },
       { id: 'dar_clients',     name: 'Клиенты',       type: 'node' },
       { id: 'dar_contractors', name: 'Подрядчики',    type: 'node' },
       { id: 'dar_docs',        name: 'Документы',     type: 'node' },
       { id: 'dar_gallery',     name: 'Галереи',       type: 'node' },
-      { id: 'dar_sellers',     name: 'Селлеры',       type: 'node' },
     ],
   },
 
@@ -178,8 +180,8 @@ export const UserJourneyFlow: NavigationNode[] = [
       value: '',
     },
     payload: [
-      { id: 'proj_alpha',  name: 'ЖК Альфа',    type: 'node', action: 'CLICK' },
-      { id: 'proj_forest', name: 'Дом в лесу',  type: 'node' },
+      { id: 'proj_alpha',  name: 'ЖК Альфа',   type: 'node', action: 'CLICK' },
+      { id: 'proj_forest', name: 'Дом в лесу', type: 'node' },
     ],
   },
 
@@ -238,4 +240,4 @@ export const UserJourneyFlow: NavigationNode[] = [
       { id: 'doc_14', name: 'Акт приемки', type: 'leaf' },
     ],
   },
-]
+];
