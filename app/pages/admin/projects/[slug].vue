@@ -102,13 +102,24 @@
 
           <!-- ADMIN NAV -->
           <template v-else-if="!contractorPreviewMode">
+            <!-- Sticky search -->
+            <div class="proj-nav-search">
+              <input
+                v-model="navSearch"
+                class="proj-nav-search-input"
+                type="search"
+                placeholder="поиск..."
+                autocomplete="off"
+              />
+            </div>
             <button
+              v-if="overviewMatchesSearch"
               class="proj-sidenav-item std-nav-item"
               :class="{ 'proj-sidenav-item--active': activePage === 'overview', 'std-nav-item--active': activePage === 'overview' }"
               @click="selectAdminPage('overview')"
               style="margin-bottom:8px"
             ><span class="proj-sidenav-icon">◈</span> обзор</button>
-            <template v-for="(group, gi) in navGroups" :key="group.label">
+            <template v-for="(group, gi) in filteredNavGroups" :key="group.label">
               <div class="proj-sidenav-group" v-if="group.pages.length">
                 <div class="proj-sidenav-group-label std-nav-group-label">{{ group.label }}</div>
                 <button
@@ -751,6 +762,27 @@ const navGroups = computed(() => {
     .filter(group => group.pages.length > 0)
 })
 
+const navSearch = ref('')
+
+const filteredNavGroups = computed(() => {
+  const q = navSearch.value.trim().toLowerCase()
+  if (!q) return navGroups.value
+  return navGroups.value
+    .map(group => ({
+      ...group,
+      pages: group.pages.filter(p =>
+        p.title.toLowerCase().includes(q) ||
+        (p.icon && p.icon.toLowerCase().includes(q))
+      ),
+    }))
+    .filter(group => group.pages.length > 0)
+})
+
+const overviewMatchesSearch = computed(() => {
+  const q = navSearch.value.trim().toLowerCase()
+  return !q || 'обзор'.includes(q)
+})
+
 const pagesMigrationInProgress = ref(false)
 
 watch(project, async (p) => {
@@ -1006,15 +1038,54 @@ async function unlinkDesigner(designerId: number) {
   top: 80px;
   align-self: flex-start;
   flex-shrink: 0;
-  overflow: visible;
+  height: calc(100vh - 80px);
+  overflow-y: auto;
+  overflow-x: hidden;
   margin-right: 20px;
+  /* thin scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--glass-text) 20%, transparent) transparent;
+}
+.proj-nav-col::-webkit-scrollbar { width: 3px; }
+.proj-nav-col::-webkit-scrollbar-track { background: transparent; }
+.proj-nav-col::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--glass-text) 22%, transparent);
+  border-radius: 2px;
 }
 
 /* ── Left sidebar nav ── */
 .proj-sidenav {
   width: var(--ds-sidebar-width, 200px); flex-shrink: 0;
-  padding: 10px;
+  padding: 0 10px 24px;
 }
+
+/* ── Sticky search in sidebar ── */
+.proj-nav-search {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding: 10px 0 6px;
+  background: var(--glass-page-bg);
+}
+.proj-nav-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: .74rem;
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  background: color-mix(in srgb, var(--glass-bg) 50%, transparent);
+  color: var(--glass-text);
+  outline: none;
+  font-family: inherit;
+  transition: border-color .15s;
+}
+.proj-nav-search-input:focus {
+  border-color: color-mix(in srgb, var(--ds-accent, #7c6ef7) 55%, transparent);
+}
+.proj-nav-search-input::placeholder { opacity: .45; }
+/* hide native clear button in webkit */
+.proj-nav-search-input::-webkit-search-cancel-button { display: none; }
 
 .proj-sidenav-group { margin-bottom: 18px; }
 .proj-sidenav-group-label {
