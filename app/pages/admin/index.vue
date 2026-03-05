@@ -3,10 +3,7 @@
     <div class="ent-layout ent-layout--with-stats">
       <!-- ═══ Sidebar ═══ -->
       <nav class="ent-sidebar std-sidenav">
-        <div class="ent-sidebar-head">
-          <span class="ent-sidebar-title">проекты</span>
-          <span class="ent-sidebar-count">{{ projects?.length ?? 0 }}</span>
-        </div>
+        <AdminSidebarSwitcher title="проекты" :count="projects?.length ?? 0" />
         <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
         <div class="std-nav">
           <template v-if="pending && !hasProjectsCache">

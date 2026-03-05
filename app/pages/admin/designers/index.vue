@@ -2,10 +2,7 @@
   <div>
     <div class="ent-layout ent-layout--with-stats">
       <nav class="ent-sidebar std-sidenav">
-        <div class="ent-sidebar-head">
-          <span class="ent-sidebar-title">дизайнеры</span>
-          <span class="ent-sidebar-count">{{ allDesigners?.length ?? 0 }}</span>
-        </div>
+        <AdminSidebarSwitcher title="дизайнеры" :count="allDesigners?.length ?? 0" />
         <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
         <div class="std-nav">
           <template v-if="pending">
