@@ -27,6 +27,43 @@
       </div>
     </div>
 
+    <!-- ── Task stats bar ── -->
+    <div class="kb-stats-bar">
+      <div class="kb-stats-left">
+        <span class="kb-stats-label">Задачи</span>
+        <div class="kb-stats-period">
+          <button
+            v-for="p in TASK_PERIODS" :key="p.key"
+            class="kb-period-btn"
+            :class="{ 'kb-period-btn--active': taskStatsPeriod === p.key }"
+            @click="taskStatsPeriod = p.key"
+          >{{ p.label }}</button>
+        </div>
+      </div>
+      <div class="kb-stats-badges">
+        <div class="kb-stat-badge kb-stat-badge--total">
+          <span class="kb-stat-n">{{ taskStats?.total ?? '—' }}</span>
+          <span class="kb-stat-lbl">всего</span>
+        </div>
+        <div class="kb-stat-badge kb-stat-badge--active">
+          <span class="kb-stat-n">{{ taskStats?.inProgress ?? '—' }}</span>
+          <span class="kb-stat-lbl">в работе</span>
+        </div>
+        <div class="kb-stat-badge kb-stat-badge--done">
+          <span class="kb-stat-n">{{ taskStats?.done ?? '—' }}</span>
+          <span class="kb-stat-lbl">выполнено</span>
+        </div>
+        <div class="kb-stat-badge kb-stat-badge--overdue">
+          <span class="kb-stat-n">{{ taskStats?.overdue ?? '—' }}</span>
+          <span class="kb-stat-lbl">просрочено</span>
+        </div>
+        <div class="kb-stat-badge kb-stat-badge--cancelled">
+          <span class="kb-stat-n">{{ taskStats?.cancelled ?? '—' }}</span>
+          <span class="kb-stat-lbl">отменено</span>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Loading skeleton ── -->
     <template v-if="pending && !hasProjectsCache">
       <div class="kb-skeleton-row">
@@ -198,6 +235,21 @@
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
+
+// ── Task stats panel ──────────────────────────────────
+const TASK_PERIODS = [
+  { key: 'today', label: 'сегодня' },
+  { key: 'week',  label: 'за неделю' },
+  { key: 'month', label: 'месяц' },
+  { key: 'all',   label: 'все время' },
+] as const
+type PeriodKey = typeof TASK_PERIODS[number]['key']
+const taskStatsPeriod = ref<PeriodKey>('all')
+const { data: taskStats, refresh: refreshTaskStats } = await useFetch(
+  () => `/api/admin/task-stats?period=${taskStatsPeriod.value}`,
+  { server: false },
+)
+watch(taskStatsPeriod, () => refreshTaskStats())
 
 const projectsCache = useState<any[]>('cache-admin-projects', () => [])
 const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects', {
@@ -484,6 +536,113 @@ function followUpUrgency(profile: any): 'red' | 'yellow' | null {
 .kb-btn-add:hover { opacity: .85; }
 
 /* ═══════════════════════════════════
+   TASK STATS BAR
+═══════════════════════════════════ */
+.kb-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  background: var(--glass-bg);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  border-radius: 12px;
+}
+.kb-stats-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.kb-stats-label {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--glass-text);
+  opacity: .45;
+  white-space: nowrap;
+}
+.kb-stats-period {
+  display: flex;
+  gap: 3px;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
+  border-radius: 8px;
+  padding: 3px;
+}
+.kb-period-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .72rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--glass-text);
+  opacity: .55;
+  transition: background .12s, opacity .12s;
+  white-space: nowrap;
+}
+.kb-period-btn:hover { opacity: .85; }
+.kb-period-btn--active {
+  background: var(--glass-bg);
+  opacity: 1;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+.kb-stats-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.kb-stat-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.kb-stat-n {
+  font-size: .95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.kb-stat-lbl {
+  font-size: .64rem;
+  font-weight: 400;
+  opacity: .7;
+}
+.kb-stat-badge--total {
+  background: color-mix(in srgb, var(--glass-text) 7%, transparent);
+  color: var(--glass-text);
+}
+.kb-stat-badge--active {
+  background: rgba(99,102,241,.08);
+  color: #4f46e5;
+}
+html.dark .kb-stat-badge--active { background: rgba(165,180,252,.1); color: #a5b4fc; }
+.kb-stat-badge--done {
+  background: rgba(34,197,94,.08);
+  color: #15803d;
+}
+html.dark .kb-stat-badge--done { background: rgba(134,239,172,.1); color: #86efac; }
+.kb-stat-badge--overdue {
+  background: rgba(239,68,68,.07);
+  color: #dc2626;
+}
+html.dark .kb-stat-badge--overdue { background: rgba(252,165,165,.1); color: #fca5a5; }
+.kb-stat-badge--cancelled {
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  color: var(--glass-text);
+  opacity: .55;
+}
+
+/* ═══════════════════════════════════
    KANBAN BOARD
 ═══════════════════════════════════ */
 .kb-board {
@@ -499,8 +658,8 @@ function followUpUrgency(profile: any): 'red' | 'yellow' | null {
 
 /* Column */
 .kb-col {
-  flex: 0 0 220px;
-  min-width: 200px;
+  flex: 0 0 185px;
+  min-width: 170px;
   display: flex;
   flex-direction: column;
   gap: 8px;

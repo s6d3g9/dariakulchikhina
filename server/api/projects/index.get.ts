@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
       taskTotal: sql<number>`cast(count(${workStatusItems.id}) as int)`,
       taskDone: sql<number>`cast(sum(case when ${workStatusItems.status} = 'done' then 1 else 0 end) as int)`,
       taskOverdue: sql<number>`cast(sum(case when ${workStatusItems.status} not in ('done','cancelled') and ${workStatusItems.dateEnd} is not null and ${workStatusItems.dateEnd} < current_date::text then 1 else 0 end) as int)`,
+      taskCancelled: sql<number>`cast(sum(case when ${workStatusItems.status} = 'cancelled' then 1 else 0 end) as int)`,
     })
     .from(projects)
     .leftJoin(workStatusItems, eq(workStatusItems.projectId, projects.id))
