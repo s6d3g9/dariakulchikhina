@@ -5,7 +5,7 @@ import { sql, and, gte, lte } from 'drizzle-orm'
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
-  const qs = new URLSearchParams(event.node.req.url?.split('?')[1] ?? '')
+  const qs = new URLSearchParams((event.path ?? '').split('?')[1] ?? '')
   const period = qs.get('period') || 'all'
 
   const today = new Date().toISOString().slice(0, 10)
