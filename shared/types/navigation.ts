@@ -82,8 +82,14 @@ export interface NavigationNode {
 //   B  registry     — Реестр дизайнеров (список сущностей)
 //   C  cabinet      — Кабинет дизайнера (смешанные узлы: листья-секции + узлы-реестры)
 //   D  registry     — Реестр проектов дизайнера
-//   E  project_root — Кабинет проекта (узлы по категориям)
-//   F  registry     — Реестр документов проекта (листья)
+//   E  project_root — Кабинет проекта (ТОЛЬКО фазы/секции проекта — НЕ субъекты)
+//                     leaf = секция открывается справа
+//                     node = drill в под-реестр (документы / галерея)
+//   F  registry     — Реестр документов проекта (листья-категории)
+//
+// ВАЖНО: В project_root ЗАПРЕЩЕНО показывать субъекты (клиентов, дизайнеров,
+// подрядчиков). Это снова создаёт меню выбора субъектов — нарушает правило 5.
+// Связанные субъекты выводятся ТОЛЬКО в секции «Обзор» справа как inline-блоки.
 //
 // Тот же путь применяется к ЛЮБОЙ сущности:
 //   Клиенты, Подрядчики, Поставщики, Документы, Галереи — ИДЕНТИЧНАЯ структура.
@@ -182,20 +188,35 @@ export const UserJourneyFlow: NavigationNode[] = [
     nodeId: 'proj_alpha',
     nodeType: 'project_root',
     context: {
-      title: 'Проект: ЖК Альфа',
+      title: 'ЖК Альфа',
       breadcrumbs: ['Главное меню', 'Дизайнеры', 'dariak', 'Проекты', 'ЖК Альфа'],
     },
     filter: {
-      placeholder: 'Поиск по компонентам проекта...',
+      placeholder: 'Поиск по фазам проекта...',
       value: '',
     },
+    // !! ТОЛЬКО фазы/секции проекта. Субъекты (клиенты, дизайнеры, подрядчики)
+    // НЕ являются пунктами навигации проекта — они отображаются в секции «Обзор»
     payload: [
-      { id: 'alpha_clients',     name: 'Клиенты',     type: 'node' },
-      { id: 'alpha_designers',   name: 'Дизайнеры',   type: 'node' },
-      { id: 'alpha_contractors', name: 'Подрядчики',  type: 'node' },
-      { id: 'alpha_docs',        name: 'Документы',   type: 'node', action: 'CLICK' },
-      { id: 'alpha_gallery',     name: 'Галереи',     type: 'node' },
-      { id: 'alpha_sellers',     name: 'Селлеры',     type: 'node' },
+      { id: 'prj_overview',      name: 'Обзор',                  type: 'leaf' },
+      { id: 'prj_firstcontact',  name: 'Первый контакт',         type: 'leaf' },
+      { id: 'prj_smartbrief',    name: 'Смарт-бриф / ТЗ',        type: 'leaf' },
+      { id: 'prj_concept',       name: 'Концепция',               type: 'leaf' },
+      { id: 'prj_spaceplanning', name: 'Планировочное решение',   type: 'leaf' },
+      { id: 'prj_moodboard',     name: 'Мудборд',                 type: 'leaf' },
+      { id: 'prj_plan',          name: 'Строительный план',       type: 'leaf' },
+      { id: 'prj_drawings',      name: 'Рабочие чертежи',         type: 'leaf' },
+      { id: 'prj_mep',           name: 'MEP-интеграция',          type: 'leaf' },
+      { id: 'prj_materials',     name: 'Материалы',               type: 'leaf' },
+      { id: 'prj_procurement',   name: 'Закупки',                 type: 'leaf' },
+      { id: 'prj_workstatus',    name: 'Строительные работы',     type: 'leaf' },
+      { id: 'prj_sitephotos',    name: 'Фото объекта',            type: 'leaf' },
+      { id: 'prj_punchlist',     name: 'Замечания (punch-list)',  type: 'leaf' },
+      { id: 'prj_commissioning', name: 'Акт ввода',               type: 'leaf' },
+      { id: 'prj_album',         name: 'Финальный альбом',        type: 'leaf' },
+      { id: 'prj_extraservices', name: 'Доп. услуги',             type: 'leaf' },
+      { id: 'prj_documents',     name: 'Документы',               type: 'node', action: 'CLICK' },
+      { id: 'prj_gallery',       name: 'Галерея',                 type: 'node' },
     ],
   },
 

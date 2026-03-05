@@ -101,16 +101,28 @@ const SELLER_CABINET_ITEMS: PayloadItem[] = [
   { id: 'sel_projects',   name: 'Проекты',    type: 'node' },
 ]
 
+// Фазы/секции проекта — ТОЛЬКО содержательные разделы, не субъекты.
+// Клиенты/дизайнеры/подрядчики проекта отображаются в секции «Обзор» как inline-блоки.
 const PROJECT_CABINET_ITEMS: PayloadItem[] = [
-  { id: 'prj_overview',    name: 'Обзор',      type: 'leaf' },
-  { id: 'prj_plan',        name: 'План',        type: 'leaf' },
-  { id: 'prj_moodboard',   name: 'Мудборд',    type: 'leaf' },
-  { id: 'prj_clients',     name: 'Клиенты',    type: 'node' },
-  { id: 'prj_designers',   name: 'Дизайнеры',  type: 'node' },
-  { id: 'prj_contractors', name: 'Подрядчики', type: 'node' },
-  { id: 'prj_documents',   name: 'Документы',  type: 'node' },
-  { id: 'prj_gallery',     name: 'Галереи',    type: 'node' },
-  { id: 'prj_sellers',     name: 'Поставщики', type: 'node' },
+  { id: 'prj_overview',      name: 'Обзор',                  type: 'leaf' },
+  { id: 'prj_firstcontact',  name: 'Первый контакт',         type: 'leaf' },
+  { id: 'prj_smartbrief',    name: 'Смарт-бриф / ТЗ',        type: 'leaf' },
+  { id: 'prj_concept',       name: 'Концепция',               type: 'leaf' },
+  { id: 'prj_spaceplanning', name: 'Планировочное решение',   type: 'leaf' },
+  { id: 'prj_moodboard',     name: 'Мудборд',                 type: 'leaf' },
+  { id: 'prj_plan',          name: 'Строительный план',       type: 'leaf' },
+  { id: 'prj_drawings',      name: 'Рабочие чертежи',         type: 'leaf' },
+  { id: 'prj_mep',           name: 'MEP-интеграция',          type: 'leaf' },
+  { id: 'prj_materials',     name: 'Материалы',               type: 'leaf' },
+  { id: 'prj_procurement',   name: 'Закупки',                 type: 'leaf' },
+  { id: 'prj_workstatus',    name: 'Строительные работы',     type: 'leaf' },
+  { id: 'prj_sitephotos',    name: 'Фото объекта',            type: 'leaf' },
+  { id: 'prj_punchlist',     name: 'Замечания (punch-list)',  type: 'leaf' },
+  { id: 'prj_commissioning', name: 'Акт ввода',               type: 'leaf' },
+  { id: 'prj_album',         name: 'Финальный альбом',        type: 'leaf' },
+  { id: 'prj_extraservices', name: 'Доп. услуги',             type: 'leaf' },
+  { id: 'prj_documents',     name: 'Документы',               type: 'node' },
+  { id: 'prj_gallery',       name: 'Галерея',                 type: 'node' },
 ]
 
 const DOCUMENT_ITEMS: PayloadItem[] = [
