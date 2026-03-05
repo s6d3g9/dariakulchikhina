@@ -69,7 +69,6 @@
 
     <!-- ── App shell body: sidebar portal + main ── -->
     <div class="adm-body">
-      <aside id="admin-sidebar-portal" class="adm-sidebar-portal"></aside>
       <main class="adm-main">
         <div class="admin-container">
           <slot />
@@ -568,22 +567,6 @@ async function logout() {
   min-height: calc(100vh - var(--admin-header-h));
 }
 
-/* Sidebar portal: sticky column, full viewport height below header */
-.adm-sidebar-portal {
-  width: var(--ds-sidebar-width, 220px);
-  flex-shrink: 0;
-  position: sticky;
-  top: calc(var(--admin-header-h) + var(--dp-panel-h, 0px));
-  height: calc(100vh - var(--admin-header-h) - var(--dp-panel-h, 0px));
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-  border-right: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 140%));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 140%));
-}
-
 /* Main scrollable area */
 .adm-main {
   flex: 1;
@@ -751,9 +734,6 @@ async function logout() {
     padding: 0 12px;
     margin: 18px auto;
   }
-  .adm-sidebar-portal {
-    width: 180px;
-  }
 }
 
 /* ── Mobile ── */
@@ -783,15 +763,6 @@ async function logout() {
 
   .adm-body {
     flex-direction: column;
-  }
-
-  .adm-sidebar-portal {
-    position: static;
-    width: 100%;
-    height: auto;
-    max-height: 240px;
-    border-right: none;
-    border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
   }
 
   .admin-container {

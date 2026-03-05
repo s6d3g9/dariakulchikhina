@@ -1,8 +1,15 @@
 <template>
   <div>
-    <Teleport to="#admin-sidebar-portal">
-      <nav class="ent-sidebar std-sidenav">
-        <AdminSidebarSwitcher title="поставщики" :count="allSellers?.length ?? 0" v-model="searchQuery" />
+    <div class="proj-content-area">
+      <div class="proj-nav-col">
+<nav class="proj-sidenav std-sidenav">
+        <div class="proj-nav-header">
+
+          <AdminSidebarSwitcher title="поставщики" :count="allSellers?.length ?? 0" v-model="searchQuery" />
+
+        </div>
+
+        <div class="proj-nav-body">
         <div class="std-nav">
           <template v-if="pending">
             <div class="ent-nav-skeleton" v-for="i in 3" :key="i" />
@@ -16,11 +23,15 @@
             <div v-else-if="!allSellers?.length" class="ent-nav-empty">нет поставщиков</div>
           </template>
         </div>
+
+        </div><!-- /.proj-nav-body -->
+
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true">+ добавить</button></div>
       </nav>
-    </Teleport>
+      </div><!-- /.proj-nav-col -->
 
-    <div class="ent-main">
+
+    <div class="proj-main">
         <template v-if="selectedSellerId">
           <div class="ent-entity-hd">
             <span class="ent-entity-hd-name">{{ selectedSeller?.name }}</span>

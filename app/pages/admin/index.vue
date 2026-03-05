@@ -1,9 +1,15 @@
 <template>
   <div>
-    <Teleport to="#admin-sidebar-portal">
-      <!-- ═══ Sidebar ═══ -->
-      <nav class="ent-sidebar std-sidenav">
-        <AdminSidebarSwitcher title="проекты" :count="projects?.length ?? 0" v-model="searchQuery" />
+    <div class="proj-content-area">
+      <div class="proj-nav-col">
+<nav class="proj-sidenav std-sidenav">
+        <div class="proj-nav-header">
+
+          <AdminSidebarSwitcher title="проекты" :count="projects?.length ?? 0" v-model="searchQuery" />
+
+        </div>
+
+        <div class="proj-nav-body">
         <div class="std-nav">
           <template v-if="pending && !hasProjectsCache">
             <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
@@ -18,12 +24,16 @@
             <div v-else-if="!projects?.length" class="pj-nav-empty">нет проектов</div>
           </template>
         </div>
+
+        </div><!-- /.proj-nav-body -->
+
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true; wizardStep = 1">+ создать</button></div>
       </nav>
-    </Teleport>
+      </div><!-- /.proj-nav-col -->
+
 
     <!-- ═══ Detail ═══ -->
-    <div class="ent-main">
+    <div class="proj-main">
         <div v-if="selectedProject" class="ent-detail-card glass-card">
           <div class="ent-detail-head">
             <div>
