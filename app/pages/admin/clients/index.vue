@@ -80,8 +80,6 @@
           <button class="a-btn-sm" style="margin-top:6px" @click="openAdd">+ добавить</button>
         </div>
 
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
     <Teleport to="body">
     <div v-if="showModal" class="cl-backdrop" @click.self="closeModal">
       <div class="cl-modal glass-surface glass-card">

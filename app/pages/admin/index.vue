@@ -6,7 +6,6 @@
       <span v-else>Нет проектов — создайте первый</span>
       <button v-if="!projects?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true; wizardStep = 1">+ создать проект</button>
     </div>
-    <AdminProjectStatusBar />
     <Teleport to="body">
       <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
         <div class="pj-modal glass-surface">

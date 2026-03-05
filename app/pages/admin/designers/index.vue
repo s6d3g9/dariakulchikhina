@@ -27,7 +27,6 @@
           <button class="a-btn-sm" style="margin-top:6px" @click="showCreate = true">+ добавить</button>
         </div>
 
-        <AdminProjectStatusBar />
   </div>
 </template>
 

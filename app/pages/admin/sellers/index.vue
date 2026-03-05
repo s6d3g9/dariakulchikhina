@@ -25,8 +25,6 @@
         <button class="a-btn-sm" style="margin-top:6px" @click="showCreate = true">+ добавить</button>
       </div>
 
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
     <Teleport to="body">
       <div v-if="showEditModal" class="ct-backdrop" @click.self="closeEdit">
         <div class="ct-modal glass-surface">

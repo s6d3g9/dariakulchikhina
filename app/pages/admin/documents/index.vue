@@ -1,7 +1,6 @@
 <template>
   <div>
     <AdminDocumentsSection :category="activeCategory" />
-    <AdminProjectStatusBar />
   </div>
 </template>
 
