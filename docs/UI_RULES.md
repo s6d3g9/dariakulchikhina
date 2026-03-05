@@ -1,10 +1,11 @@
-# UI Rules — справочник для разработки
+# UI_RULES — справочник для разработки
 
-> Компактная выжимка из `UI_INTERFACE.md`. Читай перед любой правкой компонентов.
+> Основной документ. Читай перед любой правкой компонентов, страниц, лейаутов.
+> Детали по API / DB — `ARCHITECTURE.md`. Фазы проекта — `roadmap-sync-rules.md`. UIDesignPanel — `DESIGN_EDITOR.md`.
 
 ## Стек
 
-Nuxt 3 · Vue 3 · CSS custom properties · Glass morphism · 5 тем · Dark mode
+Nuxt 4 · Vue 3 · TypeScript · CSS custom properties · Glass morphism · 5 тем · Dark mode
 
 ## Роли → маршруты
 
@@ -36,6 +37,21 @@ Nuxt 3 · Vue 3 · CSS custom properties · Glass morphism · 5 тем · Dark m
 | Поле формы        | `.u-field` + `.u-field__label` | Label + input обёртка              |
 | Заголовок секции  | `.cab-section-title`           | Над блоком формы / списком         |
 
+## Admin-лейаут (`app/layouts/admin.vue`)
+
+```
+adm-util-bar  (fixed, правый верх) — 🔍 / Ctrl+K · тема · уведомления · выйти
+ent-sidebar   (fixed, левая колонка) — заполняется через <Teleport to="#admin-sidebar-portal"> внутри каждой страницы
+adm-main      (<slot />) — контент страницы
+```
+
+| Кнопка util-bar | Действие |
+|---|---|
+| 🔍 / Ctrl+K | `searchOpen = true` → `AdminSearch` (модал) |
+| тема ●/○ | `toggleTheme()` |
+| бейдж-число | только индикатор, не кнопка |
+| выйти | `POST /api/auth/logout` → `/admin/login` |
+
 ## Layout — фрактальный паттерн
 
 Любая страница = **sidebar + main**. Всегда используй одну из двух пар:
@@ -46,6 +62,34 @@ cab-body   > cab-sidebar + cab-main    ← кабинеты (подрядчик,
 ```
 
 ≤ 980px → sidebar переворачивается в горизонтальный tab-strip автоматически.
+
+## AdminSidebarSwitcher
+
+**Файл:** `app/components/AdminSidebarSwitcher.vue`  
+**Props:** `title: string`, `count?: number`, `v-model` (строка поиска)
+
+### Структура DOM — строго в таком порядке:
+1. `esw-head` — кнопка (title + count + стрелка), клик → `open = !open`
+2. `esw-search-wrap` — поле поиска — **всегда видно** (не зависит от `open`)
+3. `esw-dropdown` — список разделов, `v-if="open"`, **`position: relative`** (in-flow, не absolute)
+
+### Правила:
+- Клик вне компонента → `open = false` (document listener)
+- Переход: `navigate(item)` → если `projectSlug` в query — сохраняет его: `push({ path, query: { projectSlug } })`
+- `isActive`: `projects` → `path === '/admin'` или `startsWith('/admin/projects')`; `gallery` → `startsWith('/admin/gallery')`; остальные → `startsWith(item.path)`
+- Монохромный стиль: цвет только `var(--glass-text)`, opacity `.38 → .72 → 1`
+
+### Маппинг разделов:
+
+| Пункт | path |
+|---|---|
+| проекты | `/admin` |
+| клиенты | `/admin/clients` |
+| подрядчики | `/admin/contractors` |
+| дизайнеры | `/admin/designers` |
+| поставщики | `/admin/sellers` |
+| галерея | `/admin/gallery/interiors` |
+| документы | `/admin/documents` |
 
 ## Форма — шаблон
 
@@ -157,15 +201,29 @@ transition: opacity var(--ds-anim-duration) var(--ds-anim-easing); /* 180ms ease
 `cloud` · `linen` · `stone` · `fog` · `parchment`  
 Хранятся: `localStorage['ui-theme']`, `localStorage['design-tokens']`.
 
-## Admin: навигация проекта
+## Admin: страница проекта `/admin/projects/[slug]`
 
-Источник: `shared/constants/pages.ts` → `PROJECT_PAGES[]`
+Источник вкладок: `shared/constants/pages.ts` → `PROJECT_PAGES[]`
 
-Фазы: 0-lead (5) → 1-concept (3) → 2-working_project (4) → 3-procurement (3) → 4-construction (4) → 5-commissioning (3) = 22 вкладки
+Фазы: 0-lead (5) → 1-concept (3) → 2-working_project (4) → 3-procurement (3) → 4-construction (4) → 5-commissioning (3) = **22 вкладки**
 
-Переключение вкладок: `selectAdminPage(slug)` → `activePage` → `<component :is>` (без URL).
+Переключение: `selectAdminPage(slug)` → `activePage` → `<component :is>` — **без смены URL**.
 
-Режимы: default | `?view=client` | `?view=contractor&cid=`
+| slug фазы 0 | slug фазы 1 | slug фазы 2 | slug фазы 3 | slug фазы 4 | slug фазы 5 |
+|---|---|---|---|---|---|
+| first_contact | space_planning | working_drawings | procurement_list | construction_plan | punch_list |
+| self_profile | moodboard | specifications | suppliers | work_status | commissioning_act |
+| site_survey | concept_approval | mep_integration | procurement_status | work_log | client_sign_off |
+| tor_contract | | design_album_final | | site_photos | |
+| extra_services | | | | | |
+
+Специальные режимы (через query):
+
+| query | Что рендерится |
+|---|---|
+| default | Admin* компоненты |
+| `?view=client` | Client* компоненты (превью клиента) |
+| `?view=contractor&cid=<id>` | `AdminContractorCabinet :contractor-id` |
 
 ## Admin: entity-разделы (все одинаковые)
 
