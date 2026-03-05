@@ -1,572 +1,402 @@
 /**
- * useAdminNav — глобальный рекурсивный drill-down навигатор
+ * useAdminNav — глобальный composable навигации
+ * Полностью реализует NavigationNode schema (shared/types/navigation.ts)
  *
- * Модель:
- *   Узел A (root)    → Главное меню — 7 разделов
- *   Узел B (reg)     → Реестр конкретного раздела (список сущностей)
- *   Узел C (cab-*)   → Кабинет сущности (смешанные листья-профиль + узлы-связи)
- *   Узел D (reg-ctx) → Реестр связанных сущностей (в контексте C)
- *   Узел E (cab-*)   → Кабинет проекта (из контекста D)
- *   Узел F (reg-ctx) → Конкретные предметы в проекте (листья — документы и т.д.)
- *
- * Стек хранится в useState → сохраняется при переходах между маршрутами
+ * Стек состоит из двух параллельных массивов:
+ *   nodeStack — NavigationNode[] для отображения (AdminNestedNav)
+ *   ctxStack  — NavCtx[] для бизнес-логики (contentSpec)
  */
 
-import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
+import type { NavigationNode, PayloadItem } from '~/shared/types/navigation'
 
-// ─── Frame types ──────────────────────────────────────────────────────────────
-
-export type FrameType =
-  | 'root'
-  | 'reg'            // Реестр раздела (designers, projects, clients…)
-  | 'cab-designer'   // Кабинет дизайнера
-  | 'cab-project'    // Кабинет проекта
-  | 'reg-ctx'        // Реестр в контексте (filtered by entity)
-
-export interface NavContext {
-  section?: string        // текущий раздел: 'designers' | 'projects' | etc.
+interface NavCtx {
+  section: string
   designerId?: number
   designerName?: string
+  clientId?: number
+  clientName?: string
+  contractorId?: number
+  contractorName?: string
+  sellerId?: number
+  sellerName?: string
   projectSlug?: string
   projectTitle?: string
-  clientId?: number
-  contractorId?: number
-  sellerId?: number
 }
-
-export interface StackFrame {
-  key: string
-  type: FrameType
-  node: NavNode
-  ctx: NavContext        // накопленный контекст к моменту создания фрейма
-}
-
-// ─── Content spec — что показывать в main области ──────────────────────────
 
 export interface ContentSpec {
-  view: 'empty' | 'section' | 'designer' | 'project' | 'client' | 'contractor' | 'seller' | 'gallery' | 'documents'
-  section?: string
-  designerId?: number
-  designerSection?: string   // выбранный лист в кабинете дизайнера
-  projectSlug?: string
-  clientId?: number
-  contractorId?: number
-  sellerId?: number
-  galleryCategory?: string
-  documentCategory?: string
-  leafDocId?: number
+  section: string
+  designerId: number | null
+  designerSection: string | null
+  clientId: number | null
+  contractorId: number | null
+  sellerId: number | null
+  projectSlug: string | null
+  projectSection: string | null
+  galleryCategory: string | null
+  documentCategory: string | null
+  activeLeafId: string | null
 }
 
-// ─── Static item lists ────────────────────────────────────────────────────────
-
-const ROOT_ITEMS: NavItem[] = [
-  { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
-  { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
-  { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
-  { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
-  { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
-  { key: 'documents',   icon: '○', label: 'документы',  isNode: true },
-  { key: 'gallery',     icon: '◉', label: 'галерея',    isNode: true },
-]
-
-const GALLERY_ITEMS: NavItem[] = [
-  { key: 'interiors',  icon: '⬡', label: 'интерьеры' },
-  { key: 'furniture',  icon: '⬢', label: 'мебель' },
-  { key: 'moodboards', icon: '⬣', label: 'мудборды' },
-  { key: 'materials',  icon: '◧', label: 'материалы' },
-  { key: 'art',        icon: '◨', label: 'арт и декор' },
-]
-
-const DOC_CATEGORY_ITEMS: NavItem[] = [
-  { key: 'all',             label: 'все документы' },
-  { key: 'contract',        label: '01 договоры на дизайн-проект' },
-  { key: 'contract_supply', label: '02 договоры поставки' },
-  { key: 'contract_work',   label: '03 договоры подряда' },
-  { key: 'act',             label: '04 акты выполненных работ' },
-  { key: 'act_defect',      label: '05 акты о дефектах' },
-  { key: 'invoice',         label: '06 счета на оплату' },
-  { key: 'estimate',        label: '07 сметы и калькуляции' },
-  { key: 'specification',   label: '08 спецификации' },
-  { key: 'tz',              label: '09 техническое задание' },
-  { key: 'approval',        label: '10 согласования' },
-  { key: 'template',        label: '14 шаблоны документов' },
-  { key: 'other',           label: '15 прочее' },
-]
-
-// Лист-секции кабинета дизайнера (не сущности, а разделы профиля)
-const DESIGNER_PROFILE_LEAVES: NavItem[] = [
-  { key: 'dashboard',     label: 'Обзор',          icon: '◈' },
-  { key: 'services',      label: 'Услуги и цены',   icon: '◎' },
-  { key: 'packages',      label: 'Пакеты',          icon: '◑' },
-  { key: 'subscriptions', label: 'Подписки',        icon: '⟳' },
-  { key: 'profile',       label: 'Профиль',         icon: '◓' },
-]
-
-// Узлы кабинета дизайнера — связанные сущности
-const DESIGNER_RELATION_NODES: NavItem[] = [
-  { key: 'rel-projects',    label: 'Проекты',    icon: '◒', isNode: true },
-  { key: 'rel-clients',     label: 'Клиенты',    icon: '◐', isNode: true },
-  { key: 'rel-contractors', label: 'Подрядчики', icon: '◒', isNode: true },
-  { key: 'rel-documents',   label: 'Документы',  icon: '○', isNode: true },
-  { key: 'rel-gallery',     label: 'Галерея',    icon: '◉', isNode: true },
-]
-
-// Узлы кабинета проекта — категории внутри проекта
-const PROJECT_CABINET_NODES: NavItem[] = [
-  { key: 'proj-clients',     label: 'Клиенты',      icon: '◐', isNode: true },
-  { key: 'proj-designers',   label: 'Дизайнеры',    icon: '◓', isNode: true },
-  { key: 'proj-contractors', label: 'Подрядчики',   icon: '◒', isNode: true },
-  { key: 'proj-documents',   label: 'Документы',    icon: '○', isNode: true },
-  { key: 'proj-gallery',     label: 'Галерея',      icon: '◉', isNode: true },
-  { key: 'proj-sellers',     label: 'Поставщики',   icon: '◑', isNode: true },
-]
-
-// Маршруты для секций
-const SECTION_ROUTES: Record<string, string> = {
-  projects:    '/admin',
-  clients:     '/admin/clients',
-  contractors: '/admin/contractors',
-  designers:   '/admin/designers',
-  sellers:     '/admin/sellers',
-  documents:   '/admin/documents',
-  gallery:     '/admin/gallery',
-}
-
-// ─── Node builders ────────────────────────────────────────────────────────────
-
-function rootFrame(): StackFrame {
+function rootNode(): NavigationNode {
   return {
-    key: 'root',
-    type: 'root',
-    ctx: {},
-    node: { key: 'root', title: 'главное меню', items: ROOT_ITEMS },
+    step: 'A',
+    nodeId: 'root',
+    nodeType: 'system_root',
+    context: { title: 'меню', breadcrumbs: ['меню'] },
+    filter: { placeholder: 'поиск...', value: '' },
+    payload: [
+      { id: 'cat_projects',    name: 'Проекты',     type: 'node' },
+      { id: 'cat_clients',     name: 'Клиенты',     type: 'node' },
+      { id: 'cat_designers',   name: 'Дизайнеры',   type: 'node' },
+      { id: 'cat_contractors', name: 'Подрядчики',  type: 'node' },
+      { id: 'cat_documents',   name: 'Документы',   type: 'node' },
+      { id: 'cat_gallery',     name: 'Галереи',     type: 'node' },
+      { id: 'cat_sellers',     name: 'Поставщики',  type: 'node' },
+    ],
   }
 }
 
-function buildEntityItems(section: string, data: any[]): NavItem[] {
-  switch (section) {
-    case 'projects':
-      return data.map(p => ({ key: p.slug, label: p.title, sub: p.status, isNode: true }))
-    case 'clients':
-      return data.map(c => ({
-        key: String(c.id), label: c.name,
-        sub: c.linkedProjects?.map((p: any) => p.title).join(', '),
-        isNode: false,
-      }))
-    case 'contractors':
-      return data.map(c => ({
-        key: String(c.id), label: c.name,
-        sub: c.workTypes?.join(', ') || c.companyName,
-        isNode: false,
-      }))
-    case 'designers':
-      return data.map(d => ({ key: String(d.id), label: d.name, sub: d.city, isNode: true }))
-    case 'sellers':
-      return data.map(s => ({ key: String(s.id), label: s.name, sub: s.city, isNode: false }))
-    default:
-      return []
-  }
+const SECTION_ROUTES: Record<string, string> = {
+  cat_projects:    '/admin',
+  cat_clients:     '/admin/clients',
+  cat_designers:   '/admin/designers',
+  cat_contractors: '/admin/contractors',
+  cat_documents:   '/admin/documents',
+  cat_gallery:     '/admin/gallery',
+  cat_sellers:     '/admin/sellers',
 }
 
-// ─── Content derivation ───────────────────────────────────────────────────────
+const DESIGNER_CABINET_ITEMS: PayloadItem[] = [
+  { id: 'des_dashboard',     name: 'Обзор',         type: 'leaf' },
+  { id: 'des_services',      name: 'Услуги и цены', type: 'leaf' },
+  { id: 'des_packages',      name: 'Пакеты',        type: 'leaf' },
+  { id: 'des_subscriptions', name: 'Подписки',      type: 'leaf' },
+  { id: 'des_profile',       name: 'Профиль',       type: 'leaf' },
+  { id: 'des_projects',      name: 'Проекты',       type: 'node' },
+  { id: 'des_clients',       name: 'Клиенты',       type: 'node' },
+  { id: 'des_contractors',   name: 'Подрядчики',    type: 'node' },
+  { id: 'des_documents',     name: 'Документы',     type: 'node' },
+  { id: 'des_gallery',       name: 'Галереи',       type: 'node' },
+]
 
-function deriveContent(frame: StackFrame, activeKey?: string): ContentSpec {
-  const { type, ctx } = frame
+const CLIENT_CABINET_ITEMS: PayloadItem[] = [
+  { id: 'cli_dashboard',  name: 'Обзор',      type: 'leaf' },
+  { id: 'cli_profile',    name: 'Профиль',    type: 'leaf' },
+  { id: 'cli_signoff',    name: 'Подписание', type: 'leaf' },
+  { id: 'cli_projects',   name: 'Проекты',    type: 'node' },
+  { id: 'cli_documents',  name: 'Документы',  type: 'node' },
+]
 
-  if (type === 'root') return { view: 'empty' }
+const CONTRACTOR_CABINET_ITEMS: PayloadItem[] = [
+  { id: 'con_dashboard',  name: 'Обзор',      type: 'leaf' },
+  { id: 'con_profile',    name: 'Профиль',    type: 'leaf' },
+  { id: 'con_projects',   name: 'Проекты',    type: 'node' },
+  { id: 'con_documents',  name: 'Документы',  type: 'node' },
+]
 
-  if (type === 'reg') {
-    if (ctx.section === 'gallery')
-      return { view: 'gallery', galleryCategory: activeKey || 'interiors' }
-    if (ctx.section === 'documents')
-      return { view: 'documents', documentCategory: activeKey || 'all' }
-    if (!activeKey) return { view: 'section', section: ctx.section }
-    switch (ctx.section) {
-      case 'designers':   return { view: 'designer',   designerId:    Number(activeKey) }
-      case 'projects':    return { view: 'project',    projectSlug:   activeKey }
-      case 'clients':     return { view: 'client',     clientId:      Number(activeKey) }
-      case 'contractors': return { view: 'contractor', contractorId:  Number(activeKey) }
-      case 'sellers':     return { view: 'seller',     sellerId:      Number(activeKey) }
+const SELLER_CABINET_ITEMS: PayloadItem[] = [
+  { id: 'sel_dashboard',  name: 'Обзор',      type: 'leaf' },
+  { id: 'sel_profile',    name: 'Профиль',    type: 'leaf' },
+  { id: 'sel_products',   name: 'Каталог',    type: 'leaf' },
+  { id: 'sel_projects',   name: 'Проекты',    type: 'node' },
+]
+
+const PROJECT_CABINET_ITEMS: PayloadItem[] = [
+  { id: 'prj_overview',    name: 'Обзор',      type: 'leaf' },
+  { id: 'prj_plan',        name: 'План',        type: 'leaf' },
+  { id: 'prj_moodboard',   name: 'Мудборд',    type: 'leaf' },
+  { id: 'prj_clients',     name: 'Клиенты',    type: 'node' },
+  { id: 'prj_designers',   name: 'Дизайнеры',  type: 'node' },
+  { id: 'prj_contractors', name: 'Подрядчики', type: 'node' },
+  { id: 'prj_documents',   name: 'Документы',  type: 'node' },
+  { id: 'prj_gallery',     name: 'Галереи',    type: 'node' },
+  { id: 'prj_sellers',     name: 'Поставщики', type: 'node' },
+]
+
+const DOCUMENT_ITEMS: PayloadItem[] = [
+  { id: 'doc_all',             name: 'Все документы',                type: 'leaf' },
+  { id: 'doc_contract',        name: '01 Договоры дизайн-проект',    type: 'leaf' },
+  { id: 'doc_contract_supply', name: '02 Договоры поставки',         type: 'leaf' },
+  { id: 'doc_contract_work',   name: '03 Договоры подряда',          type: 'leaf' },
+  { id: 'doc_act',             name: '04 Акты выполненных работ',    type: 'leaf' },
+  { id: 'doc_act_defect',      name: '05 Акты о дефектах',           type: 'leaf' },
+  { id: 'doc_invoice',         name: '06 Счета на оплату',           type: 'leaf' },
+  { id: 'doc_estimate',        name: '07 Сметы',                     type: 'leaf' },
+  { id: 'doc_specification',   name: '08 Спецификации',              type: 'leaf' },
+  { id: 'doc_tz',              name: '09 Техническое задание',       type: 'leaf' },
+  { id: 'doc_approval',        name: '10 Согласования',              type: 'leaf' },
+  { id: 'doc_template',        name: '14 Шаблоны',                   type: 'leaf' },
+  { id: 'doc_other',           name: '15 Прочее',                    type: 'leaf' },
+]
+
+const GALLERY_ITEMS: PayloadItem[] = [
+  { id: 'gal_interiors',  name: 'Интерьеры',   type: 'leaf' },
+  { id: 'gal_furniture',  name: 'Мебель',       type: 'leaf' },
+  { id: 'gal_moodboards', name: 'Мудборды',     type: 'leaf' },
+  { id: 'gal_materials',  name: 'Материалы',    type: 'leaf' },
+  { id: 'gal_art',        name: 'Арт и декор',  type: 'leaf' },
+]
+
+// ─── Composable ───────────────────────────────────────────────────────────────
+export function useAdminNav() {
+  const router = useRouter()
+
+  const nodeStack    = useState<NavigationNode[]>('nav-v2-nodes', () => [rootNode()])
+  const ctxStack     = useState<NavCtx[]>('nav-v2-ctx',  () => [{ section: '' }])
+  const activeLeafId = useState<string | undefined>('nav-v2-leaf', () => undefined)
+  const slideDir     = useState<'fwd' | 'back'>('nav-v2-dir', () => 'fwd')
+  const loading      = ref(false)
+
+  const currentNode = computed<NavigationNode>(() => nodeStack.value[nodeStack.value.length - 1])
+  const currentCtx  = computed<NavCtx>(() => ctxStack.value[ctxStack.value.length - 1])
+  const canGoBack   = computed(() => nodeStack.value.length > 1)
+
+  const contentSpec = computed<ContentSpec>(() => {
+    const ctx  = currentCtx.value
+    const leaf = activeLeafId.value ?? ''
+    return {
+      section:          ctx.section,
+      designerId:       ctx.designerId ?? null,
+      designerSection:  leaf.startsWith('des_') ? leaf.replace('des_', '') : null,
+      clientId:         ctx.clientId ?? null,
+      contractorId:     ctx.contractorId ?? null,
+      sellerId:         ctx.sellerId ?? null,
+      projectSlug:      ctx.projectSlug ?? null,
+      projectSection:   leaf.startsWith('prj_') ? leaf.replace('prj_', '') : null,
+      galleryCategory:  leaf.startsWith('gal_') ? leaf.replace('gal_', '') : null,
+      documentCategory: leaf.startsWith('doc_') ? leaf.replace('doc_', '') : null,
+      activeLeafId:     activeLeafId.value ?? null,
     }
-  }
+  })
 
-  if (type === 'cab-designer')
-    return { view: 'designer', designerId: ctx.designerId, designerSection: activeKey }
-
-  if (type === 'cab-project')
-    return { view: 'project', projectSlug: ctx.projectSlug }
-
-  if (type === 'reg-ctx') {
-    // Deep context: what was arrived-at
-    if (ctx.projectSlug)   return { view: 'project', projectSlug: ctx.projectSlug }
-    if (ctx.designerId)    return { view: 'designer', designerId: ctx.designerId }
-  }
-
-  return { view: 'empty' }
-}
-
-// ─── Main composable ──────────────────────────────────────────────────────────
-
-export const useAdminNav = () => {
-  const stack    = useState<StackFrame[]>('adm-nav-stack',  () => [rootFrame()])
-  const slideDir = useState<'fwd' | 'back'>('adm-nav-dir', () => 'fwd')
-  const activeKey= useState<string | undefined>('adm-nav-active', () => undefined)
-  const loading  = ref(false)
-
-  const currentFrame  = computed(() => stack.value.at(-1)!)
-  const currentNode   = computed(() => currentFrame.value.node)
-  const canGoBack     = computed(() => stack.value.length > 1)
-  const backLabel     = computed(() => stack.value.at(-2)?.node.title ?? '')
-  const contentSpec   = computed<ContentSpec>(() => deriveContent(currentFrame.value, activeKey.value))
-
-  // ── drill ─────────────────────────────────────────────────────────────────────
-  async function drill(item: NavItem) {
-    slideDir.value = 'fwd'
+  async function drill(item: PayloadItem) {
+    if (item.type !== 'node') return
     loading.value = true
+    slideDir.value = 'fwd'
     try {
-      const frame = await buildNextFrame(currentFrame.value, item)
-      if (frame) {
-        stack.value = [...stack.value, frame]
-        activeKey.value = undefined
-      }
+      const result = await buildNextNode(currentNode.value, currentCtx.value, item, router)
+      if (!result) return
+      nodeStack.value = [...nodeStack.value, result.node]
+      ctxStack.value  = [...ctxStack.value,  result.ctx]
+      activeLeafId.value = undefined
     } finally {
       loading.value = false
     }
   }
 
-  // ── back ──────────────────────────────────────────────────────────────────────
   function back() {
-    if (stack.value.length <= 1) return
+    if (nodeStack.value.length <= 1) return
     slideDir.value = 'back'
-    stack.value = stack.value.slice(0, -1)
-    activeKey.value = undefined
+    nodeStack.value = nodeStack.value.slice(0, -1)
+    ctxStack.value  = ctxStack.value.slice(0, -1)
+    activeLeafId.value = undefined
   }
 
-  // ── select ────────────────────────────────────────────────────────────────────
-  function select(item: NavItem) {
-    activeKey.value = item.key
-  }
-
-  // ── Sync nav to route (called by each page on mount) ──────────────────────────
-  // If top of stack is already inside this section → no change (preserve depth)
-  // If at root or different section → push section registry
-  async function ensureSection(section: string) {
-    const top = currentFrame.value
-    if (top.ctx.section === section) return  // already there
-    if (top.type !== 'root') {
-      // Reset to root first, then push
-      stack.value = [rootFrame()]
-      activeKey.value = undefined
-    }
-    // Push section registry
-    const item = ROOT_ITEMS.find(s => s.key === section)
-    if (item) await drill(item)
+  function select(item: PayloadItem) {
+    activeLeafId.value = item.id
   }
 
   function goRoot() {
     slideDir.value = 'back'
-    stack.value = [rootFrame()]
-    activeKey.value = undefined
+    nodeStack.value = [rootNode()]
+    ctxStack.value  = [{ section: '' }]
+    activeLeafId.value = undefined
+  }
+
+  async function ensureSection(sectionKey: string) {
+    const catId = `cat_${sectionKey}`
+    if (currentCtx.value.section === sectionKey) return
+    nodeStack.value = [rootNode()]
+    ctxStack.value  = [{ section: '' }]
+    activeLeafId.value = undefined
+    const item = rootNode().payload.find(p => p.id === catId)
+    if (item) await drill(item)
   }
 
   return {
     currentNode,
-    currentFrame,
     canGoBack,
-    backLabel,
-    slideDir: computed(() => slideDir.value),
-    activeKey: computed(() => activeKey.value),
-    loading: readonly(loading),
+    slideDir:     computed(() => slideDir.value),
+    activeLeafId: computed(() => activeLeafId.value),
+    loading:      readonly(loading),
     contentSpec,
     drill,
     back,
     select,
-    ensureSection,
     goRoot,
-    stack: readonly(stack),
+    ensureSection,
+    nodeStack: readonly(nodeStack),
   }
 }
 
-// ─── Async frame builder ──────────────────────────────────────────────────────
+// ─── Node builder (вне composable — не привязан к instance) ──────────────────
+async function buildNextNode(
+  current: NavigationNode,
+  ctx: NavCtx,
+  item: PayloadItem,
+  router: ReturnType<typeof useRouter>,
+): Promise<{ node: NavigationNode; ctx: NavCtx } | null> {
+  const newCtx: NavCtx = { ...ctx }
+  const crumbs = [...current.context.breadcrumbs]
 
-async function buildNextFrame(current: StackFrame, item: NavItem): Promise<StackFrame | null> {
-  const router = useRouter()
-  const ctx: NavContext = { ...current.ctx }
+  // ── ROOT → registry секций ────────────────────────────────────────────────
+  if (current.nodeId === 'root') {
+    newCtx.section = item.id.replace('cat_', '')
+    const route = SECTION_ROUTES[item.id]
+    if (route) router.push(route)
 
-  // ─── ROOT → section registry ───────────────────────────────────────────────
-  if (current.type === 'root') {
-    ctx.section = item.key
-
-    if (item.key === 'gallery') {
-      router.push('/admin/gallery')
-      return {
-        key: 'reg-gallery',
-        type: 'reg',
-        ctx,
-        node: { key: 'reg-gallery', title: 'галерея', items: GALLERY_ITEMS },
-      }
+    if (item.id === 'cat_documents') {
+      return { ctx: newCtx, node: {
+        step: 'B', nodeId: 'reg_documents', nodeType: 'registry',
+        context: { title: 'Документы', breadcrumbs: [...crumbs, 'Документы'] },
+        filter: { placeholder: 'Поиск по типу документа...', value: '' },
+        payload: DOCUMENT_ITEMS,
+      }}
+    }
+    if (item.id === 'cat_gallery') {
+      return { ctx: newCtx, node: {
+        step: 'B', nodeId: 'reg_gallery', nodeType: 'registry',
+        context: { title: 'Галереи', breadcrumbs: [...crumbs, 'Галереи'] },
+        filter: { placeholder: 'Поиск по разделу...', value: '' },
+        payload: GALLERY_ITEMS,
+      }}
     }
 
-    if (item.key === 'documents') {
-      router.push('/admin/documents')
-      return {
-        key: 'reg-documents',
-        type: 'reg',
-        ctx,
-        node: { key: 'reg-documents', title: 'документы', items: DOC_CATEGORY_ITEMS },
-      }
+    const apiMap: Record<string, string> = {
+      cat_projects:    '/api/projects',
+      cat_designers:   '/api/designers',
+      cat_clients:     '/api/clients',
+      cat_contractors: '/api/contractors',
+      cat_sellers:     '/api/sellers',
     }
-
-    const urlMap: Record<string, string> = {
-      projects: '/api/projects', clients: '/api/clients',
-      contractors: '/api/contractors', designers: '/api/designers',
-      sellers: '/api/sellers',
+    const titleMap: Record<string, string> = {
+      cat_projects: 'Проекты', cat_designers: 'Дизайнеры', cat_clients: 'Клиенты',
+      cat_contractors: 'Подрядчики', cat_sellers: 'Поставщики',
     }
-    const apiUrl = urlMap[item.key]
-    if (!apiUrl) return null
-
-    const sectionPath = SECTION_ROUTES[item.key]
-    if (sectionPath) router.push(sectionPath)
-    const data = await $fetch<any[]>(apiUrl).catch(() => [])
-    const items = buildEntityItems(item.key, data)
-
-    return {
-      key: `reg-${item.key}`,
-      type: 'reg',
-      ctx,
-      node: { key: `reg-${item.key}`, title: item.label, count: items.length, items },
-    }
+    const api = apiMap[item.id]
+    if (!api) return null
+    const data = await $fetch<any[]>(api).catch(() => [])
+    const title = titleMap[item.id] ?? newCtx.section
+    return { ctx: newCtx, node: {
+      step: 'B', nodeId: `reg_${newCtx.section}`, nodeType: 'registry',
+      context: { title, breadcrumbs: [...crumbs, title] },
+      filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
+      payload: data.map((e: any) => ({
+        id: String(e.id ?? e.slug),
+        name: e.name ?? e.title ?? e.slug ?? String(e.id),
+        type: 'node' as const,
+      })),
+    }}
   }
 
-  // ─── REG → entity cabinet / drill ─────────────────────────────────────────
-  if (current.type === 'reg') {
-    const section = ctx.section
-
-    if (section === 'gallery') {
-      // Gallery items are leaves — select, not drill
-      return null
-    }
-
-    if (section === 'documents') {
-      // Doc categories are leaves — select
-      return null
-    }
+  // ── REGISTRY → cabinet ────────────────────────────────────────────────────
+  if (current.nodeType === 'registry') {
+    const section = newCtx.section
 
     if (section === 'designers') {
-      ctx.designerId   = Number(item.key)
-      ctx.designerName = item.label
+      newCtx.designerId   = Number(item.id)
+      newCtx.designerName = item.name
       router.push('/admin/designers')
-
-      const items: NavItem[] = [
-        ...DESIGNER_PROFILE_LEAVES,
-        ...DESIGNER_RELATION_NODES,
-      ]
-      return {
-        key: `cab-designer-${item.key}`,
-        type: 'cab-designer',
-        ctx,
-        node: { key: `cab-designer-${item.key}`, title: item.label, items },
-      }
+      return { ctx: newCtx, node: {
+        step: 'C', nodeId: `cab_designer_${item.id}`, nodeType: 'cabinet',
+        context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
+        filter: { placeholder: 'Поиск по разделам...', value: '' },
+        payload: DESIGNER_CABINET_ITEMS,
+      }}
     }
-
-    if (section === 'projects') {
-      ctx.projectSlug  = item.key
-      ctx.projectTitle = item.label
-      // Full project page has its own UI — navigate to it
-      router.push(`/admin/projects/${item.key}`)
-      return null
-    }
-
     if (section === 'clients') {
-      ctx.clientId = Number(item.key)
+      newCtx.clientId   = Number(item.id)
+      newCtx.clientName = item.name
       router.push('/admin/clients')
-      return null // content area shows client detail
+      return { ctx: newCtx, node: {
+        step: 'C', nodeId: `cab_client_${item.id}`, nodeType: 'cabinet',
+        context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
+        filter: { placeholder: 'Поиск по разделам...', value: '' },
+        payload: CLIENT_CABINET_ITEMS,
+      }}
     }
-
     if (section === 'contractors') {
-      ctx.contractorId = Number(item.key)
+      newCtx.contractorId   = Number(item.id)
+      newCtx.contractorName = item.name
       router.push('/admin/contractors')
-      return null
+      return { ctx: newCtx, node: {
+        step: 'C', nodeId: `cab_contractor_${item.id}`, nodeType: 'cabinet',
+        context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
+        filter: { placeholder: 'Поиск по разделам...', value: '' },
+        payload: CONTRACTOR_CABINET_ITEMS,
+      }}
     }
-
     if (section === 'sellers') {
-      ctx.sellerId = Number(item.key)
+      newCtx.sellerId   = Number(item.id)
+      newCtx.sellerName = item.name
       router.push('/admin/sellers')
-      return null
+      return { ctx: newCtx, node: {
+        step: 'C', nodeId: `cab_seller_${item.id}`, nodeType: 'cabinet',
+        context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
+        filter: { placeholder: 'Поиск по разделам...', value: '' },
+        payload: SELLER_CABINET_ITEMS,
+      }}
     }
-
+    if (section === 'projects') {
+      newCtx.projectSlug  = item.id
+      newCtx.projectTitle = item.name
+      router.push(`/admin/projects/${item.id}`)
+      return { ctx: newCtx, node: {
+        step: 'C', nodeId: `cab_project_${item.id}`, nodeType: 'project_root',
+        context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
+        filter: { placeholder: 'Поиск по разделам проекта...', value: '' },
+        payload: PROJECT_CABINET_ITEMS,
+      }}
+    }
     return null
   }
 
-  // ─── CAB-DESIGNER → related entity registry ───────────────────────────────
-  if (current.type === 'cab-designer') {
-    const designerId   = ctx.designerId!
-    const designerName = ctx.designerName || `#${designerId}`
-    const rel = item.key.replace('rel-', '') // 'projects' | 'clients' | 'contractors' | 'documents' | 'gallery'
-    ctx.section = rel
+  // ── CABINET / PROJECT_ROOT → вложенные реестры ────────────────────────────
+  if (current.nodeType === 'cabinet' || current.nodeType === 'project_root') {
+    const sub = item.id.replace(/^(des_|cli_|con_|sel_|prj_)/, '')
 
-    if (rel === 'projects') {
-      const allProjects = await $fetch<any[]>('/api/projects').catch(() => [])
-      // TODO: filter by designer when API supports ?designerId=
-      const items: NavItem[] = allProjects.map(p => ({
-        key: p.slug, label: p.title, sub: p.status, isNode: true,
-      }))
-      return {
-        key: `reg-projects-of-${designerId}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-projects-of-${designerId}`, title: `Проекты (${designerName})`, count: items.length, items },
-      }
+    if (sub === 'documents') {
+      return { ctx: newCtx, node: {
+        step: 'D', nodeId: `reg_docs_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Документы — ${current.context.title}`, breadcrumbs: [...crumbs, 'Документы'] },
+        filter: { placeholder: 'Поиск по типу...', value: '' },
+        payload: DOCUMENT_ITEMS,
+      }}
+    }
+    if (sub === 'gallery') {
+      return { ctx: newCtx, node: {
+        step: 'D', nodeId: `reg_gallery_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Галереи — ${current.context.title}`, breadcrumbs: [...crumbs, 'Галереи'] },
+        filter: { placeholder: 'Поиск по разделу...', value: '' },
+        payload: GALLERY_ITEMS,
+      }}
     }
 
-    if (rel === 'clients') {
-      const clients = await $fetch<any[]>('/api/clients').catch(() => [])
-      const items: NavItem[] = clients.map(c => ({
-        key: String(c.id), label: c.name,
-        sub: c.linkedProjects?.map((p: any) => p.title).join(', '),
-        isNode: false,
-      }))
-      return {
-        key: `reg-clients-of-${designerId}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-clients-of-${designerId}`, title: `Клиенты (${designerName})`, count: items.length, items },
-      }
+    const relApi: Record<string, string> = {
+      projects: '/api/projects', clients: '/api/clients', designers: '/api/designers',
+      contractors: '/api/contractors', sellers: '/api/sellers',
     }
-
-    if (rel === 'contractors') {
-      const contractors = await $fetch<any[]>('/api/contractors').catch(() => [])
-      const items: NavItem[] = contractors.map(c => ({
-        key: String(c.id), label: c.name,
-        sub: c.workTypes?.join(', ') || c.companyName,
-        isNode: false,
-      }))
-      return {
-        key: `reg-contractors-of-${designerId}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-contractors-of-${designerId}`, title: `Подрядчики (${designerName})`, count: items.length, items },
-      }
+    const relTitle: Record<string, string> = {
+      projects: 'Проекты', clients: 'Клиенты', designers: 'Дизайнеры',
+      contractors: 'Подрядчики', sellers: 'Поставщики',
     }
-
-    if (rel === 'documents') {
-      const docs = await $fetch<any[]>('/api/documents').catch(() => [])
-      const items: NavItem[] = docs.map(d => ({
-        key: String(d.id), label: d.title, sub: d.projectTitle, isNode: false,
-      }))
-      return {
-        key: `reg-docs-of-${designerId}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-docs-of-${designerId}`, title: `Документы (${designerName})`, count: items.length, items },
-      }
-    }
-
-    if (rel === 'gallery') {
-      return {
-        key: `reg-gallery-of-${designerId}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-gallery-of-${designerId}`, title: `Галерея (${designerName})`, items: GALLERY_ITEMS },
-      }
-    }
-
-    return null
-  }
-
-  // ─── REG-CTX: projects list (in designer context) → project cabinet ────────
-  if (current.type === 'reg-ctx' && ctx.section === 'projects') {
-    ctx.projectSlug  = item.key
-    ctx.projectTitle = item.label
-
+    const api = relApi[sub]
+    if (!api) return null
+    const data = await $fetch<any[]>(api).catch(() => [])
+    const title = relTitle[sub] ?? sub
     return {
-      key: `cab-project-${item.key}`,
-      type: 'cab-project',
-      ctx,
+      ctx: { ...newCtx, section: sub },
       node: {
-        key: `cab-project-${item.key}`,
-        title: item.label,
-        items: PROJECT_CABINET_NODES,
+        step: 'D', nodeId: `reg_${sub}_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `${title} — ${current.context.title}`, breadcrumbs: [...crumbs, title] },
+        filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
+        payload: data.map((e: any) => ({
+          id: String(e.id ?? e.slug),
+          name: e.name ?? e.title ?? e.slug ?? String(e.id),
+          type: 'node' as const,
+        })),
       },
     }
-  }
-
-  // ─── CAB-PROJECT → category lists within project ──────────────────────────
-  if (current.type === 'cab-project') {
-    const projectSlug  = ctx.projectSlug!
-    const projectTitle = ctx.projectTitle || projectSlug
-    const cat = item.key.replace('proj-', '')
-    ctx.section = cat
-
-    if (cat === 'documents') {
-      const docs = await $fetch<any[]>(`/api/documents?projectSlug=${projectSlug}`).catch(() => [])
-      const items: NavItem[] = docs.map(d => ({
-        key: String(d.id), label: d.title, sub: d.category, isNode: false,
-      }))
-      return {
-        key: `reg-docs-in-${projectSlug}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-docs-in-${projectSlug}`, title: `Документы (${projectTitle})`, count: items.length, emptyText: 'документов нет', items },
-      }
-    }
-
-    if (cat === 'clients') {
-      const clients = await $fetch<any[]>(`/api/clients?projectSlug=${projectSlug}`).catch(() => [])
-      const items: NavItem[] = clients.map(c => ({ key: String(c.id), label: c.name, isNode: false }))
-      return {
-        key: `reg-clients-in-${projectSlug}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-clients-in-${projectSlug}`, title: `Клиенты (${projectTitle})`, count: items.length, items },
-      }
-    }
-
-    if (cat === 'contractors') {
-      const contractors = await $fetch<any[]>(`/api/contractors?projectSlug=${projectSlug}`).catch(() => [])
-      const items: NavItem[] = contractors.map(c => ({ key: String(c.id), label: c.name, sub: c.workTypes?.join(', '), isNode: false }))
-      return {
-        key: `reg-contractors-in-${projectSlug}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-contractors-in-${projectSlug}`, title: `Подрядчики (${projectTitle})`, count: items.length, items },
-      }
-    }
-
-    if (cat === 'designers') {
-      // /api/projects/[slug]/designers
-      const data = await $fetch<any[]>(`/api/projects/${projectSlug}/designers`).catch(() => [])
-      const items: NavItem[] = data.map((d: any) => ({ key: String(d.id ?? d.designerId), label: d.name ?? d.designerName, isNode: false }))
-      return {
-        key: `reg-designers-in-${projectSlug}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-designers-in-${projectSlug}`, title: `Дизайнеры (${projectTitle})`, count: items.length, items },
-      }
-    }
-
-    if (cat === 'gallery') {
-      return {
-        key: `reg-gallery-in-${projectSlug}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-gallery-in-${projectSlug}`, title: `Галерея (${projectTitle})`, items: GALLERY_ITEMS },
-      }
-    }
-
-    if (cat === 'sellers') {
-      const sellers = await $fetch<any[]>('/api/sellers').catch(() => [])
-      // TODO: filter by project when API supports it
-      const items: NavItem[] = sellers.map(s => ({ key: String(s.id), label: s.name, sub: s.city, isNode: false }))
-      return {
-        key: `reg-sellers-in-${projectSlug}`,
-        type: 'reg-ctx',
-        ctx,
-        node: { key: `reg-sellers-in-${projectSlug}`, title: `Поставщики (${projectTitle})`, count: items.length, items },
-      }
-    }
-
-    return null
   }
 
   return null

@@ -15,7 +15,7 @@
               <button class="ent-entity-hd-action" @click="openEdit(selectedClient)">ред.</button>
               <button class="ent-entity-hd-action" @click="openLink(selectedClient)">{{ selectedClient.linkedProjects?.length ? 'проект' : 'привязать' }}</button>
               <button class="ent-entity-hd-action" @click="openDocs(selectedClient)">документы</button>
-              <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" target="_blank" class="ent-entity-hd-action">↗</a>
+              <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" class="ent-entity-hd-action">↗</a>
             </div>
           </div>
 

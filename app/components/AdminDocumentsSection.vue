@@ -39,7 +39,7 @@
               <div class="docs-view-head">
                 <button class="docs-back" @click="activeDoc = null">← назад к списку</button>
                               <div class="docs-view-actions">
-                  <a v-if="activeDoc.url" :href="activeDoc.url" target="_blank" class="a-btn-sm">↗ открыть файл</a>
+                  <a v-if="activeDoc.url" :href="activeDoc.url" class="a-btn-sm">открыть файл</a>
                   <button v-if="activeDoc.content" class="a-btn-save" @click="openInEditor(activeDoc)">✏️ открыть в редакторе</button>
                   <button class="a-btn-sm" @click="editDoc">✎ реквизиты</button>
                   <button class="a-btn-sm a-btn-danger" @click="deleteDoc(activeDoc.id)">удалить</button>
@@ -102,7 +102,7 @@
                   </span>
                   <span class="doc-date">{{ formatDate(doc.createdAt) }}</span>
                   <div class="doc-actions" @click.stop>
-                    <a v-if="doc.url" :href="doc.url" target="_blank" class="doc-btn-ico" title="открыть">↗</a>
+                    <a v-if="doc.url" :href="doc.url" class="doc-btn-ico" title="открыть">↗</a>
                     <button v-if="doc.content" class="doc-btn-ico" title="открыть в редакторе" @click="openInEditor(doc)">✎</button>
                     <button class="doc-btn-ico doc-btn-ico--del" title="удалить" @click="deleteDoc(doc.id)">×</button>
                   </div>
