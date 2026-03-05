@@ -197,6 +197,166 @@ textarea, select {
   --ws-bg-paused:        color-mix(in srgb, var(--ds-accent)  10%, transparent);
   --ws-bg-cancelled:     color-mix(in srgb, var(--ds-error)   12%, transparent);
   --ws-bg-skipped:       color-mix(in srgb, var(--glass-text)  5%, transparent);
+
+  /* ── Ant Design 5.x Design Tokens ─────────────────────────
+     Source: Ant Design System for Figma (Free version)
+     Reference: ant.design/docs/react/customize-theme
+  ──────────────────────────────────────────────────────────── */
+
+  /* Typography */
+  --ant-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+  --ant-font-family-code: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+  --ant-font-size:            14px;
+  --ant-font-size-sm:         12px;
+  --ant-font-size-lg:         16px;
+  --ant-font-size-xl:         20px;
+  --ant-font-size-h1:         38px;
+  --ant-font-size-h2:         30px;
+  --ant-font-size-h3:         24px;
+  --ant-font-size-h4:         20px;
+  --ant-font-size-h5:         16px;
+  --ant-line-height:          1.5714;  /* 22/14 */
+  --ant-line-height-sm:       1.6667;
+  --ant-line-height-lg:       1.5;
+  --ant-line-height-h1:       1.2105;
+  --ant-line-height-h2:       1.2667;
+  --ant-line-height-h3:       1.3333;
+  --ant-line-height-h4:       1.4;
+  --ant-line-height-h5:       1.5;
+  --ant-font-weight:          400;
+  --ant-font-weight-strong:   600;
+
+  /* Spacing — 4 px base grid */
+  --ant-space-xxs:   4px;
+  --ant-space-xs:    8px;
+  --ant-space-sm:   12px;
+  --ant-space:      16px;
+  --ant-space-md:   20px;
+  --ant-space-lg:   24px;
+  --ant-space-xl:   32px;
+  --ant-space-xxl:  48px;
+
+  /* Padding (same scale) */
+  --ant-padding-xxs: 4px;
+  --ant-padding-xs:  8px;
+  --ant-padding-sm: 12px;
+  --ant-padding:    16px;
+  --ant-padding-md: 20px;
+  --ant-padding-lg: 24px;
+  --ant-padding-xl: 32px;
+  --ant-padding-xxl:48px;
+
+  /* Border radius */
+  --ant-radius-xs:    2px;
+  --ant-radius-sm:    4px;
+  --ant-radius:       6px;
+  --ant-radius-lg:    8px;
+  --ant-radius-xl:   12px;
+  --ant-radius-outer: 4px;
+
+  /* Component heights */
+  --ant-control-sm:  24px;
+  --ant-control:     32px;
+  --ant-control-lg:  40px;
+  --ant-control-xl:  48px;
+
+  /* Line / border */
+  --ant-line-width:      1px;
+  --ant-line-width-bold: 2px;
+
+  /* Colors — semantic (light mode defaults) */
+  --ant-color-primary:         #1677ff;
+  --ant-color-primary-hover:   #4096ff;
+  --ant-color-primary-active:  #0958d9;
+  --ant-color-primary-border:  #91caff;
+  --ant-color-primary-bg:      #e6f4ff;
+  --ant-color-primary-bg-hover:#bae0ff;
+
+  --ant-color-success:         #52c41a;
+  --ant-color-success-hover:   #73d13d;
+  --ant-color-success-active:  #389e0d;
+  --ant-color-success-border:  #b7eb8f;
+  --ant-color-success-bg:      #f6ffed;
+
+  --ant-color-warning:         #faad14;
+  --ant-color-warning-hover:   #ffc53d;
+  --ant-color-warning-active:  #d48806;
+  --ant-color-warning-border:  #ffe58f;
+  --ant-color-warning-bg:      #fffbe6;
+
+  --ant-color-error:           #ff4d4f;
+  --ant-color-error-hover:     #ff7875;
+  --ant-color-error-active:    #d9363e;
+  --ant-color-error-border:    #ffa39e;
+  --ant-color-error-bg:        #fff2f0;
+
+  --ant-color-info:            #1677ff;
+  --ant-color-info-hover:      #4096ff;
+  --ant-color-info-active:     #0958d9;
+  --ant-color-info-bg:         #e6f4ff;
+
+  /* Text */
+  --ant-color-text:             rgba(0, 0, 0, 0.88);
+  --ant-color-text-secondary:   rgba(0, 0, 0, 0.65);
+  --ant-color-text-tertiary:    rgba(0, 0, 0, 0.45);
+  --ant-color-text-quaternary:  rgba(0, 0, 0, 0.25);
+  --ant-color-text-disabled:    rgba(0, 0, 0, 0.25);
+  --ant-color-text-placeholder: rgba(0, 0, 0, 0.25);
+  --ant-color-text-heading:     rgba(0, 0, 0, 0.88);
+  --ant-color-text-label:       rgba(0, 0, 0, 0.65);
+  --ant-color-text-description: rgba(0, 0, 0, 0.45);
+
+  /* Background */
+  --ant-color-bg-container:  #ffffff;
+  --ant-color-bg-elevated:   #ffffff;
+  --ant-color-bg-layout:     #f5f5f5;
+  --ant-color-bg-spotlight:  rgba(0, 0, 0, 0.85);
+  --ant-color-bg-mask:       rgba(0, 0, 0, 0.45);
+
+  /* Border */
+  --ant-color-border:           #d9d9d9;
+  --ant-color-border-secondary: #f0f0f0;
+
+  /* Fill */
+  --ant-color-fill:            rgba(0, 0, 0, 0.15);
+  --ant-color-fill-secondary:  rgba(0, 0, 0, 0.06);
+  --ant-color-fill-tertiary:   rgba(0, 0, 0, 0.04);
+  --ant-color-fill-quaternary: rgba(0, 0, 0, 0.02);
+
+  /* Link */
+  --ant-color-link:            #1677ff;
+  --ant-color-link-hover:      #69b1ff;
+  --ant-color-link-active:     #0958d9;
+
+  /* Icon */
+  --ant-color-icon:       rgba(0, 0, 0, 0.45);
+  --ant-color-icon-hover: rgba(0, 0, 0, 0.88);
+  --ant-color-split:      rgba(5, 5, 5, 0.06);
+
+  /* Shadows */
+  --ant-shadow:    0 6px 16px 0 rgba(0,0,0,0.08), 0 3px 6px -4px rgba(0,0,0,0.12), 0 9px 28px 8px rgba(0,0,0,0.05);
+  --ant-shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02), 0 2px 4px 0 rgba(0,0,0,0.02);
+  --ant-shadow-card: 0 1px 2px -2px rgba(0,0,0,0.16), 0 3px 6px 0 rgba(0,0,0,0.12), 0 5px 12px 4px rgba(0,0,0,0.09);
+
+  /* Motion */
+  --ant-motion-fast:      0.1s;
+  --ant-motion-mid:       0.2s;
+  --ant-motion-slow:      0.3s;
+  --ant-ease-in-out:      cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ant-ease-out:         cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ant-ease-in:          cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --ant-ease-out-back:    cubic-bezier(0.12, 0.4, 0.29, 1.46);
+
+  /* Z-index */
+  --ant-z-popup:        1000;
+  --ant-z-modal:        1000;
+  --ant-z-drawer:       1000;
+  --ant-z-notification: 1010;
+  --ant-z-message:      1010;
+  --ant-z-popover:      1030;
+  --ant-z-select:       1050;
+  --ant-z-tooltip:      1070;
+  --ant-z-image:        1080;
 }
 
 /* ── Work-status global utility classes ──────────────────── */
@@ -249,6 +409,59 @@ html.dark {
   --ds-shadow:    0 8px 32px rgba(0,0,0,0.28);
   --ds-shadow-sm: 0 2px 12px rgba(0,0,0,0.2);
   --ds-shadow-lg: 0 16px 56px rgba(0,0,0,0.38);
+
+  /* Ant Design dark mode overrides */
+  --ant-color-primary:         #4096ff;
+  --ant-color-primary-hover:   #69b1ff;
+  --ant-color-primary-active:  #1677ff;
+  --ant-color-primary-border:  #1554ad;
+  --ant-color-primary-bg:      #111a2c;
+  --ant-color-primary-bg-hover:#112545;
+
+  --ant-color-success:         #49aa19;
+  --ant-color-success-border:  #274916;
+  --ant-color-success-bg:      #162312;
+
+  --ant-color-warning:         #d89614;
+  --ant-color-warning-border:  #594214;
+  --ant-color-warning-bg:      #2b2111;
+
+  --ant-color-error:           #e84749;
+  --ant-color-error-border:    #58181c;
+  --ant-color-error-bg:        #2c1618;
+
+  --ant-color-text:             rgba(255, 255, 255, 0.85);
+  --ant-color-text-secondary:   rgba(255, 255, 255, 0.65);
+  --ant-color-text-tertiary:    rgba(255, 255, 255, 0.45);
+  --ant-color-text-quaternary:  rgba(255, 255, 255, 0.25);
+  --ant-color-text-disabled:    rgba(255, 255, 255, 0.25);
+  --ant-color-text-placeholder: rgba(255, 255, 255, 0.25);
+  --ant-color-text-heading:     rgba(255, 255, 255, 0.85);
+  --ant-color-text-label:       rgba(255, 255, 255, 0.65);
+  --ant-color-text-description: rgba(255, 255, 255, 0.45);
+
+  --ant-color-bg-container: #141414;
+  --ant-color-bg-elevated:  #1f1f1f;
+  --ant-color-bg-layout:    #000000;
+
+  --ant-color-border:           rgba(255, 255, 255, 0.15);
+  --ant-color-border-secondary: rgba(255, 255, 255, 0.06);
+
+  --ant-color-fill:            rgba(255, 255, 255, 0.18);
+  --ant-color-fill-secondary:  rgba(255, 255, 255, 0.12);
+  --ant-color-fill-tertiary:   rgba(255, 255, 255, 0.08);
+  --ant-color-fill-quaternary: rgba(255, 255, 255, 0.04);
+
+  --ant-color-link:       #4096ff;
+  --ant-color-link-hover: #69b1ff;
+
+  --ant-color-icon:       rgba(255, 255, 255, 0.45);
+  --ant-color-icon-hover: rgba(255, 255, 255, 0.85);
+  --ant-color-split:      rgba(253, 253, 253, 0.12);
+
+  --ant-shadow:    0 6px 16px 0 rgba(0,0,0,0.48), 0 3px 6px -4px rgba(0,0,0,0.64), 0 9px 28px 8px rgba(0,0,0,0.05);
+  --ant-shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.16), 0 1px 6px -1px rgba(0,0,0,0.12), 0 2px 4px 0 rgba(0,0,0,0.09);
+  --ant-shadow-card: 0 1px 2px -2px rgba(0,0,0,0.64), 0 3px 6px 0 rgba(0,0,0,0.48), 0 5px 12px 4px rgba(0,0,0,0.36);
 }
 
 body {

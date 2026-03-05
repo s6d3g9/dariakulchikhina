@@ -1477,6 +1477,54 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'arrow', archSectionStyle: 'flat',
     },
   },
+  {
+    id: 'antdesign',
+    name: 'Ant Design',
+    description: 'AntD 5.x — функциональный, чёткий, деловой стиль',
+    icon: '🐜',
+    tokens: {
+      /* Typography — AntD 5.x scale */
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
+      fontSize: 0.875,            /* 14px = 0.875rem */
+      fontWeight: 400,
+      headingWeight: 600,
+      letterSpacing: 0,
+      lineHeight: 1.5714,         /* 22 / 14 */
+      headingLetterSpacing: 0,
+      headingLineHeight: 1.2105,
+      typeScale: 1.143,           /* AntD: 12→14→16→20→24→30→38 */
+      paragraphSpacing: 1.0,
+      wordSpacing: 0,
+      textIndent: 0,
+
+      /* Accent — AntD blue-6 #1677ff ≈ hsl(215, 100%, 54%) */
+      accentHue: 215, accentSaturation: 100, accentLightness: 54,
+      successHue: 103, successSaturation: 78, successLightness: 43,
+      errorHue: 0, errorSaturation: 100, errorLightness: 65,
+      warningHue: 38, warningSaturation: 95, warningLightness: 52,
+
+      /* Spacing — 4px base grid */
+      spacingBase: 4, spacingScale: 1, gridGap: 16,
+
+      /* Radii — AntD 5.x values */
+      cardRadius: 6, inputRadius: 6, chipRadius: 4, modalRadius: 8,
+      btnRadius: 6, statusPillRadius: 6, badgeRadius: 6,
+
+      /* Buttons */
+      btnStyle: 'outline', btnTransform: 'none', btnWeight: 400,
+      btnHoverAnim: 'none', cardHoverAnim: 'none',
+
+      /* Glass — flat / opaque (not glassmorphism) */
+      glassBlur: 0, glassOpacity: 1, glassBorderOpacity: 0.15, glassSaturation: 100,
+
+      /* Shadows — AntD tertiary (cards) */
+      shadowOffsetY: 1, shadowBlurRadius: 2, shadowSpread: 0, shadowOpacity: 0.03,
+
+      /* Motion — AntD motionDurationMid */
+      animDuration: 200,
+      animEasing: 'cubic-bezier(0.645, 0.045, 0.355, 1)', /* AntD easeInOut */
+    },
+  },
 ]
 
 /* ═══════════════════════════════════════════════════════════
