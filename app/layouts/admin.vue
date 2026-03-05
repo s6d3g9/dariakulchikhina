@@ -814,6 +814,7 @@ async function logout() {
 :root {
   --admin-header-h: 48px;
   --admin-container-mt: 22px;
-  --admin-nav-top: calc(var(--admin-header-h) + var(--admin-container-mt));
+  /* dp-panel-h = 28px (topbar) + высота открытой панели */
+  --admin-nav-top: calc(var(--dp-panel-h, 28px) + var(--admin-header-h) + var(--admin-container-mt));
 }
 </style>
