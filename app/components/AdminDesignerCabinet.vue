@@ -5,27 +5,7 @@
       <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     </div>
 
-    <div v-else-if="designer" class="cab-body">
-      <aside class="cab-sidebar glass-surface std-sidenav">
-        <nav class="cab-nav std-nav">
-          <button
-            v-for="item in nav"
-            :key="item.key"
-            class="cab-nav-item std-nav-item"
-            :class="{ active: section === item.key, 'std-nav-item--active': section === item.key }"
-            @click="section = item.key"
-          >
-            <span class="cab-nav-icon">{{ item.icon }}</span>
-            <span>{{ item.label }}</span>
-            <span v-if="item.key === 'projects' && designerProjects.length" class="u-counter">{{ designerProjects.length }}</span>
-            <span v-if="item.key === 'services' && services.length" class="u-counter">{{ services.length }}</span>
-            <span v-if="item.key === 'subscriptions' && subscriptions.length" class="u-counter">{{ subscriptions.length }}</span>
-            <span v-if="item.key === 'documents' && designerDocs?.length" class="u-counter">{{ designerDocs.length }}</span>
-          </button>
-        </nav>
-      </aside>
-
-      <main class="cab-main">
+    <main v-else-if="designer" class="cab-main">
         <div class="cab-inner">
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
@@ -714,8 +694,7 @@
           </template>
 
         </div>
-      </main>
-    </div>
+    </main>
   </div>
 </template>
 
@@ -738,7 +717,8 @@ import {
   PRICE_UNITS,
 } from '~~/shared/types/designer'
 
-const props = defineProps<{ designerId: number }>()
+const props = defineProps<{ designerId: number; modelValue?: string }>()
+const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
 
 const designerIdRef = computed(() => props.designerId)
 
@@ -776,6 +756,14 @@ const {
   autoSlug,
   refresh,
 } = useDesignerCabinet(designerIdRef)
+
+// ── v-model:section sync with parent ──
+watch(() => props.modelValue, (val) => {
+  if (val !== undefined && val !== section.value) section.value = val
+}, { immediate: true })
+watch(section, (val) => {
+  if (props.modelValue !== undefined) emit('update:modelValue', val)
+})
 
 // ── Local state ──
 
