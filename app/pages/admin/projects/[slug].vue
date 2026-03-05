@@ -51,8 +51,9 @@
                 v-for="pg in group.pages" :key="pg.slug"
                 class="proj-mobile-bar-btn"
                 :class="{ 'proj-mobile-bar-btn--active': activePage === pg.slug }"
+                :title="pg.title"
                 @click="selectAdminPage(pg.slug)"
-              >{{ pg.title }}</button>
+              ><span v-if="pg.icon" class="proj-mobile-bar-icon">{{ pg.icon }}</span>{{ pg.title.replace(/^\d+\.\d+\s*/, '') }}</button>
             </template>
           </div>
         </template>

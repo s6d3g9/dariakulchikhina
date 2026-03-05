@@ -18,13 +18,13 @@
         </button>
 
         <!-- Notifications bell -->
-        <div class="admin-notif-wrap">
+        <div ref="notifWrapRef" class="admin-notif-wrap">
           <button
             type="button"
             class="admin-notif-btn"
             :class="notifOpen ? 'admin-notif-btn--open' : ''"
             :title="notifTotal ? `${notifTotal} уведомлений` : 'Уведомления'"
-            @click="notifOpen = !notifOpen"
+            @click.stop="notifOpen = !notifOpen"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             <span v-if="notifTotal" class="admin-notif-badge">{{ notifTotal > 99 ? '99+' : notifTotal }}</span>
@@ -271,18 +271,13 @@ const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
 
 // ── Notifications ─────────────────────────────────────────────
-const notifOpen = ref(false)
 const { data: notifData, refresh: refreshNotif } = useFetch<any>('/api/admin/notifications', {
   server: false,
   default: () => ({ total: 0, extra: { count: 0 }, overdue: { count: 0 } }),
 })
 const notifTotal = computed(() => notifData.value?.total || 0)
 // Обновляем каждые 2 минуты
-setInterval(refreshNotif, 2 * 60 * 1000)
-// Закрываем dropdown при клике вне
-if (process.client) {
-  document.addEventListener('click', () => { notifOpen.value = false })
-}
+let _notifInterval: ReturnType<typeof setInterval> | null = null
 
 // ── Route helpers (must be before useFetch that references them) ──
 const activeProjectSlug = computed(() => {
@@ -604,6 +599,7 @@ const clientsOpen     = ref(false)
 const galleryOpen     = ref(false)
 const designersOpen   = ref(false)
 const sellersOpen     = ref(false)
+const notifOpen       = ref(false)
 
 const projectsTabRef    = ref<HTMLElement | null>(null)
 const contractorsTabRef = ref<HTMLElement | null>(null)
@@ -611,13 +607,16 @@ const clientsTabRef     = ref<HTMLElement | null>(null)
 const galleryTabRef     = ref<HTMLElement | null>(null)
 const designersTabRef   = ref<HTMLElement | null>(null)
 const sellersTabRef     = ref<HTMLElement | null>(null)
+const notifWrapRef      = ref<HTMLElement | null>(null)
 
 function closeAll() {
-  projectsOpen.value = contractorsOpen.value = clientsOpen.value = galleryOpen.value = designersOpen.value = sellersOpen.value = false
+  projectsOpen.value = contractorsOpen.value = clientsOpen.value =
+    galleryOpen.value = designersOpen.value = sellersOpen.value =
+    notifOpen.value = false
 }
 
 function onDocClick(e: MouseEvent) {
-  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value, sellersTabRef.value]
+  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value, sellersTabRef.value, notifWrapRef.value]
   if (refs.every(r => !r || !r.contains(e.target as Node))) closeAll()
 }
 
@@ -634,12 +633,14 @@ function onSearchKeydown(e: KeyboardEvent) {
 onMounted(() => {
   document.addEventListener('click', onDocClick)
   document.addEventListener('keydown', onSearchKeydown)
+  _notifInterval = setInterval(refreshNotif, 2 * 60 * 1000)
   useUITheme().initTheme()
   useDesignSystem().initDesignSystem()
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onSearchKeydown)
+  if (_notifInterval) clearInterval(_notifInterval)
 })
 watch(() => route.fullPath, closeAll)
 
@@ -815,22 +816,22 @@ async function logout() {
 
 /* ── Notifications ── */
 .admin-notif-wrap        { position: relative; }
-.admin-notif-btn         { background: none; border: 1px solid transparent; border-radius: 7px; color: #888; padding: 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; position: relative; transition: color .15s, border-color .15s; }
-.admin-notif-btn:hover   { color: #ccc; border-color: #333; }
-.admin-notif-btn--open   { color: #ccc; border-color: #444; background: #1a1a1a; }
-.admin-notif-badge       { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; background: #c62828; color: #fff; border-radius: 8px; font-size: .6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
-.admin-notif-dropdown    { position: absolute; top: calc(100% + 8px); right: 0; width: 260px; border-radius: 10px; padding: 12px; z-index: 500; box-shadow: 0 8px 32px rgba(0,0,0,.5); border: 1px solid #2a2a2a; }
-.admin-notif-head        { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #666; margin-bottom: 8px; }
-.admin-notif-empty       { font-size: .8rem; color: #4caf50; padding: 8px 0; text-align: center; }
-.admin-notif-item        { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; margin-bottom: 4px; text-decoration: none; }
-.admin-notif-item--warn  { background: #1a1200; border: 1px solid #2a2000; }
-.admin-notif-item--danger{ background: #1a0808; border: 1px solid #2a1010; }
-.admin-notif-item-count  { font-size: .85rem; font-weight: 700; color: #ffb74d; min-width: 24px; }
-.admin-notif-item--danger .admin-notif-item-count { color: #e57373; }
-.admin-notif-item-label  { font-size: .75rem; color: #aaa; }
-.admin-notif-foot        { display: flex; justify-content: flex-end; margin-top: 8px; border-top: 1px solid #1a1a1a; padding-top: 8px; }
-.admin-notif-refresh     { background: none; border: none; color: #555; font-size: .7rem; cursor: pointer; }
-.admin-notif-refresh:hover { color: #888; }
+.admin-notif-btn         { background: none; border: 1px solid transparent; border-radius: 0; color: var(--glass-text); opacity: .45; padding: 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; position: relative; transition: opacity .15s, border-color .15s; }
+.admin-notif-btn:hover   { opacity: 1; border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
+.admin-notif-btn--open   { opacity: 1; border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
+.admin-notif-badge       { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; background: var(--ds-error); color: var(--glass-page-bg); border-radius: 8px; font-size: .6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
+.admin-notif-dropdown    { position: absolute; top: calc(100% + 8px); right: 0; width: 260px; border-radius: 0; padding: 12px; z-index: 500; box-shadow: 0 8px 32px color-mix(in srgb, var(--glass-text) 15%, transparent); border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent); }
+.admin-notif-head        { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--glass-text); opacity: .35; margin-bottom: 8px; }
+.admin-notif-empty       { font-size: .8rem; color: var(--ds-success); padding: 8px 0; text-align: center; }
+.admin-notif-item        { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 0; margin-bottom: 4px; text-decoration: none; }
+.admin-notif-item--warn  { background: color-mix(in srgb, var(--ds-warning) 10%, transparent); border: 1px solid color-mix(in srgb, var(--ds-warning) 20%, transparent); }
+.admin-notif-item--danger{ background: color-mix(in srgb, var(--ds-error) 8%, transparent); border: 1px solid color-mix(in srgb, var(--ds-error) 18%, transparent); }
+.admin-notif-item-count  { font-size: .85rem; font-weight: 700; color: var(--ds-warning); min-width: 24px; }
+.admin-notif-item--danger .admin-notif-item-count { color: var(--ds-error); }
+.admin-notif-item-label  { font-size: .75rem; color: var(--glass-text); opacity: .65; }
+.admin-notif-foot        { display: flex; justify-content: flex-end; margin-top: 8px; border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent); padding-top: 8px; }
+.admin-notif-refresh     { background: none; border: none; color: var(--glass-text); opacity: .35; font-size: .7rem; cursor: pointer; font-family: inherit; }
+.admin-notif-refresh:hover { opacity: .8; }
 
 /* ── Container / tabs ── */
 .admin-container { max-width: var(--ds-container-width, 1140px); margin: 22px auto; padding: 0 24px; transition: max-width var(--ds-transition, 180ms ease); }
