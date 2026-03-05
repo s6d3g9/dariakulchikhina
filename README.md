@@ -416,6 +416,19 @@ pnpm deploy:metrics:follow      # Онлайн-просмотр
 5. [Правила синхронизации Roadmap](docs/roadmap-sync-rules.md)
 6. [BPMN: Workflow премиальной квартиры](docs/bpmn/apartment-premium-workflow.md)
 
+## UI-документация и RAG-файлы
+
+| Файл | Назначение |
+|------|-----------|
+| [UI_INTERFACE.md](docs/UI_INTERFACE.md) | Полная документация интерфейса: структура, алгоритмы переходов, компоненты, правила отображения |
+| [UI_COMPACT.md](docs/UI_COMPACT.md) | Краткая выжимка для быстрой справки разработчиков и AI-агентов |
+| [UI_STYLES.md](docs/UI_STYLES.md) | Дизайн-токены, CSS-переменные, темы, UIDesignPanel |
+| [rag/01-system-overview.md](docs/rag/01-system-overview.md) | RAG: обзор системы, стек, БД |
+| [rag/02-pages-navigation.md](docs/rag/02-pages-navigation.md) | RAG: маршруты, навигация, переходы |
+| [rag/03-components.md](docs/rag/03-components.md) | RAG: каталог всех компонентов Vue |
+| [rag/04-design-tokens.md](docs/rag/04-design-tokens.md) | RAG: дизайн-токены, CSS custom properties, темы |
+| [rag/05-api-data.md](docs/rag/05-api-data.md) | RAG: все API-эндпоинты и структуры данных |
+
 ---
 
 ## Правило по авторизации
