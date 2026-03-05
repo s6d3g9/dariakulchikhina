@@ -59,10 +59,13 @@
         </template>
       </div>
 
-      <div class="proj-content-area">
+      <!-- proj-content-area (padding-left для sidebar) нужен ТОЛЬКО в preview-режимах,
+           в admin-режиме отступ уже есть от admin-with-nav в layout -->
+      <div :class="(clientPreviewMode || contractorPreviewMode) ? 'proj-content-area' : ''">
 
-        <!-- Nav column + sidebar, sticky together -->
-        <div v-if="!contractorPreviewMode" class="proj-nav-col">
+        <!-- Nav column + sidebar — показываем ТОЛЬКО в режиме превью клиента/подрядчика.
+             В admin-режиме навигацией управляет глобальный AdminNestedNav в layout. -->
+        <div v-if="clientPreviewMode || contractorPreviewMode" class="proj-nav-col">
 
         <!-- Left sidebar: vertical nav -->
         <nav class="proj-sidenav std-sidenav">
@@ -448,6 +451,30 @@ definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false }
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
+// ── Привязка к глобальному nav (NavigationNode schema) ─────────────────────
+const adminNav = useAdminNav()
+
+// Маппинг prj_* IDs из PROJECT_CABINET_ITEMS → внутренние slugs страницы
+const PRJ_SECTION_TO_SLUG: Record<string, string> = {
+  overview:      'overview',
+  firstcontact:  'first_contact',
+  smartbrief:    'brief',
+  concept:       'concept_approval',
+  spaceplanning: 'space_planning',
+  moodboard:     'moodboard',
+  plan:          'construction_plan',
+  drawings:      'working_drawings',
+  mep:           'mep_integration',
+  materials:     'materials',
+  procurement:   'procurement_list',
+  workstatus:    'work_status',
+  sitephotos:    'site_photos',
+  punchlist:     'punch_list',
+  commissioning: 'commissioning_act',
+  album:         'design_album_final',
+  extraservices: 'extra_services',
+}
+
 const MODERN_PROJECT_PAGES = [
   'first_contact',
   'self_profile',
@@ -659,6 +686,20 @@ function selectAdminPage(slug: string) {
   activePage.value = slug
   scrollMobileBarToActive()
 }
+
+// Когда глобальный nav выбирает секцию проекта — синхронизируем activePage.
+// immediate: true — срабатывает сразу при монтировании (если секция уже выбрана)
+watch(
+  () => adminNav.contentSpec.value.projectSection,
+  (section) => {
+    if (!section) return
+    const mapped = PRJ_SECTION_TO_SLUG[section]
+    if (mapped && mapped !== activePage.value) {
+      selectAdminPage(mapped)
+    }
+  },
+  { immediate: true },
+)
 
 function selectClientPage(slug: string) {
   clientActivePage.value = slug
