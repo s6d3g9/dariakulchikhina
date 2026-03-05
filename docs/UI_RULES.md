@@ -91,6 +91,109 @@ cab-body   > cab-sidebar + cab-main    ← кабинеты (подрядчик,
 | галерея | `/admin/gallery/interiors` |
 | документы | `/admin/documents` |
 
+---
+
+## Sidebar — два режима отображения
+
+Каждая страница entity-раздела (`clients`, `contractors`, `designers`, `sellers`, `documents`) имеет **два состояния sidebar**:
+
+### Режим 1 — Список (URL без query-id)
+
+```
+[раздел ›]          ← esw-head (title + count)
+[🔍 поиск...]       ← v-model="searchQuery", всегда виден
+─────────────
+Запись А      [→]   ← .ent-nav-item, клик → переход в кабинет
+Запись Б      [→]
+Запись В      [→]
+─────────────
+[+ добавить]        ← внизу (опционально)
+```
+
+Поиск фильтрует список в реальном времени: `searchQuery` → `computed filteredItems` (debounce 300ms).
+
+### Режим 2 — Кабинет (URL с `?clientId=`, `?contractorId=` и т.д.)
+
+```
+[раздел ›]          ← esw-head сохраняется
+[🔍 поиск...]       ← поиск остаётся доступен
+─────────────
+[← к списку]        ← кнопка возврата: navigateTo('/admin/clients')
+─────────────
+вкладка 1           ← .cab-nav-item (секции кабинета)
+вкладка 2
+вкладка 3
+```
+
+Поиск в режиме кабинета: ввод текста → `navigateTo('/admin/clients?q=<query>')` → переключение обратно в режим списка с применённым фильтром.
+
+### Переключение режимов:
+
+```
+Режим 1 → Режим 2:  клик по записи → navigateTo('?clientId=<id>')
+Режим 2 → Режим 1:  клик «← к списку» → navigateTo('/admin/clients')
+                    ИЛИ ввод в поиск → navigateTo('?q=<query>')
+```
+
+### Контекст проекта (`withCtx`):
+
+Если `activeProjectSlug` задан — все переходы внутри sidebar используют `withCtx(path)`:
+```
+withCtx('/admin/clients') → '/admin/clients?projectSlug=<slug>'
+```
+При этом рядом с каждой записью появляются кнопки привязки/отвязки к проекту.
+
+### Все кнопки связи (контекстный режим):
+
+| Раздел | Привязать | Отвязать |
+|---|---|---|
+| clients | `POST /api/clients/<id>/link-project` | `POST /api/clients/<id>/unlink-project` |
+| contractors | `POST /api/projects/<slug>/contractors` | `DELETE /api/projects/<slug>/contractors` |
+| designers | `POST /api/projects/<slug>/designers` | — |
+| sellers | `POST /api/projects/<slug>/sellers` | — |
+
+После каждого вызова: `refreshProjectData()` + `refreshLinked*()`.
+
+---
+
+## Sidebar — проекты `/admin`
+
+Отличается от entity-разделов: нет режима «кабинет» в sidebar.
+
+```
+[проекты ›]         ← esw-head
+[🔍 поиск...]       ← фильтрует список проектов
+─────────────
+● Проект А          ← .ent-nav-item + аватар + статус-бейдж
+● Проект Б
+─────────────
+ничего не найдено   ← v-if="!filteredProjects.length && searchQuery"
+нет проектов        ← v-else-if="!projects?.length"
+```
+
+Клик по проекту → `router.push('/admin/projects/<slug>')` → переход на страницу проекта (sidebar меняется на фазы).
+
+---
+
+## Sidebar — страница проекта `/admin/projects/[slug]`
+
+Sidebar полностью отличается: нет `AdminSidebarSwitcher` в главной части, вместо него `AdminProjectStatusBar`.
+
+Структура: фазы как accordion-группы → вкладки без смены URL.
+
+```
+[статус-бар проекта]       ← AdminProjectStatusBar
+─────────────
+▼ Фаза 0. Инициация
+   0.1 первичный контакт   ← .ent-nav-item, клик → selectAdminPage('first_contact')
+   0.2 брифинг
+   ...
+▼ Фаза 1. Эскиз
+   ...
+─────────────
+[sb-section-nav]           ← внизу: ссылки на все entity-разделы
+```
+
 ## Форма — шаблон
 
 ```html
