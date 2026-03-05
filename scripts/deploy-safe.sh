@@ -54,7 +54,6 @@ log_stage_time() {
 
 run_preflight() {
   echo "[preflight] local tools"
-  command -v rsync >/dev/null
   command -v ssh >/dev/null
   command -v curl >/dev/null
 
@@ -62,7 +61,10 @@ run_preflight() {
   ssh "$DEPLOY_HOST" "echo '[preflight] remote host reachable'"
 
   echo "[preflight] remote tools + path"
-  ssh "$DEPLOY_HOST" "set -e; command -v node >/dev/null; command -v pnpm >/dev/null; command -v pm2 >/dev/null; mkdir -p '$DEPLOY_PATH'; test -w '$DEPLOY_PATH'"
+  ssh "$DEPLOY_HOST" "set -e; command -v node >/dev/null; command -v pnpm >/dev/null; command -v pm2 >/dev/null; command -v git >/dev/null; mkdir -p '$DEPLOY_PATH'; test -w '$DEPLOY_PATH'"
+
+  echo "[preflight] git remote reachable"
+  ssh "$DEPLOY_HOST" "cd '$DEPLOY_PATH' && git fetch origin --dry-run 2>&1 | head -2"
 
   echo "[preflight] ok"
 }
@@ -91,31 +93,20 @@ if [[ "$DRY_RUN" == "1" ]]; then
   MODE="dry-run"
 fi
 
-echo "[deploy] sync source -> ${DEPLOY_HOST}:${DEPLOY_PATH}"
+echo "[deploy] git sync: origin/main -> ${DEPLOY_HOST}:${DEPLOY_PATH}"
 SYNC_START_TS=$(date +%s)
-rsync -az --delete \
-  --exclude '.git' \
-  --exclude 'node_modules' \
-  --exclude '.nuxt' \
-  --exclude '.output' \
-  --exclude '.output_bak' \
-  --exclude '.data' \
-  --exclude '.vscode' \
-  "$ROOT_DIR/" "${DEPLOY_HOST}:${DEPLOY_PATH}/"
+ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; git fetch origin; git reset --hard origin/main; git log --oneline -1"
 log_stage_time "sync" "$SYNC_START_TS"
 
-echo "[deploy] try remote install + build"
+echo "[deploy] remote install + build"
 BUILD_START_TS=$(date +%s)
 if ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pnpm install --frozen-lockfile; pnpm build"; then
   echo "[deploy] remote build success"
 else
-  echo "[deploy] remote build failed -> fallback to local build artifacts"
-  pnpm build
-  rsync -az --delete \
-    "$ROOT_DIR/.output" \
-    "$ROOT_DIR/ecosystem.config.cjs" \
-    "$ROOT_DIR/package.json" \
-    "${DEPLOY_HOST}:${DEPLOY_PATH}/"
+  echo "[deploy] remote build failed" >&2
+  log_stage_time "build" "$BUILD_START_TS"
+  write_metrics "failed"
+  exit 1
 fi
 log_stage_time "build" "$BUILD_START_TS"
 
