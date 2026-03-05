@@ -1,53 +1,25 @@
+/**
+ * Auth utilities — session management + access guards.
+ *
+ * Sessions are stored as HS256 JWT tokens in HttpOnly cookies.
+ * signJwtSync / verifyJwtSync use Node.js crypto directly, so all guards
+ * stay synchronous — no await needed in the 90+ handler files that call them.
+ * The produced tokens are also verifiable by jose (async).
+ *
+ * Three session types:
+ *   daria_admin_session      — admin / designer  { sub:'admin',  role:'admin',      userId }
+ *   daria_client_session     — client/customer   { sub:'client', role:'client',      projectSlug }
+ *   daria_contractor_session — contractor        { sub:'contractor', role:'contractor', contractorId }
+ */
 import type { H3Event } from 'h3'
 import bcrypt from 'bcryptjs'
-import { createHmac, randomBytes } from 'crypto'
+import { signJwtSync, verifyJwtSync } from './jwt'
 
-// NOTE: h3 v2 RC bundled in Nitro has a bug where parseCookies calls
-// event.req.headers.get() but event.req is deprecated and returns raw IncomingMessage.
-// We bypass this by reading cookies directly from event.node.req.headers
-// and writing via event.node.res.setHeader().
+export const ADMIN_COOKIE      = 'daria_admin_session'
+export const CLIENT_COOKIE     = 'daria_client_session'
+export const CONTRACTOR_COOKIE = 'daria_contractor_session'
 
-const ADMIN_COOKIE = 'daria_admin_session'
-const CLIENT_COOKIE = 'daria_client_session'
-const CONTRACTOR_COOKIE = 'daria_contractor_session'
-
-// --- HMAC session signing ---
-
-const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
-
-function _getSessionSecret(): string {
-  const secret = process.env.NUXT_SESSION_SECRET || process.env.SESSION_SECRET
-  if (!secret) {
-    console.error('[SECURITY] NUXT_SESSION_SECRET is not set! Sessions will not work.')
-    // Use a random per-process secret so the app still starts but sessions don't persist across restarts
-    return _fallbackSecret
-  }
-  return secret
-}
-// Random fallback generated once per process — never predictable
-const _fallbackSecret = randomBytes(32).toString('hex')
-
-function _sign(payload: string): string {
-  const secret = _getSessionSecret()
-  const sig = createHmac('sha256', secret).update(payload).digest('base64url')
-  return `${payload}.${sig}`
-}
-
-function _verifyAndParse(signed: string): string | null {
-  const dotIdx = signed.lastIndexOf('.')
-  if (dotIdx < 0) return null
-  const payload = signed.slice(0, dotIdx)
-  const sig = signed.slice(dotIdx + 1)
-  const secret = _getSessionSecret()
-  const expected = createHmac('sha256', secret).update(payload).digest('base64url')
-  // Constant-time comparison
-  if (sig.length !== expected.length) return null
-  let mismatch = 0
-  for (let i = 0; i < sig.length; i++) {
-    mismatch |= sig.charCodeAt(i) ^ expected.charCodeAt(i)
-  }
-  return mismatch === 0 ? payload : null
-}
+const SESSION_MAX_AGE_SEC = 30 * 24 * 60 * 60 // 30 days
 
 // --- Low-level cookie helpers (Node.js-native, no h3 getCookie/setCookie) ---
 
@@ -97,27 +69,20 @@ function _deleteCookie(event: H3Event, name: string) {
 // --- Admin session (designer) ---
 
 export function setAdminSession(event: H3Event, userId: number) {
-  const payload = Buffer.from(JSON.stringify({ userId, ts: Date.now() })).toString('base64url')
-  const signed = _sign(payload)
-  _writeCookie(event, ADMIN_COOKIE, signed, {
+  const token = signJwtSync({ sub: 'admin', role: 'admin', userId }, SESSION_MAX_AGE_SEC)
+  _writeCookie(event, ADMIN_COOKIE, token, {
     httpOnly: true, sameSite: 'lax',
     secure: _isSecure(event),
-    maxAge: 60 * 60 * 24 * 30, path: '/'
+    maxAge: SESSION_MAX_AGE_SEC, path: '/'
   })
 }
 
 export function getAdminSession(event: H3Event): { userId: number } | null {
   const raw = _readCookie(event, ADMIN_COOKIE)
   if (!raw) return null
-  try {
-    const payload = _verifyAndParse(raw)
-    if (!payload) return null // Reject unsigned cookies
-    const data = JSON.parse(Buffer.from(payload, 'base64url').toString())
-    if (!data || typeof data.userId !== 'number') return null
-    // Check session expiry
-    if (typeof data.ts === 'number' && Date.now() - data.ts > SESSION_MAX_AGE_MS) return null
-    return data
-  } catch { return null }
+  const data = verifyJwtSync<{ userId?: unknown; role?: string }>(raw)
+  if (!data || data.role !== 'admin' || typeof data.userId !== 'number') return null
+  return { userId: data.userId }
 }
 
 export function clearAdminSession(event: H3Event) {
@@ -126,27 +91,27 @@ export function clearAdminSession(event: H3Event) {
 
 export function requireAdmin(event: H3Event) {
   const s = getAdminSession(event)
-  if (!s) throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  if (!s) throw createError({ statusCode: 401, statusMessage: 'Unauthorized', message: 'Требуется авторизация администратора' })
   return s
 }
 
 // --- Client session ---
 
 export function setClientSession(event: H3Event, projectSlug: string) {
-  const signed = _sign(projectSlug)
-  _writeCookie(event, CLIENT_COOKIE, signed, {
+  const token = signJwtSync({ sub: 'client', role: 'client', projectSlug }, SESSION_MAX_AGE_SEC)
+  _writeCookie(event, CLIENT_COOKIE, token, {
     httpOnly: true, sameSite: 'lax',
     secure: _isSecure(event),
-    maxAge: 60 * 60 * 24 * 30, path: '/'
+    maxAge: SESSION_MAX_AGE_SEC, path: '/'
   })
 }
 
 export function getClientSession(event: H3Event): string | null {
   const raw = _readCookie(event, CLIENT_COOKIE)
   if (!raw) return null
-  // Only accept signed cookies
-  const payload = _verifyAndParse(raw)
-  return payload || null
+  const data = verifyJwtSync<{ projectSlug?: unknown; role?: string }>(raw)
+  if (!data || data.role !== 'client' || typeof data.projectSlug !== 'string') return null
+  return data.projectSlug
 }
 
 export function clearClientSession(event: H3Event) {
@@ -156,29 +121,27 @@ export function clearClientSession(event: H3Event) {
 export function requireClient(event: H3Event, projectSlug?: string) {
   const slug = getClientSession(event)
   if (!slug || (projectSlug && slug !== projectSlug))
-    throw createError({ statusCode: 401, statusMessage: 'Client not authenticated' })
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized', message: 'Требуется авторизация клиента' })
   return slug
 }
 
 // --- Contractor session ---
 
 export function setContractorSession(event: H3Event, contractorId: number) {
-  const signed = _sign(String(contractorId))
-  _writeCookie(event, CONTRACTOR_COOKIE, signed, {
+  const token = signJwtSync({ sub: 'contractor', role: 'contractor', contractorId }, SESSION_MAX_AGE_SEC)
+  _writeCookie(event, CONTRACTOR_COOKIE, token, {
     httpOnly: true, sameSite: 'lax',
     secure: _isSecure(event),
-    maxAge: 60 * 60 * 24 * 30, path: '/'
+    maxAge: SESSION_MAX_AGE_SEC, path: '/'
   })
 }
 
 export function getContractorSession(event: H3Event): number | null {
   const raw = _readCookie(event, CONTRACTOR_COOKIE)
   if (!raw) return null
-  // Only accept signed cookies
-  const payload = _verifyAndParse(raw)
-  if (!payload) return null
-  const n = Number(payload)
-  return Number.isFinite(n) ? n : null
+  const data = verifyJwtSync<{ contractorId?: unknown; role?: string }>(raw)
+  if (!data || data.role !== 'contractor' || typeof data.contractorId !== 'number') return null
+  return data.contractorId
 }
 
 export function clearContractorSession(event: H3Event) {
@@ -187,7 +150,7 @@ export function clearContractorSession(event: H3Event) {
 
 export function requireContractor(event: H3Event) {
   const id = getContractorSession(event)
-  if (!id) throw createError({ statusCode: 401, statusMessage: 'Contractor not authenticated' })
+  if (!id) throw createError({ statusCode: 401, statusMessage: 'Unauthorized', message: 'Требуется авторизация подрядчика' })
   return id
 }
 
@@ -206,6 +169,30 @@ export function requireAdminOrClient(event: H3Event, projectSlug: string) {
   if (admin) return { role: 'admin' as const, adminUserId: admin.userId }
   const slug = getClientSession(event)
   if (slug && slug === projectSlug) return { role: 'client' as const, projectSlug: slug }
+  throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+}
+
+// --- Combined guards ---
+
+/** Returns IP for the current request (respects X-Forwarded-For). */
+export function getClientIp(event: H3Event): string {
+  const req = (event as any).node?.req ?? (event as any).req
+  const forwarded = req?.headers?.['x-forwarded-for']
+  if (forwarded) return (Array.isArray(forwarded) ? forwarded[0] : forwarded).split(',')[0].trim()
+  return req?.socket?.remoteAddress ?? req?.connection?.remoteAddress ?? 'unknown'
+}
+
+/**
+ * Require any authenticated session (admin, client, or contractor).
+ * Returns a discriminated union with role + identity.
+ */
+export function requireAnySession(event: H3Event) {
+  const admin = getAdminSession(event)
+  if (admin) return { role: 'admin' as const, userId: admin.userId }
+  const slug = getClientSession(event)
+  if (slug) return { role: 'client' as const, projectSlug: slug }
+  const cid = getContractorSession(event)
+  if (cid) return { role: 'contractor' as const, contractorId: cid }
   throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 }
 

@@ -311,4 +311,25 @@ export const workStatusItemsRelations = relations(workStatusItems, ({ one }) => 
   contractor: one(contractors, { fields: [workStatusItems.contractorId], references: [contractors.id] }),
 }))
 
+// ── Audit log (M5 security) ──────────────────────────────────────────────────
+
+export const auditLogs = pgTable('audit_logs', {
+  id:         serial('id').primaryKey(),
+  /** Nullable — может быть анонимным (неаутентифицированный запрос / клиент/подрядчик) */
+  userId:     integer('user_id'),
+  /** 'admin' | 'designer' | 'client' | 'contractor' | null */
+  role:       text('role'),
+  /** Тип действия: 'login' | 'logout' | 'create' | 'update' | 'delete' | 'view' | ... */
+  action:     text('action').notNull(),
+  /** Тип сущности: 'project' | 'contractor' | 'client' | 'user' | 'material' | ... */
+  entityType: text('entity_type'),
+  /** Идентификатор сущности (slug или числовой id как строка) */
+  entityId:   text('entity_id'),
+  /** Дополнительные данные (diff, ошибка и т.п.) */
+  details:    jsonb('details').$type<Record<string, unknown>>().default({}).notNull(),
+  /** IP-адрес запроса */
+  ip:         text('ip'),
+  createdAt:  timestamp('created_at').defaultNow().notNull(),
+})
+
 
