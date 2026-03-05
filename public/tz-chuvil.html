@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daria Marketplace — Техническая документация</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a24;
+    --surface2: #22222e;
+    --border: #2e2e3e;
+    --accent: #7c6af7;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --text: #e2e2f0;
+    --muted: #8888aa;
+    --code-bg: #13131a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  /* Layout */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo h2 { font-size: 14px; color: var(--accent2); font-weight: 600; }
+  .sidebar-logo p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .sidebar nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 20px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    border-left: 2px solid transparent;
+    transition: all .15s;
+  }
+  .sidebar nav a:hover { color: var(--text); background: var(--surface2); }
+  .sidebar nav a.active { color: var(--accent2); border-left-color: var(--accent); background: var(--surface2); }
+  .sidebar nav .nav-section {
+    padding: 16px 20px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-weight: 600;
+    margin-left: auto;
+  }
+  .badge-done { background: #064e3b; color: var(--green); }
+  .badge-wip  { background: #422006; color: var(--yellow); }
+  .badge-todo { background: #1e1b4b; color: var(--muted); }
+
+  /* Main */
+  .main { flex: 1; max-width: 900px; padding: 48px 48px 120px; }
+
+  /* Typography */
+  h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  h1 span { color: var(--accent2); }
+  .subtitle { color: var(--muted); font-size: 15px; margin-bottom: 40px; }
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 56px 0 16px;
+    padding-top: 56px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h2:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  h3 { font-size: 16px; font-weight: 600; margin: 28px 0 10px; color: var(--accent2); }
+  p { color: var(--text); margin-bottom: 12px; }
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 4px; }
+
+  /* Code */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    color: #c4b5fd;
+  }
+  pre code { color: var(--text); }
+  .kw  { color: #f472b6; }
+  .str { color: #86efac; }
+  .cmt { color: #4b5563; font-style: italic; }
+  .fn  { color: #fbbf24; }
+  .num { color: #818cf8; }
+  .typ { color: #67e8f9; }
+  code.inline {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-size: 12.5px;
+    color: #c4b5fd;
+  }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13.5px; }
+  th {
+    text-align: left;
+    padding: 9px 14px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  /* Method badges */
+  .method {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: monospace;
+  }
+  .get    { background: #052e16; color: #4ade80; }
+  .post   { background: #082f49; color: #38bdf8; }
+  .put    { background: #431407; color: #fb923c; }
+  .delete { background: #450a0a; color: #f87171; }
+
+  /* Role badges */
+  .role {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 4px;
+  }
+  .role-admin      { background: #2e1065; color: #c4b5fd; }
+  .role-customer   { background: #064e3b; color: #6ee7b7; }
+  .role-contractor { background: #422006; color: #fcd34d; }
+  .role-all        { background: #1e293b; color: #94a3b8; }
+
+  /* Info boxes */
+  .box {
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 12px 0 20px;
+    font-size: 14px;
+    border-left: 3px solid;
+  }
+  .box-info    { background: #0c1a2e; border-color: var(--blue);   color: #bfdbfe; }
+  .box-warn    { background: #1c1200; border-color: var(--yellow);  color: #fde68a; }
+  .box-success { background: #052e16; border-color: var(--green);   color: #a7f3d0; }
+
+  /* Module header */
+  .module-header {
+    background: linear-gradient(135deg, var(--surface) 0%, #16162a 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+  }
+  .module-header .tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .module-header h2 {
+    border: none;
+    padding: 0;
+    margin: 0 0 8px;
+  }
+  .module-header p { margin: 0; color: var(--muted); font-size: 14px; }
+  .module-header .meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+  .module-header .meta-item { font-size: 12px; color: var(--muted); }
+  .module-header .meta-item strong { color: var(--text); }
+
+  /* Stack pills */
+  .stack { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .pill {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: var(--surface2);
+  }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ===================== SIDEBAR ===================== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h2>Daria Marketplace</h2>
+    <p>Техническая документация</p>
+  </div>
+  <nav>
+    <div class="nav-section">Обзор</div>
+    <a href="#overview">🗺 О проекте</a>
+    <a href="#stack">⚙️ Стек</a>
+    <a href="#env">🔑 Переменные окружения</a>
+    <div class="nav-section">Готово</div>
+    <a href="#module1">М1 — БД <span class="badge badge-done">✓</span></a>
+    <a href="#module2">М2 — Auth <span class="badge badge-done">✓</span></a>
+    <a href="#module3">М3 — CRUD API <span class="badge badge-done">✓</span></a>
+    <a href="#module4">М4 — CMS <span class="badge badge-done">✓</span></a>
+    <a href="#module5">М5 — Security <span class="badge badge-done">✓</span></a>
+    <div class="nav-section">В плане</div>
+    <a href="#module5">М5 — Безопасность <span class="badge badge-todo">план</span></a>
+    <a href="#module6">М6 — Файлы/Minio <span class="badge badge-todo">план</span></a>
+    <a href="#module7">М7 — Уведомления <span class="badge badge-done">✓</span></a>
+    <a href="#module8">М8 — История статусов <span class="badge badge-done">✓</span></a>
+    <a href="#module9">М9 — PDF экспорт <span class="badge badge-done">✓</span></a>
+    <a href="#module10">М10 — Платежи <span class="badge badge-done">✓</span></a>
+    <a href="#module11">М11 — Поиск/Скоринг <span class="badge badge-todo">план</span></a>
+    <a href="#module12">М12 — Геолокация <span class="badge badge-todo">позже</span></a>
+    <a href="#module13">М13 — DevOps <span class="badge badge-todo">план</span></a>
+    <div class="nav-section">Справка</div>
+    <a href="#decisions">📌 Решения</a>
+    <a href="#errors">⚠️ Коды ошибок</a>
+    <a href="#roles">🔐 Матрица ролей</a>
+  </nav>
+</aside>
+
+<!-- ===================== MAIN ===================== -->
+<main class="main">
+
+  <h1><span>Daria</span> Marketplace</h1>
+  <p class="subtitle">Площадка для поиска исполнителей — внутренняя документация<br>
+    Репо: <code class="inline">chu1107chu-jpg/daria-marketplace</code> &nbsp;·&nbsp; Обновлено: 28.02.2026 &nbsp;·&nbsp; Готово 10 из 13 модулей
+  </p>
+
+  <!-- ===== ОБЗОР ===== -->
+  <h2 id="overview">🗺 О проекте</h2>
+  <p>Многостраничный сайт + CMS + маркетплейс для дизайнера интерьеров. Три роли пользователей:</p>
+  <ul>
+    <li><strong>admin</strong> — дизайнер/владелец. Полный доступ ко всему.</li>
+    <li><strong>customer</strong> — заказчик. Видит только свой проект.</li>
+    <li><strong>contractor</strong> — подрядчик. Видит свои задания и профиль.</li>
+  </ul>
+
+  <h2 id="stack">⚙️ Стек</h2>
+  <div class="stack">
+    <span class="pill">Nuxt 3</span>
+    <span class="pill">TypeScript</span>
+    <span class="pill">Drizzle ORM</span>
+    <span class="pill">PostgreSQL</span>
+    <span class="pill">Redis (ioredis)</span>
+    <span class="pill">Minio (S3)</span>
+    <span class="pill">Pinia</span>
+    <span class="pill">Nuxt UI</span>
+    <span class="pill">Tailwind CSS 4</span>
+    <span class="pill">Zod</span>
+    <span class="pill">jose (JWT)</span>
+    <span class="pill">bcryptjs</span>
+    <span class="pill">sharp</span>
+    <span class="pill">pdfmake</span>
+    <span class="pill">Resend (email)</span>
+  </div>
+
+  <h2 id="env">🔑 Переменные окружения <code class="inline">.env</code></h2>
+  <pre><code>DATABASE_URL=postgresql://user:password@localhost:5432/daria_marketplace
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=&lt;64 случайных символа&gt;
+FORCE_HTTPS=false
+
+# Файлы (Minio — появится в Модуле 6)
+MINIO_ENDPOINT=localhost
+MINIO_PORT=9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=daria-marketplace
+
+# Email (Resend — появится в Модуле 7)
+RESEND_API_KEY=re_xxxxxxxxxxxx
+NOTIFICATION_FROM=noreply@yourdomain.ru
+
+# Генерация JWT_SECRET:
+# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</code></pre>
+
+  <!-- ===== МОДУЛЬ 1 ===== -->
+  <h2 id="module1">📦 Модуль 1 — База данных</h2>
+
+  <div class="module-header">
+    <div class="tag">Module 1 · Статус: готов</div>
+    <h2 style="font-size:18px">Схема БД (Drizzle ORM + PostgreSQL)</h2>
+    <p>Создаёт все таблицы, индексы, связи. Основа для всего остального.</p>
+    <div class="meta">
+      <div class="meta-item"><strong>Файл схемы:</strong> server/db/schema.ts</div>
+      <div class="meta-item"><strong>Типы:</strong> server/db/types.ts</div>
+      <div class="meta-item"><strong>Доп. SQL:</strong> server/db/extras.sql</div>
+    </div>
+  </div>
+
+  <h3>Таблицы</h3>
+  <table>
+    <tr><th>Таблица</th><th>Описание</th><th>Ключевые поля</th></tr>
+    <tr><td><code class="inline">users</code></td><td>Пользователи системы</td><td>id (UUID), role, email, passwordHash</td></tr>
+    <tr><td><code class="inline">contractors</code></td><td>Профиль подрядчика (1:1 к users)</td><td>id, userId, slug, name, city, workTypes[], rating</td></tr>
+    <tr><td><code class="inline">specialties</code></td><td>Справочник специальностей</td><td>id, slug, name</td></tr>
+    <tr><td><code class="inline">contractor_specialties</code></td><td>M2M: подрядчик ↔ специальность</td><td>contractorId, specialtyId</td></tr>
+    <tr><td><code class="inline">projects</code></td><td>Проекты заказчиков</td><td>id, customerId, slug, title, status, profile (JSONB)</td></tr>
+    <tr><td><code class="inline">project_contractors</code></td><td>M2M: проект ↔ подрядчик</td><td>projectId, contractorId, role</td></tr>
+    <tr><td><code class="inline">page_configs</code></td><td>Настройки CMS-страниц</td><td>id, slug, title, sortOrder</td></tr>
+    <tr><td><code class="inline">page_content</code></td><td>Контент страниц (JSONB)</td><td>projectId, pageSlug, content</td></tr>
+    <tr><td><code class="inline">questionnaires</code></td><td>Анкеты с GIN-индексом</td><td>id, userId, type, data (JSONB), status</td></tr>
+    <tr><td><code class="inline">roadmap_stages</code></td><td>Этапы дорожной карты</td><td>id, projectId, title, status, sortOrder</td></tr>
+    <tr><td><code class="inline">work_status_items</code></td><td>Задания подрядчикам</td><td>id, projectId, contractorId, title, status</td></tr>
+    <tr><td><code class="inline">materials</code></td><td>Материалы/отделка проекта</td><td>id, projectId, name, category, meta (JSONB)</td></tr>
+    <tr><td><code class="inline">uploads</code></td><td>Загруженные файлы</td><td>id, projectId, uploadedBy, filename</td></tr>
+    <tr><td><code class="inline">audit_logs</code></td><td>Журнал действий</td><td>id, userId, action, entityType, details (JSONB)</td></tr>
+  </table>
+
+  <h3>Миграции</h3>
+  <pre><code><span class="cmt"># Генерировать SQL-миграцию</span>
+pnpm db:generate
+
+<span class="cmt"># Применить к базе (dev)</span>
+pnpm db:push
+
+<span class="cmt"># Применить миграции (prod)</span>
+pnpm db:migrate
+
+<span class="cmt"># Запустить extras.sql (расширения + справочники) — один раз</span>
+psql $DATABASE_URL -f server/db/extras.sql</code></pre>
+
+  <h3>Использование типов в коде</h3>
+  <pre><code><span class="kw">import type</span> { <span class="typ">User</span>, <span class="typ">Project</span>, <span class="typ">Contractor</span>, <span class="typ">NewProject</span> } <span class="kw">from</span> <span class="str">'~/server/db/types'</span>
+
+<span class="cmt">// User — тип строки из таблицы users (SELECT)</span>
+<span class="cmt">// NewProject — тип для INSERT в projects</span></code></pre>
+
+  <div class="box box-info">
+    <strong>GIN-индекс на анкетах:</strong> позволяет искать по любому полю JSONB без полного сканирования.
+    <br>Пример: <code class="inline">WHERE data @> '{"city": "Москва"}'</code>
+  </div>
+
+  <!-- ===== МОДУЛЬ 2 ===== -->
+  <h2 id="module2">🔐 Модуль 2 — Авторизация</h2>
+
+  <div class="module-header">
+    <div class="tag">Module 2 · Статус: готов</div>
+    <h2 style="font-size:18px">Auth (JWT + bcrypt + Redis rate-limit)</h2>
+    <p>Своя авторизация без внешних сервисов. JWT в HttpOnly cookie. Redis ограничивает брутфорс.</p>
+    <div class="meta">
+      <div class="meta-item"><strong>JWT-утилиты:</strong> server/utils/jwt.ts</div>
+      <div class="meta-item"><strong>Redis:</strong> server/utils/redis.ts</div>
+      <div class="meta-item"><strong>Auth-хелперы:</strong> server/utils/auth.ts</div>
+      <div class="meta-item"><strong>Pinia store:</strong> app/stores/auth.ts</div>
+    </div>
+  </div>
+
+  <h3>Эндпоинты</h3>
+  <table>
+    <tr><th>Метод</th><th>URL</th><th>Кто может</th><th>Описание</th></tr>
+    <tr>
+      <td><span class="method post">POST</span></td>
+      <td><code class="inline">/api/auth/login</code></td>
+      <td><span class="role role-all">все</span></td>
+      <td>Вход. Устанавливает HttpOnly cookie <code class="inline">daria_token</code></td>
+    </tr>
+    <tr>
+      <td><span class="method post">POST</span></td>
+      <td><code class="inline">/api/auth/logout</code></td>
+      <td><span class="role role-all">все</span></td>
+      <td>Удаляет cookie</td>
+    </tr>
+    <tr>
+      <td><span class="method get">GET</span></td>
+      <td><code class="inline">/api/auth/me</code></td>
+      <td><span class="role role-all">auth</span></td>
+      <td>Данные текущего пользователя + профиль подрядчика</td>
+    </tr>
+    <tr>
+      <td><span class="method post">POST</span></td>
+      <td><code class="inline">/api/auth/register</code></td>
+      <td><span class="role role-admin">admin</span> / <span class="role role-contractor">contractor</span></td>
+      <td>Admin создаёт всех; contractor регистрируется сам</td>
+    </tr>
+  </table>
+
+  <h3>Пример: вход</h3>
+  <pre><code><span class="cmt">// Запрос</span>
+<span class="fn">fetch</span>(<span class="str">'/api/auth/login'</span>, {
+  method: <span class="str">'POST'</span>,
+  body: <span class="typ">JSON</span>.stringify({ login: <span class="str">'admin@mail.ru'</span>, password: <span class="str">'secret123'</span> })
+})
+
+<span class="cmt">// Ответ 200</span>
+{ <span class="str">"userId"</span>: <span class="str">"uuid..."</span>, <span class="str">"role"</span>: <span class="str">"admin"</span>, <span class="str">"name"</span>: <span class="str">"Дарья"</span> }
+
+<span class="cmt">// Ошибка 429 (rate-limit — 5 попыток за 15 мин)</span>
+{ <span class="str">"statusMessage"</span>: <span class="str">"Too many login attempts. Try again in 14 minutes."</span> }</code></pre>
+
+  <h3>Защита API-роутов</h3>
+  <pre><code><span class="kw">import</span> { requireSession, requireRole } <span class="kw">from</span> <span class="str">'~/server/utils/auth'</span>
+
+<span class="cmt">// Любой авторизованный пользователь</span>
+<span class="kw">const</span> session = <span class="kw">await</span> <span class="fn">requireSession</span>(event)
+<span class="cmt">// → { userId, role, ... } или автоматически 401</span>
+
+<span class="cmt">// Только admin</span>
+<span class="kw">const</span> session = <span class="kw">await</span> <span class="fn">requireRole</span>(event, <span class="str">'admin'</span>)
+
+<span class="cmt">// Admin или contractor</span>
+<span class="kw">const</span> session = <span class="kw">await</span> <span class="fn">requireRole</span>(event, [<span class="str">'admin'</span>, <span class="str">'contractor'</span>])</code></pre>
+
+  <h3>Защита страниц (Nuxt middleware)</h3>
+  <pre><code><span class="cmt">// В компоненте страницы:</span>
+<span class="fn">definePageMeta</span>({ middleware: <span class="str">'admin'</span> })       <span class="cmt">// только admin</span>
+<span class="fn">definePageMeta</span>({ middleware: <span class="str">'customer'</span> })    <span class="cmt">// только customer</span>
+<span class="fn">definePageMeta</span>({ middleware: <span class="str">'contractor'</span> })  <span class="cmt">// только contractor</span>
+<span class="fn">definePageMeta</span>({ middleware: <span class="str">'require-auth'</span> }) <span class="cmt">// любой авторизованный</span></code></pre>
+
+  <h3>Pinia store</h3>
+  <pre><code><span class="kw">const</span> auth = <span class="fn">useAuthStore</span>()
+
+auth.isLoggedIn    <span class="cmt">// boolean</span>
+auth.role          <span class="cmt">// 'admin' | 'customer' | 'contractor' | null</span>
+auth.isAdmin       <span class="cmt">// boolean</span>
+auth.name          <span class="cmt">// string | null</span>
+auth.contractorId  <span class="cmt">// UUID | null (для contractor)</span>
+
+<span class="kw">await</span> auth.<span class="fn">login</span>(<span class="str">'email@mail.ru'</span>, <span class="str">'password'</span>)
+<span class="kw">await</span> auth.<span class="fn">logout</span>()  <span class="cmt">// → редирект на /login</span></code></pre>
+
+  <!-- ===== МОДУЛЬ 3 ===== -->
+  <h2 id="module3">🌐 Модуль 3 — REST API</h2>
+
+  <div class="module-header">
+    <div class="tag">Module 3 · Статус: готов</div>
+    <h2 style="font-size:18px">CRUD API для всех сущностей</h2>
+    <p>28 эндпоинтов. Pagination, фильтрация, Redis-кэш, RLS на уровне API.</p>
+    <div class="meta">
+      <div class="meta-item"><strong>Утилиты:</strong> server/utils/pagination.ts, cache.ts</div>
+      <div class="meta-item"><strong>Папка:</strong> server/api/</div>
+    </div>
+  </div>
+
+  <h3>Формат ответа списков (pagination)</h3>
+  <pre><code><span class="cmt">// GET /api/contractors?page=2&limit=20&search=иван&city=Москва</span>
+{
+  <span class="str">"data"</span>: [ { <span class="str">"id"</span>: <span class="str">"uuid"</span>, <span class="str">"name"</span>: <span class="str">"Иван Петров"</span>, ... } ],
+  <span class="str">"pagination"</span>: {
+    <span class="str">"page"</span>: <span class="num">2</span>,
+    <span class="str">"limit"</span>: <span class="num">20</span>,
+    <span class="str">"total"</span>: <span class="num">147</span>,
+    <span class="str">"pages"</span>: <span class="num">8</span>
+  }
+}</code></pre>
+
+  <h3>Все эндпоинты</h3>
+  <table>
+    <tr><th>Метод</th><th>URL</th><th>Доступ</th><th>Описание</th></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/users</code></td><td><span class="role role-admin">admin</span></td><td>Список пользователей. Фильтр: ?role, ?search</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code class="inline">/api/users</code></td><td><span class="role role-admin">admin</span></td><td>Создать пользователя</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/users/[id]</code></td><td><span class="role role-admin">admin</span> / себя</td><td>Один пользователь</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code class="inline">/api/users/[id]</code></td><td><span class="role role-admin">admin</span> / себя</td><td>Обновить (role — только admin)</td></tr>
+    <tr><td><span class="method delete">DEL</span></td><td><code class="inline">/api/users/[id]</code></td><td><span class="role role-admin">admin</span></td><td>Удалить (себя нельзя)</td></tr>
+    <tr><td colspan="5" style="padding:4px 14px; color:var(--border);">──────</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/contractors</code></td><td><span class="role role-all">auth</span> + Redis-кэш</td><td>Список. Фильтр: ?search, ?city, ?workType</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code class="inline">/api/contractors</code></td><td><span class="role role-admin">admin</span></td><td>Создать профиль подрядчика</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/contractors/[id]</code></td><td><span class="role role-all">auth</span></td><td>По UUID или slug. Полный профиль — admin/owner</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code class="inline">/api/contractors/[id]</code></td><td><span class="role role-admin">admin</span> / owner</td><td>Обновить профиль</td></tr>
+    <tr><td><span class="method delete">DEL</span></td><td><code class="inline">/api/contractors/[id]</code></td><td><span class="role role-admin">admin</span></td><td>Удалить профиль</td></tr>
+    <tr><td colspan="5" style="padding:4px 14px; color:var(--border);">──────</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/projects</code></td><td><span class="role role-all">RLS</span></td><td>Admin=все, customer=свои, contractor=назначенные</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code class="inline">/api/projects</code></td><td><span class="role role-admin">admin</span></td><td>Создать проект</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/projects/[slug]</code></td><td><span class="role role-all">RLS</span></td><td>Один проект по slug</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code class="inline">/api/projects/[slug]</code></td><td><span class="role role-admin">admin</span> / customer(profile)</td><td>Admin=всё, customer=только profile</td></tr>
+    <tr><td><span class="method delete">DEL</span></td><td><code class="inline">/api/projects/[slug]</code></td><td><span class="role role-admin">admin</span></td><td>Удалить (каскадно)</td></tr>
+    <tr><td colspan="5" style="padding:4px 14px; color:var(--border);">──────</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/questionnaires</code></td><td><span class="role role-all">RLS</span></td><td>Фильтр: ?status, ?type, ?projectId</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code class="inline">/api/questionnaires</code></td><td><span class="role role-all">auth</span></td><td>Создать анкету (status=draft)</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/questionnaires/[id]</code></td><td>owner / <span class="role role-admin">admin</span></td><td>Полные данные включая JSONB</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code class="inline">/api/questionnaires/[id]</code></td><td>owner(data) / admin(status)</td><td>Owner меняет data, admin меняет status</td></tr>
+    <tr><td colspan="5" style="padding:4px 14px; color:var(--border);">──────</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/roadmap/[projectId]</code></td><td><span class="role role-all">RLS</span></td><td>Все этапы, по sortOrder</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code class="inline">/api/roadmap/[projectId]</code></td><td><span class="role role-admin">admin</span></td><td>Bulk-замена всех этапов</td></tr>
+    <tr><td colspan="5" style="padding:4px 14px; color:var(--border);">──────</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/work-items/[projectId]</code></td><td><span class="role role-all">RLS</span></td><td>Contractor видит только свои задания</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code class="inline">/api/work-items/[projectId]</code></td><td><span class="role role-admin">admin</span></td><td>Создать задание</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code class="inline">/api/work-items/[projectId]/[id]</code></td><td><span class="role role-admin">admin</span> / contractor(status)</td><td>Contractor меняет только status/notes</td></tr>
+    <tr><td><span class="method delete">DEL</span></td><td><code class="inline">/api/work-items/[projectId]/[id]</code></td><td><span class="role role-admin">admin</span></td><td>Удалить задание</td></tr>
+    <tr><td colspan="5" style="padding:4px 14px; color:var(--border);">──────</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/materials/[projectId]</code></td><td><span class="role role-all">RLS</span></td><td>Список материалов</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code class="inline">/api/materials/[projectId]</code></td><td><span class="role role-admin">admin</span></td><td>Добавить материал</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code class="inline">/api/materials/[projectId]/[id]</code></td><td><span class="role role-admin">admin</span></td><td>Обновить</td></tr>
+    <tr><td><span class="method delete">DEL</span></td><td><code class="inline">/api/materials/[projectId]/[id]</code></td><td><span class="role role-admin">admin</span></td><td>Удалить</td></tr>
+    <tr><td colspan="5" style="padding:4px 14px; color:var(--border);">──────</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/specialties</code></td><td><span class="role role-all">auth</span> + Redis-кэш 1h</td><td>Справочник специальностей</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code class="inline">/api/specialties</code></td><td><span class="role role-admin">admin</span></td><td>Добавить специальность (инвалидирует кэш)</td></tr>
+  </table>
+
+  <h3>Redis-кэш</h3>
+  <pre><code><span class="kw">import</span> { withCache, invalidateCache } <span class="kw">from</span> <span class="str">'~/server/utils/cache'</span>
+
+<span class="cmt">// Закэшировать результат на 1 час</span>
+<span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">withCache</span>(<span class="str">'contractors:list:page1'</span>, <span class="kw">async</span> () => {
+  <span class="kw">return</span> db.select().<span class="fn">from</span>(contractors)...
+})
+
+<span class="cmt">// Инвалидировать по паттерну после записи</span>
+<span class="kw">await</span> <span class="fn">invalidateCache</span>(<span class="str">'contractors:list:*'</span>)</code></pre>
+
+  <!-- ===== МОДУЛЬ 4 ===== -->
+  <h2 id="module4">🖊️ Модуль 4 — CMS и генерация HTML</h2>
+
+  <div class="module-header">
+    <div class="tag">Module 4 · Статус: готов</div>
+    <h2 style="font-size:18px">CMS-редактор страниц + fs.writeFile генерация</h2>
+    <p>Редактор JSON-контента в админке. Сохраняет в JSONB, генерирует статический HTML через шаблонизатор.</p>
+    <div class="meta">
+      <div class="meta-item"><strong>API:</strong> server/api/cms/</div>
+      <div class="meta-item"><strong>Шаблонизатор:</strong> server/utils/html-generator.ts</div>
+      <div class="meta-item"><strong>UI:</strong> app/pages/admin/cms/</div>
+    </div>
+  </div>
+
+  <h3>Как это работает</h3>
+  <ol>
+    <li>Admin открывает <code class="inline">/admin/cms</code> → выбирает проект и тип страницы</li>
+    <li>В редакторе видит JSON-шаблон, заполняет данными</li>
+    <li>Нажимает <strong>Сохранить</strong> → PUT <code class="inline">/api/cms/content/[projectId]/[slug]</code> → JSONB в PostgreSQL</li>
+    <li>Нажимает <strong>Сгенерировать HTML</strong> → POST <code class="inline">/api/cms/generate/[projectId]/[slug]</code></li>
+    <li>Сервер читает JSONB, прогоняет через шаблон, пишет файл → <code class="inline">public/generated/[slug-проекта]/[тип].html</code></li>
+    <li>Ссылка на файл возвращается в ответе и открывается по клику</li>
+  </ol>
+
+  <h3>API эндпоинты</h3>
+  <table>
+    <tr><th>Метод</th><th>URL</th><th>Доступ</th><th>Описание</th></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/cms/pages</code></td><td><span class="role role-all">auth</span></td><td>Список всех типов страниц</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code class="inline">/api/cms/pages</code></td><td><span class="role role-admin">admin</span></td><td>Добавить новый тип страницы</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/cms/pages/[slug]</code></td><td><span class="role role-all">auth</span></td><td>Один шаблон страницы</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code class="inline">/api/cms/pages/[slug]</code></td><td><span class="role role-admin">admin</span></td><td>Обновить настройки шаблона</td></tr>
+    <tr><td><span class="method delete">DEL</span></td><td><code class="inline">/api/cms/pages/[slug]</code></td><td><span class="role role-admin">admin</span></td><td>Удалить шаблон</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code class="inline">/api/cms/content/[projectId]/[slug]</code></td><td><span class="role role-all">RLS</span></td><td>Загрузить контент страницы (JSONB)</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code class="inline">/api/cms/content/[projectId]/[slug]</code></td><td><span class="role role-admin">admin</span></td><td>Сохранить контент (upsert)</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code class="inline">/api/cms/generate/[projectId]/[slug]</code></td><td><span class="role role-admin">admin</span></td><td>Сгенерировать HTML файл на диск</td></tr>
+  </table>
+
+  <h3>Типы страниц и структура контента</h3>
+  <table>
+    <tr><th>Slug</th><th>Название</th><th>Ключевые поля контента</th></tr>
+    <tr><td><code class="inline">tz</code></td><td>Техническое задание</td><td>client, address, area, style, budget, deadline, sections[]</td></tr>
+    <tr><td><code class="inline">materials</code></td><td>Отделочные материалы</td><td>groups[].name, groups[].items[].{name, brand, article, qty}</td></tr>
+    <tr><td><code class="inline">work_status</code></td><td>Статус работ</td><td>stages[].{name, status, contractor, dates}</td></tr>
+    <tr><td><code class="inline">roadmap</code></td><td>Дорожная карта</td><td>stages[].{title, status, dateStart, dateEnd}</td></tr>
+    <tr><td><code class="inline">anketa</code></td><td>Анкета клиента</td><td>fields[].{label, value}</td></tr>
+    <tr><td><code class="inline">любой</code></td><td>Произвольная</td><td>Любой JSON → таблица ключ/значение</td></tr>
+  </table>
+
+  <h3>Пример: сохранить и сгенерировать</h3>
+  <pre><code><span class="cmt">// 1. Сохранить контент</span>
+<span class="kw">await</span> <span class="fn">$fetch</span>(<span class="str">`/api/cms/content/${projectId}/materials`</span>, {
+  method: <span class="str">'PUT'</span>,
+  body: {
+    content: {
+      title: <span class="str">'Материалы — Квартира Ивановых'</span>,
+      groups: [
+        {
+          name: <span class="str">'Гостиная'</span>,
+          items: [
+            { name: <span class="str">'Ламинат Дуб'</span>, brand: <span class="str">'Kronospan'</span>, article: <span class="str">'K-880'</span>, unit: <span class="str">'м²'</span>, qty: <span class="num">30</span> }
+          ]
+        }
+      ]
+    }
+  }
+})
+
+<span class="cmt">// 2. Сгенерировать HTML файл</span>
+<span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">$fetch</span>(<span class="str">`/api/cms/generate/${projectId}/materials`</span>, { method: <span class="str">'POST'</span> })
+<span class="cmt">// → { url: '/generated/ivanov-flat/materials.html', generatedAt: '...' }</span></code></pre>
+
+  <div class="box box-info">
+    Файлы лежат в <code class="inline">public/generated/[project-slug]/[page-slug].html</code> и доступны напрямую по URL без авторизации.
+    В будущем (Модуль 5 — Безопасность) добавим защиту на уровне nginx.
+  </div>
+
+  <!-- ===== ПОЛНЫЙ ПЛАН ===== -->
+  <h2 id="module5">🗓 Полный бэкенд-план</h2>
+
+  <div class="box box-success">
+    <strong>Принятые решения (28.02.2026):</strong><br>
+    📦 Хранение файлов — <strong>Minio</strong> (self-hosted, S3-API, в docker-compose)<br>
+    📧 Email — <strong>Resend</strong> (API-ключ, бесплатно до 3000 писем/мес)<br>
+    📋 История — <strong>roadmap_stages + work_items</strong> (цвет по статусу: ожидает/в работе/готово)<br>
+    📄 PDF — <strong>серверный pdfmake</strong> (копия сохраняется в БД/Minio)<br>
+    💳 Платежи — <strong>ручные счета</strong> (структура готова для подключения YooKassa/Тинькофф позже)<br>
+    🗺 Геолокация — <strong>откладывается</strong> (поля lat/lng добавим в схему, логику — позже)
+  </div>
+
+  <table>
+    <tr><th>#</th><th>Модуль</th><th>Что делает</th><th>Ключевые зависимости</th><th>Статус</th></tr>
+    <tr><td>1</td><td>БД — схема</td><td>14 таблиц, UUID PK, индексы, GIN</td><td>drizzle-orm, postgres</td><td><span class="badge badge-done">готов</span></td></tr>
+    <tr><td>2</td><td>Авторизация</td><td>JWT + bcrypt + Redis rate-limit + Pinia</td><td>jose, bcryptjs, ioredis</td><td><span class="badge badge-done">готов</span></td></tr>
+    <tr><td>3</td><td>CRUD API</td><td>28 эндпоинтов, пагинация, RLS, кэш</td><td>zod, ioredis</td><td><span class="badge badge-done">готов</span></td></tr>
+    <tr><td>4</td><td>CMS + HTML</td><td>JSON-редактор, генерация HTML по шаблонам</td><td>node:fs</td><td><span class="badge badge-done">готов</span></td></tr>
+    <tr><td>5</td><td>Безопасность</td><td>CSP/HSTS, body limits, XSS sanitize, audit log, ENV валидация</td><td>zod</td><td><span class="badge badge-todo">следующий</span></td></tr>
+    <tr><td>6</td><td>Файлы — Minio</td><td>Multipart upload, MIME-валидация, thumbnails, квота</td><td>minio, sharp</td><td><span class="badge badge-done">✓ готово</span></td></tr>
+    <tr><td>7</td><td>Уведомления</td><td>In-app + email (Resend), fire-and-forget, дедупликация</td><td>resend</td><td><span class="badge badge-done">✓ готово</span></td></tr>
+    <tr><td>8</td><td>История статусов</td><td>Автолог смен статусов задач + таймлайн проекта (work_items + roadmap audit)</td><td>drizzle-orm</td><td><span class="badge badge-done">✓ готово</span></td></tr>
+    <tr><td>9</td><td>PDF экспорт</td><td>Серверный рендер ТЗ/roadmap/счёта, копия в Minio</td><td>pdfmake</td><td><span class="badge badge-done">✓ MVP</span></td></tr>
+    <tr><td>10</td><td>Платежи</td><td>CRUD счетов, смена статуса, PDF, audit log. Готово к подключению ЮKassa</td><td>pdfmake</td><td><span class="badge badge-done">✓ MVP</span></td></tr>
+    <tr><td>11</td><td>Поиск + скоринг</td><td>Full-text + фильтры + скоринг спец.40%/рейтинг30%/город20%/актив.10%</td><td>pg_trgm, ioredis</td><td><span class="badge badge-todo">план</span></td></tr>
+    <tr><td>12</td><td>Геолокация</td><td>PostGIS радиус-поиск, 2GIS геокодинг, ФЗ-152 согласие</td><td>postgis</td><td><span class="badge badge-todo">позже</span></td></tr>
+    <tr><td>13</td><td>DevOps</td><td>docker-compose, pg_dump бэкап, PM2, GitHub Actions CI</td><td>docker</td><td><span class="badge badge-todo">план</span></td></tr>
+  </table>
+
+  <h3>Что добавляем в схему БД прямо сейчас (до следующих модулей)</h3>
+  <pre><code><span class="cmt">-- Таблица payments (Модуль 10)</span>
+<span class="cmt">-- Таблица notifications (Модуль 7)</span>
+<span class="cmt">-- Таблица work_item_status_history (Модуль 8)</span>
+<span class="cmt">-- Поля lat/lng в contractors (Модуль 12, логика позже)</span>
+<span class="cmt">-- → Добавляем в Модуле 5 вместе с security-хардением схемы</span></code></pre>
+
+  <!-- ===== ПРИНЯТЫЕ РЕШЕНИЯ ===== -->
+  <h2 id="decisions">📌 Принятые архитектурные решения</h2>
+
+  <table>
+    <tr><th>Вопрос</th><th>Решение</th><th>Причина</th></tr>
+    <tr>
+      <td>Хранение файлов</td>
+      <td><strong>Minio</strong> (self-hosted, S3-совместимый)</td>
+      <td>Prod-ready, без внешних сервисов, S3-интерфейс позволяет мигрировать на AWS/Cloudflare R2 без смены кода</td>
+    </tr>
+    <tr>
+      <td>Email-уведомления</td>
+      <td><strong>Resend</strong> (API-ключ)</td>
+      <td>Не нужен SMTP-сервер, бесплатно до 3000 писем/мес, простая интеграция</td>
+    </tr>
+    <tr>
+      <td>SMS-уведомления</td>
+      <td><strong>Убрали</strong> (Twilio)</td>
+      <td>Дорого, нужно юрлицо. In-app + email достаточно для MVP</td>
+    </tr>
+    <tr>
+      <td>История изменений</td>
+      <td><strong>roadmap_stages + work_status_items</strong></td>
+      <td>Таймлайн движения по проекту: цвет по статусу (ожидает / в работе / готово). Тянется из audit_logs</td>
+    </tr>
+    <tr>
+      <td>PDF генерация</td>
+      <td><strong>Серверный pdfmake</strong> (Node.js)</td>
+      <td>Одинаковый результат у всех клиентов, копия сохраняется в Minio/БД, jsPDF плохо поддерживает кириллицу</td>
+    </tr>
+    <tr>
+      <td>Платежи</td>
+      <td><strong>Ручные счета</strong></td>
+      <td>MVP: admin вводит сумму, отмечает оплату. Структура таблицы payments готова к подключению YooKassa/Тинькофф без рефакторинга</td>
+    </tr>
+    <tr>
+      <td>Геолокация</td>
+      <td><strong>Отложена</strong> (поля lat/lng добавлены в схему)</td>
+      <td>Нужна после появления пользователей в нескольких городах. Логика PostGIS пишется отдельно</td>
+    </tr>
+    <tr>
+      <td>Карты</td>
+      <td><strong>2GIS API или OSM Nominatim</strong></td>
+      <td>Яндекс.Карты платные для коммерческих проектов с 2024. 2GIS бесплатнее, OSM полностью бесплатный</td>
+    </tr>
+    <tr>
+      <td>Авторизация</td>
+      <td><strong>Своя (JWT + bcrypt)</strong></td>
+      <td>Не зависим от Supabase/Auth0, полный контроль над данными пользователей</td>
+    </tr>
+    <tr>
+      <td>Скоринг подрядчиков</td>
+      <td><strong>Специальность 40% + Рейтинг 30% + Город 20% + Активность 10%</strong></td>
+      <td>Взвешенная сумма нормализованных значений. Геолокация заменена городом до включения PostGIS</td>
+    </tr>
+  </table>
+
+  <!-- ===== ОШИБКИ ===== -->
+  <h2 id="errors">⚠️ Коды ошибок</h2>
+  <table>
+    <tr><th>Код</th><th>Когда возникает</th><th>Пример</th></tr>
+    <tr><td><code class="inline">400</code></td><td>Ошибка валидации Zod</td><td>Невалидный email, пустой title</td></tr>
+    <tr><td><code class="inline">401</code></td><td>Нет cookie / токен просрочен</td><td>Запрос без авторизации</td></tr>
+    <tr><td><code class="inline">403</code></td><td>Недостаточно прав</td><td>Customer пытается удалить проект</td></tr>
+    <tr><td><code class="inline">404</code></td><td>Запись не найдена</td><td>Нет проекта с таким slug</td></tr>
+    <tr><td><code class="inline">409</code></td><td>Конфликт уникальности</td><td>Email или slug уже занят</td></tr>
+    <tr><td><code class="inline">429</code></td><td>Rate-limit (5 попыток / 15 мин)</td><td>Брутфорс login</td></tr>
+  </table>
+  <pre><code><span class="cmt">// Формат ошибки (h3)</span>
+{
+  <span class="str">"statusCode"</span>: <span class="num">404</span>,
+  <span class="str">"statusMessage"</span>: <span class="str">"Project not found"</span>
+}</code></pre>
+
+  <!-- ===== МАТРИЦА РОЛЕЙ ===== -->
+  <h2 id="roles">🔐 Матрица ролей</h2>
+  <table>
+    <tr>
+      <th>Действие</th>
+      <th><span class="role role-admin">admin</span></th>
+      <th><span class="role role-customer">customer</span></th>
+      <th><span class="role role-contractor">contractor</span></th>
+    </tr>
+    <tr><td>Видеть всех пользователей</td><td>✅</td><td>❌</td><td>❌</td></tr>
+    <tr><td>Создавать пользователей</td><td>✅</td><td>❌</td><td>Только себя (register)</td></tr>
+    <tr><td>Видеть все проекты</td><td>✅</td><td>Только свои</td><td>Назначенные</td></tr>
+    <tr><td>Создавать проект</td><td>✅</td><td>❌</td><td>❌</td></tr>
+    <tr><td>Редактировать профиль проекта</td><td>✅</td><td>✅ (только profile)</td><td>❌</td></tr>
+    <tr><td>Управлять roadmap</td><td>✅</td><td>👁 только чтение</td><td>👁 только чтение</td></tr>
+    <tr><td>Менять статус задания</td><td>✅</td><td>❌</td><td>✅ (только свои)</td></tr>
+    <tr><td>Управлять материалами</td><td>✅</td><td>👁 только чтение</td><td>❌</td></tr>
+    <tr><td>Анкета: менять статус</td><td>✅</td><td>❌</td><td>❌</td></tr>
+    <tr><td>Анкета: редактировать данные</td><td>✅</td><td>✅ (своя)</td><td>✅ (своя)</td></tr>
+    <tr><td>Справочник специальностей</td><td>✅ CRUD</td><td>👁 только чтение</td><td>👁 только чтение</td></tr>
+  </table>
+
+  <!-- ===== МОДУЛЬ 6: ФАЙЛЫ / MINIO ===== -->
+  <h2 id="module6">🗂️ Модуль 6 — Загрузка файлов (Minio)</h2>
+  <p>S3-совместимое хранилище файлов. В development без Minio — файлы сохраняются локально в <code class="inline">/uploads/</code>. В production — Minio через docker-compose.</p>
+
+  <h3>6.1 Инфраструктура</h3>
+  <table>
+    <tr><th>Компонент</th><th>Файл</th><th>Назначение</th></tr>
+    <tr><td>Docker Compose</td><td><code class="inline">docker-compose.yml</code></td><td>PostgreSQL + Redis + Minio. Запуск: <code class="inline">docker compose up -d</code></td></tr>
+    <tr><td>Minio клиент</td><td><code class="inline">server/utils/storage.ts</code></td><td>Singleton S3Client, фаллбэк на локальный диск если нет MINIO_ENDPOINT</td></tr>
+    <tr><td>ENV пример</td><td><code class="inline">.env.example</code></td><td>Все переменные с подсказками</td></tr>
+    <tr><td>Типы</td><td><code class="inline">shared/types/upload.ts</code></td><td>UploadResult, PresignedUploadUrl, AllowedMimeType, UploadContext</td></tr>
+  </table>
+
+  <h3>6.2 API эндпоинты</h3>
+  <table>
+    <tr><th>Метод + путь</th><th>Назначение</th><th>Права</th></tr>
+    <tr><td><code class="inline">POST /api/upload</code></td><td>Multipart загрузка через сервер. Sharp сжимает и конвертирует в WebP.</td><td>Авторизованные</td></tr>
+    <tr><td><code class="inline">DELETE /api/upload/:key</code></td><td>Удаление файла. key = storageKey закодирован в base64url.</td><td>Admin или автор файла</td></tr>
+    <tr><td><code class="inline">GET /api/upload/presign</code></td><td>Presigned PUT URL — клиент льёт напрямую в Minio.</td><td>Авторизованные</td></tr>
+    <tr><td><code class="inline">POST /api/upload/confirm</code></td><td>Подтверждение после presigned-загрузки — создаёт запись в БД.</td><td>Авторизованные</td></tr>
+    <tr><td><code class="inline">GET /api/upload/url?key=</code></td><td>Presigned GET URL — временная ссылка на скачивание (частный bucket).</td><td>Admin или автор файла</td></tr>
+  </table>
+
+  <h3>6.3 Два способа загрузки</h3>
+  <p><strong>Способ 1 — Через сервер (multipart):</strong> просто, но файл проходит через наш Node.js сервер. Хорошо для малых файлов (до 5 MB) — сервер сжимает через sharp.</p>
+  <pre><code>POST /api/upload
+Content-Type: multipart/form-data
+
+file=&lt;файл&gt;  context=material_photo  projectId=uuid</code></pre>
+  <p><strong>Способ 2 — Presigned URL (прямо в Minio):</strong> для больших файлов (Го + пдф). Файл не проходит через наш сервер.</p>
+  <pre><code>1. GET /api/upload/presign?filename=photo.jpg&amp;mimeType=image/jpeg&amp;context=work_photo
+   ← { uploadUrl: "https://minio:9000/daria-files/...", storageKey: "...", expiresIn: 900 }
+
+2. PUT {uploadUrl}   ← клиент льёт напрямую в Minio
+
+3. POST /api/upload/confirm  { storageKey, originalName, mimeType, sizeBytes, context }
+   ← UploadResult (запись в БД создана)</code></pre>
+
+  <h3>6.4 Обработка изображений (sharp)</h3>
+  <table>
+    <tr><th>Операция</th><th>Параметры</th></tr>
+    <tr><td>Авто-поворот (EXIF)</td><td>всегда включён</td></tr>
+    <tr><td>Максимальный размер</td><td>1920px (фото), 400px (аватар)</td></tr>
+    <tr><td>Формат</td><td>WebP, quality 85 (меньше вес, лучше JPEG)</td></tr>
+    <tr><td>Запас при ошибке</td><td>Грузим оригинал</td></tr>
+  </table>
+
+  <h3>6.5 Контексты и структура ключей в Minio</h3>
+  <pre><code>avatars/{userId}/{uuid}.webp           — аватар пользователя
+projects/{projectId}/photos/{uuid}.webp — фото работ / обложка проекта
+materials/{projectId}/{uuid}.webp       — фото материала
+projects/{projectId}/documents/{uuid}.pdf — документы
+misc/{uuid}.webp                        — прочее</code></pre>
+
+  <h3>6.6 Разрешённые типы файлов</h3>
+  <table>
+    <tr><th>MIME</th><th>Максимальный размер</th></tr>
+    <tr><td>image/jpeg, image/png, image/webp</td><td>10 MB</td></tr>
+    <tr><td>image/gif</td><td>5 MB</td></tr>
+    <tr><td>application/pdf</td><td>20 MB</td></tr>
+    <tr><td>docx, doc</td><td>10 MB</td></tr>
+  </table>
+
+  <h3>6.7 Запуск Minio локально</h3>
+  <pre><code><span class="cmt"># 1. Запустить все сервисы:</span>
+docker compose up -d
+
+<span class="cmt"># 2. Открыть панель Minio:</span>
+http://localhost:9001   ← login: minio_admin / minio_secret_change_me
+
+<span class="cmt"># 3. Создать bucket "daria-files" вручную или автоматически при старте сервера</span>
+<span class="cmt"># (startup.ts вызывает ensureBucket() автоматически)</span>
+
+<span class="cmt"># Без Minio (dev) — файлы сохраняются в ./uploads/ локально</span></code></pre>
+
+
+  <h2 id="module5">🔒 Модуль 5 — Безопасность</h2>
+  <p>Полная защита от внешних атак + соблюдение ФЗ-152 (Россия) и GDPR (ЕС).</p>
+
+  <h3>5.1 HTTP-заголовки безопасности</h3>
+  <p>Файл: <code class="inline">server/middleware/01.security-headers.ts</code></p>
+  <table>
+    <tr><th>Заголовок</th><th>Значение</th><th>Защита от</th></tr>
+    <tr><td>Content-Security-Policy</td><td>default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src includes Resend API</td><td>XSS, injection</td></tr>
+    <tr><td>Strict-Transport-Security</td><td>max-age=31536000 (только production)</td><td>Protocol downgrade, cookie hijacking</td></tr>
+    <tr><td>X-Frame-Options</td><td>DENY</td><td>Clickjacking</td></tr>
+    <tr><td>X-Content-Type-Options</td><td>nosniff</td><td>MIME sniffing</td></tr>
+    <tr><td>Referrer-Policy</td><td>strict-origin-when-cross-origin</td><td>Утечка URL</td></tr>
+    <tr><td>Permissions-Policy</td><td>Блокирует geolocation, microphone, camera, usb, payment</td><td>Несанкционированный доступ к устройству</td></tr>
+  </table>
+
+  <h3>5.2 Rate Limiting</h3>
+  <p>Файл: <code class="inline">server/middleware/02.rate-limit.ts</code></p>
+  <table>
+    <tr><th>Зона</th><th>Метод</th><th>Лимит</th><th>Redis Key</th></tr>
+    <tr><td>Write</td><td>POST / PUT / PATCH / DELETE</td><td>60 req / мин на IP</td><td><code class="inline">rl:write:{ip}</code></td></tr>
+    <tr><td>Read</td><td>GET</td><td>300 req / мин на IP</td><td><code class="inline">rl:read:{ip}</code></td></tr>
+    <tr><td>Login</td><td>POST /api/auth/login</td><td>5 попыток / 15 мин на IP</td><td><code class="inline">rl:login:{ip}</code></td></tr>
+  </table>
+  <p>При превышении — 429 с заголовком <code class="inline">Retry-After</code>. Fail-open при недоступном Redis.</p>
+
+  <h3>5.3 Ограничение размера тела</h3>
+  <p>Файл: <code class="inline">server/middleware/03.body-limit.ts</code></p>
+  <table>
+    <tr><th>Маршрут</th><th>Лимит</th></tr>
+    <tr><td>/api/upload/*</td><td>20 MB</td></tr>
+    <tr><td>/api/cms/content/*</td><td>2 MB</td></tr>
+    <tr><td>Всё остальное</td><td>512 KB</td></tr>
+  </table>
+
+  <h3>5.4 CSRF-защита (Double-Submit Token)</h3>
+  <p>Файл: <code class="inline">server/middleware/04.csrf.ts</code></p>
+  <p>Схема: клиент запрашивает токен через <code class="inline">GET /api/auth/csrf</code>, получает 64-символьный hex. Все мутирующие запросы (POST/PUT/PATCH/DELETE) должны содержать заголовок <code class="inline">X-CSRF-Token</code>. Токен хранится в Redis с TTL 4 часа.</p>
+  <p>Исключения: login, register, logout (до получения сессии). Fail-open при недоступном Redis.</p>
+
+  <h3>5.5 Санитизация данных</h3>
+  <p>Файл: <code class="inline">server/utils/sanitize.ts</code></p>
+  <pre><code>stripHtml(input)                   <span class="cmt">// Убирает все HTML-теги</span>
+sanitizeShortText(input, max=255)  <span class="cmt">// Строки до 255 символов</span>
+sanitizeLongText(input, max=5000)  <span class="cmt">// Длинный текст, сохраняет newlines</span>
+sanitizeUrl(input)                 <span class="cmt">// Только http/https, блокирует javascript:</span>
+sanitizeJsonContent(value)         <span class="cmt">// Рекурсивная очистка JSONB полей</span>
+sanitizeUserInput(data)            <span class="cmt">// Обёртка для объекта профиля</span></code></pre>
+
+  <h3>5.6 Валидация параметров</h3>
+  <p>Файл: <code class="inline">server/utils/validate.ts</code></p>
+  <pre><code>assertUuid(value, fieldName)      <span class="cmt">// 400 если не UUID v4/v7</span>
+assertSlug(value)                 <span class="cmt">// Только lowercase + дефисы</span>
+assertSafeFilename(filename)      <span class="cmt">// Блокирует path traversal (../)</span>
+assertArraySize(arr, max)         <span class="cmt">// Защита от Array Bomb</span>
+assertEnum(value, allowed)        <span class="cmt">// Type-safe enum check</span>
+isEmail(value)                    <span class="cmt">// Regex + max 254 символа</span></code></pre>
+
+  <h3>5.7 Audit Log</h3>
+  <p>Файл: <code class="inline">server/utils/audit.ts</code></p>
+  <p>Все критичные действия записываются в таблицу <code class="inline">audit_logs</code> с IP, User-Agent и userId.</p>
+  <table>
+    <tr><th>AuditAction</th><th>Когда</th></tr>
+    <tr><td>auth.login / auth.logout</td><td>Вход и выход</td></tr>
+    <tr><td>auth.consent_given / auth.consent_withdrawn</td><td>Согласие ФЗ-152</td></tr>
+    <tr><td>user.deleted / user.data_exported</td><td>GDPR-операции</td></tr>
+    <tr><td>project.created / project.deleted</td><td>Критичные изменения</td></tr>
+    <tr><td>file.uploaded / file.deleted</td><td>Файловые операции</td></tr>
+    <tr><td>payment.created / payment.paid</td><td>Финансовые события</td></tr>
+  </table>
+
+  <h3>5.8 ENV Валидация при старте</h3>
+  <p>Файл: <code class="inline">server/utils/env-check.ts</code></p>
+  <p>Сервер не запустится с неполным окружением. Zod-схема проверяет при старте:</p>
+  <table>
+    <tr><th>Переменная</th><th>Правило</th></tr>
+    <tr><td>DATABASE_URL</td><td>Начинается с <code class="inline">postgresql://</code></td></tr>
+    <tr><td>REDIS_URL</td><td>Обязательная строка</td></tr>
+    <tr><td>JWT_SECRET</td><td>Минимум 32 символа</td></tr>
+    <tr><td>RESEND_API_KEY</td><td>Начинается с <code class="inline">re_</code> (если задан)</td></tr>
+    <tr><td>MINIO_ENDPOINT / BUCKET / KEY</td><td>Обязательные если задан MINIO_ENDPOINT</td></tr>
+  </table>
+
+  <h3>5.9 ФЗ-152 / GDPR эндпоинты</h3>
+  <table>
+    <tr><th>Метод + путь</th><th>Действие</th></tr>
+    <tr><td><code class="inline">POST /api/auth/consent</code></td><td>Запись согласия (given/withdrawn + версия политики + IP)</td></tr>
+    <tr><td><code class="inline">GET /api/me/export</code></td><td>Выгрузка всех персональных данных в JSON (право на доступ)</td></tr>
+    <tr><td><code class="inline">DELETE /api/me/delete</code></td><td>Анонимизация аккаунта (право на забвение)</td></tr>
+  </table>
+  <p><strong>Поля согласия в таблице users:</strong> <code class="inline">consentGiven</code>, <code class="inline">consentAt</code>, <code class="inline">consentIp</code></p>
+  <p><strong>Анонимизация</strong> (не физическое удаление): email → <code class="inline">deleted_{id}@deleted.local</code>, name → «Deleted User», passwordHash → пустая строка.</p>
+
+  <h3>5.10 Новые таблицы БД (Module 5)</h3>
+  <table>
+    <tr><th>Таблица</th><th>Назначение</th></tr>
+    <tr><td>notifications</td><td>Уведомления пользователям (тип, заголовок, тело, emailSent)</td></tr>
+    <tr><td>payments</td><td>Счета в копейках (integer, без float ошибок), статус, PDF путь, JSONB для YooKassa</td></tr>
+    <tr><td>work_item_status_history</td><td>История смены статуса задания (кто, когда, с чего на что)</td></tr>
+  </table>
+
+  <h3>5.11 Защита от инъекций и атак на данные</h3>
+  <p>Файл: <code class="inline">server/middleware/05.injection-guard.ts</code> — запускается на каждый API-запрос до обработчика.</p>
+  <p>Дополнения в: <code class="inline">server/utils/validate.ts</code>, <code class="inline">server/utils/sanitize.ts</code></p>
+
+  <p><strong>Почему это нужно, если Drizzle ORM уже защищает?</strong><br>
+  Drizzle параметризует SQL-запросы — это главная защита. Но атаки бывают разные: через URL-параметры, через заголовки, через структуру JSON. Middleware перехватывает их <em>до того</em> как любой код успел обработать запрос.</p>
+
+  <h4>1. SQL-инъекции</h4>
+  <p><strong>Что это:</strong> злоумышленник подставляет SQL-команды в поля ввода, чтобы прочитать или удалить базу данных.</p>
+  <pre><code><span class="cmt">// Плохой пример без защиты:</span>
+GET /api/contractors?search='; DROP TABLE users; --
+
+<span class="cmt">// После внедрения в raw SQL это стало бы:</span>
+SELECT * FROM contractors WHERE name ILIKE '%'; DROP TABLE users; --%'
+<span class="cmt">// ☠️ Таблица users удалена</span>
+
+<span class="cmt">// Как защищаемся:</span>
+<span class="cmt">// 1. Drizzle ВСЕГДА параметризует: ilike(users.name, `%${search}%`)</span>
+<span class="cmt">//    → PostgreSQL получит: ILIKE $1, параметр: '%search_text%' — команда не выполнится</span>
+<span class="cmt">// 2. Middleware дополнительно блокирует грубые паттерны в query-строке</span></code></pre>
+  <p><strong>Паттерны которые блокируются:</strong> <code class="inline">UNION SELECT</code>, <code class="inline">DROP TABLE</code>, <code class="inline">DELETE FROM</code>, <code class="inline">INSERT INTO</code>, <code class="inline">EXEC(</code>, <code class="inline">xp_cmdshell</code>, <code class="inline">pg_sleep(</code>, <code class="inline">WAITFOR DELAY</code>, <code class="inline">; DROP</code> (stacked queries), <code class="inline">--</code> в конце строки.</p>
+
+  <h4>2. Null-byte инъекция (нулевой байт)</h4>
+  <p><strong>Что это:</strong> символ <code class="inline">\x00</code> (нулевой байт) вставляется в строку. PostgreSQL и некоторые C-библиотеки обрезают строку по нулевому байту — это может обойти LIKE-фильтры или проверки прав.</p>
+  <pre><code><span class="cmt">// Атака: подрядчик ищет проект чужого клиента</span>
+GET /api/projects?search=ремонт%00' OR '1'='1
+
+<span class="cmt">// PostgreSQL TEXT обрезает по \x00 → строка становится просто "ремонт"</span>
+<span class="cmt">// Потом ' OR '1'='1 может выполниться как SQL если где-то есть raw запрос</span>
+
+<span class="cmt">// Защита: middleware удаляет все \x00 из URL, query и тела запроса</span>
+<span class="cmt">// sanitize.ts:  stripControlChars() убирает \x00 из всех строк</span></code></pre>
+
+  <h4>3. CRLF-инъекция (инъекция в заголовки)</h4>
+  <p><strong>Что это:</strong> символы <code class="inline">\r\n</code> (перенос строки в HTTP) вставляются в данные. Позволяет добавлять поддельные HTTP-заголовки в ответ или поддельные записи в логи.</p>
+  <pre><code><span class="cmt">// Атака: злой IP-адрес в X-Forwarded-For</span>
+X-Forwarded-For: 1.2.3.4\r\nSet-Cookie: admin=true
+
+<span class="cmt">// Без защиты этот IP попал бы в Redis-ключ:  rl:write:1.2.3.4\r\nSet-Cookie: admin=true</span>
+<span class="cmt">// Redis может интерпретировать \r\n как разделитель команд → command injection</span>
+
+<span class="cmt">// Защита: sanitizeIp() в validate.ts оставляет ТОЛЬКО цифры/точки/двоеточия</span>
+<span class="cmt">// "1.2.3.4\r\nDEL *"  →  "1.2.3.4"  (Redis-ключ безопасен)</span></code></pre>
+
+  <h4>4. Prototype Pollution (загрязнение прототипа)</h4>
+  <p><strong>Что это:</strong> атака через JSON-тело. Если в объект через <code class="inline">__proto__</code> добавить свойство — оно появится у <em>всех</em> объектов в Node.js процессе. Один запрос может сделать всех пользователей администраторами.</p>
+  <pre><code><span class="cmt">// Атака:</span>
+POST /api/projects
+{ "__proto__": { "isAdmin": true }, "title": "мой проект" }
+
+<span class="cmt">// Если сервер делает Object.assign({}, body) или spread {...body}</span>
+<span class="cmt">// то у ВСЕХ объектов появится isAdmin: true до перезапуска сервера</span>
+<span class="cmt">// if (user.isAdmin) → true для всех пользователей ☠️</span>
+
+<span class="cmt">// Защита: middleware проверяет каждый ключ JSON рекурсивно</span>
+<span class="cmt">// Ключи __proto__ / constructor / prototype → сразу 400 Bad Request</span></code></pre>
+
+  <h4>5. Log Injection (инъекция в логи)</h4>
+  <p><strong>Что это:</strong> пользователь передаёт строку с переносами строк <code class="inline">\n</code>. Если сервер логирует её напрямую — в журнале появятся поддельные записи. Это маскирует реальные атаки и вводит в заблуждение при аудите.</p>
+  <pre><code><span class="cmt">// Атака:</span>
+email = "user@evil.com\n[2026-01-01 03:00] INFO: admin logged in from 127.0.0.1"
+
+<span class="cmt">// Без защиты в логах появится:</span>
+<span class="cmt">// [2026-02-28] Login attempt: user@evil.com</span>
+<span class="cmt">// [2026-01-01 03:00] INFO: admin logged in from 127.0.0.1  ← поддельная строка</span>
+
+<span class="cmt">// Защита: sanitizeLogString() заменяет \n \r \t → пробел перед Console.log</span>
+<span class="cmt">// console.info('[auth] login:', sanitizeLogString(email))</span></code></pre>
+
+  <h4>6. IP-спуфинг (обход rate-limit)</h4>
+  <p><strong>Что это:</strong> заголовок <code class="inline">X-Forwarded-For</code> можно подделать. Без проверки злоумышленник может обойти ограничение попыток входа, просто меняя значение этого заголовка.</p>
+  <pre><code><span class="cmt">// Атака: брутфорс с обходом rate-limit</span>
+POST /api/auth/login  →  X-Forwarded-For: 1.1.1.1   (попытка 1-5, заблокирован)
+POST /api/auth/login  →  X-Forwarded-For: 2.2.2.2   (попытка 6-10, новый "IP")
+POST /api/auth/login  →  X-Forwarded-For: 3.3.3.3   (и так далее...)
+
+<span class="cmt">// Защита: в production nginx настраивается как единственный trusted proxy</span>
+<span class="cmt">// При настройке nginx → $real_ip используется вместо X-Forwarded-For клиента</span>
+<span class="cmt">// sanitizeIp() убирает цепочки IP и невалидные значения → 'unknown' один ключ на всех</span></code></pre>
+
+  <h4>7. Аномально длинные параметры (попытки переполнения / ReDoS)</h4>
+  <p><strong>Что это:</strong> очень длинная строка в URL-параметре может вызвать зависание regex (ReDoS) или переполнить буфер. Middleware обрезает параметры больше 2000 символов — этого хватает для любого реального поиска.</p>
+
+  <h4>Итоговая таблица защит</h4>
+  <table>
+    <tr><th>Атака</th><th>Вектор</th><th>Где закрыто</th></tr>
+    <tr><td>SQL-инъекция</td><td>Query-параметры</td><td>Drizzle (параметризация) + middleware (ключевые слова)</td></tr>
+    <tr><td>Null-byte инъекция</td><td>URL, query, body</td><td><code class="inline">05.injection-guard</code> + <code class="inline">stripControlChars()</code></td></tr>
+    <tr><td>CRLF-инъекция</td><td>Заголовки, Redis-ключи</td><td><code class="inline">sanitizeIp()</code> в validate.ts</td></tr>
+    <tr><td>Prototype Pollution</td><td>JSON body</td><td><code class="inline">05.injection-guard</code> (рекурсивная проверка ключей)</td></tr>
+    <tr><td>Log Injection</td><td>Любые строки в логах</td><td><code class="inline">sanitizeLogString()</code> в sanitize.ts</td></tr>
+    <tr><td>IP-спуфинг</td><td>X-Forwarded-For заголовок</td><td><code class="inline">sanitizeIp()</code> + конфиг nginx</td></tr>
+    <tr><td>ReDoS / buffer overflow</td><td>Длинные query-параметры</td><td>Лимит 2000 символов на параметр</td></tr>
+    <tr><td>Path traversal</td><td>Имена файлов</td><td><code class="inline">assertSafeFilename()</code> в validate.ts</td></tr>
+    <tr><td>Array bomb</td><td>JSON-массивы</td><td><code class="inline">assertArraySize()</code> в validate.ts</td></tr>
+    <tr><td>XSS</td><td>HTML в текстовых полях</td><td><code class="inline">stripHtml()</code> + CSP заголовок</td></tr>
+  </table>
+
+  <!-- ===== МОДУЛЬ 7: УВЕДОМЛЕНИЯ ===== -->
+  <h2 id="module7">🔔 Модуль 7 — Уведомления (in-app + email)</h2>
+  <p>In-app уведомления хранятся в БД и отображаются в кабинете. Email отправляется через Resend (fire-and-forget, не блокирует ответ). Если ключ не задан — email тихо пропускается, работает только in-app.</p>
+
+  <h3>7.1 Архитектура</h3>
+  <table>
+    <tr><th>Компонент</th><th>Файл</th><th>Назначение</th></tr>
+    <tr><td>Типы</td><td><code class="inline">shared/types/notification.ts</code></td><td>NotificationType, NotificationDto, CreateNotificationInput</td></tr>
+    <tr><td>Mailer</td><td><code class="inline">server/utils/mailer.ts</code></td><td>Singleton Resend-клиент, стилизованный HTML-шаблон письма</td></tr>
+    <tr><td>Notify</td><td><code class="inline">server/utils/notify.ts</code></td><td>createNotification(), notifyMany() — центральная точка создания уведомлений</td></tr>
+  </table>
+
+  <h3>7.2 API эндпоинты</h3>
+  <table>
+    <tr><th>Метод + путь</th><th>Назначение</th><th>Права</th></tr>
+    <tr><td><code class="inline">GET /api/me/notifications</code></td><td>Список уведомлений. Query: page, limit, unreadOnly</td><td>Авторизованные</td></tr>
+    <tr><td><code class="inline">PATCH /api/me/notifications/:id</code></td><td>Пометить уведомление прочитанным/непрочитанным</td><td>Только своё</td></tr>
+    <tr><td><code class="inline">POST /api/me/notifications/read-all</code></td><td>Пометить все как прочитанные</td><td>Только свои</td></tr>
+    <tr><td><code class="inline">DELETE /api/me/notifications/:id</code></td><td>Удалить уведомление</td><td>Своё или Admin</td></tr>
+  </table>
+
+  <h3>7.3 Типы событий</h3>
+  <table>
+    <tr><th>type</th><th>Кому</th><th>Когда</th><th>Email</th></tr>
+    <tr><td><code class="inline">project.created</code></td><td>Клиент</td><td>Создан проект с customerId</td><td>✓</td></tr>
+    <tr><td><code class="inline">project.status_changed</code></td><td>Клиент</td><td>Смена статуса проекта (admin)</td><td>✓</td></tr>
+    <tr><td><code class="inline">project.contractor_assigned</code></td><td>Клиент</td><td>Назначен подрядчик</td><td>опц.</td></tr>
+    <tr><td><code class="inline">roadmap.updated</code></td><td>Клиент</td><td>Обновлён роадмап проекта</td><td>—</td></tr>
+    <tr><td><code class="inline">work_item.status_changed</code></td><td>Клиент</td><td>Смена статуса задания</td><td>—</td></tr>
+    <tr><td><code class="inline">payment.created</code></td><td>Клиент</td><td>Создан счёт</td><td>✓</td></tr>
+    <tr><td><code class="inline">payment.status_changed</code></td><td>Клиент</td><td>Смена статуса платежа</td><td>✓</td></tr>
+    <tr><td><code class="inline">system.message</code></td><td>Любой</td><td>Произвольное сообщение от admin</td><td>опц.</td></tr>
+  </table>
+
+  <h3>7.4 Как использовать createNotification()</h3>
+  <pre><code><span class="cmt">// In-app only</span>
+await createNotification({
+  userId,
+  type:       'roadmap.updated',
+  title:      'Роадмап обновлён',
+  body:       'Дизайнер обновил план работ.',
+  link:       '/client/my-apartment',
+  entityType: 'project',
+  entityId:   projectId,
+})
+
+<span class="cmt">// In-app + email</span>
+await createNotification({
+  userId,
+  type:      'project.created',
+  title:     'Ваш проект создан',
+  sendEmail: true,   <span class="cmt">← если нет RESEND_API_KEY — тихо пропустит</span>
+})</code></pre>
+
+  <h3>7.5 Дедупликация</h3>
+  <p>Если для одной и той же сущности уже есть непрочитанное уведомление того же типа — оно обновляется вместо создания дубликата. Это предотвращает спам при частых обновлениях (например, несколько правок roadmap подряд).</p>
+
+  <h3>7.6 ENV переменные</h3>
+  <pre><code>RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx  <span class="cmt"># обязателен для email</span>
+NOTIFICATION_FROM=Daria Design &lt;noreply@yourdomain.ru&gt;</code></pre>
+
+
+  <!-- ===== МОДУЛЬ 8: ИСТОРИЯ СТАТУСОВ ===== -->
+  <h2 id="module8">🕒 Модуль 8 — История статусов</h2>
+  <p>Реализован системный таймлайн изменений по задачам и roadmap. История пишется автоматически при каждом изменении статуса задания, а обновления roadmap фиксируются в audit log с агрегированной статистикой изменений.</p>
+
+  <h3>8.1 Что пишем в историю автоматически</h3>
+  <table>
+    <tr><th>Событие</th><th>Куда пишем</th><th>Что сохраняем</th></tr>
+    <tr><td>Создание work_item</td><td><code class="inline">work_item_status_history</code></td><td><code class="inline">oldStatus=null</code>, <code class="inline">newStatus</code>, note=<code class="inline">Task created</code></td></tr>
+    <tr><td>Смена статуса work_item</td><td><code class="inline">work_item_status_history</code></td><td><code class="inline">oldStatus</code>, <code class="inline">newStatus</code>, note, changedBy</td></tr>
+    <tr><td>Удаление work_item</td><td><code class="inline">audit_logs</code></td><td>action=<code class="inline">work_item.deleted</code> + details</td></tr>
+    <tr><td>Обновление roadmap</td><td><code class="inline">audit_logs</code></td><td>action=<code class="inline">roadmap.updated</code>, counts: changed/added/removed/total</td></tr>
+  </table>
+
+  <h3>8.2 Новые API эндпоинты</h3>
+  <table>
+    <tr><th>Метод + путь</th><th>Назначение</th><th>Права</th></tr>
+    <tr><td><code class="inline">GET /api/work-items/:projectId/history</code></td><td>История статусов задач проекта; фильтр <code class="inline">workItemId</code></td><td>Admin / customer(owner) / contractor(свои задачи)</td></tr>
+    <tr><td><code class="inline">GET /api/projects/:projectId/status-history</code></td><td>Единый таймлайн проекта: задачи + roadmap updates</td><td>Admin / customer(owner) / contractor(участвует в проекте)</td></tr>
+  </table>
+
+  <h3>8.3 Цвета таймлайна</h3>
+  <p>Вынесены в <code class="inline">server/utils/status-history.ts</code>.</p>
+  <table>
+    <tr><th>Статус</th><th>Цвет</th><th>Смысл</th></tr>
+    <tr><td><code class="inline">pending</code></td><td>#6b7280</td><td>Ожидание</td></tr>
+    <tr><td><code class="inline">in_progress</code></td><td>#3b82f6</td><td>В работе</td></tr>
+    <tr><td><code class="inline">done</code></td><td>#16a34a</td><td>Завершено</td></tr>
+    <tr><td><code class="inline">blocked</code></td><td>#f59e0b</td><td>Блокер</td></tr>
+    <tr><td><code class="inline">cancelled</code></td><td>#ef4444</td><td>Отменено</td></tr>
+    <tr><td><code class="inline">roadmap.updated</code></td><td>#8b5cf6</td><td>Обновление плана</td></tr>
+  </table>
+
+  <h3>8.4 Связь с уведомлениями (М7)</h3>
+  <p>При смене статуса задачи клиент получает in-app уведомление <code class="inline">work_item.status_changed</code> с переходом в кабинет проекта. История и уведомления синхронизированы по одному событию.</p>
+
+  <!-- ===== МОДУЛЬ 9: PDF ===== -->
+  <h2 id="module9">📄 Модуль 9 — PDF экспорт</h2>
+  <p>Добавлен серверный экспорт PDF в одном формате для всех пользователей. Документ создаётся на сервере, загружается в Minio (или локальный storage в dev), и ссылка возвращается в ответе API.</p>
+
+  <h3>9.1 Что умеет М9</h3>
+  <table>
+    <tr><th>Тип PDF</th><th>Источник данных</th><th>Что внутри</th></tr>
+    <tr><td><code class="inline">tz</code></td><td><code class="inline">page_content (slug=tz)</code></td><td>Клиент, адрес, бюджет, разделы ТЗ</td></tr>
+    <tr><td><code class="inline">roadmap</code></td><td><code class="inline">roadmap_stages</code></td><td>Таблица этапов: статус, сроки, комментарий</td></tr>
+    <tr><td><code class="inline">payment</code></td><td><code class="inline">payments</code></td><td>Счёт: сумма, статус, срок оплаты, комментарии</td></tr>
+  </table>
+
+  <h3>9.2 API</h3>
+  <table>
+    <tr><th>Метод + путь</th><th>Тело</th><th>Результат</th><th>Права</th></tr>
+    <tr><td><code class="inline">POST /api/pdf/:projectId</code></td><td><code class="inline">{ kind: 'tz' | 'roadmap' | 'payment', paymentId? }</code></td><td><code class="inline">{ publicUrl, storageKey, uploadId }</code></td><td>admin / customer(owner)</td></tr>
+  </table>
+  <p><strong>ID формат:</strong> <code class="inline">projectId</code> и <code class="inline">paymentId</code> — строго UUID (валидация через <code class="inline">assertUuid</code> + Zod).</p>
+
+  <h3>9.3 Простые примеры</h3>
+  <pre><code><span class="cmt">// PDF по ТЗ проекта</span>
+await $fetch(`/api/pdf/${projectId}`, {
+  method: 'POST',
+  body: { kind: 'tz' }
+})
+
+<span class="cmt">// PDF по roadmap</span>
+await $fetch(`/api/pdf/${projectId}`, {
+  method: 'POST',
+  body: { kind: 'roadmap' }
+})
+
+<span class="cmt">// PDF конкретного счёта</span>
+await $fetch(`/api/pdf/${projectId}`, {
+  method: 'POST',
+  body: { kind: 'payment', paymentId }
+})</code></pre>
+
+  <p><strong>Что важно:</strong> каждая генерация PDF пишет audit-событие <code class="inline">pdf.generated</code> и создаёт запись в таблице <code class="inline">uploads</code>.</p>
+
+  <!-- ===== МОДУЛЬ 10: PAYMENTS ===== -->
+  <h2 id="module10">💳 Модуль 10 — Платежи</h2>
+  <p>Реализован MVP ручных платежей: админ создаёт счёт, меняет статус, удаляет счёт. Заказчик видит свои платежи. Подрядчик к платежам не допущен.</p>
+
+  <h3>10.1 Что есть сейчас (MVP)</h3>
+  <table>
+    <tr><th>Функция</th><th>Как работает</th></tr>
+    <tr><td>Создание счёта</td><td>Admin создаёт запись в <code class="inline">payments</code>, сумма хранится в копейках (<code class="inline">amountKopecks</code>)</td></tr>
+    <tr><td>Изменение статуса</td><td>Статусы: <code class="inline">draft</code>, <code class="inline">sent</code>, <code class="inline">paid</code>, <code class="inline">cancelled</code></td></tr>
+    <tr><td>Уведомления</td><td>Клиент получает <code class="inline">payment.created</code> и <code class="inline">payment.status_changed</code></td></tr>
+    <tr><td>Аудит</td><td>Логируются <code class="inline">payment.created</code>, <code class="inline">payment.status_changed</code>, <code class="inline">payment.deleted</code></td></tr>
+    <tr><td>PDF счёта</td><td>Генерируется через М9, путь сохраняется в <code class="inline">payments.pdfPath</code></td></tr>
+  </table>
+
+  <h3>10.2 API</h3>
+  <table>
+    <tr><th>Метод + путь</th><th>Назначение</th><th>Права</th></tr>
+    <tr><td><code class="inline">GET /api/payments/:projectId</code></td><td>Список платежей проекта (+ фильтр <code class="inline">?status=</code>)</td><td>admin / customer(owner)</td></tr>
+    <tr><td><code class="inline">POST /api/payments/:projectId</code></td><td>Создать счёт</td><td>admin</td></tr>
+    <tr><td><code class="inline">GET /api/payments/:projectId/:id</code></td><td>Один счёт</td><td>admin / customer(owner)</td></tr>
+    <tr><td><code class="inline">PUT /api/payments/:projectId/:id</code></td><td>Обновить счёт (включая статус)</td><td>admin</td></tr>
+    <tr><td><code class="inline">DELETE /api/payments/:projectId/:id</code></td><td>Удалить счёт</td><td>admin</td></tr>
+  </table>
+  <p><strong>ID формат:</strong> <code class="inline">projectId</code> и <code class="inline">id</code> (payment id) — UUID.</p>
+
+  <h3>10.3 Примеры запросов</h3>
+  <pre><code><span class="cmt">// 1) Создать счёт</span>
+await $fetch(`/api/payments/${projectId}`, {
+  method: 'POST',
+  body: {
+    title: 'Аванс за этап «Рабочий проект»',
+    amountKopecks: 25000000,
+    currency: 'RUB',
+    status: 'sent',
+    dueDate: '2026-03-20',
+    notes: 'Оплата в течение 5 рабочих дней'
+  }
+})
+
+<span class="cmt">// 2) Отметить как оплаченный</span>
+await $fetch(`/api/payments/${projectId}/${paymentId}`, {
+  method: 'PUT',
+  body: { status: 'paid' }
+})
+
+<span class="cmt">// 3) Сгенерировать PDF по этому счёту</span>
+await $fetch(`/api/pdf/${projectId}`, {
+  method: 'POST',
+  body: { kind: 'payment', paymentId }
+})</code></pre>
+
+  <p><strong>Следующий шаг в этом модуле:</strong> подключение онлайн-эквайринга (YooKassa/Тинькофф) без смены структуры БД — используем <code class="inline">providerPayload</code>.</p>
+
+</main>
+</div>
+
+<script>
+// Подсветка активного пункта меню при прокрутке
+const sections = document.querySelectorAll('h2[id]')
+const links = document.querySelectorAll('.sidebar nav a')
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'))
+      const active = document.querySelector(`.sidebar nav a[href="#${e.target.id}"]`)
+      if (active) active.classList.add('active')
+    }
+  })
+}, { rootMargin: '-30% 0px -60% 0px' })
+sections.forEach(s => observer.observe(s))
+</script>
+</body>
+</html>
