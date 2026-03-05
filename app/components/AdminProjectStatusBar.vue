@@ -104,6 +104,17 @@
         </div>
       </div>
     </template>
+
+    <!-- ── Section nav ── -->
+    <nav class="sb-section-nav">
+      <NuxtLink to="/admin"              class="sb-nav-item" exact-active-class="sb-nav-item--on">проекты</NuxtLink>
+      <NuxtLink to="/admin/contractors"  class="sb-nav-item" active-class="sb-nav-item--on">подрядчики</NuxtLink>
+      <NuxtLink to="/admin/clients"      class="sb-nav-item" active-class="sb-nav-item--on">клиенты</NuxtLink>
+      <NuxtLink to="/admin/gallery/interior" class="sb-nav-item" active-class="sb-nav-item--on">галерея</NuxtLink>
+      <NuxtLink to="/admin/documents"    class="sb-nav-item" active-class="sb-nav-item--on">документы</NuxtLink>
+      <NuxtLink to="/admin/designers"    class="sb-nav-item" active-class="sb-nav-item--on">дизайнеры</NuxtLink>
+      <NuxtLink to="/admin/sellers"      class="sb-nav-item" active-class="sb-nav-item--on">поставщики</NuxtLink>
+    </nav>
   </aside>
 </template>
 
@@ -428,4 +439,30 @@ html.dark .sb-project-bar-fill { background: color-mix(in srgb, var(--ds-success
     display: none;
   }
 }
+/* ── Section nav ── */
+.sb-section-nav {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  display: flex;
+  flex-direction: column;
+}
+.sb-nav-item {
+  display: block;
+  padding: 7px 0;
+  font-size: .68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--glass-text);
+  opacity: .38;
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent);
+  transition: opacity .15s;
+  white-space: nowrap;
+  font-family: var(--ds-font-family, inherit);
+}
+.sb-nav-item:last-child { border-bottom: none; }
+.sb-nav-item:hover { opacity: .72; }
+.sb-nav-item--on { opacity: 1; }
+
 </style>
