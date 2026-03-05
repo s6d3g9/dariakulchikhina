@@ -1,6 +1,7 @@
 <template>
   <div class="admin-bg glass-page">
-    <UIDesignPanel />
+    <!-- DesignPanel hidden for production; enable locally if needed -->
+    <!-- <UIDesignPanel /> -->
 
     <!-- Slim top-header (mobile only visible; desktop: brand in sidebar) -->
     <header class="admin-header glass-surface">

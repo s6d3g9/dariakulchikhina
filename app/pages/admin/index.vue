@@ -84,16 +84,29 @@
             <span class="kb-col-title">{{ phase.label }}</span>
             <span class="kb-col-count">{{ projectsByPhase[phase.key]?.length ?? 0 }}</span>
           </div>
-          <div class="kb-col-body">
+          <div
+            class="kb-col-body"
+            :class="{
+              'kb-col-body--over':   dragOverCol === phase.key && draggingFromPhase !== phase.key,
+              'kb-col-body--source': draggingFromPhase === phase.key && draggingCard !== null,
+            }"
+            @dragover.prevent="dragOverCol = phase.key"
+            @dragleave.self="dragOverCol = null"
+            @drop.prevent="onDrop(phase.key)"
+          >
             <template v-if="projectsByPhase[phase.key]?.length">
               <div
                 v-for="p in projectsByPhase[phase.key]"
                 :key="p.id"
                 class="kb-card-wrap"
+                :class="{ 'kb-card-wrap--rejected': dragRejectedId === p.id, 'kb-card-wrap--dragging': draggingCard?.id === p.id }"
+                draggable="true"
+                @dragstart="onDragStart($event, p, phase.key)"
+                @dragend="onDragEnd"
               >
                 <div
                   class="kb-card"
-                  @click="navigateTo(`/admin/projects/${p.slug}`)"
+                  @click="draggingCard === null && navigateTo(`/admin/projects/${p.slug}`)"
                 >
                   <div class="kb-card-title">{{ p.title }}</div>
                   <div v-if="p.profile?.fio" class="kb-card-fio">{{ p.profile.fio }}</div>
@@ -204,16 +217,34 @@
           <div class="pj-modal-body">
             <form @submit.prevent="createProject">
               <div class="pj-form-field">
-                <label class="pj-form-label">Название проекта</label>
+                <label class="pj-form-label">Название проекта <span class="pj-required">*</span></label>
                 <input v-model="newProject.title" class="pj-input" required placeholder="Например: Квартира Смирновых" autofocus @input="onTitleInput" />
+              </div>
+              <div class="pj-form-row">
+                <div class="pj-form-field">
+                  <label class="pj-form-label">Имя клиента (ФИО) <span class="pj-required">*</span></label>
+                  <input v-model="newProject.fio" class="pj-input" placeholder="Смирнова Ирина Алексеевна" />
+                </div>
+                <div class="pj-form-field">
+                  <label class="pj-form-label">Телефон / контакт <span class="pj-required">*</span></label>
+                  <input v-model="newProject.phone" class="pj-input" placeholder="+7 (999) 000-00-00" type="tel" />
+                </div>
+              </div>
+              <div class="pj-form-field">
+                <label class="pj-form-label">Тип объекта <span class="pj-required">*</span></label>
+                <select v-model="newProject.objectType" class="pj-input pj-select">
+                  <option value="" disabled>— выберите тип —</option>
+                  <option v-for="opt in OBJECT_TYPE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
               </div>
               <div class="pj-form-field">
                 <label class="pj-form-label">URL клиента</label>
                 <div class="pj-slug-row">
                   <input v-model="newProject.slug" class="pj-input pj-slug-input" required placeholder="smirnov-apt" />
-                  <button type="button" class="pj-slug-gen" :class="{ spinning: slugGenerating }" title="Сформировать URL клиента" @click="generateSlug">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-                    <span>сформировать</span>
+                  <button type="button" class="pj-slug-copy" :class="{ copied: slugCopied }" :title="slugCopied ? 'Скопировано!' : 'Копировать ссылку'"
+                    @click="copySlug" :disabled="!newProject.slug">
+                    <svg v-if="!slugCopied" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   </button>
                 </div>
                 <div v-if="newProject.slug" class="pj-slug-preview">/client/{{ newProject.slug }}</div>
@@ -228,11 +259,53 @@
         </div>
       </div>
     </Teleport>
+
+    <!-- ── Drag-and-drop toast notifications (Ant Design style) ── -->
+    <Teleport to="body">
+      <div class="kb-toasts">
+        <TransitionGroup name="kb-toast-anim">
+          <div v-for="t in toasts" :key="t.id" class="kb-toast" :class="`kb-toast--${t.type}`">
+            <div class="kb-toast-icon">
+              <!-- warning -->
+              <svg v-if="t.type === 'warning'" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="#faad14"/>
+                <line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="12" cy="17" r="1" fill="#fff"/>
+              </svg>
+              <!-- error -->
+              <svg v-else-if="t.type === 'error'" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill="#ff4d4f"/>
+                <line x1="15" y1="9" x2="9" y2="15" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+                <line x1="9" y1="9" x2="15" y2="15" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+              <!-- success -->
+              <svg v-else-if="t.type === 'success'" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill="#52c41a"/>
+                <polyline points="7 13 10 16 17 9" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <!-- info -->
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill="#1677ff"/>
+                <line x1="12" y1="11" x2="12" y2="17" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="12" cy="7.5" r="1" fill="#fff"/>
+              </svg>
+            </div>
+            <div class="kb-toast-body">
+              <div class="kb-toast-title">{{ t.title }}</div>
+              <div v-if="t.desc" class="kb-toast-desc">{{ t.desc }}</div>
+            </div>
+            <button class="kb-toast-close" @click="dismissToast(t.id)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </TransitionGroup>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PROJECT_PHASES } from '~~/shared/types/catalogs'
+import { PROJECT_PHASES, OBJECT_TYPE_OPTIONS } from '~~/shared/types/catalogs'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
@@ -316,9 +389,26 @@ const filteredProjects = computed(() => {
 // ── Create wizard ──────────────────────────────────────
 const showCreate = ref(false); const creating = ref(false); const createError = ref('')
 const slugGenerating = ref(false)
-const newProject = reactive({ title: '', slug: '' })
+const slugCopied = ref(false)
+const newProject = reactive({ title: '', slug: '', fio: '', phone: '', objectType: '' })
 
-function closeCreate() { showCreate.value = false; newProject.title = ''; newProject.slug = ''; createError.value = '' }
+function closeCreate() { showCreate.value = false; newProject.title = ''; newProject.slug = ''; newProject.fio = ''; newProject.phone = ''; newProject.objectType = ''; createError.value = ''; slugCopied.value = false }
+
+async function copySlug() {
+  if (!newProject.slug) return
+  const url = `${window.location.origin}/client/${newProject.slug}`
+  try {
+    await navigator.clipboard.writeText(url)
+  } catch {
+    // fallback
+    const el = document.createElement('textarea')
+    el.value = url; el.style.position = 'fixed'; el.style.opacity = '0'
+    document.body.appendChild(el); el.select(); document.execCommand('copy')
+    document.body.removeChild(el)
+  }
+  slugCopied.value = true
+  setTimeout(() => { slugCopied.value = false }, 2000)
+}
 
 // Transliteration table RU → EN
 const TRANSLIT: Record<string, string> = {
@@ -361,9 +451,17 @@ function onTitleInput() {
 
 async function createProject() {
   if (!newProject.title.trim() || !newProject.slug.trim()) return
+  if (!newProject.fio.trim()) { createError.value = 'Укажите имя клиента'; return }
+  if (!newProject.phone.trim()) { createError.value = 'Укажите контакт / телефон'; return }
+  if (!newProject.objectType) { createError.value = 'Выберите тип объекта'; return }
   creating.value = true; createError.value = ''
   try {
-    await $fetch('/api/projects', { method: 'POST', body: { title: newProject.title, slug: newProject.slug } })
+    const project = await $fetch<any>('/api/projects', { method: 'POST', body: { title: newProject.title, slug: newProject.slug } })
+    // Save required profile fields right after creation
+    await $fetch(`/api/projects/${project.slug}`, {
+      method: 'PUT',
+      body: { profile: { fio: newProject.fio, phone: newProject.phone, objectType: newProject.objectType } }
+    })
     closeCreate(); refresh()
   } catch (e: any) { createError.value = e.data?.message || e.data?.statusMessage || e.statusMessage || e.message || 'Ошибка создания проекта' }
   finally { creating.value = false }
@@ -408,6 +506,110 @@ function followUpUrgency(profile: any): 'red' | 'yellow' | null {
   if (diff <= 0) return 'red'
   if (diff <= 3) return 'yellow'
   return null
+}
+
+// ── Drag-and-drop ────────────────────────────────────────
+const draggingCard    = ref<any>(null)
+const draggingFromPhase = ref<string>('')
+const dragOverCol     = ref<string | null>(null)
+const dragRejectedId  = ref<number | null>(null)
+
+// Validation rules per target phase
+// key = target phase; each rule: check + message shown in alert
+const PHASE_REQUIREMENTS: Record<string, Array<{ check: (p: any) => boolean; message: string }>> = {
+  concept: [
+    { check: p => !!(p?.profile?.fio || p?.profile?.phone), message: 'Укажите имя или телефон клиента (профиль проекта)' },
+  ],
+  working_project: [
+    { check: p => !!(p?.profile?.fio || p?.profile?.phone), message: 'Укажите имя или телефон клиента' },
+    { check: p => !!(p?.profile?.objectAddress || p?.profile?.objectArea), message: 'Укажите адрес или площадь объекта' },
+  ],
+  procurement: [
+    { check: p => !!(p?.profile?.objectAddress || p?.profile?.objectArea), message: 'Укажите адрес или площадь объекта' },
+    { check: p => !!(p?.profile?.budget), message: 'Укажите бюджет проекта (профиль заказчика)' },
+  ],
+  construction: [
+    { check: p => !!(p?.profile?.budget), message: 'Укажите бюджет проекта' },
+    { check: p => !!(p?.profile?.contract_total), message: 'Укажите сумму договора (поле «Стоимость»)' },
+  ],
+  commissioning: [
+    { check: p => !!(p?.profile?.contract_total), message: 'Укажите сумму договора' },
+  ],
+  completed: [
+    { check: p => !!(p?.profile?.contract_total), message: 'Укажите сумму договора' },
+  ],
+}
+
+function onDragStart(event: DragEvent, project: any, fromPhase: string) {
+  draggingCard.value    = project
+  draggingFromPhase.value = fromPhase
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(project.id))
+  }
+}
+
+function onDragEnd() {
+  dragOverCol.value       = null
+  draggingCard.value      = null
+  draggingFromPhase.value = ''
+}
+
+async function onDrop(targetPhase: string) {
+  dragOverCol.value = null
+  const card = draggingCard.value
+  const fromPhase = draggingFromPhase.value
+  draggingCard.value      = null
+  draggingFromPhase.value = ''
+  if (!card || fromPhase === targetPhase) return
+
+  // Validate required fields for this phase
+  const rules = PHASE_REQUIREMENTS[targetPhase]
+  if (rules) {
+    for (const rule of rules) {
+      if (!rule.check(card)) {
+        // Animate rejection
+        dragRejectedId.value = card.id
+        setTimeout(() => { dragRejectedId.value = null }, 700)
+        showToast(
+          'warning',
+          `Нельзя переместить в «${phaseLabel(targetPhase)}»`,
+          rule.message,
+        )
+        return
+      }
+    }
+  }
+
+  // Optimistic update
+  const prevStatus = card.status
+  card.status = targetPhase
+
+  try {
+    await $fetch(`/api/projects/${card.slug}`, {
+      method: 'PUT',
+      body: { status: targetPhase },
+    })
+    showToast('success', 'Перемещено', `«${card.title}» → ${phaseLabel(targetPhase)}`)
+  } catch {
+    // Revert on error
+    card.status = prevStatus
+    showToast('error', 'Ошибка', 'Не удалось переместить карточку')
+  }
+}
+
+// ── Toast notifications (Ant Design style) ───────────────────────
+interface Toast { id: number; type: 'success' | 'warning' | 'error' | 'info'; title: string; desc: string }
+const toasts = ref<Toast[]>([])
+let _toastId = 0
+
+function showToast(type: Toast['type'], title: string, desc = '') {
+  const id = ++_toastId
+  toasts.value.push({ id, type, title, desc })
+  setTimeout(() => dismissToast(id), 4500)
+}
+function dismissToast(id: number) {
+  toasts.value = toasts.value.filter(t => t.id !== id)
 }
 </script>
 
@@ -677,6 +879,7 @@ html.dark .kb-stat-badge--overdue { background: rgba(252,165,165,.1); color: #fc
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  align-self: center;
 }
 .kb-col-title {
   font-size: .75rem;
@@ -686,13 +889,17 @@ html.dark .kb-stat-badge--overdue { background: rgba(252,165,165,.1); color: #fc
   flex: 1;
 }
 .kb-col-count {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
   font-size: .68rem;
   font-weight: 600;
   color: var(--glass-text);
   opacity: .35;
   background: color-mix(in srgb, var(--glass-text) 7%, transparent);
   border-radius: 10px;
-  padding: 1px 6px;
+  padding: 2px 6px;
+  flex-shrink: 0;
 }
 .kb-col-body {
   display: flex;
@@ -1064,6 +1271,8 @@ html.dark .kb-phase-chip[data-color="teal"]   { background: rgba(94,234,212,.1);
 }
 
 .pj-form-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.pj-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pj-required { color: #ef4444; font-size: .7rem; font-style: normal; vertical-align: middle; }
 .pj-form-label {
   font-size: .65rem; text-transform: uppercase; letter-spacing: .08em;
   color: var(--glass-text); opacity: .4; font-weight: 600;
@@ -1082,21 +1291,21 @@ html.dark .kb-phase-chip[data-color="teal"]   { background: rgba(94,234,212,.1);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-text) 5%, transparent);
 }
 .pj-input::placeholder { color: var(--glass-text); opacity: .3; }
+.pj-select { appearance: none; cursor: pointer; }
 .pj-form-error { font-size: .78rem; color: #dc2626; margin-bottom: 10px; }
 
 .pj-slug-row { display: flex; gap: 8px; align-items: center; }
 .pj-slug-input { flex: 1; min-width: 0; }
-.pj-slug-gen {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 0 12px; height: 36px; border-radius: 8px; border: none;
+.pj-slug-copy {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px; border: none; flex-shrink: 0;
   background: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  color: var(--glass-text); opacity: .6; font-size: .75rem; font-family: inherit;
-  cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  transition: opacity .15s, background .15s;
+  color: var(--glass-text); opacity: .6; cursor: pointer;
+  transition: opacity .15s, background .15s, color .15s;
 }
-.pj-slug-gen:hover { opacity: 1; background: color-mix(in srgb, var(--glass-text) 14%, transparent); }
-.pj-slug-gen svg { flex-shrink: 0; transition: transform .4s ease; }
-.pj-slug-gen.spinning svg { animation: spin .5s linear; }
+.pj-slug-copy:hover:not(:disabled) { opacity: 1; background: color-mix(in srgb, var(--glass-text) 14%, transparent); }
+.pj-slug-copy:disabled { opacity: .25; cursor: default; }
+.pj-slug-copy.copied { opacity: 1; color: #16a34a; background: color-mix(in srgb, #16a34a 12%, transparent); }
 @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
 .pj-slug-preview { font-size: .72rem; color: var(--glass-text); opacity: .35; margin-top: 4px; font-family: monospace; }
 
@@ -1145,4 +1354,105 @@ html.dark .kb-phase-chip[data-color="teal"]   { background: rgba(94,234,212,.1);
   .kb-board { gap: 10px; }
   .kb-col { flex: 0 0 160px; min-width: 150px; }
 }
+
+/* ═══════════════════════════════════
+   DRAG AND DROP
+═══════════════════════════════════ */
+/* Dragged card — semi-transparent in source */
+.kb-card-wrap--dragging { opacity: .35; pointer-events: none; }
+
+/* Drop zone highlight */
+.kb-col-body--over {
+  background: color-mix(in srgb, #1677ff 7%, transparent);
+  border-radius: 8px;
+  outline: 2px dashed #1677ff55;
+  outline-offset: -3px;
+}
+/* Source column subtle dim */
+.kb-col-body--source { opacity: .7; }
+
+/* Rejected card — shake + red flash */
+@keyframes kb-shake {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(-8px); }
+  35%  { transform: translateX(7px);  box-shadow: 0 0 0 2px #ff4d4f55; }
+  55%  { transform: translateX(-6px); }
+  72%  { transform: translateX(5px);  }
+  85%  { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}
+.kb-card-wrap--rejected .kb-card {
+  animation: kb-shake .6s cubic-bezier(.36,.07,.19,.97) forwards;
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 3px #ff4d4f22 !important;
+}
+
+/* ═══════════════════════════════════
+   TOAST NOTIFICATIONS (Ant Design)
+═══════════════════════════════════ */
+.kb-toasts {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  align-items: flex-end;
+}
+.kb-toast {
+  pointer-events: all;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.08);
+  padding: 12px 14px;
+  min-width: 280px;
+  max-width: 380px;
+  border-left: 3px solid transparent;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.kb-toast--warning { border-color: #faad14; }
+.kb-toast--error   { border-color: #ff4d4f; }
+.kb-toast--success { border-color: #52c41a; }
+.kb-toast--info    { border-color: #1677ff; }
+.kb-toast-icon { flex-shrink: 0; margin-top: 1px; }
+.kb-toast-body { flex: 1; min-width: 0; }
+.kb-toast-title {
+  font-size: .83rem;
+  font-weight: 600;
+  color: rgba(0,0,0,.88);
+  line-height: 1.4;
+}
+.kb-toast-desc {
+  font-size: .76rem;
+  color: rgba(0,0,0,.55);
+  margin-top: 3px;
+  line-height: 1.45;
+}
+.kb-toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: rgba(0,0,0,.35);
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  transition: color .15s, background .15s;
+  margin-top: 1px;
+}
+.kb-toast-close:hover { color: rgba(0,0,0,.7); background: rgba(0,0,0,.06); }
+
+/* TransitionGroup */
+.kb-toast-anim-enter-from  { opacity: 0; transform: translateX(40px); }
+.kb-toast-anim-enter-to    { opacity: 1; transform: translateX(0); }
+.kb-toast-anim-leave-from  { opacity: 1; transform: translateX(0); }
+.kb-toast-anim-leave-to    { opacity: 0; transform: translateX(40px); }
+.kb-toast-anim-enter-active,
+.kb-toast-anim-leave-active { transition: all .28s cubic-bezier(.42,0,.58,1); }
 </style>
