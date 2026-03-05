@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (!user) throw createError({ statusCode: 401, statusMessage: 'Пользователь не найден' })
+  if (!user) throw createError({ statusCode: 401, statusMessage: 'Unauthorized', message: 'Пользователь не найден' })
 
   let ok = await verifyPassword(body.password, user.passwordHash)
   if (!ok && initialPassword && body.password === initialPassword) {
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
     ok = true
   }
 
-  if (!ok) throw createError({ statusCode: 401, statusMessage: 'Неверный пароль' })
+  if (!ok) throw createError({ statusCode: 401, statusMessage: 'Unauthorized', message: 'Неверный пароль' })
   setAdminSession(event, user.id)
   return { ok: true, name: user.name, email: user.email }
 })

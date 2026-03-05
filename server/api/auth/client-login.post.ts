@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (!project) {
-    throw createError({ statusCode: 401, statusMessage: 'Проект не найден. Проверьте код доступа.' })
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized', message: 'Проект не найден. Проверьте код доступа.' })
   }
 
   setClientSession(event, project.slug)

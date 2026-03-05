@@ -41,7 +41,9 @@ async function submit() {
     await $fetch('/api/auth/login', { method: 'POST', body: form })
     router.push('/admin')
   } catch (e: any) {
-    error.value = e.data?.statusMessage || 'Неверный пароль'
+    error.value = (e.data?.message && e.data.message !== 'Server Error' ? e.data.message : '') ||
+      (e.data?.statusMessage || '').trim() ||
+      'Неверный пароль'
   } finally {
     loading.value = false
   }

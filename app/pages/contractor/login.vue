@@ -72,7 +72,9 @@ async function submit() {
     })
     router.push(`/contractor/${result.id}`)
   } catch (e: any) {
-    error.value = e.data?.statusMessage || e.data?.message || 'Неверные данные'
+    error.value = (e.data?.message && e.data.message !== 'Server Error' ? e.data.message : '') ||
+      (e.data?.statusMessage || '').trim() ||
+      'Неверные данные'
   } finally {
     loading.value = false
   }

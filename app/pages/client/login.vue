@@ -57,7 +57,9 @@ async function submit() {
     })
     router.push(`/client/${result.slug}`)
   } catch (e: any) {
-    error.value = e.data?.statusMessage || e.data?.message || 'Неверный код. Проверьте и попробуйте снова.'
+    error.value = (e.data?.message && e.data.message !== 'Server Error' ? e.data.message : '') ||
+      (e.data?.statusMessage || '').trim() ||
+      'Неверный код. Проверьте и попробуйте снова.'
   } finally {
     loading.value = false
   }
