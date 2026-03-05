@@ -179,6 +179,64 @@
                   @navigate="selectAdminPage"
                 />
               </template>
+              <!-- Клиенты проекта — inline без модала -->
+              <template v-else-if="activePage === 'project_clients'">
+                <div class="proj-entity-panel">
+                  <div class="proj-entity-panel-title">Клиенты проекта</div>
+
+                  <div v-if="linkedClients.length" class="proj-entity-section">
+                    <div class="proj-entity-section-label">Закреплённые</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="client in linkedClients"
+                        :key="client.id"
+                        class="proj-entity-row proj-entity-row--linked"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ client.name }}</div>
+                          <div class="proj-entity-meta">
+                            <template v-if="client.phone">{{ client.phone }}</template>
+                            <template v-else-if="client.email">{{ client.email }}</template>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          class="proj-entity-btn proj-entity-btn--remove"
+                          @click="unlinkClientFromModal(String(client.id))"
+                        >−</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="proj-entity-section">
+                    <div class="proj-entity-section-label">Добавить из CRM</div>
+                    <div v-if="!availableClientsForModal.length" class="proj-entity-empty">Нет доступных клиентов</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="client in availableClientsForModal"
+                        :key="client.id"
+                        class="proj-entity-row"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ client.name }}</div>
+                          <div class="proj-entity-meta">
+                            <template v-if="client.phone">{{ client.phone }}</template>
+                            <template v-else-if="client.email">{{ client.email }}</template>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          class="proj-entity-btn proj-entity-btn--add"
+                          @click="linkClientFromModal(String(client.id))"
+                        >+</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p v-if="clientLinkError" style="color:var(--ds-error,#c00);font-size:.8rem;margin:8px 0">{{ clientLinkError }}</p>
+                  <p v-if="clientLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ clientLinkSuccess }}</p>
+                </div>
+              </template>
               <component
                 v-else
                 :is="activeComponent"
@@ -225,60 +283,7 @@
       </div>
     </div>
 
-    <!-- Client Selection Modal -->
-    <div v-if="showClientModal" class="a-modal-backdrop" @click.self="showClientModal = false">
-      <div class="a-modal">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">клиенты проекта</h3>
-
-        <div v-if="linkedClients.length" style="margin-bottom:14px">
-          <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
-          <div class="modal-clients-list">
-            <div v-for="client in linkedClients" :key="`linked-${client.id}`" class="modal-client-item modal-client-item--linked">
-              <div class="modal-client-info">
-                <div class="modal-client-name">{{ client.name }}</div>
-                <div class="modal-client-details">
-                  <template v-if="client.phone">{{ client.phone }}</template>
-                  <template v-else-if="client.email">{{ client.email }}</template>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="modal-action-btn modal-action-btn--remove"
-                @click="unlinkClientFromModal(String(client.id))"
-              >-</button>
-            </div>
-          </div>
-        </div>
-
-        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
-        <div class="modal-clients-list">
-          <div
-            v-for="client in availableClientsForModal"
-            :key="client.id"
-            class="modal-client-item"
-          >
-            <div class="modal-client-info">
-              <div class="modal-client-name">{{ client.name }}</div>
-              <div class="modal-client-details">
-                <template v-if="client.phone">{{ client.phone }}</template>
-                <template v-else-if="client.email">{{ client.email }}</template>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="modal-action-btn modal-action-btn--add"
-              @click="linkClientFromModal(String(client.id))"
-            >+</button>
-          </div>
-        </div>
-        <div v-if="!linkedClients.length && !availableClientsForModal.length" style="font-size:.82rem;color:#888">Нет клиентов в системе</div>
-        <p v-if="clientLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ clientLinkError }}</p>
-        <p v-if="clientLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ clientLinkSuccess }}</p>
-        <div style="display:flex;justify-content:flex-end;margin-top:20px">
-          <button type="button" class="a-btn-sm" @click="showClientModal = false">закрыть</button>
-        </div>
-      </div>
-    </div>
+    <!-- Client Selection Modal REMOVED — теперь inline в content-area -->
 
     <!-- Contractor Selection Modal -->
     <div v-if="showContractorModal" class="a-modal-backdrop" @click.self="showContractorModal = false">
@@ -457,6 +462,7 @@ const adminNav = useAdminNav()
 // Маппинг prj_* IDs из PROJECT_CABINET_ITEMS → внутренние slugs страницы
 const PRJ_SECTION_TO_SLUG: Record<string, string> = {
   overview:      'overview',
+  clients:       'project_clients',
   firstcontact:  'first_contact',
   smartbrief:    'brief',
   concept:       'concept_approval',
@@ -1564,6 +1570,93 @@ async function unlinkDesigner(designerId: number) {
   .proj-client-card {
     padding: 10px;
   }
+}
+
+/* ── Inline entity panel (clients/contractors without modal) ── */
+.proj-entity-panel {
+  max-width: 560px;
+}
+.proj-entity-panel-title {
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: #888;
+  margin-bottom: 18px;
+}
+.proj-entity-section {
+  margin-bottom: 20px;
+}
+.proj-entity-section-label {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+.proj-entity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.proj-entity-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.06);
+}
+.proj-entity-row--linked {
+  background: rgba(92, 170, 127, .08);
+  border-color: rgba(92, 170, 127, .18);
+}
+.proj-entity-info {
+  flex: 1;
+  min-width: 0;
+}
+.proj-entity-name {
+  font-size: .84rem;
+  font-weight: 500;
+}
+.proj-entity-meta {
+  font-size: .74rem;
+  color: #999;
+  margin-top: 1px;
+}
+.proj-entity-empty {
+  font-size: .8rem;
+  color: #777;
+  padding: 6px 0;
+}
+.proj-entity-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+}
+.proj-entity-btn--add {
+  background: rgba(92, 170, 127, .15);
+  color: #5caa7f;
+}
+.proj-entity-btn--add:hover {
+  background: rgba(92, 170, 127, .28);
+}
+.proj-entity-btn--remove {
+  background: rgba(200, 60, 60, .12);
+  color: #c03c3c;
+}
+.proj-entity-btn--remove:hover {
+  background: rgba(200, 60, 60, .24);
 }
 
 </style>
