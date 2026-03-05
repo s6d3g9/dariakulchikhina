@@ -3,7 +3,7 @@
 Приватный кабинет для трёх ролей:
 
 | Роль | Вход | Маршрут | Возможности |
-|------|------|---------|-------------|
+| ------ | ------ | --------- | ------------- |
 | **Дизайнер / Админ** | email + пароль | `/admin` | Полное управление проектами, клиентами, подрядчиками, галереей, документами |
 | **Клиент** | slug проекта | `/client/:slug` | Просмотр страниц проекта, заполнение брифа, контактных данных, паспортных данных |
 | **Подрядчик** | id + slug | `/contractor/:id` | Просмотр задач, загрузка фото, комментарии, редактирование профиля |
@@ -13,7 +13,7 @@
 ## Стек технологий
 
 | Слой | Технология | Версия |
-|------|-----------|--------|
+| ------ | ----------- | -------- |
 | Фреймворк | Nuxt | 4.3.x |
 | UI | Vue 3 Composition API + @nuxt/ui 3 | — |
 | Стили | Tailwind CSS 4 + Glassmorphism custom CSS | — |
@@ -55,7 +55,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 
 ## Структура проекта
 
-```
+```text
 ├── app/                          # Nuxt 4 app directory
 │   ├── components/               # 60 Vue-компонентов
 │   │   ├── Admin*.vue            # Компоненты админки (30+)
@@ -95,7 +95,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 Схема: `server/db/schema.ts`. Подключение: `server/db/index.ts` → `useDb()`.
 
 | # | Таблица | Назначение |
-|---|---------|-----------|
+| --- | --------- | ----------- |
 | 1 | `users` | Администраторы / дизайнеры |
 | 2 | `projects` | Проекты (slug, title, status, pages[], profile{}) |
 | 3 | `page_configs` | Глобальные настройки страниц |
@@ -123,7 +123,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Аутентификация (`/api/auth/`)
 
 | Метод | Путь | Описание |
-|-------|------|----------|
+| ------- | ------ | ---------- |
 | POST | `/api/auth/login` | Вход admin/дизайнера (email + password, auto-create при первом входе) |
 | POST | `/api/auth/logout` | Выход admin |
 | GET | `/api/auth/me` | Текущая сессия (designer / client / contractor) |
@@ -136,7 +136,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Проекты (`/api/projects/`)
 
 | Метод | Путь | Описание |
-|-------|------|----------|
+| ------- | ------ | ---------- |
 | GET | `/api/projects` | Список с roadmap summary + task counts |
 | POST | `/api/projects` | Создание (+ roadmap из шаблона) |
 | GET/PUT/DELETE | `/api/projects/:slug` | CRUD проекта |
@@ -155,7 +155,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Подрядчики (`/api/contractors/`)
 
 | Метод | Путь | Описание |
-|-------|------|----------|
+| ------- | ------ | ---------- |
 | GET/POST | `/api/contractors` | Список / создание |
 | GET/PUT/DELETE | `/api/contractors/:id` | CRUD |
 | PUT | `/api/contractors/:id/self` | Самообновление (contractor) |
@@ -172,7 +172,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Клиенты (`/api/clients/`)
 
 | Метод | Путь | Описание |
-|-------|------|----------|
+| ------- | ------ | ---------- |
 | GET/POST | `/api/clients` | Список / создание |
 | PUT/DELETE | `/api/clients/:id` | Обновление / удаление |
 | POST | `/api/clients/:id/link-project` | Привязка к проекту |
@@ -183,7 +183,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Дизайнеры (`/api/designers/`)
 
 | Метод | Путь | Описание |
-|-------|------|----------|
+| ------- | ------ | ---------- |
 | GET/POST | `/api/designers` | Список / создание |
 | GET/PUT/DELETE | `/api/designers/:id` | CRUD |
 | POST | `/api/designers/:id/create-project` | Создание проекта |
@@ -197,7 +197,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Прочее
 
 | Метод | Путь | Описание |
-|-------|------|----------|
+| ------- | ------ | ---------- |
 | GET/POST/PUT/DELETE | `/api/documents[/:id]` | CRUD документов |
 | GET | `/api/documents/context` | Контекст для шаблонов |
 | GET/POST | `/api/gallery` | Галерея — список / создание |
@@ -216,7 +216,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ## Серверная безопасность
 
 | Уровень | Файл | Механизм |
-|---------|------|----------|
+| --------- | ------ | ---------- |
 | Middleware | `00-security-headers.ts` | CSP, X-Frame-Options, HSTS, X-Content-Type-Options |
 | Middleware | `01-rate-limit.ts` | In-memory sliding window (auth: 10/мин, upload: 30/мин, api: 200/мин) |
 | Middleware | `02-body-size-limit.ts` | JSON 1 МБ, multipart 25 МБ |
@@ -233,7 +233,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 Каждый проект проходит 7 фаз с 20 подшагами:
 
 | Фаза | Ключ | Подшаги |
-|------|------|---------|
+| ------ | ------ | --------- |
 | 0 · Инициация | `lead` | 0.1 Первичный контакт → 0.2 Брифинг → 0.3 Обмеры → 0.4 ТЗ и договор |
 | 1 · Концепция | `concept` | 1.1 Планировки → 1.2 Мудборд → 1.3 Согласование |
 | 2 · Рабочий проект | `working_project` | 2.1 Рабочие чертежи → 2.2 Спецификации → 2.3 Инженерия → 2.4 Финальный альбом |
@@ -251,7 +251,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Типы (`shared/types/`)
 
 | Файл | Экспорты |
-|------|---------|
+| ------ | --------- |
 | `auth.ts` | `LoginSchema` (Zod) |
 | `project.ts` | `ClientProfileSchema` (153+ поля), `ProjectSchema`, `CreateProjectSchema` |
 | `contractor.ts` | `ContractorSchema`, `CreateContractorSchema`, `UpdateContractorSchema` |
@@ -268,14 +268,14 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Утилиты (`shared/utils/`)
 
 | Файл | Экспорты |
-|------|---------|
+| ------ | --------- |
 | `roadmap.ts` | `normalizeRoadmapStatus()` (40+ алиасов → 4 канонических), `roadmapStatusLabel/Icon/CssClass()`, `deriveProjectPhaseFromRoadmap()` |
 | `work-status.ts` | `normalizeWorkStatus()` (7 канонических), `workStatusLabel/Icon/CssClass()`, `workTypeLabel()` |
 
 ### Константы (`shared/constants/`)
 
 | Файл | Экспорты |
-|------|---------|
+| ------ | --------- |
 | `pages.ts` | `PROJECT_PAGES` (33 стр.), `getClientPages()`, `getAdminPages()`, `getAdminNavGroups()`, `PHASE_LABELS`, `CORE_PAGES` |
 | `profile-fields.ts` | `MESSENGER_OPTIONS`, `OBJECT_TYPE_OPTIONS`, `BRIEF_*_OPTIONS`, `CLIENT_PROFILE_*_KEYS`, `createEmptyClientProfileDraft()` |
 
@@ -284,7 +284,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ## Composables
 
 | Composable | Назначение | Используется в |
-|------------|-----------|---------------|
+| ------------ | ----------- | --------------- |
 | `useDesignSystem()` | Управление дизайн-токенами (шрифты, кнопки, цвета, анимации) | UIDesignPanel, admin layout |
 | `useUITheme()` | Переключение тем (с пресетами) | UIDesignPanel, UIThemePicker, плагины |
 | `useThemeToggle()` | Переключение тёмной/светлой темы | app.vue, все layouts |
@@ -303,7 +303,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Layouts
 
 | Layout | Файл | Используется | Описание |
-|--------|------|-------------|---------|
+| -------- | ------ | ------------- | --------- |
 | `default` | `layouts/default.vue` | `/`, login-страницы, клиентские страницы | Минимальный: header + slot |
 | `admin` | `layouts/admin.vue` | `/admin/**` | Полная навигация + UIDesignPanel + sidebar |
 | `contractor` | `layouts/contractor.vue` | `/contractor/**` | Header подрядчика |
@@ -311,7 +311,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ### Middleware
 
 | Middleware | Файл | Проверяет | Редирект при ошибке |
-|-----------|------|----------|-------------------|
+| ----------- | ------ | ---------- | ------------------- |
 | `admin` | `middleware/admin.ts` | role = `designer` | `/admin/login` |
 | `client` | `middleware/client.ts` | role ∈ {`client`, `designer`, `admin`} + slug | `/client/login` |
 | `contractor` | `middleware/contractor.ts` | role ∈ {`contractor`, `designer`, `admin`} | `/contractor/login` |
@@ -321,7 +321,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ## Плагины (клиентские)
 
 | Плагин | Назначение |
-|--------|-----------|
+| -------- | ----------- |
 | `ui-theme.client.ts` | Восстановление темы и дизайн-токенов из localStorage при загрузке |
 | `dark-sync.client.ts` | Синхронизация `html.dark` ↔ `body.dark-theme` для дизайн-системы |
 | `csrf.client.ts` | Добавление `x-csrf-token` заголовка из cookie ко всем `$fetch` запросам |
@@ -336,7 +336,7 @@ Glassmorphism + Tailwind CSS 4 + Scoped CSS.
 ### Глобальные классы (`app/assets/css/main.css`)
 
 | Класс | Назначение |
-|-------|-----------|
+| ------- | ----------- |
 | `.glass-page` | Обёртка страницы с gradient overlay |
 | `.glass-surface` | Стеклянный фон с blur |
 | `.glass-card` | Карточка: surface + border-radius |
@@ -347,7 +347,7 @@ Glassmorphism + Tailwind CSS 4 + Scoped CSS.
 
 ### CSS-переменные
 
-```
+```text
 --glass-bg, --glass-border, --glass-shadow, --glass-text
 --rm-color-pending, --rm-color-progress, --rm-color-done, --rm-color-skipped
 --ds-* (дизайн-токены: --ds-font-body, --ds-btn-radius, --ds-accent...)
@@ -391,7 +391,7 @@ pnpm deploy:metrics:follow      # Онлайн-просмотр
 ## Статистика кодовой базы
 
 | Метрика | Значение |
-|---------|---------|
+| --------- | --------- |
 | Компоненты | 60 |
 | Страницы | 19 |
 | API-маршруты | 95 |
