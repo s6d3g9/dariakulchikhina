@@ -350,20 +350,20 @@ async function save() {
 
 <style scoped>
 .ator-wrap { padding: 4px 0 48px; }
-.ator-loading { font-size: .88rem; color: var(--ds-muted, #999); }
+.ator-loading { font-size: .88rem; color: var(--ds-muted, color-mix(in srgb, var(--glass-text) 60%, transparent)); }
 
 /* ── Client tariff request alert ── */
 .ator-tariff-req-alert {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; flex-wrap: wrap;
   padding: 10px 14px; margin-bottom: 14px;
-  background: color-mix(in srgb, #ff9800 8%, transparent);
-  border: 1px solid color-mix(in srgb, #ff9800 40%, transparent);
+  background: color-mix(in srgb, var(--ds-warning) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ds-warning) 40%, transparent);
   border-radius: 6px; font-size: .8rem;
 }
 .ator-tariff-req-dot {
   display: inline-block; width: 7px; height: 7px; border-radius: 999px;
-  background: #ff9800; margin-right: 6px; vertical-align: middle;
+  background: var(--ds-warning); margin-right: 6px; vertical-align: middle;
   animation: ator-req-pulse 1.6s ease-in-out infinite;
 }
 @keyframes ator-req-pulse {
@@ -376,11 +376,11 @@ async function save() {
 .ator-tariff-req-alert-text { flex: 1; }
 .ator-tariff-req-alert-actions { display: flex; gap: 8px; }
 .ator-tariff-req-accept {
-  background: #4caf50; color: #fff;
+  background: var(--ds-success); color: #fff;
   border: none; padding: 5px 14px; font-size: .76rem;
   cursor: pointer; font-family: inherit; border-radius: 4px;
 }
-.ator-tariff-req-accept:hover:not(:disabled) { background: #388e3c; }
+.ator-tariff-req-accept:hover:not(:disabled) { background: var(--ds-success); }
 .ator-tariff-req-reject {
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent);
@@ -471,22 +471,22 @@ async function save() {
 .ator-transition-banner {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 14px 18px; margin-bottom: 24px;
-  border: 1px solid color-mix(in srgb, var(--ds-success, #4caf50) 50%, transparent); background: color-mix(in srgb, var(--ds-success, #4caf50) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ds-success, var(--ds-success)) 50%, transparent); background: color-mix(in srgb, var(--ds-success, var(--ds-success)) 6%, transparent);
   flex-wrap: wrap;
 }
-.ator-banner-text { font-size: .85rem; color: var(--ds-success, #2e7d32); }
+.ator-banner-text { font-size: .85rem; color: var(--ds-success, var(--ds-success)); }
 .ator-btn-transition {
-  border: 1px solid var(--ds-success, #2e7d32); background: var(--ds-success, #2e7d32); color: #fff;
+  border: 1px solid var(--ds-success, var(--ds-success)); background: var(--ds-success, var(--ds-success)); color: #fff;
   padding: 8px 18px; font-size: .82rem; cursor: pointer; font-family: inherit;
   white-space: nowrap;
 }
-.ator-btn-transition:hover { background: color-mix(in srgb, var(--ds-success, #2e7d32) 80%, #000); }
+.ator-btn-transition:hover { background: color-mix(in srgb, var(--ds-success, var(--ds-success)) 80%, #000); }
 .ator-btn-transition:disabled { opacity: .55; cursor: default; }
 
 /* Sections */
 .ator-section { margin-bottom: 28px; }
 .ator-section-title {
-  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--ds-muted, #999);
+  font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--ds-muted, color-mix(in srgb, var(--glass-text) 60%, transparent));
   margin-bottom: 14px; padding-bottom: 8px;
   border-bottom: 1px solid var(--border, #ececec);
 }
@@ -509,14 +509,14 @@ async function save() {
 
 /* File row */
 .ator-file-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 4px 0; }
-.ator-file-link { font-size: .82rem; color: var(--text, #333); text-decoration: none; }
+.ator-file-link { font-size: .82rem; color: var(--text, color-mix(in srgb, var(--glass-text) 20%, transparent)); text-decoration: none; }
 .ator-file-link:hover { text-decoration: underline; }
 .ator-upload-btn {
-  border: 1px solid var(--border, #ddd); padding: 5px 12px;
-  font-size: .78rem; cursor: pointer; color: var(--text, #555);
+  border: 1px solid var(--border, color-mix(in srgb, var(--glass-text) 87%, transparent)); padding: 5px 12px;
+  font-size: .78rem; cursor: pointer; color: var(--text, color-mix(in srgb, var(--glass-text) 35%, transparent));
 }
-.ator-upload-btn:hover { border-color: var(--text, #1a1a1a); }
-.ator-uploading { font-size: .76rem; color: var(--ds-muted, #999); }
+.ator-upload-btn:hover { border-color: var(--text, color-mix(in srgb, var(--glass-text) 10%, transparent)); }
+.ator-uploading { font-size: .76rem; color: var(--ds-muted, color-mix(in srgb, var(--glass-text) 60%, transparent)); }
 
 /* Footer */
 .ator-footer {
@@ -525,7 +525,7 @@ async function save() {
 }
 .ator-saved { font-size: .76rem; color: var(--ds-success, #99dd99); }
 .ator-btn-save {
-  border: 1px solid var(--text, #1a1a1a); background: var(--text, #1a1a1a);
+  border: 1px solid var(--text, color-mix(in srgb, var(--glass-text) 10%, transparent)); background: var(--text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   color: var(--bg, #fff); padding: 10px 24px; font-size: .85rem;
   cursor: pointer; font-family: inherit;
 }

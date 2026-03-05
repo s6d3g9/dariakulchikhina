@@ -323,10 +323,10 @@ function fmtTime(isoStr: string): string {
 <style scoped>
 .ws-admin { padding: 4px 0; }
 .ws-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.ws-count { font-size: .78rem; color: var(--ds-muted, #999); text-transform: uppercase; letter-spacing: .5px; }
+.ws-count { font-size: .78rem; color: var(--ds-muted, color-mix(in srgb, var(--glass-text) 60%, transparent)); text-transform: uppercase; letter-spacing: .5px; }
 .ws-header-actions { display: flex; gap: 8px; }
 .ws-loading { font-size: .86rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); padding: 12px 0; }
-.ws-error { font-size: .8rem; color: var(--ds-error, #c00); margin-top: 12px; }
+.ws-error { font-size: .8rem; color: var(--ds-error, var(--ds-error)); margin-top: 12px; }
 
 .ws-btn {
   padding: 6px 14px; border: none; background: color-mix(in srgb, var(--glass-bg, #fff) 90%, transparent);
@@ -334,7 +334,7 @@ function fmtTime(isoStr: string): string {
   color: color-mix(in srgb, var(--glass-text) 60%, transparent); transition: border-color .12s;
 }
 .ws-btn:hover { opacity: .9; }
-.ws-btn--save { background: var(--ds-accent, #6366f1); border-color: var(--ds-accent, #6366f1); color: #fff; }
+.ws-btn--save { background: var(--ds-accent, var(--ds-accent)); border-color: var(--ds-accent, var(--ds-accent)); color: #fff; }
 .ws-btn--save:hover { opacity: .85; }
 .ws-btn--save:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -346,15 +346,15 @@ function fmtTime(isoStr: string): string {
 }
 .ws-stats-spacer { flex: 1; }
 .ws-total-budget { font-size: .8rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
-.ws-total-budget strong { color: var(--glass-text, #1a1a1a); }
+.ws-total-budget strong { color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); }
 
 .ws-filter-btn {
   padding: 4px 10px; border: none; border-radius: 20px;
   font-size: .76rem; font-family: inherit; cursor: pointer;
   background: color-mix(in srgb, var(--glass-bg, #fff) 90%, transparent); color: color-mix(in srgb, var(--glass-text) 55%, transparent); transition: all .12s;
 }
-.ws-filter-btn:hover { color: var(--glass-text, #1a1a1a); }
-.ws-filter-btn.active { background: var(--glass-text, #1a1a1a); color: var(--glass-page-bg, #f4f4f2); }
+.ws-filter-btn:hover { color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); }
+.ws-filter-btn.active { background: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); color: var(--glass-page-bg, #f4f4f2); }
 .ws-filter-btn--blue.active { background: color-mix(in srgb, var(--ds-accent) 10%, transparent); color: var(--ds-accent); }
 .ws-filter-btn--red.active { background: color-mix(in srgb, var(--ds-error) 7%, transparent); color: var(--ds-error); }
 .ws-filter-btn--green.active { background: color-mix(in srgb, var(--ds-success) 8%, transparent); color: var(--ds-success); }
@@ -385,7 +385,7 @@ function fmtTime(isoStr: string): string {
 .ws-lbl { font-size: .68rem; color: color-mix(in srgb, var(--glass-text) 50%, transparent); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
 /* Input styles unified → glass-input */
 .ws-del-row { text-align: right; margin-top: 8px; }
-.ws-del { background: none; border: none; font-size: .76rem; color: var(--ds-error, #c00); cursor: pointer; font-family: inherit; }
+.ws-del { background: none; border: none; font-size: .76rem; color: var(--ds-error, var(--ds-error)); cursor: pointer; font-family: inherit; }
 .ws-del:hover { text-decoration: underline; }
 
 /* Detail button */
@@ -424,7 +424,7 @@ function fmtTime(isoStr: string): string {
   font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 20px;
   background: color-mix(in srgb, var(--glass-text) 7%, transparent); color: color-mix(in srgb, var(--glass-text) 60%, transparent);
 }
-.ws-s--in_progress { background: color-mix(in srgb, var(--ds-accent, #4a80f0) 12%, transparent) !important; color: var(--ds-accent, #4a80f0) !important; }
+.ws-s--in_progress { background: color-mix(in srgb, var(--ds-accent, var(--ds-accent)) 12%, transparent) !important; color: var(--ds-accent, var(--ds-accent)) !important; }
 .ws-s--done { background: color-mix(in srgb, var(--ds-success, #2ea86a) 12%, transparent) !important; color: var(--ds-success, #2ea86a) !important; }
 .ws-s--cancelled { background: color-mix(in srgb, var(--ds-error) 10%, transparent) !important; color: var(--ds-error) !important; }
 .ws-detail-contractor { font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }

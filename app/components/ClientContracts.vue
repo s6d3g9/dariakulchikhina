@@ -237,7 +237,7 @@ function fmtDate(d: string) {
 
 .cct-tariff-pending-badge {
   font-size: .6rem; padding: 2px 8px; border-radius: 3px;
-  background: color-mix(in srgb, #ff9800 15%, transparent);
+  background: color-mix(in srgb, var(--ds-warning) 15%, transparent);
   color: #e65100; font-weight: 600; text-transform: none; letter-spacing: 0;
 }
 
@@ -245,8 +245,8 @@ function fmtDate(d: string) {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   flex-wrap: wrap;
   padding: 10px 14px; margin-bottom: 14px;
-  background: color-mix(in srgb, #ff9800 8%, transparent);
-  border: 1px solid color-mix(in srgb, #ff9800 35%, transparent);
+  background: color-mix(in srgb, var(--ds-warning) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ds-warning) 35%, transparent);
   border-radius: 6px; font-size: .8rem;
 }
 .cct-tariff-pending-info { display: flex; align-items: center; gap: 8px; }
@@ -297,8 +297,8 @@ function fmtDate(d: string) {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--tc) 25%, transparent);
 }
 .cct-tariff-card--pending {
-  border-color: #ff9800;
-  background: color-mix(in srgb, #ff9800 8%, transparent);
+  border-color: var(--ds-warning);
+  background: color-mix(in srgb, var(--ds-warning) 8%, transparent);
   opacity: 1;
 }
 .cct-tariff-card-top {
@@ -383,10 +383,10 @@ function fmtDate(d: string) {
   text-transform: uppercase; border-radius: 999px; opacity: 1;
 }
 .cct-badge--gray   { background: color-mix(in srgb, var(--glass-text) 8%, transparent); color: color-mix(in srgb, var(--glass-text) 50%, transparent); }
-.cct-badge--blue   { background: color-mix(in srgb, var(--phase-blue, #2563eb) 8%, transparent); color: var(--phase-blue, #2563eb); }
-.cct-badge--green  { background: color-mix(in srgb, var(--ds-success, #16a34a) 8%, transparent); color: var(--ds-success, #16a34a); }
+.cct-badge--blue   { background: color-mix(in srgb, var(--phase-blue, var(--ds-accent)) 8%, transparent); color: var(--phase-blue, var(--ds-accent)); }
+.cct-badge--green  { background: color-mix(in srgb, var(--ds-success, var(--ds-success)) 8%, transparent); color: var(--ds-success, var(--ds-success)); }
 .cct-badge--yellow { background: color-mix(in srgb, var(--ds-warning, #c87400) 8%, transparent); color: var(--ds-warning, #c87400); }
-.cct-badge--red    { background: color-mix(in srgb, var(--ds-error, #dc2626) 8%, transparent); color: var(--ds-error, #dc2626); }
+.cct-badge--red    { background: color-mix(in srgb, var(--ds-error, var(--ds-error)) 8%, transparent); color: var(--ds-error, var(--ds-error)); }
 
 /* Download */
 .cct-dl { margin-top: 12px; }

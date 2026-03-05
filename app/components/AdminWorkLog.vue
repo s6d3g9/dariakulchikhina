@@ -286,73 +286,73 @@ function fmtDate(d: string) {
 .awl-filter-sel   { max-width:140px; font-size:.75rem; }
 .awl-search       { flex:1; min-width:140px; max-width:220px; padding:6px 10px; font-size:.8rem; }
 .awl-header-right { display:flex; align-items:center; gap:10px; }
-.awl-saved        { font-size:.73rem; color:#4caf50; }
-.awl-add-btn      { background:#1a2340; border:1px solid #2a4080; color:#8ab4f8; border-radius:6px; padding:5px 14px; font-size:.75rem; cursor:pointer; }
-.awl-add-btn:hover { background:#203060; }
+.awl-saved        { font-size:.73rem; color:var(--ds-success); }
+.awl-add-btn      { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); border:1px solid color-mix(in srgb, var(--ds-accent) 35%, transparent); color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); border-radius:6px; padding:5px 14px; font-size:.75rem; cursor:pointer; }
+.awl-add-btn:hover { background:color-mix(in srgb, var(--ds-accent) 20%, var(--glass-bg)); }
 
-.awl-add-form     { background:#0a0a0a; border:1px solid #1e1e1e; border-radius:10px; padding:16px; margin-bottom:16px; }
+.awl-add-form     { background:var(--glass-page-bg); border:1px solid color-mix(in srgb, var(--glass-text) 11%, transparent); border-radius:10px; padding:16px; margin-bottom:16px; }
 .awl-new-photos   { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0; }
-.awl-upload-btn   { background:#1a2340; border:1px solid #2a4080; color:#8ab4f8; border-radius:5px; padding:5px 12px; font-size:.75rem; cursor:pointer; position:relative; white-space:nowrap; }
+.awl-upload-btn   { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); border:1px solid color-mix(in srgb, var(--ds-accent) 35%, transparent); color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); border-radius:5px; padding:5px 12px; font-size:.75rem; cursor:pointer; position:relative; white-space:nowrap; }
 .awl-file-input   { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
 .awl-thumb-row    { display:flex; gap:6px; flex-wrap:wrap; }
 .awl-thumb        { position:relative; width:60px; height:60px; border-radius:4px; overflow:hidden; }
 .awl-thumb img    { width:100%; height:100%; object-fit:cover; }
-.awl-thumb button { position:absolute; top:1px; right:1px; background:rgba(0,0,0,.7); border:none; color:#fff; border-radius:50%; width:14px; height:14px; font-size:.6rem; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
+.awl-thumb button { position:absolute; top:1px; right:1px; background:color-mix(in srgb, black 70%, transparent); border:none; color:white; border-radius:50%; width:14px; height:14px; font-size:.6rem; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
 .awl-form-actions { display:flex; gap:8px; margin-top:10px; }
-.awl-submit-btn   { background:#1a3a20; border:1px solid #2a6030; color:#81c784; border-radius:6px; padding:6px 16px; font-size:.8rem; cursor:pointer; }
-.awl-submit-btn:hover { background:#224a28; }
-.awl-cancel-btn   { background:none; border:1px solid #2a2a2a; color:#666; border-radius:6px; padding:6px 14px; font-size:.8rem; cursor:pointer; }
+.awl-submit-btn   { background:#1a3a20; border:1px solid #2a6030; color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); border-radius:6px; padding:6px 16px; font-size:.8rem; cursor:pointer; }
+.awl-submit-btn:hover { background:color-mix(in srgb, var(--ds-success) 18%, var(--glass-bg)); }
+.awl-cancel-btn   { background:none; border:1px solid color-mix(in srgb, var(--glass-text) 14%, transparent); color:color-mix(in srgb, var(--glass-text) 42%, transparent); border-radius:6px; padding:6px 14px; font-size:.8rem; cursor:pointer; }
 
 .awl-feed { display:flex; flex-direction:column; }
 
-.awl-month-divider { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#555; padding:12px 0 6px; border-bottom:1px solid #1a1a1a; margin-bottom:8px; }
+.awl-month-divider { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:color-mix(in srgb, var(--glass-text) 35%, transparent); padding:12px 0 6px; border-bottom:1px solid color-mix(in srgb, var(--glass-text) 10%, transparent); margin-bottom:8px; }
 
 .awl-entry        { display:flex; gap:0; margin-bottom:4px; }
 .awl-entry-left   { display:flex; flex-direction:column; align-items:center; width:36px; flex-shrink:0; }
 .awl-entry-icon   { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.9rem; flex-shrink:0; margin-top:2px; }
-.awl-icon--note        { background:#1a1a2a; }
-.awl-icon--issue       { background:#2a1010; }
-.awl-icon--milestone   { background:#0f2a0f; }
-.awl-icon--visit       { background:#1a1a2a; }
-.awl-icon--delivery    { background:#2a1a00; }
-.awl-icon--inspection  { background:#1a2a2a; }
-.awl-entry-line   { flex:1; width:1px; background:#1a1a1a; margin:4px 0; }
+.awl-icon--note        { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); }
+.awl-icon--issue       { background:color-mix(in srgb, var(--ds-error) 12%, var(--glass-bg)); }
+.awl-icon--milestone   { background:color-mix(in srgb, var(--ds-success) 12%, var(--glass-bg)); }
+.awl-icon--visit       { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); }
+.awl-icon--delivery    { background:color-mix(in srgb, var(--ds-warning) 10%, var(--glass-bg)); }
+.awl-icon--inspection  { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); }
+.awl-entry-line   { flex:1; width:1px; background:color-mix(in srgb, var(--glass-text) 10%, transparent); margin:4px 0; }
 
-.awl-entry-content { flex:1; background:#0e0e0e; border:1px solid #1a1a1a; border-radius:8px; padding:10px 12px; margin-bottom:8px; }
-.awl-entry--issue .awl-entry-content  { border-left:3px solid #c62828; }
-.awl-entry--milestone .awl-entry-content { border-left:3px solid #388e3c; }
-.awl-entry--delivery .awl-entry-content  { border-left:3px solid #e65100; }
-.awl-entry--inspection .awl-entry-content { border-left:3px solid #1565c0; }
+.awl-entry-content { flex:1; background:var(--glass-bg); border:1px solid color-mix(in srgb, var(--glass-text) 10%, transparent); border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+.awl-entry--issue .awl-entry-content  { border-left:3px solid var(--ds-error); }
+.awl-entry--milestone .awl-entry-content { border-left:3px solid var(--ds-success); }
+.awl-entry--delivery .awl-entry-content  { border-left:3px solid var(--ds-warning); }
+.awl-entry--inspection .awl-entry-content { border-left:3px solid var(--ds-accent); }
 
 .awl-entry-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
 .awl-entry-type-badge { font-size:.68rem; padding:1px 6px; border-radius:4px; }
-.awl-badge--note       { background:#1a1a2a; color:#9e9e9e; }
-.awl-badge--issue      { background:#2a1010; color:#ef5350; }
-.awl-badge--milestone  { background:#0f2a0f; color:#81c784; }
-.awl-badge--visit      { background:#1a2040; color:#8ab4f8; }
-.awl-badge--delivery   { background:#2a1a00; color:#ffb74d; }
-.awl-badge--inspection { background:#1a2a2a; color:#80deea; }
-.awl-entry-date       { font-size:.72rem; color:#666; }
-.awl-entry-contractor { font-size:.72rem; color:#8ab4f8; }
-.awl-entry-material   { font-size:.72rem; color:#ffb74d; }
-.awl-entry-text { font-size:.82rem; color:#aaa; margin:0 0 6px; white-space:pre-line; }
+.awl-badge--note       { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); color:color-mix(in srgb, var(--glass-text) 60%, transparent); }
+.awl-badge--issue      { background:color-mix(in srgb, var(--ds-error) 12%, var(--glass-bg)); color:var(--ds-error); }
+.awl-badge--milestone  { background:color-mix(in srgb, var(--ds-success) 12%, var(--glass-bg)); color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); }
+.awl-badge--visit      { background:#1a2040; color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); }
+.awl-badge--delivery   { background:color-mix(in srgb, var(--ds-warning) 10%, var(--glass-bg)); color:var(--ds-warning); }
+.awl-badge--inspection { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); color:color-mix(in srgb, var(--ds-accent) 55%, white); }
+.awl-entry-date       { font-size:.72rem; color:color-mix(in srgb, var(--glass-text) 42%, transparent); }
+.awl-entry-contractor { font-size:.72rem; color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); }
+.awl-entry-material   { font-size:.72rem; color:var(--ds-warning); }
+.awl-entry-text { font-size:.82rem; color:color-mix(in srgb, var(--glass-text) 65%, transparent); margin:0 0 6px; white-space:pre-line; }
 
 .awl-photos-grid   { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; }
 .awl-photo-thumb   { width:60px; height:60px; object-fit:cover; border-radius:4px; cursor:pointer; }
 
 .awl-edit-form { display:flex; flex-direction:column; gap:6px; margin:6px 0; }
-.awl-save-edit-btn { align-self:flex-start; background:#1a3a20; border:1px solid #2a6030; color:#81c784; border-radius:5px; padding:4px 12px; font-size:.75rem; cursor:pointer; }
+.awl-save-edit-btn { align-self:flex-start; background:#1a3a20; border:1px solid #2a6030; color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); border-radius:5px; padding:4px 12px; font-size:.75rem; cursor:pointer; }
 
 .awl-entry-footer  { display:flex; gap:8px; }
-.awl-entry-edit-btn { background:none; border:1px solid #2a2a2a; color:#666; border-radius:4px; padding:2px 8px; font-size:.68rem; cursor:pointer; }
-.awl-entry-edit-btn:hover { color:#aaa; }
-.awl-entry-del-btn  { background:none; border:1px solid #2a1a1a; color:#e57373; border-radius:4px; padding:2px 8px; font-size:.68rem; cursor:pointer; }
-.awl-entry-del-btn:hover { background:#1a0808; }
+.awl-entry-edit-btn { background:none; border:1px solid color-mix(in srgb, var(--glass-text) 14%, transparent); color:color-mix(in srgb, var(--glass-text) 42%, transparent); border-radius:4px; padding:2px 8px; font-size:.68rem; cursor:pointer; }
+.awl-entry-edit-btn:hover { color:color-mix(in srgb, var(--glass-text) 65%, transparent); }
+.awl-entry-del-btn  { background:none; border:1px solid #2a1a1a; color:var(--ds-error); border-radius:4px; padding:2px 8px; font-size:.68rem; cursor:pointer; }
+.awl-entry-del-btn:hover { background:color-mix(in srgb, var(--ds-error) 10%, var(--glass-bg)); }
 
-.awl-empty { text-align:center; padding:40px 20px; color:#444; font-size:.84rem; }
+.awl-empty { text-align:center; padding:40px 20px; color:color-mix(in srgb, var(--glass-text) 30%, transparent); font-size:.84rem; }
 
-.awl-lightbox       { position:fixed; inset:0; background:rgba(0,0,0,.9); display:flex; align-items:center; justify-content:center; z-index:9999; }
+.awl-lightbox       { position:fixed; inset:0; background:color-mix(in srgb, var(--glass-page-bg) 90%, transparent); display:flex; align-items:center; justify-content:center; z-index:9999; }
 .awl-lightbox-img   { max-width:90vw; max-height:90vh; border-radius:6px; }
-.awl-lightbox-close { position:absolute; top:16px; right:20px; background:none; border:none; color:#fff; font-size:2rem; cursor:pointer; opacity:.7; }
+.awl-lightbox-close { position:absolute; top:16px; right:20px; background:none; border:none; color:white; font-size:2rem; cursor:pointer; opacity:.7; }
 .awl-lightbox-close:hover { opacity:1; }
 </style>

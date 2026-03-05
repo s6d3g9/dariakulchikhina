@@ -591,13 +591,13 @@ async function del(id: number) {
 
 .agal-title {
   font-size: .72rem; letter-spacing: 1.2px;
-  text-transform: uppercase; color: var(--glass-text, #1a1a1a); opacity: .55;
+  text-transform: uppercase; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .55;
 }
 .agal-badge {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 20px; padding: 0 5px;
   border-radius: 999px; font-size: .62rem;
-  background: color-mix(in srgb, var(--glass-text) 9%, transparent); color: var(--glass-text, #1a1a1a);
+  background: color-mix(in srgb, var(--glass-text) 9%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
 .agal-badge--filter { background: color-mix(in srgb, var(--ds-accent) 15%, transparent); color: var(--ds-accent); }
@@ -610,7 +610,7 @@ async function del(id: number) {
   font-family: inherit; cursor: pointer;
   border-radius: 8px; white-space: nowrap;
   border: none;
-  background: var(--glass-text, #1a1a1a); color: var(--glass-page-bg, #f4f4f2);
+  background: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); color: var(--glass-page-bg, #f4f4f2);
   transition: opacity .15s;
 }
 .agal-add-btn:hover { opacity: .82; }
@@ -621,7 +621,7 @@ async function del(id: number) {
   padding: 7px 12px; border-radius: 8px;
   border: none; cursor: pointer;
   font-family: inherit; font-size: .72rem;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, #1a1a1a);
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   transition: background .13s, opacity .13s;
 }
 .agal-batch-btn:hover { background: color-mix(in srgb, var(--glass-text) 10%, transparent); }
@@ -635,14 +635,14 @@ async function del(id: number) {
 }
 .agal-batch-count {
   font-size: .72rem; font-weight: 600;
-  color: var(--glass-text, #1a1a1a); opacity: .7;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .7;
   margin-right: 4px;
 }
 .agal-batch-action {
   padding: 5px 10px; border-radius: 6px;
   border: none; cursor: pointer;
   font-family: inherit; font-size: .7rem;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, #1a1a1a);
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   transition: background .13s;
 }
 .agal-batch-action:hover { background: color-mix(in srgb, var(--glass-text) 12%, transparent); }
@@ -662,8 +662,8 @@ async function del(id: number) {
 .agal-round-check {
   width: 24px; height: 24px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,.6);
-  background: rgba(0,0,0,.2);
+  border: 2px solid color-mix(in srgb, white 60%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 20%, transparent);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center;
   transition: background .15s, border-color .15s, transform .15s;
@@ -713,7 +713,7 @@ async function del(id: number) {
 .agal-empty {
   display: flex; flex-direction: column; align-items: center;
   gap: 12px; padding: 80px 24px;
-  text-align: center; color: var(--glass-text, #1a1a1a); opacity: .3;
+  text-align: center; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .3;
   font-size: .82rem; letter-spacing: .4px;
   border-radius: 14px;
 }
@@ -739,7 +739,7 @@ async function del(id: number) {
 }
 .agal-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 16px 40px rgba(18,18,18,.13);
+  box-shadow: 0 16px 40px color-mix(in srgb, black 13%, transparent);
 }
 
 
@@ -761,7 +761,7 @@ async function del(id: number) {
 .agal-no-img {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
-  color: var(--glass-text, #1a1a1a); opacity: .18;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .18;
 }
 
 /* ─── Card action buttons ──────────────────────────────── */
@@ -782,21 +782,21 @@ async function del(id: number) {
   width: 30px; height: 30px; border-radius: 8px; border: none; cursor: pointer;
   background: var(--glass-bg, rgba(255,255,255,.82));
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  color: var(--glass-text, #1a1a1a);
-  box-shadow: 0 2px 8px rgba(0,0,0,.18);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
+  box-shadow: 0 2px 8px color-mix(in srgb, black 18%, transparent);
   transition: background .13s, transform .13s, color .13s;
 }
 .agal-icon-btn:hover { background: var(--glass-bg, #fff); transform: scale(1.08); }
-.agal-icon-btn--del { background: color-mix(in srgb, var(--ds-error, #dc2626) 80%, transparent); color: #fff; }
-.agal-icon-btn--del:hover { background: rgba(220,38,38,.97); }
+.agal-icon-btn--del { background: color-mix(in srgb, var(--ds-error, var(--ds-error)) 80%, transparent); color: #fff; }
+.agal-icon-btn--del:hover { background: color-mix(in srgb, var(--ds-error) 97%, transparent); }
 
 .agal-icon-btn--star {
-  font-size: .72rem; color: rgba(0,0,0,.25);
-  background: rgba(255,255,255,.7);
+  font-size: .72rem; color: color-mix(in srgb, black 25%, transparent);
+  background: color-mix(in srgb, white 70%, transparent);
 }
 .agal-icon-btn--starred {
-  color: var(--ds-star, #fbbf24) !important;
-  background: color-mix(in srgb, var(--ds-star, #fbbf24) 15%, transparent);
+  color: var(--ds-star, var(--ds-warning)) !important;
+  background: color-mix(in srgb, var(--ds-star, var(--ds-warning)) 15%, transparent);
 }
 .agal-icon-btn--star:hover { color: var(--ds-star, #f59e0b); }
 
@@ -808,11 +808,11 @@ async function del(id: number) {
 }
 .agal-name {
   font-size: .88rem; font-weight: 500; line-height: 1.35;
-  color: var(--glass-text, #1a1a1a);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   word-break: break-word; margin: 0;
 }
 .agal-desc {
-  font-size: .75rem; color: var(--glass-text, #1a1a1a); opacity: .5;
+  font-size: .75rem; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .5;
   line-height: 1.45; margin: 0;
   display: -webkit-box; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden;
@@ -821,7 +821,7 @@ async function del(id: number) {
 .agal-tag {
   font-size: .65rem; padding: 3px 8px;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--glass-text) 7%, transparent); color: var(--glass-text, #1a1a1a); opacity: .7;
+  background: color-mix(in srgb, var(--glass-text) 7%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .7;
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   letter-spacing: .1px; white-space: nowrap;
 }
@@ -838,7 +838,7 @@ async function del(id: number) {
 }
 .agal-list-row:hover {
   transform: translateX(3px);
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  box-shadow: 0 4px 16px color-mix(in srgb, black 8%, transparent);
 }
 .agal-list-thumb {
   width: 64px; height: 48px; flex-shrink: 0;
@@ -851,16 +851,16 @@ async function del(id: number) {
 .agal-list-no-img {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
-  color: var(--glass-text, #1a1a1a); opacity: .15;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .15;
 }
 .agal-list-body { flex: 1; min-width: 0; }
 .agal-list-top { display: flex; align-items: center; gap: 6px; }
 .agal-list-name {
   font-size: .86rem; font-weight: 500; margin: 0;
-  color: var(--glass-text, #1a1a1a);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.agal-list-star { color: var(--ds-star, #fbbf24); font-size: .74rem; }
+.agal-list-star { color: var(--ds-star, var(--ds-warning)); font-size: .74rem; }
 .agal-list-desc {
   font-size: .72rem; opacity: .45; margin: 2px 0 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -884,7 +884,7 @@ async function del(id: number) {
 }
 .msn-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 18px 44px rgba(18,18,18,.14);
+  box-shadow: 0 18px 44px color-mix(in srgb, black 14%, transparent);
 }
 
 
@@ -905,7 +905,7 @@ async function del(id: number) {
 .msn-placeholder {
   width: 100%; aspect-ratio: 4/3;
   display: flex; align-items: center; justify-content: center;
-  color: var(--glass-text, #1a1a1a); opacity: .16;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .16;
 }
 
 .msn-overlay {
@@ -926,7 +926,7 @@ async function del(id: number) {
   padding: 4px 8px; border-radius: 8px;
   background: var(--glass-bg, rgba(255,255,255,.82));
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  color: var(--glass-text, #1a1a1a); font-size: .64rem; font-weight: 600;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); font-size: .64rem; font-weight: 600;
 }
 
 .msn-info {
@@ -935,11 +935,11 @@ async function del(id: number) {
 }
 .msn-title {
   font-size: .86rem; font-weight: 500; line-height: 1.35;
-  color: var(--glass-text, #1a1a1a);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   word-break: break-word; margin: 0;
 }
 .msn-desc {
-  font-size: .74rem; color: var(--glass-text, #1a1a1a); opacity: .48;
+  font-size: .74rem; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .48;
   line-height: 1.45; margin: 0;
   display: -webkit-box; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden;
@@ -947,7 +947,7 @@ async function del(id: number) {
 .msn-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .msn-tag {
   font-size: .62rem; padding: 2px 7px; border-radius: 5px;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, #1a1a1a); opacity: .65;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .65;
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   letter-spacing: .1px; white-space: nowrap;
 }
@@ -955,7 +955,7 @@ async function del(id: number) {
 /* ─── Modal ─────────────────────────────────────────────── */
 .agal-backdrop {
   position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0,0,0,.38);
+  background: color-mix(in srgb, black 38%, transparent);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center; padding: 16px;
 }
@@ -974,7 +974,7 @@ async function del(id: number) {
 }
 .agal-close {
   width: 28px; height: 28px; border-radius: 7px; border: none;
-  background: color-mix(in srgb, var(--glass-text) 8%, transparent); color: var(--glass-text, #1a1a1a);
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
@@ -1002,7 +1002,7 @@ async function del(id: number) {
   font-size: .78rem; font-family: inherit;
   border: none;
   background: var(--glass-bg, rgba(255,255,255,.48));
-  color: var(--glass-text, #1a1a1a);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   transition: background .13s;
 }
@@ -1019,11 +1019,11 @@ async function del(id: number) {
   position: absolute; top: 6px; right: 6px;
   width: 22px; height: 22px; border-radius: 6px;
   border: none; cursor: pointer;
-  background: color-mix(in srgb, var(--ds-error, #dc2626) 85%, transparent); color: #fff;
+  background: color-mix(in srgb, var(--ds-error, var(--ds-error)) 85%, transparent); color: #fff;
   font-size: .8rem; display: flex; align-items: center; justify-content: center;
   transition: background .13s;
 }
-.agal-preview-del:hover { background: var(--ds-error, #dc2626); }
+.agal-preview-del:hover { background: var(--ds-error, var(--ds-error)); }
 
 /* ─── Multi-image upload grid ──────────────────────────── */
 .agal-multi-images {
@@ -1041,7 +1041,7 @@ async function del(id: number) {
   position: absolute; top: 3px; right: 3px;
   width: 18px; height: 18px; border-radius: 5px;
   border: none; cursor: pointer;
-  background: color-mix(in srgb, var(--ds-error, #dc2626) 85%, transparent); color: #fff;
+  background: color-mix(in srgb, var(--ds-error, var(--ds-error)) 85%, transparent); color: #fff;
   font-size: .65rem; display: flex; align-items: center; justify-content: center;
 }
 .agal-multi-add {
@@ -1050,7 +1050,7 @@ async function del(id: number) {
   border-radius: 8px; cursor: pointer;
   border: 1.5px dashed color-mix(in srgb, var(--glass-text) 15%, transparent);
   background: transparent;
-  color: var(--glass-text, #1a1a1a); opacity: .3;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .3;
   transition: opacity .13s, border-color .13s;
 }
 .agal-multi-add:hover { opacity: .6; border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
@@ -1062,11 +1062,11 @@ async function del(id: number) {
   opacity: .75 !important; cursor: pointer;
 }
 .agal-checkbox {
-  width: 16px; height: 16px; accent-color: var(--ds-warning, #fbbf24);
+  width: 16px; height: 16px; accent-color: var(--ds-warning, var(--ds-warning));
   cursor: pointer;
 }
 
-.agal-error { font-size: .78rem; color: var(--ds-error, #dc2626); margin: 0; }
+.agal-error { font-size: .78rem; color: var(--ds-error, var(--ds-error)); margin: 0; }
 
 .agal-modal-foot {
   display: flex; gap: 8px; justify-content: flex-end;
@@ -1076,7 +1076,7 @@ async function del(id: number) {
   padding: 9px 18px; border-radius: 9px; cursor: pointer;
   font-family: inherit; font-size: .82rem;
   border: none;
-  background: transparent; color: var(--glass-text, #1a1a1a);
+  background: transparent; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   transition: background .13s;
 }
 .agal-cancel-btn:hover { background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
@@ -1084,7 +1084,7 @@ async function del(id: number) {
   padding: 9px 22px; border-radius: 9px; cursor: pointer;
   font-family: inherit; font-size: .82rem; letter-spacing: .2px;
   border: none;
-  background: var(--glass-text, #1a1a1a); color: var(--glass-page-bg, #f4f4f2);
+  background: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); color: var(--glass-page-bg, #f4f4f2);
   transition: opacity .15s;
 }
 .agal-save-btn:hover:not(:disabled) { opacity: .8; }
@@ -1113,17 +1113,17 @@ async function del(id: number) {
   margin-top: 2px;
 }
 .msn-manufacturer {
-  color: color-mix(in srgb, var(--glass-text, #e0e0e0) 65%, transparent);
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 65%, transparent);
   font-weight: 500;
 }
 .msn-price {
   font-weight: 600;
-  color: var(--glass-text, #e0e0e0);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
   margin-left: auto;
 }
 .msn-material-type {
   font-size: .72rem;
-  color: color-mix(in srgb, var(--glass-text, #e0e0e0) 50%, transparent);
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 50%, transparent);
   margin-top: 1px;
 }
 
@@ -1133,12 +1133,12 @@ async function del(id: number) {
   align-items: center;
   gap: 6px;
   font-size: .72rem;
-  color: color-mix(in srgb, var(--glass-text, #e0e0e0) 60%, transparent);
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 60%, transparent);
   margin-top: 2px;
 }
 .agal-price {
   font-weight: 600;
-  color: var(--glass-text, #e0e0e0);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
   margin-left: auto;
 }
 </style>

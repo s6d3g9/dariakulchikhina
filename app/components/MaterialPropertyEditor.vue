@@ -387,7 +387,7 @@ const MpeArray = defineComponent({
 
 <style scoped>
 .mpe-wrap {
-  border: 1px solid color-mix(in srgb, var(--glass-border, #333) 40%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 40%, transparent);
   border-radius: 10px;
   overflow: hidden;
   margin-top: 12px;
@@ -398,14 +398,14 @@ const MpeArray = defineComponent({
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: color-mix(in srgb, var(--glass-bg, #1a1a1a) 40%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-border, #333) 25%, transparent);
+  background: color-mix(in srgb, var(--glass-bg, color-mix(in srgb, var(--glass-text) 10%, transparent)) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 25%, transparent);
 }
 
 .mpe-title {
   font-size: .82rem;
   font-weight: 500;
-  color: color-mix(in srgb, var(--glass-text, #e0e0e0) 70%, transparent);
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 70%, transparent);
   text-transform: uppercase;
   letter-spacing: .3px;
 }
@@ -416,7 +416,7 @@ const MpeArray = defineComponent({
   gap: 4px;
   border: none;
   background: transparent;
-  color: color-mix(in srgb, var(--glass-text, #e0e0e0) 55%, transparent);
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 55%, transparent);
   font-size: .76rem;
   cursor: pointer;
   font-family: inherit;
@@ -425,8 +425,8 @@ const MpeArray = defineComponent({
   transition: all .15s;
 }
 .mpe-expand-btn:hover {
-  color: var(--glass-text, #e0e0e0);
-  background: color-mix(in srgb, var(--glass-bg, #1a1a1a) 60%, transparent);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+  background: color-mix(in srgb, var(--glass-bg, color-mix(in srgb, var(--glass-text) 10%, transparent)) 60%, transparent);
 }
 
 .mpe-body { padding: 0 14px 14px; }
@@ -449,7 +449,7 @@ const MpeArray = defineComponent({
   padding: 5px 10px;
   border: none;
   background: transparent;
-  color: color-mix(in srgb, var(--glass-text, #e0e0e0) 50%, transparent);
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 50%, transparent);
   font-size: .74rem;
   font-family: inherit;
   cursor: pointer;
@@ -458,12 +458,12 @@ const MpeArray = defineComponent({
   transition: all .13s;
 }
 .mpe-tab:hover {
-  color: var(--glass-text, #e0e0e0);
-  background: color-mix(in srgb, var(--glass-bg, #1a1a1a) 40%, transparent);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+  background: color-mix(in srgb, var(--glass-bg, color-mix(in srgb, var(--glass-text) 10%, transparent)) 40%, transparent);
 }
 .mpe-tab--active {
-  color: var(--glass-text, #e0e0e0);
-  background: color-mix(in srgb, var(--glass-bg, #1a1a1a) 60%, transparent);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+  background: color-mix(in srgb, var(--glass-bg, color-mix(in srgb, var(--glass-text) 10%, transparent)) 60%, transparent);
 }
 
 .mpe-tab-dot {
@@ -493,7 +493,7 @@ const MpeArray = defineComponent({
   font-size: .7rem;
   text-transform: uppercase;
   letter-spacing: .3px;
-  color: color-mix(in srgb, var(--glass-text, #e0e0e0) 45%, transparent);
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 45%, transparent);
 }
 
 .mpe-label-bool {
@@ -502,7 +502,7 @@ const MpeArray = defineComponent({
   gap: 8px;
   font-size: .82rem;
   cursor: pointer;
-  color: var(--glass-text, #e0e0e0);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
 }
 
 .mpe-checkbox {
@@ -515,14 +515,14 @@ const MpeArray = defineComponent({
   padding: 5px 8px !important;
   font-size: .82rem !important;
   font-family: inherit;
-  border: 1px solid color-mix(in srgb, var(--glass-border, #333) 30%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 30%, transparent) !important;
   border-radius: 6px;
   background: transparent !important;
-  color: var(--glass-text, #e0e0e0);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
   transition: border-color .15s;
 }
 .mpe-input:focus {
-  border-color: color-mix(in srgb, var(--glass-text, #e0e0e0) 35%, #667eea) !important;
+  border-color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 35%, #667eea) !important;
   outline: none;
 }
 .mpe-input--sm { max-width: 120px; }
@@ -534,7 +534,7 @@ const MpeArray = defineComponent({
 
 .mpe-hint {
   font-size: .68rem;
-  color: color-mix(in srgb, var(--glass-text, #e0e0e0) 35%, transparent);
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 35%, transparent);
   font-style: italic;
 }
 
@@ -550,7 +550,7 @@ const MpeArray = defineComponent({
 .mpe-custom-block {
   grid-column: 1 / -1;
   padding: 10px;
-  border: 1px dashed color-mix(in srgb, var(--glass-border, #333) 35%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 35%, transparent);
   border-radius: 8px;
   margin-bottom: 8px;
 }
@@ -569,20 +569,20 @@ const MpeArray = defineComponent({
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--ds-error, #f87171);
+  color: var(--ds-error, var(--ds-error));
   font-size: 1.1rem;
   cursor: pointer;
   border-radius: 4px;
   flex-shrink: 0;
   transition: background .1s;
 }
-.mpe-del-btn:hover { background: color-mix(in srgb, var(--ds-error, #f87171) 13%, transparent); }
+.mpe-del-btn:hover { background: color-mix(in srgb, var(--ds-error, var(--ds-error)) 13%, transparent); }
 
 .mpe-add-btn {
   grid-column: 1 / -1;
-  border: 1px dashed color-mix(in srgb, var(--glass-border, #333) 40%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 40%, transparent);
   background: transparent;
-  color: color-mix(in srgb, var(--glass-text, #e0e0e0) 50%, transparent);
+  color: color-mix(in srgb, var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent)) 50%, transparent);
   padding: 8px;
   font-size: .78rem;
   cursor: pointer;
@@ -591,8 +591,8 @@ const MpeArray = defineComponent({
   transition: all .15s;
 }
 .mpe-add-btn:hover {
-  color: var(--glass-text, #e0e0e0);
-  border-color: color-mix(in srgb, var(--glass-border, #333) 60%, transparent);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 88%, transparent));
+  border-color: color-mix(in srgb, var(--glass-border, color-mix(in srgb, var(--glass-text) 20%, transparent)) 60%, transparent);
 }
 .mpe-add-btn--sub { margin-top: 4px; }
 

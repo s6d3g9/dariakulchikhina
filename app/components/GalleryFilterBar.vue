@@ -207,7 +207,7 @@ html.dark .gfb-modes { background: rgba(255, 255, 255, 0.06); }
   width: 30px; height: 28px;
   border: none; border-radius: 6px; cursor: pointer;
   background: transparent;
-  color: var(--glass-text, #1a1a1a); opacity: .4;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .4;
   transition: opacity .13s, background .13s;
 }
 .gfb-mode-btn:hover { opacity: .7; }
@@ -228,7 +228,7 @@ html.dark .gfb-modes { background: rgba(255, 255, 255, 0.06); }
 }
 .gfb-search-icon {
   position: absolute; left: 10px;
-  color: var(--glass-text, #1a1a1a); opacity: .35;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .35;
   pointer-events: none;
 }
 .gfb-search {
@@ -243,7 +243,7 @@ html.dark .gfb-modes { background: rgba(255, 255, 255, 0.06); }
   width: 18px; height: 18px;
   border: none; border-radius: 4px; cursor: pointer;
   background: rgba(0, 0, 0, 0.08);
-  color: var(--glass-text, #1a1a1a);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   font-size: .7rem; display: flex; align-items: center; justify-content: center;
   transition: background .13s;
 }
@@ -261,7 +261,7 @@ html.dark .gfb-search-clear { background: rgba(255, 255, 255, 0.1); }
   font-family: inherit; font-size: .72rem;
   letter-spacing: .2px; white-space: nowrap;
   background: rgba(0, 0, 0, 0.04);
-  color: var(--glass-text, #1a1a1a); opacity: .6;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .6;
   transition: opacity .13s, background .13s;
 }
 .gfb-sort-btn:hover { opacity: .85; }
@@ -290,7 +290,7 @@ html.dark .gfb-sort-btn { background: rgba(255, 255, 255, 0.06); }
   border: none; border-radius: 7px; cursor: pointer;
   font-family: inherit; font-size: .76rem;
   background: transparent;
-  color: var(--glass-text, #1a1a1a);
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   transition: background .13s;
 }
 .gfb-sort-opt:hover { background: rgba(0, 0, 0, 0.06); }
@@ -314,19 +314,19 @@ html.dark .gfb-sort-opt:hover { background: rgba(255, 255, 255, 0.08); }
   font-family: inherit; font-size: .72rem;
   letter-spacing: .3px; white-space: nowrap;
   background: rgba(0, 0, 0, 0.04);
-  color: var(--glass-text, #1a1a1a); opacity: .5;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .5;
   transition: opacity .13s, background .13s;
 }
 .gfb-featured-btn:hover { opacity: .8; }
 .gfb-featured-btn--active {
   opacity: 1;
-  background: color-mix(in srgb, var(--ds-star, #fbbf24) 15%, transparent);
+  background: color-mix(in srgb, var(--ds-star, var(--ds-warning)) 15%, transparent);
   color: var(--ds-star-dark, #b45309);
 }
 html.dark .gfb-featured-btn { background: rgba(255, 255, 255, 0.06); }
 html.dark .gfb-featured-btn--active {
-  background: color-mix(in srgb, var(--ds-star, #fbbf24) 18%, transparent);
-  color: var(--ds-star, #fbbf24);
+  background: color-mix(in srgb, var(--ds-star, var(--ds-warning)) 18%, transparent);
+  color: var(--ds-star, var(--ds-warning));
 }
 
 /* ── Tags ────────────────────────────────────────────────── */
@@ -348,7 +348,7 @@ html.dark .gfb-featured-btn--active {
 .gfb-tag:hover { opacity: .8; }
 .gfb-tag--active {
   opacity: 1;
-  background: var(--ds-accent, #6366f1);
+  background: var(--ds-accent, var(--ds-accent));
   color: #fff;
   border-color: transparent;
 }
