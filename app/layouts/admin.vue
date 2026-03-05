@@ -67,9 +67,14 @@
       </div>
     </header>
 
-    <div class="admin-container">
-
-      <slot />
+    <!-- ── App shell body: sidebar portal + main ── -->
+    <div class="adm-body">
+      <aside id="admin-sidebar-portal" class="adm-sidebar-portal"></aside>
+      <main class="adm-main">
+        <div class="admin-container">
+          <slot />
+        </div>
+      </main>
     </div>
 
     <!-- ── Global search palette ── -->
@@ -535,8 +540,6 @@ async function logout() {
 /* ── Page ── */
 .admin-bg {
   min-height: 100vh;
-  padding-top: calc(28px + var(--dp-panel-h, 0px));
-  transition: padding-top .2s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: var(--ds-font-family);
   font-size: var(--ds-font-size);
   font-weight: var(--ds-font-weight);
@@ -552,6 +555,40 @@ async function logout() {
   border-radius: 0;
   border-bottom: 1px solid rgba(var(--glass-text-rgb, 0,0,0), 0.08);
   background: transparent;
+  position: sticky;
+  top: var(--dp-panel-h, 0px);
+  z-index: 200;
+  flex-shrink: 0;
+}
+
+/* ── App shell body ── */
+.adm-body {
+  display: flex;
+  align-items: flex-start;
+  min-height: calc(100vh - var(--admin-header-h));
+}
+
+/* Sidebar portal: sticky column, full viewport height below header */
+.adm-sidebar-portal {
+  width: var(--ds-sidebar-width, 220px);
+  flex-shrink: 0;
+  position: sticky;
+  top: calc(var(--admin-header-h) + var(--dp-panel-h, 0px));
+  height: calc(100vh - var(--admin-header-h) - var(--dp-panel-h, 0px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 140%));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 140%));
+}
+
+/* Main scrollable area */
+.adm-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 100%;
 }
 .admin-brand {
   font-size: .72rem;
@@ -645,7 +682,7 @@ async function logout() {
 .admin-notif-refresh     { background: none; border: none; color: var(--glass-text); opacity: .35; font-size: .7rem; cursor: pointer; font-family: inherit; }
 .admin-notif-refresh:hover { opacity: .8; }
 
-/* ── Container / tabs ── */
+/* ── Container / content ── */
 .admin-container { max-width: var(--ds-container-width, 1140px); margin: 22px auto; padding: 0 24px; transition: max-width var(--ds-transition, 180ms ease); }
 
 /* ── Modal ─────────────────────────────────────────────── */
@@ -714,14 +751,13 @@ async function logout() {
     padding: 0 12px;
     margin: 18px auto;
   }
+  .adm-sidebar-portal {
+    width: 180px;
+  }
 }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .admin-bg {
-    padding-top: calc(20px + var(--dp-panel-h, 0px));
-  }
-
   .admin-header {
     padding: 10px 12px;
     border-radius: 0;
@@ -743,6 +779,19 @@ async function logout() {
   .admin-search-btn {
     padding: 5px 7px;
     border-radius: 7px;
+  }
+
+  .adm-body {
+    flex-direction: column;
+  }
+
+  .adm-sidebar-portal {
+    position: static;
+    width: 100%;
+    height: auto;
+    max-height: 240px;
+    border-right: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
   }
 
   .admin-container {

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="ent-layout ent-layout--with-stats">
+    <Teleport to="#admin-sidebar-portal">
       <!-- ═══ Sidebar ═══ -->
       <nav class="ent-sidebar std-sidenav">
         <AdminSidebarSwitcher title="проекты" :count="projects?.length ?? 0" v-model="searchQuery" />
@@ -20,9 +20,10 @@
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true; wizardStep = 1">+ создать</button></div>
       </nav>
+    </Teleport>
 
-      <!-- ═══ Detail ═══ -->
-      <div class="ent-main">
+    <!-- ═══ Detail ═══ -->
+    <div class="ent-main">
         <div v-if="selectedProject" class="ent-detail-card glass-card">
           <div class="ent-detail-head">
             <div>
@@ -65,7 +66,6 @@
 
       <!-- ═══ Status bar ═══ -->
       <AdminProjectStatusBar />
-    </div>
 
     <!-- ══ Create modal ══ -->
     <Teleport to="body">

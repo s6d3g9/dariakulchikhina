@@ -5,7 +5,7 @@
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
     </div>
-    <div class="ent-layout ent-layout--with-stats">
+    <Teleport to="#admin-sidebar-portal">
       <nav class="ent-sidebar std-sidenav">
         <AdminSidebarSwitcher title="подрядчики" :count="contractors?.length ?? 0" v-model="searchQuery" />
         <div class="std-nav">
@@ -39,8 +39,9 @@
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button></div>
       </nav>
+    </Teleport>
 
-      <div class="ent-main">
+    <div class="ent-main">
         <template v-if="selectedId">
           <div class="ent-entity-hd">
             <span class="ent-entity-hd-name">{{ selected?.name }}</span>
@@ -58,7 +59,6 @@
 
       <!-- ═══ Status bar ═══ -->
       <AdminProjectStatusBar />
-    </div>
 
     <!-- ══ Modal ══ -->
     <Teleport to="body">

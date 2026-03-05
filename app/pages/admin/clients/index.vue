@@ -7,7 +7,7 @@
     </div>
 
     <!-- ═══ Unified layout: sidebar always visible ═══ -->
-    <div class="ent-layout ent-layout--with-stats">
+    <Teleport to="#admin-sidebar-portal">
       <nav class="ent-sidebar std-sidenav">
         <AdminSidebarSwitcher title="клиенты" :count="clients?.length ?? 0" v-model="searchQuery" />
         <div class="std-nav">
@@ -26,9 +26,10 @@
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openAdd">+ добавить</button></div>
       </nav>
+    </Teleport>
 
-      <!-- Content area: selected client or empty state -->
-      <div class="ent-main">
+    <!-- Content area: selected client or empty state -->
+    <div class="ent-main">
         <template v-if="selectedClient">
           <!-- Minimal context strip -->
           <div class="ent-entity-hd">
@@ -105,7 +106,6 @@
 
       <!-- ═══ Status bar ═══ -->
       <AdminProjectStatusBar />
-    </div>
 
     <!-- ══ Add/Edit modal ══ -->
     <Teleport to="body">

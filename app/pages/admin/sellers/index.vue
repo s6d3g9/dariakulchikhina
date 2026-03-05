@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="ent-layout ent-layout--with-stats">
+    <Teleport to="#admin-sidebar-portal">
       <nav class="ent-sidebar std-sidenav">
         <AdminSidebarSwitcher title="поставщики" :count="allSellers?.length ?? 0" v-model="searchQuery" />
         <div class="std-nav">
@@ -18,8 +18,9 @@
         </div>
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true">+ добавить</button></div>
       </nav>
+    </Teleport>
 
-      <div class="ent-main">
+    <div class="ent-main">
         <template v-if="selectedSellerId">
           <div class="ent-entity-hd">
             <span class="ent-entity-hd-name">{{ selectedSeller?.name }}</span>
@@ -48,7 +49,6 @@
 
       <!-- ═══ Status bar ═══ -->
       <AdminProjectStatusBar />
-    </div>
 
     <!-- ══ Edit Modal ══ -->
     <Teleport to="body">

@@ -604,6 +604,19 @@ html.dark .glass-input::placeholder {
   scrollbar-width: thin;
 }
 
+/* When sidebar lives inside the layout portal — reset sticky, fill full height */
+#admin-sidebar-portal .ent-sidebar {
+  position: static;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .ent-sidebar-head {
   display: flex;
   align-items: center;
