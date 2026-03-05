@@ -15,12 +15,12 @@ export default defineEventHandler((event) => {
     "font-src 'self' data: https:",
     "connect-src 'self' https: wss:",
     "frame-src https://yandex.ru https://*.yandex.ru https://yandex.com https://*.yandex.com",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self' https://*.app.github.dev https://*.github.dev https://*.github.com https://*.serveousercontent.com https://*.trycloudflare.com https://*.lhr.life",
     "base-uri 'self'",
     "form-action 'self'",
   ].join('; '))
 
-  // Prevent clickjacking
+  // Prevent clickjacking (frame-ancestors in CSP takes precedence in modern browsers)
   res.setHeader('X-Frame-Options', 'SAMEORIGIN')
 
   // Prevent MIME-type sniffing

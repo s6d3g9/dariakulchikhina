@@ -45,7 +45,7 @@ export default defineNitroPlugin((nitroApp) => {
       "font-src 'self' data: https:",
       "connect-src 'self' https: wss:",
       "frame-src https://yandex.ru https://*.yandex.ru https://yandex.com https://*.yandex.com",
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self' https://*.app.github.dev https://*.github.dev https://*.github.com https://*.serveousercontent.com https://*.trycloudflare.com https://*.lhr.life",
       "base-uri 'self'",
       "form-action 'self'",
     ].join('; ')
