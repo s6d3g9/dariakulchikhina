@@ -6,8 +6,9 @@
       <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
     </div>
     <div class="proj-content-area">
+
       <div class="proj-nav-col">
-<nav class="proj-sidenav std-sidenav">
+      <nav class="proj-sidenav std-sidenav">
         <div class="proj-nav-header">
 
           <AdminSidebarSwitcher title="подрядчики" :count="contractors?.length ?? 0" v-model="searchQuery" />
@@ -44,13 +45,10 @@
             <div v-else-if="!contractors?.length" class="ent-nav-empty">нет подрядчиков</div>
           </template>
         </div>
-
         </div><!-- /.proj-nav-body -->
-
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button></div>
       </nav>
       </div><!-- /.proj-nav-col -->
-
 
     <div class="proj-main">
         <template v-if="selectedId">
@@ -72,6 +70,7 @@
       <AdminProjectStatusBar />
 
     <!-- ══ Modal ══ -->
+    </div><!-- /.proj-content-area -->
     <Teleport to="body">
       <div v-if="showModal" class="ct-backdrop" @click.self="closeModal">
         <div class="ct-modal glass-surface">

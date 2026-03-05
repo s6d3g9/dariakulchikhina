@@ -1,8 +1,9 @@
 <template>
   <div>
     <div class="proj-content-area">
+
       <div class="proj-nav-col">
-<nav class="proj-sidenav std-sidenav">
+      <nav class="proj-sidenav std-sidenav">
         <div class="proj-nav-header">
 
           <AdminSidebarSwitcher title="поставщики" :count="allSellers?.length ?? 0" v-model="searchQuery" />
@@ -23,13 +24,10 @@
             <div v-else-if="!allSellers?.length" class="ent-nav-empty">нет поставщиков</div>
           </template>
         </div>
-
         </div><!-- /.proj-nav-body -->
-
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true">+ добавить</button></div>
       </nav>
       </div><!-- /.proj-nav-col -->
-
 
     <div class="proj-main">
         <template v-if="selectedSellerId">
@@ -62,6 +60,7 @@
       <AdminProjectStatusBar />
 
     <!-- ══ Edit Modal ══ -->
+    </div><!-- /.proj-content-area -->
     <Teleport to="body">
       <div v-if="showEditModal" class="ct-backdrop" @click.self="closeEdit">
         <div class="ct-modal glass-surface">

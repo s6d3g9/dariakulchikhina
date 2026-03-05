@@ -8,8 +8,9 @@
 
     <!-- ═══ Unified layout: sidebar always visible ═══ -->
     <div class="proj-content-area">
+
       <div class="proj-nav-col">
-<nav class="proj-sidenav std-sidenav">
+      <nav class="proj-sidenav std-sidenav">
         <div class="proj-nav-header">
 
           <AdminSidebarSwitcher title="клиенты" :count="clients?.length ?? 0" v-model="searchQuery" />
@@ -31,13 +32,10 @@
             <div v-else-if="!clients?.length" class="ent-nav-empty">нет клиентов</div>
           </template>
         </div>
-
         </div><!-- /.proj-nav-body -->
-
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openAdd">+ добавить</button></div>
       </nav>
       </div><!-- /.proj-nav-col -->
-
 
     <!-- Content area: selected client or empty state -->
     <div class="proj-main">
@@ -119,6 +117,7 @@
       <AdminProjectStatusBar />
 
     <!-- ══ Add/Edit modal ══ -->
+    </div><!-- /.proj-content-area -->
     <Teleport to="body">
     <div v-if="showModal" class="cl-backdrop" @click.self="closeModal">
       <div class="cl-modal glass-surface glass-card">

@@ -1,8 +1,9 @@
 <template>
   <div>
     <div class="proj-content-area">
+
       <div class="proj-nav-col">
-<nav class="proj-sidenav std-sidenav">
+      <nav class="proj-sidenav std-sidenav">
         <div class="proj-nav-header">
 
           <AdminSidebarSwitcher title="проекты" :count="projects?.length ?? 0" v-model="searchQuery" />
@@ -24,13 +25,10 @@
             <div v-else-if="!projects?.length" class="pj-nav-empty">нет проектов</div>
           </template>
         </div>
-
         </div><!-- /.proj-nav-body -->
-
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true; wizardStep = 1">+ создать</button></div>
       </nav>
       </div><!-- /.proj-nav-col -->
-
 
     <!-- ═══ Detail ═══ -->
     <div class="proj-main">
@@ -78,6 +76,7 @@
       <AdminProjectStatusBar />
 
     <!-- ══ Create modal ══ -->
+    </div><!-- /.proj-content-area -->
     <Teleport to="body">
       <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
         <div class="pj-modal glass-surface">

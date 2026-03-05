@@ -1,8 +1,9 @@
 <template>
   <div>
     <div class="proj-content-area">
+
       <div class="proj-nav-col">
-<nav class="proj-sidenav std-sidenav">
+      <nav class="proj-sidenav std-sidenav">
         <div class="proj-nav-header">
 
           <AdminSidebarSwitcher title="дизайнеры" :count="allDesigners?.length ?? 0" v-model="searchQuery" />
@@ -23,13 +24,10 @@
             <div v-else-if="!allDesigners?.length" class="ent-nav-empty">нет дизайнеров</div>
           </template>
         </div>
-
         </div><!-- /.proj-nav-body -->
-
         <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true">+ добавить</button></div>
       </nav>
       </div><!-- /.proj-nav-col -->
-
 
     <div class="proj-main">
         <template v-if="selectedDesignerId">
@@ -59,9 +57,8 @@
 
       <!-- ═══ Status bar ═══ -->
       <AdminProjectStatusBar />
-  </div><!-- /.proj-main -->
-  </div><!-- /.proj-content-area -->
-
+    </div><!-- /.proj-content-area -->
+  </div>
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
