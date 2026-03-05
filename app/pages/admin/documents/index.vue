@@ -8,7 +8,7 @@
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
-onMounted(() => adminNav.ensureSection('documents'))
+onMounted(() => adminNav.ensureSection('docs'))
 
 const activeCategory = computed(() => adminNav.contentSpec.value.documentCategory || 'all')
 </script>

@@ -49,9 +49,12 @@ function rootNode(): NavigationNode {
       { id: 'cat_clients',     name: 'Клиенты',     type: 'node' },
       { id: 'cat_designers',   name: 'Дизайнеры',   type: 'node' },
       { id: 'cat_contractors', name: 'Подрядчики',  type: 'node' },
-      { id: 'cat_documents',   name: 'Документы',   type: 'node' },
-      { id: 'cat_gallery',     name: 'Галереи',     type: 'node' },
       { id: 'cat_sellers',     name: 'Поставщики',  type: 'node' },
+      { id: 'cat_managers',    name: 'Менеджеры',   type: 'node' },
+      { id: 'cat_docs',        name: 'Документы',   type: 'node' },
+      { id: 'cat_gallery',     name: 'Галереи',     type: 'node' },
+      { id: 'cat_moodboards',  name: 'Мудборды',    type: 'node' },
+      { id: 'cat_tariffs',     name: 'Тарифы',      type: 'node' },
     ],
   }
 }
@@ -61,9 +64,9 @@ const SECTION_ROUTES: Record<string, string> = {
   cat_clients:     '/admin/clients',
   cat_designers:   '/admin/designers',
   cat_contractors: '/admin/contractors',
-  cat_documents:   '/admin/documents',
-  cat_gallery:     '/admin/gallery',
   cat_sellers:     '/admin/sellers',
+  cat_docs:        '/admin/documents',
+  cat_gallery:     '/admin/gallery',
 }
 
 const DESIGNER_CABINET_ITEMS: PayloadItem[] = [
@@ -75,8 +78,11 @@ const DESIGNER_CABINET_ITEMS: PayloadItem[] = [
   { id: 'des_projects',      name: 'Проекты',       type: 'node' },
   { id: 'des_clients',       name: 'Клиенты',       type: 'node' },
   { id: 'des_contractors',   name: 'Подрядчики',    type: 'node' },
+  { id: 'des_sellers',       name: 'Поставщики',    type: 'node' },
+  { id: 'des_managers',      name: 'Менеджеры',     type: 'node' },
   { id: 'des_documents',     name: 'Документы',     type: 'node' },
   { id: 'des_gallery',       name: 'Галереи',       type: 'node' },
+  { id: 'des_moodboards',    name: 'Мудборды',      type: 'node' },
 ]
 
 const CLIENT_CABINET_ITEMS: PayloadItem[] = [
@@ -101,9 +107,22 @@ const SELLER_CABINET_ITEMS: PayloadItem[] = [
   { id: 'sel_projects',   name: 'Проекты',    type: 'node' },
 ]
 
-// Фазы/секции проекта — ТОЛЬКО содержательные разделы, не субъекты.
-// Клиенты/дизайнеры/подрядчики проекта отображаются в секции «Обзор» как inline-блоки.
+// Кабинет проекта — узлы верхнего уровня (alpha_*)
 const PROJECT_CABINET_ITEMS: PayloadItem[] = [
+  { id: 'alpha_phases',      name: 'Фазы (прогресс проекта)', type: 'node' },
+  { id: 'alpha_clients',     name: 'Клиенты',                  type: 'node' },
+  { id: 'alpha_contractors', name: 'Подрядчики',                type: 'node' },
+  { id: 'alpha_sellers',     name: 'Поставщики',                type: 'node' },
+  { id: 'alpha_designers',   name: 'Дизайнеры',                 type: 'node' },
+  { id: 'alpha_managers',    name: 'Менеджеры',                 type: 'node' },
+  { id: 'alpha_docs',        name: 'Документы',                 type: 'node' },
+  { id: 'alpha_gallery',     name: 'Галереи',                   type: 'node' },
+  { id: 'alpha_moodboards',  name: 'Мудборды',                  type: 'node' },
+  { id: 'alpha_tariff',      name: 'Тариф',                     type: 'node' },
+]
+
+// Фазы проекта — листья (привязаны к компонентам страницы)
+const PHASES_ITEMS: PayloadItem[] = [
   { id: 'prj_overview',      name: 'Обзор',                  type: 'leaf' },
   { id: 'prj_firstcontact',  name: 'Первый контакт',         type: 'leaf' },
   { id: 'prj_smartbrief',    name: 'Смарт-бриф / ТЗ',        type: 'leaf' },
@@ -121,8 +140,6 @@ const PROJECT_CABINET_ITEMS: PayloadItem[] = [
   { id: 'prj_commissioning', name: 'Акт ввода',               type: 'leaf' },
   { id: 'prj_album',         name: 'Финальный альбом',        type: 'leaf' },
   { id: 'prj_extraservices', name: 'Доп. услуги',             type: 'leaf' },
-  { id: 'prj_documents',     name: 'Документы',               type: 'node' },
-  { id: 'prj_gallery',       name: 'Галерея',                 type: 'node' },
 ]
 
 const DOCUMENT_ITEMS: PayloadItem[] = [
@@ -257,7 +274,7 @@ async function buildNextNode(
     const route = SECTION_ROUTES[item.id]
     if (route) router.push(route)
 
-    if (item.id === 'cat_documents') {
+    if (item.id === 'cat_docs') {
       return { ctx: newCtx, node: {
         step: 'B', nodeId: 'reg_documents', nodeType: 'registry',
         context: { title: 'Документы', breadcrumbs: [...crumbs, 'Документы'] },
@@ -271,6 +288,24 @@ async function buildNextNode(
         context: { title: 'Галереи', breadcrumbs: [...crumbs, 'Галереи'] },
         filter: { placeholder: 'Поиск по разделу...', value: '' },
         payload: GALLERY_ITEMS,
+      }}
+    }
+    if (item.id === 'cat_moodboards') {
+      return { ctx: newCtx, node: {
+        step: 'B', nodeId: 'reg_moodboards', nodeType: 'registry',
+        context: { title: 'Мудборды', breadcrumbs: [...crumbs, 'Мудборды'] },
+        filter: { placeholder: 'Поиск по мудбордам...', value: '' },
+        payload: GALLERY_ITEMS.filter(g => g.id === 'gal_moodboards'),
+      }}
+    }
+    // cat_managers, cat_tariffs — заглушки до появления API
+    if (item.id === 'cat_managers' || item.id === 'cat_tariffs') {
+      const title = item.id === 'cat_managers' ? 'Менеджеры' : 'Тарифы'
+      return { ctx: newCtx, node: {
+        step: 'B', nodeId: `reg_${newCtx.section}`, nodeType: 'registry',
+        context: { title, breadcrumbs: [...crumbs, title] },
+        filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
+        payload: [],
       }}
     }
 
@@ -363,9 +398,84 @@ async function buildNextNode(
     return null
   }
 
-  // ── CABINET / PROJECT_ROOT → вложенные реестры ────────────────────────────
-  if (current.nodeType === 'cabinet' || current.nodeType === 'project_root') {
-    const sub = item.id.replace(/^(des_|cli_|con_|sel_|prj_)/, '')
+  // ── PROJECT_ROOT → фазы и вложенные реестры (alpha_* prefix) ──────────────
+  if (current.nodeType === 'project_root') {
+    const sub = item.id.replace(/^alpha_/, '')
+
+    if (sub === 'phases') {
+      return { ctx: newCtx, node: {
+        step: 'F', nodeId: `reg_phases_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Фазы — ${current.context.title}`, breadcrumbs: [...crumbs, 'Фазы'] },
+        filter: { placeholder: 'Поиск по фазам проекта...', value: '' },
+        payload: PHASES_ITEMS,
+      }}
+    }
+    if (sub === 'docs') {
+      return { ctx: newCtx, node: {
+        step: 'F', nodeId: `reg_docs_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Документы — ${current.context.title}`, breadcrumbs: [...crumbs, 'Документы'] },
+        filter: { placeholder: 'Поиск по типу документа...', value: '' },
+        payload: DOCUMENT_ITEMS,
+      }}
+    }
+    if (sub === 'gallery') {
+      return { ctx: newCtx, node: {
+        step: 'F', nodeId: `reg_gallery_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Галереи — ${current.context.title}`, breadcrumbs: [...crumbs, 'Галереи'] },
+        filter: { placeholder: 'Поиск по разделу...', value: '' },
+        payload: GALLERY_ITEMS,
+      }}
+    }
+    if (sub === 'moodboards') {
+      return { ctx: newCtx, node: {
+        step: 'F', nodeId: `reg_moodboards_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Мудборды — ${current.context.title}`, breadcrumbs: [...crumbs, 'Мудборды'] },
+        filter: { placeholder: 'Поиск по мудбордам...', value: '' },
+        payload: GALLERY_ITEMS.filter(g => g.id === 'gal_moodboards'),
+      }}
+    }
+    if (sub === 'tariff' || sub === 'managers') {
+      const title = sub === 'tariff' ? 'Тариф' : 'Менеджеры'
+      return { ctx: newCtx, node: {
+        step: 'F', nodeId: `reg_${sub}_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `${title} — ${current.context.title}`, breadcrumbs: [...crumbs, title] },
+        filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
+        payload: [],
+      }}
+    }
+    // Субъекты проекта (clients/contractors/sellers/designers) → реестр из API
+    const prjSubApi: Record<string, string> = {
+      clients: '/api/clients', contractors: '/api/contractors',
+      sellers: '/api/sellers', designers: '/api/designers',
+    }
+    const prjSubTitle: Record<string, string> = {
+      clients: 'Клиенты', contractors: 'Подрядчики',
+      sellers: 'Поставщики', designers: 'Дизайнеры',
+    }
+    const prjApi = prjSubApi[sub]
+    if (prjApi) {
+      const data = await $fetch<any[]>(prjApi).catch(() => [])
+      const title = prjSubTitle[sub] ?? sub
+      return {
+        ctx: { ...newCtx, section: sub },
+        node: {
+          step: 'F', nodeId: `reg_${sub}_${current.nodeId}`, nodeType: 'registry',
+          context: { title: `${title} — ${current.context.title}`, breadcrumbs: [...crumbs, title] },
+          filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
+          payload: data.map((e: any) => ({
+            id: String(e.id ?? e.slug),
+            name: e.name ?? e.title ?? e.slug ?? String(e.id),
+            type: 'node' as const,
+          })),
+        },
+      }
+    }
+    return null
+  }
+
+  // ── CABINET → вложенные реестры (des_|cli_|con_|sel_| prefix) ────────────
+  if (current.nodeType === 'cabinet') {
+    const sub = item.id.replace(/^(des_|cli_|con_|sel_)/, '')
 
     if (sub === 'documents') {
       return { ctx: newCtx, node: {
@@ -381,6 +491,22 @@ async function buildNextNode(
         context: { title: `Галереи — ${current.context.title}`, breadcrumbs: [...crumbs, 'Галереи'] },
         filter: { placeholder: 'Поиск по разделу...', value: '' },
         payload: GALLERY_ITEMS,
+      }}
+    }
+    if (sub === 'moodboards') {
+      return { ctx: newCtx, node: {
+        step: 'D', nodeId: `reg_moodboards_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Мудборды — ${current.context.title}`, breadcrumbs: [...crumbs, 'Мудборды'] },
+        filter: { placeholder: 'Поиск по мудбордам...', value: '' },
+        payload: GALLERY_ITEMS.filter(g => g.id === 'gal_moodboards'),
+      }}
+    }
+    if (sub === 'managers') {
+      return { ctx: newCtx, node: {
+        step: 'D', nodeId: `reg_managers_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Менеджеры — ${current.context.title}`, breadcrumbs: [...crumbs, 'Менеджеры'] },
+        filter: { placeholder: 'Поиск по менеджерам...', value: '' },
+        payload: [],
       }}
     }
 

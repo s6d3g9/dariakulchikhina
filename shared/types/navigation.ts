@@ -88,17 +88,14 @@ export interface NavigationNode {
 //   B  registry     — Реестр дизайнеров (список сущностей)
 //   C  cabinet      — Кабинет дизайнера (смешанные узлы: листья-секции + узлы-реестры)
 //   D  registry     — Реестр проектов дизайнера
-//   E  project_root — Кабинет проекта (фазы/секции проекта — НЕ субъекты)
-//                     leaf = секция открывается справа
-//                     node = drill в под-реестр (документы / галерея)
-//   F  registry     — Реестр документов проекта (листья-категории)
+//   E  project_root — Кабинет проекта
+//                     node: alpha_phases → список фаз (F)
+//                     node: alpha_docs / alpha_gallery → реестры контента
+//                     node: alpha_clients / alpha_contractors / ... → реестры субъектов
+//   F  registry     — Фазы проекта (листья) ИЛИ реестр документов/галерей
 //
-// ВАЖНО: В project_root ЗАПРЕЩЕНО показывать субъекты (клиентов, дизайнеров,
-// подрядчиков). Это снова создаёт меню выбора субъектов — нарушает правило 3.
-// Связанные субъекты отображаются ТОЛЬКО в секции «Обзор» справа как inline-блоки.
-//
-// Тот же путь применяется к ЛЮБОЙ сущности:
-//   Клиенты, Подрядчики, Поставщики, Документы, Галереи — ИДЕНТИЧНАЯ структура.
+// ВАЖНО: В project_root субъекты (клиенты, дизайнеры, подрядчики) РАЗРЕШЕНЫ как
+// пункты навигации — они ведут в под-реестры, откуда можно открыть кабинет субъекта.
 export const UserJourneyFlow: NavigationNode[] = [
   {
     step: 'A',
@@ -117,9 +114,12 @@ export const UserJourneyFlow: NavigationNode[] = [
       { id: 'cat_clients',     name: 'Клиенты',     type: 'node' },
       { id: 'cat_designers',   name: 'Дизайнеры',   type: 'node', action: 'CLICK' },
       { id: 'cat_contractors', name: 'Подрядчики',  type: 'node' },
+      { id: 'cat_sellers',     name: 'Поставщики',  type: 'node' },
+      { id: 'cat_managers',    name: 'Менеджеры',   type: 'node' },
       { id: 'cat_docs',        name: 'Документы',   type: 'node' },
       { id: 'cat_gallery',     name: 'Галереи',     type: 'node' },
-      { id: 'cat_sellers',     name: 'Селлеры',     type: 'node' },
+      { id: 'cat_moodboards',  name: 'Мудборды',    type: 'node' },
+      { id: 'cat_tariffs',     name: 'Тарифы',      type: 'node' },
     ],
   },
 
@@ -162,8 +162,11 @@ export const UserJourneyFlow: NavigationNode[] = [
       { id: 'dar_projects',    name: 'Проекты',       type: 'node', action: 'CLICK' },
       { id: 'dar_clients',     name: 'Клиенты',       type: 'node' },
       { id: 'dar_contractors', name: 'Подрядчики',    type: 'node' },
+      { id: 'dar_sellers',     name: 'Поставщики',    type: 'node' },
+      { id: 'dar_managers',    name: 'Менеджеры',     type: 'node' },
       { id: 'dar_docs',        name: 'Документы',     type: 'node' },
       { id: 'dar_gallery',     name: 'Галереи',       type: 'node' },
+      { id: 'dar_moodboards',  name: 'Мудборды',      type: 'node' },
     ],
   },
 
@@ -190,15 +193,39 @@ export const UserJourneyFlow: NavigationNode[] = [
     nodeId: 'proj_alpha',
     nodeType: 'project_root',
     context: {
-      title: 'ЖК Альфа',
+      title: 'Кабинет проекта (ЖК Альфа)',
       breadcrumbs: ['Главное меню', 'Дизайнеры', 'dariak', 'Проекты', 'ЖК Альфа'],
     },
     filter: {
-      placeholder: 'Поиск по фазам проекта...',
+      placeholder: 'Поиск по кабинету проекта...',
       value: '',
     },
-    // !! ТОЛЬКО фазы/секции проекта. Субъекты (клиенты, дизайнеры, подрядчики)
-    // НЕ являются пунктами навигации проекта — они отображаются в секции «Обзор»
+    payload: [
+      { id: 'alpha_phases',      name: 'Фазы (прогресс проекта)', type: 'node' },
+      { id: 'alpha_clients',     name: 'Клиенты',                  type: 'node' },
+      { id: 'alpha_contractors', name: 'Подрядчики',                type: 'node' },
+      { id: 'alpha_sellers',     name: 'Поставщики',                type: 'node' },
+      { id: 'alpha_designers',   name: 'Дизайнеры',                 type: 'node' },
+      { id: 'alpha_managers',    name: 'Менеджеры',                 type: 'node' },
+      { id: 'alpha_docs',        name: 'Документы',                 type: 'node', action: 'CLICK' },
+      { id: 'alpha_gallery',     name: 'Галереи',                   type: 'node' },
+      { id: 'alpha_moodboards',  name: 'Мудборды',                  type: 'node' },
+      { id: 'alpha_tariff',      name: 'Тариф',                     type: 'node' },
+    ],
+  },
+
+  {
+    step: 'F',
+    nodeId: 'alpha_phases',
+    nodeType: 'registry',
+    context: {
+      title: 'Фазы проекта (ЖК Альфа)',
+      breadcrumbs: ['Главное меню', 'Дизайнеры', 'dariak', 'Проекты', 'ЖК Альфа', 'Фазы'],
+    },
+    filter: {
+      placeholder: 'Поиск по фазам...',
+      value: '',
+    },
     payload: [
       { id: 'prj_overview',      name: 'Обзор',                  type: 'leaf' },
       { id: 'prj_firstcontact',  name: 'Первый контакт',         type: 'leaf' },
@@ -217,27 +244,6 @@ export const UserJourneyFlow: NavigationNode[] = [
       { id: 'prj_commissioning', name: 'Акт ввода',               type: 'leaf' },
       { id: 'prj_album',         name: 'Финальный альбом',        type: 'leaf' },
       { id: 'prj_extraservices', name: 'Доп. услуги',             type: 'leaf' },
-      { id: 'prj_documents',     name: 'Документы',               type: 'node', action: 'CLICK' },
-      { id: 'prj_gallery',       name: 'Галерея',                 type: 'node' },
-    ],
-  },
-
-  {
-    step: 'F',
-    nodeId: 'alpha_docs',
-    nodeType: 'registry',
-    context: {
-      title: 'Документы (ЖК Альфа)',
-      breadcrumbs: ['Главное меню', 'Дизайнеры', 'dariak', 'Проекты', 'ЖК Альфа', 'Документы'],
-    },
-    filter: {
-      placeholder: 'Поиск по номеру или типу документа...',
-      value: '',
-    },
-    payload: [
-      { id: 'doc_12', name: 'Договор №12', type: 'leaf', action: 'OPEN_DOCUMENT' },
-      { id: 'doc_13', name: 'Смета №3',    type: 'leaf' },
-      { id: 'doc_14', name: 'Акт приемки', type: 'leaf' },
     ],
   },
 ];
