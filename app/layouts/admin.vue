@@ -1,217 +1,201 @@
 <template>
   <div class="admin-bg glass-page">
     <UIDesignPanel />
+
+    <!-- Slim top-header (mobile only visible; desktop: brand in sidebar) -->
     <header class="admin-header glass-surface">
-      <span class="admin-brand">админ-панель</span>
-      <div class="admin-header-links">
-        <!-- Search trigger -->
+      <span class="admin-brand">admin</span>
+      <div class="admin-header-right">
         <button
           type="button"
           class="admin-search-btn"
           title="Поиск  Ctrl+K / ⌘K"
-          aria-label="Поиск"
           @click="searchOpen = true"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <span class="admin-search-label">поиск</span>
           <kbd class="admin-search-kbd">Ctrl+K</kbd>
         </button>
-
-        <button
-          type="button"
-          class="theme-toggle"
-          :aria-label="isDark ? 'Светлая тема' : 'Тёмная тема'"
-          :title="isDark ? 'Светлая тема' : 'Тёмная тема'"
-          @click="toggleTheme"
-        >
-          <!-- Sun icon (light mode — click to go dark) -->
-          <svg v-if="!isDark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-          </svg>
-          <!-- Moon icon (dark mode — click to go light) -->
-          <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
+        <button type="button" class="theme-toggle" @click="toggleTheme" :aria-label="isDark ? 'Светлая' : 'Тёмная'">
+          <svg v-if="!isDark" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <NuxtLink to="/" class="admin-link">сайт</NuxtLink>
-        <a href="#" class="admin-link" @click.prevent="logout">выйти</a>
+        <button class="admin-mob-burger" @click="sidebarOpen = !sidebarOpen" aria-label="Меню">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
       </div>
     </header>
 
     <div class="admin-container">
-      <!-- ── Tab bar ── -->
-      <div class="admin-tabs">
 
-        <!-- проекты + chip текущего проекта -->
-        <div ref="projectsTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isProjectsTab }">
-          <NuxtLink to="/admin" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isProjectsTab }">проекты</NuxtLink>
-          <button
-            v-if="activeProjectSlug"
-            type="button"
-            class="admin-mini-chip"
-            :title="currentProjectTitle"
-            @click.stop="projectsOpen = !projectsOpen"
-          >{{ currentProjectInitials }}</button>
-          <button
-            v-else
-            type="button"
-            class="admin-mini-chip admin-mini-chip--dim"
-            title="Список проектов"
-            @click.stop="projectsOpen = !projectsOpen"
-          >…</button>
-          <div v-if="projectsOpen" class="admin-dropdown glass-surface" @click.stop>
-            <button
-              v-for="p in quickProjects" :key="p.slug"
-              type="button" class="admin-drop-item"
-              :class="{ 'admin-drop-item--active': p.slug === activeProjectSlug }"
-              @click="pickProject(p.slug)"
-            >
-              <span class="admin-drop-ini">{{ projectInitials(p.title) }}</span>
-              <span class="admin-drop-lbl">{{ p.title }}</span>
-            </button>
-            <div v-if="!quickProjects.length" class="admin-drop-empty">нет проектов</div>
+      <!-- ── Left Sidebar ── -->
+      <aside class="admin-sidebar glass-surface" :class="{ 'admin-sidebar--open': sidebarOpen }">
+        <nav class="admin-nav">
+
+          <div class="admin-sidebar-logo">
+            <span class="admin-sidebar-brand">admin</span>
           </div>
-        </div>
 
-        <!-- подрядчики + chip -->
-        <div ref="contractorsTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isContractorsTab }">
-          <NuxtLink :to="contractorsTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isContractorsTab }">подрядчики</NuxtLink>
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="contractorsOpen = !contractorsOpen">…</button>
-          <div v-if="contractorsOpen" class="admin-dropdown glass-surface" @click.stop>
-            <div
-              v-for="ct in quickContractors" :key="ct.id"
-              class="admin-drop-item-with-actions"
-            >
-              <button
-                type="button" class="admin-drop-item admin-drop-item--flex"
-                @click="pickContractor(ct)"
-              >
-                <span class="admin-drop-ini">{{ nameInitials(ct.name) }}</span>
-                <span class="admin-drop-lbl">{{ ct.name }}</span>
-              </button>
-              <button
-                v-if="activeProjectSlug"
-                type="button"
-                class="admin-drop-action-btn"
-                :class="isContractorLinked(ct.id) ? 'admin-drop-action-btn--remove' : 'admin-drop-action-btn--add'"
-                :disabled="clientActionLoading"
-                @click.stop="toggleContractorLink(ct.id, ct.name)"
-                :title="isContractorLinked(ct.id) ? 'Отвязать от проекта' : 'Привязать к проекту'"
-              >{{ isContractorLinked(ct.id) ? '-' : '+' }}</button>
+          <div class="admin-nav-body">
+
+            <!-- проекты -->
+            <div class="admin-nav-group">
+              <div class="admin-nav-row" :class="{ 'admin-nav-row--active': isProjectsTab }">
+                <NuxtLink to="/admin" class="admin-nav-item" @click="sidebarOpen = false">проекты</NuxtLink>
+                <button type="button" class="admin-nav-expand" @click.stop="projectsOpen = !projectsOpen">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" :style="{ transform: projectsOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .15s' }"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <div v-if="projectsOpen" class="admin-nav-sub">
+                <button
+                  v-for="p in quickProjects" :key="p.slug"
+                  type="button" class="admin-nav-sub-item"
+                  :class="{ 'admin-nav-sub-item--active': p.slug === activeProjectSlug }"
+                  @click="pickProject(p.slug); sidebarOpen = false"
+                >
+                  <span class="admin-nav-ini">{{ projectInitials(p.title) }}</span>
+                  <span class="admin-nav-sub-label">{{ p.title }}</span>
+                </button>
+                <div v-if="!quickProjects.length" class="admin-nav-sub-empty">нет проектов</div>
+              </div>
             </div>
-            <div class="admin-drop-divider"></div>
-            <button type="button" class="admin-drop-all" @click="goToAllContractors">все подрядчики →</button>
-            <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
-          </div>
-        </div>
 
-        <!-- клиенты + chip -->
-        <div ref="clientsTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isClientsTab }">
-          <NuxtLink :to="clientsTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isClientsTab }">клиенты</NuxtLink>
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="clientsOpen = !clientsOpen">…</button>
-          <div v-if="clientsOpen" class="admin-dropdown glass-surface" @click.stop>
-            <div
-              v-for="cl in quickClients" :key="cl.id"
-              class="admin-drop-item-with-actions"
-            >
-              <button
-                type="button" class="admin-drop-item admin-drop-item--flex"
-                @click="pickClient(cl)"
-              >
-                <span class="admin-drop-ini">{{ nameInitials(cl.name) }}</span>
-                <span class="admin-drop-lbl">{{ cl.name }}</span>
-              </button>
-              <button
-                v-if="activeProjectSlug"
-                type="button"
-                class="admin-drop-action-btn"
-                :class="isClientLinked(cl.id) ? 'admin-drop-action-btn--remove' : 'admin-drop-action-btn--add'"
-                :disabled="clientActionLoading"
-                @click.stop="toggleClientLink(cl.id, cl.name)"
-                :title="isClientLinked(cl.id) ? 'Отвязать от проекта' : 'Привязать к проекту'"
-              >{{ isClientLinked(cl.id) ? '-' : '+' }}</button>
+            <!-- подрядчики -->
+            <div class="admin-nav-group">
+              <div class="admin-nav-row" :class="{ 'admin-nav-row--active': isContractorsTab }">
+                <NuxtLink :to="contractorsTabTo" class="admin-nav-item" @click="sidebarOpen = false">подрядчики</NuxtLink>
+                <button type="button" class="admin-nav-expand" @click.stop="contractorsOpen = !contractorsOpen">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" :style="{ transform: contractorsOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .15s' }"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <div v-if="contractorsOpen" class="admin-nav-sub">
+                <div v-for="ct in quickContractors" :key="ct.id" class="admin-nav-sub-row">
+                  <button type="button" class="admin-nav-sub-item admin-nav-sub-item--flex" @click="pickContractor(ct); sidebarOpen = false">
+                    <span class="admin-nav-ini">{{ nameInitials(ct.name) }}</span>
+                    <span class="admin-nav-sub-label">{{ ct.name }}</span>
+                  </button>
+                  <button
+                    v-if="activeProjectSlug"
+                    type="button"
+                    class="admin-nav-link-btn"
+                    :class="isContractorLinked(ct.id) ? 'admin-nav-link-btn--remove' : 'admin-nav-link-btn--add'"
+                    :disabled="clientActionLoading"
+                    @click.stop="toggleContractorLink(ct.id, ct.name)"
+                  >{{ isContractorLinked(ct.id) ? '−' : '+' }}</button>
+                </div>
+                <button type="button" class="admin-nav-see-all" @click="goToAllContractors">все →</button>
+                <div v-if="clientActionMessage" class="admin-nav-msg">{{ clientActionMessage }}</div>
+              </div>
             </div>
-            <div class="admin-drop-divider"></div>
-            <button type="button" class="admin-drop-all" @click="goToAllClients">все клиенты →</button>
-            <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
-          </div>
-        </div>
 
-        <!-- галерея — одна кнопка с дропдауном категорий -->
-        <div ref="galleryTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isGalleryTab }">
-          <NuxtLink :to="galleryActiveTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isGalleryTab }">галерея</NuxtLink>
-          <button type="button" class="admin-mini-chip" :class="galleryCurrentChip ? 'admin-mini-chip' : 'admin-mini-chip--dim'" @click.stop="galleryOpen = !galleryOpen">
-            {{ galleryCurrentChip || '…' }}
-          </button>
-          <div v-if="galleryOpen" class="admin-dropdown glass-surface" @click.stop>
-            <button
-              v-for="g in GALLERY_TABS" :key="g.slug"
-              type="button" class="admin-drop-item"
-              :class="{ 'admin-drop-item--active': route.path === `/admin/gallery/${g.slug}` }"
-              @click="pickGallery(g.slug)"
-            >
-              <span class="admin-drop-ini">{{ g.icon }}</span>
-              <span class="admin-drop-lbl">{{ g.label }}</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- документы -->
-        <div class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDocumentsTab }">
-          <NuxtLink to="/admin/documents" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDocumentsTab }">документы</NuxtLink>
-        </div>
-
-        <!-- дизайнеры -->
-        <div ref="designersTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDesignersTab }">
-          <NuxtLink :to="designersTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDesignersTab }">дизайнеры</NuxtLink>
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="designersOpen = !designersOpen">…</button>
-          <div v-if="designersOpen" class="admin-dropdown glass-surface" @click.stop>
-            <div
-              v-for="d in quickDesigners" :key="d.id"
-              class="admin-drop-item-with-actions"
-            >
-              <button
-                type="button" class="admin-drop-item admin-drop-item--flex"
-                @click="pickDesigner(d)"
-              >
-                <span class="admin-drop-ini">{{ nameInitials(d.name) }}</span>
-                <span class="admin-drop-lbl">{{ d.name }}</span>
-              </button>
-              <button
-                v-if="activeProjectSlug"
-                type="button"
-                class="admin-drop-action-btn"
-                :class="isDesignerLinked(d.id) ? 'admin-drop-action-btn--remove' : 'admin-drop-action-btn--add'"
-                :disabled="clientActionLoading"
-                @click.stop="toggleDesignerLink(d.id, d.name)"
-                :title="isDesignerLinked(d.id) ? 'Отвязать от проекта' : 'Привязать к проекту'"
-              >{{ isDesignerLinked(d.id) ? '-' : '+' }}</button>
+            <!-- клиенты -->
+            <div class="admin-nav-group">
+              <div class="admin-nav-row" :class="{ 'admin-nav-row--active': isClientsTab }">
+                <NuxtLink :to="clientsTabTo" class="admin-nav-item" @click="sidebarOpen = false">клиенты</NuxtLink>
+                <button type="button" class="admin-nav-expand" @click.stop="clientsOpen = !clientsOpen">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" :style="{ transform: clientsOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .15s' }"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <div v-if="clientsOpen" class="admin-nav-sub">
+                <div v-for="cl in quickClients" :key="cl.id" class="admin-nav-sub-row">
+                  <button type="button" class="admin-nav-sub-item admin-nav-sub-item--flex" @click="pickClient(cl); sidebarOpen = false">
+                    <span class="admin-nav-ini">{{ nameInitials(cl.name) }}</span>
+                    <span class="admin-nav-sub-label">{{ cl.name }}</span>
+                  </button>
+                  <button
+                    v-if="activeProjectSlug"
+                    type="button"
+                    class="admin-nav-link-btn"
+                    :class="isClientLinked(cl.id) ? 'admin-nav-link-btn--remove' : 'admin-nav-link-btn--add'"
+                    :disabled="clientActionLoading"
+                    @click.stop="toggleClientLink(cl.id, cl.name)"
+                  >{{ isClientLinked(cl.id) ? '−' : '+' }}</button>
+                </div>
+                <button type="button" class="admin-nav-see-all" @click="goToAllClients">все →</button>
+              </div>
             </div>
-            <div class="admin-drop-divider"></div>
-            <button type="button" class="admin-drop-all" @click="goToAllDesigners">все дизайнеры →</button>
-            <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
+
+            <!-- галерея (с вложенностью) -->
+            <div class="admin-nav-group">
+              <div class="admin-nav-row" :class="{ 'admin-nav-row--active': isGalleryTab }">
+                <NuxtLink :to="galleryActiveTabTo" class="admin-nav-item" @click="sidebarOpen = false">галерея</NuxtLink>
+                <button type="button" class="admin-nav-expand" @click.stop="galleryOpen = !galleryOpen">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" :style="{ transform: galleryOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .15s' }"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <div v-if="galleryOpen || isGalleryTab" class="admin-nav-sub">
+                <NuxtLink
+                  v-for="g in GALLERY_TABS" :key="g.slug"
+                  :to="withCtx(`/admin/gallery/${g.slug}`)"
+                  class="admin-nav-sub-item"
+                  :class="{ 'admin-nav-sub-item--active': route.path === `/admin/gallery/${g.slug}` }"
+                  @click="sidebarOpen = false"
+                >
+                  <span class="admin-nav-ini">{{ g.icon }}</span>
+                  <span class="admin-nav-sub-label">{{ g.label }}</span>
+                </NuxtLink>
+              </div>
+            </div>
+
+            <!-- документы -->
+            <div class="admin-nav-group">
+              <div class="admin-nav-row" :class="{ 'admin-nav-row--active': isDocumentsTab }">
+                <NuxtLink to="/admin/documents" class="admin-nav-item" @click="sidebarOpen = false">документы</NuxtLink>
+              </div>
+            </div>
+
+            <!-- дизайнеры -->
+            <div class="admin-nav-group">
+              <div class="admin-nav-row" :class="{ 'admin-nav-row--active': isDesignersTab }">
+                <NuxtLink :to="designersTabTo" class="admin-nav-item" @click="sidebarOpen = false">дизайнеры</NuxtLink>
+                <button type="button" class="admin-nav-expand" @click.stop="designersOpen = !designersOpen">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" :style="{ transform: designersOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .15s' }"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <div v-if="designersOpen" class="admin-nav-sub">
+                <div v-for="d in quickDesigners" :key="d.id" class="admin-nav-sub-row">
+                  <button type="button" class="admin-nav-sub-item admin-nav-sub-item--flex" @click="pickDesigner(d); sidebarOpen = false">
+                    <span class="admin-nav-ini">{{ nameInitials(d.name) }}</span>
+                    <span class="admin-nav-sub-label">{{ d.name }}</span>
+                  </button>
+                  <button
+                    v-if="activeProjectSlug"
+                    type="button"
+                    class="admin-nav-link-btn"
+                    :class="isDesignerLinked(d.id) ? 'admin-nav-link-btn--remove' : 'admin-nav-link-btn--add'"
+                    :disabled="clientActionLoading"
+                    @click.stop="toggleDesignerLink(d.id, d.name)"
+                  >{{ isDesignerLinked(d.id) ? '−' : '+' }}</button>
+                </div>
+                <button type="button" class="admin-nav-see-all" @click="goToAllDesigners">все →</button>
+              </div>
+            </div>
+
+          </div><!-- /admin-nav-body -->
+
+          <!-- Sidebar footer -->
+          <div class="admin-nav-footer">
+            <NuxtLink to="/" class="admin-nav-footer-link">сайт</NuxtLink>
+            <a href="#" class="admin-nav-footer-link" @click.prevent="logout">выйти</a>
           </div>
-        </div>
 
+        </nav>
+      </aside>
 
-      </div><!-- /.admin-tabs -->
+      <!-- Mobile overlay -->
+      <div v-if="sidebarOpen" class="admin-mob-overlay" @click="sidebarOpen = false"></div>
 
-      <slot />
-    </div>
+      <!-- ── Main content ── -->
+      <main class="admin-content">
+        <slot />
+      </main>
+
+    </div><!-- /.admin-container -->
 
     <!-- ── Global search palette ── -->
     <AdminSearch :open="searchOpen" @close="searchOpen = false" />
   </div>
 </template>
-
 <script setup lang="ts">
 const router = useRouter()
 const route  = useRoute()
@@ -474,12 +458,14 @@ function nameInitials(name: string) {
 }
 
 // ── Dropdowns state ─────────────────────────────────────────────
+const sidebarOpen     = ref(false)
 const projectsOpen    = ref(false)
 const contractorsOpen = ref(false)
 const clientsOpen     = ref(false)
-const galleryOpen     = ref(false)
+const galleryOpen     = ref(isGalleryTab.value)
 const designersOpen   = ref(false)
 
+// Keep refs for compat (unused in sidebar but harmless)
 const projectsTabRef    = ref<HTMLElement | null>(null)
 const contractorsTabRef = ref<HTMLElement | null>(null)
 const clientsTabRef     = ref<HTMLElement | null>(null)
@@ -488,12 +474,10 @@ const designersTabRef   = ref<HTMLElement | null>(null)
 
 function closeAll() {
   projectsOpen.value = contractorsOpen.value = clientsOpen.value = galleryOpen.value = designersOpen.value = false
+  sidebarOpen.value = false
 }
 
-function onDocClick(e: MouseEvent) {
-  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value]
-  if (refs.every(r => !r || !r.contains(e.target as Node))) closeAll()
-}
+// sidebar sections don't need click-outside logic
 
 // ── Global search ─────────────────────────────────────────────
 const searchOpen = ref(false)
@@ -506,13 +490,11 @@ function onSearchKeydown(e: KeyboardEvent) {
 }
 
 onMounted(() => {
-  document.addEventListener('click', onDocClick)
   document.addEventListener('keydown', onSearchKeydown)
   useUITheme().initTheme()
   useDesignSystem().initDesignSystem()
 })
 onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onSearchKeydown)
 })
 watch(() => route.fullPath, closeAll)
@@ -584,51 +566,199 @@ async function logout() {
 /* ── Page ── */
 .admin-bg {
   min-height: 100vh;
-  padding-top: calc(28px + var(--dp-panel-h, 0px));
-  transition: padding-top .2s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: var(--ds-font-family);
   font-size: var(--ds-font-size);
   font-weight: var(--ds-font-weight);
   line-height: var(--ds-line-height);
 }
 
-/* ── Header ── */
+/* ── Header (desktop: thin strip; mobile: visible header) ── */
 .admin-header {
-  padding: 13px 24px;
+  position: fixed;
+  top: calc(var(--dp-panel-h, 0px));
+  left: 0; right: 0;
+  height: 44px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 0 0 var(--card-radius) var(--card-radius);
+  border-radius: 0;
+  z-index: 60;
+  transition: top .2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.admin-header-right { display: flex; align-items: center; gap: 10px; }
 .admin-brand {
-  font-size: .68rem;
-  letter-spacing: 2px;
+  font-size: .65rem;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: var(--glass-text);
-  opacity: .45;
+  opacity: .35;
 }
-.admin-header-links { display: flex; gap: 14px; align-items: center; }
-.admin-link {
-  font-size: .78rem;
-  color: var(--glass-text);
-  opacity: .5;
-  text-decoration: none;
+.admin-mob-burger {
+  display: none;
+  background: none; border: none; cursor: pointer;
+  color: var(--glass-text); opacity: .6; padding: 4px;
 }
-.admin-link:hover { opacity: 1; }
 
-/* ── Search button ── */
-.admin-search-btn {
+/* ── Container ── */
+.admin-container {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding-top: calc(44px + var(--dp-panel-h, 0px));
+  max-width: var(--ds-container-width, 1280px);
+  margin: 0 auto;
+  transition: padding-top .2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Sidebar ── */
+.admin-sidebar {
+  width: 210px;
+  flex-shrink: 0;
+  min-height: calc(100vh - 44px - var(--dp-panel-h, 0px));
+  position: sticky;
+  top: calc(44px + var(--dp-panel-h, 0px));
+  height: calc(100vh - 44px - var(--dp-panel-h, 0px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  border-right: 1px solid var(--glass-border);
+  transition: top .2s cubic-bezier(0.16, 1, 0.3, 1), height .2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.admin-sidebar::-webkit-scrollbar { width: 3px; }
+.admin-sidebar::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+.admin-sidebar-logo {
+  padding: 20px 16px 10px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.admin-sidebar-brand {
+  font-size: .62rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  opacity: .3;
+}
+
+/* ── Nav ── */
+.admin-nav { display: flex; flex-direction: column; flex: 1; }
+.admin-nav-body { flex: 1; padding: 10px 0; }
+
+.admin-nav-group {
+  margin-bottom: 1px;
+}
+.admin-nav-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  border-radius: 8px;
+  margin: 0 6px;
+  transition: background .12s;
+}
+.admin-nav-row:hover {
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+}
+.admin-nav-row--active {
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+.admin-nav-item {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: .74rem;
+  color: var(--glass-text);
+  text-decoration: none;
+  opacity: .55;
+  letter-spacing: .04em;
+  font-family: var(--ds-font-family);
+  background: none; border: none; cursor: pointer; text-align: left;
+  transition: opacity .12s;
+}
+.admin-nav-row:hover .admin-nav-item,
+.admin-nav-row--active .admin-nav-item {
+  opacity: 1;
+}
+.admin-nav-row--active .admin-nav-item {
+  font-weight: 600;
+  opacity: 1;
+}
+.admin-nav-expand {
+  width: 28px; height: 28px;
+  flex-shrink: 0;
+  background: none; border: none; cursor: pointer;
+  color: var(--glass-text); opacity: .3;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  transition: opacity .12s, background .12s;
+  margin-right: 4px;
+}
+.admin-nav-expand:hover { opacity: .8; background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
+
+/* Sub-items */
+.admin-nav-sub {
+  padding: 2px 6px 6px 16px;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.admin-nav-sub-row { display: flex; align-items: center; gap: 3px; }
+.admin-nav-sub-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 8px; border-radius: 7px;
+  font-size: .71rem; color: var(--glass-text); opacity: .5;
+  text-decoration: none; background: none; border: none; cursor: pointer;
+  font-family: var(--ds-font-family); text-align: left;
+  transition: opacity .12s, background .12s;
+  width: 100%;
+}
+.admin-nav-sub-item--flex { flex: 1; width: auto; }
+.admin-nav-sub-item:hover { opacity: .9; background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
+.admin-nav-sub-item--active { opacity: 1; font-weight: 600; background: color-mix(in srgb, var(--glass-text) 7%, transparent); }
+.admin-nav-ini {
+  width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  border: 1px solid var(--glass-border);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .56rem; font-weight: 700;
+}
+.admin-nav-sub-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-nav-sub-empty { font-size: .68rem; opacity: .3; padding: 4px 8px; }
+.admin-nav-see-all {
+  font-size: .66rem; opacity: .35; text-align: left; padding: 4px 8px;
+  background: none; border: none; cursor: pointer; color: var(--glass-text);
+  font-family: var(--ds-font-family); border-top: 1px solid var(--glass-border); margin-top: 2px;
+}
+.admin-nav-see-all:hover { opacity: .8; }
+.admin-nav-msg { font-size: .66rem; opacity: .5; padding: 4px 8px; color: var(--glass-text); }
+
+.admin-nav-link-btn {
+  width: 22px; height: 22px; flex-shrink: 0;
+  border-radius: 5px; border: 1px solid var(--glass-border);
+  background: var(--glass-bg); color: var(--glass-text);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all .12s;
+}
+.admin-nav-link-btn--add:hover { background: #10b981; color: white; border-color: #10b981; }
+.admin-nav-link-btn--remove:hover { background: #ef4444; color: white; border-color: #ef4444; }
+.admin-nav-link-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Sidebar footer */
+.admin-nav-footer {
+  padding: 12px 14px;
+  border-top: 1px solid var(--glass-border);
+  display: flex; align-items: center; gap: 10px;
+}
+.admin-nav-footer-link {
+  font-size: .7rem; color: var(--glass-text); opacity: .4;
+  text-decoration: none; font-family: var(--ds-font-family);
+  transition: opacity .12s;
+}
+.admin-nav-footer-link:hover { opacity: 1; }
+
+/* ── Search button (header) ── */
+.admin-search-btn {
+  display: flex; align-items: center; gap: 6px;
   background: color-mix(in srgb, var(--glass-text) 6%, transparent);
   border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-radius: 8px;
-  padding: 4px 10px 4px 8px;
-  cursor: pointer;
-  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
-  font-size: .72rem;
-  transition: background .14s, border-color .14s, color .14s;
+  border-radius: 8px; padding: 4px 10px 4px 8px;
+  cursor: pointer; color: color-mix(in srgb, var(--glass-text) 50%, transparent);
+  font-size: .72rem; transition: background .14s, border-color .14s, color .14s;
   font-family: inherit;
 }
 .admin-search-btn:hover {
@@ -636,170 +766,39 @@ async function logout() {
   border-color: color-mix(in srgb, var(--glass-text) 18%, transparent);
   color: var(--glass-text);
 }
-.admin-search-label {
-  font-size: .7rem;
-}
+.admin-search-label { font-size: .7rem; }
 .admin-search-kbd {
   font-size: .58rem;
   background: color-mix(in srgb, var(--glass-text) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-family: inherit;
+  border-radius: 4px; padding: 1px 5px; font-family: inherit;
   color: color-mix(in srgb, var(--glass-text) 38%, transparent);
 }
 
 .theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
   background: color-mix(in srgb, var(--glass-text) 5%, transparent);
-  color: var(--glass-text);
-  opacity: .65;
-  cursor: pointer;
-  padding: 0;
+  color: var(--glass-text); opacity: .65; cursor: pointer; padding: 0;
   transition: opacity .15s, background .15s, border-color .15s;
 }
-.theme-toggle:hover {
-  opacity: 1;
-  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-color: color-mix(in srgb, var(--glass-text) 22%, transparent);
+.theme-toggle:hover { opacity: 1; background: color-mix(in srgb, var(--glass-text) 10%, transparent); }
+
+.admin-link {
+  font-size: .78rem; color: var(--glass-text); opacity: .5; text-decoration: none;
+}
+.admin-link:hover { opacity: 1; }
+
+/* ── Main content ── */
+.admin-content {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 20px 40px;
+  transition: max-width var(--ds-transition, 180ms ease);
 }
 
-/* ── Container / tabs ── */
-.admin-container { max-width: var(--ds-container-width, 1140px); margin: 22px auto; padding: 0 16px; transition: max-width var(--ds-transition, 180ms ease); }
-.admin-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-/* ── Generic tab pill ── */
-.admin-tab {
-  height: 32px;
-  padding: 0 14px;
-  display: inline-flex;
-  align-items: center;
-  box-sizing: border-box;
-  text-decoration: none;
-  color: var(--glass-text);
-  font-family: var(--ds-font-family);
-  font-size: var(--ds-text-sm, .78rem);
-  line-height: 1;
-  letter-spacing: var(--ds-letter-spacing);
-  opacity: .62;
-  border-radius: 10px;
-  white-space: nowrap;
-  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
-}
-.admin-tab:hover  { opacity: .9; }
-.admin-tab--active { opacity: 1; font-weight: 600; }
-
-/* ── Chip-tab wrapper (label + mini chip) ── */
-.admin-chip-tab {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  gap: 4px;
-}
-.admin-tab-label { /* NuxtLink inheriting .admin-tab */ }
-
-/* Small circle chip — matches tab height */
-.admin-mini-chip {
-  width: 24px; height: 24px;
-  border-radius: 10px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--glass-text);
-  font-size: .6rem;
-  font-weight: var(--ds-heading-weight, 700);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  flex-shrink: 0;
-  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
-}
-.admin-mini-chip--dim {
-  background: transparent;
-  opacity: .38;
-}
-.admin-mini-chip:hover { opacity: 1; background: var(--glass-bg); }
-
-/* ── Dropdown ── */
-.admin-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 240px;
-  max-height: 320px;
-  overflow: auto;
-  border-radius: var(--card-radius, 12px);
-  border: 1px solid var(--glass-border);
-  padding: 6px;
-  z-index: 80;
-  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.10));
-  transition: box-shadow var(--ds-transition, 180ms ease);
-}
-.admin-drop-item {
-  width: 100%; border: none; background: transparent;
-  color: var(--glass-text); border-radius: calc(var(--card-radius, 12px) * 0.65);
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px; text-align: left; cursor: pointer;
-  font-family: var(--ds-font-family); font-size: var(--ds-text-sm, .76rem);
-  transition: background var(--ds-transition, 150ms ease);
-}
-.admin-drop-item:hover { background: color-mix(in srgb, var(--glass-bg) 85%, transparent); }
-.admin-drop-item--active { background: color-mix(in srgb, var(--glass-bg) 94%, transparent); font-weight: 600; }
-.admin-drop-item--flex { flex: 1; }
-.admin-drop-item-with-actions {
-  display: flex; align-items: center; gap: 4px;
-}
-.admin-drop-action-btn {
-  width: 24px; height: 24px; border: none; border-radius: 4px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: all var(--ds-transition, 150ms ease);
-  background: var(--glass-bg); color: var(--glass-text);
-  border: 1px solid var(--glass-border);
-}
-.admin-drop-action-btn--add:hover {
-  background: var(--ds-success, #10b981); color: white; border-color: color-mix(in srgb, var(--ds-success, #10b981) 80%, #000);
-}
-.admin-drop-action-btn--remove:hover {
-  background: var(--ds-error, #ef4444); color: white; border-color: color-mix(in srgb, var(--ds-error, #ef4444) 80%, #000);
-}
-.admin-drop-action-btn:disabled {
-  opacity: 0.4; cursor: not-allowed;
-}
-.admin-drop-add {
-  width: 100%; border: none; background: transparent;
-  color: var(--glass-text); border-radius: calc(var(--card-radius, 12px) * 0.65);
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px; text-align: left; cursor: pointer;
-  font-family: var(--ds-font-family); font-size: var(--ds-text-sm, .76rem);
-  transition: background var(--ds-transition, 150ms ease);
-  border: 1px dashed var(--glass-border); margin: 4px 0;
-}
-.admin-drop-add:hover { background: color-mix(in srgb, var(--glass-bg) 85%, transparent); }
-.admin-drop-divider {
-  height: 1px; background: var(--glass-border); margin: 6px 0;
-}
-.admin-drop-message {
-  font-size: .72rem; padding: 6px 8px; color: var(--glass-text); 
-  opacity: .7; text-align: center; border-radius: 4px;
-  background: color-mix(in srgb, var(--glass-bg) 50%, transparent);
-}
-
-/* ── Modal ─────────────────────────────────────────────── */
+/* ── Modal & shared buttons (kept for pages that use them) ── */
 .a-modal-backdrop {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.35);
@@ -809,198 +808,59 @@ async function logout() {
   z-index: 200;
 }
 .a-modal {
-  background: var(--glass-bg);
-  border: none;
+  background: var(--glass-bg); border: none;
   box-shadow: 0 24px 60px rgba(0,0,0,.18);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   backdrop-filter: blur(24px) saturate(150%);
-  border-radius: 18px;
-  padding: 28px 30px;
-  width: 420px;
-  max-width: 90vw;
+  border-radius: 18px; padding: 28px 30px; width: 420px; max-width: 90vw;
 }
 .a-btn-sm {
-  border: none;
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  padding: 5px 12px;
-  font-size: .78rem;
-  cursor: pointer;
-  font-family: inherit;
-  border-radius: 8px;
-  color: var(--glass-text);
-  opacity: .75;
-  text-decoration: none;
-  display: inline-block;
-  white-space: nowrap;
-  transition: opacity .15s, box-shadow .15s;
+  border: none; background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  padding: 5px 12px; font-size: .78rem; cursor: pointer;
+  font-family: inherit; border-radius: 8px; color: var(--glass-text);
+  opacity: .75; text-decoration: none; display: inline-block;
+  white-space: nowrap; transition: opacity .15s, box-shadow .15s;
 }
-.a-btn-sm:hover {
-  opacity: 1;
-  box-shadow: 0 3px 10px rgba(0,0,0,.1);
-}
-.a-btn-sm:disabled {
-  opacity: .4; cursor: not-allowed;
-}
+.a-btn-sm:hover { opacity: 1; box-shadow: 0 3px 10px rgba(0,0,0,.1); }
+.a-btn-sm:disabled { opacity: .4; cursor: not-allowed; }
 .a-btn-sm--primary {
-  background: var(--glass-text);
-  color: var(--glass-page-bg);
-  opacity: 1;
-  font-weight: 500;
+  background: var(--glass-text); color: var(--glass-page-bg); opacity: 1; font-weight: 500;
 }
-.a-btn-sm--primary:hover {
-  opacity: .85;
+.a-btn-sm--primary:hover { opacity: .85; }
+.a-btn-save {
+  padding: 6px 16px; border-radius: 8px; border: none;
+  background: var(--glass-text); color: var(--glass-page-bg);
+  font-size: .78rem; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: opacity .15s;
 }
-.a-btn-sm--primary:disabled {
-  opacity: .4;
-}
-.admin-drop-ini {
-  width: 22px; height: 22px; border-radius: 10px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  font-size: .58rem; font-weight: 700; flex-shrink: 0;
-}
-.admin-drop-lbl { font-size: .76rem; }
-.admin-drop-empty { font-size: .74rem; opacity: .4; padding: 8px; }
-.admin-drop-all {
-  display: block; padding: 8px 10px;
-  font-size: .72rem; color: var(--glass-text); opacity: .5;
-  text-decoration: none; border-top: 1px solid var(--glass-border); margin-top: 4px;
-}
-.admin-drop-all:hover { opacity: 1; }
-
-/* ══════════════════════════════════════════════════════════════
-   MOBILE RESPONSIVE — admin layout
-   ══════════════════════════════════════════════════════════════ */
-
-/* ── Tablet ── */
-@media (max-width: 1024px) {
-  .admin-container {
-    padding: 0 12px;
-    margin: 18px auto;
-  }
-}
+.a-btn-save:hover { opacity: .85; }
+.a-btn-save:disabled { opacity: .4; cursor: not-allowed; }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .admin-bg {
-    padding-top: calc(20px + var(--dp-panel-h, 0px));
-  }
+  .admin-mob-burger { display: flex; }
+  .admin-search-label, .admin-search-kbd { display: none; }
 
-  .admin-header {
-    padding: 10px 12px;
-    border-radius: 0;
-  }
-  .admin-brand {
-    font-size: .58rem;
-    letter-spacing: 1.2px;
-  }
-  .admin-header-links {
-    gap: 8px;
-  }
-  .admin-link {
-    font-size: .7rem;
-  }
-  .admin-search-label,
-  .admin-search-kbd {
-    display: none;
-  }
-  .admin-search-btn {
-    padding: 5px 7px;
-    border-radius: 7px;
-  }
-
-  .admin-container {
-    padding: 0 10px;
-    margin: 10px auto;
-  }
-
-  /* Tabs — horizontal scroll strip */
-  .admin-tabs {
-    gap: 4px;
-    margin-bottom: 12px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    flex-wrap: nowrap;
-    padding-bottom: 2px;
-  }
-  .admin-tabs::-webkit-scrollbar { display: none; }
-
-  .admin-tab {
-    height: 30px;
-    padding: 0 10px;
-    font-size: .72rem;
-    flex-shrink: 0;
-  }
-
-  .admin-chip-tab {
-    height: 30px;
-    flex-shrink: 0;
-  }
-
-  .admin-mini-chip {
-    width: 22px;
-    height: 22px;
-    font-size: .52rem;
-  }
-
-  /* Dropdowns — full-width overlay on mobile */
-  .admin-dropdown {
+  .admin-sidebar {
     position: fixed;
-    top: auto;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    min-width: 0;
-    max-width: none;
-    max-height: 50vh;
-    border-radius: 16px;
-    box-shadow: 0 -4px 40px rgba(0,0,0,.18);
-    z-index: 200;
+    left: -220px;
+    top: calc(44px + var(--dp-panel-h, 0px));
+    height: calc(100vh - 44px - var(--dp-panel-h, 0px));
+    z-index: 100;
+    width: 210px;
+    border-radius: 0 14px 14px 0;
+    box-shadow: 4px 0 24px rgba(0,0,0,.12);
+    transition: left .2s cubic-bezier(0.16, 1, 0.3, 1), top .2s, height .2s;
+  }
+  .admin-sidebar--open { left: 0; }
+  .admin-sidebar-logo { display: none; }
+
+  .admin-mob-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.3);
+    z-index: 90; backdrop-filter: blur(2px);
   }
 
-  .admin-drop-item {
-    padding: 10px 10px;
-    font-size: .8rem;
-  }
-
-  /* Modal — full width on mobile */
-  .a-modal {
-    width: 100%;
-    max-width: calc(100vw - 20px);
-    max-height: 85vh;
-    padding: 20px 16px;
-    border-radius: 16px;
-    overflow-y: auto;
-  }
+  .admin-content { padding: 14px 12px 32px; }
 }
-
-/* ── Small phones ── */
-@media (max-width: 400px) {
-  .admin-header {
-    padding: 8px 10px;
-  }
-  .admin-container {
-    padding: 0 8px;
-  }
-  .admin-tab {
-    height: 28px;
-    padding: 0 8px;
-    font-size: .68rem;
-  }
-  .admin-chip-tab {
-    height: 28px;
-  }
-  .admin-mini-chip {
-    width: 20px;
-    height: 20px;
-    font-size: .48rem;
-  }
-}
-
-
 </style>

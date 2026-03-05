@@ -177,10 +177,6 @@
               <input type="file" class="glass-input" @change="onFileSelect" />
             </div>
             <div class="docs-field">
-              <label class="docs-label">Или вставьте URL</label>
-              <input v-model="uploadForm.url" class="glass-input" placeholder="https://..." />
-            </div>
-            <div class="docs-field">
               <label class="docs-label">Заметки</label>
               <textarea v-model="uploadForm.notes" rows="2" class="glass-input u-ta" placeholder="дополнительная информация..."></textarea>
             </div>
