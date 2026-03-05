@@ -18,7 +18,9 @@ export async function getEmbedding(text: string): Promise<number[]> {
   })
   if (!resp.ok) throw new Error(`Embeds HTTP ${resp.status}`)
   const data = await resp.json() as { embeddings: number[][] }
-  return data.embeddings[0]
+  const embedding = data.embeddings[0]
+  if (!embedding) throw new Error('Ollama embed: пустой ответ embeddings')
+  return embedding
 }
 
 export interface LegalChunk {

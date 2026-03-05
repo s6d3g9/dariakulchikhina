@@ -4,6 +4,7 @@
  * Times New Roman 14pt, поля A4, выравнивание по ширине, жирные заголовки
  */
 
+import type { ServerResponse } from 'node:http'
 import {
   Document, Packer, Paragraph, TextRun, AlignmentType,
   convertMillimetersToTwip, LineRuleType,
@@ -54,8 +55,7 @@ function textToParagraphs(text: string): Paragraph[] {
   const SIZE = 28 // half-points: 28 = 14pt
   const SIZE_TITLE = 32 // 16pt для главного названия
 
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i]
+  for (const [i, raw] of lines.entries()) {
     const line = raw.trimEnd()
     const type = detectLineType(line, i)
 
@@ -171,7 +171,7 @@ export default defineEventHandler(async (event) => {
 
   const buffer = await Packer.toBuffer(doc)
 
-  const res = event.node.res
+  const res = event.node!.res as ServerResponse
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(docTitle)}.docx`)
   res.setHeader('Content-Length', buffer.length)

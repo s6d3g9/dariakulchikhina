@@ -30,18 +30,14 @@ export type AiPayload = {
 }
 
 function getCsrfToken(): string {
-  return document.cookie
-    .split('; ')
-    .find(c => c.startsWith('csrf_token='))
-    ?.split('=')[1]
-    ? decodeURIComponent(document.cookie.split('; ').find(c => c.startsWith('csrf_token='))!.split('=')[1])
-    : ''
+  const raw = document.cookie.split('; ').find(c => c.startsWith('csrf_token='))?.split('=')[1]
+  return raw ? decodeURIComponent(raw) : ''
 }
 
 export function useAiDocument() {
   const aiLoading      = ref(false)
   const aiError        = ref('')
-  const aiAction       = ref<'generate' | 'improve' | 'review' | ''>('')
+  const aiAction       = ref<'generate' | 'improve' | 'review' | 'chat' | 'continue' | ''>('')
   const aiProgress     = ref('')   // текущий статус-текст для пользователя
   const aiElapsed      = ref(0)    // секунды с момента старта
   const aiTokenCount   = ref(0)    // кол-во символов от модели

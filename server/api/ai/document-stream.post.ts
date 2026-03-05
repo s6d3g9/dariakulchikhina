@@ -4,6 +4,7 @@
  * provider авто-определяется по имени модели: claude-* → Anthropic, остальные → Ollama
  */
 
+import type { ServerResponse } from 'node:http'
 import { useDb } from '~/server/db/index'
 import { projects, clients, contractors, pageContent } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
@@ -65,7 +66,7 @@ export default defineEventHandler(async (event) => {
     : { context: '', chunks: [] }
 
   // ── SSE-заголовки ─────────────────────────────────────────────
-  const res = event.node.res
+  const res = event.node!.res as ServerResponse
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
   res.setHeader('Cache-Control', 'no-cache, no-transform')
   res.setHeader('Connection', 'keep-alive')

@@ -1,5 +1,5 @@
-import { useDb } from '~/server/db/index'
-import { sellers } from '~/server/db/schema'
+import { useDb } from '../../db/index'
+import { sellers } from '../../db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 
