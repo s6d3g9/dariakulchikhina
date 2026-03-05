@@ -1030,18 +1030,22 @@ async function unlinkDesigner(designerId: number) {
 .proj-client-btn-sm:hover:not(:disabled) { opacity: .8; }
 
 /* ── Layout ── */
-.proj-content-area { display: flex; align-items: flex-start; gap: 0; }
+.proj-content-area {
+  /* space for the fixed sidebar */
+  padding-left: calc(var(--ds-sidebar-width, 200px) + 24px);
+}
 
-/* Nav column ── */
+/* Nav column — fixed, always flush to bottom ── */
 .proj-nav-col {
-  position: sticky;
-  top: 80px;
-  align-self: flex-start;
-  flex-shrink: 0;
-  height: calc(100vh - 80px);
+  position: fixed;
+  /* align to admin-container left edge + 24px padding */
+  left: max(24px, calc((100vw - var(--ds-container-width, 1140px)) / 2 + 24px));
+  top: var(--admin-nav-top, 138px);
+  bottom: 0;
+  width: var(--ds-sidebar-width, 200px);
   overflow-y: auto;
   overflow-x: hidden;
-  margin-right: 20px;
+  z-index: 10;
   /* thin scrollbar */
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--glass-text) 20%, transparent) transparent;
@@ -1055,17 +1059,19 @@ async function unlinkDesigner(designerId: number) {
 
 /* ── Left sidebar nav ── */
 .proj-sidenav {
-  width: var(--ds-sidebar-width, 200px); flex-shrink: 0;
-  padding: 0 10px 24px;
+  width: 100%;
+  padding: 0 10px 32px;
 }
 
-/* ── Sticky search in sidebar ── */
+/* ── Sticky search in sidebar (sticks inside fixed nav col) ── */
 .proj-nav-search {
   position: sticky;
   top: 0;
   z-index: 4;
   padding: 10px 0 6px;
   background: var(--glass-page-bg);
+  /* subtle right-edge fade separator */
+  box-shadow: 0 3px 8px -4px color-mix(in srgb, var(--glass-page-bg) 80%, transparent);
 }
 .proj-nav-search-input {
   width: 100%;
@@ -1112,7 +1118,7 @@ async function unlinkDesigner(designerId: number) {
 }
 
 /* ── Right content ── */
-.proj-main { flex: 1; min-width: 0; }
+.proj-main { width: 100%; min-width: 0; }
 .proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
 
 /* ── Section switch fade ── */
@@ -1346,11 +1352,11 @@ async function unlinkDesigner(designerId: number) {
 
 /* ── Tablet ── */
 @media (max-width: 1024px) {
-  .proj-sidenav {
+  .proj-nav-col {
     width: 160px;
   }
-  .proj-nav-col {
-    margin-right: 12px;
+  .proj-content-area {
+    padding-left: calc(160px + 20px);
   }
 }
 
@@ -1362,10 +1368,9 @@ async function unlinkDesigner(designerId: number) {
   /* Hide desktop left sidebar */
   .proj-nav-col { display: none !important; }
 
-  /* Stack content vertically */
+  /* Reset reserved space for fixed sidebar */
   .proj-content-area {
-    flex-direction: column;
-    gap: 0;
+    padding-left: 0;
   }
 
   .proj-main {
