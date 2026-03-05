@@ -732,14 +732,6 @@ async function logout() {
 }
 
 /* ── Header ── */
-/* ── Admin layout measurements exposed as CSS vars ── */
-:root {
-  --admin-header-h: 48px;
-  --admin-tabs-h:   67px; /* 38px tab + 28px margin-bottom + 1px border */
-  --admin-container-mt: 22px;
-  --admin-nav-top: calc(var(--admin-header-h) + var(--admin-container-mt) + var(--admin-tabs-h));
-}
-
 .admin-header {
   padding: 12px 24px;
   display: flex;
@@ -1191,4 +1183,14 @@ async function logout() {
 }
 
 
+</style>
+
+<!-- Admin layout measurements as global CSS vars (must NOT be scoped) -->
+<style>
+:root {
+  --admin-header-h: 48px;
+  --admin-tabs-h:   67px; /* 38px tab + 28px margin-bottom + 1px border */
+  --admin-container-mt: 22px;
+  --admin-nav-top: calc(var(--admin-header-h) + var(--admin-container-mt) + var(--admin-tabs-h));
+}
 </style>
