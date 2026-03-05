@@ -7,8 +7,7 @@
     </div>
     <div class="ent-layout ent-layout--with-stats">
       <nav class="ent-sidebar std-sidenav">
-        <AdminSidebarSwitcher title="подрядчики" :count="contractors?.length ?? 0" />
-        <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
+        <AdminSidebarSwitcher title="подрядчики" :count="contractors?.length ?? 0" v-model="searchQuery" />
         <div class="std-nav">
           <template v-if="pending && !hasContractorsCache">
             <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />

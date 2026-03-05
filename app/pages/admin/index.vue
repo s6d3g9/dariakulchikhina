@@ -3,8 +3,7 @@
     <div class="ent-layout ent-layout--with-stats">
       <!-- ═══ Sidebar ═══ -->
       <nav class="ent-sidebar std-sidenav">
-        <AdminSidebarSwitcher title="проекты" :count="projects?.length ?? 0" />
-        <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
+        <AdminSidebarSwitcher title="проекты" :count="projects?.length ?? 0" v-model="searchQuery" />
         <div class="std-nav">
           <template v-if="pending && !hasProjectsCache">
             <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />

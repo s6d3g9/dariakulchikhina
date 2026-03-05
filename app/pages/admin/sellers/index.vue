@@ -2,8 +2,7 @@
   <div>
     <div class="ent-layout ent-layout--with-stats">
       <nav class="ent-sidebar std-sidenav">
-        <AdminSidebarSwitcher title="поставщики" :count="allSellers?.length ?? 0" />
-        <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
+        <AdminSidebarSwitcher title="поставщики" :count="allSellers?.length ?? 0" v-model="searchQuery" />
         <div class="std-nav">
           <template v-if="pending">
             <div class="ent-nav-skeleton" v-for="i in 3" :key="i" />

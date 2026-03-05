@@ -15,6 +15,23 @@
       </svg>
     </button>
 
+    <!-- ── Поиск (всегда виден) ── -->
+    <div class="esw-search-wrap">
+      <svg class="esw-search-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+        <path d="M8 8l2.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <input
+        class="esw-search"
+        type="search"
+        :value="modelValue"
+        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+        placeholder="поиск..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </div>
+
     <!-- ── Выпадающий список разделов ── -->
     <Transition name="esw-drop">
       <nav v-if="open" class="esw-dropdown" @click.stop>
@@ -36,6 +53,11 @@
 const props = defineProps<{
   title: string
   count?: number
+  modelValue?: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', val: string): void
 }>()
 
 const route  = useRoute()
@@ -141,18 +163,49 @@ onBeforeUnmount(() => document.removeEventListener('click', onOutsideClick))
   opacity: .6;
 }
 
+/* ── Search ── */
+.esw-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+.esw-search-icon {
+  color: var(--glass-text);
+  opacity: .30;
+  flex-shrink: 0;
+}
+.esw-search {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--ds-font-family, inherit);
+  font-size: .70rem;
+  color: var(--glass-text);
+  opacity: .55;
+  letter-spacing: 0.05em;
+  padding: 2px 0;
+  width: 100%;
+  transition: opacity .15s;
+}
+.esw-search::placeholder {
+  opacity: .40;
+  color: var(--glass-text);
+}
+.esw-search:focus { opacity: 1; }
+/* убираем X и иконку лупы из нативного input[type=search] */
+.esw-search::-webkit-search-decoration,
+.esw-search::-webkit-search-cancel-button { display: none; }
+
 /* ── Dropdown ── */
 .esw-dropdown {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  right: 0;
+  position: relative;
   background: var(--glass-page-bg);
-  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
-  border-radius: 0;
-  z-index: 120;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  z-index: 1;
   padding: 4px 0;
-  box-shadow: 0 8px 24px rgba(0,0,0,.10);
 }
 
 /* ── Items ── */
