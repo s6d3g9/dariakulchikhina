@@ -37,6 +37,7 @@
 
 | Файл | Строк | HC | RGB | TK | DK | GL | Статус |
 |------|-------|----|-----|----|----|----|--------|
+| [AppAutocomplete.vue](../app/components/AppAutocomplete.vue) | 194 | 0 | **4** | 12 | 0 | 5 | 🟡 rgba без dark |
 | [AdminDocumentEditor.vue](../app/components/AdminDocumentEditor.vue) | 2593 | **87** | 8 | 127 | 6 | 62 | 🟡 смешанный |
 | [contractor/[id]/index.vue](../app/pages/contractor/[id]/index.vue) | 2872 | **57** | 85 | 70 | 4 | 116 | 🟡 смешанный |
 | [admin/projects/[slug].vue](../app/pages/admin/projects/[slug].vue) | 1465 | **48** | 1 | 66 | 1 | 40 | 🟡 смешанный |
@@ -67,6 +68,11 @@
 
 | Файл | Строк | HC | RGB | TK | DK | GL | Статус |
 |------|-------|----|-----|----|----|----|--------|
+| [AdminClientSignOff.vue](../app/components/AdminClientSignOff.vue) | 133 | 6 | 0 | 6 | 0 | 6 | 🟢 |
+| [AdminPageContent.vue](../app/components/AdminPageContent.vue) | 81 | 1 | 0 | 2 | 0 | 4 | 🟢 |
+| [ClientContactDetails.vue](../app/components/ClientContactDetails.vue) | 323 | 4 | 0 | 15 | 0 | 25 | 🟢 |
+| [ClientPassport.vue](../app/components/ClientPassport.vue) | 185 | 2 | 0 | 8 | 0 | 17 | 🟢 |
+| [ClientWorkProgress.vue](../app/components/ClientWorkProgress.vue) | 166 | 2 | 8 | 23 | 0 | 22 | 🟢 rgba→color-mix |
 | [AdminClientProfile.vue](../app/components/AdminClientProfile.vue) | 545 | 9 | 0 | 31 | 0 | 40 | 🟢 |
 | [AdminTZ.vue](../app/components/AdminTZ.vue) | 285 | 9 | 0 | 16 | 0 | 21 | 🟢 |
 | [AdminSmartBrief.vue](../app/components/AdminSmartBrief.vue) | 479 | 8 | 0 | 15 | 0 | 19 | 🟢 |
@@ -92,6 +98,8 @@
 
 | Файл | Строк | TK | GL |
 |------|-------|----|-----|
+| [AdminProcurementList.vue](../app/components/AdminProcurementList.vue) | 167 | 6 | 18 |
+| [AdminSidebarSwitcher.vue](../app/components/AdminSidebarSwitcher.vue) | 135 | 4 | 4 |
 | [AdminContractorCabinet.vue](../app/components/AdminContractorCabinet.vue) | 901 | 6 | 70 |
 | [AdminProjectStatusBar.vue](../app/components/AdminProjectStatusBar.vue) | 417 | 26 | 30 |
 | [AdminPhaseDetail.vue](../app/components/AdminPhaseDetail.vue) | 364 | 28 | 13 |
@@ -126,11 +134,11 @@
 | Категория | Кол-во файлов | Хардкоды (hex) | Задача |
 |-----------|---------------|----------------|--------|
 | 🔴 Критичные | 8 | ~367 | Полная замена |
-| 🟡 Средние | 23 | ~434 | Замена hex, добавление dark |
-| 🟢 Почти готовы | 18 | ~118 | Финишная чистка |
-| ✅ Чистые | 11 | 0 | Контроль не нужен |
+| 🟡 Средние | 24 | ~434 | Замена hex, добавление dark |
+| 🟢 Почти готовы | 23 | ~123 | Финишная чистка |
+| ✅ Чистые | 13 | 0 | Контроль не нужен |
 | 📄 Заглушки | 8 | 0 | Пропустить |
-| **Итого** | **68** (без UIDesignPanel) | **~919** | — |
+| **Итого** | **76** (без UIDesignPanel) | **~924** | — |
 
 ---
 
@@ -146,9 +154,15 @@
 7. 🔴 AdminWorkLog.vue (39 hex)
 8. 🔴 ClientTimeline.vue (36 hex)
 9. 🔴 ClientInitiation.vue (38 hex)
-10. 🟡 AdminDocumentEditor.vue (87 hex)    [большой, но уже 127 TK]
-11. 🟡 contractor/[id]/index.vue (57 hex)  [большой, уже 70 TK]
-12. 🟡 admin/projects/[slug].vue (48 hex)
-13. Остальные 🟡 по убыванию HC
-14. 🟢 финишная чистка
+10. 🟡 AppAutocomplete.vue (4 rgba)         [rgba → color-mix]
+11. 🟡 AdminDocumentEditor.vue (87 hex)    [большой, но уже 127 TK]
+12. 🟡 contractor/[id]/index.vue (57 hex)  [большой, уже 70 TK]
+13. 🟡 admin/projects/[slug].vue (48 hex)
+14. Остальные 🟡 по убыванию HC
+15. 🟢 ClientWorkProgress.vue (2 hex + 8 rgba)  [rgba → color-mix]
+16. 🟢 AdminClientSignOff.vue (6 hex)
+17. 🟢 ClientContactDetails.vue (4 hex)
+18. 🟢 ClientPassport.vue (2 hex)
+19. 🟢 AdminPageContent.vue (1 hex)
+20. 🟢 финишная чистка остальных
 ```

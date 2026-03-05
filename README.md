@@ -416,6 +416,24 @@ pnpm deploy:metrics:follow      # Онлайн-просмотр
 5. [Правила синхронизации Roadmap](docs/roadmap-sync-rules.md)
 6. [BPMN: Workflow премиальной квартиры](docs/bpmn/apartment-premium-workflow.md)
 
+## UI / Дизайн-документация
+
+- [UI_INTERFACE.md](docs/UI_INTERFACE.md) — полная спецификация интерфейса, маршруты, компоненты, алгоритмы переходов
+- [UI_RULES.md](docs/UI_RULES.md) — компактный справочник для разработки (читать перед правкой компонентов)
+- [DESIGN_EDITOR.md](docs/DESIGN_EDITOR.md) — справочник редактора стилей (UIDesignPanel)
+
+## RAG-файлы для AI-агентов
+
+> Читать перед рефакторингом CSS и Vue-компонентов
+
+- [TOKEN_MAP.md](docs/rag/TOKEN_MAP.md) — замены hardcoded → var(--token)
+- [CLASS_DICTIONARY.md](docs/rag/CLASS_DICTIONARY.md) — все CSS-классы дизайн-системы
+- [COMPONENT_AUDIT.md](docs/rag/COMPONENT_AUDIT.md) — состояние каждого компонента (76 файлов)
+- [DARK_MODE.md](docs/rag/DARK_MODE.md) — правила поддержки тёмной темы
+- [REFACTOR_PATTERNS.md](docs/rag/REFACTOR_PATTERNS.md) — паттерны БЫЛО → СТАЛО
+- [COMPOSABLES_MAP.md](docs/rag/COMPOSABLES_MAP.md) — карта всех composables и их API
+- [API_ENDPOINTS.md](docs/rag/API_ENDPOINTS.md) — карта всех 95+ API-эндпоинтов
+
 ---
 
 ## Правило по авторизации
