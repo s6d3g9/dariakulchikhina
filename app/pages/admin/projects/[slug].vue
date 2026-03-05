@@ -67,70 +67,82 @@
         <!-- Left sidebar: vertical nav -->
         <nav class="proj-sidenav std-sidenav">
 
-          <!-- CLIENT PREVIEW MODE -->
+          <!-- ── CLIENT PREVIEW MODE ── -->
           <template v-if="clientPreviewMode">
-            <div class="proj-preview-banner">
-              <span class="proj-preview-label">👁 клиент</span>
-              <NuxtLink :to="`/admin/projects/${slug}`" class="proj-preview-exit">× выйти</NuxtLink>
+            <!-- fixed header -->
+            <div class="proj-nav-header">
+              <div class="proj-preview-banner">
+                <span class="proj-preview-label">👁 клиент</span>
+                <NuxtLink :to="`/admin/projects/${slug}`" class="proj-preview-exit">× выйти</NuxtLink>
+              </div>
+              <!-- Link client to project (if none linked yet) -->
+              <div v-if="!linkedClients.length" class="proj-client-link-inline">
+                <select v-model="selectedClientId" class="u-status-sel">
+                  <option value="">— привязать клиента —</option>
+                  <option v-for="c in clients" :key="c.id" :value="String(c.id)">
+                    {{ c.name }}
+                  </option>
+                </select>
+                <button class="proj-client-btn-sm" :disabled="!selectedClientId || linkingClient" @click="linkClientToProject">
+                  {{ linkingClient ? '...' : '✓' }}
+                </button>
+              </div>
+              <div v-else class="proj-client-link-inline proj-client-link-inline--name">
+                <span class="proj-client-linked-name">{{ linkedClients.map(c => c.name).join(', ') }}</span>
+              </div>
             </div>
-            <!-- Link client to project (if none linked yet) -->
-            <div v-if="!linkedClients.length" class="proj-client-link-inline">
-              <select v-model="selectedClientId" class="u-status-sel">
-                <option value="">— привязать клиента —</option>
-                <option v-for="c in clients" :key="c.id" :value="String(c.id)">
-                  {{ c.name }}
-                </option>
-              </select>
-              <button class="proj-client-btn-sm" :disabled="!selectedClientId || linkingClient" @click="linkClientToProject">
-                {{ linkingClient ? '...' : '✓' }}
+            <!-- scrollable list -->
+            <div class="proj-nav-body">
+              <button
+                v-for="pg in clientNavPages" :key="pg.slug"
+                class="proj-sidenav-item std-nav-item"
+                :class="{ 'proj-sidenav-item--active': clientActivePage === pg.slug, 'std-nav-item--active': clientActivePage === pg.slug }"
+                @click="selectClientPage(pg.slug)"
+              >
+                <span v-if="pg.icon" class="proj-sidenav-icon">{{ pg.icon }}</span>
+                {{ pg.title }}
               </button>
+              <div v-if="!clientNavPages.length" class="proj-sidenav-empty">Нет страниц для клиента</div>
             </div>
-            <div v-else class="proj-client-link-inline proj-client-link-inline--name">
-              <span class="proj-client-linked-name">{{ linkedClients.map(c => c.name).join(', ') }}</span>
-            </div>
-            <button
-              v-for="pg in clientNavPages" :key="pg.slug"
-              class="proj-sidenav-item std-nav-item"
-              :class="{ 'proj-sidenav-item--active': clientActivePage === pg.slug, 'std-nav-item--active': clientActivePage === pg.slug }"
-              @click="selectClientPage(pg.slug)"
-            >
-              <span v-if="pg.icon" class="proj-sidenav-icon">{{ pg.icon }}</span>
-              {{ pg.title }}
-            </button>
-            <div v-if="!clientNavPages.length" class="proj-sidenav-empty">Нет страниц для клиента</div>
           </template>
 
-          <!-- ADMIN NAV -->
+          <!-- ── ADMIN NAV ── -->
           <template v-else-if="!contractorPreviewMode">
-            <!-- Sticky search -->
-            <div class="proj-nav-search">
-              <input
-                v-model="navSearch"
-                class="proj-nav-search-input"
-                type="search"
-                placeholder="поиск..."
-                autocomplete="off"
-              />
-            </div>
-            <button
-              v-if="overviewMatchesSearch"
-              class="proj-sidenav-item std-nav-item"
-              :class="{ 'proj-sidenav-item--active': activePage === 'overview', 'std-nav-item--active': activePage === 'overview' }"
-              @click="selectAdminPage('overview')"
-              style="margin-bottom:8px"
-            ><span class="proj-sidenav-icon">◈</span> обзор</button>
-            <template v-for="(group, gi) in filteredNavGroups" :key="group.label">
-              <div class="proj-sidenav-group" v-if="group.pages.length">
-                <div class="proj-sidenav-group-label std-nav-group-label">{{ group.label }}</div>
-                <button
-                  v-for="pg in group.pages"
-                  :key="pg.slug"
-                  class="proj-sidenav-item std-nav-item"
-                  :class="{ 'proj-sidenav-item--active': activePage === pg.slug, 'std-nav-item--active': activePage === pg.slug }"
-                  @click="selectAdminPage(pg.slug)"
-                >{{ pg.title }}</button>
+            <!-- fixed header: search + overview -->
+            <div class="proj-nav-header">
+              <div class="proj-nav-search">
+                <input
+                  v-model="navSearch"
+                  class="proj-nav-search-input"
+                  type="search"
+                  placeholder="поиск..."
+                  autocomplete="off"
+                />
               </div>
-            </template>
+              <button
+                v-if="overviewMatchesSearch"
+                class="proj-sidenav-item std-nav-item proj-sidenav-item--overview"
+                :class="{ 'proj-sidenav-item--active': activePage === 'overview', 'std-nav-item--active': activePage === 'overview' }"
+                @click="selectAdminPage('overview')"
+              ><span class="proj-sidenav-icon">◈</span> обзор</button>
+            </div>
+            <!-- scrollable groups -->
+            <div class="proj-nav-body">
+              <template v-for="group in filteredNavGroups" :key="group.label">
+                <div class="proj-sidenav-group" v-if="group.pages.length">
+                  <div class="proj-sidenav-group-label std-nav-group-label"
+                    :class="{ 'proj-sidenav-group-label--active': group.isActiveGroup }"
+                  >{{ group.label }}</div>
+                  <button
+                    v-for="pg in group.pages"
+                    :key="pg.slug"
+                    class="proj-sidenav-item std-nav-item"
+                    :class="{ 'proj-sidenav-item--active': activePage === pg.slug, 'std-nav-item--active': activePage === pg.slug }"
+                    @click="selectAdminPage(pg.slug)"
+                  >{{ pg.title }}</button>
+                </div>
+              </template>
+            </div>
           </template>
 
         </nav>
@@ -764,18 +776,43 @@ const navGroups = computed(() => {
 
 const navSearch = ref('')
 
+// Group label of the currently active page
+const activeGroupLabel = computed(() =>
+  navGroups.value.find(g => g.pages.some(p => p.slug === activePage.value))?.label ?? null
+)
+
 const filteredNavGroups = computed(() => {
   const q = navSearch.value.trim().toLowerCase()
-  if (!q) return navGroups.value
-  return navGroups.value
-    .map(group => ({
-      ...group,
-      pages: group.pages.filter(p =>
-        p.title.toLowerCase().includes(q) ||
-        (p.icon && p.icon.toLowerCase().includes(q))
-      ),
-    }))
-    .filter(group => group.pages.length > 0)
+  const activeGroup = activeGroupLabel.value
+
+  const base = navGroups.value.map(group => {
+    const isActiveGroup = group.label === activeGroup
+    if (!q) return { ...group, isActiveGroup }
+
+    // When searching: within the active group boost the active page to top
+    let pages = group.pages.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      (p.icon && p.icon.toLowerCase().includes(q))
+    )
+    if (isActiveGroup) {
+      // Active page floats to TOP of results even if it matched elsewhere
+      const activeIdx = pages.findIndex(p => p.slug === activePage.value)
+      if (activeIdx > 0) {
+        const [ap] = pages.splice(activeIdx, 1)
+        pages = [ap, ...pages]
+      }
+    }
+    return { ...group, pages, isActiveGroup }
+  }).filter(group => group.pages.length > 0)
+
+  if (!q) return base
+
+  // Sort: group of the current page comes first
+  return [...base].sort((a, b) => {
+    if (a.isActiveGroup) return -1
+    if (b.isActiveGroup) return 1
+    return 0
+  })
 })
 
 const overviewMatchesSearch = computed(() => {
@@ -1035,43 +1072,80 @@ async function unlinkDesigner(designerId: number) {
   padding-left: calc(var(--ds-sidebar-width, 200px) + 24px);
 }
 
-/* Nav column — fixed, always flush to bottom ── */
+/* Nav column — fixed, full-height, flex column ── */
 .proj-nav-col {
   position: fixed;
-  /* align to admin-container left edge + 24px padding */
   left: max(24px, calc((100vw - var(--ds-container-width, 1140px)) / 2 + 24px));
   top: var(--admin-nav-top, 138px);
   bottom: 0;
   width: var(--ds-sidebar-width, 200px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* children handle their own scroll */
+  z-index: 10;
+}
+
+/* ── Left sidebar nav — fills the column ── */
+.proj-sidenav {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* ── Header: always visible, never scrolls ── */
+.proj-nav-header {
+  flex-shrink: 0;
+  padding: 10px 10px 4px;
+  background: var(--glass-page-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  z-index: 4;
+}
+
+/* ── Search input ── */
+.proj-nav-search {
+  margin-bottom: 4px;
+}
+.proj-nav-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: .74rem;
+  padding: 5px 9px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  background: color-mix(in srgb, var(--glass-bg) 50%, transparent);
+  color: var(--glass-text);
+  outline: none;
+  font-family: inherit;
+  transition: border-color .15s;
+}
+.proj-nav-search-input:focus {
+  border-color: color-mix(in srgb, var(--ds-accent, #7c6ef7) 55%, transparent);
+}
+.proj-nav-search-input::placeholder { opacity: .45; }
+.proj-nav-search-input::-webkit-search-cancel-button { display: none; }
+
+/* overview button lives in header — compact */
+.proj-sidenav-item--overview {
+  margin: 2px 0 0;
+}
+
+/* ── Scrollable nav body ── */
+.proj-nav-body {
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  z-index: 10;
-  /* thin scrollbar */
+  padding: 8px 10px 32px;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--glass-text) 20%, transparent) transparent;
 }
-.proj-nav-col::-webkit-scrollbar { width: 3px; }
-.proj-nav-col::-webkit-scrollbar-track { background: transparent; }
-.proj-nav-col::-webkit-scrollbar-thumb {
+.proj-nav-body::-webkit-scrollbar { width: 3px; }
+.proj-nav-body::-webkit-scrollbar-track { background: transparent; }
+.proj-nav-body::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--glass-text) 22%, transparent);
   border-radius: 2px;
-}
-
-/* ── Left sidebar nav ── */
-.proj-sidenav {
-  width: 100%;
-  padding: 0 10px 32px;
-}
-
-/* ── Sticky search in sidebar (sticks inside fixed nav col) ── */
-.proj-nav-search {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  padding: 10px 0 6px;
-  background: var(--glass-page-bg);
-  /* subtle right-edge fade separator */
-  box-shadow: 0 3px 8px -4px color-mix(in srgb, var(--glass-page-bg) 80%, transparent);
 }
 .proj-nav-search-input {
   width: 100%;
@@ -1098,7 +1172,10 @@ async function unlinkDesigner(designerId: number) {
   font-size: .62rem; font-weight: 600;
   text-transform: uppercase; letter-spacing: .07em;
   color: var(--glass-text); opacity: .48; margin-bottom: 6px; padding-left: 10px;
+  transition: opacity .12s;
 }
+/* Active group label is slightly more prominent when searching */
+.proj-sidenav-group-label--active { opacity: .72; }
 
 .proj-sidenav-item {
   display: block; width: 100%; text-align: left;
@@ -1369,9 +1446,7 @@ async function unlinkDesigner(designerId: number) {
   .proj-nav-col { display: none !important; }
 
   /* Reset reserved space for fixed sidebar */
-  .proj-content-area {
-    padding-left: 0;
-  }
+  .proj-content-area { padding-left: 0; }
 
   .proj-main {
     width: 100%;
