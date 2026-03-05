@@ -8,61 +8,17 @@
     <div class="proj-content-area">
 
       <div class="proj-nav-col">
-      <AdminNestedNav
-          :depth="navDepth"
-          :layer-data="layerData"
-          :model-value="currentSearch"
-          @update:model-value="onSearch"
+        <AdminNestedNav
+          :node="currentNode"
+          :direction="slideDir"
+          :can-go-back="navDepth > 0"
+          :back-label="navDepth > 0 ? 'разделы' : ''"
+          :active-key="selectedId ? String(selectedId) : undefined"
           @back="onBack"
+          @drill="onDrill"
+          @select="onSelect"
         >
-          <!-- Layer 0: section type grid -->
-          <template #layer0>
-            <div class="ann-type-grid">
-              <NuxtLink
-                v-for="s in ADMIN_SECTIONS"
-                :key="s.key"
-                :to="s.to"
-                class="ann-type-btn"
-                :class="{ 'ann-type-btn--active': s.key === 'contractors' }"
-              >
-                <span class="ann-type-icon">{{ s.icon }}</span>
-                <span>{{ s.label }}</span>
-              </NuxtLink>
-            </div>
-          </template>
-          <!-- Layer 1: entity list -->
-          <template #layer1>
-            <div class="std-nav">
-                      <template v-if="pending && !hasContractorsCache">
-                        <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
-                      </template>
-                      <template v-else>
-                        <!-- Companies -->
-                        <template v-for="company in filteredCompanies" :key="'c-' + company.id">
-                          <div class="ent-group-label">{{ company.name }}</div>
-                          <button class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === company.id }" @click="selectContractor(company)">
-                            <span class="ent-nav-avatar ct-av--company">{{ company.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                            <span class="ent-nav-name">{{ company.companyName || company.name }}<span class="ent-nav-sub">подрядчик</span></span>
-                          </button>
-                          <button v-for="m in (mastersByParent.get(company.id) || [])" :key="m.id" class="ent-nav-item ct-nav-master" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
-                            <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                            <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
-                          </button>
-                        </template>
-                        <!-- Standalone masters -->
-                        <template v-if="filteredStandalone.length">
-                          <div class="ent-group-label">частные мастера</div>
-                          <button v-for="m in filteredStandalone" :key="m.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
-                            <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                            <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
-                          </button>
-                        </template>
-                        <div v-if="searchQuery && !filteredCompanies.length && !filteredStandalone.length" class="ent-nav-empty">ничего не найдено</div>
-                        <div v-else-if="!contractors?.length" class="ent-nav-empty">нет подрядчиков</div>
-                      </template>
-                    </div>
-          </template>
-          <template #footer1>
+          <template v-if="navDepth === 1" #footer>
             <button class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button>
           </template>
         </AdminNestedNav>
@@ -233,31 +189,73 @@
 </template>
 
 <script setup lang="ts">
+import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
+
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 // ── Nav state ──
-const ADMIN_SECTIONS = [
-  { key: 'projects',    icon: '◈', label: 'проекты',    to: '/admin' },
-  { key: 'clients',     icon: '◐', label: 'клиенты',    to: '/admin/clients' },
-  { key: 'contractors', icon: '◒', label: 'подрядчики', to: '/admin/contractors' },
-  { key: 'designers',   icon: '◓', label: 'дизайнеры',  to: '/admin/designers' },
-  { key: 'sellers',     icon: '◑', label: 'продавцы',   to: '/admin/sellers' },
-] as const
-const navDepth = ref<0 | 1 | 2>(1)
-const navSearch0 = ref('')
-const currentSearch = computed(() => navDepth.value === 0 ? navSearch0.value : searchQuery.value)
-function onSearch(v: string) {
-  if (navDepth.value === 0) navSearch0.value = v
-  else searchQuery.value = v
+const ADMIN_ROUTES: Record<string, string> = {
+  projects: '/admin',
+  clients: '/admin/clients',
+  designers: '/admin/designers',
+  sellers: '/admin/sellers',
 }
-function onBack() {
-  if (navDepth.value === 1) navDepth.value = 0
-  else if (navDepth.value === 2) navDepth.value = 1
-}
-const layerData = computed(() => [
-  { title: 'разделы' },
-  { title: 'подрядчики', count: allContractors?.length ?? 0, backLabel: 'разделы' },
-  { title: '', backLabel: 'подрядчики' },
+
+const navDepth = ref<0 | 1>(1)
+const slideDir = ref<'fwd' | 'back'>('fwd')
+
+const allContractorItems = computed(() => {
+  const items: NavItem[] = []
+  for (const c of companies.value) {
+    items.push({ key: String(c.id), label: c.companyName || c.name, sub: 'подрядчик' })
+    for (const m of mastersByParent.value.get(c.id) || []) {
+      items.push({ key: String(m.id), label: m.name, sub: m.workTypes?.join(', ') || c.name })
+    }
+  }
+  for (const m of standaloneMasters.value) {
+    items.push({ key: String(m.id), label: m.name, sub: m.workTypes?.join(', ') || 'частный мастер' })
+  }
+  return items
+})
+
+const nodes = computed((): NavNode[] => [
+  {
+    key: 'root',
+    title: 'разделы',
+    items: [
+      { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
+      { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
+      { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
+      { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
+      { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
+    ],
+  },
+  {
+    key: 'contractors',
+    title: 'подрядчики',
+    count: contractors.value?.length,
+    emptyText: 'нет подрядчиков',
+    items: allContractorItems.value,
+  },
 ])
+
+const currentNode = computed(() => nodes.value[navDepth.value])
+
+function onDrill(item: NavItem) {
+  if (navDepth.value === 0) {
+    if (item.key === 'contractors') { slideDir.value = 'fwd'; navDepth.value = 1 }
+    else if (ADMIN_ROUTES[item.key]) navigateTo(ADMIN_ROUTES[item.key])
+  }
+}
+
+function onSelect(item: NavItem) {
+  const c = contractors.value?.find((x: any) => String(x.id) === item.key)
+  if (c) selectContractor(c)
+}
+
+function onBack() {
+  slideDir.value = 'back'
+  if (navDepth.value === 1) navDepth.value = 0
+}
 
 const route = useRoute()
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
@@ -272,7 +270,6 @@ const { data: contractors, pending, refresh } = await useFetch<any[]>(
 watch(contractors, (value) => { if (Array.isArray(value)) contractorsCacheByProject.value = { ...contractorsCacheByProject.value, [contractorsCacheKey.value]: value } }, { deep: true })
 
 // ── Search & selection ─────────────────────────────────
-const searchQuery = ref('')
 const selectedId = ref<number | null>(null)
 const selected = computed(() => contractors.value?.find((c: any) => c.id === selectedId.value) || null)
 function selectContractor(c: any) { selectedId.value = c.id }
@@ -311,19 +308,6 @@ const mastersByParent = computed(() => {
 })
 const standaloneMasters = computed(() => (contractors.value || []).filter((c: any) => c.contractorType === 'master' && !c.parentId))
 
-const filteredCompanies = computed(() => {
-  if (!searchQuery.value.trim()) return companies.value
-  const q = searchQuery.value.toLowerCase()
-  return companies.value.filter((c: any) =>
-    c.name?.toLowerCase().includes(q) || c.companyName?.toLowerCase().includes(q) || c.phone?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) ||
-    (mastersByParent.value.get(c.id) || []).some((m: any) => m.name?.toLowerCase().includes(q) || m.phone?.toLowerCase().includes(q))
-  )
-})
-const filteredStandalone = computed(() => {
-  if (!searchQuery.value.trim()) return standaloneMasters.value
-  const q = searchQuery.value.toLowerCase()
-  return standaloneMasters.value.filter((m: any) => m.name?.toLowerCase().includes(q) || m.phone?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q))
-})
 
 // ── Modal state ────────────────────────────────────────
 const showModal = ref(false); const saving = ref(false); const formError = ref('')

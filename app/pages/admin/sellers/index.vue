@@ -3,45 +3,17 @@
     <div class="proj-content-area">
 
       <div class="proj-nav-col">
-      <AdminNestedNav
-          :depth="navDepth"
-          :layer-data="layerData"
-          :model-value="currentSearch"
-          @update:model-value="onSearch"
+        <AdminNestedNav
+          :node="currentNode"
+          :direction="slideDir"
+          :can-go-back="navDepth > 0"
+          :back-label="navDepth > 0 ? 'разделы' : ''"
+          :active-key="selectedSellerId ? String(selectedSellerId) : undefined"
           @back="onBack"
+          @drill="onDrill"
+          @select="onSelect"
         >
-          <!-- Layer 0: section type grid -->
-          <template #layer0>
-            <div class="ann-type-grid">
-              <NuxtLink
-                v-for="s in ADMIN_SECTIONS"
-                :key="s.key"
-                :to="s.to"
-                class="ann-type-btn"
-                :class="{ 'ann-type-btn--active': s.key === 'sellers' }"
-              >
-                <span class="ann-type-icon">{{ s.icon }}</span>
-                <span>{{ s.label }}</span>
-              </NuxtLink>
-            </div>
-          </template>
-          <!-- Layer 1: entity list -->
-          <template #layer1>
-            <div class="std-nav">
-                      <template v-if="pending">
-                        <div class="ent-nav-skeleton" v-for="i in 3" :key="i" />
-                      </template>
-                      <template v-else>
-                        <button v-for="s in filteredSellers" :key="s.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedSellerId === s.id }" @click="selectedSellerId = s.id">
-                          <span class="ent-nav-avatar">{{ s.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                          <span class="ent-nav-name">{{ s.name }}<span v-if="s.city" class="ent-nav-sub">{{ s.city }}</span></span>
-                        </button>
-                        <div v-if="!filteredSellers.length && searchQuery" class="ent-nav-empty">ничего не найдено</div>
-                        <div v-else-if="!allSellers?.length" class="ent-nav-empty">нет поставщиков</div>
-                      </template>
-                    </div>
-          </template>
-          <template #footer1>
+          <template v-if="navDepth === 1" #footer>
             <button class="ent-sidebar-add a-btn-sm" @click="showCreate = true">+ добавить</button>
           </template>
         </AdminNestedNav>
@@ -119,38 +91,69 @@
 </template>
 
 <script setup lang="ts">
+import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
+
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 // ── Nav state ──
-const ADMIN_SECTIONS = [
-  { key: 'projects',    icon: '◈', label: 'проекты',    to: '/admin' },
-  { key: 'clients',     icon: '◐', label: 'клиенты',    to: '/admin/clients' },
-  { key: 'contractors', icon: '◒', label: 'подрядчики', to: '/admin/contractors' },
-  { key: 'designers',   icon: '◓', label: 'дизайнеры',  to: '/admin/designers' },
-  { key: 'sellers',     icon: '◑', label: 'продавцы',   to: '/admin/sellers' },
-] as const
-const navDepth = ref<0 | 1 | 2>(1)
-const navSearch0 = ref('')
-const currentSearch = computed(() => navDepth.value === 0 ? navSearch0.value : searchQuery.value)
-function onSearch(v: string) {
-  if (navDepth.value === 0) navSearch0.value = v
-  else searchQuery.value = v
+const ADMIN_ROUTES: Record<string, string> = {
+  projects: '/admin',
+  clients: '/admin/clients',
+  contractors: '/admin/contractors',
+  designers: '/admin/designers',
 }
-function onBack() {
-  if (navDepth.value === 1) navDepth.value = 0
-  else if (navDepth.value === 2) navDepth.value = 1
-}
-const layerData = computed(() => [
-  { title: 'разделы' },
-  { title: 'продавцы', count: allSellers?.length ?? 0, backLabel: 'разделы' },
-  { title: '', backLabel: 'продавцы' },
+
+const navDepth = ref<0 | 1>(1)
+const slideDir = ref<'fwd' | 'back'>('fwd')
+
+const nodes = computed((): NavNode[] => [
+  {
+    key: 'root',
+    title: 'разделы',
+    items: [
+      { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
+      { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
+      { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
+      { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
+      { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
+    ],
+  },
+  {
+    key: 'sellers',
+    title: 'продавцы',
+    count: allSellers.value?.length,
+    emptyText: 'нет поставщиков',
+    items: (allSellers.value ?? []).map((s: any) => ({
+      key: String(s.id),
+      label: s.name,
+      sub: s.city,
+    })),
+  },
 ])
+
+const currentNode = computed(() => nodes.value[navDepth.value])
+
+function onDrill(item: NavItem) {
+  if (navDepth.value === 0) {
+    if (item.key === 'sellers') { slideDir.value = 'fwd'; navDepth.value = 1 }
+    else if (ADMIN_ROUTES[item.key]) navigateTo(ADMIN_ROUTES[item.key])
+  }
+}
+
+function onSelect(item: NavItem) {
+  const s = allSellers.value?.find((x: any) => String(x.id) === item.key)
+  if (s) selectedSellerId.value = s.id
+}
+
+function onBack() {
+  slideDir.value = 'back'
+  if (navDepth.value === 1) navDepth.value = 0
+}
 
 const route = useRoute()
 const router = useRouter()
 
 const { data: allSellers, pending, refresh } = useFetch<any[]>('/api/sellers', { default: () => [] })
 
-const searchQuery = ref('')
 const showCreate = ref(false)
 const newName = ref('')
 const creating = ref(false)
@@ -178,13 +181,6 @@ function applySellerIdQuery() {
 watch(() => allSellers.value, () => applySellerIdQuery(), { immediate: true })
 watch(sellerIdFromQuery, () => applySellerIdQuery())
 
-const filteredSellers = computed(() => {
-  if (!searchQuery.value) return allSellers.value || []
-  const q = searchQuery.value.toLowerCase()
-  return (allSellers.value || []).filter((s: any) =>
-    s.name?.toLowerCase().includes(q) || s.city?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.companyName?.toLowerCase().includes(q)
-  )
-})
 
 async function doCreate() {
   if (!newName.value.trim()) return

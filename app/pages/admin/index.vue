@@ -3,86 +3,25 @@
     <div class="proj-content-area">
 
       <div class="proj-nav-col">
-      <AdminNestedNav
-          :depth="navDepth"
-          :layer-data="layerData"
-          :model-value="currentSearch"
-          @update:model-value="onSearch"
+        <AdminNestedNav
+          :node="currentNode"
+          :direction="slideDir"
+          :can-go-back="navDepth > 0"
+          :back-label="navDepth > 0 ? 'разделы' : ''"
+          :active-key="selectedSlug ?? undefined"
           @back="onBack"
+          @drill="onDrill"
+          @select="onSelect"
         >
-          <!-- Layer 0: section type grid -->
-          <template #layer0>
-            <div class="ann-type-grid">
-              <NuxtLink
-                v-for="s in ADMIN_SECTIONS"
-                :key="s.key"
-                :to="s.to"
-                class="ann-type-btn"
-                :class="{ 'ann-type-btn--active': s.key === 'projects' }"
-              >
-                <span class="ann-type-icon">{{ s.icon }}</span>
-                <span>{{ s.label }}</span>
-              </NuxtLink>
-            </div>
-          </template>
-          <!-- Layer 1: entity list -->
-          <template #layer1>
-            <div class="std-nav">
-                      <template v-if="pending && !hasProjectsCache">
-                        <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
-                      </template>
-                      <template v-else>
-                        <button v-for="p in filteredProjects" :key="p.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedSlug === p.slug }" @click="selectProject(p)">
-                          <span class="ent-nav-avatar pj-av">{{ p.title?.charAt(0)?.toUpperCase() || '?' }}</span>
-                          <span class="ent-nav-name">{{ p.title }}<span v-if="p.status" class="ent-nav-sub">{{ phaseLabel(p.status) }}</span></span>
-                          <span v-if="p.status" class="ent-nav-badge pj-phase" :class="`pj-phase--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
-                        </button>
-                        <div v-if="!filteredProjects.length && searchQuery" class="pj-nav-empty">ничего не найдено</div>
-                        <div v-else-if="!projects?.length" class="pj-nav-empty">нет проектов</div>
-                      </template>
-                    </div>
-          </template>
-          <template #footer1>
+          <template v-if="navDepth === 1" #footer>
             <button class="ent-sidebar-add a-btn-sm" @click="showCreate = true; wizardStep = 1">+ создать</button>
           </template>
         </AdminNestedNav>
       </div><!-- /.proj-nav-col -->
 
-    <!-- ═══ Detail ═══ -->
+    <!-- ═══ Main ═══ -->
     <div class="proj-main">
-        <div v-if="selectedProject" class="ent-detail-card glass-card">
-          <div class="ent-detail-head">
-            <div>
-              <div class="ent-detail-name">{{ selectedProject.title }}</div>
-              <div class="pj-detail-slug">{{ selectedProject.slug }}</div>
-            </div>
-            <div class="ent-detail-actions">
-              <NuxtLink :to="`/admin/projects/${selectedProject.slug}`" class="a-btn-sm pj-open-btn">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                открыть
-              </NuxtLink>
-            </div>
-          </div>
-
-          <div v-if="selectedProject.status" class="ent-detail-section">статус</div>
-          <div v-if="selectedProject.status" class="ent-detail-row">
-            <span class="pj-phase-pill" :class="`pj-phase--${phaseColor(selectedProject.status)}`">{{ phaseLabel(selectedProject.status) }}</span>
-          </div>
-
-          <div v-if="selectedProject.taskTotal > 0" class="ent-detail-section">прогресс</div>
-          <div v-if="selectedProject.taskTotal > 0" class="pj-progress-row">
-            <div class="pj-progress-bar"><div class="pj-progress-fill" :style="{ width: Math.round(selectedProject.taskDone / selectedProject.taskTotal * 100) + '%' }" /></div>
-            <span class="pj-progress-text">{{ selectedProject.taskDone }}/{{ selectedProject.taskTotal }}</span>
-            <span v-if="selectedProject.taskOverdue > 0" class="pj-overdue">⚠ {{ selectedProject.taskOverdue }} просрочено</span>
-          </div>
-
-          <div class="ent-detail-foot">
-            <NuxtLink :to="`/admin/projects/${selectedProject.slug}`" class="a-btn-sm">управление</NuxtLink>
-            <NuxtLink :to="`/admin/contractors?projectSlug=${selectedProject.slug}`" class="a-btn-sm">подрядчики</NuxtLink>
-            <NuxtLink :to="`/admin/clients?projectSlug=${selectedProject.slug}`" class="a-btn-sm">клиенты</NuxtLink>
-          </div>
-        </div>
-        <div v-else class="ent-empty-detail">
+        <div class="ent-empty-detail">
           <span class="ent-empty-icon">📁</span>
           <span v-if="projects?.length">Выберите проект из списка</span>
           <span v-else>Нет проектов — создайте первый</span>
@@ -129,32 +68,66 @@
 
 <script setup lang="ts">
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
+import type { NavItem, NavNode } from '~/components/AdminNestedNav.vue'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
+
 // ── Nav state ──
-const ADMIN_SECTIONS = [
-  { key: 'projects',    icon: '◈', label: 'проекты',    to: '/admin' },
-  { key: 'clients',     icon: '◐', label: 'клиенты',    to: '/admin/clients' },
-  { key: 'contractors', icon: '◒', label: 'подрядчики', to: '/admin/contractors' },
-  { key: 'designers',   icon: '◓', label: 'дизайнеры',  to: '/admin/designers' },
-  { key: 'sellers',     icon: '◑', label: 'продавцы',   to: '/admin/sellers' },
-] as const
-const navDepth = ref<0 | 1 | 2>(1)
-const navSearch0 = ref('')
-const currentSearch = computed(() => navDepth.value === 0 ? navSearch0.value : searchQuery.value)
-function onSearch(v: string) {
-  if (navDepth.value === 0) navSearch0.value = v
-  else searchQuery.value = v
+const ADMIN_ROUTES: Record<string, string> = {
+  clients: '/admin/clients',
+  contractors: '/admin/contractors',
+  designers: '/admin/designers',
+  sellers: '/admin/sellers',
 }
-function onBack() {
-  if (navDepth.value === 1) navDepth.value = 0
-  else if (navDepth.value === 2) navDepth.value = 1
-}
-const layerData = computed(() => [
-  { title: 'разделы' },
-  { title: 'проекты', count: projects?.length ?? 0, backLabel: 'разделы' },
-  { title: '', backLabel: 'проекты' },
+
+const navDepth = ref<0 | 1>(1)
+const slideDir = ref<'fwd' | 'back'>('fwd')
+
+const nodes = computed((): NavNode[] => [
+  {
+    key: 'root',
+    title: 'разделы',
+    items: [
+      { key: 'projects',    icon: '◈', label: 'проекты',    isNode: true },
+      { key: 'clients',     icon: '◐', label: 'клиенты',    isNode: true },
+      { key: 'contractors', icon: '◒', label: 'подрядчики', isNode: true },
+      { key: 'designers',   icon: '◓', label: 'дизайнеры',  isNode: true },
+      { key: 'sellers',     icon: '◑', label: 'продавцы',   isNode: true },
+    ],
+  },
+  {
+    key: 'projects',
+    title: 'проекты',
+    count: projects.value?.length,
+    emptyText: 'нет проектов',
+    items: (projects.value ?? []).map((p: any) => ({
+      key: p.slug,
+      label: p.title,
+      sub: phaseLabel(p.status),
+    })),
+  },
 ])
+
+const currentNode = computed(() => nodes.value[navDepth.value])
+
+function onDrill(item: NavItem) {
+  if (navDepth.value === 0) {
+    if (item.key === 'projects') {
+      slideDir.value = 'fwd'; navDepth.value = 1
+    } else if (ADMIN_ROUTES[item.key]) {
+      navigateTo(ADMIN_ROUTES[item.key])
+    }
+  }
+}
+
+function onSelect(item: NavItem) {
+  navigateTo(`/admin/projects/${item.key}`)
+}
+
+function onBack() {
+  slideDir.value = 'back'
+  if (navDepth.value === 1) navDepth.value = 0
+}
 
 const projectsCache = useState<any[]>('cache-admin-projects', () => [])
 const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects', {
@@ -171,18 +144,6 @@ onActivated(reloadProjects)
 
 const CORE_PAGE_LABELS: Record<string, string> = { materials: 'материалы', tz: 'ТЗ', profile_customer: 'профиль клиента' }
 const corePageLabels = Object.values(CORE_PAGE_LABELS)
-
-// ── Search & selection ─────────────────────────────────
-const searchQuery = ref('')
-const selectedSlug = ref<string | null>(null)
-const selectedProject = computed(() => projects.value?.find((p: any) => p.slug === selectedSlug.value) || null)
-function selectProject(p: any) { navigateTo(`/admin/projects/${p.slug}`) }
-
-const filteredProjects = computed(() => {
-  if (!searchQuery.value.trim()) return projects.value || []
-  const q = searchQuery.value.toLowerCase()
-  return (projects.value || []).filter((p: any) => p.title?.toLowerCase().includes(q) || p.slug?.toLowerCase().includes(q))
-})
 
 // ── Create wizard ──────────────────────────────────────
 const showCreate = ref(false); const wizardStep = ref(1); const creating = ref(false); const createError = ref('')
