@@ -18,10 +18,18 @@ async function main() {
       filename    TEXT,
       url         TEXT,
       notes       TEXT,
+      content     TEXT,
+      template_key TEXT,
       created_at  TIMESTAMP DEFAULT NOW() NOT NULL
     )
   `
   console.log('✓ Таблица documents создана или уже существует')
+
+  // Добавляем новые колонки если не существуют (idempotent)
+  await sql`ALTER TABLE documents ADD COLUMN IF NOT EXISTS content TEXT`
+  await sql`ALTER TABLE documents ADD COLUMN IF NOT EXISTS template_key TEXT`
+  console.log('✓ Колонки content и template_key добавлены')
+
   await sql.end()
   console.log('Готово.')
 }

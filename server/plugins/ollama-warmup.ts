@@ -29,7 +29,7 @@ export default defineNitroPlugin(() => {
       const ok1 = await warmModel('qwen3:4b', CHAT_SYSTEM_PROMPT, 2048)
       console.log(ok1 ? '[Ollama warmup] ✓ qwen3:4b готов' : '[Ollama warmup] ⚠ qwen3:4b не ответил')
     } catch (e: any) {
-      console.warn('[Ollama warmup] qwen3:14b:', e?.message)
+      console.warn('[Ollama warmup] qwen3:4b:', e?.message)
     }
     try {
       console.log('[Ollama warmup] Прогреваем gemma3:27b (documents)...')

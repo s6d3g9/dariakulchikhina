@@ -24,6 +24,8 @@
     "@nuxt/ui": "^3.1.0",
     "@pinia/nuxt": "^0.11.3",
     "bcryptjs": "^3.0.2",
+    "docx": "^9.6.0",
+    "docx": "^9.6.0",
     "drizzle-orm": "^0.41.0",
     "h3": "latest",
     "ioredis": "^5.4.2",
@@ -48,7 +50,8 @@
       "vue-demi"
     ],
     "overrides": {
-      "serialize-javascript": ">=7.0.3"
+      "serialize-javascript": ">=7.0.3",
+      "esbuild": "0.27.3"
     }
   }
 }

@@ -131,26 +131,16 @@
         <div v-for="cf in chipsFields" :key="cf.key" class="acp-row acp-chips-row">
           <label class="acp-lbl">{{ cf.label }}:</label>
           <div class="acp-chip-pools">
-            <div class="acp-chip-pool-title">Выбрано</div>
-            <TransitionGroup name="tag-shift" tag="div" class="acp-chips">
+            <div class="acp-chips">
               <button
-                v-for="opt in cf.opts.filter((item) => getChips(cf.key).includes(item.value))"
-                :key="`selected-${cf.key}-${opt.value}`"
-                type="button"
-                class="acp-chip acp-chip--on"
-                @click.prevent="toggleChip(cf.key, opt.value)"
-              >#{{ opt.label }}</button>
-            </TransitionGroup>
-            <div class="acp-chip-pool-title" style="margin-top:8px">Доступно</div>
-            <TransitionGroup name="tag-shift" tag="div" class="acp-chips">
-              <button
-                v-for="opt in cf.opts.filter((item) => !getChips(cf.key).includes(item.value))"
-                :key="`available-${cf.key}-${opt.value}`"
+                v-for="opt in cf.opts"
+                :key="`${cf.key}-${opt.value}`"
                 type="button"
                 class="acp-chip"
+                :class="{ 'acp-chip--on': getChips(cf.key).includes(opt.value) }"
                 @click.prevent="toggleChip(cf.key, opt.value)"
-              >#{{ opt.label }}</button>
-            </TransitionGroup>
+              >{{ opt.label }}</button>
+            </div>
           </div>
         </div>
       </div>

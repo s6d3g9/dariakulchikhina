@@ -19,30 +19,16 @@
         <div class="ccd-row">
           <label class="ccd-lbl">Мессенджер</label>
           <div class="ccd-tagsel">
-            <div class="ccd-tagpicker-title">Выбрано</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
+            <div class="ccd-btngroup">
               <button
-                v-for="option in selectedSingleOption(form.messenger)"
-                :key="`messenger-selected-${option}`"
+                v-for="option in MESSENGER_OPTIONS"
+                :key="`messenger-${option}`"
                 type="button"
-                class="ccd-tagopt ccd-tagopt--on"
+                class="ccd-btnopt"
+                :class="{ 'ccd-btnopt--on': form.messenger === option }"
                 @click="toggleSingleChoiceAndSave('messenger', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
-            <div class="ccd-tagpicker-title" style="margin-top: 8px">Доступно</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
-              <button
-                v-for="option in availableSingleOptions(MESSENGER_OPTIONS, form.messenger)"
-                :key="`messenger-available-${option}`"
-                type="button"
-                class="ccd-tagopt"
-                @click="toggleSingleChoiceAndSave('messenger', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
+              >{{ option }}</button>
+            </div>
           </div>
         </div>
         <div class="ccd-row">
@@ -52,30 +38,16 @@
         <div class="ccd-row">
           <label class="ccd-lbl">Предпочтительный способ связи</label>
           <div class="ccd-tagsel">
-            <div class="ccd-tagpicker-title">Выбрано</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
+            <div class="ccd-btngroup">
               <button
-                v-for="option in selectedSingleOption(form.preferredContact)"
-                :key="`preferred-selected-${option}`"
+                v-for="option in PREFERRED_CONTACT_OPTIONS"
+                :key="`preferred-${option}`"
                 type="button"
-                class="ccd-tagopt ccd-tagopt--on"
+                class="ccd-btnopt"
+                :class="{ 'ccd-btnopt--on': form.preferredContact === option }"
                 @click="toggleSingleChoiceAndSave('preferredContact', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
-            <div class="ccd-tagpicker-title" style="margin-top: 8px">Доступно</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
-              <button
-                v-for="option in availableSingleOptions(PREFERRED_CONTACT_OPTIONS, form.preferredContact)"
-                :key="`preferred-available-${option}`"
-                type="button"
-                class="ccd-tagopt"
-                @click="toggleSingleChoiceAndSave('preferredContact', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
+              >{{ option }}</button>
+            </div>
           </div>
         </div>
       </div>
@@ -103,30 +75,16 @@
         <div class="ccd-row">
           <label class="ccd-lbl">Тип объекта</label>
           <div class="ccd-tagsel">
-            <div class="ccd-tagpicker-title">Выбрано</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
+            <div class="ccd-btngroup">
               <button
-                v-for="option in selectedSingleOption(form.objectType)"
-                :key="`object-type-selected-${option}`"
+                v-for="option in OBJECT_TYPE_OPTIONS"
+                :key="`object-type-${option}`"
                 type="button"
-                class="ccd-tagopt ccd-tagopt--on"
+                class="ccd-btnopt"
+                :class="{ 'ccd-btnopt--on': form.objectType === option }"
                 @click="toggleSingleChoiceAndSave('objectType', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
-            <div class="ccd-tagpicker-title" style="margin-top: 8px">Доступно</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
-              <button
-                v-for="option in availableSingleOptions(OBJECT_TYPE_OPTIONS, form.objectType)"
-                :key="`object-type-available-${option}`"
-                type="button"
-                class="ccd-tagopt"
-                @click="toggleSingleChoiceAndSave('objectType', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
+              >{{ option }}</button>
+            </div>
           </div>
         </div>
         <div class="ccd-row">
@@ -148,59 +106,31 @@
         <div class="ccd-row">
           <label class="ccd-lbl">Балкон / лоджия</label>
           <div class="ccd-tagsel">
-            <div class="ccd-tagpicker-title">Выбрано</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
+            <div class="ccd-btngroup">
               <button
-                v-for="option in selectedSingleOption(form.hasBalcony)"
-                :key="`balcony-selected-${option}`"
+                v-for="option in BALCONY_OPTIONS"
+                :key="`balcony-${option}`"
                 type="button"
-                class="ccd-tagopt ccd-tagopt--on"
+                class="ccd-btnopt"
+                :class="{ 'ccd-btnopt--on': form.hasBalcony === option }"
                 @click="toggleSingleChoiceAndSave('hasBalcony', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
-            <div class="ccd-tagpicker-title" style="margin-top: 8px">Доступно</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
-              <button
-                v-for="option in availableSingleOptions(BALCONY_OPTIONS, form.hasBalcony)"
-                :key="`balcony-available-${option}`"
-                type="button"
-                class="ccd-tagopt"
-                @click="toggleSingleChoiceAndSave('hasBalcony', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
+              >{{ option }}</button>
+            </div>
           </div>
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Парковка</label>
           <div class="ccd-tagsel">
-            <div class="ccd-tagpicker-title">Выбрано</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
+            <div class="ccd-btngroup">
               <button
-                v-for="option in selectedSingleOption(form.parking)"
-                :key="`parking-selected-${option}`"
+                v-for="option in PARKING_OPTIONS"
+                :key="`parking-${option}`"
                 type="button"
-                class="ccd-tagopt ccd-tagopt--on"
+                class="ccd-btnopt"
+                :class="{ 'ccd-btnopt--on': form.parking === option }"
                 @click="toggleSingleChoiceAndSave('parking', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
-            <div class="ccd-tagpicker-title" style="margin-top: 8px">Доступно</div>
-            <TransitionGroup name="tag-shift" tag="div" class="ccd-tagpool">
-              <button
-                v-for="option in availableSingleOptions(PARKING_OPTIONS, form.parking)"
-                :key="`parking-available-${option}`"
-                type="button"
-                class="ccd-tagopt"
-                @click="toggleSingleChoiceAndSave('parking', option)"
-              >
-                #{{ option }}
-              </button>
-            </TransitionGroup>
+              >{{ option }}</button>
+            </div>
           </div>
         </div>
       </div>
@@ -269,14 +199,6 @@ watch(project, (p) => {
 
 const saving = ref(false)
 const { savedAt, touch: markSaved } = useTimestamp()
-
-function selectedSingleOption(value: string) {
-  return value ? [value] : []
-}
-
-function availableSingleOptions(options: readonly string[], selected: string) {
-  return options.filter(option => option !== selected)
-}
 
 function toggleSingleChoiceAndSave(field: string, option: string) {
   form[field] = form[field] === option ? '' : option
@@ -360,56 +282,35 @@ async function save() {
 }
 .ccd-btn:disabled { opacity: .6; cursor: default; }
 
-/* Tag selector */
+/* Button group — single choice */
 .ccd-tagsel {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   padding: 4px 0;
 }
-.ccd-tagpicker-title {
-  font-size: .58rem;
-  text-transform: uppercase;
-  letter-spacing: .75px;
-  color: var(--glass-text);
-  opacity: .5;
-}
-.ccd-tagpool {
+.ccd-btngroup {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
-.ccd-tagopt {
-  padding: 4px 10px;
-  font-size: .76rem;
+.ccd-btnopt {
+  padding: 6px 14px;
+  font-size: .78rem;
   cursor: pointer;
   user-select: none;
-  border: none;
+  border: 1px solid var(--glass-border);
   border-radius: 999px;
+  font-family: inherit;
   background: color-mix(in srgb, var(--glass-bg, #fff) 88%, transparent);
   color: var(--glass-text);
   opacity: .7;
-  transition: background .16s, color .16s, transform .16s, opacity .16s;
+  transition: background .16s, color .16s, border-color .16s, opacity .16s;
 }
-.ccd-tagopt:hover { opacity: .95; }
-.ccd-tagopt--on {
-  background: var(--glass-text, #1a1a1a); color: var(--glass-bg, #fff);
+.ccd-btnopt:hover { opacity: .95; border-color: var(--glass-text); }
+.ccd-btnopt--on {
+  background: transparent;
+  color: var(--glass-text, #1a1a1a);
+  border: 2px solid var(--glass-text, #1a1a1a);
+  font-weight: 600;
   opacity: 1;
-}
-
-.tag-shift-enter-active,
-.tag-shift-leave-active {
-  transition: all .2s ease;
-}
-
-.tag-shift-enter-from,
-.tag-shift-leave-to {
-  opacity: 0;
-  transform: translateY(4px) scale(.98);
-}
-
-.tag-shift-move {
-  transition: transform .2s ease;
 }
 
 @media (max-width: 760px) {

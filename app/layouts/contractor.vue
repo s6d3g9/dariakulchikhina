@@ -14,11 +14,10 @@
         </div>
         <button
           type="button"
-          class="theme-dot glass-chip"
-          :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
+          class="contractor-theme-btn"
           @click="toggleTheme"
-        ></button>
-        <button class="contractor-logout-btn glass-chip" @click="logout">Выйти</button>
+        >{{ isDark ? 'светло' : 'темно' }}</button>
+        <button class="contractor-logout-btn" @click="logout">Выйти</button>
       </div>
     </header>
     <main class="contractor-main">
@@ -146,7 +145,7 @@ async function logout() {
 .contractor-logout-btn {
   font-size: .78rem;
   padding: 5px 14px;
-  border-radius: 999px;
+  border-radius: 0;
   border: 1px solid var(--glass-border, rgba(255,255,255,0.3));
   background: none;
   cursor: pointer;
@@ -161,18 +160,22 @@ async function logout() {
   padding: 24px;
 }
 
-.theme-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: none;
-  background: color-mix(in srgb, var(--bg) 72%, var(--glass-page-bg, #f7f7f7) 28%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+.contractor-theme-btn {
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  color: var(--glass-text, #1a1a1a);
+  opacity: .55;
   cursor: pointer;
-  padding: 0;
+  font-size: .62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 3px 8px;
   appearance: none;
   -webkit-appearance: none;
+  transition: opacity .15s;
 }
+.contractor-theme-btn:hover { opacity: 1; }
 
 @media (max-width: 640px) {
   .contractor-header { flex-wrap: wrap; gap: 8px; }

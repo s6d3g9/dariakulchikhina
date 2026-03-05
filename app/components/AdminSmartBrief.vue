@@ -17,31 +17,15 @@
 
               @blur="save"
             />
-            <div v-else-if="f.options" class="asb-tagsel">
-              <div class="asb-tagpicker-title">Выбрано</div>
-              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
-                <button
-                  v-for="option in selectedSingleOption((form as any)[f.key])"
-                  :key="`${f.key}-selected-${option}`"
-                  type="button"
-                  class="asb-tagopt asb-tagopt--on"
-                  @click="toggleSingleChoiceAndSave(f.key, option)"
-                >
-                  #{{ option }}
-                </button>
-              </TransitionGroup>
-              <div class="asb-tagpicker-title" style="margin-top: 8px">Доступно</div>
-              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
-                <button
-                  v-for="option in availableSingleOptions(f.options, (form as any)[f.key])"
-                  :key="`${f.key}-available-${option}`"
-                  type="button"
-                  class="asb-tagopt"
-                  @click="toggleSingleChoiceAndSave(f.key, option)"
-                >
-                  #{{ option }}
-                </button>
-              </TransitionGroup>
+            <div v-else-if="f.options" class="asb-btngroup">
+              <button
+                v-for="option in f.options"
+                :key="`${f.key}-${option}`"
+                type="button"
+                class="asb-btnopt"
+                :class="{ 'asb-btnopt--on': (form as any)[f.key] === option }"
+                @click="toggleSingleChoiceAndSave(f.key, option)"
+              >{{ option }}</button>
             </div>
             <input
               v-else
@@ -188,31 +172,15 @@
               :placeholder="f.placeholder || ''"
               @blur="save"
             />
-            <div v-else-if="f.options" class="asb-tagsel">
-              <div class="asb-tagpicker-title">Выбрано</div>
-              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
-                <button
-                  v-for="option in selectedSingleOption((form as any)[f.key])"
-                  :key="`${f.key}-selected-${option}`"
-                  type="button"
-                  class="asb-tagopt asb-tagopt--on"
-                  @click="toggleSingleChoiceAndSave(f.key, option)"
-                >
-                  #{{ option }}
-                </button>
-              </TransitionGroup>
-              <div class="asb-tagpicker-title" style="margin-top: 8px">Доступно</div>
-              <TransitionGroup name="tag-shift" tag="div" class="asb-tagpool">
-                <button
-                  v-for="option in availableSingleOptions(f.options, (form as any)[f.key])"
-                  :key="`${f.key}-available-${option}`"
-                  type="button"
-                  class="asb-tagopt"
-                  @click="toggleSingleChoiceAndSave(f.key, option)"
-                >
-                  #{{ option }}
-                </button>
-              </TransitionGroup>
+            <div v-else-if="f.options" class="asb-btngroup">
+              <button
+                v-for="option in f.options"
+                :key="`${f.key}-${option}`"
+                type="button"
+                class="asb-btnopt"
+                :class="{ 'asb-btnopt--on': (form as any)[f.key] === option }"
+                @click="toggleSingleChoiceAndSave(f.key, option)"
+              >{{ option }}</button>
             </div>
             <input
               v-else
@@ -317,14 +285,6 @@ function toggle(key: string) {
   save()
 }
 
-function selectedSingleOption(value: string | null | undefined) {
-  return value ? [value] : []
-}
-
-function availableSingleOptions(options: readonly string[] | undefined, selected: string | null | undefined) {
-  return (options || []).filter(option => option !== selected)
-}
-
 function toggleSingleChoiceAndSave(key: string, option: string) {
   form[key] = form[key] === option ? '' : option
   save()
@@ -338,7 +298,6 @@ const familyFields = [
   { key: 'brief_handed',          label: 'Доп. параметры',               placeholder: 'левша, физ. ограничения, инвалидное кресло...', multi: true },
   { key: 'brief_pets_desc',       label: 'Питомцы',                      placeholder: 'порода, размер' },
   { key: 'brief_pets_zone_detail',label: 'Зона питомца (детали)',        placeholder: 'лапомойка, миски, лоток, будка...', multi: true },
-  { key: 'brief_remote_work',     label: 'Удалённая работа',             options: BRIEF_REMOTE_WORK_OPTIONS },
   { key: 'brief_guests_freq',     label: 'Частота гостей',               options: BRIEF_GUESTS_FREQ_OPTIONS },
   { key: 'brief_hobbies',         label: 'Хобби и увлечения',            placeholder: 'музыка, живопись, спорт...', multi: true },
 ]
@@ -487,50 +446,27 @@ async function save() {
 .asb-btn-save:disabled { opacity: .55; cursor: default; }
 .asb-btn-save:hover:not(:disabled) { opacity: .85; }
 
-/* Tag-style option selector */
-.asb-tagsel {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 4px 0;
-}
-.asb-tagpicker-title {
-  font-size: .58rem;
-  text-transform: uppercase;
-  letter-spacing: .75px;
-  color: color-mix(in srgb, var(--glass-text) 55%, transparent);
-}
-.asb-tagpool {
+/* Button group — single choice */
+.asb-btngroup {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  padding: 4px 0;
 }
-.asb-tagopt {
-  padding: 4px 10px; font-size: .74rem; cursor: pointer; user-select: none;
-  border: none;
-  border-radius: 999px;
+.asb-btnopt {
+  padding: 6px 14px; font-size: .76rem; cursor: pointer; user-select: none;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  border-radius: 999px; font-family: inherit;
   background: color-mix(in srgb, var(--glass-bg, #fff) 88%, transparent);
   color: color-mix(in srgb, var(--glass-text) 55%, transparent);
-  transition: background .16s, color .16s, transform .16s;
+  transition: background .16s, color .16s, border-color .16s;
 }
-.asb-tagopt:hover { color: var(--text, #1a1a1a); }
-.asb-tagopt--on {
-  background: var(--text, #1a1a1a); color: var(--bg, #fff);
-}
-
-.tag-shift-enter-active,
-.tag-shift-leave-active {
-  transition: all .2s ease;
-}
-
-.tag-shift-enter-from,
-.tag-shift-leave-to {
-  opacity: 0;
-  transform: translateY(4px) scale(.98);
-}
-
-.tag-shift-move {
-  transition: transform .2s ease;
+.asb-btnopt:hover { color: var(--text, #1a1a1a); border-color: var(--text, #1a1a1a); }
+.asb-btnopt--on {
+  background: transparent;
+  color: var(--glass-text, #1a1a1a);
+  border: 2px solid var(--glass-text, #1a1a1a);
+  font-weight: 600;
 }
 
 /* ── Mobile ── */

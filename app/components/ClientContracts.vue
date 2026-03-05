@@ -4,6 +4,63 @@
 
     <template v-else-if="project">
 
+      <!-- ── Тариф ── -->
+      <div class="cct-tariff-section">
+        <div class="cct-section-title">
+          тариф
+          <span v-if="pendingRequest" class="cct-tariff-pending-badge">запрос отправлен ↗</span>
+        </div>
+
+        <!-- Pending request banner -->
+        <div v-if="pendingRequest" class="cct-tariff-pending">
+          <div class="cct-tariff-pending-info">
+            <span class="cct-tariff-pending-icon">⏳</span>
+            <span>запрос на <strong>{{ pendingRequest.label }}</strong> ожидает подтверждения дизайнера</span>
+          </div>
+          <button type="button" class="cct-tariff-cancel-btn" :disabled="reqSaving" @click="cancelRequest">
+            {{ reqSaving ? '...' : 'отменить запрос' }}
+          </button>
+        </div>
+
+        <!-- All tariff cards -->
+        <div class="cct-tariff-grid">
+          <button
+            v-for="t in DESIGNER_TARIFFS"
+            :key="t.key"
+            type="button"
+            class="cct-tariff-card"
+            :class="{
+              'cct-tariff-card--active':   t.key === profile.service_tariff,
+              'cct-tariff-card--selected': t.key === selectedTariff && t.key !== profile.service_tariff,
+              'cct-tariff-card--pending':  t.key === profile.service_tariff_request && t.key !== profile.service_tariff,
+            }"
+            :style="`--tc: ${t.color}`"
+            :disabled="!!pendingRequest"
+            @click="selectTariff(t.key)"
+          >
+            <div class="cct-tariff-card-top">
+              <span class="cct-tariff-card-name">{{ t.label }}</span>
+              <span class="cct-tariff-card-price">{{ t.priceHint }}</span>
+              <span v-if="t.key === profile.service_tariff" class="cct-tariff-card-cur">текущий</span>
+            </div>
+            <p class="cct-tariff-card-desc">{{ t.description }}</p>
+            <div class="cct-tariff-card-chips">
+              <span v-for="s in t.services" :key="s" class="cct-tariff-card-chip">{{ serviceLabel(s) }}</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Send request row -->
+        <div v-if="selectedTariff && selectedTariff !== profile.service_tariff && !pendingRequest" class="cct-tariff-req-row">
+          <span class="cct-tariff-req-hint">выбран <strong>{{ DESIGNER_TARIFFS.find(t => t.key === selectedTariff)?.label }}</strong> — отправьте запрос дизайнеру</span>
+          <button type="button" class="cct-tariff-req-btn" :disabled="reqSaving" @click="sendRequest">
+            {{ reqSaving ? '...' : 'запросить тариф →' }}
+          </button>
+        </div>
+
+        <p v-if="!profile.service_tariff && !pendingRequest" class="cct-tariff-hint">тариф ещё не выбран дизайнером — вы можете запросить предпочтительный</p>
+      </div>
+
       <!-- ── Договор ── -->
       <div class="cct-section">
         <div class="cct-section-title">
@@ -89,11 +146,66 @@
 
 <script setup lang="ts">
 import { CONTRACT_STATUS_MAP, PAYMENT_STATUS_MAP } from '~~/shared/utils/status-maps'
+import { DESIGNER_TARIFFS, DESIGNER_SERVICE_TYPE_OPTIONS } from '~~/shared/types/catalogs'
 const props = defineProps<{ slug: string }>()
 const reqHeaders = useRequestHeaders(['cookie'])
 const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
 const profile = computed(() => project.value?.profile || {})
+
+const svcLabelMap = Object.fromEntries(DESIGNER_SERVICE_TYPE_OPTIONS.map(o => [o.value, o.label]))
+function serviceLabel(s: string) { return svcLabelMap[s] || s }
+
+// ── Tariff request ────────────────────────────────────────────────
+const selectedTariff = ref<string>('')
+const reqSaving = ref(false)
+const reqDone = ref(false)
+
+watch(profile, (p) => {
+  // pre-select pending request if any, else current tariff
+  selectedTariff.value = p.service_tariff_request || p.service_tariff || ''
+}, { immediate: true })
+
+const pendingRequest = computed(() => {
+  const req = profile.value.service_tariff_request
+  if (!req || req === profile.value.service_tariff) return null
+  return DESIGNER_TARIFFS.find(t => t.key === req) || null
+})
+
+function selectTariff(key: string) {
+  if (pendingRequest.value) return
+  selectedTariff.value = selectedTariff.value === key ? '' : key
+}
+
+async function sendRequest() {
+  if (!selectedTariff.value || selectedTariff.value === profile.value.service_tariff) return
+  reqSaving.value = true
+  try {
+    await $fetch(`/api/projects/${props.slug}/client-profile`, {
+      method: 'PUT',
+      body: { service_tariff_request: selectedTariff.value },
+    })
+    await refresh()
+    reqDone.value = true
+  } finally {
+    reqSaving.value = false
+  }
+}
+
+async function cancelRequest() {
+  reqSaving.value = true
+  try {
+    await $fetch(`/api/projects/${props.slug}/client-profile`, {
+      method: 'PUT',
+      body: { service_tariff_request: '' },
+    })
+    await refresh()
+    selectedTariff.value = profile.value.service_tariff || ''
+    reqDone.value = false
+  } finally {
+    reqSaving.value = false
+  }
+}
 
 const hasContract = computed(() => !!(
   profile.value.contract_number || profile.value.contract_date ||
@@ -118,6 +230,133 @@ function fmtDate(d: string) {
 <style scoped>
 .cct-root { padding: 16px; }
 .cct-loading { font-size: .85rem; color: color-mix(in srgb, var(--glass-text) 45%, transparent); }
+
+/* Tariff banner */
+/* ── Tariff section ── */
+.cct-tariff-section { margin-bottom: 28px; }
+
+.cct-tariff-pending-badge {
+  font-size: .6rem; padding: 2px 8px; border-radius: 3px;
+  background: color-mix(in srgb, #ff9800 15%, transparent);
+  color: #e65100; font-weight: 600; text-transform: none; letter-spacing: 0;
+}
+
+.cct-tariff-pending {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px; margin-bottom: 14px;
+  background: color-mix(in srgb, #ff9800 8%, transparent);
+  border: 1px solid color-mix(in srgb, #ff9800 35%, transparent);
+  border-radius: 6px; font-size: .8rem;
+}
+.cct-tariff-pending-info { display: flex; align-items: center; gap: 8px; }
+.cct-tariff-pending-icon { font-size: 1rem; }
+.cct-tariff-cancel-btn {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 60%, transparent);
+  padding: 4px 12px; font-size: .72rem; cursor: pointer; border-radius: 4px;
+  font-family: inherit;
+}
+.cct-tariff-cancel-btn:hover { border-color: var(--glass-text); color: var(--glass-text); }
+.cct-tariff-cancel-btn:disabled { opacity: .5; cursor: default; }
+
+/* Tariff grid */
+.cct-tariff-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cct-tariff-card {
+  --tc: #78909c;
+  text-align: left; cursor: pointer; font-family: inherit;
+  padding: 12px 14px;
+  border: 1.5px solid color-mix(in srgb, var(--tc) 22%, var(--glass-border, #e5e5e5));
+  background: color-mix(in srgb, var(--tc) 4%, transparent);
+  border-radius: 8px;
+  transition: background .13s, border-color .13s;
+  opacity: .7;
+}
+.cct-tariff-card:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--tc) 9%, transparent);
+  border-color: color-mix(in srgb, var(--tc) 55%, transparent);
+  opacity: 1;
+}
+.cct-tariff-card:disabled { cursor: default; }
+.cct-tariff-card--active {
+  border-color: var(--tc);
+  background: color-mix(in srgb, var(--tc) 10%, transparent);
+  opacity: 1;
+}
+.cct-tariff-card--selected {
+  border-color: color-mix(in srgb, var(--tc) 70%, transparent);
+  background: color-mix(in srgb, var(--tc) 7%, transparent);
+  opacity: 1;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tc) 25%, transparent);
+}
+.cct-tariff-card--pending {
+  border-color: #ff9800;
+  background: color-mix(in srgb, #ff9800 8%, transparent);
+  opacity: 1;
+}
+.cct-tariff-card-top {
+  display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+.cct-tariff-card-name {
+  font-size: .85rem; font-weight: 700; color: var(--tc);
+}
+.cct-tariff-card-price {
+  font-size: .68rem;
+  color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+  margin-left: auto;
+}
+.cct-tariff-card-cur {
+  font-size: .6rem; padding: 1px 6px; border-radius: 3px;
+  background: color-mix(in srgb, var(--tc) 15%, transparent);
+  color: var(--tc); font-weight: 600;
+}
+.cct-tariff-card-desc {
+  font-size: .72rem; margin: 0 0 8px;
+  color: color-mix(in srgb, var(--glass-text) 65%, transparent);
+  line-height: 1.4;
+}
+.cct-tariff-card-chips {
+  display: flex; flex-wrap: wrap; gap: 3px;
+}
+.cct-tariff-card-chip {
+  font-size: .58rem; padding: 2px 6px; border-radius: 3px;
+  background: color-mix(in srgb, var(--tc) 12%, transparent);
+  color: color-mix(in srgb, var(--tc) 80%, var(--glass-text));
+}
+
+/* Request row */
+.cct-tariff-req-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 6px; font-size: .78rem;
+}
+.cct-tariff-req-hint { color: color-mix(in srgb, var(--glass-text) 65%, transparent); }
+.cct-tariff-req-btn {
+  background: var(--glass-text); color: var(--glass-page-bg, #fff);
+  border: none; padding: 7px 18px; font-size: .78rem;
+  cursor: pointer; font-family: inherit; border-radius: 4px; white-space: nowrap;
+}
+.cct-tariff-req-btn:hover:not(:disabled) { opacity: .85; }
+.cct-tariff-req-btn:disabled { opacity: .5; cursor: default; }
+
+.cct-tariff-hint {
+  font-size: .72rem; margin: 8px 0 0;
+  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+}
+@media (max-width: 560px) {
+  .cct-tariff-grid { grid-template-columns: 1fr; }
+}
 
 .cct-section { margin-bottom: 24px; }
 .cct-section-title {

@@ -194,7 +194,30 @@ export const documents = pgTable('documents', {
   filename: text('filename'),           // физическое имя файла в uploads/
   url: text('url'),                     // публичный URL (если есть)
   notes: text('notes'),
+  content: text('content'),             // текст сгенерированного документа
+  templateKey: text('template_key'),    // ключ шаблона (contract_design, tz_doc, ...)
   createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+// ── Дополнительные услуги по проекту ───────────────────────────
+export const projectExtraServices = pgTable('project_extra_services', {
+  id:             serial('id').primaryKey(),
+  projectId:      integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  requestedBy:    text('requested_by').notNull().default('client'), // 'client' | 'admin'
+  serviceKey:     text('service_key'),                               // из каталога EXTRA_SERVICE_CATALOG
+  title:          text('title').notNull(),
+  description:    text('description'),
+  quantity:       text('quantity').notNull().default('1'),
+  unit:           text('unit').notNull().default('услуга'),
+  unitPrice:      integer('unit_price'),                             // цена за единицу, руб
+  totalPrice:     integer('total_price'),                            // итоговая сумма, руб
+  status:         text('status').notNull().default('requested'),     // см. EXTRA_SERVICE_STATUSES
+  clientNotes:    text('client_notes'),
+  adminNotes:     text('admin_notes'),
+  contractDocId:  integer('contract_doc_id').references(() => documents.id, { onDelete: 'set null' }),
+  invoiceDocId:   integer('invoice_doc_id').references(() => documents.id, { onDelete: 'set null' }),
+  createdAt:      timestamp('created_at').defaultNow().notNull(),
+  updatedAt:      timestamp('updated_at').defaultNow().notNull(),
 })
 
 export const contractorDocuments = pgTable('contractor_documents', {
@@ -285,6 +308,64 @@ export const designerProjectClientsRelations = relations(designerProjectClients,
 export const designerProjectContractorsRelations = relations(designerProjectContractors, ({ one }) => ({
   designerProject: one(designerProjects, { fields: [designerProjectContractors.designerProjectId], references: [designerProjects.id] }),
   contractor: one(contractors, { fields: [designerProjectContractors.contractorId], references: [contractors.id] }),
+}))
+
+// ── Селлер / Поставщик ──────────────────────────────────────────
+export const sellers = pgTable('sellers', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  companyName: text('company_name'),
+  contactPerson: text('contact_person'),
+  phone: text('phone'),
+  email: text('email'),
+  inn: text('inn'),
+  kpp: text('kpp'),
+  ogrn: text('ogrn'),
+  bankName: text('bank_name'),
+  bik: text('bik'),
+  settlementAccount: text('settlement_account'),
+  correspondentAccount: text('correspondent_account'),
+  legalAddress: text('legal_address'),
+  factAddress: text('fact_address'),
+  categories: text('categories').array().default([]).notNull(),
+  notes: text('notes'),
+  messenger: text('messenger'),
+  messengerNick: text('messenger_nick'),
+  website: text('website'),
+  telegram: text('telegram'),
+  whatsapp: text('whatsapp'),
+  city: text('city'),
+  deliveryTerms: text('delivery_terms'),
+  paymentTerms: text('payment_terms'),
+  minOrder: text('min_order'),
+  discount: text('discount'),
+  rating: integer('rating'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const sellerProjects = pgTable('seller_projects', {
+  id: serial('id').primaryKey(),
+  sellerId: integer('seller_id').notNull().references(() => sellers.id, { onDelete: 'cascade' }),
+  projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  notes: text('notes'),
+  status: text('status').default('active').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [unique('seller_project_uniq').on(t.sellerId, t.projectId)])
+
+export const sellersRelations = relations(sellers, ({ many }) => ({
+  sellerProjects: many(sellerProjects),
+}))
+
+export const sellerProjectsRelations = relations(sellerProjects, ({ one }) => ({
+  seller: one(sellers, { fields: [sellerProjects.sellerId], references: [sellers.id] }),
+  project: one(projects, { fields: [sellerProjects.projectId], references: [projects.id] }),
+}))
+
+export const projectExtraServicesRelations = relations(projectExtraServices, ({ one }) => ({
+  project:     one(projects,   { fields: [projectExtraServices.projectId],     references: [projects.id] }),
+  contractDoc: one(documents,  { fields: [projectExtraServices.contractDocId], references: [documents.id] }),
+  invoiceDoc:  one(documents,  { fields: [projectExtraServices.invoiceDocId],  references: [documents.id] }),
 }))
 
 export const projectsRelations = relations(projects, ({ many, one }) => ({

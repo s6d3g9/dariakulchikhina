@@ -25,6 +25,7 @@ export const PROJECT_PAGES: ProjectPageDef[] = [
   { slug: 'self_profile',        title: '0.2 брифинг',            icon: '◎', phase: 'lead', adminVisible: true, clientVisible: false },
   { slug: 'site_survey',         title: '0.3 обмеры / аудит',     icon: '◐', phase: 'lead', clientVisible: false },
   { slug: 'tor_contract',        title: '0.4 ТЗ и договор',       icon: '◒', phase: 'lead', clientVisible: false },
+  { slug: 'extra_services',      title: '0.5 доп. услуги',        icon: '⊕', phase: 'lead' },
 
   // Фаза 1 – Концепция
   { slug: 'space_planning',      title: '1.1 планировки',         icon: '◖', phase: 'concept', clientVisible: false },
@@ -113,6 +114,7 @@ export const CORE_PAGES = [
   'self_profile',
   'site_survey',
   'tor_contract',
+  'extra_services',
   'space_planning',
   'moodboard',
   'concept_approval',

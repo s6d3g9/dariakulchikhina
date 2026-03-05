@@ -1,113 +1,103 @@
 <template>
-  <div>
-    <div class="ent-layout ent-layout--with-stats">
-      <!-- ═══ Sidebar ═══ -->
-      <nav class="ent-sidebar std-sidenav">
-        <div class="ent-sidebar-head">
-          <span class="ent-sidebar-title">проекты</span>
-          <span class="ent-sidebar-count">{{ projects?.length ?? 0 }}</span>
-        </div>
+    <!-- ═══ Sidebar ═══ -->
+  <Teleport v-if="sidebarActive" to="#admin-sidebar-portal">
+      <AdminSidebarSwitcher title="проекты" :count="projects?.length ?? 0">
         <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
         <div class="std-nav">
           <template v-if="pending && !hasProjectsCache">
             <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
           </template>
           <template v-else>
-            <button v-for="p in filteredProjects" :key="p.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedSlug === p.slug }" @click="selectProject(p)">
-              <span class="ent-nav-avatar pj-av">{{ p.title?.charAt(0)?.toUpperCase() || '?' }}</span>
-              <span class="ent-nav-name">{{ p.title }}<span v-if="p.status" class="ent-nav-sub">{{ phaseLabel(p.status) }}</span></span>
-              <span v-if="p.status" class="ent-nav-badge pj-phase" :class="`pj-phase--${phaseColor(p.status)}`">{{ phaseLabel(p.status) }}</span>
-            </button>
+            <button v-for="p in filteredProjects" :key="p.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedSlug === p.slug }" @click="selectProject(p)">{{ p.title }}</button>
             <div v-if="!filteredProjects.length && searchQuery" class="pj-nav-empty">ничего не найдено</div>
             <div v-else-if="!projects?.length" class="pj-nav-empty">нет проектов</div>
           </template>
         </div>
-        <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="showCreate = true; wizardStep = 1">+ создать</button></div>
-      </nav>
+      </AdminSidebarSwitcher>
+  </Teleport>
 
-      <!-- ═══ Detail ═══ -->
-      <div class="ent-main">
-        <div v-if="selectedProject" class="ent-detail-card glass-card">
-          <div class="ent-detail-head">
-            <div>
-              <div class="ent-detail-name">{{ selectedProject.title }}</div>
-              <div class="pj-detail-slug">{{ selectedProject.slug }}</div>
-            </div>
-            <div class="ent-detail-actions">
-              <NuxtLink :to="`/admin/projects/${selectedProject.slug}`" class="a-btn-sm pj-open-btn">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                открыть
-              </NuxtLink>
-            </div>
+    <!-- ═══ Detail ═══ -->
+    <div>
+      <div v-if="selectedProject" class="ent-detail-card glass-card">
+        <div class="ent-detail-head">
+          <div>
+            <div class="ent-detail-name">{{ selectedProject.title }}</div>
+            <div class="pj-detail-slug">{{ selectedProject.slug }}</div>
           </div>
-
-          <div v-if="selectedProject.status" class="ent-detail-section">статус</div>
-          <div v-if="selectedProject.status" class="ent-detail-row">
-            <span class="pj-phase-pill" :class="`pj-phase--${phaseColor(selectedProject.status)}`">{{ phaseLabel(selectedProject.status) }}</span>
-          </div>
-
-          <div v-if="selectedProject.taskTotal > 0" class="ent-detail-section">прогресс</div>
-          <div v-if="selectedProject.taskTotal > 0" class="pj-progress-row">
-            <div class="pj-progress-bar"><div class="pj-progress-fill" :style="{ width: Math.round(selectedProject.taskDone / selectedProject.taskTotal * 100) + '%' }" /></div>
-            <span class="pj-progress-text">{{ selectedProject.taskDone }}/{{ selectedProject.taskTotal }}</span>
-            <span v-if="selectedProject.taskOverdue > 0" class="pj-overdue">⚠ {{ selectedProject.taskOverdue }} просрочено</span>
-          </div>
-
-          <div class="ent-detail-foot">
-            <NuxtLink :to="`/admin/projects/${selectedProject.slug}`" class="a-btn-sm">управление</NuxtLink>
-            <NuxtLink :to="`/admin/contractors?projectSlug=${selectedProject.slug}`" class="a-btn-sm">подрядчики</NuxtLink>
-            <NuxtLink :to="`/admin/clients?projectSlug=${selectedProject.slug}`" class="a-btn-sm">клиенты</NuxtLink>
+          <div class="ent-detail-actions">
+            <NuxtLink :to="`/admin/projects/${selectedProject.slug}`" class="a-btn-sm pj-open-btn">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M15 3h6v6M9 15L21 3M21 9v12H3V3h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              открыть
+            </NuxtLink>
           </div>
         </div>
-        <div v-else class="ent-empty-detail">
-          <span class="ent-empty-icon">📁</span>
-          <span v-if="projects?.length">Выберите проект из списка</span>
-          <span v-else>Нет проектов — создайте первый</span>
-          <button v-if="!projects?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true; wizardStep = 1">+ создать проект</button>
+
+        <div v-if="selectedProject.status" class="ent-detail-section">статус</div>
+        <div v-if="selectedProject.status" class="ent-detail-row">
+          <span class="pj-phase-pill" :class="`pj-phase--${phaseColor(selectedProject.status)}`">{{ phaseLabel(selectedProject.status) }}</span>
+        </div>
+
+        <div v-if="selectedProject.taskTotal > 0" class="ent-detail-section">прогресс</div>
+        <div v-if="selectedProject.taskTotal > 0" class="pj-progress-row">
+          <div class="pj-progress-bar"><div class="pj-progress-fill" :style="{ width: Math.round(selectedProject.taskDone / selectedProject.taskTotal * 100) + '%' }" /></div>
+          <span class="pj-progress-text">{{ selectedProject.taskDone }}/{{ selectedProject.taskTotal }}</span>
+          <span v-if="selectedProject.taskOverdue > 0" class="pj-overdue">⚠ {{ selectedProject.taskOverdue }} просрочено</span>
+        </div>
+
+        <div class="ent-detail-foot">
+          <NuxtLink :to="`/admin/projects/${selectedProject.slug}`" class="a-btn-sm">управление</NuxtLink>
+          <NuxtLink :to="`/admin/contractors?projectSlug=${selectedProject.slug}`" class="a-btn-sm">подрядчики</NuxtLink>
+          <NuxtLink :to="`/admin/clients?projectSlug=${selectedProject.slug}`" class="a-btn-sm">клиенты</NuxtLink>
         </div>
       </div>
-
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
+      <div v-else class="pj-stats-center">
+        <div class="pj-stats-hint">
+          <span v-if="projects?.length">выберите проект из списка</span>
+          <template v-else>
+            <span>нет проектов</span>
+            <button class="pj-typo-create" @click="showCreate = true; wizardStep = 1">+ создать проект</button>
+          </template>
+        </div>
+      </div>
     </div>
 
-    <!-- ══ Create modal ══ -->
-    <Teleport to="body">
-      <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
-        <div class="pj-modal glass-surface">
-          <div class="pj-modal-head">
-            <span>новый проект</span>
-            <span class="pj-modal-step">шаг {{ wizardStep }} из 2</span>
-            <button class="pj-modal-close" @click="closeCreate">✕</button>
-          </div>
-          <div class="pj-modal-body">
-            <form @submit.prevent="onWizardSubmit">
-              <template v-if="wizardStep === 1">
-                <div class="pj-form-field"><label class="pj-form-label">Название</label><input v-model="newProject.title" class="glass-input" required placeholder="Название проекта" autofocus /></div>
-                <div class="pj-form-field"><label class="pj-form-label">Slug (URL)</label><input v-model="newProject.slug" class="glass-input" required placeholder="project-slug" /></div>
-              </template>
-              <template v-else>
-                <div class="pj-preview-row"><span class="pj-preview-label">Проект</span><span class="pj-preview-value">{{ newProject.title }} · <span class="pj-preview-dim">{{ newProject.slug }}</span></span></div>
-                <div class="pj-preview-pages"><span class="pj-preview-label">Страницы</span><div class="pj-pages-chips"><span v-for="pg in corePageLabels" :key="pg" class="pj-page-chip">{{ pg }}</span></div></div>
-              </template>
-              <p v-if="createError" class="pj-form-error">{{ createError }}</p>
-              <div class="pj-modal-foot">
-                <button type="button" class="a-btn-sm" @click="closeCreate">отмена</button>
-                <button v-if="wizardStep === 2" type="button" class="a-btn-sm" @click="wizardStep = 1">← назад</button>
-                <button type="submit" class="a-btn-save" :disabled="creating">{{ wizardStep === 1 ? 'далее →' : (creating ? '...' : 'создать проект') }}</button>
-              </div>
-            </form>
-          </div>
+  <!-- ══ Create modal ══ -->
+  <Teleport to="body">
+    <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
+      <div class="pj-modal glass-surface">
+        <div class="pj-modal-head">
+          <span>новый проект</span>
+          <span class="pj-modal-step">шаг {{ wizardStep }} из 2</span>
+          <button class="pj-modal-close" @click="closeCreate">✕</button>
+        </div>
+        <div class="pj-modal-body">
+          <form @submit.prevent="onWizardSubmit">
+            <template v-if="wizardStep === 1">
+              <div class="pj-form-field"><label class="pj-form-label">Название</label><input v-model="newProject.title" class="glass-input" required placeholder="Название проекта" autofocus /></div>
+              <div class="pj-form-field"><label class="pj-form-label">Slug (URL)</label><input v-model="newProject.slug" class="glass-input" required placeholder="project-slug" /></div>
+            </template>
+            <template v-else>
+              <div class="pj-preview-row"><span class="pj-preview-label">Проект</span><span class="pj-preview-value">{{ newProject.title }} · <span class="pj-preview-dim">{{ newProject.slug }}</span></span></div>
+              <div class="pj-preview-pages"><span class="pj-preview-label">Страницы</span><div class="pj-pages-chips"><span v-for="pg in corePageLabels" :key="pg" class="pj-page-chip">{{ pg }}</span></div></div>
+            </template>
+            <p v-if="createError" class="pj-form-error">{{ createError }}</p>
+            <div class="pj-modal-foot">
+              <button type="button" class="a-btn-sm" @click="closeCreate">отмена</button>
+              <button v-if="wizardStep === 2" type="button" class="a-btn-sm" @click="wizardStep = 1">← назад</button>
+              <button type="submit" class="a-btn-save" :disabled="creating">{{ wizardStep === 1 ? 'далее →' : (creating ? '...' : 'создать проект') }}</button>
+            </div>
+          </form>
         </div>
       </div>
-    </Teleport>
-  </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 
-definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
+definePageMeta({ layout: 'admin', middleware: ['admin'] })
+const sidebarActive = useSidebarActive()
 
 const projectsCache = useState<any[]>('cache-admin-projects', () => [])
 const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects', {
@@ -212,4 +202,41 @@ html.dark .pj-phase--teal   { color: #5eead4; background: rgba(94,234,212,.1); }
 .pj-preview-pages { margin-bottom: 8px; }
 .pj-pages-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .pj-page-chip { font-size: .68rem; padding: 2px 8px; border-radius: var(--chip-radius, 999px); background: color-mix(in srgb, var(--glass-text) 5%, transparent); color: var(--glass-text); opacity: .5; }
+
+/* ══ Center infographic wrapper ══ */
+.pj-stats-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 40px;
+}
+.pj-stats-hint {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+  font-size: .6rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--glass-text);
+  opacity: .22;
+}
+.pj-typo-create {
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  color: var(--glass-text);
+  font-family: var(--ds-font-family);
+  font-size: .6rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  cursor: pointer;
+  opacity: .4;
+  transition: opacity .15s;
+}
+.pj-typo-create:hover { opacity: .85; }
+
+
 </style>

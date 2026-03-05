@@ -1,66 +1,160 @@
 <template>
   <div class="apl-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading">
+      <div class="ent-skeleton-line" v-for="i in 5" :key="i"/>
+    </div>
     <template v-else>
 
-      <div class="apl-status-row">
-        <span class="apl-dot" :class="`apl-dot--${statusColor}`"></span>
-        <select v-model="form.pl_status" class="u-status-sel" @change="save">
-          <option value="">статус не задан</option>
-          <option value="in_progress">идёт проверка</option>
-          <option value="revision">устранение замечаний</option>
-          <option value="done">все замечания устранены ✓</option>
-        </select>
-        <span class="apl-stat">{{ openCount }} открытых · {{ doneCount }} закрыто</span>
+      <!-- ── Статистика ─────────────────────────────────────────── -->
+      <div class="apl-stats">
+        <div v-for="s in statCards" :key="s.key" class="apl-stat-card" :class="`apl-stat-card--${s.color}`">
+          <span class="apl-stat-num">{{ s.count }}</span>
+          <span class="apl-stat-label">{{ s.label }}</span>
+        </div>
+        <div class="apl-stat-total">
+          <span class="apl-stat-num">{{ items.length }}</span>
+          <span class="apl-stat-label">всего</span>
+        </div>
         <span v-if="savedAt" class="apl-saved">✓ {{ savedAt }}</span>
       </div>
 
-      <div class="apl-section">
-        <div class="apl-section-title">
-          замечания
-          <button class="apl-add-btn" @click="addItem">+ замечание</button>
-        </div>
-
-        <div v-if="form.pl_items.length" class="apl-list">
-          <div v-for="(item, i) in form.pl_items" :key="i" class="apl-item" :class="{ 'apl-item--done': item.status === 'fixed' }">
-            <div class="apl-item-head">
-              <span class="apl-num">{{ i + 1 }}</span>
-              <input v-model="item.location" class="glass-input glass-input--inline" placeholder="помещение / зона..." @blur="save">
-              <select v-model="item.status" class="u-status-sel" @change="save">
-                <option value="open">открыто</option>
-                <option value="in_progress">устраняется</option>
-                <option value="fixed">устранено ✓</option>
-              </select>
-              <button class="apl-del" @click="removeItem(i)">×</button>
-            </div>
-            <textarea v-model="item.description" class="glass-input glass-input--inline u-ta" rows="2" placeholder="описание дефекта..." @blur="save" />
-            <div class="apl-item-foot">
-              <label class="u-field__label">виновная сторона:</label>
-              <input v-model="item.responsible" class="glass-input glass-input--inline" placeholder="подрядчик / поставщик..." @blur="save">
-              <label class="u-field__label">срок устранения:</label>
-              <AppDatePicker v-model="item.deadline" model-type="iso" input-class="apl-date" @update:model-value="save" />
-            </div>
-          </div>
-        </div>
-        <div v-else class="apl-empty">Замечания не добавлены</div>
+      <!-- ── Фильтры ────────────────────────────────────────────── -->
+      <div class="apl-filters">
+        <button
+          v-for="f in filterOptions"
+          :key="f.value"
+          class="apl-filter-btn"
+          :class="activeFilter === f.value ? 'apl-filter-btn--active' : ''"
+          @click="activeFilter = f.value"
+        >{{ f.label }}</button>
+        <div style="flex:1"/>
+        <select v-model="activeStatus" class="u-status-sel apl-filter-sel">
+          <option value="">все статусы</option>
+          <option value="open">открыт</option>
+          <option value="assigned">назначен</option>
+          <option value="fixed">исправлен</option>
+          <option value="verified">принят ✓</option>
+        </select>
+        <button class="apl-add-btn" @click="addItem">+ замечание</button>
       </div>
 
-      <div class="apl-section">
-        <div class="apl-section-title">итоговый акт</div>
-        <div class="u-grid-2">
-          <div class="u-field">
-            <label class="u-field__label">дата осмотра</label>
-            <AppDatePicker v-model="form.pl_inspection_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
+      <!-- ── Список замечаний ───────────────────────────────────── -->
+      <div v-if="filteredItems.length" class="apl-list">
+        <div
+          v-for="(item, idx) in filteredItems"
+          :key="item.id"
+          class="apl-item"
+          :class="[`apl-item--${item.priority || 'minor'}`, `apl-item--status-${item.status || 'open'}`]"
+        >
+          <!-- Шапка замечания -->
+          <div class="apl-item-head" @click="toggleItem(item.id)">
+            <div class="apl-item-head-left">
+              <span class="apl-priority-tag" :class="`apl-priority--${item.priority || 'minor'}`">
+                {{ priorityLabel(item.priority) }}
+              </span>
+              <span class="apl-item-num">#{{ realIndex(item) + 1 }}</span>
+              <span class="apl-item-room">{{ item.room || 'помещение не указано' }}</span>
+              <span class="apl-item-title-preview">{{ item.description ? item.description.slice(0,50) : '—' }}{{ item.description?.length > 50 ? '…' : '' }}</span>
+            </div>
+            <div class="apl-item-head-right">
+              <span class="apl-status-badge" :class="`apl-status--${item.status || 'open'}`">
+                {{ statusLabel(item.status) }}
+              </span>
+              <span class="apl-chevron">{{ expandedItems.has(item.id) ? '▲' : '▼' }}</span>
+            </div>
           </div>
-          <div class="u-field">
-            <label class="u-field__label">дата устранения замечаний</label>
-            <AppDatePicker v-model="form.pl_resolution_date" model-type="iso" input-class="glass-input" @update:model-value="save" />
-          </div>
-          <div class="u-field u-field--full">
-            <label class="u-field__label">примечания</label>
-            <textarea v-model="form.pl_notes" class="glass-input u-ta" rows="3" @blur="save" />
+
+          <!-- Тело (expandable) -->
+          <div v-show="expandedItems.has(item.id)" class="apl-item-body">
+            <div class="u-grid-2" style="margin-bottom:12px">
+              <div class="u-field">
+                <label class="u-field__label">приоритет</label>
+                <select v-model="item.priority" class="u-status-sel" @change="save">
+                  <option value="critical">критичный 🔴</option>
+                  <option value="major">серьёзный 🟠</option>
+                  <option value="minor">незначительный 🟡</option>
+                  <option value="cosmetic">косметический ⬜</option>
+                </select>
+              </div>
+              <div class="u-field">
+                <label class="u-field__label">статус</label>
+                <select v-model="item.status" class="u-status-sel" @change="save">
+                  <option value="open">открыт</option>
+                  <option value="assigned">назначен</option>
+                  <option value="fixed">исправлен</option>
+                  <option value="verified">принят ✓</option>
+                </select>
+              </div>
+              <div class="u-field">
+                <label class="u-field__label">помещение / зона</label>
+                <input v-model="item.room" class="glass-input" placeholder="кухня, ванна, коридор…" @blur="save">
+              </div>
+              <div class="u-field">
+                <label class="u-field__label">ответственный подрядчик</label>
+                <input v-model="item.contractor" class="glass-input" placeholder="компания / ФИО" @blur="save">
+              </div>
+              <div class="u-field">
+                <label class="u-field__label">срок устранения</label>
+                <AppDatePicker v-model="item.dueDate" model-type="iso" input-class="glass-input" @update:model-value="save" />
+              </div>
+              <div class="u-field">
+                <label class="u-field__label">дата устранения (факт)</label>
+                <AppDatePicker v-model="item.resolvedDate" model-type="iso" input-class="glass-input" @update:model-value="save" />
+              </div>
+              <div class="u-field u-field--full">
+                <label class="u-field__label">описание замечания</label>
+                <textarea v-model="item.description" class="glass-input u-ta" rows="3" @blur="save" placeholder="Подробное описание…"/>
+              </div>
+              <div class="u-field u-field--full">
+                <label class="u-field__label">комментарий (ход устранения)</label>
+                <textarea v-model="item.resolution" class="glass-input u-ta" rows="2" @blur="save" placeholder="Что было сделано…"/>
+              </div>
+            </div>
+
+            <!-- Фото -->
+            <div class="apl-photos-section">
+              <div class="apl-photos-header">
+                <span class="apl-photos-label">фото замечания</span>
+                <label class="apl-upload-btn">
+                  <input type="file" multiple accept="image/*" class="apl-file-input" @change="e => uploadPhotos(item, e)">
+                  + фото
+                </label>
+              </div>
+              <div v-if="item.photos && item.photos.length" class="apl-photos-grid">
+                <div v-for="(ph, pi) in item.photos" :key="pi" class="apl-photo-thumb">
+                  <img :src="ph" :alt="`фото ${pi+1}`" @click="lightbox = ph"/>
+                  <button class="apl-photo-del" @click.stop="removePhoto(item, pi)">×</button>
+                </div>
+              </div>
+              <div v-else class="apl-photos-empty">Фото не прикреплены</div>
+            </div>
+
+            <!-- Действия -->
+            <div class="apl-item-actions">
+              <!-- Быстрые переходы статуса -->
+              <div class="apl-status-flow">
+                <button
+                  v-for="st in statusFlow"
+                  :key="st.value"
+                  class="apl-flow-btn"
+                  :class="item.status === st.value ? 'apl-flow-btn--active' : ''"
+                  @click="setStatus(item, st.value)"
+                >{{ st.label }}</button>
+              </div>
+              <button class="apl-del-btn" @click="removeItem(idx)">удалить замечание</button>
+            </div>
           </div>
         </div>
+      </div>
+      <div v-else class="apl-empty">
+        <template v-if="activeFilter || activeStatus">Нет замечаний по выбранному фильтру</template>
+        <template v-else>Замечания пока не добавлены. Нажмите «+ замечание»</template>
+      </div>
+
+      <!-- Lightbox -->
+      <div v-if="lightbox" class="apl-lightbox" @click="lightbox = ''">
+        <img :src="lightbox" class="apl-lightbox-img" @click.stop>
+        <button class="apl-lightbox-close" @click="lightbox = ''">×</button>
       </div>
 
     </template>
@@ -72,49 +166,200 @@ const props = defineProps<{ slug: string }>()
 const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`)
 const { savedAt, touch: markSaved } = useTimestamp()
 
-const form = reactive<any>({
-  pl_status: '',
-  pl_items: [] as any[],
-  pl_inspection_date: '',
-  pl_resolution_date: '',
-  pl_notes: '',
-})
+const expandedItems = ref<Set<string>>(new Set())
+const activeFilter  = ref('')
+const activeStatus  = ref('')
+const lightbox      = ref('')
+
+const items = ref<any[]>([])
 
 watch(project, (p) => {
-  if (!p?.profile) return
-  const pf = p.profile
-  Object.keys(form).forEach(k => { if (pf[k] !== undefined) (form as any)[k] = pf[k] })
-  if (!Array.isArray(form.pl_items)) form.pl_items = []
+  if (!p?.profile?.pl_items) return
+  items.value = p.profile.pl_items
 }, { immediate: true })
-
-const statusColor = useStatusColor(form, 'pl_status')
-const openCount = computed(() => form.pl_items.filter((i: any) => i.status !== 'fixed').length)
-const doneCount = computed(() => form.pl_items.filter((i: any) => i.status === 'fixed').length)
 
 async function save() {
   await $fetch(`/api/projects/${props.slug}`, {
     method: 'PUT',
-    body: { profile: { ...(project.value?.profile || {}), ...form } },
+    body: { profile: { ...(project.value?.profile || {}), pl_items: items.value } },
   })
   markSaved()
 }
 
-function addItem() {
-  form.pl_items.push({ location: '', description: '', status: 'open', responsible: '', deadline: '' })
+// ── Filters ───────────────────────────────────────────────────
+const filterOptions = [
+  { value: '', label: 'все' },
+  { value: 'critical', label: '🔴 критичные' },
+  { value: 'major', label: '🟠 серьёзные' },
+  { value: 'minor', label: '🟡 незначительные' },
+  { value: 'cosmetic', label: '⬜ косметические' },
+]
+
+const filteredItems = computed(() => {
+  return items.value.filter(i => {
+    if (activeFilter.value && i.priority !== activeFilter.value) return false
+    if (activeStatus.value && i.status !== activeStatus.value) return false
+    return true
+  })
+})
+
+function realIndex(item: any) {
+  return items.value.indexOf(item)
 }
-function removeItem(i: number) {
-  form.pl_items.splice(i, 1)
+
+// ── Stats ─────────────────────────────────────────────────────
+const statCards = computed(() => [
+  { key: 'open',     label: 'открыты',    color: 'red',    count: items.value.filter(i => i.status === 'open').length },
+  { key: 'assigned', label: 'назначены',  color: 'orange', count: items.value.filter(i => i.status === 'assigned').length },
+  { key: 'fixed',    label: 'исправлены', color: 'blue',   count: items.value.filter(i => i.status === 'fixed').length },
+  { key: 'verified', label: 'приняты',    color: 'green',  count: items.value.filter(i => i.status === 'verified').length },
+])
+
+// ── Status flow ────────────────────────────────────────────────
+const statusFlow = [
+  { value: 'open',     label: '① открыт' },
+  { value: 'assigned', label: '② назначен' },
+  { value: 'fixed',    label: '③ исправлен' },
+  { value: 'verified', label: '④ принят ✓' },
+]
+
+function setStatus(item: any, s: string) {
+  item.status = s
+  if (s === 'fixed' || s === 'verified') {
+    if (!item.resolvedDate) item.resolvedDate = new Date().toISOString().slice(0, 10)
+  }
   save()
+}
+
+// ── CRUD ──────────────────────────────────────────────────────
+function addItem() {
+  const id = `pl_${Date.now()}`
+  items.value.push({
+    id, priority: 'minor', status: 'open',
+    room: '', contractor: '', description: '',
+    resolution: '', dueDate: '', resolvedDate: '',
+    photos: [],
+  })
+  expandedItems.value.add(id)
+  save()
+}
+
+function removeItem(idx: number) {
+  if (!confirm('Удалить замечание?')) return
+  items.value.splice(idx, 1)
+  save()
+}
+
+function toggleItem(id: string) {
+  if (expandedItems.value.has(id)) expandedItems.value.delete(id)
+  else expandedItems.value.add(id)
+}
+
+// ── Photos ────────────────────────────────────────────────────
+async function uploadPhotos(item: any, e: Event) {
+  const files = (e.target as HTMLInputElement).files
+  if (!files?.length) return
+  for (const file of Array.from(files)) {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await $fetch<any>('/api/upload', { method: 'POST', body: fd })
+    if (!item.photos) item.photos = []
+    item.photos.push(res.url)
+  }
+  save()
+}
+
+function removePhoto(item: any, pi: number) {
+  item.photos.splice(pi, 1)
+  save()
+}
+
+// ── Labels ────────────────────────────────────────────────────
+function priorityLabel(p: string) {
+  return ({critical:'🔴 критичный',major:'🟠 серьёзный',minor:'🟡 незначительный',cosmetic:'⬜ косметический'} as any)[p] || p
+}
+function statusLabel(s: string) {
+  return ({open:'открыт',assigned:'назначен',fixed:'исправлен',verified:'принят ✓'} as any)[s] || s
 }
 </script>
 
 <style scoped>
 .apl-wrap { padding: 4px 0 40px; }
-.apl-loading { padding: 40px 0; font-size: .82rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
-.apl-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
-.apl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.apl-dot--gray   { background: color-mix(in srgb, var(--glass-text) 40%, transparent); }
-.apl-dot--blue   { background: var(--ds-accent); }
-.apl-dot--yellow { background: var(--ds-warning); }
-.apl-dot--green  { background: var(--ds-success); }
+
+.apl-stats        { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+.apl-stat-card    { display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 14px; border-radius:8px; min-width:72px; }
+.apl-stat-card--red    { background:#1a0808; border:1px solid #3a1010; }
+.apl-stat-card--orange { background:#1a1000; border:1px solid #3a2800; }
+.apl-stat-card--blue   { background:#0d1a2a; border:1px solid #1a3050; }
+.apl-stat-card--green  { background:#0f1f0f; border:1px solid #1a3a1a; }
+.apl-stat-total   { display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 14px; border-radius:8px; background:#0e0e0e; border:1px solid #222; min-width:72px; }
+.apl-stat-num     { font-size:1.3rem; font-weight:700; color:#ccc; }
+.apl-stat-label   { font-size:.65rem; color:#666; text-transform:uppercase; letter-spacing:.04em; }
+.apl-saved        { font-size:.73rem; color:#4caf50; margin-left:auto; }
+
+.apl-filters      { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.apl-filter-btn   { background:#0e0e0e; border:1px solid #222; color:#777; border-radius:6px; padding:4px 10px; font-size:.74rem; cursor:pointer; }
+.apl-filter-btn:hover { background:#181818; }
+.apl-filter-btn--active { background:#1a2340; border-color:#2a4080; color:#8ab4f8; }
+.apl-filter-sel   { max-width:140px; font-size:.75rem; padding:4px 8px; }
+.apl-add-btn      { background:#1a2340; border:1px solid #2a4080; color:#8ab4f8; border-radius:6px; padding:4px 12px; font-size:.75rem; cursor:pointer; }
+.apl-add-btn:hover { background:#203060; }
+
+.apl-list { display:flex; flex-direction:column; gap:8px; }
+.apl-item { background:#0e0e0e; border:1px solid #222; border-radius:10px; overflow:hidden; }
+.apl-item--critical { border-left:3px solid #c62828; }
+.apl-item--major    { border-left:3px solid #e65100; }
+.apl-item--minor    { border-left:3px solid #f9a825; }
+.apl-item--cosmetic { border-left:3px solid #444; }
+.apl-item--status-verified { opacity:.65; }
+
+.apl-item-head       { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 14px; cursor:pointer; }
+.apl-item-head:hover { background:#111; }
+.apl-item-head-left  { display:flex; align-items:center; gap:8px; flex:1; min-width:0; overflow:hidden; }
+.apl-item-head-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+
+.apl-priority-tag { font-size:.68rem; padding:2px 6px; border-radius:4px; white-space:nowrap; }
+.apl-priority--critical { background:#1a0000; color:#ef5350; }
+.apl-priority--major    { background:#1a0e00; color:#ff8a65; }
+.apl-priority--minor    { background:#1a1800; color:#ffd54f; }
+.apl-priority--cosmetic { background:#1a1a1a; color:#9e9e9e; }
+
+.apl-item-num          { font-size:.72rem; color:#555; flex-shrink:0; }
+.apl-item-room         { font-size:.78rem; color:#8ab4f8; flex-shrink:0; }
+.apl-item-title-preview { font-size:.8rem; color:#aaa; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.apl-status-badge { font-size:.68rem; padding:2px 7px; border-radius:4px; flex-shrink:0; }
+.apl-status--open     { background:#1a0f0f; color:#ef5350; }
+.apl-status--assigned { background:#1a1200; color:#ffb74d; }
+.apl-status--fixed    { background:#0d1a2a; color:#64b5f6; }
+.apl-status--verified { background:#0f1f0f; color:#81c784; }
+.apl-chevron { font-size:.65rem; color:#555; }
+
+.apl-item-body { padding:14px 16px 16px; border-top:1px solid #1a1a1a; }
+
+.apl-photos-section { background:#070707; border:1px solid #1a1a1a; border-radius:8px; padding:12px; margin-bottom:12px; }
+.apl-photos-header  { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.apl-photos-label   { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#666; }
+.apl-upload-btn     { background:#1a2340; border:1px solid #2a4080; color:#8ab4f8; border-radius:5px; padding:3px 10px; font-size:.72rem; cursor:pointer; position:relative; }
+.apl-file-input     { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.apl-photos-grid    { display:flex; flex-wrap:wrap; gap:6px; }
+.apl-photo-thumb    { position:relative; width:72px; height:72px; border-radius:4px; overflow:hidden; }
+.apl-photo-thumb img { width:100%; height:100%; object-fit:cover; cursor:pointer; }
+.apl-photo-del      { position:absolute; top:2px; right:2px; background:rgba(0,0,0,.7); border:none; color:#fff; border-radius:50%; width:16px; height:16px; font-size:.7rem; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+.apl-photos-empty   { font-size:.76rem; color:#444; text-align:center; padding:6px 0; }
+
+.apl-item-actions  { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.apl-status-flow   { display:flex; gap:4px; }
+.apl-flow-btn      { background:#0e0e0e; border:1px solid #2a2a2a; color:#666; border-radius:6px; padding:4px 10px; font-size:.72rem; cursor:pointer; }
+.apl-flow-btn:hover { background:#181818; color:#aaa; }
+.apl-flow-btn--active { background:#1a2340; border-color:#2a4080; color:#8ab4f8; }
+.apl-del-btn       { background:none; border:1px solid #3a1a1a; color:#e57373; border-radius:6px; padding:4px 12px; font-size:.73rem; cursor:pointer; }
+.apl-del-btn:hover { background:#1a0808; }
+
+.apl-empty { text-align:center; padding:40px 20px; color:#444; font-size:.84rem; }
+
+.apl-lightbox       { position:fixed; inset:0; background:rgba(0,0,0,.9); display:flex; align-items:center; justify-content:center; z-index:9999; }
+.apl-lightbox-img   { max-width:90vw; max-height:90vh; border-radius:6px; }
+.apl-lightbox-close { position:absolute; top:16px; right:20px; background:none; border:none; color:#fff; font-size:2rem; cursor:pointer; opacity:.7; }
+.apl-lightbox-close:hover { opacity:1; }
 </style>

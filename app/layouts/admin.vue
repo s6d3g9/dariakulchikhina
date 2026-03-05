@@ -1,192 +1,29 @@
 <template>
   <div class="admin-bg glass-page">
     <UIDesignPanel />
-    <header class="admin-header glass-surface">
-      <span class="admin-brand">админ-панель</span>
-      <div class="admin-header-links">
-        <!-- Search trigger -->
-        <button
-          type="button"
-          class="admin-search-btn"
-          title="Поиск  Ctrl+K / ⌘K"
-          aria-label="Поиск"
-          @click="searchOpen = true"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span class="admin-search-label">поиск</span>
-          <kbd class="admin-search-kbd">Ctrl+K</kbd>
-        </button>
 
-        <button
-          type="button"
-          class="theme-dot"
-          :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
-          @click="toggleTheme"
-        ></button>
-        <NuxtLink to="/" class="admin-link">сайт</NuxtLink>
-        <a href="#" class="admin-link" @click.prevent="logout">выйти</a>
-      </div>
-    </header>
+    <!-- ── Minimal utility bar ── -->
+    <div class="adm-util-bar">
+      <button class="adm-util-btn" @click="searchOpen = true" title="Ctrl+K">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="adm-util-btn" @click="toggleTheme" :title="isDark ? 'светлая тема' : 'тёмная тема'">{{ isDark ? '○' : '●' }}</button>
+      <span v-if="notifTotal" class="adm-util-notif">{{ notifTotal }}</span>
+      <button class="adm-util-btn adm-util-btn--exit" @click.prevent="logout">выйти</button>
+    </div>
 
     <div class="admin-container">
-      <!-- ── Tab bar ── -->
-      <div class="admin-tabs">
+      <div class="adm-layout">
+        <!-- ── Persistent sidebar panel (single DOM element across all pages) ── -->
+        <nav class="ent-sidebar std-sidenav" id="admin-sidebar-host">
+          <div id="admin-sidebar-portal"></div>
+        </nav>
 
-        <!-- проекты + chip текущего проекта -->
-        <div ref="projectsTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isProjectsTab }">
-          <NuxtLink to="/admin" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isProjectsTab }">проекты</NuxtLink>
-          <button
-            v-if="activeProjectSlug"
-            type="button"
-            class="admin-mini-chip"
-            :title="currentProjectTitle"
-            @click.stop="projectsOpen = !projectsOpen"
-          >{{ currentProjectInitials }}</button>
-          <button
-            v-else
-            type="button"
-            class="admin-mini-chip admin-mini-chip--dim"
-            title="Список проектов"
-            @click.stop="projectsOpen = !projectsOpen"
-          >…</button>
-          <div v-if="projectsOpen" class="admin-dropdown glass-surface" @click.stop>
-            <button
-              v-for="p in quickProjects" :key="p.slug"
-              type="button" class="admin-drop-item"
-              :class="{ 'admin-drop-item--active': p.slug === activeProjectSlug }"
-              @click="pickProject(p.slug)"
-            >
-              <span class="admin-drop-ini">{{ projectInitials(p.title) }}</span>
-              <span class="admin-drop-lbl">{{ p.title }}</span>
-            </button>
-            <div v-if="!quickProjects.length" class="admin-drop-empty">нет проектов</div>
-          </div>
+        <!-- ── Main content  ── -->
+        <div class="adm-main">
+          <slot />
         </div>
-
-        <!-- подрядчики + chip -->
-        <div ref="contractorsTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isContractorsTab }">
-          <NuxtLink :to="contractorsTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isContractorsTab }">подрядчики</NuxtLink>
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="contractorsOpen = !contractorsOpen">…</button>
-          <div v-if="contractorsOpen" class="admin-dropdown glass-surface" @click.stop>
-            <div
-              v-for="ct in quickContractors" :key="ct.id"
-              class="admin-drop-item-with-actions"
-            >
-              <button
-                type="button" class="admin-drop-item admin-drop-item--flex"
-                @click="pickContractor(ct)"
-              >
-                <span class="admin-drop-ini">{{ nameInitials(ct.name) }}</span>
-                <span class="admin-drop-lbl">{{ ct.name }}</span>
-              </button>
-              <button
-                v-if="activeProjectSlug"
-                type="button"
-                class="admin-drop-action-btn"
-                :class="isContractorLinked(ct.id) ? 'admin-drop-action-btn--remove' : 'admin-drop-action-btn--add'"
-                :disabled="clientActionLoading"
-                @click.stop="toggleContractorLink(ct.id, ct.name)"
-                :title="isContractorLinked(ct.id) ? 'Отвязать от проекта' : 'Привязать к проекту'"
-              >{{ isContractorLinked(ct.id) ? '-' : '+' }}</button>
-            </div>
-            <div class="admin-drop-divider"></div>
-            <button type="button" class="admin-drop-all" @click="goToAllContractors">все подрядчики →</button>
-            <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
-          </div>
-        </div>
-
-        <!-- клиенты + chip -->
-        <div ref="clientsTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isClientsTab }">
-          <NuxtLink :to="clientsTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isClientsTab }">клиенты</NuxtLink>
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="clientsOpen = !clientsOpen">…</button>
-          <div v-if="clientsOpen" class="admin-dropdown glass-surface" @click.stop>
-            <div
-              v-for="cl in quickClients" :key="cl.id"
-              class="admin-drop-item-with-actions"
-            >
-              <button
-                type="button" class="admin-drop-item admin-drop-item--flex"
-                @click="pickClient(cl)"
-              >
-                <span class="admin-drop-ini">{{ nameInitials(cl.name) }}</span>
-                <span class="admin-drop-lbl">{{ cl.name }}</span>
-              </button>
-              <button
-                v-if="activeProjectSlug"
-                type="button"
-                class="admin-drop-action-btn"
-                :class="isClientLinked(cl.id) ? 'admin-drop-action-btn--remove' : 'admin-drop-action-btn--add'"
-                :disabled="clientActionLoading"
-                @click.stop="toggleClientLink(cl.id, cl.name)"
-                :title="isClientLinked(cl.id) ? 'Отвязать от проекта' : 'Привязать к проекту'"
-              >{{ isClientLinked(cl.id) ? '-' : '+' }}</button>
-            </div>
-            <div class="admin-drop-divider"></div>
-            <button type="button" class="admin-drop-all" @click="goToAllClients">все клиенты →</button>
-            <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
-          </div>
-        </div>
-
-        <!-- галерея — одна кнопка с дропдауном категорий -->
-        <div ref="galleryTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isGalleryTab }">
-          <NuxtLink :to="galleryActiveTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isGalleryTab }">галерея</NuxtLink>
-          <button type="button" class="admin-mini-chip" :class="galleryCurrentChip ? 'admin-mini-chip' : 'admin-mini-chip--dim'" @click.stop="galleryOpen = !galleryOpen">
-            {{ galleryCurrentChip || '…' }}
-          </button>
-          <div v-if="galleryOpen" class="admin-dropdown glass-surface" @click.stop>
-            <button
-              v-for="g in GALLERY_TABS" :key="g.slug"
-              type="button" class="admin-drop-item"
-              :class="{ 'admin-drop-item--active': route.path === `/admin/gallery/${g.slug}` }"
-              @click="pickGallery(g.slug)"
-            >
-              <span class="admin-drop-ini">{{ g.icon }}</span>
-              <span class="admin-drop-lbl">{{ g.label }}</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- документы -->
-        <div class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDocumentsTab }">
-          <NuxtLink to="/admin/documents" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDocumentsTab }">документы</NuxtLink>
-        </div>
-
-        <!-- дизайнеры -->
-        <div ref="designersTabRef" class="admin-chip-tab" :class="{ 'admin-chip-tab--active': isDesignersTab }">
-          <NuxtLink :to="designersTabTo" class="admin-tab-label glass-chip admin-tab" :class="{ 'admin-tab--active': isDesignersTab }">дизайнеры</NuxtLink>
-          <button type="button" class="admin-mini-chip admin-mini-chip--dim" @click.stop="designersOpen = !designersOpen">…</button>
-          <div v-if="designersOpen" class="admin-dropdown glass-surface" @click.stop>
-            <div
-              v-for="d in quickDesigners" :key="d.id"
-              class="admin-drop-item-with-actions"
-            >
-              <button
-                type="button" class="admin-drop-item admin-drop-item--flex"
-                @click="pickDesigner(d)"
-              >
-                <span class="admin-drop-ini">{{ nameInitials(d.name) }}</span>
-                <span class="admin-drop-lbl">{{ d.name }}</span>
-              </button>
-              <button
-                v-if="activeProjectSlug"
-                type="button"
-                class="admin-drop-action-btn"
-                :class="isDesignerLinked(d.id) ? 'admin-drop-action-btn--remove' : 'admin-drop-action-btn--add'"
-                :disabled="clientActionLoading"
-                @click.stop="toggleDesignerLink(d.id, d.name)"
-                :title="isDesignerLinked(d.id) ? 'Отвязать от проекта' : 'Привязать к проекту'"
-              >{{ isDesignerLinked(d.id) ? '-' : '+' }}</button>
-            </div>
-            <div class="admin-drop-divider"></div>
-            <button type="button" class="admin-drop-all" @click="goToAllDesigners">все дизайнеры →</button>
-            <div v-if="clientActionMessage" class="admin-drop-message">{{ clientActionMessage }}</div>
-          </div>
-        </div>
-
-
-      </div><!-- /.admin-tabs -->
-
-      <slot />
+      </div>
     </div>
 
     <!-- ── Global search palette ── -->
@@ -198,6 +35,22 @@
 const router = useRouter()
 const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
+
+// ── Notifications ─────────────────────────────────────────────
+const notifOpen = ref(false)
+const { data: notifData, refresh: refreshNotif } = useFetch<any>('/api/admin/notifications', {
+  server: false,
+  default: () => ({ total: 0, extra: { count: 0 }, overdue: { count: 0 } }),
+})
+const notifTotal = computed(() => notifData.value?.total || 0)
+setInterval(refreshNotif, 2 * 60 * 1000)
+
+// ── Hamburger menu ────────────────────────────────────────────
+const menuOpen      = ref(false)
+const menuRef       = ref<HTMLElement | null>(null)
+const menuPanelRef  = ref<HTMLElement | null>(null)
+// Close notif when menu closes
+watch(menuOpen, v => { if (!v) notifOpen.value = false })
 
 // ── Route helpers (must be before useFetch that references them) ──
 const activeProjectSlug = computed(() => {
@@ -222,11 +75,11 @@ const { data: projectData, refresh: refreshProjectData } = await useFetch(() =>
 
 // ── Gallery tabs config ─────────────────────────────────────────
 const GALLERY_TABS = [
-  { slug: 'interiors',  label: 'интерьеры',    icon: '🏠' },
-  { slug: 'furniture',  label: 'мебель',        icon: '🪑' },
-  { slug: 'materials',  label: 'материалы',     icon: '🪵' },
-  { slug: 'art',        label: 'арт-объекты',   icon: '🎨' },
-  { slug: 'moodboards', label: 'мудборды',      icon: '🖼' },
+  { slug: 'interiors',  label: 'интерьеры',    icon: 'ин' },
+  { slug: 'furniture',  label: 'мебель',        icon: 'мб' },
+  { slug: 'materials',  label: 'материалы',     icon: 'мт' },
+  { slug: 'art',        label: 'арт-объекты',   icon: 'ар' },
+  { slug: 'moodboards', label: 'мудборды',      icon: 'мд' },
 ]
 
 function withCtx(path: string) {
@@ -241,10 +94,13 @@ const isClientsTab     = computed(() => route.path.startsWith('/admin/clients'))
 const isGalleryTab     = computed(() => route.path.startsWith('/admin/gallery'))
 const isDocumentsTab   = computed(() => route.path.startsWith('/admin/documents'))
 const isDesignersTab   = computed(() => route.path.startsWith('/admin/designers'))
+const isSellersTab     = computed(() => route.path.startsWith('/admin/sellers'))
+const isSettingsTab    = computed(() => route.path.startsWith('/admin/settings'))
 
 const contractorsTabTo    = computed(() => withCtx('/admin/contractors'))
 const clientsTabTo        = computed(() => withCtx('/admin/clients'))
 const designersTabTo      = computed(() => withCtx('/admin/designers'))
+const sellersTabTo        = computed(() => withCtx('/admin/sellers'))
 const galleryActiveTabTo  = computed(() => {
   const match = GALLERY_TABS.find(g => route.path === `/admin/gallery/${g.slug}`)
   return withCtx(`/admin/gallery/${match?.slug ?? 'interiors'}`)
@@ -274,6 +130,15 @@ const quickClients = computed(() => (clientsData.value || []).slice(0, 12))
 // ── Designers data ──────────────────────────────────────────────
 const { data: designersData } = useFetch<any[]>('/api/designers', { server: false, default: () => [] })
 const quickDesigners = computed(() => (designersData.value || []).slice(0, 12))
+
+// ── Sellers data ────────────────────────────────────────────────
+const { data: sellersData } = useFetch<any[]>('/api/sellers', { server: false, default: () => [] })
+const quickSellers = computed(() => (sellersData.value || []).slice(0, 12))
+const { data: linkedSellersData, refresh: refreshLinkedSellers } = await useFetch<any[]>(
+  () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/sellers` : null,
+  { watch: [activeProjectSlug], server: false, default: () => [] },
+)
+
 const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await useFetch<any[]>(
   () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/designers` : null,
   { watch: [activeProjectSlug], server: false, default: () => [] },
@@ -311,6 +176,10 @@ const linkedDesignerIds = computed(() => {
   return new Set((linkedDesignersData.value || []).map((d: any) => String(d.id)))
 })
 
+const linkedSellerIds = computed(() => {
+  return new Set((linkedSellersData.value || []).map((s: any) => String(s.id)))
+})
+
 // Check if client/contractor is linked to current project
 function isClientLinked(clientId: string): boolean {
   return linkedClientIds.value.has(String(clientId))
@@ -322,6 +191,10 @@ function isContractorLinked(contractorId: string): boolean {
 
 function isDesignerLinked(designerId: string): boolean {
   return linkedDesignerIds.value.has(String(designerId))
+}
+
+function isSellerLinked(sellerId: string): boolean {
+  return linkedSellerIds.value.has(String(sellerId))
 }
 
 // Toggle client link to current project
@@ -444,6 +317,44 @@ async function toggleDesignerLink(designerId: string, designerName: string) {
   }
 }
 
+async function toggleSellerLink(sellerId: string, sellerName: string) {
+  if (!activeProjectSlug.value) {
+    clientActionMessage.value = 'Нет активного проекта'
+    return
+  }
+
+  clientActionLoading.value = true
+  clientActionMessage.value = ''
+
+  const isLinked = isSellerLinked(sellerId)
+
+  try {
+    if (isLinked) {
+      await $fetch(`/api/projects/${activeProjectSlug.value}/sellers`, {
+        method: 'DELETE',
+        body: { sellerId: Number(sellerId) },
+      })
+      clientActionMessage.value = `Поставщик "${sellerName}" отвязан от проекта`
+    } else {
+      await $fetch(`/api/projects/${activeProjectSlug.value}/sellers`, {
+        method: 'POST',
+        body: { sellerId: Number(sellerId) },
+      })
+      clientActionMessage.value = `Поставщик "${sellerName}" привязан к проекту`
+    }
+
+    await refreshLinkedSellers()
+
+    setTimeout(() => {
+      clientActionMessage.value = ''
+    }, 2000)
+  } catch (error: any) {
+    clientActionMessage.value = error?.data?.message || 'Ошибка при изменении связи поставщика'
+  } finally {
+    clientActionLoading.value = false
+  }
+}
+
 // ── Initials helpers ────────────────────────────────────────────
 function projectInitials(title: string) {
   const s = String(title || '').trim()
@@ -456,25 +367,30 @@ function nameInitials(name: string) {
 }
 
 // ── Dropdowns state ─────────────────────────────────────────────
-const projectsOpen    = ref(false)
-const contractorsOpen = ref(false)
-const clientsOpen     = ref(false)
-const galleryOpen     = ref(false)
-const designersOpen   = ref(false)
+const projectsOpen  = ref(false)
+const subjectsOpen  = ref(false)
 
-const projectsTabRef    = ref<HTMLElement | null>(null)
-const contractorsTabRef = ref<HTMLElement | null>(null)
-const clientsTabRef     = ref<HTMLElement | null>(null)
-const galleryTabRef     = ref<HTMLElement | null>(null)
-const designersTabRef   = ref<HTMLElement | null>(null)
+const isSubjectsSection = computed(() =>
+  isContractorsTab.value || isClientsTab.value || isGalleryTab.value ||
+  isDocumentsTab.value   || isDesignersTab.value || isSellersTab.value || isSettingsTab.value
+)
+// Auto-open субъекты when on a subjects page
+watch(isSubjectsSection, (v) => { if (v) subjectsOpen.value = true }, { immediate: true })
 
 function closeAll() {
-  projectsOpen.value = contractorsOpen.value = clientsOpen.value = galleryOpen.value = designersOpen.value = false
+  projectsOpen.value = subjectsOpen.value = false
 }
 
 function onDocClick(e: MouseEvent) {
-  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value]
-  if (refs.every(r => !r || !r.contains(e.target as Node))) closeAll()
+  // Close hamburger menu if click outside
+  const t = e.target as Node
+  if (
+    menuOpen.value &&
+    menuRef.value && !menuRef.value.contains(t) &&
+    menuPanelRef.value && !menuPanelRef.value.contains(t)
+  ) {
+    menuOpen.value = false
+  }
 }
 
 // ── Global search ─────────────────────────────────────────────
@@ -497,7 +413,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onSearchKeydown)
 })
-watch(() => route.fullPath, closeAll)
+watch(() => route.fullPath, () => { closeAll(); menuOpen.value = false })
 
 // ── Pickers ─────────────────────────────────────────────────────
 function pickProject(slug: string) { closeAll(); navigateTo(`/admin/projects/${slug}`) }
@@ -525,6 +441,10 @@ function pickGallery(slug: string) { closeAll(); navigateTo(withCtx(`/admin/gall
 function pickDesigner(designer: any) {
   closeAll()
   navigateTo(`/admin/designers?designerId=${designer.id}`)
+}
+function pickSeller(seller: any) {
+  closeAll()
+  navigateTo(`/admin/sellers?sellerId=${seller.id}`)
 }
 
 // ── "All entities" navigation (works even if already on the page) ──
@@ -554,6 +474,14 @@ function goToAllDesigners() {
     navigateTo(designersTabTo.value)
   }
 }
+function goToAllSellers() {
+  closeAll()
+  if (isSellersTab.value) {
+    entityDeselectSignal.value++
+  } else {
+    navigateTo(sellersTabTo.value)
+  }
+}
 
 // ── Auth ─────────────────────────────────────────────────────────
 async function logout() {
@@ -566,7 +494,7 @@ async function logout() {
 /* ── Page ── */
 .admin-bg {
   min-height: 100vh;
-  padding-top: calc(28px + var(--dp-panel-h, 0px));
+  padding-top: calc(var(--dp-panel-h, 0px));
   transition: padding-top .2s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: var(--ds-font-family);
   font-size: var(--ds-font-size);
@@ -574,182 +502,65 @@ async function logout() {
   line-height: var(--ds-line-height);
 }
 
-/* ── Header ── */
-.admin-header {
-  padding: 13px 24px;
+/* ── Utility bar (top-right) ── */
+.adm-util-bar {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 1200;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border-radius: 0 0 var(--card-radius) var(--card-radius);
+  gap: 2px;
 }
-.admin-brand {
-  font-size: .68rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--glass-text);
-  opacity: .45;
-}
-.admin-header-links { display: flex; gap: 14px; align-items: center; }
-.admin-link {
-  font-size: .78rem;
-  color: var(--glass-text);
-  opacity: .5;
-  text-decoration: none;
-}
-.admin-link:hover { opacity: 1; }
-
-/* ── Search button ── */
-.admin-search-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-radius: 8px;
-  padding: 4px 10px 4px 8px;
-  cursor: pointer;
-  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
-  font-size: .72rem;
-  transition: background .14s, border-color .14s, color .14s;
-  font-family: inherit;
-}
-.admin-search-btn:hover {
-  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-color: color-mix(in srgb, var(--glass-text) 18%, transparent);
-  color: var(--glass-text);
-}
-.admin-search-label {
-  font-size: .7rem;
-}
-.admin-search-kbd {
-  font-size: .58rem;
-  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-family: inherit;
-  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
-}
-
-.theme-dot {
-  width: 18px; height: 18px;
-  border-radius: 999px;
+.adm-util-btn {
+  background: transparent;
   border: none;
-  background: color-mix(in srgb, var(--glass-bg) 80%, transparent);
-  box-shadow: inset 0 0 0 1px var(--glass-border);
   cursor: pointer;
-  padding: 0;
-}
-
-/* ── Container / tabs ── */
-.admin-container { max-width: var(--ds-container-width, 1140px); margin: 22px auto; padding: 0 16px; transition: max-width var(--ds-transition, 180ms ease); }
-.admin-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-/* ── Generic tab pill ── */
-.admin-tab {
-  height: 32px;
-  padding: 0 14px;
-  display: inline-flex;
-  align-items: center;
-  box-sizing: border-box;
-  text-decoration: none;
   color: var(--glass-text);
   font-family: var(--ds-font-family);
-  font-size: var(--ds-text-sm, .78rem);
-  line-height: 1;
-  letter-spacing: var(--ds-letter-spacing);
-  opacity: .62;
-  border-radius: 999px;
-  white-space: nowrap;
-  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
-}
-.admin-tab:hover  { opacity: .9; }
-.admin-tab--active { opacity: 1; font-weight: 600; }
-
-/* ── Chip-tab wrapper (label + mini chip) ── */
-.admin-chip-tab {
-  position: relative;
-  display: inline-flex;
+  font-size: .62rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  opacity: .3;
+  padding: 5px 8px;
+  transition: opacity .15s;
+  display: flex;
   align-items: center;
-  height: 32px;
-  gap: 4px;
 }
-.admin-tab-label { /* NuxtLink inheriting .admin-tab */ }
+.adm-util-btn:hover { opacity: .75; }
+.adm-util-btn--exit { opacity: .2; }
+.adm-util-btn--exit:hover { opacity: .6; }
+.adm-util-notif {
+  font-size: .58rem;
+  font-weight: 700;
+  color: #e57373;
+  padding: 2px 5px;
+  opacity: .8;
+  letter-spacing: 0;
+}
 
-/* Small circle chip — matches tab height */
-.admin-mini-chip {
-  width: 24px; height: 24px;
-  border-radius: 999px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--glass-text);
-  font-size: .6rem;
-  font-weight: var(--ds-heading-weight, 700);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  flex-shrink: 0;
-  transition: opacity var(--ds-transition, 150ms ease), background var(--ds-transition, 150ms ease);
-}
-.admin-mini-chip--dim {
-  background: transparent;
-  opacity: .38;
-}
-.admin-mini-chip:hover { opacity: 1; background: var(--glass-bg); }
+/* ── Container ── */
+.admin-container { max-width: var(--ds-container-width, 1140px); margin: 0 auto; padding: 56px 24px 0; transition: max-width var(--ds-transition, 180ms ease); }
 
-/* ── Dropdown ── */
-.admin-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 240px;
-  max-height: 320px;
-  overflow: auto;
-  border-radius: var(--card-radius, 12px);
-  border: 1px solid var(--glass-border);
-  padding: 6px;
-  z-index: 80;
-  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.10));
-  transition: box-shadow var(--ds-transition, 180ms ease);
+/* ── Unified layout: persistent sidebar + content ── */
+.adm-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
 }
-.admin-drop-item {
-  width: 100%; border: none; background: transparent;
-  color: var(--glass-text); border-radius: calc(var(--card-radius, 12px) * 0.65);
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px; text-align: left; cursor: pointer;
-  font-family: var(--ds-font-family); font-size: var(--ds-text-sm, .76rem);
-  transition: background var(--ds-transition, 150ms ease);
+.adm-main {
+  flex: 1;
+  min-width: 0;
+  animation: adm-main-appear .22s cubic-bezier(.4,0,.2,1) both;
 }
-.admin-drop-item:hover { background: color-mix(in srgb, var(--glass-bg) 85%, transparent); }
-.admin-drop-item--active { background: color-mix(in srgb, var(--glass-bg) 94%, transparent); font-weight: 600; }
-.admin-drop-item--flex { flex: 1; }
-.admin-drop-item-with-actions {
-  display: flex; align-items: center; gap: 4px;
+@keyframes adm-main-appear {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
 }
-.admin-drop-action-btn {
-  width: 24px; height: 24px; border: none; border-radius: 4px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  transition: all var(--ds-transition, 150ms ease);
-  background: var(--glass-bg); color: var(--glass-text);
-  border: 1px solid var(--glass-border);
-}
-.admin-drop-action-btn--add:hover {
-  background: var(--ds-success, #10b981); color: white; border-color: color-mix(in srgb, var(--ds-success, #10b981) 80%, #000);
-}
-.admin-drop-action-btn--remove:hover {
-  background: var(--ds-error, #ef4444); color: white; border-color: color-mix(in srgb, var(--ds-error, #ef4444) 80%, #000);
-}
-.admin-drop-action-btn:disabled {
-  opacity: 0.4; cursor: not-allowed;
+
+/* Portal: content fills the sidebar panel */
+#admin-sidebar-portal {
+  display: contents;
 }
 .admin-drop-add {
   width: 100%; border: none; background: transparent;
@@ -827,20 +638,14 @@ async function logout() {
   opacity: .4;
 }
 .admin-drop-ini {
-  width: 22px; height: 22px; border-radius: 999px;
+  width: 20px; height: 20px; border-radius: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  font-size: .58rem; font-weight: 700; flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  background: transparent;
+  font-size: .52rem; font-weight: 400; flex-shrink: 0;
+  letter-spacing: 0;
+  opacity: .7;
 }
-.admin-drop-lbl { font-size: .76rem; }
-.admin-drop-empty { font-size: .74rem; opacity: .4; padding: 8px; }
-.admin-drop-all {
-  display: block; padding: 8px 10px;
-  font-size: .72rem; color: var(--glass-text); opacity: .5;
-  text-decoration: none; border-top: 1px solid var(--glass-border); margin-top: 4px;
-}
-.admin-drop-all:hover { opacity: 1; }
 
 /* ══════════════════════════════════════════════════════════════
    MOBILE RESPONSIVE — admin layout
@@ -849,94 +654,29 @@ async function logout() {
 /* ── Tablet ── */
 @media (max-width: 1024px) {
   .admin-container {
-    padding: 0 12px;
-    margin: 18px auto;
+    padding: 48px 12px 0;
+    margin: 0 auto;
   }
 }
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
   .admin-bg {
-    padding-top: calc(20px + var(--dp-panel-h, 0px));
+    padding-top: var(--dp-panel-h, 0px);
   }
 
-  .admin-header {
-    padding: 10px 12px;
-    border-radius: 0;
+  .adm-util-bar {
+    top: 10px;
+    right: 10px;
+    gap: 0;
   }
-  .admin-brand {
-    font-size: .58rem;
-    letter-spacing: 1.2px;
-  }
-  .admin-header-links {
-    gap: 8px;
-  }
-  .admin-link {
-    font-size: .7rem;
-  }
-  .admin-search-label,
-  .admin-search-kbd {
-    display: none;
-  }
-  .admin-search-btn {
-    padding: 5px 7px;
-    border-radius: 7px;
-  }
-
+  .adm-util-btn { padding: 4px 6px; font-size: .58rem; }
   .admin-container {
-    padding: 0 10px;
-    margin: 10px auto;
+    padding: 44px 10px 0;
+    margin: 0 auto;
   }
-
-  /* Tabs — horizontal scroll strip */
-  .admin-tabs {
-    gap: 4px;
-    margin-bottom: 12px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    flex-wrap: nowrap;
-    padding-bottom: 2px;
-  }
-  .admin-tabs::-webkit-scrollbar { display: none; }
-
-  .admin-tab {
-    height: 30px;
-    padding: 0 10px;
-    font-size: .72rem;
-    flex-shrink: 0;
-  }
-
-  .admin-chip-tab {
-    height: 30px;
-    flex-shrink: 0;
-  }
-
-  .admin-mini-chip {
-    width: 22px;
-    height: 22px;
-    font-size: .52rem;
-  }
-
-  /* Dropdowns — full-width overlay on mobile */
-  .admin-dropdown {
-    position: fixed;
-    top: auto;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    min-width: 0;
-    max-width: none;
-    max-height: 50vh;
-    border-radius: 16px;
-    box-shadow: 0 -4px 40px rgba(0,0,0,.18);
-    z-index: 200;
-  }
-
-  .admin-drop-item {
-    padding: 10px 10px;
-    font-size: .8rem;
+  .adm-layout {
+    flex-direction: column;
   }
 
   /* Modal — full width on mobile */
@@ -952,24 +692,8 @@ async function logout() {
 
 /* ── Small phones ── */
 @media (max-width: 400px) {
-  .admin-header {
-    padding: 8px 10px;
-  }
   .admin-container {
-    padding: 0 8px;
-  }
-  .admin-tab {
-    height: 28px;
-    padding: 0 8px;
-    font-size: .68rem;
-  }
-  .admin-chip-tab {
-    height: 28px;
-  }
-  .admin-mini-chip {
-    width: 20px;
-    height: 20px;
-    font-size: .48rem;
+    padding: 40px 8px 0;
   }
 }
 

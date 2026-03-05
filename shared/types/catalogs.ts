@@ -347,6 +347,49 @@ export const DESIGNER_SERVICE_TYPE_OPTIONS = asOptions(DESIGNER_SERVICE_TYPES, {
   decoration: 'Декорирование',
 })
 
+// ── Designer tariffs (service packages) ──────────────────────────────────────
+export const DESIGNER_TARIFFS: {
+  key: string
+  label: string
+  description: string
+  services: (typeof DESIGNER_SERVICE_TYPES[number])[]
+  color: string
+  priceHint: string
+}[] = [
+  {
+    key: 'light',
+    label: 'Лайт',
+    description: 'Планировочные решения и базовая концепция интерьера',
+    services: ['measurement', 'layout_solution', 'style_collage'],
+    color: '#78909c',
+    priceHint: 'от 3 000 ₽/м²',
+  },
+  {
+    key: 'standard',
+    label: 'Стандарт',
+    description: 'Полный дизайн-проект с 3D-визуализацией и рабочими чертежами',
+    services: ['measurement', 'layout_solution', 'concept_design', 'style_collage', 'visualization_3d', 'working_drawings'],
+    color: '#5c6bc0',
+    priceHint: 'от 5 000 ₽/м²',
+  },
+  {
+    key: 'full',
+    label: 'Полный',
+    description: 'Дизайн-проект + авторский надзор за реализацией',
+    services: ['measurement', 'layout_solution', 'concept_design', 'visualization_3d', 'working_drawings', 'budgeting', 'author_supervision'],
+    color: '#26a69a',
+    priceHint: 'от 7 000 ₽/м²',
+  },
+  {
+    key: 'turnkey',
+    label: 'Под ключ',
+    description: 'Полное сопровождение — от концепции до декорирования',
+    services: ['measurement', 'technical_task', 'layout_solution', 'concept_design', 'visualization_3d', 'working_drawings', 'budgeting', 'author_supervision', 'procurement_support', 'decoration'],
+    color: '#66bb6a',
+    priceHint: 'от 10 000 ₽/м²',
+  },
+]
+
 export const PAYMENT_TYPE_OPTIONS = asOptions(PAYMENT_TYPES, {
   cash: 'Наличные',
   sbp: 'СБП',
@@ -788,4 +831,232 @@ export const WORK_TYPE_STAGES: Record<string, WorkStage[]> = {
     { key: 'final_check',  label: 'Финальная проверка и подпись акта сдачи' },
   ],
 }
+
+// ═══════════════════════════════════════════════════════════════
+// ДОПОЛНИТЕЛЬНЫЕ УСЛУГИ ДИЗАЙНЕРА (Extra Services)
+// ═══════════════════════════════════════════════════════════════
+
+export type ExtraServiceStatus =
+  | 'requested'       // Клиент / дизайнер создал запрос
+  | 'quoted'          // Дизайнер назначил цену
+  | 'approved'        // Клиент подтвердил стоимость
+  | 'contract_sent'   // Договор + счёт сформированы
+  | 'paid'            // Оплата получена
+  | 'in_progress'     // Выполняется
+  | 'done'            // Завершено
+  | 'rejected'        // Отклонено дизайнером
+  | 'cancelled'       // Отменено клиентом
+
+export const EXTRA_SERVICE_STATUSES: ExtraServiceStatus[] = [
+  'requested', 'quoted', 'approved', 'contract_sent',
+  'paid', 'in_progress', 'done', 'rejected', 'cancelled',
+]
+
+export const EXTRA_SERVICE_STATUS_MAP: Record<ExtraServiceStatus, { label: string; color: string; next?: ExtraServiceStatus[] }> = {
+  requested:     { label: 'Запрошено',          color: '#607d8b', next: ['quoted', 'rejected'] },
+  quoted:        { label: 'Оценено',            color: '#1976d2', next: ['approved', 'rejected'] },
+  approved:      { label: 'Согласовано',        color: '#0288d1', next: ['contract_sent'] },
+  contract_sent: { label: 'Договор выставлен',  color: '#7b1fa2', next: ['paid', 'cancelled'] },
+  paid:          { label: 'Оплачено',           color: '#2e7d32', next: ['in_progress'] },
+  in_progress:   { label: 'В работе',           color: '#ef6c00', next: ['done'] },
+  done:          { label: 'Выполнено',          color: '#388e3c', next: [] },
+  rejected:      { label: 'Отклонено',          color: '#c62828', next: [] },
+  cancelled:     { label: 'Отменено',           color: '#9e9e9e', next: [] },
+}
+
+export type ExtraServiceCategory =
+  | 'design'
+  | 'visualization'
+  | 'supervision'
+  | 'procurement'
+  | 'consultation'
+
+export const EXTRA_SERVICE_CATEGORY_LABELS: Record<ExtraServiceCategory, string> = {
+  design:        '✏️ Дизайн',
+  visualization: '🖼 Визуализация',
+  supervision:   '🏗 Авторский надзор',
+  procurement:   '🛒 Комплектация',
+  consultation:  '💬 Консультации',
+}
+
+export interface ExtraServiceCatalogItem {
+  key: string
+  category: ExtraServiceCategory
+  title: string
+  description: string
+  defaultPrice: number   // руб. (ориентировочно)
+  unit: string           // ед. изм.
+}
+
+export const EXTRA_SERVICE_CATALOG: ExtraServiceCatalogItem[] = [
+  // ── Дизайн ────────────────────────────────────────────────────
+  {
+    key: 'extra_space_planning',
+    category: 'design',
+    title: 'Дополнительный вариант планировки',
+    description: 'Разработка альтернативного планировочного решения сверх договора',
+    defaultPrice: 15000,
+    unit: 'вариант',
+  },
+  {
+    key: 'revision_concept',
+    category: 'design',
+    title: 'Доработка концепции',
+    description: 'Существенные изменения концепции после её утверждения',
+    defaultPrice: 20000,
+    unit: 'правка',
+  },
+  {
+    key: 'extra_moodboard',
+    category: 'design',
+    title: 'Дополнительный мудборд',
+    description: 'Создание ещё одной концепции подбора материалов и образов',
+    defaultPrice: 8000,
+    unit: 'шт.',
+  },
+  {
+    key: 'extra_drawings',
+    category: 'design',
+    title: 'Дополнительные рабочие чертежи',
+    description: 'Узлы, детали или помещения, не вошедшие в основной альбом',
+    defaultPrice: 12000,
+    unit: 'лист А3',
+  },
+  {
+    key: 'express_design',
+    category: 'design',
+    title: 'Экспресс-дизайн (срочно)',
+    description: 'Выполнение работ в сокращённые сроки (× 1.5 к стоимости)',
+    defaultPrice: 0,
+    unit: 'доплата',
+  },
+
+  // ── Визуализация ─────────────────────────────────────────────
+  {
+    key: 'extra_view_3d',
+    category: 'visualization',
+    title: 'Дополнительный ракурс 3D',
+    description: 'Один дополнительный фотореалистичный рендер помещения',
+    defaultPrice: 7000,
+    unit: 'ракурс',
+  },
+  {
+    key: 'extra_vr_tour',
+    category: 'visualization',
+    title: 'VR-тур по проекту',
+    description: 'Интерактивный панорамный тур (360°) по всем помещениям',
+    defaultPrice: 45000,
+    unit: 'проект',
+  },
+  {
+    key: 'animation_walkthrough',
+    category: 'visualization',
+    title: 'Анимационный облёт',
+    description: 'Видеоролик с прогулкой по 3D-пространству (до 60 сек)',
+    defaultPrice: 35000,
+    unit: 'ролик',
+  },
+  {
+    key: 'detail_render',
+    category: 'visualization',
+    title: 'Детальный рендер узла/зоны',
+    description: 'Крупноплановая визуализация отдельного элемента интерьера',
+    defaultPrice: 5000,
+    unit: 'шт.',
+  },
+
+  // ── Авторский надзор ─────────────────────────────────────────
+  {
+    key: 'extra_site_visit',
+    category: 'supervision',
+    title: 'Дополнительный выезд на объект',
+    description: 'Плановый контрольный визит сверх договорного количества',
+    defaultPrice: 8000,
+    unit: 'выезд',
+  },
+  {
+    key: 'emergency_visit',
+    category: 'supervision',
+    title: 'Внеплановый / экстренный выезд',
+    description: 'Срочный выезд для решения критической ситуации на объекте',
+    defaultPrice: 12000,
+    unit: 'выезд',
+  },
+  {
+    key: 'contractor_coordination',
+    category: 'supervision',
+    title: 'Координация дополнительных подрядчиков',
+    description: 'Введение в проект нового подрядчика и контроль его работы',
+    defaultPrice: 25000,
+    unit: 'подрядчик',
+  },
+  {
+    key: 'defect_act',
+    category: 'supervision',
+    title: 'Дефектация и акт замечаний',
+    description: 'Детальный осмотр, составление дефектной ведомости и контроль устранения',
+    defaultPrice: 15000,
+    unit: 'акт',
+  },
+
+  // ── Комплектация ─────────────────────────────────────────────
+  {
+    key: 'procurement_full',
+    category: 'procurement',
+    title: 'Полная комплектация под ключ',
+    description: 'Поиск, заказ и контроль поставок всех позиций спецификации',
+    defaultPrice: 0,
+    unit: '% от суммы',
+  },
+  {
+    key: 'procurement_furniture',
+    category: 'procurement',
+    title: 'Подбор и заказ мебели',
+    description: 'Поиск аналогов, согласование и размещение заказа на мебель',
+    defaultPrice: 20000,
+    unit: 'помещение',
+  },
+  {
+    key: 'procurement_lighting',
+    category: 'procurement',
+    title: 'Подбор светильников',
+    description: 'Разработка световой концепции и подбор светильников',
+    defaultPrice: 15000,
+    unit: 'проект',
+  },
+  {
+    key: 'procurement_textiles',
+    category: 'procurement',
+    title: 'Подбор текстиля и декора',
+    description: 'Шторы, подушки, ковры, предметы декора — подбор, аналоги, заказ',
+    defaultPrice: 12000,
+    unit: 'помещение',
+  },
+
+  // ── Консультации ─────────────────────────────────────────────
+  {
+    key: 'consultation_hour',
+    category: 'consultation',
+    title: 'Консультация дизайнера (1 час)',
+    description: 'Разовая онлайн или офлайн консультация по вопросам проекта',
+    defaultPrice: 5000,
+    unit: 'час',
+  },
+  {
+    key: 'photo_styling',
+    category: 'consultation',
+    title: 'Фотостайлинг и постановка съёмки',
+    description: 'Расстановка декора, подготовка интерьера для профессиональной съёмки',
+    defaultPrice: 18000,
+    unit: 'объект',
+  },
+  {
+    key: 'custom',
+    category: 'consultation',
+    title: 'Индивидуальная услуга',
+    description: 'Услуга не из стандартного каталога — описание и стоимость согласовываются отдельно',
+    defaultPrice: 0,
+    unit: 'услуга',
+  },
+]
 

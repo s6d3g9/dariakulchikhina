@@ -1,225 +1,218 @@
 <template>
-  <div>
-    <div v-if="projectSlugFilter" class="ct-filter-info glass-surface glass-card">
-      <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
-      <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
-      <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
-    </div>
-    <div v-if="selectedId" class="ent-cabinet-wrap">
-      <div class="ent-cabinet-topbar">
-        <button class="ent-back-btn a-btn-sm" @click="selectedId = null">← к списку</button>
-        <span v-if="selected" class="ent-cabinet-title">{{ selected.name }}</span>
-        <div class="ent-cabinet-actions">
-          <button class="a-btn-sm" @click="openEdit(selected)">✎ редактировать</button>
-          <button class="a-btn-sm a-btn-danger" @click="del(selected!.id)">× удалить</button>
-        </div>
-      </div>
-      <AdminContractorCabinet :contractor-id="selectedId" />
-    </div>
-
-    <div v-else class="ent-layout ent-layout--with-stats">
-      <nav class="ent-sidebar std-sidenav">
-        <div class="ent-sidebar-head">
-          <span class="ent-sidebar-title">подрядчики</span>
-          <span class="ent-sidebar-count">{{ contractors?.length ?? 0 }}</span>
-        </div>
-        <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
-        <div class="std-nav">
-          <template v-if="pending && !hasContractorsCache">
-            <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
-          </template>
-          <template v-else>
-            <!-- Companies -->
-            <template v-for="company in filteredCompanies" :key="'c-' + company.id">
-              <div class="ent-group-label">{{ company.name }}</div>
-              <button class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === company.id }" @click="selectContractor(company)">
-                <span class="ent-nav-avatar ct-av--company">{{ company.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                <span class="ent-nav-name">{{ company.companyName || company.name }}<span class="ent-nav-sub">подрядчик</span></span>
-              </button>
-              <button v-for="m in (mastersByParent.get(company.id) || [])" :key="m.id" class="ent-nav-item ct-nav-master" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
-                <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
-              </button>
-            </template>
-            <!-- Standalone masters -->
-            <template v-if="filteredStandalone.length">
-              <div class="ent-group-label">частные мастера</div>
-              <button v-for="m in filteredStandalone" :key="m.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
-                <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
-              </button>
-            </template>
-            <div v-if="searchQuery && !filteredCompanies.length && !filteredStandalone.length" class="ent-nav-empty">ничего не найдено</div>
-            <div v-else-if="!contractors?.length" class="ent-nav-empty">нет подрядчиков</div>
-          </template>
-        </div>
-        <div class="ent-sidebar-foot"><button class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button></div>
-      </nav>
-
-      <div class="ent-main">
-        <div class="ent-empty-detail">
-          <span class="ent-empty-icon">🏗</span>
-          <span v-if="contractors?.length">Выберите подрядчика из списка</span>
-          <span v-else>Нет подрядчиков — добавьте первого</span>
-          <button v-if="!contractors?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить первого</button>
-        </div>
-      </div>
-
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
-    </div>
-
-    <!-- ══ Modal ══ -->
-    <Teleport to="body">
-      <div v-if="showModal" class="ct-backdrop" @click.self="closeModal">
-        <div class="ct-modal glass-surface">
-          <div class="ct-modal-head">
-            <span>{{ editingId ? 'редактировать' : 'добавить' }} подрядчика</span>
-            <button class="ct-modal-close" @click="closeModal">✕</button>
-          </div>
-
-          <!-- Табы (только в режиме редактирования) -->
-          <div v-if="isEditMode" class="ct-modal-tabs">
-            <button v-for="t in modalTabs" :key="t.key" class="ct-modal-tab" :class="{ active: modalTab === t.key }" @click="modalTab = t.key">{{ t.label }}</button>
-          </div>
-
-          <div class="ct-modal-body">
-            <!-- ═══ TAB: Основное ═══ -->
-            <form v-show="modalTab === 'main' || !isEditMode" @submit.prevent="save">
-              <div class="ct-form-section">тип участника</div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Тип</label><select v-model="form.contractorType" class="glass-input"><option value="master">Мастер (частный специалист)</option><option value="company">Подрядчик (организация)</option></select></div>
-                <div v-if="form.contractorType === 'master'" class="u-field"><label class="u-field__label">Компания-работодатель</label><select v-model="form.parentId" class="glass-input"><option :value="null">— самозанятый —</option><option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option></select></div>
-              </div>
-              <template v-if="isEditMode">
-                <div class="ct-form-section">проекты</div>
-                <div v-if="projectsLoading" class="ct-form-hint">Загрузка проектов...</div>
-                <div v-else-if="projectsError" class="ct-form-error">{{ projectsError }}</div>
-                <div v-else-if="!allProjects.length" class="ct-form-hint">Нет проектов</div>
-                <div v-else class="ct-project-pool">
-                  <div class="ct-project-pool-title">Выбрано</div>
-                  <TransitionGroup name="tag-shift" tag="div" class="ct-projects-grid">
-                    <button v-for="p in allProjects.filter((item) => selectedProjectIds.includes(item.id))" :key="`project-selected-${p.id}`" type="button" class="ct-project-tag ct-project-tag--active" @click.prevent="toggleProject(p.id)">#{{ p.title }}</button>
-                  </TransitionGroup>
-                  <div class="ct-project-pool-title" style="margin-top:8px">Доступно</div>
-                  <TransitionGroup name="tag-shift" tag="div" class="ct-projects-grid">
-                    <button v-for="p in allProjects.filter((item) => !selectedProjectIds.includes(item.id))" :key="`project-available-${p.id}`" type="button" class="ct-project-tag" @click.prevent="toggleProject(p.id)">#{{ p.title }}</button>
-                  </TransitionGroup>
-                </div>
-              </template>
-              <div class="ct-form-section">основное</div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Название *</label><input v-model="form.name" class="glass-input" required /></div>
-                <div class="u-field"><label class="u-field__label">Slug *</label><input v-model="form.slug" class="glass-input" required :disabled="!!editingId" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Компания</label><input v-model="form.companyName" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Контактное лицо</label><input v-model="form.contactPerson" class="glass-input" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Виды работ</label><input v-model="workTypesStr" class="glass-input" placeholder="через запятую" /></div>
-                <div class="u-field"></div>
-              </div>
-              <div class="ct-form-section">контакты</div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Телефон</label><input v-model="form.phone" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Email</label><input v-model="form.email" class="glass-input" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">—</option><option value="telegram">telegram</option><option value="whatsapp">whatsapp</option><option value="viber">viber</option></select></div>
-                <div class="u-field"><label class="u-field__label">Ник / номер мессенджера</label><input v-model="form.messengerNick" class="glass-input" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Сайт / портфолио</label><input v-model="form.website" class="glass-input" placeholder="https://" /></div>
-                <div class="u-field"></div>
-              </div>
-              <div class="ct-form-section">адреса</div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Юридический адрес</label><AppAddressInput v-model="form.legalAddress" input-class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Фактический адрес</label><AppAddressInput v-model="form.factAddress" input-class="glass-input" /></div>
-              </div>
-              <div class="ct-form-section">реквизиты</div>
-              <div class="u-grid-3">
-                <div class="u-field"><label class="u-field__label">ИНН</label><input v-model="form.inn" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">КПП</label><input v-model="form.kpp" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">ОГРН / ОГРНИП</label><input v-model="form.ogrn" class="glass-input" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Банк</label><input v-model="form.bankName" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">БИК</label><input v-model="form.bik" class="glass-input" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Расчётный счёт</label><input v-model="form.settlementAccount" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Корр. счёт</label><input v-model="form.correspondentAccount" class="glass-input" /></div>
-              </div>
-              <div class="ct-form-section">примечания</div>
-              <div class="u-field"><textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="заметки о подрядчике"></textarea></div>
-              <p v-if="formError" class="ct-form-error ct-form-error--bottom">{{ formError }}</p>
-              <div class="ct-modal-foot"><button type="button" class="a-btn-sm" @click="closeModal">отмена</button><button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button></div>
-            </form>
-
-            <!-- ═══ TAB: Паспорт ═══ -->
-            <div v-if="isEditMode && modalTab === 'passport'" class="ct-tab-content">
-              <div class="ct-form-section">паспортные данные (только чтение)</div>
-              <div class="u-grid-3">
-                <div class="ct-ro-field"><span class="ct-ro-label">Серия</span><span class="ct-ro-value">{{ editContractor?.passportSeries || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Номер</span><span class="ct-ro-value">{{ editContractor?.passportNumber || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Код подразделения</span><span class="ct-ro-value">{{ editContractor?.passportDepartmentCode || '—' }}</span></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="ct-ro-field"><span class="ct-ro-label">Кем выдан</span><span class="ct-ro-value">{{ editContractor?.passportIssuedBy || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Дата выдачи</span><span class="ct-ro-value">{{ editContractor?.passportIssueDate || '—' }}</span></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="ct-ro-field"><span class="ct-ro-label">Дата рождения</span><span class="ct-ro-value">{{ editContractor?.birthDate || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Место рождения</span><span class="ct-ro-value">{{ editContractor?.birthPlace || '—' }}</span></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="ct-ro-field"><span class="ct-ro-label">Адрес регистрации</span><span class="ct-ro-value">{{ editContractor?.registrationAddress || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">СНИЛС</span><span class="ct-ro-value">{{ editContractor?.snils || '—' }}</span></div>
-              </div>
-            </div>
-
-            <!-- ═══ TAB: Документы ═══ -->
-            <div v-if="isEditMode && modalTab === 'documents'" class="ct-tab-content">
-              <div class="ct-form-section">загруженные документы</div>
-              <div v-if="docsLoading" class="ct-form-hint">Загрузка...</div>
-              <div v-else-if="!contractorDocs.length" class="ct-form-hint" style="text-align:center;padding:24px 0;opacity:0.5">Подрядчик пока не загрузил документы</div>
-              <div v-else class="ct-docs-list">
-                <div v-for="doc in contractorDocs" :key="doc.id" class="ct-doc-row">
-                  <span class="ct-doc-icon">📄</span>
-                  <div class="ct-doc-info"><span class="ct-doc-name">{{ doc.originalName }}</span><span class="ct-doc-meta">{{ doc.category || 'Без категории' }} · {{ formatDocDate(doc.createdAt) }}</span></div>
-                  <a :href="doc.url" target="_blank" class="ct-doc-download">скачать</a>
-                </div>
-              </div>
-            </div>
-
-            <!-- ═══ TAB: Финансы ═══ -->
-            <div v-if="isEditMode && modalTab === 'finances'" class="ct-tab-content">
-              <div class="ct-form-section">финансовые данные (только чтение)</div>
-              <div class="u-grid-3">
-                <div class="ct-ro-field"><span class="ct-ro-label">Ставка (₽/час)</span><span class="ct-ro-value">{{ editContractor?.hourlyRate ? editContractor.hourlyRate + ' ₽' : '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Система налогообложения</span><span class="ct-ro-value">{{ editContractor?.taxSystem || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Опыт (лет)</span><span class="ct-ro-value">{{ editContractor?.experienceYears ?? '—' }}</span></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="ct-ro-field"><span class="ct-ro-label">Способы оплаты</span><span class="ct-ro-value">{{ formatPaymentMethods(editContractor?.paymentMethods) }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Страхование</span><span class="ct-ro-value">{{ editContractor?.hasInsurance ? 'Да — ' + (editContractor?.insuranceDetails || '') : 'Нет' }}</span></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="ct-ro-field"><span class="ct-ro-label">Образование</span><span class="ct-ro-value">{{ editContractor?.education || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Сертификаты</span><span class="ct-ro-value"><template v-if="editContractor?.certifications?.length"><span v-for="cert in editContractor.certifications" :key="cert" class="ct-cert-chip">{{ cert }}</span></template><template v-else>—</template></span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+  <div v-if="projectSlugFilter" class="ct-filter-info glass-surface glass-card">
+    <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
+    <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
+    <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
   </div>
+  <Teleport v-if="sidebarActive" to="#admin-sidebar-portal">
+      <!-- ── Layer 1: contractor list ── -->
+      <template v-if="!selectedId">
+        <AdminSidebarSwitcher title="подрядчики" :count="contractors?.length ?? 0">
+          <input v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
+          <div class="std-nav">
+            <template v-if="pending && !hasContractorsCache">
+              <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
+            </template>
+            <template v-else>
+              <template v-for="company in filteredCompanies" :key="'c-' + company.id">
+                <div class="ent-group-label">{{ company.name }}</div>
+                <button class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === company.id }" @click="selectContractor(company)">{{ company.companyName || company.name }}</button>
+                <button v-for="m in (mastersByParent.get(company.id) || [])" :key="m.id" class="ent-nav-item ct-nav-master" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">{{ m.name }}</button>
+              </template>
+              <template v-if="filteredStandalone.length">
+                <div class="ent-group-label">частные мастера</div>
+                <button v-for="m in filteredStandalone" :key="m.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">{{ m.name }}</button>
+              </template>
+              <div v-if="searchQuery && !filteredCompanies.length && !filteredStandalone.length" class="ent-nav-empty">ничего не найдено</div>
+              <div v-else-if="!contractors?.length" class="ent-nav-empty">нет подрядчиков</div>
+            </template>
+          </div>
+        </AdminSidebarSwitcher>
+      </template>
+
+      <!-- ── Layer 2: section nav ── -->
+      <template v-else>
+        <AdminSidebarSwitcher title="подрядчики">
+          <button class="ent-back-btn" @click="selectedId = null; pageSection = 'dashboard'">← все подрядчики</button>
+          <div class="ent-layer2-name">{{ selected?.name }}</div>
+          <div class="std-nav">
+          <button
+            v-for="item in CONTRACTOR_NAV"
+            :key="item.key"
+            class="ent-nav-item std-nav-item"
+            :class="{ 'ent-nav-item--active': pageSection === item.key }"
+            @click="pageSection = item.key"
+          >{{ item.label }}</button>
+        </div>
+        </AdminSidebarSwitcher>
+      </template>
+  </Teleport>
+
+    <div>
+      <Transition name="tab-fade" mode="out-in">
+      <AdminContractorCabinet
+        v-if="selectedId"
+        :key="selectedId"
+        :contractor-id="selectedId"
+        hide-nav
+        :model-section="pageSection"
+        @update:section="pageSection = $event"
+      />
+      <div v-else class="ent-empty-detail">
+        <span class="ent-empty-icon">🏗</span>
+        <span v-if="contractors?.length">Выберите подрядчика из списка</span>
+        <span v-else>Нет подрядчиков — добавьте первого</span>
+        <button v-if="!contractors?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить первого</button>
+      </div>
+      </Transition>
+    </div>
+
+  <!-- ══ Modal ══ -->
+  <Teleport to="body">
+    <div v-if="showModal" class="ct-backdrop" @click.self="closeModal">
+      <div class="ct-modal glass-surface">
+        <div class="ct-modal-head">
+          <span>{{ editingId ? 'редактировать' : 'добавить' }} подрядчика</span>
+          <button class="ct-modal-close" @click="closeModal">✕</button>
+        </div>
+
+        <!-- Табы (только в режиме редактирования) -->
+        <div v-if="isEditMode" class="ct-modal-tabs">
+          <button v-for="t in modalTabs" :key="t.key" class="ct-modal-tab" :class="{ active: modalTab === t.key }" @click="modalTab = t.key">{{ t.label }}</button>
+        </div>
+
+        <div class="ct-modal-body">
+          <!-- ═══ TAB: Основное ═══ -->
+          <form v-show="modalTab === 'main' || !isEditMode" @submit.prevent="save">
+            <div class="ct-form-section">тип участника</div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Тип</label><select v-model="form.contractorType" class="glass-input"><option value="master">Мастер (частный специалист)</option><option value="company">Подрядчик (организация)</option></select></div>
+              <div v-if="form.contractorType === 'master'" class="u-field"><label class="u-field__label">Компания-работодатель</label><select v-model="form.parentId" class="glass-input"><option :value="null">— самозанятый —</option><option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option></select></div>
+            </div>
+            <template v-if="isEditMode">
+              <div class="ct-form-section">проекты</div>
+              <div v-if="projectsLoading" class="ct-form-hint">Загрузка проектов...</div>
+              <div v-else-if="projectsError" class="ct-form-error">{{ projectsError }}</div>
+              <div v-else-if="!allProjects.length" class="ct-form-hint">Нет проектов</div>
+              <div v-else class="ct-project-pool">
+                <div class="ct-projects-grid">
+                  <button v-for="p in allProjects" :key="`project-${p.id}`" type="button" class="ct-project-tag" :class="{ 'ct-project-tag--active': selectedProjectIds.includes(p.id) }" @click.prevent="toggleProject(p.id)">{{ p.title }}</button>
+                </div>
+              </div>
+            </template>
+            <div class="ct-form-section">основное</div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Название *</label><input v-model="form.name" class="glass-input" required /></div>
+              <div class="u-field"><label class="u-field__label">Slug *</label><input v-model="form.slug" class="glass-input" required :disabled="!!editingId" /></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Компания</label><input v-model="form.companyName" class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">Контактное лицо</label><input v-model="form.contactPerson" class="glass-input" /></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Виды работ</label><input v-model="workTypesStr" class="glass-input" placeholder="через запятую" /></div>
+              <div class="u-field"></div>
+            </div>
+            <div class="ct-form-section">контакты</div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Телефон</label><input v-model="form.phone" class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">Email</label><input v-model="form.email" class="glass-input" /></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">—</option><option value="telegram">telegram</option><option value="whatsapp">whatsapp</option><option value="viber">viber</option></select></div>
+              <div class="u-field"><label class="u-field__label">Ник / номер мессенджера</label><input v-model="form.messengerNick" class="glass-input" /></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Сайт / портфолио</label><input v-model="form.website" class="glass-input" placeholder="https://" /></div>
+              <div class="u-field"></div>
+            </div>
+            <div class="ct-form-section">адреса</div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Юридический адрес</label><AppAddressInput v-model="form.legalAddress" input-class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">Фактический адрес</label><AppAddressInput v-model="form.factAddress" input-class="glass-input" /></div>
+            </div>
+            <div class="ct-form-section">реквизиты</div>
+            <div class="u-grid-3">
+              <div class="u-field"><label class="u-field__label">ИНН</label><input v-model="form.inn" class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">КПП</label><input v-model="form.kpp" class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">ОГРН / ОГРНИП</label><input v-model="form.ogrn" class="glass-input" /></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Банк</label><input v-model="form.bankName" class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">БИК</label><input v-model="form.bik" class="glass-input" /></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="u-field"><label class="u-field__label">Расчётный счёт</label><input v-model="form.settlementAccount" class="glass-input" /></div>
+              <div class="u-field"><label class="u-field__label">Корр. счёт</label><input v-model="form.correspondentAccount" class="glass-input" /></div>
+            </div>
+            <div class="ct-form-section">примечания</div>
+            <div class="u-field"><textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="заметки о подрядчике"></textarea></div>
+            <p v-if="formError" class="ct-form-error ct-form-error--bottom">{{ formError }}</p>
+            <div class="ct-modal-foot"><button type="button" class="a-btn-sm" @click="closeModal">отмена</button><button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button></div>
+          </form>
+
+          <!-- ═══ TAB: Паспорт ═══ -->
+          <div v-if="isEditMode && modalTab === 'passport'" class="ct-tab-content">
+            <div class="ct-form-section">паспортные данные (только чтение)</div>
+            <div class="u-grid-3">
+              <div class="ct-ro-field"><span class="ct-ro-label">Серия</span><span class="ct-ro-value">{{ editContractor?.passportSeries || '—' }}</span></div>
+              <div class="ct-ro-field"><span class="ct-ro-label">Номер</span><span class="ct-ro-value">{{ editContractor?.passportNumber || '—' }}</span></div>
+              <div class="ct-ro-field"><span class="ct-ro-label">Код подразделения</span><span class="ct-ro-value">{{ editContractor?.passportDepartmentCode || '—' }}</span></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="ct-ro-field"><span class="ct-ro-label">Кем выдан</span><span class="ct-ro-value">{{ editContractor?.passportIssuedBy || '—' }}</span></div>
+              <div class="ct-ro-field"><span class="ct-ro-label">Дата выдачи</span><span class="ct-ro-value">{{ editContractor?.passportIssueDate || '—' }}</span></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="ct-ro-field"><span class="ct-ro-label">Дата рождения</span><span class="ct-ro-value">{{ editContractor?.birthDate || '—' }}</span></div>
+              <div class="ct-ro-field"><span class="ct-ro-label">Место рождения</span><span class="ct-ro-value">{{ editContractor?.birthPlace || '—' }}</span></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="ct-ro-field"><span class="ct-ro-label">Адрес регистрации</span><span class="ct-ro-value">{{ editContractor?.registrationAddress || '—' }}</span></div>
+              <div class="ct-ro-field"><span class="ct-ro-label">СНИЛС</span><span class="ct-ro-value">{{ editContractor?.snils || '—' }}</span></div>
+            </div>
+          </div>
+
+          <!-- ═══ TAB: Документы ═══ -->
+          <div v-if="isEditMode && modalTab === 'documents'" class="ct-tab-content">
+            <div class="ct-form-section">загруженные документы</div>
+            <div v-if="docsLoading" class="ct-form-hint">Загрузка...</div>
+            <div v-else-if="!contractorDocs.length" class="ct-form-hint" style="text-align:center;padding:24px 0;opacity:0.5">Подрядчик пока не загрузил документы</div>
+            <div v-else class="ct-docs-list">
+              <div v-for="doc in contractorDocs" :key="doc.id" class="ct-doc-row">
+                <span class="ct-doc-icon">📄</span>
+                <div class="ct-doc-info"><span class="ct-doc-name">{{ doc.originalName }}</span><span class="ct-doc-meta">{{ doc.category || 'Без категории' }} · {{ formatDocDate(doc.createdAt) }}</span></div>
+                <a :href="doc.url" target="_blank" class="ct-doc-download">скачать</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ TAB: Финансы ═══ -->
+          <div v-if="isEditMode && modalTab === 'finances'" class="ct-tab-content">
+            <div class="ct-form-section">финансовые данные (только чтение)</div>
+            <div class="u-grid-3">
+              <div class="ct-ro-field"><span class="ct-ro-label">Ставка (₽/час)</span><span class="ct-ro-value">{{ editContractor?.hourlyRate ? editContractor.hourlyRate + ' ₽' : '—' }}</span></div>
+              <div class="ct-ro-field"><span class="ct-ro-label">Система налогообложения</span><span class="ct-ro-value">{{ editContractor?.taxSystem || '—' }}</span></div>
+              <div class="ct-ro-field"><span class="ct-ro-label">Опыт (лет)</span><span class="ct-ro-value">{{ editContractor?.experienceYears ?? '—' }}</span></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="ct-ro-field"><span class="ct-ro-label">Способы оплаты</span><span class="ct-ro-value">{{ formatPaymentMethods(editContractor?.paymentMethods) }}</span></div>
+              <div class="ct-ro-field"><span class="ct-ro-label">Страхование</span><span class="ct-ro-value">{{ editContractor?.hasInsurance ? 'Да — ' + (editContractor?.insuranceDetails || '') : 'Нет' }}</span></div>
+            </div>
+            <div class="u-grid-2">
+              <div class="ct-ro-field"><span class="ct-ro-label">Образование</span><span class="ct-ro-value">{{ editContractor?.education || '—' }}</span></div>
+              <div class="ct-ro-field"><span class="ct-ro-label">Сертификаты</span><span class="ct-ro-value"><template v-if="editContractor?.certifications?.length"><span v-for="cert in editContractor.certifications" :key="cert" class="ct-cert-chip">{{ cert }}</span></template><template v-else>—</template></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
+definePageMeta({ layout: 'admin', middleware: ['admin'] })
+const sidebarActive = useSidebarActive()
 
 const route = useRoute()
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
@@ -236,12 +229,27 @@ watch(contractors, (value) => { if (Array.isArray(value)) contractorsCacheByProj
 // ── Search & selection ─────────────────────────────────
 const searchQuery = ref('')
 const selectedId = ref<number | null>(null)
+const pageSection = ref('dashboard')
 const selected = computed(() => contractors.value?.find((c: any) => c.id === selectedId.value) || null)
-function selectContractor(c: any) { selectedId.value = c.id }
+function selectContractor(c: any) { selectedId.value = c.id; pageSection.value = 'dashboard' }
 
 // Deselect when layout sends "все подрядчики" signal
 const entityDeselectSignal = useState<number>('entity-deselect-signal', () => 0)
-watch(entityDeselectSignal, () => { selectedId.value = null })
+watch(entityDeselectSignal, () => { selectedId.value = null; pageSection.value = 'dashboard' })
+
+const CONTRACTOR_NAV = [
+  { key: 'dashboard',      icon: '◈', label: 'Обзор' },
+  { key: 'tasks',          icon: '◎', label: 'Задачи' },
+  { key: 'staff',          icon: '◔', label: 'Бригада' },
+  { key: 'contacts',       icon: '☎', label: 'Контактные данные' },
+  { key: 'passport',       icon: '◑', label: 'Паспортные данные' },
+  { key: 'requisites',     icon: '◒', label: 'Реквизиты' },
+  { key: 'documents',      icon: '◓', label: 'Документы' },
+  { key: 'specialization', icon: '◐', label: 'Специализации' },
+  { key: 'finances',       icon: '◕', label: 'Финансы' },
+  { key: 'portfolio',      icon: '◖', label: 'Портфолио' },
+  { key: 'settings',       icon: '⚙', label: 'Настройки' },
+]
 
 // Auto-select contractor from ?contractorId= query
 const router = useRouter()

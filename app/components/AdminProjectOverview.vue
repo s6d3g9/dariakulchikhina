@@ -33,6 +33,21 @@
       </button>
     </div>
 
+    <!-- Gallery categories -->
+    <div class="apo-section">
+      <div class="apo-section-title">Галерея</div>
+      <div class="apo-quick-nav">
+        <NuxtLink
+          v-for="tab in GALLERY_TABS"
+          :key="tab.slug"
+          :to="`/admin/gallery?cat=${tab.slug}`"
+          class="apo-quick-btn glass-surface"
+        >
+          <span class="apo-quick-label">{{ tab.label }}</span>
+        </NuxtLink>
+      </div>
+    </div>
+
     <!-- Linked entities -->
     <div class="apo-section">
       <div class="apo-section-title">Команда проекта</div>
@@ -94,6 +109,14 @@
 
 <script setup lang="ts">
 import { PHASE_LABELS, getAdminNavGroups } from '~~/shared/constants/pages'
+
+const GALLERY_TABS = [
+  { slug: 'interiors',  label: 'интерьеры' },
+  { slug: 'furniture',  label: 'мебель' },
+  { slug: 'materials',  label: 'материалы' },
+  { slug: 'art',        label: 'арт-объекты' },
+  { slug: 'moodboards', label: 'мудборды' },
+]
 
 const props = defineProps<{
   slug: string

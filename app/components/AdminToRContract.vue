@@ -14,6 +14,48 @@
         </button>
       </div>
 
+      <!-- ── Tariff selector ──────────────────────────────────────── -->
+      <div class="ator-section">
+        <div class="ator-section-title">тариф дизайнера</div>
+
+        <!-- Client tariff request alert -->
+        <div v-if="pendingTariffRequest" class="ator-tariff-req-alert">
+          <div class="ator-tariff-req-alert-text">
+            <span class="ator-tariff-req-dot"></span>
+            клиент запросил смену тарифа на <strong :style="`color:${pendingTariffRequest.color}`">{{ pendingTariffRequest.label }}</strong>
+            <span class="ator-tariff-req-price">{{ pendingTariffRequest.priceHint }}</span>
+          </div>
+          <div class="ator-tariff-req-alert-actions">
+            <button class="ator-tariff-req-accept" :disabled="reqActing" @click="acceptTariffRequest">принять</button>
+            <button class="ator-tariff-req-reject" :disabled="reqActing" @click="rejectTariffRequest">отклонить</button>
+          </div>
+        </div>
+
+        <div class="ator-tariff-grid">
+          <button
+            v-for="t in DESIGNER_TARIFFS"
+            :key="t.key"
+            type="button"
+            class="ator-tariff-card"
+            :class="{ 'ator-tariff-card--selected': form.service_tariff === t.key }"
+            :style="`--tariff-color: ${t.color}`"
+            @click="pickTariff(t.key)"
+          >
+            <div class="ator-tariff-top">
+              <span class="ator-tariff-name">{{ t.label }}</span>
+              <span class="ator-tariff-check" v-if="form.service_tariff === t.key">✓</span>
+              <span class="ator-tariff-price">{{ t.priceHint }}</span>
+            </div>
+            <p class="ator-tariff-desc">{{ t.description }}</p>
+            <div class="ator-tariff-services">
+              <span v-for="s in t.services" :key="s" class="ator-tariff-chip">
+                {{ serviceLabelMap[s] || s }}
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <!-- ── Contract ─────────────────────────────────────────────── -->
       <div class="ator-section">
         <div class="ator-section-title">договор и ТЗ</div>
@@ -156,15 +198,19 @@
 
 <script setup lang="ts">
 import { CONTRACT_STATUSES, PAYMENT_STATUSES } from '~~/shared/utils/status-maps'
+import { DESIGNER_TARIFFS, DESIGNER_SERVICE_TYPE_OPTIONS } from '~~/shared/types/catalogs'
 
 // template aliases
 const contractStatuses = CONTRACT_STATUSES
 const paymentStatuses  = PAYMENT_STATUSES
+
+const serviceLabelMap = Object.fromEntries(DESIGNER_SERVICE_TYPE_OPTIONS.map(o => [o.value, o.label]))
 const props = defineProps<{ slug: string }>()
 
 const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`)
 
 const form = reactive<Record<string, any>>({
+  service_tariff: '',
   contract_number: '',
   contract_date: '',
   contract_status: 'draft',
@@ -187,12 +233,52 @@ const form = reactive<Record<string, any>>({
 
 watch(project, (p) => {
   if (p?.profile) {
-    const prefixes = ['contract_', 'invoice_', 'payment_', 'tor_']
+    const prefixes = ['contract_', 'invoice_', 'payment_', 'tor_', 'service_']
     Object.entries(p.profile).forEach(([k, v]) => {
       if (prefixes.some(pf => k.startsWith(pf))) form[k] = v as any
     })
   }
 }, { immediate: true })
+
+function pickTariff(key: string) {
+  form.service_tariff = form.service_tariff === key ? '' : key
+  save()
+}
+
+// ── Client tariff request ────────────────────────────────────────────────
+const reqActing = ref(false)
+
+const pendingTariffRequest = computed(() => {
+  const req = project.value?.profile?.service_tariff_request
+  if (!req || req === form.service_tariff) return null
+  return DESIGNER_TARIFFS.find(t => t.key === req) || null
+})
+
+async function acceptTariffRequest() {
+  const req = project.value?.profile?.service_tariff_request
+  if (!req) return
+  reqActing.value = true
+  try {
+    form.service_tariff = req
+    await $fetch(`/api/projects/${props.slug}`, {
+      method: 'PUT',
+      body: { profile: { ...project.value?.profile, service_tariff: req, service_tariff_request: '' } }
+    })
+    await refresh()
+    markSaved()
+  } finally { reqActing.value = false }
+}
+
+async function rejectTariffRequest() {
+  reqActing.value = true
+  try {
+    await $fetch(`/api/projects/${props.slug}`, {
+      method: 'PUT',
+      body: { profile: { ...project.value?.profile, service_tariff_request: '' } }
+    })
+    await refresh()
+  } finally { reqActing.value = false }
+}
 
 // ── Status choices ────────────────────────────────────────────────
 function setContractStatus(v: string) { form.contract_status = v; save() }
@@ -265,6 +351,121 @@ async function save() {
 <style scoped>
 .ator-wrap { padding: 4px 0 48px; }
 .ator-loading { font-size: .88rem; color: var(--ds-muted, #999); }
+
+/* ── Client tariff request alert ── */
+.ator-tariff-req-alert {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px; margin-bottom: 14px;
+  background: color-mix(in srgb, #ff9800 8%, transparent);
+  border: 1px solid color-mix(in srgb, #ff9800 40%, transparent);
+  border-radius: 6px; font-size: .8rem;
+}
+.ator-tariff-req-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 999px;
+  background: #ff9800; margin-right: 6px; vertical-align: middle;
+  animation: ator-req-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ator-req-pulse {
+  0%, 100% { opacity: 1; } 50% { opacity: .35; }
+}
+.ator-tariff-req-price {
+  margin-left: 6px; font-size: .72rem;
+  color: color-mix(in srgb, var(--glass-text) 40%, transparent);
+}
+.ator-tariff-req-alert-text { flex: 1; }
+.ator-tariff-req-alert-actions { display: flex; gap: 8px; }
+.ator-tariff-req-accept {
+  background: #4caf50; color: #fff;
+  border: none; padding: 5px 14px; font-size: .76rem;
+  cursor: pointer; font-family: inherit; border-radius: 4px;
+}
+.ator-tariff-req-accept:hover:not(:disabled) { background: #388e3c; }
+.ator-tariff-req-reject {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 55%, transparent);
+  padding: 5px 14px; font-size: .76rem;
+  cursor: pointer; font-family: inherit; border-radius: 4px;
+}
+.ator-tariff-req-reject:hover:not(:disabled) { border-color: var(--glass-text); color: var(--glass-text); }
+.ator-tariff-req-accept:disabled,
+.ator-tariff-req-reject:disabled { opacity: .5; cursor: default; }
+
+/* ── Tariff selector ── */
+.ator-tariff-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.ator-tariff-card {
+  --tariff-color: #78909c;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1.5px solid color-mix(in srgb, var(--tariff-color) 30%, var(--border, #e5e5e5));
+  background: color-mix(in srgb, var(--tariff-color) 4%, transparent);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: var(--glass-text);
+  border-radius: 2px;
+  transition: border-color .15s, background .15s;
+}
+.ator-tariff-card:hover {
+  border-color: color-mix(in srgb, var(--tariff-color) 60%, transparent);
+  background: color-mix(in srgb, var(--tariff-color) 8%, transparent);
+}
+.ator-tariff-card--selected {
+  border-color: var(--tariff-color);
+  background: color-mix(in srgb, var(--tariff-color) 10%, transparent);
+}
+.ator-tariff-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ator-tariff-name {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--tariff-color);
+}
+.ator-tariff-check {
+  font-size: .8rem;
+  color: var(--tariff-color);
+  font-weight: 700;
+}
+.ator-tariff-price {
+  margin-left: auto;
+  font-size: .7rem;
+  color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+  white-space: nowrap;
+}
+.ator-tariff-desc {
+  font-size: .76rem;
+  color: color-mix(in srgb, var(--glass-text) 65%, transparent);
+  margin: 0;
+  line-height: 1.45;
+}
+.ator-tariff-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.ator-tariff-chip {
+  font-size: .62rem;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--tariff-color) 12%, transparent);
+  color: color-mix(in srgb, var(--tariff-color) 85%, var(--glass-text));
+  white-space: nowrap;
+}
+@media (max-width: 620px) {
+  .ator-tariff-grid { grid-template-columns: 1fr; }
+}
 
 /* Transition banner */
 .ator-transition-banner {
