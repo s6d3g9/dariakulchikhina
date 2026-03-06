@@ -79,8 +79,7 @@
       <!-- ── Kanban board ── -->
       <div v-if="view === 'kanban'" class="kb-board">
         <div v-for="phase in PHASES" :key="phase.key" class="kb-col">
-          <div class="kb-col-head">
-            <span class="kb-col-dot" :style="{ background: phase.dotColor }"></span>
+          <div class="kb-col-head" :style="{ borderTopColor: phase.dotColor }">
             <span class="kb-col-title">{{ phase.label }}</span>
             <span class="kb-col-count">{{ projectsByPhase[phase.key]?.length ?? 0 }}</span>
           </div>
@@ -106,7 +105,7 @@
               >
                 <div
                   class="kb-card"
-                  @click="draggingCard === null && navigateTo(`/admin/projects/${p.slug}`)"
+                  @click="!wasDragging && navigateTo(`/admin/projects/${p.slug}`)"
                 >
                   <div class="kb-card-title">{{ p.title }}</div>
                   <div v-if="p.profile?.fio" class="kb-card-fio">{{ p.profile.fio }}</div>
@@ -132,7 +131,7 @@
                     <span v-if="p.taskOverdue > 0" class="kb-prog-overdue">⚠ {{ p.taskOverdue }}</span>
                   </div>
                   <div class="kb-card-foot">
-                    <NuxtLink :to="`/admin/projects/${p.slug}`" class="kb-card-link" @click.stop>открыть →</NuxtLink>
+                    <NuxtLink :to="`/admin/projects/${p.slug}`" class="kb-card-link" draggable="false" @click.stop>открыть →</NuxtLink>
                   </div>
                 </div>
                 <!-- Follow-up alert below card -->
@@ -513,7 +512,7 @@ const draggingCard    = ref<any>(null)
 const draggingFromPhase = ref<string>('')
 const dragOverCol     = ref<string | null>(null)
 const dragRejectedId  = ref<number | null>(null)
-
+const wasDragging     = ref(false)
 // Validation rules per target phase
 // key = target phase; each rule: check + message shown in alert
 const PHASE_REQUIREMENTS: Record<string, Array<{ check: (p: any) => boolean; message: string }>> = {
@@ -553,6 +552,8 @@ function onDragEnd() {
   dragOverCol.value       = null
   draggingCard.value      = null
   draggingFromPhase.value = ''
+  wasDragging.value = true
+  setTimeout(() => { wasDragging.value = false }, 100)
 }
 
 async function onDrop(targetPhase: string) {
@@ -869,36 +870,37 @@ html.dark .kb-stat-badge--overdue { background: rgba(252,165,165,.1); color: #fc
 .kb-col-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 7px;
-  padding: 0 4px 8px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
-  margin-bottom: 0;
-}
-.kb-col-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  align-self: center;
+  padding: 6px 10px 6px 12px;
+  border-radius: 10px;
+  border-top: 3px solid #94a3b8;
+  background: color-mix(in srgb, var(--glass-bg) 70%, transparent);
+  border-left: 1px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
 }
 .kb-col-title {
-  font-size: .75rem;
+  font-size: .7rem;
   font-weight: 600;
-  letter-spacing: .01em;
+  text-transform: uppercase;
+  letter-spacing: .06em;
   color: var(--glass-text);
+  opacity: .75;
   flex: 1;
 }
 .kb-col-count {
   display: inline-flex;
   align-items: center;
   line-height: 1;
-  font-size: .68rem;
-  font-weight: 600;
+  font-size: .65rem;
+  font-weight: 700;
   color: var(--glass-text);
-  opacity: .35;
-  background: color-mix(in srgb, var(--glass-text) 7%, transparent);
-  border-radius: 10px;
-  padding: 2px 6px;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 20px;
+  padding: 0 6px;
+  min-width: 18px;
+  text-align: center;
   flex-shrink: 0;
 }
 .kb-col-body {
@@ -920,9 +922,12 @@ html.dark .kb-stat-badge--overdue { background: rgba(252,165,165,.1); color: #fc
   border: 1px solid color-mix(in srgb, var(--glass-text) 9%, transparent);
   border-radius: 10px;
   padding: 12px 14px;
-  cursor: pointer;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
   transition: box-shadow .15s, border-color .15s, transform .1s;
 }
+.kb-card:active { cursor: grabbing; }
 .kb-card:hover {
   border-color: color-mix(in srgb, var(--glass-text) 18%, transparent);
   box-shadow: 0 4px 16px rgba(0,0,0,.07);
@@ -940,6 +945,8 @@ html.dark .kb-stat-badge--overdue { background: rgba(252,165,165,.1); color: #fc
   display: flex;
   flex-direction: column;
   gap: 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
 /* FIO */
 .kb-card-fio {

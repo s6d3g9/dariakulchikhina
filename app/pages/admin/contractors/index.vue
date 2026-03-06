@@ -1,10 +1,13 @@
 <template>
   <div>
+    <!-- ── Project filter banner ── -->
     <div v-if="projectSlugFilter" class="ct-filter-info glass-surface glass-card">
       <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
     </div>
+
+    <!-- ── Contractor cabinet view ── -->
     <div v-if="selectedId" class="ent-cabinet-wrap">
       <div class="ent-cabinet-topbar">
         <button class="ent-back-btn a-btn-sm" @click="selectedId = null">← к списку</button>
@@ -17,87 +20,33 @@
       <AdminContractorCabinet :contractor-id="selectedId" />
     </div>
 
-    <div v-else class="ent-layout ent-layout--with-stats">
-      <nav class="ent-sidebar std-sidenav">
-        <div class="ent-sidebar-head">
-          <span class="ent-sidebar-title">подрядчики</span>
-          <span class="ent-sidebar-count">{{ contractors?.length ?? 0 }}</span>
+    <!-- ── Intake detail view ── -->
+    <div v-else-if="selectedIntakeId && selectedIntake" class="ct-intake-view">
+      <div class="ct-topbar">
+        <div class="ct-topbar-left">
+          <button class="a-btn-sm" @click="selectedIntakeId = null">← к доске</button>
+          <span class="ct-title">заявка</span>
         </div>
-        <!-- Intake toggle -->
-        <div class="ct-view-tabs">
-          <button class="ct-view-tab" :class="{ 'ct-view-tab--active': !showIntakes }" @click="showIntakes = false">Список</button>
-          <button class="ct-view-tab" :class="{ 'ct-view-tab--active': showIntakes }" @click="showIntakes = true">
-            Заявки<span v-if="newIntakesCount" class="ct-intake-badge">{{ newIntakesCount }}</span>
-          </button>
+        <div class="ct-topbar-right">
+          <select v-model="selectedIntake.status" class="ct-intake-status-sel glass-input"
+            @change="updateIntakeStatus(selectedIntake.id, ($event.target as HTMLSelectElement).value)">
+            <option value="new">Новая</option>
+            <option value="reviewed">Рассмотрена</option>
+            <option value="added">Добавлен</option>
+            <option value="rejected">Отклонена</option>
+          </select>
         </div>
-        <input v-if="!showIntakes" v-model="searchQuery" class="ent-search glass-input" placeholder="поиск..." />
-        <div v-if="!showIntakes" class="std-nav">
-          <template v-if="pending && !hasContractorsCache">
-            <div class="ent-nav-skeleton" v-for="i in 4" :key="i" />
-          </template>
-          <template v-else>
-            <!-- Companies -->
-            <template v-for="company in filteredCompanies" :key="'c-' + company.id">
-              <div class="ent-group-label">{{ company.name }}</div>
-              <button class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === company.id }" @click="selectContractor(company)">
-                <span class="ent-nav-avatar ct-av--company">{{ company.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                <span class="ent-nav-name">{{ company.companyName || company.name }}<span class="ent-nav-sub">подрядчик</span></span>
-              </button>
-              <button v-for="m in (mastersByParent.get(company.id) || [])" :key="m.id" class="ent-nav-item ct-nav-master" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
-                <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
-              </button>
-            </template>
-            <!-- Standalone masters -->
-            <template v-if="filteredStandalone.length">
-              <div class="ent-group-label">частные мастера</div>
-              <button v-for="m in filteredStandalone" :key="m.id" class="ent-nav-item" :class="{ 'ent-nav-item--active': selectedId === m.id }" @click="selectContractor(m)">
-                <span class="ent-nav-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</span>
-                <span class="ent-nav-name">{{ m.name }}<span v-if="m.workTypes?.length" class="ent-nav-sub">{{ m.workTypes.join(', ') }}</span></span>
-              </button>
-            </template>
-            <div v-if="searchQuery && !filteredCompanies.length && !filteredStandalone.length" class="ent-nav-empty">ничего не найдено</div>
-            <div v-else-if="!contractors?.length" class="ent-nav-empty">нет подрядчиков</div>
-          </template>
+      </div>
+      <div class="ct-intake-detail glass-surface glass-card">
+        <div class="ct-intake-dhead">
+          <div class="ct-intake-dtitle">{{ selectedIntake.name }}</div>
+          <span class="ct-intake-status-pill" :class="`ct-intake-pill--${selectedIntake.status}`">
+            {{ { new: 'Новая', reviewed: 'Рассмотрена', added: 'Добавлен', rejected: 'Отклонена' }[selectedIntake.status] ?? selectedIntake.status }}
+          </span>
         </div>
-
-        <!-- Intakes sidebar list -->
-        <div v-if="showIntakes" class="ct-intake-sidebar">
-          <div v-if="intakesPending" class="ent-nav-skeleton" v-for="i in 4" :key="i" />
-          <template v-else>
-            <button
-              v-for="intake in intakes" :key="intake.id"
-              class="ct-intake-nav-item"
-              :class="{ 'ct-intake-nav-item--active': selectedIntakeId === intake.id }"
-              @click="selectedIntakeId = intake.id"
-            >
-              <span class="ct-intake-name">{{ intake.name }}</span>
-              <span class="ct-intake-status-dot" :class="`ct-intake-dot--${intake.status}`" />
-            </button>
-            <div v-if="!intakes?.length" class="ent-nav-empty">нет заявок</div>
-          </template>
-        </div>
-
-        <div class="ent-sidebar-foot">
-          <button v-if="!showIntakes" class="ent-sidebar-add a-btn-sm" @click="openCreate">+ добавить</button>
-        </div>
-      </nav>
-
-        <!-- Intake detail -->
-        <div v-if="showIntakes" class="ent-main">
-          <div v-if="selectedIntake" class="ct-intake-detail glass-surface glass-card">
-            <div class="ct-intake-dhead">
-              <div class="ct-intake-dtitle">{{ selectedIntake.name }}</div>
-              <select v-model="selectedIntake.status" class="ct-intake-status-sel glass-input" @change="updateIntakeStatus(selectedIntake.id, ($event.target as HTMLSelectElement).value)">
-                <option value="new">Новая</option>
-                <option value="reviewed">Рассмотрена</option>
-                <option value="added">Добавлен</option>
-                <option value="rejected">Отклонена</option>
-              </select>
-            </div>
-            <div class="ct-intake-grid">
-              <div class="ct-intake-field" v-if="selectedIntake.companyName">
-                <span class="ct-intake-label">Компания</span>
+        <div class="ct-intake-grid">
+          <div class="ct-intake-field" v-if="selectedIntake.companyName">
+            <span class="ct-intake-label">Компания</span>
                 <span class="ct-intake-val">{{ selectedIntake.companyName }}</span>
               </div>
               <div class="ct-intake-field">
@@ -128,23 +77,115 @@
               <p class="ct-intake-notes-text">{{ selectedIntake.notes }}</p>
             </div>
           </div>
-          <div v-else class="ent-empty-detail">
-            <span class="ent-empty-icon">📋</span>
-            <span>Выберите заявку из списка</span>
+        </div>
+    </div>
+
+    <!-- ── Board view ── -->
+    <div v-else class="ct-root">
+      <div class="ct-topbar">
+        <div class="ct-topbar-left">
+          <span class="ct-title">подрядчики</span>
+          <span class="ct-total">{{ (contractors?.length ?? 0) + (intakes?.length ?? 0) }}</span>
+        </div>
+        <div class="ct-topbar-right">
+          <input v-model="searchQuery" class="glass-input ct-search" placeholder="поиск..." />
+          <button class="a-btn-sm" @click="openCreate">+ добавить</button>
+          <button class="a-btn-sm" @click="refresh(); refreshIntakes()">↺</button>
+        </div>
+      </div>
+
+      <!-- ── Board ── -->
+      <div class="ct-board">
+
+        <!-- Col 1: Companies -->
+        <div class="ct-col">
+          <div class="ct-col-head" style="border-top-color: #f59e0b;">
+            <span class="ct-col-title">Подрядчики</span>
+            <span class="ct-col-count">{{ filteredCompanies.length }}</span>
+          </div>
+          <div class="ct-col-body">
+            <div v-if="pending && !hasContractorsCache" v-for="i in 2" :key="i" class="ct-skel" />
+            <div v-else-if="filteredCompanies.length === 0" class="ct-col-empty">—</div>
+            <div v-for="c in filteredCompanies" :key="c.id" class="ct-card glass-card" @click="selectContractor(c)">
+              <div class="ct-card-who">
+                <div class="ct-avatar ct-av--company">{{ c.name?.charAt(0)?.toUpperCase() || '?' }}</div>
+                <div class="ct-card-meta">
+                  <div class="ct-card-name">{{ c.companyName || c.name }}</div>
+                  <div v-if="c.phone || c.city" class="ct-card-sub">{{ [c.city, c.phone].filter(Boolean).join(' · ') }}</div>
+                </div>
+              </div>
+              <div v-if="c.workTypes?.length" class="ct-card-tags">
+                <span v-for="wt in c.workTypes.slice(0, 3)" :key="wt" class="ct-tag">{{ wt }}</span>
+                <span v-if="c.workTypes.length > 3" class="ct-tag ct-tag--more">+{{ c.workTypes.length - 3 }}</span>
+              </div>
+              <div v-if="(mastersByParent.get(c.id) || []).length > 0" class="ct-card-masters">
+                <span class="ct-card-masters-label">мастеров</span>
+                <span class="ct-card-masters-count">{{ (mastersByParent.get(c.id) || []).length }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div v-if="!showIntakes" class="ent-main">
-          <div class="ent-empty-detail">
-            <span class="ent-empty-icon">🏗</span>
-            <span v-if="contractors?.length">Выберите подрядчика из списка</span>
-            <span v-else>Нет подрядчиков — добавьте первого</span>
-            <button v-if="!contractors?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить первого</button>
+        <!-- Col 2: Masters -->
+        <div class="ct-col">
+          <div class="ct-col-head" style="border-top-color: #3b82f6;">
+            <span class="ct-col-title">Мастера</span>
+            <span class="ct-col-count">{{ filteredAllMasters.length }}</span>
+          </div>
+          <div class="ct-col-body">
+            <div v-if="pending && !hasContractorsCache" v-for="i in 3" :key="i" class="ct-skel" />
+            <div v-else-if="filteredAllMasters.length === 0" class="ct-col-empty">—</div>
+            <div v-for="m in filteredAllMasters" :key="m.id" class="ct-card glass-card" @click="selectContractor(m)">
+              <div class="ct-card-who">
+                <div class="ct-avatar ct-av--master">{{ m.name?.charAt(0)?.toUpperCase() || '?' }}</div>
+                <div class="ct-card-meta">
+                  <div class="ct-card-name">{{ m.name }}</div>
+                  <div v-if="m.phone || parentNameOf(m)" class="ct-card-sub">{{ [parentNameOf(m), m.phone].filter(Boolean).join(' · ') }}</div>
+                </div>
+              </div>
+              <div v-if="m.workTypes?.length" class="ct-card-tags">
+                <span v-for="wt in m.workTypes.slice(0, 3)" :key="wt" class="ct-tag">{{ wt }}</span>
+                <span v-if="m.workTypes.length > 3" class="ct-tag ct-tag--more">+{{ m.workTypes.length - 3 }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-      <!-- ═══ Status bar ═══ -->
-      <AdminProjectStatusBar />
+        <!-- Col 3: Intakes -->
+        <div class="ct-col">
+          <div class="ct-col-head" style="border-top-color: #ef4444;">
+            <span class="ct-col-title">Заявки</span>
+            <span class="ct-col-count" :class="{ 'ct-col-count--alert': newIntakesCount > 0 }">
+              {{ intakes?.length ?? 0 }}
+              <span v-if="newIntakesCount" class="ct-col-new-dot" />
+            </span>
+          </div>
+          <div class="ct-col-body">
+            <div v-if="intakesPending" v-for="i in 2" :key="i" class="ct-skel" />
+            <div v-else-if="!intakes?.length" class="ct-col-empty">—</div>
+            <div
+              v-for="intake in intakes" :key="intake.id"
+              class="ct-card glass-card"
+              :class="{ 'ct-card--new': intake.status === 'new' }"
+              @click="selectedIntakeId = intake.id"
+            >
+              <div class="ct-card-who">
+                <div class="ct-avatar ct-av--intake">{{ intake.name?.charAt(0)?.toUpperCase() || '?' }}</div>
+                <div class="ct-card-meta">
+                  <div class="ct-card-name">{{ intake.name }}</div>
+                  <div v-if="intake.createdAt" class="ct-card-sub">{{ fmtIntakeDate(intake.createdAt) }}</div>
+                </div>
+                <span class="ct-intake-status-dot" :class="`ct-intake-dot--${intake.status}`" style="margin-left: auto; flex-shrink: 0;" />
+              </div>
+              <div v-if="intake.workTypes?.length" class="ct-card-tags">
+                <span v-for="wt in intake.workTypes.slice(0, 3)" :key="wt" class="ct-tag">{{ wt }}</span>
+                <span v-if="intake.workTypes.length > 3" class="ct-tag ct-tag--more">+{{ intake.workTypes.length - 3 }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <!-- ══ Modal ══ -->
@@ -363,6 +404,18 @@ const filteredStandalone = computed(() => {
   const q = searchQuery.value.toLowerCase()
   return standaloneMasters.value.filter((m: any) => m.name?.toLowerCase().includes(q) || m.phone?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q))
 })
+// All masters (under companies + standalone), filtered by search
+const allMasters = computed(() => (contractors.value || []).filter((c: any) => c.contractorType === 'master'))
+const filteredAllMasters = computed(() => {
+  if (!searchQuery.value.trim()) return allMasters.value
+  const q = searchQuery.value.toLowerCase()
+  return allMasters.value.filter((m: any) => m.name?.toLowerCase().includes(q) || m.phone?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q))
+})
+// Returns parent company name for a master
+function parentNameOf(m: any): string | null {
+  if (!m.parentId) return null
+  return companies.value.find((c: any) => c.id === m.parentId)?.name ?? null
+}
 
 // ── Modal state ────────────────────────────────────────
 const showModal = ref(false); const saving = ref(false); const formError = ref('')
@@ -501,25 +554,103 @@ function fmtIntakeDate(d: string) {
 </script>
 
 <style scoped>
-.ct-filter-info { margin-bottom: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: .76rem; color: var(--glass-text); }
+/* ── Project filter banner ── */
+.ct-filter-info { margin-bottom: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: .76rem; }
 .ct-filter-link { text-decoration: none; color: var(--glass-text); opacity: .5; transition: opacity .15s; }
 .ct-filter-link:hover { opacity: 1; }
-.ct-nav-master { padding-left: 22px; }
-.ct-av--company { background: color-mix(in srgb, #a06e1e 12%, transparent); color: #a06e1e; }
-html.dark .ct-av--company { background: color-mix(in srgb, #c8a03c 15%, transparent); color: #c8a03c; }
-.ct-av--master { background: color-mix(in srgb, #3b82f6 12%, transparent); color: #3b82f6; }
-html.dark .ct-av--master { background: color-mix(in srgb, #82a5ff 15%, transparent); color: #82a5ff; }
-.ct-badge { display: inline-block; font-size: .56rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; padding: 2px 8px; border-radius: var(--chip-radius, 999px); margin-bottom: 4px; }
-.ct-badge--company { background: rgba(160,110,30,.1); color: #a06e1e; }
-html.dark .ct-badge--company { background: rgba(200,160,60,.15); color: #c8a03c; }
-.ct-badge--master { background: rgba(59,130,246,.1); color: #3b82f6; }
-html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; }
-.ct-detail-sub { font-size: .78rem; color: var(--glass-text); opacity: .5; margin-top: 2px; }
-.ct-nested-masters { display: flex; flex-direction: column; gap: 4px; }
-.ct-nested-master { display: flex; align-items: center; gap: 6px; background: transparent; border: none; padding: 4px 8px; border-radius: 7px; font-family: inherit; font-size: .78rem; color: var(--glass-text); opacity: .6; cursor: pointer; transition: opacity .12s; }
-.ct-nested-master:hover { opacity: 1; background: color-mix(in srgb, var(--glass-bg) 80%, transparent); }
-.ct-btn-cabinet { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; font-family: inherit; color: var(--glass-page-bg); background: var(--glass-text); padding: 5px 10px; border-radius: 7px; border: none; cursor: pointer; opacity: .75; transition: opacity .15s; white-space: nowrap; }
-.ct-btn-cabinet:hover { opacity: 1; }
+
+/* ── Board root ── */
+.ct-root { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Topbar (matches dk-topbar style from designers) ── */
+.ct-topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+.ct-topbar-left { display: flex; align-items: center; gap: 10px; }
+.ct-topbar-right { display: flex; align-items: center; gap: 8px; }
+.ct-title { font-size: .8rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
+.ct-total { font-size: .7rem; font-weight: 700; background: color-mix(in srgb, var(--glass-text) 10%, transparent); border: 1px solid var(--glass-border); border-radius: 20px; padding: 1px 8px; }
+.ct-search { width: 200px; height: 32px; font-size: .78rem; }
+
+/* ── Board layout ── */
+.ct-board { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
+.ct-board::-webkit-scrollbar { height: 5px; }
+.ct-board::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+
+/* ── Column (matches dk-col) ── */
+.ct-col { flex: 0 0 240px; min-width: 220px; display: flex; flex-direction: column; gap: 8px; }
+.ct-col-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px 6px 12px; border-radius: 10px; border-top: 3px solid #94a3b8;
+  background: color-mix(in srgb, var(--glass-bg) 70%, transparent);
+  border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);
+}
+.ct-col-title { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; opacity: .75; }
+.ct-col-count { font-size: .65rem; font-weight: 700; background: color-mix(in srgb, var(--glass-text) 10%, transparent); border-radius: 20px; padding: 0 6px; min-width: 18px; text-align: center; display: flex; align-items: center; gap: 4px; }
+.ct-col-count--alert { background: color-mix(in srgb, #ef4444 15%, transparent); color: #dc2626; }
+.ct-col-new-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; display: inline-block; }
+.ct-col-body { display: flex; flex-direction: column; gap: 8px; }
+.ct-col-empty { font-size: .72rem; opacity: .3; text-align: center; padding: 16px 0; }
+
+/* ── Card ── */
+.ct-card { padding: 12px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; transition: transform .12s, box-shadow .12s; border: 1px solid var(--glass-border); }
+.ct-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+.ct-card--new { border-color: rgba(59,130,246,.35); }
+
+/* ── Card person row ── */
+.ct-card-who { display: flex; align-items: center; gap: 8px; }
+.ct-avatar { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; background: color-mix(in srgb, var(--glass-text) 12%, transparent); border: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; letter-spacing: .04em; }
+.ct-av--company { background: color-mix(in srgb, #f59e0b 15%, transparent); color: #a06e1e; border-color: rgba(245,158,11,.25); }
+html.dark .ct-av--company { background: color-mix(in srgb, #f59e0b 20%, transparent); color: #fbbf24; }
+.ct-av--master { background: color-mix(in srgb, #3b82f6 12%, transparent); color: #3b82f6; border-color: rgba(59,130,246,.25); }
+html.dark .ct-av--master { background: color-mix(in srgb, #60a5fa 18%, transparent); color: #60a5fa; }
+.ct-av--intake { background: color-mix(in srgb, #ef4444 10%, transparent); color: #ef4444; border-color: rgba(239,68,68,.25); }
+.ct-card-meta { min-width: 0; flex: 1; }
+.ct-card-name { font-size: .8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ct-card-sub { font-size: .68rem; opacity: .5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Tags ── */
+.ct-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.ct-tag { font-size: .62rem; font-weight: 500; padding: 2px 7px; border-radius: 20px; background: color-mix(in srgb, var(--glass-text) 8%, transparent); border: 1px solid var(--glass-border); }
+.ct-tag--more { opacity: .5; }
+
+/* ── Masters count ── */
+.ct-card-masters { display: flex; align-items: center; gap: 6px; }
+.ct-card-masters-label { font-size: .6rem; text-transform: uppercase; letter-spacing: .07em; opacity: .4; font-weight: 600; }
+.ct-card-masters-count { font-size: .7rem; font-weight: 700; background: color-mix(in srgb, #3b82f6 12%, transparent); color: #3b82f6; border-radius: 20px; padding: 0 6px; }
+
+/* ── Skeleton ── */
+.ct-skel { height: 72px; border-radius: 12px; background: color-mix(in srgb, var(--glass-text) 5%, transparent); animation: skel-pulse 1.4s ease-in-out infinite; }
+@keyframes skel-pulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+
+/* ── Intake status dot ── */
+.ct-intake-status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ct-intake-dot--new      { background: #3b82f6; }
+.ct-intake-dot--reviewed { background: #f59e0b; }
+.ct-intake-dot--added    { background: #16a34a; }
+.ct-intake-dot--rejected { background: #9ca3af; }
+
+/* ── Intake detail view ── */
+.ct-intake-view { display: flex; flex-direction: column; gap: 16px; }
+.ct-intake-detail { padding: 24px 28px; border-radius: 14px; max-width: 720px; }
+.ct-intake-dhead { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+.ct-intake-dtitle { font-size: 1.1rem; font-weight: 700; flex: 1; }
+.ct-intake-status-sel { max-width: 160px; font-size: .78rem; padding: 5px 10px; }
+.ct-intake-status-pill { font-size: .68rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+.ct-intake-pill--new      { background: rgba(59,130,246,.12); color: #3b82f6; }
+.ct-intake-pill--reviewed { background: rgba(245,158,11,.12); color: #d97706; }
+.ct-intake-pill--added    { background: rgba(22,163,74,.12); color: #16a34a; }
+.ct-intake-pill--rejected { background: rgba(107,114,128,.1); color: #6b7280; }
+.ct-intake-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+@media (max-width: 640px) { .ct-intake-grid { grid-template-columns: 1fr; } }
+.ct-intake-field { display: flex; flex-direction: column; gap: 2px; }
+.ct-intake-label { font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; opacity: .4; font-weight: 600; }
+.ct-intake-val { font-size: .88rem; font-weight: 500; }
+.ct-intake-link { color: var(--ds-accent, #6366f1); text-decoration: none; }
+.ct-intake-link:hover { text-decoration: underline; }
+.ct-intake-wt { margin-bottom: 14px; }
+.ct-intake-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ct-intake-chip { font-size: .72rem; padding: 2px 10px; border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent); border-radius: 12px; opacity: .7; }
+.ct-intake-notes { margin-top: 4px; }
+.ct-intake-notes-text { font-size: .84rem; opacity: .6; white-space: pre-line; margin-top: 4px; line-height: 1.5; }
 
 /* ══ Modal ══ */
 .ct-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
@@ -563,61 +694,4 @@ html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; 
 .ct-doc-download { font-size: .78rem; font-weight: 600; color: var(--ds-accent, #6366f1); text-decoration: none; }
 .ct-doc-download:hover { text-decoration: underline; }
 .ct-cert-chip { display: inline-block; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--ds-accent, #6366f1) 10%, transparent); color: var(--ds-accent, #6366f1); font-size: .75rem; font-weight: 500; margin-right: 4px; margin-bottom: 2px; }
-
-@media (max-width: 640px) { .ct-nav-master { padding-left: 10px; } }
-
-/* ── View tabs ── */
-.ct-view-tabs { display: flex; gap: 0; padding: 0 10px 8px; }
-.ct-view-tab {
-  flex: 1; background: none; border: none; padding: 6px 10px;
-  font-size: .72rem; font-weight: 600; cursor: pointer; color: var(--glass-text);
-  opacity: .4; border-bottom: 2px solid transparent; transition: all .12s; font-family: inherit;
-}
-.ct-view-tab:hover { opacity: .7; }
-.ct-view-tab--active { opacity: 1; border-bottom-color: var(--ds-accent, #6366f1); color: var(--ds-accent, #6366f1); }
-.ct-intake-badge {
-  display: inline-block; margin-left: 5px; background: #ef4444; color: #fff;
-  font-size: .55rem; font-weight: 700; border-radius: 20px; padding: 1px 5px; vertical-align: middle;
-}
-
-/* ── Intake sidebar ── */
-.ct-intake-sidebar { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; flex: 1; overflow-y: auto; }
-.ct-intake-nav-item {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 8px 12px; border-radius: 8px; border: none; background: none;
-  cursor: pointer; font-family: inherit; color: var(--glass-text); text-align: left;
-  transition: background .1s;
-}
-.ct-intake-nav-item:hover { background: color-mix(in srgb, var(--glass-text) 5%, transparent); }
-.ct-intake-nav-item--active { background: color-mix(in srgb, var(--ds-accent, #6366f1) 10%, transparent); }
-.ct-intake-name { font-size: .8rem; }
-.ct-intake-status-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-}
-.ct-intake-dot--new      { background: #3b82f6; }
-.ct-intake-dot--reviewed { background: #f59e0b; }
-.ct-intake-dot--added    { background: #16a34a; }
-.ct-intake-dot--rejected { background: #9ca3af; }
-
-/* ── Intake detail ── */
-.ct-intake-detail { padding: 24px 28px; border-radius: 14px; }
-.ct-intake-dhead { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
-.ct-intake-dtitle { font-size: 1.1rem; font-weight: 700; flex: 1; }
-.ct-intake-status-sel { max-width: 160px; font-size: .78rem; padding: 5px 10px; }
-.ct-intake-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-@media (max-width: 640px) { .ct-intake-grid { grid-template-columns: 1fr; } }
-.ct-intake-field { display: flex; flex-direction: column; gap: 2px; }
-.ct-intake-label { font-size: .62rem; text-transform: uppercase; letter-spacing: .07em; opacity: .4; font-weight: 600; }
-.ct-intake-val { font-size: .88rem; font-weight: 500; }
-.ct-intake-link { color: var(--ds-accent, #6366f1); text-decoration: none; }
-.ct-intake-link:hover { text-decoration: underline; }
-.ct-intake-wt { margin-bottom: 14px; }
-.ct-intake-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.ct-intake-chip {
-  font-size: .72rem; padding: 2px 10px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-radius: 12px; opacity: .7;
-}
-.ct-intake-notes { margin-top: 4px; }
-.ct-intake-notes-text { font-size: .84rem; opacity: .6; white-space: pre-line; margin-top: 4px; line-height: 1.5; }
 </style>
