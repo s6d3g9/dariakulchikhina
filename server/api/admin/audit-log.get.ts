@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   const { page, limit } = parsePagination(event)
   const safeLimit = Math.min(limit, 200)
 
-  const q = getQuery(event)
+  const q = safeGetQuery(event)
   const action     = typeof q.action     === 'string' ? q.action     : undefined
   const role       = typeof q.role       === 'string' ? q.role       : undefined
   const entityType = typeof q.entityType === 'string' ? q.entityType : undefined

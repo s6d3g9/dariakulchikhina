@@ -40,7 +40,7 @@ const MAX_LIMIT     = 100
  * All parameters are optional and have safe defaults.
  */
 export function parsePagination(event: H3Event): PaginationParams {
-  const query  = getQuery(event)
+  const query  = safeGetQuery(event)
   const page   = Math.max(1, parseInt(String(query.page  ?? '1'),                 10) || 1)
   const limit  = Math.min(
     MAX_LIMIT,
