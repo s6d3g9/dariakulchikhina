@@ -334,6 +334,36 @@ export const contractorIntakes = pgTable('contractor_intakes', {
   createdAt:   timestamp('created_at').defaultNow().notNull(),
 })
 
+// ── Tasks (задания) ─────────────────────────────────────────────────────────
+// statuses: new | in_progress | review | approval | done | cancelled
+
+export const tasks = pgTable('tasks', {
+  id:                   serial('id').primaryKey(),
+  title:                text('title').notNull(),
+  description:          text('description'),
+  projectId:            integer('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  /** new | in_progress | review | approval | done | cancelled */
+  status:               text('status').notNull().default('new'),
+  workType:             text('work_type'),
+  serviceDescription:   text('service_description'),
+  dateStart:            text('date_start'),
+  dateEnd:              text('date_end'),
+  address:              text('address'),
+  assignedContractorId: integer('assigned_contractor_id').references(() => contractors.id, { onDelete: 'set null' }),
+  /** { photoReport?: boolean; workAct?: boolean } */
+  requirements:         jsonb('requirements').$type<{ photoReport?: boolean; workAct?: boolean }>(),
+  budget:               numeric('budget', { precision: 12, scale: 2 }),
+  notes:                text('notes'),
+  createdBy:            integer('created_by'),
+  createdAt:            timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt:            timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const tasksRelations = relations(tasks, ({ one }) => ({
+  project:             one(projects,     { fields: [tasks.projectId],            references: [projects.id] }),
+  assignedContractor:  one(contractors,  { fields: [tasks.assignedContractorId], references: [contractors.id] }),
+}))
+
 export const auditLogs = pgTable('audit_logs', {
   id:         serial('id').primaryKey(),
   /** Nullable — может быть анонимным (неаутентифицированный запрос / клиент/подрядчик) */

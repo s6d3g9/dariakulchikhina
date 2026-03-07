@@ -45,39 +45,38 @@
           </span>
         </div>
         <div class="ct-intake-grid">
-          <div class="ct-intake-field" v-if="selectedIntake.companyName">
+          <div v-if="selectedIntake.companyName" class="ct-intake-field">
             <span class="ct-intake-label">Компания</span>
-                <span class="ct-intake-val">{{ selectedIntake.companyName }}</span>
-              </div>
-              <div class="ct-intake-field">
-                <span class="ct-intake-label">Телефон</span>
-                <a :href="`tel:${selectedIntake.phone}`" class="ct-intake-val ct-intake-link">{{ selectedIntake.phone }}</a>
-              </div>
-              <div class="ct-intake-field" v-if="selectedIntake.email">
-                <span class="ct-intake-label">Email</span>
-                <a :href="`mailto:${selectedIntake.email}`" class="ct-intake-val ct-intake-link">{{ selectedIntake.email }}</a>
-              </div>
-              <div class="ct-intake-field" v-if="selectedIntake.city">
-                <span class="ct-intake-label">Город</span>
-                <span class="ct-intake-val">{{ selectedIntake.city }}</span>
-              </div>
-              <div class="ct-intake-field" v-if="selectedIntake.createdAt">
-                <span class="ct-intake-label">Дата заявки</span>
-                <span class="ct-intake-val">{{ fmtIntakeDate(selectedIntake.createdAt) }}</span>
-              </div>
-            </div>
-            <div v-if="selectedIntake.workTypes?.length" class="ct-intake-wt">
-              <div class="ct-intake-label">Виды работ</div>
-              <div class="ct-intake-chips">
-                <span v-for="wt in selectedIntake.workTypes" :key="wt" class="ct-intake-chip">{{ wt }}</span>
-              </div>
-            </div>
-            <div v-if="selectedIntake.notes" class="ct-intake-notes">
-              <div class="ct-intake-label">Примечания</div>
-              <p class="ct-intake-notes-text">{{ selectedIntake.notes }}</p>
-            </div>
+            <span class="ct-intake-val">{{ selectedIntake.companyName }}</span>
+          </div>
+          <div class="ct-intake-field">
+            <span class="ct-intake-label">Телефон</span>
+            <a :href="`tel:${selectedIntake.phone}`" class="ct-intake-val ct-intake-link">{{ selectedIntake.phone }}</a>
+          </div>
+          <div v-if="selectedIntake.email" class="ct-intake-field">
+            <span class="ct-intake-label">Email</span>
+            <a :href="`mailto:${selectedIntake.email}`" class="ct-intake-val ct-intake-link">{{ selectedIntake.email }}</a>
+          </div>
+          <div v-if="selectedIntake.city" class="ct-intake-field">
+            <span class="ct-intake-label">Город</span>
+            <span class="ct-intake-val">{{ selectedIntake.city }}</span>
+          </div>
+          <div v-if="selectedIntake.createdAt" class="ct-intake-field">
+            <span class="ct-intake-label">Дата заявки</span>
+            <span class="ct-intake-val">{{ fmtIntakeDate(selectedIntake.createdAt) }}</span>
           </div>
         </div>
+        <div v-if="selectedIntake.workTypes?.length" class="ct-intake-wt">
+          <div class="ct-intake-label">Виды работ</div>
+          <div class="ct-intake-chips">
+            <span v-for="wt in selectedIntake.workTypes" :key="wt" class="ct-intake-chip">{{ wt }}</span>
+          </div>
+        </div>
+        <div v-if="selectedIntake.notes" class="ct-intake-notes">
+          <div class="ct-intake-label">Примечания</div>
+          <p class="ct-intake-notes-text">{{ selectedIntake.notes }}</p>
+        </div>
+      </div>
     </div>
 
     <!-- ── Board view ── -->

@@ -145,6 +145,13 @@
               </div>
             </div>
 
+            <!-- задания -->
+            <div class="admin-nav-group">
+              <div class="admin-nav-row" :class="{ 'admin-nav-row--active': isTasksTab }">
+                <NuxtLink to="/admin/tasks" class="admin-nav-item" @click="sidebarOpen = false">задания</NuxtLink>
+              </div>
+            </div>
+
             <!-- дизайнеры -->
             <div class="admin-nav-group">
               <div class="admin-nav-row" :class="{ 'admin-nav-row--active': isDesignersTab }">
@@ -243,6 +250,7 @@ const isContractorsTab = computed(() => route.path.startsWith('/admin/contractor
 const isClientsTab     = computed(() => route.path.startsWith('/admin/clients'))
 const isGalleryTab     = computed(() => route.path.startsWith('/admin/gallery'))
 const isDocumentsTab   = computed(() => route.path.startsWith('/admin/documents'))
+const isTasksTab       = computed(() => route.path.startsWith('/admin/tasks'))
 const isDesignersTab   = computed(() => route.path.startsWith('/admin/designers'))
 
 const contractorsTabTo    = computed(() => withCtx('/admin/contractors'))

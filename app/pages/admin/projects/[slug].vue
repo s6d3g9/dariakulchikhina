@@ -60,6 +60,11 @@
               :class="{ 'proj-mobile-bar-btn--active': activePage === 'overview' }"
               @click="selectAdminPage('overview')"
             >◈ обзор</button>
+            <button
+              class="proj-mobile-bar-btn"
+              :class="{ 'proj-mobile-bar-btn--active': activePage === 'tasks' }"
+              @click="selectAdminPage('tasks')"
+            >✅ задания</button>
             <template v-for="group in navGroups" :key="'mob-' + group.label">
               <button
                 v-for="pg in group.pages" :key="pg.slug"
@@ -145,6 +150,14 @@
               </div>
             </template>
 
+            <!-- ── Задания ── -->
+            <button
+              class="proj-sidenav-item std-nav-item"
+              :class="{ 'proj-sidenav-item--active': activePage === 'tasks', 'std-nav-item--active': activePage === 'tasks' }"
+              @click="selectAdminPage('tasks')"
+              style="margin-top:8px"
+            ><span class="proj-sidenav-icon">✅</span> задания</button>
+
             <!-- ── Visit / Payment / Follow-up widget ── -->
             <div class="proj-visit-widget">
               <div class="proj-visit-widget-title" @click="visitWidgetOpen = !visitWidgetOpen">
@@ -229,6 +242,10 @@
                   :designers="linkedDesignersList"
                   @navigate="selectAdminPage"
                 />
+              </template>
+              <!-- Tasks tab -->
+              <template v-else-if="activePage === 'tasks'">
+                <AdminTaskList :project-id="project.id" />
               </template>
               <component
                 v-else
