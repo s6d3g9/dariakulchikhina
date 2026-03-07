@@ -14,7 +14,7 @@ import { eq, not, inArray, and, sql } from 'drizzle-orm'
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
-  const { workType } = getQuery(event) as { workType?: string }
+  const { workType } = safeGetQuery(event) as { workType?: string }
 
   // Fetch all contractors
   const allContractors = await db.select({

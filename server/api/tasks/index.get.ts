@@ -5,7 +5,7 @@ import { desc, eq, and } from 'drizzle-orm'
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const db = useDb()
-  const q = getQuery(event) as { status?: string; projectId?: string; contractorId?: string }
+  const q = safeGetQuery(event) as { status?: string; projectId?: string; contractorId?: string }
 
   const conditions = []
   if (q.status) conditions.push(eq(tasks.status, q.status))
