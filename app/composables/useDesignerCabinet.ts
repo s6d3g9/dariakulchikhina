@@ -78,13 +78,16 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
 
   const nav = computed(() => {
     const items = [
-      { key: 'dashboard', icon: '◈', label: 'Обзор' },
-      { key: 'services', icon: '◎', label: 'Услуги и цены' },
-      { key: 'packages', icon: '◑', label: 'Пакеты' },
+      { key: 'dashboard',     icon: '◈', label: 'Обзор' },
+      { key: 'availability',  icon: '◐', label: 'Загрузка' },
+      { key: 'portfolio',     icon: '◧', label: 'Портфолио' },
+      { key: 'regalia',       icon: '★', label: 'Регалии' },
+      { key: 'services',      icon: '◎', label: 'Услуги и цены' },
+      { key: 'packages',      icon: '◑', label: 'Пакеты' },
       { key: 'subscriptions', icon: '⟳', label: 'Подписки' },
-      { key: 'documents', icon: '📎', label: 'Документы' },
-      { key: 'projects', icon: '◒', label: 'Проекты' },
-      { key: 'profile', icon: '◓', label: 'Профиль' },
+      { key: 'documents',     icon: '📎', label: 'Документы' },
+      { key: 'projects',      icon: '◒', label: 'Проекты' },
+      { key: 'profile',       icon: '◓', label: 'Профиль' },
     ]
     return items
   })
@@ -103,6 +106,21 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     specializations: [] as string[],
   })
 
+  // ── Availability form ──
+  const availabilityForm = reactive({
+    availabilityStatus:  'free' as 'free' | 'busy' | 'paused',
+    availableFrom:       '' as string,
+    canTakeOrder:        true,
+    rating:              '' as string,
+    completedProjectsCount: 0,
+  })
+
+  // ── Regalia items ──
+  const regaliaItems = ref<Array<{ type: string; title: string; year: string; description: string }>>([])  
+
+  // ── Portfolio items ──
+  const portfolioItems = ref<Array<{ title: string; imageUrl: string; description: string; year: string }>>([])  
+
   const saving = ref(false)
   const saveMsg = ref('')
 
@@ -118,6 +136,16 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     form.experience = d.experience || ''
     form.about = d.about || ''
     form.specializations = Array.isArray(d.specializations) ? [...d.specializations] : []
+    // Availability
+    availabilityForm.availabilityStatus   = (d.availabilityStatus   || 'free') as 'free' | 'busy' | 'paused'
+    availabilityForm.availableFrom        = d.availableFrom         || ''
+    availabilityForm.canTakeOrder         = d.canTakeOrder          ?? true
+    availabilityForm.rating               = d.rating != null        ? String(d.rating) : ''
+    availabilityForm.completedProjectsCount = d.completedProjectsCount ?? 0
+    // Regalia
+    regaliaItems.value   = Array.isArray(d.regalia)   ? [...d.regalia]   : []
+    // Portfolio
+    portfolioItems.value = Array.isArray(d.portfolio) ? [...d.portfolio] : []
   }, { immediate: true })
 
   async function saveProfile() {
@@ -369,6 +397,42 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     return Math.round((filled + hasSvc + hasPkg + hasSub) / (fields.length + 3) * 100)
   })
 
+  // ── Availability / rating ──
+  async function saveAvailability() {
+    if (!did.value) return
+    await $fetch(`/api/designers/${did.value}`, {
+      method: 'PUT' as any,
+      body: {
+        availabilityStatus:     availabilityForm.availabilityStatus,
+        availableFrom:          availabilityForm.availableFrom || null,
+        canTakeOrder:           availabilityForm.canTakeOrder,
+        rating:                 availabilityForm.rating !== '' ? Number(availabilityForm.rating) : null,
+        completedProjectsCount: availabilityForm.completedProjectsCount,
+      },
+    })
+    await refresh()
+  }
+
+  // ── Regalia ──
+  async function saveRegalia() {
+    if (!did.value) return
+    await $fetch(`/api/designers/${did.value}`, {
+      method: 'PUT' as any,
+      body: { regalia: regaliaItems.value },
+    })
+    await refresh()
+  }
+
+  // ── Portfolio ──
+  async function savePortfolio() {
+    if (!did.value) return
+    await $fetch(`/api/designers/${did.value}`, {
+      method: 'PUT' as any,
+      body: { portfolio: portfolioItems.value },
+    })
+    await refresh()
+  }
+
   // ── Create designer ──
   async function createDesigner(name: string) {
     const result = await $fetch('/api/designers', {
@@ -409,6 +473,18 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     saving,
     saveMsg,
     saveProfile,
+
+    // Availability / rating
+    availabilityForm,
+    saveAvailability,
+
+    // Regalia
+    regaliaItems,
+    saveRegalia,
+
+    // Portfolio
+    portfolioItems,
+    savePortfolio,
 
     // Services
     saveServices,

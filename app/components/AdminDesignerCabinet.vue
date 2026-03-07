@@ -124,6 +124,121 @@
             </div>
           </template>
 
+          <!-- ═══════════════ ЗАГРУЗКА & РЕЙТИНГ ═══════════════ -->
+          <template v-else-if="section === 'availability'">
+            <div class="u-section-title"><h2>Загрузка и доступность</h2></div>
+
+            <div class="avail-block glass-surface">
+              <!-- Status pills -->
+              <div class="avail-status-row">
+                <div class="avail-status-label">Текущий статус</div>
+                <div class="avail-status-pills">
+                  <button
+                    v-for="opt in AVAIL_STATUSES" :key="opt.key"
+                    class="avail-pill"
+                    :class="{ 'avail-pill--on': availabilityForm.availabilityStatus === opt.key, [`avail-pill--${opt.key}`]: true }"
+                    @click="availabilityForm.availabilityStatus = (opt.key as any); saveAvailability()"
+                  >{{ opt.label }}</button>
+                </div>
+              </div>
+
+              <div class="avail-grid">
+                <div class="avail-field">
+                  <label class="avail-lbl">Свободен с</label>
+                  <input type="date" v-model="availabilityForm.availableFrom" class="glass-input" @change="saveAvailability" />
+                  <span class="avail-hint">оставьте пустым если свободен сейчас</span>
+                </div>
+                <div class="avail-field">
+                  <label class="avail-lbl">Рейтинг (0–5)</label>
+                  <input type="number" v-model="availabilityForm.rating" class="glass-input" min="0" max="5" step="0.1" @blur="saveAvailability" />
+                  <div v-if="availabilityForm.rating" class="avail-stars">
+                    <span v-for="i in 5" :key="i" class="avail-star" :class="{ 'avail-star--on': i <= Math.round(Number(availabilityForm.rating)) }">★</span>
+                    <span class="avail-star-val">{{ Number(availabilityForm.rating).toFixed(1) }}</span>
+                  </div>
+                </div>
+                <div class="avail-field">
+                  <label class="avail-lbl">Завершённых проектов</label>
+                  <input type="number" v-model="availabilityForm.completedProjectsCount" class="glass-input" min="0" @blur="saveAvailability" />
+                </div>
+                <div class="avail-field">
+                  <label class="avail-lbl">Может взять новый заказ</label>
+                  <label class="avail-toggle">
+                    <input type="checkbox" v-model="availabilityForm.canTakeOrder" @change="saveAvailability" />
+                    <span class="avail-toggle-track">
+                      <span class="avail-toggle-thumb"></span>
+                    </span>
+                    <span class="avail-toggle-label">{{ availabilityForm.canTakeOrder ? 'Да, готов взять' : 'Нет, занят' }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Summary card -->
+              <div class="avail-summary">
+                <div class="avail-summary-status" :class="`avail-sum--${availabilityForm.availabilityStatus}`">
+                  {{ { free: '✓ Свободен', busy: '✗ Занят', paused: '⏸ На паузе' }[availabilityForm.availabilityStatus] }}
+                </div>
+                <div v-if="availabilityForm.availableFrom && availabilityForm.availabilityStatus !== 'free'" class="avail-summary-date">
+                  Свободен с {{ new Date(availabilityForm.availableFrom).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) }}
+                </div>
+                <div class="avail-summary-take">
+                  {{ availabilityForm.canTakeOrder ? 'Готов взять ещё заказ' : 'Новые заказы не берёт' }}
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- ═══════════════ ПОРТФОЛИО ═══════════════ -->
+          <template v-else-if="section === 'portfolio'">
+            <div class="u-section-title">
+              <h2>Портфолио</h2>
+              <button class="a-btn-sm" @click="portfolioItems.push({ title: '', imageUrl: '', description: '', year: String(new Date().getFullYear()) }); savePortfolio()">+ добавить</button>
+            </div>
+            <div v-if="!portfolioItems.length" class="u-empty-state">Добавьте работы из портфолио</div>
+            <div class="port-grid">
+              <div v-for="(item, idx) in portfolioItems" :key="idx" class="port-card glass-surface">
+                <div class="port-card-img-wrap">
+                  <img v-if="item.imageUrl" :src="item.imageUrl" class="port-card-img" />
+                  <div v-else class="port-card-img-placeholder">фото</div>
+                </div>
+                <div class="port-card-fields">
+                  <input v-model="item.title" class="glass-input port-inp" placeholder="Название проекта" @blur="savePortfolio" />
+                  <input v-model="item.imageUrl" class="glass-input port-inp" placeholder="URL фото" @blur="savePortfolio" />
+                  <input v-model="item.year" class="glass-input port-inp" placeholder="Год" @blur="savePortfolio" />
+                  <textarea v-model="item.description" class="glass-input port-ta" rows="2" placeholder="Краткое описание" @blur="savePortfolio" />
+                </div>
+                <button class="port-del" @click="portfolioItems.splice(idx, 1); savePortfolio()">×</button>
+              </div>
+            </div>
+          </template>
+
+          <!-- ═══════════════ РЕГАЛИИ / ДОСТИЖЕНИЯ ═══════════════ -->
+          <template v-else-if="section === 'regalia'">
+            <div class="u-section-title">
+              <h2>Регалии и достижения</h2>
+              <button class="a-btn-sm" @click="regaliaItems.push({ type: 'award', title: '', year: String(new Date().getFullYear()), description: '' }); saveRegalia()">+ добавить</button>
+            </div>
+            <div v-if="!regaliaItems.length" class="u-empty-state">Добавьте образование, награды, публикации и другие достижения</div>
+            <div class="reg-list">
+              <div v-for="(item, idx) in regaliaItems" :key="idx" class="reg-row glass-surface">
+                <div class="reg-row-head">
+                  <select v-model="item.type" class="glass-input reg-type-sel" @change="saveRegalia">
+                    <option value="education">🎓 Образование</option>
+                    <option value="award">🏆 Награда</option>
+                    <option value="publication">📖 Публикация</option>
+                    <option value="exhibition">🖼 Выставка</option>
+                    <option value="certification">📜 Сертификат</option>
+                    <option value="experience">💼 Опыт работы</option>
+                    <option value="other">◈ Прочее</option>
+                  </select>
+                  <input v-model="item.year" class="glass-input reg-year" placeholder="Год" @blur="saveRegalia" />
+                  <button class="reg-del a-btn-sm" style="color:#ef4444" @click="regaliaItems.splice(idx, 1); saveRegalia()">×</button>
+                </div>
+                <input v-model="item.title" class="glass-input" placeholder="Название" @blur="saveRegalia" />
+                <textarea v-model="item.description" class="glass-input reg-ta" rows="2" placeholder="Подробности..." @blur="saveRegalia" />
+              </div>
+            </div>
+          </template>
+
           <!-- ═══════════════ SERVICES & PRICING ═══════════════ -->
           <template v-else-if="section === 'services'">
             <div class="u-section-title">
@@ -783,6 +898,12 @@ const {
   saving,
   saveMsg,
   saveProfile,
+  availabilityForm,
+  saveAvailability,
+  regaliaItems,
+  saveRegalia,
+  portfolioItems,
+  savePortfolio,
   saveServices,
   initServicesFromTemplates,
   savePackages,
@@ -804,6 +925,12 @@ const {
 } = useDesignerCabinet(designerIdRef)
 
 // ── Local state ──
+
+const AVAIL_STATUSES = [
+  { key: 'free',   label: 'Свободен' },
+  { key: 'busy',   label: 'Занят' },
+  { key: 'paused', label: 'На паузе' },
+]
 
 const SPECIALIZATION_OPTIONS = [
   'Квартиры', 'Дома и коттеджи', 'Апартаменты', 'Офисы',
@@ -1585,4 +1712,62 @@ async function saveDesignerProjectEdits() {
   .pkg-grid { grid-template-columns: 1fr; }
   .sub-grid { grid-template-columns: 1fr; }
 }
+
+/* ══ AVAILABILITY ══ */
+.avail-block { border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+.avail-status-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.avail-status-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; opacity: .45; min-width: 110px; }
+.avail-status-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.avail-pill { padding: 6px 16px; border-radius: 20px; border: 1.5px solid var(--glass-border); font-size: .78rem; font-weight: 600; cursor: pointer; background: transparent; color: inherit; transition: all .15s; }
+.avail-pill--on.avail-pill--free   { background: rgba(16,185,129,.15); border-color: rgba(16,185,129,.5); color: #059669; }
+.avail-pill--on.avail-pill--busy   { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.4); color: #dc2626; }
+.avail-pill--on.avail-pill--paused { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.4); color: #d97706; }
+.avail-pill:hover { background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
+
+.avail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; }
+@media (max-width: 600px) { .avail-grid { grid-template-columns: 1fr; } }
+.avail-field { display: flex; flex-direction: column; gap: 5px; }
+.avail-lbl   { font-size: .64rem; text-transform: uppercase; letter-spacing: .08em; opacity: .45; }
+.avail-hint  { font-size: .62rem; opacity: .35; }
+
+.avail-stars { display: flex; align-items: center; gap: 2px; margin-top: 4px; }
+.avail-star  { font-size: 1.2rem; color: var(--glass-border); transition: color .12s; }
+.avail-star--on { color: #f59e0b; }
+.avail-star-val { font-size: .8rem; font-weight: 700; margin-left: 6px; color: #f59e0b; }
+
+.avail-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 4px; }
+.avail-toggle input { display: none; }
+.avail-toggle-track { width: 40px; height: 22px; border-radius: 11px; background: color-mix(in srgb, var(--glass-text) 15%, transparent); position: relative; transition: background .2s; flex-shrink: 0; }
+.avail-toggle input:checked + .avail-toggle-track { background: #10b981; }
+.avail-toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: white; transition: left .2s; }
+.avail-toggle input:checked + .avail-toggle-track .avail-toggle-thumb { left: 21px; }
+.avail-toggle-label { font-size: .78rem; font-weight: 500; }
+
+.avail-summary { display: flex; flex-direction: column; gap: 4px; padding: 14px 18px; border-radius: 10px; background: color-mix(in srgb, var(--glass-text) 5%, transparent); }
+.avail-summary-status { font-size: .88rem; font-weight: 700; }
+.avail-sum--free   { color: #059669; }
+.avail-sum--busy   { color: #dc2626; }
+.avail-sum--paused { color: #d97706; }
+.avail-summary-date { font-size: .75rem; opacity: .6; }
+.avail-summary-take { font-size: .75rem; opacity: .55; }
+
+/* ══ PORTFOLIO ══ */
+.port-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.port-card { border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+.port-card-img-wrap { height: 140px; border-radius: 10px; overflow: hidden; background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
+.port-card-img { width: 100%; height: 100%; object-fit: cover; }
+.port-card-img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: .72rem; opacity: .3; }
+.port-card-fields { display: flex; flex-direction: column; gap: 6px; }
+.port-inp { font-size: .78rem; height: 32px; }
+.port-ta { font-size: .75rem; resize: vertical; min-height: 50px; }
+.port-del { position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(239,68,68,.15); color: #ef4444; font-size: .88rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+/* ══ REGALIA ══ */
+.reg-list { display: flex; flex-direction: column; gap: 12px; }
+.reg-row { border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.reg-row-head { display: flex; align-items: center; gap: 8px; }
+.reg-type-sel { flex: 1; height: 32px; font-size: .78rem; }
+.reg-year { width: 90px; height: 32px; font-size: .78rem; flex-shrink: 0; }
+.reg-del { flex-shrink: 0; }
+.reg-ta { resize: vertical; min-height: 50px; font-size: .76rem; }
 </style>

@@ -226,7 +226,8 @@
                 </div>
                 <div class="pj-form-field">
                   <label class="pj-form-label">Телефон / контакт <span class="pj-required">*</span></label>
-                  <input v-model="newProject.phone" class="pj-input" placeholder="+7 (999) 000-00-00" type="tel" />
+                  <input v-model="newProject.phone" class="pj-input" placeholder="+7 (999) 000-00-00" type="tel"
+                    @focus="initPhone" @input="formatProjectPhone" />
                 </div>
               </div>
               <div class="pj-form-field">
@@ -392,6 +393,23 @@ const slugCopied = ref(false)
 const newProject = reactive({ title: '', slug: '', fio: '', phone: '', objectType: '' })
 
 function closeCreate() { showCreate.value = false; newProject.title = ''; newProject.slug = ''; newProject.fio = ''; newProject.phone = ''; newProject.objectType = ''; createError.value = ''; slugCopied.value = false }
+
+function initPhone() {
+  if (!newProject.phone) newProject.phone = '+7 '
+}
+function formatProjectPhone(e: Event) {
+  const input = e.target as HTMLInputElement
+  let v = input.value.replace(/\D/g, '')
+  if (v.startsWith('8')) v = '7' + v.slice(1)
+  if (!v.startsWith('7')) v = '7' + v
+  v = v.slice(0, 11)
+  let result = '+7'
+  if (v.length > 1) result += ' (' + v.slice(1, 4)
+  if (v.length >= 4) result += ') ' + v.slice(4, 7)
+  if (v.length >= 7) result += '-' + v.slice(7, 9)
+  if (v.length >= 9) result += '-' + v.slice(9, 11)
+  newProject.phone = result
+}
 
 async function copySlug() {
   if (!newProject.slug) return

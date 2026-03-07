@@ -1,46 +1,27 @@
 import { useDb } from '~/server/db/index'
 import { designers } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
-import { z } from 'zod'
-
-const UpdateDesignerSchema = z.object({
-  name: z.string().min(1).optional(),
-  companyName: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
-  telegram: z.string().optional(),
-  website: z.string().optional(),
-  city: z.string().optional(),
-  experience: z.string().optional(),
-  about: z.string().optional(),
-  specializations: z.array(z.string()).optional(),
-  services: z.array(z.any()).optional(),
-  packages: z.array(z.any()).optional(),
-  subscriptions: z.array(z.any()).optional(),
-})
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
+  const id = Number(event.context.params?.id)
   if (!id || !Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
 
-  const body = await readValidatedNodeBody(event, UpdateDesignerSchema)
+  const body = await readBody(event)
   const db = useDb()
 
+  const ALLOWED_TEXT = ['name','companyName','phone','email','telegram','website','city','experience','about','availabilityStatus','availableFrom','messengerNick']
+  const ALLOWED_JSON = ['specializations','services','packages','subscriptions','regalia','portfolio']
+  const ALLOWED_BOOL = ['canTakeOrder']
+  const ALLOWED_NUM  = ['completedProjectsCount']
+  const ALLOWED_NUMERIC = ['rating']
+
   const updates: Record<string, unknown> = { updatedAt: new Date() }
-  if (body.name !== undefined) updates.name = body.name
-  if (body.companyName !== undefined) updates.companyName = body.companyName || null
-  if (body.phone !== undefined) updates.phone = body.phone || null
-  if (body.email !== undefined) updates.email = body.email || null
-  if (body.telegram !== undefined) updates.telegram = body.telegram || null
-  if (body.website !== undefined) updates.website = body.website || null
-  if (body.city !== undefined) updates.city = body.city || null
-  if (body.experience !== undefined) updates.experience = body.experience || null
-  if (body.about !== undefined) updates.about = body.about || null
-  if (body.specializations !== undefined) updates.specializations = body.specializations
-  if (body.services !== undefined) updates.services = body.services
-  if (body.packages !== undefined) updates.packages = body.packages
-  if (body.subscriptions !== undefined) updates.subscriptions = body.subscriptions
+  for (const k of ALLOWED_TEXT)    if (k in body) updates[k] = body[k] ?? null
+  for (const k of ALLOWED_JSON)    if (k in body) updates[k] = body[k]
+  for (const k of ALLOWED_BOOL)    if (k in body) updates[k] = Boolean(body[k])
+  for (const k of ALLOWED_NUM)     if (k in body) updates[k] = Number(body[k]) || 0
+  for (const k of ALLOWED_NUMERIC) if (k in body) updates[k] = body[k] != null && body[k] !== '' ? Number(body[k]) : null
 
   const [updated] = await db.update(designers).set(updates).where(eq(designers.id, id)).returning()
   if (!updated) throw createError({ statusCode: 404, statusMessage: 'Designer not found' })

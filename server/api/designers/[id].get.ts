@@ -4,7 +4,7 @@ import { eq, sql } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
+  const id = Number(event.context.params?.id)
   if (!id || !Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
 
   const db = useDb()

@@ -9,6 +9,7 @@ import {
   unique,
   boolean,
   numeric,
+  date,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
@@ -235,6 +236,18 @@ export const designers = pgTable('designers', {
   packages: jsonb('packages').$type<Record<string, unknown>[]>().default([]).notNull(),
   /** Подписки / абонементы (JSON: DesignerSubscription[]) */
   subscriptions: jsonb('subscriptions').$type<Record<string, unknown>[]>().default([]).notNull(),
+  /** 'free' | 'busy' | 'paused' */
+  availabilityStatus: text('availability_status').default('free').notNull(),
+  /** Дата, с которой дизайнер свободен (если занят) */
+  availableFrom: date('available_from'),
+  canTakeOrder: boolean('can_take_order').default(true).notNull(),
+  /** Средний рейтинг (0–5) */
+  rating: numeric('rating', { precision: 3, scale: 1 }),
+  completedProjectsCount: integer('completed_projects_count').default(0).notNull(),
+  /** Регалии / достижения: { type, title, year, description }[] */
+  regalia: jsonb('regalia').$type<Record<string, unknown>[]>().default([]).notNull(),
+  /** Портфолио: { title, imageUrl, description, year, projectId? }[] */
+  portfolio: jsonb('portfolio').$type<Record<string, unknown>[]>().default([]).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
@@ -363,6 +376,57 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   project:             one(projects,     { fields: [tasks.projectId],            references: [projects.id] }),
   assignedContractor:  one(contractors,  { fields: [tasks.assignedContractorId], references: [contractors.id] }),
 }))
+
+// ── Sellers / Поставщики (магазины-партнёры дизайнера) ──────────────────────
+export const sellers = pgTable('sellers', {
+  id:           serial('id').primaryKey(),
+  name:         text('name').notNull(),
+  companyName:  text('company_name'),
+  contactPerson: text('contact_person'),
+  phone:        text('phone'),
+  email:        text('email'),
+  telegram:     text('telegram'),
+  whatsapp:     text('whatsapp'),
+  website:      text('website'),
+  city:         text('city'),
+  messenger:    text('messenger'),  // 'WhatsApp' | 'Telegram' | 'Viber' | ...
+  messengerNick: text('messenger_nick'),
+  /** Категории товаров: ['finish','plumbing','electrical','lighting','furniture','textile','decor','windows','climate','kitchen','bathroom','flooring','paint','other'] */
+  categories:   text('categories').array().default([]).notNull(),
+  /** Реквизиты (ИНН, ОГРН, банк и т.д.) */
+  requisites:   jsonb('requisites').$type<Record<string, string>>().default({}).notNull(),
+  /** Условия сотрудничества (скидки, сроки, особые условия) */
+  conditions:   text('conditions'),
+  notes:        text('notes'),
+  logo:         text('logo'),
+  /** 'active' | 'inactive' | 'potential' */
+  status:       text('status').default('active').notNull(),
+  /** Тип: 'marketplace' — размещён как партнёр; 'link' — просто ссылка для клиентов */
+  type:         text('type').default('link').notNull(),
+  /** Публичный URL (если размещён на маркетплейсе) */
+  publicSlug:   text('public_slug').unique(),
+  createdAt:    timestamp('created_at').defaultNow().notNull(),
+  updatedAt:    timestamp('updated_at').defaultNow().notNull(),
+})
+
+export const sellerProjects = pgTable('seller_projects', {
+  id:       serial('id').primaryKey(),
+  sellerId: integer('seller_id').notNull().references(() => sellers.id, { onDelete: 'cascade' }),
+  projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  notes:    text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (t) => [unique('seller_project_uniq').on(t.sellerId, t.projectId)])
+
+export const sellersRelations = relations(sellers, ({ many }) => ({
+  sellerProjects: many(sellerProjects),
+}))
+
+export const sellerProjectsRelations = relations(sellerProjects, ({ one }) => ({
+  seller:  one(sellers,  { fields: [sellerProjects.sellerId],  references: [sellers.id] }),
+  project: one(projects, { fields: [sellerProjects.projectId], references: [projects.id] }),
+}))
+
+// ── Audit log (M5 security) ──────────────────────────────────────────────────
 
 export const auditLogs = pgTable('audit_logs', {
   id:         serial('id').primaryKey(),
