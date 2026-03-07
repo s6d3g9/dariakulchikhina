@@ -206,6 +206,18 @@
             <form v-show="modalTab === 'main' || !isEditMode" @submit.prevent="save">
               <div class="ct-form-section">тип участника</div>
               <div class="u-grid-2">
+                <div class="u-field u-field--full">
+                  <label class="u-field__label">Форма собственности</label>
+                  <select v-model="form.legalForm" class="glass-input">
+                    <option value="">— не указана —</option>
+                    <option value="self_employed">Физлицо / Самозанятый (НПД)</option>
+                    <option value="ip">ИП</option>
+                    <option value="ooo">ООО</option>
+                    <option value="other_legal">Другое юрлицо (АО, ПАО…)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="u-grid-2">
                 <div class="u-field"><label class="u-field__label">Тип</label><select v-model="form.contractorType" class="glass-input"><option value="master">Мастер (частный специалист)</option><option value="company">Подрядчик (организация)</option></select></div>
                 <div v-if="form.contractorType === 'master'" class="u-field"><label class="u-field__label">Компания-работодатель</label><select v-model="form.parentId" class="glass-input"><option :value="null">— самозанятый —</option><option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option></select></div>
               </div>
@@ -226,14 +238,24 @@
                 </div>
               </template>
               <div class="ct-form-section">основное</div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Название *</label><input v-model="form.name" class="glass-input" required /></div>
-                <div class="u-field"><label class="u-field__label">Slug *</label><input v-model="form.slug" class="glass-input" required :disabled="!!editingId" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Компания</label><input v-model="form.companyName" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Контактное лицо</label><input v-model="form.contactPerson" class="glass-input" /></div>
-              </div>
+              <!-- Самозанятый: ФИО -->
+              <template v-if="form.legalForm === 'self_employed'">
+                <div class="u-grid-2">
+                  <div class="u-field"><label class="u-field__label">ФИО *</label><input v-model="form.name" class="glass-input" required placeholder="Иванов Иван Иванович" /></div>
+                  <div class="u-field"><label class="u-field__label">Slug (URL) *</label><input v-model="form.slug" class="glass-input" required :disabled="!!editingId" placeholder="авто" /></div>
+                </div>
+              </template>
+              <!-- Юрлицо / ИП -->
+              <template v-else>
+                <div class="u-grid-2">
+                  <div class="u-field"><label class="u-field__label">Название организации *</label><input v-model="form.name" class="glass-input" required /></div>
+                  <div class="u-field"><label class="u-field__label">Slug (URL) *</label><input v-model="form.slug" class="glass-input" required :disabled="!!editingId" placeholder="авто" /></div>
+                </div>
+                <div class="u-grid-2">
+                  <div class="u-field"><label class="u-field__label">Компания / бренд</label><input v-model="form.companyName" class="glass-input" /></div>
+                  <div class="u-field"><label class="u-field__label">Контактное лицо</label><input v-model="form.contactPerson" class="glass-input" /></div>
+                </div>
+              </template>
               <div class="u-grid-2">
                 <div class="u-field"><label class="u-field__label">Виды работ</label><input v-model="workTypesStr" class="glass-input" placeholder="через запятую" /></div>
                 <div class="u-field"></div>
@@ -249,26 +271,43 @@
               </div>
               <div class="ct-form-section">адреса</div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Юридический адрес</label><AppAddressInput v-model="form.legalAddress" input-class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">{{ form.legalForm === 'self_employed' ? 'Адрес регистрации' : 'Юридический адрес' }}</label><AppAddressInput v-model="form.legalAddress" input-class="glass-input" /></div>
                 <div class="u-field"><label class="u-field__label">Фактический адрес</label><AppAddressInput v-model="form.factAddress" input-class="glass-input" /></div>
               </div>
-              <div class="ct-form-section">реквизиты</div>
-              <div class="u-grid-2">
-                <div class="u-field u-field--full"><label class="u-field__label">Форма собственности</label><select v-model="form.legalForm" class="glass-input"><option value="">— не указана —</option><option value="self_employed">Самозанятый (физлицо / НПД)</option><option value="ip">ИП</option><option value="ooo">ООО</option><option value="other_legal">Другое юрлицо (АО, ПАО…)</option></select></div>
-              </div>
-              <div class="u-grid-3">
-                <div class="u-field"><label class="u-field__label">ИНН</label><input v-model="form.inn" class="glass-input" :placeholder="(form.legalForm === 'ooo' || form.legalForm === 'other_legal') ? '0000000000 (10)' : '000000000000 (12)'" :maxlength="(form.legalForm === 'ooo' || form.legalForm === 'other_legal') ? 10 : 12" /></div>
-                <div v-if="form.legalForm === 'ooo' || form.legalForm === 'other_legal' || !form.legalForm" class="u-field"><label class="u-field__label">КПП</label><input v-model="form.kpp" class="glass-input" placeholder="000000000" maxlength="9" /></div>
-                <div v-if="form.legalForm !== 'self_employed'" class="u-field"><label class="u-field__label">{{ form.legalForm === 'ip' ? 'ОГРНИП' : 'ОГРН / ОГРНИП' }}</label><input v-model="form.ogrn" class="glass-input" :placeholder="form.legalForm === 'ip' ? '000000000000000' : '0000000000000'" :maxlength="form.legalForm === 'ip' ? 15 : 13" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Банк</label><input v-model="form.bankName" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">БИК</label><input v-model="form.bik" class="glass-input" /></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Расчётный счёт</label><input v-model="form.settlementAccount" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Корр. счёт</label><input v-model="form.correspondentAccount" class="glass-input" /></div>
-              </div>
+
+              <!-- ═══ Реквизиты: ФИЗЛИЦО / САМОЗАНЯТЫЙ ═══ -->
+              <template v-if="form.legalForm === 'self_employed'">
+                <div class="ct-form-section">реквизиты (самозанятый)</div>
+                <div class="u-grid-2">
+                  <div class="u-field"><label class="u-field__label">ИНН (12 цифр)</label><input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" inputmode="numeric" /></div>
+                  <div class="u-field"><label class="u-field__label">СНИЛС</label><input v-model="form.snils" class="glass-input" placeholder="000-000-000 00" /></div>
+                </div>
+                <div class="ct-nalog-info">
+                  <span class="ct-nalog-icon">📱</span>
+                  <div>
+                    <div class="ct-nalog-title">Подтверждение самозанятости</div>
+                    <div class="ct-nalog-desc">Попросите подрядчика подтвердить статус в приложении <a href="https://npd.nalog.ru/" target="_blank" class="ct-nalog-link">«Мой налог»</a> или через <a href="https://www.gosuslugi.ru/" target="_blank" class="ct-nalog-link">Госуслуги</a>. Проверить статус: <a href="https://npd.nalog.ru/check-status/" target="_blank" class="ct-nalog-link">npd.nalog.ru/check-status</a></div>
+                  </div>
+                </div>
+              </template>
+
+              <!-- ═══ Реквизиты: ИП / ЮРЛ ═══ -->
+              <template v-else-if="form.legalForm">
+                <div class="ct-form-section">реквизиты</div>
+                <div class="u-grid-3">
+                  <div class="u-field"><label class="u-field__label">ИНН</label><input v-model="form.inn" class="glass-input" :placeholder="(form.legalForm === 'ooo' || form.legalForm === 'other_legal') ? '0000000000 (10)' : '000000000000 (12)'" :maxlength="(form.legalForm === 'ooo' || form.legalForm === 'other_legal') ? 10 : 12" inputmode="numeric" /></div>
+                  <div v-if="form.legalForm === 'ooo' || form.legalForm === 'other_legal'" class="u-field"><label class="u-field__label">КПП</label><input v-model="form.kpp" class="glass-input" placeholder="000000000" maxlength="9" inputmode="numeric" /></div>
+                  <div class="u-field"><label class="u-field__label">{{ form.legalForm === 'ip' ? 'ОГРНИП' : 'ОГРН' }}</label><input v-model="form.ogrn" class="glass-input" :placeholder="form.legalForm === 'ip' ? '000000000000000 (15)' : '0000000000000 (13)'" :maxlength="form.legalForm === 'ip' ? 15 : 13" inputmode="numeric" /></div>
+                </div>
+                <div class="u-grid-2">
+                  <div class="u-field"><label class="u-field__label">Банк</label><input v-model="form.bankName" class="glass-input" /></div>
+                  <div class="u-field"><label class="u-field__label">БИК</label><input v-model="form.bik" class="glass-input" maxlength="9" inputmode="numeric" /></div>
+                </div>
+                <div class="u-grid-2">
+                  <div class="u-field"><label class="u-field__label">Расчётный счёт</label><input v-model="form.settlementAccount" class="glass-input" maxlength="20" inputmode="numeric" /></div>
+                  <div class="u-field"><label class="u-field__label">Корр. счёт</label><input v-model="form.correspondentAccount" class="glass-input" maxlength="20" inputmode="numeric" /></div>
+                </div>
+              </template>
               <div class="ct-form-section">примечания</div>
               <div class="u-field"><textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="заметки о подрядчике"></textarea></div>
               <p v-if="formError" class="ct-form-error ct-form-error--bottom">{{ formError }}</p>
@@ -277,24 +316,29 @@
 
             <!-- ═══ TAB: Паспорт ═══ -->
             <div v-if="isEditMode && modalTab === 'passport'" class="ct-tab-content">
-              <div class="ct-form-section">паспортные данные (только чтение)</div>
-              <div class="u-grid-3">
-                <div class="ct-ro-field"><span class="ct-ro-label">Серия</span><span class="ct-ro-value">{{ editContractor?.passportSeries || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Номер</span><span class="ct-ro-value">{{ editContractor?.passportNumber || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Код подразделения</span><span class="ct-ro-value">{{ editContractor?.passportDepartmentCode || '—' }}</span></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="ct-ro-field"><span class="ct-ro-label">Кем выдан</span><span class="ct-ro-value">{{ editContractor?.passportIssuedBy || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Дата выдачи</span><span class="ct-ro-value">{{ editContractor?.passportIssueDate || '—' }}</span></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="ct-ro-field"><span class="ct-ro-label">Дата рождения</span><span class="ct-ro-value">{{ editContractor?.birthDate || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">Место рождения</span><span class="ct-ro-value">{{ editContractor?.birthPlace || '—' }}</span></div>
-              </div>
-              <div class="u-grid-2">
-                <div class="ct-ro-field"><span class="ct-ro-label">Адрес регистрации</span><span class="ct-ro-value">{{ editContractor?.registrationAddress || '—' }}</span></div>
-                <div class="ct-ro-field"><span class="ct-ro-label">СНИЛС</span><span class="ct-ro-value">{{ editContractor?.snils || '—' }}</span></div>
-              </div>
+              <div class="ct-form-section">паспортные данные</div>
+              <form @submit.prevent="savePassport">
+                <div class="u-grid-3">
+                  <div class="u-field"><label class="u-field__label">Серия</label><input v-model="passportForm.passportSeries" class="glass-input" placeholder="0000" maxlength="4" /></div>
+                  <div class="u-field"><label class="u-field__label">Номер</label><input v-model="passportForm.passportNumber" class="glass-input" placeholder="000000" maxlength="6" /></div>
+                  <div class="u-field"><label class="u-field__label">Код подразделения</label><input v-model="passportForm.passportDepartmentCode" class="glass-input" placeholder="000-000" /></div>
+                </div>
+                <div class="u-grid-2">
+                  <div class="u-field"><label class="u-field__label">Кем выдан</label><input v-model="passportForm.passportIssuedBy" class="glass-input" placeholder="УФМС..." /></div>
+                  <div class="u-field"><label class="u-field__label">Дата выдачи</label><input v-model="passportForm.passportIssueDate" class="glass-input" type="date" /></div>
+                </div>
+                <div class="u-grid-2">
+                  <div class="u-field"><label class="u-field__label">Дата рождения</label><input v-model="passportForm.birthDate" class="glass-input" type="date" /></div>
+                  <div class="u-field"><label class="u-field__label">Место рождения</label><input v-model="passportForm.birthPlace" class="glass-input" /></div>
+                </div>
+                <div class="u-grid-2">
+                  <div class="u-field"><label class="u-field__label">Адрес регистрации</label><AppAddressInput v-model="passportForm.registrationAddress" input-class="glass-input" /></div>
+                  <div class="u-field"><label class="u-field__label">СНИЛС</label><input v-model="passportForm.snils" class="glass-input" placeholder="000-000-000 00" /></div>
+                </div>
+                <p v-if="passportSaveErr" class="ct-form-error ct-form-error--bottom">{{ passportSaveErr }}</p>
+                <p v-if="passportSaveOk" class="ct-form-error" style="color:#2da870">✓ сохранено</p>
+                <div class="ct-modal-foot"><button type="submit" class="a-btn-save" :disabled="passportSaving">{{ passportSaving ? '...' : 'сохранить' }}</button></div>
+              </form>
             </div>
 
             <!-- ═══ TAB: Документы ═══ -->
@@ -441,10 +485,72 @@ const emptyForm = () => ({
   phone: '', email: '', messenger: '', messengerNick: '', website: '',
   legalAddress: '', factAddress: '',
   inn: '', kpp: '', ogrn: '', legalForm: '', bankName: '', bik: '', settlementAccount: '', correspondentAccount: '',
+  snils: '',
   notes: '', workTypes: [] as string[],
   contractorType: 'master' as 'master' | 'company', parentId: null as number | null,
 })
 const form = reactive(emptyForm())
+
+// ── Auto-slug from name/company ──────────────────────────────────────────
+function toSlug(s: string): string {
+  const map: Record<string, string> = {
+    а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'yo',ж:'zh',з:'z',и:'i',й:'y',к:'k',
+    л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'ts',
+    ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya',
+  }
+  return s.toLowerCase()
+    .replace(/[а-яё]/g, c => map[c] ?? c)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+}
+watch(
+  () => [form.name, form.companyName, form.legalForm] as const,
+  ([name, company, lf]) => {
+    if (editingId.value) return  // don't change slug when editing
+    const src = lf === 'self_employed' ? name : (company || name)
+    if (src) form.slug = toSlug(src)
+  },
+)
+
+// ── Passport tab form ────────────────────────────────────────────────────
+const passportForm = reactive({
+  passportSeries: '', passportNumber: '', passportDepartmentCode: '',
+  passportIssuedBy: '', passportIssueDate: '',
+  birthDate: '', birthPlace: '', registrationAddress: '', snils: '',
+})
+const passportSaving = ref(false)
+const passportSaveErr = ref('')
+const passportSaveOk = ref(false)
+
+watch(
+  () => editContractor.value,
+  (c) => {
+    if (!c) return
+    passportForm.passportSeries          = c.passportSeries          ?? ''
+    passportForm.passportNumber          = c.passportNumber          ?? ''
+    passportForm.passportDepartmentCode  = c.passportDepartmentCode  ?? ''
+    passportForm.passportIssuedBy        = c.passportIssuedBy        ?? ''
+    passportForm.passportIssueDate       = c.passportIssueDate       ?? ''
+    passportForm.birthDate               = c.birthDate               ?? ''
+    passportForm.birthPlace              = c.birthPlace              ?? ''
+    passportForm.registrationAddress     = c.registrationAddress     ?? ''
+    passportForm.snils                   = c.snils                   ?? ''
+  },
+  { immediate: true },
+)
+
+async function savePassport() {
+  if (!editingId.value) return
+  passportSaving.value = true; passportSaveErr.value = ''; passportSaveOk.value = false
+  try {
+    await $fetch(`/api/contractors/${editingId.value}`, { method: 'PUT', body: { ...passportForm } })
+    passportSaveOk.value = true
+    setTimeout(() => { passportSaveOk.value = false }, 3000)
+  } catch (e: any) {
+    passportSaveErr.value = e?.data?.message || 'Ошибка сохранения'
+  } finally { passportSaving.value = false }
+}
 
 const workTypesStr = computed({
   get: () => form.workTypes.join(', '),
@@ -557,6 +663,19 @@ function fmtIntakeDate(d: string) {
 .ct-filter-info { margin-bottom: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: .76rem; }
 .ct-filter-link { text-decoration: none; color: var(--glass-text); opacity: .5; transition: opacity .15s; }
 .ct-filter-link:hover { opacity: 1; }
+
+/* ── Мой налог info block ── */
+.ct-nalog-info {
+  display: flex; gap: .75rem; align-items: flex-start;
+  padding: .75rem 1rem; border-radius: 10px;
+  background: rgba(79,140,255,.08);
+  border: 1px solid rgba(79,140,255,.2);
+  margin-top: .5rem;
+}
+.ct-nalog-icon { font-size: 1.3rem; line-height: 1; flex-shrink: 0; }
+.ct-nalog-title { font-weight: 600; font-size: .82rem; margin-bottom: .25rem; }
+.ct-nalog-desc { font-size: .78rem; color: var(--text-secondary); line-height: 1.5; }
+.ct-nalog-link { color: var(--color-accent, #4f8cff); text-decoration: underline; }
 
 /* ── Board root ── */
 .ct-root { display: flex; flex-direction: column; gap: 16px; }
