@@ -95,6 +95,16 @@ export default defineEventHandler(async (event) => {
 - PM2 app: `daria-nuxt`
 - Команда: `pnpm deploy:safe:prod` или `bash scripts/deploy-safe.sh`
 
+## ПРАВИЛО ДЕПЛОЯ (обязательно, без исключений)
+
+> **Перед любым деплоем Copilot ОБЯЗАН:**
+> 1. `git add -A` — сохранить все изменения
+> 2. `git commit -m "..."` — закоммитить локально
+> 3. `git push origin main` — отправить на GitHub
+> 4. Только после этого — `bash scripts/deploy-safe.sh`
+
+Это правило нельзя обойти. `deploy-safe.sh` завершится с ошибкой если есть незакоммиченные или непушенные изменения.
+
 ## Правила кода
 - Не добавлять `console.log` в production код
 - Валидировать входные данные на сервере через Zod
