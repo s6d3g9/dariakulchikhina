@@ -1,5 +1,26 @@
 {
   "files.exclude": {
     "**/.git": false
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[vue]": {
+    "editor.defaultFormatter": "vue.volar"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "vue.server.hybridMode": true,
+  "tailwindCSS.experimental.classRegex": [
+    ["class=\"([^\"]*)", "([^\"\\s]*)"]
+  ],
+  "files.associations": {
+    "*.css": "css"
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.nuxt": true,
+    "**/.output": true
   }
 }
