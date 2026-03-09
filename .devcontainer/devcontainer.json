@@ -1,0 +1,22 @@
+{
+  "name": "dariakulchikhina",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+
+  "secrets": ["SSH_DEPLOY_KEY"],
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Vue.volar",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "antfu.unocss"
+      ]
+    }
+  }
+}
