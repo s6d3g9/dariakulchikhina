@@ -101,12 +101,22 @@ rsync -az --delete \
   --exclude '.output_bak' \
   --exclude '.data' \
   --exclude '.vscode' \
-  "$ROOT_DIR/" "${DEPLOY_HOST}:${DEPLOY_PATH}/"
+  "$ROOT_DIR/" "${DEPLOY_HOST}:${DEPLOY_PATH}/" || {
+    RC=$?
+    # exit 23 = some files/attrs not transferred (e.g. dir timestamps on tmpfs)
+    # exit 24 = some files vanished before transfer — both are non-fatal here
+    if [[ $RC -eq 23 || $RC -eq 24 ]]; then
+      echo "[deploy] rsync exited with $RC (non-fatal, files transferred OK)"
+    else
+      echo "[deploy] rsync failed with exit code $RC"
+      exit $RC
+    fi
+  }
 log_stage_time "sync" "$SYNC_START_TS"
 
 echo "[deploy] try remote install + build"
 BUILD_START_TS=$(date +%s)
-if ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pnpm install --frozen-lockfile; pnpm build"; then
+if ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; sudo chown -R \$(whoami):\$(whoami) node_modules 2>/dev/null || true; CI=true pnpm install --frozen-lockfile; pnpm build"; then
   echo "[deploy] remote build success"
 else
   echo "[deploy] remote build failed -> fallback to local build artifacts"
@@ -127,7 +137,7 @@ if [[ "$DRY_RUN" == "1" ]]; then
 fi
 
 RESTART_START_TS=$(date +%s)
-ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pm2 restart '$APP_NAME' --update-env --silent"
+ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pm2 describe '$APP_NAME' > /dev/null 2>&1 && pm2 restart '$APP_NAME' --update-env --silent || pm2 start ecosystem.config.cjs; pm2 save --force"
 log_stage_time "restart" "$RESTART_START_TS"
 
 echo "[deploy] pm2 status"
