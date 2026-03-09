@@ -13,7 +13,23 @@ NO_PREFLIGHT="${NO_PREFLIGHT:-0}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 METRICS_FILE="${METRICS_FILE:-$ROOT_DIR/logs/deploy-metrics.log}"
-
+# ── Проверка: все изменения должны быть закоммичены и запушены ──────────────
+if [[ -n "$(git status --porcelain)" ]]; then
+  echo "[error] есть незакоммиченные изменения!" >&2
+  echo "[error] сначала: git add . && git commit -m '...' && git push origin main" >&2
+  git status --short >&2
+  exit 1
+fi
+git fetch origin --quiet 2>/dev/null
+LOCAL_SHA=$(git rev-parse HEAD)
+REMOTE_SHA=$(git rev-parse origin/main 2>/dev/null || echo "")
+if [[ -n "$REMOTE_SHA" && "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
+  echo "[error] локальные коммиты не отправлены на GitHub!" >&2
+  echo "[error] сначала: git push origin main" >&2
+  exit 1
+fi
+echo "[git] всё закоммичено и запушено — $(git log --oneline -1)"
+# ────────────────────────────────────────────────────────────────────────────
 SCRIPT_START_TS=$(date +%s)
 TIMESTAMP_UTC=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 METRIC_PREFLIGHT="-"
@@ -135,6 +151,21 @@ case "$status_code" in
     echo "[deploy] done"
     log_stage_time "total" "$SCRIPT_START_TS"
     write_metrics "ok"
+
+    # ── Сохранение сборки локально ──────────────────────────────────────────
+    BUILDS_DIR="$ROOT_DIR/builds"
+    mkdir -p "$BUILDS_DIR"
+    BUILD_ARCHIVE="$BUILDS_DIR/build-$(date -u +"%Y%m%d-%H%M%S")-$(git rev-parse --short HEAD).tar.gz"
+    echo "[backup] сохраняю сборку с сервера → $BUILD_ARCHIVE"
+    if ssh "$DEPLOY_HOST" "cd '$DEPLOY_PATH' && tar -czf - .output" > "$BUILD_ARCHIVE" 2>/dev/null; then
+      echo "[backup] сохранено: $(du -sh "$BUILD_ARCHIVE" | cut -f1)"
+      # Оставляем только последние 5 сборок
+      ls -t "$BUILDS_DIR"/build-*.tar.gz 2>/dev/null | tail -n +6 | xargs rm -f
+    else
+      echo "[backup] предупреждение: не удалось сохранить сборку локально" >&2
+      rm -f "$BUILD_ARCHIVE"
+    fi
+    # ────────────────────────────────────────────────────────────────────────
     ;;
   *)
     echo "[deploy] warning: unexpected health status ${status_code}" >&2
