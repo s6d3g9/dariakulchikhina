@@ -173,7 +173,8 @@ export interface DesignTokens {
   archHeadingTracking: number                                             // ×0.01em, range -5..30
   archHeadingCase:    'none' | 'uppercase' | 'lowercase' | 'capitalize'  // heading text-transform
   archDivider:        'none' | 'line' | 'gradient'                       // section divider style
-  archPageEnter:      'none' | 'fade' | 'slide'                          // page-enter transition
+  archPageEnter:      'none' | 'fade' | 'slide' | 'slide-l' | 'slide-r' | 'slide-t' | 'slide-b' | 'curtain' | 'curtain-b' | 'zoom' | 'flip' | 'blur' // page-enter transition
+  pageTransitDuration: number                                             // ms, 80..800 — speed of page transition
   archLinkAnim:       'none' | 'underline' | 'arrow'                     // link hover animation
   archSectionStyle:   'flat' | 'card' | 'striped'                        // section background style
   archNavStyle:       'full' | 'minimal' | 'hidden'                      // nav chrome level
@@ -315,6 +316,7 @@ export const DEFAULT_TOKENS: DesignTokens = {
   archHeadingCase:     'none',
   archDivider:         'line',
   archPageEnter:       'fade',
+  pageTransitDuration: 280,
   archLinkAnim:        'underline',
   archSectionStyle:    'flat',
   archNavStyle:        'minimal',

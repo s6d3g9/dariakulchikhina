@@ -1525,7 +1525,7 @@
                   <!-- Page enter -->
                   <div class="dp-field">
                     <label class="dp-label">переход между страницами</label>
-                    <div class="dp-arch-chips">
+                    <div class="dp-arch-chips dp-arch-chips--wrap">
                       <button
                         v-for="opt in archPageEnters" :key="opt.id"
                         type="button"
@@ -1534,6 +1534,18 @@
                         @click="set('archPageEnter', opt.id)"
                       >{{ opt.label }}</button>
                     </div>
+                  </div>
+
+                  <!-- Page transition speed -->
+                  <div class="dp-field" v-if="tokens.archPageEnter !== 'none'">
+                    <label class="dp-label">скорость перехода <span class="dp-label-val">{{ tokens.pageTransitDuration ?? 280 }} мс</span></label>
+                    <input
+                      type="range" min="80" max="800" step="20"
+                      :value="tokens.pageTransitDuration ?? 280"
+                      @input="set('pageTransitDuration', Number(($event.target as HTMLInputElement).value))"
+                      class="dp-range"
+                    />
+                    <div class="dp-range-hints"><span>быстро</span><span>медленно</span></div>
                   </div>
 
                   <!-- Section style -->
@@ -1849,9 +1861,17 @@ const archDividers = [
   { id: 'gradient' as const, label: 'градиент' },
 ]
 const archPageEnters = [
-  { id: 'none'  as const, label: 'нет' },
-  { id: 'fade'  as const, label: 'плавно' },
-  { id: 'slide' as const, label: 'слайд' },
+  { id: 'none'     as const, label: 'нет' },
+  { id: 'fade'     as const, label: 'плавно' },
+  { id: 'zoom'     as const, label: 'масштаб' },
+  { id: 'blur'     as const, label: 'размытие' },
+  { id: 'flip'     as const, label: 'переворот' },
+  { id: 'slide-r'  as const, label: '→ слайд' },
+  { id: 'slide-l'  as const, label: '← слайд' },
+  { id: 'slide-t'  as const, label: '↑ слайд' },
+  { id: 'slide-b'  as const, label: '↓ слайд' },
+  { id: 'curtain'  as const, label: 'занавес ↓' },
+  { id: 'curtain-b' as const, label: 'занавес ↑' },
 ]
 const archLinkAnims = [
   { id: 'none'      as const, label: 'нет' },
@@ -3219,9 +3239,17 @@ onBeforeUnmount(() => {
   font-size: .66rem; color: var(--glass-text); opacity: .65;
   margin-bottom: 5px; letter-spacing: .02em;
 }
+.dp-label-val {
+  font-variant-numeric: tabular-nums; opacity: .7; font-size: .6rem; font-weight: 500;
+  min-width: 36px; text-align: right;
+}
 .dp-val {
   font-variant-numeric: tabular-nums; opacity: .5; font-size: .6rem; font-weight: 500;
   min-width: 36px; text-align: right;
+}
+.dp-range-hints {
+  display: flex; justify-content: space-between;
+  font-size: .55rem; opacity: .4; margin-top: 2px; letter-spacing: .02em;
 }
 
 .dp-separator { height: 1px; background: rgba(0,0,0,.04); margin: 12px 0; }
@@ -3255,6 +3283,7 @@ onBeforeUnmount(() => {
   gap: 4px;
   margin-top: 4px;
 }
+.dp-arch-chips--wrap { flex-wrap: wrap; max-height: none; }
 .dp-arch-chip {
   padding: 3px 9px;
   font-size: .62rem;
