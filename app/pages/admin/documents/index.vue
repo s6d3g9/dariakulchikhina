@@ -1,6 +1,36 @@
 <template>
   <div class="docs-root">
 
+    <!-- ══ Urgent / upcoming deadlines alert banner ══ -->
+    <div v-if="urgentDocs.length || soonDocs.length" class="docs-alerts-wrap">
+      <div v-if="urgentDocs.length" class="docs-alert docs-alert--urgent">
+        <span class="docs-alert-icon">🔴</span>
+        <div class="docs-alert-body">
+          <span class="docs-alert-title">Срочно / просрочено ({{ urgentDocs.length }})</span>
+          <div class="docs-alert-list">
+            <span
+              v-for="d in urgentDocs" :key="d.id"
+              class="docs-alert-chip"
+              @click="openDoc(d)"
+            >{{ d.title }}<span class="docs-alert-due"> · {{ formatDate(d.dueDate) }}</span></span>
+          </div>
+        </div>
+      </div>
+      <div v-if="soonDocs.length" class="docs-alert docs-alert--soon">
+        <span class="docs-alert-icon">🟡</span>
+        <div class="docs-alert-body">
+          <span class="docs-alert-title">Ближайшие дедлайны ({{ soonDocs.length }})</span>
+          <div class="docs-alert-list">
+            <span
+              v-for="d in soonDocs" :key="d.id"
+              class="docs-alert-chip"
+              @click="openDoc(d)"
+            >{{ d.title }}<span class="docs-alert-due"> · {{ formatDate(d.dueDate) }}</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Header bar -->
     <div class="docs-topbar glass-card">
       <div class="docs-topbar-left">
@@ -179,6 +209,10 @@
             <div class="docs-field">
               <label class="docs-label">Заметки</label>
               <textarea v-model="uploadForm.notes" rows="2" class="glass-input u-ta" placeholder="дополнительная информация..."></textarea>
+            </div>
+            <div class="docs-field">
+              <label class="docs-label">Срок выполнения / дедлайн</label>
+              <input type="date" v-model="uploadForm.dueDate" class="glass-input" />
             </div>
             <p v-if="uploadError" class="docs-error">{{ uploadError }}</p>
           </div>
@@ -781,6 +815,27 @@ const filteredDocs = computed(() => {
   return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
+// ── Urgent / upcoming deadline alerts ──────────────────────────
+const urgentDocs = computed(() => {
+  const now = new Date(); now.setHours(0, 0, 0, 0)
+  const in7 = new Date(now); in7.setDate(now.getDate() + 7)
+  return (allDocs.value || []).filter((d: any) => {
+    if (!d.dueDate) return false
+    const due = new Date(d.dueDate); due.setHours(0, 0, 0, 0)
+    return due <= in7
+  }).sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+})
+const soonDocs = computed(() => {
+  const now = new Date(); now.setHours(0, 0, 0, 0)
+  const in7 = new Date(now); in7.setDate(now.getDate() + 7)
+  const in30 = new Date(now); in30.setDate(now.getDate() + 30)
+  return (allDocs.value || []).filter((d: any) => {
+    if (!d.dueDate) return false
+    const due = new Date(d.dueDate); due.setHours(0, 0, 0, 0)
+    return due > in7 && due <= in30
+  }).sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+})
+
 function fileIcon(url?: string): string {
   if (!url) return '📄'
   if (/\.pdf$/i.test(url)) return '📕'
@@ -829,6 +884,7 @@ function editDoc() {
   uploadForm.projectSlug = activeDoc.value.projectSlug || ''
   uploadForm.url = activeDoc.value.url || ''
   uploadForm.notes = activeDoc.value.notes || ''
+  uploadForm.dueDate = activeDoc.value.dueDate || ''
   uploadFile.value = null
   uploadError.value = ''
   showUploadModal.value = true
@@ -847,6 +903,7 @@ const uploadForm = reactive({
   projectSlug: '',
   url: '',
   notes: '',
+  dueDate: '',
 })
 
 function openUpload() {
@@ -856,6 +913,7 @@ function openUpload() {
   uploadForm.projectSlug = ''
   uploadForm.url = ''
   uploadForm.notes = ''
+  uploadForm.dueDate = ''
   uploadFile.value = null
   uploadError.value = ''
   showUploadModal.value = true
@@ -893,6 +951,7 @@ async function submitUpload() {
           url: fileUrl || undefined,
           filename: filename || editingDoc.value.filename,
           notes: uploadForm.notes || undefined,
+          dueDate: uploadForm.dueDate || undefined,
         },
       })
     } else {
@@ -905,6 +964,7 @@ async function submitUpload() {
           url: fileUrl || undefined,
           filename,
           notes: uploadForm.notes || undefined,
+          dueDate: uploadForm.dueDate || undefined,
         },
       })
     }

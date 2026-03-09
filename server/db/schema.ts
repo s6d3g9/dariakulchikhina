@@ -201,6 +201,7 @@ export const documents = pgTable('documents', {
   filename: text('filename'),           // физическое имя файла в uploads/
   url: text('url'),                     // публичный URL (если есть)
   notes: text('notes'),
+  dueDate: date('due_date'),            // срок выполнения / дедлайн
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 

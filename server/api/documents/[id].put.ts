@@ -16,11 +16,12 @@ const UpdateDocumentSchema = z.object({
   url: z.string().max(1000).nullable().optional(),
   projectSlug: z.string().max(200).nullable().optional(),
   notes: z.string().max(5000).nullable().optional(),
+  dueDate: z.string().max(20).nullable().optional(),
 })
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
-  const id = Number(getRouterParam(event, 'id'))
+  const id = Number(event.context.params?.id)
   if (!id) throw createError({ statusCode: 400 })
 
   const body = await readValidatedNodeBody(event, UpdateDocumentSchema)
@@ -32,6 +33,7 @@ export default defineEventHandler(async (event) => {
   if (body.filename !== undefined) updates.filename = body.filename
   if (body.url !== undefined) updates.url = body.url
   if (body.notes !== undefined) updates.notes = body.notes
+  if (body.dueDate !== undefined) updates.dueDate = body.dueDate || null
 
   if (body.projectSlug !== undefined) {
     if (body.projectSlug) {

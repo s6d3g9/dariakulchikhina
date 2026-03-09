@@ -16,6 +16,7 @@ const CreateDocumentSchema = z.object({
   url: z.string().max(1000).nullable().optional(),
   projectSlug: z.string().max(200).nullable().optional(),
   notes: z.string().max(5000).nullable().optional(),
+  dueDate: z.string().max(20).nullable().optional(),
 })
 
 export default defineEventHandler(async (event) => {
@@ -38,6 +39,7 @@ export default defineEventHandler(async (event) => {
     url: body.url || null,
     projectId,
     notes: body.notes || null,
+    dueDate: body.dueDate || null,
   }).returning()
 
   return doc
