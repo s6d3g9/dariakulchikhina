@@ -12,9 +12,8 @@
         <div class="nav-hd">
           <button v-if="canGoBack" class="nav-back" @click="emit('back')">
             <span class="nav-back-arrow">‹</span>
-            <span class="nav-back-label">{{ node.context.breadcrumbs.at(-2) ?? 'назад' }}</span>
+            <span class="nav-back-label">{{ node.context.title }}</span>
           </button>
-          <div class="nav-title">{{ node.context.title }}</div>
         </div>
 
         <!-- Поиск -->
@@ -100,7 +99,7 @@ function onItemClick(item: PayloadItem) {
 
 /* ── Header ── */
 .nav-hd {
-  padding: 8px 0 6px;
+  padding: 8px 0 4px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -124,19 +123,6 @@ function onItemClick(item: PayloadItem) {
 .nav-back:hover { opacity: .8; }
 .nav-back-arrow { font-size: .9rem; line-height: 1; }
 .nav-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
-
-.nav-title {
-  font-size: var(--ds-text-xs, .72rem);
-  font-weight: var(--ds-heading-weight, 600);
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--glass-text);
-  opacity: .45;
-  padding: 2px 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 /* ── Search ── */
 .nav-search-wrap {
