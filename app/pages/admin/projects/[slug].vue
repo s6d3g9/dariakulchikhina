@@ -45,14 +45,14 @@
           <div class="proj-mobile-bar-scroll">
             <button
               class="proj-mobile-bar-btn"
-              :class="{ 'proj-mobile-bar-btn--active': activePage === 'overview' }"
+              :class="{ 'proj-mobile-bar-btn--active': currentProjectPage === 'overview' }"
               @click="selectAdminPage('overview')"
             >◈ обзор</button>
             <template v-for="group in navGroups" :key="'mob-' + group.label">
               <button
                 v-for="pg in group.pages" :key="pg.slug"
                 class="proj-mobile-bar-btn"
-                :class="{ 'proj-mobile-bar-btn--active': activePage === pg.slug }"
+                :class="{ 'proj-mobile-bar-btn--active': currentProjectPage === pg.slug }"
                 :title="pg.title"
                 @click="selectAdminPage(pg.slug)"
               ><span v-if="pg.icon" class="proj-mobile-bar-icon">{{ pg.icon }}</span>{{ pg.title.replace(/^\d+\.\d+\s*/, '') }}</button>
@@ -127,7 +127,7 @@
               <button
                 v-if="overviewMatchesSearch"
                 class="proj-sidenav-item std-nav-item proj-sidenav-item--overview"
-                :class="{ 'proj-sidenav-item--active': activePage === 'overview', 'std-nav-item--active': activePage === 'overview' }"
+                :class="{ 'proj-sidenav-item--active': currentProjectPage === 'overview', 'std-nav-item--active': currentProjectPage === 'overview' }"
                 @click="selectAdminPage('overview')"
               ><span class="proj-sidenav-icon">◈</span> обзор</button>
             </div>
@@ -142,7 +142,7 @@
                     v-for="pg in group.pages"
                     :key="pg.slug"
                     class="proj-sidenav-item std-nav-item"
-                    :class="{ 'proj-sidenav-item--active': activePage === pg.slug, 'std-nav-item--active': activePage === pg.slug }"
+                    :class="{ 'proj-sidenav-item--active': currentProjectPage === pg.slug, 'std-nav-item--active': currentProjectPage === pg.slug }"
                     @click="selectAdminPage(pg.slug)"
                   >{{ pg.title }}</button>
                 </div>
@@ -163,7 +163,7 @@
               <NuxtLink to="/admin">проекты</NuxtLink>
               <span>/</span>
               <span>{{ project.title }}</span>
-              <template v-if="activePage !== 'overview'">
+              <template v-if="currentProjectPage !== 'overview'">
                 <span>/</span>
                 <span>{{ activePageTitle }}</span>
               </template>
@@ -209,7 +209,7 @@
                 v-bind="clientActiveComponentProps"
               />
               <!-- admin view -->
-              <template v-else-if="activePage === 'overview'">
+              <template v-else-if="currentProjectPage === 'overview'">
                 <section class="proj-section-shell" :class="{ 'proj-section-shell--brutalist': isBrutalistProjectMode }">
                   <AdminProjectOverview
                     :slug="slug"
@@ -222,7 +222,7 @@
                 </section>
               </template>
               <!-- Клиенты проекта — inline без модала -->
-              <template v-else-if="activePage === 'project_clients'">
+              <template v-else-if="currentProjectPage === 'project_clients'">
                 <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
                   <div class="proj-entity-panel-title">Клиенты проекта</div>
 
@@ -279,7 +279,7 @@
                   <p v-if="clientLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ clientLinkSuccess }}</p>
                 </div>
               </template>
-              <template v-else-if="activePage === 'project_contractors'">
+              <template v-else-if="currentProjectPage === 'project_contractors'">
                 <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
                   <div class="proj-entity-panel-title">Подрядчики проекта</div>
 
@@ -330,7 +330,7 @@
                   <p v-if="contractorLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ contractorLinkSuccess }}</p>
                 </div>
               </template>
-              <template v-else-if="activePage === 'project_designers'">
+              <template v-else-if="currentProjectPage === 'project_designers'">
                 <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
                   <div class="proj-entity-panel-title">Дизайнеры проекта</div>
 
@@ -381,7 +381,7 @@
                   <p v-if="designerLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ designerLinkSuccess }}</p>
                 </div>
               </template>
-              <template v-else-if="activePage === 'project_sellers'">
+              <template v-else-if="currentProjectPage === 'project_sellers'">
                 <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
                   <div class="proj-entity-panel-title">Поставщики проекта</div>
 
@@ -432,7 +432,7 @@
                   <p v-if="sellerLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ sellerLinkSuccess }}</p>
                 </div>
               </template>
-              <template v-else-if="activePage === 'project_managers'">
+              <template v-else-if="currentProjectPage === 'project_managers'">
                 <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
                   <div class="proj-entity-panel-title">Менеджеры проекта</div>
 
@@ -972,7 +972,7 @@ const clientActivePage  = ref('')
 const contentKey = computed(() => {
   if (contractorPreviewMode.value) return 'ctr-cabinet'
   if (clientPreviewMode.value)     return `cli-${clientActivePage.value}`
-  return `adm-${activePage.value}`
+  return `adm-${currentProjectPage.value}`
 })
 
 const projectRegistryPageMeta: Record<string, { title: string; group: string }> = {
@@ -1076,7 +1076,7 @@ const clientActiveComponentProps = computed(() => {
 
 // ── Admin page state ───────────────────────────────────────────
 const normalizedActivePage = computed(() =>
-  activePage.value === 'brief' ? 'self_profile' : activePage.value,
+  currentProjectPage.value === 'brief' ? 'self_profile' : currentProjectPage.value,
 )
 
 const activeComponent = computed<Component>(() => pageComponentMap[normalizedActivePage.value] || AdminPageContent)
@@ -1146,6 +1146,8 @@ const resolvedProjectPageFromNav = computed(() => {
   return null
 })
 
+const currentProjectPage = computed(() => resolvedProjectPageFromNav.value || activePage.value)
+
 watch(
   resolvedProjectPageFromNav,
   (resolvedPage) => {
@@ -1168,13 +1170,13 @@ const navGroups = computed(() => {
 })
 
 const activePageTitle = computed(() => {
-  if (activePage.value === 'overview') return 'обзор'
-  if (projectRegistryPageMeta[activePage.value]) return projectRegistryPageMeta[activePage.value].title
+  if (currentProjectPage.value === 'overview') return 'обзор'
+  if (projectRegistryPageMeta[currentProjectPage.value]) return projectRegistryPageMeta[currentProjectPage.value].title
   return availablePages.value.find(page => page.slug === normalizedActivePage.value)?.title || project.value?.title || slug.value
 })
 
 const activeHeroTitle = computed(() => {
-  if (activePage.value === 'overview') return project.value?.title || slug.value
+  if (currentProjectPage.value === 'overview') return project.value?.title || slug.value
   return activePageTitle.value
 })
 
@@ -1182,8 +1184,8 @@ const navSearch = ref('')
 
 // Group label of the currently active page
 const activeGroupLabel = computed(() =>
-  projectRegistryPageMeta[activePage.value]?.group
-    ?? navGroups.value.find(g => g.pages.some(p => p.slug === activePage.value))?.label
+  projectRegistryPageMeta[currentProjectPage.value]?.group
+    ?? navGroups.value.find(g => g.pages.some(p => p.slug === currentProjectPage.value))?.label
     ?? null
 )
 
@@ -1220,7 +1222,7 @@ const filteredNavGroups = computed(() => {
     )
     if (isActiveGroup) {
       // Active page floats to TOP of results even if it matched elsewhere
-      const activeIdx = pages.findIndex(p => p.slug === activePage.value)
+      const activeIdx = pages.findIndex(p => p.slug === currentProjectPage.value)
       if (activeIdx > 0) {
         const [ap] = pages.splice(activeIdx, 1)
         pages = [ap, ...pages]
