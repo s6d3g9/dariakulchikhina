@@ -569,28 +569,7 @@ import {
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const route = useRoute()
-const routeProjectParam = String(route.params.slug ?? '')
-const canonicalProjectSlug = ref(routeProjectParam)
-
-if (/^\d+$/.test(routeProjectParam)) {
-  const canonicalProject = await $fetch<{ slug: string }>(`/api/projects/by-id/${routeProjectParam}`)
-
-  canonicalProjectSlug.value = canonicalProject.slug
-
-  await navigateTo({
-    path: `/admin/projects/${canonicalProject.slug}`,
-    query: route.query,
-    hash: route.hash,
-  }, {
-    redirectCode: 301,
-    replace: true,
-  })
-}
-
-const slug = computed(() => {
-  const currentParam = String(route.params.slug ?? '')
-  return /^\d+$/.test(currentParam) ? canonicalProjectSlug.value : currentParam
-})
+const slug = computed(() => route.params.slug as string)
 const designSystem = useDesignSystem()
 const isBrutalistProjectMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const showLegacyMobileNav = computed(() => !contractorPreviewMode.value && !isBrutalistProjectMode.value)
