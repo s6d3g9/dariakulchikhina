@@ -5,8 +5,8 @@
       <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     </div>
 
-    <div v-else-if="contractor" class="cab-body">
-      <aside class="cab-sidebar glass-surface std-sidenav">
+    <div v-else-if="contractor" class="cab-body" :class="{ 'cab-body--content-only': !showSidebar }">
+      <aside v-if="showSidebar" class="cab-sidebar glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav"
@@ -24,7 +24,7 @@
         </nav>
       </aside>
 
-      <main class="cab-main">
+      <main class="cab-main" :class="{ 'cab-main--content-only': !showSidebar }">
         <div class="cab-inner">
           <template v-if="section === 'dashboard'">
             <section v-if="showBrutalistContractorDashboardHero" class="ct-cab-hero">
@@ -803,8 +803,11 @@ import {
 const props = defineProps<{
   contractorId: number | null
   modelValue?: string
+  showSidebar?: boolean
 }>()
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
+
+const showSidebar = computed(() => props.showSidebar !== false)
 
 const contractorIdRef = computed(() => props.contractorId)
 const designSystem = useDesignSystem()
@@ -917,6 +920,8 @@ function formatDocDate(value: string) {
 
 <style scoped>
 .cab-embed { min-height: 420px; }
+.cab-body--content-only { display: block; }
+.cab-main--content-only { padding-left: 0; }
 .cab-select { appearance: none; cursor: pointer; }
 .cab-inline-task-window { margin-bottom: 14px; border-radius: var(--card-radius, 16px); overflow: hidden; }
 

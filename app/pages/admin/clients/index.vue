@@ -28,7 +28,7 @@
               <div class="cl-hero-actions">
                 <button class="cl-hero-action" @click="openEdit(selectedClient)">редактировать</button>
                 <button class="cl-hero-action" @click="openLink(selectedClient)">{{ selectedClient.linkedProjects?.length ? 'сменить проект' : 'привязать к проекту' }}</button>
-                <button class="cl-hero-action" @click="openDocs(selectedClient)">документы</button>
+                <button class="cl-hero-action" @click="clientPage = 'documents'">документы</button>
                 <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" class="cl-hero-action">кабинет ↗</a>
               </div>
             </div>
@@ -40,62 +40,92 @@
             <div class="ent-entity-hd-actions">
               <button class="ent-entity-hd-action" @click="openEdit(selectedClient)">ред.</button>
               <button class="ent-entity-hd-action" @click="openLink(selectedClient)">{{ selectedClient.linkedProjects?.length ? 'проект' : 'привязать' }}</button>
-              <button class="ent-entity-hd-action" @click="openDocs(selectedClient)">документы</button>
+              <button class="ent-entity-hd-action" @click="clientPage = 'documents'">документы</button>
               <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" class="ent-entity-hd-action">↗</a>
             </div>
           </div>
 
-          <!-- Client has a linked project → sections cabinet -->
-          <div v-if="selectedClientSlug" class="cab-body cl-cab-body" :class="{ 'cl-cab-body--brutalist': isBrutalistClientsMode }">
-            <aside class="cab-sidebar glass-surface std-sidenav" :class="{ 'cl-cab-sidebar--brutalist': isBrutalistClientsMode }">
-              <nav class="cab-nav std-nav">
-                <button
-                  class="cab-nav-item std-nav-item"
-                  :class="{ active: clientPage === 'dashboard', 'std-nav-item--active': clientPage === 'dashboard' }"
-                  @click="clientPage = 'dashboard'"
-                ><span class="cab-nav-icon">◈</span> обзор</button>
-                <button
-                  v-for="pg in clientNavPages"
-                  :key="pg.slug"
-                  class="cab-nav-item std-nav-item"
-                  :class="{ active: clientPage === pg.slug, 'std-nav-item--active': clientPage === pg.slug }"
-                  @click="clientPage = pg.slug"
-                ><span class="cab-nav-icon">{{ pg.icon }}</span> {{ pg.title }}</button>
-              </nav>
-            </aside>
-            <main class="cab-main cl-cab-main" :class="{ 'cl-cab-main--brutalist': isBrutalistClientsMode }">
-              <div class="cab-inner cl-cab-inner" :class="{ 'cl-cab-inner--brutalist': isBrutalistClientsMode }">
-                <ClientOverview
-                  v-if="clientPage === 'dashboard'"
-                  :slug="selectedClientSlug"
-                  :project="clientProject"
-                  :contractors="[]"
-                  :rm-map="{}"
-                  @navigate="clientPage = $event"
-                />
-                <component
-                  v-else
-                  :is="clientActiveComponent"
-                  v-bind="clientActiveProps"
-                  :key="clientPage"
-                />
+          <section class="cl-main-shell" :class="{ 'cl-main-shell--brutalist': isBrutalistClientsMode }">
+            <div v-if="currentClientPage === 'dashboard'" class="cl-section-grid">
+              <div class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+                <div class="ent-detail-section">клиент</div>
+                <div class="ent-detail-row">{{ selectedClient.name }}</div>
+                <div v-if="selectedClient.phone" class="ent-detail-row">{{ selectedClient.phone }}</div>
+                <div v-if="selectedClient.email" class="ent-detail-row">{{ selectedClient.email }}</div>
+                <div v-if="selectedClient.address" class="ent-detail-row">{{ selectedClient.address }}</div>
+                <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
               </div>
-            </main>
-          </div>
-
-          <!-- No project linked → contact card -->
-          <div v-else class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }" style="margin-top: 16px">
-            <div class="ent-detail-section">контакты</div>
-            <div v-if="selectedClient.phone" class="ent-detail-row">{{ selectedClient.phone }}</div>
-            <div v-if="selectedClient.email" class="ent-detail-row">{{ selectedClient.email }}</div>
-            <div v-if="selectedClient.messengerNick" class="ent-detail-row">{{ selectedClient.messenger ? selectedClient.messenger + ' ' : '' }}{{ selectedClient.messengerNick }}</div>
-            <div v-if="selectedClient.address" class="ent-detail-row">{{ selectedClient.address }}</div>
-            <div v-if="!selectedClient.phone && !selectedClient.email && !selectedClient.messengerNick && !selectedClient.address" class="ent-detail-row" style="opacity:.3">контакты не указаны</div>
-            <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
-            <div class="ent-detail-foot" style="margin-top:16px">
-              <button class="a-btn-save" @click="openLink(selectedClient)">привязать к проекту</button>
+              <div class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+                <div class="ent-detail-section">проект</div>
+                <template v-if="selectedClientSlug && clientProject">
+                  <div class="ent-detail-row">{{ clientProject.title }}</div>
+                  <div class="ent-detail-row" style="opacity:.62">{{ selectedClientSlug }}</div>
+                  <div class="ent-detail-foot" style="margin-top:16px">
+                    <NuxtLink :to="`/admin/projects/${selectedClientSlug}`" class="a-btn-sm">открыть проект</NuxtLink>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="ent-detail-row" style="opacity:.48">проект не привязан</div>
+                  <div class="ent-detail-foot" style="margin-top:16px">
+                    <button class="a-btn-sm" @click="openLink(selectedClient)">привязать к проекту</button>
+                  </div>
+                </template>
+              </div>
             </div>
-          </div>
+
+            <div v-else-if="currentClientPage === 'profile'" class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+              <div class="ent-detail-section">профиль клиента</div>
+              <div class="ent-detail-row">имя: {{ selectedClient.name }}</div>
+              <div v-if="selectedClient.phone" class="ent-detail-row">телефон: {{ selectedClient.phone }}</div>
+              <div v-if="selectedClient.email" class="ent-detail-row">email: {{ selectedClient.email }}</div>
+              <div v-if="selectedClient.messengerNick" class="ent-detail-row">мессенджер: {{ selectedClient.messenger ? selectedClient.messenger + ' ' : '' }}{{ selectedClient.messengerNick }}</div>
+              <div v-if="selectedClient.address" class="ent-detail-row">адрес: {{ selectedClient.address }}</div>
+              <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
+            </div>
+
+            <div v-else-if="currentClientPage === 'signoff'" class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+              <div class="ent-detail-section">подписание и согласование</div>
+              <template v-if="selectedClientSlug && clientProject">
+                <div class="ent-detail-row">проект: {{ clientProject.title }}</div>
+                <div class="ent-detail-row" style="opacity:.62">клиент может согласовывать документы через кабинет проекта</div>
+                <div class="ent-detail-foot" style="margin-top:16px">
+                  <NuxtLink :to="`/admin/projects/${selectedClientSlug}`" class="a-btn-sm">открыть проект</NuxtLink>
+                </div>
+              </template>
+              <div v-else class="ent-detail-row" style="opacity:.48">для этого раздела сначала нужен привязанный проект</div>
+            </div>
+
+            <div v-else-if="currentClientPage === 'projects'" class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+              <div class="ent-detail-section">проекты клиента</div>
+              <div v-if="selectedClient.linkedProjects?.length" class="cl-linked-projects">
+                <NuxtLink
+                  v-for="projectItem in selectedClient.linkedProjects"
+                  :key="projectItem.slug"
+                  :to="`/admin/projects/${projectItem.slug}`"
+                  class="cl-linked-project-card"
+                >
+                  <span>{{ projectItem.title || projectItem.slug }}</span>
+                  <span>{{ projectItem.slug }}</span>
+                </NuxtLink>
+              </div>
+              <div v-else class="ent-detail-row" style="opacity:.48">у клиента пока нет привязанных проектов</div>
+            </div>
+
+            <div v-else-if="currentClientPage === 'documents'" class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+              <div class="ent-detail-section">документы клиента</div>
+              <div class="cl-row"><div class="cl-field"><label>Поиск</label><input v-model="docsSearch" class="glass-input" placeholder="Название" /></div><div class="cl-field"><label>Категория</label><select v-model="docsFilter" class="glass-input"><option value="">Все</option><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
+              <div class="cl-row"><div class="cl-field"><label>Название</label><input v-model="docsTitle" class="glass-input" placeholder="Название документа" /></div><div class="cl-field"><label>Категория</label><select v-model="docsCategory" class="glass-input"><option v-for="dc in DOC_CATEGORIES" :key="`inline-${dc.value}`" :value="dc.value">{{ dc.label }}</option></select></div></div>
+              <div class="cl-field"><label>Примечание</label><input v-model="docsNotes" class="glass-input" placeholder="Необязательно" /></div>
+              <div style="margin-bottom:14px"><label class="a-btn-save" style="display:inline-flex;align-items:center;cursor:pointer"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadClientDoc" />{{ docsUploading ? 'загрузка…' : '＋ выбрать файл' }}</label></div>
+              <div v-if="filteredClientDocs.length" class="cl-docs-list">
+                <div v-for="doc in filteredClientDocs" :key="doc.id" class="cl-doc-item glass-surface">
+                  <div><div class="cl-doc-title">{{ doc.title }}</div><div class="cl-doc-meta">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}<span v-if="doc.notes"> · {{ doc.notes }}</span><span v-if="doc.createdAt"> · {{ formatDocDate(doc.createdAt) }}</span></div></div>
+                  <div class="cl-doc-actions"><a v-if="doc.url" :href="doc.url" target="_blank" class="ent-detail-chip">скачать</a><button class="a-btn-sm a-btn-danger" @click="deleteClientDoc(doc.id)">✕</button></div>
+                </div>
+              </div>
+              <div v-else class="ent-detail-row" style="opacity:.48">документов пока нет</div>
+            </div>
+          </section>
         </template>
 
         <!-- Nothing selected -->
@@ -186,8 +216,12 @@ onActivated(() => adminNav.ensureSection('clients'))
 
 // Sync selected client from global nav contentSpec
 watch(() => adminNav.contentSpec.value.clientId, (id) => {
-  if (id) { selectedClientId.value = id; clientPage.value = 'dashboard' }
-})
+  if (id) selectedClientId.value = id
+}, { immediate: true })
+
+watch(() => adminNav.contentSpec.value.clientSection, (section) => {
+  if (section) clientPage.value = section
+}, { immediate: true })
 
 const route = useRoute()
 const designSystem = useDesignSystem()
@@ -249,6 +283,16 @@ const PAGE_COMPONENT_MAP: Record<string, Component> = {
 }
 const allClientPages = getClientPages()
 const clientPage = ref('dashboard')
+const resolvedClientPageFromNav = computed(() => {
+  const spec = adminNav.contentSpec.value
+  const nodeId = adminNav.currentNode.value.nodeId
+
+  if (spec.clientSection) return spec.clientSection
+  if (spec.documentCategory || nodeId.startsWith('reg_docs_')) return 'documents'
+  if (nodeId.startsWith('reg_projects_')) return 'projects'
+  return null
+})
+const currentClientPage = computed(() => resolvedClientPageFromNav.value || clientPage.value)
 const clientNavPages = computed(() => {
   const pages = clientProject.value?.pages || []
   return allClientPages.filter(p => {
@@ -265,7 +309,7 @@ const clientHeroFacts = computed(() => [
 ])
 watch(selectedClientId, () => { clientPage.value = 'dashboard' })
 const clientNormalizedPage = computed(() =>
-  clientPage.value === 'brief' ? 'self_profile' : clientPage.value
+  currentClientPage.value === 'brief' ? 'self_profile' : currentClientPage.value
 )
 const clientActiveComponent = computed<Component>(() =>
   PAGE_COMPONENT_MAP[clientNormalizedPage.value] || ClientPageContent
@@ -300,6 +344,11 @@ const showDocs = ref(false); const docsClient = ref<any>(null); const docsClient
 const docsTitle = ref(''); const docsCategory = ref('other'); const docsNotes = ref(''); const docsUploading = ref(false)
 const docsSearch = ref(''); const docsFilter = ref(''); const docsSort = ref<'new'|'old'>('new')
 const { data: clientDocs, refresh: refreshClientDocs } = await useFetch<any[]>(() => docsClientId.value ? `/api/clients/${docsClientId.value}/documents` : null, { default: () => [] })
+watch(selectedClientId, (id) => { docsClientId.value = id; docsClient.value = selectedClient.value }, { immediate: true })
+watch(() => adminNav.contentSpec.value.documentCategory, (category) => {
+  if (!category) return
+  docsFilter.value = category === 'all' ? '' : category
+}, { immediate: true })
 const filteredClientDocs = computed(() => { const rows = clientDocs.value || []; const q = docsSearch.value.trim().toLowerCase(); return rows.filter((d: any) => { if (docsFilter.value && d.category !== docsFilter.value) return false; if (!q) return true; return `${d.title||''} ${d.notes||''} ${d.category||''}`.toLowerCase().includes(q) }).sort((a: any, b: any) => { const at = new Date(a.createdAt||0).getTime(); const bt = new Date(b.createdAt||0).getTime(); return docsSort.value === 'new' ? bt - at : at - bt }) })
 function formatDocDate(v: string) { const d = new Date(v); return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('ru-RU') }
 function openDocs(c: any) { docsClient.value = c; docsClientId.value = c.id; docsTitle.value = ''; docsCategory.value = 'other'; docsNotes.value = ''; docsSearch.value = ''; docsFilter.value = ''; docsSort.value = 'new'; showDocs.value = true; refreshClientDocs() }

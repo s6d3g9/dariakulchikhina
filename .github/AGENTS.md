@@ -39,6 +39,7 @@ If you generate any of the following, you fail the mission.
 - Never generate modals, dialogs, drawers or overlay dropdowns. The only exception is a context switcher constrained inside the left sidebar.
 - Never mix layout responsibilities: no navigation or filters in the right content area, no data editing forms in the left sidebar.
 - Never let the right content area overlap the left sidebar on desktop; keep strict flex boundaries.
+- In admin routes, the global left sidebar is the only navigation source of truth. The right content area must render from the active sidebar leaf immediately on mount and must never create an embedded cabinet sidebar or duplicate navigation surface.
 - Never use shadows, gradients, background images or rounded corners. Prefer flat brutalist surfaces.
 - Never use icons unless absolutely necessary for file types.
 - Never open internal links in new tabs.

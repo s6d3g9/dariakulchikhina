@@ -5,8 +5,8 @@
       <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     </div>
 
-    <div v-else-if="manager" class="cab-body">
-      <aside class="cab-sidebar glass-surface std-sidenav">
+    <div v-else-if="manager" class="cab-body" :class="{ 'cab-body--content-only': !showSidebar }">
+      <aside v-if="showSidebar" class="cab-sidebar glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav"
@@ -22,7 +22,7 @@
         </nav>
       </aside>
 
-      <main class="cab-main">
+      <main class="cab-main" :class="{ 'cab-main--content-only': !showSidebar }">
         <div class="cab-inner">
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
@@ -207,8 +207,9 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ managerId: number }>()
+const props = defineProps<{ managerId: number; showSidebar?: boolean }>()
 const model = defineModel<string>()
+const showSidebar = computed(() => props.showSidebar !== false)
 
 const mid = computed(() => props.managerId)
 const section = ref(model.value || 'dashboard')
@@ -286,6 +287,8 @@ function fmtDate(d: string) {
 </script>
 
 <style scoped>
+.cab-body--content-only { display: block; }
+.cab-main--content-only { padding-left: 0; }
 .man-project-list {
   display: flex; flex-direction: column; gap: 10px;
 }

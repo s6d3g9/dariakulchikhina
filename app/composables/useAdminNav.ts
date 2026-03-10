@@ -30,6 +30,7 @@ export interface ContentSpec {
   designerId: number | null
   designerSection: string | null
   clientId: number | null
+  clientSection: string | null
   contractorId: number | null
   contractorSection: string | null
   sellerId: number | null
@@ -211,6 +212,7 @@ export function useAdminNav() {
       designerId:        ctx.designerId ?? null,
       designerSection:   leaf.startsWith('des_') ? leaf.replace('des_', '') : null,
       clientId:          ctx.clientId ?? null,
+      clientSection:     leaf.startsWith('cli_') ? leaf.replace('cli_', '') : null,
       contractorId:      ctx.contractorId ?? null,
       contractorSection: leaf.startsWith('con_') ? leaf.replace('con_', '') : null,
       sellerId:          ctx.sellerId ?? null,

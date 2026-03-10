@@ -65,10 +65,10 @@ onActivated(() => adminNav.ensureSection('designers'))
 // Sync from global nav contentSpec
 watch(() => adminNav.contentSpec.value.designerId, (id) => {
   if (id) selectedDesignerId.value = id
-})
+}, { immediate: true })
 watch(() => adminNav.contentSpec.value.designerSection, (sec) => {
   if (sec) activeSection.value = sec
-})
+}, { immediate: true })
 
 // ── Data ──
 const { data: allDesigners, pending, refresh } = useFetch<any[]>('/api/designers', { default: () => [] })

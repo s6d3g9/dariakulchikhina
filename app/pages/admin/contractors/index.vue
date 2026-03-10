@@ -36,7 +36,7 @@
         <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
       </div>
       <section class="ct-cab-shell" :class="{ 'ct-cab-shell--brutalist': isBrutalistContractorsMode }">
-        <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" v-model="activeContractorSection" />
+        <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" :show-sidebar="false" v-model="activeContractorSection" />
       </section>
     </template>
     <div v-else class="ent-empty-detail ct-empty-detail" :class="{ 'ct-empty-detail--brutalist': isBrutalistContractorsMode }">
@@ -199,10 +199,10 @@ onActivated(() => adminNav.ensureSection('contractors'))
 // Sync from global nav contentSpec
 watch(() => adminNav.contentSpec.value.contractorId, (id) => {
   if (id) selectedId.value = id
-})
+}, { immediate: true })
 watch(() => adminNav.contentSpec.value.contractorSection, (sec) => {
   if (sec) activeContractorSection.value = sec
-})
+}, { immediate: true })
 
 // ── Section state ──
 const activeContractorSection = ref('dashboard')

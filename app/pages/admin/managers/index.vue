@@ -5,7 +5,7 @@
         <span class="ent-entity-hd-name">{{ selectedManager?.name }}</span>
         <button class="ent-entity-hd-action" @click="openEdit(selectedManager)">ред.</button>
       </div>
-      <AdminManagerCabinet :key="selectedManagerId" :manager-id="selectedManagerId" v-model="activeManagerSection" />
+      <AdminManagerCabinet :key="selectedManagerId" :manager-id="selectedManagerId" :show-sidebar="false" v-model="activeManagerSection" />
     </template>
     <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
       <div class="ent-detail-head">
@@ -71,10 +71,10 @@ onActivated(() => adminNav.ensureSection('managers'))
 
 watch(() => adminNav.contentSpec.value.managerId, (id) => {
   if (id) selectedManagerId.value = id
-})
+}, { immediate: true })
 watch(() => adminNav.contentSpec.value.managerSection, (sec) => {
   if (sec) activeManagerSection.value = sec
-})
+}, { immediate: true })
 
 const activeManagerSection = ref('dashboard')
 

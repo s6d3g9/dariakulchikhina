@@ -970,6 +970,39 @@
                       <span class="dp-card-preset-desc">{{ preset.description }}</span>
                     </button>
                   </div>
+                  <div class="dp-col-label" style="margin-top:14px">Сценические пресеты</div>
+                  <div class="dp-field">
+                    <div class="dp-menu-generator-actions">
+                      <button type="button" class="dp-sm-btn" @click="generateFullDesignScene">сгенерировать всё</button>
+                      <button type="button" class="dp-sm-btn" @click="generateContentScene">сгенерировать сцену</button>
+                      <button type="button" class="dp-sm-btn" @click="applyContentScenePreset('workbench')">база</button>
+                    </div>
+                  </div>
+                  <div class="dp-scene-presets-grid">
+                    <button
+                      v-for="scene in contentScenePresets"
+                      :key="`content-scene-${scene.id}`"
+                      type="button"
+                      class="dp-scene-preset"
+                      :class="{ 'dp-scene-preset--active': activeContentScenePresetId === scene.id }"
+                      @click="applyContentScenePreset(scene.id)"
+                    >
+                      <span class="dp-scene-preset-preview" :class="`dp-scene-preset-preview--${scene.id}`">
+                        <span class="dp-scene-block dp-scene-block--hero" />
+                        <span class="dp-scene-row">
+                          <span class="dp-scene-block dp-scene-block--wide" />
+                          <span class="dp-scene-block dp-scene-block--side" />
+                        </span>
+                        <span class="dp-scene-row dp-scene-row--triple">
+                          <span class="dp-scene-block" />
+                          <span class="dp-scene-block" />
+                          <span class="dp-scene-block" />
+                        </span>
+                      </span>
+                      <span class="dp-card-preset-name">{{ scene.label }}</span>
+                      <span class="dp-card-preset-desc">{{ scene.description }}</span>
+                    </button>
+                  </div>
                 </div>
                 <div class="dp-col">
                   <div class="dp-col-label">Генератор меню</div>
@@ -2101,6 +2134,12 @@ const contentCardPresets = [
   { id: 'glass' as const, label: 'glass', description: 'Полупрозрачные карточки с живой кромкой.' },
   { id: 'brutal' as const, label: 'brutal', description: 'Контрастные панели с жёсткой рамкой.' },
 ]
+const contentScenePresets = [
+  { id: 'workbench' as const, label: 'workbench', description: 'Рабочая сцена: ровная сетка и строгие панели.' },
+  { id: 'magazine' as const, label: 'magazine', description: 'Редакционный разворот с мягкими крупными блоками.' },
+  { id: 'ops' as const, label: 'ops', description: 'Плотная операционная панель для аналитики и статусов.' },
+  { id: 'gallery' as const, label: 'gallery', description: 'Витринная сцена с воздухом и стеклянными карточками.' },
+]
 const contentLayoutRecipes: Record<(typeof contentLayoutPresets)[number]['id'], Partial<DesignTokens>> = {
   balanced: {
     containerWidth: 1180,
@@ -2185,6 +2224,44 @@ const contentCardRecipes: Record<(typeof contentCardPresets)[number]['id'], Part
     shadowOpacity: 0,
     archCardChrome: 'visible',
     cardHoverAnim: 'border',
+  },
+}
+const contentSceneRecipes: Record<(typeof contentScenePresets)[number]['id'], { layout: (typeof contentLayoutPresets)[number]['id']; card: (typeof contentCardPresets)[number]['id']; extras?: Partial<DesignTokens> }> = {
+  workbench: {
+    layout: 'balanced',
+    card: 'flat',
+    extras: {
+      archPageEnter: 'fade',
+      archContentReveal: 'fade-up',
+      btnHoverAnim: 'fill',
+    },
+  },
+  magazine: {
+    layout: 'editorial',
+    card: 'soft',
+    extras: {
+      archPageEnter: 'slide-l',
+      archContentReveal: 'fade',
+      archTextReveal: 'clip',
+    },
+  },
+  ops: {
+    layout: 'dashboard',
+    card: 'brutal',
+    extras: {
+      archPageEnter: 'none',
+      archContentReveal: 'none',
+      archTextReveal: 'none',
+    },
+  },
+  gallery: {
+    layout: 'showcase',
+    card: 'glass',
+    extras: {
+      archPageEnter: 'zoom',
+      archContentReveal: 'blur',
+      archTextReveal: 'blur-in',
+    },
   },
 }
 const navLayoutPresets = [
@@ -2318,6 +2395,7 @@ const currentScaleLabel = computed(() =>
 
 const activeContentLayoutId = ref<(typeof contentLayoutPresets)[number]['id']>('balanced')
 const activeContentCardPresetId = ref<(typeof contentCardPresets)[number]['id']>('flat')
+const activeContentScenePresetId = ref<(typeof contentScenePresets)[number]['id']>('workbench')
 
 const activeContentLayout = computed(() =>
   contentLayoutPresets.find(preset => preset.id === activeContentLayoutId.value) || contentLayoutPresets[0]
@@ -2438,6 +2516,51 @@ function applyContentCardPreset(presetId: (typeof contentCardPresets)[number]['i
   }
 }
 
+function applyContentScenePreset(sceneId: (typeof contentScenePresets)[number]['id']) {
+  activeContentScenePresetId.value = sceneId
+  const recipe = contentSceneRecipes[sceneId]
+  if (!recipe) return
+  applyContentLayoutPreset(recipe.layout)
+  applyContentCardPreset(recipe.card)
+  if (recipe.extras) {
+    for (const [key, value] of Object.entries(recipe.extras) as Array<[keyof DesignTokens, DesignTokens[keyof DesignTokens]]>) {
+      set(key, value)
+    }
+  }
+}
+
+function generateContentScene() {
+  const scene = contentScenePresets[Math.floor(Math.random() * contentScenePresets.length)]
+  applyContentScenePreset(scene.id)
+  set('containerWidth', Math.min(1400, Math.max(980, tokens.value.containerWidth + (Math.floor(Math.random() * 5) - 2) * 20)))
+  set('gridGap', Math.min(32, Math.max(8, tokens.value.gridGap + (Math.floor(Math.random() * 5) - 2) * 2)))
+  set('pageTransitDuration', Math.min(800, Math.max(120, (tokens.value.pageTransitDuration ?? 280) + (Math.floor(Math.random() * 5) - 2) * 20)))
+}
+
+function generateFullDesignScene() {
+  const scene = contentScenePresets[Math.floor(Math.random() * contentScenePresets.length)]
+  const navByScene: Record<(typeof contentScenePresets)[number]['id'], DesignTokens['navLayoutPreset']> = {
+    workbench: 'balanced',
+    magazine: 'showcase',
+    ops: 'compact',
+    gallery: 'rail',
+  }
+  const navFxByScene: Record<(typeof contentScenePresets)[number]['id'], DesignTokens['archNavTransition']> = {
+    workbench: 'slide',
+    magazine: 'push',
+    ops: 'none',
+    gallery: 'blur',
+  }
+
+  applyContentScenePreset(scene.id)
+  applyNavLayoutPreset(navByScene[scene.id])
+  set('archNavTransition', navFxByScene[scene.id])
+  set('navTransitDuration', Math.min(700, Math.max(100, (tokens.value.navTransitDuration ?? 220) + (Math.floor(Math.random() * 5) - 2) * 20)))
+  set('navTransitDistance', Math.min(40, Math.max(0, (tokens.value.navTransitDistance ?? 18) + (Math.floor(Math.random() * 5) - 2) * 2)))
+  set('navItemStagger', Math.min(40, Math.max(0, (tokens.value.navItemStagger ?? 12) + (Math.floor(Math.random() * 5) - 2) * 2)))
+  set('animDuration', Math.min(500, Math.max(80, (tokens.value.animDuration ?? 180) + (Math.floor(Math.random() * 5) - 2) * 20)))
+}
+
 /* ── Section search filter ──────────────────────── */
 const sectionSearchMap: Record<string, string[]> = {
   presets:  ['образ', 'рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal', 'minale', 'bauhaus', 'artdeco', 'cyberpunk', 'zen', 'y2k', 'newspaper', 'pastel', 'tokyo', 'terracotta', 'arctic', 'glow', 'ink', 'bubblegum', 'blueprint', 'snohetta', 'olsonkundig', 'mvrdv', 'som', 'mad', 'архитектура'],
@@ -2449,7 +2572,7 @@ const sectionSearchMap: Record<string, string[]> = {
   surface:  ['стекло', 'glass', 'поверхность', 'размытие', 'blur', 'тень', 'shadow', 'прозрачн'],
   radii:    ['скруглен', 'radius', 'отступ', 'spacing', 'карточ', 'chip', 'modal'],
   anim:     ['анимац', 'animation', 'easing', 'длительн', 'duration'],
-  grid:     ['сетк', 'grid', 'макет', 'layout', 'контейнер', 'container', 'sidebar', 'обводк', 'border', 'генератор', 'раскладка', 'меню', 'layout generator', 'rail', 'showcase', 'compact'],
+  grid:     ['сетк', 'grid', 'макет', 'layout', 'контейнер', 'container', 'sidebar', 'обводк', 'border', 'генератор', 'раскладка', 'меню', 'layout generator', 'rail', 'showcase', 'compact', 'сцена', 'scene', 'генератор сцены', 'карточки', 'card preset', 'workbench', 'magazine', 'ops', 'gallery'],
   darkMode: ['тёмн', 'темн', 'dark', 'mode', 'elevation', 'saturation'],
   inputs:   ['инпут', 'поле', 'ввод', 'input', 'text field', 'textarea', 'border opacity', 'прозрачн'],
   tags:     ['тег', 'чип', 'badge', 'chip', 'tag', 'пилюля', 'метка', 'padding'],
@@ -3972,6 +4095,83 @@ onBeforeUnmount(() => {
   line-height: 1.4;
   opacity: .62;
 }
+.dp-scene-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.dp-scene-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(0,0,0,.018);
+  color: var(--glass-text);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+.dp-scene-preset:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0,0,0,.14);
+}
+.dp-scene-preset--active {
+  background: rgba(0,0,0,.05);
+  border-color: rgba(0,0,0,.18);
+}
+.dp-scene-preset-preview {
+  width: 100%;
+  min-height: 88px;
+  padding: 8px;
+  border: 1px solid rgba(0,0,0,.08);
+  display: grid;
+  gap: 6px;
+  background: rgba(255,255,255,.4);
+}
+.dp-scene-preset-preview--workbench {
+  border-radius: 0;
+}
+.dp-scene-preset-preview--magazine {
+  border-radius: 18px;
+}
+.dp-scene-preset-preview--ops {
+  border-radius: 0;
+  border-width: 2px;
+  background: rgba(0,0,0,.06);
+}
+.dp-scene-preset-preview--gallery {
+  border-radius: 16px;
+  background: rgba(255,255,255,.26);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(255,255,255,.35);
+}
+.dp-scene-row {
+  display: grid;
+  grid-template-columns: 1.6fr .9fr;
+  gap: 6px;
+}
+.dp-scene-row--triple {
+  grid-template-columns: repeat(3, 1fr);
+}
+.dp-scene-block {
+  display: block;
+  min-height: 16px;
+  background: rgba(0,0,0,.14);
+}
+.dp-scene-block--hero {
+  min-height: 22px;
+}
+.dp-scene-block--wide {
+  min-height: 24px;
+}
+.dp-scene-block--side {
+  min-height: 24px;
+}
 .dp-arch-nav-preview {
   display: grid;
   gap: 6px;
@@ -4030,6 +4230,8 @@ onBeforeUnmount(() => {
 :global(html.dark) .dp-content-preview-card,
 :global(html.dark) .dp-card-preset,
 :global(html.dark) .dp-card-preset-preview,
+:global(html.dark) .dp-scene-preset,
+:global(html.dark) .dp-scene-preset-preview,
 :global(html.dark) .dp-arch-nav-preview-item {
   border-color: rgba(255,255,255,.1);
   background: rgba(255,255,255,.03);
@@ -4047,6 +4249,13 @@ onBeforeUnmount(() => {
   border-color: rgba(255,255,255,.18);
 }
 :global(html.dark) .dp-card-preset-preview-line {
+  background: rgba(255,255,255,.18);
+}
+:global(html.dark) .dp-scene-preset--active {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.18);
+}
+:global(html.dark) .dp-scene-block {
   background: rgba(255,255,255,.18);
 }
 

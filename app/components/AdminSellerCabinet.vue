@@ -5,8 +5,8 @@
       <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     </div>
 
-    <div v-else-if="seller" class="cab-body">
-      <aside class="cab-sidebar glass-surface std-sidenav">
+    <div v-else-if="seller" class="cab-body" :class="{ 'cab-body--content-only': !showSidebar }">
+      <aside v-if="showSidebar" class="cab-sidebar glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav"
@@ -22,7 +22,7 @@
         </nav>
       </aside>
 
-      <main class="cab-main">
+      <main class="cab-main" :class="{ 'cab-main--content-only': !showSidebar }">
         <div class="cab-inner">
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
@@ -272,8 +272,9 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ sellerId: number; modelValue?: string }>()
+const props = defineProps<{ sellerId: number; modelValue?: string; showSidebar?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
+const showSidebar = computed(() => props.showSidebar !== false)
 
 const CATEGORY_OPTIONS = [
   'finish', 'plumbing', 'electrical', 'lighting',
@@ -404,6 +405,7 @@ async function saveProfile() {
 /* Re-use the cab-* classes from contractor/designer cabinets — they're global in the entity layout system */
 .cab-embed { width: 100%; }
 .cab-body { display: flex; gap: 0; min-height: 500px; }
+.cab-body--content-only { display: block; }
 .cab-sidebar { width: 200px; flex-shrink: 0; border-radius: var(--card-radius, 14px); padding: 10px 0; }
 .cab-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 6px; }
 .cab-nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: none; background: none; cursor: pointer; font-size: .82rem; color: var(--glass-text, #333); border-radius: 8px; text-align: left; width: 100%; }
@@ -411,6 +413,7 @@ async function saveProfile() {
 .cab-nav-item.active { background: rgba(0,0,0,.07); font-weight: 500; }
 .cab-nav-icon { font-size: 1rem; width: 20px; text-align: center; }
 .cab-main { flex: 1; min-width: 0; padding: 4px 0 4px 16px; }
+.cab-main--content-only { padding-left: 0; }
 .cab-inner { max-width: 900px; }
 .cab-form { }
 
