@@ -4,8 +4,8 @@
     Реализует NavigationNode schema (shared/types/navigation.ts)
     ПРАВИЛА: только текст в меню, никаких иконок/эмодзи, только левый сайдбар
   -->
-  <div class="nav-shell">
-    <Transition :name="direction === 'fwd' ? 'nav-fwd' : 'nav-back'" mode="out-in">
+  <div class="nav-shell" :class="`nav-shell--${navTransitionMode}`" :style="navMotionStyle">
+    <Transition name="nav-pane" mode="out-in">
       <div :key="node.nodeId" class="nav-panel">
 
         <!-- Назад + заголовок -->
@@ -33,13 +33,14 @@
           <div v-else-if="!node.payload.length" class="nav-empty">пусто</div>
 
           <button
-            v-for="item in filteredPayload"
+            v-for="(item, index) in filteredPayload"
             :key="item.id"
             class="nav-item"
             :class="{
               'nav-item--active': item.id === activeId,
               'nav-item--node': item.type === 'node',
             }"
+            :style="{ '--nav-item-index': index }"
             @click="onItemClick(item)"
           >
             <span class="nav-item-name">{{ item.name }}</span>
@@ -68,7 +69,25 @@ const emit = defineEmits<{
   back: []
 }>()
 
+const { tokens } = useDesignSystem()
+
 const search = ref('')
+
+const navTransitionMode = computed(() => tokens.value.archNavTransition || 'slide')
+
+const navDistance = computed(() => Math.min(56, Math.max(0, tokens.value.navTransitDistance ?? 18)))
+
+const navDuration = computed(() => Math.min(700, Math.max(80, tokens.value.navTransitDuration ?? 220)))
+
+const navMotionStyle = computed(() => {
+  const enter = props.direction === 'fwd' ? navDistance.value : -navDistance.value
+  const leave = props.direction === 'fwd' ? -navDistance.value : navDistance.value
+  return {
+    '--nav-enter-x': `${enter}px`,
+    '--nav-leave-x': `${leave}px`,
+    '--nav-trans-duration': `${navDuration.value}ms`,
+  }
+})
 
 // Сбрасываем поиск при смене узла
 watch(() => props.node.nodeId, () => { search.value = '' })
@@ -94,7 +113,7 @@ function onItemClick(item: PayloadItem) {
 .nav-panel {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--ds-nav-panel-gap, 8px);
 }
 
 /* ── Header ── */
@@ -126,17 +145,17 @@ function onItemClick(item: PayloadItem) {
 
 /* ── Search ── */
 .nav-search-wrap {
-  margin-bottom: 4px;
+  margin-bottom: 0;
 }
 .nav-search {
   width: 100%;
   box-sizing: border-box;
-  padding: 6px 10px;
+  padding: calc(var(--nav-item-padding-v, 12px) * 0.75) var(--nav-item-padding-h, 16px);
   font-size: var(--ds-text-xs, .74rem);
   font-family: inherit;
   background: color-mix(in srgb, var(--glass-text) 5%, transparent);
   border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-radius: var(--input-radius, 6px);
+  border-radius: var(--nav-item-radius, var(--input-radius, 6px));
   color: var(--glass-text);
   outline: none;
   transition: border-color .15s;
@@ -149,7 +168,7 @@ function onItemClick(item: PayloadItem) {
 .nav-list {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--ds-nav-list-gap, 2px);
 }
 
 .nav-empty {
@@ -164,7 +183,8 @@ function onItemClick(item: PayloadItem) {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 8px 10px;
+  min-height: 44px;
+  padding: var(--nav-item-padding-v, 12px) var(--nav-item-padding-h, 16px);
   background: none;
   border: none;
   cursor: pointer;
@@ -172,11 +192,13 @@ function onItemClick(item: PayloadItem) {
   font-size: var(--ds-text-sm, .8rem);
   color: var(--glass-text);
   opacity: .6;
-  border-radius: var(--input-radius, 6px);
+  border-radius: var(--nav-item-radius, 6px);
   text-align: left;
   transition: opacity .15s, background .15s;
   white-space: nowrap;
   overflow: hidden;
+  animation: nav-item-in calc(var(--ds-nav-trans-duration, 220ms) * 0.9) ease both;
+  animation-delay: calc(var(--nav-item-index, 0) * var(--ds-nav-item-stagger, 0ms));
 }
 .nav-item:hover {
   opacity: 1;
@@ -203,14 +225,108 @@ function onItemClick(item: PayloadItem) {
 }
 
 /* ── Transitions ── */
-.nav-fwd-enter-active,
-.nav-fwd-leave-active,
-.nav-back-enter-active,
-.nav-back-leave-active {
-  transition: transform .2s ease, opacity .2s ease;
+.nav-pane-enter-active,
+.nav-pane-leave-active {
+  transition:
+    opacity var(--nav-trans-duration, var(--ds-nav-trans-duration, 220ms)) ease,
+    transform var(--nav-trans-duration, var(--ds-nav-trans-duration, 220ms)) cubic-bezier(0.33, 1, 0.68, 1),
+    filter var(--nav-trans-duration, var(--ds-nav-trans-duration, 220ms)) ease;
+  will-change: opacity, transform, filter;
 }
-.nav-fwd-enter-from  { transform: translateX(18px); opacity: 0; }
-.nav-fwd-leave-to    { transform: translateX(-18px); opacity: 0; }
-.nav-back-enter-from { transform: translateX(-18px); opacity: 0; }
-.nav-back-leave-to   { transform: translateX(18px); opacity: 0; }
+
+.nav-shell--none .nav-pane-enter-active,
+.nav-shell--none .nav-pane-leave-active {
+  transition: none;
+}
+
+.nav-shell--none .nav-pane-enter-from,
+.nav-shell--none .nav-pane-leave-to {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+.nav-shell--fade .nav-pane-enter-from,
+.nav-shell--fade .nav-pane-leave-to {
+  opacity: 0;
+}
+
+.nav-shell--slide .nav-pane-enter-from {
+  opacity: 0;
+  transform: translateX(var(--nav-enter-x, 18px));
+}
+
+.nav-shell--slide .nav-pane-leave-to {
+  opacity: 0;
+  transform: translateX(var(--nav-leave-x, -18px));
+}
+
+.nav-shell--push .nav-pane-enter-from {
+  opacity: 0;
+  transform: translateX(var(--nav-enter-x, 18px)) scale(.985);
+}
+
+.nav-shell--push .nav-pane-leave-to {
+  opacity: 0;
+  transform: translateX(var(--nav-leave-x, -18px)) scale(1.015);
+}
+
+.nav-shell--stack .nav-pane-enter-from {
+  opacity: 0;
+  transform: translateY(10px) scale(.985);
+}
+
+.nav-shell--stack .nav-pane-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(1.015);
+}
+
+.nav-shell--blur .nav-pane-enter-from {
+  opacity: 0;
+  transform: translateX(calc(var(--nav-enter-x, 18px) * 0.5));
+  filter: blur(10px);
+}
+
+.nav-shell--blur .nav-pane-leave-to {
+  opacity: 0;
+  transform: translateX(calc(var(--nav-leave-x, -18px) * 0.5));
+  filter: blur(10px);
+}
+
+@keyframes nav-item-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--nav-enter-x, 18px) * 0.3));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+:global(html[data-nav-layout="compact"]) .nav-search {
+  font-size: var(--ds-text-xs, .72rem);
+}
+
+:global(html[data-nav-layout="compact"]) .nav-item {
+  font-size: var(--ds-text-xs, .76rem);
+}
+
+:global(html[data-nav-layout="showcase"]) .nav-hd {
+  padding-top: 12px;
+}
+
+:global(html[data-nav-layout="showcase"]) .nav-item {
+  letter-spacing: .04em;
+  font-size: var(--ds-text-base, .92rem);
+}
+
+:global(html[data-nav-layout="rail"]) .nav-list {
+  gap: calc(var(--ds-nav-list-gap, 2px) + 2px);
+}
+
+:global(html[data-nav-layout="rail"]) .nav-item {
+  border-radius: 999px;
+  letter-spacing: .06em;
+}
 </style>

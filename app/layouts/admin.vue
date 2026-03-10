@@ -67,91 +67,92 @@
       </div>
     </header>
 
-    <div v-if="isBrutalistShell" ref="adminMenuRef" class="admin-shell-menu-wrap">
-      <button
-        type="button"
-        class="admin-shell-menu-btn glass-surface"
-        :class="{ 'admin-shell-menu-btn--open': adminShellMenuOpen }"
-        aria-label="Открыть меню админ-панели"
-        :aria-expanded="adminShellMenuOpen ? 'true' : 'false'"
-        @click.stop="adminShellMenuOpen = !adminShellMenuOpen"
-      >
-        <span class="admin-shell-menu-icon" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </span>
-      </button>
-
-      <div v-if="adminShellMenuOpen" class="admin-shell-menu-panel glass-surface" @click.stop>
-        <div class="admin-sidebar-brand">админ-панель</div>
-        <button
-          type="button"
-          class="admin-search-btn admin-search-btn--sidebar"
-          title="Поиск  Ctrl+K / ⌘K"
-          aria-label="Поиск"
-          @click="searchOpen = true; adminShellMenuOpen = false"
-        >
-          <span class="admin-search-label">поиск</span>
-          <kbd class="admin-search-kbd">Ctrl+K</kbd>
-        </button>
-
-        <div ref="notifWrapRef" class="admin-notif-wrap admin-notif-wrap--sidebar">
-          <button
-            type="button"
-            class="admin-notif-btn admin-notif-btn--sidebar"
-            :class="notifOpen ? 'admin-notif-btn--open' : ''"
-            :title="notifTotal ? `${notifTotal} уведомлений` : 'Уведомления'"
-            @click.stop="notifOpen = !notifOpen"
-          >
-            <span>уведомления</span>
-            <span v-if="notifTotal" class="admin-notif-inline-count">{{ notifTotal > 99 ? '99+' : notifTotal }}</span>
-          </button>
-          <div v-if="notifOpen" class="admin-notif-dropdown admin-notif-dropdown--sidebar glass-surface" @click.stop>
-            <div class="admin-notif-head">уведомления</div>
-            <div v-if="!notifTotal" class="admin-notif-empty">[ всё в порядке ]</div>
-            <template v-else>
-              <NuxtLink
-                v-if="notifData?.extra?.count"
-                to="/admin"
-                class="admin-notif-item admin-notif-item--warn"
-                @click="notifOpen = false; adminShellMenuOpen = false"
-              >
-                <span class="admin-notif-item-count">{{ notifData.extra.count }}</span>
-                <span class="admin-notif-item-label">{{ notifData.extra.label }}</span>
-              </NuxtLink>
-              <div
-                v-if="notifData?.overdue?.count"
-                class="admin-notif-item admin-notif-item--danger"
-              >
-                <span class="admin-notif-item-count">{{ notifData.overdue.count }}</span>
-                <span class="admin-notif-item-label">{{ notifData.overdue.label }}</span>
-              </div>
-            </template>
-            <div class="admin-notif-foot">
-              <button class="admin-notif-refresh" @click="refreshNotif">обновить</button>
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          class="admin-theme-btn admin-theme-btn--sidebar"
-          :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
-          @click="toggleTheme"
-        >{{ isDark ? 'светло' : 'темно' }}</button>
-
-        <div class="admin-sidebar-links">
-          <NuxtLink to="/" class="admin-link admin-link--sidebar" @click="adminShellMenuOpen = false">сайт</NuxtLink>
-          <a href="#" class="admin-link admin-link--sidebar" @click.prevent="adminShellMenuOpen = false; logout()">выйти</a>
-        </div>
-      </div>
-    </div>
-
     <!-- ── App shell body: global nav sidebar + main ── -->
     <div class="adm-body">
       <!-- Global navigation sidebar — persists across all admin routes -->
       <aside class="proj-nav-col">
+        <div v-if="isBrutalistShell" ref="adminMenuRef" class="admin-sidebar-menu-wrap">
+          <button
+            type="button"
+            class="admin-sidebar-menu-btn"
+            :class="{ 'admin-sidebar-menu-btn--open': adminShellMenuOpen }"
+            aria-label="Открыть меню админ-панели"
+            :aria-expanded="adminShellMenuOpen ? 'true' : 'false'"
+            @click.stop="adminShellMenuOpen = !adminShellMenuOpen"
+          >
+            <span class="admin-shell-menu-icon" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span class="admin-sidebar-menu-label">меню админки</span>
+          </button>
+
+          <div v-if="adminShellMenuOpen" class="admin-sidebar-menu-panel" @click.stop>
+            <div class="admin-sidebar-brand">админ-панель</div>
+            <button
+              type="button"
+              class="admin-search-btn admin-search-btn--sidebar"
+              title="Поиск  Ctrl+K / ⌘K"
+              aria-label="Поиск"
+              @click="searchOpen = true; adminShellMenuOpen = false"
+            >
+              <span class="admin-search-label">поиск</span>
+              <kbd class="admin-search-kbd">Ctrl+K</kbd>
+            </button>
+
+            <div ref="notifWrapRef" class="admin-notif-wrap admin-notif-wrap--sidebar">
+              <button
+                type="button"
+                class="admin-notif-btn admin-notif-btn--sidebar"
+                :class="notifOpen ? 'admin-notif-btn--open' : ''"
+                :title="notifTotal ? `${notifTotal} уведомлений` : 'Уведомления'"
+                @click.stop="notifOpen = !notifOpen"
+              >
+                <span>уведомления</span>
+                <span v-if="notifTotal" class="admin-notif-inline-count">{{ notifTotal > 99 ? '99+' : notifTotal }}</span>
+              </button>
+              <div v-if="notifOpen" class="admin-notif-dropdown admin-notif-dropdown--sidebar glass-surface" @click.stop>
+                <div class="admin-notif-head">уведомления</div>
+                <div v-if="!notifTotal" class="admin-notif-empty">[ всё в порядке ]</div>
+                <template v-else>
+                  <NuxtLink
+                    v-if="notifData?.extra?.count"
+                    to="/admin"
+                    class="admin-notif-item admin-notif-item--warn"
+                    @click="notifOpen = false; adminShellMenuOpen = false"
+                  >
+                    <span class="admin-notif-item-count">{{ notifData.extra.count }}</span>
+                    <span class="admin-notif-item-label">{{ notifData.extra.label }}</span>
+                  </NuxtLink>
+                  <div
+                    v-if="notifData?.overdue?.count"
+                    class="admin-notif-item admin-notif-item--danger"
+                  >
+                    <span class="admin-notif-item-count">{{ notifData.overdue.count }}</span>
+                    <span class="admin-notif-item-label">{{ notifData.overdue.label }}</span>
+                  </div>
+                </template>
+                <div class="admin-notif-foot">
+                  <button class="admin-notif-refresh" @click="refreshNotif">обновить</button>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="admin-theme-btn admin-theme-btn--sidebar"
+              :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
+              @click="toggleTheme"
+            >{{ isDark ? 'светло' : 'темно' }}</button>
+
+            <div class="admin-sidebar-links">
+              <NuxtLink to="/" class="admin-link admin-link--sidebar" @click="adminShellMenuOpen = false">сайт</NuxtLink>
+              <a href="#" class="admin-link admin-link--sidebar" @click.prevent="adminShellMenuOpen = false; logout()">выйти</a>
+            </div>
+          </div>
+        </div>
+
         <AdminNestedNav
           :node="adminNav.currentNode.value"
           :direction="adminNav.slideDir.value"
@@ -696,27 +697,38 @@ async function logout() {
   font-weight: 400;
 }
 .admin-header-links { display: flex; gap: 20px; align-items: center; }
-.admin-shell-menu-wrap {
-  position: fixed;
-  top: calc(var(--dp-panel-h, 28px) + 14px);
-  left: 18px;
-  z-index: 260;
+.admin-sidebar-menu-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
 }
 
-.admin-shell-menu-btn {
-  width: 52px;
-  height: 52px;
-  display: inline-flex;
+.admin-sidebar-menu-btn {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
   border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
-  background: var(--glass-bg);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
   cursor: pointer;
-  padding: 0;
+  padding: 10px 12px;
+  color: var(--glass-text);
+  font: inherit;
+  text-transform: uppercase;
+  letter-spacing: .1em;
 }
 
-.admin-shell-menu-btn--open {
+.admin-sidebar-menu-btn--open {
   border-color: color-mix(in srgb, var(--glass-text) 30%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 7%, transparent);
+}
+
+.admin-sidebar-menu-label {
+  font-size: .68rem;
 }
 
 .admin-shell-menu-icon {
@@ -732,15 +744,14 @@ async function logout() {
   background: var(--glass-text);
 }
 
-.admin-shell-menu-panel {
-  margin-top: 10px;
-  width: 248px;
+.admin-sidebar-menu-panel {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 14px;
+  width: 100%;
+  padding: 0;
   border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
-  box-shadow: 0 18px 36px color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
 }
 
 .admin-sidebar-util {
@@ -945,19 +956,9 @@ async function logout() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .admin-shell-menu-wrap {
-    top: calc(var(--dp-panel-h, 28px) + 10px);
-    left: 10px;
-  }
-
-  .admin-shell-menu-btn {
-    width: 46px;
-    height: 46px;
-  }
-
-  .admin-shell-menu-panel {
-    width: min(260px, calc(100vw - 20px));
-    padding: 12px;
+  .admin-sidebar-menu-wrap {
+    padding-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .admin-header {

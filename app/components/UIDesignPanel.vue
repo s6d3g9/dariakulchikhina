@@ -903,6 +903,52 @@
                   </div>
                 </div>
                 <div class="dp-col">
+                  <div class="dp-col-label">Генератор меню</div>
+                  <div class="dp-field">
+                    <label class="dp-label">раскладка объектов <span class="dp-val">{{ activeNavLayoutLabel }}</span></label>
+                    <div class="dp-chip-picker">
+                      <div class="dp-chip-pool">
+                        <button
+                          v-for="preset in navLayoutPresets"
+                          :key="`nav-layout-${preset.id}`"
+                          type="button"
+                          class="dp-chip"
+                          :class="{ 'dp-chip--active': tokens.navLayoutPreset === preset.id }"
+                          @click="applyNavLayoutPreset(preset.id)"
+                        >{{ preset.label }}</button>
+                      </div>
+                    </div>
+                    <div class="dp-field-hint">Пресет меняет плотность меню, интервалы и поведение навигационных объектов в сайдбаре.</div>
+                  </div>
+                  <div class="dp-field">
+                    <div class="dp-menu-generator-actions">
+                      <button type="button" class="dp-sm-btn" @click="generateNavLayout">сгенерировать</button>
+                      <button type="button" class="dp-sm-btn" @click="applyNavLayoutPreset('balanced')">сбросить</button>
+                    </div>
+                  </div>
+                  <div class="dp-grid-menu-preview">
+                    <div
+                      class="dp-grid-menu-preview-shell"
+                      :class="`dp-grid-menu-preview-shell--${tokens.navLayoutPreset}`"
+                      :style="menuPreviewStyle"
+                    >
+                      <div class="dp-grid-menu-preview-search" />
+                      <div class="dp-grid-menu-preview-list">
+                        <div
+                          v-for="(item, index) in menuPreviewItems"
+                          :key="item"
+                          class="dp-grid-menu-preview-item"
+                          :class="{ 'dp-grid-menu-preview-item--active': index === 1, 'dp-grid-menu-preview-item--branch': index === 3 }"
+                        >
+                          <span>{{ item }}</span>
+                          <span v-if="index === 3" class="dp-grid-menu-preview-arrow">›</span>
+                        </div>
+                      </div>
+                      <div class="dp-grid-menu-preview-meta">{{ activeNavLayoutDescription }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="dp-col">
                   <div class="dp-col-label">Обводки</div>
                   <div class="dp-field">
                     <label class="dp-label">толщина <span class="dp-val">{{ tokens.borderWidth }}px</span></label>
@@ -1136,6 +1182,49 @@
                   </div>
                 </div>
                 <div class="dp-col">
+                  <div class="dp-col-label">Эффекты сайдбара</div>
+                  <div class="dp-field">
+                    <label class="dp-label">переход между меню</label>
+                    <div class="dp-arch-chips dp-arch-chips--wrap">
+                      <button
+                        v-for="opt in archNavTransitions" :key="`nav-fx-${opt.id}`"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': (tokens.archNavTransition || 'slide') === opt.id }"
+                        @click="set('archNavTransition', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                    <div class="dp-field-hint">Отдельное управление drill-down анимацией сайдбара без влияния на переходы страниц.</div>
+                  </div>
+                  <div class="dp-field" v-if="(tokens.archNavTransition || 'slide') !== 'none'">
+                    <label class="dp-label">скорость эффекта <span class="dp-label-val">{{ tokens.navTransitDuration ?? 220 }} мс</span></label>
+                    <input
+                      type="range" min="80" max="700" step="10"
+                      :value="tokens.navTransitDuration ?? 220"
+                      @input="set('navTransitDuration', Number(($event.target as HTMLInputElement).value))"
+                      class="dp-range"
+                    />
+                  </div>
+                  <div class="dp-field" v-if="(tokens.archNavTransition || 'slide') !== 'none' && (tokens.archNavTransition || 'slide') !== 'fade'">
+                    <label class="dp-label">дистанция смещения <span class="dp-label-val">{{ tokens.navTransitDistance ?? 18 }} px</span></label>
+                    <input
+                      type="range" min="0" max="56" step="2"
+                      :value="tokens.navTransitDistance ?? 18"
+                      @input="set('navTransitDistance', Number(($event.target as HTMLInputElement).value))"
+                      class="dp-range"
+                    />
+                  </div>
+                  <div class="dp-field" v-if="(tokens.archNavTransition || 'slide') !== 'none'">
+                    <label class="dp-label">каскад пунктов <span class="dp-label-val">{{ tokens.navItemStagger ?? 12 }} мс</span></label>
+                    <input
+                      type="range" min="0" max="60" step="2"
+                      :value="tokens.navItemStagger ?? 12"
+                      @input="set('navItemStagger', Number(($event.target as HTMLInputElement).value))"
+                      class="dp-range"
+                    />
+                  </div>
+                </div>
+                <div class="dp-col">
                   <div class="dp-col-label">Превью</div>
                   <div class="dp-live-preview" style="margin-top:0; flex-direction:column; gap:2px; padding:8px; border-radius:var(--card-radius,14px); background:color-mix(in srgb,var(--glass-bg) 80%,transparent)">
                     <div v-for="(item, i) in ['Обзор', 'Клиенты', 'Проекты', 'Документы']" :key="item"
@@ -1152,6 +1241,17 @@
                         cursor: 'pointer',
                       }"
                     >{{ item }}</div>
+                  </div>
+                  <div class="dp-arch-nav-preview" :class="`dp-arch-nav-preview--${tokens.archNavTransition || 'slide'}`" style="margin-top:12px">
+                    <div
+                      v-for="(item, index) in menuPreviewItems.slice(0, 4)"
+                      :key="`nav-preview-${item}`"
+                      class="dp-arch-nav-preview-item"
+                      :style="{ animationDelay: `${index * (tokens.navItemStagger ?? 12)}ms` }"
+                    >
+                      <span>{{ item }}</span>
+                      <span v-if="index === 2">›</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1912,6 +2012,66 @@ const archTextReveals = [
   { id: 'blur-in'     as const, label: 'из размытия' },
   { id: 'letter-fade' as const, label: 'побуквенно' },
 ]
+const archNavTransitions = [
+  { id: 'none'  as const, label: 'нет' },
+  { id: 'fade'  as const, label: 'плавно' },
+  { id: 'slide' as const, label: 'слайд' },
+  { id: 'push'  as const, label: 'push' },
+  { id: 'stack' as const, label: 'stack' },
+  { id: 'blur'  as const, label: 'blur' },
+]
+const navLayoutPresets = [
+  { id: 'compact' as const, label: 'компактно', description: 'Плотная и быстрая вертикаль для длинных деревьев.' },
+  { id: 'balanced' as const, label: 'баланс', description: 'Нейтральная раскладка для повседневной работы.' },
+  { id: 'showcase' as const, label: 'витрина', description: 'Больше воздуха, крупнее блоки и выраженный ритм.' },
+  { id: 'rail' as const, label: 'рейл', description: 'Собранная колонка с акцентом на компактную навигацию.' },
+]
+const navLayoutRecipes: Record<DesignTokens['navLayoutPreset'], Partial<DesignTokens>> = {
+  compact: {
+    navLayoutPreset: 'compact',
+    sidebarWidth: 232,
+    navItemPaddingH: 10,
+    navItemPaddingV: 7,
+    navPanelGap: 6,
+    navListGap: 1,
+    navItemRadius: 6,
+    navTransitDistance: 12,
+    navItemStagger: 6,
+  },
+  balanced: {
+    navLayoutPreset: 'balanced',
+    sidebarWidth: 260,
+    navItemPaddingH: 16,
+    navItemPaddingV: 12,
+    navPanelGap: 8,
+    navListGap: 2,
+    navItemRadius: 0,
+    navTransitDistance: 18,
+    navItemStagger: 12,
+  },
+  showcase: {
+    navLayoutPreset: 'showcase',
+    sidebarWidth: 304,
+    navItemPaddingH: 18,
+    navItemPaddingV: 15,
+    navPanelGap: 14,
+    navListGap: 7,
+    navItemRadius: 14,
+    navTransitDistance: 24,
+    navItemStagger: 18,
+  },
+  rail: {
+    navLayoutPreset: 'rail',
+    sidebarWidth: 216,
+    navItemPaddingH: 12,
+    navItemPaddingV: 10,
+    navPanelGap: 10,
+    navListGap: 6,
+    navItemRadius: 999,
+    navTransitDistance: 14,
+    navItemStagger: 10,
+  },
+}
 const BORDER_STYLE_OPTIONS = [
   { id: 'solid' as const, label: 'solid' },
   { id: 'dashed' as const, label: 'dashed' },
@@ -1989,6 +2149,42 @@ const currentScaleLabel = computed(() =>
   TYPE_SCALE_OPTIONS.find(s => Math.abs(s.ratio - tokens.value.typeScale) < 0.005)?.label || `${tokens.value.typeScale.toFixed(3)}`
 )
 
+const menuPreviewItems = ['обзор', 'планировка', 'материалы', 'подрядчики', 'документы']
+
+const activeNavLayout = computed(() =>
+  navLayoutPresets.find(preset => preset.id === tokens.value.navLayoutPreset) || navLayoutPresets[1]
+)
+
+const activeNavLayoutLabel = computed(() => activeNavLayout.value.label)
+
+const activeNavLayoutDescription = computed(() => activeNavLayout.value.description)
+
+const menuPreviewStyle = computed(() => ({
+  '--dp-menu-preview-width': `${Math.max(188, tokens.value.sidebarWidth - 24)}px`,
+  '--dp-menu-preview-gap': `${tokens.value.navListGap + 2}px`,
+  '--dp-menu-preview-radius': `${tokens.value.navItemRadius}px`,
+  '--dp-menu-preview-pad-x': `${tokens.value.navItemPaddingH}px`,
+  '--dp-menu-preview-pad-y': `${tokens.value.navItemPaddingV}px`,
+}))
+
+function applyNavLayoutPreset(presetId: DesignTokens['navLayoutPreset']) {
+  const recipe = navLayoutRecipes[presetId]
+  if (!recipe) return
+  for (const [key, value] of Object.entries(recipe) as Array<[keyof DesignTokens, DesignTokens[keyof DesignTokens]]>) {
+    set(key, value)
+  }
+}
+
+function generateNavLayout() {
+  const preset = navLayoutPresets[Math.floor(Math.random() * navLayoutPresets.length)]
+  applyNavLayoutPreset(preset.id)
+  set('sidebarWidth', Math.min(340, Math.max(208, tokens.value.sidebarWidth + (Math.floor(Math.random() * 5) - 2) * 8)))
+  set('navItemPaddingH', Math.min(22, Math.max(8, tokens.value.navItemPaddingH + (Math.floor(Math.random() * 5) - 2))))
+  set('navItemPaddingV', Math.min(18, Math.max(6, tokens.value.navItemPaddingV + (Math.floor(Math.random() * 5) - 2))))
+  set('navListGap', Math.min(10, Math.max(1, tokens.value.navListGap + (Math.floor(Math.random() * 5) - 2))))
+  set('navPanelGap', Math.min(18, Math.max(4, tokens.value.navPanelGap + (Math.floor(Math.random() * 5) - 2))))
+}
+
 /* ── Section search filter ──────────────────────── */
 const sectionSearchMap: Record<string, string[]> = {
   presets:  ['образ', 'рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal', 'minale', 'bauhaus', 'artdeco', 'cyberpunk', 'zen', 'y2k', 'newspaper', 'pastel', 'tokyo', 'terracotta', 'arctic', 'glow', 'ink', 'bubblegum', 'blueprint', 'snohetta', 'olsonkundig', 'mvrdv', 'som', 'mad', 'архитектура'],
@@ -2000,11 +2196,11 @@ const sectionSearchMap: Record<string, string[]> = {
   surface:  ['стекло', 'glass', 'поверхность', 'размытие', 'blur', 'тень', 'shadow', 'прозрачн'],
   radii:    ['скруглен', 'radius', 'отступ', 'spacing', 'карточ', 'chip', 'modal'],
   anim:     ['анимац', 'animation', 'easing', 'длительн', 'duration'],
-  grid:     ['сетк', 'grid', 'макет', 'layout', 'контейнер', 'container', 'sidebar', 'обводк', 'border'],
+  grid:     ['сетк', 'grid', 'макет', 'layout', 'контейнер', 'container', 'sidebar', 'обводк', 'border', 'генератор', 'раскладка', 'меню', 'layout generator', 'rail', 'showcase', 'compact'],
   darkMode: ['тёмн', 'темн', 'dark', 'mode', 'elevation', 'saturation'],
   inputs:   ['инпут', 'поле', 'ввод', 'input', 'text field', 'textarea', 'border opacity', 'прозрачн'],
   tags:     ['тег', 'чип', 'badge', 'chip', 'tag', 'пилюля', 'метка', 'padding'],
-  nav:      ['навиг', 'sidebar', 'menu', 'пункт', 'nav', 'меню'],
+  nav:      ['навиг', 'sidebar', 'menu', 'пункт', 'nav', 'меню', 'эффект сайдбара', 'sidebar transition', 'drill-down', 'push', 'stack', 'stagger', 'переход меню', 'каскад', 'смещение'],
   statuses: ['статус', 'пин', 'status', 'pin bar', 'badge', 'прогресс', 'дорожная карта', 'roadmap'],
   popups:   ['попап', 'popup', 'dropdown', 'оверлей', 'overlay', 'modal', 'blur', 'затемн'],
   scrollbar: ['скроллбар', 'scrollbar', 'полоса прокрутки', 'ширина', 'width', 'прозрач'],
@@ -3317,6 +3513,125 @@ onBeforeUnmount(() => {
   font-weight: 400;
   opacity: .6;
   margin-bottom: 0;
+}
+.dp-menu-generator-actions {
+  display: flex;
+  gap: 8px;
+}
+.dp-grid-menu-preview {
+  margin-top: 10px;
+}
+.dp-grid-menu-preview-shell {
+  width: min(100%, var(--dp-menu-preview-width, 236px));
+  padding: 10px;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(0,0,0,.025);
+}
+.dp-grid-menu-preview-shell--showcase {
+  background: rgba(0,0,0,.04);
+}
+.dp-grid-menu-preview-shell--rail {
+  width: min(100%, 220px);
+}
+.dp-grid-menu-preview-search {
+  height: 12px;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(0,0,0,.04);
+  margin-bottom: 10px;
+}
+.dp-grid-menu-preview-list {
+  display: grid;
+  gap: var(--dp-menu-preview-gap, 4px);
+}
+.dp-grid-menu-preview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  padding: var(--dp-menu-preview-pad-y, 10px) var(--dp-menu-preview-pad-x, 14px);
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: var(--dp-menu-preview-radius, 0px);
+  font-size: .62rem;
+  letter-spacing: .04em;
+  color: var(--glass-text);
+  background: transparent;
+}
+.dp-grid-menu-preview-item--active {
+  background: rgba(0,0,0,.08);
+  border-color: rgba(0,0,0,.16);
+}
+.dp-grid-menu-preview-item--branch {
+  text-transform: uppercase;
+}
+.dp-grid-menu-preview-arrow {
+  opacity: .4;
+}
+.dp-grid-menu-preview-meta {
+  margin-top: 10px;
+  font-size: .58rem;
+  line-height: 1.4;
+  opacity: .52;
+}
+.dp-arch-nav-preview {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+.dp-arch-nav-preview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border: 1px solid rgba(0,0,0,.08);
+  font-size: .62rem;
+  opacity: .88;
+  animation: dp-nav-preview-in var(--ds-nav-trans-duration, 220ms) ease both;
+}
+.dp-arch-nav-preview--fade .dp-arch-nav-preview-item {
+  animation-name: dp-nav-preview-fade;
+}
+.dp-arch-nav-preview--blur .dp-arch-nav-preview-item {
+  animation-name: dp-nav-preview-blur;
+}
+.dp-arch-nav-preview--stack .dp-arch-nav-preview-item {
+  animation-name: dp-nav-preview-stack;
+}
+.dp-arch-nav-preview--push .dp-arch-nav-preview-item {
+  animation-name: dp-nav-preview-push;
+}
+.dp-arch-nav-preview--none .dp-arch-nav-preview-item {
+  animation: none;
+}
+@keyframes dp-nav-preview-in {
+  from { opacity: 0; transform: translateX(var(--ds-nav-trans-distance, 18px)); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes dp-nav-preview-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dp-nav-preview-blur {
+  from { opacity: 0; filter: blur(8px); transform: translateX(calc(var(--ds-nav-trans-distance, 18px) * 0.5)); }
+  to { opacity: 1; filter: blur(0); transform: translateX(0); }
+}
+@keyframes dp-nav-preview-stack {
+  from { opacity: 0; transform: translateY(8px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes dp-nav-preview-push {
+  from { opacity: 0; transform: translateX(var(--ds-nav-trans-distance, 18px)) scale(.985); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+:global(html.dark) .dp-grid-menu-preview-shell,
+:global(html.dark) .dp-grid-menu-preview-search,
+:global(html.dark) .dp-grid-menu-preview-item,
+:global(html.dark) .dp-arch-nav-preview-item {
+  border-color: rgba(255,255,255,.1);
+  background: rgba(255,255,255,.03);
+}
+:global(html.dark) .dp-grid-menu-preview-item--active {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.18);
 }
 
 /* ── Chips ── */

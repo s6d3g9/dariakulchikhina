@@ -109,6 +109,11 @@ textarea, select {
   --input-font-size: var(--ds-text-sm, .833rem);
   --nav-item-padding-h: 16px;
   --nav-item-padding-v: 12px;
+  --ds-nav-panel-gap: 8px;
+  --ds-nav-list-gap: 2px;
+  --ds-nav-trans-duration: 220ms;
+  --ds-nav-trans-distance: 18px;
+  --ds-nav-item-stagger: 12ms;
   /* ── Dropdown/popup surfaces ── */
   --dropdown-bg:     rgba(255, 255, 255, 0.97);
   --dropdown-border: rgba(0, 0, 0, 0.10);
@@ -737,8 +742,16 @@ html.dark .glass-input::placeholder {
 
 .proj-content-area,
 .admin-with-nav {
-  /* space for the fixed sidebar column */
-  padding-left: calc(var(--ds-sidebar-width, 200px) + 24px);
+  /* Reserve the sidebar footprint for narrow and mid desktop widths. */
+  padding-left: calc(var(--ds-sidebar-width, 200px) + 48px);
+}
+
+@media (min-width: 1140px) {
+  .proj-content-area,
+  .admin-with-nav {
+    /* On wide screens, add the real viewport offset of the fixed sidebar. */
+    padding-left: calc(((100vw - var(--ds-container-width, 1140px)) / 2) + var(--ds-sidebar-width, 200px) + 48px);
+  }
 }
 
 .proj-nav-col {
@@ -787,6 +800,20 @@ html.dark .glass-input::placeholder {
 
 .proj-main { width: 100%; min-width: 0; }
 .proj-main-inner { min-width: 0; }
+
+@media (max-width: 1024px) {
+  .proj-content-area,
+  .admin-with-nav {
+    padding-left: calc(24px + 160px + 20px);
+  }
+}
+
+@media (max-width: 768px) {
+  .proj-content-area,
+  .admin-with-nav {
+    padding-left: 0;
+  }
+}
 
 .proj-sidenav-item {
   display: block; width: 100%; text-align: left;
@@ -6502,53 +6529,53 @@ html[data-concept="glass"] .dp-panel {
    ═══════════════════════════════════════════════════ */
 
 /* ── fade ── */
-.pt-fade-enter-active, .pt-fade-leave-active { transition: opacity var(--pt-dur, 280ms) ease; }
+.pt-fade-enter-active, .pt-fade-leave-active { transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease); }
 .pt-fade-enter-from, .pt-fade-leave-to { opacity: 0; }
 
 /* ── zoom ── */
-.pt-zoom-enter-active, .pt-zoom-leave-active { transition: opacity var(--pt-dur, 280ms) ease, transform var(--pt-dur, 280ms) cubic-bezier(0.16,1,0.3,1); }
+.pt-zoom-enter-active, .pt-zoom-leave-active { transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease), transform var(--pt-dur, 280ms) var(--pt-ease, cubic-bezier(0.16,1,0.3,1)); }
 .pt-zoom-enter-from { opacity: 0; transform: scale(0.94); }
 .pt-zoom-leave-to   { opacity: 0; transform: scale(1.04); }
 
 /* ── blur ── */
-.pt-blur-enter-active, .pt-blur-leave-active { transition: opacity var(--pt-dur, 280ms) ease, filter var(--pt-dur, 280ms) ease; }
+.pt-blur-enter-active, .pt-blur-leave-active { transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease), filter var(--pt-dur, 280ms) var(--pt-ease, ease); }
 .pt-blur-enter-from { opacity: 0; filter: blur(10px); }
 .pt-blur-leave-to   { opacity: 0; filter: blur(10px); }
 
 /* ── flip (Y axis) ── */
 .pt-flip-enter-active, .pt-flip-leave-active {
-  transition: opacity var(--pt-dur, 280ms) ease, transform var(--pt-dur, 280ms) cubic-bezier(0.33,1,0.68,1);
+  transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease), transform var(--pt-dur, 280ms) var(--pt-ease, cubic-bezier(0.33,1,0.68,1));
   perspective: 800px;
 }
 .pt-flip-enter-from { opacity: 0; transform: rotateY(-12deg) translateZ(-40px); }
 .pt-flip-leave-to   { opacity: 0; transform: rotateY(12deg)  translateZ(-40px); }
 
 /* ── slide-r (→ page comes from right) ── */
-.pt-slide-r-enter-active, .pt-slide-r-leave-active { transition: opacity var(--pt-dur, 280ms) ease, transform var(--pt-dur, 280ms) cubic-bezier(0.33,1,0.68,1); }
+.pt-slide-r-enter-active, .pt-slide-r-leave-active { transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease), transform var(--pt-dur, 280ms) var(--pt-ease, cubic-bezier(0.33,1,0.68,1)); }
 .pt-slide-r-enter-from { opacity: 0; transform: translateX(48px); }
 .pt-slide-r-leave-to   { opacity: 0; transform: translateX(-48px); }
 
 /* ── slide-l (← page comes from left) ── */
-.pt-slide-l-enter-active, .pt-slide-l-leave-active { transition: opacity var(--pt-dur, 280ms) ease, transform var(--pt-dur, 280ms) cubic-bezier(0.33,1,0.68,1); }
+.pt-slide-l-enter-active, .pt-slide-l-leave-active { transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease), transform var(--pt-dur, 280ms) var(--pt-ease, cubic-bezier(0.33,1,0.68,1)); }
 .pt-slide-l-enter-from { opacity: 0; transform: translateX(-48px); }
 .pt-slide-l-leave-to   { opacity: 0; transform: translateX(48px); }
 
 /* ── slide-t (↑ page comes from top) ── */
-.pt-slide-t-enter-active, .pt-slide-t-leave-active { transition: opacity var(--pt-dur, 280ms) ease, transform var(--pt-dur, 280ms) cubic-bezier(0.33,1,0.68,1); }
+.pt-slide-t-enter-active, .pt-slide-t-leave-active { transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease), transform var(--pt-dur, 280ms) var(--pt-ease, cubic-bezier(0.33,1,0.68,1)); }
 .pt-slide-t-enter-from { opacity: 0; transform: translateY(-40px); }
 .pt-slide-t-leave-to   { opacity: 0; transform: translateY(40px); }
 
 /* ── slide-b (↓ page comes from bottom) ── */
-.pt-slide-b-enter-active, .pt-slide-b-leave-active { transition: opacity var(--pt-dur, 280ms) ease, transform var(--pt-dur, 280ms) cubic-bezier(0.33,1,0.68,1); }
+.pt-slide-b-enter-active, .pt-slide-b-leave-active { transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease), transform var(--pt-dur, 280ms) var(--pt-ease, cubic-bezier(0.33,1,0.68,1)); }
 .pt-slide-b-enter-from { opacity: 0; transform: translateY(40px); }
 .pt-slide-b-leave-to   { opacity: 0; transform: translateY(-40px); }
 
 /* ── curtain (занавес сверху вниз) ── */
 .pt-curtain-enter-active {
-  transition: clip-path var(--pt-dur, 280ms) cubic-bezier(0.16,1,0.3,1), opacity calc(var(--pt-dur, 280ms) * 0.5) ease;
+  transition: clip-path var(--pt-dur, 280ms) var(--pt-ease, cubic-bezier(0.16,1,0.3,1)), opacity calc(var(--pt-dur, 280ms) * 0.5) var(--pt-ease, ease);
 }
 .pt-curtain-leave-active {
-  transition: opacity var(--pt-dur, 280ms) ease;
+  transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease);
 }
 .pt-curtain-enter-from { clip-path: inset(0 0 100% 0); opacity: 0; }
 .pt-curtain-enter-to   { clip-path: inset(0 0 0% 0); opacity: 1; }
@@ -6556,10 +6583,10 @@ html[data-concept="glass"] .dp-panel {
 
 /* ── curtain-b (занавес снизу вверх) ── */
 .pt-curtain-b-enter-active {
-  transition: clip-path var(--pt-dur, 280ms) cubic-bezier(0.16,1,0.3,1), opacity calc(var(--pt-dur, 280ms) * 0.5) ease;
+  transition: clip-path var(--pt-dur, 280ms) var(--pt-ease, cubic-bezier(0.16,1,0.3,1)), opacity calc(var(--pt-dur, 280ms) * 0.5) var(--pt-ease, ease);
 }
 .pt-curtain-b-leave-active {
-  transition: opacity var(--pt-dur, 280ms) ease;
+  transition: opacity var(--pt-dur, 280ms) var(--pt-ease, ease);
 }
 .pt-curtain-b-enter-from { clip-path: inset(100% 0 0% 0); opacity: 0; }
 .pt-curtain-b-enter-to   { clip-path: inset(0% 0 0 0); opacity: 1; }

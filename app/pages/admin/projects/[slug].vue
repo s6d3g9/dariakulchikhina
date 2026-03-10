@@ -193,7 +193,7 @@
             </div>
           </section>
 
-          <Transition name="tab-fade" mode="out-in">
+          <Transition :name="projectContentTransitionName" :css="projectContentTransitionCss" mode="out-in" :duration="projectContentTransitionDuration">
             <div :key="contentKey" class="proj-main-inner" :class="{ 'proj-main-inner--after-hero': showBrutalistHero }">
               <!-- contractor preview -->
               <template v-if="contractorPreviewMode">
@@ -277,6 +277,199 @@
 
                   <p v-if="clientLinkError" style="color:var(--ds-error,#c00);font-size:.8rem;margin:8px 0">{{ clientLinkError }}</p>
                   <p v-if="clientLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ clientLinkSuccess }}</p>
+                </div>
+              </template>
+              <template v-else-if="activePage === 'project_contractors'">
+                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
+                  <div class="proj-entity-panel-title">Подрядчики проекта</div>
+
+                  <div v-if="linkedContractorsList.length" class="proj-entity-section">
+                    <div class="proj-entity-section-label">Закреплённые</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="contractor in linkedContractorsList"
+                        :key="contractor.id"
+                        class="proj-entity-row proj-entity-row--linked"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ contractor.name }}</div>
+                          <div class="proj-entity-meta">{{ contractor.companyName || contractor.phone || contractor.email || 'без контакта' }}</div>
+                        </div>
+                        <button
+                          type="button"
+                          class="proj-entity-btn proj-entity-btn--remove"
+                          @click="unlinkContractor(contractor.id)"
+                        >−</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="proj-entity-section">
+                    <div class="proj-entity-section-label">Добавить из CRM</div>
+                    <div v-if="!availableContractorsForModal.length" class="proj-entity-empty">Нет доступных подрядчиков</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="contractor in availableContractorsForModal"
+                        :key="contractor.id"
+                        class="proj-entity-row"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ contractor.name }}</div>
+                          <div class="proj-entity-meta">{{ contractor.companyName || contractor.phone || contractor.email || 'без контакта' }}</div>
+                        </div>
+                        <button
+                          type="button"
+                          class="proj-entity-btn proj-entity-btn--add"
+                          @click="linkContractorFromModal(contractor.id)"
+                        >+</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p v-if="contractorLinkError" style="color:var(--ds-error,#c00);font-size:.8rem;margin:8px 0">{{ contractorLinkError }}</p>
+                  <p v-if="contractorLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ contractorLinkSuccess }}</p>
+                </div>
+              </template>
+              <template v-else-if="activePage === 'project_designers'">
+                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
+                  <div class="proj-entity-panel-title">Дизайнеры проекта</div>
+
+                  <div v-if="linkedDesignersList.length" class="proj-entity-section">
+                    <div class="proj-entity-section-label">Закреплённые</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="designer in linkedDesignersList"
+                        :key="designer.id"
+                        class="proj-entity-row proj-entity-row--linked"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ designer.name }}</div>
+                          <div class="proj-entity-meta">{{ designer.companyName || designer.phone || designer.email || 'без контакта' }}</div>
+                        </div>
+                        <button
+                          type="button"
+                          class="proj-entity-btn proj-entity-btn--remove"
+                          @click="unlinkDesigner(designer.id)"
+                        >−</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="proj-entity-section">
+                    <div class="proj-entity-section-label">Добавить из CRM</div>
+                    <div v-if="!availableDesignersForModal.length" class="proj-entity-empty">Нет доступных дизайнеров</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="designer in availableDesignersForModal"
+                        :key="designer.id"
+                        class="proj-entity-row"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ designer.name }}</div>
+                          <div class="proj-entity-meta">{{ designer.companyName || designer.phone || designer.email || 'без контакта' }}</div>
+                        </div>
+                        <button
+                          type="button"
+                          class="proj-entity-btn proj-entity-btn--add"
+                          @click="linkDesignerFromModal(designer.id)"
+                        >+</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p v-if="designerLinkError" style="color:var(--ds-error,#c00);font-size:.8rem;margin:8px 0">{{ designerLinkError }}</p>
+                  <p v-if="designerLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ designerLinkSuccess }}</p>
+                </div>
+              </template>
+              <template v-else-if="activePage === 'project_sellers'">
+                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
+                  <div class="proj-entity-panel-title">Поставщики проекта</div>
+
+                  <div v-if="linkedSellersList.length" class="proj-entity-section">
+                    <div class="proj-entity-section-label">Закреплённые</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="seller in linkedSellersList"
+                        :key="seller.id"
+                        class="proj-entity-row proj-entity-row--linked"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ seller.name }}</div>
+                          <div class="proj-entity-meta">{{ seller.companyName || seller.city || seller.contactPerson || 'без контакта' }}</div>
+                        </div>
+                        <button
+                          type="button"
+                          class="proj-entity-btn proj-entity-btn--remove"
+                          @click="unlinkSeller(seller.id)"
+                        >−</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="proj-entity-section">
+                    <div class="proj-entity-section-label">Добавить из CRM</div>
+                    <div v-if="!availableSellersForProject.length" class="proj-entity-empty">Нет доступных поставщиков</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="seller in availableSellersForProject"
+                        :key="seller.id"
+                        class="proj-entity-row"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ seller.name }}</div>
+                          <div class="proj-entity-meta">{{ seller.companyName || seller.city || seller.contactPerson || 'без контакта' }}</div>
+                        </div>
+                        <button
+                          type="button"
+                          class="proj-entity-btn proj-entity-btn--add"
+                          @click="linkSeller(seller.id)"
+                        >+</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p v-if="sellerLinkError" style="color:var(--ds-error,#c00);font-size:.8rem;margin:8px 0">{{ sellerLinkError }}</p>
+                  <p v-if="sellerLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ sellerLinkSuccess }}</p>
+                </div>
+              </template>
+              <template v-else-if="activePage === 'project_managers'">
+                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
+                  <div class="proj-entity-panel-title">Менеджеры проекта</div>
+
+                  <div v-if="linkedManagersList.length" class="proj-entity-section">
+                    <div class="proj-entity-section-label">Назначенные</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="manager in linkedManagersList"
+                        :key="manager.id"
+                        class="proj-entity-row proj-entity-row--linked"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ manager.name }}</div>
+                          <div class="proj-entity-meta">{{ manager.role || manager.phone || manager.email || 'менеджер проекта' }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else class="proj-entity-empty">Менеджеры пока не привязаны к проекту</div>
+
+                  <div class="proj-entity-section">
+                    <div class="proj-entity-section-label">Доступные в системе</div>
+                    <div v-if="!availableManagersForProject.length" class="proj-entity-empty">Нет дополнительных менеджеров</div>
+                    <div class="proj-entity-list">
+                      <div
+                        v-for="manager in availableManagersForProject"
+                        :key="manager.id"
+                        class="proj-entity-row"
+                      >
+                        <div class="proj-entity-info">
+                          <div class="proj-entity-name">{{ manager.name }}</div>
+                          <div class="proj-entity-meta">{{ manager.role || manager.phone || manager.email || 'менеджер' }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </template>
               <section v-else class="proj-section-shell" :class="{ 'proj-section-shell--brutalist': isBrutalistProjectMode }">
@@ -494,7 +687,7 @@ import {
   AdminProjectOverview,
 } from '#components'
 
-definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
+definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -502,6 +695,16 @@ const designSystem = useDesignSystem()
 const isBrutalistProjectMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const showLegacyMobileNav = computed(() => !contractorPreviewMode.value && !isBrutalistProjectMode.value)
 const showBrutalistHero = computed(() => isBrutalistProjectMode.value && !clientPreviewMode.value && !contractorPreviewMode.value)
+const projectContentTransitionEffect = computed(() => {
+  const effect = designSystem.tokens.value.archPageEnter ?? 'fade'
+  if (effect === 'slide') return 'slide-r'
+  return effect
+})
+const projectContentTransitionDuration = computed(() => Math.min(800, Math.max(80, designSystem.tokens.value.pageTransitDuration ?? 280)))
+const projectContentTransitionCss = computed(() => projectContentTransitionEffect.value !== 'none')
+const projectContentTransitionName = computed(() =>
+  projectContentTransitionEffect.value === 'none' ? 'tab-fade' : `pt-${projectContentTransitionEffect.value}`
+)
 
 // ── Привязка к глобальному nav (NavigationNode schema) ─────────────────────
 const adminNav = useAdminNav()
@@ -574,6 +777,16 @@ const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await use
   `/api/projects/${slug.value}/designers`,
   { default: () => [] },
 )
+const { data: allSellersData } = await useFetch<any[]>('/api/sellers', { default: () => [] })
+const { data: linkedSellersData, refresh: refreshLinkedSellers } = await useFetch<any[]>(
+  `/api/projects/${slug.value}/sellers`,
+  { default: () => [] },
+)
+const { data: allManagersData } = await useFetch<any[]>('/api/managers', { default: () => [] })
+const { data: linkedManagersData } = await useFetch<any[]>(
+  () => `/api/managers?projectSlug=${slug.value}`,
+  { default: () => [] },
+)
 const activePage = ref('overview')
 const showEdit = ref(false)
 const saving = ref(false)
@@ -596,6 +809,10 @@ const linkingDesigner = ref(false)
 const designerLinkError = ref('')
 const designerLinkSuccess = ref('')
 const showDesignerModal = ref(false)
+// ── Seller link state ────────────────────────────────────────────
+const linkingSeller = ref(false)
+const sellerLinkError = ref('')
+const sellerLinkSuccess = ref('')
 
 const allContractors = computed(() => allContractorsData.value || [])
 const linkedContractorsList = computed(() => linkedContractorsData.value || [])
@@ -603,6 +820,12 @@ const linkedContractorIds = computed(() => new Set(linkedContractorsList.value.m
 const allDesigners = computed(() => allDesignersData.value || [])
 const linkedDesignersList = computed(() => linkedDesignersData.value || [])
 const linkedDesignerIds = computed(() => new Set(linkedDesignersList.value.map((d: any) => String(d.id))))
+const allSellers = computed(() => allSellersData.value || [])
+const linkedSellersList = computed(() => linkedSellersData.value || [])
+const linkedSellerIds = computed(() => new Set(linkedSellersList.value.map((s: any) => String(s.id))))
+const allManagers = computed(() => allManagersData.value || [])
+const linkedManagersList = computed(() => linkedManagersData.value || [])
+const linkedManagerIds = computed(() => new Set(linkedManagersList.value.map((m: any) => String(m.id))))
 
 async function linkContractorToProject() {
   if (!selectedContractorId.value) return
@@ -693,6 +916,14 @@ const availableDesignersForModal = computed(() => {
   return allDesigners.value.filter((d: any) => !linkedDesignerIds.value.has(String(d.id)))
 })
 
+const availableSellersForProject = computed(() => {
+  return allSellers.value.filter((seller: any) => !linkedSellerIds.value.has(String(seller.id)))
+})
+
+const availableManagersForProject = computed(() => {
+  return allManagers.value.filter((manager: any) => !linkedManagerIds.value.has(String(manager.id)))
+})
+
 const editForm = reactive({
   title: project.value?.title || '',
   pages: [...(project.value?.pages || [])],
@@ -743,6 +974,29 @@ const contentKey = computed(() => {
   if (clientPreviewMode.value)     return `cli-${clientActivePage.value}`
   return `adm-${activePage.value}`
 })
+
+const projectRegistryPageMeta: Record<string, { title: string; group: string }> = {
+  project_clients: { title: 'клиенты проекта', group: 'субъекты проекта' },
+  project_contractors: { title: 'подрядчики проекта', group: 'субъекты проекта' },
+  project_designers: { title: 'дизайнеры проекта', group: 'субъекты проекта' },
+  project_sellers: { title: 'поставщики проекта', group: 'субъекты проекта' },
+  project_managers: { title: 'менеджеры проекта', group: 'субъекты проекта' },
+}
+
+const defaultPhasePage = computed(() => {
+  const pages = project.value?.pages || []
+  const firstVisiblePhasePage = getAdminNavGroups()
+    .flatMap(group => group.pages)
+    .find((page) => {
+      if (page.slug === 'self_profile' && pages.includes('brief')) {
+        return true
+      }
+      return pages.includes(page.slug)
+    })
+
+  return firstVisiblePhasePage?.slug || 'overview'
+})
+
 function selectAdminPage(slug: string) {
   activePage.value = slug
   scrollMobileBarToActive()
@@ -757,6 +1011,56 @@ watch(
     const mapped = PRJ_SECTION_TO_SLUG[section]
     if (mapped && mapped !== activePage.value) {
       selectAdminPage(mapped)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => ({
+    nodeId: adminNav.currentNode.value.nodeId,
+    nodeType: adminNav.currentNode.value.nodeType,
+    section: adminNav.contentSpec.value.section,
+    projectSlug: adminNav.contentSpec.value.projectSlug,
+    projectSection: adminNav.contentSpec.value.projectSection,
+  }),
+  (state) => {
+    if (state.projectSlug && state.projectSlug !== slug.value) {
+      return
+    }
+    if (state.projectSection) {
+      return
+    }
+    if (state.nodeType === 'project_root') {
+      if (activePage.value !== 'overview') {
+        selectAdminPage('overview')
+      }
+      return
+    }
+    if (state.nodeId.startsWith('reg_phases_')) {
+      if (activePage.value === 'overview' || projectRegistryPageMeta[activePage.value]) {
+        selectAdminPage(defaultPhasePage.value)
+      }
+      return
+    }
+    if (state.nodeId.startsWith('reg_clients_')) {
+      if (activePage.value !== 'project_clients') selectAdminPage('project_clients')
+      return
+    }
+    if (state.nodeId.startsWith('reg_contractors_')) {
+      if (activePage.value !== 'project_contractors') selectAdminPage('project_contractors')
+      return
+    }
+    if (state.nodeId.startsWith('reg_designers_')) {
+      if (activePage.value !== 'project_designers') selectAdminPage('project_designers')
+      return
+    }
+    if (state.nodeId.startsWith('reg_sellers_')) {
+      if (activePage.value !== 'project_sellers') selectAdminPage('project_sellers')
+      return
+    }
+    if (state.nodeId.startsWith('reg_managers_')) {
+      if (activePage.value !== 'project_managers') selectAdminPage('project_managers')
     }
   },
   { immediate: true },
@@ -878,6 +1182,7 @@ const navGroups = computed(() => {
 
 const activePageTitle = computed(() => {
   if (activePage.value === 'overview') return 'обзор'
+  if (projectRegistryPageMeta[activePage.value]) return projectRegistryPageMeta[activePage.value].title
   return availablePages.value.find(page => page.slug === normalizedActivePage.value)?.title || project.value?.title || slug.value
 })
 
@@ -890,7 +1195,9 @@ const navSearch = ref('')
 
 // Group label of the currently active page
 const activeGroupLabel = computed(() =>
-  navGroups.value.find(g => g.pages.some(p => p.slug === activePage.value))?.label ?? null
+  projectRegistryPageMeta[activePage.value]?.group
+    ?? navGroups.value.find(g => g.pages.some(p => p.slug === activePage.value))?.label
+    ?? null
 )
 
 const brutalistHeroFacts = computed(() => [
@@ -977,6 +1284,9 @@ watch(project, async (p) => {
 })
 
 watch(availablePages, (pages) => {
+  if (activePage.value === 'overview' || projectRegistryPageMeta[activePage.value]) {
+    return
+  }
   const normalized = normalizedActivePage.value
   if (!pages.length) {
     activePage.value = 'overview'
@@ -1092,6 +1402,46 @@ async function unlinkDesigner(designerId: number) {
     designerLinkError.value = e?.data?.message || 'Не удалось отвязать дизайнера'
   } finally {
     linkingDesigner.value = false
+  }
+}
+
+async function linkSeller(sellerId: number) {
+  if (linkingSeller.value) return
+  linkingSeller.value = true
+  sellerLinkError.value = ''
+  sellerLinkSuccess.value = ''
+  try {
+    await $fetch(`/api/projects/${slug.value}/sellers`, {
+      method: 'POST',
+      body: { sellerId },
+    })
+    await refreshLinkedSellers()
+    sellerLinkSuccess.value = 'Поставщик привязан к проекту'
+    setTimeout(() => { sellerLinkSuccess.value = '' }, 3000)
+  } catch (e: any) {
+    sellerLinkError.value = e?.data?.message || 'Не удалось привязать поставщика'
+  } finally {
+    linkingSeller.value = false
+  }
+}
+
+async function unlinkSeller(sellerId: number) {
+  if (linkingSeller.value) return
+  linkingSeller.value = true
+  sellerLinkError.value = ''
+  sellerLinkSuccess.value = ''
+  try {
+    await $fetch(`/api/projects/${slug.value}/sellers`, {
+      method: 'DELETE',
+      body: { sellerId },
+    })
+    await refreshLinkedSellers()
+    sellerLinkSuccess.value = 'Поставщик отвязан от проекта'
+    setTimeout(() => { sellerLinkSuccess.value = '' }, 2500)
+  } catch (e: any) {
+    sellerLinkError.value = e?.data?.message || 'Не удалось отвязать поставщика'
+  } finally {
+    linkingSeller.value = false
   }
 }
 </script>

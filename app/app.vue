@@ -25,6 +25,8 @@ const transitionDuration = computed(() => {
   return Math.min(800, Math.max(80, raw))
 })
 
+const transitionEasing = computed(() => tokens.value.animEasing || 'ease')
+
 const pageTransition = computed(() => {
   const effect = transitionEffect.value
   if (effect === 'none') return false
@@ -34,6 +36,7 @@ const pageTransition = computed(() => {
 watchEffect(() => {
   if (!import.meta.client) return
   document.documentElement.style.setProperty('--pt-dur', `${transitionDuration.value}ms`)
+  document.documentElement.style.setProperty('--pt-ease', transitionEasing.value)
 })
 
 onMounted(() => {

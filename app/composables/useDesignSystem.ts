@@ -127,6 +127,9 @@ export interface DesignTokens {
   navItemRadius: number         // px — nav-item border-radius
   navItemPaddingH: number       // px — nav-item horizontal padding
   navItemPaddingV: number       // px — nav-item vertical padding
+  navPanelGap: number           // px — vertical gap between sidebar blocks
+  navListGap: number            // px — gap between menu items
+  navLayoutPreset: 'compact' | 'balanced' | 'showcase' | 'rail' // menu object layout preset
 
   /* ── Button padding override ── */
   btnPaddingH: number           // 0 = auto from btnSize, >0 = direct px
@@ -194,6 +197,10 @@ export interface DesignTokens {
   archVerticalRhythm: number                                             // 0.5..3.0 — vertical spacing multiplier
   archContentReveal:  'none' | 'fade-up' | 'fade' | 'slide-up' | 'blur'  // section enter animation
   archTextReveal:     'none' | 'clip' | 'blur-in' | 'letter-fade'         // text reveal animation style
+  archNavTransition:  'none' | 'fade' | 'slide' | 'push' | 'stack' | 'blur' // sidebar drill-down transition
+  navTransitDuration: number                                             // ms, 80..700 — sidebar transition speed
+  navTransitDistance: number                                             // px, 0..56 — sidebar transition amplitude
+  navItemStagger:     number                                             // ms, 0..60 — per-item cascade delay
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -277,6 +284,9 @@ export const DEFAULT_TOKENS: DesignTokens = {
 
   navItemPaddingH: 16,
   navItemPaddingV: 12,
+  navPanelGap: 8,
+  navListGap: 2,
+  navLayoutPreset: 'balanced',
 
   btnPaddingH: 0,
   btnPaddingV: 0,
@@ -334,6 +344,10 @@ export const DEFAULT_TOKENS: DesignTokens = {
   archCardChrome:      'visible',
   archHeroScale:       'normal',
   archVerticalRhythm:  1,
+  archNavTransition:  'slide',
+  navTransitDuration: 220,
+  navTransitDistance: 18,
+  navItemStagger: 12,
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2251,6 +2265,12 @@ export function useDesignSystem() {
     el.style.setProperty('--nav-item-radius', `${t.navItemRadius}px`)
     el.style.setProperty('--nav-item-padding-h', `${t.navItemPaddingH}px`)
     el.style.setProperty('--nav-item-padding-v', `${t.navItemPaddingV}px`)
+    el.style.setProperty('--ds-nav-panel-gap', `${t.navPanelGap}px`)
+    el.style.setProperty('--ds-nav-list-gap', `${t.navListGap}px`)
+    el.style.setProperty('--ds-nav-trans-duration', `${t.navTransitDuration}ms`)
+    el.style.setProperty('--ds-nav-trans-distance', `${t.navTransitDistance}px`)
+    el.style.setProperty('--ds-nav-item-stagger', `${t.navItemStagger}ms`)
+    el.setAttribute('data-nav-layout', t.navLayoutPreset || 'balanced')
 
     // Status pills / pin bars
     const sBg = t.statusBgOpacity
@@ -2325,6 +2345,7 @@ export function useDesignSystem() {
     el.style.setProperty('--arch-vertical-rhythm', String(t.archVerticalRhythm ?? 1))
     el.setAttribute('data-content-reveal', t.archContentReveal || 'none')
     el.setAttribute('data-text-reveal',   t.archTextReveal   || 'none')
+    el.setAttribute('data-nav-transition', t.archNavTransition || 'slide')
 
     // Set data-dark-surface when page bg is very dark (for CSS dark-surface cascade)
     if (t.colorPageBg && /^#[0-1][0-9a-f]/i.test(t.colorPageBg)) {
@@ -2564,6 +2585,11 @@ export function useDesignSystem() {
       `  --nav-item-radius: ${t.navItemRadius}px;`,
       `  --nav-item-padding-h: ${t.navItemPaddingH}px;`,
       `  --nav-item-padding-v: ${t.navItemPaddingV}px;`,
+      `  --ds-nav-panel-gap: ${t.navPanelGap}px;`,
+      `  --ds-nav-list-gap: ${t.navListGap}px;`,
+      `  --ds-nav-trans-duration: ${t.navTransitDuration}ms;`,
+      `  --ds-nav-trans-distance: ${t.navTransitDistance}px;`,
+      `  --ds-nav-item-stagger: ${t.navItemStagger}ms;`,
       ``,
       `  /* ── Status pills ── */`,
       `  --status-pill-radius: ${t.statusPillRadius}px;`,
