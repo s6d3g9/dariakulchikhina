@@ -523,6 +523,12 @@
 </template>
 
 <script setup lang="ts">
+import {
+  PROJECT_PAGE_TO_NAV_TARGET,
+  PROJECT_REGISTRY_NODE_PREFIX_TO_PAGE,
+  PROJECT_REGISTRY_PAGE_META,
+  PROJECT_SECTION_TO_PAGE,
+} from '~~/shared/constants/admin-navigation'
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
 import type { Component } from 'vue'
 import {
@@ -598,67 +604,6 @@ onActivated(syncNavToProject)
 watch(slug, () => {
   syncNavToProject()
 }, { immediate: true })
-
-// Маппинг prj_* IDs из PROJECT_CABINET_ITEMS → внутренние slugs страницы
-const PRJ_SECTION_TO_SLUG: Record<string, string> = {
-  overview:      'overview',
-  clients:       'project_clients',
-  firstcontact:  'first_contact',
-  smartbrief:    'brief',
-  sitesurvey:    'site_survey',
-  torcontract:   'tor_contract',
-  concept:       'concept_approval',
-  spaceplanning: 'space_planning',
-  moodboard:     'moodboard',
-  plan:          'construction_plan',
-  drawings:      'working_drawings',
-  specifications:'specifications',
-  mep:           'mep_integration',
-  materials:     'materials',
-  procurement:   'procurement_list',
-  suppliers:     'suppliers',
-  procurementstatus: 'procurement_status',
-  workstatus:    'work_status',
-  worklog:       'work_log',
-  sitephotos:    'site_photos',
-  punchlist:     'punch_list',
-  commissioning: 'commissioning_act',
-  clientsignoff: 'client_sign_off',
-  album:         'design_album_final',
-  extraservices: 'extra_services',
-}
-
-const PROJECT_PAGE_TO_NAV_TARGET: Record<string, { branchId?: string; leafId?: string }> = {
-  overview: {},
-  project_clients: { branchId: 'alpha_clients' },
-  project_contractors: { branchId: 'alpha_contractors' },
-  project_designers: { branchId: 'alpha_designers' },
-  project_sellers: { branchId: 'alpha_sellers' },
-  project_managers: { branchId: 'alpha_managers' },
-  first_contact: { branchId: 'alpha_phases', leafId: 'prj_firstcontact' },
-  brief: { branchId: 'alpha_phases', leafId: 'prj_smartbrief' },
-  site_survey: { branchId: 'alpha_phases', leafId: 'prj_sitesurvey' },
-  tor_contract: { branchId: 'alpha_phases', leafId: 'prj_torcontract' },
-  extra_services: { branchId: 'alpha_phases', leafId: 'prj_extraservices' },
-  space_planning: { branchId: 'alpha_phases', leafId: 'prj_spaceplanning' },
-  moodboard: { branchId: 'alpha_phases', leafId: 'prj_moodboard' },
-  concept_approval: { branchId: 'alpha_phases', leafId: 'prj_concept' },
-  working_drawings: { branchId: 'alpha_phases', leafId: 'prj_drawings' },
-  specifications: { branchId: 'alpha_phases', leafId: 'prj_specifications' },
-  mep_integration: { branchId: 'alpha_phases', leafId: 'prj_mep' },
-  design_album_final: { branchId: 'alpha_phases', leafId: 'prj_album' },
-  procurement_list: { branchId: 'alpha_phases', leafId: 'prj_procurement' },
-  suppliers: { branchId: 'alpha_phases', leafId: 'prj_suppliers' },
-  procurement_status: { branchId: 'alpha_phases', leafId: 'prj_procurementstatus' },
-  construction_plan: { branchId: 'alpha_phases', leafId: 'prj_plan' },
-  work_status: { branchId: 'alpha_phases', leafId: 'prj_workstatus' },
-  work_log: { branchId: 'alpha_phases', leafId: 'prj_worklog' },
-  site_photos: { branchId: 'alpha_phases', leafId: 'prj_sitephotos' },
-  punch_list: { branchId: 'alpha_phases', leafId: 'prj_punchlist' },
-  commissioning_act: { branchId: 'alpha_phases', leafId: 'prj_commissioning' },
-  client_sign_off: { branchId: 'alpha_phases', leafId: 'prj_clientsignoff' },
-  materials: { branchId: 'alpha_phases', leafId: 'prj_materials' },
-}
 
 const MODERN_PROJECT_PAGES = [
   'first_contact',
@@ -869,22 +814,6 @@ const contentKey = computed(() => {
   return `adm-${currentProjectPage.value}`
 })
 
-const projectRegistryPageMeta: Record<string, { title: string; group: string }> = {
-  project_clients: { title: 'клиенты проекта', group: 'субъекты проекта' },
-  project_contractors: { title: 'подрядчики проекта', group: 'субъекты проекта' },
-  project_designers: { title: 'дизайнеры проекта', group: 'субъекты проекта' },
-  project_sellers: { title: 'поставщики проекта', group: 'субъекты проекта' },
-  project_managers: { title: 'менеджеры проекта', group: 'субъекты проекта' },
-}
-
-const PROJECT_REGISTRY_NODE_TO_PAGE: Record<string, string> = {
-  reg_clients_: 'project_clients',
-  reg_contractors_: 'project_contractors',
-  reg_designers_: 'project_designers',
-  reg_sellers_: 'project_sellers',
-  reg_managers_: 'project_managers',
-}
-
 const defaultPhasePage = computed(() => {
   const pages = project.value?.pages || []
   const firstVisiblePhasePage = getAdminNavGroups()
@@ -1025,10 +954,10 @@ const resolvedProjectPageFromNav = computed(() => {
   }
 
   if (spec.projectSection) {
-    return PRJ_SECTION_TO_SLUG[spec.projectSection] || null
+    return PROJECT_SECTION_TO_PAGE[spec.projectSection] || null
   }
 
-  for (const [prefix, page] of Object.entries(PROJECT_REGISTRY_NODE_TO_PAGE)) {
+  for (const [prefix, page] of Object.entries(PROJECT_REGISTRY_NODE_PREFIX_TO_PAGE)) {
     if (node.nodeId.startsWith(prefix)) {
       return page
     }
@@ -1070,7 +999,7 @@ const navGroups = computed(() => {
 
 const activePageTitle = computed(() => {
   if (currentProjectPage.value === 'overview') return 'обзор'
-  if (projectRegistryPageMeta[currentProjectPage.value]) return projectRegistryPageMeta[currentProjectPage.value].title
+  if (PROJECT_REGISTRY_PAGE_META[currentProjectPage.value]) return PROJECT_REGISTRY_PAGE_META[currentProjectPage.value].title
   return availablePages.value.find(page => page.slug === normalizedActivePage.value)?.title || project.value?.title || slug.value
 })
 
@@ -1083,7 +1012,7 @@ const navSearch = ref('')
 
 // Group label of the currently active page
 const activeGroupLabel = computed(() =>
-  projectRegistryPageMeta[currentProjectPage.value]?.group
+  PROJECT_REGISTRY_PAGE_META[currentProjectPage.value]?.group
     ?? navGroups.value.find(g => g.pages.some(p => p.slug === currentProjectPage.value))?.label
     ?? null
 )
@@ -1172,7 +1101,7 @@ watch(project, async (p) => {
 })
 
 watch(availablePages, (pages) => {
-  if (activePage.value === 'overview' || projectRegistryPageMeta[activePage.value]) {
+  if (activePage.value === 'overview' || PROJECT_REGISTRY_PAGE_META[activePage.value]) {
     return
   }
   const normalized = normalizedActivePage.value

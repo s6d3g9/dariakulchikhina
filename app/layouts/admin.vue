@@ -176,6 +176,8 @@
 </template>
 
 <script setup lang="ts">
+import { ADMIN_SECTION_ROUTES } from '~~/shared/constants/admin-navigation'
+
 const router = useRouter()
 const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
@@ -233,18 +235,18 @@ function withCtx(path: string) {
     : path
 }
 
-const isProjectsTab    = computed(() => route.path === '/admin' || route.path.startsWith('/admin/projects'))
-const isContractorsTab = computed(() => route.path.startsWith('/admin/contractors'))
-const isClientsTab     = computed(() => route.path.startsWith('/admin/clients'))
-const isGalleryTab     = computed(() => route.path.startsWith('/admin/gallery'))
-const isDocumentsTab   = computed(() => route.path.startsWith('/admin/documents'))
-const isDesignersTab   = computed(() => route.path.startsWith('/admin/designers'))
-const isSellersTab     = computed(() => route.path.startsWith('/admin/sellers'))
+const isProjectsTab    = computed(() => route.path === ADMIN_SECTION_ROUTES.projects || route.path.startsWith('/admin/projects'))
+const isContractorsTab = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.contractors))
+const isClientsTab     = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.clients))
+const isGalleryTab     = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.gallery))
+const isDocumentsTab   = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.docs))
+const isDesignersTab   = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.designers))
+const isSellersTab     = computed(() => route.path.startsWith(ADMIN_SECTION_ROUTES.sellers))
 
-const contractorsTabTo    = computed(() => withCtx('/admin/contractors'))
-const clientsTabTo        = computed(() => withCtx('/admin/clients'))
-const designersTabTo      = computed(() => withCtx('/admin/designers'))
-const sellersTabTo        = computed(() => withCtx('/admin/sellers'))
+const contractorsTabTo    = computed(() => withCtx(ADMIN_SECTION_ROUTES.contractors))
+const clientsTabTo        = computed(() => withCtx(ADMIN_SECTION_ROUTES.clients))
+const designersTabTo      = computed(() => withCtx(ADMIN_SECTION_ROUTES.designers))
+const sellersTabTo        = computed(() => withCtx(ADMIN_SECTION_ROUTES.sellers))
 const galleryActiveTabTo  = computed(() => {
   const match = GALLERY_TABS.find(g => route.path === `/admin/gallery/${g.slug}`)
   return withCtx(`/admin/gallery/${match?.slug ?? 'interiors'}`)

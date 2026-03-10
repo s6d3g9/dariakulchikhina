@@ -7,7 +7,14 @@
  *   ctxStack  — NavCtx[] для бизнес-логики (contentSpec)
  */
 
-import type { NavigationNode, PayloadItem } from '~/shared/types/navigation'
+import type { NavigationNode, PayloadItem } from '~~/shared/types/navigation'
+import {
+  getAdminCategoryRoute,
+  getAdminSectionRoute,
+  getProjectRoute,
+  getRegistryItemId,
+  getRegistryItemLabel,
+} from '~~/shared/constants/admin-navigation'
 
 interface NavCtx {
   section: string
@@ -64,17 +71,6 @@ function rootNode(): NavigationNode {
       { id: 'cat_tariffs',     name: 'Тарифы',      type: 'node' },
     ],
   }
-}
-
-const SECTION_ROUTES: Record<string, string> = {
-  cat_projects:    '/admin',
-  cat_clients:     '/admin/clients',
-  cat_designers:   '/admin/designers',
-  cat_contractors: '/admin/contractors',
-  cat_sellers:     '/admin/sellers',
-  cat_managers:    '/admin/managers',
-  cat_docs:        '/admin/documents',
-  cat_gallery:     '/admin/gallery',
 }
 
 const DESIGNER_CABINET_ITEMS: PayloadItem[] = [
@@ -372,7 +368,7 @@ async function buildNextNode(
   // ── ROOT → registry секций ────────────────────────────────────────────────
   if (current.nodeId === 'root') {
     newCtx.section = item.id.replace('cat_', '')
-    const route = SECTION_ROUTES[item.id]
+    const route = getAdminCategoryRoute(item.id)
     if (route) router.push(route)
 
     if (item.id === 'cat_docs') {
@@ -431,8 +427,8 @@ async function buildNextNode(
       context: { title, breadcrumbs: [...crumbs, title] },
       filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
       payload: data.map((e: any) => ({
-        id: String(e.id ?? e.slug),
-        name: e.name ?? e.title ?? e.slug ?? String(e.id),
+        id: getRegistryItemId(newCtx.section, e),
+        name: getRegistryItemLabel(e),
         type: 'node' as const,
       })),
     }}
@@ -445,7 +441,7 @@ async function buildNextNode(
     if (section === 'designers') {
       newCtx.designerId   = Number(item.id)
       newCtx.designerName = item.name
-      router.push('/admin/designers')
+      router.push(getAdminSectionRoute('designers') || '/admin/designers')
       return { ctx: newCtx, node: {
         step: 'C', nodeId: `cab_designer_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
@@ -456,7 +452,7 @@ async function buildNextNode(
     if (section === 'clients') {
       newCtx.clientId   = Number(item.id)
       newCtx.clientName = item.name
-      router.push('/admin/clients')
+      router.push(getAdminSectionRoute('clients') || '/admin/clients')
       return { ctx: newCtx, node: {
         step: 'C', nodeId: `cab_client_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
@@ -467,7 +463,7 @@ async function buildNextNode(
     if (section === 'contractors') {
       newCtx.contractorId   = Number(item.id)
       newCtx.contractorName = item.name
-      router.push('/admin/contractors')
+      router.push(getAdminSectionRoute('contractors') || '/admin/contractors')
       return { ctx: newCtx, node: {
         step: 'C', nodeId: `cab_contractor_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
@@ -478,7 +474,7 @@ async function buildNextNode(
     if (section === 'sellers') {
       newCtx.sellerId   = Number(item.id)
       newCtx.sellerName = item.name
-      router.push('/admin/sellers')
+      router.push(getAdminSectionRoute('sellers') || '/admin/sellers')
       return { ctx: newCtx, node: {
         step: 'C', nodeId: `cab_seller_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
@@ -489,7 +485,7 @@ async function buildNextNode(
     if (section === 'managers') {
       newCtx.managerId   = Number(item.id)
       newCtx.managerName = item.name
-      router.push('/admin/managers')
+      router.push(getAdminSectionRoute('managers') || '/admin/managers')
       return { ctx: newCtx, node: {
         step: 'C', nodeId: `cab_manager_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
@@ -500,7 +496,7 @@ async function buildNextNode(
     if (section === 'projects') {
       newCtx.projectSlug  = item.id
       newCtx.projectTitle = item.name
-      router.push(`/admin/projects/${item.id}`)
+      router.push(getProjectRoute(item.id))
       return { ctx: newCtx, node: {
         step: 'C', nodeId: `cab_project_${item.id}`, nodeType: 'project_root',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
@@ -588,8 +584,8 @@ async function buildNextNode(
           context: { title: `${title} — ${current.context.title}`, breadcrumbs: [...crumbs, title] },
           filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
           payload: data.map((e: any) => ({
-            id: String(e.id ?? e.slug),
-            name: e.name ?? e.title ?? e.slug ?? String(e.id),
+            id: getRegistryItemId(sub, e),
+            name: getRegistryItemLabel(e),
             type: 'node' as const,
           })),
         },
@@ -657,8 +653,8 @@ async function buildNextNode(
         context: { title: `${title} — ${current.context.title}`, breadcrumbs: [...crumbs, title] },
         filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
         payload: data.map((e: any) => ({
-          id: String(e.id ?? e.slug),
-          name: e.name ?? e.title ?? e.slug ?? String(e.id),
+          id: getRegistryItemId(sub, e),
+          name: getRegistryItemLabel(e),
           type: 'node' as const,
         })),
       },
