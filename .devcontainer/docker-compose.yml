@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    network_mode: host
+    environment:
+      - DATABASE_URL=postgresql://daria:daria_secret_2026@localhost:5433/daria_admin
+      - NUXT_SESSION_SECRET=daria2026supersecretkeyatleast32chars!!
+      - REDIS_URL=redis://localhost:6380
+      - NODE_ENV=development
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: daria
+      POSTGRES_PASSWORD: daria_secret_2026
+      POSTGRES_DB: daria_admin
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    command: redis-server --save 60 1 --loglevel warning
+
+volumes:
+  postgres-data:
