@@ -66,6 +66,27 @@ export default defineNuxtConfig({
         }
       }
     },
+    // Nitro maintains its own server-side unimport context and still scans
+    // shared/types unless it is pruned separately.
+    'nitro:config'(nitroConfig) {
+      const pruneSharedTypes = (dirs?: string[]) => {
+        if (!dirs) {
+          return
+        }
+
+        for (let i = dirs.length - 1; i >= 0; i--) {
+          if ((dirs[i] ?? '').replace(/\\/g, '/').includes('shared/types')) {
+            dirs.splice(i, 1)
+          }
+        }
+      }
+
+      if (nitroConfig.imports && nitroConfig.imports !== false) {
+        pruneSharedTypes(nitroConfig.imports.dirs)
+      }
+
+      pruneSharedTypes(nitroConfig.scanDirs)
+    },
   },
 
   typescript: {
