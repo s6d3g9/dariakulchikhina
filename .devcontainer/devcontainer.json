@@ -1,6 +1,6 @@
 {
   "name": "dariakulchikhina",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "image": "ghcr.io/devcontainers/images/javascript-node:1-22-bookworm",
   "remoteUser": "vscode",
   "init": true,
   "overrideCommand": false,
