@@ -901,6 +901,56 @@
                     <label class="dp-label">gap <span class="dp-val">{{ tokens.gridGap }}px</span></label>
                     <input type="range" min="4" max="32" step="1" :value="tokens.gridGap" class="dp-range" @input="onRange('gridGap', $event)">
                   </div>
+                  <div class="dp-field">
+                    <label class="dp-label">колонки контента <span class="dp-val">{{ tokens.gridColumns }}</span></label>
+                    <input type="range" min="2" max="12" step="1" :value="tokens.gridColumns" class="dp-range" @input="onRange('gridColumns', $event)">
+                  </div>
+                </div>
+                <div class="dp-col">
+                  <div class="dp-col-label">Генератор контента</div>
+                  <div class="dp-field">
+                    <label class="dp-label">раскладка контента <span class="dp-val">{{ activeContentLayoutLabel }}</span></label>
+                    <div class="dp-chip-picker">
+                      <div class="dp-chip-pool">
+                        <button
+                          v-for="preset in contentLayoutPresets"
+                          :key="`content-layout-${preset.id}`"
+                          type="button"
+                          class="dp-chip"
+                          :class="{ 'dp-chip--active': activeContentLayoutId === preset.id }"
+                          @click="applyContentLayoutPreset(preset.id)"
+                        >{{ preset.label }}</button>
+                      </div>
+                    </div>
+                    <div class="dp-field-hint">Меняет ширину контейнера, число колонок, ритм секций и характер карточек в основной области.</div>
+                  </div>
+                  <div class="dp-field">
+                    <div class="dp-menu-generator-actions">
+                      <button type="button" class="dp-sm-btn" @click="generateContentLayout">сгенерировать</button>
+                      <button type="button" class="dp-sm-btn" @click="applyContentLayoutPreset('balanced')">сбросить</button>
+                    </div>
+                  </div>
+                  <div class="dp-content-preview">
+                    <div class="dp-content-preview-shell" :style="contentPreviewStyle">
+                      <div class="dp-content-preview-hero">
+                        <div class="dp-content-preview-kicker">{{ activeContentLayoutLabel }}</div>
+                        <div class="dp-content-preview-title">{{ activeContentLayoutDescription }}</div>
+                      </div>
+                      <div class="dp-content-preview-grid" :class="`dp-content-preview-grid--${tokens.archSectionStyle || 'flat'}`">
+                        <article
+                          v-for="card in contentPreviewCards"
+                          :key="card.title"
+                          class="dp-content-preview-card"
+                          :class="{ 'dp-content-preview-card--accent': card.accent }"
+                          :style="{ gridColumn: `span ${card.span}` }"
+                        >
+                          <div class="dp-content-preview-card-eyebrow">{{ card.eyebrow }}</div>
+                          <div class="dp-content-preview-card-title">{{ card.title }}</div>
+                          <div class="dp-content-preview-card-text">{{ card.text }}</div>
+                        </article>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div class="dp-col">
                   <div class="dp-col-label">Генератор меню</div>
@@ -2020,6 +2070,50 @@ const archNavTransitions = [
   { id: 'stack' as const, label: 'stack' },
   { id: 'blur'  as const, label: 'blur' },
 ]
+const contentLayoutPresets = [
+  { id: 'balanced' as const, label: 'баланс', description: 'Универсальная двухколоночная раскладка с ровным ритмом.' },
+  { id: 'editorial' as const, label: 'редакция', description: 'Шире контейнер, меньше карточного хрома, больше воздуха.' },
+  { id: 'dashboard' as const, label: 'дашборд', description: 'Более плотная сетка с компактными аналитическими карточками.' },
+  { id: 'showcase' as const, label: 'витрина', description: 'Крупные hero-карточки и широкий межсекционный ритм.' },
+]
+const contentLayoutRecipes: Record<(typeof contentLayoutPresets)[number]['id'], Partial<DesignTokens>> = {
+  balanced: {
+    containerWidth: 1180,
+    gridColumns: 12,
+    gridGap: 16,
+    archDensity: 'normal',
+    archVerticalRhythm: 1,
+    archSectionStyle: 'flat',
+    archCardChrome: 'visible',
+  },
+  editorial: {
+    containerWidth: 1320,
+    gridColumns: 10,
+    gridGap: 24,
+    archDensity: 'airy',
+    archVerticalRhythm: 1.5,
+    archSectionStyle: 'flat',
+    archCardChrome: 'ghost',
+  },
+  dashboard: {
+    containerWidth: 1240,
+    gridColumns: 12,
+    gridGap: 12,
+    archDensity: 'dense',
+    archVerticalRhythm: 0.8,
+    archSectionStyle: 'card',
+    archCardChrome: 'visible',
+  },
+  showcase: {
+    containerWidth: 1380,
+    gridColumns: 8,
+    gridGap: 28,
+    archDensity: 'grand',
+    archVerticalRhythm: 1.8,
+    archSectionStyle: 'striped',
+    archCardChrome: 'subtle',
+  },
+}
 const navLayoutPresets = [
   { id: 'compact' as const, label: 'компактно', description: 'Плотная и быстрая вертикаль для длинных деревьев.' },
   { id: 'balanced' as const, label: 'баланс', description: 'Нейтральная раскладка для повседневной работы.' },
@@ -2149,6 +2243,64 @@ const currentScaleLabel = computed(() =>
   TYPE_SCALE_OPTIONS.find(s => Math.abs(s.ratio - tokens.value.typeScale) < 0.005)?.label || `${tokens.value.typeScale.toFixed(3)}`
 )
 
+const activeContentLayoutId = ref<(typeof contentLayoutPresets)[number]['id']>('balanced')
+
+const activeContentLayout = computed(() =>
+  contentLayoutPresets.find(preset => preset.id === activeContentLayoutId.value) || contentLayoutPresets[0]
+)
+
+const activeContentLayoutLabel = computed(() => activeContentLayout.value.label)
+
+const activeContentLayoutDescription = computed(() => activeContentLayout.value.description)
+
+const contentPreviewCards = computed(() => {
+  const columns = Math.max(2, Math.min(12, tokens.value.gridColumns || 12))
+  const wideSpan = Math.max(2, Math.min(columns, columns >= 10 ? 6 : Math.ceil(columns * 0.6)))
+  const midSpan = Math.max(2, Math.min(columns, columns >= 8 ? 4 : Math.ceil(columns / 2)))
+  const smallSpan = Math.max(1, Math.min(columns, Math.ceil(columns / 3)))
+
+  if (activeContentLayoutId.value === 'dashboard') {
+    return [
+      { title: 'KPI блок', eyebrow: 'метрика', text: 'Короткая сводка и статус.', span: smallSpan, accent: true },
+      { title: 'Дорожная карта', eyebrow: 'процесс', text: 'Компактная аналитическая секция.', span: midSpan, accent: false },
+      { title: 'Финансы', eyebrow: 'контроль', text: 'Табличный блок с плотным ритмом.', span: smallSpan, accent: false },
+      { title: 'Материалы', eyebrow: 'реестр', text: 'Карточка среднего масштаба.', span: midSpan, accent: false },
+      { title: 'Подрядчики', eyebrow: 'команда', text: 'Регистровая колонка с быстрым доступом.', span: midSpan, accent: false },
+    ]
+  }
+
+  if (activeContentLayoutId.value === 'showcase') {
+    return [
+      { title: 'Hero секция', eyebrow: 'витрина', text: 'Крупный вводный блок с выразительной типографикой.', span: columns, accent: true },
+      { title: 'Галерея проекта', eyebrow: 'контент', text: 'Широкая карточка для визуального нарратива.', span: wideSpan, accent: false },
+      { title: 'Матрица задач', eyebrow: 'матрица', text: 'Высокая секция для ритма и навигации.', span: columns - wideSpan || midSpan, accent: false },
+      { title: 'Технический блок', eyebrow: 'данные', text: 'Подчинённая карточка с сухими деталями.', span: midSpan, accent: false },
+    ]
+  }
+
+  if (activeContentLayoutId.value === 'editorial') {
+    return [
+      { title: 'Вводный разворот', eyebrow: 'редакция', text: 'Воздух, широкий контейнер и длинные строки.', span: wideSpan, accent: true },
+      { title: 'Служебные данные', eyebrow: 'поля', text: 'Вторичная колонка для сопровождающей информации.', span: columns - wideSpan || midSpan, accent: false },
+      { title: 'Основной материал', eyebrow: 'контент', text: 'Крупный текстовый блок с большим межсекционным ритмом.', span: columns, accent: false },
+    ]
+  }
+
+  return [
+    { title: 'Обзор проекта', eyebrow: 'баланс', text: 'Ровная шапка и стабильный рабочий ритм.', span: wideSpan, accent: true },
+    { title: 'Сводка', eyebrow: 'метаданные', text: 'Спутниковая карточка рядом с основным блоком.', span: columns - wideSpan || midSpan, accent: false },
+    { title: 'Рабочая секция', eyebrow: 'контент', text: 'Базовая карточка для форм и регистров.', span: midSpan, accent: false },
+    { title: 'Документы', eyebrow: 'реестр', text: 'Секция под таблицы и документы.', span: midSpan, accent: false },
+  ]
+})
+
+const contentPreviewStyle = computed(() => ({
+  '--dp-content-preview-width': `${Math.max(320, Math.min(560, tokens.value.containerWidth * 0.34))}px`,
+  '--dp-content-preview-gap': `${tokens.value.gridGap}px`,
+  '--dp-content-preview-columns': String(Math.max(2, Math.min(12, tokens.value.gridColumns || 12))),
+  '--dp-content-preview-rhythm': String(tokens.value.archVerticalRhythm ?? 1),
+}))
+
 const menuPreviewItems = ['обзор', 'планировка', 'материалы', 'подрядчики', 'документы']
 
 const activeNavLayout = computed(() =>
@@ -2183,6 +2335,24 @@ function generateNavLayout() {
   set('navItemPaddingV', Math.min(18, Math.max(6, tokens.value.navItemPaddingV + (Math.floor(Math.random() * 5) - 2))))
   set('navListGap', Math.min(10, Math.max(1, tokens.value.navListGap + (Math.floor(Math.random() * 5) - 2))))
   set('navPanelGap', Math.min(18, Math.max(4, tokens.value.navPanelGap + (Math.floor(Math.random() * 5) - 2))))
+}
+
+function applyContentLayoutPreset(presetId: (typeof contentLayoutPresets)[number]['id']) {
+  activeContentLayoutId.value = presetId
+  const recipe = contentLayoutRecipes[presetId]
+  if (!recipe) return
+  for (const [key, value] of Object.entries(recipe) as Array<[keyof DesignTokens, DesignTokens[keyof DesignTokens]]>) {
+    set(key, value)
+  }
+}
+
+function generateContentLayout() {
+  const preset = contentLayoutPresets[Math.floor(Math.random() * contentLayoutPresets.length)]
+  applyContentLayoutPreset(preset.id)
+  set('containerWidth', Math.min(1400, Math.max(980, tokens.value.containerWidth + (Math.floor(Math.random() * 7) - 3) * 20)))
+  set('gridColumns', Math.min(12, Math.max(2, tokens.value.gridColumns + (Math.floor(Math.random() * 5) - 2))))
+  set('gridGap', Math.min(32, Math.max(8, tokens.value.gridGap + (Math.floor(Math.random() * 5) - 2) * 2)))
+  set('archVerticalRhythm', Math.min(2.4, Math.max(0.7, Number(((tokens.value.archVerticalRhythm ?? 1) + (Math.random() * 0.6 - 0.3)).toFixed(1)))))
 }
 
 /* ── Section search filter ──────────────────────── */
@@ -3572,6 +3742,72 @@ onBeforeUnmount(() => {
   line-height: 1.4;
   opacity: .52;
 }
+.dp-content-preview {
+  margin-top: 10px;
+}
+.dp-content-preview-shell {
+  width: min(100%, var(--dp-content-preview-width, 440px));
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(0,0,0,.022);
+  padding: 12px;
+}
+.dp-content-preview-hero {
+  margin-bottom: calc(10px * var(--dp-content-preview-rhythm, 1));
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+.dp-content-preview-kicker {
+  font-size: .54rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  opacity: .44;
+  margin-bottom: 6px;
+}
+.dp-content-preview-title {
+  font-size: .72rem;
+  line-height: 1.45;
+  opacity: .78;
+}
+.dp-content-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--dp-content-preview-columns, 12), minmax(0, 1fr));
+  gap: var(--dp-content-preview-gap, 16px);
+}
+.dp-content-preview-grid--striped .dp-content-preview-card:nth-child(even) {
+  background: rgba(0,0,0,.05);
+}
+.dp-content-preview-grid--flat .dp-content-preview-card {
+  box-shadow: none;
+}
+.dp-content-preview-card {
+  min-height: 88px;
+  padding: 10px;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(255,255,255,.45);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dp-content-preview-card--accent {
+  background: rgba(0,0,0,.08);
+  border-color: rgba(0,0,0,.16);
+}
+.dp-content-preview-card-eyebrow {
+  font-size: .52rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  opacity: .42;
+}
+.dp-content-preview-card-title {
+  font-size: .68rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.dp-content-preview-card-text {
+  font-size: .58rem;
+  line-height: 1.45;
+  opacity: .68;
+}
 .dp-arch-nav-preview {
   display: grid;
   gap: 6px;
@@ -3623,13 +3859,20 @@ onBeforeUnmount(() => {
   to { opacity: 1; transform: translateX(0) scale(1); }
 }
 :global(html.dark) .dp-grid-menu-preview-shell,
+:global(html.dark) .dp-content-preview-shell,
 :global(html.dark) .dp-grid-menu-preview-search,
 :global(html.dark) .dp-grid-menu-preview-item,
+:global(html.dark) .dp-content-preview-hero,
+:global(html.dark) .dp-content-preview-card,
 :global(html.dark) .dp-arch-nav-preview-item {
   border-color: rgba(255,255,255,.1);
   background: rgba(255,255,255,.03);
 }
 :global(html.dark) .dp-grid-menu-preview-item--active {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.18);
+}
+:global(html.dark) .dp-content-preview-card--accent {
   background: rgba(255,255,255,.08);
   border-color: rgba(255,255,255,.18);
 }
