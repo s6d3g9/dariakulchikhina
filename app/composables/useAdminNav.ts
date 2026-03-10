@@ -19,6 +19,8 @@ interface NavCtx {
   contractorName?: string
   sellerId?: number
   sellerName?: string
+  managerId?: number
+  managerName?: string
   projectSlug?: string
   projectTitle?: string
 }
@@ -32,6 +34,8 @@ export interface ContentSpec {
   contractorSection: string | null
   sellerId: number | null
   sellerSection: string | null
+  managerId: number | null
+  managerSection: string | null
   projectSlug: string | null
   projectSection: string | null
   galleryCategory: string | null
@@ -67,6 +71,7 @@ const SECTION_ROUTES: Record<string, string> = {
   cat_designers:   '/admin/designers',
   cat_contractors: '/admin/contractors',
   cat_sellers:     '/admin/sellers',
+  cat_managers:    '/admin/managers',
   cat_docs:        '/admin/documents',
   cat_gallery:     '/admin/gallery',
 }
@@ -114,6 +119,15 @@ const SELLER_CABINET_ITEMS: PayloadItem[] = [
   { id: 'sel_requisites',  name: 'Реквизиты',  type: 'leaf' },
   { id: 'sel_terms',       name: 'Условия',    type: 'leaf' },
   { id: 'sel_projects',    name: 'Проекты',    type: 'leaf' },
+]
+
+const MANAGER_CABINET_ITEMS: PayloadItem[] = [
+  { id: 'man_dashboard',  name: 'Обзор',         type: 'leaf' },
+  { id: 'man_projects',   name: 'Проекты',       type: 'leaf' },
+  { id: 'man_feed',       name: 'Лента событий', type: 'leaf' },
+  { id: 'man_approvals',  name: 'Согласования',  type: 'leaf' },
+  { id: 'man_reports',    name: 'Отчёты',        type: 'leaf' },
+  { id: 'man_profile',    name: 'Профиль',       type: 'leaf' },
 ]
 
 // Кабинет проекта — узлы верхнего уровня (alpha_*)
@@ -201,6 +215,8 @@ export function useAdminNav() {
       contractorSection: leaf.startsWith('con_') ? leaf.replace('con_', '') : null,
       sellerId:          ctx.sellerId ?? null,
       sellerSection:     leaf.startsWith('sel_') ? leaf.replace('sel_', '') : null,
+      managerId:         ctx.managerId ?? null,
+      managerSection:    leaf.startsWith('man_') ? leaf.replace('man_', '') : null,
       projectSlug:      ctx.projectSlug ?? null,
       projectSection:   leaf.startsWith('prj_') ? leaf.replace('prj_', '') : null,
       galleryCategory:  leaf.startsWith('gal_') ? leaf.replace('gal_', '') : null,
@@ -340,13 +356,12 @@ async function buildNextNode(
         payload: GALLERY_ITEMS.filter(g => g.id === 'gal_moodboards'),
       }}
     }
-    // cat_managers, cat_tariffs — заглушки до появления API
-    if (item.id === 'cat_managers' || item.id === 'cat_tariffs') {
-      const title = item.id === 'cat_managers' ? 'Менеджеры' : 'Тарифы'
+    // cat_tariffs — заглушка до появления API
+    if (item.id === 'cat_tariffs') {
       return { ctx: newCtx, node: {
         step: 'B', nodeId: `reg_${newCtx.section}`, nodeType: 'registry',
-        context: { title, breadcrumbs: [...crumbs, title] },
-        filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
+        context: { title: 'Тарифы', breadcrumbs: [...crumbs, 'Тарифы'] },
+        filter: { placeholder: 'Поиск по тарифам...', value: '' },
         payload: [],
       }}
     }
@@ -357,10 +372,12 @@ async function buildNextNode(
       cat_clients:     '/api/clients',
       cat_contractors: '/api/contractors',
       cat_sellers:     '/api/sellers',
+      cat_managers:    '/api/managers',
     }
     const titleMap: Record<string, string> = {
       cat_projects: 'Проекты', cat_designers: 'Дизайнеры', cat_clients: 'Клиенты',
       cat_contractors: 'Подрядчики', cat_sellers: 'Поставщики',
+      cat_managers: 'Менеджеры',
     }
     const api = apiMap[item.id]
     if (!api) return null
@@ -426,6 +443,17 @@ async function buildNextNode(
         payload: SELLER_CABINET_ITEMS,
       }}
     }
+    if (section === 'managers') {
+      newCtx.managerId   = Number(item.id)
+      newCtx.managerName = item.name
+      router.push('/admin/managers')
+      return { ctx: newCtx, node: {
+        step: 'C', nodeId: `cab_manager_${item.id}`, nodeType: 'cabinet',
+        context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
+        filter: { placeholder: 'Поиск по разделам...', value: '' },
+        payload: MANAGER_CABINET_ITEMS,
+      }}
+    }
     if (section === 'projects') {
       newCtx.projectSlug  = item.id
       newCtx.projectTitle = item.name
@@ -476,13 +504,24 @@ async function buildNextNode(
         payload: GALLERY_ITEMS.filter(g => g.id === 'gal_moodboards'),
       }}
     }
-    if (sub === 'tariff' || sub === 'managers') {
-      const title = sub === 'tariff' ? 'Тариф' : 'Менеджеры'
+    if (sub === 'tariff') {
       return { ctx: newCtx, node: {
-        step: 'F', nodeId: `reg_${sub}_${current.nodeId}`, nodeType: 'registry',
-        context: { title: `${title} — ${current.context.title}`, breadcrumbs: [...crumbs, title] },
-        filter: { placeholder: `Поиск по ${title.toLowerCase()}...`, value: '' },
+        step: 'F', nodeId: `reg_tariff_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Тариф — ${current.context.title}`, breadcrumbs: [...crumbs, 'Тариф'] },
+        filter: { placeholder: 'Поиск по тарифам...', value: '' },
         payload: [],
+      }}
+    }
+    if (sub === 'managers') {
+      const slug = newCtx.projectSlug
+      const data = await $fetch<any[]>(`/api/managers${slug ? `?projectSlug=${slug}` : ''}`).catch(() => [])
+      return { ctx: { ...newCtx, section: 'managers' }, node: {
+        step: 'F', nodeId: `reg_managers_${current.nodeId}`, nodeType: 'registry',
+        context: { title: `Менеджеры — ${current.context.title}`, breadcrumbs: [...crumbs, 'Менеджеры'] },
+        filter: { placeholder: 'Поиск по менеджерам...', value: '' },
+        payload: data.map((e: any) => ({
+          id: String(e.id), name: e.name ?? String(e.id), type: 'node' as const,
+        })),
       }}
     }
     // Субъекты проекта (clients/contractors/sellers/designers) → реестр из API
@@ -494,6 +533,7 @@ async function buildNextNode(
       clients: 'Клиенты', contractors: 'Подрядчики',
       sellers: 'Поставщики', designers: 'Дизайнеры',
     }
+    // Note: managers handled above with project-scoped query
     const prjApi = prjSubApi[sub]
     if (prjApi) {
       const data = await $fetch<any[]>(prjApi).catch(() => [])
@@ -515,9 +555,9 @@ async function buildNextNode(
     return null
   }
 
-  // ── CABINET → вложенные реестры (des_|cli_|con_|sel_| prefix) ────────────
+  // ── CABINET → вложенные реестры (des_|cli_|con_|sel_|man_ prefix) ────────
   if (current.nodeType === 'cabinet') {
-    const sub = item.id.replace(/^(des_|cli_|con_|sel_)/, '')
+    const sub = item.id.replace(/^(des_|cli_|con_|sel_|man_)/, '')
 
     if (sub === 'documents') {
       return { ctx: newCtx, node: {
@@ -544,11 +584,14 @@ async function buildNextNode(
       }}
     }
     if (sub === 'managers') {
+      const data = await $fetch<any[]>('/api/managers').catch(() => [])
       return { ctx: newCtx, node: {
         step: 'D', nodeId: `reg_managers_${current.nodeId}`, nodeType: 'registry',
         context: { title: `Менеджеры — ${current.context.title}`, breadcrumbs: [...crumbs, 'Менеджеры'] },
         filter: { placeholder: 'Поиск по менеджерам...', value: '' },
-        payload: [],
+        payload: data.map((e: any) => ({
+          id: String(e.id), name: e.name ?? String(e.id), type: 'node' as const,
+        })),
       }}
     }
 
