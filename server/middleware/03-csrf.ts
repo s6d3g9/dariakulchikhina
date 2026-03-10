@@ -18,6 +18,7 @@ const EXEMPT_ROUTES = new Set([
   '/api/auth/login',
   '/api/auth/contractor-login',
   '/api/auth/client-login',
+  '/api/auth/designer-login',
 ])
 
 function readCsrfCookie(event: any): string | undefined {
