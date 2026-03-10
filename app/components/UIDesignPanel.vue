@@ -258,31 +258,31 @@
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorPageBg || 'var(--glass-page-bg, #f3f4f6)' }" />
                       <label class="dp-clr-chip-label">страница</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorPageBg || '#f3f4f6'" @input="set('colorPageBg', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorPageBg, '#f3f4f6')" @input="set('colorPageBg', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorPageBg" type="button" class="dp-clr-chip-reset" @click="set('colorPageBg', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorSurface || 'var(--glass-bg, rgba(255,255,255,.5))' }" />
                       <label class="dp-clr-chip-label">карточки</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorSurface || '#ffffff'" @input="set('colorSurface', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorSurface, '#ffffff')" @input="set('colorSurface', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorSurface" type="button" class="dp-clr-chip-reset" @click="set('colorSurface', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorNavBg || 'var(--ds-nav-bg, var(--glass-bg, rgba(255,255,255,.4)))' }" />
                       <label class="dp-clr-chip-label">навигация</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorNavBg || '#ffffff'" @input="set('colorNavBg', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorNavBg, '#ffffff')" @input="set('colorNavBg', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorNavBg" type="button" class="dp-clr-chip-reset" @click="set('colorNavBg', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorCardBg || 'var(--ds-card-bg, var(--glass-bg, rgba(255,255,255,.5)))' }" />
                       <label class="dp-clr-chip-label">модальные</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorCardBg || '#ffffff'" @input="set('colorCardBg', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorCardBg, '#ffffff')" @input="set('colorCardBg', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorCardBg" type="button" class="dp-clr-chip-reset" @click="set('colorCardBg', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorBorder || 'var(--glass-border, rgba(180,180,220,.2))' }" />
                       <label class="dp-clr-chip-label">границы</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorBorder || '#b4b4dc'" @input="set('colorBorder', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorBorder, '#b4b4dc')" @input="set('colorBorder', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorBorder" type="button" class="dp-clr-chip-reset" @click="set('colorBorder', '')">✕</button>
                     </div>
                   </div>
@@ -295,25 +295,25 @@
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorText || 'var(--glass-text, #1f1f1f)' }" />
                       <label class="dp-clr-chip-label">основной</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorText || '#1f1f1f'" @input="set('colorText', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorText, '#1f1f1f')" @input="set('colorText', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorText" type="button" class="dp-clr-chip-reset" @click="set('colorText', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorHeading || 'var(--ds-heading-color, var(--glass-text, #1f1f1f))' }" />
                       <label class="dp-clr-chip-label">заголовки</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorHeading || '#1f1f1f'" @input="set('colorHeading', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorHeading, '#1f1f1f')" @input="set('colorHeading', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorHeading" type="button" class="dp-clr-chip-reset" @click="set('colorHeading', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorMuted || 'var(--ds-muted, #888)' }" />
                       <label class="dp-clr-chip-label">второстепенный</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorMuted || '#888888'" @input="set('colorMuted', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorMuted, '#888888')" @input="set('colorMuted', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorMuted" type="button" class="dp-clr-chip-reset" @click="set('colorMuted', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorLink || 'var(--ds-link-color, #3b6bdb)' }" />
                       <label class="dp-clr-chip-label">ссылки</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorLink || '#3b6bdb'" @input="set('colorLink', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorLink, '#3b6bdb')" @input="set('colorLink', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorLink" type="button" class="dp-clr-chip-reset" @click="set('colorLink', '')">✕</button>
                     </div>
                   </div>
@@ -326,31 +326,31 @@
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorBtnBg || 'var(--btn-bg-base, rgba(0,0,0,.07))' }" />
                       <label class="dp-clr-chip-label">кнопка (фон)</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorBtnBg || '#000000'" @input="set('colorBtnBg', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorBtnBg, '#000000')" @input="set('colorBtnBg', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorBtnBg" type="button" class="dp-clr-chip-reset" @click="set('colorBtnBg', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorBtnText || 'var(--btn-color, var(--glass-text, #1f1f1f))' }" />
                       <label class="dp-clr-chip-label">кнопка (текст)</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorBtnText || '#1f1f1f'" @input="set('colorBtnText', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorBtnText, '#1f1f1f')" @input="set('colorBtnText', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorBtnText" type="button" class="dp-clr-chip-reset" @click="set('colorBtnText', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorInputBg || 'var(--input-bg, rgba(0,0,0,.04))' }" />
                       <label class="dp-clr-chip-label">поле ввода</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorInputBg || '#f5f5f5'" @input="set('colorInputBg', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorInputBg, '#f5f5f5')" @input="set('colorInputBg', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorInputBg" type="button" class="dp-clr-chip-reset" @click="set('colorInputBg', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorTagBg || 'var(--ds-tag-bg, var(--chip-bg, rgba(0,0,0,.06)))' }" />
                       <label class="dp-clr-chip-label">тег (фон)</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorTagBg || '#e5e7eb'" @input="set('colorTagBg', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorTagBg, '#e5e7eb')" @input="set('colorTagBg', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorTagBg" type="button" class="dp-clr-chip-reset" @click="set('colorTagBg', '')">✕</button>
                     </div>
                     <div class="dp-clr-chip">
                       <div class="dp-clr-chip-swatch" :style="{ background: tokens.colorTagText || 'var(--ds-tag-color, var(--glass-text, #1f1f1f))' }" />
                       <label class="dp-clr-chip-label">тег (текст)</label>
-                      <input type="color" class="dp-clr-chip-input" :value="tokens.colorTagText || '#374151'" @input="set('colorTagText', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-clr-chip-input" :value="colorInputValue(tokens.colorTagText, '#374151')" @input="set('colorTagText', ($event.target as HTMLInputElement).value)">
                       <button v-if="tokens.colorTagText" type="button" class="dp-clr-chip-reset" @click="set('colorTagText', '')">✕</button>
                     </div>
                   </div>
@@ -371,21 +371,21 @@
                   <div class="dp-field">
                     <label class="dp-label">страница <button v-if="tokens.colorPageBg" type="button" class="dp-clr-reset" @click="set('colorPageBg', '')" title="Сбросить">✕</button></label>
                     <div class="dp-clr-row">
-                      <input type="color" class="dp-color-input" :value="tokens.colorPageBg || '#f3f4f6'" @input="set('colorPageBg', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-color-input" :value="colorInputValue(tokens.colorPageBg, '#f3f4f6')" @input="set('colorPageBg', ($event.target as HTMLInputElement).value)">
                       <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorPageBg }">{{ tokens.colorPageBg || 'авто' }}</span>
                     </div>
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">поверхности / панели <button v-if="tokens.colorSurface" type="button" class="dp-clr-reset" @click="set('colorSurface', '')" title="Сбросить">✕</button></label>
                     <div class="dp-clr-row">
-                      <input type="color" class="dp-color-input" :value="tokens.colorSurface || '#ffffff'" @input="set('colorSurface', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-color-input" :value="colorInputValue(tokens.colorSurface, '#ffffff')" @input="set('colorSurface', ($event.target as HTMLInputElement).value)">
                       <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorSurface }">{{ tokens.colorSurface || 'авто' }}</span>
                     </div>
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">границы / рамки <button v-if="tokens.colorBorder" type="button" class="dp-clr-reset" @click="set('colorBorder', '')" title="Сбросить">✕</button></label>
                     <div class="dp-clr-row">
-                      <input type="color" class="dp-color-input" :value="tokens.colorBorder || '#ffffff'" @input="set('colorBorder', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-color-input" :value="colorInputValue(tokens.colorBorder, '#ffffff')" @input="set('colorBorder', ($event.target as HTMLInputElement).value)">
                       <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorBorder }">{{ tokens.colorBorder || 'авто' }}</span>
                     </div>
                   </div>
@@ -398,21 +398,21 @@
                   <div class="dp-field">
                     <label class="dp-label">основной текст <button v-if="tokens.colorText" type="button" class="dp-clr-reset" @click="set('colorText', '')" title="Сбросить">✕</button></label>
                     <div class="dp-clr-row">
-                      <input type="color" class="dp-color-input" :value="tokens.colorText || '#1f1f1f'" @input="set('colorText', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-color-input" :value="colorInputValue(tokens.colorText, '#1f1f1f')" @input="set('colorText', ($event.target as HTMLInputElement).value)">
                       <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorText }">{{ tokens.colorText || 'авто' }}</span>
                     </div>
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">заголовки h1–h6 <button v-if="tokens.colorHeading" type="button" class="dp-clr-reset" @click="set('colorHeading', '')" title="Сбросить">✕</button></label>
                     <div class="dp-clr-row">
-                      <input type="color" class="dp-color-input" :value="tokens.colorHeading || '#1f1f1f'" @input="set('colorHeading', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-color-input" :value="colorInputValue(tokens.colorHeading, '#1f1f1f')" @input="set('colorHeading', ($event.target as HTMLInputElement).value)">
                       <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorHeading }">{{ tokens.colorHeading || 'авто' }}</span>
                     </div>
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">ссылки <button v-if="tokens.colorLink" type="button" class="dp-clr-reset" @click="set('colorLink', '')" title="Сбросить">✕</button></label>
                     <div class="dp-clr-row">
-                      <input type="color" class="dp-color-input" :value="tokens.colorLink || '#3b6bdb'" @input="set('colorLink', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-color-input" :value="colorInputValue(tokens.colorLink, '#3b6bdb')" @input="set('colorLink', ($event.target as HTMLInputElement).value)">
                       <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorLink }">{{ tokens.colorLink || 'авто' }}</span>
                     </div>
                   </div>
@@ -424,14 +424,14 @@
                   <div class="dp-field">
                     <label class="dp-label">фон кнопки <button v-if="tokens.colorBtnBg" type="button" class="dp-clr-reset" @click="set('colorBtnBg', '')" title="Сбросить">✕</button></label>
                     <div class="dp-clr-row">
-                      <input type="color" class="dp-color-input" :value="tokens.colorBtnBg || '#000000'" @input="set('colorBtnBg', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-color-input" :value="colorInputValue(tokens.colorBtnBg, '#000000')" @input="set('colorBtnBg', ($event.target as HTMLInputElement).value)">
                       <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorBtnBg }">{{ tokens.colorBtnBg || 'авто' }}</span>
                     </div>
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">текст кнопки <button v-if="tokens.colorBtnText" type="button" class="dp-clr-reset" @click="set('colorBtnText', '')" title="Сбросить">✕</button></label>
                     <div class="dp-clr-row">
-                      <input type="color" class="dp-color-input" :value="tokens.colorBtnText || '#2c2c2a'" @input="set('colorBtnText', ($event.target as HTMLInputElement).value)">
+                      <input type="color" class="dp-color-input" :value="colorInputValue(tokens.colorBtnText, '#2c2c2a')" @input="set('colorBtnText', ($event.target as HTMLInputElement).value)">
                       <span class="dp-clr-hex" :class="{ 'dp-clr-hex--auto': !tokens.colorBtnText }">{{ tokens.colorBtnText || 'авто' }}</span>
                     </div>
                   </div>
@@ -2443,6 +2443,14 @@ function selectedDesignOptions<T extends PickerOption>(options: readonly T[], se
 
 function availableDesignOptions<T extends PickerOption>(options: readonly T[], selected: string | number | undefined) {
   return options.filter(option => String(option.id) !== String(selected ?? ''))
+}
+
+function colorInputValue(value: string | undefined, fallback: string) {
+  if (!value) {
+    return fallback
+  }
+
+  return /^#[0-9a-f]{6}$/i.test(value) ? value : fallback
 }
 
 const selectedScaleOptions = computed(() =>

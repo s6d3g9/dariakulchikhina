@@ -223,9 +223,10 @@ const activeProjectSlug = computed(() => {
 })
 
 // Current project info for linking/unlinking
-const { data: projectData, refresh: refreshProjectData } = await useFetch(() => 
-  activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}` : null,
-  { watch: [activeProjectSlug], default: () => null }
+const { data: projectData, refresh: refreshProjectData } = await useAsyncData(
+  'admin-layout-project-data',
+  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}`) : null,
+  { watch: [activeProjectSlug], default: () => null, server: false },
 )
 
 // ── Gallery tabs config ─────────────────────────────────────────
@@ -288,17 +289,20 @@ const quickDesigners = computed(() => (designersData.value || []).slice(0, 12))
 // ── Sellers data ────────────────────────────────────────────────
 const { data: sellersData } = useFetch<any[]>('/api/sellers', { server: false, default: () => [] })
 const quickSellers = computed(() => (sellersData.value || []).slice(0, 12))
-const { data: linkedSellersData, refresh: refreshLinkedSellers } = await useFetch<any[]>(
-  () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/sellers` : null,
+const { data: linkedSellersData, refresh: refreshLinkedSellers } = await useAsyncData<any[]>(
+  'admin-layout-linked-sellers',
+  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}/sellers`) : [],
   { watch: [activeProjectSlug], server: false, default: () => [] },
 )
 
-const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await useFetch<any[]>(
-  () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/designers` : null,
+const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await useAsyncData<any[]>(
+  'admin-layout-linked-designers',
+  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}/designers`) : [],
   { watch: [activeProjectSlug], server: false, default: () => [] },
 )
-const { data: linkedContractorsData, refresh: refreshLinkedContractors } = await useFetch<any[]>(
-  () => activeProjectSlug.value ? `/api/projects/${activeProjectSlug.value}/contractors` : null,
+const { data: linkedContractorsData, refresh: refreshLinkedContractors } = await useAsyncData<any[]>(
+  'admin-layout-linked-contractors',
+  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}/contractors`) : [],
   { watch: [activeProjectSlug], server: false, default: () => [] },
 )
 

@@ -1,8 +1,34 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { adminSettings } from '~/server/db/schema'
 import { useDb } from '~/server/db/index'
 
+let ensureAdminSettingsTablePromise: Promise<void> | null = null
+
+async function ensureAdminSettingsTable() {
+  if (!ensureAdminSettingsTablePromise) {
+    const db = useDb()
+    ensureAdminSettingsTablePromise = (async () => {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS "admin_settings" (
+          "id" serial PRIMARY KEY NOT NULL,
+          "key" text NOT NULL,
+          "value" jsonb DEFAULT '{}'::jsonb NOT NULL,
+          "created_at" timestamp DEFAULT now() NOT NULL,
+          "updated_at" timestamp DEFAULT now() NOT NULL,
+          CONSTRAINT "admin_settings_key_unique" UNIQUE("key")
+        )
+      `)
+    })().catch((error) => {
+      ensureAdminSettingsTablePromise = null
+      throw error
+    })
+  }
+
+  await ensureAdminSettingsTablePromise
+}
+
 export async function getAdminSetting<T>(key: string) {
+  await ensureAdminSettingsTable()
   const db = useDb()
   const [record] = await db
     .select({ value: adminSettings.value })
@@ -14,6 +40,7 @@ export async function getAdminSetting<T>(key: string) {
 }
 
 export async function setAdminSetting<T>(key: string, value: T) {
+  await ensureAdminSettingsTable()
   const db = useDb()
   const [existing] = await db
     .select({ id: adminSettings.id })
