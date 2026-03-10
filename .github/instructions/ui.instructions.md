@@ -4,176 +4,99 @@ applyTo: "app/**/*.vue,app/**/*.ts,app/assets/**/*.css"
 
 # UI — правила построения интерфейса
 
-> Источник истины: `docs/UI_RULES.md`. При конфликте — docs/UI_RULES.md приоритетнее.
+> Главный приоритет для новых UI-чатов: `.github/AGENTS.md`. Этот файл применяет манифест к реальным файлам интерфейса проекта.
 
-## Стек
-Nuxt 4 · Vue 3 SFC · `<script setup>` · TypeScript · CSS custom properties · Glass morphism · 5 тем · Dark mode
+## Режимы дизайна
 
-## CSS примитивы — ТОЛЬКО эти классы
+- В проекте поддерживаются два UI-направления: `brutalist` и `liquid-glass`.
+- По умолчанию всегда выбирать `brutalist`.
+- `liquid-glass` использовать для Apple-подобного стеклянного интерфейса и для адресной поддержки существующих glass-экранов без полного редизайна.
+- Для новых страниц, новых компонентов и заметных UI-перестроений использовать `brutalist`.
 
-| Элемент | Класс | Когда |
-|---|---|---|
-| Поверхность | `.glass-surface` / `.glass-card` | Панели, карточки |
-| Чип | `.glass-chip` | Метки, теги, фильтры |
-| Инпут | `.glass-input` | Все поля ввода |
-| Инпут inline | `.glass-input--inline` | Ячейки таблиц |
-| Кнопка основная | `.a-btn-save` | Сохранить, подтвердить |
-| Кнопка малая | `.a-btn-sm` | Добавить, отменить |
-| Кнопка danger | `.a-btn-sm.a-btn-danger` | Удалить, сброс |
-| Кнопка AI | `.a-btn-ai` | Генерация ИИ |
-| Навигация admin | `.ent-nav-item` | Sidebar в admin-разделах |
-| Навигация cabinet | `.cab-nav-item` | Sidebar в кабинетах |
-| Статус | `.ws-status--{state}` | pending/planned/progress/done/paused/cancelled/skipped |
-| Dropdown | `.glass-dropdown` | Все popover/popup |
-| Пустое состояние | `.u-empty` / `.cab-empty` | Нет данных |
-| Загрузка | `.ent-content-loading` | Skeleton при загрузке |
-| Секция формы | `.u-form-section` | Блок с полями |
-| Поле формы | `.u-field` + `.u-field__label` | Label + input обёртка |
-| Заголовок секции | `.cab-section-title` | Над блоком формы |
+## Базовый режим работы
 
-## Layout паттерн
+- Любой новый UI строится по Fractal SPA Architecture.
+- Desktop всегда делится на левый sidebar и правую content-зону.
+- Sidebar содержит только навигацию, поиск, back и контекстные attach/detach действия.
+- Right content содержит только breadcrumbs, hero-screen и data/form section.
 
-Любая страница = sidebar + main. Всегда одна из двух пар:
+## Layout для файлов проекта
 
-```
-ent-layout > ent-sidebar + ent-main    ← admin-разделы (списки)
-cab-body   > cab-sidebar + cab-main    ← кабинеты (подрядчик, дизайнер, продавец)
-```
+- Для admin-разделов использовать `ent-layout`, `ent-sidebar`, `ent-main`.
+- Для cabinet-разделов использовать `cab-body`, `cab-sidebar`, `cab-main`.
+- В `app/layouts/admin.vue` sidebar должен оставаться совместимым с Teleport в `#admin-sidebar-portal`.
+- На desktop main не должен визуально или технически перекрывать sidebar.
+- Если в репозитории уже есть рабочее архитектурное решение для section или cabinet того же класса, новые экраны обязаны повторять его, а не изобретать параллельную схему.
 
-Страница проекта: sidebar через `<Teleport to="#admin-sidebar-portal">` в `app/layouts/admin.vue`.
+## Навигация
 
-## Admin layout
+- Запрещены horizontal tabs, top navbars, header links и любая верхняя навигация.
+- Breadcrumbs допустимы только в правой зоне как единственный navigation-элемент.
+- Dropdown допустим только как context switcher внутри левого sidebar.
+- Никаких overlay dropdown, modal, dialog, drawer.
+- В схожих разделах разных сущностей структура меню должна совпадать полностью.
+- В схожих разделах разных сущностей должна совпадать не только структура меню, но и архитектура правой зоны: hero, shell, form flow, registry flow, documents flow, project flow.
 
-```
-adm-util-bar   — фиксированная полоска сверху справа
-ent-sidebar    — фиксированный сайдбар (Teleport portal)
-adm-main       — <slot /> контент
-```
+## Hero-first content
 
-## Форма — шаблон
+- При открытии leaf, detail-view, cabinet section или project section правая зона начинается с full-height hero-screen.
+- Только после hero-screen допускаются форма, таблица полей, чеклисты или редакторы.
+- Если контент начинается сразу с формы, это считается нарушением архитектуры.
 
-```html
-<div class="u-form-section">
-  <h3>Заголовок</h3>
-  <div class="u-grid-2">
-    <div class="u-field">
-      <label class="u-field__label">Поле</label>
-      <input class="glass-input" />
-    </div>
-  </div>
-  <div class="u-form-foot">
-    <button class="a-btn-save">Сохранить</button>
-  </div>
-</div>
-```
+## 2x8 grid
 
-## Состояния — обязательны для каждого компонента
+- Ниже hero-screen использовать строгую 2-колоночную сетку на desktop и 1-колоночную на mobile.
+- Не использовать горизонтальные вкладки для группировки данных.
+- Label обязателен и находится над контролом.
+- Placeholder не заменяет label.
 
-```vue
-<template>
-  <div v-if="pending" class="ent-content-loading">
-    <div v-for="i in 5" class="ent-skeleton-line" />
-  </div>
-  <div v-else-if="error" class="cab-inline-error">
-    {{ error.message }} <button class="a-btn-sm" @click="refresh()">повторить</button>
-  </div>
-  <div v-else-if="!data?.length" class="u-empty">нет данных</div>
-  <div v-else><!-- контент --></div>
-</template>
-```
+## Формы и сохранение
 
-## Переходы между вкладками
+- Интерфейс реактивный: `input`, `select`, `textarea` должны auto-save на `blur` или `change`.
+- Не добавлять кнопки `Save`, `Submit`, `Сохранить`, `Отправить`.
+- Не проектировать сценарии, требующие явного подтверждения сохранения.
 
-```vue
-<Transition name="tab-fade" mode="out-in">
-  <component :is="activeComponent" :key="activePage" />
-</Transition>
-```
+## Состояния
 
-## Цвета — ТОЛЬКО токены
+- Loading делать только текстовым, без спиннеров.
+- Empty делать только текстовым, без иллюстраций.
+- Error показывать inline в контентной зоне, без модалок.
 
-| Нужен цвет | Токен |
-|---|---|
-| Текст | `var(--glass-text)` |
-| Фон | `var(--glass-bg)` |
-| Фон страницы | `var(--glass-page-bg)` |
-| Бордер | `var(--glass-border)` |
-| Акцент | `var(--ds-accent)` |
-| Успех | `var(--ds-success)` |
-| Ошибка | `var(--ds-error)` |
-| Предупреждение | `var(--ds-warning)` |
+Рекомендуемая семантика:
 
-`#hex` / `rgb()` / `hsl()` литералы — **баг**. Исключение: SVG `currentColor`.
+- loading: `[ LOADING... ]`
+- empty: `[ NO DATA ATTACHED ]`
+- action: `[+ ADD]`
 
-## Скругления — только токены
+## Touch и accessibility
 
-| Элемент | Токен |
-|---|---|
-| Карточка | `var(--card-radius)` |
-| Чип | `var(--chip-radius)` |
-| Инпут | `var(--input-radius)` |
-| Модал | `var(--modal-radius)` |
-| Кнопка | `var(--btn-radius)` |
+- Все кликабельные элементы должны иметь минимум 44px по высоте.
+- Sidebar должен поддерживать keyboard-first поведение: Up/Down, Enter, Esc, Backspace.
+- На mobile поля ввода должны быть 16px или крупнее.
+- Учитывать safe-area inset через padding в нижних областях.
 
-`border-radius: 8px` литерал — **баг**.
+## Визуальный язык
 
-## Типографика
+- Не использовать box-shadow, gradients, background images и декоративные rounded corners.
+- Не использовать иконки, кроме действительно необходимых file-type случаев.
+- Предпочитать плоские поверхности, строгие границы, uppercase-заголовки и типографический ритм.
 
-- Размеры: `var(--ds-text-xs)` → `var(--ds-text-3xl)`
-- Заголовки: `text-transform: uppercase`, `letter-spacing: ≥ .06em`
-- Opacity иерархия: `.35` → `.4` → `.48` → `.65` → `.75` → `1`
+## Работа с токенами проекта
 
-## Анимация
+- Не хардкодить системные значения без необходимости.
+- Для цветов и темы использовать существующие CSS variables проекта.
+- Для dark mode использовать только `html.dark`.
+- Если дизайн-токены конфликтуют с brutalist-направлением, корректировать базовые токены или глобальные примитивы, а не локально ломать систему.
 
-```css
-transition: opacity var(--ds-anim-duration) var(--ds-anim-easing);
-```
+## Что запрещено в коде
 
-Не хардкодь длительность — только `var(--ds-anim-duration)`.
-
-## Тёмный режим
-
-```css
-html.dark .my-class { }
-```
-
-**Никогда не использовать** `@media (prefers-color-scheme: dark)`.  
-Не писать scoped dark-mode переопределения — токены `--glass-*` инвертируются автоматически.
-
-## Навигация — AdminNestedNav
-
-- Файл: `app/components/AdminNestedNav.vue`
-- Используется **только** в `app/layouts/admin.vue`
-- Структура: `app/composables/useAdminNav.ts`
-- Тип узла: `NavigationNode` из `shared/types/navigation.ts`
-- Только текст в меню — никаких иконок и эмодзи
-
-## Страница проекта `/admin/projects/[slug]`
-
-Вкладки без смены URL: `selectAdminPage(slug)` → `activePage` → `<component :is>`.  
-Источник вкладок: `shared/constants/pages.ts` → `PROJECT_PAGES[]`  
-22 вкладки в 6 фазах (0-lead → 5-commissioning).
-
-## Breakpoints (встроены в классы — не пиши свои)
-
-| px | Эффект |
-|---|---|
-| 980 | `cab-body` → column |
-| 768 | `ent-sidebar` → 100% width |
-| 600 | `u-grid-2/3` → 1 column |
-
-## ЗАПРЕЩЕНО
-
-- ❌ Новые CSS-классы для layout — используй `cab-body` / `ent-layout`
-- ❌ Hardcoded цвета — используй `--glass-*` / `--ds-*`
-- ❌ Hardcoded `border-radius` — используй `--card/chip/input/modal/btn-radius`
-- ❌ Hardcoded `font-size` — используй `--ds-text-*`
-- ❌ Hardcoded transition duration — используй `--ds-anim-duration`
-- ❌ `<input>` без `.glass-input`
-- ❌ `<button>` без `.a-btn-save` / `.a-btn-sm` / `.a-btn-ai`
-- ❌ Компонент без loading/empty/error состояний
-- ❌ Вкладки без `<Transition name="tab-fade">`
-- ❌ Scoped dark-mode стили
-- ❌ `@media` для sidebar↔main layout
-- ❌ Tailwind-классы напрямую в компонентах
-- ❌ `target="_blank"` на внутренних ссылках
+- Новые layout-схемы вне `ent-layout` / `cab-body`
+- Навигация в правой зоне кроме breadcrumbs
+- Формы и редакторы в sidebar
+- Горизонтальные tabs
+- `target="_blank"` на внутренних ссылках
+- Save/Submit-кнопки
+- Спиннеры
+- Empty-state иллюстрации
+- Overlap main-content поверх sidebar
+- Tailwind-классы напрямую в компонентах, если задачу можно выразить через существующие глобальные примитивы и системные классы проекта

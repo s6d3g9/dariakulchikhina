@@ -119,3 +119,7 @@ export default defineEventHandler(async (event) => {
 - `docs/UI_RULES.md` — правила UI
 - `docs/rag/BACKEND_GUIDE.md` — API паттерны
 - `docs/rag/DRIZZLE_PATTERNS.md` — работа с БД
+
+## Always-on правила интерфейса
+- Для любого нового чата в этом репозитории учитывать `.github/AGENTS.md` как always-on набор правил по построению интерфейса.
+- При любых UI-изменениях сначала опираться на `.github/AGENTS.md`; при конфликте этот файл важнее `docs/UI_RULES.md` и `.github/instructions/ui.instructions.md`.

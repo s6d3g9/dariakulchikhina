@@ -362,11 +362,17 @@ Glassmorphism + Tailwind CSS 4 + Scoped CSS.
 Скрипт `scripts/deploy-safe.sh` реализует стратегию с fallback:
 
 1. **Preflight** — проверка утилит, SSH, серверных инструментов
-2. **Sync** — rsync исходников на сервер
+2. **Sync** — git sync `origin/main` на сервер
 3. **Build** — `pnpm install + pnpm build` на сервере
 4. **Fallback** — если серверная сборка падает → локальная сборка + rsync `.output`
 5. **Restart** — `pm2 restart`
 6. **Health check** — curl с 20-секундным таймаутом
+
+Перед деплоем скрипт автоматически:
+
+1. Сохраняет изменения в git (`add/commit/push` в `main`)
+2. Делает локальный snapshot в `builds/pre-deploy` (`.bundle` + `.meta`)
+3. Ротирует служебные ветки деплоя: `deploy/latest` (текущая версия деплоя) и `deploy/previous` (версия до последнего деплоя)
 
 ### Команды деплоя
 
@@ -385,6 +391,33 @@ pnpm deploy:metrics:follow      # Онлайн-просмотр
 ```
 
 Метрики хранятся в `logs/deploy-metrics.log`.
+
+### Ветки деплоя и откат
+
+Проверка текущих SHA для веток деплоя:
+
+```bash
+git fetch origin
+git log --oneline -1 origin/deploy/latest
+git log --oneline -1 origin/deploy/previous
+```
+
+Быстрый откат `main` к версии до последнего деплоя:
+
+```bash
+git checkout main
+git fetch origin
+git reset --hard origin/deploy/previous
+git push --force-with-lease origin main
+pnpm deploy:safe:prod
+```
+
+Восстановление из локального snapshot:
+
+```bash
+pnpm run snapshot:list
+pnpm run snapshot:restore:last
+```
 
 ---
 

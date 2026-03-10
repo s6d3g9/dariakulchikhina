@@ -14,6 +14,8 @@ UI_DOC="docs/UI_INTERFACE.md"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+LOCAL_SNAPSHOT_KEEP="${LOCAL_SNAPSHOT_KEEP:-10}"
+
 # ── Цвета ──────────────────────────────────────────────────────────────────
 R='\033[0;31m'   # red
 G='\033[0;32m'   # green
@@ -30,6 +32,59 @@ info() { echo -e "${C}  →  $1${N}"; }
 warn() { echo -e "${Y}  !  $1${N}"; }
 err()  { echo -e "${R}  ✗  $1${N}"; exit 1; }
 ask()  { echo -e "${Y}  ?  $1${N}"; read -r REPLY; }
+
+save_local_snapshot() {
+  local snapshots_dir
+  local ts
+  local sha
+  local branch
+  local safe_branch
+  local base
+
+  snapshots_dir="$ROOT_DIR/builds/pre-deploy"
+  mkdir -p "$snapshots_dir"
+
+  ts="$(date -u +'%Y%m%d-%H%M%S')"
+  sha="$(git rev-parse --short HEAD)"
+  branch="$(git branch --show-current)"
+  safe_branch="${branch//\//-}"
+  base="${snapshots_dir}/predeploy-${ts}-${safe_branch}-${sha}"
+
+  git bundle create "${base}.bundle" HEAD >/dev/null 2>&1 || err "Не удалось создать локальный snapshot"
+
+  {
+    echo "timestamp_utc=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+    echo "branch=${branch}"
+    echo "head=$(git rev-parse HEAD)"
+    git log --oneline -1
+  } > "${base}.meta"
+
+  info "Локальный snapshot: ${base}.bundle"
+
+  ls -t "$snapshots_dir"/*.bundle 2>/dev/null | tail -n +$((LOCAL_SNAPSHOT_KEEP + 1)) | xargs -r rm -f
+  ls -t "$snapshots_dir"/*.meta 2>/dev/null | tail -n +$((LOCAL_SNAPSHOT_KEEP + 1)) | xargs -r rm -f
+}
+
+autosave_before_deploy() {
+  local target_branch="$1"
+  local commit_msg
+
+  info "Автосохранение перед деплоем (${target_branch})"
+  git add -A
+
+  if git diff --cached --quiet; then
+    info "Новых изменений для коммита нет"
+  else
+    commit_msg="chore(deploy): autosave before deploy $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+    git commit -m "$commit_msg"
+    ok "Автокоммит создан"
+  fi
+
+  git push origin "$target_branch"
+  ok "Состояние отправлено в origin/${target_branch}"
+
+  save_local_snapshot
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ШАГ 1 — АНАЛИЗ: читаем docs/UI_INTERFACE.md
@@ -139,6 +194,8 @@ ask "Деплоить? (y / n)"
 if [[ "$REPLY" != "y" ]]; then
   warn "Деплой пропущен."
 else
+  autosave_before_deploy "$BRANCH"
+
   echo ""
   info "Синхронизация ветки на сервере..."
   ssh "$DEPLOY_HOST" "
@@ -210,6 +267,7 @@ else
   echo ""
   ask "Откатить сервер обратно на main? (y / n)"
   if [[ "$REPLY" == "y" ]]; then
+    git checkout main --quiet
     bash scripts/deploy-safe.sh
     ok "Сервер откачен на main"
   fi

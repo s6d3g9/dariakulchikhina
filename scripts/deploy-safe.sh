@@ -5,6 +5,12 @@ DEPLOY_HOST="${DEPLOY_HOST:-daria-deploy}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/daria-nuxt}"
 APP_NAME="${APP_NAME:-daria-nuxt}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://152.53.176.165:3000/admin}"
+AUTO_GIT_SAVE="${AUTO_GIT_SAVE:-1}"
+LOCAL_SNAPSHOT_BEFORE_DEPLOY="${LOCAL_SNAPSHOT_BEFORE_DEPLOY:-1}"
+LOCAL_SNAPSHOT_KEEP="${LOCAL_SNAPSHOT_KEEP:-10}"
+TRACK_DEPLOY_BRANCHES="${TRACK_DEPLOY_BRANCHES:-1}"
+DEPLOY_LATEST_BRANCH="${DEPLOY_LATEST_BRANCH:-deploy/latest}"
+DEPLOY_PREVIOUS_BRANCH="${DEPLOY_PREVIOUS_BRANCH:-deploy/previous}"
 DRY_RUN="${DRY_RUN:-0}"
 PREFLIGHT="${PREFLIGHT:-1}"
 PREFLIGHT_ONLY="${PREFLIGHT_ONLY:-0}"
@@ -13,22 +19,111 @@ NO_PREFLIGHT="${NO_PREFLIGHT:-0}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 METRICS_FILE="${METRICS_FILE:-$ROOT_DIR/logs/deploy-metrics.log}"
-# ── Проверка: все изменения должны быть закоммичены и запушены ──────────────
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "[error] есть незакоммиченные изменения!" >&2
-  echo "[error] сначала: git add . && git commit -m '...' && git push origin main" >&2
-  git status --short >&2
-  exit 1
+
+ensure_main_branch() {
+  local branch
+  branch="$(git branch --show-current)"
+  if [[ "$branch" != "main" ]]; then
+    echo "[error] деплой разрешён только из ветки main (сейчас: ${branch})" >&2
+    exit 1
+  fi
+}
+
+autosave_git_before_deploy() {
+  echo "[git] авто-сохранение перед деплоем"
+  git add -A
+
+  if git diff --cached --quiet; then
+    echo "[git] изменений для коммита нет"
+  else
+    local commit_msg
+    commit_msg="chore(deploy): autosave before deploy $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+    git commit -m "$commit_msg"
+    echo "[git] создан коммит: $commit_msg"
+  fi
+
+  git push origin main
+}
+
+save_local_snapshot_before_deploy() {
+  local snapshots_dir
+  local ts
+  local sha
+  local base
+
+  snapshots_dir="$ROOT_DIR/builds/pre-deploy"
+  mkdir -p "$snapshots_dir"
+
+  ts="$(date -u +'%Y%m%d-%H%M%S')"
+  sha="$(git rev-parse --short HEAD)"
+  base="${snapshots_dir}/predeploy-${ts}-${sha}"
+
+  git bundle create "${base}.bundle" HEAD >/dev/null 2>&1 || {
+    echo "[error] не удалось создать локальный git snapshot" >&2
+    exit 1
+  }
+
+  {
+    echo "timestamp_utc=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+    echo "branch=$(git branch --show-current)"
+    echo "head=$(git rev-parse HEAD)"
+    git log --oneline -1
+  } > "${base}.meta"
+
+  echo "[local] snapshot сохранён: ${base}.bundle"
+
+  ls -t "$snapshots_dir"/*.bundle 2>/dev/null | tail -n +$((LOCAL_SNAPSHOT_KEEP + 1)) | xargs -r rm -f
+  ls -t "$snapshots_dir"/*.meta 2>/dev/null | tail -n +$((LOCAL_SNAPSHOT_KEEP + 1)) | xargs -r rm -f
+}
+
+rotate_deploy_tracking_branches() {
+  local prev_source=""
+
+  echo "[git] обновление веток деплоя: ${DEPLOY_PREVIOUS_BRANCH} <- ${DEPLOY_LATEST_BRANCH} <- HEAD"
+
+  git fetch origin --quiet 2>/dev/null || true
+
+  if git show-ref --verify --quiet "refs/remotes/origin/${DEPLOY_LATEST_BRANCH}"; then
+    prev_source="origin/${DEPLOY_LATEST_BRANCH}"
+  elif git show-ref --verify --quiet "refs/heads/${DEPLOY_LATEST_BRANCH}"; then
+    prev_source="${DEPLOY_LATEST_BRANCH}"
+  fi
+
+  if [[ -n "$prev_source" ]]; then
+    git branch -f "$DEPLOY_PREVIOUS_BRANCH" "$prev_source" >/dev/null
+    git push --force-with-lease origin "$DEPLOY_PREVIOUS_BRANCH:$DEPLOY_PREVIOUS_BRANCH"
+    echo "[git] ${DEPLOY_PREVIOUS_BRANCH} обновлена из ${prev_source}"
+  else
+    echo "[git] предыдущей версии не найдено (первый запуск)"
+  fi
+
+  git branch -f "$DEPLOY_LATEST_BRANCH" HEAD >/dev/null
+  git push --force-with-lease origin "$DEPLOY_LATEST_BRANCH:$DEPLOY_LATEST_BRANCH"
+  echo "[git] ${DEPLOY_LATEST_BRANCH} указывает на $(git rev-parse --short HEAD)"
+}
+
+# ── Перед деплоем: сохранить в git и локально ──────────────────────────────
+ensure_main_branch
+if [[ "$AUTO_GIT_SAVE" == "1" ]]; then
+  autosave_git_before_deploy
 fi
+
+if [[ "$LOCAL_SNAPSHOT_BEFORE_DEPLOY" == "1" ]]; then
+  save_local_snapshot_before_deploy
+fi
+
+if [[ "$TRACK_DEPLOY_BRANCHES" == "1" ]]; then
+  rotate_deploy_tracking_branches
+fi
+
 git fetch origin --quiet 2>/dev/null
 LOCAL_SHA=$(git rev-parse HEAD)
 REMOTE_SHA=$(git rev-parse origin/main 2>/dev/null || echo "")
 if [[ -n "$REMOTE_SHA" && "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
-  echo "[error] локальные коммиты не отправлены на GitHub!" >&2
-  echo "[error] сначала: git push origin main" >&2
+  echo "[error] HEAD не совпадает с origin/main после автосохранения" >&2
   exit 1
 fi
-echo "[git] всё закоммичено и запушено — $(git log --oneline -1)"
+echo "[git] синхронизировано с origin/main — $(git log --oneline -1)"
 # ────────────────────────────────────────────────────────────────────────────
 SCRIPT_START_TS=$(date +%s)
 TIMESTAMP_UTC=$(date -u +"%Y-%m-%dT%H:%M:%SZ")

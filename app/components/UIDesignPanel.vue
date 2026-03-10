@@ -76,33 +76,33 @@
                 class="dp-mode-btn"
                 :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-glass' }"
                 @click="switchMode('concept-glass')"
-                title="Витрина — glassmorphism, blur, pill-формы, цветные акценты"
+                title="Liquid Glass — Apple macOS / iOS: blur, depth, soft chrome, pill-формы"
               >
                 <span class="dp-mode-icon">❖</span>
                 <span class="dp-mode-name">Liquid Glass</span>
-                <span class="dp-mode-hint">витрина · blur · pill</span>
+                <span class="dp-mode-hint">apple · blur · depth</span>
               </button>
               <button
                 type="button"
                 class="dp-mode-btn"
                 :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-minale' }"
                 @click="switchMode('concept-minale')"
-                title="Minale+Mann — чёрный фон, белый текст, uppercase, hairlines"
+                title="Brutalist / Minale + Mann — чёрный фон, белый текст, uppercase, hairlines"
               >
                 <span class="dp-mode-icon">◼</span>
-                <span class="dp-mode-name">Minale + Mann</span>
-                <span class="dp-mode-hint">editorial · black · tracked</span>
+                <span class="dp-mode-name">Brutalist / Minale</span>
+                <span class="dp-mode-hint">black · tracked · primary</span>
               </button>
               <button
                 type="button"
                 class="dp-mode-btn dp-mode-btn--reset"
-                :class="{ 'dp-mode-btn--active': !activeModeSlug || (activeModeSlug !== 'concept-glass' && activeModeSlug !== 'concept-minale') }"
+                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-minale' }"
                 @click="clearMode()"
-                title="Сбросить режим — вернуть переменные из дизайн-системы"
+                title="Вернуть режим по умолчанию — Brutalist / Minale"
               >
                 <span class="dp-mode-icon">○</span>
-                <span class="dp-mode-name">Системный</span>
-                <span class="dp-mode-hint">токены · дефолт</span>
+                <span class="dp-mode-name">По умолчанию</span>
+                <span class="dp-mode-hint">brutalist · default</span>
               </button>
             </div>
 
@@ -1967,7 +1967,7 @@ function switchMode(conceptId: 'concept-glass' | 'concept-minale') {
 function clearMode() {
   cancelPreview()
   activePresetId.value = ''
-  if (import.meta.client) document.documentElement.removeAttribute('data-concept')
+  switchMode('concept-minale')
 }
 
 /* ── Type scale computed sizes ──────────────────── */

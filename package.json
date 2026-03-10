@@ -14,6 +14,8 @@
     "deploy:safe:prod:preflight": "PREFLIGHT_ONLY=1 DEPLOY_HOST=daria-deploy DEPLOY_PATH=/opt/daria-nuxt APP_NAME=daria-nuxt HEALTHCHECK_URL=http://152.53.176.165:3000/admin bash scripts/deploy-safe.sh",
     "deploy:metrics": "tail -n 20 logs/deploy-metrics.log",
     "deploy:metrics:follow": "tail -f logs/deploy-metrics.log",
+    "snapshot:list": "ls -1t builds/pre-deploy/*.bundle 2>/dev/null || echo 'no snapshots yet'",
+    "snapshot:restore:last": "bash scripts/restore-last-snapshot.sh",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

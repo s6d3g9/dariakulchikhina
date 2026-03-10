@@ -1,361 +1,337 @@
-# UI_RULES — справочник для разработки
-
-> Основной документ. Читай перед любой правкой компонентов, страниц, лейаутов.
-> Детали по API / DB — `ARCHITECTURE.md`. Фазы проекта — `roadmap-sync-rules.md`. UIDesignPanel — `DESIGN_EDITOR.md`.
-
-## Стек
-
-Nuxt 4 · Vue 3 · TypeScript · CSS custom properties · Glass morphism · 5 тем · Dark mode
-
-## Роли → маршруты
-
-| Роль       | Login              | Кабинет                     | Layout         | Middleware     |
-|------------|--------------------|-----------------------------|----------------|----------------|
-| Дизайнер   | `/admin/login`     | `/admin` → `/admin/projects/[slug]` | `admin.vue` | `admin.ts`  |
-| Клиент     | `/project/login`   | `/project/[slug]`           | встроен в страницу | `project.ts` |
-| Подрядчик  | `/contractor/login`| `/contractor/[id]`          | `contractor.vue` | `contractor.ts` |
-
-## Примитивы (используй ТОЛЬКО эти)
-
-| Элемент           | Класс                          | Когда                              |
-|-------------------|--------------------------------|------------------------------------|
-| Поверхность       | `.glass-surface` / `.glass-card` | Панели, карточки                 |
-| Чип               | `.glass-chip`                  | Метки, теги, фильтры               |
-| Инпут             | `.glass-input`                 | Все поля ввода                     |
-| Инпут (inline)    | `.glass-input--inline`         | Ячейки таблиц                      |
-| Кнопка (основная) | `.a-btn-save`                  | Сохранить, подтвердить             |
-| Кнопка (малая)    | `.a-btn-sm`                    | Добавить, отменить                 |
-| Кнопка (danger)   | `.a-btn-sm.a-btn-danger`       | Удалить, сброс                     |
-| Кнопка (AI)       | `.a-btn-ai`                    | Генерация ИИ                       |
-| Навигация (admin) | `.ent-nav-item`                | Sidebar в admin-разделах           |
-| Навигация (cabinet)| `.cab-nav-item`               | Sidebar в кабинетах                |
-| Статус            | `.ws-status--{state}`          | pending/planned/progress/done/paused/cancelled/skipped |
-| Dropdown          | `.glass-dropdown`              | Все popover/popup                  |
-| Пустое            | `.u-empty` / `.cab-empty`      | Нет данных                         |
-| Загрузка          | `.ent-content-loading`         | Skeleton-линии при загрузке        |
-| Секция формы      | `.u-form-section`              | Блок с полями                      |
-| Поле формы        | `.u-field` + `.u-field__label` | Label + input обёртка              |
-| Заголовок секции  | `.cab-section-title`           | Над блоком формы / списком         |
-
-## Admin-лейаут (`app/layouts/admin.vue`)
-
-```
-adm-util-bar  (fixed, правый верх) — 🔍 / Ctrl+K · тема · уведомления · выйти
-ent-sidebar   (fixed, левая колонка) — заполняется через <Teleport to="#admin-sidebar-portal"> внутри каждой страницы
-adm-main      (<slot />) — контент страницы
-```
-
-| Кнопка util-bar | Действие |
-|---|---|
-| 🔍 / Ctrl+K | `searchOpen = true` → `AdminSearch` (модал) |
-| тема ●/○ | `toggleTheme()` |
-| бейдж-число | только индикатор, не кнопка |
-| выйти | `POST /api/auth/logout` → `/admin/login` |
-
-## Layout — фрактальный паттерн
-
-Любая страница = **sidebar + main**. Всегда используй одну из двух пар:
-
-```
-ent-layout > ent-sidebar + ent-main    ← admin-разделы (списки)
-cab-body   > cab-sidebar + cab-main    ← кабинеты (подрядчик, дизайнер, продавец)
-```
-
-≤ 980px → sidebar переворачивается в горизонтальный tab-strip автоматически.
-
-## AdminSidebarSwitcher
-
-**Файл:** `app/components/AdminSidebarSwitcher.vue`  
-**Props:** `title: string`, `count?: number`, `v-model` (строка поиска)
-
-### Структура DOM — строго в таком порядке:
-1. `esw-head` — кнопка (title + count + стрелка), клик → `open = !open`
-2. `esw-search-wrap` — поле поиска — **всегда видно** (не зависит от `open`)
-3. `esw-dropdown` — список разделов, `v-if="open"`, **`position: relative`** (in-flow, не absolute)
-
-### Правила:
-- Клик вне компонента → `open = false` (document listener)
-- Переход: `navigate(item)` → если `projectSlug` в query — сохраняет его: `push({ path, query: { projectSlug } })`
-- `isActive`: `projects` → `path === '/admin'` или `startsWith('/admin/projects')`; `gallery` → `startsWith('/admin/gallery')`; остальные → `startsWith(item.path)`
-- Монохромный стиль: цвет только `var(--glass-text)`, opacity `.38 → .72 → 1`
-
-### Маппинг разделов:
-
-| Пункт | path |
-|---|---|
-| проекты | `/admin` |
-| клиенты | `/admin/clients` |
-| подрядчики | `/admin/contractors` |
-| дизайнеры | `/admin/designers` |
-| поставщики | `/admin/sellers` |
-| галерея | `/admin/gallery/interiors` |
-| документы | `/admin/documents` |
-
----
-
-## Sidebar — два режима отображения
-
-Каждая страница entity-раздела (`clients`, `contractors`, `designers`, `sellers`, `documents`) имеет **два состояния sidebar**:
-
-### Режим 1 — Список (URL без query-id)
-
-```
-[раздел ›]          ← esw-head (title + count)
-[🔍 поиск...]       ← v-model="searchQuery", всегда виден
-─────────────
-Запись А      [→]   ← .ent-nav-item, клик → переход в кабинет
-Запись Б      [→]
-Запись В      [→]
-─────────────
-[+ добавить]        ← внизу (опционально)
-```
-
-Поиск фильтрует список в реальном времени: `searchQuery` → `computed filteredItems` (debounce 300ms).
-
-### Режим 2 — Кабинет (URL с `?clientId=`, `?contractorId=` и т.д.)
-
-```
-[раздел ›]          ← esw-head сохраняется
-[🔍 поиск...]       ← поиск остаётся доступен
-─────────────
-[← к списку]        ← кнопка возврата: navigateTo('/admin/clients')
-─────────────
-вкладка 1           ← .cab-nav-item (секции кабинета)
-вкладка 2
-вкладка 3
-```
-
-Поиск в режиме кабинета: ввод текста → `navigateTo('/admin/clients?q=<query>')` → переключение обратно в режим списка с применённым фильтром.
-
-### Переключение режимов:
-
-```
-Режим 1 → Режим 2:  клик по записи → navigateTo('?clientId=<id>')
-Режим 2 → Режим 1:  клик «← к списку» → navigateTo('/admin/clients')
-                    ИЛИ ввод в поиск → navigateTo('?q=<query>')
-```
-
-### Контекст проекта (`withCtx`):
-
-Если `activeProjectSlug` задан — все переходы внутри sidebar используют `withCtx(path)`:
-```
-withCtx('/admin/clients') → '/admin/clients?projectSlug=<slug>'
-```
-При этом рядом с каждой записью появляются кнопки привязки/отвязки к проекту.
-
-### Все кнопки связи (контекстный режим):
-
-| Раздел | Привязать | Отвязать |
-|---|---|---|
-| clients | `POST /api/clients/<id>/link-project` | `POST /api/clients/<id>/unlink-project` |
-| contractors | `POST /api/projects/<slug>/contractors` | `DELETE /api/projects/<slug>/contractors` |
-| designers | `POST /api/projects/<slug>/designers` | — |
-| sellers | `POST /api/projects/<slug>/sellers` | — |
-
-После каждого вызова: `refreshProjectData()` + `refreshLinked*()`.
-
----
-
-## Sidebar — проекты `/admin`
-
-Отличается от entity-разделов: нет режима «кабинет» в sidebar.
-
-```
-[проекты ›]         ← esw-head
-[🔍 поиск...]       ← фильтрует список проектов
-─────────────
-● Проект А          ← .ent-nav-item + аватар + статус-бейдж
-● Проект Б
-─────────────
-ничего не найдено   ← v-if="!filteredProjects.length && searchQuery"
-нет проектов        ← v-else-if="!projects?.length"
-```
-
-Клик по проекту → `router.push('/admin/projects/<slug>')` → переход на страницу проекта (sidebar меняется на фазы).
-
----
-
-## Sidebar — страница проекта `/admin/projects/[slug]`
-
-Sidebar полностью отличается: нет `AdminSidebarSwitcher` в главной части, вместо него `AdminProjectStatusBar`.
-
-Структура: фазы как accordion-группы → вкладки без смены URL.
-
-```
-[статус-бар проекта]       ← AdminProjectStatusBar
-─────────────
-▼ Фаза 0. Инициация
-   0.1 первичный контакт   ← .ent-nav-item, клик → selectAdminPage('first_contact')
-   0.2 брифинг
-   ...
-▼ Фаза 1. Эскиз
-   ...
-─────────────
-[sb-section-nav]           ← внизу: ссылки на все entity-разделы
-```
-
-## Форма — шаблон
-
-```html
-<div class="u-form-section">
-  <h3>Заголовок</h3>
-  <div class="u-grid-2">
-    <div class="u-field">
-      <label class="u-field__label">Поле</label>
-      <input class="glass-input" />
-    </div>
-    <div class="u-field u-field--full">
-      <label class="u-field__label">Широкое</label>
-      <textarea class="glass-input"></textarea>
-    </div>
-  </div>
-  <div class="u-form-foot">
-    <button class="a-btn-save">Сохранить</button>
-  </div>
-</div>
-```
-
-## Состояния — обязательны для каждого компонента
-
-```vue
-<template>
-  <div v-if="pending" class="ent-content-loading">
-    <div v-for="i in 5" class="ent-skeleton-line" />
-  </div>
-  <div v-else-if="error" class="cab-inline-error">
-    {{ error.message }} <button class="a-btn-sm" @click="refresh()">повторить</button>
-  </div>
-  <div v-else-if="!data?.length" class="u-empty">нет данных</div>
-  <div v-else>
-    <!-- контент -->
-  </div>
-</template>
-```
-
-## Переход между вкладками
-
-```vue
-<Transition name="tab-fade" mode="out-in">
-  <component :is="activeComponent" :key="activePage" />
-</Transition>
-```
-
-## Цвета — ТОЛЬКО токены
-
-| Нужен цвет для     | Токен                      |
-|---------------------|----------------------------|
-| Текст               | `var(--glass-text)`        |
-| Фон                 | `var(--glass-bg)`          |
-| Фон страницы        | `var(--glass-page-bg)`     |
-| Бордер              | `var(--glass-border)`      |
-| Акцент              | `var(--ds-accent)`         |
-| Успех               | `var(--ds-success)`        |
-| Ошибка              | `var(--ds-error)`          |
-| Предупреждение      | `var(--ds-warning)`        |
-| Полупрозрачность    | `color-mix(in srgb, var(--glass-text) N%, transparent)` |
-
-Hex / rgb / hsl литералы = **баг**. Исключение: SVG `currentColor`.
-
-## Скругления — только токены
-
-| Элемент   | `var(--card-radius)` | `var(--chip-radius)` | `var(--input-radius)` | `var(--modal-radius)` | `var(--btn-radius)` |
-|-----------|:---:|:---:|:---:|:---:|:---:|
-| Карточка  | ✓ | | | | |
-| Чип       | | ✓ | | | |
-| Инпут     | | | ✓ | | |
-| Модал     | | | | ✓ | |
-| Кнопка    | | | | | ✓ |
-
-`border-radius: 8px` литерал = **баг**.
-
-## Типографика
-
-- Шрифт: `font-family: inherit` (каскад от `--ds-font-family`)
-- Размеры: `--ds-text-xs` (.694rem) → `--ds-text-3xl` (2.074rem)
-- Заголовки: всегда `text-transform: uppercase`, `letter-spacing: ≥ .06em`
-- Opacity иерархия: .35 (action) → .4 (sidebar title) → .48 (section) → .65 (form h3) → .75 (entity name) → 1 (активный)
-
-## Анимация
-
-```css
-transition: opacity var(--ds-anim-duration) var(--ds-anim-easing); /* 180ms ease */
-```
-
-Не хардкодь длительность. Все button/a/input/select/textarea наследуют из токенов.
-
-## Breakpoints
-
-| px    | Эффект                                            |
-|-------|---------------------------------------------------|
-| 980   | cab-body → column, cab-nav → horizontal scroll   |
-| 768   | ent-sidebar → 100% width, nav → pill scroll      |
-| 600   | u-grid-2, u-grid-3 → 1 column                    |
-| 480   | dash-stats → 1 col, compact padding              |
-
-Не пиши свои @media для layout — `cab-body` и `ent-layout` уже адаптивны.
-
-## Тёмный режим
-
-Автоматический через `html.dark` → все `--glass-*` инвертируются.  
-**Не пиши** scoped `.dark` переопределения — токены сделают всё сами.
-
-## 5 тем
-
-`cloud` · `linen` · `stone` · `fog` · `parchment`  
-Хранятся: `localStorage['ui-theme']`, `localStorage['design-tokens']`.
-
-## Admin: страница проекта `/admin/projects/[slug]`
-
-Источник вкладок: `shared/constants/pages.ts` → `PROJECT_PAGES[]`
-
-Фазы: 0-lead (5) → 1-concept (3) → 2-working_project (4) → 3-procurement (3) → 4-construction (4) → 5-commissioning (3) = **22 вкладки**
-
-Переключение: `selectAdminPage(slug)` → `activePage` → `<component :is>` — **без смены URL**.
-
-| slug фазы 0 | slug фазы 1 | slug фазы 2 | slug фазы 3 | slug фазы 4 | slug фазы 5 |
-|---|---|---|---|---|---|
-| first_contact | space_planning | working_drawings | procurement_list | construction_plan | punch_list |
-| self_profile | moodboard | specifications | suppliers | work_status | commissioning_act |
-| site_survey | concept_approval | mep_integration | procurement_status | work_log | client_sign_off |
-| tor_contract | | design_album_final | | site_photos | |
-| extra_services | | | | | |
-
-Специальные режимы (через query):
-
-| query | Что рендерится |
-|---|---|
-| default | Admin* компоненты |
-| `?view=client` | Client* компоненты (превью клиента) |
-| `?view=contractor&cid=<id>` | `AdminContractorCabinet :contractor-id` |
-
-## Admin: entity-разделы (все одинаковые)
-
-Паттерн **список → детали** через query:
-
-| Раздел      | Query param      | Секции кабинета |
-|-------------|------------------|-----------------|
-| clients     | `?clientId=`     | getClientPages() + overview + self_profile |
-| contractors | `?contractorId=` | 11: dashboard, tasks, staff*, contacts, passport, requisites, documents, specialization, finances, portfolio, settings |
-| designers   | `?designerId=`   | 7: dashboard, services, packages, subscriptions, documents, projects, profile |
-| sellers     | `?sellerId=`     | 5: dashboard, profile, requisites, terms, projects |
-
-`*staff` — только если `contractorType === 'company'`
-
-## Галерея
-
-5 вкладок: `interiors` · `furniture` · `materials` · `art` · `moodboards`  
-URL: `/admin/gallery/{tab}` (реальная навигация, не component swap)
-
-## Запреты
-
-- ❌ Новые CSS-классы для layout (используй cab-body / ent-layout)
-- ❌ Hardcoded цвета (используй --glass-* / --ds-*)
-- ❌ Hardcoded border-radius (используй --card/chip/input/modal/btn-radius)
-- ❌ Hardcoded font-size (используй --ds-text-*)
-- ❌ Hardcoded transition duration (используй --ds-anim-duration)
-- ❌ `<input>` без `.glass-input`
-- ❌ `<button>` без `.a-btn-save` / `.a-btn-sm` / `.a-btn-ai`
-- ❌ Компонент без loading/empty/error состояний
-- ❌ Вкладки без `<Transition name="tab-fade">`
-- ❌ Scoped dark-mode стили
-- ❌ Собственные @media для sidebar↔main
+# UI_RULES — Fractal SPA Architecture
+
+Основной UI-справочник для проекта.
+Если задача касается компонентов, страниц, layout, форм, навигации или интеракций, сначала учитывай .github/AGENTS.md, затем этот документ.
+
+## Приоритет
+
+1. .github/AGENTS.md — always-on манифест для новых чатов
+2. .github/instructions/ui.instructions.md — прикладные правила для файлов интерфейса
+3. [docs/UI_DESIGN_MODES.md](docs/UI_DESIGN_MODES.md) — карта режимов дизайна и очередность миграции
+4. Этот документ — подробная спецификация архитектуры интерфейса
+
+Если старые интерфейсные решения проекта конфликтуют с этим документом, ориентиром считается новая Fractal SPA Architecture.
+
+## Режимы дизайна
+
+Проект развивается в двух параллельных дизайн-режимах:
+
+1. Brutalist Fractal SPA — текущий приоритет и default-направление
+2. Liquid Glass / Apple-style UI system — вторичный режим для стеклянных, мягких и витринных интерфейсов
+
+Правила применения:
+
+- Для новых интерфейсов, новых страниц и крупных переработок по умолчанию использовать brutalist-направление.
+- Для локальных правок старых стеклянных экранов без задачи на редизайн допускается сохранять liquid-glass стиль.
+- При конфликте между направлениями решение принимается в пользу brutalist-дизайна, если пользователь явно не указал иное.
+- При работе над одной и той же сущностью в двух стилях важно сохранять отдельность дизайн-режимов и не смешивать их в одном экране без явной цели.
+
+## Миссия
+
+Строим строгий, плоский, самоподобный SPA-интерфейс без случайных паттернов.
+Интерфейс должен быть предсказуемым по структуре: одна и та же логика навигации, одинаковое распределение зон, одинаковое поведение форм и состояний.
+
+## Жесткие запреты
+
+- Нельзя делать горизонтальную навигацию: никаких header navbars, top links, horizontal tabs.
+- Нельзя делать overlay-паттерны: никаких модалок, drawer, dialog, popup. Исключение: переключатель контекста внутри левого sidebar.
+- Нельзя смешивать зоны: навигация и фильтры живут только слева, формы и редактирование только справа.
+- Нельзя допускать наложение main-content на sidebar на desktop.
+- Нельзя использовать тени, градиенты, фоновые картинки и декоративные скругления.
+- Нельзя открывать внутренние ссылки в новой вкладке.
+- Нельзя строить UX вокруг ручного сохранения: никаких Save, Submit, FAB.
+- Нельзя использовать спиннеры и иллюстрации для loading/empty.
+- Нельзя придумывать отдельные layout-схемы для сущностей с одинаковым смыслом.
+
+## Базовая архитектура
+
+Desktop-интерфейс всегда делится на две зоны.
+
+### Zone A — Left Sidebar
+
+Left Sidebar используется только для навигации и контекстных действий.
+
+Структура сверху вниз:
+
+1. Smart Header
+2. Filter/Search
+3. Cabinet Actions
+4. Payload Tree
+
+Правила:
+
+- Sidebar фиксированной ширины, не сжимается.
+- Header совмещает кнопку возврата и заголовок текущего контекста.
+- Search всегда закреплен под header.
+- Cabinet Actions показываются только в кабинетном контексте.
+- Payload Tree прокручивается независимо и остается единственным scrollable-блоком навигации.
+
+### Zone B — Right Main Content
+
+Right Main Content используется только для просмотра и редактирования.
+
+Структура сверху вниз:
+
+1. Breadcrumbs
+2. 100vh Hero Screen
+3. Data/Form Section
+
+Правила:
+
+- Breadcrumbs — единственный навигационный элемент в правой зоне.
+- При открытии leaf/node сначала показывается полноэкранный hero-блок с крупным заголовком.
+- Форма, данные и редакторы начинаются только после hero-screen.
+- Правая зона имеет собственный scroll и не должна зависеть от прокрутки sidebar.
+
+## Layout-паттерн проекта
+
+В рамках текущего репозитория визуальная реализация опирается на существующие layout-контейнеры проекта, но их поведение должно соответствовать Fractal SPA Architecture.
+
+- admin-разделы: ent-layout > ent-sidebar + ent-main
+- кабинеты: cab-body > cab-sidebar + cab-main
+- sidebar в admin layout продолжает подключаться через Teleport в #admin-sidebar-portal
+
+Это означает:
+
+- ent-sidebar и cab-sidebar остаются левой навигационной зоной
+- ent-main и cab-main остаются правой контентной зоной
+- содержимое этих зон нельзя смешивать
+
+## 100vh Hero Rule
+
+Каждый открытый раздел, leaf, cabinet screen или detail-view в правой зоне должен начинаться с full-height hero-screen.
+
+Hero-screen обязан содержать:
+
+- большой заголовок текущего узла или сущности
+- breadcrumbs в левом верхнем углу
+- текстовую scroll-подсказку внизу
+
+Без hero-screen нельзя сразу начинать форму или список полей.
+
+## 2x8 Grid Rule
+
+Ниже hero-screen данные и формы должны строиться по строгому grid-паттерну:
+
+- desktop: максимум 2 колонки
+- mobile: 1 колонка
+- вертикальный поток вниз без горизонтальных табов
+- label всегда отдельно сверху
+- control всегда снизу
+- placeholder не заменяет label
+
+Первый экран данных должен визуально читаться как до 2 колонок и до 8 строк. Дальше контент может продолжаться вниз без ограничения.
+
+## 6 архитектурных паттернов
+
+Каждую новую UI-задачу нужно укладывать в один из шести паттернов:
+
+1. Deep Hierarchy
+2. Flat Registry
+3. Cross-Context Pivot
+4. Process Pipeline
+5. Settings Matrix
+6. Matrix Pivot
+
+### Deep Hierarchy
+
+Sidebar проваливается по иерархии до leaf.
+Правая зона рендерит документ или форму по схеме 2x8.
+
+### Flat Registry
+
+Sidebar показывает плоский список сущностей.
+Правая зона показывает профиль или карточку выбранной сущности.
+
+### Cross-Context Pivot
+
+Sidebar переводит пользователя из одного контекста в другой.
+Правая зона обязана отразить этот путь через breadcrumbs.
+
+### Process Pipeline
+
+Sidebar показывает вертикальные фазы или задачи.
+Правая зона показывает статус, чеклисты и поля этапа.
+
+### Settings Matrix
+
+Sidebar выбирает категорию настроек.
+Правая зона рендерит бесконечный вертикальный список настроек по 2x8 grid.
+
+### Matrix Pivot
+
+Sidebar последовательно выбирает Axis X, затем Axis Y.
+Правая зона показывает содержимое выбранного пересечения.
+Смена осей через правую часть запрещена.
+
+## Синхронизация меню
+
+Если разные сущности имеют одинаковые соседние разделы, например Документы, Подрядчики, Контакты, Финансы, их layout, структура и визуальная иерархия должны совпадать.
+
+Нельзя делать:
+
+- разные паттерны sidebar для одного и того же типа данных
+- разную структуру detail-view для одинаковых разделов
+- разные способы навигации в схожих кабинетах
+
+## Правило архитектурной консистентности
+
+Если для одного cabinet, entity-screen или section уже принят рабочий архитектурный паттерн, он должен повторяться во всех аналогичных местах системы.
+
+Это означает:
+
+- один и тот же тип продуктовой задачи должен решаться одной и той же архитектурой;
+- нельзя делать документы по одному паттерну у дизайнера и по другому у подрядчика, если продуктовый смысл одинаковый;
+- нельзя делать разные structural-shell решения для projects, finances, contacts, registries, services, packages и других однотипных разделов;
+- различия между `brutalist` и `liquid-glass` допустимы на уровне визуального языка, ритма, surface-решений и акцентов, но не на уровне базовой IA и layout-логики;
+- различия между сущностями допустимы только там, где различается реальная бизнес-семантика.
+
+Короткая формула: одна продуктовая задача — одно архитектурное решение.
+
+## Навигация и поведение sidebar
+
+Sidebar должен поддерживать:
+
+- переход назад
+- выбор текущего контекста
+- фильтрацию списка
+- drill-down по node/leaf
+- attach/detach в кабинетном контексте
+- управление с клавиатуры
+
+Правила:
+
+- Up/Down перемещают фокус по payload tree
+- Enter открывает node/leaf
+- Esc или Backspace выполняют действие back
+- каждый кликабельный элемент имеет минимальную высоту 44px
+
+## Мобильное поведение
+
+Ниже 768px layout превращается в layer-toggle:
+
+- сначала показывается sidebar на всю ширину
+- после выбора leaf показывается main-content на всю ширину
+- sidebar скрывается до возврата назад
+- grid автоматически деградирует до 1xN
+
+Дополнительно:
+
+- учитывать safe-area inset через padding
+- интерактивные элементы не ниже 44px
+- поля ввода должны использовать 16px или больше, чтобы iOS не делал auto-zoom
+
+## Состояния интерфейса
+
+Loading и Empty должны быть текстовыми, строгими, без декоративности.
+
+### Loading
+
+- текстовый вид, например [ LOADING... ]
+- допустима пульсация текста
+- спиннеры запрещены
+
+### Empty
+
+- крупный текстовый блок, например [ NO DATA ATTACHED ]
+- ниже допускается только текстовое действие вроде [+ ADD]
+- иллюстрации и карточки пустого состояния запрещены
+
+### Error
+
+- строгий текстовый блок с описанием ошибки
+- допускается действие повторной загрузки
+- без overlay-ошибок и без модалок
+
+## Формы и auto-save
+
+Интерфейс полностью реактивный.
+
+Правила:
+
+- любое input, select, textarea должно отправлять обновление на blur или change
+- ручная кнопка сохранения не используется
+- форма не строится вокруг одного общего submit-сценария
+- пользователь должен воспринимать интерфейс как постоянно синхронизированный
+
+## Визуальный стиль
+
+Основная визуальная система проекта — brutalist flat SPA.
+
+Liquid Glass-система не удалена, но считается вторичной и используется как совместимый и витринный слой для стеклянных экранов.
+
+Правила:
+
+- плоские поверхности без теней
+- без декоративных градиентов
+- без иллюстративного фона
+- без скругленных контролов
+- типографика крупная, жесткая, иерархичная
+- заголовки uppercase
+- акцент строится на ритме, границах, толщине линий и контрасте текста
+
+## CSS и токены проекта
+
+Несмотря на смену визуального направления, в кодовой базе по-прежнему нужно использовать токены и инфраструктуру проекта, а не произвольные литералы.
+
+Правила:
+
+- цвета брать из --glass-* и --ds-* либо из согласованного монохромного набора через существующие переменные
+- не хардкодить transition duration, font-size и иные системные значения без причины
+- dark mode оформлять через html.dark
+- внутренние ссылки не должны использовать target="_blank"
+
+Если существующие glass-токены визуально не соответствуют brutalist-направлению, менять нужно токены и базовые примитивы, а не обходить систему локальными стилями.
+
+## Привязка к маршрутам проекта
+
+### Admin
+
+- /admin и списочные entity-разделы следуют паттерну Flat Registry
+- /admin/projects/[slug] следует паттерну Process Pipeline или Deep Hierarchy в зависимости от страницы
+- переключение внутренних project-разделов сохраняется без смены URL, если это уже заложено в архитектуре страницы
+
+### Client и Contractor
+
+- кабинеты строятся по тем же фрактальным правилам: левый navigation-only sidebar и правый hero-first content
+- одинаковые сущности между кабинетами должны быть синхронизированы по структуре
+
+## DOM-ориентир
+
+При проектировании новых компонентов придерживаться такой логики дерева:
+
+1. layout с жестким горизонтальным split на desktop
+2. aside с header, search, attach/detach и payload tree
+3. main с breadcrumbs
+4. затем full-height hero-screen
+5. затем data-section с 2x8 grid
+
+## Чеклист перед UI-изменением
+
+Перед тем как писать код, проверь:
+
+1. Нет ли горизонтальной навигации или top-tabs
+2. Не попала ли навигация в правую зону
+3. Не попала ли форма в левый sidebar
+4. Не перекрывает ли main sidebar на desktop
+5. Есть ли hero-screen перед данными
+6. Построен ли data-block по 2x8 логике
+7. Нет ли Save или Submit кнопок
+8. Все ли интерактивные элементы имеют высоту 44px+
+9. Есть ли keyboard-first поведение в sidebar
+10. Синхронизирован ли экран с аналогичными разделами других сущностей
+
+## Что считать ошибкой
+
+Следующее считается UI-багом по умолчанию:
+
+- горизонтальные вкладки
+- top navbar
+- модалки и overlay dropdown вне sidebar
+- спиннеры
+- иллюстрации в empty-state
+- кнопка Save или Submit
+- форма без auto-save
+- данные до hero-screen
+- разный layout у одинаковых сущностей
+- скругленные контролы и декоративные тени

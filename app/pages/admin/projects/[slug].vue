@@ -6,20 +6,22 @@
     </div>
     <div v-else-if="!project" style="font-size:.88rem;color:#999">Проект не найден</div>
     <template v-else>
-      <div style="font-size:.78rem;color:#aaa;margin-bottom:12px">
+      <div v-if="!showBrutalistHero" style="font-size:.78rem;color:#aaa;margin-bottom:12px">
         <NuxtLink to="/admin" style="color:#888;text-decoration:none">проекты</NuxtLink>
         <span style="margin:0 6px">/</span>
         <span>{{ project.title }}</span>
       </div>
-      <p v-if="clientLinkError" class="proj-client-error" style="margin-bottom:6px">{{ clientLinkError }}</p>
-      <p v-else-if="clientLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ clientLinkSuccess }}</p>
-      <p v-if="contractorLinkError" class="proj-client-error" style="margin-bottom:6px">{{ contractorLinkError }}</p>
-      <p v-else-if="contractorLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ contractorLinkSuccess }}</p>
-      <p v-if="designerLinkError" class="proj-client-error" style="margin-bottom:6px">{{ designerLinkError }}</p>
-      <p v-else-if="designerLinkSuccess" class="proj-client-success" style="margin-bottom:6px">{{ designerLinkSuccess }}</p>
+      <div v-if="projectFlashMessages.length && !showBrutalistHero" class="proj-notice-stack">
+        <p
+          v-for="message in projectFlashMessages"
+          :key="message.key"
+          :class="message.tone === 'error' ? 'proj-client-error' : 'proj-client-success'"
+          style="margin-bottom:6px"
+        >{{ message.text }}</p>
+      </div>
 
       <!-- ═══ Mobile top horizontal nav bar ═══ -->
-      <div v-if="!contractorPreviewMode" class="proj-mobile-nav">
+      <div v-if="showLegacyMobileNav" class="proj-mobile-nav">
         <!-- Client preview mode -->
         <template v-if="clientPreviewMode">
           <div class="proj-mobile-bar-header">
@@ -152,9 +154,47 @@
         </div><!-- /.proj-nav-col -->
 
         <!-- Right content -->
-        <div class="proj-main">
+        <div class="proj-main" :class="{ 'proj-main--brutalist': isBrutalistProjectMode }">
+          <section
+            v-if="showBrutalistHero"
+            class="proj-hero"
+          >
+            <nav class="proj-hero-breadcrumbs">
+              <NuxtLink to="/admin">проекты</NuxtLink>
+              <span>/</span>
+              <span>{{ project.title }}</span>
+              <template v-if="activePage !== 'overview'">
+                <span>/</span>
+                <span>{{ activePageTitle }}</span>
+              </template>
+            </nav>
+            <div class="proj-hero-body">
+              <p class="proj-hero-kicker">{{ activeGroupLabel || 'архитектура проекта' }}</p>
+              <h1 class="proj-hero-title">{{ activeHeroTitle }}</h1>
+              <div class="proj-hero-meta" aria-label="Контекст проекта">
+                <div
+                  v-for="fact in brutalistHeroFacts"
+                  :key="fact.label"
+                  class="proj-hero-meta-item"
+                >
+                  <span class="proj-hero-meta-label">{{ fact.label }}</span>
+                  <span class="proj-hero-meta-value">{{ fact.value }}</span>
+                </div>
+              </div>
+              <div v-if="projectFlashMessages.length" class="proj-hero-notices">
+                <p
+                  v-for="message in projectFlashMessages"
+                  :key="message.key"
+                  class="proj-hero-notice"
+                  :class="message.tone === 'error' ? 'proj-hero-notice--error' : 'proj-hero-notice--success'"
+                >{{ message.text }}</p>
+              </div>
+              <div class="proj-hero-prompt">↓ прокрутка / swipe ↓</div>
+            </div>
+          </section>
+
           <Transition name="tab-fade" mode="out-in">
-            <div :key="contentKey" class="proj-main-inner">
+            <div :key="contentKey" class="proj-main-inner" :class="{ 'proj-main-inner--after-hero': showBrutalistHero }">
               <!-- contractor preview -->
               <template v-if="contractorPreviewMode">
                 <div v-if="contractorPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
@@ -170,18 +210,20 @@
               />
               <!-- admin view -->
               <template v-else-if="activePage === 'overview'">
-                <AdminProjectOverview
-                  :slug="slug"
-                  :project="project"
-                  :clients="linkedClients"
-                  :contractors="linkedContractorsList"
-                  :designers="linkedDesignersList"
-                  @navigate="selectAdminPage"
-                />
+                <section class="proj-section-shell" :class="{ 'proj-section-shell--brutalist': isBrutalistProjectMode }">
+                  <AdminProjectOverview
+                    :slug="slug"
+                    :project="project"
+                    :clients="linkedClients"
+                    :contractors="linkedContractorsList"
+                    :designers="linkedDesignersList"
+                    @navigate="selectAdminPage"
+                  />
+                </section>
               </template>
               <!-- Клиенты проекта — inline без модала -->
               <template v-else-if="activePage === 'project_clients'">
-                <div class="proj-entity-panel">
+                <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
                   <div class="proj-entity-panel-title">Клиенты проекта</div>
 
                   <div v-if="linkedClients.length" class="proj-entity-section">
@@ -237,19 +279,20 @@
                   <p v-if="clientLinkSuccess" style="color:var(--ds-success,#5caa7f);font-size:.8rem;margin:8px 0">{{ clientLinkSuccess }}</p>
                 </div>
               </template>
-              <component
-                v-else
-                :is="activeComponent"
-                v-bind="activeComponentProps"
-              />
+              <section v-else class="proj-section-shell" :class="{ 'proj-section-shell--brutalist': isBrutalistProjectMode }">
+                <component
+                  :is="activeComponent"
+                  v-bind="activeComponentProps"
+                />
+              </section>
             </div>
           </Transition>
         </div>
       </div>
     </template>
 
-    <div v-if="showEdit" class="a-modal-backdrop" @click.self="showEdit = false">
-      <div class="a-modal">
+    <div v-if="showEdit" class="a-modal-backdrop" :class="{ 'a-modal-backdrop--brutalist': isBrutalistProjectMode }" @click.self="showEdit = false">
+      <div class="a-modal" :class="{ 'a-modal--brutalist': isBrutalistProjectMode }">
         <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">редактировать проект</h3>
         <form @submit.prevent="saveProject">
           <div class="a-field">
@@ -286,8 +329,8 @@
     <!-- Client Selection Modal REMOVED — теперь inline в content-area -->
 
     <!-- Contractor Selection Modal -->
-    <div v-if="showContractorModal" class="a-modal-backdrop" @click.self="showContractorModal = false">
-      <div class="a-modal">
+    <div v-if="showContractorModal" class="a-modal-backdrop" :class="{ 'a-modal-backdrop--brutalist': isBrutalistProjectMode }" @click.self="showContractorModal = false">
+      <div class="a-modal" :class="{ 'a-modal--brutalist': isBrutalistProjectMode }">
         <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">подрядчики проекта</h3>
 
         <div v-if="linkedContractorsList.length" style="margin-bottom:14px">
@@ -345,8 +388,8 @@
     </div>
 
     <!-- Designer Selection Modal -->
-    <div v-if="showDesignerModal" class="a-modal-backdrop" @click.self="showDesignerModal = false">
-      <div class="a-modal">
+    <div v-if="showDesignerModal" class="a-modal-backdrop" :class="{ 'a-modal-backdrop--brutalist': isBrutalistProjectMode }" @click.self="showDesignerModal = false">
+      <div class="a-modal" :class="{ 'a-modal--brutalist': isBrutalistProjectMode }">
         <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">дизайнеры проекта</h3>
 
         <div v-if="linkedDesignersList.length" style="margin-bottom:14px">
@@ -455,6 +498,10 @@ definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false }
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
+const designSystem = useDesignSystem()
+const isBrutalistProjectMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
+const showLegacyMobileNav = computed(() => !contractorPreviewMode.value && !isBrutalistProjectMode.value)
+const showBrutalistHero = computed(() => isBrutalistProjectMode.value && !clientPreviewMode.value && !contractorPreviewMode.value)
 
 // ── Привязка к глобальному nav (NavigationNode schema) ─────────────────────
 const adminNav = useAdminNav()
@@ -829,12 +876,40 @@ const navGroups = computed(() => {
     .filter(group => group.pages.length > 0)
 })
 
+const activePageTitle = computed(() => {
+  if (activePage.value === 'overview') return 'обзор'
+  return availablePages.value.find(page => page.slug === normalizedActivePage.value)?.title || project.value?.title || slug.value
+})
+
+const activeHeroTitle = computed(() => {
+  if (activePage.value === 'overview') return project.value?.title || slug.value
+  return activePageTitle.value
+})
+
 const navSearch = ref('')
 
 // Group label of the currently active page
 const activeGroupLabel = computed(() =>
   navGroups.value.find(g => g.pages.some(p => p.slug === activePage.value))?.label ?? null
 )
+
+const brutalistHeroFacts = computed(() => [
+  { label: 'раздел', value: activePageTitle.value },
+  { label: 'группа', value: activeGroupLabel.value || 'обзор' },
+  { label: 'страницы', value: String(availablePages.value.length) },
+  { label: 'клиенты', value: String(linkedClients.value.length) },
+  { label: 'подрядчики', value: String(linkedContractorsList.value.length) },
+  { label: 'дизайнеры', value: String(linkedDesignersList.value.length) },
+])
+
+const projectFlashMessages = computed(() => [
+  { key: 'client-error', tone: 'error', text: clientLinkError.value },
+  { key: 'client-success', tone: 'success', text: clientLinkSuccess.value },
+  { key: 'contractor-error', tone: 'error', text: contractorLinkError.value },
+  { key: 'contractor-success', tone: 'success', text: contractorLinkSuccess.value },
+  { key: 'designer-error', tone: 'error', text: designerLinkError.value },
+  { key: 'designer-success', tone: 'success', text: designerLinkSuccess.value },
+].filter((message): message is { key: string; tone: 'error' | 'success'; text: string } => Boolean(message.text)))
 
 const filteredNavGroups = computed(() => {
   const q = navSearch.value.trim().toLowerCase()
@@ -1251,7 +1326,149 @@ async function unlinkDesigner(designerId: number) {
 
 /* ── Right content ── */
 .proj-main { width: 100%; min-width: 0; }
+.proj-main--brutalist {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--dp-panel-h, 28px));
+}
 .proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
+.proj-main-inner--after-hero {
+  min-height: 100vh;
+  padding-bottom: max(3rem, env(safe-area-inset-bottom));
+}
+
+.proj-section-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+.proj-section-shell--brutalist {
+  padding: clamp(18px, 2.4vw, 32px) 0 max(3rem, env(safe-area-inset-bottom));
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.proj-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.proj-hero-breadcrumbs {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .62rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+}
+
+.proj-hero-breadcrumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.proj-hero-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+}
+
+.proj-hero-kicker {
+  margin: 0;
+  font-size: .68rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
+
+.proj-hero-title {
+  margin: 0;
+  max-width: 980px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  line-height: .96;
+  font-size: clamp(2.4rem, 8vw, 7rem);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.proj-hero-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 980px);
+}
+
+.proj-hero-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.proj-hero-meta-label {
+  font-size: .6rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 44%, transparent);
+}
+
+.proj-hero-meta-value {
+  font-size: .96rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.proj-hero-notices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: min(100%, 980px);
+}
+
+.proj-hero-notice {
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  font-size: .68rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.proj-hero-notice--success {
+  color: color-mix(in srgb, var(--ds-success, #5caa7f) 78%, var(--glass-text) 22%);
+}
+
+.proj-hero-notice--error {
+  color: color-mix(in srgb, var(--ds-error, #c00) 82%, var(--glass-text) 18%);
+}
+
+.proj-hero-prompt {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .68rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 42%, transparent);
+}
 
 /* ── Section switch fade ── */
 .tab-fade-enter-active { transition: opacity .35s ease-in-out; }
@@ -1300,10 +1517,27 @@ async function unlinkDesigner(designerId: number) {
   position: fixed; inset: 0; background: rgba(0,0,0,.3);
   display: flex; align-items: center; justify-content: center; z-index: 100;
 }
+
+.a-modal-backdrop--brutalist {
+  background: color-mix(in srgb, #000 58%, transparent);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
 .a-modal {
   background: #fff; border: none;
   padding: 32px; width: 480px; max-width: 90vw; max-height: 90vh; overflow-y: auto;
 }
+
+.a-modal--brutalist {
+  width: min(760px, calc(100vw - 40px));
+  padding: 28px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-page-bg) 94%, #000 6%);
+  box-shadow: none;
+}
+
 .dark .a-modal { background: #1a1a1c; border-color: #2a2a2e; }
 
 /* Small circle chip — matches admin layout style */
@@ -1405,6 +1639,39 @@ async function unlinkDesigner(designerId: number) {
   transform: scale(1.05);
 }
 
+.proj-entity-panel--brutalist {
+  max-width: none;
+  width: 100%;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.proj-entity-panel--brutalist .proj-entity-panel-title,
+.proj-entity-panel--brutalist .proj-entity-section-label,
+.proj-entity-panel--brutalist .proj-entity-name,
+.proj-entity-panel--brutalist .proj-entity-meta {
+  text-transform: uppercase;
+}
+
+.proj-entity-panel--brutalist .proj-entity-list {
+  gap: 0;
+}
+
+.proj-entity-panel--brutalist .proj-entity-row {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+}
+
+.proj-entity-panel--brutalist .proj-entity-btn {
+  border-radius: 0;
+}
+
 /* ══════════════════════════════════════════════════════════════
    MOBILE HORIZONTAL NAV BAR
    ══════════════════════════════════════════════════════════════ */
@@ -1494,6 +1761,42 @@ async function unlinkDesigner(designerId: number) {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
+  .proj-hero {
+    min-height: calc(100vh - max(24px, env(safe-area-inset-top)));
+    padding: 28px 16px max(3.5rem, env(safe-area-inset-bottom));
+  }
+
+  .proj-hero-breadcrumbs {
+    top: 14px;
+    left: 0;
+    font-size: .56rem;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .proj-hero-title {
+    font-size: clamp(2rem, 11vw, 4rem);
+    letter-spacing: .09em;
+  }
+
+  .proj-hero-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .proj-hero-meta-item {
+    padding: 10px 12px;
+  }
+
+  .proj-hero-meta-value {
+    font-size: .76rem;
+  }
+
+  .proj-hero-prompt {
+    bottom: max(14px, env(safe-area-inset-bottom));
+    font-size: .6rem;
+  }
+
   /* Show mobile nav */
   .proj-mobile-nav { display: block; }
 
@@ -1567,6 +1870,10 @@ async function unlinkDesigner(designerId: number) {
 
 /* ── Small phones ── */
 @media (max-width: 400px) {
+  .proj-hero-meta {
+    grid-template-columns: 1fr;
+  }
+
   .proj-mobile-nav-toggle {
     padding: 8px 10px;
     font-size: .76rem;

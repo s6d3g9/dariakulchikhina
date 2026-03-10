@@ -1,3 +1,14 @@
+import {
+  CONCEPT_TO_DESIGN_MODE,
+  DEFAULT_DESIGN_CONCEPT,
+  DESIGN_CONCEPT_STORAGE_KEY,
+  DESIGN_MODE_STORAGE_KEY,
+  DESIGN_MODE_TO_CONCEPT,
+  DESIGN_TOKENS_STORAGE_KEY,
+  LEGACY_DESIGN_TOKENS_STORAGE_KEYS,
+} from '~~/shared/constants/design-modes'
+import type { DesignConceptSlug, DesignMode } from '~~/shared/types/design-mode'
+
 /**
  * useDesignSystem v3 — world-class design-token engine.
  *
@@ -1941,19 +1952,37 @@ export const TYPE_SCALE_OPTIONS = [
 /* ═══════════════════════════════════════════════════════════
    COMPOSABLE
    ═══════════════════════════════════════════════════════════ */
-const LS_KEY = 'design-tokens-minale'
 const HISTORY_MAX = 50
 
 export function useDesignSystem() {
   const tokens  = useState<DesignTokens>('designTokens', () => ({ ...DEFAULT_TOKENS }))
   const history = useState<DesignTokens[]>('dsHistory', () => [])
   const future  = useState<DesignTokens[]>('dsFuture', () => [])
+  const activeConceptSlug = useState<string>('dsConceptSlug', () => DEFAULT_DESIGN_CONCEPT)
+  const currentDesignMode = computed<DesignMode>(() => {
+    const conceptSlug = activeConceptSlug.value as DesignConceptSlug
+    return CONCEPT_TO_DESIGN_MODE[conceptSlug] || 'brutalist'
+  })
 
   /* ── Persist / restore ─────────────────────────────────── */
   function save() {
     if (!import.meta.client) return
     try {
-      localStorage.setItem(LS_KEY, JSON.stringify(tokens.value))
+      localStorage.setItem(DESIGN_TOKENS_STORAGE_KEY, JSON.stringify(tokens.value))
+
+      const conceptSlug = activeConceptSlug.value.trim()
+      if (conceptSlug) {
+        localStorage.setItem(DESIGN_CONCEPT_STORAGE_KEY, conceptSlug)
+      } else {
+        localStorage.removeItem(DESIGN_CONCEPT_STORAGE_KEY)
+      }
+
+      const designMode = CONCEPT_TO_DESIGN_MODE[conceptSlug as DesignConceptSlug]
+      if (designMode) {
+        localStorage.setItem(DESIGN_MODE_STORAGE_KEY, designMode)
+      } else {
+        localStorage.removeItem(DESIGN_MODE_STORAGE_KEY)
+      }
     } catch (err) {
       console.warn('Failed to save design tokens:', err)
     }
@@ -1962,11 +1991,19 @@ export function useDesignSystem() {
   function load() {
     if (!import.meta.client) return
     try {
-      const raw = localStorage.getItem(LS_KEY)
+      const raw = localStorage.getItem(DESIGN_TOKENS_STORAGE_KEY)
+        || LEGACY_DESIGN_TOKENS_STORAGE_KEYS.map(key => localStorage.getItem(key)).find(Boolean)
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<DesignTokens>
         tokens.value = { ...DEFAULT_TOKENS, ...parsed }
       }
+
+      const savedConcept = localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || ''
+      const savedMode = (localStorage.getItem(DESIGN_MODE_STORAGE_KEY)?.trim() || '') as DesignMode | ''
+
+      activeConceptSlug.value = savedConcept
+        || (savedMode ? DESIGN_MODE_TO_CONCEPT[savedMode] : '')
+        || DEFAULT_DESIGN_CONCEPT
     } catch { /* corrupt data → just use defaults */ }
   }
 
@@ -1982,6 +2019,8 @@ export function useDesignSystem() {
   function reset() {
     pushHistory()
     tokens.value = { ...DEFAULT_TOKENS }
+    activeConceptSlug.value = DEFAULT_DESIGN_CONCEPT
+    _syncConceptAttr()
     applyToDOM()
     save()
   }
@@ -2393,8 +2432,6 @@ export function useDesignSystem() {
   }
 
   /* ── Batch setter (one undo step for preset switch) ───── */
-  const activeConceptSlug = useState<string>('dsConceptSlug', () => '')
-  
   function applyPreset(preset: DesignPreset) {
     pushHistory()
     // Start from DEFAULT_TOKENS — complete reset, no residue from prev presets
@@ -2575,16 +2612,20 @@ export function useDesignSystem() {
   /* ── Init ──────────────────────────────────────────────── */
   function initDesignSystem() {
     load()
+    _syncConceptAttr()
     applyToDOM()
   }
 
   /* ── Preview mode (try preset without committing) ──── */
-  const snapshotBeforePreview = useState<DesignTokens | null>('dsSnapshot', () => null)
+  const snapshotBeforePreview = useState<{ tokens: DesignTokens; conceptSlug: string } | null>('dsSnapshot', () => null)
   const isPreviewActive = computed(() => snapshotBeforePreview.value !== null)
 
   function previewPreset(preset: DesignPreset) {
     if (!snapshotBeforePreview.value) {
-      snapshotBeforePreview.value = { ...tokens.value }
+      snapshotBeforePreview.value = {
+        tokens: { ...tokens.value },
+        conceptSlug: activeConceptSlug.value,
+      }
     }
     // Track active concept slug for CSS selectors
     activeConceptSlug.value = preset.id.startsWith('concept-') ? preset.id.replace('concept-', '') : ''
@@ -2599,7 +2640,7 @@ export function useDesignSystem() {
       pushHistory()
       // tokens already have the preview state — just persist
       // We pushed history with the snapshot so undo goes back correctly
-      history.value[history.value.length - 1] = { ...snapshotBeforePreview.value }
+      history.value[history.value.length - 1] = { ...snapshotBeforePreview.value.tokens }
       snapshotBeforePreview.value = null
       save()
     }
@@ -2607,9 +2648,9 @@ export function useDesignSystem() {
 
   function cancelPreview() {
     if (snapshotBeforePreview.value) {
-      tokens.value = { ...snapshotBeforePreview.value }
+      tokens.value = { ...snapshotBeforePreview.value.tokens }
+      activeConceptSlug.value = snapshotBeforePreview.value.conceptSlug || DEFAULT_DESIGN_CONCEPT
       snapshotBeforePreview.value = null
-      activeConceptSlug.value = ''
       _syncConceptAttr()
       applyToDOM()
     }
@@ -2686,6 +2727,7 @@ export function useDesignSystem() {
     undo, redo, canUndo, canRedo,
     exportJSON, importJSON, exportCSS,
     initDesignSystem, applyToDOM, save, load,
+    activeConceptSlug, currentDesignMode,
     previewPreset, confirmPreview, cancelPreview, isPreviewActive,
     customPresets, loadCustomPresets, saveCustomPreset, deleteCustomPreset, renameCustomPreset,
   }

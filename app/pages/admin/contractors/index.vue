@@ -1,19 +1,45 @@
 <template>
-  <div>
-    <div v-if="projectSlugFilter" class="ct-filter-info glass-surface glass-card">
+  <div class="ct-page" :class="{ 'ct-page--brutalist': isBrutalistContractorsMode }">
+    <div v-if="projectSlugFilter" class="ct-filter-info glass-surface glass-card" :class="{ 'ct-filter-info--brutalist': isBrutalistContractorsMode }">
       <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
     </div>
     <!-- Content: selected contractor or empty state -->
     <template v-if="selectedId">
-      <div class="ent-entity-hd">
+      <section v-if="showBrutalistContractorHero" class="ct-hero">
+        <nav class="ct-hero-breadcrumbs">
+          <NuxtLink to="/admin">админ</NuxtLink>
+          <span>/</span>
+          <span>подрядчики</span>
+          <span>/</span>
+          <span>{{ selected?.name }}</span>
+        </nav>
+        <div class="ct-hero-body">
+          <p class="ct-hero-kicker">{{ contractorSectionLabel }}</p>
+          <h1 class="ct-hero-title">{{ selected?.name }}</h1>
+          <div class="ct-hero-meta">
+            <div v-for="fact in contractorHeroFacts" :key="fact.label" class="ct-hero-meta-item">
+              <span class="ct-hero-meta-label">{{ fact.label }}</span>
+              <span class="ct-hero-meta-value">{{ fact.value }}</span>
+            </div>
+          </div>
+          <div class="ct-hero-actions">
+            <button class="ct-hero-action" @click="openEdit(selected)">редактировать</button>
+            <button class="ct-hero-action" @click="openCreate">новый подрядчик</button>
+          </div>
+        </div>
+      </section>
+
+      <div v-if="!showBrutalistContractorHero" class="ent-entity-hd">
         <span class="ent-entity-hd-name">{{ selected?.name }}</span>
         <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
       </div>
-      <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" v-model="activeContractorSection" />
+      <section class="ct-cab-shell" :class="{ 'ct-cab-shell--brutalist': isBrutalistContractorsMode }">
+        <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" v-model="activeContractorSection" />
+      </section>
     </template>
-    <div v-else class="ent-empty-detail">
+    <div v-else class="ent-empty-detail ct-empty-detail" :class="{ 'ct-empty-detail--brutalist': isBrutalistContractorsMode }">
       <span class="ent-empty-icon">🏗</span>
       <span v-if="contractors?.length">Выберите подрядчика из списка</span>
       <span v-else>Нет подрядчиков — добавьте первого</span>
@@ -21,8 +47,8 @@
     </div>
 
     <Teleport to="body">
-      <div v-if="showModal" class="ct-backdrop" @click.self="closeModal">
-        <div class="ct-modal glass-surface">
+      <div v-if="showModal" class="ct-backdrop" :class="{ 'ct-backdrop--brutalist': isBrutalistContractorsMode }" @click.self="closeModal">
+        <div class="ct-modal glass-surface" :class="{ 'ct-modal--brutalist': isBrutalistContractorsMode }">
           <div class="ct-modal-head">
             <span>{{ editingId ? 'редактировать' : 'добавить' }} подрядчика</span>
             <button class="ct-modal-close" @click="closeModal">✕</button>
@@ -182,6 +208,8 @@ watch(() => adminNav.contentSpec.value.contractorSection, (sec) => {
 const activeContractorSection = ref('dashboard')
 
 const route = useRoute()
+const designSystem = useDesignSystem()
+const isBrutalistContractorsMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
 const contractorsCacheByProject = useState<Record<string, any[]>>('cache-admin-contractors-by-project', () => ({}))
 const contractorsCacheKey = computed(() => projectSlugFilter.value || '__all__')
@@ -197,6 +225,17 @@ watch(contractors, (value) => { if (Array.isArray(value)) contractorsCacheByProj
 const selectedId = ref<number | null>(null)
 const selected = computed(() => contractors.value?.find((c: any) => c.id === selectedId.value) || null)
 function selectContractor(c: any) { selectedId.value = c.id }
+const showBrutalistContractorHero = computed(() => isBrutalistContractorsMode.value && !!selected.value)
+const contractorSectionLabel = computed(() => {
+  if (activeContractorSection.value === 'dashboard') return 'кабинет подрядчика'
+  return String(activeContractorSection.value || 'кабинет подрядчика').replace(/_/g, ' ')
+})
+const contractorHeroFacts = computed(() => [
+  { label: 'тип', value: selected.value?.contractorType === 'company' ? 'организация' : 'мастер' },
+  { label: 'контакт', value: selected.value?.phone || selected.value?.email || 'не указан' },
+  { label: 'компания', value: selected.value?.companyName || 'без компании' },
+  { label: 'раздел', value: contractorSectionLabel.value },
+])
 
 // Auto-select contractor from ?contractorId= query
 const router = useRouter()
@@ -345,7 +384,18 @@ async function del(id: number) {
 </script>
 
 <style scoped>
+.ct-page {
+  width: 100%;
+}
+
+.ct-page--brutalist {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .ct-filter-info { margin-bottom: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: .76rem; color: var(--glass-text); }
+.ct-filter-info--brutalist { margin-bottom: 0; padding: 12px 14px; border-radius: 0; border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent); background: color-mix(in srgb, var(--glass-text) 2%, transparent); }
 .ct-filter-link { text-decoration: none; color: var(--glass-text); opacity: .5; transition: opacity .15s; }
 .ct-filter-link:hover { opacity: 1; }
 .ct-nav-master { padding-left: 22px; }
@@ -365,9 +415,128 @@ html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; 
 .ct-btn-cabinet { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; font-family: inherit; color: var(--glass-page-bg); background: var(--glass-text); padding: 5px 10px; border-radius: 7px; border: none; cursor: pointer; opacity: .75; transition: opacity .15s; white-space: nowrap; }
 .ct-btn-cabinet:hover { opacity: 1; }
 
+.ct-hero {
+  position: relative;
+  min-height: min(72vh, 720px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.ct-hero-breadcrumbs {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .62rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
+
+.ct-hero-breadcrumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ct-hero-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: min(100%, 980px);
+}
+
+.ct-hero-kicker {
+  margin: 0;
+  font-size: .68rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
+
+.ct-hero-title {
+  margin: 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  line-height: .94;
+  font-size: clamp(2.4rem, 8vw, 6.5rem);
+}
+
+.ct-hero-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.ct-hero-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.ct-hero-meta-label {
+  font-size: .6rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 44%, transparent);
+}
+
+.ct-hero-meta-value {
+  font-size: .9rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.ct-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ct-hero-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: transparent;
+  color: var(--glass-text);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: .68rem;
+  cursor: pointer;
+}
+
+.ct-cab-shell--brutalist {
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  padding-top: 18px;
+}
+
+.ct-empty-detail--brutalist {
+  min-height: 56vh;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
 /* ══ Modal ══ */
 .ct-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
+.ct-backdrop--brutalist { background: color-mix(in srgb, #000 58%, transparent); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
 .ct-modal { width: 620px; max-width: 100%; max-height: 90vh; border-radius: var(--modal-radius, 16px); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,.18); }
+.ct-modal--brutalist { border-radius: 0; box-shadow: none; border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent); background: color-mix(in srgb, var(--glass-page-bg) 95%, #000 5%); }
 .ct-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent); font-size: var(--ds-text-sm, .84rem); font-weight: 500; color: var(--glass-text); flex-shrink: 0; }
 .ct-modal-close { background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--glass-text); opacity: .45; padding: 2px 6px; }
 .ct-modal-close:hover { opacity: 1; }
@@ -408,5 +577,29 @@ html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; 
 .ct-doc-download:hover { text-decoration: underline; }
 .ct-cert-chip { display: inline-block; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--ds-accent, #6366f1) 10%, transparent); color: var(--ds-accent, #6366f1); font-size: .75rem; font-weight: 500; margin-right: 4px; margin-bottom: 2px; }
 
-@media (max-width: 640px) { .ct-nav-master { padding-left: 10px; } }
+@media (max-width: 900px) {
+  .ct-hero-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .ct-nav-master { padding-left: 10px; }
+  .ct-hero {
+    min-height: auto;
+    padding: 26px 14px;
+  }
+  .ct-hero-breadcrumbs {
+    position: static;
+    align-self: flex-start;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .ct-hero-title {
+    font-size: clamp(2rem, 11vw, 4rem);
+  }
+  .ct-hero-meta {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

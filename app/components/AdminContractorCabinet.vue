@@ -27,7 +27,26 @@
       <main class="cab-main">
         <div class="cab-inner">
           <template v-if="section === 'dashboard'">
-            <div class="dash-welcome glass-surface">
+            <section v-if="showBrutalistContractorDashboardHero" class="ct-cab-hero">
+              <div class="ct-cab-hero-topline">кабинет подрядчика</div>
+              <div class="ct-cab-hero-grid">
+                <div class="ct-cab-hero-main">
+                  <div class="ct-cab-hero-avatar">{{ contractor?.name?.charAt(0)?.toUpperCase() || '◑' }}</div>
+                  <div class="ct-cab-hero-copy">
+                    <h2 class="ct-cab-hero-title">{{ contractor?.name }}</h2>
+                    <p class="ct-cab-hero-subtitle">{{ contractorHeroSubtitle }}</p>
+                  </div>
+                </div>
+                <div class="ct-cab-hero-facts">
+                  <div v-for="fact in contractorDashboardFacts" :key="fact.label" class="ct-cab-hero-fact">
+                    <span class="ct-cab-hero-fact-label">{{ fact.label }}</span>
+                    <span class="ct-cab-hero-fact-value">{{ fact.value }}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div v-if="!showBrutalistContractorDashboardHero" class="dash-welcome glass-surface">
               <div class="dash-welcome-left">
                 <div class="dash-avatar">{{ contractor?.name?.charAt(0)?.toUpperCase() || '◑' }}</div>
                 <div>
@@ -49,34 +68,34 @@
               </div>
             </div>
 
-            <div class="dash-quick-nav">
-              <button v-for="item in quickActions" :key="item.key" class="dash-quick-btn glass-surface" @click="section = item.key">
+            <div class="dash-quick-nav" :class="{ 'dash-quick-nav--brutalist': isBrutalistContractorCabinetMode }">
+              <button v-for="item in quickActions" :key="item.key" class="dash-quick-btn glass-surface" :class="{ 'dash-quick-btn--brutalist': isBrutalistContractorCabinetMode }" @click="section = item.key">
                 <span class="dash-quick-icon">{{ item.icon }}</span>
                 <span class="dash-quick-label">{{ item.label }}</span>
                 <span v-if="item.badge" class="dash-quick-badge">{{ item.badge }}</span>
               </button>
             </div>
 
-            <div class="dash-stats">
-              <div class="dash-stat glass-surface">
+            <div class="dash-stats" :class="{ 'dash-stats--brutalist': isBrutalistContractorCabinetMode }">
+              <div class="dash-stat glass-surface" :class="{ 'dash-stat--brutalist': isBrutalistContractorCabinetMode }">
                 <div class="dash-stat-val">{{ dashStats.total }}</div>
                 <div class="dash-stat-label">Всего задач</div>
               </div>
-              <div class="dash-stat glass-surface dash-stat--blue">
+              <div class="dash-stat glass-surface dash-stat--blue" :class="{ 'dash-stat--brutalist': isBrutalistContractorCabinetMode }">
                 <div class="dash-stat-val">{{ dashStats.inProgress }}</div>
                 <div class="dash-stat-label">В работе</div>
               </div>
-              <div class="dash-stat glass-surface dash-stat--green">
+              <div class="dash-stat glass-surface dash-stat--green" :class="{ 'dash-stat--brutalist': isBrutalistContractorCabinetMode }">
                 <div class="dash-stat-val">{{ dashStats.done }}</div>
                 <div class="dash-stat-label">Выполнено</div>
               </div>
-              <div class="dash-stat glass-surface" :class="dashStats.overdue ? 'dash-stat--red' : ''">
+              <div class="dash-stat glass-surface" :class="[{ 'dash-stat--brutalist': isBrutalistContractorCabinetMode }, dashStats.overdue ? 'dash-stat--red' : '']">
                 <div class="dash-stat-val">{{ dashStats.overdue }}</div>
                 <div class="dash-stat-label">Просрочено</div>
               </div>
             </div>
 
-            <div class="dash-progress glass-surface">
+            <div class="dash-progress glass-surface" :class="{ 'dash-progress--brutalist': isBrutalistContractorCabinetMode }">
               <div class="dash-progress-head">
                 <span>Общий прогресс</span>
                 <span class="dash-progress-pct">{{ dashStats.total ? Math.round(dashStats.done / dashStats.total * 100) : 0 }}%</span>
@@ -86,17 +105,17 @@
               </div>
             </div>
 
-            <div v-if="linkedProjects?.length" class="dash-projects glass-surface">
+            <div v-if="linkedProjects?.length" class="dash-projects glass-surface" :class="{ 'dash-projects--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-section-title">Мои проекты ({{ linkedProjects.length }})</div>
               <div class="dash-projects-grid">
-                <div v-for="p in linkedProjects" :key="p.slug" class="dash-project-card">
+                <div v-for="p in linkedProjects" :key="p.slug" class="dash-project-card" :class="{ 'dash-project-card--brutalist': isBrutalistContractorCabinetMode }">
                   <span class="dash-project-name">{{ p.title }}</span>
                   <span class="dash-project-slug">{{ p.slug }}</span>
                 </div>
               </div>
             </div>
 
-            <div v-if="dashDeadlines.length" class="dash-deadlines glass-surface">
+            <div v-if="dashDeadlines.length" class="dash-deadlines glass-surface" :class="{ 'dash-deadlines--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-section-title">Ближайшие дедлайны</div>
               <div
                 v-for="item in dashDeadlines"
@@ -111,7 +130,7 @@
               </div>
             </div>
 
-            <div v-if="dashNoDue.length" class="dash-nodue glass-surface">
+            <div v-if="dashNoDue.length" class="dash-nodue glass-surface" :class="{ 'dash-nodue--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-section-title">Без срока ({{ dashNoDue.length }})</div>
               <div v-for="item in dashNoDue" :key="item.id" class="dash-nodue-row">
                 <span class="dash-nodue-dot" />
@@ -122,11 +141,11 @@
           </template>
 
           <template v-else-if="section === 'tasks'">
-            <div class="cab-add-task-row">
+            <div class="cab-add-task-row" :class="{ 'cab-add-task-row--brutalist': isBrutalistContractorCabinetMode }">
               <button class="cab-add-task-btn" @click="openNewTaskModal">＋ Добавить задачу</button>
             </div>
 
-            <div v-if="showNewTaskModal" class="u-modal glass-surface">
+            <div v-if="showNewTaskModal" class="u-modal glass-surface" :class="{ 'u-modal--brutalist-task': isBrutalistContractorCabinetMode }">
               <div class="u-modal__head">
                 <span class="u-modal__title">Новая задача</span>
                 <button class="u-modal__close" @click="showNewTaskModal = false">✕</button>
@@ -186,7 +205,7 @@
               </div>
             </div>
 
-            <div v-if="workItems?.length" class="cab-filters">
+            <div v-if="workItems?.length" class="cab-filters" :class="{ 'cab-filters--brutalist': isBrutalistContractorCabinetMode }">
               <button
                 v-for="f in FILTERS"
                 :key="f.value"
@@ -208,7 +227,7 @@
               <p>Нет задач с выбранным фильтром.</p>
             </div>
             <template v-else>
-              <div v-for="proj in byProject" :key="proj.slug" class="cab-project-group">
+              <div v-for="proj in byProject" :key="proj.slug" class="cab-project-group" :class="{ 'cab-project-group--brutalist': isBrutalistContractorCabinetMode }">
                 <div class="cab-proj-header">
                   <span class="cab-proj-title">{{ proj.title }}</span>
                   <span class="cab-proj-stats">{{ proj.doneCount }} / {{ proj.totalCount }}</span>
@@ -233,7 +252,7 @@
                         v-for="item in wtGroup.items"
                         :key="item.id"
                         class="cab-task glass-surface"
-                        :class="{ expanded: expandedId === item.id }"
+                        :class="{ expanded: expandedId === item.id, 'cab-task--brutalist': isBrutalistContractorCabinetMode }"
                       >
                         <div class="cab-task-top" @click="toggleExpand(item.id)">
                           <span class="cab-task-expand-icon">{{ expandedId === item.id ? '▾' : '▸' }}</span>
@@ -296,7 +315,7 @@
                       </div>
                     </div>
 
-                    <div v-if="wtGroup.stages.length" class="cab-stages-inline glass-surface">
+                    <div v-if="wtGroup.stages.length" class="cab-stages-inline glass-surface" :class="{ 'cab-stages-inline--brutalist': isBrutalistContractorCabinetMode }">
                       <div class="cab-stages-inline-head">
                         <span class="cab-stages-inline-title">Технологические этапы</span>
                         <span class="cab-stages-inline-pct">{{ stagesPct(proj.slug, wtGroup.workType, wtGroup.stages.length) }}%</span>
@@ -324,8 +343,8 @@
           </template>
 
           <template v-else-if="section === 'contacts'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Основные контакты</h3>
                 <div class="u-modal__row2">
                   <div class="u-field">
@@ -355,8 +374,8 @@
           </template>
 
           <template v-else-if="section === 'passport'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Паспорт гражданина РФ</h3>
                 <div class="u-modal__row2">
                   <div class="u-field">
@@ -382,7 +401,7 @@
                 </div>
               </div>
 
-              <div class="u-form-section">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Персональные данные</h3>
                 <div class="u-modal__row2">
                   <div class="u-field">
@@ -416,8 +435,8 @@
           </template>
 
           <template v-else-if="section === 'requisites'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Юридические данные</h3>
                 <div class="u-grid-2">
                   <div class="u-field">
@@ -443,7 +462,7 @@
                 </div>
               </div>
 
-              <div class="u-form-section">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Банковские реквизиты</h3>
                 <div class="u-grid-2">
                   <div class="u-field u-field--full">
@@ -473,6 +492,7 @@
           </template>
 
           <template v-else-if="section === 'documents'">
+            <div class="cab-docs-panel" :class="{ 'cab-docs-panel--brutalist': isBrutalistContractorCabinetMode }">
             <div class="u-grid-2" style="margin-bottom:12px">
               <div class="u-field">
                 <label>Поиск</label>
@@ -494,7 +514,7 @@
               </div>
             </div>
 
-            <div class="u-form-section">
+            <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
               <h3>Загрузить документ</h3>
               <div class="u-grid-2">
                 <div class="u-field">
@@ -521,7 +541,7 @@
             </div>
 
             <div v-if="filteredContractorDocs.length" class="cab-docs-list">
-              <div v-for="doc in filteredContractorDocs" :key="doc.id" class="cab-doc-card glass-surface">
+              <div v-for="doc in filteredContractorDocs" :key="doc.id" class="cab-doc-card glass-surface" :class="{ 'cab-doc-card--brutalist': isBrutalistContractorCabinetMode }">
                 <div class="cab-doc-icon">📎</div>
                 <div class="cab-doc-info">
                   <div class="cab-doc-title">{{ doc.title }}</div>
@@ -538,19 +558,20 @@
                 </div>
               </div>
             </div>
-            <div v-else-if="contractorDocs?.length" class="u-empty glass-surface">
+            <div v-else-if="contractorDocs?.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistContractorCabinetMode }">
               <span>🔎</span>
               <p>По фильтру ничего не найдено.</p>
             </div>
-            <div v-else class="u-empty glass-surface">
+            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistContractorCabinetMode }">
               <span>📂</span>
               <p>Документов пока нет.<br>Загрузите паспорт, лицензии, сертификаты и другие документы.</p>
+            </div>
             </div>
           </template>
 
           <template v-else-if="section === 'specialization'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Роль / профессия</h3>
                 <div class="u-field u-field--full">
                   <div v-for="group in ROLE_GROUPS" :key="group.label" class="u-tag-group">
@@ -569,7 +590,7 @@
                 </div>
               </div>
 
-              <div class="u-form-section">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Виды работ</h3>
                 <div class="u-field u-field--full">
                   <div v-for="group in WORK_GROUPS" :key="group.label" class="u-tag-group">
@@ -596,8 +617,8 @@
           </template>
 
           <template v-else-if="section === 'finances'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Система налогообложения</h3>
                 <div class="u-grid-2">
                   <div class="u-field">
@@ -619,7 +640,7 @@
                 </div>
               </div>
 
-              <div class="u-form-section">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Способы оплаты</h3>
                 <div class="u-tags">
                   <button
@@ -633,7 +654,7 @@
                 </div>
               </div>
 
-              <div class="u-form-section">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Сертификаты и допуски</h3>
                 <div class="cab-certs-list">
                   <div v-for="(cert, idx) in form.certifications" :key="idx" class="cab-cert-item">
@@ -655,7 +676,7 @@
           </template>
 
           <template v-else-if="section === 'portfolio'">
-            <div class="cab-portfolio-stats glass-surface">
+            <div class="cab-portfolio-stats glass-surface" :class="{ 'cab-portfolio-stats--brutalist': isBrutalistContractorCabinetMode }">
               <div class="cab-portfolio-stat">
                 <span class="cab-portfolio-stat-val">{{ portfolioStats.doneCount }}</span>
                 <span class="cab-portfolio-stat-label">Выполнено задач</span>
@@ -677,7 +698,7 @@
             <div class="u-form-section">
               <h3>Выполненные работы</h3>
               <div class="cab-portfolio-grid">
-                <div v-for="proj in byProject" :key="proj.slug" class="cab-portfolio-proj glass-surface">
+                <div v-for="proj in byProject" :key="proj.slug" class="cab-portfolio-proj glass-surface" :class="{ 'cab-portfolio-proj--brutalist': isBrutalistContractorCabinetMode }">
                   <div class="cab-portfolio-proj-head">
                     <span class="cab-portfolio-proj-title">{{ proj.title }}</span>
                     <span class="cab-portfolio-proj-progress">{{ proj.doneCount }}/{{ proj.totalCount }}</span>
@@ -695,7 +716,7 @@
           </template>
 
           <template v-else-if="section === 'settings'">
-            <div class="u-form-section">
+            <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
               <h3>Аккаунт</h3>
               <div class="u-grid-2">
                 <div class="u-field">
@@ -713,7 +734,7 @@
               </div>
             </div>
 
-            <div class="u-form-section">
+            <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
               <h3>Уведомления</h3>
               <div class="cab-settings-toggles">
                 <label class="cab-toggle-row">
@@ -732,7 +753,7 @@
           </template>
 
           <template v-else-if="section === 'staff'">
-            <div v-if="!staff?.length" class="u-empty glass-surface">
+            <div v-if="!staff?.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistContractorCabinetMode }">
               <span>◔</span>
               <p>Сотрудников пока нет.<br>Администратор добавит мастеров за вашей компанией.</p>
             </div>
@@ -742,6 +763,7 @@
                 :key="m.id"
                 :to="`/contractor/${m.id}`"
                 class="cab-staff-card glass-surface"
+                :class="{ 'cab-staff-card--brutalist': isBrutalistContractorCabinetMode }"
               >
                 <div class="cab-staff-avatar">◑</div>
                 <div class="cab-staff-info">
@@ -785,6 +807,8 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
 
 const contractorIdRef = computed(() => props.contractorId)
+const designSystem = useDesignSystem()
+const isBrutalistContractorCabinetMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 
 const {
   contractor,
@@ -871,6 +895,19 @@ const filteredContractorDocs = computed(() => {
   })
 })
 
+const showBrutalistContractorDashboardHero = computed(() => isBrutalistContractorCabinetMode.value && section.value === 'dashboard')
+const contractorHeroSubtitle = computed(() => {
+  const type = contractor.value?.contractorType === 'company' ? 'подрядчик / компания' : 'мастер'
+  const city = contractor.value?.city ? ` · ${contractor.value.city}` : ''
+  return `${type}${city}`
+})
+const contractorDashboardFacts = computed(() => [
+  { label: 'профиль', value: `${profilePct.value}%` },
+  { label: 'активные задачи', value: String(activeCount.value) },
+  { label: 'проекты', value: String(linkedProjects.value?.length || 0) },
+  { label: 'документы', value: String(contractorDocs.value?.length || 0) },
+])
+
 function formatDocDate(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
@@ -900,4 +937,219 @@ function formatDocDate(value: string) {
 }
 .tag-shift-move, .tag-shift-enter-active, .tag-shift-leave-active { transition: all .22s ease; }
 .tag-shift-enter-from, .tag-shift-leave-to { opacity: 0; transform: translateY(8px) scale(.97); }
+
+.cab-add-task-row--brutalist {
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  margin-bottom: 14px;
+}
+
+.cab-form--brutalist {
+  gap: 18px;
+}
+
+.u-form-section--brutalist {
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.u-modal--brutalist-task {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.cab-docs-panel--brutalist {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cab-filters--brutalist {
+  padding: 10px 0 2px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  margin-bottom: 14px;
+}
+
+.cab-project-group--brutalist {
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+  padding: 14px;
+}
+
+.cab-task--brutalist,
+.cab-stages-inline--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.cab-doc-card--brutalist,
+.u-empty--brutalist,
+.cab-portfolio-stats--brutalist,
+.cab-portfolio-proj--brutalist,
+.cab-staff-card--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.ct-cab-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 8px 0 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  margin-bottom: 18px;
+}
+
+.ct-cab-hero-topline {
+  font-size: .64rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
+
+.ct-cab-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, .9fr);
+  gap: 16px;
+}
+
+.ct-cab-hero-main,
+.ct-cab-hero-facts {
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.ct-cab-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+}
+
+.ct-cab-hero-avatar {
+  width: 72px;
+  height: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  font-size: 1.6rem;
+  text-transform: uppercase;
+}
+
+.ct-cab-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ct-cab-hero-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3.8rem);
+  line-height: .95;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.ct-cab-hero-subtitle {
+  margin: 0;
+  font-size: .82rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 52%, transparent);
+}
+
+.ct-cab-hero-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ct-cab-hero-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.ct-cab-hero-fact:nth-child(2n) {
+  border-right: 0;
+}
+
+.ct-cab-hero-fact:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.ct-cab-hero-fact-label {
+  font-size: .58rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 44%, transparent);
+}
+
+.ct-cab-hero-fact-value {
+  font-size: 1rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.dash-quick-nav--brutalist {
+  gap: 0;
+}
+
+.dash-quick-btn--brutalist,
+.dash-stat--brutalist,
+.dash-progress--brutalist,
+.dash-projects--brutalist,
+.dash-project-card--brutalist,
+.dash-deadlines--brutalist,
+.dash-nodue--brutalist {
+  border-radius: 0;
+}
+
+.dash-quick-btn--brutalist,
+.dash-stat--brutalist,
+.dash-progress--brutalist,
+.dash-projects--brutalist,
+.dash-deadlines--brutalist,
+.dash-nodue--brutalist {
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.dash-project-card--brutalist {
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+@media (max-width: 980px) {
+  .ct-cab-hero-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .ct-cab-hero-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ct-cab-hero-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .ct-cab-hero-fact {
+    border-right: 0;
+  }
+
+  .ct-cab-hero-fact:not(:last-child) {
+    border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  }
+}
 </style>

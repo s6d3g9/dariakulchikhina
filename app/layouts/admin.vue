@@ -1,7 +1,7 @@
 <template>
-  <div class="admin-bg glass-page">
+  <div class="admin-bg glass-page" :class="{ 'admin-bg--brutalist': isBrutalistShell, 'admin-bg--glass': isLiquidGlassShell }">
     <UIDesignPanel />
-    <header class="admin-header glass-surface">
+    <header v-if="!isBrutalistShell" class="admin-header glass-surface">
       <span class="admin-brand">админ-панель</span>
       <div class="admin-header-links">
         <!-- Search trigger -->
@@ -71,6 +71,70 @@
     <div class="adm-body">
       <!-- Global navigation sidebar — persists across all admin routes -->
       <aside class="proj-nav-col">
+        <div v-if="isBrutalistShell" class="admin-sidebar-util glass-surface">
+          <div class="admin-sidebar-brand">админ-панель</div>
+          <button
+            type="button"
+            class="admin-search-btn admin-search-btn--sidebar"
+            title="Поиск  Ctrl+K / ⌘K"
+            aria-label="Поиск"
+            @click="searchOpen = true"
+          >
+            <span class="admin-search-label">поиск</span>
+            <kbd class="admin-search-kbd">Ctrl+K</kbd>
+          </button>
+
+          <div ref="notifWrapRef" class="admin-notif-wrap admin-notif-wrap--sidebar">
+            <button
+              type="button"
+              class="admin-notif-btn admin-notif-btn--sidebar"
+              :class="notifOpen ? 'admin-notif-btn--open' : ''"
+              :title="notifTotal ? `${notifTotal} уведомлений` : 'Уведомления'"
+              @click.stop="notifOpen = !notifOpen"
+            >
+              <span>уведомления</span>
+              <span v-if="notifTotal" class="admin-notif-inline-count">{{ notifTotal > 99 ? '99+' : notifTotal }}</span>
+            </button>
+            <div v-if="notifOpen" class="admin-notif-dropdown admin-notif-dropdown--sidebar glass-surface" @click.stop>
+              <div class="admin-notif-head">уведомления</div>
+              <div v-if="!notifTotal" class="admin-notif-empty">[ всё в порядке ]</div>
+              <template v-else>
+                <NuxtLink
+                  v-if="notifData?.extra?.count"
+                  to="/admin"
+                  class="admin-notif-item admin-notif-item--warn"
+                  @click="notifOpen = false"
+                >
+                  <span class="admin-notif-item-count">{{ notifData.extra.count }}</span>
+                  <span class="admin-notif-item-label">{{ notifData.extra.label }}</span>
+                </NuxtLink>
+                <div
+                  v-if="notifData?.overdue?.count"
+                  class="admin-notif-item admin-notif-item--danger"
+                >
+                  <span class="admin-notif-item-count">{{ notifData.overdue.count }}</span>
+                  <span class="admin-notif-item-label">{{ notifData.overdue.label }}</span>
+                </div>
+              </template>
+              <div class="admin-notif-foot">
+                <button class="admin-notif-refresh" @click="refreshNotif">обновить</button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="admin-theme-btn admin-theme-btn--sidebar"
+            :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
+            @click="toggleTheme"
+          >{{ isDark ? 'светло' : 'темно' }}</button>
+
+          <div class="admin-sidebar-links">
+            <NuxtLink to="/" class="admin-link admin-link--sidebar">сайт</NuxtLink>
+            <a href="#" class="admin-link admin-link--sidebar" @click.prevent="logout">выйти</a>
+          </div>
+        </div>
+
         <AdminNestedNav
           :node="adminNav.currentNode.value"
           :direction="adminNav.slideDir.value"
@@ -97,6 +161,11 @@
 const router = useRouter()
 const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
+const designSystem = useDesignSystem()
+
+const isBrutalistShell = computed(() => designSystem.currentDesignMode.value === 'brutalist')
+
+const isLiquidGlassShell = computed(() => designSystem.currentDesignMode.value === 'liquid-glass')
 
 // ── Global nav ──────────────────────────────────────────
 const adminNav = useAdminNav()
@@ -466,7 +535,7 @@ onMounted(() => {
   document.addEventListener('keydown', onSearchKeydown)
   _notifInterval = setInterval(refreshNotif, 2 * 60 * 1000)
   useUITheme().initTheme()
-  useDesignSystem().initDesignSystem()
+  designSystem.initDesignSystem()
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
@@ -560,6 +629,17 @@ async function logout() {
   line-height: var(--ds-line-height);
 }
 
+.admin-bg--brutalist {
+  --admin-header-h: 0px;
+  --admin-container-mt: 14px;
+  --admin-nav-top: calc(var(--dp-panel-h, 28px) + 14px);
+}
+
+.admin-bg--glass {
+  --admin-header-h: 48px;
+  --admin-container-mt: 22px;
+}
+
 /* ── Header ── */
 .admin-header {
   padding: 12px 24px;
@@ -597,6 +677,36 @@ async function logout() {
   font-weight: 400;
 }
 .admin-header-links { display: flex; gap: 20px; align-items: center; }
+.admin-sidebar-util {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0 14px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+}
+
+.admin-sidebar-brand {
+  font-size: .68rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--glass-text);
+  opacity: .45;
+  padding: 0 0 4px;
+}
+
+.admin-sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-link--sidebar {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+}
 .admin-link {
   font-size: .75rem;
   letter-spacing: 0.12em;
@@ -626,6 +736,12 @@ async function logout() {
   font-family: inherit;
 }
 .admin-search-btn svg { display: none; }
+.admin-search-btn--sidebar {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+}
 .admin-search-btn:hover {
   border-color: color-mix(in srgb, var(--glass-text) 50%, transparent);
   color: var(--glass-text);
@@ -660,14 +776,24 @@ async function logout() {
   transition: opacity .15s, border-color .15s;
 }
 .admin-theme-btn:hover { opacity: 1; border-color: var(--glass-text); }
+.admin-theme-btn--sidebar {
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  justify-content: flex-start;
+}
 
 /* ── Notifications ── */
 .admin-notif-wrap        { position: relative; }
+.admin-notif-wrap--sidebar { width: 100%; }
 .admin-notif-btn         { background: none; border: 1px solid transparent; border-radius: 0; color: var(--glass-text); opacity: .45; padding: 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; position: relative; transition: opacity .15s, border-color .15s; }
+.admin-notif-btn--sidebar { width: 100%; min-height: 44px; justify-content: space-between; padding: 8px 12px; }
 .admin-notif-btn:hover   { opacity: 1; border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
 .admin-notif-btn--open   { opacity: 1; border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
 .admin-notif-badge       { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; background: var(--ds-error); color: var(--glass-page-bg); border-radius: 8px; font-size: .6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
+.admin-notif-inline-count { opacity: .7; }
 .admin-notif-dropdown    { position: absolute; top: calc(100% + 8px); right: 0; width: 260px; border-radius: 0; padding: 12px; z-index: 500; box-shadow: 0 8px 32px color-mix(in srgb, var(--glass-text) 15%, transparent); border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent); }
+.admin-notif-dropdown--sidebar { left: 0; right: auto; width: 100%; }
 .admin-notif-head        { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--glass-text); opacity: .35; margin-bottom: 8px; }
 .admin-notif-empty       { font-size: .8rem; color: var(--ds-success); padding: 8px 0; text-align: center; }
 .admin-notif-item        { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 0; margin-bottom: 4px; text-decoration: none; }
@@ -753,6 +879,11 @@ async function logout() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
+  .admin-sidebar-util {
+    padding-bottom: 10px;
+    margin-bottom: 8px;
+  }
+
   .admin-header {
     padding: 10px 12px;
     border-radius: 0;

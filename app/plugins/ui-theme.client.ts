@@ -1,3 +1,13 @@
+import {
+  DEFAULT_DESIGN_CONCEPT,
+  DESIGN_CONCEPT_STORAGE_KEY,
+  DESIGN_MODE_STORAGE_KEY,
+  DESIGN_MODE_TO_CONCEPT,
+  DESIGN_TOKENS_STORAGE_KEY,
+  LEGACY_DESIGN_TOKENS_STORAGE_KEYS,
+} from '~~/shared/constants/design-modes'
+import type { DesignMode } from '~~/shared/types/design-mode'
+
 // Applies saved UI theme + design tokens from localStorage before first paint to avoid flash
 export default defineNuxtPlugin(() => {
   if (!import.meta.client) return
@@ -6,9 +16,15 @@ export default defineNuxtPlugin(() => {
   const saved = localStorage.getItem('ui-theme') || 'cloud'
   document.documentElement.setAttribute('data-theme', saved)
 
+  const savedConcept = localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || ''
+  const savedMode = (localStorage.getItem(DESIGN_MODE_STORAGE_KEY)?.trim() || '') as DesignMode | ''
+  const resolvedConcept = savedConcept || (savedMode ? DESIGN_MODE_TO_CONCEPT[savedMode] : '') || DEFAULT_DESIGN_CONCEPT
+  document.documentElement.setAttribute('data-concept', resolvedConcept)
+
   // Design system tokens (v3 — full token surface)
   try {
-    const raw = localStorage.getItem('design-tokens')
+    const raw = localStorage.getItem(DESIGN_TOKENS_STORAGE_KEY)
+      || LEGACY_DESIGN_TOKENS_STORAGE_KEYS.map(key => localStorage.getItem(key)).find(Boolean)
     if (raw) {
       const t = JSON.parse(raw)
       const el = document.documentElement

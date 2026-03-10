@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div v-if="projectSlugFilter" class="cl-filter-info glass-surface glass-card">
+  <div class="cl-page" :class="{ 'cl-page--brutalist': isBrutalistClientsMode }">
+    <div v-if="projectSlugFilter" class="cl-filter-info glass-surface glass-card" :class="{ 'cl-filter-info--brutalist': isBrutalistClientsMode }">
       <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="cl-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/clients" class="cl-filter-link">показать всех</NuxtLink>
@@ -8,8 +8,34 @@
 
     <!-- Content: selected client or empty state -->
     <template v-if="selectedClient">
+          <section v-if="showBrutalistClientHero" class="cl-hero">
+            <nav class="cl-hero-breadcrumbs">
+              <NuxtLink to="/admin">админ</NuxtLink>
+              <span>/</span>
+              <span>клиенты</span>
+              <span>/</span>
+              <span>{{ selectedClient.name }}</span>
+            </nav>
+            <div class="cl-hero-body">
+              <p class="cl-hero-kicker">{{ selectedClientSlug ? 'клиентский кабинет' : 'карточка клиента' }}</p>
+              <h1 class="cl-hero-title">{{ selectedClient.name }}</h1>
+              <div class="cl-hero-meta">
+                <div v-for="fact in clientHeroFacts" :key="fact.label" class="cl-hero-meta-item">
+                  <span class="cl-hero-meta-label">{{ fact.label }}</span>
+                  <span class="cl-hero-meta-value">{{ fact.value }}</span>
+                </div>
+              </div>
+              <div class="cl-hero-actions">
+                <button class="cl-hero-action" @click="openEdit(selectedClient)">редактировать</button>
+                <button class="cl-hero-action" @click="openLink(selectedClient)">{{ selectedClient.linkedProjects?.length ? 'сменить проект' : 'привязать к проекту' }}</button>
+                <button class="cl-hero-action" @click="openDocs(selectedClient)">документы</button>
+                <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" class="cl-hero-action">кабинет ↗</a>
+              </div>
+            </div>
+          </section>
+
           <!-- Minimal context strip -->
-          <div class="ent-entity-hd">
+          <div v-if="!showBrutalistClientHero" class="ent-entity-hd">
             <span class="ent-entity-hd-name">{{ selectedClient.name }}</span>
             <div class="ent-entity-hd-actions">
               <button class="ent-entity-hd-action" @click="openEdit(selectedClient)">ред.</button>
@@ -20,8 +46,8 @@
           </div>
 
           <!-- Client has a linked project → sections cabinet -->
-          <div v-if="selectedClientSlug" class="cab-body">
-            <aside class="cab-sidebar glass-surface std-sidenav">
+          <div v-if="selectedClientSlug" class="cab-body cl-cab-body" :class="{ 'cl-cab-body--brutalist': isBrutalistClientsMode }">
+            <aside class="cab-sidebar glass-surface std-sidenav" :class="{ 'cl-cab-sidebar--brutalist': isBrutalistClientsMode }">
               <nav class="cab-nav std-nav">
                 <button
                   class="cab-nav-item std-nav-item"
@@ -37,8 +63,8 @@
                 ><span class="cab-nav-icon">{{ pg.icon }}</span> {{ pg.title }}</button>
               </nav>
             </aside>
-            <main class="cab-main">
-              <div class="cab-inner">
+            <main class="cab-main cl-cab-main" :class="{ 'cl-cab-main--brutalist': isBrutalistClientsMode }">
+              <div class="cab-inner cl-cab-inner" :class="{ 'cl-cab-inner--brutalist': isBrutalistClientsMode }">
                 <ClientOverview
                   v-if="clientPage === 'dashboard'"
                   :slug="selectedClientSlug"
@@ -58,7 +84,7 @@
           </div>
 
           <!-- No project linked → contact card -->
-          <div v-else class="ent-detail-card glass-card" style="margin-top: 16px">
+          <div v-else class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }" style="margin-top: 16px">
             <div class="ent-detail-section">контакты</div>
             <div v-if="selectedClient.phone" class="ent-detail-row">{{ selectedClient.phone }}</div>
             <div v-if="selectedClient.email" class="ent-detail-row">{{ selectedClient.email }}</div>
@@ -73,7 +99,7 @@
         </template>
 
         <!-- Nothing selected -->
-        <div v-else class="ent-empty-detail">
+        <div v-else class="ent-empty-detail cl-empty-detail" :class="{ 'cl-empty-detail--brutalist': isBrutalistClientsMode }">
           <span class="ent-empty-icon">👤</span>
           <span v-if="clients?.length">Выберите клиента из списка</span>
           <span v-else>Нет клиентов — добавьте первого</span>
@@ -81,8 +107,8 @@
         </div>
 
     <Teleport to="body">
-    <div v-if="showModal" class="cl-backdrop" @click.self="closeModal">
-      <div class="cl-modal glass-surface glass-card">
+    <div v-if="showModal" class="cl-backdrop" :class="{ 'cl-backdrop--brutalist': isBrutalistClientsMode }" @click.self="closeModal">
+      <div class="cl-modal glass-surface glass-card" :class="{ 'cl-modal--brutalist': isBrutalistClientsMode }">
         <div class="cl-modal-head"><span>{{ editingId ? 'редактировать клиента' : 'новый клиент' }}</span><button class="cl-close" @click="closeModal">✕</button></div>
         <form class="cl-form" @submit.prevent="save">
           <div class="cl-field"><label>Имя / Название *</label><input v-model="form.name" class="glass-input" required placeholder="Иванова Анна Сергеевна" autofocus></div>
@@ -99,8 +125,8 @@
 
     <!-- ══ Link-to-project modal ══ -->
     <Teleport to="body">
-    <div v-if="showLink" class="cl-backdrop" @click.self="showLink = false">
-      <div class="cl-modal glass-surface glass-card">
+    <div v-if="showLink" class="cl-backdrop" :class="{ 'cl-backdrop--brutalist': isBrutalistClientsMode }" @click.self="showLink = false">
+      <div class="cl-modal glass-surface glass-card" :class="{ 'cl-modal--brutalist': isBrutalistClientsMode }">
         <div class="cl-modal-head"><span>привязать «{{ linkClient?.name }}» к проекту</span><button class="cl-close" @click="showLink = false">✕</button></div>
         <div class="cl-form">
           <div class="cl-field"><label>Выберите проект</label><select v-model="linkProjectSlug" class="glass-input"><option value="">— выберите проект —</option><option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option></select></div>
@@ -114,8 +140,8 @@
 
     <!-- ══ Documents modal ══ -->
     <Teleport to="body">
-    <div v-if="showDocs" class="cl-backdrop" @click.self="closeDocs">
-      <div class="cl-modal glass-surface glass-card" style="max-width:600px">
+    <div v-if="showDocs" class="cl-backdrop" :class="{ 'cl-backdrop--brutalist': isBrutalistClientsMode }" @click.self="closeDocs">
+      <div class="cl-modal glass-surface glass-card" :class="{ 'cl-modal--brutalist': isBrutalistClientsMode }" style="max-width:600px">
         <div class="cl-modal-head"><span>документы «{{ docsClient?.name }}»</span><button class="cl-close" @click="closeDocs">✕</button></div>
         <div class="cl-form">
           <div class="cl-row"><div class="cl-field"><label>Поиск</label><input v-model="docsSearch" class="glass-input" placeholder="Название" /></div><div class="cl-field"><label>Категория</label><select v-model="docsFilter" class="glass-input"><option value="">Все</option><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
@@ -164,6 +190,8 @@ watch(() => adminNav.contentSpec.value.clientId, (id) => {
 })
 
 const route = useRoute()
+const designSystem = useDesignSystem()
+const isBrutalistClientsMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
 const clientsCacheByProject = useState<Record<string, any[]>>('cache-admin-clients-by-project', () => ({}))
 const clientsCacheKey = computed(() => projectSlugFilter.value || '__all__')
@@ -229,6 +257,12 @@ const clientNavPages = computed(() => {
     return pages.includes(p.slug)
   })
 })
+const showBrutalistClientHero = computed(() => isBrutalistClientsMode.value && !!selectedClient.value)
+const clientHeroFacts = computed(() => [
+  { label: 'проект', value: clientProject.value?.title || 'не привязан' },
+  { label: 'контакт', value: selectedClient.value?.phone || selectedClient.value?.email || 'не указан' },
+  { label: 'разделы', value: selectedClientSlug.value ? String(clientNavPages.value.length + 1) : '0' },
+])
 watch(selectedClientId, () => { clientPage.value = 'dashboard' })
 const clientNormalizedPage = computed(() =>
   clientPage.value === 'brief' ? 'self_profile' : clientPage.value
@@ -275,14 +309,173 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 </script>
 
 <style scoped>
+.cl-page {
+  width: 100%;
+}
+
+.cl-page--brutalist {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .cl-filter-info { margin-bottom: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: .76rem; color: var(--glass-text); }
+.cl-filter-info--brutalist {
+  margin-bottom: 0;
+  padding: 12px 14px;
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
 .cl-filter-link { text-decoration: none; color: var(--glass-text); opacity: .72; }
 .cl-filter-link:hover { opacity: 1; }
 .cl-nav-arrow { margin-left: auto; font-size: .7rem; opacity: .4; flex-shrink: 0; }
 
+.cl-hero {
+  position: relative;
+  min-height: min(72vh, 720px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.cl-hero-breadcrumbs {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .62rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
+
+.cl-hero-breadcrumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cl-hero-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: min(100%, 980px);
+}
+
+.cl-hero-kicker {
+  margin: 0;
+  font-size: .68rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
+
+.cl-hero-title {
+  margin: 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  line-height: .94;
+  font-size: clamp(2.4rem, 8vw, 6.5rem);
+}
+
+.cl-hero-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.cl-hero-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.cl-hero-meta-label {
+  font-size: .6rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 44%, transparent);
+}
+
+.cl-hero-meta-value {
+  font-size: .9rem;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.cl-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cl-hero-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: transparent;
+  color: var(--glass-text);
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: .68rem;
+  cursor: pointer;
+}
+
+.cl-cab-body--brutalist {
+  gap: 0;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.cl-cab-sidebar--brutalist {
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.cl-cab-main--brutalist {
+  min-width: 0;
+}
+
+.cl-cab-inner--brutalist {
+  padding-top: 22px;
+  padding-bottom: 40px;
+}
+
+.cl-detail-card--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.cl-empty-detail--brutalist {
+  min-height: 56vh;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
 /* ── Modals ── */
 .cl-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.35); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.cl-backdrop--brutalist { background: color-mix(in srgb, #000 58%, transparent); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
 .cl-modal { width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 24px 26px 28px; }
+.cl-modal--brutalist { border-radius: 0; box-shadow: none; border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent); background: color-mix(in srgb, var(--glass-page-bg) 95%, #000 5%); }
 .cl-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
 .cl-modal-head span { font-size: .72rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--glass-text); opacity: .5; }
 .cl-close { width: 28px; height: 28px; border-radius: 7px; border: none; background: rgba(0,0,0,.08); color: var(--glass-text); cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
@@ -303,5 +496,27 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-doc-title { font-size: .84rem; font-weight: 500; }
 .cl-doc-meta { font-size: .72rem; opacity: .5; }
 .cl-doc-actions { display: flex; align-items: center; gap: 8px; }
-@media (max-width: 600px) { .cl-row { grid-template-columns: 1fr; } }
+
+@media (max-width: 900px) {
+  .cl-hero-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .cl-row { grid-template-columns: 1fr; }
+  .cl-hero {
+    min-height: auto;
+    padding: 26px 14px;
+  }
+  .cl-hero-breadcrumbs {
+    position: static;
+    align-self: flex-start;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .cl-hero-title {
+    font-size: clamp(2rem, 11vw, 4rem);
+  }
+}
 </style>

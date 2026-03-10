@@ -10,7 +10,26 @@
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
           <template v-if="section === 'dashboard'">
-            <div class="dash-welcome glass-surface">
+            <section v-if="showBrutalistDashboardHero" class="ds-cab-hero">
+              <div class="ds-cab-hero-topline">дизайнерский кабинет</div>
+              <div class="ds-cab-hero-grid">
+                <div class="ds-cab-hero-main">
+                  <div class="ds-cab-hero-avatar">{{ designer?.name?.charAt(0)?.toUpperCase() || '◑' }}</div>
+                  <div class="ds-cab-hero-copy">
+                    <h2 class="ds-cab-hero-title">{{ designer?.name }}</h2>
+                    <p class="ds-cab-hero-subtitle">{{ designerHeroSubtitle }}</p>
+                  </div>
+                </div>
+                <div class="ds-cab-hero-facts">
+                  <div v-for="fact in designerDashboardFacts" :key="fact.label" class="ds-cab-hero-fact">
+                    <span class="ds-cab-hero-fact-label">{{ fact.label }}</span>
+                    <span class="ds-cab-hero-fact-value">{{ fact.value }}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div v-if="!showBrutalistDashboardHero" class="dash-welcome glass-surface">
               <div class="dash-welcome-left">
                 <div class="dash-avatar">{{ designer?.name?.charAt(0)?.toUpperCase() || '◑' }}</div>
                 <div>
@@ -32,69 +51,69 @@
               </div>
             </div>
 
-            <div class="dash-quick-nav">
-              <button class="dash-quick-btn glass-surface" @click="section = 'services'">
+            <div class="dash-quick-nav" :class="{ 'dash-quick-nav--brutalist': isBrutalistDesignerCabinetMode }">
+              <button class="dash-quick-btn glass-surface" :class="{ 'dash-quick-btn--brutalist': isBrutalistDesignerCabinetMode }" @click="section = 'services'">
                 <span class="dash-quick-icon">◎</span>
                 <span class="dash-quick-label">Услуги и цены</span>
                 <span v-if="services.length" class="dash-quick-badge">{{ services.length }}</span>
               </button>
-              <button class="dash-quick-btn glass-surface" @click="section = 'packages'">
+              <button class="dash-quick-btn glass-surface" :class="{ 'dash-quick-btn--brutalist': isBrutalistDesignerCabinetMode }" @click="section = 'packages'">
                 <span class="dash-quick-icon">◑</span>
                 <span class="dash-quick-label">Пакеты</span>
                 <span v-if="packages.length" class="dash-quick-badge">{{ packages.length }}</span>
               </button>
-              <button class="dash-quick-btn glass-surface" @click="section = 'subscriptions'">
+              <button class="dash-quick-btn glass-surface" :class="{ 'dash-quick-btn--brutalist': isBrutalistDesignerCabinetMode }" @click="section = 'subscriptions'">
                 <span class="dash-quick-icon">⟳</span>
                 <span class="dash-quick-label">Подписки</span>
                 <span v-if="subscriptions.length" class="dash-quick-badge">{{ subscriptions.length }}</span>
               </button>
-              <button class="dash-quick-btn glass-surface" @click="section = 'projects'">
+              <button class="dash-quick-btn glass-surface" :class="{ 'dash-quick-btn--brutalist': isBrutalistDesignerCabinetMode }" @click="section = 'projects'">
                 <span class="dash-quick-icon">◒</span>
                 <span class="dash-quick-label">Проекты</span>
                 <span v-if="designerProjects.length" class="dash-quick-badge">{{ designerProjects.length }}</span>
               </button>
-              <button class="dash-quick-btn glass-surface" @click="section = 'profile'">
+              <button class="dash-quick-btn glass-surface" :class="{ 'dash-quick-btn--brutalist': isBrutalistDesignerCabinetMode }" @click="section = 'profile'">
                 <span class="dash-quick-icon">◓</span>
                 <span class="dash-quick-label">Профиль</span>
               </button>
             </div>
 
-            <div class="dash-stats">
-              <div class="dash-stat glass-surface">
+            <div class="dash-stats" :class="{ 'dash-stats--brutalist': isBrutalistDesignerCabinetMode }">
+              <div class="dash-stat glass-surface" :class="{ 'dash-stat--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="dash-stat-val">{{ dashStats.active }}</div>
                 <div class="dash-stat-label">Активных проектов</div>
               </div>
-              <div class="dash-stat glass-surface">
+              <div class="dash-stat glass-surface" :class="{ 'dash-stat--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="dash-stat-val">{{ uniqueClients.length }}</div>
                 <div class="dash-stat-label">Клиентов</div>
               </div>
-              <div class="dash-stat glass-surface">
+              <div class="dash-stat glass-surface" :class="{ 'dash-stat--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="dash-stat-val">{{ uniqueContractors.length }}</div>
                 <div class="dash-stat-label">Подрядчиков</div>
               </div>
-              <div class="dash-stat glass-surface">
+              <div class="dash-stat glass-surface" :class="{ 'dash-stat--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="dash-stat-val">{{ linkedData?.sellers?.length || 0 }}</div>
                 <div class="dash-stat-label">Поставщиков</div>
               </div>
-              <div class="dash-stat glass-surface">
+              <div class="dash-stat glass-surface" :class="{ 'dash-stat--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="dash-stat-val">{{ dashStats.totalRevenue.toLocaleString('ru-RU') }} ₽</div>
                 <div class="dash-stat-label">Общая выручка</div>
               </div>
-              <div class="dash-stat glass-surface">
+              <div class="dash-stat glass-surface" :class="{ 'dash-stat--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="dash-stat-val">{{ dashStats.total ? Math.round(dashStats.totalRevenue / dashStats.total).toLocaleString('ru-RU') : 0 }} ₽</div>
                 <div class="dash-stat-label">Ср. стоимость проекта</div>
               </div>
-              <div class="dash-stat glass-surface">
+              <div class="dash-stat glass-surface" :class="{ 'dash-stat--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="dash-stat-val">{{ services.length }}</div>
                 <div class="dash-stat-label">Услуг настроено</div>
               </div>
-              <div class="dash-stat glass-surface">
+              <div class="dash-stat glass-surface" :class="{ 'dash-stat--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="dash-stat-val">{{ packages.length }}</div>
                 <div class="dash-stat-label">Пакетов</div>
               </div>
             </div>
 
-            <div v-if="!services.length" class="cab-cta glass-surface">
+            <div v-if="!services.length" class="cab-cta glass-surface" :class="{ 'cab-cta--brutalist': isBrutalistDesignerCabinetMode }">
               <div class="cab-cta-icon">💡</div>
               <div>
                 <strong>Начните с настройки прайс-листа</strong><br>
@@ -103,12 +122,12 @@
               <button class="cab-cta-btn" @click="initFromTemplates">Загрузить шаблон цен (Москва)</button>
             </div>
 
-            <div v-if="designerProjects.length" class="dash-projects glass-surface">
+            <div v-if="designerProjects.length" class="dash-projects glass-surface" :class="{ 'dash-projects--brutalist': isBrutalistDesignerCabinetMode }">
               <div class="u-section-title">Последние проекты</div>
               <div class="dash-projects-grid">
                 <NuxtLink v-for="dp in designerProjects.slice(0, 6)" :key="dp.id"
                   :to="dp.projectSlug ? `/admin/projects/${dp.projectSlug}` : undefined"
-                  class="dash-project-card" :class="{ 'dash-project-card--link': dp.projectSlug }">
+                  class="dash-project-card" :class="{ 'dash-project-card--link': dp.projectSlug, 'dash-project-card--brutalist': isBrutalistDesignerCabinetMode }">
                   <span class="dash-project-name">{{ dp.projectTitle }}</span>
                   <span class="dash-project-status u-status" :class="`u-status--${dp.status}`">
                     {{ DESIGNER_PROJECT_STATUS_LABELS[dp.status as keyof typeof DESIGNER_PROJECT_STATUS_LABELS] || dp.status }}
@@ -122,7 +141,7 @@
 
           <!-- ═══════════════ SERVICES & PRICING ═══════════════ -->
           <template v-else-if="section === 'services'">
-            <div class="u-section-title">
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Услуги и прайс-лист</h2>
               <div>
                 <button v-if="!services.length" class="a-btn-save" @click="initFromTemplates">
@@ -141,13 +160,13 @@
             <p v-if="svcEditError" class="cab-inline-error">{{ svcEditError }}</p>
             <p v-if="svcEditSuccess" class="cab-inline-success">{{ svcEditSuccess }}</p>
 
-            <div v-if="!services.length && !editingServices" class="u-empty glass-surface">
+            <div v-if="!services.length && !editingServices" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>◎</span>
               <p>Услуги не настроены.<br>Загрузите шаблон московских расценок или добавьте вручную.</p>
             </div>
 
             <template v-if="editingServices">
-              <div v-for="[cat, catServices] in editServicesByCat" :key="cat" class="svc-category glass-surface">
+              <div v-for="[cat, catServices] in editServicesByCat" :key="cat" class="svc-category glass-surface" :class="{ 'svc-category--brutalist': isBrutalistDesignerCabinetMode }">
                 <h3 class="svc-cat-title">{{ DESIGNER_SERVICE_CATEGORY_LABELS[cat] || cat }}</h3>
                 <div v-for="(svc, idx) in catServices" :key="svc.serviceKey" class="svc-edit-row">
                   <label class="svc-enable">
@@ -184,10 +203,10 @@
             </template>
 
             <template v-else-if="services.length">
-              <div v-for="[cat, catServices] in servicesByCat" :key="cat" class="svc-category glass-surface">
+              <div v-for="[cat, catServices] in servicesByCat" :key="cat" class="svc-category glass-surface" :class="{ 'svc-category--brutalist': isBrutalistDesignerCabinetMode }">
                 <h3 class="svc-cat-title">{{ DESIGNER_SERVICE_CATEGORY_LABELS[cat] || cat }}</h3>
                 <div class="svc-list">
-                  <div v-for="svc in catServices" :key="svc.serviceKey" class="svc-row" :class="{ disabled: !svc.enabled }">
+                  <div v-for="svc in catServices" :key="svc.serviceKey" class="svc-row" :class="{ disabled: !svc.enabled, 'svc-row--brutalist': isBrutalistDesignerCabinetMode }">
                     <div class="svc-name">{{ svc.title }}</div>
                     <div class="svc-desc">{{ svc.description }}</div>
                     <div class="svc-price svc-price-inline" @click="startInlinePrice(svc)">
@@ -216,7 +235,7 @@
 
           <!-- ═══════════════ PACKAGES ═══════════════ -->
           <template v-else-if="section === 'packages'">
-            <div class="u-section-title">
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Пакеты услуг</h2>
               <div>
                 <button v-if="!packages.length" class="a-btn-save" @click="initPackages">
@@ -235,13 +254,13 @@
             <p v-if="pkgEditError" class="cab-inline-error">{{ pkgEditError }}</p>
             <p v-if="pkgEditSuccess" class="cab-inline-success">{{ pkgEditSuccess }}</p>
 
-            <div v-if="!packages.length && !editingPackages" class="u-empty glass-surface">
+            <div v-if="!packages.length && !editingPackages" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>◑</span>
               <p>Пакеты не настроены.<br>Загрузите стандартные или создайте собственные.</p>
             </div>
 
             <template v-if="editingPackages">
-              <div v-for="pkg in editPackagesList" :key="pkg.key" class="pkg-edit glass-surface">
+              <div v-for="pkg in editPackagesList" :key="pkg.key" class="pkg-edit glass-surface" :class="{ 'pkg-edit--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="pkg-edit-head">
                   <label class="svc-enable"><input type="checkbox" v-model="pkg.enabled" /><span>{{ pkg.enabled ? 'вкл' : 'выкл' }}</span></label>
                   <input v-model="pkg.title" class="glass-input pkg-title-inp" placeholder="Название пакета" />
@@ -274,8 +293,8 @@
             </template>
 
             <template v-else-if="packages.length">
-              <div class="pkg-grid">
-                <div v-for="pkg in packages" :key="pkg.key" class="pkg-card glass-surface" :class="{ disabled: !pkg.enabled }">
+              <div class="pkg-grid" :class="{ 'pkg-grid--brutalist': isBrutalistDesignerCabinetMode }">
+                <div v-for="pkg in packages" :key="pkg.key" class="pkg-card glass-surface" :class="{ disabled: !pkg.enabled, 'pkg-card--brutalist': isBrutalistDesignerCabinetMode }">
                   <div class="pkg-card-head">
                     <h3 class="pkg-card-title">{{ pkg.title }}</h3>
                     <div class="pkg-card-price">{{ (pkg.pricePerSqm ?? 0).toLocaleString('ru-RU') }} <span>₽/м²</span></div>
@@ -297,7 +316,7 @@
 
           <!-- ═══════════════ SUBSCRIPTIONS ═══════════════ -->
           <template v-else-if="section === 'subscriptions'">
-            <div class="u-section-title">
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Подписки и абонементы</h2>
               <div>
                 <button v-if="!subscriptions.length" class="a-btn-save" @click="initSubs">
@@ -316,14 +335,14 @@
             <p v-if="subEditError" class="cab-inline-error">{{ subEditError }}</p>
             <p v-if="subEditSuccess" class="cab-inline-success">{{ subEditSuccess }}</p>
 
-            <div v-if="!subscriptions.length && !editingSubscriptions" class="u-empty glass-surface">
+            <div v-if="!subscriptions.length && !editingSubscriptions" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>⟳</span>
               <p>Подписки не настроены.<br>Загрузите шаблоны или создайте собственный абонемент.</p>
             </div>
 
             <!-- Edit mode -->
             <template v-if="editingSubscriptions">
-              <div v-for="sub in editSubscriptionsList" :key="sub.key" class="sub-edit glass-surface">
+              <div v-for="sub in editSubscriptionsList" :key="sub.key" class="sub-edit glass-surface" :class="{ 'sub-edit--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="sub-edit-head">
                   <label class="svc-enable"><input type="checkbox" v-model="sub.enabled" /><span>{{ sub.enabled ? 'вкл' : 'выкл' }}</span></label>
                   <input v-model="sub.title" class="glass-input pkg-title-inp" placeholder="Название подписки" />
@@ -385,8 +404,8 @@
 
             <!-- View mode -->
             <template v-else-if="subscriptions.length">
-              <div class="sub-grid">
-                <div v-for="sub in subscriptions" :key="sub.key" class="sub-card glass-surface" :class="{ disabled: !sub.enabled }">
+              <div class="sub-grid" :class="{ 'sub-grid--brutalist': isBrutalistDesignerCabinetMode }">
+                <div v-for="sub in subscriptions" :key="sub.key" class="sub-card glass-surface" :class="{ disabled: !sub.enabled, 'sub-card--brutalist': isBrutalistDesignerCabinetMode }">
                   <div class="sub-card-head">
                     <h3 class="sub-card-title">{{ sub.title }}</h3>
                     <span class="sub-period-badge">{{ getBillingLabel(sub.billingPeriod) }}</span>
@@ -421,7 +440,7 @@
 
           <!-- ═══════════════ DOCUMENTS ═══════════════ -->
           <template v-else-if="section === 'documents'">
-            <div class="u-section-title">
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Документы</h2>
             </div>
 
@@ -446,7 +465,7 @@
               </div>
             </div>
 
-            <div class="u-form-section">
+            <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistDesignerCabinetMode }">
               <h3>Загрузить документ</h3>
               <div class="u-modal__row2">
                 <div class="u-field">
@@ -472,8 +491,8 @@
               </div>
             </div>
 
-            <div v-if="filteredDesignerDocs.length" class="cab-docs-list">
-              <div v-for="doc in filteredDesignerDocs" :key="doc.id" class="cab-doc-card glass-surface">
+            <div v-if="filteredDesignerDocs.length" class="cab-docs-list" :class="{ 'cab-docs-list--brutalist': isBrutalistDesignerCabinetMode }">
+              <div v-for="doc in filteredDesignerDocs" :key="doc.id" class="cab-doc-card glass-surface" :class="{ 'cab-doc-card--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="cab-doc-icon">📎</div>
                 <div class="cab-doc-info">
                   <div class="cab-doc-title">{{ doc.title }}</div>
@@ -489,11 +508,11 @@
                 </div>
               </div>
             </div>
-            <div v-else-if="designerDocs?.length" class="u-empty glass-surface">
+            <div v-else-if="designerDocs?.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>🔎</span>
               <p>По фильтру ничего не найдено.</p>
             </div>
-            <div v-else class="u-empty glass-surface">
+            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>📂</span>
               <p>Документов пока нет.<br>Загрузите договоры, ТЗ, референсы и акты.</p>
             </div>
@@ -501,7 +520,7 @@
 
           <!-- ═══════════════ PROJECTS ═══════════════ -->
           <template v-else-if="section === 'projects'">
-            <div class="u-section-title">
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Мои проекты</h2>
               <button class="a-btn-save" @click="showNewProjectModal = true">＋ Новый проект</button>
             </div>
@@ -509,7 +528,7 @@
             <p v-if="projectEditSuccess" class="cab-inline-success">{{ projectEditSuccess }}</p>
 
             <!-- New project modal -->
-            <div v-if="showNewProjectModal" class="u-modal glass-surface">
+            <div v-if="showNewProjectModal" class="u-modal glass-surface" :class="{ 'u-modal--brutalist-project': isBrutalistDesignerCabinetMode }">
               <div class="u-modal__head">
                 <span class="u-modal__title">Создать проект</span>
                 <button class="u-modal__close" @click="showNewProjectModal = false">✕</button>
@@ -542,7 +561,7 @@
                     <input v-model.number="newProject.area" class="glass-input" type="number" min="0" />
                   </div>
                 </div>
-                <div v-if="newProject.pricePerSqm && newProject.area" class="proj-total glass-surface">
+                <div v-if="newProject.pricePerSqm && newProject.area" class="proj-total glass-surface" :class="{ 'proj-total--brutalist': isBrutalistDesignerCabinetMode }">
                   <span>Итого:</span>
                   <strong>{{ (newProject.pricePerSqm * newProject.area).toLocaleString('ru-RU') }} ₽</strong>
                 </div>
@@ -562,12 +581,12 @@
             </div>
 
             <!-- Project list -->
-            <div v-if="!designerProjects.length && !showNewProjectModal" class="u-empty glass-surface">
+            <div v-if="!designerProjects.length && !showNewProjectModal" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>◒</span>
               <p>Проектов пока нет.<br>Создайте первый проект, чтобы начать работу.</p>
             </div>
 
-            <div v-for="dp in designerProjects" :key="dp.id" class="proj-card glass-surface">
+            <div v-for="dp in designerProjects" :key="dp.id" class="proj-card glass-surface" :class="{ 'proj-card--brutalist': isBrutalistDesignerCabinetMode }">
               <div class="proj-card-head">
                 <div class="proj-card-title-row">
                   <h3 class="proj-card-title">{{ dp.projectTitle }}</h3>
@@ -585,7 +604,7 @@
                 </div>
               </div>
 
-              <div v-if="editingDesignerProjectId === dp.id" class="u-modal glass-surface" style="margin-top:10px">
+              <div v-if="editingDesignerProjectId === dp.id" class="u-modal glass-surface" :class="{ 'u-modal--brutalist-project': isBrutalistDesignerCabinetMode }" style="margin-top:10px">
                 <div class="u-modal__body">
                   <div class="u-modal__row2">
                     <div class="u-field">
@@ -642,9 +661,9 @@
 
           <!-- ═══════════════ CLIENTS (Flat Registry pivot) ═══════════════ -->
           <template v-else-if="section === 'clients'">
-            <div class="u-section-title"><h2>Клиенты</h2></div>
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Клиенты</h2></div>
             <div v-if="uniqueClients.length" class="pivot-list">
-              <div v-for="c in uniqueClients" :key="c.id" class="pivot-banner glass-surface" @click="goToClient(c.id, c.name)">
+              <div v-for="c in uniqueClients" :key="c.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToClient(c.id, c.name)">
                 <div class="pivot-banner-left">
                   <span class="pivot-banner-name">{{ c.name }}</span>
                   <span v-if="c.phone || c.email" class="pivot-banner-contact">
@@ -654,14 +673,14 @@
                 <span class="pivot-banner-arrow">→</span>
               </div>
             </div>
-            <div v-else class="u-empty glass-surface"><p>Клиентов пока нет. Добавьте клиента в проект.</p></div>
+            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Клиентов пока нет. Добавьте клиента в проект.</p></div>
           </template>
 
           <!-- ═══════════════ CONTRACTORS (Flat Registry pivot) ═══════════════ -->
           <template v-else-if="section === 'contractors'">
-            <div class="u-section-title"><h2>Подрядчики</h2></div>
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Подрядчики</h2></div>
             <div v-if="uniqueContractors.length" class="pivot-list">
-              <div v-for="c in uniqueContractors" :key="c.id" class="pivot-banner glass-surface" @click="goToContractor(c.id, c.name)">
+              <div v-for="c in uniqueContractors" :key="c.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToContractor(c.id, c.name)">
                 <div class="pivot-banner-left">
                   <span class="pivot-banner-name">{{ c.name }}</span>
                   <span v-if="c.role" class="pivot-banner-contact">{{ c.role }}</span>
@@ -669,14 +688,14 @@
                 <span class="pivot-banner-arrow">→</span>
               </div>
             </div>
-            <div v-else class="u-empty glass-surface"><p>Подрядчиков пока нет. Добавьте подрядчика в проект.</p></div>
+            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Подрядчиков пока нет. Добавьте подрядчика в проект.</p></div>
           </template>
 
           <!-- ═══════════════ SELLERS (Flat Registry pivot) ═══════════════ -->
           <template v-else-if="section === 'sellers'">
-            <div class="u-section-title"><h2>Продавцы / Поставщики</h2></div>
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Продавцы / Поставщики</h2></div>
             <div v-if="linkedData?.sellers?.length" class="pivot-list">
-              <div v-for="s in linkedData.sellers" :key="s.id" class="pivot-banner glass-surface" @click="goToSeller(s.id, s.name)">
+              <div v-for="s in linkedData.sellers" :key="s.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToSeller(s.id, s.name)">
                 <div class="pivot-banner-left">
                   <span class="pivot-banner-name">{{ s.name }}</span>
                   <span v-if="s.companyName" class="pivot-banner-contact">{{ s.companyName }}</span>
@@ -691,14 +710,14 @@
                 </div>
               </div>
             </div>
-            <div v-else class="u-empty glass-surface"><p>Поставщиков пока нет.</p></div>
+            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Поставщиков пока нет.</p></div>
           </template>
 
           <!-- ═══════════════ MANAGERS (Flat Registry) ═══════════════ -->
           <template v-else-if="section === 'managers'">
-            <div class="u-section-title"><h2>Менеджеры</h2></div>
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Менеджеры</h2></div>
             <div v-if="linkedData?.managers?.length" class="pivot-list">
-              <div v-for="m in linkedData.managers" :key="m.id" class="pivot-banner glass-surface" @click="goToManager(m.id, m.name)">
+              <div v-for="m in linkedData.managers" :key="m.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToManager(m.id, m.name)">
                 <div class="pivot-banner-left">
                   <span class="pivot-banner-name">{{ m.name }}</span>
                   <span v-if="m.role" class="pivot-banner-contact">{{ m.role }}</span>
@@ -713,14 +732,14 @@
                 </div>
               </div>
             </div>
-            <div v-else class="u-empty glass-surface"><p>Менеджеров пока нет.</p></div>
+            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Менеджеров пока нет.</p></div>
           </template>
 
           <!-- ═══════════════ GALLERY (Flat Registry) ═══════════════ -->
           <template v-else-if="section === 'gallery'">
-            <div class="u-section-title"><h2>Галерея</h2></div>
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Галерея</h2></div>
             <div v-if="galleryList.length" class="gallery-grid">
-              <div v-for="g in galleryList" :key="g.id" class="gallery-card glass-surface">
+              <div v-for="g in galleryList" :key="g.id" class="gallery-card glass-surface" :class="{ 'gallery-card--brutalist': isBrutalistDesignerCabinetMode }">
                 <div v-if="g.image" class="gallery-card-img">
                   <img :src="`/uploads/${g.image}`" :alt="g.title" loading="lazy" />
                 </div>
@@ -734,14 +753,14 @@
                 </div>
               </div>
             </div>
-            <div v-else class="u-empty glass-surface"><p>Элементов галереи пока нет.</p></div>
+            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Элементов галереи пока нет.</p></div>
           </template>
 
           <!-- ═══════════════ MOODBOARDS (Flat Registry) ═══════════════ -->
           <template v-else-if="section === 'moodboards'">
-            <div class="u-section-title"><h2>Мудборды</h2></div>
+            <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Мудборды</h2></div>
             <div v-if="moodboardList.length" class="gallery-grid">
-              <div v-for="g in moodboardList" :key="g.id" class="gallery-card glass-surface">
+              <div v-for="g in moodboardList" :key="g.id" class="gallery-card glass-surface" :class="{ 'gallery-card--brutalist': isBrutalistDesignerCabinetMode }">
                 <div v-if="g.image" class="gallery-card-img">
                   <img :src="`/uploads/${g.image}`" :alt="g.title" loading="lazy" />
                 </div>
@@ -754,13 +773,13 @@
                 </div>
               </div>
             </div>
-            <div v-else class="u-empty glass-surface"><p>Мудбордов пока нет.</p></div>
+            <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Мудбордов пока нет.</p></div>
           </template>
 
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-else-if="section === 'profile'">
-            <form @submit.prevent="saveProfile" class="cab-form">
-              <div class="u-form-section">
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistDesignerCabinetMode }">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistDesignerCabinetMode }">
                 <h3>Основные данные</h3>
                 <div class="u-modal__row2">
                   <div class="u-field">
@@ -798,14 +817,14 @@
                 </div>
               </div>
 
-              <div class="u-form-section">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistDesignerCabinetMode }">
                 <h3>О себе</h3>
                 <div class="u-field u-field--full">
                   <textarea v-model="form.about" class="glass-input u-ta" rows="4" placeholder="Расскажите о своём подходе к дизайну, стилях, специализации…" />
                 </div>
               </div>
 
-              <div class="u-form-section">
+              <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistDesignerCabinetMode }">
                 <h3>Специализации</h3>
                 <div class="u-tags">
                   <button
@@ -854,6 +873,8 @@ const props = defineProps<{ designerId: number; modelValue?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
 
 const designerIdRef = computed(() => props.designerId)
+const designSystem = useDesignSystem()
+const isBrutalistDesignerCabinetMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 
 const {
   designer,
@@ -954,6 +975,18 @@ const filteredDesignerDocs = computed(() => {
     return designerDocSort.value === 'new' ? bt - at : at - bt
   })
 })
+
+const showBrutalistDashboardHero = computed(() => isBrutalistDesignerCabinetMode.value && section.value === 'dashboard')
+const designerHeroSubtitle = computed(() => {
+  const city = designer.value?.city ? ` · ${designer.value.city}` : ''
+  return `дизайнер интерьеров${city}`
+})
+const designerDashboardFacts = computed(() => [
+  { label: 'профиль', value: `${profilePct.value}%` },
+  { label: 'активные проекты', value: String(dashStats.value.active) },
+  { label: 'клиенты', value: String(uniqueClients.value.length) },
+  { label: 'услуги', value: String(services.value.length) },
+])
 
 function formatDocDate(value: string) {
   const date = new Date(value)
@@ -1556,15 +1589,182 @@ async function saveDesignerProjectEdits() {
 
 /* ── Form accent ── */
 .cab-form { display: flex; flex-direction: column; gap: 24px; }
+.cab-form--brutalist {
+  gap: 0;
+}
 .u-form-section h3 { color: var(--ds-accent, #646cff); }
+
+.ds-section-head--brutalist {
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+}
+
+.u-empty--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.u-form-section--brutalist,
+.u-modal--brutalist-project,
+.proj-total--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
 
 /* ── Designer-specific dashboard extras ── */
 .dash-project-status { font-size: .75rem; padding: 2px 8px; border-radius: 6px; width: fit-content; }
 .dash-project-price  { font-size: .82rem; color: var(--ds-success, var(--ds-success)); }
 .dash-project-area   { font-size: .78rem; opacity: .55; }
 
+.ds-cab-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 0 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  margin-bottom: 18px;
+}
+
+.ds-cab-hero-topline {
+  font-size: .64rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
+
+.ds-cab-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, .9fr);
+  gap: 16px;
+}
+
+.ds-cab-hero-main,
+.ds-cab-hero-facts {
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.ds-cab-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+}
+
+.ds-cab-hero-avatar {
+  width: 72px;
+  height: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  font-size: 1.6rem;
+  text-transform: uppercase;
+}
+
+.ds-cab-hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ds-cab-hero-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3.8rem);
+  line-height: .95;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.ds-cab-hero-subtitle {
+  margin: 0;
+  font-size: .82rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 52%, transparent);
+}
+
+.ds-cab-hero-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ds-cab-hero-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.ds-cab-hero-fact:nth-child(2n) {
+  border-right: 0;
+}
+
+.ds-cab-hero-fact:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.ds-cab-hero-fact-label {
+  font-size: .58rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 44%, transparent);
+}
+
+.ds-cab-hero-fact-value {
+  font-size: 1rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.dash-quick-nav--brutalist {
+  gap: 0;
+}
+
+.dash-quick-btn--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.dash-stats--brutalist {
+  gap: 0;
+}
+
+.dash-stat--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.cab-cta--brutalist,
+.dash-projects--brutalist,
+.dash-project-card--brutalist {
+  border-radius: 0;
+}
+
+.dash-projects--brutalist {
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.dash-project-card--brutalist {
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
 /* ── Services ── */
 .svc-category  { padding: 20px 24px; border-radius: 12px; margin-bottom: 14px; }
+.svc-category--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
 .svc-cat-title { font-size: 1rem; font-weight: 600; margin-bottom: 14px; color: var(--ds-accent, #646cff); }
 .svc-list { display: flex; flex-direction: column; gap: 8px; }
 .svc-row {
@@ -1574,6 +1774,10 @@ async function saveDesignerProjectEdits() {
   align-items: center;
 }
 .svc-row.disabled { opacity: .4; }
+.svc-row--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
 .svc-name  { font-weight: 500; font-size: .92rem; }
 .svc-desc  { font-size: .82rem; opacity: .55; }
 .svc-price { font-weight: 600; color: var(--ds-success, var(--ds-success)); text-align: right; white-space: nowrap; }
@@ -1601,9 +1805,21 @@ async function saveDesignerProjectEdits() {
 
 /* ── Packages ── */
 .pkg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.pkg-grid--brutalist,
+.sub-grid--brutalist {
+  gap: 0;
+}
 .pkg-card {
   padding: 22px 20px; border-radius: 14px;
   border: 1px solid var(--glass-border); transition: all .15s;
+}
+.pkg-card--brutalist,
+.pkg-edit--brutalist,
+.sub-card--brutalist,
+.sub-edit--brutalist {
+  border-radius: 0;
+  border-color: color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 .pkg-card:hover  { border-color: color-mix(in srgb, var(--ds-accent) 30%, var(--glass-border)); }
 .pkg-card.disabled { opacity: .4; }
@@ -1653,6 +1869,11 @@ async function saveDesignerProjectEdits() {
 
 /* ── Designer project cards ── */
 .proj-card { padding: 22px 24px; border-radius: 14px; margin-bottom: 16px; }
+.proj-card--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
 .proj-card-head { margin-bottom: 16px; }
 .proj-card-title-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
 .proj-card-title { font-size: 1.1rem; font-weight: 600; }
@@ -1740,11 +1961,24 @@ async function saveDesignerProjectEdits() {
   border-color: color-mix(in srgb, var(--ds-accent) 40%, var(--glass-border));
 }
 
+.cab-docs-list--brutalist {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cab-doc-card--brutalist {
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
 /* ── Responsive (designer-specific) ── */
 @media (max-width: 980px) {
   .pkg-grid { grid-template-columns: 1fr; }
   .sub-grid { grid-template-columns: 1fr; }
   .gallery-grid { grid-template-columns: 1fr; }
+  .ds-cab-hero-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Pivot banner (Flat Registry rows) ── */
@@ -1767,6 +2001,13 @@ async function saveDesignerProjectEdits() {
 .pivot-banner-arrow { font-size: 1.1rem; opacity: .5; }
 .pivot-banner:hover .pivot-banner-arrow { opacity: 1; }
 
+.pivot-banner--brutalist,
+.gallery-card--brutalist {
+  border-radius: 0;
+  border-color: color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
 /* ── Gallery grid (2 cols) ── */
 .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .gallery-card { border-radius: 10px; overflow: hidden; border: 1px solid var(--glass-border); }
@@ -1781,4 +2022,23 @@ async function saveDesignerProjectEdits() {
   background: color-mix(in srgb, var(--glass-text) 6%, transparent); opacity: .7;
 }
 .gallery-card-feat { font-size: .7rem; font-weight: 600; opacity: .7; }
+
+@media (max-width: 640px) {
+  .ds-cab-hero-main {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ds-cab-hero-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .ds-cab-hero-fact {
+    border-right: 0;
+  }
+
+  .ds-cab-hero-fact:not(:last-child) {
+    border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  }
+}
 </style>
