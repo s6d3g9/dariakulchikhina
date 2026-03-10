@@ -187,13 +187,39 @@ const router = useRouter()
 const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
 const designSystem = useDesignSystem()
-const { adminLayout } = useDesignModules()
+const { adminLayout, resetModules } = useDesignModules()
 useElementVisibility()
 const adminLayoutModules = computed(() => adminLayout.value)
 
 const isBrutalistShell = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 
 const isLiquidGlassShell = computed(() => designSystem.currentDesignMode.value === 'liquid-glass')
+
+function shouldResetDesignPanelFromQuery(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.some(item => shouldResetDesignPanelFromQuery(item))
+  }
+
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  const normalized = value.trim().toLowerCase()
+  return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'reset'
+}
+
+onMounted(() => {
+  if (!shouldResetDesignPanelFromQuery(route.query.resetDesignPanel)) {
+    return
+  }
+
+  resetModules()
+
+  const nextQuery = { ...route.query }
+  delete nextQuery.resetDesignPanel
+
+  void router.replace({ query: nextQuery })
+})
 
 // ── Global nav ──────────────────────────────────────────
 const adminNav = useAdminNav()
