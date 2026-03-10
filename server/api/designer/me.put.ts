@@ -1,13 +1,11 @@
 import { useDb } from '~/server/db/index'
 import { designers } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { readNodeBody } from '~/server/utils/body'
 
 export default defineEventHandler(async (event) => {
-  const id = Number(event.context.params?.id)
-  if (!id || !Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
-  requireAdminOrDesignerSelf(event, id)
-
-  const body = await readBody(event)
+  const designerId = requireDesigner(event)
+  const body = await readNodeBody(event) as Record<string, unknown>
   const db = useDb()
 
   const ALLOWED_TEXT = ['name','companyName','phone','email','telegram','website','city','experience','about','availabilityStatus','availableFrom','messengerNick']
@@ -23,7 +21,7 @@ export default defineEventHandler(async (event) => {
   for (const k of ALLOWED_NUM)     if (k in body) updates[k] = Number(body[k]) || 0
   for (const k of ALLOWED_NUMERIC) if (k in body) updates[k] = body[k] != null && body[k] !== '' ? Number(body[k]) : null
 
-  const [updated] = await db.update(designers).set(updates).where(eq(designers.id, id)).returning()
-  if (!updated) throw createError({ statusCode: 404, statusMessage: 'Designer not found' })
+  const [updated] = await db.update(designers).set(updates).where(eq(designers.id, designerId)).returning()
+  if (!updated) throw createError({ statusCode: 404, statusMessage: 'Дизайнер не найден' })
   return updated
 })

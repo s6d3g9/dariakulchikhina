@@ -15,9 +15,8 @@ const BodySchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  requireAdmin(event)
-
   const designerId = Number(getRouterParam(event, 'id'))
+  requireAdminOrDesignerSelf(event, designerId)
   if (!designerId || !Number.isFinite(designerId)) {
     throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
   }

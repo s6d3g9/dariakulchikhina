@@ -16,7 +16,8 @@ const CreateDesignerProjectSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  requireAdmin(event)
+  const designerIdParam = Number(getRouterParam(event, 'id'))
+  requireAdminOrDesignerSelf(event, designerIdParam)
   const body = await readValidatedNodeBody(event, CreateDesignerProjectSchema)
   const db = useDb()
 

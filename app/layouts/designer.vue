@@ -9,8 +9,11 @@
         </div>
       </div>
       <nav class="designer-nav">
-        <NuxtLink to="/designer" class="designer-nav-link" active-class="designer-nav-active">
+        <NuxtLink to="/designer" class="designer-nav-link" active-class="designer-nav-active" exact>
           Проекты
+        </NuxtLink>
+        <NuxtLink to="/designer/profile" class="designer-nav-link" active-class="designer-nav-active">
+          Профиль
         </NuxtLink>
       </nav>
       <div class="designer-actions">

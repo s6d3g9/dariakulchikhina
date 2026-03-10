@@ -266,6 +266,8 @@ export const designerProjects = pgTable('designer_projects', {
   /** Итого стоимость */
   totalPrice: integer('total_price'),
   status: text('status').default('draft').notNull(),
+  /** Текущий этап проекта (канбан-доска) */
+  stage: text('stage').default('smart_brief').notNull(),
   notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (t) => [unique('designer_project_uniq').on(t.designerId, t.projectId)])

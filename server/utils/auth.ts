@@ -194,6 +194,15 @@ export function requireDesigner(event: H3Event): number {
   return id
 }
 
+/** Require admin OR the authenticated designer matching the given designer id */
+export function requireAdminOrDesignerSelf(event: H3Event, designerIdParam: number) {
+  const admin = getAdminSession(event)
+  if (admin) return { role: 'admin' as const, adminUserId: admin.userId }
+  const did = getDesignerSession(event)
+  if (did && did === designerIdParam) return { role: 'designer' as const, designerId: did }
+  throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+}
+
 /** Require admin OR an authenticated client for this project slug */
 export function requireAdminOrClient(event: H3Event, projectSlug: string) {
   const admin = getAdminSession(event)

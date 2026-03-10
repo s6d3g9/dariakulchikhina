@@ -1,9 +1,10 @@
 import { useDb } from '~/server/db/index'
 import { designerAccounts, designers } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { readNodeBody } from '~/server/utils/body'
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event) as { email?: string; password?: string }
+  const body = await readNodeBody(event) as { email?: string; password?: string }
   const email = (body?.email || '').trim().toLowerCase()
   const password = (body?.password || '').trim()
 

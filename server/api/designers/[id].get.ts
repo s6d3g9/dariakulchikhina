@@ -3,9 +3,9 @@ import { designers, designerProjects, designerProjectClients, designerProjectCon
 import { eq, sql } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
-  requireAdmin(event)
   const id = Number(event.context.params?.id)
   if (!id || !Number.isFinite(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
+  requireAdminOrDesignerSelf(event, id)
 
   const db = useDb()
   const [designer] = await db.select().from(designers).where(eq(designers.id, id)).limit(1)
