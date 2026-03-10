@@ -364,6 +364,10 @@ async function buildNextNode(
 ): Promise<{ node: NavigationNode; ctx: NavCtx } | null> {
   const newCtx: NavCtx = { ...ctx }
   const crumbs = [...current.context.breadcrumbs]
+  const projectScopedRoute = (path: string) =>
+    newCtx.projectSlug
+      ? { path, query: { projectSlug: newCtx.projectSlug } }
+      : path
 
   // ── ROOT → registry секций ────────────────────────────────────────────────
   if (current.nodeId === 'root') {
@@ -373,7 +377,7 @@ async function buildNextNode(
 
     if (item.id === 'cat_docs') {
       return { ctx: newCtx, node: {
-        step: 'B', nodeId: 'reg_documents', nodeType: 'registry',
+        step: 'B', nodeId: 'reg_docs_root', nodeType: 'registry',
         context: { title: 'Документы', breadcrumbs: [...crumbs, 'Документы'] },
         filter: { placeholder: 'Поиск по типу документа...', value: '' },
         payload: DOCUMENT_ITEMS,
@@ -520,36 +524,20 @@ async function buildNextNode(
       }}
     }
     if (sub === 'docs') {
-      return { ctx: newCtx, node: {
-        step: 'F', nodeId: `reg_docs_${current.nodeId}`, nodeType: 'registry',
-        context: { title: `Документы — ${current.context.title}`, breadcrumbs: [...crumbs, 'Документы'] },
-        filter: { placeholder: 'Поиск по типу документа...', value: '' },
-        payload: DOCUMENT_ITEMS,
-      }}
+      await router.push(projectScopedRoute('/admin/documents'))
+      return null
     }
     if (sub === 'gallery') {
-      return { ctx: newCtx, node: {
-        step: 'F', nodeId: `reg_gallery_${current.nodeId}`, nodeType: 'registry',
-        context: { title: `Галереи — ${current.context.title}`, breadcrumbs: [...crumbs, 'Галереи'] },
-        filter: { placeholder: 'Поиск по разделу...', value: '' },
-        payload: GALLERY_ITEMS,
-      }}
+      await router.push(projectScopedRoute('/admin/gallery/interiors'))
+      return null
     }
     if (sub === 'moodboards') {
-      return { ctx: newCtx, node: {
-        step: 'F', nodeId: `reg_moodboards_${current.nodeId}`, nodeType: 'registry',
-        context: { title: `Мудборды — ${current.context.title}`, breadcrumbs: [...crumbs, 'Мудборды'] },
-        filter: { placeholder: 'Поиск по мудбордам...', value: '' },
-        payload: GALLERY_ITEMS.filter(g => g.id === 'gal_moodboards'),
-      }}
+      await router.push(projectScopedRoute('/admin/gallery/moodboards'))
+      return null
     }
     if (sub === 'tariff') {
-      return { ctx: newCtx, node: {
-        step: 'F', nodeId: `reg_tariff_${current.nodeId}`, nodeType: 'registry',
-        context: { title: `Тариф — ${current.context.title}`, breadcrumbs: [...crumbs, 'Тариф'] },
-        filter: { placeholder: 'Поиск по тарифам...', value: '' },
-        payload: [],
-      }}
+      await router.push(projectScopedRoute('/admin/pages'))
+      return null
     }
     if (sub === 'managers') {
       const slug = newCtx.projectSlug

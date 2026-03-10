@@ -269,7 +269,7 @@ const resolvedClientPageFromNav = computed(() => {
   const nodeId = adminNav.currentNode.value.nodeId
 
   if (spec.clientSection) return spec.clientSection
-  if (spec.documentCategory || nodeId.startsWith('reg_docs_')) return 'documents'
+  if (spec.documentCategory || nodeId === 'reg_docs_root' || nodeId.startsWith('reg_docs_')) return 'documents'
   if (nodeId.startsWith('reg_projects_')) return 'projects'
   return null
 })

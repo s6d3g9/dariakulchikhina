@@ -96,10 +96,6 @@ export const PROJECT_PAGE_TO_NAV_TARGET: Record<string, { branchId?: string; lea
   project_designers: { branchId: 'alpha_designers' },
   project_sellers: { branchId: 'alpha_sellers' },
   project_managers: { branchId: 'alpha_managers' },
-  project_docs: { branchId: 'alpha_docs' },
-  project_gallery: { branchId: 'alpha_gallery' },
-  project_moodboards: { branchId: 'alpha_moodboards' },
-  project_tariff: { branchId: 'alpha_tariff' },
   first_contact: { branchId: 'alpha_phases', leafId: 'prj_firstcontact' },
   brief: { branchId: 'alpha_phases', leafId: 'prj_smartbrief' },
   site_survey: { branchId: 'alpha_phases', leafId: 'prj_sitesurvey' },
@@ -131,10 +127,6 @@ export const PROJECT_REGISTRY_NODE_PREFIX_TO_PAGE: Record<string, string> = {
   reg_designers_: 'project_designers',
   reg_sellers_: 'project_sellers',
   reg_managers_: 'project_managers',
-  reg_docs_: 'project_docs',
-  reg_gallery_: 'project_gallery',
-  reg_moodboards_: 'project_moodboards',
-  reg_tariff_: 'project_tariff',
 }
 
 export const PROJECT_REGISTRY_PAGE_META: Record<string, { title: string; group: string }> = {
@@ -143,8 +135,4 @@ export const PROJECT_REGISTRY_PAGE_META: Record<string, { title: string; group: 
   project_designers: { title: 'дизайнеры проекта', group: 'субъекты проекта' },
   project_sellers: { title: 'поставщики проекта', group: 'субъекты проекта' },
   project_managers: { title: 'менеджеры проекта', group: 'субъекты проекта' },
-  project_docs: { title: 'документы проекта', group: 'контент проекта' },
-  project_gallery: { title: 'галереи проекта', group: 'контент проекта' },
-  project_moodboards: { title: 'мудборды проекта', group: 'контент проекта' },
-  project_tariff: { title: 'тариф проекта', group: 'контент проекта' },
 }

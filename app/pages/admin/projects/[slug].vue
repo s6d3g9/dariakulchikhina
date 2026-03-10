@@ -159,15 +159,6 @@
             v-if="showBrutalistHero"
             class="proj-hero"
           >
-            <nav class="proj-hero-breadcrumbs">
-              <NuxtLink to="/admin">проекты</NuxtLink>
-              <span>/</span>
-              <span>{{ project.title }}</span>
-              <template v-if="currentProjectPage !== 'overview'">
-                <span>/</span>
-                <span>{{ activePageTitle }}</span>
-              </template>
-            </nav>
             <div class="proj-hero-body">
               <p class="proj-hero-kicker">{{ activeGroupLabel || 'архитектура проекта' }}</p>
               <h1 class="proj-hero-title">{{ activeHeroTitle }}</h1>
@@ -572,7 +563,7 @@ import {
   AdminProjectOverview,
 } from '#components'
 
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
+definePageMeta({ layout: 'admin', middleware: ['admin', 'admin-project-canonical'] })
 
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -1523,24 +1514,6 @@ async function unlinkSeller(sellerId: number) {
   align-items: center;
   padding: 32px 20px;
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-}
-
-.proj-hero-breadcrumbs {
-  position: absolute;
-  top: 18px;
-  left: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: .62rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 45%, transparent);
-}
-
-.proj-hero-breadcrumbs a {
-  color: inherit;
-  text-decoration: none;
 }
 
 .proj-hero-body {
