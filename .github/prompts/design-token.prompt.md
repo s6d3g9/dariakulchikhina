@@ -1,5 +1,5 @@
 ---
-mode: 'agent'
+agent: 'agent'
 description: 'Добавить токен в дизайн-систему и подключить в UIDesignPanel'
 ---
 

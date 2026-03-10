@@ -1,5 +1,5 @@
 ---
-mode: 'agent'
+agent: 'agent'
 description: 'Создать новый API endpoint (H3 + Drizzle + Zod)'
 ---
 

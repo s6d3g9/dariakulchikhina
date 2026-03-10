@@ -786,7 +786,7 @@ html.dark .glass-input::placeholder {
 }
 
 .proj-main { width: 100%; min-width: 0; }
-.proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
+.proj-main-inner { min-width: 0; }
 
 .proj-sidenav-item {
   display: block; width: 100%; text-align: left;
@@ -1449,7 +1449,13 @@ html.dark .glass-input::placeholder {
 .cab-task-counters { display: flex; gap: 8px; margin-top: 4px; }
 .cab-task-counter { font-size: .75rem; opacity: .65; }
 .cab-task-notes { font-size: .82rem; opacity: .65; line-height: 1.5; }
-.cab-task-notes--preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cab-task-notes--preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 .cab-task-edit { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent); margin-top: 6px; }
 .cab-task-edit-row { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -2030,7 +2036,7 @@ html.dark .glass-input::placeholder {
 .u-status-sel:hover { border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
 
 /* ── u-inline-inp (DEPRECATED → use glass-input glass-input--inline) ── */
-.u-inline-inp { /* alias */ }
+.u-inline-inp { display: inline-block; }
 .u-inline-inp--xs { max-width: 56px; }
 .u-inline-inp--sm { max-width: 100px; }
 .u-inline-inp--ta { resize: vertical; min-height: 32px; }

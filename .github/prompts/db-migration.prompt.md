@@ -1,5 +1,5 @@
 ---
-mode: 'agent'
+agent: 'agent'
 description: 'Добавить поле в Drizzle схему и создать миграцию'
 ---
 

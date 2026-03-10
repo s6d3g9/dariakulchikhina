@@ -82,8 +82,14 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
       { key: 'services', icon: '◎', label: 'Услуги и цены' },
       { key: 'packages', icon: '◑', label: 'Пакеты' },
       { key: 'subscriptions', icon: '⟳', label: 'Подписки' },
-      { key: 'documents', icon: '📎', label: 'Документы' },
       { key: 'projects', icon: '◒', label: 'Проекты' },
+      { key: 'clients', icon: '◇', label: 'Клиенты' },
+      { key: 'contractors', icon: '◆', label: 'Подрядчики' },
+      { key: 'sellers', icon: '◈', label: 'Продавцы' },
+      { key: 'managers', icon: '◎', label: 'Менеджеры' },
+      { key: 'documents', icon: '📎', label: 'Документы' },
+      { key: 'gallery', icon: '◑', label: 'Галерея' },
+      { key: 'moodboards', icon: '◒', label: 'Мудборды' },
       { key: 'profile', icon: '◓', label: 'Профиль' },
     ]
     return items

@@ -1,5 +1,5 @@
 ---
-mode: 'agent'
+agent: 'agent'
 description: 'Задеплоить проект на сервер dariakulchikhina.com'
 ---
 

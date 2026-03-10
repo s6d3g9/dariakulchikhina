@@ -74,15 +74,15 @@ const DESIGNER_CABINET_ITEMS: PayloadItem[] = [
   { id: 'des_services',      name: 'Услуги и цены', type: 'leaf' },
   { id: 'des_packages',      name: 'Пакеты',        type: 'leaf' },
   { id: 'des_subscriptions', name: 'Подписки',      type: 'leaf' },
+  { id: 'des_projects',      name: 'Проекты',       type: 'leaf' },
+  { id: 'des_clients',       name: 'Клиенты',       type: 'leaf' },
+  { id: 'des_contractors',   name: 'Подрядчики',    type: 'leaf' },
+  { id: 'des_sellers',       name: 'Продавцы',      type: 'leaf' },
+  { id: 'des_managers',      name: 'Менеджеры',     type: 'leaf' },
+  { id: 'des_documents',     name: 'Документы',     type: 'leaf' },
+  { id: 'des_gallery',       name: 'Галерея',       type: 'leaf' },
+  { id: 'des_moodboards',    name: 'Мудборды',      type: 'leaf' },
   { id: 'des_profile',       name: 'Профиль',       type: 'leaf' },
-  { id: 'des_projects',      name: 'Проекты',       type: 'node' },
-  { id: 'des_clients',       name: 'Клиенты',       type: 'node' },
-  { id: 'des_contractors',   name: 'Подрядчики',    type: 'node' },
-  { id: 'des_sellers',       name: 'Поставщики',    type: 'node' },
-  { id: 'des_managers',      name: 'Менеджеры',     type: 'node' },
-  { id: 'des_documents',     name: 'Документы',     type: 'node' },
-  { id: 'des_gallery',       name: 'Галереи',       type: 'node' },
-  { id: 'des_moodboards',    name: 'Мудборды',      type: 'node' },
 ]
 
 const CLIENT_CABINET_ITEMS: PayloadItem[] = [

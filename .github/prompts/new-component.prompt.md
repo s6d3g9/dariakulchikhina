@@ -1,5 +1,5 @@
 ---
-mode: 'agent'
+agent: 'agent'
 description: 'Создать новый Vue компонент для admin-панели'
 ---
 

@@ -61,20 +61,36 @@
 
             <div class="dash-stats">
               <div class="dash-stat glass-surface">
-                <div class="dash-stat-val">{{ dashStats.total }}</div>
-                <div class="dash-stat-label">Всего проектов</div>
-              </div>
-              <div class="dash-stat glass-surface dash-stat--blue">
                 <div class="dash-stat-val">{{ dashStats.active }}</div>
-                <div class="dash-stat-label">В работе</div>
+                <div class="dash-stat-label">Активных проектов</div>
               </div>
-              <div class="dash-stat glass-surface dash-stat--green">
-                <div class="dash-stat-val">{{ dashStats.completed }}</div>
-                <div class="dash-stat-label">Завершено</div>
+              <div class="dash-stat glass-surface">
+                <div class="dash-stat-val">{{ uniqueClients.length }}</div>
+                <div class="dash-stat-label">Клиентов</div>
+              </div>
+              <div class="dash-stat glass-surface">
+                <div class="dash-stat-val">{{ uniqueContractors.length }}</div>
+                <div class="dash-stat-label">Подрядчиков</div>
+              </div>
+              <div class="dash-stat glass-surface">
+                <div class="dash-stat-val">{{ linkedData?.sellers?.length || 0 }}</div>
+                <div class="dash-stat-label">Поставщиков</div>
               </div>
               <div class="dash-stat glass-surface">
                 <div class="dash-stat-val">{{ dashStats.totalRevenue.toLocaleString('ru-RU') }} ₽</div>
-                <div class="dash-stat-label">Общий оборот</div>
+                <div class="dash-stat-label">Общая выручка</div>
+              </div>
+              <div class="dash-stat glass-surface">
+                <div class="dash-stat-val">{{ dashStats.total ? Math.round(dashStats.totalRevenue / dashStats.total).toLocaleString('ru-RU') : 0 }} ₽</div>
+                <div class="dash-stat-label">Ср. стоимость проекта</div>
+              </div>
+              <div class="dash-stat glass-surface">
+                <div class="dash-stat-val">{{ services.length }}</div>
+                <div class="dash-stat-label">Услуг настроено</div>
+              </div>
+              <div class="dash-stat glass-surface">
+                <div class="dash-stat-val">{{ packages.length }}</div>
+                <div class="dash-stat-label">Пакетов</div>
               </div>
             </div>
 
@@ -624,6 +640,123 @@
 
           </template>
 
+          <!-- ═══════════════ CLIENTS (Flat Registry pivot) ═══════════════ -->
+          <template v-else-if="section === 'clients'">
+            <div class="u-section-title"><h2>Клиенты</h2></div>
+            <div v-if="uniqueClients.length" class="pivot-list">
+              <div v-for="c in uniqueClients" :key="c.id" class="pivot-banner glass-surface" @click="goToClient(c.id, c.name)">
+                <div class="pivot-banner-left">
+                  <span class="pivot-banner-name">{{ c.name }}</span>
+                  <span v-if="c.phone || c.email" class="pivot-banner-contact">
+                    {{ [c.phone, c.email].filter(Boolean).join(' / ') }}
+                  </span>
+                </div>
+                <span class="pivot-banner-arrow">→</span>
+              </div>
+            </div>
+            <div v-else class="u-empty glass-surface"><p>Клиентов пока нет. Добавьте клиента в проект.</p></div>
+          </template>
+
+          <!-- ═══════════════ CONTRACTORS (Flat Registry pivot) ═══════════════ -->
+          <template v-else-if="section === 'contractors'">
+            <div class="u-section-title"><h2>Подрядчики</h2></div>
+            <div v-if="uniqueContractors.length" class="pivot-list">
+              <div v-for="c in uniqueContractors" :key="c.id" class="pivot-banner glass-surface" @click="goToContractor(c.id, c.name)">
+                <div class="pivot-banner-left">
+                  <span class="pivot-banner-name">{{ c.name }}</span>
+                  <span v-if="c.role" class="pivot-banner-contact">{{ c.role }}</span>
+                </div>
+                <span class="pivot-banner-arrow">→</span>
+              </div>
+            </div>
+            <div v-else class="u-empty glass-surface"><p>Подрядчиков пока нет. Добавьте подрядчика в проект.</p></div>
+          </template>
+
+          <!-- ═══════════════ SELLERS (Flat Registry pivot) ═══════════════ -->
+          <template v-else-if="section === 'sellers'">
+            <div class="u-section-title"><h2>Продавцы / Поставщики</h2></div>
+            <div v-if="linkedData?.sellers?.length" class="pivot-list">
+              <div v-for="s in linkedData.sellers" :key="s.id" class="pivot-banner glass-surface" @click="goToSeller(s.id, s.name)">
+                <div class="pivot-banner-left">
+                  <span class="pivot-banner-name">{{ s.name }}</span>
+                  <span v-if="s.companyName" class="pivot-banner-contact">{{ s.companyName }}</span>
+                  <span v-if="s.phone || s.email" class="pivot-banner-contact">
+                    {{ [s.phone, s.email].filter(Boolean).join(' / ') }}
+                  </span>
+                  <span v-if="s.city" class="pivot-banner-contact">{{ s.city }}</span>
+                </div>
+                <div class="pivot-banner-right">
+                  <span class="pivot-banner-count">{{ s.projects.length }} {{ pluralProjects(s.projects.length) }}</span>
+                  <span class="pivot-banner-arrow">→</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="u-empty glass-surface"><p>Поставщиков пока нет.</p></div>
+          </template>
+
+          <!-- ═══════════════ MANAGERS (Flat Registry) ═══════════════ -->
+          <template v-else-if="section === 'managers'">
+            <div class="u-section-title"><h2>Менеджеры</h2></div>
+            <div v-if="linkedData?.managers?.length" class="pivot-list">
+              <div v-for="m in linkedData.managers" :key="m.id" class="pivot-banner glass-surface" @click="goToManager(m.id, m.name)">
+                <div class="pivot-banner-left">
+                  <span class="pivot-banner-name">{{ m.name }}</span>
+                  <span v-if="m.role" class="pivot-banner-contact">{{ m.role }}</span>
+                  <span v-if="m.phone || m.email" class="pivot-banner-contact">
+                    {{ [m.phone, m.email].filter(Boolean).join(' / ') }}
+                  </span>
+                  <span v-if="m.telegram" class="pivot-banner-contact">{{ m.telegram }}</span>
+                </div>
+                <div class="pivot-banner-right">
+                  <span class="pivot-banner-count">{{ m.projects.length }} {{ pluralProjects(m.projects.length) }}</span>
+                  <span class="pivot-banner-arrow">→</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="u-empty glass-surface"><p>Менеджеров пока нет.</p></div>
+          </template>
+
+          <!-- ═══════════════ GALLERY (Flat Registry) ═══════════════ -->
+          <template v-else-if="section === 'gallery'">
+            <div class="u-section-title"><h2>Галерея</h2></div>
+            <div v-if="galleryList.length" class="gallery-grid">
+              <div v-for="g in galleryList" :key="g.id" class="gallery-card glass-surface">
+                <div v-if="g.image" class="gallery-card-img">
+                  <img :src="`/uploads/${g.image}`" :alt="g.title" loading="lazy" />
+                </div>
+                <div class="gallery-card-body">
+                  <span class="gallery-card-title">{{ g.title }}</span>
+                  <span v-if="g.category" class="gallery-card-cat">{{ g.category }}</span>
+                  <div v-if="g.tags?.length" class="gallery-card-tags">
+                    <span v-for="t in g.tags" :key="t" class="gallery-tag">{{ t }}</span>
+                  </div>
+                  <span v-if="g.featured" class="gallery-card-feat">Избранное</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="u-empty glass-surface"><p>Элементов галереи пока нет.</p></div>
+          </template>
+
+          <!-- ═══════════════ MOODBOARDS (Flat Registry) ═══════════════ -->
+          <template v-else-if="section === 'moodboards'">
+            <div class="u-section-title"><h2>Мудборды</h2></div>
+            <div v-if="moodboardList.length" class="gallery-grid">
+              <div v-for="g in moodboardList" :key="g.id" class="gallery-card glass-surface">
+                <div v-if="g.image" class="gallery-card-img">
+                  <img :src="`/uploads/${g.image}`" :alt="g.title" loading="lazy" />
+                </div>
+                <div class="gallery-card-body">
+                  <span class="gallery-card-title">{{ g.title }}</span>
+                  <div v-if="g.tags?.length" class="gallery-card-tags">
+                    <span v-for="t in g.tags" :key="t" class="gallery-tag">{{ t }}</span>
+                  </div>
+                  <span v-if="g.featured" class="gallery-card-feat">Избранное</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="u-empty glass-surface"><p>Мудбордов пока нет.</p></div>
+          </template>
+
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-else-if="section === 'profile'">
             <form @submit.prevent="saveProfile" class="cab-form">
@@ -793,6 +926,11 @@ const { data: designerDocs, refresh: refreshDesignerDocs } = await useFetch<any[
   () => `/api/designers/${props.designerId}/documents`,
   { default: () => [], watch: [designerIdRef] },
 )
+
+const { data: linkedData } = await useFetch<any>(
+  () => `/api/designers/${props.designerId}/linked-entities`,
+  { default: () => ({ sellers: [], managers: [], gallery: [], moodboards: [] }), watch: [designerIdRef] },
+)
 const designerDocUploading = ref(false)
 const newDesignerDocTitle = ref('')
 const newDesignerDocCategory = ref('other')
@@ -828,6 +966,66 @@ function toggleSpec(sp: string) {
   if (idx >= 0) form.specializations.splice(idx, 1)
   else form.specializations.push(sp)
 }
+
+// ── Linked entities (pivot lists) ──
+
+const uniqueClients = computed(() => {
+  const map = new Map<number, { id: number; name: string; phone: string | null; email: string | null }>()
+  for (const dp of designerProjects.value) {
+    for (const c of (dp.clients || [])) {
+      if (!map.has(c.id)) map.set(c.id, c)
+    }
+  }
+  return [...map.values()]
+})
+
+const uniqueContractors = computed(() => {
+  const map = new Map<number, { id: number; name: string; role: string | null }>()
+  for (const dp of designerProjects.value) {
+    for (const c of (dp.contractors || [])) {
+      if (!map.has(c.id)) map.set(c.id, c)
+    }
+  }
+  return [...map.values()]
+})
+
+const galleryList = computed(() => linkedData.value?.gallery || [])
+const moodboardList = computed(() => linkedData.value?.moodboards || [])
+
+function pluralProjects(n: number): string {
+  if (n % 10 === 1 && n % 100 !== 11) return 'проект'
+  if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'проекта'
+  return 'проектов'
+}
+
+// ── Pivot navigation to entity cabinets ──
+const { drillToEntityCabinet, setCabinetCounts } = useAdminNav()
+
+function goToClient(id: number, name?: string) {
+  drillToEntityCabinet('clients', id, name)
+}
+function goToContractor(id: number, name?: string) {
+  drillToEntityCabinet('contractors', id, name)
+}
+function goToSeller(id: number, name?: string) {
+  drillToEntityCabinet('sellers', id, name)
+}
+function goToManager(id: number, name?: string) {
+  drillToEntityCabinet('managers', id, name)
+}
+
+// ── Sidebar counters (N) ──
+watch([designerProjects, linkedData], () => {
+  setCabinetCounts({
+    des_projects:    designerProjects.value.length,
+    des_clients:     uniqueClients.value.length,
+    des_contractors: uniqueContractors.value.length,
+    des_sellers:     linkedData.value?.sellers?.length ?? 0,
+    des_managers:    linkedData.value?.managers?.length ?? 0,
+    des_gallery:     galleryList.value.length,
+    des_moodboards:  moodboardList.value.length,
+  })
+}, { immediate: true })
 
 // ── Services editing ──
 
@@ -1546,5 +1744,41 @@ async function saveDesignerProjectEdits() {
 @media (max-width: 980px) {
   .pkg-grid { grid-template-columns: 1fr; }
   .sub-grid { grid-template-columns: 1fr; }
+  .gallery-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Pivot banner (Flat Registry rows) ── */
+.pivot-list { display: flex; flex-direction: column; gap: 8px; }
+.pivot-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--glass-border); transition: all .15s;
+}
+.pivot-banner:hover {
+  background: var(--glass-text); color: var(--glass-bg);
+}
+.pivot-banner:hover .pivot-banner-contact,
+.pivot-banner:hover .pivot-banner-count { opacity: .7; }
+.pivot-banner-left { display: flex; flex-direction: column; gap: 2px; }
+.pivot-banner-right { display: flex; align-items: center; gap: 12px; }
+.pivot-banner-name { font-weight: 600; font-size: .92rem; }
+.pivot-banner-contact { font-size: .78rem; opacity: .55; }
+.pivot-banner-count { font-size: .78rem; opacity: .55; }
+.pivot-banner-arrow { font-size: 1.1rem; opacity: .5; }
+.pivot-banner:hover .pivot-banner-arrow { opacity: 1; }
+
+/* ── Gallery grid (2 cols) ── */
+.gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.gallery-card { border-radius: 10px; overflow: hidden; border: 1px solid var(--glass-border); }
+.gallery-card-img { aspect-ratio: 16/10; overflow: hidden; background: color-mix(in srgb, var(--glass-text) 4%, transparent); }
+.gallery-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-card-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; }
+.gallery-card-title { font-weight: 600; font-size: .88rem; }
+.gallery-card-cat { font-size: .72rem; opacity: .5; text-transform: uppercase; letter-spacing: .05em; }
+.gallery-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.gallery-tag {
+  font-size: .66rem; padding: 2px 7px; border-radius: 5px;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent); opacity: .7;
+}
+.gallery-card-feat { font-size: .7rem; font-weight: 600; opacity: .7; }
 </style>
