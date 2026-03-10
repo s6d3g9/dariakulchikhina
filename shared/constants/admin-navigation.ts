@@ -8,6 +8,7 @@ export type AdminSectionKey =
   | 'docs'
   | 'gallery'
   | 'moodboards'
+  | 'ui-modules'
   | 'tariffs'
 
 export const ADMIN_SECTION_ROUTES: Record<AdminSectionKey, string> = {
@@ -20,6 +21,7 @@ export const ADMIN_SECTION_ROUTES: Record<AdminSectionKey, string> = {
   docs: '/admin/documents',
   gallery: '/admin/gallery',
   moodboards: '/admin/gallery/moodboards',
+  'ui-modules': '/admin/pages',
   tariffs: '/admin/pages',
 }
 
@@ -33,11 +35,16 @@ export const ADMIN_CATEGORY_SECTION_MAP: Record<string, AdminSectionKey> = {
   cat_docs: 'docs',
   cat_gallery: 'gallery',
   cat_moodboards: 'moodboards',
-  cat_tariffs: 'tariffs',
+  cat_tariffs: 'ui-modules',
+}
+
+const ADMIN_SECTION_ALIASES: Record<string, AdminSectionKey> = {
+  tariffs: 'ui-modules',
 }
 
 export function getAdminSectionRoute(sectionKey: string) {
-  return ADMIN_SECTION_ROUTES[sectionKey as AdminSectionKey] || null
+  const normalizedKey = ADMIN_SECTION_ALIASES[sectionKey] || sectionKey
+  return ADMIN_SECTION_ROUTES[normalizedKey as AdminSectionKey] || null
 }
 
 export function getAdminCategoryRoute(categoryId: string) {

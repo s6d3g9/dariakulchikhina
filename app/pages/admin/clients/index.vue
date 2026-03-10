@@ -8,42 +8,30 @@
 
     <!-- Content: selected client or empty state -->
     <template v-if="selectedClient">
-          <section v-if="showBrutalistClientHero" class="cl-hero">
-            <nav class="cl-hero-breadcrumbs">
-              <NuxtLink to="/admin">админ</NuxtLink>
-              <span>/</span>
-              <span>клиенты</span>
-              <span>/</span>
-              <span>{{ selectedClient.name }}</span>
-            </nav>
-            <div class="cl-hero-body">
-              <p class="cl-hero-kicker">{{ selectedClientSlug ? 'клиентский кабинет' : 'карточка клиента' }}</p>
-              <h1 class="cl-hero-title">{{ selectedClient.name }}</h1>
-              <div class="cl-hero-meta">
-                <div v-for="fact in clientHeroFacts" :key="fact.label" class="cl-hero-meta-item">
-                  <span class="cl-hero-meta-label">{{ fact.label }}</span>
-                  <span class="cl-hero-meta-value">{{ fact.value }}</span>
-                </div>
-              </div>
-              <div class="cl-hero-actions">
-                <button class="cl-hero-action" @click="openEdit(selectedClient)">редактировать</button>
-                <button class="cl-hero-action" @click="openLink(selectedClient)">{{ selectedClient.linkedProjects?.length ? 'сменить проект' : 'привязать к проекту' }}</button>
-                <button class="cl-hero-action" @click="clientPage = 'documents'">документы</button>
-                <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" class="cl-hero-action">кабинет ↗</a>
-              </div>
-            </div>
-          </section>
+          <AdminEntityHero
+            v-if="showBrutalistClientHero"
+            :kicker="selectedClientSlug ? 'клиентский кабинет' : 'карточка клиента'"
+            :title="selectedClient.name"
+            :facts="clientHeroFacts"
+            :meta-columns="3"
+          >
+            <template #actions>
+              <button class="admin-entity-hero__action" @click="openEdit(selectedClient)">редактировать</button>
+              <button class="admin-entity-hero__action" @click="openLink(selectedClient)">{{ selectedClient.linkedProjects?.length ? 'сменить проект' : 'привязать к проекту' }}</button>
+              <button class="admin-entity-hero__action" @click="clientPage = 'documents'">документы</button>
+              <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" class="admin-entity-hero__action">кабинет ↗</a>
+            </template>
+          </AdminEntityHero>
 
           <!-- Minimal context strip -->
-          <div v-if="!showBrutalistClientHero" class="ent-entity-hd">
-            <span class="ent-entity-hd-name">{{ selectedClient.name }}</span>
-            <div class="ent-entity-hd-actions">
+          <AdminEntityHeader v-if="!showBrutalistClientHero" :title="selectedClient.name">
+            <template #actions>
               <button class="ent-entity-hd-action" @click="openEdit(selectedClient)">ред.</button>
               <button class="ent-entity-hd-action" @click="openLink(selectedClient)">{{ selectedClient.linkedProjects?.length ? 'проект' : 'привязать' }}</button>
               <button class="ent-entity-hd-action" @click="clientPage = 'documents'">документы</button>
               <a v-if="selectedClient.linkedProjects?.length" :href="`/client/${selectedClient.linkedProjects[0].slug}`" class="ent-entity-hd-action">↗</a>
-            </div>
-          </div>
+            </template>
+          </AdminEntityHeader>
 
           <section class="cl-main-shell" :class="{ 'cl-main-shell--brutalist': isBrutalistClientsMode }">
             <div v-if="currentClientPage === 'dashboard'" class="cl-section-grid">
@@ -117,7 +105,8 @@
               <div class="cl-row"><div class="cl-field"><label>Название</label><input v-model="docsTitle" class="glass-input" placeholder="Название документа" /></div><div class="cl-field"><label>Категория</label><select v-model="docsCategory" class="glass-input"><option v-for="dc in DOC_CATEGORIES" :key="`inline-${dc.value}`" :value="dc.value">{{ dc.label }}</option></select></div></div>
               <div class="cl-field"><label>Примечание</label><input v-model="docsNotes" class="glass-input" placeholder="Необязательно" /></div>
               <div style="margin-bottom:14px"><label class="a-btn-save" style="display:inline-flex;align-items:center;cursor:pointer"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadClientDoc" />{{ docsUploading ? 'загрузка…' : '＋ выбрать файл' }}</label></div>
-              <div v-if="filteredClientDocs.length" class="cl-docs-list">
+              <div v-if="docsPending" class="ent-detail-row" style="opacity:.48">загрузка документов…</div>
+              <div v-else-if="filteredClientDocs.length" class="cl-docs-list">
                 <div v-for="doc in filteredClientDocs" :key="doc.id" class="cl-doc-item glass-surface">
                   <div><div class="cl-doc-title">{{ doc.title }}</div><div class="cl-doc-meta">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}<span v-if="doc.notes"> · {{ doc.notes }}</span><span v-if="doc.createdAt"> · {{ formatDocDate(doc.createdAt) }}</span></div></div>
                   <div class="cl-doc-actions"><a v-if="doc.url" :href="doc.url" target="_blank" class="ent-detail-chip">скачать</a><button class="a-btn-sm a-btn-danger" @click="deleteClientDoc(doc.id)">✕</button></div>
@@ -129,12 +118,16 @@
         </template>
 
         <!-- Nothing selected -->
-        <div v-else class="ent-empty-detail cl-empty-detail" :class="{ 'cl-empty-detail--brutalist': isBrutalistClientsMode }">
-          <span class="ent-empty-icon">👤</span>
-          <span v-if="clients?.length">Выберите клиента из списка</span>
-          <span v-else>Нет клиентов — добавьте первого</span>
-          <button class="a-btn-sm" style="margin-top:6px" @click="openAdd">+ добавить</button>
-        </div>
+        <AdminEntityEmptyState
+          v-else
+          icon="👤"
+          :has-items="Boolean(clients?.length)"
+          message-with-items="Выберите клиента из списка"
+          message-empty="Нет клиентов — добавьте первого"
+          action-label="+ добавить"
+          :brutalist="isBrutalistClientsMode"
+          @action="openAdd"
+        />
 
     <Teleport to="body">
     <div v-if="showModal" class="cl-backdrop" :class="{ 'cl-backdrop--brutalist': isBrutalistClientsMode }" @click.self="closeModal">
@@ -159,7 +152,13 @@
       <div class="cl-modal glass-surface glass-card" :class="{ 'cl-modal--brutalist': isBrutalistClientsMode }">
         <div class="cl-modal-head"><span>привязать «{{ linkClient?.name }}» к проекту</span><button class="cl-close" @click="showLink = false">✕</button></div>
         <div class="cl-form">
-          <div class="cl-field"><label>Выберите проект</label><select v-model="linkProjectSlug" class="glass-input"><option value="">— выберите проект —</option><option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option></select></div>
+          <div class="cl-field">
+            <label>Выберите проект</label>
+            <select v-model="linkProjectSlug" class="glass-input" :disabled="projectsCatalogLoading">
+              <option value="">{{ projectsCatalogLoading ? 'загрузка проектов…' : '— выберите проект —' }}</option>
+              <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
+            </select>
+          </div>
           <div v-if="linkProjectSlug" class="cl-link-preview glass-surface"><p class="cl-link-preview-title">Будет заполнено в профиле проекта:</p><ul class="cl-link-list"><li><b>Имя клиента</b> → {{ linkClient?.name }}</li><li v-if="linkClient?.phone"><b>Телефон</b> → {{ linkClient?.phone }}</li><li v-if="linkClient?.email"><b>Email</b> → {{ linkClient?.email }}</li></ul></div>
           <p v-if="linkError" class="cl-error">{{ linkError }}</p>
           <div class="cl-modal-foot"><button type="button" class="a-btn-sm" @click="showLink = false">отмена</button><button class="a-btn-save" :disabled="!linkProjectSlug || linking" @click="doLink">{{ linking ? '...' : 'привязать' }}</button></div>
@@ -206,17 +205,12 @@ const route = useRoute()
 const designSystem = useDesignSystem()
 const isBrutalistClientsMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
-const clientsCacheByProject = useState<Record<string, any[]>>('cache-admin-clients-by-project', () => ({}))
-const clientsCacheKey = computed(() => projectSlugFilter.value || '__all__')
-const hasClientsCache = computed(() => (clientsCacheByProject.value[clientsCacheKey.value] || []).length > 0)
+const clientsDirectory = useAdminClientsDirectory(projectSlugFilter)
+const { clients, pending, refresh } = clientsDirectory
 
-const { data: clients, pending, refresh } = await useFetch<any[]>(
-  () => projectSlugFilter.value ? `/api/clients?projectSlug=${encodeURIComponent(projectSlugFilter.value)}` : '/api/clients',
-  { server: false, default: () => clientsCacheByProject.value[clientsCacheKey.value] || [] },
-)
-watch(clients, (v) => { if (Array.isArray(v)) clientsCacheByProject.value = { ...clientsCacheByProject.value, [clientsCacheKey.value]: v } }, { deep: true })
-
-const { data: allProjects } = await useFetch<any[]>('/api/projects')
+const adminCatalogs = useAdminCatalogs()
+const allProjects = adminCatalogs.getCatalog('projects')
+const projectsCatalogLoading = adminCatalogs.isCatalogLoading('projects')
 const DOC_CATEGORIES = [{ value: 'passport', label: 'Паспорт' },{ value: 'contract', label: 'Договор' },{ value: 'invoice', label: 'Счёт' },{ value: 'act', label: 'Акт' },{ value: 'other', label: 'Другое' }]
 
 // ── Search & selection ─────────────────────────────────
@@ -310,21 +304,25 @@ function openEdit(c: any) { editingId.value = c.id; form.value = { name: c.name 
 function closeModal() { showModal.value = false }
 async function save() {
   saving.value = true; saveError.value = ''
-  try { if (editingId.value) await $fetch(`/api/clients/${editingId.value}`, { method: 'PUT', body: form.value }); else await $fetch('/api/clients', { method: 'POST', body: form.value }); await refresh(); closeModal() }
+  try { await clientsDirectory.saveClient(editingId.value, form.value); closeModal() }
   catch (e: any) { saveError.value = e?.data?.statusMessage || 'Ошибка' } finally { saving.value = false }
 }
-async function del(id: number) { if (!confirm('Удалить клиента?')) return; await $fetch(`/api/clients/${id}`, { method: 'DELETE' }); if (selectedClientId.value === id) selectedClientId.value = null; await refresh() }
+async function del(id: number) { if (!confirm('Удалить клиента?')) return; await clientsDirectory.deleteClient(id); if (selectedClientId.value === id) selectedClientId.value = null }
 
 // ── Link ───────────────────────────────────────────────
 const showLink = ref(false); const linkClient = ref<any>(null); const linkProjectSlug = ref(''); const linking = ref(false); const linkError = ref('')
-function openLink(c: any) { linkClient.value = c; linkProjectSlug.value = ''; linkError.value = ''; showLink.value = true }
-async function doLink() { if (!linkProjectSlug.value || !linkClient.value) return; linking.value = true; linkError.value = ''; try { await $fetch(`/api/clients/${linkClient.value.id}/link-project`, { method: 'POST', body: { projectSlug: linkProjectSlug.value } }); await refresh(); showLink.value = false } catch (e: any) { linkError.value = e?.data?.statusMessage || 'Ошибка' } finally { linking.value = false } }
+async function openLink(c: any) { linkClient.value = c; linkProjectSlug.value = ''; linkError.value = ''; showLink.value = true; await adminCatalogs.ensureCatalog('projects') }
+async function doLink() { if (!linkProjectSlug.value || !linkClient.value) return; linking.value = true; linkError.value = ''; try { await clientsDirectory.linkClientToProject(linkClient.value.id, linkProjectSlug.value); showLink.value = false } catch (e: any) { linkError.value = e?.data?.statusMessage || 'Ошибка' } finally { linking.value = false } }
 
 // ── Docs ───────────────────────────────────────────────
 const docsClientId = ref<number | null>(null)
 const docsTitle = ref(''); const docsCategory = ref('other'); const docsNotes = ref(''); const docsUploading = ref(false)
 const docsSearch = ref(''); const docsFilter = ref(''); const docsSort = ref<'new'|'old'>('new')
-const { data: clientDocs, refresh: refreshClientDocs } = await useFetch<any[]>(() => docsClientId.value ? `/api/clients/${docsClientId.value}/documents` : null, { default: () => [] })
+const shouldLoadClientDocs = computed(() => currentClientPage.value === 'documents' && !!docsClientId.value)
+const { data: clientDocs, pending: docsPending, refresh: refreshClientDocs } = await useFetch<any[]>(
+  () => shouldLoadClientDocs.value ? `/api/clients/${docsClientId.value}/documents` : null,
+  { default: () => [] },
+)
 watch(selectedClientId, (id) => { docsClientId.value = id }, { immediate: true })
 watch(() => adminNav.contentSpec.value.documentCategory, (category) => {
   if (!category) return
@@ -359,112 +357,6 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-filter-link:hover { opacity: 1; }
 .cl-nav-arrow { margin-left: auto; font-size: .7rem; opacity: .4; flex-shrink: 0; }
 
-.cl-hero {
-  position: relative;
-  min-height: min(72vh, 720px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 20px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-}
-
-.cl-hero-breadcrumbs {
-  position: absolute;
-  top: 18px;
-  left: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: .62rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
-}
-
-.cl-hero-breadcrumbs a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.cl-hero-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: min(100%, 980px);
-}
-
-.cl-hero-kicker {
-  margin: 0;
-  font-size: .68rem;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
-}
-
-.cl-hero-title {
-  margin: 0;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  line-height: .94;
-  font-size: clamp(2.4rem, 8vw, 6.5rem);
-}
-
-.cl-hero-meta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  width: 100%;
-}
-
-.cl-hero-meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
-}
-
-.cl-hero-meta-label {
-  font-size: .6rem;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 44%, transparent);
-}
-
-.cl-hero-meta-value {
-  font-size: .9rem;
-  line-height: 1.15;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-}
-
-.cl-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-}
-
-.cl-hero-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 14px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
-  background: transparent;
-  color: var(--glass-text);
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  font-size: .68rem;
-  cursor: pointer;
-}
-
 .cl-cab-body--brutalist {
   gap: 0;
   border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
@@ -489,13 +381,6 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-detail-card--brutalist {
   border-radius: 0;
   border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
-}
-
-.cl-empty-detail--brutalist {
-  min-height: 56vh;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-radius: 0;
   background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 
@@ -525,26 +410,7 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-doc-meta { font-size: .72rem; opacity: .5; }
 .cl-doc-actions { display: flex; align-items: center; gap: 8px; }
 
-@media (max-width: 900px) {
-  .cl-hero-meta {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 600px) {
   .cl-row { grid-template-columns: 1fr; }
-  .cl-hero {
-    min-height: auto;
-    padding: 26px 14px;
-  }
-  .cl-hero-breadcrumbs {
-    position: static;
-    align-self: flex-start;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-  }
-  .cl-hero-title {
-    font-size: clamp(2rem, 11vw, 4rem);
-  }
 }
 </style>

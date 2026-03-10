@@ -364,7 +364,7 @@ export interface DesignPreset {
 export const DESIGN_PRESETS: DesignPreset[] = [
   {
     id: 'minimal',
-    name: 'Minimal',
+    name: 'Минимализм',
     description: 'Чистый и лаконичный — как Linear',
     icon: '◻',
     tokens: {
@@ -392,7 +392,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'soft',
-    name: 'Soft',
+    name: 'Мягкость',
     description: 'Округлый и мягкий — как Notion',
     icon: '◉',
     tokens: {
@@ -421,7 +421,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'brutalist',
-    name: 'Brutalist',
+    name: 'Брутализм',
     description: 'Резкий и контрастный — без компромиссов',
     icon: '▬',
     tokens: {
@@ -449,7 +449,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'corporate',
-    name: 'Corporate',
+    name: 'Корпоративный',
     description: 'Деловой — как Salesforce / Stripe',
     icon: '▣',
     tokens: {
@@ -477,7 +477,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'editorial',
-    name: 'Editorial',
+    name: 'Редакционный',
     description: 'Журнальная эстетика — serif, воздух',
     icon: '▤',
     tokens: {
@@ -508,7 +508,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'neomorphism',
-    name: 'Neomorphism',
+    name: 'Неоморфизм',
     description: 'Мягкие тени — 3D эффект без границ',
     icon: '◎',
     tokens: {
@@ -538,7 +538,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   /* ── New presets ─────────────────────────────────── */
   {
     id: 'glassmorphism',
-    name: 'Glassmorphism',
+    name: 'Стекло',
     description: 'Матовое стекло — как iOS / macOS',
     icon: '❖',
     tokens: {
@@ -567,7 +567,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'luxury',
-    name: 'Luxury',
+    name: 'Люкс',
     description: 'Премиум — тёмные тона, золотой акцент',
     icon: '♦',
     tokens: {
@@ -598,7 +598,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'playful',
-    name: 'Playful',
+    name: 'Игровой',
     description: 'Яркий и весёлый — как Figma / Notion AI',
     icon: '●',
     tokens: {
@@ -627,7 +627,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'swiss',
-    name: 'Swiss',
+    name: 'Швейцарский',
     description: 'Швейцарский стиль — Helvetica, сетка, порядок',
     icon: '▦',
     tokens: {
@@ -658,7 +658,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'monochrome',
-    name: 'Monochrome',
+    name: 'Монохром',
     description: 'Чисто чёрно-белый, без лишнего цвета',
     icon: '◒',
     tokens: {
@@ -687,7 +687,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'scandinavian',
-    name: 'Scandinavian',
+    name: 'Скандинавский',
     description: 'Воздушный и тёплый — скандинавский уют',
     icon: '◇',
     tokens: {
@@ -717,7 +717,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'dashboard',
-    name: 'Dashboard',
+    name: 'Дашборд',
     description: 'Компактный — как Grafana / Datadog',
     icon: '▥',
     tokens: {
@@ -808,7 +808,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   },
   {
     id: 'retro',
-    name: 'Retro Terminal',
+    name: 'Ретро-терминал',
     description: 'Терминал 80-х — моноширинный, зелёный',
     icon: '▮',
     tokens: {
@@ -840,7 +840,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
   /* ── Effect-focused presets ─────────────────────────── */
   {
     id: 'glow',
-    name: 'Glow',
+    name: 'Свечение',
     description: 'Неоновое свечение — яркие акценты, глубокие тени',
     icon: '✦',
     tokens: {

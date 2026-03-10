@@ -155,34 +155,27 @@
 
         <!-- Right content -->
         <div class="proj-main" :class="{ 'proj-main--brutalist': isBrutalistProjectMode }">
-          <section
+          <AdminEntityHero
             v-if="showBrutalistHero"
-            class="proj-hero"
+            :kicker="activeGroupLabel || 'архитектура проекта'"
+            :title="activeHeroTitle"
+            :facts="brutalistHeroFacts"
+            :full-height="true"
+            frame="divided"
+            :meta-columns="3"
+            prompt="↓ прокрутка / swipe ↓"
           >
-            <div class="proj-hero-body">
-              <p class="proj-hero-kicker">{{ activeGroupLabel || 'архитектура проекта' }}</p>
-              <h1 class="proj-hero-title">{{ activeHeroTitle }}</h1>
-              <div class="proj-hero-meta" aria-label="Контекст проекта">
-                <div
-                  v-for="fact in brutalistHeroFacts"
-                  :key="fact.label"
-                  class="proj-hero-meta-item"
-                >
-                  <span class="proj-hero-meta-label">{{ fact.label }}</span>
-                  <span class="proj-hero-meta-value">{{ fact.value }}</span>
-                </div>
-              </div>
-              <div v-if="projectFlashMessages.length" class="proj-hero-notices">
+            <template #notices>
+              <template v-if="projectFlashMessages.length">
                 <p
                   v-for="message in projectFlashMessages"
                   :key="message.key"
-                  class="proj-hero-notice"
-                  :class="message.tone === 'error' ? 'proj-hero-notice--error' : 'proj-hero-notice--success'"
+                  class="admin-entity-hero__notice"
+                  :class="message.tone === 'error' ? 'admin-entity-hero__notice--error' : 'admin-entity-hero__notice--success'"
                 >{{ message.text }}</p>
-              </div>
-              <div class="proj-hero-prompt">↓ прокрутка / swipe ↓</div>
-            </div>
-          </section>
+              </template>
+            </template>
+          </AdminEntityHero>
 
           <Transition :name="projectContentTransitionName" :css="projectContentTransitionCss" mode="out-in" :duration="projectContentTransitionDuration">
             <div :key="contentKey" class="proj-main-inner" :class="{ 'proj-main-inner--after-hero': showBrutalistHero }">
@@ -623,136 +616,11 @@ const MODERN_PROJECT_PAGES = [
 const LEGACY_PROJECT_PAGES = new Set(['materials', 'tz', 'profile_customer'])
 
 const { data: project, pending: projectPending, refresh } = await useFetch<any>(`/api/projects/${slug.value}`)
-const { data: clientsData } = await useFetch<any[]>('/api/clients', { default: () => [] })
-const { data: allContractorsData } = await useFetch<any[]>('/api/contractors', { default: () => [] })
-const { data: linkedContractorsData, refresh: refreshLinkedContractors } = await useFetch<any[]>(
-  `/api/projects/${slug.value}/contractors`,
-  { default: () => [] },
-)
-const { data: allDesignersData } = await useFetch<any[]>('/api/designers', { default: () => [] })
-const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await useFetch<any[]>(
-  `/api/projects/${slug.value}/designers`,
-  { default: () => [] },
-)
-const { data: allSellersData } = await useFetch<any[]>('/api/sellers', { default: () => [] })
-const { data: linkedSellersData, refresh: refreshLinkedSellers } = await useFetch<any[]>(
-  `/api/projects/${slug.value}/sellers`,
-  { default: () => [] },
-)
-const { data: allManagersData } = await useFetch<any[]>('/api/managers', { default: () => [] })
-const { data: linkedManagersData } = await useFetch<any[]>(
-  () => `/api/managers?projectSlug=${slug.value}`,
-  { default: () => [] },
-)
 const activePage = ref('overview')
 const showEdit = ref(false)
 const saving = ref(false)
 const editError = ref('')
 const projectStatus = ref(project.value?.status || 'lead')
-
-const selectedClientId = ref('')
-const linkingClient = ref(false)
-const clientLinkError = ref('')
-const clientLinkSuccess = ref('')
-const contractorLinkError = ref('')
-const contractorLinkSuccess = ref('')
-// ── Designer link state ──────────────────────────────────────────
-const linkingDesigner = ref(false)
-const designerLinkError = ref('')
-const designerLinkSuccess = ref('')
-// ── Seller link state ────────────────────────────────────────────
-const linkingSeller = ref(false)
-const sellerLinkError = ref('')
-const sellerLinkSuccess = ref('')
-
-const allContractors = computed(() => allContractorsData.value || [])
-const linkedContractorsList = computed(() => linkedContractorsData.value || [])
-const linkedContractorIds = computed(() => new Set(linkedContractorsList.value.map((c: any) => String(c.id))))
-const allDesigners = computed(() => allDesignersData.value || [])
-const linkedDesignersList = computed(() => linkedDesignersData.value || [])
-const linkedDesignerIds = computed(() => new Set(linkedDesignersList.value.map((d: any) => String(d.id))))
-const allSellers = computed(() => allSellersData.value || [])
-const linkedSellersList = computed(() => linkedSellersData.value || [])
-const linkedSellerIds = computed(() => new Set(linkedSellersList.value.map((s: any) => String(s.id))))
-const allManagers = computed(() => allManagersData.value || [])
-const linkedManagersList = computed(() => linkedManagersData.value || [])
-const linkedManagerIds = computed(() => new Set(linkedManagersList.value.map((m: any) => String(m.id))))
-
-async function unlinkContractor(contractorId: number) {
-  contractorLinkError.value = ''
-  contractorLinkSuccess.value = ''
-  try {
-    await $fetch(`/api/projects/${slug.value}/contractors`, {
-      method: 'DELETE',
-      body: { contractorId },
-    })
-    await refreshLinkedContractors()
-    contractorLinkSuccess.value = 'Подрядчик отвязан'
-    setTimeout(() => { contractorLinkSuccess.value = '' }, 2500)
-  } catch (e: any) {
-    contractorLinkError.value = e?.data?.message || 'Не удалось отвязать подрядчика'
-  }
-}
-
-// Modal functions for contractors
-async function linkContractorFromModal(contractorId: number) {
-  contractorLinkError.value = ''
-  contractorLinkSuccess.value = ''
-  try {
-    await $fetch(`/api/projects/${slug.value}/contractors`, {
-      method: 'POST',
-      body: { contractorId },
-    })
-    await refreshLinkedContractors()
-    contractorLinkSuccess.value = 'Подрядчик привязан к проекту'
-    setTimeout(() => { contractorLinkSuccess.value = '' }, 3000)
-  } catch (e: any) {
-    contractorLinkError.value = e?.data?.message || 'Не удалось привязать подрядчика'
-  }
-}
-
-const clients = computed(() => clientsData.value || [])
-
-const linkedClientIds = computed(() => {
-  const profile = (project.value?.profile || {}) as Record<string, any>
-  const ids = new Set<string>()
-  if (Array.isArray(profile.client_ids)) {
-    for (const id of profile.client_ids) {
-      const normalized = String(id || '')
-      if (normalized) ids.add(normalized)
-    }
-  }
-  if (profile.client_id) {
-    ids.add(String(profile.client_id))
-  }
-  return Array.from(ids)
-})
-
-const linkedClients = computed(() => {
-  const linkedSet = new Set(linkedClientIds.value)
-  return clients.value.filter((c: any) => linkedSet.has(String(c.id)))
-})
-
-const availableClientsForModal = computed(() => {
-  const linkedSet = new Set(linkedClientIds.value)
-  return clients.value.filter((c: any) => !linkedSet.has(String(c.id)))
-})
-
-const availableContractorsForModal = computed(() => {
-  return allContractors.value.filter((c: any) => !linkedContractorIds.value.has(String(c.id)))
-})
-
-const availableDesignersForModal = computed(() => {
-  return allDesigners.value.filter((d: any) => !linkedDesignerIds.value.has(String(d.id)))
-})
-
-const availableSellersForProject = computed(() => {
-  return allSellers.value.filter((seller: any) => !linkedSellerIds.value.has(String(seller.id)))
-})
-
-const availableManagersForProject = computed(() => {
-  return allManagers.value.filter((manager: any) => !linkedManagerIds.value.has(String(manager.id)))
-})
 
 const editForm = reactive({
   title: project.value?.title || '',
@@ -922,7 +790,6 @@ watch(project, (p) => {
     editForm.title = p.title
     editForm.pages = [...(p.pages || [])]
     projectStatus.value = p.status || 'lead'
-    selectedClientId.value = String(p?.profile?.client_id || linkedClientIds.value[0] || '')
   }
 })
 
@@ -966,6 +833,45 @@ const resolvedProjectPageFromNav = computed(() => {
 })
 
 const currentProjectPage = computed(() => resolvedProjectPageFromNav.value || activePage.value)
+
+const {
+  clients,
+  selectedClientId,
+  linkingClient,
+  clientLinkError,
+  clientLinkSuccess,
+  contractorLinkError,
+  contractorLinkSuccess,
+  designerLinkError,
+  designerLinkSuccess,
+  sellerLinkError,
+  sellerLinkSuccess,
+  linkedClients,
+  linkedContractorsList,
+  linkedDesignersList,
+  linkedSellersList,
+  linkedManagersList,
+  availableClientsForModal,
+  availableContractorsForModal,
+  availableDesignersForModal,
+  availableSellersForProject,
+  availableManagersForProject,
+  projectFlashMessages,
+  linkClientToProject,
+  linkClientFromModal,
+  unlinkClientFromModal,
+  linkContractorFromModal,
+  unlinkContractor,
+  linkDesignerFromModal,
+  unlinkDesigner,
+  linkSeller,
+  unlinkSeller,
+} = useAdminProjectRelations({
+  projectSlug: slug,
+  currentProjectPage,
+  clientPreviewMode,
+  refreshProject: refresh,
+})
 
 watch(
   resolvedProjectPageFromNav,
@@ -1016,15 +922,6 @@ const brutalistHeroFacts = computed(() => [
   { label: 'подрядчики', value: String(linkedContractorsList.value.length) },
   { label: 'дизайнеры', value: String(linkedDesignersList.value.length) },
 ])
-
-const projectFlashMessages = computed(() => [
-  { key: 'client-error', tone: 'error', text: clientLinkError.value },
-  { key: 'client-success', tone: 'success', text: clientLinkSuccess.value },
-  { key: 'contractor-error', tone: 'error', text: contractorLinkError.value },
-  { key: 'contractor-success', tone: 'success', text: contractorLinkSuccess.value },
-  { key: 'designer-error', tone: 'error', text: designerLinkError.value },
-  { key: 'designer-success', tone: 'success', text: designerLinkSuccess.value },
-].filter((message): message is { key: string; tone: 'error' | 'success'; text: string } => Boolean(message.text)))
 
 const filteredNavGroups = computed(() => {
   const q = navSearch.value.trim().toLowerCase()
@@ -1122,134 +1019,6 @@ async function saveProject() {
     editError.value = e.data?.message || 'Ошибка'
   } finally {
     saving.value = false
-  }
-}
-
-async function linkClientToProject() {
-  if (!selectedClientId.value) return
-  linkingClient.value = true
-  clientLinkError.value = ''
-  clientLinkSuccess.value = ''
-  try {
-    await $fetch(`/api/clients/${selectedClientId.value}/link-project`, {
-      method: 'POST',
-      body: { projectSlug: slug.value },
-    })
-    await refresh()
-    clientLinkSuccess.value = 'Клиент привязан к проекту'
-  } catch (e: any) {
-    clientLinkError.value = e?.data?.statusMessage || 'Не удалось привязать клиента'
-  } finally {
-    linkingClient.value = false
-  }
-}
-
-// Modal functions for clients
-async function linkClientFromModal(clientId: string) {
-  try {
-    await $fetch(`/api/clients/${clientId}/link-project`, {
-      method: 'POST',
-      body: { projectSlug: slug.value },
-    })
-    await refresh()
-    clientLinkSuccess.value = 'Клиент привязан к проекту'
-    setTimeout(() => { clientLinkSuccess.value = '' }, 3000)
-  } catch (e: any) {
-    clientLinkError.value = e?.data?.statusMessage || 'Не удалось привязать клиента'
-  }
-}
-
-async function unlinkClientFromModal(clientId: string) {
-  try {
-    await $fetch(`/api/clients/${clientId}/unlink-project`, {
-      method: 'POST',
-      body: { projectSlug: slug.value },
-    })
-    await refresh()
-    clientLinkSuccess.value = 'Клиент отвязан от проекта'
-    setTimeout(() => { clientLinkSuccess.value = '' }, 2500)
-  } catch (e: any) {
-    clientLinkError.value = e?.data?.statusMessage || 'Не удалось отвязать клиента'
-  }
-}
-
-async function linkDesignerFromModal(designerId: number) {
-  if (linkingDesigner.value) return
-  linkingDesigner.value = true
-  designerLinkError.value = ''
-  designerLinkSuccess.value = ''
-  try {
-    await $fetch(`/api/projects/${slug.value}/designers`, {
-      method: 'POST',
-      body: { designerId },
-    })
-    await refreshLinkedDesigners()
-    designerLinkSuccess.value = 'Дизайнер привязан к проекту'
-    setTimeout(() => { designerLinkSuccess.value = '' }, 3000)
-  } catch (e: any) {
-    designerLinkError.value = e?.data?.message || 'Не удалось привязать дизайнера'
-  } finally {
-    linkingDesigner.value = false
-  }
-}
-
-async function unlinkDesigner(designerId: number) {
-  if (linkingDesigner.value) return
-  linkingDesigner.value = true
-  designerLinkError.value = ''
-  designerLinkSuccess.value = ''
-  try {
-    await $fetch(`/api/projects/${slug.value}/designers`, {
-      method: 'DELETE',
-      body: { designerId },
-    })
-    await refreshLinkedDesigners()
-    designerLinkSuccess.value = 'Дизайнер отвязан'
-    setTimeout(() => { designerLinkSuccess.value = '' }, 2500)
-  } catch (e: any) {
-    designerLinkError.value = e?.data?.message || 'Не удалось отвязать дизайнера'
-  } finally {
-    linkingDesigner.value = false
-  }
-}
-
-async function linkSeller(sellerId: number) {
-  if (linkingSeller.value) return
-  linkingSeller.value = true
-  sellerLinkError.value = ''
-  sellerLinkSuccess.value = ''
-  try {
-    await $fetch(`/api/projects/${slug.value}/sellers`, {
-      method: 'POST',
-      body: { sellerId },
-    })
-    await refreshLinkedSellers()
-    sellerLinkSuccess.value = 'Поставщик привязан к проекту'
-    setTimeout(() => { sellerLinkSuccess.value = '' }, 3000)
-  } catch (e: any) {
-    sellerLinkError.value = e?.data?.message || 'Не удалось привязать поставщика'
-  } finally {
-    linkingSeller.value = false
-  }
-}
-
-async function unlinkSeller(sellerId: number) {
-  if (linkingSeller.value) return
-  linkingSeller.value = true
-  sellerLinkError.value = ''
-  sellerLinkSuccess.value = ''
-  try {
-    await $fetch(`/api/projects/${slug.value}/sellers`, {
-      method: 'DELETE',
-      body: { sellerId },
-    })
-    await refreshLinkedSellers()
-    sellerLinkSuccess.value = 'Поставщик отвязан от проекта'
-    setTimeout(() => { sellerLinkSuccess.value = '' }, 2500)
-  } catch (e: any) {
-    sellerLinkError.value = e?.data?.message || 'Не удалось отвязать поставщика'
-  } finally {
-    linkingSeller.value = false
   }
 }
 </script>
@@ -1503,111 +1272,6 @@ async function unlinkSeller(sellerId: number) {
 .proj-section-shell--brutalist {
   padding: clamp(18px, 2.4vw, 32px) 0 max(3rem, env(safe-area-inset-bottom));
   border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-}
-
-.proj-hero {
-  position: relative;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 32px 20px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-}
-
-.proj-hero-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  width: 100%;
-}
-
-.proj-hero-kicker {
-  margin: 0;
-  font-size: .68rem;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
-}
-
-.proj-hero-title {
-  margin: 0;
-  max-width: 980px;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  line-height: .96;
-  font-size: clamp(2.4rem, 8vw, 7rem);
-  font-weight: 500;
-  word-break: break-word;
-}
-
-.proj-hero-meta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  width: min(100%, 980px);
-}
-
-.proj-hero-meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
-}
-
-.proj-hero-meta-label {
-  font-size: .6rem;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 44%, transparent);
-}
-
-.proj-hero-meta-value {
-  font-size: .96rem;
-  line-height: 1.15;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-
-.proj-hero-notices {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  width: min(100%, 980px);
-}
-
-.proj-hero-notice {
-  margin: 0;
-  padding: 9px 12px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
-  font-size: .68rem;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-
-.proj-hero-notice--success {
-  color: color-mix(in srgb, var(--ds-success, #5caa7f) 78%, var(--glass-text) 22%);
-}
-
-.proj-hero-notice--error {
-  color: color-mix(in srgb, var(--ds-error, #c00) 82%, var(--glass-text) 18%);
-}
-
-.proj-hero-prompt {
-  position: absolute;
-  bottom: 22px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: .68rem;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 42%, transparent);
 }
 
 /* ── Section switch fade ── */
@@ -1901,42 +1565,6 @@ async function unlinkSeller(sellerId: number) {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .proj-hero {
-    min-height: calc(100vh - max(24px, env(safe-area-inset-top)));
-    padding: 28px 16px max(3.5rem, env(safe-area-inset-bottom));
-  }
-
-  .proj-hero-breadcrumbs {
-    top: 14px;
-    left: 0;
-    font-size: .56rem;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .proj-hero-title {
-    font-size: clamp(2rem, 11vw, 4rem);
-    letter-spacing: .09em;
-  }
-
-  .proj-hero-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .proj-hero-meta-item {
-    padding: 10px 12px;
-  }
-
-  .proj-hero-meta-value {
-    font-size: .76rem;
-  }
-
-  .proj-hero-prompt {
-    bottom: max(14px, env(safe-area-inset-bottom));
-    font-size: .6rem;
-  }
-
   /* Show mobile nav */
   .proj-mobile-nav { display: block; }
 
@@ -2010,10 +1638,6 @@ async function unlinkSeller(sellerId: number) {
 
 /* ── Small phones ── */
 @media (max-width: 400px) {
-  .proj-hero-meta {
-    grid-template-columns: 1fr;
-  }
-
   .proj-mobile-nav-toggle {
     padding: 8px 10px;
     font-size: .76rem;

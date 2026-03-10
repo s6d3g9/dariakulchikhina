@@ -1,29 +1,47 @@
 <template>
-  <div>
-    <template v-if="selectedSellerId">
-        <div class="ent-entity-hd">
-          <span class="ent-entity-hd-name">{{ selectedSeller?.name }}</span>
+  <AdminEntityPageShell :has-selection="Boolean(selectedSellerId)" :show-create="showCreate">
+    <template #selected>
+      <AdminEntityCabinetShell
+        :show-hero="showBrutalistSellerHero"
+        :title="selectedSeller?.name || ''"
+        :kicker="sellerSectionLabel"
+        :facts="sellerHeroFacts"
+        :meta-columns="3"
+        :brutalist="isBrutalistSellersMode"
+      >
+        <template #heroActions>
+          <button class="admin-entity-hero__action" @click="openEdit(selectedSeller)">редактировать</button>
+          <button class="admin-entity-hero__action" @click="showCreate = true">новый поставщик</button>
+        </template>
+        <template #headerActions>
           <button class="ent-entity-hd-action" @click="openEdit(selectedSeller)">ред.</button>
-        </div>
+        </template>
         <AdminSellerCabinet :key="selectedSellerId" :seller-id="selectedSellerId" :show-sidebar="false" v-model="activeSellerSection" />
-      </template>
-      <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
-        <div class="ent-detail-head">
-          <div class="ent-detail-name">Новый поставщик</div>
-          <button class="a-btn-sm" @click="showCreate = false">✕</button>
-        </div>
-        <input v-model="newName" class="glass-input" style="margin-bottom:8px" placeholder="Название компании / ИП" @keydown.enter="doCreate" />
-        <div class="ent-detail-foot">
-          <button class="a-btn-save" :disabled="!newName.trim() || creating" @click="doCreate">{{ creating ? '…' : 'создать' }}</button>
-          <button class="a-btn-sm" @click="showCreate = false">отмена</button>
-        </div>
-      </div>
-      <div v-else class="ent-empty-detail">
-        <span class="ent-empty-icon">🏪</span>
-        <span v-if="allSellers?.length">Выберите поставщика из списка</span>
-        <span v-else>Нет поставщиков — добавьте первого</span>
-        <button class="a-btn-sm" style="margin-top:6px" @click="showCreate = true">+ добавить</button>
-      </div>
+      </AdminEntityCabinetShell>
+    </template>
+    <template #create>
+      <AdminEntityCreateCard
+        title="Новый поставщик"
+        v-model="newName"
+        placeholder="Название компании / ИП"
+        :submit-label="creating ? '…' : 'создать'"
+        :disabled="!newName.trim() || creating"
+        :brutalist="isBrutalistSellersMode"
+        @submit="doCreate"
+        @close="showCreate = false"
+      />
+    </template>
+    <template #empty>
+      <AdminEntityEmptyState
+        icon="🏪"
+        :has-items="Boolean(allSellers?.length)"
+        message-with-items="Выберите поставщика из списка"
+        message-empty="Нет поставщиков — добавьте первого"
+        action-label="+ добавить"
+        :brutalist="isBrutalistSellersMode"
+        @action="showCreate = true"
+      />
+    </template>
 
     <Teleport to="body">
       <div v-if="showEditModal" class="ct-backdrop" @click.self="closeEdit">
@@ -61,7 +79,7 @@
         </div>
       </div>
     </Teleport>
-  </div>
+  </AdminEntityPageShell>
 </template>
 
 <script setup lang="ts">
@@ -84,8 +102,13 @@ const activeSellerSection = ref('dashboard')
 
 const route = useRoute()
 const router = useRouter()
+const designSystem = useDesignSystem()
+const isBrutalistSellersMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 
-const { data: allSellers, pending, refresh } = useFetch<any[]>('/api/sellers', { default: () => [] })
+const sellersDirectory = useAdminEntityDirectory<any>('sellers')
+await sellersDirectory.ensureLoaded()
+const allSellers = sellersDirectory.items
+const pending = sellersDirectory.pending
 
 const showCreate = ref(false)
 const newName = ref('')
@@ -93,6 +116,16 @@ const creating = ref(false)
 const selectedSellerId = ref<number | null>(null)
 
 const selectedSeller = computed(() => allSellers.value?.find((s: any) => s.id === selectedSellerId.value) || null)
+const showBrutalistSellerHero = computed(() => isBrutalistSellersMode.value && !!selectedSeller.value)
+const sellerSectionLabel = computed(() => {
+  if (activeSellerSection.value === 'dashboard') return 'кабинет поставщика'
+  return String(activeSellerSection.value || 'кабинет поставщика').replace(/_/g, ' ')
+})
+const sellerHeroFacts = computed(() => [
+  { label: 'раздел', value: sellerSectionLabel.value },
+  { label: 'город', value: selectedSeller.value?.city || 'не указан' },
+  { label: 'контакт', value: selectedSeller.value?.phone || selectedSeller.value?.email || 'не указан' },
+])
 
 // Auto-select from query
 const sellerIdFromQuery = computed(() => {
@@ -117,16 +150,15 @@ async function doCreate() {
   if (!newName.value.trim()) return
   creating.value = true
   try {
-    await $fetch('/api/sellers', { method: 'POST', body: { name: newName.value.trim() } })
-    await refresh(); newName.value = ''; showCreate.value = false
+    await sellersDirectory.createItem({ name: newName.value.trim() })
+    newName.value = ''; showCreate.value = false
   } finally { creating.value = false }
 }
 
 async function del(id: number) {
   if (!confirm('Удалить поставщика?')) return
-  await $fetch(`/api/sellers/${id}`, { method: 'DELETE' })
+  await sellersDirectory.deleteItem(id)
   if (selectedSellerId.value === id) selectedSellerId.value = null
-  await refresh()
 }
 
 // ── Edit modal ──
@@ -161,10 +193,11 @@ async function saveEdit() {
   if (!editingId.value) return
   editSaving.value = true; editError.value = ''
   try {
-    await $fetch(`/api/sellers/${editingId.value}`, { method: 'PUT', body: { ...editForm } })
-    closeEdit(); refresh()
+    await sellersDirectory.updateItem(editingId.value, { ...editForm })
+    closeEdit()
   } catch (e: any) {
     editError.value = e?.data?.message || 'Ошибка сохранения'
   } finally { editSaving.value = false }
 }
 </script>
+

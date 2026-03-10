@@ -10,6 +10,7 @@ import {
   boolean,
 } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
+import type { DesignModulesConfig } from '~/shared/types/design-modules'
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -18,6 +19,14 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   name: text('name'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const adminSettings = pgTable('admin_settings', {
+  id: serial('id').primaryKey(),
+  key: text('key').notNull().unique(),
+  value: jsonb('value').$type<DesignModulesConfig | Record<string, unknown>>().default({}).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })
 
 export const projects = pgTable('projects', {

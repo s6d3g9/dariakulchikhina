@@ -1,5 +1,5 @@
 <template>
-  <div class="dp-wrap">
+  <div v-if="panelEnabled" class="dp-wrap">
     <!-- ═══ Top Bar Trigger ═══ -->
     <div class="dp-topbar" :class="{ 'dp-topbar--open': open, 'dp-topbar--inspect': inspectMode }">
       <button type="button" class="dp-trigger" @click.stop="open = !open" title="Дизайн-система">
@@ -12,12 +12,16 @@
         <span class="dp-trigger-label">дизайн</span>
       </button>
       <span class="dp-topbar-sep" />
-      <button type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': inspectMode }" @click="toggleInspect" title="CSS-инспектор">
+      <button v-if="designPanelModules.inspect" type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': inspectMode }" @click="toggleInspect" title="CSS-инспектор">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 2l4.5 10 1.5-3.5L11.5 7z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8l3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span>css</span>
       </button>
+      <button v-if="designPanelModules.elementVisibility" type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active-alt': visibilityMode }" @click="toggleVisibilityMode" title="Скрыть элемент на странице или везде">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7c1.6-2.3 3.4-3.5 5-3.5S10.4 4.7 12 7c-1.6 2.3-3.4 3.5-5 3.5S3.6 9.3 2 7Z" stroke="currentColor" stroke-width="1.1"/><path d="M1.8 12.2 12.2 1.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span>скрыть</span>
+      </button>
       <span class="dp-topbar-sep" />
-      <button type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': compMode }" @click="toggleComp" title="Компонентный инспектор — имя компонента и путь к файлу">
+      <button v-if="designPanelModules.componentInspector" type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': compMode }" @click="toggleComp" title="Компонентный инспектор — имя компонента и путь к файлу">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M4 5l-2.5 2L4 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 5l2.5 2L10 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3l-2 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span>компоненты</span>
       </button>
@@ -43,7 +47,7 @@
             <div class="dp-panel-toprow">
               <nav class="dp-tabs" role="tablist">
                 <button
-                  v-for="tab in tabList" :key="tab.id"
+                  v-for="tab in visibleTabList" :key="tab.id"
                   type="button" role="tab"
                   class="dp-tab" :class="{ 'dp-tab--active': activeTab === tab.id }"
                   @click="activeTab = tab.id"
@@ -58,7 +62,7 @@
                   <input v-model="searchQuery" class="glass-input glass-input--sm" placeholder="поиск…" type="text">
                   <button v-if="searchQuery" type="button" class="dp-search-clear" @click="searchQuery = ''">✕</button>
                 </div>
-                <button type="button" class="dp-icon-btn" @click="showExport = !showExport" title="Экспорт / Импорт">
+                <button v-if="designPanelModules.exportImport" type="button" class="dp-icon-btn" @click="showExport = !showExport" title="Экспорт / Импорт">
                   <svg width="13" height="13" viewBox="0 0 14 14"><path d="M7 2v7M4 6l3 3 3-3M3 11h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
                 <button type="button" class="dp-icon-btn dp-icon-btn--danger" @click="resetAll" title="Сбросить">
@@ -76,10 +80,10 @@
                 class="dp-mode-btn"
                 :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-glass' }"
                 @click="switchMode('concept-glass')"
-                title="Liquid Glass — Apple macOS / iOS: blur, depth, soft chrome, pill-формы"
+                title="Жидкое стекло: blur, глубина, мягкий хром, pill-формы"
               >
                 <span class="dp-mode-icon">❖</span>
-                <span class="dp-mode-name">Liquid Glass</span>
+                <span class="dp-mode-name">Жидкое стекло</span>
                 <span class="dp-mode-hint">apple · blur · depth</span>
               </button>
               <button
@@ -87,10 +91,10 @@
                 class="dp-mode-btn"
                 :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-minale' }"
                 @click="switchMode('concept-minale')"
-                title="Brutalist / Minale + Mann — чёрный фон, белый текст, uppercase, hairlines"
+                title="Брутализм / Minale + Mann — чёрный фон, белый текст, uppercase, hairlines"
               >
                 <span class="dp-mode-icon">◼</span>
-                <span class="dp-mode-name">Brutalist / Minale</span>
+                <span class="dp-mode-name">Брутализм / Minale</span>
                 <span class="dp-mode-hint">black · tracked · primary</span>
               </button>
               <button
@@ -98,7 +102,7 @@
                 class="dp-mode-btn dp-mode-btn--reset"
                 :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-minale' }"
                 @click="clearMode()"
-                title="Вернуть режим по умолчанию — Brutalist / Minale"
+                title="Вернуть режим по умолчанию — Брутализм / Minale"
               >
                 <span class="dp-mode-icon">○</span>
                 <span class="dp-mode-name">По умолчанию</span>
@@ -131,6 +135,14 @@
 
             <!-- ── Tab content ── -->
             <div class="dp-tab-content">
+
+              <!-- ═══ Модули UI ═══ -->
+              <div v-show="isTabVisible('modules')" class="dp-page">
+                <div class="dp-page-stack">
+                  <UIDesignModulesMatrix compact show-toolbar />
+                  <UIDesignVisibilityRules />
+                </div>
+              </div>
 
               <!-- ═══ Рецепты дизайна ═══ -->
               <div v-show="isTabVisible('presets')" class="dp-page">
@@ -1909,9 +1921,98 @@
       </div>
     </Teleport>
 
+    <!-- ═══ Visibility Mode Overlay ═══ -->
+    <Teleport to="body">
+      <div v-if="visibilityMode" class="dp-visibility-overlay" @click.stop>
+        <div
+          v-if="visibilityHover.visible"
+          class="dp-visibility-highlight"
+          :style="visibilityHighlightStyle"
+        />
+        <Transition name="dp-fade">
+          <div
+            v-if="visibilityHover.visible"
+            class="dp-visibility-tooltip"
+            :style="visibilityTooltipStyle"
+          >
+            <span class="dp-visibility-tag">{{ visibilityHover.tag }}</span>
+            <span v-if="visibilityHover.classes" class="dp-visibility-classes">.{{ visibilityHover.classes }}</span>
+            <div class="dp-visibility-hover-path">страница: {{ visibilityHover.pageSelector }}</div>
+            <div class="dp-visibility-hover-path">везде: {{ visibilityHover.globalSelector }}</div>
+            <div class="dp-visibility-hint">← клик — выбрать правило скрытия</div>
+          </div>
+        </Transition>
+        <Transition name="dp-fade">
+          <div v-if="visibilityResult" class="dp-visibility-result" :style="visibilityResultStyle">
+            <div class="dp-visibility-result-header">
+              <span class="dp-visibility-result-tag">{{ visibilityResult.tag }}</span>
+              <span v-if="visibilityResult.classes" class="dp-visibility-result-tag dp-visibility-result-tag--classes">.{{ visibilityResult.classes }}</span>
+              <button type="button" class="dp-inspect-result-close" @click="visibilityResult = null">✕</button>
+            </div>
+
+            <div class="dp-visibility-result-info">
+              <div class="dp-visibility-result-label">действие</div>
+              <div class="dp-visibility-actions">
+                <button type="button" class="dp-visibility-action" :class="{ 'dp-visibility-action--active': Boolean(currentPageVisibilityRule) }" @click="toggleVisibilityRule('page')">
+                  {{ currentPageVisibilityRule ? 'вернуть на этой странице' : 'скрыть на этой странице' }}
+                </button>
+                <button type="button" class="dp-visibility-action" :class="{ 'dp-visibility-action--active': Boolean(globalVisibilityRule) }" @click="toggleVisibilityRule('global')">
+                  {{ globalVisibilityRule ? 'вернуть везде' : 'скрыть на всех страницах' }}
+                </button>
+                <button type="button" class="dp-visibility-action" :class="{ 'dp-visibility-action--active': Boolean(classVisibilityRule) }" :disabled="!visibilityResult.classSelector" @click="toggleVisibilityGroupRule('class')">
+                  {{ classVisibilityRule ? `вернуть класс ${visibilityResult.className}` : `скрыть весь класс ${visibilityResult.className || '—'}` }}
+                </button>
+                <button type="button" class="dp-visibility-action" :class="{ 'dp-visibility-action--active': Boolean(componentVisibilityRule) }" :disabled="!visibilityResult.componentSelector" @click="toggleVisibilityGroupRule('component')">
+                  {{ componentVisibilityRule ? `вернуть компонент ${visibilityResult.componentName}` : `скрыть весь компонент ${visibilityResult.componentName || '—'}` }}
+                </button>
+              </div>
+
+              <div class="dp-inspect-paths dp-inspect-paths--visibility">
+                <div class="dp-inspect-paths-label">селекторы скрытия</div>
+                <div class="dp-inspect-path-row">
+                  <span class="dp-inspect-path-kind">страница</span>
+                  <code class="dp-inspect-path-code">{{ visibilityResult.pageSelector }}</code>
+                  <button type="button" class="dp-inspect-path-copy" @click="copyPath(visibilityResult.pageSelector)" :title="copiedPath === visibilityResult.pageSelector ? 'Скопировано!' : 'Копировать'">
+                    <svg v-if="copiedPath !== visibilityResult.pageSelector" width="10" height="10" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg v-else width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+                <div class="dp-inspect-path-row">
+                  <span class="dp-inspect-path-kind">везде</span>
+                  <code class="dp-inspect-path-code">{{ visibilityResult.globalSelector }}</code>
+                  <button type="button" class="dp-inspect-path-copy" @click="copyPath(visibilityResult.globalSelector)" :title="copiedPath === visibilityResult.globalSelector ? 'Скопировано!' : 'Копировать'">
+                    <svg v-if="copiedPath !== visibilityResult.globalSelector" width="10" height="10" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg v-else width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+                <div v-if="visibilityResult.classSelector" class="dp-inspect-path-row">
+                  <span class="dp-inspect-path-kind">класс</span>
+                  <code class="dp-inspect-path-code">{{ visibilityResult.classSelector }}</code>
+                  <button type="button" class="dp-inspect-path-copy" @click="copyPath(visibilityResult.classSelector)" :title="copiedPath === visibilityResult.classSelector ? 'Скопировано!' : 'Копировать'">
+                    <svg v-if="copiedPath !== visibilityResult.classSelector" width="10" height="10" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg v-else width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+                <div v-if="visibilityResult.componentSelector" class="dp-inspect-path-row">
+                  <span class="dp-inspect-path-kind">компонент</span>
+                  <code class="dp-inspect-path-code">{{ visibilityResult.componentSelector }}</code>
+                  <button type="button" class="dp-inspect-path-copy" @click="copyPath(visibilityResult.componentSelector)" :title="copiedPath === visibilityResult.componentSelector ? 'Скопировано!' : 'Копировать'">
+                    <svg v-if="copiedPath !== visibilityResult.componentSelector" width="10" height="10" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg v-else width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <p v-if="visibilityNotice" class="dp-visibility-notice">{{ visibilityNotice }}</p>
+            </div>
+          </div>
+        </Transition>
+      </div>
+    </Teleport>
+
     <!-- ═══ Component Inspector ═══ -->
     <Teleport to="body">
-      <div v-if="compMode" class="dp-comp-layer">
+      <div v-if="designPanelModules.componentInspector && compMode" class="dp-comp-layer">
         <!-- Hover highlight box -->
         <div
           v-if="compHover.visible && !compResult"
@@ -1955,12 +2056,17 @@
 </template>
 
 <script setup lang="ts">
+import UIDesignModulesMatrix from '~/components/UIDesignModulesMatrix.vue'
+import UIDesignVisibilityRules from '~/components/UIDesignVisibilityRules.vue'
 import {
   useDesignSystem, FONT_OPTIONS, BTN_SIZE_MAP, EASING_OPTIONS, DESIGN_PRESETS,
   DESIGN_CONCEPTS,
   TYPE_SCALE_OPTIONS,
   type DesignTokens, type DesignPreset,
 } from '~/composables/useDesignSystem'
+import type { DesignPanelTabId } from '~/composables/useDesignModules'
+
+type PanelTabId = DesignPanelTabId | 'modules'
 
 const {
   tokens, set, reset: dsReset, applyPreset,
@@ -1968,8 +2074,12 @@ const {
   exportJSON, importJSON, exportCSS,
   previewPreset, confirmPreview, cancelPreview, isPreviewActive,
 } = useDesignSystem()
+const { designPanel: designPanelModules, isPanelTabEnabled } = useDesignModules()
+const { currentPath, findRule: findVisibilityRule, addRule: addVisibilityRule, removeMatchingRule } = useElementVisibility()
 const { themeId, applyThemeWithTokens, UI_THEMES } = useUITheme()
 const { isDark } = useThemeToggle()
+const route = useRoute()
+const panelEnabled = computed(() => designPanelModules.value.enabled || route.query.designPanelTab === 'modules')
 
 const open = ref(false)
 const showExport = ref(false)
@@ -1983,8 +2093,9 @@ const appliedFlash = ref(false)
 const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
 
 /* ── Tab navigation ─────────────────────────────── */
-const activeTab = ref('presets')
+const activeTab = ref<PanelTabId>('presets')
 const tabList = [
+  { id: 'modules',   label: 'модули ui' },
   { id: 'presets',   label: 'образы' },
   { id: 'concept',   label: 'концепция' },
   { id: 'palette',   label: 'палитра' },
@@ -2007,6 +2118,7 @@ const tabList = [
   { id: 'badges',    label: 'значки' },
   { id: 'arch',      label: 'архитектура' },
 ]
+const visibleTabList = computed(() => tabList.filter(tab => tab.id === 'modules' || isPanelTabEnabled(tab.id)))
 // Tab keying — sections object kept only for inspect-mode quick-jump compatibility
 const sections = reactive({ presets: true, concept: false, palette: true, colors: false, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false, arch: false })
 function toggle(key: keyof typeof sections) { activeTab.value = key as string }
@@ -2118,9 +2230,9 @@ const archNavTransitions = [
   { id: 'none'  as const, label: 'нет' },
   { id: 'fade'  as const, label: 'плавно' },
   { id: 'slide' as const, label: 'слайд' },
-  { id: 'push'  as const, label: 'push' },
-  { id: 'stack' as const, label: 'stack' },
-  { id: 'blur'  as const, label: 'blur' },
+  { id: 'push'  as const, label: 'вытеснение' },
+  { id: 'stack' as const, label: 'слои' },
+  { id: 'blur'  as const, label: 'размытие' },
 ]
 const contentLayoutPresets = [
   { id: 'balanced' as const, label: 'баланс', description: 'Универсальная двухколоночная раскладка с ровным ритмом.' },
@@ -2131,8 +2243,8 @@ const contentLayoutPresets = [
 const contentCardPresets = [
   { id: 'flat' as const, label: 'плоские', description: 'Строгие карточки без лишнего объёма.' },
   { id: 'soft' as const, label: 'мягкие', description: 'Скруглённые блоки с мягкой тенью.' },
-  { id: 'glass' as const, label: 'glass', description: 'Полупрозрачные карточки с живой кромкой.' },
-  { id: 'brutal' as const, label: 'brutal', description: 'Контрастные панели с жёсткой рамкой.' },
+  { id: 'glass' as const, label: 'стекло', description: 'Полупрозрачные карточки с живой кромкой.' },
+  { id: 'brutal' as const, label: 'брутализм', description: 'Контрастные панели с жёсткой рамкой.' },
 ]
 const contentScenePresets = [
   { id: 'workbench' as const, label: 'workbench', description: 'Рабочая сцена: ровная сетка и строгие панели.' },
@@ -2586,14 +2698,78 @@ const sectionSearchMap: Record<string, string[]> = {
 }
 
 function isTabVisible(key: string): boolean {
-  return activeTab.value === key
+  return (key === 'modules' || isPanelTabEnabled(key)) && activeTab.value === key
 }
+
+watch(visibleTabList, (tabs) => {
+  const firstVisibleTab = tabs[0]?.id
+  if (!firstVisibleTab) {
+    return
+  }
+
+  if (!tabs.some(tab => tab.id === activeTab.value)) {
+    activeTab.value = firstVisibleTab
+  }
+}, { immediate: true })
+
+watch(() => route.query.designPanelTab, (tab) => {
+  if (typeof tab !== 'string') {
+    return
+  }
+
+  if (tab === 'modules') {
+    open.value = true
+    activeTab.value = 'modules'
+    return
+  }
+
+  if (visibleTabList.value.some(item => item.id === tab)) {
+    open.value = true
+    activeTab.value = tab as PanelTabId
+  }
+}, { immediate: true })
+
+watch(() => designPanelModules.value.inspect, (enabled) => {
+  if (!enabled && inspectMode.value) {
+    disableInspect()
+  }
+})
+
+watch(() => designPanelModules.value.elementVisibility, (enabled) => {
+  if (!enabled && visibilityMode.value) {
+    disableVisibilityMode()
+  }
+})
+
+watch(() => designPanelModules.value.componentInspector, (enabled) => {
+  if (!enabled && compMode.value) {
+    toggleComp()
+  }
+})
+
+watch(panelEnabled, (enabled) => {
+  if (enabled) {
+    return
+  }
+
+  open.value = false
+  showExport.value = false
+  if (inspectMode.value) {
+    disableInspect()
+  }
+  if (visibilityMode.value) {
+    disableVisibilityMode()
+  }
+  if (compMode.value) {
+    toggleComp()
+  }
+})
 
 // Auto-switch to first matching tab when search query changes
 watch(searchQuery, (q) => {
   if (!q.trim()) return
   const lower = q.toLowerCase()
-  const matchingTab = tabList.find(t => {
+  const matchingTab = visibleTabList.value.find(t => {
     const ws = sectionSearchMap[t.id] || []
     return ws.some(w => w.includes(lower) || lower.includes(w))
   })
@@ -2785,6 +2961,7 @@ const inspectResult = ref<InspectResult | null>(null)
 const copiedPath = ref<string | null>(null)
 
 const sectionLabels: Record<string, string> = {
+  modules: 'Модули UI',
   presets: 'Рецепты', palette: 'Палитра', buttons: 'Кнопки',
   type: 'Типографика', typeScale: 'Шкала', surface: 'Поверхности',
   radii: 'Скругления', anim: 'Анимация', grid: 'Сетка', darkMode: 'Тёмная тема',
@@ -2903,6 +3080,97 @@ const inspectResultStyle = computed(() => {
   }
 })
 
+const visibilityMode = ref(false)
+const visibilityNotice = ref('')
+const visibilityHover = reactive({
+  visible: false,
+  rect: { x: 0, y: 0, w: 0, h: 0 },
+  tag: '',
+  classes: '',
+  pageSelector: '',
+  globalSelector: '',
+})
+
+interface VisibilityResult {
+  tag: string
+  classes: string
+  rect: { x: number; y: number; w: number; h: number }
+  pageSelector: string
+  globalSelector: string
+  className: string
+  classSelector: string
+  componentName: string
+  componentSelector: string
+}
+
+const visibilityResult = ref<VisibilityResult | null>(null)
+
+const currentPageVisibilityRule = computed(() => {
+  if (!visibilityResult.value) {
+    return null
+  }
+
+  return findVisibilityRule(visibilityResult.value.pageSelector, 'page', currentPath.value)
+})
+
+const globalVisibilityRule = computed(() => {
+  if (!visibilityResult.value) {
+    return null
+  }
+
+  return findVisibilityRule(visibilityResult.value.globalSelector, 'global')
+})
+
+const classVisibilityRule = computed(() => {
+  if (!visibilityResult.value?.classSelector) {
+    return null
+  }
+
+  return findVisibilityRule(visibilityResult.value.classSelector, 'global')
+})
+
+const componentVisibilityRule = computed(() => {
+  if (!visibilityResult.value?.componentSelector) {
+    return null
+  }
+
+  return findVisibilityRule(visibilityResult.value.componentSelector, 'global')
+})
+
+const visibilityHighlightStyle = computed(() => ({
+  left: `${visibilityHover.rect.x}px`,
+  top: `${visibilityHover.rect.y}px`,
+  width: `${visibilityHover.rect.w}px`,
+  height: `${visibilityHover.rect.h}px`,
+}))
+
+const visibilityTooltipStyle = computed(() => {
+  const r = visibilityHover.rect
+  const top = r.y > 80 ? r.y - 8 : r.y + r.h + 8
+  return {
+    left: `${Math.max(8, r.x)}px`,
+    top: `${top}px`,
+    transform: r.y > 80 ? 'translateY(-100%)' : 'none',
+  }
+})
+
+const visibilityResultStyle = computed(() => {
+  if (!visibilityResult.value) {
+    return {}
+  }
+
+  const r = visibilityResult.value.rect
+  const panelW = 320
+  const leftEdge = r.x + r.w + 12
+  const useLeft = leftEdge + panelW < window.innerWidth
+
+  return {
+    top: `${Math.max(8, Math.min(r.y, window.innerHeight - 420))}px`,
+    left: useLeft ? `${leftEdge}px` : `${Math.max(8, r.x - panelW - 12)}px`,
+    width: `${panelW}px`,
+  }
+})
+
 /* ── CSS path utilities ── */
 function getElementSelector(el: Element): string {
   const tag = el.tagName.toLowerCase()
@@ -2936,6 +3204,49 @@ function getCssSelector(el: Element): string {
     } catch { /* skip invalid selectors */ }
   }
   return path.join(' > ')
+}
+
+function getGlobalSelector(el: HTMLElement): string {
+  if (el.id) {
+    return `#${CSS.escape(el.id)}`
+  }
+
+  const tag = el.tagName.toLowerCase()
+  const classes = Array.from(el.classList)
+    .filter(className => className && !className.startsWith('dp-') && !className.startsWith('v-') && !/\d{3,}/.test(className))
+    .slice(0, 3)
+
+  if (classes.length) {
+    return `${tag}.${classes.map(className => CSS.escape(className)).join('.')}`
+  }
+
+  if (el.dataset.compName) {
+    return `[data-comp-name="${CSS.escape(el.dataset.compName)}"]`
+  }
+
+  return getCssSelector(el)
+}
+
+function getPrimaryClass(el: HTMLElement): string {
+  return Array.from(el.classList)
+    .filter(className => className && !className.startsWith('dp-') && !className.startsWith('v-') && !className.startsWith('router-link') && !/^nuxt/.test(className) && !/\d{3,}/.test(className))
+    .sort((left, right) => left.length - right.length)[0] || ''
+}
+
+function getComponentSelector(el: HTMLElement): { name: string; selector: string } | null {
+  const stamped = el.closest('[data-comp-name]') as HTMLElement | null
+  if (stamped?.dataset.compName) {
+    return {
+      name: stamped.dataset.compName,
+      selector: `[data-comp-name="${CSS.escape(stamped.dataset.compName)}"]`,
+    }
+  }
+
+  return null
+}
+
+function getVisibilityLabel(tag: string, classes: string) {
+  return classes ? `${tag}.${classes}` : tag
 }
 
 function copyPath(text: string) {
@@ -3085,7 +3396,8 @@ function getTokenInfo(el: HTMLElement, secs: string[]): { name: string; value: s
 /* ── Inspect event handlers ── */
 function isInsidePanel(el: HTMLElement): boolean {
   return !!el.closest('.dp-panel') || !!el.closest('.dp-inspect-result') ||
-         !!el.closest('.dp-inspect-tooltip') || !!el.closest('.dp-overlay')
+         !!el.closest('.dp-inspect-tooltip') || !!el.closest('.dp-visibility-result') ||
+         !!el.closest('.dp-visibility-tooltip') || !!el.closest('.dp-overlay')
 }
 
 function onInspectMove(e: MouseEvent) {
@@ -3132,12 +3444,18 @@ function onInspectClick(e: MouseEvent) {
 }
 
 function jumpToSection(sec: string) {
+  if (!isPanelTabEnabled(sec)) {
+    return
+  }
   if (!open.value) open.value = true
   activeTab.value = sec
   disableInspect()
 }
 
 function toggleInspect() {
+  if (!designPanelModules.value.inspect) {
+    return
+  }
   if (inspectMode.value) {
     disableInspect()
   } else {
@@ -3146,6 +3464,15 @@ function toggleInspect() {
 }
 
 function enableInspect() {
+  if (!designPanelModules.value.inspect) {
+    return
+  }
+  if (visibilityMode.value) {
+    disableVisibilityMode()
+  }
+  if (compMode.value) {
+    toggleComp()
+  }
   inspectMode.value = true
   inspectResult.value = null
   document.addEventListener('mousemove', onInspectMove, true)
@@ -3159,6 +3486,173 @@ function disableInspect() {
   inspectResult.value = null
   document.removeEventListener('mousemove', onInspectMove, true)
   document.removeEventListener('click', onInspectClick, true)
+  document.body.style.cursor = ''
+}
+
+function onVisibilityMove(e: MouseEvent) {
+  const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+  if (!el || isInsidePanel(el)) {
+    visibilityHover.visible = false
+    return
+  }
+
+  const rect = el.getBoundingClientRect()
+  visibilityHover.rect = { x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+  visibilityHover.tag = el.tagName.toLowerCase()
+  visibilityHover.classes = (el.className?.toString?.() || '')
+    .split(/\s+/)
+    .filter(className => className && !className.startsWith('dp-'))
+    .slice(0, 3)
+    .join('.')
+  visibilityHover.pageSelector = getCssSelector(el)
+  visibilityHover.globalSelector = getGlobalSelector(el)
+  visibilityHover.visible = true
+}
+
+function onVisibilityClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  if (target && isInsidePanel(target)) {
+    return
+  }
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
+  if (!el) {
+    return
+  }
+
+  const rect = el.getBoundingClientRect()
+  const classes = (el.className?.toString?.() || '')
+    .split(/\s+/)
+    .filter(className => className && !className.startsWith('dp-'))
+    .slice(0, 4)
+    .join('.')
+  const primaryClass = getPrimaryClass(el)
+  const componentMeta = getComponentSelector(el)
+
+  visibilityResult.value = {
+    tag: el.tagName.toLowerCase(),
+    classes,
+    rect: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
+    pageSelector: getCssSelector(el),
+    globalSelector: getGlobalSelector(el),
+    className: primaryClass,
+    classSelector: primaryClass ? `.${CSS.escape(primaryClass)}` : '',
+    componentName: componentMeta?.name || '',
+    componentSelector: componentMeta?.selector || '',
+  }
+  visibilityNotice.value = ''
+}
+
+function toggleVisibilityRule(scope: 'page' | 'global') {
+  if (!visibilityResult.value) {
+    return
+  }
+
+  const selector = scope === 'page'
+    ? visibilityResult.value.pageSelector
+    : visibilityResult.value.globalSelector
+  const existingRule = scope === 'page' ? currentPageVisibilityRule.value : globalVisibilityRule.value
+
+  if (existingRule) {
+    removeMatchingRule(selector, scope, scope === 'page' ? currentPath.value : null)
+    visibilityNotice.value = scope === 'page'
+      ? 'Элемент снова включён на текущей странице.'
+      : 'Элемент снова включён на всех страницах.'
+    return
+  }
+
+  addVisibilityRule({
+    selector,
+    scope,
+    path: scope === 'page' ? currentPath.value : null,
+    label: getVisibilityLabel(visibilityResult.value.tag, visibilityResult.value.classes),
+    tag: visibilityResult.value.tag,
+    classes: visibilityResult.value.classes,
+  })
+  visibilityNotice.value = scope === 'page'
+    ? 'Элемент скрыт только на текущем маршруте.'
+    : 'Элемент скрыт глобально на всех страницах.'
+}
+
+function toggleVisibilityGroupRule(type: 'class' | 'component') {
+  if (!visibilityResult.value) {
+    return
+  }
+
+  const isClass = type === 'class'
+  const selector = isClass ? visibilityResult.value.classSelector : visibilityResult.value.componentSelector
+  const label = isClass ? visibilityResult.value.className : visibilityResult.value.componentName
+  const existingRule = isClass ? classVisibilityRule.value : componentVisibilityRule.value
+
+  if (!selector) {
+    visibilityNotice.value = isClass
+      ? 'У выбранного элемента нет подходящего класса для массового скрытия.'
+      : 'Ближайший Vue-компонент не найден, массовое скрытие недоступно.'
+    return
+  }
+
+  if (existingRule) {
+    removeMatchingRule(selector, 'global')
+    visibilityNotice.value = isClass
+      ? `Все элементы класса ${label} снова показаны.`
+      : `Компонент ${label} снова показан на всех страницах.`
+    return
+  }
+
+  addVisibilityRule({
+    selector,
+    scope: 'global',
+    label: isClass ? `класс ${label}` : `компонент ${label}`,
+    tag: visibilityResult.value.tag,
+    classes: visibilityResult.value.classes,
+  })
+  visibilityNotice.value = isClass
+    ? `Все элементы класса ${label} скрыты глобально.`
+    : `Компонент ${label} скрыт глобально на всех страницах.`
+}
+
+function toggleVisibilityMode() {
+  if (!designPanelModules.value.elementVisibility) {
+    return
+  }
+
+  if (visibilityMode.value) {
+    disableVisibilityMode()
+  } else {
+    enableVisibilityMode()
+  }
+}
+
+function enableVisibilityMode() {
+  if (!designPanelModules.value.elementVisibility) {
+    return
+  }
+
+  if (inspectMode.value) {
+    disableInspect()
+  }
+  if (compMode.value) {
+    toggleComp()
+  }
+
+  visibilityMode.value = true
+  visibilityResult.value = null
+  visibilityNotice.value = ''
+  document.addEventListener('mousemove', onVisibilityMove, true)
+  document.addEventListener('click', onVisibilityClick, true)
+  document.body.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724%27 height=%2724%27%3E%3Ccircle cx=%2712%27 cy=%2712%27 r=%2710%27 fill=%27none%27 stroke=%27%23ff6b57%27 stroke-width=%271.5%27 stroke-dasharray=%273 2%27 opacity=%270.9%27/%3E%3Cpath d=%27M5 12h14%27 stroke=%27%23ff6b57%27 stroke-width=%271.2%27 stroke-linecap=%27round%27/%3E%3Cpath d=%27M12 5v14%27 stroke=%27%23ff6b57%27 stroke-width=%271.2%27 stroke-linecap=%27round%27 opacity=%270.45%27/%3E%3Cpath d=%27M7 7l10 10%27 stroke=%27%23ff6b57%27 stroke-width=%271.5%27 stroke-linecap=%27round%27/%3E%3C/svg%3E") 12 12, crosshair'
+}
+
+function disableVisibilityMode() {
+  visibilityMode.value = false
+  visibilityHover.visible = false
+  visibilityResult.value = null
+  visibilityNotice.value = ''
+  document.removeEventListener('mousemove', onVisibilityMove, true)
+  document.removeEventListener('click', onVisibilityClick, true)
   document.body.style.cursor = ''
 }
 
@@ -3334,12 +3828,21 @@ function copyCompResult() {
 }
 
 function toggleComp() {
+  if (!designPanelModules.value.componentInspector) {
+    return
+  }
   if (compMode.value) {
     compMode.value = false; compHover.visible = false; compResult.value = null
     document.removeEventListener('mousemove', onCompMove, true)
     document.removeEventListener('click', onCompClick, true)
     document.body.style.cursor = ''
   } else {
+    if (inspectMode.value) {
+      disableInspect()
+    }
+    if (visibilityMode.value) {
+      disableVisibilityMode()
+    }
     compMode.value = true; compResult.value = null
     document.addEventListener('mousemove', onCompMove, true)
     document.addEventListener('click', onCompClick, true)
@@ -3350,6 +3853,7 @@ function toggleComp() {
 /* ── Keyboard ────────────────────────────────────── */
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape' && compMode.value) { toggleComp(); return }
+  if (e.key === 'Escape' && visibilityMode.value) { disableVisibilityMode(); return }
   if (e.key === 'Escape' && inspectMode.value) { disableInspect(); return }
   if (e.key === 'Escape' && open.value) { open.value = false; return }
   if ((e.ctrlKey || e.metaKey) && e.key === 'z' && open.value) { e.preventDefault(); undo() }
@@ -3364,6 +3868,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey)
   document.removeEventListener('mousedown', onOutsideClick, true)
   if (inspectMode.value) disableInspect()
+  if (visibilityMode.value) disableVisibilityMode()
   if (compMode.value) toggleComp()
   panelRO?.disconnect()
   document.documentElement.style.setProperty('--dp-panel-h', '0px')
@@ -3415,6 +3920,11 @@ onBeforeUnmount(() => {
 .dp-topbar-btn:disabled { opacity: .2; cursor: default; }
 .dp-topbar-btn--active {
   background: hsl(200, 80%, 50%) !important; color: #fff !important;
+  border-radius: 4px;
+}
+.dp-topbar-btn--active-alt {
+  background: hsl(8, 82%, 58%) !important;
+  color: #fff !important;
   border-radius: 4px;
 }
 
@@ -3659,6 +4169,10 @@ onBeforeUnmount(() => {
 /* ── Page (one tab page) ── */
 .dp-page {
   padding: 16px 20px 20px;
+}
+.dp-page-stack {
+  display: grid;
+  gap: 14px;
 }
 .dp-page--cols {
   display: grid;
@@ -4742,6 +5256,9 @@ onBeforeUnmount(() => {
 
 /* ── Quick-edit section inside inspect result ── */
 .dp-inspect-result { max-height: 480px; width: 300px !important; }
+.dp-inspect-paths--visibility {
+  margin-top: 12px;
+}
 .dp-qe-section {
   padding: 8px 12px 4px;
   border-bottom: 1px solid rgba(255,255,255,.06);
@@ -4784,6 +5301,140 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums; text-align: right;
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   white-space: nowrap;
+}
+
+.dp-visibility-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.dp-visibility-highlight {
+  position: fixed;
+  pointer-events: none;
+  border: 2px solid hsl(8, 88%, 62%);
+  background: hsla(8, 88%, 62%, .08);
+  border-radius: 3px;
+  transition: all .08s ease;
+  box-shadow: 0 0 0 1px hsla(8, 88%, 62%, .2), 0 0 12px hsla(8, 88%, 62%, .12);
+}
+
+.dp-visibility-tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: hsl(12, 16%, 14%);
+  color: #f4ece9;
+  padding: 6px 9px;
+  border-radius: 6px;
+  font-size: .6rem;
+  line-height: 1.45;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  max-width: 320px;
+  z-index: 10001;
+}
+
+.dp-visibility-tag {
+  color: hsl(8, 88%, 72%);
+  font-weight: 700;
+}
+
+.dp-visibility-classes {
+  color: hsl(42, 88%, 74%);
+  margin-left: 4px;
+  font-size: .56rem;
+}
+
+.dp-visibility-hover-path,
+.dp-visibility-hint,
+.dp-visibility-notice {
+  margin-top: 4px;
+  font-size: .53rem;
+}
+
+.dp-visibility-hover-path {
+  color: rgba(255,255,255,.7);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp-visibility-hint {
+  color: hsl(8, 88%, 72%);
+}
+
+.dp-visibility-result {
+  position: fixed;
+  z-index: 10002;
+  pointer-events: auto;
+  width: 320px;
+  max-height: 440px;
+  overflow-y: auto;
+  background: hsl(12, 16%, 13%);
+  color: #f4ece9;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 0 0 1px hsla(8, 88%, 62%, .18);
+}
+
+.dp-visibility-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.dp-visibility-result-tag {
+  font-size: .7rem;
+  font-weight: 700;
+  color: hsl(8, 88%, 72%);
+}
+
+.dp-visibility-result-tag--classes {
+  color: hsl(42, 88%, 74%);
+  margin-left: 4px;
+  font-size: .6rem;
+}
+
+.dp-visibility-result-info {
+  padding: 10px 12px 12px;
+}
+
+.dp-visibility-result-label {
+  display: block;
+  font-size: .52rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  opacity: .45;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.dp-visibility-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.dp-visibility-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid hsla(8, 88%, 62%, .22);
+  background: transparent;
+  color: #f4ece9;
+  font-family: inherit;
+  font-size: .62rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0 12px;
+}
+
+.dp-visibility-action--active {
+  background: hsla(8, 88%, 62%, .16);
+  border-color: hsla(8, 88%, 62%, .38);
 }
 
 /* ══════════════════════════════════════════════════════

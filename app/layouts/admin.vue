@@ -1,11 +1,12 @@
 <template>
   <div class="admin-bg glass-page" :class="{ 'admin-bg--brutalist': isBrutalistShell, 'admin-bg--glass': isLiquidGlassShell }">
-    <UIDesignPanel />
-    <header v-if="!isBrutalistShell" class="admin-header glass-surface">
+    <UIDesignPanel v-if="adminLayoutModules.designPanel" />
+    <header v-if="adminLayoutModules.header && !isBrutalistShell" class="admin-header glass-surface">
       <span class="admin-brand">админ-панель</span>
       <div class="admin-header-links">
         <!-- Search trigger -->
         <button
+          v-if="adminLayoutModules.search"
           type="button"
           class="admin-search-btn"
           title="Поиск  Ctrl+K / ⌘K"
@@ -18,7 +19,7 @@
         </button>
 
         <!-- Notifications bell -->
-        <div ref="notifWrapRef" class="admin-notif-wrap">
+        <div v-if="adminLayoutModules.notifications" ref="notifWrapRef" class="admin-notif-wrap">
           <button
             type="button"
             class="admin-notif-btn"
@@ -57,13 +58,14 @@
         </div>
 
         <button
+          v-if="adminLayoutModules.themeSwitch"
           type="button"
           class="admin-theme-btn"
           :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
           @click="toggleTheme"
         >{{ isDark ? 'светло' : 'темно' }}</button>
-        <NuxtLink to="/" class="admin-link">сайт</NuxtLink>
-        <a href="#" class="admin-link" @click.prevent="logout">выйти</a>
+        <NuxtLink v-if="adminLayoutModules.siteLink" to="/" class="admin-link">сайт</NuxtLink>
+        <a v-if="adminLayoutModules.logoutLink" href="#" class="admin-link" @click.prevent="logout">выйти</a>
       </div>
     </header>
 
@@ -71,7 +73,7 @@
     <div class="adm-body">
       <!-- Global navigation sidebar — persists across all admin routes -->
       <aside class="proj-nav-col">
-        <div v-if="isBrutalistShell" ref="adminMenuRef" class="admin-sidebar-menu-wrap">
+        <div v-if="adminLayoutModules.sidebarMenu && isBrutalistShell" ref="adminMenuRef" class="admin-sidebar-menu-wrap">
           <button
             type="button"
             class="admin-sidebar-menu-btn"
@@ -91,6 +93,7 @@
           <div v-if="adminShellMenuOpen" class="admin-sidebar-menu-panel" @click.stop>
             <div class="admin-sidebar-brand">админ-панель</div>
             <button
+              v-if="adminLayoutModules.search"
               type="button"
               class="admin-search-btn admin-search-btn--sidebar"
               title="Поиск  Ctrl+K / ⌘K"
@@ -101,7 +104,7 @@
               <kbd class="admin-search-kbd">Ctrl+K</kbd>
             </button>
 
-            <div ref="notifWrapRef" class="admin-notif-wrap admin-notif-wrap--sidebar">
+            <div v-if="adminLayoutModules.notifications" ref="notifWrapRef" class="admin-notif-wrap admin-notif-wrap--sidebar">
               <button
                 type="button"
                 class="admin-notif-btn admin-notif-btn--sidebar"
@@ -140,6 +143,7 @@
             </div>
 
             <button
+              v-if="adminLayoutModules.themeSwitch"
               type="button"
               class="admin-theme-btn admin-theme-btn--sidebar"
               :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
@@ -147,13 +151,14 @@
             >{{ isDark ? 'светло' : 'темно' }}</button>
 
             <div class="admin-sidebar-links">
-              <NuxtLink to="/" class="admin-link admin-link--sidebar" @click="adminShellMenuOpen = false">сайт</NuxtLink>
-              <a href="#" class="admin-link admin-link--sidebar" @click.prevent="adminShellMenuOpen = false; logout()">выйти</a>
+              <NuxtLink v-if="adminLayoutModules.siteLink" to="/" class="admin-link admin-link--sidebar" @click="adminShellMenuOpen = false">сайт</NuxtLink>
+              <a v-if="adminLayoutModules.logoutLink" href="#" class="admin-link admin-link--sidebar" @click.prevent="adminShellMenuOpen = false; logout()">выйти</a>
             </div>
           </div>
         </div>
 
         <AdminNestedNav
+          v-if="adminLayoutModules.nestedNav"
           :node="adminNav.currentNode.value"
           :direction="adminNav.slideDir.value"
           :can-go-back="adminNav.canGoBack.value"
@@ -171,7 +176,7 @@
     </div>
 
     <!-- ── Global search palette ── -->
-    <AdminSearch :open="searchOpen" @close="searchOpen = false" />
+    <AdminSearch v-if="adminLayoutModules.search" :open="searchOpen" @close="searchOpen = false" />
   </div>
 </template>
 
@@ -182,6 +187,9 @@ const router = useRouter()
 const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
 const designSystem = useDesignSystem()
+const { adminLayout } = useDesignModules()
+useElementVisibility()
+const adminLayoutModules = computed(() => adminLayout.value)
 
 const isBrutalistShell = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 
@@ -546,6 +554,10 @@ function onDocClick(e: MouseEvent) {
 const searchOpen = ref(false)
 
 function onSearchKeydown(e: KeyboardEvent) {
+  if (!adminLayoutModules.value.search) {
+    return
+  }
+
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
     e.preventDefault()
     searchOpen.value = !searchOpen.value
@@ -555,7 +567,9 @@ function onSearchKeydown(e: KeyboardEvent) {
 onMounted(() => {
   document.addEventListener('click', onDocClick)
   document.addEventListener('keydown', onSearchKeydown)
-  _notifInterval = setInterval(refreshNotif, 2 * 60 * 1000)
+  if (adminLayoutModules.value.notifications) {
+    _notifInterval = setInterval(refreshNotif, 2 * 60 * 1000)
+  }
   useUITheme().initTheme()
   designSystem.initDesignSystem()
 })
@@ -563,6 +577,33 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onSearchKeydown)
   if (_notifInterval) clearInterval(_notifInterval)
+})
+
+watch(() => adminLayoutModules.value.notifications, (enabled) => {
+  if (_notifInterval) {
+    clearInterval(_notifInterval)
+    _notifInterval = null
+  }
+
+  if (!enabled) {
+    notifOpen.value = false
+    return
+  }
+
+  refreshNotif()
+  _notifInterval = setInterval(refreshNotif, 2 * 60 * 1000)
+}, { immediate: false })
+
+watch(() => adminLayoutModules.value.search, (enabled) => {
+  if (!enabled) {
+    searchOpen.value = false
+  }
+})
+
+watch(() => adminLayoutModules.value.sidebarMenu, (enabled) => {
+  if (!enabled) {
+    adminShellMenuOpen.value = false
+  }
 })
 watch(() => route.fullPath, closeAll)
 

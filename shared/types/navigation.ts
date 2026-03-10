@@ -119,7 +119,6 @@ export const UserJourneyFlow: NavigationNode[] = [
       { id: 'cat_docs',        name: 'Документы',   type: 'node' },
       { id: 'cat_gallery',     name: 'Галереи',     type: 'node' },
       { id: 'cat_moodboards',  name: 'Мудборды',    type: 'node' },
-      { id: 'cat_tariffs',     name: 'Тарифы',      type: 'node' },
     ],
   },
 
@@ -210,7 +209,6 @@ export const UserJourneyFlow: NavigationNode[] = [
       { id: 'alpha_docs',        name: 'Документы',                 type: 'node', action: 'CLICK' },
       { id: 'alpha_gallery',     name: 'Галереи',                   type: 'node' },
       { id: 'alpha_moodboards',  name: 'Мудборды',                  type: 'node' },
-      { id: 'alpha_tariff',      name: 'Тариф',                     type: 'node' },
     ],
   },
 

@@ -1,29 +1,47 @@
 <template>
-  <div>
-    <template v-if="selectedManagerId">
-      <div class="ent-entity-hd">
-        <span class="ent-entity-hd-name">{{ selectedManager?.name }}</span>
-        <button class="ent-entity-hd-action" @click="openEdit(selectedManager)">ред.</button>
-      </div>
-      <AdminManagerCabinet :key="selectedManagerId" :manager-id="selectedManagerId" :show-sidebar="false" v-model="activeManagerSection" />
+  <AdminEntityPageShell :has-selection="Boolean(selectedManagerId)" :show-create="showCreate">
+    <template #selected>
+      <AdminEntityCabinetShell
+        :show-hero="showBrutalistManagerHero"
+        :title="selectedManager?.name || ''"
+        :kicker="managerSectionLabel"
+        :facts="managerHeroFacts"
+        :meta-columns="3"
+        :brutalist="isBrutalistManagersMode"
+      >
+        <template #heroActions>
+          <button class="admin-entity-hero__action" @click="openEdit(selectedManager)">редактировать</button>
+          <button class="admin-entity-hero__action" @click="showCreate = true">новый менеджер</button>
+        </template>
+        <template #headerActions>
+          <button class="ent-entity-hd-action" @click="openEdit(selectedManager)">ред.</button>
+        </template>
+        <AdminManagerCabinet :key="selectedManagerId" :manager-id="selectedManagerId" :show-sidebar="false" v-model="activeManagerSection" />
+      </AdminEntityCabinetShell>
     </template>
-    <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
-      <div class="ent-detail-head">
-        <div class="ent-detail-name">Новый менеджер</div>
-        <button class="a-btn-sm" @click="showCreate = false">✕</button>
-      </div>
-      <input v-model="newName" class="glass-input" style="margin-bottom:8px" placeholder="Имя менеджера" @keydown.enter="doCreate" />
-      <div class="ent-detail-foot">
-        <button class="a-btn-save" :disabled="!newName.trim() || creating" @click="doCreate">{{ creating ? '…' : 'создать' }}</button>
-        <button class="a-btn-sm" @click="showCreate = false">отмена</button>
-      </div>
-    </div>
-    <div v-else class="ent-empty-detail">
-      <span class="ent-empty-icon">👔</span>
-      <span v-if="allManagers?.length">Выберите менеджера из списка</span>
-      <span v-else>Нет менеджеров — добавьте первого</span>
-      <button class="a-btn-sm" style="margin-top:6px" @click="showCreate = true">+ добавить</button>
-    </div>
+    <template #create>
+      <AdminEntityCreateCard
+        title="Новый менеджер"
+        v-model="newName"
+        placeholder="Имя менеджера"
+        :submit-label="creating ? '…' : 'создать'"
+        :disabled="!newName.trim() || creating"
+        :brutalist="isBrutalistManagersMode"
+        @submit="doCreate"
+        @close="showCreate = false"
+      />
+    </template>
+    <template #empty>
+    <AdminEntityEmptyState
+      icon="👔"
+      :has-items="Boolean(allManagers?.length)"
+      message-with-items="Выберите менеджера из списка"
+      message-empty="Нет менеджеров — добавьте первого"
+      action-label="+ добавить"
+      :brutalist="isBrutalistManagersMode"
+      @action="showCreate = true"
+    />
+    </template>
 
     <Teleport to="body">
       <div v-if="showEditModal" class="ct-backdrop" @click.self="closeEdit">
@@ -59,7 +77,7 @@
         </div>
       </div>
     </Teleport>
-  </div>
+  </AdminEntityPageShell>
 </template>
 
 <script setup lang="ts">
@@ -80,14 +98,29 @@ const activeManagerSection = ref('dashboard')
 
 const route = useRoute()
 const router = useRouter()
+const designSystem = useDesignSystem()
+const isBrutalistManagersMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 
-const { data: allManagers, pending, refresh } = useFetch<any[]>('/api/managers', { default: () => [] })
+const managersDirectory = useAdminEntityDirectory<any>('managers')
+await managersDirectory.ensureLoaded()
+const allManagers = managersDirectory.items
+const pending = managersDirectory.pending
 const showCreate = ref(false)
 const newName = ref('')
 const creating = ref(false)
 const selectedManagerId = ref<number | null>(null)
 
 const selectedManager = computed(() => allManagers.value?.find((m: any) => m.id === selectedManagerId.value) || null)
+const showBrutalistManagerHero = computed(() => isBrutalistManagersMode.value && !!selectedManager.value)
+const managerSectionLabel = computed(() => {
+  if (activeManagerSection.value === 'dashboard') return 'кабинет менеджера'
+  return String(activeManagerSection.value || 'кабинет менеджера').replace(/_/g, ' ')
+})
+const managerHeroFacts = computed(() => [
+  { label: 'раздел', value: managerSectionLabel.value },
+  { label: 'роль', value: selectedManager.value?.role || 'не указана' },
+  { label: 'контакт', value: selectedManager.value?.phone || selectedManager.value?.email || 'не указан' },
+])
 
 const managerIdFromQuery = computed(() => {
   const v = route.query.managerId
@@ -110,16 +143,15 @@ async function doCreate() {
   if (!newName.value.trim()) return
   creating.value = true
   try {
-    await $fetch('/api/managers', { method: 'POST', body: { name: newName.value.trim() } })
-    await refresh(); newName.value = ''; showCreate.value = false
+    await managersDirectory.createItem({ name: newName.value.trim() })
+    newName.value = ''; showCreate.value = false
   } finally { creating.value = false }
 }
 
 async function del(id: number) {
   if (!confirm('Удалить менеджера?')) return
-  await $fetch(`/api/managers/${id}`, { method: 'DELETE' })
+  await managersDirectory.deleteItem(id)
   if (selectedManagerId.value === id) selectedManagerId.value = null
-  await refresh()
 }
 
 const showEditModal = ref(false)
@@ -151,10 +183,11 @@ async function saveEdit() {
   if (!editingId.value) return
   editSaving.value = true; editError.value = ''
   try {
-    await $fetch(`/api/managers/${editingId.value}`, { method: 'PUT', body: { ...editForm } })
-    closeEdit(); refresh()
+    await managersDirectory.updateItem(editingId.value, { ...editForm })
+    closeEdit()
   } catch (e: any) {
     editError.value = e?.data?.message || 'Ошибка сохранения'
   } finally { editSaving.value = false }
 }
 </script>
+

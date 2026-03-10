@@ -7,44 +7,34 @@
     </div>
     <!-- Content: selected contractor or empty state -->
     <template v-if="selectedId">
-      <section v-if="showBrutalistContractorHero" class="ct-hero">
-        <nav class="ct-hero-breadcrumbs">
-          <NuxtLink to="/admin">админ</NuxtLink>
-          <span>/</span>
-          <span>подрядчики</span>
-          <span>/</span>
-          <span>{{ selected?.name }}</span>
-        </nav>
-        <div class="ct-hero-body">
-          <p class="ct-hero-kicker">{{ contractorSectionLabel }}</p>
-          <h1 class="ct-hero-title">{{ selected?.name }}</h1>
-          <div class="ct-hero-meta">
-            <div v-for="fact in contractorHeroFacts" :key="fact.label" class="ct-hero-meta-item">
-              <span class="ct-hero-meta-label">{{ fact.label }}</span>
-              <span class="ct-hero-meta-value">{{ fact.value }}</span>
-            </div>
-          </div>
-          <div class="ct-hero-actions">
-            <button class="ct-hero-action" @click="openEdit(selected)">редактировать</button>
-            <button class="ct-hero-action" @click="openCreate">новый подрядчик</button>
-          </div>
-        </div>
-      </section>
-
-      <div v-if="!showBrutalistContractorHero" class="ent-entity-hd">
-        <span class="ent-entity-hd-name">{{ selected?.name }}</span>
-        <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
-      </div>
-      <section class="ct-cab-shell" :class="{ 'ct-cab-shell--brutalist': isBrutalistContractorsMode }">
+      <AdminEntityCabinetShell
+        :show-hero="showBrutalistContractorHero"
+        :title="selected?.name || ''"
+        :kicker="contractorSectionLabel"
+        :facts="contractorHeroFacts"
+        :meta-columns="4"
+        :brutalist="isBrutalistContractorsMode"
+      >
+        <template #heroActions>
+          <button class="admin-entity-hero__action" @click="openEdit(selected)">редактировать</button>
+          <button class="admin-entity-hero__action" @click="openCreate">новый подрядчик</button>
+        </template>
+        <template #headerActions>
+          <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
+        </template>
         <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" :show-sidebar="false" v-model="activeContractorSection" />
-      </section>
+      </AdminEntityCabinetShell>
     </template>
-    <div v-else class="ent-empty-detail ct-empty-detail" :class="{ 'ct-empty-detail--brutalist': isBrutalistContractorsMode }">
-      <span class="ent-empty-icon">🏗</span>
-      <span v-if="contractors?.length">Выберите подрядчика из списка</span>
-      <span v-else>Нет подрядчиков — добавьте первого</span>
-      <button class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ добавить</button>
-    </div>
+    <AdminEntityEmptyState
+      v-else
+      icon="🏗"
+      :has-items="Boolean(contractors?.length)"
+      message-with-items="Выберите подрядчика из списка"
+      message-empty="Нет подрядчиков — добавьте первого"
+      action-label="+ добавить"
+      :brutalist="isBrutalistContractorsMode"
+      @action="openCreate"
+    />
 
     <Teleport to="body">
       <div v-if="showModal" class="ct-backdrop" :class="{ 'ct-backdrop--brutalist': isBrutalistContractorsMode }" @click.self="closeModal">
@@ -275,6 +265,8 @@ const showModal = ref(false); const saving = ref(false); const formError = ref('
 const editingId = ref<number | null>(null); const isEditMode = ref(false)
 const selectedProjectIds = ref<number[]>([]); const originalProjectIds = ref<number[]>([])
 const allProjects = ref<any[]>([]); const projectsLoading = ref(false); const projectsError = ref('')
+const adminCatalogs = useAdminCatalogs()
+const cachedProjects = adminCatalogs.getCatalog('projects')
 
 const modalTab = ref<'main' | 'passport' | 'documents' | 'finances'>('main')
 const modalTabs = [{ key: 'main' as const, label: 'Основное' }, { key: 'passport' as const, label: 'Паспорт' }, { key: 'documents' as const, label: 'Документы' }, { key: 'finances' as const, label: 'Финансы' }]
@@ -308,6 +300,7 @@ const workTypesStr = computed({
 function openCreate() {
   editingId.value = null; isEditMode.value = false; modalTab.value = 'main'
   editContractor.value = null; contractorDocs.value = []
+  allProjects.value = cachedProjects.value
   Object.assign(form, emptyForm()); showModal.value = true
 }
 function openCreateMaster(companyId: number) {
@@ -326,7 +319,7 @@ async function openEdit(c: any) {
   showModal.value = true
   try {
     const [projs, linked, fullContractor] = await Promise.all([
-      $fetch<any[]>('/api/projects'),
+      adminCatalogs.ensureCatalog('projects'),
       $fetch<any[]>(`/api/contractors/${c.id}/projects`),
       $fetch<any>(`/api/contractors/${c.id}`),
     ])
@@ -417,123 +410,6 @@ html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; 
 .ct-btn-cabinet { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; font-family: inherit; color: var(--glass-page-bg); background: var(--glass-text); padding: 5px 10px; border-radius: 7px; border: none; cursor: pointer; opacity: .75; transition: opacity .15s; white-space: nowrap; }
 .ct-btn-cabinet:hover { opacity: 1; }
 
-.ct-hero {
-  position: relative;
-  min-height: min(72vh, 720px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 20px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-}
-
-.ct-hero-breadcrumbs {
-  position: absolute;
-  top: 18px;
-  left: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: .62rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
-}
-
-.ct-hero-breadcrumbs a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.ct-hero-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: min(100%, 980px);
-}
-
-.ct-hero-kicker {
-  margin: 0;
-  font-size: .68rem;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
-}
-
-.ct-hero-title {
-  margin: 0;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  line-height: .94;
-  font-size: clamp(2.4rem, 8vw, 6.5rem);
-}
-
-.ct-hero-meta {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  width: 100%;
-}
-
-.ct-hero-meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
-}
-
-.ct-hero-meta-label {
-  font-size: .6rem;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 44%, transparent);
-}
-
-.ct-hero-meta-value {
-  font-size: .9rem;
-  line-height: 1.15;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-}
-
-.ct-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-}
-
-.ct-hero-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0 14px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
-  background: transparent;
-  color: var(--glass-text);
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  font-size: .68rem;
-  cursor: pointer;
-}
-
-.ct-cab-shell--brutalist {
-  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  padding-top: 18px;
-}
-
-.ct-empty-detail--brutalist {
-  min-height: 56vh;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-radius: 0;
-  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
-}
-
 /* ══ Modal ══ */
 .ct-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
 .ct-backdrop--brutalist { background: color-mix(in srgb, #000 58%, transparent); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
@@ -579,29 +455,7 @@ html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; 
 .ct-doc-download:hover { text-decoration: underline; }
 .ct-cert-chip { display: inline-block; padding: 2px 8px; border-radius: 6px; background: color-mix(in srgb, var(--ds-accent, #6366f1) 10%, transparent); color: var(--ds-accent, #6366f1); font-size: .75rem; font-weight: 500; margin-right: 4px; margin-bottom: 2px; }
 
-@media (max-width: 900px) {
-  .ct-hero-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 640px) {
   .ct-nav-master { padding-left: 10px; }
-  .ct-hero {
-    min-height: auto;
-    padding: 26px 14px;
-  }
-  .ct-hero-breadcrumbs {
-    position: static;
-    align-self: flex-start;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-  }
-  .ct-hero-title {
-    font-size: clamp(2rem, 11vw, 4rem);
-  }
-  .ct-hero-meta {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

@@ -23,7 +23,7 @@ export interface UITheme {
 export const UI_THEMES: UITheme[] = [
   /* ── 1. Cloud — clean cool grey ── */
   {
-    id: 'cloud', label: 'Cloud', swatch: '#f4f4f2', swatchDark: '#1a1c22', btnPreview: 'серый',
+    id: 'cloud', label: 'Облако', swatch: '#f4f4f2', swatchDark: '#1a1c22', btnPreview: 'серый',
     vars: {
       '--glass-page-bg': '#f4f4f2',
       '--glass-bg':      'rgba(255, 255, 255, 0.52)',
@@ -59,7 +59,7 @@ export const UI_THEMES: UITheme[] = [
 
   /* ── 2. Linen — warm ivory ── */
   {
-    id: 'linen', label: 'Linen', swatch: '#ede8de', swatchDark: '#231e16', btnPreview: 'кремовый',
+    id: 'linen', label: 'Лён', swatch: '#ede8de', swatchDark: '#231e16', btnPreview: 'кремовый',
     vars: {
       '--glass-page-bg': '#ede8de',
       '--glass-bg':      'rgba(253, 248, 238, 0.60)',
@@ -95,7 +95,7 @@ export const UI_THEMES: UITheme[] = [
 
   /* ── 3. Stone — greige, sharp, uppercase ── */
   {
-    id: 'stone', label: 'Stone', swatch: '#e8e5e0', swatchDark: '#1e1c18', btnPreview: 'GREIGE',
+    id: 'stone', label: 'Камень', swatch: '#e8e5e0', swatchDark: '#1e1c18', btnPreview: 'грейдж',
     vars: {
       '--glass-page-bg': '#e8e5e0',
       '--glass-bg':      'rgba(242, 239, 233, 0.60)',
@@ -131,7 +131,7 @@ export const UI_THEMES: UITheme[] = [
 
   /* ── 4. Fog — cool grey-blue, pill buttons ── */
   {
-    id: 'fog', label: 'Fog', swatch: '#eeeef0', swatchDark: '#181a26', btnPreview: 'rounded',
+    id: 'fog', label: 'Туман', swatch: '#eeeef0', swatchDark: '#181a26', btnPreview: 'скруглённый',
     vars: {
       '--glass-page-bg': '#eeeef0',
       '--glass-bg':      'rgba(248, 248, 252, 0.56)',
@@ -167,7 +167,7 @@ export const UI_THEMES: UITheme[] = [
 
   /* ── 5. Parchment — warm ivory, outline only ── */
   {
-    id: 'parchment', label: 'Parchment', swatch: '#f2ece1', swatchDark: '#201a10', btnPreview: 'OUTLINE',
+    id: 'parchment', label: 'Пергамент', swatch: '#f2ece1', swatchDark: '#201a10', btnPreview: 'контур',
     vars: {
       '--glass-page-bg': '#f2ece1',
       '--glass-bg':      'rgba(255, 251, 242, 0.56)',

@@ -51,6 +51,14 @@ export interface ContentSpec {
   activeLeafId: string | null
 }
 
+function normalizeAdminSectionKey(sectionKey: string) {
+  return sectionKey === 'tariffs' ? 'ui-modules' : sectionKey
+}
+
+function getAdminCategoryIdBySectionKey(sectionKey: string) {
+  return `cat_${sectionKey}`
+}
+
 function rootNode(): NavigationNode {
   return {
     step: 'A',
@@ -68,7 +76,6 @@ function rootNode(): NavigationNode {
       { id: 'cat_docs',        name: 'Документы',   type: 'node' },
       { id: 'cat_gallery',     name: 'Галереи',     type: 'node' },
       { id: 'cat_moodboards',  name: 'Мудборды',    type: 'node' },
-      { id: 'cat_tariffs',     name: 'Тарифы',      type: 'node' },
     ],
   }
 }
@@ -138,7 +145,6 @@ const PROJECT_CABINET_ITEMS: PayloadItem[] = [
   { id: 'alpha_docs',        name: 'Документы',                 type: 'node' },
   { id: 'alpha_gallery',     name: 'Галереи',                   type: 'node' },
   { id: 'alpha_moodboards',  name: 'Мудборды',                  type: 'node' },
-  { id: 'alpha_tariff',      name: 'Тариф',                     type: 'node' },
 ]
 
 // Фазы проекта — листья (привязаны к компонентам страницы)
@@ -265,8 +271,9 @@ export function useAdminNav() {
   }
 
   async function ensureSection(sectionKey: string) {
-    const catId = `cat_${sectionKey}`
-    if (currentCtx.value.section === sectionKey) return
+    const normalizedSectionKey = normalizeAdminSectionKey(sectionKey)
+    const catId = getAdminCategoryIdBySectionKey(normalizedSectionKey)
+    if (normalizeAdminSectionKey(currentCtx.value.section) === normalizedSectionKey) return
     nodeStack.value = [rootNode()]
     ctxStack.value  = [{ section: '' }]
     activeLeafId.value = undefined
@@ -371,7 +378,7 @@ async function buildNextNode(
 
   // ── ROOT → registry секций ────────────────────────────────────────────────
   if (current.nodeId === 'root') {
-    newCtx.section = item.id.replace('cat_', '')
+    newCtx.section = normalizeAdminSectionKey(item.id.replace('cat_', ''))
     const route = getAdminCategoryRoute(item.id)
     if (route) router.push(route)
 
@@ -399,16 +406,6 @@ async function buildNextNode(
         payload: GALLERY_ITEMS.filter(g => g.id === 'gal_moodboards'),
       }}
     }
-    // cat_tariffs — заглушка до появления API
-    if (item.id === 'cat_tariffs') {
-      return { ctx: newCtx, node: {
-        step: 'B', nodeId: `reg_${newCtx.section}`, nodeType: 'registry',
-        context: { title: 'Тарифы', breadcrumbs: [...crumbs, 'Тарифы'] },
-        filter: { placeholder: 'Поиск по тарифам...', value: '' },
-        payload: [],
-      }}
-    }
-
     const apiMap: Record<string, string> = {
       cat_projects:    '/api/projects',
       cat_designers:   '/api/designers',
