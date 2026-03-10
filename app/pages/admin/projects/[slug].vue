@@ -519,127 +519,6 @@
       </div>
     </div>
 
-    <!-- Client Selection Modal REMOVED — теперь inline в content-area -->
-
-    <!-- Contractor Selection Modal -->
-    <div v-if="showContractorModal" class="a-modal-backdrop" :class="{ 'a-modal-backdrop--brutalist': isBrutalistProjectMode }" @click.self="showContractorModal = false">
-      <div class="a-modal" :class="{ 'a-modal--brutalist': isBrutalistProjectMode }">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">подрядчики проекта</h3>
-
-        <div v-if="linkedContractorsList.length" style="margin-bottom:14px">
-          <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
-          <div class="modal-contractors-list">
-            <div
-              v-for="contractor in linkedContractorsList"
-              :key="`linked-${contractor.id}`"
-              class="modal-contractor-item modal-contractor-item--linked"
-            >
-              <div class="modal-contractor-info">
-                <div class="modal-contractor-name">{{ contractor.name }}</div>
-                <div class="modal-contractor-details">
-                  <template v-if="contractor.companyName">{{ contractor.companyName }}</template>
-                  <template v-else-if="contractor.phone">{{ contractor.phone }}</template>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="modal-action-btn modal-action-btn--remove"
-                @click="unlinkContractor(contractor.id)"
-              >-</button>
-            </div>
-          </div>
-        </div>
-
-        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
-        <div class="modal-contractors-list">
-          <div
-            v-for="contractor in availableContractorsForModal"
-            :key="contractor.id"
-            class="modal-contractor-item"
-          >
-            <div class="modal-contractor-info">
-              <div class="modal-contractor-name">{{ contractor.name }}</div>
-              <div class="modal-contractor-details">
-                <template v-if="contractor.companyName">{{ contractor.companyName }}</template>
-                <template v-else-if="contractor.phone">{{ contractor.phone }}</template>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="modal-action-btn modal-action-btn--add"
-              @click="linkContractorFromModal(contractor.id)"
-            >+</button>
-          </div>
-        </div>
-        <div v-if="!linkedContractorsList.length && !availableContractorsForModal.length" style="font-size:.82rem;color:#888">Нет подрядчиков в системе</div>
-        <p v-if="contractorLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ contractorLinkError }}</p>
-        <p v-if="contractorLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ contractorLinkSuccess }}</p>
-        <div style="display:flex;justify-content:flex-end;margin-top:20px">
-          <button type="button" class="a-btn-sm" @click="showContractorModal = false">закрыть</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Designer Selection Modal -->
-    <div v-if="showDesignerModal" class="a-modal-backdrop" :class="{ 'a-modal-backdrop--brutalist': isBrutalistProjectMode }" @click.self="showDesignerModal = false">
-      <div class="a-modal" :class="{ 'a-modal--brutalist': isBrutalistProjectMode }">
-        <h3 style="font-size:.85rem;font-weight:400;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:20px">дизайнеры проекта</h3>
-
-        <div v-if="linkedDesignersList.length" style="margin-bottom:14px">
-          <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">закреплённые</div>
-          <div class="modal-designers-list">
-            <div
-              v-for="designer in linkedDesignersList"
-              :key="`linked-${designer.id}`"
-              class="modal-designer-item modal-designer-item--linked"
-            >
-              <div class="modal-designer-info">
-                <div class="modal-designer-name">{{ designer.name }}</div>
-                <div class="modal-designer-details">
-                  <template v-if="designer.companyName">{{ designer.companyName }}</template>
-                  <template v-else-if="designer.phone">{{ designer.phone }}</template>
-                  <template v-else-if="designer.email">{{ designer.email }}</template>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="modal-action-btn modal-action-btn--remove"
-                @click="unlinkDesigner(designer.id)"
-              >-</button>
-            </div>
-          </div>
-        </div>
-
-        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">доступные для привязки</div>
-        <div class="modal-designers-list">
-          <div
-            v-for="designer in availableDesignersForModal"
-            :key="designer.id"
-            class="modal-designer-item"
-          >
-            <div class="modal-designer-info">
-              <div class="modal-designer-name">{{ designer.name }}</div>
-              <div class="modal-designer-details">
-                <template v-if="designer.companyName">{{ designer.companyName }}</template>
-                <template v-else-if="designer.phone">{{ designer.phone }}</template>
-                <template v-else-if="designer.email">{{ designer.email }}</template>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="modal-action-btn modal-action-btn--add"
-              @click="linkDesignerFromModal(designer.id)"
-            >+</button>
-          </div>
-        </div>
-        <div v-if="!linkedDesignersList.length && !availableDesignersForModal.length" style="font-size:.82rem;color:#888">Нет дизайнеров в системе</div>
-        <p v-if="designerLinkError" style="color:var(--ds-error, #c00);font-size:.8rem;margin:10px 0">{{ designerLinkError }}</p>
-        <p v-if="designerLinkSuccess" style="color:var(--ds-success, #5caa7f);font-size:.8rem;margin:10px 0">{{ designerLinkSuccess }}</p>
-        <div style="display:flex;justify-content:flex-end;margin-top:20px">
-          <button type="button" class="a-btn-sm" @click="showDesignerModal = false">закрыть</button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -716,6 +595,9 @@ function syncNavToProject() {
 }
 onMounted(syncNavToProject)
 onActivated(syncNavToProject)
+watch(slug, () => {
+  syncNavToProject()
+}, { immediate: true })
 
 // Маппинг prj_* IDs из PROJECT_CABINET_ITEMS → внутренние slugs страницы
 const PRJ_SECTION_TO_SLUG: Record<string, string> = {
@@ -723,20 +605,59 @@ const PRJ_SECTION_TO_SLUG: Record<string, string> = {
   clients:       'project_clients',
   firstcontact:  'first_contact',
   smartbrief:    'brief',
+  sitesurvey:    'site_survey',
+  torcontract:   'tor_contract',
   concept:       'concept_approval',
   spaceplanning: 'space_planning',
   moodboard:     'moodboard',
   plan:          'construction_plan',
   drawings:      'working_drawings',
+  specifications:'specifications',
   mep:           'mep_integration',
   materials:     'materials',
   procurement:   'procurement_list',
+  suppliers:     'suppliers',
+  procurementstatus: 'procurement_status',
   workstatus:    'work_status',
+  worklog:       'work_log',
   sitephotos:    'site_photos',
   punchlist:     'punch_list',
   commissioning: 'commissioning_act',
+  clientsignoff: 'client_sign_off',
   album:         'design_album_final',
   extraservices: 'extra_services',
+}
+
+const PROJECT_PAGE_TO_NAV_TARGET: Record<string, { branchId?: string; leafId?: string }> = {
+  overview: {},
+  project_clients: { branchId: 'alpha_clients' },
+  project_contractors: { branchId: 'alpha_contractors' },
+  project_designers: { branchId: 'alpha_designers' },
+  project_sellers: { branchId: 'alpha_sellers' },
+  project_managers: { branchId: 'alpha_managers' },
+  first_contact: { branchId: 'alpha_phases', leafId: 'prj_firstcontact' },
+  brief: { branchId: 'alpha_phases', leafId: 'prj_smartbrief' },
+  site_survey: { branchId: 'alpha_phases', leafId: 'prj_sitesurvey' },
+  tor_contract: { branchId: 'alpha_phases', leafId: 'prj_torcontract' },
+  extra_services: { branchId: 'alpha_phases', leafId: 'prj_extraservices' },
+  space_planning: { branchId: 'alpha_phases', leafId: 'prj_spaceplanning' },
+  moodboard: { branchId: 'alpha_phases', leafId: 'prj_moodboard' },
+  concept_approval: { branchId: 'alpha_phases', leafId: 'prj_concept' },
+  working_drawings: { branchId: 'alpha_phases', leafId: 'prj_drawings' },
+  specifications: { branchId: 'alpha_phases', leafId: 'prj_specifications' },
+  mep_integration: { branchId: 'alpha_phases', leafId: 'prj_mep' },
+  design_album_final: { branchId: 'alpha_phases', leafId: 'prj_album' },
+  procurement_list: { branchId: 'alpha_phases', leafId: 'prj_procurement' },
+  suppliers: { branchId: 'alpha_phases', leafId: 'prj_suppliers' },
+  procurement_status: { branchId: 'alpha_phases', leafId: 'prj_procurementstatus' },
+  construction_plan: { branchId: 'alpha_phases', leafId: 'prj_plan' },
+  work_status: { branchId: 'alpha_phases', leafId: 'prj_workstatus' },
+  work_log: { branchId: 'alpha_phases', leafId: 'prj_worklog' },
+  site_photos: { branchId: 'alpha_phases', leafId: 'prj_sitephotos' },
+  punch_list: { branchId: 'alpha_phases', leafId: 'prj_punchlist' },
+  commissioning_act: { branchId: 'alpha_phases', leafId: 'prj_commissioning' },
+  client_sign_off: { branchId: 'alpha_phases', leafId: 'prj_clientsignoff' },
+  materials: { branchId: 'alpha_phases', leafId: 'prj_materials' },
 }
 
 const MODERN_PROJECT_PAGES = [
@@ -767,7 +688,7 @@ const LEGACY_PROJECT_PAGES = new Set(['materials', 'tz', 'profile_customer'])
 
 const { data: project, pending: projectPending, refresh } = await useFetch<any>(`/api/projects/${slug.value}`)
 const { data: clientsData } = await useFetch<any[]>('/api/clients', { default: () => [] })
-const { data: allContractorsData, refresh: refreshAllContractors } = await useFetch<any[]>('/api/contractors', { default: () => [] })
+const { data: allContractorsData } = await useFetch<any[]>('/api/contractors', { default: () => [] })
 const { data: linkedContractorsData, refresh: refreshLinkedContractors } = await useFetch<any[]>(
   `/api/projects/${slug.value}/contractors`,
   { default: () => [] },
@@ -797,18 +718,12 @@ const selectedClientId = ref('')
 const linkingClient = ref(false)
 const clientLinkError = ref('')
 const clientLinkSuccess = ref('')
-const showClientModal = ref(false)
-// ── Contractor link state ─────────────────────────────────────────
-const selectedContractorId = ref('')
-const linkingContractor = ref(false)
 const contractorLinkError = ref('')
 const contractorLinkSuccess = ref('')
-const showContractorModal = ref(false)
 // ── Designer link state ──────────────────────────────────────────
 const linkingDesigner = ref(false)
 const designerLinkError = ref('')
 const designerLinkSuccess = ref('')
-const showDesignerModal = ref(false)
 // ── Seller link state ────────────────────────────────────────────
 const linkingSeller = ref(false)
 const sellerLinkError = ref('')
@@ -826,27 +741,6 @@ const linkedSellerIds = computed(() => new Set(linkedSellersList.value.map((s: a
 const allManagers = computed(() => allManagersData.value || [])
 const linkedManagersList = computed(() => linkedManagersData.value || [])
 const linkedManagerIds = computed(() => new Set(linkedManagersList.value.map((m: any) => String(m.id))))
-
-async function linkContractorToProject() {
-  if (!selectedContractorId.value) return
-  linkingContractor.value = true
-  contractorLinkError.value = ''
-  contractorLinkSuccess.value = ''
-  try {
-    await $fetch(`/api/projects/${slug.value}/contractors`, {
-      method: 'POST',
-      body: { contractorId: Number(selectedContractorId.value) },
-    })
-    await refreshLinkedContractors()
-    selectedContractorId.value = ''
-    contractorLinkSuccess.value = 'Подрядчик привязан к проекту'
-    setTimeout(() => { contractorLinkSuccess.value = '' }, 3000)
-  } catch (e: any) {
-    contractorLinkError.value = e?.data?.message || 'Не удалось привязать подрядчика'
-  } finally {
-    linkingContractor.value = false
-  }
-}
 
 async function unlinkContractor(contractorId: number) {
   contractorLinkError.value = ''
@@ -1005,8 +899,16 @@ const defaultPhasePage = computed(() => {
   return firstVisiblePhasePage?.slug || 'overview'
 })
 
-function selectAdminPage(slug: string) {
-  activePage.value = slug
+async function selectAdminPage(pageSlug: string) {
+  activePage.value = pageSlug
+  const normalizedPage = pageSlug === 'self_profile' ? 'brief' : pageSlug
+  const target = PROJECT_PAGE_TO_NAV_TARGET[normalizedPage] || {}
+  const title = project.value?.title || slug.value
+  if (target.branchId || target.leafId) {
+    await adminNav.setProjectView(slug.value, title, target)
+  } else {
+    adminNav.ensureProject(slug.value, title)
+  }
   scrollMobileBarToActive()
 }
 
@@ -1133,10 +1035,7 @@ const resolvedProjectPageFromNav = computed(() => {
   }
 
   if (node.nodeId.startsWith('reg_phases_')) {
-    const currentPage = activePage.value
-    const normalizedCurrentPage = currentPage === 'brief' ? 'self_profile' : currentPage
-    const currentPageIsVisiblePhase = availablePages.value.some(page => page.slug === normalizedCurrentPage)
-    return currentPageIsVisiblePhase ? currentPage : defaultPhasePage.value
+    return defaultPhasePage.value
   }
 
   if (node.nodeType === 'project_root') {
@@ -1154,7 +1053,7 @@ watch(
     if (!resolvedPage || resolvedPage === activePage.value) {
       return
     }
-    selectAdminPage(resolvedPage)
+    activePage.value = resolvedPage
   },
   { immediate: true },
 )

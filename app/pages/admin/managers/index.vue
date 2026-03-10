@@ -98,7 +98,9 @@ function applyManagerIdQuery() {
   if (qid && allManagers.value?.length) {
     const found = allManagers.value.find((m: any) => m.id === qid)
     if (found) selectedManagerId.value = found.id
-    router.replace({ query: { ...route.query, managerId: undefined } })
+    const nextQuery = { ...route.query }
+    delete nextQuery.managerId
+    router.replace({ query: nextQuery })
   }
 }
 watch(() => allManagers.value, () => applyManagerIdQuery(), { immediate: true })

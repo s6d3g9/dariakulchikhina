@@ -248,7 +248,9 @@ function applyContractorIdQuery() {
   if (qid && contractors.value?.length) {
     const found = contractors.value.find((c: any) => c.id === qid)
     if (found) selectedId.value = found.id
-    router.replace({ query: { ...route.query, contractorId: undefined } })
+    const nextQuery = { ...route.query }
+    delete nextQuery.contractorId
+    router.replace({ query: nextQuery })
   }
 }
 watch(contractors, () => applyContractorIdQuery(), { immediate: true })

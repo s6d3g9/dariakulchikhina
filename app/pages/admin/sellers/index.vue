@@ -104,7 +104,9 @@ function applySellerIdQuery() {
   if (qid && allSellers.value?.length) {
     const found = allSellers.value.find((s: any) => s.id === qid)
     if (found) selectedSellerId.value = found.id
-    router.replace({ query: { ...route.query, sellerId: undefined } })
+    const nextQuery = { ...route.query }
+    delete nextQuery.sellerId
+    router.replace({ query: nextQuery })
   }
 }
 watch(() => allSellers.value, () => applySellerIdQuery(), { immediate: true })

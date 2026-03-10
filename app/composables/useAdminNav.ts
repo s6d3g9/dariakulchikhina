@@ -150,18 +150,25 @@ const PHASES_ITEMS: PayloadItem[] = [
   { id: 'prj_overview',      name: 'Обзор',                  type: 'leaf' },
   { id: 'prj_firstcontact',  name: 'Первый контакт',         type: 'leaf' },
   { id: 'prj_smartbrief',    name: 'Смарт-бриф / ТЗ',        type: 'leaf' },
+  { id: 'prj_sitesurvey',    name: 'Обмеры / аудит',         type: 'leaf' },
+  { id: 'prj_torcontract',   name: 'ТЗ и договор',           type: 'leaf' },
   { id: 'prj_concept',       name: 'Концепция',               type: 'leaf' },
   { id: 'prj_spaceplanning', name: 'Планировочное решение',   type: 'leaf' },
   { id: 'prj_moodboard',     name: 'Мудборд',                 type: 'leaf' },
   { id: 'prj_plan',          name: 'Строительный план',       type: 'leaf' },
   { id: 'prj_drawings',      name: 'Рабочие чертежи',         type: 'leaf' },
+  { id: 'prj_specifications',name: 'Спецификации',            type: 'leaf' },
   { id: 'prj_mep',           name: 'MEP-интеграция',          type: 'leaf' },
   { id: 'prj_materials',     name: 'Материалы',               type: 'leaf' },
   { id: 'prj_procurement',   name: 'Закупки',                 type: 'leaf' },
+  { id: 'prj_suppliers',     name: 'Поставщики',              type: 'leaf' },
+  { id: 'prj_procurementstatus', name: 'Статус закупок',      type: 'leaf' },
   { id: 'prj_workstatus',    name: 'Строительные работы',     type: 'leaf' },
+  { id: 'prj_worklog',       name: 'Журнал работ',            type: 'leaf' },
   { id: 'prj_sitephotos',    name: 'Фото объекта',            type: 'leaf' },
   { id: 'prj_punchlist',     name: 'Замечания (punch-list)',  type: 'leaf' },
   { id: 'prj_commissioning', name: 'Акт ввода',               type: 'leaf' },
+  { id: 'prj_clientsignoff', name: 'Подпись клиента',         type: 'leaf' },
   { id: 'prj_album',         name: 'Финальный альбом',        type: 'leaf' },
   { id: 'prj_extraservices', name: 'Доп. услуги',             type: 'leaf' },
 ]
@@ -271,14 +278,7 @@ export function useAdminNav() {
     if (item) await drill(item)
   }
 
-  /**
-   * Напрямую устанавливает навигацию на конкретный проект (без router.push).
-   * Используется при keepalive-активации [slug].vue чтобы не терять текущий маршрут.
-   */
-  function ensureProject(projectSlug: string, projectTitle: string) {
-    const spec = contentSpec.value
-    if (spec.section === 'projects' && spec.projectSlug === projectSlug) return
-
+  function buildProjectBaseState(projectSlug: string, projectTitle: string) {
     const root = rootNode()
     const regNode: NavigationNode = {
       step: 'B', nodeId: 'reg_projects', nodeType: 'registry',
@@ -292,12 +292,52 @@ export function useAdminNav() {
       filter: { placeholder: 'Поиск по разделам проекта...', value: '' },
       payload: PROJECT_CABINET_ITEMS,
     }
-    nodeStack.value = [root, regNode, cabNode]
-    ctxStack.value  = [
-      { section: '' },
-      { section: 'projects' },
-      { section: 'projects', projectSlug, projectTitle },
-    ]
+
+    return {
+      nodes: [root, regNode, cabNode],
+      ctxs: [
+        { section: '' },
+        { section: 'projects' },
+        { section: 'projects', projectSlug, projectTitle },
+      ] as NavCtx[],
+      cabNode,
+    }
+  }
+
+  async function setProjectView(
+    projectSlug: string,
+    projectTitle: string,
+    options: { branchId?: string | null; leafId?: string | null } = {},
+  ) {
+    const { nodes, ctxs, cabNode } = buildProjectBaseState(projectSlug, projectTitle)
+
+    if (options.branchId) {
+      const branchItem = PROJECT_CABINET_ITEMS.find(item => item.id === options.branchId)
+      if (branchItem) {
+        const result = await buildNextNode(cabNode, ctxs[2], branchItem, router)
+        if (result) {
+          nodes.push(result.node)
+          ctxs.push(result.ctx)
+        }
+      }
+    }
+
+    nodeStack.value = nodes
+    ctxStack.value = ctxs
+    activeLeafId.value = options.leafId || undefined
+  }
+
+  /**
+   * Напрямую устанавливает навигацию на конкретный проект (без router.push).
+   * Используется при keepalive-активации [slug].vue чтобы не терять текущий маршрут.
+   */
+  function ensureProject(projectSlug: string, projectTitle: string) {
+    const spec = contentSpec.value
+    if (spec.section === 'projects' && spec.projectSlug === projectSlug) return
+
+    const { nodes, ctxs } = buildProjectBaseState(projectSlug, projectTitle)
+    nodeStack.value = nodes
+    ctxStack.value = ctxs
     activeLeafId.value = undefined
   }
 
@@ -314,6 +354,7 @@ export function useAdminNav() {
     goRoot,
     ensureSection,
     ensureProject,
+    setProjectView,
     nodeStack: readonly(nodeStack),
   }
 }
