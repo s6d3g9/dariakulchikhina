@@ -415,7 +415,19 @@
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-section-label">Роли</div>
+      <div class="sidebar-section-label">User Flow</div>
+      <a class="sidebar-link" href="#userflow">
+        <span class="icon">🗺</span> Все роли и сценарии
+      </a>
+      <a class="sidebar-link" href="#uf-admin"><span class="icon">⬡</span> Роль 1 — Администратор</a>
+      <a class="sidebar-link" href="#uf-designer"><span class="icon">✏</span> Роль 2 — Дизайнер</a>
+      <a class="sidebar-link" href="#uf-client"><span class="icon">◯</span> Роль 3 — Клиент</a>
+      <a class="sidebar-link" href="#uf-master"><span class="icon">🔨</span> Роль 4 — Мастер</a>
+      <a class="sidebar-link" href="#uf-shop"><span class="icon">🏪</span> Роль 5 — Магазин</a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Роли (реализация)</div>
       <a class="sidebar-link active" href="#admin">
         <span class="icon">⬡</span> Администратор
         <span class="sidebar-role-badge badge-admin">Admin</span>
@@ -468,8 +480,193 @@
 
     <div class="page-header">
       <h1>UX-описание интерфейса · dev</h1>
-      <p>Полная карта страниц, API, модулей и содержимого — по каждой роли и разделу. Обновлено 2026-03-04.</p>
+      <p>Полная карта страниц, API, модулей и содержимого — по каждой роли и разделу. Обновлено 2026-03-10.</p>
     </div>
+
+    <!-- ═══════════════════════════════ USER FLOW / ROLES ══════════════════════════ -->
+    <section class="role-section" id="userflow" style="margin-bottom:0">
+      <div class="role-header" style="background:linear-gradient(90deg,#1a1a1a 0,#2d2d2d 100%);color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:24px">
+        <div class="role-dot" style="background:#fff;opacity:.6"></div>
+        <h2 style="color:#fff">Роли и User Flow</h2>
+        <span class="role-path" style="background:rgba(255,255,255,.1);color:#fff">Эталонные сценарии · v1.0 · 2026-03-10</span>
+      </div>
+
+      <!-- OVERVIEW GRID -->
+      <div class="pages-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:24px">
+        <div class="page-card" style="border-top:3px solid #6366f1">
+          <div style="font-size:20px;margin-bottom:6px">⬡</div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">Администратор</div>
+          <div style="font-size:11px;color:var(--muted)">Полный доступ. Управляет проектами, дизайнерами, клиентами, мастерами, магазинами. Видит сырые данные.</div>
+          <div style="margin-top:8px"><span class="field-tag highlight">/admin/*</span></div>
+        </div>
+        <div class="page-card" style="border-top:3px solid #8b5cf6">
+          <div style="font-size:20px;margin-bottom:6px">✏</div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">Дизайнер</div>
+          <div style="font-size:11px;color:var(--muted)">Ведёт проекты клиентов. Назначает мастеров, управляет материалами, документами, этапами роудмэпа.</div>
+          <div style="margin-top:8px"><span class="field-tag" style="background:#ede9ff;color:#6d28d9;border-color:#c4b5fd">/designer/*</span> <span class="field-tag red">❌ не реализован</span></div>
+        </div>
+        <div class="page-card" style="border-top:3px solid #059669">
+          <div style="font-size:20px;margin-bottom:6px">◯</div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">Клиент</div>
+          <div style="font-size:11px;color:var(--muted)">Видит только свой проект. Заполняет бриф, следит за прогрессом, выбирает материалы, принимает работы.</div>
+          <div style="margin-top:8px"><span class="field-tag green">/client/[slug]</span></div>
+        </div>
+        <div class="page-card" style="border-top:3px solid #d97706">
+          <div style="font-size:20px;margin-bottom:6px">🔨</div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">Мастер</div>
+          <div style="font-size:11px;color:var(--muted)">Исполнитель. Получает задания, переключает статусы, ждёт подтверждения клиента. Видит финансы.</div>
+          <div style="margin-top:8px"><span class="field-tag amber">/contractor/[id]</span></div>
+        </div>
+        <div class="page-card" style="border-top:3px solid #0ea5e9">
+          <div style="font-size:20px;margin-bottom:6px">🏪</div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">Магазин</div>
+          <div style="font-size:11px;color:var(--muted)">Поставщик материалов. Вход по уникальной ссылке. Управляет товарами, видит заказы и статистику.</div>
+          <div style="margin-top:8px"><span class="field-tag" style="background:#e0f2fe;color:#0369a1;border-color:#7dd3fc">/seller/[slug]</span> <span class="field-tag red">❌ не реализован</span></div>
+        </div>
+      </div>
+
+      <!-- ROLE 1: ADMIN -->
+      <div class="page-card full" id="uf-admin" style="margin-bottom:16px;border-left:4px solid #6366f1">
+        <div class="page-card-header">
+          <div class="page-card-title">⬡ Роль 1: Администратор — полный доступ к системе</div>
+          <span class="field-tag highlight">реализован ✅</span>
+        </div>
+        <table class="info-table">
+          <thead><tr><th>#</th><th>Сценарий</th><th>Действие</th><th>Результат</th><th>Статус</th></tr></thead>
+          <tbody>
+            <tr><td>1.1</td><td>Вход и дашборд</td><td>Авторизуется в системе</td><td>Видит дашборд: проекты по статусам, количество пользователей, последние действия</td><td><span class="field-tag green">✅ есть</span></td></tr>
+            <tr><td>1.2</td><td>Управление пользователями</td><td>Переходит в раздел пользователей. Вкладки: Клиенты, Дизайнеры, Мастера, Магазины</td><td>Создаёт, редактирует, блокирует, удаляет. Смотрит историю действий</td><td><span class="field-tag amber">⚠️ частично</span></td></tr>
+            <tr><td>1.3</td><td>Управление проектами</td><td>Создаёт проект: выбирает клиента, назначает дизайнера, адрес, дедлайн</td><td>Дизайнер получает уведомление. Может перекинуть проект другому дизайнеру</td><td><span class="field-tag amber">⚠️ designer_id отсутствует</span></td></tr>
+            <tr><td>1.4</td><td>Управление мастерами</td><td>Видит анкеты на модерации. Проверяет документы, нажимает «Одобрить»</td><td>Мастер получает доступ в ЛК и появляется в списке для назначения</td><td><span class="field-tag green">✅ есть</span></td></tr>
+            <tr><td>1.5</td><td>Управление магазинами</td><td>Видит заявки, проверяет юрдокументы, нажимает «Подтвердить»</td><td>Магазин получает уникальный URL для входа в ЛК</td><td><span class="field-tag amber">⚠️ URL-вход не реализован</span></td></tr>
+            <tr><td>1.6</td><td>База данных / Логи</td><td>Переходит в раздел «Логи», видит сырые таблицы, выгружает Excel</td><td>Аудит-лог всех действий, прямые запросы</td><td><span class="field-tag red">❌ страница отсутствует</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ROLE 2: DESIGNER -->
+      <div class="page-card full" id="uf-designer" style="margin-bottom:16px;border-left:4px solid #8b5cf6">
+        <div class="page-card-header">
+          <div class="page-card-title">✏ Роль 2: Дизайнер — управление проектами, клиентами, заданиями</div>
+          <span class="field-tag red">❌ ЛК не реализован</span>
+        </div>
+        <div style="font-size:12px;color:#6d28d9;background:#ede9ff;border-radius:8px;padding:10px 14px;margin-bottom:12px">
+          <strong>Архитектурное требование:</strong> нужны отдельные аккаунты дизайнеров (таблица <code>designer_users</code> или расширение <code>users</code> с ролью). Каждый дизайнер видит только свои проекты. <code>projects.designer_id</code> — обязательное поле.
+        </div>
+        <table class="info-table">
+          <thead><tr><th>#</th><th>Сценарий</th><th>Действие</th><th>Результат</th><th>Статус</th></tr></thead>
+          <tbody>
+            <tr><td>2.1</td><td>Вход в рабочий кабинет</td><td>Авторизуется по логину/паролю</td><td>Видит «Мои проекты» (где назначен) и «Приглашения» (от admin)</td><td><span class="field-tag red">❌ нет /designer/login</span></td></tr>
+            <tr><td>2.2А</td><td>Клиент сам пришёл (лид)</td><td>Дизайнер отправляет клиенту публичную ссылку на бриф</td><td>Клиент заполняет бриф → создаётся карточка клиента + проект-черновик. Дизайнер получает уведомление «Новый лид»</td><td><span class="field-tag red">❌ нет /start (публичный бриф)</span></td></tr>
+            <tr><td>2.2Б</td><td>Заводит клиента вручную</td><td>«Новый клиент» → данные → «Создать проект»</td><td>Проект создан, дизайнер назначен автоматически</td><td><span class="field-tag amber">⚠️ частично через admin</span></td></tr>
+            <tr><td>2.2В</td><td>Назначен админом</td><td>Видит в списке новый проект с пометкой «Назначен админом»</td><td>Заходит в проект, начинает работу</td><td><span class="field-tag red">❌ нет поля designer_id</span></td></tr>
+            <tr><td>2.3</td><td>Ведение роудмэпа</td><td>Переключает этапы (14 этапов), загружает файлы</td><td>Клиент видит обновлённый прогресс в своём ЛК</td><td><span class="field-tag green">✅ реализован через /admin</span></td></tr>
+            <tr><td>2.4</td><td>Назначение мастеров</td><td>Создаёт задание, выбирает мастера, указывает сроки и материалы</td><td>Мастер получает уведомление. Дизайнер видит статусы</td><td><span class="field-tag green">✅ задания реализованы</span></td></tr>
+            <tr><td>2.5</td><td>Документооборот</td><td>Выбирает шаблон договора, заполняет, формирует PDF, отправляет клиенту</td><td>Клиент видит документ в своём ЛК, может скачать</td><td><span class="field-tag amber">⚠️ частично</span></td></tr>
+            <tr><td>2.6</td><td>Завершение проекта</td><td>«Завершить проект» → система предлагает финальный альбом и акт</td><td>Клиент получает уведомление о завершении</td><td><span class="field-tag amber">⚠️ статусы есть, финальный поток нет</span></td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:12px;font-size:11px;color:var(--muted)">
+          <strong>Нужно реализовать:</strong>
+          <span class="field-tag red">designer_id в projects</span>
+          <span class="field-tag red">таблица designer_accounts (логин/пароль)</span>
+          <span class="field-tag red">/designer/* страницы</span>
+          <span class="field-tag red">/start публичный бриф</span>
+          <span class="field-tag red">уведомление «Новый лид»</span>
+        </div>
+      </div>
+
+      <!-- ROLE 3: CLIENT -->
+      <div class="page-card full" id="uf-client" style="margin-bottom:16px;border-left:4px solid #059669">
+        <div class="page-card-header">
+          <div class="page-card-title">◯ Роль 3: Клиент — прозрачный ремонт под ключ</div>
+          <span class="field-tag amber">⚠️ частично реализован</span>
+        </div>
+        <table class="info-table">
+          <thead><tr><th>#</th><th>Сценарий</th><th>Действие</th><th>Результат</th><th>Статус</th></tr></thead>
+          <tbody>
+            <tr><td>3.1А</td><td>Вход по ссылке от дизайнера</td><td>Получает ссылку, видит «Вас пригласили в проект», заполняет имя/телефон/пароль</td><td>Попадает в ЛК — проект уже есть</td><td><span class="field-tag green">✅ есть</span></td></tr>
+            <tr><td>3.1Б</td><td>Саморегистрация</td><td>Заходит на /start, заполняет бриф, отправляет</td><td>Создаётся лид, уведомляется дизайнер. Клиент в ЛК: «Ожидание дизайнера»</td><td><span class="field-tag red">❌ нет /start страницы</span></td></tr>
+            <tr><td>3.2</td><td>Смарт-бриф</td><td>В ЛК текущий этап — «Смарт-бриф». Отвечает на вопросы</td><td>Дизайнер получает ответы</td><td><span class="field-tag green">✅ есть</span></td></tr>
+            <tr><td>3.3</td><td>Просмотр прогресса</td><td>Видит все этапы роудмэпа. Завершённые — галочки, текущий — подсвечен</td><td>Может скачать файлы с каждого этапа</td><td><span class="field-tag green">✅ есть</span></td></tr>
+            <tr><td>3.4</td><td>Доска материалов</td><td>Выбирает комнату → открывается каталог магазинов → добавляет товар</td><td>Товар появляется в комнате с ценой и магазином. Блок «Нужен мастер?» → список мастеров</td><td><span class="field-tag amber">⚠️ компонент есть, каталог не привязан</span></td></tr>
+            <tr><td>3.5</td><td>Контроль работ мастера</td><td>Мастер выехал / на месте / выполнено → «Принять работу?»</td><td>Принять («ОК») или «Есть замечания» → форма → задание возвращается мастеру. Оценка + отзыв</td><td><span class="field-tag red">❌ приём работ не реализован</span></td></tr>
+            <tr><td>3.6</td><td>Связь с дизайнером</td><td>Кнопка «Связаться». Варианты: выбрать слот в календаре или «Срочный вопрос»</td><td>Дизайнер видит заявку / получает уведомление</td><td><span class="field-tag red">❌ нет</span></td></tr>
+            <tr><td>3.7</td><td>Документы</td><td>Вкладка «Документы по проекту». Скачать договор, акты, счета. Кнопка «Подписать»</td><td>Подписанный документ фиксируется в системе</td><td><span class="field-tag amber">⚠️ частично</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ROLE 4: MASTER -->
+      <div class="page-card full" id="uf-master" style="margin-bottom:16px;border-left:4px solid #d97706">
+        <div class="page-card-header">
+          <div class="page-card-title">🔨 Роль 4: Мастер (Исполнитель) — работа с заданиями</div>
+          <span class="field-tag amber">⚠️ частично реализован</span>
+        </div>
+        <table class="info-table">
+          <thead><tr><th>#</th><th>Сценарий</th><th>Действие</th><th>Результат</th><th>Статус</th></tr></thead>
+          <tbody>
+            <tr><td>4.1</td><td>Регистрация и модерация</td><td>Заполняет анкету: ФИО, фото, специализация, портфолио, сканы документов</td><td>Отправляет на модерацию → Админ Одобряет → Мастер получает доступ в ЛК</td><td><span class="field-tag green">✅ /contractor/apply</span></td></tr>
+            <tr><td>4.2</td><td>Личный кабинет</td><td>Вход в ЛК</td><td>Видит «Мои задания» (текущие/выполненные/отменённые), рейтинг, профиль</td><td><span class="field-tag green">✅ /contractor/[id]</span></td></tr>
+            <tr><td>4.3</td><td>Получение задания</td><td>Приходит уведомление о новом задании. Видит детали, сроки, контакт дизайнера</td><td>Принимает задание</td><td><span class="field-tag amber">⚠️ уведомления только внутри системы</span></td></tr>
+            <tr><td>4.4</td><td>Статусы выполнения</td><td>Принять → Выехал → Прибыл → Начал → Выполнено</td><td>Клиент видит статус в реальном времени. После «Выполнено» — уведомление клиенту «Принять работу?»</td><td><span class="field-tag amber">⚠️ статусы есть, уведомление клиенту нет</span></td></tr>
+            <tr><td>4.5</td><td>Замечания клиента</td><td>Клиент не принял → видит комментарий → исправляет → снова «Выполнено»</td><td>Цикл замечаний до принятия</td><td><span class="field-tag red">❌ не реализован</span></td></tr>
+            <tr><td>4.6</td><td>Финансы</td><td>Раздел «Заработано»: история выплат, баланс, кнопка «Вывести средства»</td><td>Запрос на выплату отправляется администратору</td><td><span class="field-tag red">❌ не реализован</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ROLE 5: SHOP -->
+      <div class="page-card full" id="uf-shop" style="margin-bottom:16px;border-left:4px solid #0ea5e9">
+        <div class="page-card-header">
+          <div class="page-card-title">🏪 Роль 5: Магазин (Поставщик) — продажа товаров</div>
+          <span class="field-tag red">❌ ЛК не реализован</span>
+        </div>
+        <div style="font-size:12px;color:#0369a1;background:#e0f2fe;border-radius:8px;padding:10px 14px;margin-bottom:12px">
+          <strong>Особенность входа:</strong> Магазин не имеет отдельного логина/пароля. Администратор или дизайнер регистрирует магазин в системе → автоматически формируется уникальный <code>public_slug</code> → это и есть ссылка для входа: <code>/seller/[slug]</code>.
+        </div>
+        <table class="info-table">
+          <thead><tr><th>#</th><th>Сценарий</th><th>Действие</th><th>Результат</th><th>Статус</th></tr></thead>
+          <tbody>
+            <tr><td>5.1</td><td>Регистрация и доступ</td><td>Оставляет заявку или дизайнер добавляет вручную. Админ выдаёт доступ</td><td>Магазин получает уникальный URL /seller/[slug] для входа в ЛК</td><td><span class="field-tag amber">⚠️ карточка есть, URL-вход нет</span></td></tr>
+            <tr><td>5.2</td><td>Управление товарами</td><td>Загружает товары (название, категория, цена, фото), выгружает прайс Excel</td><td>Товары становятся доступны в каталоге для дизайнеров и клиентов</td><td><span class="field-tag red">❌ нет таблицы products</span></td></tr>
+            <tr><td>5.3</td><td>Статистика спроса</td><td>Видит: «Ваши товары добавлены в проекты N раз», популярные товары</td><td>Аналитика для магазина</td><td><span class="field-tag red">❌ не реализован</span></td></tr>
+            <tr><td>5.4</td><td>Заказы</td><td>Клиент нажал «Купить» / дизайнер подтвердил закупку → магазин получает уведомление</td><td>Видит контакт для отгрузки, отмечает «Заказ отгружен»</td><td><span class="field-tag red">❌ не реализован</span></td></tr>
+            <tr><td>5.5</td><td>Скидки и отзывы</td><td>Предлагает скидку на конкретный товар. Видит отзывы от клиентов</td><td>Скидка отображается в каталоге</td><td><span class="field-tag red">❌ не реализован</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PRIORITY ROADMAP -->
+      <div class="page-card full" style="background:#1a1a1a;color:#fff;border:none">
+        <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#666;margin-bottom:16px">Приоритеты реализации</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+          <div style="background:#2a2a2a;border-radius:10px;padding:14px">
+            <div style="font-size:10px;color:#6366f1;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Блок 2 — Сейчас</div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px">Архитектура Дизайнера</div>
+            <div style="font-size:11px;color:#888;line-height:1.6">designer_id в projects<br>Таблица designer_accounts<br>Роль в JWT<br>/designer/* маршруты<br>ЛК: мои проекты, клиенты</div>
+          </div>
+          <div style="background:#2a2a2a;border-radius:10px;padding:14px">
+            <div style="font-size:10px;color:#059669;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Блок 1 — Следующий</div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px">Клиентский ЛК</div>
+            <div style="font-size:11px;color:#888;line-height:1.6">/start публичный бриф<br>Доска материалов<br>Приём работ мастера<br>Связь с дизайнером</div>
+          </div>
+          <div style="background:#2a2a2a;border-radius:10px;padding:14px">
+            <div style="font-size:10px;color:#d97706;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Блок 3</div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px">Мастер (доделать)</div>
+            <div style="font-size:11px;color:#888;line-height:1.6">Приём работ клиентом<br>Цикл замечаний<br>Финансовый блок<br>Выплаты</div>
+          </div>
+          <div style="background:#2a2a2a;border-radius:10px;padding:14px">
+            <div style="font-size:10px;color:#0ea5e9;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Блок 4</div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px">Магазин</div>
+            <div style="font-size:11px;color:#888;line-height:1.6">/seller/[slug] вход<br>Товары (продукты)<br>Заказы и уведомления<br>Статистика спроса</div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <div class="divider"></div>
 
     <!-- ═══════════════════════════════════════ ADMIN ═══════════════════════════════ -->
     <section class="role-section" id="admin">

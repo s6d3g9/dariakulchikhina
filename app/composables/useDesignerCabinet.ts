@@ -88,6 +88,7 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
       { key: 'documents',     icon: '📎', label: 'Документы' },
       { key: 'projects',      icon: '◒', label: 'Проекты' },
       { key: 'profile',       icon: '◓', label: 'Профиль' },
+      { key: 'account',       icon: '🔑', label: 'Доступ (логин)' },
     ]
     return items
   })

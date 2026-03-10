@@ -6,10 +6,11 @@
  * stay synchronous — no await needed in the 90+ handler files that call them.
  * The produced tokens are also verifiable by jose (async).
  *
- * Three session types:
- *   daria_admin_session      — admin / designer  { sub:'admin',  role:'admin',      userId }
- *   daria_client_session     — client/customer   { sub:'client', role:'client',      projectSlug }
- *   daria_contractor_session — contractor        { sub:'contractor', role:'contractor', contractorId }
+ * Four session types:
+ *   daria_admin_session      — admin              { sub:'admin',      role:'admin',      userId }
+ *   daria_client_session     — client/customer    { sub:'client',     role:'client',     projectSlug }
+ *   daria_contractor_session — contractor         { sub:'contractor', role:'contractor', contractorId }
+ *   daria_designer_session   — designer LK        { sub:'designer',   role:'designer',   designerId }
  */
 import type { H3Event } from 'h3'
 import bcrypt from 'bcryptjs'
@@ -18,6 +19,7 @@ import { signJwtSync, verifyJwtSync } from './jwt'
 export const ADMIN_COOKIE      = 'daria_admin_session'
 export const CLIENT_COOKIE     = 'daria_client_session'
 export const CONTRACTOR_COOKIE = 'daria_contractor_session'
+export const DESIGNER_COOKIE   = 'daria_designer_session'
 
 const SESSION_MAX_AGE_SEC = 30 * 24 * 60 * 60 // 30 days
 
@@ -163,6 +165,35 @@ export function requireAdminOrContractor(event: H3Event, contractorId: number) {
   throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 }
 
+// --- Designer session ---
+
+export function setDesignerSession(event: H3Event, designerId: number) {
+  const token = signJwtSync({ sub: 'designer', role: 'designer', designerId }, SESSION_MAX_AGE_SEC)
+  _writeCookie(event, DESIGNER_COOKIE, token, {
+    httpOnly: true, sameSite: 'lax',
+    secure: _isSecure(event),
+    maxAge: SESSION_MAX_AGE_SEC, path: '/'
+  })
+}
+
+export function getDesignerSession(event: H3Event): number | null {
+  const raw = _readCookie(event, DESIGNER_COOKIE)
+  if (!raw) return null
+  const data = verifyJwtSync<{ designerId?: unknown; role?: string }>(raw)
+  if (!data || data.role !== 'designer' || typeof data.designerId !== 'number') return null
+  return data.designerId
+}
+
+export function clearDesignerSession(event: H3Event) {
+  _deleteCookie(event, DESIGNER_COOKIE)
+}
+
+export function requireDesigner(event: H3Event): number {
+  const id = getDesignerSession(event)
+  if (!id) throw createError({ statusCode: 401, statusMessage: 'Unauthorized', message: 'Требуется авторизация дизайнера' })
+  return id
+}
+
 /** Require admin OR an authenticated client for this project slug */
 export function requireAdminOrClient(event: H3Event, projectSlug: string) {
   const admin = getAdminSession(event)
@@ -193,6 +224,8 @@ export function requireAnySession(event: H3Event) {
   if (slug) return { role: 'client' as const, projectSlug: slug }
   const cid = getContractorSession(event)
   if (cid) return { role: 'contractor' as const, contractorId: cid }
+  const did = getDesignerSession(event)
+  if (did) return { role: 'designer' as const, designerId: did }
   throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
 }
 

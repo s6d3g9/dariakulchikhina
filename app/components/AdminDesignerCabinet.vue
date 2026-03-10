@@ -854,6 +854,70 @@
             </form>
           </template>
 
+          <!-- ═══════════════ ACCOUNT (ЛОГИН) ═══════════════ -->
+          <template v-if="section === 'account'">
+            <div class="u-form-section">
+              <h2 class="u-section-title">Доступ в личный кабинет</h2>
+              <p class="u-section-desc">
+                Задайте email и пароль для входа дизайнера по адресу
+                <NuxtLink to="/designer/login" target="_blank" class="u-link">/designer/login</NuxtLink>.
+              </p>
+
+              <!-- Текущий аккаунт -->
+              <div v-if="accountData" class="account-info glass-surface">
+                <div class="account-info-row">
+                  <span class="account-info-label">Текущий email:</span>
+                  <span class="account-info-value">{{ accountData.email }}</span>
+                </div>
+                <div class="account-info-row">
+                  <span class="account-info-label">Создан:</span>
+                  <span class="account-info-value">{{ formatAccountDate(accountData.createdAt) }}</span>
+                </div>
+                <div v-if="accountData.updatedAt !== accountData.createdAt" class="account-info-row">
+                  <span class="account-info-label">Обновлён:</span>
+                  <span class="account-info-value">{{ formatAccountDate(accountData.updatedAt) }}</span>
+                </div>
+              </div>
+              <div v-else-if="!accountPending" class="account-no-access glass-surface">
+                ⚠ Логин не создан. Дизайнер не может войти в кабинет.
+              </div>
+
+              <!-- Форма -->
+              <form class="u-form" @submit.prevent="saveAccount">
+                <div class="u-form-cols">
+                  <div class="u-field">
+                    <label class="u-label">Email</label>
+                    <input
+                      v-model="accountForm.email"
+                      type="email"
+                      class="glass-input"
+                      placeholder="email@example.com"
+                      required
+                    />
+                  </div>
+                  <div class="u-field">
+                    <label class="u-label">{{ accountData ? 'Новый пароль' : 'Пароль' }}</label>
+                    <input
+                      v-model="accountForm.password"
+                      type="password"
+                      class="glass-input"
+                      :placeholder="accountData ? 'Оставьте пустым — не менять' : 'Минимум 6 символов'"
+                      :required="!accountData"
+                      autocomplete="new-password"
+                    />
+                  </div>
+                </div>
+                <p v-if="accountError" class="u-err">{{ accountError }}</p>
+                <div class="u-form-foot">
+                  <button type="submit" class="a-btn-save" :disabled="accountSaving">
+                    {{ accountSaving ? 'Сохранение…' : accountData ? 'Обновить доступ' : 'Создать доступ' }}
+                  </button>
+                  <span v-if="accountSuccess" class="u-save-msg">{{ accountSuccess }}</span>
+                </div>
+              </form>
+            </div>
+          </template>
+
         </div>
       </main>
     </div>
@@ -965,6 +1029,47 @@ const newDesignerDocNotes = ref('')
 const designerDocSearch = ref('')
 const designerDocFilter = ref('')
 const designerDocSort = ref<'new' | 'old'>('new')
+
+// ── Account (login access) ──
+const { data: accountData, pending: accountPending, refresh: refreshAccount } = await useFetch<any>(
+  () => `/api/designers/${props.designerId}/account`,
+  { default: () => null, watch: [designerIdRef] },
+)
+const accountForm = reactive({ email: '', password: '' })
+const accountSaving = ref(false)
+const accountError = ref('')
+const accountSuccess = ref('')
+
+watch(accountData, (d) => {
+  if (d?.email) accountForm.email = d.email
+}, { immediate: true })
+
+function formatAccountDate(val: string) {
+  if (!val) return ''
+  return new Date(val).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+async function saveAccount() {
+  accountError.value = ''
+  accountSuccess.value = ''
+  if (!accountForm.email) { accountError.value = 'Введите email'; return }
+  if (!accountData.value && !accountForm.password) { accountError.value = 'Введите пароль'; return }
+  if (accountForm.password && accountForm.password.length < 6) { accountError.value = 'Пароль — минимум 6 символов'; return }
+  accountSaving.value = true
+  try {
+    const body: any = { email: accountForm.email }
+    if (accountForm.password) body.password = accountForm.password
+    await $fetch(`/api/designers/${props.designerId}/account`, { method: 'POST', body })
+    accountForm.password = ''
+    await refreshAccount()
+    accountSuccess.value = accountData.value ? 'Доступ обновлён' : 'Доступ создан'
+    setTimeout(() => { accountSuccess.value = '' }, 3000)
+  } catch (e: any) {
+    accountError.value = e.data?.message || 'Ошибка сохранения'
+  } finally {
+    accountSaving.value = false
+  }
+}
 
 const filteredDesignerDocs = computed(() => {
   const rows = designerDocs.value || []
@@ -1770,4 +1875,52 @@ async function saveDesignerProjectEdits() {
 .reg-year { width: 90px; height: 32px; font-size: .78rem; flex-shrink: 0; }
 .reg-del { flex-shrink: 0; }
 .reg-ta { resize: vertical; min-height: 50px; font-size: .76rem; }
+
+/* ══ ACCOUNT ══ */
+.account-info {
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.account-info-row {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+.account-info-label {
+  color: var(--glass-label, #888);
+  min-width: 110px;
+  flex-shrink: 0;
+}
+.account-info-value {
+  color: var(--glass-text, #111);
+  font-weight: 500;
+}
+.account-no-access {
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: var(--glass-warn, #d97706);
+  background: color-mix(in srgb, var(--glass-warn, #d97706) 10%, transparent);
+}
+.u-link {
+  color: var(--glass-accent, #6366f1);
+  text-decoration: none;
+}
+.u-link:hover { text-decoration: underline; }
+.u-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: var(--glass-text, #111);
+}
+.u-section-desc {
+  font-size: 0.875rem;
+  color: var(--glass-label, #888);
+  margin: 0 0 1rem;
+}
 </style>

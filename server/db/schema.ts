@@ -283,11 +283,27 @@ export const designerProjectContractors = pgTable('designer_project_contractors'
   role: text('role'),
 }, (t) => [unique('designer_project_contractor_uniq').on(t.designerProjectId, t.contractorId)])
 
+// ── Аккаунты дизайнеров (для входа в личный кабинет) ───────────────────────
+export const designerAccounts = pgTable('designer_accounts', {
+  id: serial('id').primaryKey(),
+  /** Один аккаунт на одного дизайнера */
+  designerId: integer('designer_id').notNull().unique().references(() => designers.id, { onDelete: 'cascade' }),
+  email: text('email').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+})
+
 // ── Relations ──
+
+export const designerAccountsRelations = relations(designerAccounts, ({ one }) => ({
+  designer: one(designers, { fields: [designerAccounts.designerId], references: [designers.id] }),
+}))
 
 export const designersRelations = relations(designers, ({ one, many }) => ({
   user: one(users, { fields: [designers.userId], references: [users.id] }),
   designerProjects: many(designerProjects),
+  account: one(designerAccounts, { fields: [designers.id], references: [designerAccounts.designerId] }),
 }))
 
 export const designerProjectsRelations = relations(designerProjects, ({ one, many }) => ({
