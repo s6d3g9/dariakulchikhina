@@ -2,7 +2,7 @@
   <UApp>
     <NuxtLayout>
       <NuxtPage
-        keepalive
+        :keepalive="{ max: 10 }"
         :transition="pageTransition"
       />
     </NuxtLayout>
