@@ -27,6 +27,7 @@ const GALLERY_ITEMS = [
 
 const adminNav = useAdminNav()
 onMounted(() => adminNav.ensureSection('gallery'))
+onActivated(() => adminNav.ensureSection('gallery'))
 
 const activeCategory = computed(() => adminNav.contentSpec.value.galleryCategory || 'interiors')
 </script>

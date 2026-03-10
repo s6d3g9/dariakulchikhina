@@ -168,6 +168,7 @@ definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false }
 
 const adminNav = useAdminNav()
 onMounted(() => adminNav.ensureSection('contractors'))
+onActivated(() => adminNav.ensureSection('contractors'))
 
 // Sync from global nav contentSpec
 watch(() => adminNav.contentSpec.value.contractorId, (id) => {

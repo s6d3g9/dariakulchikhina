@@ -13,11 +13,27 @@
 const { initTheme } = useThemeToggle()
 const { tokens } = useDesignSystem()
 
-const pageTransition = computed(() => {
+const transitionEffect = computed(() => {
   const effect = tokens.value.archPageEnter ?? 'fade'
-  const dur = tokens.value.pageTransitDuration ?? 280
+  // "slide" is a preset-level shorthand; map it to an existing CSS transition.
+  if (effect === 'slide') return 'slide-r'
+  return effect
+})
+
+const transitionDuration = computed(() => {
+  const raw = tokens.value.pageTransitDuration ?? 280
+  return Math.min(800, Math.max(80, raw))
+})
+
+const pageTransition = computed(() => {
+  const effect = transitionEffect.value
   if (effect === 'none') return false
-  return { name: `pt-${effect}`, mode: 'out-in', css: true, duration: dur }
+  return { name: `pt-${effect}`, mode: 'out-in', css: true, duration: transitionDuration.value }
+})
+
+watchEffect(() => {
+  if (!import.meta.client) return
+  document.documentElement.style.setProperty('--pt-dur', `${transitionDuration.value}ms`)
 })
 
 onMounted(() => {

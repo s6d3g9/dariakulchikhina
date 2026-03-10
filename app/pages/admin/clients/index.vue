@@ -156,6 +156,7 @@ definePageMeta({ layout: 'admin', middleware: 'admin', pageTransition: false })
 
 const adminNav = useAdminNav()
 onMounted(() => adminNav.ensureSection('clients'))
+onActivated(() => adminNav.ensureSection('clients'))
 
 // Sync selected client from global nav contentSpec
 watch(() => adminNav.contentSpec.value.clientId, (id) => {
