@@ -951,6 +951,25 @@
                       </div>
                     </div>
                   </div>
+                  <div class="dp-col-label" style="margin-top:14px">Пресеты карточек</div>
+                  <div class="dp-card-presets-grid">
+                    <button
+                      v-for="preset in contentCardPresets"
+                      :key="`content-card-${preset.id}`"
+                      type="button"
+                      class="dp-card-preset"
+                      :class="{ 'dp-card-preset--active': activeContentCardPresetId === preset.id }"
+                      @click="applyContentCardPreset(preset.id)"
+                    >
+                      <span class="dp-card-preset-preview" :class="`dp-card-preset-preview--${preset.id}`">
+                        <span class="dp-card-preset-preview-line dp-card-preset-preview-line--lg" />
+                        <span class="dp-card-preset-preview-line" />
+                        <span class="dp-card-preset-preview-line dp-card-preset-preview-line--sm" />
+                      </span>
+                      <span class="dp-card-preset-name">{{ preset.label }}</span>
+                      <span class="dp-card-preset-desc">{{ preset.description }}</span>
+                    </button>
+                  </div>
                 </div>
                 <div class="dp-col">
                   <div class="dp-col-label">Генератор меню</div>
@@ -2076,6 +2095,12 @@ const contentLayoutPresets = [
   { id: 'dashboard' as const, label: 'дашборд', description: 'Более плотная сетка с компактными аналитическими карточками.' },
   { id: 'showcase' as const, label: 'витрина', description: 'Крупные hero-карточки и широкий межсекционный ритм.' },
 ]
+const contentCardPresets = [
+  { id: 'flat' as const, label: 'плоские', description: 'Строгие карточки без лишнего объёма.' },
+  { id: 'soft' as const, label: 'мягкие', description: 'Скруглённые блоки с мягкой тенью.' },
+  { id: 'glass' as const, label: 'glass', description: 'Полупрозрачные карточки с живой кромкой.' },
+  { id: 'brutal' as const, label: 'brutal', description: 'Контрастные панели с жёсткой рамкой.' },
+]
 const contentLayoutRecipes: Record<(typeof contentLayoutPresets)[number]['id'], Partial<DesignTokens>> = {
   balanced: {
     containerWidth: 1180,
@@ -2112,6 +2137,54 @@ const contentLayoutRecipes: Record<(typeof contentLayoutPresets)[number]['id'], 
     archVerticalRhythm: 1.8,
     archSectionStyle: 'striped',
     archCardChrome: 'subtle',
+  },
+}
+const contentCardRecipes: Record<(typeof contentCardPresets)[number]['id'], Partial<DesignTokens>> = {
+  flat: {
+    cardRadius: 0,
+    borderWidth: 1,
+    glassOpacity: 0.96,
+    glassBorderOpacity: 0.08,
+    shadowOffsetY: 0,
+    shadowBlurRadius: 0,
+    shadowOpacity: 0,
+    archCardChrome: 'visible',
+    cardHoverAnim: 'border',
+  },
+  soft: {
+    cardRadius: 18,
+    borderWidth: 0,
+    glassOpacity: 0.84,
+    glassBorderOpacity: 0.03,
+    shadowOffsetY: 10,
+    shadowBlurRadius: 24,
+    shadowOpacity: 0.1,
+    archCardChrome: 'subtle',
+    cardHoverAnim: 'lift',
+  },
+  glass: {
+    cardRadius: 16,
+    borderWidth: 1,
+    glassBlur: 20,
+    glassOpacity: 0.38,
+    glassBorderOpacity: 0.14,
+    shadowOffsetY: 8,
+    shadowBlurRadius: 28,
+    shadowOpacity: 0.08,
+    archCardChrome: 'subtle',
+    cardHoverAnim: 'reveal',
+  },
+  brutal: {
+    cardRadius: 0,
+    borderWidth: 2,
+    glassBlur: 0,
+    glassOpacity: 0.98,
+    glassBorderOpacity: 0.22,
+    shadowOffsetY: 0,
+    shadowBlurRadius: 0,
+    shadowOpacity: 0,
+    archCardChrome: 'visible',
+    cardHoverAnim: 'border',
   },
 }
 const navLayoutPresets = [
@@ -2244,6 +2317,7 @@ const currentScaleLabel = computed(() =>
 )
 
 const activeContentLayoutId = ref<(typeof contentLayoutPresets)[number]['id']>('balanced')
+const activeContentCardPresetId = ref<(typeof contentCardPresets)[number]['id']>('flat')
 
 const activeContentLayout = computed(() =>
   contentLayoutPresets.find(preset => preset.id === activeContentLayoutId.value) || contentLayoutPresets[0]
@@ -2353,6 +2427,15 @@ function generateContentLayout() {
   set('gridColumns', Math.min(12, Math.max(2, tokens.value.gridColumns + (Math.floor(Math.random() * 5) - 2))))
   set('gridGap', Math.min(32, Math.max(8, tokens.value.gridGap + (Math.floor(Math.random() * 5) - 2) * 2)))
   set('archVerticalRhythm', Math.min(2.4, Math.max(0.7, Number(((tokens.value.archVerticalRhythm ?? 1) + (Math.random() * 0.6 - 0.3)).toFixed(1)))))
+}
+
+function applyContentCardPreset(presetId: (typeof contentCardPresets)[number]['id']) {
+  activeContentCardPresetId.value = presetId
+  const recipe = contentCardRecipes[presetId]
+  if (!recipe) return
+  for (const [key, value] of Object.entries(recipe) as Array<[keyof DesignTokens, DesignTokens[keyof DesignTokens]]>) {
+    set(key, value)
+  }
 }
 
 /* ── Section search filter ──────────────────────── */
@@ -3808,6 +3891,87 @@ onBeforeUnmount(() => {
   line-height: 1.45;
   opacity: .68;
 }
+.dp-card-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.dp-card-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(0,0,0,.02);
+  color: var(--glass-text);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+.dp-card-preset:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0,0,0,.14);
+}
+.dp-card-preset--active {
+  background: rgba(0,0,0,.05);
+  border-color: rgba(0,0,0,.18);
+}
+.dp-card-preset-preview {
+  width: 100%;
+  min-height: 74px;
+  padding: 10px;
+  border: 1px solid rgba(0,0,0,.08);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: rgba(255,255,255,.42);
+}
+.dp-card-preset-preview--flat {
+  border-radius: 0;
+  box-shadow: none;
+}
+.dp-card-preset-preview--soft {
+  border-radius: 18px;
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(0,0,0,.08);
+}
+.dp-card-preset-preview--glass {
+  border-radius: 16px;
+  background: rgba(255,255,255,.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(255,255,255,.35);
+}
+.dp-card-preset-preview--brutal {
+  border-radius: 0;
+  border-width: 2px;
+  background: rgba(0,0,0,.08);
+}
+.dp-card-preset-preview-line {
+  display: block;
+  height: 7px;
+  width: 78%;
+  background: rgba(0,0,0,.16);
+}
+.dp-card-preset-preview-line--lg {
+  width: 92%;
+  height: 9px;
+}
+.dp-card-preset-preview-line--sm {
+  width: 54%;
+}
+.dp-card-preset-name {
+  font-size: .64rem;
+  font-weight: 600;
+}
+.dp-card-preset-desc {
+  font-size: .56rem;
+  line-height: 1.4;
+  opacity: .62;
+}
 .dp-arch-nav-preview {
   display: grid;
   gap: 6px;
@@ -3864,6 +4028,8 @@ onBeforeUnmount(() => {
 :global(html.dark) .dp-grid-menu-preview-item,
 :global(html.dark) .dp-content-preview-hero,
 :global(html.dark) .dp-content-preview-card,
+:global(html.dark) .dp-card-preset,
+:global(html.dark) .dp-card-preset-preview,
 :global(html.dark) .dp-arch-nav-preview-item {
   border-color: rgba(255,255,255,.1);
   background: rgba(255,255,255,.03);
@@ -3875,6 +4041,13 @@ onBeforeUnmount(() => {
 :global(html.dark) .dp-content-preview-card--accent {
   background: rgba(255,255,255,.08);
   border-color: rgba(255,255,255,.18);
+}
+:global(html.dark) .dp-card-preset--active {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.18);
+}
+:global(html.dark) .dp-card-preset-preview-line {
+  background: rgba(255,255,255,.18);
 }
 
 /* ── Chips ── */
