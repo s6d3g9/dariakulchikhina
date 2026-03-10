@@ -2,6 +2,17 @@
 # Запускается один раз при создании контейнера
 set -eu
 
+# Для базового alpine-образа ставим Node.js/npm/pnpm при отсутствии
+if ! command -v node >/dev/null 2>&1; then
+  echo "[setup] installing nodejs + npm (alpine apk)..."
+  sudo apk add --no-cache nodejs npm
+fi
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "[setup] installing pnpm..."
+  sudo npm i -g pnpm
+fi
+
 # Восстанавливаем SSH ключ из Codespaces Secret
 if [ -n "${SSH_DEPLOY_KEY:-}" ]; then
   mkdir -p ~/.ssh
