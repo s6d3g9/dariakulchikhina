@@ -983,6 +983,14 @@ const projectRegistryPageMeta: Record<string, { title: string; group: string }> 
   project_managers: { title: 'менеджеры проекта', group: 'субъекты проекта' },
 }
 
+const PROJECT_REGISTRY_NODE_TO_PAGE: Record<string, string> = {
+  reg_clients_: 'project_clients',
+  reg_contractors_: 'project_contractors',
+  reg_designers_: 'project_designers',
+  reg_sellers_: 'project_sellers',
+  reg_managers_: 'project_managers',
+}
+
 const defaultPhasePage = computed(() => {
   const pages = project.value?.pages || []
   const firstVisiblePhasePage = getAdminNavGroups()
@@ -1001,70 +1009,6 @@ function selectAdminPage(slug: string) {
   activePage.value = slug
   scrollMobileBarToActive()
 }
-
-// Когда глобальный nav выбирает секцию проекта — синхронизируем activePage.
-// immediate: true — срабатывает сразу при монтировании (если секция уже выбрана)
-watch(
-  () => adminNav.contentSpec.value.projectSection,
-  (section) => {
-    if (!section) return
-    const mapped = PRJ_SECTION_TO_SLUG[section]
-    if (mapped && mapped !== activePage.value) {
-      selectAdminPage(mapped)
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  () => ({
-    nodeId: adminNav.currentNode.value.nodeId,
-    nodeType: adminNav.currentNode.value.nodeType,
-    section: adminNav.contentSpec.value.section,
-    projectSlug: adminNav.contentSpec.value.projectSlug,
-    projectSection: adminNav.contentSpec.value.projectSection,
-  }),
-  (state) => {
-    if (state.projectSlug && state.projectSlug !== slug.value) {
-      return
-    }
-    if (state.projectSection) {
-      return
-    }
-    if (state.nodeType === 'project_root') {
-      if (activePage.value !== 'overview') {
-        selectAdminPage('overview')
-      }
-      return
-    }
-    if (state.nodeId.startsWith('reg_phases_')) {
-      if (activePage.value === 'overview' || projectRegistryPageMeta[activePage.value]) {
-        selectAdminPage(defaultPhasePage.value)
-      }
-      return
-    }
-    if (state.nodeId.startsWith('reg_clients_')) {
-      if (activePage.value !== 'project_clients') selectAdminPage('project_clients')
-      return
-    }
-    if (state.nodeId.startsWith('reg_contractors_')) {
-      if (activePage.value !== 'project_contractors') selectAdminPage('project_contractors')
-      return
-    }
-    if (state.nodeId.startsWith('reg_designers_')) {
-      if (activePage.value !== 'project_designers') selectAdminPage('project_designers')
-      return
-    }
-    if (state.nodeId.startsWith('reg_sellers_')) {
-      if (activePage.value !== 'project_sellers') selectAdminPage('project_sellers')
-      return
-    }
-    if (state.nodeId.startsWith('reg_managers_')) {
-      if (activePage.value !== 'project_managers') selectAdminPage('project_managers')
-    }
-  },
-  { immediate: true },
-)
 
 function selectClientPage(slug: string) {
   clientActivePage.value = slug
@@ -1169,6 +1113,49 @@ const availablePages = computed(() => {
     return pages.includes(p.slug)
   })
 })
+
+const resolvedProjectPageFromNav = computed(() => {
+  const spec = adminNav.contentSpec.value
+  const node = adminNav.currentNode.value
+
+  if (spec.projectSlug && spec.projectSlug !== slug.value) {
+    return null
+  }
+
+  if (spec.projectSection) {
+    return PRJ_SECTION_TO_SLUG[spec.projectSection] || null
+  }
+
+  for (const [prefix, page] of Object.entries(PROJECT_REGISTRY_NODE_TO_PAGE)) {
+    if (node.nodeId.startsWith(prefix)) {
+      return page
+    }
+  }
+
+  if (node.nodeId.startsWith('reg_phases_')) {
+    const currentPage = activePage.value
+    const normalizedCurrentPage = currentPage === 'brief' ? 'self_profile' : currentPage
+    const currentPageIsVisiblePhase = availablePages.value.some(page => page.slug === normalizedCurrentPage)
+    return currentPageIsVisiblePhase ? currentPage : defaultPhasePage.value
+  }
+
+  if (node.nodeType === 'project_root') {
+    return 'overview'
+  }
+
+  return null
+})
+
+watch(
+  resolvedProjectPageFromNav,
+  (resolvedPage) => {
+    if (!resolvedPage || resolvedPage === activePage.value) {
+      return
+    }
+    selectAdminPage(resolvedPage)
+  },
+  { immediate: true },
+)
 
 const navGroups = computed(() => {
   const available = new Set(availablePages.value.map(p => p.slug))
