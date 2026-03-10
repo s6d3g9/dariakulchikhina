@@ -151,6 +151,21 @@ export function useDesignModules() {
     commitModules(createDefaultDesignModules())
   }
 
+  async function restoreModules() {
+    const defaults = normalizeDesignModulesConfig(createDefaultDesignModules())
+    modules.value = defaults
+    syncLocalModules(defaults)
+    pendingPersistPayload.value = ''
+    isHydrated.value = true
+
+    if (!import.meta.client) {
+      return defaults
+    }
+
+    await flushServerModules(JSON.stringify(defaults))
+    return modules.value
+  }
+
   function setModule(path: string, enabled: boolean): DesignModuleToggleResult {
     const segments = path.split('.').filter(Boolean)
     if (!segments.length) {
@@ -197,5 +212,6 @@ export function useDesignModules() {
     isPanelTabEnabled,
     setModule,
     resetModules,
+    restoreModules,
   }
 }

@@ -187,7 +187,7 @@ const router = useRouter()
 const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
 const designSystem = useDesignSystem()
-const { adminLayout, resetModules } = useDesignModules()
+const { adminLayout, restoreModules } = useDesignModules()
 useElementVisibility()
 const adminLayoutModules = computed(() => adminLayout.value)
 
@@ -213,12 +213,14 @@ onMounted(() => {
     return
   }
 
-  resetModules()
+  void (async () => {
+    await restoreModules()
 
-  const nextQuery = { ...route.query }
-  delete nextQuery.resetDesignPanel
+    const nextQuery = { ...route.query }
+    delete nextQuery.resetDesignPanel
 
-  void router.replace({ query: nextQuery })
+    await router.replace({ query: nextQuery })
+  })()
 })
 
 // ── Global nav ──────────────────────────────────────────
