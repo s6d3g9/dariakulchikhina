@@ -1,7 +1,10 @@
 {
   "name": "dariakulchikhina",
-  "image": "mcr.microsoft.com/devcontainers/base:alpine",
-  "remoteUser": "vscode",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "remoteUser": "node",
   "init": true,
   "overrideCommand": false,
   "waitFor": "postCreateCommand",
