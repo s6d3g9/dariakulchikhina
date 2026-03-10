@@ -1,10 +1,7 @@
 {
   "name": "dariakulchikhina",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": "."
-  },
-  "remoteUser": "node",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "remoteUser": "codespace",
   "init": true,
   "overrideCommand": false,
   "waitFor": "postCreateCommand",
