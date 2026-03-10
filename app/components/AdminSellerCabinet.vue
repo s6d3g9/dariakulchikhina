@@ -272,7 +272,8 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ sellerId: number }>()
+const props = defineProps<{ sellerId: number; modelValue?: string }>()
+const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
 
 const CATEGORY_OPTIONS = [
   'finish', 'plumbing', 'electrical', 'lighting',
@@ -305,6 +306,15 @@ const nav = [
 ]
 
 const section = ref('dashboard')
+
+// ── v-model:section sync with parent ──
+watch(() => props.modelValue, (val) => {
+  if (val !== undefined && val !== section.value) section.value = val
+}, { immediate: true })
+watch(section, (val) => {
+  if (props.modelValue !== undefined) emit('update:modelValue', val)
+})
+
 const saving = ref(false)
 const saveMsg = ref('')
 

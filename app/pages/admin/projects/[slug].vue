@@ -459,6 +459,14 @@ const slug = computed(() => route.params.slug as string)
 // ── Привязка к глобальному nav (NavigationNode schema) ─────────────────────
 const adminNav = useAdminNav()
 
+// При keepalive-активации — синхронизировать навигацию с текущим проектом
+function syncNavToProject() {
+  const title = project.value?.title || slug.value
+  adminNav.ensureProject(slug.value, title)
+}
+onMounted(syncNavToProject)
+onActivated(syncNavToProject)
+
 // Маппинг prj_* IDs из PROJECT_CABINET_ITEMS → внутренние slugs страницы
 const PRJ_SECTION_TO_SLUG: Record<string, string> = {
   overview:      'overview',

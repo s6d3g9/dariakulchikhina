@@ -11,7 +11,7 @@
         <span class="ent-entity-hd-name">{{ selected?.name }}</span>
         <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
       </div>
-      <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" />
+      <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" v-model="activeContractorSection" />
     </template>
     <div v-else class="ent-empty-detail">
       <span class="ent-empty-icon">🏗</span>
@@ -174,6 +174,12 @@ onActivated(() => adminNav.ensureSection('contractors'))
 watch(() => adminNav.contentSpec.value.contractorId, (id) => {
   if (id) selectedId.value = id
 })
+watch(() => adminNav.contentSpec.value.contractorSection, (sec) => {
+  if (sec) activeContractorSection.value = sec
+})
+
+// ── Section state ──
+const activeContractorSection = ref('dashboard')
 
 const route = useRoute()
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')

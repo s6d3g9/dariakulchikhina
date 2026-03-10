@@ -5,7 +5,7 @@
           <span class="ent-entity-hd-name">{{ selectedSeller?.name }}</span>
           <button class="ent-entity-hd-action" @click="openEdit(selectedSeller)">ред.</button>
         </div>
-        <AdminSellerCabinet :key="selectedSellerId" :seller-id="selectedSellerId" />
+        <AdminSellerCabinet :key="selectedSellerId" :seller-id="selectedSellerId" v-model="activeSellerSection" />
       </template>
       <div v-else-if="showCreate" class="ent-detail-card glass-card" style="margin-bottom:14px">
         <div class="ent-detail-head">
@@ -75,6 +75,12 @@ onActivated(() => adminNav.ensureSection('sellers'))
 watch(() => adminNav.contentSpec.value.sellerId, (id) => {
   if (id) selectedSellerId.value = id
 })
+watch(() => adminNav.contentSpec.value.sellerSection, (sec) => {
+  if (sec) activeSellerSection.value = sec
+})
+
+// ── Section state ──
+const activeSellerSection = ref('dashboard')
 
 const route = useRoute()
 const router = useRouter()

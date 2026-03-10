@@ -780,7 +780,9 @@ import {
 
 const props = defineProps<{
   contractorId: number | null
+  modelValue?: string
 }>()
+const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
 
 const contractorIdRef = computed(() => props.contractorId)
 
@@ -841,6 +843,14 @@ const {
   openNewTaskModal,
   createTask,
 } = useContractorCabinet(contractorIdRef)
+
+// ── v-model:section sync with parent ──
+watch(() => props.modelValue, (val) => {
+  if (val !== undefined && val !== section.value) section.value = val
+}, { immediate: true })
+watch(section, (val) => {
+  if (props.modelValue !== undefined) emit('update:modelValue', val)
+})
 
 const docsSearch = ref('')
 const docsFilter = ref('')

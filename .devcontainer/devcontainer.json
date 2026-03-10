@@ -1,7 +1,12 @@
 {
   "name": "dariakulchikhina",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "remoteUser": "vscode",
+  "init": true,
+  "overrideCommand": false,
+  "waitFor": "postCreateCommand",
 
-  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postCreateCommand": "sh .devcontainer/setup.sh",
 
   "customizations": {
     "vscode": {

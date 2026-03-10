@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 # Запускается один раз при создании контейнера
-set -e
+set -eu
 
 # Восстанавливаем SSH ключ из Codespaces Secret
 if [ -n "${SSH_DEPLOY_KEY:-}" ]; then

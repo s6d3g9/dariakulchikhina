@@ -29,7 +29,9 @@ export interface ContentSpec {
   designerSection: string | null
   clientId: number | null
   contractorId: number | null
+  contractorSection: string | null
   sellerId: number | null
+  sellerSection: string | null
   projectSlug: string | null
   projectSection: string | null
   galleryCategory: string | null
@@ -94,17 +96,24 @@ const CLIENT_CABINET_ITEMS: PayloadItem[] = [
 ]
 
 const CONTRACTOR_CABINET_ITEMS: PayloadItem[] = [
-  { id: 'con_dashboard',  name: 'Обзор',      type: 'leaf' },
-  { id: 'con_profile',    name: 'Профиль',    type: 'leaf' },
-  { id: 'con_projects',   name: 'Проекты',    type: 'node' },
-  { id: 'con_documents',  name: 'Документы',  type: 'node' },
+  { id: 'con_dashboard',       name: 'Обзор',            type: 'leaf' },
+  { id: 'con_tasks',           name: 'Задачи',           type: 'leaf' },
+  { id: 'con_contacts',        name: 'Контактные данные',type: 'leaf' },
+  { id: 'con_passport',        name: 'Паспортные данные',type: 'leaf' },
+  { id: 'con_requisites',      name: 'Реквизиты',        type: 'leaf' },
+  { id: 'con_documents',       name: 'Документы',        type: 'leaf' },
+  { id: 'con_specialization',  name: 'Специализации',    type: 'leaf' },
+  { id: 'con_finances',        name: 'Финансы',          type: 'leaf' },
+  { id: 'con_portfolio',       name: 'Портфолио',        type: 'leaf' },
+  { id: 'con_settings',        name: 'Настройки',        type: 'leaf' },
 ]
 
 const SELLER_CABINET_ITEMS: PayloadItem[] = [
-  { id: 'sel_dashboard',  name: 'Обзор',      type: 'leaf' },
-  { id: 'sel_profile',    name: 'Профиль',    type: 'leaf' },
-  { id: 'sel_products',   name: 'Каталог',    type: 'leaf' },
-  { id: 'sel_projects',   name: 'Проекты',    type: 'node' },
+  { id: 'sel_dashboard',   name: 'Обзор',      type: 'leaf' },
+  { id: 'sel_profile',     name: 'Профиль',    type: 'leaf' },
+  { id: 'sel_requisites',  name: 'Реквизиты',  type: 'leaf' },
+  { id: 'sel_terms',       name: 'Условия',    type: 'leaf' },
+  { id: 'sel_projects',    name: 'Проекты',    type: 'leaf' },
 ]
 
 // Кабинет проекта — узлы верхнего уровня (alpha_*)
@@ -185,11 +194,13 @@ export function useAdminNav() {
     const leaf = activeLeafId.value ?? ''
     return {
       section:          ctx.section,
-      designerId:       ctx.designerId ?? null,
-      designerSection:  leaf.startsWith('des_') ? leaf.replace('des_', '') : null,
-      clientId:         ctx.clientId ?? null,
-      contractorId:     ctx.contractorId ?? null,
-      sellerId:         ctx.sellerId ?? null,
+      designerId:        ctx.designerId ?? null,
+      designerSection:   leaf.startsWith('des_') ? leaf.replace('des_', '') : null,
+      clientId:          ctx.clientId ?? null,
+      contractorId:      ctx.contractorId ?? null,
+      contractorSection: leaf.startsWith('con_') ? leaf.replace('con_', '') : null,
+      sellerId:          ctx.sellerId ?? null,
+      sellerSection:     leaf.startsWith('sel_') ? leaf.replace('sel_', '') : null,
       projectSlug:      ctx.projectSlug ?? null,
       projectSection:   leaf.startsWith('prj_') ? leaf.replace('prj_', '') : null,
       galleryCategory:  leaf.startsWith('gal_') ? leaf.replace('gal_', '') : null,
@@ -242,6 +253,36 @@ export function useAdminNav() {
     if (item) await drill(item)
   }
 
+  /**
+   * Напрямую устанавливает навигацию на конкретный проект (без router.push).
+   * Используется при keepalive-активации [slug].vue чтобы не терять текущий маршрут.
+   */
+  function ensureProject(projectSlug: string, projectTitle: string) {
+    const spec = contentSpec.value
+    if (spec.section === 'projects' && spec.projectSlug === projectSlug) return
+
+    const root = rootNode()
+    const regNode: NavigationNode = {
+      step: 'B', nodeId: 'reg_projects', nodeType: 'registry',
+      context: { title: 'Проекты', breadcrumbs: ['меню', 'Проекты'] },
+      filter: { placeholder: 'Поиск по проектам...', value: '' },
+      payload: [{ id: projectSlug, name: projectTitle, type: 'node' as const }],
+    }
+    const cabNode: NavigationNode = {
+      step: 'C', nodeId: `cab_project_${projectSlug}`, nodeType: 'project_root',
+      context: { title: projectTitle, breadcrumbs: ['меню', 'Проекты', projectTitle] },
+      filter: { placeholder: 'Поиск по разделам проекта...', value: '' },
+      payload: PROJECT_CABINET_ITEMS,
+    }
+    nodeStack.value = [root, regNode, cabNode]
+    ctxStack.value  = [
+      { section: '' },
+      { section: 'projects' },
+      { section: 'projects', projectSlug, projectTitle },
+    ]
+    activeLeafId.value = undefined
+  }
+
   return {
     currentNode,
     canGoBack,
@@ -254,6 +295,7 @@ export function useAdminNav() {
     select,
     goRoot,
     ensureSection,
+    ensureProject,
     nodeStack: readonly(nodeStack),
   }
 }
