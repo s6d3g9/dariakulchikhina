@@ -166,6 +166,9 @@
           <div v-if="contentViewMode === 'wipe'" class="proj-sheet-frame" aria-hidden="true">
             <div class="proj-sheet-frame__card"></div>
           </div>
+          <div v-if="contentViewMode === 'wipe'" class="proj-wipe-overlay" aria-hidden="true">
+            <div class="proj-wipe-overlay__sheet"></div>
+          </div>
           <AdminEntityHero
             v-if="showBrutalistHero"
             :kicker="activeGroupLabel || 'архитектура проекта'"
@@ -1035,6 +1038,12 @@ function syncProjectViewportAttrs() {
   el.style.setProperty('--cv-viewport-height', `${viewportHeight}px`)
   el.style.setProperty('--cv-sheet-top', `${sheetTop}px`)
   el.style.setProperty('--cv-sheet-bottom', `${sheetBottom}px`)
+
+  if (isWipe) {
+    const t = designSystem.tokens.value
+    el.style.setProperty('--wipe-page-fill', String(t.wipePageFill ?? 0.85))
+    el.dataset.cvWipeTransition = t.wipeTransition ?? 'slide'
+  }
 }
 
 function resetProjectViewport() {
@@ -1400,7 +1409,7 @@ watch([projectViewport, contentViewMode, projectContentTransitionDuration, proje
 // Re-sync when wipe tokens change (sliders in design panel)
 const wipeTokenDeps = computed(() => {
   const t = designSystem.tokens.value
-  return `${t.wipeTopInset}-${t.wipeBottomInset}-${t.wipeSideMargin}-${t.wipeContentPadding}-${t.wipeCardRadius}-${t.wipeCardBorder}-${t.wipeCardShadow}`
+  return `${t.wipeTopInset}-${t.wipeBottomInset}-${t.wipeSideMargin}-${t.wipeContentPadding}-${t.wipeCardRadius}-${t.wipeCardBorder}-${t.wipeCardShadow}-${t.wipePageFill}-${t.wipeTransition}`
 })
 watch(wipeTokenDeps, () => {
   syncProjectViewportAttrs()
@@ -1774,42 +1783,99 @@ html.dark .proj-sheet-frame__card {
   border-color: color-mix(in srgb, var(--glass-text) 8%, transparent);
 }
 
-.proj-main--paged[data-cv-mode="wipe"]::after {
-  content: '';
-  position: absolute;
-  inset: 0;
+/* ── Wipe overlay: real DOM element with sticky positioning ── */
+.proj-wipe-overlay {
+  position: sticky;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: calc(100vh - var(--dp-panel-h, 28px));
+  margin-bottom: calc(-100vh + var(--dp-panel-h, 28px));
   z-index: 3;
   pointer-events: none;
+  overflow: hidden;
+}
+.proj-wipe-overlay__sheet {
+  position: absolute;
+  inset: 0;
   opacity: 0;
+  pointer-events: none;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--glass-page-bg) 96%, transparent), color-mix(in srgb, var(--glass-page-bg) 88%, transparent)),
     linear-gradient(135deg, color-mix(in srgb, var(--glass-text) 8%, transparent), transparent 45%);
   border-top: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+}
+
+/* ── Slide transition (default) ── */
+.proj-main--paged[data-cv-wipe-transition="slide"] .proj-wipe-overlay__sheet {
   transform: translate3d(0, var(--cv-wipe-from, 102%), 0);
   transition:
     transform calc(var(--cv-transition-ms, 320ms) * 0.48) cubic-bezier(.2, .7, .16, 1),
     opacity 120ms ease;
 }
-
-.proj-main--paged[data-cv-mode="wipe"][data-cv-dir="next"] {
-  --cv-wipe-from: 102%;
-  --cv-wipe-to: -102%;
-}
-
-.proj-main--paged[data-cv-mode="wipe"][data-cv-dir="prev"] {
-  --cv-wipe-from: -102%;
-  --cv-wipe-to: 102%;
-}
-
-.proj-main--paged[data-cv-mode="wipe"][data-cv-phase="cover"]::after {
+.proj-main--paged[data-cv-wipe-transition="slide"][data-cv-dir="next"] { --cv-wipe-from: 102%; --cv-wipe-to: -102%; }
+.proj-main--paged[data-cv-wipe-transition="slide"][data-cv-dir="prev"] { --cv-wipe-from: -102%; --cv-wipe-to: 102%; }
+.proj-main--paged[data-cv-wipe-transition="slide"][data-cv-phase="cover"] .proj-wipe-overlay__sheet {
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
-
-.proj-main--paged[data-cv-mode="wipe"][data-cv-phase="reveal"]::after {
+.proj-main--paged[data-cv-wipe-transition="slide"][data-cv-phase="reveal"] .proj-wipe-overlay__sheet {
   opacity: 1;
   transform: translate3d(0, var(--cv-wipe-to, -102%), 0);
+}
+
+/* ── Fade transition ── */
+.proj-main--paged[data-cv-wipe-transition="fade"] .proj-wipe-overlay__sheet {
+  transform: none;
+  transition: opacity calc(var(--cv-transition-ms, 320ms) * 0.48) ease;
+}
+.proj-main--paged[data-cv-wipe-transition="fade"][data-cv-phase="cover"] .proj-wipe-overlay__sheet {
+  opacity: 1;
+}
+.proj-main--paged[data-cv-wipe-transition="fade"][data-cv-phase="reveal"] .proj-wipe-overlay__sheet {
+  opacity: 1;
+  transition: opacity calc(var(--cv-transition-ms, 320ms) * 0.52) ease;
+}
+
+/* ── Curtain transition (horizontal) ── */
+.proj-main--paged[data-cv-wipe-transition="curtain"] .proj-wipe-overlay__sheet {
+  transform: translate3d(var(--cv-wipe-from, 102%), 0, 0);
+  transition:
+    transform calc(var(--cv-transition-ms, 320ms) * 0.48) cubic-bezier(.25, .8, .25, 1),
+    opacity 100ms ease;
+}
+.proj-main--paged[data-cv-wipe-transition="curtain"][data-cv-dir="next"] { --cv-wipe-from: 102%; --cv-wipe-to: -102%; }
+.proj-main--paged[data-cv-wipe-transition="curtain"][data-cv-dir="prev"] { --cv-wipe-from: -102%; --cv-wipe-to: 102%; }
+.proj-main--paged[data-cv-wipe-transition="curtain"][data-cv-phase="cover"] .proj-wipe-overlay__sheet {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.proj-main--paged[data-cv-wipe-transition="curtain"][data-cv-phase="reveal"] .proj-wipe-overlay__sheet {
+  opacity: 1;
+  transform: translate3d(var(--cv-wipe-to, -102%), 0, 0);
+}
+
+/* ── Blur transition ── */
+.proj-main--paged[data-cv-wipe-transition="blur"] .proj-wipe-overlay__sheet {
+  transform: none;
+  backdrop-filter: blur(0px);
+  background: color-mix(in srgb, var(--glass-page-bg) 70%, transparent);
+  transition:
+    opacity calc(var(--cv-transition-ms, 320ms) * 0.44) ease,
+    backdrop-filter calc(var(--cv-transition-ms, 320ms) * 0.44) ease;
+}
+.proj-main--paged[data-cv-wipe-transition="blur"][data-cv-phase="cover"] .proj-wipe-overlay__sheet {
+  opacity: 1;
+  backdrop-filter: blur(18px);
+}
+.proj-main--paged[data-cv-wipe-transition="blur"][data-cv-phase="reveal"] .proj-wipe-overlay__sheet {
+  opacity: 1;
+  backdrop-filter: blur(18px);
+  transition:
+    opacity calc(var(--cv-transition-ms, 320ms) * 0.52) ease,
+    backdrop-filter calc(var(--cv-transition-ms, 320ms) * 0.52) ease;
 }
 .proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
 .proj-main-inner--after-hero {

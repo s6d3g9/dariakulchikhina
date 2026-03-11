@@ -1878,6 +1878,32 @@
                       />
                       <div class="dp-range-hints"><span>0%</span><span>100%</span></div>
                     </div>
+
+                    <div class="dp-field">
+                      <label class="dp-label">заполнение карточки <span class="dp-label-val">{{ Math.round((tokens.wipePageFill ?? 0.85) * 100) }}%</span></label>
+                      <input
+                        type="range" min="0.3" max="1" step="0.05"
+                        :value="tokens.wipePageFill ?? 0.85"
+                        @input="set('wipePageFill', Number(($event.target as HTMLInputElement).value))"
+                        class="dp-range"
+                      />
+                      <div class="dp-range-hints"><span>30%</span><span>100%</span></div>
+                      <div class="dp-field-hint">меньше — меньше контента на карточке, больше карточек</div>
+                    </div>
+
+                    <div class="dp-field">
+                      <label class="dp-label">переход между карточками <span class="dp-label-val">{{ tokens.wipeTransition ?? 'slide' }}</span></label>
+                      <div class="dp-arch-chips">
+                        <button
+                          v-for="opt in wipeTransitions" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': (tokens.wipeTransition || 'slide') === opt.id }"
+                          @click="set('wipeTransition', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                      <div class="dp-field-hint">slide — шторка, fade — затухание, curtain — занавес, blur — размытие</div>
+                    </div>
                   </template>
 
                   <!-- Section style -->
@@ -2325,6 +2351,12 @@ const contentViewModes = [
   { id: 'paged' as const, label: 'экраны', description: 'Листание контента по высоте видимой зоны.' },
   { id: 'flow' as const, label: 'поток', description: 'Экранное листание и переход к следующему пункту активного меню.' },
   { id: 'wipe' as const, label: 'wipe', description: 'Фиксированное окно и последовательное открытие частей контента через вайп-переход.' },
+]
+const wipeTransitions = [
+  { id: 'slide' as const, label: 'шторка' },
+  { id: 'fade' as const, label: 'затухание' },
+  { id: 'curtain' as const, label: 'занавес' },
+  { id: 'blur' as const, label: 'размытие' },
 ]
 const archSectionStyles = [
   { id: 'flat'    as const, label: 'плоский' },

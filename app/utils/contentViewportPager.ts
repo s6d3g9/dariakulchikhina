@@ -327,6 +327,96 @@ function applyViewportZoneLayoutPass(viewport: HTMLElement) {
   return applied
 }
 
+/**
+ * Content-aware page breaks for wipe (book-like) mode.
+ *
+ * Elements that would be sliced at a page boundary are pushed to the
+ * visible top of the next page via margin-top offsets — exactly like a
+ * word-processor respecting "keep with next" rules.
+ *
+ * Large elements that cannot fit on a single page are left in place and
+ * allowed to span naturally.
+ */
+function applyWipeContentBreaks(viewport: HTMLElement) {
+  const viewportHeight = Math.max(viewport.clientHeight, 1)
+  const vpStyle = getComputedStyle(viewport)
+  const sheetTop = parseCssPixels(vpStyle.getPropertyValue('--cv-sheet-top')) || 48
+  const sheetBottom = parseCssPixels(vpStyle.getPropertyValue('--cv-sheet-bottom')) || 106
+  const pageFill = clampNumber(Number.parseFloat(vpStyle.getPropertyValue('--wipe-page-fill')) || 0.85, 0.3, 1)
+  const step = Math.max(120, viewportHeight - sheetTop - sheetBottom)
+  const fillBudget = step * pageFill
+
+  const hero = viewport.querySelector<HTMLElement>('.admin-entity-hero')
+  const heroBottom = hero ? resolveTopRelativeToViewport(hero, viewport) + hero.offsetHeight : 0
+
+  let firstContentStop = step
+  if (heroBottom > sheetTop + step) {
+    firstContentStop = heroBottom - sheetTop
+  }
+
+  // Collect all leaf-level breakable items
+  const blocks = resolvePageBlocks(viewport)
+  if (!blocks.length) return
+
+  const items: HTMLElement[] = []
+  blocks.forEach((block) => {
+    const children = collectRowItems(block, viewport)
+    if (children.length >= 2) {
+      items.push(...children)
+    } else {
+      items.push(block)
+    }
+  })
+
+  // Deduplicate and sort by position
+  const seen = new Set<HTMLElement>()
+  const sorted = items
+    .filter((el) => { if (seen.has(el)) return false; seen.add(el); return true })
+    .sort((a, b) => resolveTopRelativeToViewport(a, viewport) - resolveTopRelativeToViewport(b, viewport))
+
+  let accOffset = 0
+
+  sorted.forEach((item) => {
+    const itemTop = resolveTopRelativeToViewport(item, viewport) + accOffset
+    const itemHeight = item.offsetHeight
+    const itemBottom = itemTop + itemHeight
+
+    // Skip items on the hero page
+    if (itemBottom <= sheetTop + step) return
+
+    // Find the visible bottom boundary of the current page
+    const contentRel = itemTop - firstContentStop - sheetTop
+    const pageIdx = Math.max(0, Math.floor(contentRel / step))
+    const pageVisibleBottom = firstContentStop + sheetTop + (pageIdx + 1) * step
+    const pageVisibleTop = firstContentStop + sheetTop + pageIdx * step
+    const usedOnPage = itemTop - pageVisibleTop
+
+    // Case 1: item crosses the page boundary
+    if (itemBottom > pageVisibleBottom + ZONE_EDGE_GAP) {
+      // If item fits on one page, push it to the next page
+      if (itemHeight < step - ZONE_EDGE_GAP * 2) {
+        const pushOffset = pageVisibleBottom - itemTop
+        if (pushOffset > ZONE_EDGE_GAP && pushOffset < step) {
+          applyZoneOffset(item, pushOffset)
+          accOffset += pushOffset
+        }
+        return
+      }
+      // Large items: leave in place, they span multiple pages
+      return
+    }
+
+    // Case 2: page fill budget exceeded — push to next page
+    if (usedOnPage > fillBudget && itemTop > pageVisibleTop + MIN_ZONE_DELTA) {
+      const pushOffset = pageVisibleBottom - itemTop
+      if (pushOffset > ZONE_EDGE_GAP && pushOffset < step && itemHeight < step - ZONE_EDGE_GAP * 2) {
+        applyZoneOffset(item, pushOffset)
+        accOffset += pushOffset
+      }
+    }
+  })
+}
+
 export function applyViewportZoneLayout(viewport: HTMLElement) {
   const preservedScrollTop = viewport.scrollTop
   clearZoneOffsets(viewport)
@@ -334,8 +424,11 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
   const zoneInsets = resolveZoneInsets(Math.max(viewport.clientHeight, 1), resolveViewportPagerRailInset(viewport))
   ensureViewportBottomSpacer(viewport, zoneInsets.visibleHeight)
 
-  // In wipe/book mode, content flows naturally — skip layout adjustments
-  if (viewport.dataset.cvMode === 'wipe') return
+  // In wipe/book mode, apply content-aware page breaks
+  if (viewport.dataset.cvMode === 'wipe') {
+    applyWipeContentBreaks(viewport)
+    return
+  }
 
   const nextMaxTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
   const targetTop = Math.min(preservedScrollTop, nextMaxTop)

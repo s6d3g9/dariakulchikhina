@@ -212,6 +212,8 @@ export interface DesignTokens {
   wipeCardRadius:     number    // px, 0..32  — card border-radius
   wipeCardBorder:     number    // px, 0..4   — card border width
   wipeCardShadow:     number    // 0..1       — card shadow intensity
+  wipePageFill:       number    // 0.3..1.0   — page fill ratio (lower = less content per card)
+  wipeTransition:     'slide' | 'fade' | 'curtain' | 'blur'  // transition effect between cards
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -368,6 +370,8 @@ export const DEFAULT_TOKENS: DesignTokens = {
   wipeCardRadius: 14,
   wipeCardBorder: 1,
   wipeCardShadow: 0.4,
+  wipePageFill: 0.85,
+  wipeTransition: 'slide',
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2394,6 +2398,8 @@ export function useDesignSystem() {
     el.style.setProperty('--wipe-card-shadow', String(ws))
     el.style.setProperty('--wipe-shadow-sm', `rgba(0,0,0,${(ws * 0.1).toFixed(3)})`)
     el.style.setProperty('--wipe-shadow-lg', `rgba(0,0,0,${(ws * 0.075).toFixed(3)})`)
+    el.style.setProperty('--wipe-page-fill', String(t.wipePageFill ?? 0.85))
+    el.style.setProperty('--wipe-transition', t.wipeTransition ?? 'slide')
 
     // Set data-dark-surface when page bg is very dark (for CSS dark-surface cascade)
     if (t.colorPageBg && /^#[0-1][0-9a-f]/i.test(t.colorPageBg)) {
