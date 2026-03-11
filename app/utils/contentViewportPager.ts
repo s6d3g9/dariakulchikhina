@@ -292,13 +292,25 @@ function resolvePageBlocks(viewport: HTMLElement) {
   const directChildren = Array.from(viewport.children)
     .filter(isRenderableNode)
     .filter((node) => !isPagerRail(node) && !isZoneSpacer(node))
-  const rawSource = shell
+  let blocks = (shell
     ? Array.from(shell.children)
-    : directChildren.filter((node) => !node.classList.contains('admin-entity-hero'))
-
-  return rawSource
+    : directChildren.filter((node) => !node.classList.contains('admin-entity-hero')))
     .filter(isRenderableNode)
     .filter((node) => !isZoneSpacer(node))
+
+  for (let depth = 0; depth < 4 && blocks.length === 1; depth += 1) {
+    const [onlyBlock] = blocks
+    const children = getRenderableChildren(onlyBlock)
+    const style = getComputedStyle(onlyBlock)
+
+    if (children.length < 2 || !isFlowDisplay(style.display)) {
+      break
+    }
+
+    blocks = children
+  }
+
+  return blocks
 }
 
 function collectAtomicUnits(node: HTMLElement, viewportHeight: number, depth = 0): HTMLElement[] {
