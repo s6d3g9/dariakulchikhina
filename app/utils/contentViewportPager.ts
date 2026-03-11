@@ -488,7 +488,7 @@ function compressStops(stops: number[]) {
 }
 
 function pruneCoveredStops(stops: number[], visibleHeight: number) {
-  const minimumFreshArea = Math.max(MIN_ZONE_DELTA, visibleHeight - ZONE_EDGE_GAP - MIN_ZONE_DELTA)
+  const minimumFreshArea = Math.max(MIN_ZONE_DELTA, Math.round(visibleHeight * 0.78))
 
   return stops.reduce<number[]>((acc, stop, index) => {
     if (index === 0) {
