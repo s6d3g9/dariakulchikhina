@@ -423,16 +423,15 @@ function buildWipeItemList(viewport: HTMLElement, step: number): WipeItem[] {
 
       let companionHeight = 0
       if (heading && next) {
-        // For section headings, check if the next item's parent container
-        // (e.g. .apo-phases) can fit on one page together with the heading.
-        // If so, use the full container height as companion to keep them together.
+        // For section headings, calculate companion height.
+        // If the full sibling container fits entirely on one page WITH the heading,
+        // keep them together. Otherwise just ensure the first content item is visible.
         const siblingContainer = child.nextElementSibling
-        if (
-          siblingContainer instanceof HTMLElement
+        const fullGroupFits = siblingContainer instanceof HTMLElement
           && siblingContainer.offsetHeight > 0
-          && child.offsetHeight + siblingContainer.offsetHeight < step * 0.95
-        ) {
-          companionHeight = siblingContainer.offsetHeight + 12
+          && child.offsetHeight + siblingContainer.offsetHeight < step * 0.55
+        if (fullGroupFits) {
+          companionHeight = (siblingContainer as HTMLElement).offsetHeight + 12
         } else {
           companionHeight = Math.min(next.offsetHeight, 120) + 12
         }
@@ -594,7 +593,10 @@ function applyWipeContentBreaks(viewport: HTMLElement) {
     // Rule 2: Keep-with-next — heading must share page with companion content
     if (item.keepWithNext) {
       const neededHeight = item.height + item.minCompanionHeight
-      if (remainingOnPage < neededHeight && usedOnPage > ZONE_EDGE_GAP) {
+      // Only push if enough content already occupies the page (> 40% usage).
+      // Otherwise, the push creates an unacceptably empty page before this heading.
+      const worthPushing = usedOnPage > step * 0.4
+      if (remainingOnPage < neededHeight && usedOnPage > ZONE_EDGE_GAP && worthPushing) {
         const pushOffset = pageBottom - effectiveTop
         if (pushOffset > 0 && pushOffset < step) {
           applyWipeOffset(item.el, pushOffset)
