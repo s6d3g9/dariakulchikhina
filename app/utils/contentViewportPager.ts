@@ -160,6 +160,18 @@ function resolvePrimaryLayoutContainer(node: HTMLElement, viewport: HTMLElement,
 
 function collectZoneLayoutContainers(viewport: HTMLElement) {
   const blocks = resolvePageBlocks(viewport)
+  const commonParent = blocks.length >= 2
+    ? blocks[0]?.parentElement
+    : null
+
+  if (
+    commonParent instanceof HTMLElement
+    && blocks.every((block) => block.parentElement === commonParent)
+    && isFlowDisplay(getComputedStyle(commonParent).display)
+  ) {
+    return [commonParent]
+  }
+
   const seen = new Set<HTMLElement>()
 
   return blocks
