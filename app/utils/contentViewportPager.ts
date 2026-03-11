@@ -689,7 +689,42 @@ export function buildViewportPageStops(viewport: HTMLElement) {
 
   const blocks = resolvePageBlocks(viewport)
 
-  if (blocks.length) {
+  if (isWipeMode && blocks.length) {
+    const allRows: DensityRow[] = []
+    blocks.forEach((block) => {
+      allRows.push(...resolveDensityRows(block, viewport))
+    })
+    allRows.sort((a, b) => a.top - b.top)
+
+    if (allRows.length) {
+      const contentStart = clampZoneStart(allRows[0].top - zoneInsets.top, 0, maxTop)
+      if (contentStart > 4) pushStop(stops, contentStart)
+
+      let sheetStart = stops[stops.length - 1] ?? 0
+
+      for (const row of allRows) {
+        const visibleBottom = sheetStart + viewportHeight - zoneInsets.bottom
+
+        if (row.bottom <= visibleBottom + ZONE_EDGE_GAP) continue
+
+        const newStart = clampZoneStart(row.top - zoneInsets.top, 0, maxTop)
+        pushStop(stops, newStart)
+        sheetStart = newStart
+
+        const rowHeight = row.bottom - row.top
+        if (rowHeight > zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
+          let slice = row.top
+          while (row.bottom > slice + zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
+            slice += zoneInsets.visibleHeight - ZONE_EDGE_GAP
+            const nextStart = clampZoneStart(slice - zoneInsets.top, 0, maxTop)
+            if (nextStart <= sheetStart + MIN_ZONE_DELTA) break
+            pushStop(stops, nextStart)
+            sheetStart = nextStart
+          }
+        }
+      }
+    }
+  } else if (blocks.length) {
     blocks.forEach((block) => {
       const rawStart = resolveTopRelativeToViewport(block, viewport)
       const contentStart = Math.max(minimumContentStart, Math.min(maxTop, rawStart))
@@ -702,8 +737,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
       const blockBottom = contentStart + blockHeight
       const blockMaxStart = Math.max(blockStart, Math.min(maxTop, blockBottom - (viewportHeight - zoneInsets.bottom)))
 
-      const followsHeroTooClosely = !isWipeMode
-        && minimumContentStart > 0
+      const followsHeroTooClosely = minimumContentStart > 0
         && contentStart - minimumContentStart < heroToContentMinimumDelta
 
       if (blockStart > 4 && !followsHeroTooClosely) {
@@ -724,7 +758,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
         blockStart,
         blockMaxStart,
         viewportHeight,
-        isWipeMode ? Infinity : densityBudget,
+        densityBudget,
         reservedBottomInset,
       )
 
