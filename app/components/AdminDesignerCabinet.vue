@@ -5,7 +5,16 @@
       <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     </div>
 
-    <main v-else-if="designer" class="cab-main">
+    <main
+      v-else-if="designer"
+      ref="viewportRef"
+      class="cab-main"
+      :class="{ 'cv-viewport--paged': isPaged }"
+      :tabindex="isPaged ? 0 : undefined"
+      @wheel="handleWheel"
+      @keydown="handleKeydown"
+      @scroll="syncPager"
+    >
         <div class="cab-inner">
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
@@ -846,6 +855,16 @@
           </template>
 
         </div>
+        <div v-if="isPaged" class="cv-pager-rail">
+          <div class="cv-pager-rail__meta">
+            <span class="cv-pager-rail__mode">{{ contentViewMode === 'flow' ? 'поток' : 'экраны' }}</span>
+            <span>экран {{ pageIndex }} / {{ pageCount }}</span>
+          </div>
+          <div class="cv-pager-rail__actions">
+            <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
+            <button type="button" class="a-btn-sm" @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / след.' : 'экран →' }}</button>
+          </div>
+        </div>
     </main>
   </div>
 </template>
@@ -910,6 +929,26 @@ const {
   autoSlug,
   refresh,
 } = useDesignerCabinet(designerIdRef)
+const sectionOrder = computed(() => (nav.value || []).map((item: any) => item.key))
+const {
+  viewportRef,
+  contentViewMode,
+  isPaged,
+  pageIndex,
+  pageCount,
+  syncPager,
+  move,
+  handleWheel,
+  handleKeydown,
+} = useContentViewport({
+  mode: computed(() => designSystem.tokens.value.contentViewMode),
+  currentSection: section,
+  sectionOrder,
+  onNavigate: async (nextSection) => {
+    section.value = nextSection
+  },
+  transitionMs: computed(() => designSystem.tokens.value.pageTransitDuration ?? 280),
+})
 
 // ── v-model:section sync with parent ──
 watch(() => props.modelValue, (val) => {
