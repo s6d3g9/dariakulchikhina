@@ -623,6 +623,7 @@ const projectViewportWipePhase = ref<'idle' | 'cover' | 'reveal'>('idle')
 const projectViewportWipeDirection = ref<'next' | 'prev'>('next')
 let projectViewportWipeTimers: number[] = []
 let projectNavHydrated = false
+let projectNavStabilizeUntil = 0
 
 function isViewportEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
@@ -640,6 +641,7 @@ function syncNavToProject() {
   projectNavHydrated = true
 }
 onMounted(() => {
+  projectNavStabilizeUntil = Date.now() + 2200
   syncNavToProject()
   window.addEventListener('keydown', handleWindowProjectViewportKeydown)
 })
@@ -855,6 +857,20 @@ watch(project, (p) => {
     projectStatus.value = p.status || 'lead'
   }
 })
+
+watch(
+  [() => adminNav.currentNode.value.nodeId, () => adminNav.activeLeafId.value, currentProjectPage],
+  ([nodeId, activeLeaf, page]) => {
+    if (Date.now() > projectNavStabilizeUntil) return
+    if (clientPreviewMode.value || contractorPreviewMode.value) return
+    if (page !== 'overview') return
+
+    const expectedNodeId = `cab_project_${slug.value}`
+    if (nodeId === expectedNodeId && !activeLeaf) return
+
+    adminNav.ensureProject(slug.value, project.value?.title || slug.value, { force: true })
+  },
+)
 
 const allPageSlugs = getAdminPages()
 
