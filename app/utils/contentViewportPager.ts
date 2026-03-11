@@ -627,6 +627,7 @@ function buildVisibleZonesForBlock(
 
 export function buildViewportPageStops(viewport: HTMLElement) {
   const viewportHeight = Math.max(viewport.clientHeight, 1)
+  const isWipeMode = viewport.dataset.cvMode === 'wipe'
   const reservedBottomInset = resolveViewportPagerRailInset(viewport)
   const zoneInsets = resolveZoneInsets(viewportHeight, reservedBottomInset)
   const maxTop = Math.max(0, viewport.scrollHeight - viewportHeight)
@@ -660,7 +661,9 @@ export function buildViewportPageStops(viewport: HTMLElement) {
       const blockBottom = contentStart + blockHeight
       const blockMaxStart = Math.max(blockStart, Math.min(maxTop, blockBottom - (viewportHeight - zoneInsets.bottom)))
 
-      const followsHeroTooClosely = minimumContentStart > 0 && contentStart - minimumContentStart < heroToContentMinimumDelta
+      const followsHeroTooClosely = !isWipeMode
+        && minimumContentStart > 0
+        && contentStart - minimumContentStart < heroToContentMinimumDelta
 
       if (blockStart > 4 && !followsHeroTooClosely) {
         pushStop(stops, blockStart)
