@@ -1602,6 +1602,7 @@ async function saveProject() {
   min-height: calc(100vh - var(--dp-panel-h, 28px));
 }
 .proj-main--paged {
+  display: block; /* override flex from --brutalist so sticky rail works */
   position: relative;
   height: calc(100vh - var(--dp-panel-h, 28px));
   overflow-y: auto;
