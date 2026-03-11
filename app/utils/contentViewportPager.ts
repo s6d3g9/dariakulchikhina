@@ -472,12 +472,20 @@ function applyWipeGroupKeepTogether(
   heroPageEnd: number,
 ): Set<HTMLElement> {
   const handled = new Set<HTMLElement>()
-  const groups = viewport.querySelectorAll<HTMLElement>(WIPE_GROUP_SELECTORS)
+  const groups = Array.from(viewport.querySelectorAll<HTMLElement>(WIPE_GROUP_SELECTORS))
+    .filter(g => g.offsetParent !== null)
 
-  for (const group of groups) {
-    if (group.offsetParent === null) continue
-    const groupTop = resolveTopRelativeToViewport(group, viewport)
-    const groupHeight = group.offsetHeight
+  // Phase 1: Measure ALL group positions before applying any push.
+  // This prevents cascade where an earlier push shifts a later group's position,
+  // causing it to falsely appear to cross a page boundary.
+  const groupInfos = groups.map(group => ({
+    group,
+    top: resolveTopRelativeToViewport(group, viewport),
+    height: group.offsetHeight,
+  }))
+
+  // Phase 2: Decide and apply pushes based on snapshot positions.
+  for (const { group, top: groupTop, height: groupHeight } of groupInfos) {
     const groupBottom = groupTop + groupHeight
 
     // Skip groups fully inside hero page
