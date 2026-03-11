@@ -305,6 +305,10 @@ const activeProjectSlug = computed(() => {
   return normalize(route.query.projectSlug)
 })
 
+if (activeProjectSlug.value) {
+  adminNav.ensureProject(activeProjectSlug.value, activeProjectSlug.value, { force: true })
+}
+
 // Current project info for linking/unlinking
 const { data: projectData, refresh: refreshProjectData } = await useAsyncData(
   'admin-layout-project-data',
