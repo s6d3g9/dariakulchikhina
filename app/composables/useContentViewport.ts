@@ -4,6 +4,11 @@ import { buildViewportPageStops } from '~/utils/contentViewportPager'
 type ViewMode = 'scroll' | 'paged' | 'flow' | 'wipe'
 type Direction = 'next' | 'prev'
 
+function isEditableTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return target.isContentEditable || target.matches('input, textarea, select, [contenteditable="true"]')
+}
+
 export function useContentViewport(options: {
   mode: MaybeRefOrGetter<ViewMode | string | undefined>
   currentSection: Ref<string>
@@ -202,6 +207,7 @@ export function useContentViewport(options: {
 
   function handleKeydown(event: KeyboardEvent) {
     if (!isPaged.value) return
+    if (isEditableTarget(event.target)) return
     const isNext = event.key === 'PageDown' || event.key === 'ArrowDown' || event.key === ' '
     const isPrev = event.key === 'PageUp' || event.key === 'ArrowUp'
     if (!isNext && !isPrev) return
@@ -219,14 +225,21 @@ export function useContentViewport(options: {
     syncViewportAttrs()
   }, { immediate: true })
 
+  function handleWindowKeydown(event: KeyboardEvent) {
+    if (!viewportRef.value || !isPaged.value) return
+    handleKeydown(event)
+  }
+
   onMounted(() => {
     nextTick(syncPager)
     window.addEventListener('resize', syncPager)
+    window.addEventListener('keydown', handleWindowKeydown)
   })
 
   onBeforeUnmount(() => {
     clearWipeTimers()
     window.removeEventListener('resize', syncPager)
+    window.removeEventListener('keydown', handleWindowKeydown)
   })
 
   return {

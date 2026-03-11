@@ -217,7 +217,7 @@ const isDesktopSidebar = ref(false)
 const canAutoCollapseSidebar = computed(() => {
   return isDesktopSidebar.value
     && adminLayoutModules.value.nestedNav
-    && Boolean(adminNav.activeLeafId.value)
+    && route.path !== ADMIN_SECTION_ROUTES.projects
 })
 
 function syncDesktopSidebarState() {

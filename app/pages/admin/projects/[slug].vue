@@ -620,6 +620,11 @@ const projectViewportWipePhase = ref<'idle' | 'cover' | 'reveal'>('idle')
 const projectViewportWipeDirection = ref<'next' | 'prev'>('next')
 let projectViewportWipeTimers: number[] = []
 
+function isViewportEditableTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return target.isContentEditable || target.matches('input, textarea, select, [contenteditable="true"]')
+}
+
 // ── Привязка к глобальному nav (NavigationNode schema) ─────────────────────
 const adminNav = useAdminNav()
 
@@ -628,8 +633,14 @@ function syncNavToProject() {
   const title = project.value?.title || slug.value
   adminNav.ensureProject(slug.value, title)
 }
-onMounted(syncNavToProject)
+onMounted(() => {
+  syncNavToProject()
+  window.addEventListener('keydown', handleWindowProjectViewportKeydown)
+})
 onActivated(syncNavToProject)
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleWindowProjectViewportKeydown)
+})
 watch(slug, () => {
   syncNavToProject()
 }, { immediate: true })
@@ -1049,6 +1060,7 @@ function handleProjectViewportWheel(event: WheelEvent) {
 
 function handleProjectViewportKeydown(event: KeyboardEvent) {
   if (!isProjectViewportPaged.value) return
+  if (isViewportEditableTarget(event.target)) return
 
   const isNext = event.key === 'PageDown' || event.key === 'ArrowDown' || event.key === ' '
   const isPrev = event.key === 'PageUp' || event.key === 'ArrowUp'
@@ -1057,6 +1069,11 @@ function handleProjectViewportKeydown(event: KeyboardEvent) {
   event.preventDefault()
   if (!canFlipProjectViewport()) return
   void moveProjectViewport(isNext ? 'next' : 'prev')
+}
+
+function handleWindowProjectViewportKeydown(event: KeyboardEvent) {
+  if (!projectViewport.value || !isProjectViewportPaged.value) return
+  handleProjectViewportKeydown(event)
 }
 
 const {

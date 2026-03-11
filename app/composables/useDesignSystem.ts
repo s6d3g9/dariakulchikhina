@@ -2007,15 +2007,25 @@ export function useDesignSystem() {
   function load() {
     if (!import.meta.client) return
     try {
+      const savedConcept = localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || ''
+      const savedMode = (localStorage.getItem(DESIGN_MODE_STORAGE_KEY)?.trim() || '') as DesignMode | ''
+      const inferredMode = savedMode || CONCEPT_TO_DESIGN_MODE[savedConcept as DesignConceptSlug] || 'brutalist'
       const raw = localStorage.getItem(DESIGN_TOKENS_STORAGE_KEY)
         || LEGACY_DESIGN_TOKENS_STORAGE_KEYS.map(key => localStorage.getItem(key)).find(Boolean)
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<DesignTokens>
-        tokens.value = { ...DEFAULT_TOKENS, ...parsed }
-      }
+        const migratedTokens: DesignTokens = {
+          ...DEFAULT_TOKENS,
+          ...parsed,
+          contentViewMode: parsed.contentViewMode ?? (inferredMode === 'brutalist' ? 'wipe' : DEFAULT_TOKENS.contentViewMode),
+        }
 
-      const savedConcept = localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || ''
-      const savedMode = (localStorage.getItem(DESIGN_MODE_STORAGE_KEY)?.trim() || '') as DesignMode | ''
+        tokens.value = migratedTokens
+
+        if (!Object.prototype.hasOwnProperty.call(parsed, 'contentViewMode')) {
+          localStorage.setItem(DESIGN_TOKENS_STORAGE_KEY, JSON.stringify(migratedTokens))
+        }
+      }
 
       activeConceptSlug.value = savedConcept
         || (savedMode ? DESIGN_MODE_TO_CONCEPT[savedMode] : '')
