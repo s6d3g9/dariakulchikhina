@@ -88,6 +88,7 @@ export function useContentViewport(options: {
     }
 
     applyViewportZoneLayout(el)
+    applyViewportZoneLayout(el)
     pageStops.value = buildViewportPageStops(el)
     pageCount.value = pageStops.value.length
 
