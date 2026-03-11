@@ -1,10 +1,18 @@
 <template>
-  <div class="docs-screen">
+  <div
+    ref="viewportRef"
+    class="docs-screen"
+    :class="{ 'cv-viewport--paged': isPaged }"
+    :tabindex="isPaged ? 0 : undefined"
+    @wheel="handleWheel"
+    @keydown="handleKeydown"
+    @scroll="syncPager"
+  >
     <AdminEntityHero
       kicker="реестр документов / admin"
       title="Документы"
       :facts="heroFacts"
-      prompt="прокрутите вниз к реестру"
+      :prompt="docsHeroPrompt"
       :full-height="true"
       frame="divided"
       max-width="1120px"
@@ -285,12 +293,25 @@
         </div>
       </section>
     </Transition>
+
+    <div v-if="isPaged" class="cv-pager-rail">
+      <div class="cv-pager-rail__meta">
+        <span class="cv-pager-rail__mode">{{ contentViewMode === 'flow' ? 'поток' : 'экраны' }}</span>
+        <span>экран {{ pageIndex }} / {{ pageCount }}</span>
+      </div>
+      <div class="cv-pager-rail__actions">
+        <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
+        <button type="button" class="a-btn-sm" @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / кат.' : 'экран →' }}</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 // ── Props — driven by global nav ──
 const props = defineProps<{ category: string }>()
+const designSystem = useDesignSystem()
+const adminNav = useAdminNav()
 
 // ══════════════════════════════════════════════════════════════════
 // CATEGORIES — numbered, professional
@@ -874,11 +895,35 @@ const registryNote = computed(() => {
   if (activeCategory.value === 'all') return 'Единый реестр договоров, актов, счетов и шаблонов по всем проектам.'
   return `Срез по категории ${currentCategoryLabel.value}. Записи отсортированы от новых к старым.`
 })
+const docsSectionOrder = computed(() => CATEGORIES.map((item) => item.key))
+const docsHeroPrompt = computed(() => isPaged.value ? '↓ экран / PgDn ↓' : 'прокрутите вниз к реестру')
 const heroFacts = computed(() => ([
   { label: 'всего записей', value: String(documentsCount.value) },
   { label: 'в выборке', value: String(filteredDocs.value.length) },
   { label: 'проектов', value: String(linkedProjectsCount.value) },
 ]))
+
+const {
+  viewportRef,
+  contentViewMode,
+  isPaged,
+  pageIndex,
+  pageCount,
+  syncPager,
+  move,
+  handleWheel,
+  handleKeydown,
+} = useContentViewport({
+  mode: computed(() => designSystem.tokens.value.contentViewMode),
+  enabled: computed(() => viewMode.value === 'list'),
+  currentSection: activeCategory,
+  sectionOrder: docsSectionOrder,
+  onNavigate: async (nextCategory) => {
+    activeCategory.value = nextCategory
+    adminNav.select({ id: `doc_${nextCategory}`, name: nextCategory, type: 'leaf' })
+  },
+  transitionMs: computed(() => designSystem.tokens.value.pageTransitDuration ?? 280),
+})
 
 // Sync from parent prop (nav drives category)
 watch(() => props.category, (cat) => {

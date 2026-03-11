@@ -1,5 +1,13 @@
 <template>
-  <div class="agal-wrap">
+  <div
+    ref="viewportRef"
+    class="agal-wrap"
+    :class="{ 'cv-viewport--paged': isPaged }"
+    :tabindex="isPaged ? 0 : undefined"
+    @wheel="handleWheel"
+    @keydown="handleKeydown"
+    @scroll="syncPager"
+  >
 
     <!-- ─── Header ─────────────────────────────────────── -->
     <div class="agal-header glass-surface glass-card">
@@ -220,6 +228,17 @@
       </div>
     </div>
 
+    <div v-if="isPaged" class="cv-pager-rail">
+      <div class="cv-pager-rail__meta">
+        <span class="cv-pager-rail__mode">{{ contentViewMode === 'flow' ? 'поток' : 'экраны' }}</span>
+        <span>экран {{ pageIndex }} / {{ pageCount }}</span>
+      </div>
+      <div class="cv-pager-rail__actions">
+        <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
+        <button type="button" class="a-btn-sm" @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / раздел' : 'экран →' }}</button>
+      </div>
+    </div>
+
     <!-- ─── Lightbox ───────────────────────────────────── -->
     <GalleryLightbox
       :open="gallery.lightboxOpen.value"
@@ -328,11 +347,16 @@ import type { GalleryFilterStateExtended } from './GalleryFilterBar.vue'
 import type { MaterialProperties } from '~~/shared/types/material'
 
 const props = defineProps<{ category: string; title: string }>()
+const router = useRouter()
+const route = useRoute()
+const designSystem = useDesignSystem()
+const adminNav = useAdminNav()
 
 // ── Composable (единый источник truth) ────────────────────
 const categoryRef = computed(() => props.category)
 const gallery = useGallery(categoryRef)
 await gallery.load()
+const galleryCategoryOrder = computed(() => ['interiors', 'furniture', 'moodboards', 'materials', 'art'])
 
 // ── Filter bar → composable bridge ───────────────────────
 const filterState = computed<GalleryFilterStateExtended>(() => ({
@@ -352,6 +376,32 @@ function onFilterUpdate(f: GalleryFilterStateExtended) {
   if (f.sortField) gallery.sortField.value = f.sortField as any
   if (f.sortDir) gallery.sortDir.value = f.sortDir as any
 }
+
+const {
+  viewportRef,
+  contentViewMode,
+  isPaged,
+  pageIndex,
+  pageCount,
+  syncPager,
+  move,
+  handleWheel,
+  handleKeydown,
+} = useContentViewport({
+  mode: computed(() => designSystem.tokens.value.contentViewMode),
+  currentSection: computed(() => props.category),
+  sectionOrder: galleryCategoryOrder,
+  onNavigate: async (nextCategory) => {
+    const targetPath = `/admin/gallery/${nextCategory}`
+
+    if (route.path !== targetPath) {
+      await router.push(targetPath)
+    }
+
+    adminNav.select({ id: `gal_${nextCategory}`, name: nextCategory, type: 'leaf' })
+  },
+  transitionMs: computed(() => designSystem.tokens.value.pageTransitDuration ?? 280),
+})
 
 // ── Lightbox ─────────────────────────────────────────────
 function onCardClick(index: number) {
