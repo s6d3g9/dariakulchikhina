@@ -708,6 +708,12 @@ export function buildViewportPageStops(viewport: HTMLElement) {
       firstContentStop = heroBottom - zoneInsets.top
     }
 
+    // Find where real content ends (excluding spacers) to avoid empty trailing pages
+    const realContentBottom = blocks.reduce(
+      (max, b) => Math.max(max, resolveTopRelativeToViewport(b, viewport) + b.offsetHeight),
+      heroBottom,
+    )
+
     if (step > 0 && maxTop > 0) {
       for (let cursor = firstContentStop; cursor < maxTop; cursor += step) {
         const stop = Math.min(cursor, maxTop)
@@ -715,8 +721,10 @@ export function buildViewportPageStops(viewport: HTMLElement) {
           pushStop(stops, stop)
         }
       }
-      // Add final stop only if there's meaningful remaining content
-      if (maxTop > (stops[stops.length - 1] ?? 0) + MIN_ZONE_DELTA) {
+      // Only add final maxTop stop if the last page doesn't already cover all content
+      const lastStop = stops[stops.length - 1] ?? 0
+      const lastVisibleEnd = lastStop + zoneInsets.top + zoneInsets.visibleHeight
+      if (realContentBottom > lastVisibleEnd + ZONE_EDGE_GAP && maxTop > lastStop + MIN_ZONE_DELTA) {
         pushStop(stops, maxTop)
       }
     }
