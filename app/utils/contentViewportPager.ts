@@ -21,6 +21,7 @@ const PAGER_RAIL_SELECTORS = '.cv-pager-rail, .proj-pager-rail'
 const GRID_ROWS_PER_PAGE = 8
 const MIN_VISIBLE_HEIGHT = 24
 const ROW_GROUP_GAP = 14
+const ZONE_EDGE_GAP = 8
 
 function isRenderableNode(node: Element): node is HTMLElement {
   return node instanceof HTMLElement && node.offsetParent !== null && node.offsetHeight > MIN_VISIBLE_HEIGHT
@@ -102,15 +103,75 @@ function resolveGridRows(block: HTMLElement, viewport: HTMLElement) {
   return rows
 }
 
-function pushViewportSlices(stops: number[], blockStart: number, blockMaxStart: number, viewportHeight: number) {
-  if (blockMaxStart <= blockStart + 4) return
+function clampZoneStart(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, Math.round(value)))
+}
 
-  const lastStop = stops[stops.length - 1] ?? blockStart
-  for (let cursor = Math.max(blockStart + viewportHeight, lastStop + viewportHeight); cursor < blockMaxStart - 4; cursor += viewportHeight) {
-    stops.push(Math.round(cursor))
+function buildVisibleZonesForBlock(
+  rows: Array<{ top: number, bottom: number }>,
+  blockStart: number,
+  blockMaxStart: number,
+  viewportHeight: number,
+) {
+  const stops = [blockStart]
+  if (!rows.length || blockMaxStart <= blockStart + 4) {
+    return stops
   }
 
-  stops.push(Math.round(blockMaxStart))
+  let zoneStart = blockStart
+  let zoneRows = 0
+
+  rows.forEach((row) => {
+    const rowTop = clampZoneStart(row.top, blockStart, blockMaxStart)
+    const rowBottom = Math.max(rowTop + 1, row.bottom)
+    const rowHeight = rowBottom - rowTop
+    const rowFitsCurrentZone = rowBottom <= zoneStart + viewportHeight - ZONE_EDGE_GAP
+    const rowLimitReached = zoneRows >= GRID_ROWS_PER_PAGE
+
+    if (!rowFitsCurrentZone || rowLimitReached) {
+      let nextStart = rowTop
+
+      if (rowHeight > viewportHeight - ZONE_EDGE_GAP) {
+        const oversizedStops: number[] = []
+        let sliceStart = Math.max(zoneStart, rowTop)
+        if (sliceStart > zoneStart + 4 || stops.length === 1) {
+          oversizedStops.push(clampZoneStart(sliceStart, blockStart, blockMaxStart))
+        }
+
+        while (rowBottom > sliceStart + viewportHeight - ZONE_EDGE_GAP) {
+          sliceStart = clampZoneStart(sliceStart + viewportHeight - ZONE_EDGE_GAP, blockStart, blockMaxStart)
+          if (sliceStart <= (oversizedStops[oversizedStops.length - 1] ?? zoneStart) + 4) break
+          oversizedStops.push(sliceStart)
+        }
+
+        oversizedStops.forEach((stop) => {
+          if (stop > (stops[stops.length - 1] ?? blockStart) + 4) {
+            stops.push(stop)
+          }
+        })
+
+        zoneStart = oversizedStops[oversizedStops.length - 1] ?? rowTop
+        zoneRows = 1
+        return
+      }
+
+      nextStart = clampZoneStart(nextStart, blockStart, blockMaxStart)
+      if (nextStart > (stops[stops.length - 1] ?? blockStart) + 4) {
+        stops.push(nextStart)
+      }
+      zoneStart = nextStart
+      zoneRows = 1
+      return
+    }
+
+    zoneRows += 1
+  })
+
+  if (blockMaxStart > (stops[stops.length - 1] ?? blockStart) + 4) {
+    stops.push(blockMaxStart)
+  }
+
+  return stops
 }
 
 export function buildViewportPageStops(viewport: HTMLElement) {
@@ -149,37 +210,21 @@ export function buildViewportPageStops(viewport: HTMLElement) {
         }))
         .filter((row) => row.top > blockStart + 4)
 
-      if (rows.length > 1) {
-        let cursor = 0
-        let pageStart = blockStart
+      const blockStops = buildVisibleZonesForBlock(
+        rows.length ? rows : [{ top: blockStart, bottom: blockStart + blockHeight }],
+        blockStart,
+        blockMaxStart,
+        viewportHeight,
+      )
 
-        while (cursor < rows.length) {
-          let rowCount = 0
-          let nextIndex = cursor
-          const viewportLimit = pageStart + viewportHeight - 8
-
-          while (
-            nextIndex < rows.length
-            && rowCount < GRID_ROWS_PER_PAGE
-            && rows[nextIndex].bottom <= viewportLimit + ROW_GROUP_GAP
-          ) {
-            nextIndex += 1
-            rowCount += 1
-          }
-
-          if (nextIndex >= rows.length) break
-
-          const nextStart = Math.max(blockStart, Math.min(blockMaxStart, rows[nextIndex].top))
-          if (nextStart <= pageStart + 4) break
-
-          stops.push(Math.round(nextStart))
-          pageStart = nextStart
-          cursor = nextIndex
+      blockStops.forEach((stop) => {
+        if (stop > (stops[stops.length - 1] ?? 0) + 4) {
+          stops.push(stop)
         }
-      }
+      })
 
-      if (blockHeight > viewportHeight + 8) {
-        pushViewportSlices(stops, blockStart, blockMaxStart, viewportHeight)
+      if (!rows.length && blockHeight > viewportHeight + 8 && blockMaxStart > (stops[stops.length - 1] ?? blockStart) + 4) {
+        stops.push(blockMaxStart)
       }
     })
   } else {
