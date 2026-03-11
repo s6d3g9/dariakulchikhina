@@ -690,66 +690,61 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   const blocks = resolvePageBlocks(viewport)
 
   if (isWipeMode && blocks.length) {
-    const WIPE_PAD = 20
-    const packingRows: DensityRow[] = []
-    const effectiveVisible = zoneInsets.visibleHeight - 2 * WIPE_PAD
+    // Simple physical-fit algorithm for wipe mode:
+    // 1. Collect all top-level blocks with their positions
+    // 2. Greedily pack blocks onto sheets by checking if block.bottom fits
+    // 3. For oversized blocks, place them starting a new sheet and slice by visible height
+    const WIPE_PAD = 16
+    const usableHeight = zoneInsets.visibleHeight - 2 * WIPE_PAD
 
+    // Collect all blocks as simple {top, bottom} spans
+    const spans: { top: number; bottom: number }[] = []
     for (const block of blocks) {
-      const blockTop = resolveTopRelativeToViewport(block, viewport)
-      const height = block.offsetHeight
-
-      if (height <= effectiveVisible - ZONE_EDGE_GAP) {
-        packingRows.push({ top: blockTop, bottom: blockTop + height, density: 1, preserveBoundary: true })
-      } else {
-        const subChildren = getRenderableChildren(block)
-        if (subChildren.length >= 2) {
-          for (let i = 0; i < subChildren.length; i++) {
-            const child = subChildren[i]
-            const childTop = resolveTopRelativeToViewport(child, viewport)
-            const rowTop = (i === 0) ? blockTop : childTop
-            packingRows.push({ top: rowTop, bottom: childTop + child.offsetHeight, density: 1, preserveBoundary: true })
-          }
-        } else {
-          packingRows.push({ top: blockTop, bottom: blockTop + height, density: 1, preserveBoundary: true })
-        }
-      }
+      const top = resolveTopRelativeToViewport(block, viewport)
+      spans.push({ top, bottom: top + block.offsetHeight })
     }
+    spans.sort((a, b) => a.top - b.top)
 
-    packingRows.sort((a, b) => a.top - b.top)
-
-    if (packingRows.length) {
-      const contentStart = clampZoneStart(packingRows[0].top - zoneInsets.top - WIPE_PAD, 0, maxTop)
-      if (contentStart > 4) pushStop(stops, contentStart)
+    if (spans.length) {
+      // First sheet starts so that the first block has WIPE_PAD gap below topInset
+      const firstContentTop = spans[0].top
+      const firstSheetStart = clampZoneStart(firstContentTop - zoneInsets.top - WIPE_PAD, 0, maxTop)
+      if (firstSheetStart > 4) pushStop(stops, firstSheetStart)
 
       let sheetStart = stops[stops.length - 1] ?? 0
+      let sheetVisibleBottom = sheetStart + zoneInsets.top + WIPE_PAD + usableHeight
 
-      for (const row of packingRows) {
-        const visibleBottom = sheetStart + viewportHeight - zoneInsets.bottom - WIPE_PAD
+      for (const span of spans) {
+        // Does this block fit on the current sheet?
+        if (span.bottom <= sheetVisibleBottom + ZONE_EDGE_GAP) {
+          continue // fits, keep accumulating
+        }
 
-        if (row.bottom <= visibleBottom + ZONE_EDGE_GAP) continue
+        // Block doesn't fit. Start a new sheet aligned to this block's top.
+        const newStart = clampZoneStart(span.top - zoneInsets.top - WIPE_PAD, 0, maxTop)
+        if (newStart > sheetStart + MIN_ZONE_DELTA) {
+          pushStop(stops, newStart)
+          sheetStart = newStart
+          sheetVisibleBottom = sheetStart + zoneInsets.top + WIPE_PAD + usableHeight
+        }
 
-        const newStart = clampZoneStart(row.top - zoneInsets.top - WIPE_PAD, 0, maxTop)
-        pushStop(stops, newStart)
-        sheetStart = newStart
-
-        const rowHeight = row.bottom - row.top
-        if (rowHeight > effectiveVisible - ZONE_EDGE_GAP) {
-          let slice = row.top
-          while (row.bottom > slice + effectiveVisible - ZONE_EDGE_GAP) {
-            slice += effectiveVisible - ZONE_EDGE_GAP
-            const nextStart = clampZoneStart(slice - zoneInsets.top - WIPE_PAD, 0, maxTop)
+        // If block itself is oversized (taller than usable area), slice it
+        if (span.bottom - span.top > usableHeight) {
+          let cursor = sheetVisibleBottom
+          while (span.bottom > cursor + ZONE_EDGE_GAP) {
+            const nextStart = clampZoneStart(cursor - zoneInsets.top - WIPE_PAD, 0, maxTop)
             if (nextStart <= sheetStart + MIN_ZONE_DELTA) break
             pushStop(stops, nextStart)
             sheetStart = nextStart
+            sheetVisibleBottom = sheetStart + zoneInsets.top + WIPE_PAD + usableHeight
+            cursor = sheetVisibleBottom
           }
         }
       }
 
-      const lastContentBottom = packingRows[packingRows.length - 1]?.bottom ?? 0
-      const lastStop = stops[stops.length - 1] ?? 0
-      const lastStopVisibleBottom = lastStop + viewportHeight - zoneInsets.bottom
-
-      if (lastContentBottom > lastStopVisibleBottom + ZONE_EDGE_GAP && maxTop > 4) {
+      // Only add maxTop if last content isn't fully visible on the last sheet
+      const lastContentBottom = spans[spans.length - 1].bottom
+      if (lastContentBottom > sheetVisibleBottom + ZONE_EDGE_GAP && maxTop > (stops[stops.length - 1] ?? 0) + MIN_ZONE_DELTA) {
         pushStop(stops, maxTop)
       }
     }
