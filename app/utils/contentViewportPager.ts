@@ -189,11 +189,19 @@ function applyViewportZoneLayoutPass(viewport: HTMLElement) {
 }
 
 export function applyViewportZoneLayout(viewport: HTMLElement) {
+  const preservedScrollTop = viewport.scrollTop
   clearZoneOffsets(viewport)
 
   for (let pass = 0; pass < 4; pass += 1) {
     const changed = applyViewportZoneLayoutPass(viewport)
     if (!changed) break
+  }
+
+  const nextMaxTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
+  const targetTop = Math.min(preservedScrollTop, nextMaxTop)
+
+  if (Math.abs(viewport.scrollTop - targetTop) > 1) {
+    viewport.scrollTo({ top: targetTop, behavior: 'auto' })
   }
 }
 
