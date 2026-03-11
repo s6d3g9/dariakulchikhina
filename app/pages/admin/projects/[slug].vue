@@ -858,20 +858,6 @@ watch(project, (p) => {
   }
 })
 
-watch(
-  [() => adminNav.currentNode.value.nodeId, () => adminNav.activeLeafId.value, currentProjectPage],
-  ([nodeId, activeLeaf, page]) => {
-    if (Date.now() > projectNavStabilizeUntil) return
-    if (clientPreviewMode.value || contractorPreviewMode.value) return
-    if (page !== 'overview') return
-
-    const expectedNodeId = `cab_project_${slug.value}`
-    if (nodeId === expectedNodeId && !activeLeaf) return
-
-    adminNav.ensureProject(slug.value, project.value?.title || slug.value, { force: true })
-  },
-)
-
 const allPageSlugs = getAdminPages()
 
 const availablePages = computed(() => {
@@ -923,6 +909,20 @@ const currentProjectLeafIndex = computed(() => {
   if (!currentLeafId) return -1
   return currentProjectLeafItems.value.findIndex((item) => item.id === currentLeafId)
 })
+
+watch(
+  [() => adminNav.currentNode.value.nodeId, () => adminNav.activeLeafId.value, currentProjectPage],
+  ([nodeId, activeLeaf, page]) => {
+    if (Date.now() > projectNavStabilizeUntil) return
+    if (clientPreviewMode.value || contractorPreviewMode.value) return
+    if (page !== 'overview') return
+
+    const expectedNodeId = `cab_project_${slug.value}`
+    if (nodeId === expectedNodeId && !activeLeaf) return
+
+    adminNav.ensureProject(slug.value, project.value?.title || slug.value, { force: true })
+  },
+)
 
 let projectViewportObserver: MutationObserver | null = null
 let projectViewportSyncFrame = 0
