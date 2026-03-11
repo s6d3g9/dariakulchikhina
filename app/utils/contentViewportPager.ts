@@ -640,7 +640,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   if (hero) {
     const heroBottom = resolveTopRelativeToViewport(hero, viewport) + hero.offsetHeight
 
-    if (heroBottom > 24 && heroBottom < maxTop - 4) {
+    if (!isWipeMode && heroBottom > 24 && heroBottom < maxTop - 4) {
       pushStop(stops, heroBottom)
       minimumContentStart = heroBottom
     }
