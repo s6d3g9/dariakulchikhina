@@ -46,6 +46,10 @@ const MIN_ZONE_DENSITY_BUDGET = 3.6
 const MAX_ZONE_DENSITY_BUDGET = 7.4
 const MIN_ZONE_FILL_RATIO = 0.52
 const HERO_TO_CONTENT_MIN_DELTA_RATIO = 0.28
+const MIN_ZONE_TOP_INSET = 28
+const MAX_ZONE_TOP_INSET = 72
+const MIN_ZONE_BOTTOM_INSET = 28
+const MAX_ZONE_BOTTOM_INSET = 96
 
 type DensityRow = {
   top: number
@@ -85,6 +89,16 @@ function resolveZoneCarryOffset(zoneTop: number, childTop: number, viewportHeigh
   const relativeTop = childTop - zoneTop
   if (relativeTop < MIN_ZONE_DELTA) return 0
   return Math.max(0, viewportHeight - relativeTop)
+}
+
+function resolveZoneInsets(viewportHeight: number) {
+  const top = clampNumber(Math.round(viewportHeight * 0.075), MIN_ZONE_TOP_INSET, MAX_ZONE_TOP_INSET)
+  const bottom = clampNumber(Math.round(viewportHeight * 0.1), MIN_ZONE_BOTTOM_INSET, MAX_ZONE_BOTTOM_INSET)
+  return {
+    top,
+    bottom,
+    visibleHeight: Math.max(120, viewportHeight - top - bottom),
+  }
 }
 
 function isFlowDisplay(display: string) {
@@ -143,6 +157,7 @@ function applyViewportZoneLayoutPass(viewport: HTMLElement) {
   let applied = false
 
   const viewportHeight = Math.max(viewport.clientHeight, 1)
+  const zoneInsets = resolveZoneInsets(viewportHeight)
   const containers = collectZoneLayoutContainers(viewport)
 
   containers.forEach((container) => {
@@ -153,33 +168,44 @@ function applyViewportZoneLayoutPass(viewport: HTMLElement) {
     let carriedOffset = 0
     let zoneTop = resolveTopRelativeToViewport(container, viewport)
 
-    children.forEach((child) => {
-      const childTop = resolveTopRelativeToViewport(child, viewport) + carriedOffset
+    children.forEach((child, index) => {
+      let childTop = resolveTopRelativeToViewport(child, viewport) + carriedOffset
+      const minimumVisibleTop = zoneTop + zoneInsets.top
+
+      if (index === 0 && childTop < minimumVisibleTop) {
+        const leadingOffset = minimumVisibleTop - childTop
+        applyZoneOffset(child, leadingOffset)
+        carriedOffset += leadingOffset
+        childTop += leadingOffset
+        applied = true
+      }
+
       const childHeight = child.offsetHeight
       const childBottom = childTop + childHeight
-      const zoneBottom = zoneTop + viewportHeight - ZONE_EDGE_GAP
-      const carryOffset = resolveZoneCarryOffset(zoneTop, childTop, viewportHeight)
+      const visibleTop = zoneTop + zoneInsets.top
+      const visibleBottom = zoneTop + viewportHeight - zoneInsets.bottom
+      const carryOffset = resolveZoneCarryOffset(visibleTop, childTop, viewportHeight)
 
-      if (childHeight >= viewportHeight - ZONE_EDGE_GAP) {
+      if (childHeight >= zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
         if (carryOffset > 0) {
           applyZoneOffset(child, carryOffset)
           carriedOffset += carryOffset
-          zoneTop = childTop + carryOffset
+          zoneTop = childTop + carryOffset - zoneInsets.top
           applied = true
           return
         }
 
-        if (childTop >= zoneTop + MIN_ZONE_DELTA) {
-          zoneTop = childTop
+        if (childTop >= visibleTop + MIN_ZONE_DELTA) {
+          zoneTop = childTop - zoneInsets.top
         }
         return
       }
 
-      if (childTop >= zoneTop + MIN_ZONE_DELTA && childBottom > zoneBottom) {
+      if (childTop >= visibleTop + MIN_ZONE_DELTA && childBottom > visibleBottom) {
         const appliedOffset = carryOffset
         applyZoneOffset(child, appliedOffset)
         carriedOffset += appliedOffset
-        zoneTop = childTop + appliedOffset
+        zoneTop = childTop + appliedOffset - zoneInsets.top
         applied = true
       }
     })
@@ -418,6 +444,7 @@ function buildVisibleZonesForBlock(
   viewportHeight: number,
   densityBudget: number,
 ) {
+  const zoneInsets = resolveZoneInsets(viewportHeight)
   const stops = [blockStart]
   if (!rows.length || blockMaxStart <= blockStart + 4) {
     return stops
@@ -425,25 +452,27 @@ function buildVisibleZonesForBlock(
 
   let zoneStart = blockStart
   let zoneDensity = 0
-  const minimumZoneFill = viewportHeight * MIN_ZONE_FILL_RATIO
+  const minimumZoneFill = zoneInsets.visibleHeight * MIN_ZONE_FILL_RATIO
   const minimumInitialStopDelta = Math.max(120, Math.round(viewportHeight * HERO_TO_CONTENT_MIN_DELTA_RATIO))
 
   rows.forEach((row) => {
     const rowTop = clampZoneStart(row.top, blockStart, blockMaxStart)
     const rowBottom = Math.max(rowTop + 1, row.bottom)
     const rowHeight = rowBottom - rowTop
-    const rowFitsCurrentZone = rowBottom <= zoneStart + viewportHeight - ZONE_EDGE_GAP
-    const rowStartsNearZoneTop = rowTop - zoneStart < minimumInitialStopDelta
-    const consumedHeight = rowTop - zoneStart
+    const currentVisibleTop = zoneStart + zoneInsets.top
+    const currentVisibleBottom = zoneStart + viewportHeight - zoneInsets.bottom
+    const rowFitsCurrentZone = rowBottom <= currentVisibleBottom
+    const rowStartsNearZoneTop = rowTop - currentVisibleTop < minimumInitialStopDelta
+    const consumedHeight = rowTop - currentVisibleTop
     const rowOverloadsZone = zoneDensity > 0
       && zoneDensity + row.density > densityBudget
       && consumedHeight >= minimumZoneFill
 
     if (!rowFitsCurrentZone || rowOverloadsZone) {
-      let nextStart = rowTop
+      let nextStart = rowTop - zoneInsets.top
       const tinyInitialStop = stops.length === 1 && nextStart - blockStart < minimumInitialStopDelta
       const splitOnlyBecauseShortPrelude = !rowFitsCurrentZone
-        && rowHeight <= viewportHeight - ZONE_EDGE_GAP
+        && rowHeight <= zoneInsets.visibleHeight - ZONE_EDGE_GAP
         && rowStartsNearZoneTop
 
       if (tinyInitialStop && rowFitsCurrentZone) {
@@ -456,24 +485,25 @@ function buildVisibleZonesForBlock(
         return
       }
 
-      if (rowHeight > viewportHeight - ZONE_EDGE_GAP) {
+      if (rowHeight > zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
         const oversizedStops: number[] = []
-        let sliceStart = Math.max(zoneStart, rowTop)
+        let sliceStart = Math.max(zoneStart + zoneInsets.top, rowTop)
         if (sliceStart > zoneStart + 4 || stops.length === 1) {
-          pushStop(oversizedStops, clampZoneStart(sliceStart, blockStart, blockMaxStart))
+          pushStop(oversizedStops, clampZoneStart(sliceStart - zoneInsets.top, blockStart, blockMaxStart))
         }
 
-        while (rowBottom > sliceStart + viewportHeight - ZONE_EDGE_GAP) {
-          sliceStart = clampZoneStart(sliceStart + viewportHeight - ZONE_EDGE_GAP, blockStart, blockMaxStart)
-          if (sliceStart <= (oversizedStops[oversizedStops.length - 1] ?? zoneStart) + 4) break
-          pushStop(oversizedStops, sliceStart)
+        while (rowBottom > sliceStart + zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
+          sliceStart = clampZoneStart(sliceStart + zoneInsets.visibleHeight - ZONE_EDGE_GAP, blockStart + zoneInsets.top, blockMaxStart + zoneInsets.top)
+          const normalizedSliceStart = clampZoneStart(sliceStart - zoneInsets.top, blockStart, blockMaxStart)
+          if (normalizedSliceStart <= (oversizedStops[oversizedStops.length - 1] ?? zoneStart) + 4) break
+          pushStop(oversizedStops, normalizedSliceStart)
         }
 
         oversizedStops.forEach((stop) => {
           pushStop(stops, stop)
         })
 
-        zoneStart = oversizedStops[oversizedStops.length - 1] ?? rowTop
+        zoneStart = oversizedStops[oversizedStops.length - 1] ?? Math.max(blockStart, rowTop - zoneInsets.top)
         zoneDensity = Math.max(row.density, densityBudget * 0.55)
         return
       }
