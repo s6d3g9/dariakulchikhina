@@ -48,12 +48,19 @@ const ZONE_LAYOUT_CONTAINER_SELECTORS = [
 ].join(', ')
 
 const PAGER_RAIL_SELECTORS = '.cv-pager-rail, .proj-pager-rail'
-const GRID_ROWS_PER_PAGE = 8
 const MIN_VISIBLE_HEIGHT = 24
 const ROW_GROUP_GAP = 14
 const ZONE_EDGE_GAP = 8
 const MIN_ZONE_DELTA = 32
 const ZONE_OFFSET_ATTR = 'data-cv-zone-offset'
+const MIN_ZONE_DENSITY_BUDGET = 3.6
+const MAX_ZONE_DENSITY_BUDGET = 7.4
+
+type DensityRow = {
+  top: number
+  bottom: number
+  density: number
+}
 
 function isRenderableNode(node: Element): node is HTMLElement {
   return node instanceof HTMLElement && node.offsetParent !== null && node.offsetHeight > MIN_VISIBLE_HEIGHT
@@ -211,21 +218,68 @@ function collectRowItems(block: HTMLElement, viewport: HTMLElement) {
   return items.sort((left, right) => left.getBoundingClientRect().top - right.getBoundingClientRect().top)
 }
 
-function resolveGridRows(block: HTMLElement, viewport: HTMLElement) {
+function clampNumber(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value))
+}
+
+function resolveLineHeightPx(style: CSSStyleDeclaration, fontSize: number) {
+  const raw = Number.parseFloat(style.lineHeight)
+  if (Number.isFinite(raw)) return raw
+  return fontSize * 1.45
+}
+
+function measureNodeDensity(node: HTMLElement, viewport: HTMLElement) {
+  const viewportHeight = Math.max(viewport.clientHeight, 1)
+  const style = getComputedStyle(node)
+  const fontSize = Number.parseFloat(style.fontSize) || 16
+  const lineHeight = resolveLineHeightPx(style, fontSize)
+  const textLength = (node.textContent || '').replace(/\s+/g, ' ').trim().length
+  const headingCount = node.matches('h1, h2, h3, h4, h5, h6') ? 1 : node.querySelectorAll('h1, h2, h3, h4, h5, h6').length
+  const buttonCount = node.matches('button, [role="button"]') ? 1 : node.querySelectorAll('button, [role="button"], .a-btn-sm, .admin-entity-hero__action').length
+  const inputCount = node.matches('input, textarea, select') ? 1 : node.querySelectorAll('input, textarea, select, [contenteditable="true"]').length
+  const badgeCount = node.querySelectorAll('.doc-badge, .docs-stat, .docs-meta-card, [class*="badge"], [class*="chip"]').length
+  const mediaCount = node.querySelectorAll('img, video, iframe, canvas, svg').length
+  const paragraphCount = node.querySelectorAll('p, li, pre, blockquote').length
+  const areaWeight = clampNumber((node.offsetHeight / viewportHeight) * 2.2, 0.35, 2.8)
+  const textWeight = clampNumber(textLength / 420, 0, 1.9)
+  const typographyWeight = clampNumber((fontSize / 16 - 1) * 0.7 + (lineHeight / Math.max(fontSize, 1) - 1.35) * 0.35, 0, 0.9)
+  const headingWeight = headingCount * 0.24
+  const actionWeight = buttonCount * 0.16 + inputCount * 0.3
+  const supportingWeight = badgeCount * 0.06 + paragraphCount * 0.04 + mediaCount * 0.4
+
+  return clampNumber(
+    areaWeight + textWeight + typographyWeight + headingWeight + actionWeight + supportingWeight,
+    0.4,
+    3.6,
+  )
+}
+
+function resolveViewportDensityBudget(viewport: HTMLElement) {
+  const style = getComputedStyle(viewport)
+  const fontSize = Number.parseFloat(style.fontSize) || 16
+  const lineHeight = resolveLineHeightPx(style, fontSize)
+  const visibleLines = viewport.clientHeight / Math.max(lineHeight, 1)
+  const rawBudget = visibleLines / 7.5 - Math.max(0, fontSize - 16) * 0.08
+  return clampNumber(rawBudget, MIN_ZONE_DENSITY_BUDGET, MAX_ZONE_DENSITY_BUDGET)
+}
+
+function resolveDensityRows(block: HTMLElement, viewport: HTMLElement): DensityRow[] {
   const items = collectRowItems(block, viewport)
-  const rows: Array<{ top: number, bottom: number }> = []
+  const rows: DensityRow[] = []
 
   items.forEach((item) => {
     const top = resolveTopRelativeToViewport(item, viewport)
     const bottom = top + item.offsetHeight
+    const density = measureNodeDensity(item, viewport)
     const current = rows[rows.length - 1]
 
     if (!current || top > current.bottom + ROW_GROUP_GAP) {
-      rows.push({ top, bottom })
+      rows.push({ top, bottom, density })
       return
     }
 
     current.bottom = Math.max(current.bottom, bottom)
+    current.density += density
   })
 
   return rows
@@ -254,10 +308,11 @@ function compressStops(stops: number[]) {
 }
 
 function buildVisibleZonesForBlock(
-  rows: Array<{ top: number, bottom: number }>,
+  rows: DensityRow[],
   blockStart: number,
   blockMaxStart: number,
   viewportHeight: number,
+  densityBudget: number,
 ) {
   const stops = [blockStart]
   if (!rows.length || blockMaxStart <= blockStart + 4) {
@@ -265,16 +320,16 @@ function buildVisibleZonesForBlock(
   }
 
   let zoneStart = blockStart
-  let zoneRows = 0
+  let zoneDensity = 0
 
   rows.forEach((row) => {
     const rowTop = clampZoneStart(row.top, blockStart, blockMaxStart)
     const rowBottom = Math.max(rowTop + 1, row.bottom)
     const rowHeight = rowBottom - rowTop
     const rowFitsCurrentZone = rowBottom <= zoneStart + viewportHeight - ZONE_EDGE_GAP
-    const rowLimitReached = zoneRows >= GRID_ROWS_PER_PAGE
+    const rowOverloadsZone = zoneDensity > 0 && zoneDensity + row.density > densityBudget
 
-    if (!rowFitsCurrentZone || rowLimitReached) {
+    if (!rowFitsCurrentZone || rowOverloadsZone) {
       let nextStart = rowTop
 
       if (rowHeight > viewportHeight - ZONE_EDGE_GAP) {
@@ -295,18 +350,18 @@ function buildVisibleZonesForBlock(
         })
 
         zoneStart = oversizedStops[oversizedStops.length - 1] ?? rowTop
-        zoneRows = 1
+        zoneDensity = Math.max(row.density, densityBudget * 0.55)
         return
       }
 
       nextStart = clampZoneStart(nextStart, blockStart, blockMaxStart)
       pushStop(stops, nextStart)
       zoneStart = nextStart
-      zoneRows = 1
+      zoneDensity = row.density
       return
     }
 
-    zoneRows += 1
+    zoneDensity += row.density
   })
 
   if (blockMaxStart > (stops[stops.length - 1] ?? blockStart) + 4) {
@@ -319,6 +374,7 @@ function buildVisibleZonesForBlock(
 export function buildViewportPageStops(viewport: HTMLElement) {
   const viewportHeight = Math.max(viewport.clientHeight, 1)
   const maxTop = Math.max(0, viewport.scrollHeight - viewportHeight)
+  const densityBudget = resolveViewportDensityBudget(viewport)
   const stops = [0]
   const hero = viewport.querySelector<HTMLElement>('.admin-entity-hero')
   let minimumContentStart = 0
@@ -345,18 +401,20 @@ export function buildViewportPageStops(viewport: HTMLElement) {
         pushStop(stops, blockStart)
       }
 
-      const rows = resolveGridRows(block, viewport)
+      const rows = resolveDensityRows(block, viewport)
         .map((row) => ({
           top: Math.max(blockStart, Math.min(blockMaxStart, row.top)),
           bottom: Math.max(blockStart, Math.min(blockStart + blockHeight, row.bottom)),
+          density: row.density,
         }))
         .filter((row) => row.top > blockStart + 4)
 
       const blockStops = buildVisibleZonesForBlock(
-        rows.length ? rows : [{ top: blockStart, bottom: blockStart + blockHeight }],
+        rows.length ? rows : [{ top: blockStart, bottom: blockStart + blockHeight, density: Math.max(1, blockHeight / viewportHeight) }],
         blockStart,
         blockMaxStart,
         viewportHeight,
+        densityBudget,
       )
 
       blockStops.forEach((stop) => {
