@@ -606,7 +606,12 @@ const projectPagerModeLabel = computed(() => {
 })
 const projectPagerNextLabel = computed(() => {
   if (contentViewMode.value === 'flow') return 'экран / след.'
-  if (contentViewMode.value === 'wipe') return 'лист →'
+  if (contentViewMode.value === 'wipe') {
+    const atLast = viewportPageIndex.value >= viewportPageCount.value
+    const hasNextLeaf = currentProjectLeafIndex.value >= 0
+      && currentProjectLeafIndex.value < currentProjectLeafItems.value.length - 1
+    return atLast && hasNextLeaf ? 'след. →' : 'лист →'
+  }
   return 'экран →'
 })
 const projectContentTransitionCss = computed(() => projectContentTransitionEffect.value !== 'none')
@@ -1073,18 +1078,44 @@ async function advanceProjectLeaf(direction: 'next' | 'prev') {
   const nextPage = resolveProjectPageFromLeafId(targetLeaf.id)
   if (!nextPage) return false
 
+  const useWipe = contentViewMode.value === 'wipe'
+  const total = projectContentTransitionDuration.value
+  const half = Math.max(80, Math.round(total * 0.48))
+
   viewportNavigationBusy.value = true
   lockProjectViewportPaging()
+
+  if (useWipe && total > 0) {
+    clearProjectViewportWipeTimers()
+    projectViewportWipeDirection.value = direction
+    projectViewportWipePhase.value = 'cover'
+    syncProjectViewportAttrs()
+    await new Promise(r => setTimeout(r, half))
+  }
+
   try {
     await selectAdminPage(nextPage)
     await nextTick()
     resetProjectViewport()
+
+    if (useWipe && total > 0) {
+      projectViewportWipePhase.value = 'reveal'
+      syncProjectViewportAttrs()
+    }
+
     return true
   } finally {
+    const delay = useWipe && total > 0
+      ? Math.max(80, total - half)
+      : Math.min(900, Math.max(260, total))
     window.setTimeout(() => {
+      if (useWipe) {
+        projectViewportWipePhase.value = 'idle'
+        syncProjectViewportAttrs()
+      }
       viewportNavigationBusy.value = false
       syncProjectViewportPager()
-    }, Math.min(900, Math.max(260, projectContentTransitionDuration.value)))
+    }, delay)
   }
 }
 
@@ -1100,11 +1131,11 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
   const atEnd = targetIndex >= stops.length
 
   if (direction === 'next' && atEnd) {
-    return contentViewMode.value === 'flow' ? advanceProjectLeaf('next') : false
+    return isProjectViewportPaged.value ? advanceProjectLeaf('next') : false
   }
 
   if (direction === 'prev' && atStart) {
-    return contentViewMode.value === 'flow' ? advanceProjectLeaf('prev') : false
+    return isProjectViewportPaged.value ? advanceProjectLeaf('prev') : false
   }
 
   const targetTop = stops[Math.max(0, Math.min(stops.length - 1, targetIndex))] ?? 0
