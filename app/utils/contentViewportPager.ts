@@ -266,7 +266,7 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
   clearZoneOffsets(viewport)
 
   const zoneInsets = resolveZoneInsets(Math.max(viewport.clientHeight, 1))
-  ensureViewportBottomSpacer(viewport, zoneInsets.bottom)
+  ensureViewportBottomSpacer(viewport, zoneInsets.visibleHeight)
 
   for (let pass = 0; pass < 4; pass += 1) {
     const changed = applyViewportZoneLayoutPass(viewport)
