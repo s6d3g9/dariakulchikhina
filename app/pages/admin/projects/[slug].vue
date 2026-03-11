@@ -641,9 +641,6 @@ onActivated(syncNavToProject)
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleWindowProjectViewportKeydown)
 })
-watch(slug, () => {
-  syncNavToProject()
-}, { immediate: true })
 
 const MODERN_PROJECT_PAGES = [
   'first_contact',
@@ -672,6 +669,10 @@ const MODERN_PROJECT_PAGES = [
 const LEGACY_PROJECT_PAGES = new Set(['materials', 'tz', 'profile_customer'])
 
 const { data: project, pending: projectPending, refresh } = await useFetch<any>(`/api/projects/${slug.value}`)
+watch(slug, () => {
+  syncNavToProject()
+}, { immediate: true })
+
 const activePage = ref('overview')
 const showEdit = ref(false)
 const saving = ref(false)
