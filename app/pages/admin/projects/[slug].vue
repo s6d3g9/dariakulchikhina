@@ -911,7 +911,6 @@ function syncProjectViewportPager() {
   }
 
   applyViewportZoneLayout(el)
-  applyViewportZoneLayout(el)
   projectViewportStops.value = buildViewportPageStops(el)
   viewportPageCount.value = projectViewportStops.value.length
 

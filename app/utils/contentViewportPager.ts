@@ -82,8 +82,8 @@ function resolveZoneCarryOffset(zoneTop: number, childTop: number, viewportHeigh
   return Math.max(0, viewportHeight - relativeTop)
 }
 
-export function applyViewportZoneLayout(viewport: HTMLElement) {
-  clearZoneOffsets(viewport)
+function applyViewportZoneLayoutPass(viewport: HTMLElement) {
+  let applied = false
 
   const viewportHeight = Math.max(viewport.clientHeight, 1)
   const containers = Array.from(viewport.querySelectorAll<HTMLElement>(ZONE_LAYOUT_CONTAINER_SELECTORS))
@@ -111,6 +111,7 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
           applyZoneOffset(child, carryOffset)
           carriedOffset += carryOffset
           zoneTop = childTop + carryOffset
+          applied = true
           return
         }
 
@@ -125,9 +126,21 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
         applyZoneOffset(child, appliedOffset)
         carriedOffset += appliedOffset
         zoneTop = childTop + appliedOffset
+        applied = true
       }
     })
   })
+
+  return applied
+}
+
+export function applyViewportZoneLayout(viewport: HTMLElement) {
+  clearZoneOffsets(viewport)
+
+  for (let pass = 0; pass < 4; pass += 1) {
+    const changed = applyViewportZoneLayoutPass(viewport)
+    if (!changed) break
+  }
 }
 
 export function resolveTopRelativeToViewport(node: HTMLElement, viewport: HTMLElement) {
