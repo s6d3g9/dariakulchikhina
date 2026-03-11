@@ -3,10 +3,8 @@
  * Добавляет колонку project_type в таблицу projects.
  * Идемпотентный: повторный запуск безопасен.
  */
+import 'dotenv/config'
 import postgres from 'postgres'
-import { config } from 'dotenv'
-
-config()
 
 const DATABASE_URL = process.env.DATABASE_URL
 if (!DATABASE_URL) {
