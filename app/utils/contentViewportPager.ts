@@ -331,6 +331,7 @@ function buildVisibleZonesForBlock(
     const rowBottom = Math.max(rowTop + 1, row.bottom)
     const rowHeight = rowBottom - rowTop
     const rowFitsCurrentZone = rowBottom <= zoneStart + viewportHeight - ZONE_EDGE_GAP
+    const rowStartsNearZoneTop = rowTop - zoneStart < minimumInitialStopDelta
     const consumedHeight = rowTop - zoneStart
     const rowOverloadsZone = zoneDensity > 0
       && zoneDensity + row.density > densityBudget
@@ -339,8 +340,16 @@ function buildVisibleZonesForBlock(
     if (!rowFitsCurrentZone || rowOverloadsZone) {
       let nextStart = rowTop
       const tinyInitialStop = stops.length === 1 && nextStart - blockStart < minimumInitialStopDelta
+      const splitOnlyBecauseShortPrelude = !rowFitsCurrentZone
+        && rowHeight <= viewportHeight - ZONE_EDGE_GAP
+        && rowStartsNearZoneTop
 
       if (tinyInitialStop && rowFitsCurrentZone) {
+        zoneDensity += row.density
+        return
+      }
+
+      if (splitOnlyBecauseShortPrelude) {
         zoneDensity += row.density
         return
       }
