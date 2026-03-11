@@ -680,9 +680,10 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   const stops = [0]
   const hero = viewport.querySelector<HTMLElement>('.admin-entity-hero')
   let minimumContentStart = 0
+  let heroBottom = 0
 
   if (hero) {
-    const heroBottom = resolveTopRelativeToViewport(hero, viewport) + hero.offsetHeight
+    heroBottom = resolveTopRelativeToViewport(hero, viewport) + hero.offsetHeight
 
     if (!isWipeMode && heroBottom > 24 && heroBottom < maxTop - 4) {
       pushStop(stops, heroBottom)
@@ -700,8 +701,15 @@ export function buildViewportPageStops(viewport: HTMLElement) {
     // at the top of the next page — exactly like a printed book.
     const step = zoneInsets.visibleHeight
 
+    // If the hero extends past the first visible page, align the second
+    // stop so that main content starts at the top of the card area.
+    let firstContentStop = step
+    if (heroBottom > zoneInsets.top + step) {
+      firstContentStop = heroBottom - zoneInsets.top
+    }
+
     if (step > 0 && maxTop > 0) {
-      for (let cursor = step; cursor < maxTop; cursor += step) {
+      for (let cursor = firstContentStop; cursor < maxTop; cursor += step) {
         const stop = Math.min(cursor, maxTop)
         if (stop > (stops[stops.length - 1] ?? 0) + MIN_ZONE_DELTA) {
           pushStop(stops, stop)
