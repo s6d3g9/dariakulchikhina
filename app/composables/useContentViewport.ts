@@ -26,6 +26,8 @@ export function useContentViewport(options: {
   const wipePhase = ref<'idle' | 'cover' | 'reveal'>('idle')
   const wipeDirection = ref<Direction>('next')
   let wipeTimers: number[] = []
+  let pagerObserver: MutationObserver | null = null
+  let pagerSyncFrame = 0
 
   const contentViewMode = computed<ViewMode>(() => {
     const mode = toValue(options.mode)
@@ -94,6 +96,32 @@ export function useContentViewport(options: {
     const currentTop = el.scrollTop + 2
     const currentIndex = pageStops.value.findLastIndex((stop) => stop <= currentTop)
     pageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
+  }
+
+  function scheduleSyncPager() {
+    if (pagerSyncFrame || !isPaged.value) return
+    pagerSyncFrame = window.requestAnimationFrame(() => {
+      pagerSyncFrame = 0
+      syncPager()
+    })
+  }
+
+  function reconnectPagerObserver() {
+    pagerObserver?.disconnect()
+    pagerObserver = null
+
+    const el = viewportRef.value
+    if (!el || typeof MutationObserver === 'undefined') return
+
+    pagerObserver = new MutationObserver(() => {
+      if (navigationBusy.value) return
+      scheduleSyncPager()
+    })
+
+    pagerObserver.observe(el, {
+      childList: true,
+      subtree: true,
+    })
   }
 
   function resetViewport() {
@@ -230,6 +258,10 @@ export function useContentViewport(options: {
     syncViewportAttrs()
   }, { immediate: true })
 
+  watch(viewportRef, () => {
+    reconnectPagerObserver()
+  })
+
   function handleWindowKeydown(event: KeyboardEvent) {
     if (!viewportRef.value || !isPaged.value) return
     handleKeydown(event)
@@ -237,12 +269,19 @@ export function useContentViewport(options: {
 
   onMounted(() => {
     nextTick(syncPager)
+    nextTick(reconnectPagerObserver)
     window.addEventListener('resize', syncPager)
     window.addEventListener('keydown', handleWindowKeydown)
   })
 
   onBeforeUnmount(() => {
     clearWipeTimers()
+    if (pagerSyncFrame) {
+      window.cancelAnimationFrame(pagerSyncFrame)
+      pagerSyncFrame = 0
+    }
+    pagerObserver?.disconnect()
+    pagerObserver = null
     window.removeEventListener('resize', syncPager)
     window.removeEventListener('keydown', handleWindowKeydown)
   })

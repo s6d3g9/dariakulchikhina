@@ -901,6 +901,9 @@ const currentProjectLeafIndex = computed(() => {
   return currentProjectLeafItems.value.findIndex((item) => item.id === currentLeafId)
 })
 
+let projectViewportObserver: MutationObserver | null = null
+let projectViewportSyncFrame = 0
+
 function syncProjectViewportPager() {
   const el = projectViewport.value
   if (!el || !isProjectViewportPaged.value) {
@@ -917,6 +920,32 @@ function syncProjectViewportPager() {
   const currentTop = el.scrollTop + 2
   const currentIndex = projectViewportStops.value.findLastIndex((stop) => stop <= currentTop)
   viewportPageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
+}
+
+function scheduleProjectViewportPagerSync() {
+  if (projectViewportSyncFrame || !isProjectViewportPaged.value) return
+  projectViewportSyncFrame = window.requestAnimationFrame(() => {
+    projectViewportSyncFrame = 0
+    syncProjectViewportPager()
+  })
+}
+
+function reconnectProjectViewportObserver() {
+  projectViewportObserver?.disconnect()
+  projectViewportObserver = null
+
+  const el = projectViewport.value
+  if (!el || typeof MutationObserver === 'undefined') return
+
+  projectViewportObserver = new MutationObserver(() => {
+    if (viewportNavigationBusy.value) return
+    scheduleProjectViewportPagerSync()
+  })
+
+  projectViewportObserver.observe(el, {
+    childList: true,
+    subtree: true,
+  })
 }
 
 function clearProjectViewportWipeTimers() {
@@ -1258,13 +1287,24 @@ watch([projectViewport, contentViewMode, projectContentTransitionDuration, proje
   syncProjectViewportAttrs()
 }, { immediate: true })
 
+watch(projectViewport, () => {
+  reconnectProjectViewportObserver()
+})
+
 onMounted(() => {
   nextTick(syncProjectViewportPager)
+  nextTick(reconnectProjectViewportObserver)
   window.addEventListener('resize', syncProjectViewportPager)
 })
 
 onBeforeUnmount(() => {
   clearProjectViewportWipeTimers()
+  if (projectViewportSyncFrame) {
+    window.cancelAnimationFrame(projectViewportSyncFrame)
+    projectViewportSyncFrame = 0
+  }
+  projectViewportObserver?.disconnect()
+  projectViewportObserver = null
   window.removeEventListener('resize', syncProjectViewportPager)
 })
 
