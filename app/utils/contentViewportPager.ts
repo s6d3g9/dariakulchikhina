@@ -724,7 +724,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
         blockStart,
         blockMaxStart,
         viewportHeight,
-        densityBudget,
+        isWipeMode ? Infinity : densityBudget,
         reservedBottomInset,
       )
 
