@@ -438,10 +438,68 @@ function buildWipeItemList(viewport: HTMLElement): WipeItem[] {
     .sort((a, b) => a.naturalTop - b.naturalTop)
 }
 
+/** Selectors for semantic containers that should be kept together when possible. */
+const WIPE_GROUP_SELECTORS = '.apo-section, .apo-entity-group, .apo-phases, .u-form-section, [data-cv-unit="section"], [data-cv-unit="group"]'
+
+/**
+ * Pre-pass: push whole semantic sections/groups across page boundaries.
+ *
+ * If a section fits on a single page but straddles a boundary, push its
+ * first visible child (which carries the offset for the whole block) to the
+ * next page. Returns a Set of elements whose children should be skipped in
+ * the individual item pass (they've already been repositioned as a block).
+ */
+function applyWipeGroupKeepTogether(
+  viewport: HTMLElement,
+  step: number,
+  pageStart0: number,
+  heroPageEnd: number,
+): Set<HTMLElement> {
+  const handled = new Set<HTMLElement>()
+  const groups = viewport.querySelectorAll<HTMLElement>(WIPE_GROUP_SELECTORS)
+
+  for (const group of groups) {
+    if (group.offsetParent === null) continue
+    const groupTop = resolveTopRelativeToViewport(group, viewport)
+    const groupHeight = group.offsetHeight
+    const groupBottom = groupTop + groupHeight
+
+    // Skip groups fully inside hero page
+    if (groupBottom <= heroPageEnd) continue
+
+    // Only handle groups that can fit on one page
+    if (groupHeight > step - ZONE_EDGE_GAP * 2) continue
+
+    // Where is the group?
+    const contentRel = groupTop - pageStart0
+    const pageIdx = Math.max(0, Math.floor(contentRel / step))
+    const pageBottom = pageStart0 + (pageIdx + 1) * step
+
+    // Does it cross the boundary?
+    if (groupBottom <= pageBottom + ZONE_EDGE_GAP) continue
+
+    // Push the group to the next page
+    const pushOffset = pageBottom - groupTop
+    if (pushOffset <= 0 || pushOffset >= step) continue
+
+    // Find the first renderable element to apply offset to.
+    // Prefer section title/heading, fallback to the group itself.
+    const firstChild = group.querySelector<HTMLElement>(WIPE_HEADING_SELECTORS)
+      || (group.firstElementChild instanceof HTMLElement && group.firstElementChild.offsetParent !== null ? group.firstElementChild : null)
+    const target = firstChild || group
+
+    applyWipeOffset(target, pushOffset)
+    handled.add(group)
+  }
+
+  return handled
+}
+
 /**
  * Content-aware page breaks for wipe (book-like) mode.
  *
- * Works like a typesetting engine with three rules:
+ * Works like a typesetting engine with four rules:
+ * 0. Group keep-together: semantic sections that fit on one page are not split
  * 1. Cross-boundary: items sliced at a page boundary → push to next page
  * 2. Keep-with-next: headings must share a page with companion content
  * 3. Fill budget: respect the configurable page fill ratio
@@ -470,6 +528,9 @@ function applyWipeContentBreaks(viewport: HTMLElement) {
   const pageStart0 = sheetTop + firstContentStop // top of first content page
   const heroPageEnd = sheetTop + step // bottom of hero page
 
+  // Rule 0 (pre-pass): keep whole semantic sections together
+  const groupHandled = applyWipeGroupKeepTogether(viewport, step, pageStart0, heroPageEnd)
+
   const items = buildWipeItemList(viewport)
   if (!items.length) return
 
@@ -477,6 +538,16 @@ function applyWipeContentBreaks(viewport: HTMLElement) {
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
+
+    // Skip items inside groups that were already repositioned as a unit
+    if (groupHandled.size > 0) {
+      let skip = false
+      for (const g of groupHandled) {
+        if (g.contains(item.el)) { skip = true; break }
+      }
+      if (skip) continue
+    }
+
     const effectiveTop = item.naturalTop + accOffset
     const effectiveBottom = effectiveTop + item.height
 
