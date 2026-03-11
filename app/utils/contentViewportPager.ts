@@ -371,44 +371,70 @@ type WipeItem = {
  * Headings (section titles, group labels) are marked with keepWithNext=true
  * and carry a minCompanionHeight — the minimum height of content that MUST
  * appear on the same page below the heading to prevent orphaning.
+ *
+ * NOTE: isRenderableNode filters elements < 24px, so short headings like
+ * .apo-section-title (19px) and .apo-entity-label (19px) are invisible to
+ * collectRowItems. We explicitly scan for them via querySelectorAll.
  */
 function buildWipeItemList(viewport: HTMLElement): WipeItem[] {
   const blocks = resolvePageBlocks(viewport)
   const result: WipeItem[] = []
+  const seen = new Set<HTMLElement>()
 
   for (const block of blocks) {
     const children = collectRowItems(block, viewport)
-    if (children.length < 2) {
-      result.push({
-        el: block,
-        naturalTop: resolveTopRelativeToViewport(block, viewport),
-        height: block.offsetHeight,
-        keepWithNext: false,
-        minCompanionHeight: 0,
-      })
+
+    // Explicitly find headings that might be smaller than MIN_VISIBLE_HEIGHT
+    const headings = Array.from(block.querySelectorAll<HTMLElement>(WIPE_HEADING_SELECTORS))
+      .filter((el) => el.offsetParent !== null && el.offsetHeight > 0)
+
+    // Merge headings into the items list, deduplicating
+    const merged: HTMLElement[] = []
+    for (const h of headings) {
+      if (!seen.has(h)) { seen.add(h); merged.push(h) }
+    }
+    for (const c of children) {
+      if (!seen.has(c)) { seen.add(c); merged.push(c) }
+    }
+
+    if (merged.length < 2 && children.length < 2) {
+      if (!seen.has(block)) {
+        seen.add(block)
+        result.push({
+          el: block,
+          naturalTop: resolveTopRelativeToViewport(block, viewport),
+          height: block.offsetHeight,
+          keepWithNext: false,
+          minCompanionHeight: 0,
+        })
+      }
       continue
     }
 
-    for (let i = 0; i < children.length; i++) {
-      const child = children[i]
+    // Sort merged items by position
+    const sorted = merged.sort(
+      (a, b) => resolveTopRelativeToViewport(a, viewport) - resolveTopRelativeToViewport(b, viewport),
+    )
+
+    for (let i = 0; i < sorted.length; i++) {
+      const child = sorted[i]
       const heading = isWipeHeading(child)
-      const next = children[i + 1]
+      const next = sorted[i + 1]
 
       result.push({
         el: child,
         naturalTop: resolveTopRelativeToViewport(child, viewport),
         height: child.offsetHeight,
         keepWithNext: heading && !!next,
-        // Heading must share page with at least the next item (or 80px minimum)
         minCompanionHeight: heading && next ? Math.min(next.offsetHeight, 120) + 12 : 0,
       })
     }
   }
 
-  // Deduplicate and sort by natural position
-  const seen = new Set<HTMLElement>()
+  // Final dedup + sort by natural position
+  const finalSeen = new Set<HTMLElement>()
   return result
-    .filter((u) => { if (seen.has(u.el)) return false; seen.add(u.el); return true })
+    .filter((u) => { if (finalSeen.has(u.el)) return false; finalSeen.add(u.el); return true })
     .sort((a, b) => a.naturalTop - b.naturalTop)
 }
 
