@@ -961,7 +961,11 @@ function syncProjectViewportPager() {
   applyViewportZoneLayout(el)
   projectViewportStops.value = buildViewportPageStops(el)
   viewportPageCount.value = projectViewportStops.value.length
-  projectViewportLayoutInProgress = false
+
+  // Defer flag clear so MutationObserver microtask sees it as true and skips re-trigger
+  queueMicrotask(() => {
+    projectViewportLayoutInProgress = false
+  })
 
   updateProjectViewportPageIndex(el)
 }
@@ -993,8 +997,16 @@ function reconnectProjectViewportObserver() {
   const el = projectViewport.value
   if (!el || typeof MutationObserver === 'undefined') return
 
-  projectViewportObserver = new MutationObserver(() => {
+  projectViewportObserver = new MutationObserver((mutations) => {
     if (viewportNavigationBusy.value || projectViewportLayoutInProgress) return
+    // Ignore mutations caused by the layout engine itself (zone offsets / spacers)
+    const onlyZone = mutations.every((m) =>
+      [...m.addedNodes, ...m.removedNodes].every(
+        (n) => n instanceof Element
+          && (n.hasAttribute('data-cv-zone-offset') || n.hasAttribute('data-cv-zone-spacer')),
+      ) && m.attributeName === null,
+    )
+    if (onlyZone) return
     scheduleProjectViewportPagerSync()
   })
 
