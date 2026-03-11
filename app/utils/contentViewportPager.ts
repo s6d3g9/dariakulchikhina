@@ -690,23 +690,27 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   const blocks = resolvePageBlocks(viewport)
 
   if (isWipeMode && blocks.length) {
+    const WIPE_PAD = 20
     const packingRows: DensityRow[] = []
+    const effectiveVisible = zoneInsets.visibleHeight - 2 * WIPE_PAD
 
     for (const block of blocks) {
-      const top = resolveTopRelativeToViewport(block, viewport)
+      const blockTop = resolveTopRelativeToViewport(block, viewport)
       const height = block.offsetHeight
 
-      if (height <= zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
-        packingRows.push({ top, bottom: top + height, density: 1, preserveBoundary: true })
+      if (height <= effectiveVisible - ZONE_EDGE_GAP) {
+        packingRows.push({ top: blockTop, bottom: blockTop + height, density: 1, preserveBoundary: true })
       } else {
         const subChildren = getRenderableChildren(block)
         if (subChildren.length >= 2) {
-          for (const child of subChildren) {
+          for (let i = 0; i < subChildren.length; i++) {
+            const child = subChildren[i]
             const childTop = resolveTopRelativeToViewport(child, viewport)
-            packingRows.push({ top: childTop, bottom: childTop + child.offsetHeight, density: 1, preserveBoundary: true })
+            const rowTop = (i === 0) ? blockTop : childTop
+            packingRows.push({ top: rowTop, bottom: childTop + child.offsetHeight, density: 1, preserveBoundary: true })
           }
         } else {
-          packingRows.push({ top, bottom: top + height, density: 1, preserveBoundary: true })
+          packingRows.push({ top: blockTop, bottom: blockTop + height, density: 1, preserveBoundary: true })
         }
       }
     }
@@ -714,31 +718,39 @@ export function buildViewportPageStops(viewport: HTMLElement) {
     packingRows.sort((a, b) => a.top - b.top)
 
     if (packingRows.length) {
-      const contentStart = clampZoneStart(packingRows[0].top - zoneInsets.top, 0, maxTop)
+      const contentStart = clampZoneStart(packingRows[0].top - zoneInsets.top - WIPE_PAD, 0, maxTop)
       if (contentStart > 4) pushStop(stops, contentStart)
 
       let sheetStart = stops[stops.length - 1] ?? 0
 
       for (const row of packingRows) {
-        const visibleBottom = sheetStart + viewportHeight - zoneInsets.bottom
+        const visibleBottom = sheetStart + viewportHeight - zoneInsets.bottom - WIPE_PAD
 
         if (row.bottom <= visibleBottom + ZONE_EDGE_GAP) continue
 
-        const newStart = clampZoneStart(row.top - zoneInsets.top, 0, maxTop)
+        const newStart = clampZoneStart(row.top - zoneInsets.top - WIPE_PAD, 0, maxTop)
         pushStop(stops, newStart)
         sheetStart = newStart
 
         const rowHeight = row.bottom - row.top
-        if (rowHeight > zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
+        if (rowHeight > effectiveVisible - ZONE_EDGE_GAP) {
           let slice = row.top
-          while (row.bottom > slice + zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
-            slice += zoneInsets.visibleHeight - ZONE_EDGE_GAP
-            const nextStart = clampZoneStart(slice - zoneInsets.top, 0, maxTop)
+          while (row.bottom > slice + effectiveVisible - ZONE_EDGE_GAP) {
+            slice += effectiveVisible - ZONE_EDGE_GAP
+            const nextStart = clampZoneStart(slice - zoneInsets.top - WIPE_PAD, 0, maxTop)
             if (nextStart <= sheetStart + MIN_ZONE_DELTA) break
             pushStop(stops, nextStart)
             sheetStart = nextStart
           }
         }
+      }
+
+      const lastContentBottom = packingRows[packingRows.length - 1]?.bottom ?? 0
+      const lastStop = stops[stops.length - 1] ?? 0
+      const lastStopVisibleBottom = lastStop + viewportHeight - zoneInsets.bottom
+
+      if (lastContentBottom > lastStopVisibleBottom + ZONE_EDGE_GAP && maxTop > 4) {
+        pushStop(stops, maxTop)
       }
     }
   } else if (blocks.length) {
@@ -793,7 +805,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
     }
   }
 
-  if (maxTop > 4) {
+  if (!(isWipeMode && blocks.length) && maxTop > 4) {
     pushStop(stops, maxTop)
   }
 
