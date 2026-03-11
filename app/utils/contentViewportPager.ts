@@ -36,6 +36,27 @@ const ATOMIC_UNIT_CONTAINER_SELECTORS = [
   '.de-sources',
 ].join(', ')
 
+const SEMANTIC_GROUP_CONTAINER_SELECTORS = [
+  '[data-cv-unit="group"]',
+  '[data-cv-unit="list"]',
+  '[data-cv-unit="section"]',
+  '.u-form-section',
+  '.apo-section',
+  '.apo-entity-group',
+  '.apo-phases',
+].join(', ')
+
+const SEMANTIC_ATOMIC_UNIT_SELECTORS = [
+  '[data-cv-unit="atomic"]',
+  '[data-cv-unit="item"]',
+  '[data-cv-unit="field"]',
+  '.u-field',
+  '.apo-welcome',
+  '.apo-quick-nav',
+  '.apo-entity-card',
+  '.apo-phase-row',
+].join(', ')
+
 const PAGER_RAIL_SELECTORS = '.cv-pager-rail, .proj-pager-rail'
 const MIN_VISIBLE_HEIGHT = 24
 const ROW_GROUP_GAP = 14
@@ -137,9 +158,19 @@ function isFlowDisplay(display: string) {
   return display === 'block' || display === 'grid' || display === 'flex' || display === 'table' || display === 'flow-root'
 }
 
+function isSemanticGroupContainer(node: HTMLElement) {
+  return node.matches(SEMANTIC_GROUP_CONTAINER_SELECTORS)
+}
+
+function isSemanticAtomicUnit(node: HTMLElement) {
+  return node.matches(SEMANTIC_ATOMIC_UNIT_SELECTORS)
+}
+
 function shouldTreatAsLayoutContainer(node: HTMLElement, viewport: HTMLElement) {
   const children = getRenderableChildren(node)
   if (children.length < 2) return false
+
+  if (isSemanticGroupContainer(node)) return true
 
   const style = getComputedStyle(node)
   if (!isFlowDisplay(style.display)) return false
@@ -350,6 +381,10 @@ function resolvePageBlocks(viewport: HTMLElement) {
 }
 
 function collectAtomicUnits(node: HTMLElement, viewportHeight: number, depth = 0): HTMLElement[] {
+  if (isSemanticAtomicUnit(node)) {
+    return [node]
+  }
+
   const directChildren = getRenderableChildren(node)
 
   if (!directChildren.length || depth >= 4) {
@@ -367,7 +402,8 @@ function collectAtomicUnits(node: HTMLElement, viewportHeight: number, depth = 0
   const style = getComputedStyle(node)
   const isDynamicContainer = directChildren.length > 1 && isFlowDisplay(style.display)
 
-  const shouldSplit = node.matches(ATOMIC_UNIT_CONTAINER_SELECTORS)
+  const shouldSplit = isSemanticGroupContainer(node)
+    || node.matches(ATOMIC_UNIT_CONTAINER_SELECTORS)
     || node.matches(ROW_CONTAINER_SELECTORS)
     || isDynamicContainer
     || node.offsetHeight > viewportHeight - ZONE_EDGE_GAP
@@ -378,7 +414,8 @@ function collectAtomicUnits(node: HTMLElement, viewportHeight: number, depth = 0
 
   return directChildren.flatMap((child) => {
     const childCanSplit = child.children.length > 1 && (
-      child.matches(ATOMIC_UNIT_CONTAINER_SELECTORS)
+      isSemanticGroupContainer(child)
+      || child.matches(ATOMIC_UNIT_CONTAINER_SELECTORS)
       || child.matches(ROW_CONTAINER_SELECTORS)
       || child.offsetHeight > viewportHeight - ZONE_EDGE_GAP
     )
@@ -413,6 +450,10 @@ function clampNumber(value: number, min: number, max: number) {
 }
 
 function shouldPreserveRowBoundary(node: HTMLElement) {
+  if (isSemanticAtomicUnit(node) || isSemanticGroupContainer(node)) {
+    return true
+  }
+
   if (node.tagName === 'SECTION' || node.tagName === 'ARTICLE' || node.tagName === 'FORM' || node.tagName === 'FIELDSET') {
     return true
   }

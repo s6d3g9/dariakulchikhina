@@ -1,7 +1,7 @@
 <template>
   <div class="apo-root">
     <!-- Welcome card -->
-    <div class="apo-welcome glass-surface">
+    <div class="apo-welcome glass-surface" data-cv-unit="atomic">
       <div class="apo-welcome-left">
         <div class="apo-avatar">{{ project?.title?.charAt(0)?.toUpperCase() || '◈' }}</div>
         <div>
@@ -18,7 +18,7 @@
     </div>
 
     <!-- Quick actions -->
-    <div class="apo-quick-nav">
+    <div class="apo-quick-nav" data-cv-unit="atomic">
       <button class="apo-quick-btn glass-surface" @click="emit('navigate', 'first_contact')">
         <span class="apo-quick-icon">◍</span>
         <span class="apo-quick-label">Первичный контакт</span>
@@ -34,13 +34,13 @@
     </div>
 
     <!-- Linked entities -->
-    <div class="apo-section">
+    <div class="apo-section" data-cv-unit="section">
       <div class="apo-section-title">Команда проекта</div>
 
-      <div class="apo-entity-group">
+      <div class="apo-entity-group" data-cv-unit="list">
         <div class="apo-entity-label">Клиенты</div>
         <div v-if="!clients.length" class="apo-empty">Не привязаны</div>
-        <div v-for="c in clients" :key="c.id" class="apo-entity-card glass-surface">
+        <div v-for="c in clients" :key="c.id" class="apo-entity-card glass-surface" data-cv-unit="item">
           <span class="apo-entity-avatar">{{ c.name?.charAt(0)?.toUpperCase() || '?' }}</span>
           <div class="apo-entity-info">
             <div class="apo-entity-name">{{ c.name }}</div>
@@ -49,10 +49,10 @@
         </div>
       </div>
 
-      <div class="apo-entity-group">
+      <div class="apo-entity-group" data-cv-unit="list">
         <div class="apo-entity-label">Подрядчики</div>
         <div v-if="!contractors.length" class="apo-empty">Не привязаны</div>
-        <div v-for="c in contractors" :key="c.id" class="apo-entity-card glass-surface">
+        <div v-for="c in contractors" :key="c.id" class="apo-entity-card glass-surface" data-cv-unit="item">
           <span class="apo-entity-avatar">{{ c.name?.charAt(0)?.toUpperCase() || '?' }}</span>
           <div class="apo-entity-info">
             <div class="apo-entity-name">{{ c.name }}</div>
@@ -61,10 +61,10 @@
         </div>
       </div>
 
-      <div class="apo-entity-group">
+      <div class="apo-entity-group" data-cv-unit="list">
         <div class="apo-entity-label">Дизайнеры</div>
         <div v-if="!designers.length" class="apo-empty">Не привязаны</div>
-        <div v-for="d in designers" :key="d.id" class="apo-entity-card glass-surface">
+        <div v-for="d in designers" :key="d.id" class="apo-entity-card glass-surface" data-cv-unit="item">
           <span class="apo-entity-avatar">{{ d.name?.charAt(0)?.toUpperCase() || '?' }}</span>
           <div class="apo-entity-info">
             <div class="apo-entity-name">{{ d.name }}</div>
@@ -75,10 +75,10 @@
     </div>
 
     <!-- Phase progress -->
-    <div class="apo-section">
+    <div class="apo-section" data-cv-unit="section">
       <div class="apo-section-title">Прогресс по фазам</div>
-      <div class="apo-phases">
-        <div v-for="phase in phases" :key="phase.key" class="apo-phase-row">
+      <div class="apo-phases" data-cv-unit="list">
+        <div v-for="phase in phases" :key="phase.key" class="apo-phase-row" data-cv-unit="item">
           <div class="apo-phase-bar-wrap">
             <div class="apo-phase-label">{{ phase.label }}</div>
             <div class="apo-phase-bar">
