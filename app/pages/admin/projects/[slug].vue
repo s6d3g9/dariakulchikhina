@@ -590,7 +590,10 @@ const projectContentTransitionEffect = computed(() => {
   return effect
 })
 const projectContentTransitionDuration = computed(() => Math.min(10000, Math.max(0, designSystem.tokens.value.pageTransitDuration ?? 280)))
-const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
+const contentViewMode = computed(() => {
+  if (!designSystem.isHydrated.value) return 'scroll'
+  return designSystem.tokens.value.contentViewMode ?? 'scroll'
+})
 const isProjectViewportPaged = computed(() => !clientPreviewMode.value && !contractorPreviewMode.value && contentViewMode.value !== 'scroll')
 const projectHeroPrompt = computed(() => {
   if (!isProjectViewportPaged.value) return '↓ прокрутка / swipe ↓'

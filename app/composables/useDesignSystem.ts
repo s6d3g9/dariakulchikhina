@@ -1975,6 +1975,7 @@ export function useDesignSystem() {
   const history = useState<DesignTokens[]>('dsHistory', () => [])
   const future  = useState<DesignTokens[]>('dsFuture', () => [])
   const activeConceptSlug = useState<string>('dsConceptSlug', () => DEFAULT_DESIGN_CONCEPT)
+  const isHydrated = useState<boolean>('dsHydrated', () => false)
   const currentDesignMode = computed<DesignMode>(() => {
     const conceptSlug = activeConceptSlug.value as DesignConceptSlug
     return CONCEPT_TO_DESIGN_MODE[conceptSlug] || 'brutalist'
@@ -2653,6 +2654,7 @@ export function useDesignSystem() {
     load()
     _syncConceptAttr()
     applyToDOM()
+    isHydrated.value = true
   }
 
   /* ── Preview mode (try preset without committing) ──── */
@@ -2766,7 +2768,7 @@ export function useDesignSystem() {
     undo, redo, canUndo, canRedo,
     exportJSON, importJSON, exportCSS,
     initDesignSystem, applyToDOM, save, load,
-    activeConceptSlug, currentDesignMode,
+    activeConceptSlug, currentDesignMode, isHydrated,
     previewPreset, confirmPreview, cancelPreview, isPreviewActive,
     customPresets, loadCustomPresets, saveCustomPreset, deleteCustomPreset, renameCustomPreset,
   }

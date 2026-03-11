@@ -280,11 +280,6 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
   const zoneInsets = resolveZoneInsets(Math.max(viewport.clientHeight, 1))
   ensureViewportBottomSpacer(viewport, zoneInsets.visibleHeight)
 
-  for (let pass = 0; pass < 4; pass += 1) {
-    const changed = applyViewportZoneLayoutPass(viewport)
-    if (!changed) break
-  }
-
   const nextMaxTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
   const targetTop = Math.min(preservedScrollTop, nextMaxTop)
 
@@ -630,12 +625,17 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   if (blocks.length) {
     blocks.forEach((block) => {
       const rawStart = resolveTopRelativeToViewport(block, viewport)
-      const blockStart = Math.max(minimumContentStart, Math.min(maxTop, rawStart))
+      const contentStart = Math.max(minimumContentStart, Math.min(maxTop, rawStart))
+      const blockStart = clampZoneStart(
+        contentStart - zoneInsets.top,
+        minimumContentStart > 0 ? minimumContentStart : 0,
+        maxTop,
+      )
       const blockHeight = block.offsetHeight
-      const blockBottom = blockStart + blockHeight
+      const blockBottom = contentStart + blockHeight
       const blockMaxStart = Math.max(blockStart, Math.min(maxTop, blockBottom - (viewportHeight - zoneInsets.bottom)))
 
-      const followsHeroTooClosely = minimumContentStart > 0 && blockStart - minimumContentStart < heroToContentMinimumDelta
+      const followsHeroTooClosely = minimumContentStart > 0 && contentStart - minimumContentStart < heroToContentMinimumDelta
 
       if (blockStart > 4 && !followsHeroTooClosely) {
         pushStop(stops, blockStart)
@@ -644,7 +644,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
       const rows = resolveDensityRows(block, viewport)
         .map((row) => ({
           top: Math.max(blockStart, Math.min(blockMaxStart, row.top)),
-          bottom: Math.max(blockStart, Math.min(blockStart + blockHeight, row.bottom)),
+          bottom: Math.max(blockStart, Math.min(contentStart + blockHeight, row.bottom)),
           density: row.density,
           preserveBoundary: row.preserveBoundary,
         }))
