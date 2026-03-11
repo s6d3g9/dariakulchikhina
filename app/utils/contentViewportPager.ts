@@ -40,7 +40,6 @@ const ZONE_LAYOUT_CONTAINER_SELECTORS = [
   '.docs-registry',
   '.docs-list',
   '.docs-panel',
-  '.docs-column',
   '.cab-inner',
   '.proj-main-inner',
   '.de-fields-grid',
