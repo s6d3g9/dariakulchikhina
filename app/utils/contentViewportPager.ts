@@ -350,8 +350,21 @@ function isWipeHeading(el: HTMLElement): boolean {
   // Short first-child of a semantic container (label/title pattern)
   const parent = el.parentElement
   if (parent && el === parent.firstElementChild && el.offsetHeight < 60) {
+    if (el.querySelector('input, textarea, select, button, img, video')) return false
+    // Explicit semantic containers
     if (parent.matches('.apo-section, .apo-entity-group, .u-form-section, [data-cv-unit="section"], [data-cv-unit="group"]')) {
-      if (!el.querySelector('input, textarea, select, button, img, video')) return true
+      return true
+    }
+    // Universal: any short first child whose sibling containers hold form fields.
+    // Covers *-section-title / *-section-header patterns across all components.
+    const siblings = Array.from(parent.children).filter(
+      (c): c is HTMLElement => c instanceof HTMLElement && (c as HTMLElement).offsetHeight > 0 && c !== el,
+    )
+    if (
+      siblings.length >= 1
+      && siblings.some(s => (s as HTMLElement).querySelectorAll('input, textarea, select').length >= 1)
+    ) {
+      return true
     }
   }
   return false
@@ -717,11 +730,16 @@ function collectAtomicUnits(node: HTMLElement, viewportHeight: number, depth = 0
   }
 
   return directChildren.flatMap((child) => {
+    // A container of form rows: ≥3 children AND ≥2 form inputs → treat as breakable list.
+    // Covers *-rows, *-fields, *-list patterns in all admin form components universally.
+    const childIsFormRowList = child.children.length >= 3
+      && child.querySelectorAll('input, textarea, select').length >= 2
     const childCanSplit = child.children.length > 1 && (
       isSemanticGroupContainer(child)
       || child.matches(ATOMIC_UNIT_CONTAINER_SELECTORS)
       || child.matches(ROW_CONTAINER_SELECTORS)
       || child.offsetHeight > viewportHeight - ZONE_EDGE_GAP
+      || childIsFormRowList
     )
 
     if (!childCanSplit) {
