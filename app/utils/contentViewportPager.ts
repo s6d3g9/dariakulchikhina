@@ -115,6 +115,13 @@ function applyZoneOffset(node: HTMLElement, offset: number) {
   node.setAttribute(ZONE_OFFSET_ATTR, '1')
 }
 
+/** Wipe-mode offset with a lower threshold — even small pushes matter for strict page boundaries. */
+function applyWipeOffset(node: HTMLElement, offset: number) {
+  if (offset < 4) return
+  node.style.marginTop = `${Math.round(offset)}px`
+  node.setAttribute(ZONE_OFFSET_ATTR, '1')
+}
+
 function resolveZoneCarryOffset(zoneTop: number, childTop: number, visibleHeight: number) {
   const relativeTop = childTop - zoneTop
   if (relativeTop < MIN_ZONE_DELTA) return 0
@@ -462,8 +469,8 @@ function applyWipeContentBreaks(viewport: HTMLElement) {
     if (effectiveBottom > pageBottom + ZONE_EDGE_GAP) {
       if (item.height < step - ZONE_EDGE_GAP * 2) {
         const pushOffset = pageBottom - effectiveTop
-        if (pushOffset > ZONE_EDGE_GAP && pushOffset < step) {
-          applyZoneOffset(item.el, pushOffset)
+        if (pushOffset > 0 && pushOffset < step) {
+          applyWipeOffset(item.el, pushOffset)
           accOffset += pushOffset
         }
       }
@@ -475,8 +482,8 @@ function applyWipeContentBreaks(viewport: HTMLElement) {
       const neededHeight = item.height + item.minCompanionHeight
       if (remainingOnPage < neededHeight && usedOnPage > ZONE_EDGE_GAP) {
         const pushOffset = pageBottom - effectiveTop
-        if (pushOffset > ZONE_EDGE_GAP && pushOffset < step) {
-          applyZoneOffset(item.el, pushOffset)
+        if (pushOffset > 0 && pushOffset < step) {
+          applyWipeOffset(item.el, pushOffset)
           accOffset += pushOffset
         }
         continue
@@ -486,8 +493,8 @@ function applyWipeContentBreaks(viewport: HTMLElement) {
     // Rule 3: Fill budget — only for non-heading items
     if (!item.keepWithNext && usedOnPage > fillBudget && effectiveTop > pageTop + MIN_ZONE_DELTA) {
       const pushOffset = pageBottom - effectiveTop
-      if (pushOffset > ZONE_EDGE_GAP && pushOffset < step && item.height < step - ZONE_EDGE_GAP * 2) {
-        applyZoneOffset(item.el, pushOffset)
+      if (pushOffset > 0 && pushOffset < step && item.height < step - ZONE_EDGE_GAP * 2) {
+        applyWipeOffset(item.el, pushOffset)
         accOffset += pushOffset
       }
     }
