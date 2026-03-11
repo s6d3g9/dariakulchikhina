@@ -55,6 +55,7 @@ const MIN_ZONE_DELTA = 32
 const ZONE_OFFSET_ATTR = 'data-cv-zone-offset'
 const MIN_ZONE_DENSITY_BUDGET = 3.6
 const MAX_ZONE_DENSITY_BUDGET = 7.4
+const MIN_ZONE_FILL_RATIO = 0.52
 
 type DensityRow = {
   top: number
@@ -321,13 +322,17 @@ function buildVisibleZonesForBlock(
 
   let zoneStart = blockStart
   let zoneDensity = 0
+  const minimumZoneFill = viewportHeight * MIN_ZONE_FILL_RATIO
 
   rows.forEach((row) => {
     const rowTop = clampZoneStart(row.top, blockStart, blockMaxStart)
     const rowBottom = Math.max(rowTop + 1, row.bottom)
     const rowHeight = rowBottom - rowTop
     const rowFitsCurrentZone = rowBottom <= zoneStart + viewportHeight - ZONE_EDGE_GAP
-    const rowOverloadsZone = zoneDensity > 0 && zoneDensity + row.density > densityBudget
+    const consumedHeight = rowTop - zoneStart
+    const rowOverloadsZone = zoneDensity > 0
+      && zoneDensity + row.density > densityBudget
+      && consumedHeight >= minimumZoneFill
 
     if (!rowFitsCurrentZone || rowOverloadsZone) {
       let nextStart = rowTop
