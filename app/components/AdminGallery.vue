@@ -230,12 +230,12 @@
 
     <div v-if="isPaged" class="cv-pager-rail">
       <div class="cv-pager-rail__meta">
-        <span class="cv-pager-rail__mode">{{ contentViewMode === 'flow' ? 'поток' : 'экраны' }}</span>
+        <span class="cv-pager-rail__mode">{{ pagerModeLabel }}</span>
         <span>экран {{ pageIndex }} / {{ pageCount }}</span>
       </div>
       <div class="cv-pager-rail__actions">
         <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
-        <button type="button" class="a-btn-sm" @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / раздел' : 'экран →' }}</button>
+        <button type="button" class="a-btn-sm" @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / раздел' : pagerNextLabel }}</button>
       </div>
     </div>
 
@@ -381,6 +381,8 @@ const {
   viewportRef,
   contentViewMode,
   isPaged,
+  pagerModeLabel,
+  pagerNextLabel,
   pageIndex,
   pageCount,
   syncPager,

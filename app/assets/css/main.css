@@ -1950,6 +1950,7 @@ html.dark .glass-input::placeholder {
    ═══════════════════════════════════════════════════════════ */
 
 .cv-viewport--paged {
+  position: relative;
   height: calc(100vh - var(--dp-panel-h, 28px));
   overflow-y: auto;
   overflow-x: hidden;
@@ -1964,6 +1965,49 @@ html.dark .glass-input::placeholder {
 .cv-viewport--paged::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--glass-text) 18%, transparent);
   border-radius: 999px;
+}
+
+.cv-viewport--paged[data-cv-mode="wipe"] {
+  overflow-y: hidden;
+  scroll-behavior: auto;
+}
+
+.cv-viewport--paged[data-cv-mode="wipe"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--glass-page-bg) 96%, transparent), color-mix(in srgb, var(--glass-page-bg) 88%, transparent)),
+    linear-gradient(135deg, color-mix(in srgb, var(--glass-text) 8%, transparent), transparent 45%);
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  transform: translate3d(0, var(--cv-wipe-from, 102%), 0);
+  transition:
+    transform calc(var(--cv-transition-ms, 320ms) * 0.48) cubic-bezier(.2, .7, .16, 1),
+    opacity 120ms ease;
+}
+
+.cv-viewport--paged[data-cv-mode="wipe"][data-cv-dir="next"] {
+  --cv-wipe-from: 102%;
+  --cv-wipe-to: -102%;
+}
+
+.cv-viewport--paged[data-cv-mode="wipe"][data-cv-dir="prev"] {
+  --cv-wipe-from: -102%;
+  --cv-wipe-to: 102%;
+}
+
+.cv-viewport--paged[data-cv-mode="wipe"][data-cv-phase="cover"]::after {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.cv-viewport--paged[data-cv-mode="wipe"][data-cv-phase="reveal"]::after {
+  opacity: 1;
+  transform: translate3d(0, var(--cv-wipe-to, -102%), 0);
 }
 
 .cv-pager-rail {

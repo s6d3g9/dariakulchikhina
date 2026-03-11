@@ -189,7 +189,7 @@ export interface DesignTokens {
   archDivider:        'none' | 'line' | 'gradient'                       // section divider style
   archPageEnter:      'none' | 'fade' | 'slide' | 'slide-l' | 'slide-r' | 'slide-t' | 'slide-b' | 'curtain' | 'curtain-b' | 'zoom' | 'flip' | 'blur' | 'scale-fade' | 'drift-r' | 'drift-l' | 'clip-x' | 'clip-y' | 'skew' // page-enter transition
   pageTransitDuration: number                                             // ms, 0..10000 — speed of page transition
-  contentViewMode:    'scroll' | 'paged' | 'flow'                        // content viewport behavior
+  contentViewMode:    'scroll' | 'paged' | 'flow' | 'wipe'               // content viewport behavior
   archLinkAnim:       'none' | 'underline' | 'arrow'                     // link hover animation
   archSectionStyle:   'flat' | 'card' | 'striped'                        // section background style
   archNavStyle:       'full' | 'minimal' | 'hidden'                      // nav chrome level

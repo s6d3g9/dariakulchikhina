@@ -1797,7 +1797,7 @@
                         @click="set('contentViewMode', opt.id)"
                       >{{ opt.label }}</button>
                     </div>
-                    <div class="dp-field-hint">scroll — как сейчас, экраны — листание по размеру окна, поток — после конца материала открывает следующий пункт текущего меню.</div>
+                    <div class="dp-field-hint">scroll — как сейчас, экраны — листание по размеру окна, поток — после конца материала открывает следующий пункт текущего меню, wipe — фиксированное окно с перелистыванием частей контента через вайп.</div>
                   </div>
 
                   <!-- Section style -->
@@ -2244,6 +2244,7 @@ const contentViewModes = [
   { id: 'scroll' as const, label: 'скролл', description: 'Непрерывная прокрутка как сейчас.' },
   { id: 'paged' as const, label: 'экраны', description: 'Листание контента по высоте видимой зоны.' },
   { id: 'flow' as const, label: 'поток', description: 'Экранное листание и переход к следующему пункту активного меню.' },
+  { id: 'wipe' as const, label: 'wipe', description: 'Фиксированное окно и последовательное открытие частей контента через вайп-переход.' },
 ]
 const archSectionStyles = [
   { id: 'flat'    as const, label: 'плоский' },

@@ -475,12 +475,12 @@
 
           <div v-if="isProjectViewportPaged" class="proj-pager-rail">
             <div class="proj-pager-rail__meta">
-              <span class="proj-pager-rail__mode">{{ contentViewMode === 'flow' ? 'поток' : 'экраны' }}</span>
+              <span class="proj-pager-rail__mode">{{ projectPagerModeLabel }}</span>
               <span>экран {{ viewportPageIndex }} / {{ viewportPageCount }}</span>
             </div>
             <div class="proj-pager-rail__actions">
               <button type="button" class="a-btn-sm" @click="moveProjectViewport('prev')">← экран</button>
-              <button type="button" class="a-btn-sm" @click="moveProjectViewport('next')">{{ contentViewMode === 'flow' ? 'экран / след.' : 'экран →' }}</button>
+              <button type="button" class="a-btn-sm" @click="moveProjectViewport('next')">{{ projectPagerNextLabel }}</button>
             </div>
           </div>
         </div>
@@ -591,7 +591,20 @@ const projectContentTransitionEffect = computed(() => {
 const projectContentTransitionDuration = computed(() => Math.min(10000, Math.max(0, designSystem.tokens.value.pageTransitDuration ?? 280)))
 const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
 const isProjectViewportPaged = computed(() => !clientPreviewMode.value && !contractorPreviewMode.value && contentViewMode.value !== 'scroll')
-const projectHeroPrompt = computed(() => isProjectViewportPaged.value ? '↓ экран / PgDn ↓' : '↓ прокрутка / swipe ↓')
+const projectHeroPrompt = computed(() => {
+  if (!isProjectViewportPaged.value) return '↓ прокрутка / swipe ↓'
+  return contentViewMode.value === 'wipe' ? '↓ лист / PgDn ↓' : '↓ экран / PgDn ↓'
+})
+const projectPagerModeLabel = computed(() => {
+  if (contentViewMode.value === 'flow') return 'поток'
+  if (contentViewMode.value === 'wipe') return 'листы'
+  return 'экраны'
+})
+const projectPagerNextLabel = computed(() => {
+  if (contentViewMode.value === 'flow') return 'экран / след.'
+  if (contentViewMode.value === 'wipe') return 'лист →'
+  return 'экран →'
+})
 const projectContentTransitionCss = computed(() => projectContentTransitionEffect.value !== 'none')
 const projectContentTransitionName = computed(() =>
   projectContentTransitionEffect.value === 'none' ? 'tab-fade' : `pt-${projectContentTransitionEffect.value}`
@@ -601,6 +614,9 @@ const viewportPageIndex = ref(1)
 const viewportPageCount = ref(1)
 const viewportPagingLockUntil = ref(0)
 const viewportNavigationBusy = ref(false)
+const projectViewportWipePhase = ref<'idle' | 'cover' | 'reveal'>('idle')
+const projectViewportWipeDirection = ref<'next' | 'prev'>('next')
+let projectViewportWipeTimers: number[] = []
 
 // ── Привязка к глобальному nav (NavigationNode schema) ─────────────────────
 const adminNav = useAdminNav()
@@ -886,9 +902,31 @@ function syncProjectViewportPager() {
   viewportPageIndex.value = Math.min(viewportPageCount.value, Math.floor((el.scrollTop + 2) / pageHeight) + 1)
 }
 
+function clearProjectViewportWipeTimers() {
+  projectViewportWipeTimers.forEach((timer) => window.clearTimeout(timer))
+  projectViewportWipeTimers = []
+}
+
+function syncProjectViewportAttrs() {
+  const el = projectViewport.value
+  if (!el) return
+
+  el.dataset.cvMode = contentViewMode.value
+  el.dataset.cvDir = projectViewportWipeDirection.value
+  if (projectViewportWipePhase.value === 'idle') {
+    delete el.dataset.cvPhase
+  } else {
+    el.dataset.cvPhase = projectViewportWipePhase.value
+  }
+  el.style.setProperty('--cv-transition-ms', `${projectContentTransitionDuration.value}ms`)
+}
+
 function resetProjectViewport() {
   const el = projectViewport.value
   if (!el) return
+  clearProjectViewportWipeTimers()
+  projectViewportWipePhase.value = 'idle'
+  syncProjectViewportAttrs()
   el.scrollTo({ top: 0, behavior: 'auto' })
   syncProjectViewportPager()
 }
@@ -899,6 +937,40 @@ function lockProjectViewportPaging() {
 
 function canFlipProjectViewport() {
   return Date.now() >= viewportPagingLockUntil.value && !viewportNavigationBusy.value
+}
+
+function moveProjectViewportWithWipe(targetTop: number, direction: 'next' | 'prev') {
+  const el = projectViewport.value
+  if (!el) return false
+
+  const total = projectContentTransitionDuration.value
+  if (total <= 0) {
+    el.scrollTo({ top: targetTop, behavior: 'auto' })
+    syncProjectViewportPager()
+    return true
+  }
+
+  clearProjectViewportWipeTimers()
+  projectViewportWipeDirection.value = direction
+  projectViewportWipePhase.value = 'cover'
+  syncProjectViewportAttrs()
+  lockProjectViewportPaging()
+
+  const half = Math.max(80, Math.round(total * 0.48))
+  projectViewportWipeTimers.push(window.setTimeout(() => {
+    el.scrollTo({ top: targetTop, behavior: 'auto' })
+    syncProjectViewportPager()
+    projectViewportWipePhase.value = 'reveal'
+    syncProjectViewportAttrs()
+  }, half))
+
+  projectViewportWipeTimers.push(window.setTimeout(() => {
+    projectViewportWipePhase.value = 'idle'
+    syncProjectViewportAttrs()
+    syncProjectViewportPager()
+  }, Math.max(half + 80, total)))
+
+  return true
 }
 
 function resolveProjectPageFromLeafId(leafId: string) {
@@ -951,6 +1023,10 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
     : Math.max(0, el.scrollTop - pageHeight)
 
   if (targetTop === el.scrollTop) return false
+
+  if (contentViewMode.value === 'wipe') {
+    return moveProjectViewportWithWipe(targetTop, direction)
+  }
 
   lockProjectViewportPaging()
   el.scrollTo({ top: targetTop, behavior: 'smooth' })
@@ -1151,12 +1227,17 @@ watch([currentProjectPage, contentViewMode], async () => {
   resetProjectViewport()
 })
 
+watch([projectViewport, contentViewMode, projectContentTransitionDuration, projectViewportWipePhase, projectViewportWipeDirection], () => {
+  syncProjectViewportAttrs()
+}, { immediate: true })
+
 onMounted(() => {
   nextTick(syncProjectViewportPager)
   window.addEventListener('resize', syncProjectViewportPager)
 })
 
 onBeforeUnmount(() => {
+  clearProjectViewportWipeTimers()
   window.removeEventListener('resize', syncProjectViewportPager)
 })
 
@@ -1417,6 +1498,7 @@ async function saveProject() {
   min-height: calc(100vh - var(--dp-panel-h, 28px));
 }
 .proj-main--paged {
+  position: relative;
   height: calc(100vh - var(--dp-panel-h, 28px));
   overflow-y: auto;
   overflow-x: hidden;
@@ -1431,6 +1513,49 @@ async function saveProject() {
 .proj-main--paged::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--glass-text) 18%, transparent);
   border-radius: 999px;
+}
+
+.proj-main--paged[data-cv-mode="wipe"] {
+  overflow-y: hidden;
+  scroll-behavior: auto;
+}
+
+.proj-main--paged[data-cv-mode="wipe"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--glass-page-bg) 96%, transparent), color-mix(in srgb, var(--glass-page-bg) 88%, transparent)),
+    linear-gradient(135deg, color-mix(in srgb, var(--glass-text) 8%, transparent), transparent 45%);
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  transform: translate3d(0, var(--cv-wipe-from, 102%), 0);
+  transition:
+    transform calc(var(--cv-transition-ms, 320ms) * 0.48) cubic-bezier(.2, .7, .16, 1),
+    opacity 120ms ease;
+}
+
+.proj-main--paged[data-cv-mode="wipe"][data-cv-dir="next"] {
+  --cv-wipe-from: 102%;
+  --cv-wipe-to: -102%;
+}
+
+.proj-main--paged[data-cv-mode="wipe"][data-cv-dir="prev"] {
+  --cv-wipe-from: -102%;
+  --cv-wipe-to: 102%;
+}
+
+.proj-main--paged[data-cv-mode="wipe"][data-cv-phase="cover"]::after {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.proj-main--paged[data-cv-mode="wipe"][data-cv-phase="reveal"]::after {
+  opacity: 1;
+  transform: translate3d(0, var(--cv-wipe-to, -102%), 0);
 }
 .proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
 .proj-main-inner--after-hero {
@@ -1845,7 +1970,7 @@ async function saveProject() {
 
 /* ── Small phones ── */
 @media (max-width: 400px) {
-  .proj-main--paged {
+  .proj-main--paged:not([data-cv-mode="wipe"]) {
     height: auto;
     max-height: none;
     overflow: visible;

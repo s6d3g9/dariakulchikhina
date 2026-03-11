@@ -70,9 +70,24 @@
     </header>
 
     <!-- ── App shell body: global nav sidebar + main ── -->
-    <div class="adm-body">
+    <div class="adm-body" :class="{ 'adm-body--sidebar-collapsed': isSidebarCollapsed }">
       <!-- Global navigation sidebar — persists across all admin routes -->
-      <aside class="proj-nav-col">
+      <aside
+        ref="sidebarRef"
+        class="proj-nav-col adm-sidebar"
+        :class="{ 'adm-sidebar--collapsed': isSidebarCollapsed }"
+        @pointerenter="handleSidebarPointerEnter"
+      >
+        <button
+          v-if="canAutoCollapseSidebar"
+          type="button"
+          class="adm-sidebar-rail"
+          :class="{ 'adm-sidebar-rail--visible': isSidebarCollapsed }"
+          aria-label="Раскрыть меню"
+          @pointerenter="handleSidebarRailPointerEnter"
+          @focus="expandSidebar"
+        />
+        <div class="adm-sidebar-inner" :class="{ 'adm-sidebar-inner--collapsed': isSidebarCollapsed }">
         <div v-if="adminLayoutModules.sidebarMenu && isBrutalistShell" ref="adminMenuRef" class="admin-sidebar-menu-wrap">
           <button
             type="button"
@@ -167,8 +182,9 @@
           @back="adminNav.back"
           @select="adminNav.select"
         />
+        </div>
       </aside>
-      <main class="adm-main admin-with-nav">
+      <main class="adm-main admin-with-nav" @pointerenter="handleMainPointerEnter">
         <div class="admin-container">
           <slot />
         </div>
@@ -194,6 +210,45 @@ const adminLayoutModules = computed(() => adminLayout.value)
 const isBrutalistShell = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 
 const isLiquidGlassShell = computed(() => designSystem.currentDesignMode.value === 'liquid-glass')
+const sidebarRef = ref<HTMLElement | null>(null)
+const isSidebarCollapsed = ref(false)
+const isDesktopSidebar = ref(false)
+
+const canAutoCollapseSidebar = computed(() => {
+  return isDesktopSidebar.value
+    && adminLayoutModules.value.nestedNav
+    && Boolean(adminNav.activeLeafId.value)
+})
+
+function syncDesktopSidebarState() {
+  if (typeof window === 'undefined') return
+  isDesktopSidebar.value = window.matchMedia('(min-width: 1025px)').matches
+  if (!isDesktopSidebar.value) {
+    isSidebarCollapsed.value = false
+  }
+}
+
+function collapseSidebar() {
+  if (!canAutoCollapseSidebar.value) return
+  isSidebarCollapsed.value = true
+}
+
+function expandSidebar() {
+  isSidebarCollapsed.value = false
+}
+
+function handleMainPointerEnter() {
+  collapseSidebar()
+}
+
+function handleSidebarPointerEnter() {
+  if (!isSidebarCollapsed.value) return
+  expandSidebar()
+}
+
+function handleSidebarRailPointerEnter() {
+  expandSidebar()
+}
 
 function shouldResetDesignPanelFromQuery(value: unknown) {
   if (Array.isArray(value)) {
@@ -604,11 +659,14 @@ onMounted(() => {
   }
   useUITheme().initTheme()
   designSystem.initDesignSystem()
+  syncDesktopSidebarState()
+  window.addEventListener('resize', syncDesktopSidebarState)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onSearchKeydown)
   if (_notifInterval) clearInterval(_notifInterval)
+  window.removeEventListener('resize', syncDesktopSidebarState)
 })
 
 watch(() => adminLayoutModules.value.notifications, (enabled) => {
@@ -635,6 +693,11 @@ watch(() => adminLayoutModules.value.search, (enabled) => {
 watch(() => adminLayoutModules.value.sidebarMenu, (enabled) => {
   if (!enabled) {
     adminShellMenuOpen.value = false
+  }
+})
+watch(canAutoCollapseSidebar, (enabled) => {
+  if (!enabled) {
+    isSidebarCollapsed.value = false
   }
 })
 watch(() => route.fullPath, closeAll)
@@ -755,6 +818,69 @@ async function logout() {
   display: flex;
   align-items: flex-start;
   min-height: calc(100vh - var(--admin-header-h));
+}
+
+.adm-sidebar {
+  position: sticky;
+  top: var(--admin-nav-top, calc(var(--dp-panel-h, 28px) + 14px));
+  align-self: flex-start;
+  width: var(--ds-sidebar-width, 232px);
+  min-width: var(--ds-sidebar-width, 232px);
+  flex: 0 0 var(--ds-sidebar-width, 232px);
+  transition: width 220ms ease, min-width 220ms ease, flex-basis 220ms ease;
+}
+
+.adm-sidebar-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+
+.adm-sidebar-rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 14px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: e-resize;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.adm-sidebar-rail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 6px;
+  width: 2px;
+  background: color-mix(in srgb, var(--glass-text) 24%, transparent);
+}
+
+.adm-sidebar--collapsed {
+  width: 18px;
+  min-width: 18px;
+  flex-basis: 18px;
+}
+
+.adm-sidebar--collapsed .adm-sidebar-inner {
+  opacity: 0;
+  transform: translateX(-12px);
+  pointer-events: none;
+}
+
+.adm-sidebar-rail--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.adm-body--sidebar-collapsed .adm-main {
+  padding-left: 8px;
 }
 
 /* Main scrollable area */
@@ -1031,6 +1157,26 @@ async function logout() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
+  .adm-sidebar,
+  .adm-sidebar--collapsed {
+    position: static;
+    width: 100%;
+    min-width: 100%;
+    flex-basis: auto;
+  }
+
+  .adm-sidebar-inner,
+  .adm-sidebar--collapsed .adm-sidebar-inner {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .adm-sidebar-rail,
+  .adm-sidebar-rail--visible {
+    display: none;
+  }
+
   .admin-sidebar-menu-wrap {
     padding-bottom: 10px;
     margin-bottom: 8px;

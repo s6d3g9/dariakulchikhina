@@ -1,6 +1,6 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
 
-type ViewMode = 'scroll' | 'paged' | 'flow'
+type ViewMode = 'scroll' | 'paged' | 'flow' | 'wipe'
 type Direction = 'next' | 'prev'
 
 export function useContentViewport(options: {
@@ -16,10 +16,13 @@ export function useContentViewport(options: {
   const pageCount = ref(1)
   const lockUntil = ref(0)
   const navigationBusy = ref(false)
+  const wipePhase = ref<'idle' | 'cover' | 'reveal'>('idle')
+  const wipeDirection = ref<Direction>('next')
+  let wipeTimers: number[] = []
 
   const contentViewMode = computed<ViewMode>(() => {
     const mode = toValue(options.mode)
-    return mode === 'paged' || mode === 'flow' ? mode : 'scroll'
+    return mode === 'paged' || mode === 'flow' || mode === 'wipe' ? mode : 'scroll'
   })
 
   const isPaged = computed(() => {
@@ -27,11 +30,42 @@ export function useContentViewport(options: {
     return contentViewMode.value !== 'scroll'
   })
 
+  const pagerModeLabel = computed(() => {
+    if (contentViewMode.value === 'flow') return 'поток'
+    if (contentViewMode.value === 'wipe') return 'листы'
+    return 'экраны'
+  })
+
+  const pagerNextLabel = computed(() => {
+    if (contentViewMode.value === 'flow') return 'экран / след.'
+    if (contentViewMode.value === 'wipe') return 'лист →'
+    return 'экран →'
+  })
+
   const transitionMs = computed(() => {
     const raw = Number(toValue(options.transitionMs) ?? 320)
     if (!Number.isFinite(raw)) return 320
     return Math.min(10000, Math.max(0, raw))
   })
+
+  function clearWipeTimers() {
+    wipeTimers.forEach((timer) => window.clearTimeout(timer))
+    wipeTimers = []
+  }
+
+  function syncViewportAttrs() {
+    const el = viewportRef.value
+    if (!el) return
+
+    el.dataset.cvMode = contentViewMode.value
+    el.dataset.cvDir = wipeDirection.value
+    if (wipePhase.value === 'idle') {
+      delete el.dataset.cvPhase
+    } else {
+      el.dataset.cvPhase = wipePhase.value
+    }
+    el.style.setProperty('--cv-transition-ms', `${transitionMs.value}ms`)
+  }
 
   function syncPager() {
     const el = viewportRef.value
@@ -50,6 +84,9 @@ export function useContentViewport(options: {
   function resetViewport() {
     const el = viewportRef.value
     if (!el) return
+    clearWipeTimers()
+    wipePhase.value = 'idle'
+    syncViewportAttrs()
     el.scrollTo({ top: 0, behavior: 'auto' })
     syncPager()
   }
@@ -60,6 +97,40 @@ export function useContentViewport(options: {
 
   function canMove() {
     return !navigationBusy.value && Date.now() >= lockUntil.value
+  }
+
+  function moveWithWipe(targetTop: number, direction: Direction) {
+    const el = viewportRef.value
+    if (!el) return false
+
+    const total = transitionMs.value
+    if (total <= 0) {
+      el.scrollTo({ top: targetTop, behavior: 'auto' })
+      syncPager()
+      return true
+    }
+
+    clearWipeTimers()
+    wipeDirection.value = direction
+    wipePhase.value = 'cover'
+    syncViewportAttrs()
+    lockPaging()
+
+    const half = Math.max(80, Math.round(total * 0.48))
+    wipeTimers.push(window.setTimeout(() => {
+      el.scrollTo({ top: targetTop, behavior: 'auto' })
+      syncPager()
+      wipePhase.value = 'reveal'
+      syncViewportAttrs()
+    }, half))
+
+    wipeTimers.push(window.setTimeout(() => {
+      wipePhase.value = 'idle'
+      syncViewportAttrs()
+      syncPager()
+    }, Math.max(half + 80, total)))
+
+    return true
   }
 
   async function navigateSibling(direction: Direction) {
@@ -106,6 +177,10 @@ export function useContentViewport(options: {
 
     if (targetTop === el.scrollTop) return false
 
+    if (contentViewMode.value === 'wipe') {
+      return moveWithWipe(targetTop, direction)
+    }
+
     lockPaging()
     el.scrollTo({ top: targetTop, behavior: 'smooth' })
     window.setTimeout(syncPager, Math.min(900, Math.max(260, transitionMs.value)))
@@ -135,12 +210,17 @@ export function useContentViewport(options: {
     resetViewport()
   })
 
+  watch([viewportRef, contentViewMode, transitionMs, wipePhase, wipeDirection], () => {
+    syncViewportAttrs()
+  }, { immediate: true })
+
   onMounted(() => {
     nextTick(syncPager)
     window.addEventListener('resize', syncPager)
   })
 
   onBeforeUnmount(() => {
+    clearWipeTimers()
     window.removeEventListener('resize', syncPager)
   })
 
@@ -148,6 +228,8 @@ export function useContentViewport(options: {
     viewportRef,
     contentViewMode,
     isPaged,
+    pagerModeLabel,
+    pagerNextLabel,
     pageIndex,
     pageCount,
     syncPager,
