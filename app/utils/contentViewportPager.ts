@@ -62,7 +62,17 @@ type DensityRow = {
   top: number
   bottom: number
   density: number
+  preserveBoundary: boolean
 }
+
+const SEMANTIC_ROW_BOUNDARY_SELECTORS = [
+  'section',
+  '.u-form-section',
+  '.docs-panel',
+  '.proj-entity-section',
+  '.afc-section',
+  '.pd-step',
+].join(', ')
 
 function isRenderableNode(node: Element): node is HTMLElement {
   return node instanceof HTMLElement && node.offsetParent !== null && node.offsetHeight > MIN_VISIBLE_HEIGHT
@@ -224,6 +234,11 @@ function clampNumber(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
 }
 
+function shouldPreserveRowBoundary(node: HTMLElement) {
+  if (node.matches(SEMANTIC_ROW_BOUNDARY_SELECTORS)) return true
+  return Array.from(node.classList).some((className) => /(^|[-_])(section|step|panel|card|block)([-_]|$)/i.test(className))
+}
+
 function resolveLineHeightPx(style: CSSStyleDeclaration, fontSize: number) {
   const raw = Number.parseFloat(style.lineHeight)
   if (Number.isFinite(raw)) return raw
@@ -274,9 +289,11 @@ function resolveDensityRows(block: HTMLElement, viewport: HTMLElement): DensityR
     const bottom = top + item.offsetHeight
     const density = measureNodeDensity(item, viewport)
     const current = rows[rows.length - 1]
+    const preserveBoundary = shouldPreserveRowBoundary(item)
+    const shouldKeepSeparate = current?.preserveBoundary && preserveBoundary
 
-    if (!current || top > current.bottom + ROW_GROUP_GAP) {
-      rows.push({ top, bottom, density })
+    if (!current || shouldKeepSeparate || top > current.bottom + ROW_GROUP_GAP) {
+      rows.push({ top, bottom, density, preserveBoundary })
       return
     }
 
@@ -435,7 +452,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
         .filter((row) => row.top > blockStart + 4)
 
       const blockStops = buildVisibleZonesForBlock(
-        rows.length ? rows : [{ top: blockStart, bottom: blockStart + blockHeight, density: Math.max(1, blockHeight / viewportHeight) }],
+        rows.length ? rows : [{ top: blockStart, bottom: blockStart + blockHeight, density: Math.max(1, blockHeight / viewportHeight), preserveBoundary: true }],
         blockStart,
         blockMaxStart,
         viewportHeight,
