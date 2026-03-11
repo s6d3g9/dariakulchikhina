@@ -533,7 +533,7 @@ import {
   PROJECT_SECTION_TO_PAGE,
 } from '~~/shared/constants/admin-navigation'
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
-import { applyViewportZoneLayout, buildViewportPageStops } from '~/utils/contentViewportPager'
+import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -973,6 +973,7 @@ function syncProjectViewportAttrs() {
 
   const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
   const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
+  const sheetInsets = resolveViewportSheetInsets(viewportHeight)
 
   el.dataset.cvMode = contentViewMode.value
   el.dataset.cvDir = projectViewportWipeDirection.value
@@ -983,6 +984,8 @@ function syncProjectViewportAttrs() {
   }
   el.style.setProperty('--cv-transition-ms', `${projectContentTransitionDuration.value}ms`)
   el.style.setProperty('--cv-viewport-height', `${viewportHeight}px`)
+  el.style.setProperty('--cv-sheet-top', `${sheetInsets.top}px`)
+  el.style.setProperty('--cv-sheet-bottom', `${sheetInsets.bottom}px`)
 }
 
 function resetProjectViewport() {
@@ -1588,6 +1591,28 @@ async function saveProject() {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--glass-text) 18%, transparent) transparent;
   outline: none;
+}
+.proj-main--paged::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin-bottom: -100%;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glass-page-bg) 100%, transparent) 0,
+      color-mix(in srgb, var(--glass-page-bg) 100%, transparent) var(--cv-sheet-top, 48px),
+      transparent var(--cv-sheet-top, 48px),
+      transparent calc(100% - var(--cv-sheet-bottom, 64px)),
+      color-mix(in srgb, var(--glass-page-bg) 100%, transparent) calc(100% - var(--cv-sheet-bottom, 64px)),
+      color-mix(in srgb, var(--glass-page-bg) 100%, transparent) 100%
+    );
 }
 .proj-main--paged::-webkit-scrollbar { width: 5px; }
 .proj-main--paged::-webkit-scrollbar-track { background: transparent; }

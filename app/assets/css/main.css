@@ -1960,6 +1960,28 @@ html.dark .glass-input::placeholder {
   scrollbar-color: color-mix(in srgb, var(--glass-text) 18%, transparent) transparent;
   outline: none;
 }
+.cv-viewport--paged::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin-bottom: -100%;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--glass-page-bg) 100%, transparent) 0,
+      color-mix(in srgb, var(--glass-page-bg) 100%, transparent) var(--cv-sheet-top, 48px),
+      transparent var(--cv-sheet-top, 48px),
+      transparent calc(100% - var(--cv-sheet-bottom, 64px)),
+      color-mix(in srgb, var(--glass-page-bg) 100%, transparent) calc(100% - var(--cv-sheet-bottom, 64px)),
+      color-mix(in srgb, var(--glass-page-bg) 100%, transparent) 100%
+    );
+ }
 .cv-viewport--paged::-webkit-scrollbar { width: 5px; }
 .cv-viewport--paged::-webkit-scrollbar-track { background: transparent; }
 .cv-viewport--paged::-webkit-scrollbar-thumb {

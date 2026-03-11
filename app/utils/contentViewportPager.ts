@@ -110,6 +110,10 @@ function resolveZoneInsets(viewportHeight: number) {
   }
 }
 
+export function resolveViewportSheetInsets(viewportHeight: number) {
+  return resolveZoneInsets(viewportHeight)
+}
+
 function isFlowDisplay(display: string) {
   return display === 'block' || display === 'grid' || display === 'flex' || display === 'table' || display === 'flow-root'
 }

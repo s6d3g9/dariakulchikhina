@@ -1,5 +1,5 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
-import { applyViewportZoneLayout, buildViewportPageStops } from '~/utils/contentViewportPager'
+import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
 
 type ViewMode = 'scroll' | 'paged' | 'flow' | 'wipe'
 type Direction = 'next' | 'prev'
@@ -68,6 +68,7 @@ export function useContentViewport(options: {
 
     const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
     const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
+    const sheetInsets = resolveViewportSheetInsets(viewportHeight)
 
     el.dataset.cvMode = contentViewMode.value
     el.dataset.cvDir = wipeDirection.value
@@ -78,6 +79,8 @@ export function useContentViewport(options: {
     }
     el.style.setProperty('--cv-transition-ms', `${transitionMs.value}ms`)
     el.style.setProperty('--cv-viewport-height', `${viewportHeight}px`)
+    el.style.setProperty('--cv-sheet-top', `${sheetInsets.top}px`)
+    el.style.setProperty('--cv-sheet-bottom', `${sheetInsets.bottom}px`)
   }
 
   function syncPager() {
