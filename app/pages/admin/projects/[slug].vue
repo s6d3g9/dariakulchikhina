@@ -533,7 +533,7 @@ import {
   PROJECT_SECTION_TO_PAGE,
 } from '~~/shared/constants/admin-navigation'
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
-import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
+import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportPagerRailInset, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -917,6 +917,7 @@ function syncProjectViewportPager() {
     return
   }
 
+  syncProjectViewportAttrs()
   applyViewportZoneLayout(el)
   projectViewportStops.value = buildViewportPageStops(el)
   viewportPageCount.value = projectViewportStops.value.length
@@ -973,7 +974,7 @@ function syncProjectViewportAttrs() {
 
   const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
   const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
-  const sheetInsets = resolveViewportSheetInsets(viewportHeight)
+  const sheetInsets = resolveViewportSheetInsets(viewportHeight, resolveViewportPagerRailInset(el))
 
   el.dataset.cvMode = contentViewMode.value
   el.dataset.cvDir = projectViewportWipeDirection.value

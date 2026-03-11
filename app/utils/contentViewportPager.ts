@@ -49,7 +49,7 @@ const HERO_TO_CONTENT_MIN_DELTA_RATIO = 0.28
 const MIN_ZONE_TOP_INSET = 28
 const MAX_ZONE_TOP_INSET = 72
 const MIN_ZONE_BOTTOM_INSET = 28
-const MAX_ZONE_BOTTOM_INSET = 96
+const MAX_ZONE_BOTTOM_INSET = 180
 const ZONE_SPACER_ATTR = 'data-cv-zone-spacer'
 
 type DensityRow = {
@@ -100,9 +100,28 @@ function resolveZoneCarryOffset(zoneTop: number, childTop: number, visibleHeight
   return Math.max(0, visibleHeight - relativeTop)
 }
 
-function resolveZoneInsets(viewportHeight: number) {
+function parseCssPixels(value: string | null | undefined) {
+  const parsed = Number.parseFloat(value || '')
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+export function resolveViewportPagerRailInset(viewport: HTMLElement | null) {
+  if (!viewport) return 0
+
+  const rail = viewport.querySelector<HTMLElement>(PAGER_RAIL_SELECTORS)
+  if (!rail || rail.offsetParent === null) return 0
+
+  const railStyle = getComputedStyle(rail)
+  const stickyBottom = parseCssPixels(railStyle.bottom)
+  const marginBottom = parseCssPixels(railStyle.marginBottom)
+
+  return Math.round(rail.offsetHeight + stickyBottom + marginBottom)
+}
+
+function resolveZoneInsets(viewportHeight: number, reservedBottomInset = 0) {
   const top = clampNumber(Math.round(viewportHeight * 0.075), MIN_ZONE_TOP_INSET, MAX_ZONE_TOP_INSET)
-  const bottom = clampNumber(Math.round(viewportHeight * 0.1), MIN_ZONE_BOTTOM_INSET, MAX_ZONE_BOTTOM_INSET)
+  const baseBottom = clampNumber(Math.round(viewportHeight * 0.1), MIN_ZONE_BOTTOM_INSET, MAX_ZONE_BOTTOM_INSET)
+  const bottom = clampNumber(Math.max(baseBottom, reservedBottomInset), MIN_ZONE_BOTTOM_INSET, MAX_ZONE_BOTTOM_INSET)
   return {
     top,
     bottom,
@@ -110,8 +129,8 @@ function resolveZoneInsets(viewportHeight: number) {
   }
 }
 
-export function resolveViewportSheetInsets(viewportHeight: number) {
-  return resolveZoneInsets(viewportHeight)
+export function resolveViewportSheetInsets(viewportHeight: number, reservedBottomInset = 0) {
+  return resolveZoneInsets(viewportHeight, reservedBottomInset)
 }
 
 function isFlowDisplay(display: string) {
@@ -220,7 +239,7 @@ function applyViewportZoneLayoutPass(viewport: HTMLElement) {
   let applied = false
 
   const viewportHeight = Math.max(viewport.clientHeight, 1)
-  const zoneInsets = resolveZoneInsets(viewportHeight)
+  const zoneInsets = resolveZoneInsets(viewportHeight, resolveViewportPagerRailInset(viewport))
   const containers = collectZoneLayoutContainers(viewport)
 
   containers.forEach((container) => {
@@ -281,7 +300,7 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
   const preservedScrollTop = viewport.scrollTop
   clearZoneOffsets(viewport)
 
-  const zoneInsets = resolveZoneInsets(Math.max(viewport.clientHeight, 1))
+  const zoneInsets = resolveZoneInsets(Math.max(viewport.clientHeight, 1), resolveViewportPagerRailInset(viewport))
   ensureViewportBottomSpacer(viewport, zoneInsets.visibleHeight)
 
   const nextMaxTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
@@ -523,8 +542,9 @@ function buildVisibleZonesForBlock(
   blockMaxStart: number,
   viewportHeight: number,
   densityBudget: number,
+  reservedBottomInset = 0,
 ) {
-  const zoneInsets = resolveZoneInsets(viewportHeight)
+  const zoneInsets = resolveZoneInsets(viewportHeight, reservedBottomInset)
   const stops = [blockStart]
   if (!rows.length || blockMaxStart <= blockStart + 4) {
     return stops
@@ -607,7 +627,8 @@ function buildVisibleZonesForBlock(
 
 export function buildViewportPageStops(viewport: HTMLElement) {
   const viewportHeight = Math.max(viewport.clientHeight, 1)
-  const zoneInsets = resolveZoneInsets(viewportHeight)
+  const reservedBottomInset = resolveViewportPagerRailInset(viewport)
+  const zoneInsets = resolveZoneInsets(viewportHeight, reservedBottomInset)
   const maxTop = Math.max(0, viewport.scrollHeight - viewportHeight)
   const densityBudget = resolveViewportDensityBudget(viewport, zoneInsets.visibleHeight)
   const heroToContentMinimumDelta = Math.max(120, Math.round(viewportHeight * HERO_TO_CONTENT_MIN_DELTA_RATIO))
@@ -660,6 +681,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
         blockMaxStart,
         viewportHeight,
         densityBudget,
+        reservedBottomInset,
       )
 
       blockStops.forEach((stop) => {
