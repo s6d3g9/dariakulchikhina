@@ -376,7 +376,7 @@ type WipeItem = {
  * .apo-section-title (19px) and .apo-entity-label (19px) are invisible to
  * collectRowItems. We explicitly scan for them via querySelectorAll.
  */
-function buildWipeItemList(viewport: HTMLElement): WipeItem[] {
+function buildWipeItemList(viewport: HTMLElement, step: number): WipeItem[] {
   const blocks = resolvePageBlocks(viewport)
   const result: WipeItem[] = []
   const seen = new Set<HTMLElement>()
@@ -421,12 +421,29 @@ function buildWipeItemList(viewport: HTMLElement): WipeItem[] {
       const heading = isWipeHeading(child)
       const next = sorted[i + 1]
 
+      let companionHeight = 0
+      if (heading && next) {
+        // For section headings, check if the next item's parent container
+        // (e.g. .apo-phases) can fit on one page together with the heading.
+        // If so, use the full container height as companion to keep them together.
+        const siblingContainer = child.nextElementSibling
+        if (
+          siblingContainer instanceof HTMLElement
+          && siblingContainer.offsetHeight > 0
+          && child.offsetHeight + siblingContainer.offsetHeight < step * 0.95
+        ) {
+          companionHeight = siblingContainer.offsetHeight + 12
+        } else {
+          companionHeight = Math.min(next.offsetHeight, 120) + 12
+        }
+      }
+
       result.push({
         el: child,
         naturalTop: resolveTopRelativeToViewport(child, viewport),
         height: child.offsetHeight,
         keepWithNext: heading && !!next,
-        minCompanionHeight: heading && next ? Math.min(next.offsetHeight, 120) + 12 : 0,
+        minCompanionHeight: companionHeight,
       })
     }
   }
@@ -439,7 +456,7 @@ function buildWipeItemList(viewport: HTMLElement): WipeItem[] {
 }
 
 /** Selectors for semantic containers that should be kept together when possible. */
-const WIPE_GROUP_SELECTORS = '.apo-section, .apo-entity-group, .apo-phases, .u-form-section, [data-cv-unit="section"], [data-cv-unit="group"]'
+const WIPE_GROUP_SELECTORS = '.apo-section, .apo-entity-group, .u-form-section, [data-cv-unit="section"], [data-cv-unit="group"]'
 
 /**
  * Pre-pass: push whole semantic sections/groups across page boundaries.
@@ -531,7 +548,7 @@ function applyWipeContentBreaks(viewport: HTMLElement) {
   // Rule 0 (pre-pass): keep whole semantic sections together
   const groupHandled = applyWipeGroupKeepTogether(viewport, step, pageStart0, heroPageEnd)
 
-  const items = buildWipeItemList(viewport)
+  const items = buildWipeItemList(viewport, step)
   if (!items.length) return
 
   let accOffset = 0
