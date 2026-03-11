@@ -673,7 +673,18 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   const viewportHeight = Math.max(viewport.clientHeight, 1)
   const isWipeMode = viewport.dataset.cvMode === 'wipe'
   const reservedBottomInset = resolveViewportPagerRailInset(viewport)
-  const zoneInsets = resolveZoneInsets(viewportHeight, reservedBottomInset)
+
+  // For wipe mode, read actual CSS variable insets set by the design tokens
+  let zoneInsets: { top: number; bottom: number; visibleHeight: number }
+  if (isWipeMode) {
+    const vpStyle = getComputedStyle(viewport)
+    const top = parseCssPixels(vpStyle.getPropertyValue('--cv-sheet-top')) || 48
+    const bottom = parseCssPixels(vpStyle.getPropertyValue('--cv-sheet-bottom')) || 106
+    zoneInsets = { top, bottom, visibleHeight: Math.max(120, viewportHeight - top - bottom) }
+  } else {
+    zoneInsets = resolveZoneInsets(viewportHeight, reservedBottomInset)
+  }
+
   const maxTop = Math.max(0, viewport.scrollHeight - viewportHeight)
   const densityBudget = resolveViewportDensityBudget(viewport, zoneInsets.visibleHeight)
   const heroToContentMinimumDelta = Math.max(120, Math.round(viewportHeight * HERO_TO_CONTENT_MIN_DELTA_RATIO))

@@ -203,6 +203,15 @@ export interface DesignTokens {
   navTransitDuration: number                                             // ms, 80..700 — sidebar transition speed
   navTransitDistance: number                                             // px, 0..56 — sidebar transition amplitude
   navItemStagger:     number                                             // ms, 0..60 — per-item cascade delay
+
+  /* ── Wipe mode settings ── */
+  wipeTopInset:       number    // px, 24..120 — top padding of the card from viewport edge
+  wipeBottomInset:    number    // px, 24..200 — bottom padding (includes pager rail)
+  wipeSideMargin:     number    // px, 0..80  — horizontal margin of the card
+  wipeContentPadding: number    // px, 0..48  — internal content padding inside the card
+  wipeCardRadius:     number    // px, 0..32  — card border-radius
+  wipeCardBorder:     number    // px, 0..4   — card border width
+  wipeCardShadow:     number    // 0..1       — card shadow intensity
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -351,6 +360,14 @@ export const DEFAULT_TOKENS: DesignTokens = {
   navTransitDuration: 220,
   navTransitDistance: 18,
   navItemStagger: 12,
+
+  wipeTopInset: 48,
+  wipeBottomInset: 106,
+  wipeSideMargin: 20,
+  wipeContentPadding: 20,
+  wipeCardRadius: 14,
+  wipeCardBorder: 1,
+  wipeCardShadow: 0.4,
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2365,6 +2382,18 @@ export function useDesignSystem() {
     el.setAttribute('data-content-reveal', t.archContentReveal || 'none')
     el.setAttribute('data-text-reveal',   t.archTextReveal   || 'none')
     el.setAttribute('data-nav-transition', t.archNavTransition || 'slide')
+
+    // ── Wipe mode CSS custom properties ────────────────────
+    el.style.setProperty('--wipe-top-inset', `${t.wipeTopInset ?? 48}px`)
+    el.style.setProperty('--wipe-bottom-inset', `${t.wipeBottomInset ?? 106}px`)
+    el.style.setProperty('--wipe-side-margin', `${t.wipeSideMargin ?? 20}px`)
+    el.style.setProperty('--wipe-content-padding', `${t.wipeContentPadding ?? 20}px`)
+    el.style.setProperty('--wipe-card-radius', `${t.wipeCardRadius ?? 14}px`)
+    el.style.setProperty('--wipe-card-border', `${t.wipeCardBorder ?? 1}px`)
+    const ws = t.wipeCardShadow ?? 0.4
+    el.style.setProperty('--wipe-card-shadow', String(ws))
+    el.style.setProperty('--wipe-shadow-sm', `rgba(0,0,0,${(ws * 0.1).toFixed(3)})`)
+    el.style.setProperty('--wipe-shadow-lg', `rgba(0,0,0,${(ws * 0.075).toFixed(3)})`)
 
     // Set data-dark-surface when page bg is very dark (for CSS dark-surface cascade)
     if (t.colorPageBg && /^#[0-1][0-9a-f]/i.test(t.colorPageBg)) {

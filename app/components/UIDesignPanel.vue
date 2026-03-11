@@ -1800,6 +1800,86 @@
                     <div class="dp-field-hint">scroll — как сейчас, экраны — листание по размеру окна, поток — после конца материала открывает следующий пункт текущего меню, wipe — фиксированное окно с перелистыванием частей контента через вайп.</div>
                   </div>
 
+                  <!-- ── Wipe mode settings ── -->
+                  <template v-if="(tokens.contentViewMode || 'scroll') === 'wipe'">
+                    <div class="dp-field">
+                      <label class="dp-label">отступ сверху <span class="dp-label-val">{{ tokens.wipeTopInset ?? 48 }}px</span></label>
+                      <input
+                        type="range" min="12" max="120" step="2"
+                        :value="tokens.wipeTopInset ?? 48"
+                        @input="set('wipeTopInset', Number(($event.target as HTMLInputElement).value))"
+                        class="dp-range"
+                      />
+                      <div class="dp-range-hints"><span>12</span><span>120</span></div>
+                    </div>
+
+                    <div class="dp-field">
+                      <label class="dp-label">отступ снизу <span class="dp-label-val">{{ tokens.wipeBottomInset ?? 106 }}px</span></label>
+                      <input
+                        type="range" min="40" max="200" step="2"
+                        :value="tokens.wipeBottomInset ?? 106"
+                        @input="set('wipeBottomInset', Number(($event.target as HTMLInputElement).value))"
+                        class="dp-range"
+                      />
+                      <div class="dp-range-hints"><span>40</span><span>200</span></div>
+                    </div>
+
+                    <div class="dp-field">
+                      <label class="dp-label">боковые поля <span class="dp-label-val">{{ tokens.wipeSideMargin ?? 20 }}px</span></label>
+                      <input
+                        type="range" min="0" max="80" step="2"
+                        :value="tokens.wipeSideMargin ?? 20"
+                        @input="set('wipeSideMargin', Number(($event.target as HTMLInputElement).value))"
+                        class="dp-range"
+                      />
+                      <div class="dp-range-hints"><span>0</span><span>80</span></div>
+                    </div>
+
+                    <div class="dp-field">
+                      <label class="dp-label">отступ контента <span class="dp-label-val">{{ tokens.wipeContentPadding ?? 20 }}px</span></label>
+                      <input
+                        type="range" min="0" max="48" step="2"
+                        :value="tokens.wipeContentPadding ?? 20"
+                        @input="set('wipeContentPadding', Number(($event.target as HTMLInputElement).value))"
+                        class="dp-range"
+                      />
+                      <div class="dp-range-hints"><span>0</span><span>48</span></div>
+                    </div>
+
+                    <div class="dp-field">
+                      <label class="dp-label">радиус карточки <span class="dp-label-val">{{ tokens.wipeCardRadius ?? 14 }}px</span></label>
+                      <input
+                        type="range" min="0" max="32" step="1"
+                        :value="tokens.wipeCardRadius ?? 14"
+                        @input="set('wipeCardRadius', Number(($event.target as HTMLInputElement).value))"
+                        class="dp-range"
+                      />
+                      <div class="dp-range-hints"><span>0</span><span>32</span></div>
+                    </div>
+
+                    <div class="dp-field">
+                      <label class="dp-label">рамка карточки <span class="dp-label-val">{{ tokens.wipeCardBorder ?? 1 }}px</span></label>
+                      <input
+                        type="range" min="0" max="4" step="0.5"
+                        :value="tokens.wipeCardBorder ?? 1"
+                        @input="set('wipeCardBorder', Number(($event.target as HTMLInputElement).value))"
+                        class="dp-range"
+                      />
+                      <div class="dp-range-hints"><span>0</span><span>4</span></div>
+                    </div>
+
+                    <div class="dp-field">
+                      <label class="dp-label">тень карточки <span class="dp-label-val">{{ Math.round((tokens.wipeCardShadow ?? 0.4) * 100) }}%</span></label>
+                      <input
+                        type="range" min="0" max="1" step="0.05"
+                        :value="tokens.wipeCardShadow ?? 0.4"
+                        @input="set('wipeCardShadow', Number(($event.target as HTMLInputElement).value))"
+                        class="dp-range"
+                      />
+                      <div class="dp-range-hints"><span>0%</span><span>100%</span></div>
+                    </div>
+                  </template>
+
                   <!-- Section style -->
                   <div class="dp-field">
                     <label class="dp-label">стиль секций страницы</label>

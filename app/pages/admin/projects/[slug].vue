@@ -1009,7 +1009,20 @@ function syncProjectViewportAttrs() {
 
   const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
   const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
-  const sheetInsets = resolveViewportSheetInsets(viewportHeight, resolveViewportPagerRailInset(el))
+  const isWipe = contentViewMode.value === 'wipe'
+
+  // In wipe mode, use design tokens for insets; otherwise compute from viewport
+  let sheetTop: number
+  let sheetBottom: number
+  if (isWipe) {
+    const t = designSystem.tokens.value
+    sheetTop = t.wipeTopInset ?? 48
+    sheetBottom = Math.max(t.wipeBottomInset ?? 106, resolveViewportPagerRailInset(el) + 14)
+  } else {
+    const sheetInsets = resolveViewportSheetInsets(viewportHeight, resolveViewportPagerRailInset(el))
+    sheetTop = sheetInsets.top
+    sheetBottom = sheetInsets.bottom
+  }
 
   el.dataset.cvMode = contentViewMode.value
   el.dataset.cvDir = projectViewportWipeDirection.value
@@ -1020,8 +1033,8 @@ function syncProjectViewportAttrs() {
   }
   el.style.setProperty('--cv-transition-ms', `${projectContentTransitionDuration.value}ms`)
   el.style.setProperty('--cv-viewport-height', `${viewportHeight}px`)
-  el.style.setProperty('--cv-sheet-top', `${sheetInsets.top}px`)
-  el.style.setProperty('--cv-sheet-bottom', `${sheetInsets.bottom}px`)
+  el.style.setProperty('--cv-sheet-top', `${sheetTop}px`)
+  el.style.setProperty('--cv-sheet-bottom', `${sheetBottom}px`)
 }
 
 function resetProjectViewport() {
@@ -1384,6 +1397,16 @@ watch([projectViewport, contentViewMode, projectContentTransitionDuration, proje
   syncProjectViewportAttrs()
 }, { immediate: true })
 
+// Re-sync when wipe tokens change (sliders in design panel)
+const wipeTokenDeps = computed(() => {
+  const t = designSystem.tokens.value
+  return `${t.wipeTopInset}-${t.wipeBottomInset}-${t.wipeSideMargin}-${t.wipeContentPadding}-${t.wipeCardRadius}-${t.wipeCardBorder}-${t.wipeCardShadow}`
+})
+watch(wipeTokenDeps, () => {
+  syncProjectViewportAttrs()
+  nextTick(syncProjectViewportPager)
+})
+
 watch(projectViewport, () => {
   reconnectProjectViewportObserver()
 })
@@ -1704,11 +1727,11 @@ async function saveProject() {
     /* outer rect */
     0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
     /* inner rect (card hole) — wound counter-clockwise */
-    20px var(--cv-sheet-top, 48px),
-    20px calc(100% - var(--cv-sheet-bottom, 64px)),
-    calc(100% - 20px) calc(100% - var(--cv-sheet-bottom, 64px)),
-    calc(100% - 20px) var(--cv-sheet-top, 48px),
-    20px var(--cv-sheet-top, 48px)
+    var(--wipe-side-margin, 20px) var(--cv-sheet-top, 48px),
+    var(--wipe-side-margin, 20px) calc(100% - var(--cv-sheet-bottom, 64px)),
+    calc(100% - var(--wipe-side-margin, 20px)) calc(100% - var(--cv-sheet-bottom, 64px)),
+    calc(100% - var(--wipe-side-margin, 20px)) var(--cv-sheet-top, 48px),
+    var(--wipe-side-margin, 20px) var(--cv-sheet-top, 48px)
   );
 }
 .proj-main--paged::-webkit-scrollbar { width: 5px; }
@@ -1739,19 +1762,16 @@ async function saveProject() {
   position: absolute;
   top: var(--cv-sheet-top, 48px);
   bottom: var(--cv-sheet-bottom, 64px);
-  left: 20px;
-  right: 20px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-radius: 14px;
+  left: var(--wipe-side-margin, 20px);
+  right: var(--wipe-side-margin, 20px);
+  border: var(--wipe-card-border, 1px) solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: var(--wipe-card-radius, 14px);
   box-shadow:
-    0 1px 3px color-mix(in srgb, var(--glass-text) 4%, transparent),
-    0 6px 24px color-mix(in srgb, var(--glass-text) 3%, transparent);
+    0 1px 3px var(--wipe-shadow-sm),
+    0 6px 24px var(--wipe-shadow-lg);
 }
 html.dark .proj-sheet-frame__card {
   border-color: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  box-shadow:
-    0 1px 3px color-mix(in srgb, var(--glass-text) 6%, transparent),
-    0 6px 24px rgba(0, 0, 0, .12);
 }
 
 .proj-main--paged[data-cv-mode="wipe"]::after {
@@ -1837,12 +1857,13 @@ html.dark .proj-sheet-frame__card {
 
 /* Wipe card horizontal padding so content fits inside the card frame */
 .proj-main--paged[data-cv-mode="wipe"] .proj-section-shell {
-  padding-left: 28px;
-  padding-right: 28px;
+  padding-left: calc(var(--wipe-side-margin, 20px) + var(--wipe-content-padding, 20px));
+  padding-right: calc(var(--wipe-side-margin, 20px) + var(--wipe-content-padding, 20px));
+  padding-top: var(--wipe-content-padding, 20px);
 }
 .proj-main--paged[data-cv-mode="wipe"] .admin-entity-hero {
-  padding-left: 28px;
-  padding-right: 28px;
+  padding-left: calc(var(--wipe-side-margin, 20px) + var(--wipe-content-padding, 20px));
+  padding-right: calc(var(--wipe-side-margin, 20px) + var(--wipe-content-padding, 20px));
 }
 
 .proj-section-shell--brutalist {
