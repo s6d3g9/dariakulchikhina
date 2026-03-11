@@ -22,6 +22,7 @@ const GRID_ROWS_PER_PAGE = 8
 const MIN_VISIBLE_HEIGHT = 24
 const ROW_GROUP_GAP = 14
 const ZONE_EDGE_GAP = 8
+const MIN_ZONE_DELTA = 32
 
 function isRenderableNode(node: Element): node is HTMLElement {
   return node instanceof HTMLElement && node.offsetParent !== null && node.offsetHeight > MIN_VISIBLE_HEIGHT
@@ -107,6 +108,24 @@ function clampZoneStart(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, Math.round(value)))
 }
 
+function pushStop(stops: number[], value: number) {
+  const normalized = Math.round(value)
+  const previous = stops[stops.length - 1]
+  if (previous == null || normalized - previous >= MIN_ZONE_DELTA) {
+    stops.push(normalized)
+  }
+}
+
+function compressStops(stops: number[]) {
+  return stops.reduce<number[]>((acc, stop) => {
+    const previous = acc[acc.length - 1]
+    if (previous == null || stop - previous >= MIN_ZONE_DELTA) {
+      acc.push(stop)
+    }
+    return acc
+  }, [])
+}
+
 function buildVisibleZonesForBlock(
   rows: Array<{ top: number, bottom: number }>,
   blockStart: number,
@@ -135,19 +154,17 @@ function buildVisibleZonesForBlock(
         const oversizedStops: number[] = []
         let sliceStart = Math.max(zoneStart, rowTop)
         if (sliceStart > zoneStart + 4 || stops.length === 1) {
-          oversizedStops.push(clampZoneStart(sliceStart, blockStart, blockMaxStart))
+          pushStop(oversizedStops, clampZoneStart(sliceStart, blockStart, blockMaxStart))
         }
 
         while (rowBottom > sliceStart + viewportHeight - ZONE_EDGE_GAP) {
           sliceStart = clampZoneStart(sliceStart + viewportHeight - ZONE_EDGE_GAP, blockStart, blockMaxStart)
           if (sliceStart <= (oversizedStops[oversizedStops.length - 1] ?? zoneStart) + 4) break
-          oversizedStops.push(sliceStart)
+          pushStop(oversizedStops, sliceStart)
         }
 
         oversizedStops.forEach((stop) => {
-          if (stop > (stops[stops.length - 1] ?? blockStart) + 4) {
-            stops.push(stop)
-          }
+          pushStop(stops, stop)
         })
 
         zoneStart = oversizedStops[oversizedStops.length - 1] ?? rowTop
@@ -156,9 +173,7 @@ function buildVisibleZonesForBlock(
       }
 
       nextStart = clampZoneStart(nextStart, blockStart, blockMaxStart)
-      if (nextStart > (stops[stops.length - 1] ?? blockStart) + 4) {
-        stops.push(nextStart)
-      }
+      pushStop(stops, nextStart)
       zoneStart = nextStart
       zoneRows = 1
       return
@@ -168,7 +183,7 @@ function buildVisibleZonesForBlock(
   })
 
   if (blockMaxStart > (stops[stops.length - 1] ?? blockStart) + 4) {
-    stops.push(blockMaxStart)
+    pushStop(stops, blockMaxStart)
   }
 
   return stops
@@ -185,7 +200,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
     const heroBottom = resolveTopRelativeToViewport(hero, viewport) + hero.offsetHeight
 
     if (heroBottom > 24 && heroBottom < maxTop - 4) {
-      stops.push(Math.round(heroBottom))
+      pushStop(stops, heroBottom)
       minimumContentStart = heroBottom
     }
   }
@@ -200,7 +215,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
       const blockMaxStart = Math.max(blockStart, Math.min(maxTop, blockStart + blockHeight - viewportHeight))
 
       if (blockStart > 4) {
-        stops.push(Math.round(blockStart))
+        pushStop(stops, blockStart)
       }
 
       const rows = resolveGridRows(block, viewport)
@@ -218,24 +233,22 @@ export function buildViewportPageStops(viewport: HTMLElement) {
       )
 
       blockStops.forEach((stop) => {
-        if (stop > (stops[stops.length - 1] ?? 0) + 4) {
-          stops.push(stop)
-        }
+        pushStop(stops, stop)
       })
 
       if (!rows.length && blockHeight > viewportHeight + 8 && blockMaxStart > (stops[stops.length - 1] ?? blockStart) + 4) {
-        stops.push(blockMaxStart)
+        pushStop(stops, blockMaxStart)
       }
     })
   } else {
     for (let cursor = viewportHeight; cursor < maxTop - 4; cursor += viewportHeight) {
-      stops.push(Math.round(cursor))
+      pushStop(stops, cursor)
     }
   }
 
   if (maxTop > 4) {
-    stops.push(Math.round(maxTop))
+    pushStop(stops, maxTop)
   }
 
-  return Array.from(new Set(stops)).sort((left, right) => left - right)
+  return compressStops(Array.from(new Set(stops)).sort((left, right) => left - right))
 }
