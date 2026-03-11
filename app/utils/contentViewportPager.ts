@@ -334,6 +334,9 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
   const zoneInsets = resolveZoneInsets(Math.max(viewport.clientHeight, 1), resolveViewportPagerRailInset(viewport))
   ensureViewportBottomSpacer(viewport, zoneInsets.visibleHeight)
 
+  // In wipe/book mode, content flows naturally — skip layout adjustments
+  if (viewport.dataset.cvMode === 'wipe') return
+
   const nextMaxTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
   const targetTop = Math.min(preservedScrollTop, nextMaxTop)
 
@@ -689,62 +692,23 @@ export function buildViewportPageStops(viewport: HTMLElement) {
 
   const blocks = resolvePageBlocks(viewport)
 
-  if (isWipeMode && blocks.length) {
-    // Simple physical-fit algorithm for wipe mode:
-    // 1. Collect all top-level blocks with their positions
-    // 2. Greedily pack blocks onto sheets by checking if block.bottom fits
-    // 3. For oversized blocks, place them starting a new sheet and slice by visible height
-    const WIPE_PAD = 16
-    const usableHeight = zoneInsets.visibleHeight - 2 * WIPE_PAD
+  if (isWipeMode) {
+    // Book-like pagination for wipe mode:
+    // Each page is a fixed-height window (visibleHeight).
+    // Pages tile without overlap: stop[N+1] = stop[N] + visibleHeight.
+    // Content that doesn't fit is clipped at the bottom and continues
+    // at the top of the next page — exactly like a printed book.
+    const step = zoneInsets.visibleHeight
 
-    // Collect all blocks as simple {top, bottom} spans
-    const spans: { top: number; bottom: number }[] = []
-    for (const block of blocks) {
-      const top = resolveTopRelativeToViewport(block, viewport)
-      spans.push({ top, bottom: top + block.offsetHeight })
-    }
-    spans.sort((a, b) => a.top - b.top)
-
-    if (spans.length) {
-      // First sheet starts so that the first block has WIPE_PAD gap below topInset
-      const firstContentTop = spans[0].top
-      const firstSheetStart = clampZoneStart(firstContentTop - zoneInsets.top - WIPE_PAD, 0, maxTop)
-      if (firstSheetStart > 4) pushStop(stops, firstSheetStart)
-
-      let sheetStart = stops[stops.length - 1] ?? 0
-      let sheetVisibleBottom = sheetStart + zoneInsets.top + WIPE_PAD + usableHeight
-
-      for (const span of spans) {
-        // Does this block fit on the current sheet?
-        if (span.bottom <= sheetVisibleBottom + ZONE_EDGE_GAP) {
-          continue // fits, keep accumulating
-        }
-
-        // Block doesn't fit. Start a new sheet aligned to this block's top.
-        const newStart = clampZoneStart(span.top - zoneInsets.top - WIPE_PAD, 0, maxTop)
-        if (newStart > sheetStart + MIN_ZONE_DELTA) {
-          pushStop(stops, newStart)
-          sheetStart = newStart
-          sheetVisibleBottom = sheetStart + zoneInsets.top + WIPE_PAD + usableHeight
-        }
-
-        // If block itself is oversized (taller than usable area), slice it
-        if (span.bottom - span.top > usableHeight) {
-          let cursor = sheetVisibleBottom
-          while (span.bottom > cursor + ZONE_EDGE_GAP) {
-            const nextStart = clampZoneStart(cursor - zoneInsets.top - WIPE_PAD, 0, maxTop)
-            if (nextStart <= sheetStart + MIN_ZONE_DELTA) break
-            pushStop(stops, nextStart)
-            sheetStart = nextStart
-            sheetVisibleBottom = sheetStart + zoneInsets.top + WIPE_PAD + usableHeight
-            cursor = sheetVisibleBottom
-          }
+    if (step > 0 && maxTop > 0) {
+      for (let cursor = step; cursor < maxTop; cursor += step) {
+        const stop = Math.min(cursor, maxTop)
+        if (stop > (stops[stops.length - 1] ?? 0) + MIN_ZONE_DELTA) {
+          pushStop(stops, stop)
         }
       }
-
-      // Only add maxTop if last content isn't fully visible on the last sheet
-      const lastContentBottom = spans[spans.length - 1].bottom
-      if (lastContentBottom > sheetVisibleBottom + ZONE_EDGE_GAP && maxTop > (stops[stops.length - 1] ?? 0) + MIN_ZONE_DELTA) {
+      // Add final stop only if there's meaningful remaining content
+      if (maxTop > (stops[stops.length - 1] ?? 0) + MIN_ZONE_DELTA) {
         pushStop(stops, maxTop)
       }
     }

@@ -1695,25 +1695,21 @@ async function saveProject() {
       color-mix(in srgb, var(--glass-page-bg) 100%, transparent) 100%
     );
 }
-/* Wipe mode: extend mask to sides so only card area is visible */
+/* Wipe mode: hard clip content to card rectangle */
 .proj-main--paged[data-cv-mode="wipe"]::before {
-  background:
-    /* left strip */
-    linear-gradient(to right, var(--glass-page-bg) 20px, transparent 20px),
-    /* right strip */
-    linear-gradient(to left, var(--glass-page-bg) 20px, transparent 20px),
-    /* top strip */
-    linear-gradient(
-      to bottom,
-      var(--glass-page-bg) var(--cv-sheet-top, 48px),
-      transparent var(--cv-sheet-top, 48px)
-    ),
-    /* bottom strip */
-    linear-gradient(
-      to top,
-      var(--glass-page-bg) var(--cv-sheet-bottom, 64px),
-      transparent var(--cv-sheet-bottom, 64px)
-    );
+  /* Cover everything outside the card area with page background */
+  background: var(--glass-page-bg);
+  /* Cut out the card rectangle so content shows through */
+  clip-path: polygon(
+    /* outer rect */
+    0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
+    /* inner rect (card hole) — wound counter-clockwise */
+    20px var(--cv-sheet-top, 48px),
+    20px calc(100% - var(--cv-sheet-bottom, 64px)),
+    calc(100% - 20px) calc(100% - var(--cv-sheet-bottom, 64px)),
+    calc(100% - 20px) var(--cv-sheet-top, 48px),
+    20px var(--cv-sheet-top, 48px)
+  );
 }
 .proj-main--paged::-webkit-scrollbar { width: 5px; }
 .proj-main--paged::-webkit-scrollbar-track { background: transparent; }
