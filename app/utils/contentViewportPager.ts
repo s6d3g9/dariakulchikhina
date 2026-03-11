@@ -77,6 +77,12 @@ function applyZoneOffset(node: HTMLElement, offset: number) {
   node.setAttribute(ZONE_OFFSET_ATTR, '1')
 }
 
+function resolveZoneCarryOffset(zoneTop: number, childTop: number, viewportHeight: number) {
+  const relativeTop = childTop - zoneTop
+  if (relativeTop < MIN_ZONE_DELTA) return 0
+  return Math.max(0, viewportHeight - relativeTop)
+}
+
 export function applyViewportZoneLayout(viewport: HTMLElement) {
   clearZoneOffsets(viewport)
 
@@ -99,8 +105,16 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
       const childHeight = child.offsetHeight
       const childBottom = childTop + childHeight
       const zoneBottom = zoneTop + viewportHeight - ZONE_EDGE_GAP
+      const carryOffset = resolveZoneCarryOffset(zoneTop, childTop, viewportHeight)
 
       if (childHeight >= viewportHeight - ZONE_EDGE_GAP) {
+        if (carryOffset > 0) {
+          applyZoneOffset(child, carryOffset)
+          carriedOffset += carryOffset
+          zoneTop = childTop + carryOffset
+          return
+        }
+
         if (childTop >= zoneTop + MIN_ZONE_DELTA) {
           zoneTop = childTop
         }
@@ -108,12 +122,10 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
       }
 
       if (childTop >= zoneTop + MIN_ZONE_DELTA && childBottom > zoneBottom) {
-        const offset = zoneBottom - childTop
-        const positiveOffset = Math.max(0, offset)
-        const appliedOffset = viewportHeight - (childTop - zoneTop)
+        const appliedOffset = carryOffset
         applyZoneOffset(child, appliedOffset)
         carriedOffset += appliedOffset
-        zoneTop += viewportHeight
+        zoneTop = childTop + appliedOffset
       }
     })
   })
