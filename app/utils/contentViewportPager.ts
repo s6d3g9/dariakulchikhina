@@ -328,14 +328,94 @@ function applyViewportZoneLayoutPass(viewport: HTMLElement) {
 }
 
 /**
+ * Heading-like element detection for keep-with-next rules.
+ * Returns true for section titles, group labels, and HTML headings.
+ */
+const WIPE_HEADING_SELECTORS = [
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  '.apo-section-title',
+  '.apo-entity-label',
+  '[role="heading"]',
+].join(', ')
+
+function isWipeHeading(el: HTMLElement): boolean {
+  if (el.matches(WIPE_HEADING_SELECTORS)) return true
+  // Short first-child of a semantic container (label/title pattern)
+  const parent = el.parentElement
+  if (parent && el === parent.firstElementChild && el.offsetHeight < 60) {
+    if (parent.matches('.apo-section, .apo-entity-group, .u-form-section, [data-cv-unit="section"], [data-cv-unit="group"]')) {
+      if (!el.querySelector('input, textarea, select, button, img, video')) return true
+    }
+  }
+  return false
+}
+
+type WipeItem = {
+  el: HTMLElement
+  naturalTop: number
+  height: number
+  keepWithNext: boolean
+  minCompanionHeight: number
+}
+
+/**
+ * Build a flat list of items with semantic keep-together awareness.
+ *
+ * Headings (section titles, group labels) are marked with keepWithNext=true
+ * and carry a minCompanionHeight — the minimum height of content that MUST
+ * appear on the same page below the heading to prevent orphaning.
+ */
+function buildWipeItemList(viewport: HTMLElement): WipeItem[] {
+  const blocks = resolvePageBlocks(viewport)
+  const result: WipeItem[] = []
+
+  for (const block of blocks) {
+    const children = collectRowItems(block, viewport)
+    if (children.length < 2) {
+      result.push({
+        el: block,
+        naturalTop: resolveTopRelativeToViewport(block, viewport),
+        height: block.offsetHeight,
+        keepWithNext: false,
+        minCompanionHeight: 0,
+      })
+      continue
+    }
+
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i]
+      const heading = isWipeHeading(child)
+      const next = children[i + 1]
+
+      result.push({
+        el: child,
+        naturalTop: resolveTopRelativeToViewport(child, viewport),
+        height: child.offsetHeight,
+        keepWithNext: heading && !!next,
+        // Heading must share page with at least the next item (or 80px minimum)
+        minCompanionHeight: heading && next ? Math.min(next.offsetHeight, 120) + 12 : 0,
+      })
+    }
+  }
+
+  // Deduplicate and sort by natural position
+  const seen = new Set<HTMLElement>()
+  return result
+    .filter((u) => { if (seen.has(u.el)) return false; seen.add(u.el); return true })
+    .sort((a, b) => a.naturalTop - b.naturalTop)
+}
+
+/**
  * Content-aware page breaks for wipe (book-like) mode.
  *
- * Elements that would be sliced at a page boundary are pushed to the
- * visible top of the next page via margin-top offsets — exactly like a
- * word-processor respecting "keep with next" rules.
+ * Works like a typesetting engine with three rules:
+ * 1. Cross-boundary: items sliced at a page boundary → push to next page
+ * 2. Keep-with-next: headings must share a page with companion content
+ * 3. Fill budget: respect the configurable page fill ratio
  *
- * Large elements that cannot fit on a single page are left in place and
- * allowed to span naturally.
+ * Large elements that cannot fit on a single page are left in place.
+ * All offsets are calculated sequentially but applied via a single
+ * accumulated offset tracker to avoid interleaved DOM reads/writes.
  */
 function applyWipeContentBreaks(viewport: HTMLElement) {
   const viewportHeight = Math.max(viewport.clientHeight, 1)
@@ -354,67 +434,64 @@ function applyWipeContentBreaks(viewport: HTMLElement) {
     firstContentStop = heroBottom - sheetTop
   }
 
-  // Collect all leaf-level breakable items
-  const blocks = resolvePageBlocks(viewport)
-  if (!blocks.length) return
+  const pageStart0 = sheetTop + firstContentStop // top of first content page
+  const heroPageEnd = sheetTop + step // bottom of hero page
 
-  const items: HTMLElement[] = []
-  blocks.forEach((block) => {
-    const children = collectRowItems(block, viewport)
-    if (children.length >= 2) {
-      items.push(...children)
-    } else {
-      items.push(block)
-    }
-  })
-
-  // Deduplicate and sort by position
-  const seen = new Set<HTMLElement>()
-  const sorted = items
-    .filter((el) => { if (seen.has(el)) return false; seen.add(el); return true })
-    .sort((a, b) => resolveTopRelativeToViewport(a, viewport) - resolveTopRelativeToViewport(b, viewport))
+  const items = buildWipeItemList(viewport)
+  if (!items.length) return
 
   let accOffset = 0
 
-  sorted.forEach((item) => {
-    const itemTop = resolveTopRelativeToViewport(item, viewport) + accOffset
-    const itemHeight = item.offsetHeight
-    const itemBottom = itemTop + itemHeight
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    const effectiveTop = item.naturalTop + accOffset
+    const effectiveBottom = effectiveTop + item.height
 
-    // Skip items on the hero page
-    if (itemBottom <= sheetTop + step) return
+    // Skip items that fit entirely within the hero page
+    if (effectiveBottom <= heroPageEnd) continue
 
-    // Find the visible bottom boundary of the current page
-    const contentRel = itemTop - firstContentStop - sheetTop
+    // Determine which content page this item falls on
+    const contentRel = effectiveTop - pageStart0
     const pageIdx = Math.max(0, Math.floor(contentRel / step))
-    const pageVisibleBottom = firstContentStop + sheetTop + (pageIdx + 1) * step
-    const pageVisibleTop = firstContentStop + sheetTop + pageIdx * step
-    const usedOnPage = itemTop - pageVisibleTop
+    const pageTop = pageStart0 + pageIdx * step
+    const pageBottom = pageStart0 + (pageIdx + 1) * step
+    const usedOnPage = effectiveTop - pageTop
+    const remainingOnPage = pageBottom - effectiveTop
 
-    // Case 1: item crosses the page boundary
-    if (itemBottom > pageVisibleBottom + ZONE_EDGE_GAP) {
-      // If item fits on one page, push it to the next page
-      if (itemHeight < step - ZONE_EDGE_GAP * 2) {
-        const pushOffset = pageVisibleBottom - itemTop
+    // Rule 1: Item crosses page boundary — push to next page if it fits on one
+    if (effectiveBottom > pageBottom + ZONE_EDGE_GAP) {
+      if (item.height < step - ZONE_EDGE_GAP * 2) {
+        const pushOffset = pageBottom - effectiveTop
         if (pushOffset > ZONE_EDGE_GAP && pushOffset < step) {
-          applyZoneOffset(item, pushOffset)
+          applyZoneOffset(item.el, pushOffset)
           accOffset += pushOffset
         }
-        return
       }
-      // Large items: leave in place, they span multiple pages
-      return
+      continue
     }
 
-    // Case 2: page fill budget exceeded — push to next page
-    if (usedOnPage > fillBudget && itemTop > pageVisibleTop + MIN_ZONE_DELTA) {
-      const pushOffset = pageVisibleBottom - itemTop
-      if (pushOffset > ZONE_EDGE_GAP && pushOffset < step && itemHeight < step - ZONE_EDGE_GAP * 2) {
-        applyZoneOffset(item, pushOffset)
+    // Rule 2: Keep-with-next — heading must share page with companion content
+    if (item.keepWithNext) {
+      const neededHeight = item.height + item.minCompanionHeight
+      if (remainingOnPage < neededHeight && usedOnPage > ZONE_EDGE_GAP) {
+        const pushOffset = pageBottom - effectiveTop
+        if (pushOffset > ZONE_EDGE_GAP && pushOffset < step) {
+          applyZoneOffset(item.el, pushOffset)
+          accOffset += pushOffset
+        }
+        continue
+      }
+    }
+
+    // Rule 3: Fill budget — only for non-heading items
+    if (!item.keepWithNext && usedOnPage > fillBudget && effectiveTop > pageTop + MIN_ZONE_DELTA) {
+      const pushOffset = pageBottom - effectiveTop
+      if (pushOffset > ZONE_EDGE_GAP && pushOffset < step && item.height < step - ZONE_EDGE_GAP * 2) {
+        applyZoneOffset(item.el, pushOffset)
         accOffset += pushOffset
       }
     }
-  })
+  }
 }
 
 export function applyViewportZoneLayout(viewport: HTMLElement) {

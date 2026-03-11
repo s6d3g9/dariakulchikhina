@@ -945,6 +945,7 @@ watch(
 
 let projectViewportObserver: MutationObserver | null = null
 let projectViewportSyncFrame = 0
+let projectViewportLayoutInProgress = false
 
 function syncProjectViewportPager() {
   const el = projectViewport.value
@@ -955,10 +956,12 @@ function syncProjectViewportPager() {
     return
   }
 
+  projectViewportLayoutInProgress = true
   syncProjectViewportAttrs()
   applyViewportZoneLayout(el)
   projectViewportStops.value = buildViewportPageStops(el)
   viewportPageCount.value = projectViewportStops.value.length
+  projectViewportLayoutInProgress = false
 
   updateProjectViewportPageIndex(el)
 }
@@ -991,7 +994,7 @@ function reconnectProjectViewportObserver() {
   if (!el || typeof MutationObserver === 'undefined') return
 
   projectViewportObserver = new MutationObserver(() => {
-    if (viewportNavigationBusy.value) return
+    if (viewportNavigationBusy.value || projectViewportLayoutInProgress) return
     scheduleProjectViewportPagerSync()
   })
 
