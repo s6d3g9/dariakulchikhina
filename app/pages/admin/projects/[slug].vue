@@ -622,6 +622,7 @@ const viewportNavigationBusy = ref(false)
 const projectViewportWipePhase = ref<'idle' | 'cover' | 'reveal'>('idle')
 const projectViewportWipeDirection = ref<'next' | 'prev'>('next')
 let projectViewportWipeTimers: number[] = []
+let projectNavHydrated = false
 
 function isViewportEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
@@ -634,7 +635,8 @@ const adminNav = useAdminNav()
 // При keepalive-активации — синхронизировать навигацию с текущим проектом
 function syncNavToProject() {
   const title = project.value?.title || slug.value
-  adminNav.ensureProject(slug.value, title)
+  adminNav.ensureProject(slug.value, title, { force: !projectNavHydrated })
+  projectNavHydrated = true
 }
 onMounted(() => {
   syncNavToProject()

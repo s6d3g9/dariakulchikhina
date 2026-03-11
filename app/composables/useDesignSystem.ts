@@ -1,5 +1,6 @@
 import {
   CONCEPT_TO_DESIGN_MODE,
+  DEFAULT_DESIGN_MODE,
   DEFAULT_DESIGN_CONCEPT,
   DESIGN_CONCEPT_STORAGE_KEY,
   DESIGN_MODE_STORAGE_KEY,
@@ -1977,8 +1978,12 @@ export function useDesignSystem() {
   const activeConceptSlug = useState<string>('dsConceptSlug', () => DEFAULT_DESIGN_CONCEPT)
   const isHydrated = useState<boolean>('dsHydrated', () => false)
   const currentDesignMode = computed<DesignMode>(() => {
+    if (!isHydrated.value) {
+      return DEFAULT_DESIGN_MODE
+    }
+
     const conceptSlug = activeConceptSlug.value as DesignConceptSlug
-    return CONCEPT_TO_DESIGN_MODE[conceptSlug] || 'brutalist'
+    return CONCEPT_TO_DESIGN_MODE[conceptSlug] || DEFAULT_DESIGN_MODE
   })
 
   /* ── Persist / restore ─────────────────────────────────── */

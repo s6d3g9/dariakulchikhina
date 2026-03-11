@@ -334,9 +334,9 @@ export function useAdminNav() {
    * Напрямую устанавливает навигацию на конкретный проект (без router.push).
    * Используется при keepalive-активации [slug].vue чтобы не терять текущий маршрут.
    */
-  function ensureProject(projectSlug: string, projectTitle: string) {
+  function ensureProject(projectSlug: string, projectTitle: string, options: { force?: boolean } = {}) {
     const spec = contentSpec.value
-    if (spec.section === 'projects' && spec.projectSlug === projectSlug) return
+    if (!options.force && spec.section === 'projects' && spec.projectSlug === projectSlug) return
 
     const { nodes, ctxs } = buildProjectBaseState(projectSlug, projectTitle)
     nodeStack.value = nodes
