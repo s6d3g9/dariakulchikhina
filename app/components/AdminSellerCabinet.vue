@@ -454,7 +454,6 @@ async function saveProfile() {
 .cab-main { flex: 1; min-width: 0; padding: 4px 0 4px 16px; }
 .cab-main--content-only { padding-left: 0; }
 .cab-inner { max-width: 900px; }
-.cab-form { }
 
 .dash-welcome { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-radius: var(--card-radius, 14px); margin-bottom: 16px; gap: 16px; flex-wrap: wrap; }
 .dash-welcome-left { display: flex; align-items: center; gap: 16px; }
@@ -471,7 +470,6 @@ async function saveProfile() {
 .dash-quick-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 .dash-quick-btn { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border: none; cursor: pointer; font-size: .82rem; border-radius: var(--card-radius, 14px); }
 .dash-quick-icon { font-size: 1.1rem; }
-.dash-quick-label { }
 .dash-quick-badge { background: #e8e4e0; border-radius: 8px; padding: 1px 7px; font-size: .72rem; }
 
 .dash-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
