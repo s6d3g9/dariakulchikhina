@@ -690,19 +690,36 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   const blocks = resolvePageBlocks(viewport)
 
   if (isWipeMode && blocks.length) {
-    const allRows: DensityRow[] = []
-    blocks.forEach((block) => {
-      allRows.push(...resolveDensityRows(block, viewport))
-    })
-    allRows.sort((a, b) => a.top - b.top)
+    const packingRows: DensityRow[] = []
 
-    if (allRows.length) {
-      const contentStart = clampZoneStart(allRows[0].top - zoneInsets.top, 0, maxTop)
+    for (const block of blocks) {
+      const top = resolveTopRelativeToViewport(block, viewport)
+      const height = block.offsetHeight
+
+      if (height <= zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
+        packingRows.push({ top, bottom: top + height, density: 1, preserveBoundary: true })
+      } else {
+        const subChildren = getRenderableChildren(block)
+        if (subChildren.length >= 2) {
+          for (const child of subChildren) {
+            const childTop = resolveTopRelativeToViewport(child, viewport)
+            packingRows.push({ top: childTop, bottom: childTop + child.offsetHeight, density: 1, preserveBoundary: true })
+          }
+        } else {
+          packingRows.push({ top, bottom: top + height, density: 1, preserveBoundary: true })
+        }
+      }
+    }
+
+    packingRows.sort((a, b) => a.top - b.top)
+
+    if (packingRows.length) {
+      const contentStart = clampZoneStart(packingRows[0].top - zoneInsets.top, 0, maxTop)
       if (contentStart > 4) pushStop(stops, contentStart)
 
       let sheetStart = stops[stops.length - 1] ?? 0
 
-      for (const row of allRows) {
+      for (const row of packingRows) {
         const visibleBottom = sheetStart + viewportHeight - zoneInsets.bottom
 
         if (row.bottom <= visibleBottom + ZONE_EDGE_GAP) continue
