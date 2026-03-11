@@ -305,12 +305,8 @@ function resolvePageBlocks(viewport: HTMLElement) {
 
     if (children.length === 1) {
       const [onlyChild] = children
-      const wrapperSlack = Math.abs(onlyBlock.offsetHeight - onlyChild.offsetHeight)
-
-      if (wrapperSlack <= MIN_ZONE_DELTA) {
-        blocks = [onlyChild]
-        continue
-      }
+      blocks = [onlyChild]
+      continue
     }
 
     if (children.length < 2 || !isFlowDisplay(style.display)) {
