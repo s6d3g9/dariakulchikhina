@@ -533,6 +533,7 @@ import {
   PROJECT_SECTION_TO_PAGE,
 } from '~~/shared/constants/admin-navigation'
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
+import { buildViewportPageStops } from '~/utils/contentViewportPager'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -612,6 +613,7 @@ const projectContentTransitionName = computed(() =>
 const projectViewport = ref<HTMLElement | null>(null)
 const viewportPageIndex = ref(1)
 const viewportPageCount = ref(1)
+const projectViewportStops = ref<number[]>([0])
 const viewportPagingLockUntil = ref(0)
 const viewportNavigationBusy = ref(false)
 const projectViewportWipePhase = ref<'idle' | 'cover' | 'reveal'>('idle')
@@ -891,15 +893,18 @@ const currentProjectLeafIndex = computed(() => {
 function syncProjectViewportPager() {
   const el = projectViewport.value
   if (!el || !isProjectViewportPaged.value) {
+    projectViewportStops.value = [0]
     viewportPageIndex.value = 1
     viewportPageCount.value = 1
     return
   }
 
-  const pageHeight = Math.max(el.clientHeight, 1)
-  const maxTop = Math.max(0, el.scrollHeight - pageHeight)
-  viewportPageCount.value = Math.max(1, Math.ceil((maxTop + pageHeight) / pageHeight))
-  viewportPageIndex.value = Math.min(viewportPageCount.value, Math.floor((el.scrollTop + 2) / pageHeight) + 1)
+  projectViewportStops.value = buildViewportPageStops(el)
+  viewportPageCount.value = projectViewportStops.value.length
+
+  const currentTop = el.scrollTop + 2
+  const currentIndex = projectViewportStops.value.findLastIndex((stop) => stop <= currentTop)
+  viewportPageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
 }
 
 function clearProjectViewportWipeTimers() {
@@ -1005,10 +1010,12 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
   const el = projectViewport.value
   if (!el) return false
 
-  const pageHeight = Math.max(el.clientHeight, 1)
-  const maxTop = Math.max(0, el.scrollHeight - pageHeight)
-  const atStart = el.scrollTop <= 4
-  const atEnd = el.scrollTop >= maxTop - 4
+  const stops = projectViewportStops.value.length ? projectViewportStops.value : [0]
+  const currentTop = el.scrollTop + 2
+  const currentIndex = Math.max(0, stops.findLastIndex((stop) => stop <= currentTop))
+  const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1
+  const atStart = currentIndex <= 0
+  const atEnd = targetIndex >= stops.length
 
   if (direction === 'next' && atEnd) {
     return contentViewMode.value === 'flow' ? advanceProjectLeaf('next') : false
@@ -1018,9 +1025,7 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
     return contentViewMode.value === 'flow' ? advanceProjectLeaf('prev') : false
   }
 
-  const targetTop = direction === 'next'
-    ? Math.min(maxTop, el.scrollTop + pageHeight)
-    : Math.max(0, el.scrollTop - pageHeight)
+  const targetTop = stops[Math.max(0, Math.min(stops.length - 1, targetIndex))] ?? 0
 
   if (targetTop === el.scrollTop) return false
 

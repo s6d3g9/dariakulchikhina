@@ -1,4 +1,5 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
+import { buildViewportPageStops } from '~/utils/contentViewportPager'
 
 type ViewMode = 'scroll' | 'paged' | 'flow' | 'wipe'
 type Direction = 'next' | 'prev'
@@ -14,6 +15,7 @@ export function useContentViewport(options: {
   const viewportRef = ref<HTMLElement | null>(null)
   const pageIndex = ref(1)
   const pageCount = ref(1)
+  const pageStops = ref<number[]>([0])
   const lockUntil = ref(0)
   const navigationBusy = ref(false)
   const wipePhase = ref<'idle' | 'cover' | 'reveal'>('idle')
@@ -70,15 +72,18 @@ export function useContentViewport(options: {
   function syncPager() {
     const el = viewportRef.value
     if (!el || !isPaged.value) {
+      pageStops.value = [0]
       pageIndex.value = 1
       pageCount.value = 1
       return
     }
 
-    const viewportHeight = Math.max(el.clientHeight, 1)
-    const maxTop = Math.max(0, el.scrollHeight - viewportHeight)
-    pageCount.value = Math.max(1, Math.ceil((maxTop + viewportHeight) / viewportHeight))
-    pageIndex.value = Math.min(pageCount.value, Math.floor((el.scrollTop + 2) / viewportHeight) + 1)
+    pageStops.value = buildViewportPageStops(el)
+    pageCount.value = pageStops.value.length
+
+    const currentTop = el.scrollTop + 2
+    const currentIndex = pageStops.value.findLastIndex((stop) => stop <= currentTop)
+    pageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
   }
 
   function resetViewport() {
@@ -159,10 +164,12 @@ export function useContentViewport(options: {
     const el = viewportRef.value
     if (!el) return false
 
-    const viewportHeight = Math.max(el.clientHeight, 1)
-    const maxTop = Math.max(0, el.scrollHeight - viewportHeight)
-    const atStart = el.scrollTop <= 4
-    const atEnd = el.scrollTop >= maxTop - 4
+    const stops = pageStops.value.length ? pageStops.value : [0]
+    const currentTop = el.scrollTop + 2
+    const currentIndex = Math.max(0, stops.findLastIndex((stop) => stop <= currentTop))
+    const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1
+    const atStart = currentIndex <= 0
+    const atEnd = targetIndex >= stops.length
 
     if (direction === 'next' && atEnd) {
       return contentViewMode.value === 'flow' ? navigateSibling('next') : false
@@ -171,9 +178,7 @@ export function useContentViewport(options: {
       return contentViewMode.value === 'flow' ? navigateSibling('prev') : false
     }
 
-    const targetTop = direction === 'next'
-      ? Math.min(maxTop, el.scrollTop + viewportHeight)
-      : Math.max(0, el.scrollTop - viewportHeight)
+    const targetTop = stops[Math.max(0, Math.min(stops.length - 1, targetIndex))] ?? 0
 
     if (targetTop === el.scrollTop) return false
 

@@ -827,7 +827,7 @@ async function logout() {
   width: var(--ds-sidebar-width, 232px);
   min-width: var(--ds-sidebar-width, 232px);
   flex: 0 0 var(--ds-sidebar-width, 232px);
-  transition: width 220ms ease, min-width 220ms ease, flex-basis 220ms ease;
+  overflow: hidden;
 }
 
 .adm-sidebar-inner {
@@ -835,6 +835,7 @@ async function logout() {
   z-index: 2;
   width: 100%;
   transition: opacity 180ms ease, transform 220ms ease;
+  transform-origin: left center;
 }
 
 .adm-sidebar-rail {
@@ -863,24 +864,20 @@ async function logout() {
 }
 
 .adm-sidebar--collapsed {
-  width: 18px;
-  min-width: 18px;
-  flex-basis: 18px;
+  width: var(--ds-sidebar-width, 232px);
+  min-width: var(--ds-sidebar-width, 232px);
+  flex-basis: var(--ds-sidebar-width, 232px);
 }
 
 .adm-sidebar--collapsed .adm-sidebar-inner {
   opacity: 0;
-  transform: translateX(-12px);
+  transform: translateX(-18px) scaleX(.04);
   pointer-events: none;
 }
 
 .adm-sidebar-rail--visible {
   opacity: 1;
   pointer-events: auto;
-}
-
-.adm-body--sidebar-collapsed .adm-main {
-  padding-left: 8px;
 }
 
 /* Main scrollable area */
