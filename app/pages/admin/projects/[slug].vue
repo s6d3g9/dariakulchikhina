@@ -1654,8 +1654,8 @@ async function saveProject() {
   left: 0;
   display: block;
   width: 100%;
-  height: 100%;
-  margin-bottom: -100%;
+  height: calc(100vh - var(--dp-panel-h, 28px));
+  margin-bottom: calc(-100vh + var(--dp-panel-h, 28px));
   z-index: 2;
   pointer-events: none;
   background:
@@ -1708,8 +1708,8 @@ async function saveProject() {
   left: 0;
   display: block;
   width: 100%;
-  height: 100%;
-  margin-bottom: -100%;
+  height: calc(100vh - var(--dp-panel-h, 28px));
+  margin-bottom: calc(-100vh + var(--dp-panel-h, 28px));
   z-index: 1;
   pointer-events: none;
 }
