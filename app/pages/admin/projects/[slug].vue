@@ -163,6 +163,9 @@
           @keydown="handleProjectViewportKeydown"
           @scroll="updateProjectViewportPageIndex"
         >
+          <div v-if="contentViewMode === 'wipe'" class="proj-sheet-frame" aria-hidden="true">
+            <div class="proj-sheet-frame__card"></div>
+          </div>
           <AdminEntityHero
             v-if="showBrutalistHero"
             :kicker="activeGroupLabel || 'архитектура проекта'"
@@ -1666,6 +1669,26 @@ async function saveProject() {
       color-mix(in srgb, var(--glass-page-bg) 100%, transparent) 100%
     );
 }
+/* Wipe mode: extend mask to sides so only card area is visible */
+.proj-main--paged[data-cv-mode="wipe"]::before {
+  background:
+    /* left strip */
+    linear-gradient(to right, var(--glass-page-bg) 20px, transparent 20px),
+    /* right strip */
+    linear-gradient(to left, var(--glass-page-bg) 20px, transparent 20px),
+    /* top strip */
+    linear-gradient(
+      to bottom,
+      var(--glass-page-bg) var(--cv-sheet-top, 48px),
+      transparent var(--cv-sheet-top, 48px)
+    ),
+    /* bottom strip */
+    linear-gradient(
+      to top,
+      var(--glass-page-bg) var(--cv-sheet-bottom, 64px),
+      transparent var(--cv-sheet-bottom, 64px)
+    );
+}
 .proj-main--paged::-webkit-scrollbar { width: 5px; }
 .proj-main--paged::-webkit-scrollbar-track { background: transparent; }
 .proj-main--paged::-webkit-scrollbar-thumb {
@@ -1676,6 +1699,37 @@ async function saveProject() {
 .proj-main--paged[data-cv-mode="wipe"] {
   overflow-y: hidden;
   scroll-behavior: auto;
+}
+
+/* ── Card frame: visible card boundary for wipe sheets ── */
+.proj-sheet-frame {
+  position: sticky;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin-bottom: -100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.proj-sheet-frame__card {
+  position: absolute;
+  top: var(--cv-sheet-top, 48px);
+  bottom: var(--cv-sheet-bottom, 64px);
+  left: 20px;
+  right: 20px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 3px color-mix(in srgb, var(--glass-text) 4%, transparent),
+    0 6px 24px color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+html.dark .proj-sheet-frame__card {
+  border-color: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  box-shadow:
+    0 1px 3px color-mix(in srgb, var(--glass-text) 6%, transparent),
+    0 6px 24px rgba(0, 0, 0, .12);
 }
 
 .proj-main--paged[data-cv-mode="wipe"]::after {
@@ -1757,6 +1811,16 @@ async function saveProject() {
 .proj-section-shell {
   width: 100%;
   min-width: 0;
+}
+
+/* Wipe card horizontal padding so content fits inside the card frame */
+.proj-main--paged[data-cv-mode="wipe"] .proj-section-shell {
+  padding-left: 28px;
+  padding-right: 28px;
+}
+.proj-main--paged[data-cv-mode="wipe"] .admin-entity-hero {
+  padding-left: 28px;
+  padding-right: 28px;
 }
 
 .proj-section-shell--brutalist {
