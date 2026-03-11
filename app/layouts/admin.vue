@@ -222,7 +222,7 @@ const canAutoCollapseSidebar = computed(() => {
 
 function syncDesktopSidebarState() {
   if (typeof window === 'undefined') return
-  isDesktopSidebar.value = window.matchMedia('(min-width: 1025px)').matches
+  isDesktopSidebar.value = window.matchMedia('(min-width: 700px) and (hover: hover) and (pointer: fine)').matches
   if (!isDesktopSidebar.value) {
     isSidebarCollapsed.value = false
   }
