@@ -161,7 +161,7 @@
           :tabindex="isProjectViewportPaged ? 0 : undefined"
           @wheel="handleProjectViewportWheel"
           @keydown="handleProjectViewportKeydown"
-          @scroll="syncProjectViewportPager"
+          @scroll="updateProjectViewportPageIndex"
         >
           <AdminEntityHero
             v-if="showBrutalistHero"
@@ -917,6 +917,16 @@ function syncProjectViewportPager() {
   applyViewportZoneLayout(el)
   projectViewportStops.value = buildViewportPageStops(el)
   viewportPageCount.value = projectViewportStops.value.length
+
+  updateProjectViewportPageIndex(el)
+}
+
+function updateProjectViewportPageIndex(el = projectViewport.value) {
+  if (!el || !isProjectViewportPaged.value) {
+    viewportPageIndex.value = 1
+    viewportPageCount.value = Math.max(1, projectViewportStops.value.length)
+    return
+  }
 
   const currentTop = el.scrollTop + 2
   const currentIndex = projectViewportStops.value.findLastIndex((stop) => stop <= currentTop)

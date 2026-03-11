@@ -93,8 +93,18 @@ export function useContentViewport(options: {
     pageStops.value = buildViewportPageStops(el)
     pageCount.value = pageStops.value.length
 
+    updatePageIndexFromScroll(el)
+  }
+
+  function updatePageIndexFromScroll(el = viewportRef.value) {
+    if (!el || !isPaged.value) {
+      pageIndex.value = 1
+      pageCount.value = Math.max(1, pageStops.value.length)
+      return
+    }
+
     const currentTop = el.scrollTop + 2
-    const currentIndex = pageStops.value.findLastIndex((stop) => stop <= currentTop)
+    const currentIndex = pageStops.value.findLastIndex((stop: number) => stop <= currentTop)
     pageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
   }
 
@@ -178,7 +188,7 @@ export function useContentViewport(options: {
 
   async function navigateSibling(direction: Direction) {
     const order = toValue(options.sectionOrder)
-    const currentIndex = order.findIndex((item) => item === options.currentSection.value)
+    const currentIndex = order.findIndex((item: string) => item === options.currentSection.value)
     const nextIndex = currentIndex + (direction === 'next' ? 1 : -1)
     const target = order[nextIndex]
     if (!target) return false
@@ -204,7 +214,7 @@ export function useContentViewport(options: {
 
     const stops = pageStops.value.length ? pageStops.value : [0]
     const currentTop = el.scrollTop + 2
-    const currentIndex = Math.max(0, stops.findLastIndex((stop) => stop <= currentTop))
+    const currentIndex = Math.max(0, stops.findLastIndex((stop: number) => stop <= currentTop))
     const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1
     const atStart = currentIndex <= 0
     const atEnd = targetIndex >= stops.length
@@ -295,6 +305,7 @@ export function useContentViewport(options: {
     pageIndex,
     pageCount,
     syncPager,
+    updatePageIndexFromScroll,
     move,
     handleWheel,
     handleKeydown,
