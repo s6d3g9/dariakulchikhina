@@ -324,6 +324,7 @@ function buildVisibleZonesForBlock(
   let zoneStart = blockStart
   let zoneDensity = 0
   const minimumZoneFill = viewportHeight * MIN_ZONE_FILL_RATIO
+  const minimumInitialStopDelta = Math.max(120, Math.round(viewportHeight * HERO_TO_CONTENT_MIN_DELTA_RATIO))
 
   rows.forEach((row) => {
     const rowTop = clampZoneStart(row.top, blockStart, blockMaxStart)
@@ -337,6 +338,12 @@ function buildVisibleZonesForBlock(
 
     if (!rowFitsCurrentZone || rowOverloadsZone) {
       let nextStart = rowTop
+      const tinyInitialStop = stops.length === 1 && nextStart - blockStart < minimumInitialStopDelta
+
+      if (tinyInitialStop && rowFitsCurrentZone) {
+        zoneDensity += row.density
+        return
+      }
 
       if (rowHeight > viewportHeight - ZONE_EDGE_GAP) {
         const oversizedStops: number[] = []
