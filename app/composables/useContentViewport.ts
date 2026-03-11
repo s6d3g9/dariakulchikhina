@@ -64,6 +64,9 @@ export function useContentViewport(options: {
     const el = viewportRef.value
     if (!el) return
 
+    const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
+    const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
+
     el.dataset.cvMode = contentViewMode.value
     el.dataset.cvDir = wipeDirection.value
     if (wipePhase.value === 'idle') {
@@ -72,6 +75,7 @@ export function useContentViewport(options: {
       el.dataset.cvPhase = wipePhase.value
     }
     el.style.setProperty('--cv-transition-ms', `${transitionMs.value}ms`)
+    el.style.setProperty('--cv-viewport-height', `${viewportHeight}px`)
   }
 
   function syncPager() {

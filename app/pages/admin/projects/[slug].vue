@@ -927,6 +927,9 @@ function syncProjectViewportAttrs() {
   const el = projectViewport.value
   if (!el) return
 
+  const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
+  const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
+
   el.dataset.cvMode = contentViewMode.value
   el.dataset.cvDir = projectViewportWipeDirection.value
   if (projectViewportWipePhase.value === 'idle') {
@@ -935,6 +938,7 @@ function syncProjectViewportAttrs() {
     el.dataset.cvPhase = projectViewportWipePhase.value
   }
   el.style.setProperty('--cv-transition-ms', `${projectContentTransitionDuration.value}ms`)
+  el.style.setProperty('--cv-viewport-height', `${viewportHeight}px`)
 }
 
 function resetProjectViewport() {

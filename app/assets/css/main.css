@@ -1951,7 +1951,7 @@ html.dark .glass-input::placeholder {
 
 .cv-viewport--paged {
   position: relative;
-  height: calc(100vh - var(--dp-panel-h, 28px));
+  height: var(--cv-viewport-height, calc(100vh - var(--dp-panel-h, 28px)));
   overflow-y: auto;
   overflow-x: hidden;
   scroll-behavior: smooth;
@@ -2040,7 +2040,7 @@ html.dark .glass-input::placeholder {
   gap: 8px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 699px) {
   .cv-viewport--paged {
     height: auto;
     max-height: none;
