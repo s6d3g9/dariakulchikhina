@@ -1,6 +1,7 @@
 import { useDb } from '~/server/db/index'
 import { projects } from '~/server/db/schema'
 import { CreateProjectSchema } from '~/shared/types/project'
+import { findPreset } from '~/shared/constants/presets'
 import { CORE_PAGES } from '~/shared/constants/pages'
 
 export default defineEventHandler(async (event) => {
@@ -8,13 +9,18 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedNodeBody(event, CreateProjectSchema)
   const db = useDb()
 
+  const preset = body.projectType ? findPreset(body.projectType) : undefined
+  const pages = preset ? [...preset.pages] : [...CORE_PAGES]
+  const initialProfile = preset ? { ...preset.defaultProfile } : {}
+
   let project: any
   try {
     ;[project] = await db.insert(projects).values({
       slug: body.slug,
       title: body.title,
-      pages: CORE_PAGES,
-      profile: {},
+      projectType: body.projectType ?? 'apartment',
+      pages,
+      profile: initialProfile,
     }).returning()
   } catch (e: any) {
     const code = e?.cause?.code ?? e?.code

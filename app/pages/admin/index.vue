@@ -4,31 +4,127 @@
       <span class="ent-empty-icon">📁</span>
       <span v-if="projects?.length">Выберите проект из списка</span>
       <span v-else>Нет проектов — создайте первый</span>
-      <button v-if="!projects?.length" class="a-btn-sm" style="margin-top:6px" @click="showCreate = true; wizardStep = 1">+ создать проект</button>
+      <button v-if="!projects?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ создать проект</button>
     </div>
     <Teleport to="body">
       <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
         <div class="pj-modal glass-surface">
           <div class="pj-modal-head">
             <span>новый проект</span>
-            <span class="pj-modal-step">шаг {{ wizardStep }} из 2</span>
+            <span class="pj-modal-step">шаг {{ wizardStep }} из 3</span>
             <button class="pj-modal-close" @click="closeCreate">✕</button>
           </div>
           <div class="pj-modal-body">
             <form @submit.prevent="onWizardSubmit">
+
+              <!-- ── Шаг 1: Выбор пресета ─────────────────────────── -->
               <template v-if="wizardStep === 1">
-                <div class="pj-form-field"><label class="pj-form-label">Название</label><input v-model="newProject.title" class="glass-input" required placeholder="Название проекта" autofocus /></div>
-                <div class="pj-form-field"><label class="pj-form-label">Slug (URL)</label><input v-model="newProject.slug" class="glass-input" required placeholder="project-slug" /></div>
+                <p class="pj-step-hint">Выберите тип объекта — это определит набор разделов проекта</p>
+
+                <div class="pj-preset-category">
+                  <span class="pj-preset-cat-label">Жилые объекты</span>
+                  <div class="pj-preset-grid">
+                    <button
+                      v-for="p in residentialPresets"
+                      :key="p.key"
+                      type="button"
+                      class="pj-preset-card"
+                      :class="{ 'pj-preset-card--active': newProject.projectType === p.key }"
+                      @click="selectPreset(p.key)"
+                    >
+                      <span class="pj-preset-icon">{{ p.icon }}</span>
+                      <span class="pj-preset-label">{{ p.label }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="pj-preset-category">
+                  <span class="pj-preset-cat-label">Коммерческие объекты</span>
+                  <div class="pj-preset-grid">
+                    <button
+                      v-for="p in commercialPresets"
+                      :key="p.key"
+                      type="button"
+                      class="pj-preset-card"
+                      :class="{ 'pj-preset-card--active': newProject.projectType === p.key }"
+                      @click="selectPreset(p.key)"
+                    >
+                      <span class="pj-preset-icon">{{ p.icon }}</span>
+                      <span class="pj-preset-label">{{ p.label }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div v-if="selectedPreset" class="pj-preset-desc">
+                  {{ selectedPreset.description }}
+                </div>
               </template>
+
+              <!-- ── Шаг 2: Название и slug ──────────────────────── -->
+              <template v-else-if="wizardStep === 2">
+                <div v-if="selectedPreset" class="pj-selected-preset">
+                  <span class="pj-preset-icon">{{ selectedPreset.icon }}</span>
+                  <span>{{ selectedPreset.label }}</span>
+                </div>
+                <div class="pj-form-field">
+                  <label class="pj-form-label">Название проекта</label>
+                  <input
+                    v-model="newProject.title"
+                    class="glass-input"
+                    required
+                    placeholder="Квартира Иванова — ул. Ленина, 10"
+                    autofocus
+                    @input="autoSlug"
+                  />
+                </div>
+                <div class="pj-form-field">
+                  <label class="pj-form-label">Slug (часть URL)</label>
+                  <input
+                    v-model="newProject.slug"
+                    class="glass-input"
+                    required
+                    placeholder="ivanova-lenina-10"
+                  />
+                  <span class="pj-slug-hint">/admin/projects/<strong>{{ newProject.slug || '...' }}</strong></span>
+                </div>
+              </template>
+
+              <!-- ── Шаг 3: Подтверждение ────────────────────────── -->
               <template v-else>
-                <div class="pj-preview-row"><span class="pj-preview-label">Проект</span><span class="pj-preview-value">{{ newProject.title }} · <span class="pj-preview-dim">{{ newProject.slug }}</span></span></div>
-                <div class="pj-preview-pages"><span class="pj-preview-label">Страницы</span><div class="pj-pages-chips"><span v-for="pg in corePageLabels" :key="pg" class="pj-page-chip">{{ pg }}</span></div></div>
+                <div class="pj-confirm-block">
+                  <div class="pj-confirm-row">
+                    <span class="pj-preview-label">Название</span>
+                    <span class="pj-preview-value">{{ newProject.title }}</span>
+                  </div>
+                  <div class="pj-confirm-row">
+                    <span class="pj-preview-label">Slug</span>
+                    <span class="pj-preview-value pj-preview-dim">{{ newProject.slug }}</span>
+                  </div>
+                  <div class="pj-confirm-row">
+                    <span class="pj-preview-label">Тип объекта</span>
+                    <span class="pj-preview-value">
+                      <span v-if="selectedPreset">{{ selectedPreset.icon }} {{ selectedPreset.label }}</span>
+                      <span v-else>—</span>
+                    </span>
+                  </div>
+                  <div class="pj-confirm-row">
+                    <span class="pj-preview-label">Разделов</span>
+                    <span class="pj-preview-value">{{ selectedPreset?.pages.length ?? 20 }}</span>
+                  </div>
+                </div>
               </template>
+
               <p v-if="createError" class="pj-form-error">{{ createError }}</p>
               <div class="pj-modal-foot">
                 <button type="button" class="a-btn-sm" @click="closeCreate">отмена</button>
-                <button v-if="wizardStep === 2" type="button" class="a-btn-sm" @click="wizardStep = 1">← назад</button>
-                <button type="submit" class="a-btn-save" :disabled="creating">{{ wizardStep === 1 ? 'далее →' : (creating ? '...' : 'создать проект') }}</button>
+                <button v-if="wizardStep > 1" type="button" class="a-btn-sm" @click="wizardStep--">← назад</button>
+                <button
+                  type="submit"
+                  class="a-btn-save"
+                  :disabled="creating || (wizardStep === 1 && !newProject.projectType)"
+                >
+                  {{ wizardStep < 3 ? 'далее →' : (creating ? '...' : 'создать проект') }}
+                </button>
               </div>
             </form>
           </div>
@@ -40,6 +136,7 @@
 
 <script setup lang="ts">
 import { PROJECT_PHASES } from '~~/shared/types/catalogs'
+import { PROJECT_PRESETS, getPresetsByCategory, findPreset } from '~~/shared/constants/presets'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
@@ -58,23 +155,92 @@ async function reloadProjects() {
 onMounted(async () => { await adminNav.ensureSection('projects'); reloadProjects() })
 onActivated(async () => { await adminNav.ensureSection('projects'); reloadProjects() })
 
-const CORE_PAGE_LABELS: Record<string, string> = { materials: 'материалы', tz: 'ТЗ', profile_customer: 'профиль клиента' }
-const corePageLabels = Object.values(CORE_PAGE_LABELS)
+// ── Пресеты ──────────────────────────────────────────
+const residentialPresets = getPresetsByCategory('residential')
+const commercialPresets = getPresetsByCategory('commercial')
 
 // ── Create wizard ──────────────────────────────────────
-const showCreate = ref(false); const wizardStep = ref(1); const creating = ref(false); const createError = ref('')
-const newProject = reactive({ title: '', slug: '' })
+const showCreate = ref(false)
+const wizardStep = ref(1)
+const creating = ref(false)
+const createError = ref('')
+const newProject = reactive({ title: '', slug: '', projectType: '' })
 
-function closeCreate() { showCreate.value = false; wizardStep.value = 1; newProject.title = ''; newProject.slug = ''; createError.value = '' }
-function onWizardSubmit() { if (wizardStep.value === 1) { if (!newProject.title.trim() || !newProject.slug.trim()) return; wizardStep.value = 2; return }; createProject() }
+const selectedPreset = computed(() =>
+  newProject.projectType ? findPreset(newProject.projectType) : undefined,
+)
+
+function openCreate() {
+  showCreate.value = true
+  wizardStep.value = 1
+}
+
+function closeCreate() {
+  showCreate.value = false
+  wizardStep.value = 1
+  newProject.title = ''
+  newProject.slug = ''
+  newProject.projectType = ''
+  createError.value = ''
+}
+
+function selectPreset(key: string) {
+  newProject.projectType = key
+}
+
+/** Автоматически генерировать slug из названия */
+function autoSlug() {
+  if (!newProject.title) return
+  newProject.slug = newProject.title
+    .toLowerCase()
+    .replace(/ё/g, 'e').replace(/а/g, 'a').replace(/б/g, 'b').replace(/в/g, 'v')
+    .replace(/г/g, 'g').replace(/д/g, 'd').replace(/е/g, 'e').replace(/ж/g, 'zh')
+    .replace(/з/g, 'z').replace(/и/g, 'i').replace(/й/g, 'y').replace(/к/g, 'k')
+    .replace(/л/g, 'l').replace(/м/g, 'm').replace(/н/g, 'n').replace(/о/g, 'o')
+    .replace(/п/g, 'p').replace(/р/g, 'r').replace(/с/g, 's').replace(/т/g, 't')
+    .replace(/у/g, 'u').replace(/ф/g, 'f').replace(/х/g, 'h').replace(/ц/g, 'ts')
+    .replace(/ч/g, 'ch').replace(/ш/g, 'sh').replace(/щ/g, 'sch').replace(/ъ/g, '')
+    .replace(/ы/g, 'y').replace(/ь/g, '').replace(/э/g, 'e').replace(/ю/g, 'yu')
+    .replace(/я/g, 'ya')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+}
+
+function onWizardSubmit() {
+  if (wizardStep.value === 1) {
+    if (!newProject.projectType) return
+    wizardStep.value = 2
+    return
+  }
+  if (wizardStep.value === 2) {
+    if (!newProject.title.trim() || !newProject.slug.trim()) return
+    wizardStep.value = 3
+    return
+  }
+  createProject()
+}
 
 async function createProject() {
-  creating.value = true; createError.value = ''
+  creating.value = true
+  createError.value = ''
   try {
-    await $fetch('/api/projects', { method: 'POST', body: { title: newProject.title, slug: newProject.slug } })
-    closeCreate(); refresh()
-  } catch (e: any) { createError.value = e.data?.message || e.data?.statusMessage || e.statusMessage || e.message || 'Ошибка создания проекта'; wizardStep.value = 1 }
-  finally { creating.value = false }
+    await $fetch('/api/projects', {
+      method: 'POST',
+      body: {
+        title: newProject.title,
+        slug: newProject.slug,
+        projectType: newProject.projectType || 'apartment',
+      },
+    })
+    closeCreate()
+    refresh()
+  } catch (e: any) {
+    createError.value = e.data?.message || e.data?.statusMessage || e.statusMessage || e.message || 'Ошибка создания проекта'
+    wizardStep.value = 2
+  } finally {
+    creating.value = false
+  }
 }
 
 function phaseLabel(status: string) { return PROJECT_PHASES.find(p => p.key === status)?.label || status }
@@ -136,4 +302,32 @@ html.dark .pj-phase--teal   { color: #5eead4; background: rgba(94,234,212,.1); }
 .pj-preview-pages { margin-bottom: 8px; }
 .pj-pages-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .pj-page-chip { font-size: .68rem; padding: 2px 8px; border-radius: var(--chip-radius, 999px); background: color-mix(in srgb, var(--glass-text) 5%, transparent); color: var(--glass-text); opacity: .5; }
+
+/* ══ Preset selector ══ */
+.pj-step-hint { font-size: .8rem; color: var(--glass-text); opacity: .45; margin-bottom: 14px; }
+.pj-preset-category { margin-bottom: 16px; }
+.pj-preset-cat-label { display: block; font-size: .58rem; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; color: var(--glass-text); opacity: .3; margin-bottom: 8px; }
+.pj-preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pj-preset-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 6px 8px;
+  border-radius: 10px;
+  border: 1.5px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+  cursor: pointer; transition: border-color .15s, background .15s;
+}
+.pj-preset-card:hover { border-color: color-mix(in srgb, var(--ds-accent, #6366f1) 40%, transparent); background: color-mix(in srgb, var(--ds-accent, #6366f1) 6%, transparent); }
+.pj-preset-card--active { border-color: var(--ds-accent, #6366f1); background: color-mix(in srgb, var(--ds-accent, #6366f1) 10%, transparent); }
+.pj-preset-icon { font-size: 1.5rem; line-height: 1; }
+.pj-preset-label { font-size: .68rem; font-weight: 500; color: var(--glass-text); text-align: center; line-height: 1.2; }
+.pj-preset-desc { font-size: .76rem; color: var(--glass-text); opacity: .4; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--glass-text) 4%, transparent); margin-top: 4px; }
+
+/* ══ Step 2: title+slug ══ */
+.pj-selected-preset { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--ds-accent, #6366f1); background: color-mix(in srgb, var(--ds-accent, #6366f1) 8%, transparent); border-radius: 8px; padding: 4px 10px; margin-bottom: 14px; font-weight: 500; }
+.pj-slug-hint { font-size: .68rem; color: var(--glass-text); opacity: .35; margin-top: 3px; }
+
+/* ══ Step 3: confirmation ══ */
+.pj-confirm-block { border-radius: 10px; border: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent); overflow: hidden; margin-bottom: 6px; }
+.pj-confirm-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 14px; gap: 10px; }
+.pj-confirm-row + .pj-confirm-row { border-top: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent); }
 </style>

@@ -166,15 +166,18 @@ export const ProjectSchema = z.object({
   id: z.number(),
   slug: z.string().min(1),
   title: z.string().min(1),
+  projectType: z.string().optional(),
   pages: z.array(z.string()),
   profile: ClientProfileSchema,
 })
 export const CreateProjectSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9_-]+$/),
   title: z.string().min(1),
+  projectType: z.string().optional(),
 })
 export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
   status: z.string().optional(),
+  projectType: z.string().optional(),
   pages: z.array(z.string()).optional(),
   profile: ClientProfileSchema.optional(),
 })

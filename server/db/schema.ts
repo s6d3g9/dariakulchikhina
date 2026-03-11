@@ -34,6 +34,7 @@ export const projects = pgTable('projects', {
   slug: text('slug').notNull().unique(),
   title: text('title').notNull(),
   status: text('status').default('lead').notNull(),
+  projectType: text('project_type').default('apartment').notNull(),
   userId: integer('user_id').references(() => users.id),
   pages: text('pages').array().default([]).notNull(),
   profile: jsonb('profile').$type<Record<string, string>>().default({}).notNull(),
