@@ -154,7 +154,15 @@
         </div><!-- /.proj-nav-col -->
 
         <!-- Right content -->
-        <div class="proj-main" :class="{ 'proj-main--brutalist': isBrutalistProjectMode }">
+        <div
+          ref="projectViewport"
+          class="proj-main"
+          :class="{ 'proj-main--brutalist': isBrutalistProjectMode, 'proj-main--paged': isProjectViewportPaged }"
+          :tabindex="isProjectViewportPaged ? 0 : undefined"
+          @wheel="handleProjectViewportWheel"
+          @keydown="handleProjectViewportKeydown"
+          @scroll="syncProjectViewportPager"
+        >
           <AdminEntityHero
             v-if="showBrutalistHero"
             :kicker="activeGroupLabel || 'архитектура проекта'"
@@ -163,7 +171,7 @@
             :full-height="true"
             frame="divided"
             :meta-columns="3"
-            prompt="↓ прокрутка / swipe ↓"
+            :prompt="projectHeroPrompt"
           >
             <template #notices>
               <template v-if="projectFlashMessages.length">
@@ -464,6 +472,17 @@
               </section>
             </div>
           </Transition>
+
+          <div v-if="isProjectViewportPaged" class="proj-pager-rail">
+            <div class="proj-pager-rail__meta">
+              <span class="proj-pager-rail__mode">{{ contentViewMode === 'flow' ? 'поток' : 'экраны' }}</span>
+              <span>экран {{ viewportPageIndex }} / {{ viewportPageCount }}</span>
+            </div>
+            <div class="proj-pager-rail__actions">
+              <button type="button" class="a-btn-sm" @click="moveProjectViewport('prev')">← экран</button>
+              <button type="button" class="a-btn-sm" @click="moveProjectViewport('next')">{{ contentViewMode === 'flow' ? 'экран / след.' : 'экран →' }}</button>
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -569,11 +588,19 @@ const projectContentTransitionEffect = computed(() => {
   if (effect === 'slide') return 'slide-r'
   return effect
 })
-const projectContentTransitionDuration = computed(() => Math.min(800, Math.max(80, designSystem.tokens.value.pageTransitDuration ?? 280)))
+const projectContentTransitionDuration = computed(() => Math.min(10000, Math.max(0, designSystem.tokens.value.pageTransitDuration ?? 280)))
+const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
+const isProjectViewportPaged = computed(() => !clientPreviewMode.value && !contractorPreviewMode.value && contentViewMode.value !== 'scroll')
+const projectHeroPrompt = computed(() => isProjectViewportPaged.value ? '↓ экран / PgDn ↓' : '↓ прокрутка / swipe ↓')
 const projectContentTransitionCss = computed(() => projectContentTransitionEffect.value !== 'none')
 const projectContentTransitionName = computed(() =>
   projectContentTransitionEffect.value === 'none' ? 'tab-fade' : `pt-${projectContentTransitionEffect.value}`
 )
+const projectViewport = ref<HTMLElement | null>(null)
+const viewportPageIndex = ref(1)
+const viewportPageCount = ref(1)
+const viewportPagingLockUntil = ref(0)
+const viewportNavigationBusy = ref(false)
 
 // ── Привязка к глобальному nav (NavigationNode schema) ─────────────────────
 const adminNav = useAdminNav()
@@ -834,6 +861,123 @@ const resolvedProjectPageFromNav = computed(() => {
 
 const currentProjectPage = computed(() => resolvedProjectPageFromNav.value || activePage.value)
 
+const currentProjectLeafItems = computed(() =>
+  adminNav.currentNode.value.payload.filter((item) => item.type === 'leaf' && item.id.startsWith('prj_')),
+)
+
+const currentProjectLeafIndex = computed(() => {
+  const fallbackLeafId = PROJECT_PAGE_TO_NAV_TARGET[normalizedActivePage.value]?.leafId || null
+  const currentLeafId = adminNav.activeLeafId.value || fallbackLeafId
+  if (!currentLeafId) return -1
+  return currentProjectLeafItems.value.findIndex((item) => item.id === currentLeafId)
+})
+
+function syncProjectViewportPager() {
+  const el = projectViewport.value
+  if (!el || !isProjectViewportPaged.value) {
+    viewportPageIndex.value = 1
+    viewportPageCount.value = 1
+    return
+  }
+
+  const pageHeight = Math.max(el.clientHeight, 1)
+  const maxTop = Math.max(0, el.scrollHeight - pageHeight)
+  viewportPageCount.value = Math.max(1, Math.ceil((maxTop + pageHeight) / pageHeight))
+  viewportPageIndex.value = Math.min(viewportPageCount.value, Math.floor((el.scrollTop + 2) / pageHeight) + 1)
+}
+
+function resetProjectViewport() {
+  const el = projectViewport.value
+  if (!el) return
+  el.scrollTo({ top: 0, behavior: 'auto' })
+  syncProjectViewportPager()
+}
+
+function lockProjectViewportPaging() {
+  viewportPagingLockUntil.value = Date.now() + Math.min(900, Math.max(260, projectContentTransitionDuration.value))
+}
+
+function canFlipProjectViewport() {
+  return Date.now() >= viewportPagingLockUntil.value && !viewportNavigationBusy.value
+}
+
+function resolveProjectPageFromLeafId(leafId: string) {
+  if (!leafId.startsWith('prj_')) return null
+  return PROJECT_SECTION_TO_PAGE[leafId.replace('prj_', '')] || null
+}
+
+async function advanceProjectLeaf(direction: 'next' | 'prev') {
+  const nextIndex = currentProjectLeafIndex.value + (direction === 'next' ? 1 : -1)
+  const targetLeaf = currentProjectLeafItems.value[nextIndex]
+  if (!targetLeaf) return false
+
+  const nextPage = resolveProjectPageFromLeafId(targetLeaf.id)
+  if (!nextPage) return false
+
+  viewportNavigationBusy.value = true
+  lockProjectViewportPaging()
+  try {
+    await selectAdminPage(nextPage)
+    await nextTick()
+    resetProjectViewport()
+    return true
+  } finally {
+    window.setTimeout(() => {
+      viewportNavigationBusy.value = false
+      syncProjectViewportPager()
+    }, Math.min(900, Math.max(260, projectContentTransitionDuration.value)))
+  }
+}
+
+async function moveProjectViewport(direction: 'next' | 'prev') {
+  const el = projectViewport.value
+  if (!el) return false
+
+  const pageHeight = Math.max(el.clientHeight, 1)
+  const maxTop = Math.max(0, el.scrollHeight - pageHeight)
+  const atStart = el.scrollTop <= 4
+  const atEnd = el.scrollTop >= maxTop - 4
+
+  if (direction === 'next' && atEnd) {
+    return contentViewMode.value === 'flow' ? advanceProjectLeaf('next') : false
+  }
+
+  if (direction === 'prev' && atStart) {
+    return contentViewMode.value === 'flow' ? advanceProjectLeaf('prev') : false
+  }
+
+  const targetTop = direction === 'next'
+    ? Math.min(maxTop, el.scrollTop + pageHeight)
+    : Math.max(0, el.scrollTop - pageHeight)
+
+  if (targetTop === el.scrollTop) return false
+
+  lockProjectViewportPaging()
+  el.scrollTo({ top: targetTop, behavior: 'smooth' })
+  window.setTimeout(syncProjectViewportPager, Math.min(900, Math.max(260, projectContentTransitionDuration.value)))
+  return true
+}
+
+function handleProjectViewportWheel(event: WheelEvent) {
+  if (!isProjectViewportPaged.value || !projectViewport.value) return
+  if (Math.abs(event.deltaY) < 12) return
+  event.preventDefault()
+  if (!canFlipProjectViewport()) return
+  void moveProjectViewport(event.deltaY > 0 ? 'next' : 'prev')
+}
+
+function handleProjectViewportKeydown(event: KeyboardEvent) {
+  if (!isProjectViewportPaged.value) return
+
+  const isNext = event.key === 'PageDown' || event.key === 'ArrowDown' || event.key === ' '
+  const isPrev = event.key === 'PageUp' || event.key === 'ArrowUp'
+  if (!isNext && !isPrev) return
+
+  event.preventDefault()
+  if (!canFlipProjectViewport()) return
+  void moveProjectViewport(isNext ? 'next' : 'prev')
+}
+
 const {
   clients,
   selectedClientId,
@@ -1001,6 +1145,20 @@ watch(availablePages, (pages) => {
     activePage.value = pages[0].slug
   }
 }, { immediate: true })
+
+watch([currentProjectPage, contentViewMode], async () => {
+  await nextTick()
+  resetProjectViewport()
+})
+
+onMounted(() => {
+  nextTick(syncProjectViewportPager)
+  window.addEventListener('resize', syncProjectViewportPager)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncProjectViewportPager)
+})
 
 async function saveProject() {
   saving.value = true
@@ -1258,10 +1416,59 @@ async function saveProject() {
   flex-direction: column;
   min-height: calc(100vh - var(--dp-panel-h, 28px));
 }
+.proj-main--paged {
+  height: calc(100vh - var(--dp-panel-h, 28px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--glass-text) 18%, transparent) transparent;
+  outline: none;
+}
+.proj-main--paged::-webkit-scrollbar { width: 5px; }
+.proj-main--paged::-webkit-scrollbar-track { background: transparent; }
+.proj-main--paged::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--glass-text) 18%, transparent);
+  border-radius: 999px;
+}
 .proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
 .proj-main-inner--after-hero {
   min-height: 100vh;
   padding-bottom: max(3rem, env(safe-area-inset-bottom));
+}
+
+.proj-pager-rail {
+  position: sticky;
+  bottom: 14px;
+  margin: 0 0 14px auto;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-page-bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+  z-index: 4;
+}
+.proj-pager-rail__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: .69rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: color-mix(in srgb, var(--glass-text) 72%, transparent);
+}
+.proj-pager-rail__mode {
+  color: var(--glass-text);
+}
+.proj-pager-rail__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .proj-section-shell {
@@ -1638,6 +1845,22 @@ async function saveProject() {
 
 /* ── Small phones ── */
 @media (max-width: 400px) {
+  .proj-main--paged {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .proj-pager-rail {
+    position: static;
+    margin: 12px 0 0;
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .proj-pager-rail__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
   .proj-mobile-nav-toggle {
     padding: 8px 10px;
     font-size: .76rem;

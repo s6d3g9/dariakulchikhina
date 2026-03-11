@@ -179,7 +179,7 @@ export interface DesignTokens {
   colorCardBg:  string   // --ds-card-bg     — card / modal background override
 
   /* ── Button & Card hover animation ── */
-  btnHoverAnim: 'none' | 'lift' | 'scale' | 'glow' | 'fill' | 'sheen'  // kinetic hover style
+  btnHoverAnim: 'none' | 'lift' | 'scale' | 'glow' | 'fill' | 'sheen' | 'pulse' | 'shutter' | 'magnet' | 'scan'  // kinetic hover style
   cardHoverAnim: 'none' | 'lift' | 'scale' | 'dim' | 'border' | 'reveal' // card hover micromotion
 
   /* ── Design Architecture tokens ── */
@@ -187,8 +187,9 @@ export interface DesignTokens {
   archHeadingTracking: number                                             // ×0.01em, range -5..30
   archHeadingCase:    'none' | 'uppercase' | 'lowercase' | 'capitalize'  // heading text-transform
   archDivider:        'none' | 'line' | 'gradient'                       // section divider style
-  archPageEnter:      'none' | 'fade' | 'slide' | 'slide-l' | 'slide-r' | 'slide-t' | 'slide-b' | 'curtain' | 'curtain-b' | 'zoom' | 'flip' | 'blur' // page-enter transition
-  pageTransitDuration: number                                             // ms, 80..800 — speed of page transition
+  archPageEnter:      'none' | 'fade' | 'slide' | 'slide-l' | 'slide-r' | 'slide-t' | 'slide-b' | 'curtain' | 'curtain-b' | 'zoom' | 'flip' | 'blur' | 'scale-fade' | 'drift-r' | 'drift-l' | 'clip-x' | 'clip-y' | 'skew' // page-enter transition
+  pageTransitDuration: number                                             // ms, 0..10000 — speed of page transition
+  contentViewMode:    'scroll' | 'paged' | 'flow'                        // content viewport behavior
   archLinkAnim:       'none' | 'underline' | 'arrow'                     // link hover animation
   archSectionStyle:   'flat' | 'card' | 'striped'                        // section background style
   archNavStyle:       'full' | 'minimal' | 'hidden'                      // nav chrome level
@@ -338,6 +339,7 @@ export const DEFAULT_TOKENS: DesignTokens = {
   archDivider:         'line',
   archPageEnter:       'fade',
   pageTransitDuration: 280,
+  contentViewMode:     'scroll',
   archLinkAnim:        'underline',
   archSectionStyle:    'flat',
   archNavStyle:        'minimal',
@@ -2337,6 +2339,7 @@ export function useDesignSystem() {
     el.setAttribute('data-heading-case',  t.archHeadingCase  || 'none')
     el.setAttribute('data-divider',       t.archDivider      || 'none')
     el.setAttribute('data-page-enter',    t.archPageEnter    || 'none')
+    el.setAttribute('data-content-view',  t.contentViewMode  || 'scroll')
     el.setAttribute('data-link-anim',     t.archLinkAnim     || 'none')
     el.setAttribute('data-section-style', t.archSectionStyle || 'flat')
     el.setAttribute('data-nav-style',     t.archNavStyle     || 'full')

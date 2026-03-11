@@ -22,7 +22,15 @@
         </nav>
       </aside>
 
-      <main class="cab-main" :class="{ 'cab-main--content-only': !showSidebar }">
+      <main
+        ref="viewportRef"
+        class="cab-main"
+        :class="{ 'cab-main--content-only': !showSidebar, 'cv-viewport--paged': isPaged }"
+        :tabindex="isPaged ? 0 : undefined"
+        @wheel="handleWheel"
+        @keydown="handleKeydown"
+        @scroll="syncPager"
+      >
         <div class="cab-inner">
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
@@ -266,6 +274,16 @@
           </template>
 
         </div>
+        <div v-if="isPaged" class="cv-pager-rail">
+          <div class="cv-pager-rail__meta">
+            <span class="cv-pager-rail__mode">{{ contentViewMode === 'flow' ? 'поток' : 'экраны' }}</span>
+            <span>экран {{ pageIndex }} / {{ pageCount }}</span>
+          </div>
+          <div class="cv-pager-rail__actions">
+            <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
+            <button type="button" class="a-btn-sm" @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / след.' : 'экран →' }}</button>
+          </div>
+        </div>
       </main>
     </div>
   </div>
@@ -275,6 +293,7 @@
 const props = defineProps<{ sellerId: number; modelValue?: string; showSidebar?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
 const showSidebar = computed(() => props.showSidebar !== false)
+const designSystem = useDesignSystem()
 
 const CATEGORY_OPTIONS = [
   'finish', 'plumbing', 'electrical', 'lighting',
@@ -307,6 +326,26 @@ const nav = [
 ]
 
 const section = ref('dashboard')
+const sectionOrder = computed(() => nav.map((item) => item.key))
+const {
+  viewportRef,
+  contentViewMode,
+  isPaged,
+  pageIndex,
+  pageCount,
+  syncPager,
+  move,
+  handleWheel,
+  handleKeydown,
+} = useContentViewport({
+  mode: computed(() => designSystem.tokens.value.contentViewMode),
+  currentSection: section,
+  sectionOrder,
+  onNavigate: async (nextSection) => {
+    section.value = nextSection
+  },
+  transitionMs: computed(() => designSystem.tokens.value.pageTransitDuration ?? 280),
+})
 
 // ── v-model:section sync with parent ──
 watch(() => props.modelValue, (val) => {

@@ -22,7 +22,7 @@ const transitionEffect = computed(() => {
 
 const transitionDuration = computed(() => {
   const raw = tokens.value.pageTransitDuration ?? 280
-  return Math.min(800, Math.max(80, raw))
+  return Math.min(10000, Math.max(0, raw))
 })
 
 const transitionEasing = computed(() => tokens.value.animEasing || 'ease')

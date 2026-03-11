@@ -988,6 +988,8 @@
                       <button type="button" class="dp-sm-btn" @click="generateFullDesignScene">сгенерировать всё</button>
                       <button type="button" class="dp-sm-btn" @click="generateContentScene">сгенерировать сцену</button>
                       <button type="button" class="dp-sm-btn" @click="applyContentScenePreset('workbench')">база</button>
+                      <button type="button" class="dp-sm-btn" @click="applyContentScenePreset('registry')">реестр</button>
+                      <button type="button" class="dp-sm-btn" @click="applyContentScenePreset('atelier')">студия</button>
                     </div>
                   </div>
                   <div class="dp-scene-presets-grid">
@@ -1738,6 +1740,28 @@
 
                   <!-- Page enter -->
                   <div class="dp-field">
+                    <label class="dp-label">пресеты переходов</label>
+                    <div class="dp-card-presets-grid">
+                      <button
+                        v-for="preset in archTransitionPresets"
+                        :key="`arch-transition-${preset.id}`"
+                        type="button"
+                        class="dp-card-preset"
+                        :class="{ 'dp-card-preset--active': tokens.archPageEnter === preset.tokens.archPageEnter && (tokens.pageTransitDuration ?? 280) === preset.tokens.pageTransitDuration }"
+                        @click="applyArchitectureTransitionPreset(preset.id)"
+                      >
+                        <span class="dp-card-preset-preview" :class="`dp-card-preset-preview--${preset.id}`">
+                          <span class="dp-card-preset-preview-line dp-card-preset-preview-line--lg" />
+                          <span class="dp-card-preset-preview-line" />
+                          <span class="dp-card-preset-preview-line dp-card-preset-preview-line--sm" />
+                        </span>
+                        <span class="dp-card-preset-name">{{ preset.label }}</span>
+                        <span class="dp-card-preset-desc">{{ preset.description }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="dp-field">
                     <label class="dp-label">переход между страницами</label>
                     <div class="dp-arch-chips dp-arch-chips--wrap">
                       <button
@@ -1751,15 +1775,29 @@
                   </div>
 
                   <!-- Page transition speed -->
-                  <div class="dp-field" v-if="tokens.archPageEnter !== 'none'">
-                    <label class="dp-label">скорость перехода <span class="dp-label-val">{{ tokens.pageTransitDuration ?? 280 }} мс</span></label>
+                  <div class="dp-field">
+                    <label class="dp-label">длительность перехода <span class="dp-label-val">{{ formatTransitionDuration(tokens.pageTransitDuration ?? 280) }}</span></label>
                     <input
-                      type="range" min="80" max="800" step="20"
+                      type="range" min="0" max="10000" step="50"
                       :value="tokens.pageTransitDuration ?? 280"
                       @input="set('pageTransitDuration', Number(($event.target as HTMLInputElement).value))"
                       class="dp-range"
                     />
-                    <div class="dp-range-hints"><span>быстро</span><span>медленно</span></div>
+                    <div class="dp-range-hints"><span>0 сек</span><span>10 сек</span></div>
+                  </div>
+
+                  <div class="dp-field">
+                    <label class="dp-label">режим просмотра страницы <span class="dp-label-val">{{ tokens.contentViewMode || 'scroll' }}</span></label>
+                    <div class="dp-arch-chips dp-arch-chips--wrap">
+                      <button
+                        v-for="opt in contentViewModes" :key="opt.id"
+                        type="button"
+                        class="dp-arch-chip"
+                        :class="{ 'dp-arch-chip--active': (tokens.contentViewMode || 'scroll') === opt.id }"
+                        @click="set('contentViewMode', opt.id)"
+                      >{{ opt.label }}</button>
+                    </div>
+                    <div class="dp-field-hint">scroll — как сейчас, экраны — листание по размеру окна, поток — после конца материала открывает следующий пункт текущего меню.</div>
                   </div>
 
                   <!-- Section style -->
@@ -2148,6 +2186,10 @@ const btnHoverAnims = [
   { id: 'glow'  as const, label: 'свечение' },
   { id: 'fill'  as const, label: 'заливка' },
   { id: 'sheen' as const, label: 'блик' },
+  { id: 'pulse' as const, label: 'импульс' },
+  { id: 'shutter' as const, label: 'шторки' },
+  { id: 'magnet' as const, label: 'магнит' },
+  { id: 'scan' as const, label: 'скан' },
 ]
 const cardHoverAnims = [
   { id: 'none'   as const, label: 'нет' },
@@ -2177,6 +2219,7 @@ const archDividers = [
 const archPageEnters = [
   { id: 'none'     as const, label: 'нет' },
   { id: 'fade'     as const, label: 'плавно' },
+  { id: 'scale-fade' as const, label: 'scale fade' },
   { id: 'zoom'     as const, label: 'масштаб' },
   { id: 'blur'     as const, label: 'размытие' },
   { id: 'flip'     as const, label: 'переворот' },
@@ -2184,6 +2227,11 @@ const archPageEnters = [
   { id: 'slide-l'  as const, label: '← слайд' },
   { id: 'slide-t'  as const, label: '↑ слайд' },
   { id: 'slide-b'  as const, label: '↓ слайд' },
+  { id: 'drift-r'  as const, label: '→ дрейф' },
+  { id: 'drift-l'  as const, label: '← дрейф' },
+  { id: 'clip-x'   as const, label: 'клип x' },
+  { id: 'clip-y'   as const, label: 'клип y' },
+  { id: 'skew'     as const, label: 'скос' },
   { id: 'curtain'  as const, label: 'занавес ↓' },
   { id: 'curtain-b' as const, label: 'занавес ↑' },
 ]
@@ -2191,6 +2239,11 @@ const archLinkAnims = [
   { id: 'none'      as const, label: 'нет' },
   { id: 'underline' as const, label: 'подчёркивание' },
   { id: 'arrow'     as const, label: 'стрелка' },
+]
+const contentViewModes = [
+  { id: 'scroll' as const, label: 'скролл', description: 'Непрерывная прокрутка как сейчас.' },
+  { id: 'paged' as const, label: 'экраны', description: 'Листание контента по высоте видимой зоны.' },
+  { id: 'flow' as const, label: 'поток', description: 'Экранное листание и переход к следующему пункту активного меню.' },
 ]
 const archSectionStyles = [
   { id: 'flat'    as const, label: 'плоский' },
@@ -2234,11 +2287,82 @@ const archNavTransitions = [
   { id: 'stack' as const, label: 'слои' },
   { id: 'blur'  as const, label: 'размытие' },
 ]
+const archTransitionPresets = [
+  {
+    id: 'instant' as const,
+    label: 'мгновенно',
+    description: 'Без анимации для рабочих режимов и быстрых переключений.',
+    tokens: {
+      archPageEnter: 'none' as const,
+      pageTransitDuration: 0,
+      archNavTransition: 'none' as const,
+      navTransitDuration: 0,
+      archContentReveal: 'none' as const,
+      archTextReveal: 'none' as const,
+    },
+  },
+  {
+    id: 'calm' as const,
+    label: 'спокойно',
+    description: 'Нейтральный fade для повседневной админки.',
+    tokens: {
+      archPageEnter: 'fade' as const,
+      pageTransitDuration: 280,
+      archNavTransition: 'slide' as const,
+      navTransitDuration: 220,
+      archContentReveal: 'fade-up' as const,
+      archTextReveal: 'none' as const,
+    },
+  },
+  {
+    id: 'editorial' as const,
+    label: 'редакция',
+    description: 'Медленнее, со сдвигом и более длинным ритмом.',
+    tokens: {
+      archPageEnter: 'slide-l' as const,
+      pageTransitDuration: 760,
+      archNavTransition: 'push' as const,
+      navTransitDuration: 320,
+      archContentReveal: 'fade' as const,
+      archTextReveal: 'clip' as const,
+    },
+  },
+  {
+    id: 'spatial' as const,
+    label: 'пространство',
+    description: 'Масштаб и дрейф для более объёмной смены сцен.',
+    tokens: {
+      archPageEnter: 'drift-r' as const,
+      pageTransitDuration: 1100,
+      archNavTransition: 'stack' as const,
+      navTransitDuration: 380,
+      archContentReveal: 'blur' as const,
+      archTextReveal: 'blur-in' as const,
+    },
+  },
+  {
+    id: 'cinematic' as const,
+    label: 'кино',
+    description: 'Большой занавес и длинный драматический тайминг.',
+    tokens: {
+      archPageEnter: 'curtain' as const,
+      pageTransitDuration: 1800,
+      archNavTransition: 'stack' as const,
+      navTransitDuration: 420,
+      archContentReveal: 'fade-up' as const,
+      archTextReveal: 'letter-fade' as const,
+    },
+  },
+]
 const contentLayoutPresets = [
   { id: 'balanced' as const, label: 'баланс', description: 'Универсальная двухколоночная раскладка с ровным ритмом.' },
+  { id: 'registry' as const, label: 'реестр', description: 'Плотная матрица для таблиц, статусов и списков.' },
+  { id: 'matrix' as const, label: 'матрица', description: 'Равномерная сетка для модульных карточек и обзорных экранов.' },
   { id: 'editorial' as const, label: 'редакция', description: 'Шире контейнер, меньше карточного хрома, больше воздуха.' },
+  { id: 'studio' as const, label: 'студия', description: 'Широкая рабочая сцена для проектных разворотов и мудбордов.' },
   { id: 'dashboard' as const, label: 'дашборд', description: 'Более плотная сетка с компактными аналитическими карточками.' },
   { id: 'showcase' as const, label: 'витрина', description: 'Крупные hero-карточки и широкий межсекционный ритм.' },
+  { id: 'storyboard' as const, label: 'сториборд', description: 'Крупные блоки и длинный ритм для презентационных страниц.' },
 ]
 const contentCardPresets = [
   { id: 'flat' as const, label: 'плоские', description: 'Строгие карточки без лишнего объёма.' },
@@ -2248,9 +2372,12 @@ const contentCardPresets = [
 ]
 const contentScenePresets = [
   { id: 'workbench' as const, label: 'workbench', description: 'Рабочая сцена: ровная сетка и строгие панели.' },
+  { id: 'registry' as const, label: 'registry', description: 'Операционный реестр для документов, задач и контроллинга.' },
   { id: 'magazine' as const, label: 'magazine', description: 'Редакционный разворот с мягкими крупными блоками.' },
+  { id: 'atelier' as const, label: 'atelier', description: 'Студийная сцена для концептов, коллажей и презентаций.' },
   { id: 'ops' as const, label: 'ops', description: 'Плотная операционная панель для аналитики и статусов.' },
   { id: 'gallery' as const, label: 'gallery', description: 'Витринная сцена с воздухом и стеклянными карточками.' },
+  { id: 'cinematic' as const, label: 'cinematic', description: 'Медленная презентационная сцена с драматичными переходами.' },
 ]
 const contentLayoutRecipes: Record<(typeof contentLayoutPresets)[number]['id'], Partial<DesignTokens>> = {
   balanced: {
@@ -2262,6 +2389,24 @@ const contentLayoutRecipes: Record<(typeof contentLayoutPresets)[number]['id'], 
     archSectionStyle: 'flat',
     archCardChrome: 'visible',
   },
+  registry: {
+    containerWidth: 1160,
+    gridColumns: 12,
+    gridGap: 10,
+    archDensity: 'dense',
+    archVerticalRhythm: 0.75,
+    archSectionStyle: 'card',
+    archCardChrome: 'visible',
+  },
+  matrix: {
+    containerWidth: 1260,
+    gridColumns: 12,
+    gridGap: 18,
+    archDensity: 'normal',
+    archVerticalRhythm: 1.1,
+    archSectionStyle: 'card',
+    archCardChrome: 'subtle',
+  },
   editorial: {
     containerWidth: 1320,
     gridColumns: 10,
@@ -2270,6 +2415,15 @@ const contentLayoutRecipes: Record<(typeof contentLayoutPresets)[number]['id'], 
     archVerticalRhythm: 1.5,
     archSectionStyle: 'flat',
     archCardChrome: 'ghost',
+  },
+  studio: {
+    containerWidth: 1360,
+    gridColumns: 9,
+    gridGap: 26,
+    archDensity: 'airy',
+    archVerticalRhythm: 1.7,
+    archSectionStyle: 'flat',
+    archCardChrome: 'subtle',
   },
   dashboard: {
     containerWidth: 1240,
@@ -2288,6 +2442,15 @@ const contentLayoutRecipes: Record<(typeof contentLayoutPresets)[number]['id'], 
     archVerticalRhythm: 1.8,
     archSectionStyle: 'striped',
     archCardChrome: 'subtle',
+  },
+  storyboard: {
+    containerWidth: 1400,
+    gridColumns: 6,
+    gridGap: 30,
+    archDensity: 'grand',
+    archVerticalRhythm: 2,
+    archSectionStyle: 'striped',
+    archCardChrome: 'ghost',
   },
 }
 const contentCardRecipes: Record<(typeof contentCardPresets)[number]['id'], Partial<DesignTokens>> = {
@@ -2338,30 +2501,80 @@ const contentCardRecipes: Record<(typeof contentCardPresets)[number]['id'], Part
     cardHoverAnim: 'border',
   },
 }
-const contentSceneRecipes: Record<(typeof contentScenePresets)[number]['id'], { layout: (typeof contentLayoutPresets)[number]['id']; card: (typeof contentCardPresets)[number]['id']; extras?: Partial<DesignTokens> }> = {
+const contentSceneRecipes: Record<(typeof contentScenePresets)[number]['id'], {
+  layout: (typeof contentLayoutPresets)[number]['id']
+  card: (typeof contentCardPresets)[number]['id']
+  nav: DesignTokens['navLayoutPreset']
+  pageEnter: DesignTokens['archPageEnter']
+  pageDuration: number
+  navTransition: DesignTokens['archNavTransition']
+  navDuration: number
+  extras?: Partial<DesignTokens>
+}> = {
   workbench: {
     layout: 'balanced',
     card: 'flat',
+    nav: 'balanced',
+    pageEnter: 'fade',
+    pageDuration: 260,
+    navTransition: 'slide',
+    navDuration: 220,
     extras: {
-      archPageEnter: 'fade',
       archContentReveal: 'fade-up',
       btnHoverAnim: 'fill',
+    },
+  },
+  registry: {
+    layout: 'registry',
+    card: 'flat',
+    nav: 'compact',
+    pageEnter: 'none',
+    pageDuration: 0,
+    navTransition: 'fade',
+    navDuration: 160,
+    extras: {
+      archContentReveal: 'none',
+      archTextReveal: 'none',
+      btnHoverAnim: 'shutter',
     },
   },
   magazine: {
     layout: 'editorial',
     card: 'soft',
+    nav: 'showcase',
+    pageEnter: 'slide-l',
+    pageDuration: 760,
+    navTransition: 'push',
+    navDuration: 320,
     extras: {
-      archPageEnter: 'slide-l',
       archContentReveal: 'fade',
       archTextReveal: 'clip',
+      btnHoverAnim: 'magnet',
+    },
+  },
+  atelier: {
+    layout: 'studio',
+    card: 'glass',
+    nav: 'rail',
+    pageEnter: 'drift-r',
+    pageDuration: 980,
+    navTransition: 'blur',
+    navDuration: 360,
+    extras: {
+      archContentReveal: 'blur',
+      archTextReveal: 'blur-in',
+      btnHoverAnim: 'sheen',
     },
   },
   ops: {
     layout: 'dashboard',
     card: 'brutal',
+    nav: 'compact',
+    pageEnter: 'none',
+    pageDuration: 0,
+    navTransition: 'none',
+    navDuration: 0,
     extras: {
-      archPageEnter: 'none',
       archContentReveal: 'none',
       archTextReveal: 'none',
     },
@@ -2369,10 +2582,29 @@ const contentSceneRecipes: Record<(typeof contentScenePresets)[number]['id'], { 
   gallery: {
     layout: 'showcase',
     card: 'glass',
+    nav: 'rail',
+    pageEnter: 'zoom',
+    pageDuration: 860,
+    navTransition: 'blur',
+    navDuration: 340,
     extras: {
-      archPageEnter: 'zoom',
       archContentReveal: 'blur',
       archTextReveal: 'blur-in',
+      btnHoverAnim: 'pulse',
+    },
+  },
+  cinematic: {
+    layout: 'storyboard',
+    card: 'soft',
+    nav: 'showcase',
+    pageEnter: 'curtain',
+    pageDuration: 1800,
+    navTransition: 'stack',
+    navDuration: 420,
+    extras: {
+      archContentReveal: 'fade-up',
+      archTextReveal: 'letter-fade',
+      btnHoverAnim: 'scan',
     },
   },
 }
@@ -2642,6 +2874,11 @@ function applyContentScenePreset(sceneId: (typeof contentScenePresets)[number]['
   if (!recipe) return
   applyContentLayoutPreset(recipe.layout)
   applyContentCardPreset(recipe.card)
+  applyNavLayoutPreset(recipe.nav)
+  set('archPageEnter', recipe.pageEnter)
+  set('pageTransitDuration', recipe.pageDuration)
+  set('archNavTransition', recipe.navTransition)
+  set('navTransitDuration', recipe.navDuration)
   if (recipe.extras) {
     for (const [key, value] of Object.entries(recipe.extras) as Array<[keyof DesignTokens, DesignTokens[keyof DesignTokens]]>) {
       set(key, value)
@@ -2654,31 +2891,31 @@ function generateContentScene() {
   applyContentScenePreset(scene.id)
   set('containerWidth', Math.min(1400, Math.max(980, tokens.value.containerWidth + (Math.floor(Math.random() * 5) - 2) * 20)))
   set('gridGap', Math.min(32, Math.max(8, tokens.value.gridGap + (Math.floor(Math.random() * 5) - 2) * 2)))
-  set('pageTransitDuration', Math.min(800, Math.max(120, (tokens.value.pageTransitDuration ?? 280) + (Math.floor(Math.random() * 5) - 2) * 20)))
+  set('pageTransitDuration', Math.min(10000, Math.max(0, (tokens.value.pageTransitDuration ?? 280) + (Math.floor(Math.random() * 5) - 2) * 80)))
 }
 
 function generateFullDesignScene() {
   const scene = contentScenePresets[Math.floor(Math.random() * contentScenePresets.length)]
-  const navByScene: Record<(typeof contentScenePresets)[number]['id'], DesignTokens['navLayoutPreset']> = {
-    workbench: 'balanced',
-    magazine: 'showcase',
-    ops: 'compact',
-    gallery: 'rail',
-  }
-  const navFxByScene: Record<(typeof contentScenePresets)[number]['id'], DesignTokens['archNavTransition']> = {
-    workbench: 'slide',
-    magazine: 'push',
-    ops: 'none',
-    gallery: 'blur',
-  }
-
   applyContentScenePreset(scene.id)
-  applyNavLayoutPreset(navByScene[scene.id])
-  set('archNavTransition', navFxByScene[scene.id])
   set('navTransitDuration', Math.min(700, Math.max(100, (tokens.value.navTransitDuration ?? 220) + (Math.floor(Math.random() * 5) - 2) * 20)))
   set('navTransitDistance', Math.min(40, Math.max(0, (tokens.value.navTransitDistance ?? 18) + (Math.floor(Math.random() * 5) - 2) * 2)))
   set('navItemStagger', Math.min(40, Math.max(0, (tokens.value.navItemStagger ?? 12) + (Math.floor(Math.random() * 5) - 2) * 2)))
   set('animDuration', Math.min(500, Math.max(80, (tokens.value.animDuration ?? 180) + (Math.floor(Math.random() * 5) - 2) * 20)))
+}
+
+function applyArchitectureTransitionPreset(presetId: (typeof archTransitionPresets)[number]['id']) {
+  const preset = archTransitionPresets.find((item) => item.id === presetId)
+  if (!preset) return
+  for (const [key, value] of Object.entries(preset.tokens) as Array<[keyof typeof preset.tokens, (typeof preset.tokens)[keyof typeof preset.tokens]]>) {
+    set(key as keyof DesignTokens, value as DesignTokens[keyof DesignTokens])
+  }
+}
+
+function formatTransitionDuration(value: number) {
+  if (value <= 0) return '0 сек'
+  if (value < 1000) return `${value} мс`
+  const seconds = value / 1000
+  return `${seconds % 1 === 0 ? seconds.toFixed(0) : seconds.toFixed(1)} сек`
 }
 
 /* ── Section search filter ──────────────────────── */

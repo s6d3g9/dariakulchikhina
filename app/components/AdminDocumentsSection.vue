@@ -1,172 +1,290 @@
 <template>
-  <div>
-    <!-- ══ Content area ══ -->
-    <div class="docs-topbar glass-card" style="margin-bottom:14px">
-          <div class="docs-topbar-left">
-            <span class="docs-topbar-title">документы</span>
-            <span class="docs-count">{{ allDocs.length }}</span>
+  <div class="docs-screen">
+    <AdminEntityHero
+      kicker="реестр документов / admin"
+      title="Документы"
+      :facts="heroFacts"
+      prompt="прокрутите вниз к реестру"
+      :full-height="true"
+      frame="divided"
+      max-width="1120px"
+    >
+      <template #actions>
+        <button class="admin-entity-hero__action" type="button" @click="openGenerate">из шаблона</button>
+        <button class="admin-entity-hero__action" type="button" @click="openUpload">загрузить документ</button>
+      </template>
+
+      <template #notices>
+        <span class="admin-entity-hero__notice docs-hero-notice">{{ currentCategoryLabel }}</span>
+        <span
+          class="admin-entity-hero__notice docs-hero-notice"
+          :class="legalStatus?.ready ? 'admin-entity-hero__notice--success' : 'docs-hero-notice--muted'"
+        >
+          {{ legalStatusLabel }}
+        </span>
+      </template>
+    </AdminEntityHero>
+
+    <Transition name="tab-fade" mode="out-in">
+      <section v-if="viewMode === 'editor'" key="editor" class="docs-editor-stage">
+        <div class="docs-stage-head">
+          <AdminEntityHeader title="Генератор документов">
+            <template #actions>
+              <button class="docs-inline-action" type="button" @click="viewMode = 'list'">назад к реестру</button>
+            </template>
+          </AdminEntityHeader>
+          <p class="docs-stage-hint">Шаблон открывается в рабочей зоне и остаётся частью общего реестра документов.</p>
+        </div>
+
+        <AdminDocumentEditor
+          :templates="DOC_TEMPLATES"
+          :projects="allProjects"
+          :existingDoc="existingDocToEdit"
+          @close="viewMode = 'list'"
+          @saved="onEditorSaved"
+        />
+      </section>
+
+      <section v-else key="registry" class="docs-registry">
+        <div class="docs-registry-head">
+          <div class="docs-registry-copy">
+            <p class="docs-registry-kicker">реестр</p>
+            <h2 class="docs-registry-title">{{ currentCategoryLabel }}</h2>
+            <p class="docs-registry-note">{{ registryNote }}</p>
           </div>
-          <div class="docs-topbar-right">
-            <input v-model="search" class="docs-search glass-input" placeholder="поиск..." />
-            <button class="ent-sidebar-add a-btn-sm" @click="openGenerate">✦ из шаблона</button>
-            <button class="ent-sidebar-add a-btn-sm" @click="openUpload">+ загрузить</button>
-            <div class="docs-rag-status" :class="legalStatus?.ready ? 'docs-rag-status--ok' : 'docs-rag-status--off'">
-              <span class="docs-rag-dot"></span>
-              <div class="docs-rag-info">
-                <span class="docs-rag-label">правовая база</span>
-                <span v-if="legalStatus?.ready" class="docs-rag-count">{{ legalStatus.totalChunks }} норм</span>
-                <span v-else class="docs-rag-count">не загружена</span>
+
+          <div class="docs-registry-controls">
+            <label class="u-field docs-search-field">
+              <span class="u-field__label">Поиск по реестру</span>
+              <input v-model="search" class="glass-input docs-search-input" placeholder="название, проект, заметка" />
+            </label>
+
+            <div class="docs-registry-stats">
+              <div class="docs-stat">
+                <span class="docs-stat__label">найдено</span>
+                <span class="docs-stat__value">{{ filteredDocs.length }}</span>
+              </div>
+              <div class="docs-stat">
+                <span class="docs-stat__label">проектов</span>
+                <span class="docs-stat__value">{{ linkedProjectsCount }}</span>
               </div>
             </div>
           </div>
         </div>
-        <Transition name="tab-fade" mode="out-in">
 
-                <!-- ── EDITOR VIEW (inline) ── -->
-          <div v-if="viewMode === 'editor'" key="editor">
-            <AdminDocumentEditor
-              :templates="DOC_TEMPLATES"
-              :projects="allProjects"
-              :existingDoc="existingDocToEdit"
-              @close="viewMode = 'list'"
-              @saved="onEditorSaved"
-            />
-          </div>
+        <div class="docs-grid">
+          <div class="docs-column docs-column--list">
+            <AdminEntityHeader :title="listHeaderTitle">
+              <template #actions>
+                <button v-if="search" class="docs-inline-action" type="button" @click="search = ''">сбросить поиск</button>
+              </template>
+            </AdminEntityHeader>
 
-          <!-- ── Document detail view ── -->
-          <div v-else-if="activeDoc" key="doc-view">
-            <div class="docs-view">
-              <div class="docs-view-head">
-                <button class="docs-back" @click="activeDoc = null">← назад к списку</button>
-                              <div class="docs-view-actions">
-                  <a v-if="activeDoc.url" :href="activeDoc.url" class="a-btn-sm">открыть файл</a>
-                  <button v-if="activeDoc.content" class="a-btn-save" @click="openInEditor(activeDoc)">✏️ открыть в редакторе</button>
-                  <button class="a-btn-sm" @click="editDoc">✎ реквизиты</button>
-                  <button class="a-btn-sm a-btn-danger" @click="deleteDoc(activeDoc.id)">удалить</button>
-                </div>
-              </div>
-              <div class="docs-view-card glass-card">
-                <div class="docs-view-badge" :class="`docs-view-badge--${activeDoc.category}`">
-                  {{ catLabel(activeDoc.category) }}
-                </div>
-                <h2 class="docs-view-title">{{ activeDoc.title }}</h2>
-                <div v-if="activeDoc.projectTitle" class="docs-view-project">
-                  проект: <NuxtLink :to="`/admin/projects/${activeDoc.projectSlug}`" class="docs-view-project-link">{{ activeDoc.projectTitle }}</NuxtLink>
-                </div>
-                <div class="docs-view-meta">
-                  <span class="docs-view-date">{{ formatDate(activeDoc.createdAt) }}</span>
-                  <span v-if="activeDoc.filename" class="docs-view-file">{{ activeDoc.filename }}</span>
-                </div>
-                <div v-if="activeDoc.notes" class="docs-view-notes">{{ activeDoc.notes }}</div>
+            <div v-if="!hasMounted || pending" class="docs-loading">[ LOADING... ]</div>
 
-                <!-- Inline preview for text files -->
-                <div v-if="activeDoc.content" class="docs-view-preview docs-view-preview--content">
-                  <pre class="docs-view-pre">{{ activeDoc.content }}</pre>
-                </div>
-                <div v-else-if="previewText" class="docs-view-preview">
-                  <pre class="docs-view-pre">{{ previewText }}</pre>
-                </div>
-                <div v-else-if="activeDoc.url && isImage(activeDoc.url)" class="docs-view-preview">
-                  <img :src="activeDoc.url" class="docs-view-img" />
-                </div>
-                <div v-else-if="activeDoc.url && isPdf(activeDoc.url)" class="docs-view-preview">
-                  <iframe :src="activeDoc.url" class="docs-view-pdf"></iframe>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── Document list ── -->
-          <div v-else key="doc-list">
-            <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
             <div v-else-if="!filteredDocs.length" class="docs-empty">
-              <span class="docs-empty-icon">{{ search ? '🔍' : '📂' }}</span>
-              <span>{{ search ? 'Ничего не найдено' : 'Нет документов в этой категории' }}</span>
-              <button v-if="!search" class="docs-empty-action a-btn-sm" @click="openGenerate">✦ создать из шаблона</button>
+              <span class="docs-empty__title">[ NO DATA ATTACHED ]</span>
+              <span class="docs-empty__text">
+                {{ search ? 'По этому запросу ничего не найдено.' : 'В текущей выборке ещё нет документов.' }}
+              </span>
+              <button v-if="!search" class="docs-inline-action" type="button" @click="openUpload">добавить документ</button>
             </div>
+
             <transition-group v-else name="doc-list" tag="div" class="docs-list">
-              <div
-                v-for="doc in filteredDocs" :key="doc.id"
-                class="doc-card glass-card"
+              <article
+                v-for="doc in filteredDocs"
+                :key="doc.id"
+                class="doc-card"
+                :class="{ 'doc-card--active': activeDoc?.id === doc.id }"
                 @click="openDoc(doc)"
               >
                 <div class="doc-card-head">
-                  <span class="doc-file-icon" :class="{ 'doc-file-icon--ai': doc.content && !doc.url }">
-                    {{ doc.content && !doc.url ? '✦' : fileIcon(doc.url) }}
-                  </span>
-                  <span class="doc-badge" :class="`doc-badge--${doc.category}`">
-                    {{ catLabel(doc.category) }}
-                  </span>
-                  <span v-if="doc.projectTitle" class="doc-project">
-                    {{ doc.projectTitle }}
-                  </span>
+                  <span class="doc-code">{{ categoryCode(doc.category) }}</span>
+                  <span class="doc-badge" :class="`doc-badge--${doc.category}`">{{ categoryName(doc.category) }}</span>
+                  <span class="doc-kind">{{ fileKind(doc) }}</span>
                   <span class="doc-date">{{ formatDate(doc.createdAt) }}</span>
-                  <div class="doc-actions" @click.stop>
-                    <a v-if="doc.url" :href="doc.url" class="doc-btn-ico" title="открыть">↗</a>
-                    <button v-if="doc.content" class="doc-btn-ico" title="открыть в редакторе" @click="openInEditor(doc)">✎</button>
-                    <button class="doc-btn-ico doc-btn-ico--del" title="удалить" @click="deleteDoc(doc.id)">×</button>
-                  </div>
                 </div>
-                <div class="doc-title">{{ doc.title }}</div>
-                <div v-if="doc.notes" class="doc-notes">{{ doc.notes }}</div>
-              </div>
+
+                <h3 class="doc-title">{{ doc.title }}</h3>
+
+                <p v-if="doc.projectTitle" class="doc-project">{{ doc.projectTitle }}</p>
+                <p v-if="doc.notes" class="doc-notes">{{ doc.notes }}</p>
+
+                <div class="doc-actions" @click.stop>
+                  <a v-if="doc.url" :href="doc.url" class="doc-action" @click.stop>открыть</a>
+                  <button v-if="doc.content" class="doc-action" type="button" @click="openInEditor(doc)">редактор</button>
+                  <button class="doc-action doc-action--danger" type="button" @click="deleteDoc(doc.id)">удалить</button>
+                </div>
+              </article>
             </transition-group>
           </div>
 
-        </Transition>
+          <div class="docs-column docs-column--panel">
+            <AdminEntityHeader :title="panelTitle">
+              <template #actions>
+                <button v-if="panelMode === 'form'" class="docs-inline-action" type="button" @click="cancelUpload">отмена</button>
+                <button v-else-if="activeDoc" class="docs-inline-action" type="button" @click="activeDoc = null">закрыть</button>
+              </template>
+            </AdminEntityHeader>
 
-    <!-- ═══ Upload modal ═══ -->
-    <Teleport to="body">
-      <div v-if="showUploadModal" class="docs-backdrop" @click.self="showUploadModal = false">
-        <div class="docs-modal glass-surface">
-          <div class="docs-modal-head">
-            <span>{{ editingDoc ? 'Редактировать документ' : 'Загрузить документ' }}</span>
-            <button class="docs-modal-close" @click="showUploadModal = false">✕</button>
-          </div>
-          <div class="docs-modal-body">
-            <div class="docs-field">
-              <label class="docs-label">Название *</label>
-              <input v-model="uploadForm.title" class="glass-input" placeholder="Договор подряда №12..." />
+            <div v-if="panelMode === 'form'" class="docs-panel docs-panel--form">
+              <div class="docs-panel-head">
+                <div>
+                  <p class="docs-panel-kicker">{{ editingDoc ? 'редактирование записи' : 'новая запись' }}</p>
+                  <h3 class="docs-panel-title">{{ editingDoc ? editingDoc.title : 'Добавить документ в реестр' }}</h3>
+                </div>
+              </div>
+
+              <div class="docs-field-grid">
+                <label class="u-field">
+                  <span class="u-field__label">Название *</span>
+                  <input v-model="uploadForm.title" class="glass-input docs-input" placeholder="Договор подряда №12" />
+                </label>
+
+                <label class="u-field">
+                  <span class="u-field__label">Категория</span>
+                  <select v-model="uploadForm.category" class="glass-input docs-input">
+                    <option v-for="c in CATEGORIES.filter(c => c.key !== 'all')" :key="c.key" :value="c.key">
+                      {{ c.num }} {{ c.label }}
+                    </option>
+                  </select>
+                </label>
+
+                <label class="u-field">
+                  <span class="u-field__label">Проект</span>
+                  <select v-model="uploadForm.projectSlug" class="glass-input docs-input">
+                    <option value="">без проекта</option>
+                    <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
+                  </select>
+                </label>
+
+                <label v-if="!editingDoc" class="u-field">
+                  <span class="u-field__label">Файл</span>
+                  <input :key="uploadInputKey" type="file" class="glass-input docs-input docs-file-input" @change="onFileSelect" />
+                </label>
+
+                <label class="u-field" :class="{ 'docs-field--full': editingDoc }">
+                  <span class="u-field__label">URL файла</span>
+                  <input v-model="uploadForm.url" class="glass-input docs-input" placeholder="https://..." />
+                </label>
+
+                <label class="u-field docs-field--full">
+                  <span class="u-field__label">Заметки</span>
+                  <textarea
+                    v-model="uploadForm.notes"
+                    rows="4"
+                    class="glass-input docs-input docs-textarea"
+                    placeholder="контекст, версия, назначение документа"
+                  ></textarea>
+                </label>
+              </div>
+
+              <p v-if="uploadError" class="docs-error">{{ uploadError }}</p>
+
+              <div class="docs-panel-foot">
+                <button class="docs-inline-action" type="button" @click="cancelUpload">отмена</button>
+                <button class="docs-primary-action" type="button" :disabled="uploading || !uploadForm.title" @click="submitUpload">
+                  {{ uploading ? 'обработка...' : (editingDoc ? 'обновить запись' : 'добавить в реестр') }}
+                </button>
+              </div>
             </div>
-            <div class="docs-field">
-              <label class="docs-label">Категория</label>
-              <select v-model="uploadForm.category" class="glass-input">
-                <option v-for="c in CATEGORIES.filter(c => c.key !== 'all')" :key="c.key" :value="c.key">
-                  {{ c.num }} {{ c.label }}
-                </option>
-              </select>
+
+            <div v-else-if="activeDoc" class="docs-panel docs-panel--detail">
+              <div class="docs-panel-head docs-panel-head--detail">
+                <div>
+                  <p class="docs-panel-kicker">{{ categoryCode(activeDoc.category) }} / {{ categoryName(activeDoc.category) }}</p>
+                  <h3 class="docs-panel-title">{{ activeDoc.title }}</h3>
+                </div>
+
+                <div class="docs-panel-actions">
+                  <a v-if="activeDoc.url" :href="activeDoc.url" class="docs-inline-action">открыть файл</a>
+                  <button v-if="activeDoc.content" class="docs-inline-action" type="button" @click="openInEditor(activeDoc)">в редактор</button>
+                  <button class="docs-inline-action" type="button" @click="editDoc">реквизиты</button>
+                  <button class="docs-inline-action docs-inline-action--danger" type="button" @click="deleteDoc(activeDoc.id)">удалить</button>
+                </div>
+              </div>
+
+              <div class="docs-meta-grid">
+                <div class="docs-meta-card">
+                  <span class="docs-meta-label">дата</span>
+                  <span class="docs-meta-value">{{ formatDate(activeDoc.createdAt) || '—' }}</span>
+                </div>
+                <div class="docs-meta-card">
+                  <span class="docs-meta-label">тип файла</span>
+                  <span class="docs-meta-value">{{ fileKind(activeDoc) }}</span>
+                </div>
+                <div class="docs-meta-card">
+                  <span class="docs-meta-label">проект</span>
+                  <NuxtLink
+                    v-if="activeDoc.projectTitle && activeDoc.projectSlug"
+                    :to="`/admin/projects/${activeDoc.projectSlug}`"
+                    class="docs-meta-link"
+                  >
+                    {{ activeDoc.projectTitle }}
+                  </NuxtLink>
+                  <span v-else class="docs-meta-value">не привязан</span>
+                </div>
+                <div class="docs-meta-card">
+                  <span class="docs-meta-label">файл</span>
+                  <span class="docs-meta-value docs-meta-value--mono">{{ activeDoc.filename || '—' }}</span>
+                </div>
+              </div>
+
+              <div v-if="activeDoc.notes" class="docs-note-block">
+                <span class="docs-meta-label">заметки</span>
+                <p class="docs-note-text">{{ activeDoc.notes }}</p>
+              </div>
+
+              <div v-if="activeDoc.content" class="docs-preview docs-preview--content">
+                <pre class="docs-view-pre">{{ activeDoc.content }}</pre>
+              </div>
+              <div v-else-if="previewText" class="docs-preview">
+                <pre class="docs-view-pre">{{ previewText }}</pre>
+              </div>
+              <div v-else-if="activeDoc.url && isImage(activeDoc.url)" class="docs-preview">
+                <img :src="activeDoc.url" class="docs-view-img" alt="Предпросмотр документа" />
+              </div>
+              <div v-else-if="activeDoc.url && isPdf(activeDoc.url)" class="docs-preview docs-preview--pdf">
+                <iframe :src="activeDoc.url" class="docs-view-pdf" title="Предпросмотр PDF"></iframe>
+              </div>
+              <div v-else class="docs-preview docs-preview--empty">[ FILE ATTACHED ]</div>
             </div>
-            <div class="docs-field">
-              <label class="docs-label">Проект</label>
-              <select v-model="uploadForm.projectSlug" class="glass-input">
-                <option value="">— без проекта —</option>
-                <option v-for="p in allProjects" :key="p.slug" :value="p.slug">{{ p.title }}</option>
-              </select>
+
+            <div v-else class="docs-panel docs-panel--summary">
+              <p class="docs-panel-kicker">рабочая панель</p>
+              <h3 class="docs-panel-title">Контекст текущей выборки</h3>
+              <p class="docs-summary-text">
+                Выберите документ слева, чтобы открыть реквизиты и превью, либо добавьте новую запись напрямую в реестр.
+              </p>
+
+              <div class="docs-meta-grid docs-meta-grid--summary">
+                <div class="docs-meta-card">
+                  <span class="docs-meta-label">категория</span>
+                  <span class="docs-meta-value">{{ currentCategoryLabel }}</span>
+                </div>
+                <div class="docs-meta-card">
+                  <span class="docs-meta-label">всего записей</span>
+                  <span class="docs-meta-value">{{ documentsCount }}</span>
+                </div>
+                <div class="docs-meta-card">
+                  <span class="docs-meta-label">в выборке</span>
+                  <span class="docs-meta-value">{{ filteredDocs.length }}</span>
+                </div>
+                <div class="docs-meta-card">
+                  <span class="docs-meta-label">правовая база</span>
+                  <span class="docs-meta-value">{{ legalStatusLabel }}</span>
+                </div>
+              </div>
+
+              <div class="docs-panel-foot docs-panel-foot--summary">
+                <button class="docs-inline-action" type="button" @click="openUpload">добавить документ</button>
+                <button class="docs-inline-action" type="button" @click="openGenerate">открыть шаблон</button>
+              </div>
             </div>
-            <div v-if="!editingDoc" class="docs-field">
-              <label class="docs-label">Файл</label>
-              <input type="file" class="glass-input" @change="onFileSelect" />
-            </div>
-            <div class="docs-field">
-              <label class="docs-label">Или вставьте URL</label>
-              <input v-model="uploadForm.url" class="glass-input" placeholder="https://..." />
-            </div>
-            <div class="docs-field">
-              <label class="docs-label">Заметки</label>
-              <textarea v-model="uploadForm.notes" rows="2" class="glass-input u-ta" placeholder="дополнительная информация..."></textarea>
-            </div>
-            <p v-if="uploadError" class="docs-error">{{ uploadError }}</p>
-          </div>
-          <div class="docs-modal-foot">
-            <button class="a-btn-sm" @click="showUploadModal = false">отмена</button>
-            <button class="a-btn-save" :disabled="uploading || !uploadForm.title" @click="submitUpload">
-              {{ uploading ? 'загрузка...' : (editingDoc ? 'сохранить' : 'загрузить') }}
-            </button>
           </div>
         </div>
-      </div>
-    </Teleport>
-
+      </section>
+    </Transition>
   </div>
 </template>
 
@@ -725,6 +843,42 @@ const activeDoc = ref<any>(null)
 const editingDoc = ref<any>(null)
 const previewText = ref('')
 const existingDocToEdit = ref<{ id: number; content: string; templateKey?: string | null; projectSlug?: string | null } | null>(null)
+const uploadInputKey = ref(0)
+const hasMounted = ref(false)
+const isCreatingUpload = ref(false)
+
+const documentsCount = computed(() => allDocs.value?.length || 0)
+const linkedProjectsCount = computed(() => new Set(
+  (allDocs.value || []).map((doc: any) => doc.projectSlug).filter(Boolean),
+).size)
+
+const currentCategoryLabel = computed(() => catLabel(activeCategory.value))
+const legalStatusLabel = computed(() => {
+  if (legalStatus.value?.ready) return `в базе ${legalStatus.value.totalChunks} норм`
+  return 'база не загружена'
+})
+const listHeaderTitle = computed(() => activeCategory.value === 'all' ? 'Все документы' : currentCategoryLabel.value)
+const panelMode = computed<'summary' | 'form' | 'detail'>(() => {
+  if (editingDoc.value || isCreatingUpload.value) return 'form'
+  if (activeDoc.value) return 'detail'
+  return 'summary'
+})
+const panelTitle = computed(() => {
+  if (panelMode.value === 'form') return editingDoc.value ? 'Редактирование документа' : 'Новый документ'
+  if (panelMode.value === 'detail') return 'Карточка документа'
+  return 'Панель документа'
+})
+const registryNote = computed(() => {
+  const query = search.value.trim()
+  if (query) return `Поиск активен: ${filteredDocs.value.length} результатов по запросу «${query}».`
+  if (activeCategory.value === 'all') return 'Единый реестр договоров, актов, счетов и шаблонов по всем проектам.'
+  return `Срез по категории ${currentCategoryLabel.value}. Записи отсортированы от новых к старым.`
+})
+const heroFacts = computed(() => ([
+  { label: 'всего записей', value: String(documentsCount.value) },
+  { label: 'в выборке', value: String(filteredDocs.value.length) },
+  { label: 'проектов', value: String(linkedProjectsCount.value) },
+]))
 
 // Sync from parent prop (nav drives category)
 watch(() => props.category, (cat) => {
@@ -732,7 +886,10 @@ watch(() => props.category, (cat) => {
     activeCategory.value = cat
     viewMode.value = 'list'
     activeDoc.value = null
+    editingDoc.value = null
+    isCreatingUpload.value = false
     previewText.value = ''
+    resetUploadForm()
   }
 })
 
@@ -745,7 +902,16 @@ watch(viewMode, (v, prev) => {
 })
 
 // При уходе со страницы сбрасываем, чтобы при возврате не открывался редактор
-onBeforeRouteLeave(() => { viewMode.value = 'list' })
+onBeforeRouteLeave(() => {
+  viewMode.value = 'list'
+  editingDoc.value = null
+  isCreatingUpload.value = false
+  activeDoc.value = null
+})
+
+onMounted(() => {
+  hasMounted.value = true
+})
 
 const countByCategory = computed(() => {
   const r: Record<string, number> = {}
@@ -789,6 +955,25 @@ function formatDate(val: string) {
 function isImage(url: string) { return /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url) }
 function isPdf(url: string) { return /\.pdf$/i.test(url) }
 function isTextFile(url: string) { return /\.(txt|md|csv)$/i.test(url) }
+function categoryCode(key: string) { return CATEGORIES.find(c => c.key === key)?.num || '00' }
+function categoryName(key: string) { return CATEGORIES.find(c => c.key === key)?.label || key }
+function fileKind(doc: any) {
+  if (doc?.content && !doc?.url) return 'AI'
+  const source = String(doc?.filename || doc?.url || '').split('?')[0]
+  const ext = source.includes('.') ? source.split('.').pop()?.toUpperCase() : ''
+  return ext || 'FILE'
+}
+
+function resetUploadForm() {
+  uploadForm.title = ''
+  uploadForm.category = activeCategory.value === 'all' ? 'contract' : activeCategory.value
+  uploadForm.projectSlug = ''
+  uploadForm.url = ''
+  uploadForm.notes = ''
+  uploadFile.value = null
+  uploadError.value = ''
+  uploadInputKey.value += 1
+}
 
 function selectCategory(key: string) {
   viewMode.value = 'list'
@@ -799,6 +984,8 @@ function selectCategory(key: string) {
 
 async function openDoc(doc: any) {
   viewMode.value = 'list'
+  editingDoc.value = null
+  isCreatingUpload.value = false
   activeDoc.value = doc
   previewText.value = ''
   if (!doc.content && doc.url && isTextFile(doc.url)) {
@@ -816,12 +1003,16 @@ function openInEditor(doc: any) {
     templateKey: doc.templateKey || null,
     projectSlug: doc.projectSlug || null,
   }
+  editingDoc.value = null
+  isCreatingUpload.value = false
   activeDoc.value = null
+  previewText.value = ''
   viewMode.value = 'editor'
 }
 
 function editDoc() {
   if (!activeDoc.value) return
+  isCreatingUpload.value = true
   editingDoc.value = activeDoc.value
   uploadForm.title = activeDoc.value.title
   uploadForm.category = activeDoc.value.category
@@ -830,13 +1021,14 @@ function editDoc() {
   uploadForm.notes = activeDoc.value.notes || ''
   uploadFile.value = null
   uploadError.value = ''
-  showUploadModal.value = true
+  uploadInputKey.value += 1
+  activeDoc.value = null
+  previewText.value = ''
 }
 
 // ══════════════════════════════════════════════════════════════════
 // UPLOAD / EDIT
 // ══════════════════════════════════════════════════════════════════
-const showUploadModal = ref(false)
 const uploading = ref(false)
 const uploadError = ref('')
 const uploadFile = ref<File | null>(null)
@@ -849,15 +1041,18 @@ const uploadForm = reactive({
 })
 
 function openUpload() {
+  viewMode.value = 'list'
+  isCreatingUpload.value = true
   editingDoc.value = null
-  uploadForm.title = ''
-  uploadForm.category = activeCategory.value === 'all' ? 'contract' : activeCategory.value
-  uploadForm.projectSlug = ''
-  uploadForm.url = ''
-  uploadForm.notes = ''
-  uploadFile.value = null
-  uploadError.value = ''
-  showUploadModal.value = true
+  activeDoc.value = null
+  previewText.value = ''
+  resetUploadForm()
+}
+
+function cancelUpload() {
+  isCreatingUpload.value = false
+  editingDoc.value = null
+  resetUploadForm()
 }
 
 function onFileSelect(e: Event) {
@@ -872,6 +1067,7 @@ async function submitUpload() {
   try {
     let fileUrl = uploadForm.url
     let filename: string | undefined
+    let savedDoc: any = null
 
     if (uploadFile.value) {
       const fd = new FormData()
@@ -882,7 +1078,7 @@ async function submitUpload() {
     }
 
     if (editingDoc.value) {
-      await $fetch(`/api/documents/${editingDoc.value.id}`, {
+      savedDoc = await $fetch(`/api/documents/${editingDoc.value.id}`, {
         method: 'PUT',
         body: {
           title: uploadForm.title,
@@ -894,7 +1090,7 @@ async function submitUpload() {
         },
       })
     } else {
-      await $fetch('/api/documents', {
+      savedDoc = await $fetch('/api/documents', {
         method: 'POST',
         body: {
           title: uploadForm.title,
@@ -907,10 +1103,11 @@ async function submitUpload() {
       })
     }
 
-    showUploadModal.value = false
-    editingDoc.value = null
-    activeDoc.value = null
     await refresh()
+    isCreatingUpload.value = false
+    editingDoc.value = null
+    resetUploadForm()
+    activeDoc.value = (allDocs.value || []).find((doc: any) => doc.id === savedDoc?.id) || null
   } catch (e: any) {
     uploadError.value = e?.data?.statusMessage || 'Ошибка загрузки'
   } finally {
@@ -921,7 +1118,12 @@ async function submitUpload() {
 async function deleteDoc(id: number) {
   if (!confirm('Удалить документ?')) return
   await $fetch(`/api/documents/${id}`, { method: 'DELETE' }).catch(() => {})
-  activeDoc.value = null
+  if (activeDoc.value?.id === id) activeDoc.value = null
+  if (editingDoc.value?.id === id) {
+    isCreatingUpload.value = false
+    editingDoc.value = null
+    resetUploadForm()
+  }
   await refresh()
 }
 
@@ -931,281 +1133,445 @@ async function deleteDoc(id: number) {
 function openGenerate() {
   viewMode.value = 'editor'
   activeDoc.value = null
+  editingDoc.value = null
+  isCreatingUpload.value = false
+  previewText.value = ''
 }
 
 function onEditorSaved() {
-  // Ничего не делаем — редактор остаётся открытым.
-  // Список обновится автоматически когда пользователь вернётся через @close
+  refresh()
 }
 </script>
 
 <style scoped>
-/* ══════════════════════════════════════════════════════════════
-   DOCUMENTS — admin panel
-   ══════════════════════════════════════════════════════════════ */
+.docs-screen {
+  color: var(--glass-text);
+}
 
-/* ── Topbar ── */
-.docs-topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 18px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+@media (min-width: 768px) {
+  .docs-screen {
+    padding-left: clamp(140px, 14vw, 240px);
+  }
 }
-.docs-topbar-left { display: flex; align-items: center; gap: 10px; }
-.docs-topbar-title {
-  font-size: var(--ds-text-sm, .78rem); text-transform: uppercase;
-  letter-spacing: .08em; color: var(--glass-text); opacity: .45; font-weight: var(--ds-heading-weight, 600);
+
+.docs-hero-notice--muted {
+  color: color-mix(in srgb, var(--glass-text) 54%, transparent);
 }
-.docs-count {
-  font-size: var(--ds-text-xs, .65rem); padding: 1px 7px; border-radius: var(--chip-radius, 999px);
+
+.docs-screen :deep(.admin-entity-hero) {
+  justify-content: flex-start;
+  padding-top: 40px;
+}
+
+.docs-screen :deep(.admin-entity-hero__body),
+.docs-screen :deep(.admin-entity-hero__actions),
+.docs-screen :deep(.admin-entity-hero__notices) {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.docs-screen :deep(.admin-entity-hero__title),
+.docs-screen :deep(.admin-entity-hero__kicker),
+.docs-screen :deep(.admin-entity-hero__prompt) {
+  text-align: left;
+}
+
+.docs-screen :deep(.admin-entity-hero__prompt) {
+  left: 20px;
+  right: 20px;
+  transform: none;
+}
+
+.docs-editor-stage,
+.docs-registry {
+  padding: 24px 20px 48px;
+}
+
+.docs-stage-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.docs-stage-hint,
+.docs-registry-note,
+.docs-summary-text,
+.doc-notes,
+.doc-project,
+.docs-note-text {
+  margin: 0;
+  font-size: .82rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--glass-text) 72%, transparent);
+}
+
+.docs-inline-action,
+.docs-primary-action,
+.doc-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
+  background: transparent;
+  color: var(--glass-text);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: .68rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.docs-primary-action {
   background: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  color: var(--glass-text); opacity: .6;
-}
-.docs-topbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.docs-search { width: 200px; padding: 7px 12px; font-size: var(--ds-text-sm, .8rem); }
-
-/* ── Layout ── */
-.docs-layout { display: flex; gap: var(--ds-grid-gap, 16px); align-items: flex-start; }
-
-/* ── Nav sidebar ── */
-.docs-nav {
-  width: var(--ds-sidebar-width, 220px); flex-shrink: 0; padding: 8px;
-  position: sticky; top: 80px;
-  max-height: calc(100vh - 120px); overflow-y: auto;
-  scrollbar-width: thin; scrollbar-color: rgba(128,128,128,.15) transparent;
-}
-.docs-nav-item {
-  gap: 6px !important;
-  font-size: var(--ds-text-xs, .74rem) !important;
-  padding: 7px 10px !important;
-}
-.docs-nav-num {
-  font-size: .6rem; opacity: .35; font-variant-numeric: tabular-nums;
-  min-width: 16px; flex-shrink: 0;
-}
-.docs-nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.docs-nav-count {
-  font-size: .58rem; padding: 0 5px; border-radius: var(--chip-radius, 999px);
-  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
-  flex-shrink: 0; line-height: 1.6;
-}
-.docs-nav-create {
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
-  margin-bottom: 4px; padding-bottom: 8px !important;
-  font-weight: 500 !important;
 }
 
-/* ── RAG status widget ── */
-.docs-rag-status {
-  display: flex; align-items: center; gap: 8px;
-  margin-top: 8px; padding: 8px 10px;
-  border-radius: var(--chip-radius, 8px);
-  border: 1px solid transparent;
-  font-size: .62rem;
+.docs-inline-action--danger,
+.doc-action--danger {
+  color: color-mix(in srgb, var(--ds-error, #c00) 84%, var(--glass-text) 16%);
 }
-.docs-rag-status--ok  { background: rgba(22, 163, 74, .08); border-color: rgba(22, 163, 74, .18); }
-.docs-rag-status--off { background: rgba(128,128,128, .06); border-color: rgba(128,128,128, .12); }
-.docs-rag-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-}
-.docs-rag-status--ok  .docs-rag-dot { background: var(--ds-success, #16a34a); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ds-success, #16a34a) 25%, transparent); }
-.docs-rag-status--off .docs-rag-dot { background: var(--ds-muted, #9ca3af); }
-.docs-rag-info { display: flex; flex-direction: column; gap: 1px; }
-.docs-rag-label { font-weight: 600; text-transform: uppercase; letter-spacing: .07em; opacity: .45; color: var(--glass-text); }
-.docs-rag-count { opacity: .65; color: var(--glass-text); }
 
-/* ── Main content ── */
-.docs-main { flex: 1; min-width: 0; }
-.docs-empty {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  font-size: var(--ds-text-sm, .84rem); color: var(--glass-text); opacity: .35; padding: 40px 0;
+.docs-registry {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-.docs-empty-icon { font-size: 1.8rem; opacity: .5; }
-.docs-empty-action { margin-top: 4px; opacity: 1; }
-.docs-list { display: flex; flex-direction: column; gap: 8px; }
 
-/* ── Doc card ── */
+.docs-registry-head,
+.docs-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+  gap: 16px;
+}
+
+.docs-registry-copy,
+.docs-registry-controls,
+.docs-column,
+.docs-panel,
 .doc-card {
-  padding: 12px 16px; cursor: pointer;
-  transition: box-shadow var(--ds-transition, .18s ease), transform var(--ds-transition, .18s ease);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
-.doc-card:hover {
-  box-shadow: var(--ds-shadow-lg, 0 8px 32px rgba(0,0,0,.1));
-  transform: translateY(-1px);
+
+.docs-registry-copy,
+.docs-registry-controls,
+.docs-column {
+  padding: 16px;
 }
+
+.docs-registry-kicker,
+.docs-panel-kicker,
+.docs-meta-label,
+.docs-stat__label,
+.doc-code,
+.doc-kind,
+.docs-empty__title {
+  margin: 0;
+  font-size: .64rem;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  color: color-mix(in srgb, var(--glass-text) 54%, transparent);
+}
+
+.docs-registry-title,
+.docs-panel-title,
+.doc-title {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  line-height: 1.08;
+}
+
+.docs-registry-title {
+  font-size: clamp(1.6rem, 3vw, 2.7rem);
+}
+
+.docs-search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.docs-search-input,
+.docs-input {
+  min-height: 48px;
+  border-radius: 0;
+  font-size: 1rem;
+}
+
+.docs-file-input {
+  padding: 10px 12px;
+}
+
+.docs-textarea {
+  min-height: 132px;
+  resize: vertical;
+}
+
+.docs-registry-stats,
+.docs-meta-grid,
+.docs-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.docs-stat,
+.docs-meta-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.docs-stat__value,
+.docs-meta-value {
+  font-size: .94rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.docs-meta-value--mono,
+.docs-view-pre,
+.doc-code,
+.doc-kind {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+.docs-column {
+  min-width: 0;
+}
+
+.docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.doc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 168px;
+  padding: 14px;
+  cursor: pointer;
+  transition: background-color .16s ease, border-color .16s ease;
+}
+
+.doc-card:hover,
+.doc-card--active {
+  border-color: color-mix(in srgb, var(--glass-text) 26%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+}
+
+.doc-card-head,
+.doc-actions,
+.docs-panel-actions,
+.docs-panel-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .doc-card-head {
-  display: flex; align-items: center; gap: 8px;
-  flex-wrap: wrap; margin-bottom: 6px;
+  justify-content: space-between;
 }
+
+.doc-code {
+  min-width: 34px;
+}
+
 .doc-badge {
-  font-size: .58rem; text-transform: uppercase; letter-spacing: .5px;
-  padding: 2px 8px; border-radius: var(--chip-radius, 999px);
-  background: color-mix(in srgb, var(--glass-text) 7%, transparent);
-  color: var(--glass-text); flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
 }
-.doc-file-icon {
-  font-size: .9rem; flex-shrink: 0; line-height: 1; opacity: .6;
-}
-.doc-file-icon--ai {
-  opacity: 1; color: var(--ds-accent, #6366f1); font-size: .8rem; font-weight: 700;
-}
+
 .doc-badge--contract,
 .doc-badge--contract_supply,
-.doc-badge--contract_work { background: color-mix(in srgb, var(--ds-accent, #6366f1) 12%, transparent); color: var(--ds-accent, #6366f1); }
+.doc-badge--contract_work {
+  color: color-mix(in srgb, var(--ds-accent, #4964d1) 76%, var(--glass-text) 24%);
+}
+
 .doc-badge--act,
-.doc-badge--act_defect { background: color-mix(in srgb, var(--ds-success, #22c55e) 10%, transparent); color: var(--ds-success, #16a34a); }
-.doc-badge--invoice { background: color-mix(in srgb, var(--ds-warning, #f59e0b) 12%, transparent); color: var(--ds-warning, #d97706); }
-.doc-badge--estimate { background: color-mix(in srgb, var(--phase-violet, #a855f7) 10%, transparent); color: var(--phase-violet, #9333ea); }
+.doc-badge--act_defect,
+.doc-badge--approval {
+  color: color-mix(in srgb, var(--ds-success, #4d8f61) 78%, var(--glass-text) 22%);
+}
+
+.doc-badge--invoice,
+.doc-badge--estimate,
 .doc-badge--specification,
-.doc-badge--tz { background: color-mix(in srgb, var(--phase-blue, #3b82f6) 10%, transparent); color: var(--phase-blue, #3b82f6); }
-.doc-badge--approval { background: color-mix(in srgb, var(--ds-success, #22c55e) 8%, transparent); color: var(--ds-success, #059669); }
-.doc-badge--warranty { background: color-mix(in srgb, var(--phase-teal, #0ea5e9) 10%, transparent); color: var(--phase-teal, #0ea5e9); }
-.doc-badge--photo_report { background: color-mix(in srgb, var(--ds-accent, #ec4899) 10%, transparent); color: var(--ds-accent, #db2777); }
-.doc-badge--correspondence { background: color-mix(in srgb, var(--ds-muted, #6b7280) 10%, transparent); color: var(--ds-muted, #6b7280); }
-.doc-badge--template { background: color-mix(in srgb, var(--phase-violet, #a855f7) 10%, transparent); color: var(--phase-violet, #9333ea); }
+.doc-badge--tz,
+.doc-badge--template,
+.doc-badge--warranty,
+.doc-badge--photo_report,
+.doc-badge--correspondence,
+.doc-badge--other {
+  color: color-mix(in srgb, var(--glass-text) 74%, transparent);
+}
 
-html.dark .doc-badge--contract,
-html.dark .doc-badge--contract_supply,
-html.dark .doc-badge--contract_work { background: rgba(99,102,241,.2); color: #a5b4fc; }
-html.dark .doc-badge--act,
-html.dark .doc-badge--act_defect { background: rgba(34,197,94,.15); color: #86efac; }
-html.dark .doc-badge--invoice { background: rgba(245,158,11,.15); color: #fcd34d; }
-html.dark .doc-badge--estimate { background: rgba(168,85,247,.15); color: #c4b5fd; }
+.doc-date {
+  margin-left: auto;
+  font-size: .72rem;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
 
-.doc-project { flex: 1; min-width: 0; font-size: .74rem; color: var(--glass-text); opacity: .5; }
-.doc-date { font-size: .68rem; color: var(--glass-text); opacity: .3; white-space: nowrap; margin-left: auto; }
+.doc-title {
+  font-size: 1.02rem;
+}
 
-.doc-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.doc-btn-ico {
-  width: 24px; height: 24px; border: none; background: none;
-  cursor: pointer; font-size: .8rem; color: var(--glass-text); opacity: .3;
-  border-radius: 4px; display: flex; align-items: center; justify-content: center;
-  text-decoration: none; transition: opacity .15s;
+.doc-actions {
+  margin-top: auto;
 }
-.doc-btn-ico:hover { opacity: .7; }
-.doc-btn-ico--del:hover { color: var(--ds-error, #dc2626); opacity: .8; }
 
-.doc-title { font-size: var(--ds-text-sm, .88rem); font-weight: 500; color: var(--glass-text); }
-.doc-notes { margin-top: 4px; font-size: var(--ds-text-xs, .74rem); color: var(--glass-text); opacity: .4; }
+.docs-panel {
+  margin-top: 14px;
+  padding: 16px;
+  min-height: 420px;
+}
 
-/* ── Transitions ── */
-.doc-list-enter-active, .doc-list-leave-active { transition: all .2s ease; }
-.doc-list-enter-from { opacity: 0; transform: translateY(-4px); }
-.doc-list-leave-to  { opacity: 0; transform: translateY(4px); }
-.tab-fade-enter-active, .tab-fade-leave-active { transition: opacity .2s ease; }
-.tab-fade-enter-from, .tab-fade-leave-to { opacity: 0; }
+.docs-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
 
-/* ══ Document inline view ══ */
-.docs-view-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+.docs-meta-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.docs-back {
-  background: none; border: none; cursor: pointer;
-  font-size: var(--ds-text-sm, .8rem); color: var(--glass-text); opacity: .5;
-  font-family: inherit; padding: 4px 0;
-  transition: opacity .15s;
-}
-.docs-back:hover { opacity: 1; }
-.docs-view-actions { display: flex; gap: 6px; }
-.docs-view-card { padding: 24px; }
-.docs-view-badge {
-  display: inline-block;
-  font-size: .6rem; text-transform: uppercase; letter-spacing: .5px;
-  padding: 2px 10px; border-radius: var(--chip-radius, 999px);
-  background: color-mix(in srgb, var(--glass-text) 7%, transparent);
-  color: var(--glass-text); margin-bottom: 12px;
-}
-.docs-view-badge--contract,
-.docs-view-badge--contract_supply,
-.docs-view-badge--contract_work { background: color-mix(in srgb, var(--ds-accent, #6366f1) 12%, transparent); color: var(--ds-accent, #6366f1); }
-.docs-view-badge--act { background: color-mix(in srgb, var(--ds-success, #22c55e) 10%, transparent); color: var(--ds-success, #16a34a); }
-.docs-view-badge--invoice { background: color-mix(in srgb, var(--ds-warning, #f59e0b) 12%, transparent); color: var(--ds-warning, #d97706); }
 
-.docs-view-title {
-  font-size: var(--ds-text-xl, 1.2rem); font-weight: var(--ds-heading-weight, 600);
-  color: var(--glass-text); margin-bottom: 8px; line-height: 1.3;
+.docs-note-block,
+.docs-preview {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
-.docs-view-project {
-  font-size: var(--ds-text-sm, .8rem); color: var(--glass-text); opacity: .5; margin-bottom: 6px;
+
+.docs-preview {
+  max-height: 560px;
+  overflow: auto;
 }
-.docs-view-project-link { color: var(--ds-accent, #6366f1); text-decoration: none; }
-.docs-view-project-link:hover { text-decoration: underline; }
-.docs-view-meta {
-  display: flex; gap: 12px; margin-bottom: 12px;
-  font-size: var(--ds-text-xs, .72rem); color: var(--glass-text); opacity: .35;
+
+.docs-preview--empty,
+.docs-loading,
+.docs-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  text-align: center;
 }
-.docs-view-file {
-  font-family: 'JetBrains Mono', monospace; font-size: .68rem;
+
+.docs-empty {
+  flex-direction: column;
+  gap: 8px;
 }
-.docs-view-notes {
-  font-size: var(--ds-text-sm, .82rem); color: var(--glass-text); opacity: .6;
-  line-height: 1.6; margin-bottom: 16px;
-  padding: 12px; border-radius: var(--input-radius, 6px);
-  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+
+.docs-empty__text {
+  max-width: 320px;
+  font-size: .82rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--glass-text) 68%, transparent);
 }
-.docs-view-preview {
-  margin-top: 16px; padding: 16px; border-radius: var(--input-radius, 8px);
-  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
-  max-height: 500px; overflow-y: auto;
-}
-.docs-view-preview--content .docs-view-pre {
-  font-family: inherit;
-  font-size: var(--ds-text-sm, .82rem);
-  line-height: 1.7;
-}
+
 .docs-view-pre {
-  margin: 0; font-family: 'JetBrains Mono', 'Courier New', monospace;
-  font-size: var(--ds-text-xs, .74rem); color: var(--glass-text);
-  white-space: pre-wrap; line-height: 1.6;
+  margin: 0;
+  font-size: .76rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
 }
-.docs-view-img { max-width: 100%; border-radius: var(--input-radius, 6px); }
-.docs-view-pdf { width: 100%; height: 500px; border: none; border-radius: var(--input-radius, 6px); }
 
-/* ══ Modal ══ */
-.docs-backdrop {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.35);
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 200; padding: 16px;
+.docs-view-img,
+.docs-view-pdf {
+  width: 100%;
+  border: none;
 }
-.docs-modal {
-  width: 480px; max-width: 100%; max-height: 88vh;
-  border-radius: var(--modal-radius, 16px);
-  display: flex; flex-direction: column;
-  overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,.18);
-}
-.docs-modal-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
-  font-size: var(--ds-text-sm, .84rem); font-weight: 500; color: var(--glass-text);
-  flex-shrink: 0;
-}
-.docs-modal-close {
-  background: none; border: none; cursor: pointer;
-  font-size: 1rem; color: var(--glass-text); opacity: .45; padding: 2px 6px;
-}
-.docs-modal-close:hover { opacity: 1; }
-.docs-modal-body { overflow-y: auto; flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
-.docs-modal-foot {
-  padding: 12px 20px;
-  border-top: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
-  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
-  flex-shrink: 0;
-}
-.docs-field { display: flex; flex-direction: column; gap: 4px; }
-.docs-label {
-  font-size: .62rem; text-transform: uppercase; letter-spacing: .06em;
-  color: var(--glass-text); opacity: .45; font-weight: var(--ds-heading-weight, 600);
-}
-.docs-error { font-size: var(--ds-text-xs, .78rem); color: var(--ds-error, #dc2626); }
 
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .docs-layout { flex-direction: column; }
-  .docs-nav { width: 100%; position: static; flex-direction: row; overflow-x: auto; max-height: none; }
-  .docs-nav .std-nav { flex-direction: row; }
-  .docs-nav-item { white-space: nowrap; }
-  .docs-nav-num { display: none; }
+.docs-view-pdf {
+  min-height: 540px;
+}
+
+.docs-error {
+  margin: 12px 0 0;
+  font-size: .82rem;
+  color: color-mix(in srgb, var(--ds-error, #c00) 84%, var(--glass-text) 16%);
+}
+
+.docs-field--full {
+  grid-column: 1 / -1;
+}
+
+.doc-list-enter-active,
+.doc-list-leave-active {
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.doc-list-enter-from,
+.doc-list-leave-to,
+.tab-fade-enter-from,
+.tab-fade-leave-to {
+  opacity: 0;
+}
+
+.doc-list-enter-from {
+  transform: translateY(6px);
+}
+
+.doc-list-leave-to {
+  transform: translateY(-6px);
+}
+
+.tab-fade-enter-active,
+.tab-fade-leave-active {
+  transition: opacity .18s ease;
+}
+
+@media (max-width: 1080px) {
+  .docs-registry-head,
+  .docs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .docs-screen :deep(.admin-entity-hero__prompt) {
+    left: 16px;
+    right: 16px;
+  }
+
+  .docs-editor-stage,
+  .docs-registry {
+    padding: 18px 14px 40px;
+  }
+
+  .docs-registry-stats,
+  .docs-meta-grid,
+  .docs-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .docs-panel-head,
+  .doc-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .doc-date {
+    margin-left: 0;
+  }
 }
 </style>
