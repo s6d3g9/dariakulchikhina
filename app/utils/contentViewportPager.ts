@@ -36,17 +36,6 @@ const ATOMIC_UNIT_CONTAINER_SELECTORS = [
   '.de-sources',
 ].join(', ')
 
-const ZONE_LAYOUT_CONTAINER_SELECTORS = [
-  '.docs-registry',
-  '.docs-list',
-  '.docs-panel',
-  '.cab-inner',
-  '.proj-main-inner',
-  '.de-fields-grid',
-  '.de-tpl-grid',
-  '.de-sources',
-].join(', ')
-
 const PAGER_RAIL_SELECTORS = '.cv-pager-rail, .proj-pager-rail'
 const MIN_VISIBLE_HEIGHT = 24
 const ROW_GROUP_GAP = 14
@@ -65,17 +54,14 @@ type DensityRow = {
   preserveBoundary: boolean
 }
 
-const SEMANTIC_ROW_BOUNDARY_SELECTORS = [
-  'section',
-  '.u-form-section',
-  '.docs-panel',
-  '.proj-entity-section',
-  '.afc-section',
-  '.pd-step',
-].join(', ')
-
 function isRenderableNode(node: Element): node is HTMLElement {
   return node instanceof HTMLElement && node.offsetParent !== null && node.offsetHeight > MIN_VISIBLE_HEIGHT
+}
+
+function getRenderableChildren(node: HTMLElement) {
+  return Array.from(node.children)
+    .filter(isRenderableNode)
+    .filter((child) => !isPagerRail(child) && !child.classList.contains('admin-entity-hero'))
 }
 
 function isPagerRail(node: HTMLElement) {
@@ -101,17 +87,66 @@ function resolveZoneCarryOffset(zoneTop: number, childTop: number, viewportHeigh
   return Math.max(0, viewportHeight - relativeTop)
 }
 
+function isFlowDisplay(display: string) {
+  return display === 'block' || display === 'grid' || display === 'flex' || display === 'table' || display === 'flow-root'
+}
+
+function shouldTreatAsLayoutContainer(node: HTMLElement, viewport: HTMLElement) {
+  const children = getRenderableChildren(node)
+  if (children.length < 2) return false
+
+  const style = getComputedStyle(node)
+  if (!isFlowDisplay(style.display)) return false
+
+  const nodeTop = resolveTopRelativeToViewport(node, viewport)
+  const viewportHeight = Math.max(viewport.clientHeight, 1)
+  const nodeBottom = nodeTop + node.offsetHeight
+
+  if (nodeBottom > nodeTop + viewportHeight - ZONE_EDGE_GAP) {
+    return true
+  }
+
+  return children.some((child) => {
+    const childTop = resolveTopRelativeToViewport(child, viewport)
+    return childTop - nodeTop >= MIN_ZONE_DELTA
+  })
+}
+
+function collectZoneLayoutContainers(viewport: HTMLElement) {
+  const blocks = resolvePageBlocks(viewport)
+  const candidates: Array<{ node: HTMLElement, depth: number, top: number }> = []
+  const seen = new Set<HTMLElement>()
+
+  const visit = (node: HTMLElement, depth: number) => {
+    const children = getRenderableChildren(node)
+
+    children.forEach((child) => {
+      visit(child, depth + 1)
+    })
+
+    if (seen.has(node) || !shouldTreatAsLayoutContainer(node, viewport)) {
+      return
+    }
+
+    seen.add(node)
+    candidates.push({ node, depth, top: resolveTopRelativeToViewport(node, viewport) })
+  }
+
+  blocks.forEach((block) => visit(block, 0))
+
+  return candidates
+    .sort((left, right) => right.depth - left.depth || left.top - right.top)
+    .map((entry) => entry.node)
+}
+
 function applyViewportZoneLayoutPass(viewport: HTMLElement) {
   let applied = false
 
   const viewportHeight = Math.max(viewport.clientHeight, 1)
-  const containers = Array.from(viewport.querySelectorAll<HTMLElement>(ZONE_LAYOUT_CONTAINER_SELECTORS))
-    .filter(isRenderableNode)
+  const containers = collectZoneLayoutContainers(viewport)
 
   containers.forEach((container) => {
-    const children = Array.from(container.children)
-      .filter(isRenderableNode)
-      .filter((child) => !isPagerRail(child) && !child.classList.contains('admin-entity-hero'))
+    const children = getRenderableChildren(container)
 
     if (children.length < 2) return
 
@@ -182,16 +217,26 @@ function resolvePageBlocks(viewport: HTMLElement) {
 }
 
 function collectAtomicUnits(node: HTMLElement, viewportHeight: number, depth = 0): HTMLElement[] {
-  const directChildren = Array.from(node.children)
-    .filter(isRenderableNode)
-    .filter((child) => !isPagerRail(child) && !child.classList.contains('admin-entity-hero'))
+  const directChildren = getRenderableChildren(node)
 
   if (!directChildren.length || depth >= 4) {
     return [node]
   }
 
+  if (directChildren.length === 1) {
+    const [onlyChild] = directChildren
+    const wrapperSlack = Math.abs(node.offsetHeight - onlyChild.offsetHeight)
+    if (wrapperSlack <= MIN_ZONE_DELTA) {
+      return collectAtomicUnits(onlyChild, viewportHeight, depth + 1)
+    }
+  }
+
+  const style = getComputedStyle(node)
+  const isDynamicContainer = directChildren.length > 1 && isFlowDisplay(style.display)
+
   const shouldSplit = node.matches(ATOMIC_UNIT_CONTAINER_SELECTORS)
     || node.matches(ROW_CONTAINER_SELECTORS)
+    || isDynamicContainer
     || node.offsetHeight > viewportHeight - ZONE_EDGE_GAP
 
   if (!shouldSplit) {
@@ -235,8 +280,21 @@ function clampNumber(value: number, min: number, max: number) {
 }
 
 function shouldPreserveRowBoundary(node: HTMLElement) {
-  if (node.matches(SEMANTIC_ROW_BOUNDARY_SELECTORS)) return true
-  return Array.from(node.classList).some((className) => /(^|[-_])(section|step|panel|card|block)([-_]|$)/i.test(className))
+  if (node.tagName === 'SECTION' || node.tagName === 'ARTICLE' || node.tagName === 'FORM' || node.tagName === 'FIELDSET') {
+    return true
+  }
+
+  const style = getComputedStyle(node)
+  const children = getRenderableChildren(node)
+  const hasHeading = !!node.querySelector('h1, h2, h3, h4, h5, h6, legend')
+  const hasControls = node.querySelectorAll('input, textarea, select, button, [role="button"]').length >= 2
+  const ownMargin = (Number.parseFloat(style.marginTop) || 0) + (Number.parseFloat(style.marginBottom) || 0)
+
+  if (children.length > 1 && isFlowDisplay(style.display) && (hasHeading || hasControls)) {
+    return true
+  }
+
+  return ownMargin >= ROW_GROUP_GAP
 }
 
 function resolveLineHeightPx(style: CSSStyleDeclaration, fontSize: number) {
@@ -448,6 +506,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
           top: Math.max(blockStart, Math.min(blockMaxStart, row.top)),
           bottom: Math.max(blockStart, Math.min(blockStart + blockHeight, row.bottom)),
           density: row.density,
+          preserveBoundary: row.preserveBoundary,
         }))
         .filter((row) => row.top > blockStart + 4)
 
