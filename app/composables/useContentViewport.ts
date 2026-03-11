@@ -1,5 +1,5 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
-import { buildViewportPageStops } from '~/utils/contentViewportPager'
+import { applyViewportZoneLayout, buildViewportPageStops } from '~/utils/contentViewportPager'
 
 type ViewMode = 'scroll' | 'paged' | 'flow' | 'wipe'
 type Direction = 'next' | 'prev'
@@ -87,6 +87,7 @@ export function useContentViewport(options: {
       return
     }
 
+    applyViewportZoneLayout(el)
     pageStops.value = buildViewportPageStops(el)
     pageCount.value = pageStops.value.length
 

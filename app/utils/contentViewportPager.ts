@@ -17,12 +17,44 @@ const ROW_CONTAINER_SELECTORS = [
   '.de-sources',
 ].join(', ')
 
+const ATOMIC_UNIT_CONTAINER_SELECTORS = [
+  '.u-grid-2',
+  '.docs-grid',
+  '.docs-list',
+  '.docs-column',
+  '.docs-panel',
+  '.docs-field-grid',
+  '.docs-meta-grid',
+  '.docs-registry-head',
+  '.docs-registry-controls',
+  '.cab-inner',
+  '.cab-projects-grid',
+  '.dash-stats',
+  '.agal-grid',
+  '.de-fields-grid',
+  '.de-tpl-grid',
+  '.de-sources',
+].join(', ')
+
+const ZONE_LAYOUT_CONTAINER_SELECTORS = [
+  '.docs-registry',
+  '.docs-list',
+  '.docs-panel',
+  '.docs-column',
+  '.cab-inner',
+  '.proj-main-inner',
+  '.de-fields-grid',
+  '.de-tpl-grid',
+  '.de-sources',
+].join(', ')
+
 const PAGER_RAIL_SELECTORS = '.cv-pager-rail, .proj-pager-rail'
 const GRID_ROWS_PER_PAGE = 8
 const MIN_VISIBLE_HEIGHT = 24
 const ROW_GROUP_GAP = 14
 const ZONE_EDGE_GAP = 8
 const MIN_ZONE_DELTA = 32
+const ZONE_OFFSET_ATTR = 'data-cv-zone-offset'
 
 function isRenderableNode(node: Element): node is HTMLElement {
   return node instanceof HTMLElement && node.offsetParent !== null && node.offsetHeight > MIN_VISIBLE_HEIGHT
@@ -30,6 +62,61 @@ function isRenderableNode(node: Element): node is HTMLElement {
 
 function isPagerRail(node: HTMLElement) {
   return node.matches(PAGER_RAIL_SELECTORS)
+}
+
+function clearZoneOffsets(viewport: HTMLElement) {
+  Array.from(viewport.querySelectorAll<HTMLElement>(`[${ZONE_OFFSET_ATTR}]`)).forEach((node) => {
+    node.style.removeProperty('margin-top')
+    node.removeAttribute(ZONE_OFFSET_ATTR)
+  })
+}
+
+function applyZoneOffset(node: HTMLElement, offset: number) {
+  if (offset < MIN_ZONE_DELTA) return
+  node.style.marginTop = `${Math.round(offset)}px`
+  node.setAttribute(ZONE_OFFSET_ATTR, '1')
+}
+
+export function applyViewportZoneLayout(viewport: HTMLElement) {
+  clearZoneOffsets(viewport)
+
+  const viewportHeight = Math.max(viewport.clientHeight, 1)
+  const containers = Array.from(viewport.querySelectorAll<HTMLElement>(ZONE_LAYOUT_CONTAINER_SELECTORS))
+    .filter(isRenderableNode)
+
+  containers.forEach((container) => {
+    const children = Array.from(container.children)
+      .filter(isRenderableNode)
+      .filter((child) => !isPagerRail(child) && !child.classList.contains('admin-entity-hero'))
+
+    if (children.length < 2) return
+
+    let carriedOffset = 0
+    let zoneTop = resolveTopRelativeToViewport(container, viewport)
+
+    children.forEach((child) => {
+      const childTop = resolveTopRelativeToViewport(child, viewport) + carriedOffset
+      const childHeight = child.offsetHeight
+      const childBottom = childTop + childHeight
+      const zoneBottom = zoneTop + viewportHeight - ZONE_EDGE_GAP
+
+      if (childHeight >= viewportHeight - ZONE_EDGE_GAP) {
+        if (childTop >= zoneTop + MIN_ZONE_DELTA) {
+          zoneTop = childTop
+        }
+        return
+      }
+
+      if (childTop >= zoneTop + MIN_ZONE_DELTA && childBottom > zoneBottom) {
+        const offset = zoneBottom - childTop
+        const positiveOffset = Math.max(0, offset)
+        const appliedOffset = viewportHeight - (childTop - zoneTop)
+        applyZoneOffset(child, appliedOffset)
+        carriedOffset += appliedOffset
+        zoneTop += viewportHeight
+      }
+    })
+  })
 }
 
 export function resolveTopRelativeToViewport(node: HTMLElement, viewport: HTMLElement) {
@@ -51,25 +138,41 @@ function resolvePageBlocks(viewport: HTMLElement) {
   return source.filter(isRenderableNode)
 }
 
-function collectRowItems(block: HTMLElement) {
-  const candidates = new Set<HTMLElement>()
-  const containers = [
-    block,
-    ...Array.from(block.querySelectorAll(ROW_CONTAINER_SELECTORS)).filter(isRenderableNode),
-  ]
+function collectAtomicUnits(node: HTMLElement, viewportHeight: number, depth = 0): HTMLElement[] {
+  const directChildren = Array.from(node.children)
+    .filter(isRenderableNode)
+    .filter((child) => !isPagerRail(child) && !child.classList.contains('admin-entity-hero'))
 
-  containers.forEach((container) => {
-    Array.from(container.children)
-      .filter(isRenderableNode)
-      .forEach((child) => {
-        if (isPagerRail(child)) return
-        candidates.add(child)
-      })
+  if (!directChildren.length || depth >= 4) {
+    return [node]
+  }
+
+  const shouldSplit = node.matches(ATOMIC_UNIT_CONTAINER_SELECTORS)
+    || node.matches(ROW_CONTAINER_SELECTORS)
+    || node.offsetHeight > viewportHeight - ZONE_EDGE_GAP
+
+  if (!shouldSplit) {
+    return [node]
+  }
+
+  return directChildren.flatMap((child) => {
+    const childCanSplit = child.children.length > 1 && (
+      child.matches(ATOMIC_UNIT_CONTAINER_SELECTORS)
+      || child.matches(ROW_CONTAINER_SELECTORS)
+      || child.offsetHeight > viewportHeight - ZONE_EDGE_GAP
+    )
+
+    if (!childCanSplit) {
+      return [child]
+    }
+
+    return collectAtomicUnits(child, viewportHeight, depth + 1)
   })
+}
 
-  let items = Array.from(candidates)
+function collectRowItems(block: HTMLElement, viewport: HTMLElement) {
+  let items = collectAtomicUnits(block, viewport.clientHeight)
     .filter((item) => item !== block)
-    .filter((item) => !item.classList.contains('admin-entity-hero'))
 
   if (items.length >= 2) {
     items = items.filter((item) => !items.some((other) => other !== item && item.contains(other)))
@@ -85,7 +188,7 @@ function collectRowItems(block: HTMLElement) {
 }
 
 function resolveGridRows(block: HTMLElement, viewport: HTMLElement) {
-  const items = collectRowItems(block)
+  const items = collectRowItems(block, viewport)
   const rows: Array<{ top: number, bottom: number }> = []
 
   items.forEach((item) => {

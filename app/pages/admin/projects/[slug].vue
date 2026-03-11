@@ -533,7 +533,7 @@ import {
   PROJECT_SECTION_TO_PAGE,
 } from '~~/shared/constants/admin-navigation'
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
-import { buildViewportPageStops } from '~/utils/contentViewportPager'
+import { applyViewportZoneLayout, buildViewportPageStops } from '~/utils/contentViewportPager'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -910,6 +910,7 @@ function syncProjectViewportPager() {
     return
   }
 
+  applyViewportZoneLayout(el)
   projectViewportStops.value = buildViewportPageStops(el)
   viewportPageCount.value = projectViewportStops.value.length
 
