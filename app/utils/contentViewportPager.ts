@@ -50,6 +50,7 @@ const MIN_ZONE_TOP_INSET = 28
 const MAX_ZONE_TOP_INSET = 72
 const MIN_ZONE_BOTTOM_INSET = 28
 const MAX_ZONE_BOTTOM_INSET = 96
+const ZONE_SPACER_ATTR = 'data-cv-zone-spacer'
 
 type DensityRow = {
   top: number
@@ -65,17 +66,25 @@ function isRenderableNode(node: Element): node is HTMLElement {
 function getRenderableChildren(node: HTMLElement) {
   return Array.from(node.children)
     .filter(isRenderableNode)
-    .filter((child) => !isPagerRail(child) && !child.classList.contains('admin-entity-hero'))
+    .filter((child) => !isPagerRail(child) && !isZoneSpacer(child) && !child.classList.contains('admin-entity-hero'))
 }
 
 function isPagerRail(node: HTMLElement) {
   return node.matches(PAGER_RAIL_SELECTORS)
 }
 
+function isZoneSpacer(node: HTMLElement) {
+  return node.getAttribute(ZONE_SPACER_ATTR) === '1'
+}
+
 function clearZoneOffsets(viewport: HTMLElement) {
   Array.from(viewport.querySelectorAll<HTMLElement>(`[${ZONE_OFFSET_ATTR}]`)).forEach((node) => {
     node.style.removeProperty('margin-top')
     node.removeAttribute(ZONE_OFFSET_ATTR)
+  })
+
+  Array.from(viewport.querySelectorAll<HTMLElement>(`[${ZONE_SPACER_ATTR}]`)).forEach((node) => {
+    node.remove()
   })
 }
 
@@ -85,10 +94,10 @@ function applyZoneOffset(node: HTMLElement, offset: number) {
   node.setAttribute(ZONE_OFFSET_ATTR, '1')
 }
 
-function resolveZoneCarryOffset(zoneTop: number, childTop: number, viewportHeight: number) {
+function resolveZoneCarryOffset(zoneTop: number, childTop: number, visibleHeight: number) {
   const relativeTop = childTop - zoneTop
   if (relativeTop < MIN_ZONE_DELTA) return 0
-  return Math.max(0, viewportHeight - relativeTop)
+  return Math.max(0, visibleHeight - relativeTop)
 }
 
 function resolveZoneInsets(viewportHeight: number) {
@@ -126,31 +135,69 @@ function shouldTreatAsLayoutContainer(node: HTMLElement, viewport: HTMLElement) 
   })
 }
 
-function collectZoneLayoutContainers(viewport: HTMLElement) {
-  const blocks = resolvePageBlocks(viewport)
-  const candidates: Array<{ node: HTMLElement, depth: number, top: number }> = []
-  const seen = new Set<HTMLElement>()
+function resolvePrimaryLayoutContainer(node: HTMLElement, viewport: HTMLElement, depth = 0): HTMLElement[] {
+  const children = getRenderableChildren(node)
 
-  const visit = (node: HTMLElement, depth: number) => {
-    const children = getRenderableChildren(node)
-
-    children.forEach((child) => {
-      visit(child, depth + 1)
-    })
-
-    if (seen.has(node) || !shouldTreatAsLayoutContainer(node, viewport)) {
-      return
-    }
-
-    seen.add(node)
-    candidates.push({ node, depth, top: resolveTopRelativeToViewport(node, viewport) })
+  if (!children.length || depth >= 4) {
+    return []
   }
 
-  blocks.forEach((block) => visit(block, 0))
+  if (children.length === 1) {
+    const [onlyChild] = children
+    const wrapperSlack = Math.abs(node.offsetHeight - onlyChild.offsetHeight)
 
-  return candidates
-    .sort((left, right) => right.depth - left.depth || left.top - right.top)
-    .map((entry) => entry.node)
+    if (wrapperSlack <= MIN_ZONE_DELTA) {
+      return resolvePrimaryLayoutContainer(onlyChild, viewport, depth + 1)
+    }
+  }
+
+  if (shouldTreatAsLayoutContainer(node, viewport)) {
+    return [node]
+  }
+
+  return children.flatMap((child) => resolvePrimaryLayoutContainer(child, viewport, depth + 1))
+}
+
+function collectZoneLayoutContainers(viewport: HTMLElement) {
+  const blocks = resolvePageBlocks(viewport)
+  const seen = new Set<HTMLElement>()
+
+  return blocks
+    .flatMap((block) => resolvePrimaryLayoutContainer(block, viewport))
+    .filter((node) => {
+      if (seen.has(node)) return false
+      seen.add(node)
+      return true
+    })
+    .sort((left, right) => resolveTopRelativeToViewport(left, viewport) - resolveTopRelativeToViewport(right, viewport))
+}
+
+function resolvePageBlockSource(viewport: HTMLElement) {
+  const directChildren = Array.from(viewport.children)
+    .filter(isRenderableNode)
+    .filter((node) => !isPagerRail(node) && !isZoneSpacer(node))
+
+  const shell = directChildren.find((node) => node.matches(BLOCK_SHELL_SELECTORS))
+  const source = shell ?? viewport
+
+  return {
+    shell,
+    source,
+  }
+}
+
+function ensureViewportBottomSpacer(viewport: HTMLElement, height: number) {
+  const normalizedHeight = Math.max(0, Math.round(height))
+  if (!normalizedHeight) return
+
+  const { source } = resolvePageBlockSource(viewport)
+  const spacer = document.createElement('div')
+  spacer.setAttribute(ZONE_SPACER_ATTR, '1')
+  spacer.setAttribute('aria-hidden', 'true')
+  spacer.style.height = `${normalizedHeight}px`
+  spacer.style.flex = '0 0 auto'
+  spacer.style.pointerEvents = 'none'
+  source.appendChild(spacer)
 }
 
 function applyViewportZoneLayoutPass(viewport: HTMLElement) {
@@ -184,7 +231,7 @@ function applyViewportZoneLayoutPass(viewport: HTMLElement) {
       const childBottom = childTop + childHeight
       const visibleTop = zoneTop + zoneInsets.top
       const visibleBottom = zoneTop + viewportHeight - zoneInsets.bottom
-      const carryOffset = resolveZoneCarryOffset(visibleTop, childTop, viewportHeight)
+      const carryOffset = resolveZoneCarryOffset(visibleTop, childTop, zoneInsets.visibleHeight)
 
       if (childHeight >= zoneInsets.visibleHeight - ZONE_EDGE_GAP) {
         if (carryOffset > 0) {
@@ -218,6 +265,9 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
   const preservedScrollTop = viewport.scrollTop
   clearZoneOffsets(viewport)
 
+  const zoneInsets = resolveZoneInsets(Math.max(viewport.clientHeight, 1))
+  ensureViewportBottomSpacer(viewport, zoneInsets.bottom)
+
   for (let pass = 0; pass < 4; pass += 1) {
     const changed = applyViewportZoneLayoutPass(viewport)
     if (!changed) break
@@ -238,16 +288,17 @@ export function resolveTopRelativeToViewport(node: HTMLElement, viewport: HTMLEl
 }
 
 function resolvePageBlocks(viewport: HTMLElement) {
+  const { shell, source } = resolvePageBlockSource(viewport)
   const directChildren = Array.from(viewport.children)
     .filter(isRenderableNode)
-    .filter((node) => !isPagerRail(node))
-
-  const shell = directChildren.find((node) => node.matches(BLOCK_SHELL_SELECTORS))
-  const source = shell
+    .filter((node) => !isPagerRail(node) && !isZoneSpacer(node))
+  const rawSource = shell
     ? Array.from(shell.children)
     : directChildren.filter((node) => !node.classList.contains('admin-entity-hero'))
 
-  return source.filter(isRenderableNode)
+  return rawSource
+    .filter(isRenderableNode)
+    .filter((node) => !isZoneSpacer(node))
 }
 
 function collectAtomicUnits(node: HTMLElement, viewportHeight: number, depth = 0): HTMLElement[] {
@@ -363,11 +414,11 @@ function measureNodeDensity(node: HTMLElement, viewport: HTMLElement) {
   )
 }
 
-function resolveViewportDensityBudget(viewport: HTMLElement) {
+function resolveViewportDensityBudget(viewport: HTMLElement, visibleHeight = Math.max(viewport.clientHeight, 1)) {
   const style = getComputedStyle(viewport)
   const fontSize = Number.parseFloat(style.fontSize) || 16
   const lineHeight = resolveLineHeightPx(style, fontSize)
-  const visibleLines = viewport.clientHeight / Math.max(lineHeight, 1)
+  const visibleLines = visibleHeight / Math.max(lineHeight, 1)
   const rawBudget = visibleLines / 7.5 - Math.max(0, fontSize - 16) * 0.08
   return clampNumber(rawBudget, MIN_ZONE_DENSITY_BUDGET, MAX_ZONE_DENSITY_BUDGET)
 }
@@ -418,8 +469,8 @@ function compressStops(stops: number[]) {
   }, [])
 }
 
-function pruneCoveredStops(stops: number[], viewportHeight: number) {
-  const minimumFreshArea = Math.max(MIN_ZONE_DELTA, viewportHeight - ZONE_EDGE_GAP - MIN_ZONE_DELTA)
+function pruneCoveredStops(stops: number[], visibleHeight: number) {
+  const minimumFreshArea = Math.max(MIN_ZONE_DELTA, visibleHeight - ZONE_EDGE_GAP - MIN_ZONE_DELTA)
 
   return stops.reduce<number[]>((acc, stop, index) => {
     if (index === 0) {
@@ -527,8 +578,9 @@ function buildVisibleZonesForBlock(
 
 export function buildViewportPageStops(viewport: HTMLElement) {
   const viewportHeight = Math.max(viewport.clientHeight, 1)
+  const zoneInsets = resolveZoneInsets(viewportHeight)
   const maxTop = Math.max(0, viewport.scrollHeight - viewportHeight)
-  const densityBudget = resolveViewportDensityBudget(viewport)
+  const densityBudget = resolveViewportDensityBudget(viewport, zoneInsets.visibleHeight)
   const heroToContentMinimumDelta = Math.max(120, Math.round(viewportHeight * HERO_TO_CONTENT_MIN_DELTA_RATIO))
   const stops = [0]
   const hero = viewport.querySelector<HTMLElement>('.admin-entity-hero')
@@ -550,7 +602,8 @@ export function buildViewportPageStops(viewport: HTMLElement) {
       const rawStart = resolveTopRelativeToViewport(block, viewport)
       const blockStart = Math.max(minimumContentStart, Math.min(maxTop, rawStart))
       const blockHeight = block.offsetHeight
-      const blockMaxStart = Math.max(blockStart, Math.min(maxTop, blockStart + blockHeight - viewportHeight))
+      const blockBottom = blockStart + blockHeight
+      const blockMaxStart = Math.max(blockStart, Math.min(maxTop, blockBottom - (viewportHeight - zoneInsets.bottom)))
 
       const followsHeroTooClosely = minimumContentStart > 0 && blockStart - minimumContentStart < heroToContentMinimumDelta
 
@@ -568,7 +621,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
         .filter((row) => row.top > blockStart + 4)
 
       const blockStops = buildVisibleZonesForBlock(
-        rows.length ? rows : [{ top: blockStart, bottom: blockStart + blockHeight, density: Math.max(1, blockHeight / viewportHeight), preserveBoundary: true }],
+        rows.length ? rows : [{ top: blockStart, bottom: blockStart + blockHeight, density: Math.max(1, blockHeight / zoneInsets.visibleHeight), preserveBoundary: true }],
         blockStart,
         blockMaxStart,
         viewportHeight,
@@ -579,12 +632,12 @@ export function buildViewportPageStops(viewport: HTMLElement) {
         pushStop(stops, stop)
       })
 
-      if (!rows.length && blockHeight > viewportHeight + 8 && blockMaxStart > (stops[stops.length - 1] ?? blockStart) + 4) {
+      if (!rows.length && blockHeight > zoneInsets.visibleHeight + 8 && blockMaxStart > (stops[stops.length - 1] ?? blockStart) + 4) {
         pushStop(stops, blockMaxStart)
       }
     })
   } else {
-    for (let cursor = viewportHeight; cursor < maxTop - 4; cursor += viewportHeight) {
+    for (let cursor = zoneInsets.visibleHeight; cursor < maxTop - 4; cursor += zoneInsets.visibleHeight) {
       pushStop(stops, cursor)
     }
   }
@@ -595,6 +648,6 @@ export function buildViewportPageStops(viewport: HTMLElement) {
 
   return pruneCoveredStops(
     compressStops(Array.from(new Set(stops)).sort((left, right) => left - right)),
-    viewportHeight,
+    zoneInsets.visibleHeight,
   )
 }
