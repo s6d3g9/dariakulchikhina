@@ -705,8 +705,11 @@ export function buildViewportPageStops(viewport: HTMLElement) {
     pushStop(stops, maxTop)
   }
 
-  return pruneCoveredStops(
-    compressStops(Array.from(new Set(stops)).sort((left, right) => left - right)),
-    zoneInsets.visibleHeight,
-  )
+  const normalizedStops = compressStops(Array.from(new Set(stops)).sort((left, right) => left - right))
+
+  if (isWipeMode) {
+    return normalizedStops
+  }
+
+  return pruneCoveredStops(normalizedStops, zoneInsets.visibleHeight)
 }
