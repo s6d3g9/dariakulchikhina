@@ -611,9 +611,17 @@ const projectPagerNextLabel = computed(() => {
   if (contentViewMode.value === 'flow') return 'экран / след.'
   if (contentViewMode.value === 'wipe') {
     const atLast = viewportPageIndex.value >= viewportPageCount.value
-    const hasNextLeaf = currentProjectLeafIndex.value >= 0
-      && currentProjectLeafIndex.value < currentProjectLeafItems.value.length - 1
-    return atLast && hasNextLeaf ? 'след. →' : 'лист →'
+    if (!atLast) return 'лист →'
+    // Check if there's a next page in any direction
+    const leafIdx = currentProjectLeafIndex.value
+    const leaves = currentProjectLeafItems.value
+    const hasNextLeaf = leafIdx >= 0 && leafIdx < leaves.length - 1
+    if (hasNextLeaf) return 'след. →'
+    // Global fallback: check available pages order
+    const slugs = ['overview', ...availablePages.value.map(p => p.slug)]
+    const idx = slugs.indexOf(normalizedActivePage.value)
+    if (idx >= 0 && idx < slugs.length - 1) return 'след. →'
+    return 'лист →'
   }
   return 'экран →'
 })
@@ -1074,11 +1082,29 @@ function resolveProjectPageFromLeafId(leafId: string) {
 }
 
 async function advanceProjectLeaf(direction: 'next' | 'prev') {
-  const nextIndex = currentProjectLeafIndex.value + (direction === 'next' ? 1 : -1)
-  const targetLeaf = currentProjectLeafItems.value[nextIndex]
-  if (!targetLeaf) return false
+  // Try current nav node leaves first
+  let nextPage: string | null = null
 
-  const nextPage = resolveProjectPageFromLeafId(targetLeaf.id)
+  const leafIdx = currentProjectLeafIndex.value
+  const leaves = currentProjectLeafItems.value
+  if (leafIdx >= 0 && leaves.length) {
+    const targetLeaf = leaves[leafIdx + (direction === 'next' ? 1 : -1)]
+    if (targetLeaf) {
+      nextPage = resolveProjectPageFromLeafId(targetLeaf.id)
+    }
+  }
+
+  // Fallback: use global page order (overview → first_contact → ... → client_sign_off)
+  if (!nextPage) {
+    const current = normalizedActivePage.value
+    const slugs = ['overview', ...availablePages.value.map(p => p.slug)]
+    const idx = slugs.indexOf(current)
+    if (idx >= 0) {
+      const target = slugs[idx + (direction === 'next' ? 1 : -1)]
+      if (target) nextPage = target
+    }
+  }
+
   if (!nextPage) return false
 
   const useWipe = contentViewMode.value === 'wipe'
