@@ -56,6 +56,7 @@ const ZONE_OFFSET_ATTR = 'data-cv-zone-offset'
 const MIN_ZONE_DENSITY_BUDGET = 3.6
 const MAX_ZONE_DENSITY_BUDGET = 7.4
 const MIN_ZONE_FILL_RATIO = 0.52
+const HERO_TO_CONTENT_MIN_DELTA_RATIO = 0.28
 
 type DensityRow = {
   top: number
@@ -380,6 +381,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   const viewportHeight = Math.max(viewport.clientHeight, 1)
   const maxTop = Math.max(0, viewport.scrollHeight - viewportHeight)
   const densityBudget = resolveViewportDensityBudget(viewport)
+  const heroToContentMinimumDelta = Math.max(120, Math.round(viewportHeight * HERO_TO_CONTENT_MIN_DELTA_RATIO))
   const stops = [0]
   const hero = viewport.querySelector<HTMLElement>('.admin-entity-hero')
   let minimumContentStart = 0
@@ -402,7 +404,9 @@ export function buildViewportPageStops(viewport: HTMLElement) {
       const blockHeight = block.offsetHeight
       const blockMaxStart = Math.max(blockStart, Math.min(maxTop, blockStart + blockHeight - viewportHeight))
 
-      if (blockStart > 4) {
+      const followsHeroTooClosely = minimumContentStart > 0 && blockStart - minimumContentStart < heroToContentMinimumDelta
+
+      if (blockStart > 4 && !followsHeroTooClosely) {
         pushStop(stops, blockStart)
       }
 
