@@ -392,6 +392,25 @@ function compressStops(stops: number[]) {
   }, [])
 }
 
+function pruneCoveredStops(stops: number[], viewportHeight: number) {
+  const minimumFreshArea = Math.max(MIN_ZONE_DELTA, viewportHeight - ZONE_EDGE_GAP - MIN_ZONE_DELTA)
+
+  return stops.reduce<number[]>((acc, stop, index) => {
+    if (index === 0) {
+      acc.push(stop)
+      return acc
+    }
+
+    const previous = acc[acc.length - 1] ?? 0
+    if (stop <= previous + minimumFreshArea) {
+      return acc
+    }
+
+    acc.push(stop)
+    return acc
+  }, [])
+}
+
 function buildVisibleZonesForBlock(
   rows: DensityRow[],
   blockStart: number,
@@ -544,5 +563,8 @@ export function buildViewportPageStops(viewport: HTMLElement) {
     pushStop(stops, maxTop)
   }
 
-  return compressStops(Array.from(new Set(stops)).sort((left, right) => left - right))
+  return pruneCoveredStops(
+    compressStops(Array.from(new Set(stops)).sort((left, right) => left - right)),
+    viewportHeight,
+  )
 }
