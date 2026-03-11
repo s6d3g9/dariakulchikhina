@@ -623,7 +623,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   const blocks = resolvePageBlocks(viewport)
 
   if (blocks.length) {
-    blocks.forEach((block) => {
+    const blockEntries = blocks.map((block) => {
       const rawStart = resolveTopRelativeToViewport(block, viewport)
       const contentStart = Math.max(minimumContentStart, Math.min(maxTop, rawStart))
       const blockStart = clampZoneStart(
@@ -634,6 +634,62 @@ export function buildViewportPageStops(viewport: HTMLElement) {
       const blockHeight = block.offsetHeight
       const blockBottom = contentStart + blockHeight
       const blockMaxStart = Math.max(blockStart, Math.min(maxTop, blockBottom - (viewportHeight - zoneInsets.bottom)))
+
+      return {
+        block,
+        rawStart,
+        contentStart,
+        blockStart,
+        blockHeight,
+        blockBottom,
+        blockMaxStart,
+      }
+    })
+
+    const allBlocksFitIndividually = blockEntries.every((entry) => entry.blockHeight <= zoneInsets.visibleHeight + ZONE_EDGE_GAP)
+
+    if (allBlocksFitIndividually) {
+      let currentPageStart = minimumContentStart > 0 ? minimumContentStart : null
+      let currentVisibleBottom = currentPageStart == null
+        ? Number.NEGATIVE_INFINITY
+        : currentPageStart + viewportHeight - zoneInsets.bottom
+      let pageHasContent = false
+
+      blockEntries.forEach((entry) => {
+        const followsHeroTooClosely = minimumContentStart > 0
+          && entry.contentStart - minimumContentStart < heroToContentMinimumDelta
+        const fitsCurrentPage = entry.blockBottom <= currentVisibleBottom
+
+        if (!pageHasContent) {
+          if (currentPageStart == null) {
+            currentPageStart = entry.blockStart
+            currentVisibleBottom = currentPageStart + viewportHeight - zoneInsets.bottom
+            if (currentPageStart > 4 && !followsHeroTooClosely) {
+              pushStop(stops, currentPageStart)
+            }
+          }
+          pageHasContent = true
+          return
+        }
+
+        if (fitsCurrentPage) {
+          return
+        }
+
+        currentPageStart = entry.blockStart
+        currentVisibleBottom = currentPageStart + viewportHeight - zoneInsets.bottom
+        pushStop(stops, currentPageStart)
+      })
+
+      if (maxTop > 4) {
+        pushStop(stops, maxTop)
+      }
+
+      return compressStops(Array.from(new Set(stops)).sort((left, right) => left - right))
+    }
+
+    blockEntries.forEach((entry) => {
+      const { block, contentStart, blockStart, blockHeight, blockBottom, blockMaxStart } = entry
 
       const followsHeroTooClosely = minimumContentStart > 0 && contentStart - minimumContentStart < heroToContentMinimumDelta
 
