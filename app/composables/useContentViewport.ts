@@ -62,6 +62,22 @@ export function useContentViewport(options: {
     wipeTimers = []
   }
 
+  function getWipeInner() {
+    return viewportRef.value?.querySelector<HTMLElement>('.cv-wipe-inner') ?? null
+  }
+
+  function getCurrentWipeOffset(): number {
+    const inner = getWipeInner()
+    if (!inner) return 0
+    const m = inner.style.transform.match(/translateY\((-?[\d.]+)px\)/)
+    return m ? -parseFloat(m[1]) : 0
+  }
+
+  function setWipeOffset(offset: number) {
+    const inner = getWipeInner()
+    if (inner) inner.style.transform = `translateY(${-offset}px)`
+  }
+
   function syncViewportAttrs() {
     const el = viewportRef.value
     if (!el) return
@@ -129,6 +145,13 @@ export function useContentViewport(options: {
       return
     }
 
+    if (contentViewMode.value === 'wipe') {
+      const currentOffset = getCurrentWipeOffset()
+      const currentIndex = pageStops.value.findLastIndex((s: number) => s <= currentOffset + 2)
+      pageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
+      return
+    }
+
     const currentTop = el.scrollTop + 2
     const currentIndex = pageStops.value.findLastIndex((stop: number) => stop <= currentTop)
     pageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
@@ -166,7 +189,11 @@ export function useContentViewport(options: {
     clearWipeTimers()
     wipePhase.value = 'idle'
     syncViewportAttrs()
-    el.scrollTo({ top: 0, behavior: 'auto' })
+    if (contentViewMode.value === 'wipe') {
+      setWipeOffset(0)
+    } else {
+      el.scrollTo({ top: 0, behavior: 'auto' })
+    }
     syncPager()
   }
 
@@ -178,13 +205,13 @@ export function useContentViewport(options: {
     return !navigationBusy.value && Date.now() >= lockUntil.value
   }
 
-  function moveWithWipe(targetTop: number, direction: Direction) {
+  function moveWithWipe(targetOffset: number, direction: Direction) {
     const el = viewportRef.value
     if (!el) return false
 
     const total = transitionMs.value
     if (total <= 0) {
-      el.scrollTo({ top: targetTop, behavior: 'auto' })
+      setWipeOffset(targetOffset)
       syncPager()
       return true
     }
@@ -197,7 +224,7 @@ export function useContentViewport(options: {
 
     const half = Math.max(80, Math.round(total * 0.48))
     wipeTimers.push(window.setTimeout(() => {
-      el.scrollTo({ top: targetTop, behavior: 'auto' })
+      setWipeOffset(targetOffset)
       syncPager()
       wipePhase.value = 'reveal'
       syncViewportAttrs()
@@ -239,7 +266,8 @@ export function useContentViewport(options: {
     if (!el) return false
 
     const stops = pageStops.value.length ? pageStops.value : [0]
-    const currentTop = el.scrollTop + 2
+    const currentPos = contentViewMode.value === 'wipe' ? getCurrentWipeOffset() : el.scrollTop
+    const currentTop = currentPos + 2
     const currentIndex = Math.max(0, stops.findLastIndex((stop: number) => stop <= currentTop))
     const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1
     const atStart = currentIndex <= 0
@@ -254,11 +282,12 @@ export function useContentViewport(options: {
 
     const targetTop = stops[Math.max(0, Math.min(stops.length - 1, targetIndex))] ?? 0
 
-    if (targetTop === el.scrollTop) return false
-
     if (contentViewMode.value === 'wipe') {
+      if (targetTop === getCurrentWipeOffset()) return false
       return moveWithWipe(targetTop, direction)
     }
+
+    if (targetTop === el.scrollTop) return false
 
     lockPaging()
     el.scrollTo({ top: targetTop, behavior: 'smooth' })

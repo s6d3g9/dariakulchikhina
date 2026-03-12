@@ -1990,14 +1990,31 @@ html.dark .glass-input::placeholder {
 }
 
 .cv-viewport--paged[data-cv-mode="wipe"] {
-  /* scroll (not hidden) — чтобы sticky-элементы работали и scrollTo() работал во всех браузерах */
-  overflow-y: scroll;
+  /* overflow:hidden — изолируем содержимое как страницу книги.
+     Контент переключается через transform на .cv-wipe-inner, без скролла. */
+  overflow: hidden;
   scroll-behavior: auto;
   scrollbar-width: none;
   overscroll-behavior: none;
   touch-action: none;
 }
 .cv-viewport--paged[data-cv-mode="wipe"]::-webkit-scrollbar { display: none; }
+
+/* Враппер контента, который сдвигается при смене страниц */
+.cv-viewport--paged[data-cv-mode="wipe"] .cv-wipe-inner {
+  padding-top: var(--cv-sheet-top, 48px);
+  will-change: transform;
+  min-height: calc(var(--cv-viewport-height, 100vh) - var(--cv-sheet-top, 48px));
+}
+
+/* Pager rail: абсолютное позиционирование внутри overflow:hidden */
+.cv-viewport--paged[data-cv-mode="wipe"] .cv-pager-rail {
+  position: absolute;
+  bottom: 14px;
+  right: calc(var(--wipe-side-margin, 20px) + 4px);
+  margin: 0;
+  max-width: calc(100% - 2 * var(--wipe-side-margin, 20px) - 8px);
+}
 
 /* Вайп оверлей: sticky + отрицательный margin чтобы не занимать место в потоке */
 .cv-viewport--paged[data-cv-mode="wipe"]::after {

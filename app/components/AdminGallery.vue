@@ -8,7 +8,7 @@
     @keydown="handleKeydown"
     @scroll="syncPager"
   >
-
+    <div class="cv-wipe-inner">
     <!-- ─── Header ─────────────────────────────────────── -->
     <div class="agal-header glass-surface glass-card">
       <div class="agal-header-left">
@@ -227,9 +227,9 @@
         </div>
       </div>
     </div>
+    </div><!-- /cv-wipe-inner -->
 
-    <div v-if="isPaged" class="cv-pager-rail">
-      <div class="cv-pager-rail__meta">
+    <div v-if="isPaged" class="cv-pager-rail">      <div class="cv-pager-rail__meta">
         <span class="cv-pager-rail__mode">{{ pagerModeLabel }}</span>
         <span>экран {{ pageIndex }} / {{ pageCount }}</span>
       </div>

@@ -33,7 +33,7 @@
         @keydown="handleKeydown"
         @scroll="syncPager"
       >
-        <div class="cab-inner">
+        <div class="cab-inner cv-wipe-inner">
           <template v-if="section === 'dashboard'">
             <section v-if="showBrutalistContractorDashboardHero" class="ct-cab-hero">
               <div class="ct-cab-hero-topline">кабинет подрядчика</div>

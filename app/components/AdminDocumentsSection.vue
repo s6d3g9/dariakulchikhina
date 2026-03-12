@@ -8,6 +8,7 @@
     @keydown="handleKeydown"
     @scroll="syncPager"
   >
+    <div class="cv-wipe-inner">
     <AdminEntityHero
       kicker="реестр документов / admin"
       title="Документы"
@@ -293,6 +294,7 @@
         </div>
       </section>
     </Transition>
+    </div><!-- /cv-wipe-inner -->
 
     <div v-if="isPaged" class="cv-pager-rail">
       <div class="cv-pager-rail__meta">

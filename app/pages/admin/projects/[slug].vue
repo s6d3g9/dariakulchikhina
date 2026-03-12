@@ -171,6 +171,7 @@
           <div v-if="contentViewMode === 'wipe'" class="proj-wipe-overlay" aria-hidden="true">
             <div class="proj-wipe-overlay__sheet"></div>
           </div>
+          <div class="proj-wipe-inner">
           <AdminEntityHero
             v-if="showBrutalistHero"
             :kicker="activeGroupLabel || 'архитектура проекта'"
@@ -480,6 +481,7 @@
               </section>
             </div>
           </Transition>
+          </div><!-- /proj-wipe-inner -->
 
           <div v-if="isProjectViewportPaged" class="proj-pager-rail">
             <div class="proj-pager-rail__meta">
@@ -981,6 +983,13 @@ function updateProjectViewportPageIndex(el = projectViewport.value) {
     return
   }
 
+  if (contentViewMode.value === 'wipe') {
+    const currentOffset = getCurrentProjectWipeOffset()
+    const currentIndex = projectViewportStops.value.findLastIndex((stop) => stop <= currentOffset + 2)
+    viewportPageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
+    return
+  }
+
   const currentTop = el.scrollTop + 2
   const currentIndex = projectViewportStops.value.findLastIndex((stop) => stop <= currentTop)
   viewportPageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
@@ -1023,6 +1032,22 @@ function reconnectProjectViewportObserver() {
 function clearProjectViewportWipeTimers() {
   projectViewportWipeTimers.forEach((timer) => window.clearTimeout(timer))
   projectViewportWipeTimers = []
+}
+
+function getProjectWipeInner() {
+  return projectViewport.value?.querySelector<HTMLElement>('.proj-wipe-inner') ?? null
+}
+
+function getCurrentProjectWipeOffset(): number {
+  const inner = getProjectWipeInner()
+  if (!inner) return 0
+  const m = inner.style.transform.match(/translateY\((-?[\d.]+)px\)/)
+  return m ? -parseFloat(m[1]) : 0
+}
+
+function setProjectWipeOffset(offset: number) {
+  const inner = getProjectWipeInner()
+  if (inner) inner.style.transform = `translateY(${-offset}px)`
 }
 
 function syncProjectViewportAttrs() {
@@ -1071,7 +1096,11 @@ function resetProjectViewport() {
   clearProjectViewportWipeTimers()
   projectViewportWipePhase.value = 'idle'
   syncProjectViewportAttrs()
-  el.scrollTo({ top: 0, behavior: 'auto' })
+  if (contentViewMode.value === 'wipe') {
+    setProjectWipeOffset(0)
+  } else {
+    el.scrollTo({ top: 0, behavior: 'auto' })
+  }
   syncProjectViewportPager()
 }
 
@@ -1083,13 +1112,13 @@ function canFlipProjectViewport() {
   return Date.now() >= viewportPagingLockUntil.value && !viewportNavigationBusy.value
 }
 
-function moveProjectViewportWithWipe(targetTop: number, direction: 'next' | 'prev') {
+function moveProjectViewportWithWipe(targetOffset: number, direction: 'next' | 'prev') {
   const el = projectViewport.value
   if (!el) return false
 
   const total = projectContentTransitionDuration.value
   if (total <= 0) {
-    el.scrollTo({ top: targetTop, behavior: 'auto' })
+    setProjectWipeOffset(targetOffset)
     syncProjectViewportPager()
     return true
   }
@@ -1102,7 +1131,7 @@ function moveProjectViewportWithWipe(targetTop: number, direction: 'next' | 'pre
 
   const half = Math.max(80, Math.round(total * 0.48))
   projectViewportWipeTimers.push(window.setTimeout(() => {
-    el.scrollTo({ top: targetTop, behavior: 'auto' })
+    setProjectWipeOffset(targetOffset)
     syncProjectViewportPager()
     projectViewportWipePhase.value = 'reveal'
     syncProjectViewportAttrs()
@@ -1194,7 +1223,8 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
   if (!el) return false
 
   const stops = projectViewportStops.value.length ? projectViewportStops.value : [0]
-  const currentTop = el.scrollTop + 2
+  const currentPos = contentViewMode.value === 'wipe' ? getCurrentProjectWipeOffset() : el.scrollTop
+  const currentTop = currentPos + 2
   const currentIndex = Math.max(0, stops.findLastIndex((stop) => stop <= currentTop))
   const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1
   const atStart = currentIndex <= 0
@@ -1210,11 +1240,12 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
 
   const targetTop = stops[Math.max(0, Math.min(stops.length - 1, targetIndex))] ?? 0
 
-  if (targetTop === el.scrollTop) return false
-
   if (contentViewMode.value === 'wipe') {
+    if (targetTop === getCurrentProjectWipeOffset()) return false
     return moveProjectViewportWithWipe(targetTop, direction)
   }
+
+  if (targetTop === el.scrollTop) return false
 
   lockProjectViewportPaging()
   el.scrollTo({ top: targetTop, behavior: 'smooth' })
@@ -1787,14 +1818,31 @@ async function saveProject() {
 }
 
 .proj-main--paged[data-cv-mode="wipe"] {
-  /* scroll, not hidden — sticky + scrollTo() должны работать во всех браузерах */
-  overflow-y: scroll;
+  /* overflow:hidden — true book-page mode, no scroll at all.
+     Content switches via transform on .proj-wipe-inner. */
+  overflow: hidden;
   scroll-behavior: auto;
   scrollbar-width: none;
   overscroll-behavior: none;
   touch-action: none;
 }
 .proj-main--paged[data-cv-mode="wipe"]::-webkit-scrollbar { display: none; }
+
+/* Content wrapper that shifts to reveal each page */
+.proj-main--paged[data-cv-mode="wipe"] .proj-wipe-inner {
+  padding-top: var(--cv-sheet-top, 48px);
+  will-change: transform;
+  min-height: calc(var(--cv-viewport-height, 100vh) - var(--cv-sheet-top, 48px));
+}
+
+/* Pager rail: absolute in wipe mode (sticky doesn't work with overflow:hidden) */
+.proj-main--paged[data-cv-mode="wipe"] .proj-pager-rail {
+  position: absolute;
+  bottom: 14px;
+  right: calc(var(--wipe-side-margin, 20px) + 4px);
+  margin: 0;
+  max-width: calc(100% - 2 * var(--wipe-side-margin, 20px) - 8px);
+}
 
 /* ── Card frame: visible card boundary for wipe sheets ── */
 .proj-sheet-frame {

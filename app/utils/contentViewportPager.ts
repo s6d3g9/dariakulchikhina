@@ -642,16 +642,10 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
   const preservedScrollTop = viewport.scrollTop
   clearZoneOffsets(viewport)
 
-  // In wipe/book mode, use token-based insets for spacer (not generic).
-  // Content flows naturally through the card window — no margin injection needed.
-  // Page stops are uniform multiples of step (buildViewportPageStops handles this).
+  // In transform-based wipe mode: no bottom spacer needed.
+  // Content uses translateY on cv-wipe-inner, not scrollTop. Spacers would
+  // inflate scrollHeight which would break page-count calculation.
   if (viewport.dataset.cvMode === 'wipe') {
-    const vpStyle = getComputedStyle(viewport)
-    const vpHeight = Math.max(viewport.clientHeight, 1)
-    const wipeTop = parseCssPixels(vpStyle.getPropertyValue('--cv-sheet-top')) || 48
-    const wipeBottom = parseCssPixels(vpStyle.getPropertyValue('--cv-sheet-bottom')) || 106
-    const wipeStep = Math.max(120, vpHeight - wipeTop - wipeBottom)
-    ensureViewportBottomSpacer(viewport, wipeStep)
     return
   }
 
@@ -1033,36 +1027,29 @@ export function buildViewportPageStops(viewport: HTMLElement) {
   if (isWipeMode) {
     // Book-like pagination for wipe mode:
     // Each page is a fixed-height window (visibleHeight).
-    // Pages tile without overlap: stop[N+1] = stop[N] + visibleHeight.
-    // Content that doesn't fit is clipped at the bottom and continues
-    // at the top of the next page — exactly like a printed book.
+    // Pages tile without overlap: stop[N+1] = stop[N] + step.
+    // Content uses transform: translateY on cv-wipe-inner (no scroll).
+    // The inner element has padding-top = sheetTop, so content starts at
+    // the card's top edge. Each page offset = N * step.
     const step = zoneInsets.visibleHeight
+    const inner = viewport.querySelector<HTMLElement>('.cv-wipe-inner')
 
-    // If the hero extends past the first visible page, align the second
-    // stop so that main content starts at the top of the card area.
-    let firstContentStop = step
-    if (heroBottom > zoneInsets.top + step) {
-      firstContentStop = heroBottom - zoneInsets.top
-    }
+    // Content height = inner.scrollHeight minus the padding-top (= sheetTop)
+    // If no inner found, fall back to viewport scrollHeight
+    const innerScrollHeight = inner ? inner.scrollHeight : 0
+    const contentHeight = inner
+      ? Math.max(0, innerScrollHeight - zoneInsets.top)
+      : Math.max(0, viewport.scrollHeight - viewportHeight)
 
-    // Find where real content ends (excluding spacers) to avoid empty trailing pages
-    const realContentBottom = blocks.reduce(
-      (max, b) => Math.max(max, resolveTopRelativeToViewport(b, viewport) + b.offsetHeight),
-      heroBottom,
-    )
+    const maxOffset = Math.max(0, contentHeight - step)
 
-    if (step > 0 && maxTop > 0) {
-      for (let cursor = firstContentStop; cursor < maxTop; cursor += step) {
-        const stop = Math.min(cursor, maxTop)
-        if (stop > (stops[stops.length - 1] ?? 0) + MIN_ZONE_DELTA) {
-          pushStop(stops, stop)
-        }
+    if (step > 0 && maxOffset > 0) {
+      for (let offset = step; offset < maxOffset; offset += step) {
+        pushStop(stops, Math.round(offset))
       }
-      // Only add final maxTop stop if the last page doesn't already cover all content
-      const lastStop = stops[stops.length - 1] ?? 0
-      const lastVisibleEnd = lastStop + zoneInsets.top + zoneInsets.visibleHeight
-      if (realContentBottom > lastVisibleEnd + ZONE_EDGE_GAP && maxTop > lastStop + MIN_ZONE_DELTA) {
-        pushStop(stops, maxTop)
+      const last = stops[stops.length - 1] ?? 0
+      if (maxOffset - last > MIN_ZONE_DELTA) {
+        pushStop(stops, Math.round(maxOffset))
       }
     }
   } else if (blocks.length) {
@@ -1117,7 +1104,7 @@ export function buildViewportPageStops(viewport: HTMLElement) {
     }
   }
 
-  if (!(isWipeMode && blocks.length) && maxTop > 4) {
+  if (!isWipeMode && maxTop > 4) {
     pushStop(stops, maxTop)
   }
 

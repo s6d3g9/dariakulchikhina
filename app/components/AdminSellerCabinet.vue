@@ -31,7 +31,7 @@
         @keydown="handleKeydown"
         @scroll="syncPager"
       >
-        <div class="cab-inner">
+        <div class="cab-inner cv-wipe-inner">
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
           <template v-if="section === 'dashboard'">
