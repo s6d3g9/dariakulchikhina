@@ -2,113 +2,115 @@
   <div class="admin-bg glass-page" :class="{ 'admin-bg--brutalist': isBrutalistShell, 'admin-bg--glass': isLiquidGlassShell }">
     <UIDesignPanel v-if="adminLayoutModules.designPanel" />
     <header v-if="adminLayoutModules.header && !isBrutalistShell" class="admin-header glass-surface">
-      <div class="admin-header-start">
-        <button type="button" class="adm-hamburger" :class="{ 'adm-hamburger--open': drawerOpen }" aria-label="Открыть меню" @click="drawerOpen = !drawerOpen">
-          <span /><span /><span />
-        </button>
-        <span class="admin-brand">админ-панель</span>
-      </div>
+      <span class="admin-brand">админ-панель</span>
       <div class="admin-header-links">
-        <!-- Search trigger -->
-        <button
-          v-if="adminLayoutModules.search"
-          type="button"
-          class="admin-search-btn"
-          title="Поиск  Ctrl+K / ⌘K"
-          aria-label="Поиск"
-          @click="searchOpen = true"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span class="admin-search-label">поиск</span>
-          <kbd class="admin-search-kbd">Ctrl+K</kbd>
-        </button>
-
-        <!-- Notifications bell -->
-        <div v-if="adminLayoutModules.notifications" ref="notifWrapRef" class="admin-notif-wrap">
+        <div ref="utilBarRef" class="adm-util-wrap">
           <button
             type="button"
-            class="admin-notif-btn"
-            :class="notifOpen ? 'admin-notif-btn--open' : ''"
-            :title="notifTotal ? `${notifTotal} уведомлений` : 'Уведомления'"
-            @click.stop="notifOpen = !notifOpen"
+            class="adm-hamburger"
+            :class="{ 'adm-hamburger--open': utilBarOpen }"
+            aria-label="Открыть панель"
+            @click.stop="utilBarOpen = !utilBarOpen"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-            <span v-if="notifTotal" class="admin-notif-badge">{{ notifTotal > 99 ? '99+' : notifTotal }}</span>
+            <span /><span /><span />
           </button>
-          <div v-if="notifOpen" class="admin-notif-dropdown glass-surface" @click.stop>
-            <div class="admin-notif-head">уведомления</div>
-            <div v-if="!notifTotal" class="admin-notif-empty">Всё в порядке ✓</div>
-            <template v-else>
-              <NuxtLink
-                v-if="notifData?.extra?.count"
-                to="/admin"
-                class="admin-notif-item admin-notif-item--warn"
-                @click="notifOpen = false"
+          <div v-if="utilBarOpen" class="adm-util-panel glass-surface" @click.stop>
+            <!-- Edit mode -->
+            <button type="button" class="adm-edit-btn" :class="{ 'adm-edit-btn--on': editMode }" @click="toggleEditMode">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              {{ editMode ? 'редактирование вкл' : 'редактировать' }}
+            </button>
+            <p v-if="editMode" class="adm-edit-hint">Карточки и блоки доступны для редактирования</p>
+            <!-- Search -->
+            <button
+              v-if="adminLayoutModules.search"
+              type="button"
+              class="admin-search-btn admin-search-btn--sidebar"
+              title="Поиск Ctrl+K / ⌘K"
+              aria-label="Поиск"
+              @click="searchOpen = true; utilBarOpen = false"
+            >
+              <span class="admin-search-label">поиск</span>
+              <kbd class="admin-search-kbd">Ctrl+K</kbd>
+            </button>
+            <!-- Notifications -->
+            <div v-if="adminLayoutModules.notifications" ref="notifWrapRef" class="admin-notif-wrap admin-notif-wrap--sidebar">
+              <button
+                type="button"
+                class="admin-notif-btn admin-notif-btn--sidebar"
+                :class="notifOpen ? 'admin-notif-btn--open' : ''"
+                :title="notifTotal ? `${notifTotal} уведомлений` : 'Уведомления'"
+                @click.stop="notifOpen = !notifOpen"
               >
-                <span class="admin-notif-item-count">{{ notifData.extra.count }}</span>
-                <span class="admin-notif-item-label">{{ notifData.extra.label }}</span>
-              </NuxtLink>
-              <div
-                v-if="notifData?.overdue?.count"
-                class="admin-notif-item admin-notif-item--danger"
-              >
-                <span class="admin-notif-item-count">{{ notifData.overdue.count }}</span>
-                <span class="admin-notif-item-label">{{ notifData.overdue.label }}</span>
+                <span>уведомления</span>
+                <span v-if="notifTotal" class="admin-notif-inline-count">{{ notifTotal > 99 ? '99+' : notifTotal }}</span>
+              </button>
+              <div v-if="notifOpen" class="admin-notif-dropdown admin-notif-dropdown--sidebar glass-surface" @click.stop>
+                <div class="admin-notif-head">уведомления</div>
+                <div v-if="!notifTotal" class="admin-notif-empty">Всё в порядке ✓</div>
+                <template v-else>
+                  <NuxtLink
+                    v-if="notifData?.extra?.count"
+                    to="/admin"
+                    class="admin-notif-item admin-notif-item--warn"
+                    @click="notifOpen = false; utilBarOpen = false"
+                  >
+                    <span class="admin-notif-item-count">{{ notifData.extra.count }}</span>
+                    <span class="admin-notif-item-label">{{ notifData.extra.label }}</span>
+                  </NuxtLink>
+                  <div
+                    v-if="notifData?.overdue?.count"
+                    class="admin-notif-item admin-notif-item--danger"
+                  >
+                    <span class="admin-notif-item-count">{{ notifData.overdue.count }}</span>
+                    <span class="admin-notif-item-label">{{ notifData.overdue.label }}</span>
+                  </div>
+                </template>
+                <div class="admin-notif-foot">
+                  <button class="admin-notif-refresh" @click="refreshNotif">обновить</button>
+                </div>
               </div>
-            </template>
-            <div class="admin-notif-foot">
-              <button class="admin-notif-refresh" @click="refreshNotif">обновить</button>
+            </div>
+            <!-- Theme -->
+            <button
+              v-if="adminLayoutModules.themeSwitch"
+              type="button"
+              class="admin-theme-btn admin-theme-btn--sidebar"
+              :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
+              @click="toggleTheme"
+            >{{ isDark ? 'светло' : 'темно' }}</button>
+            <!-- Site / Logout -->
+            <div class="admin-sidebar-links">
+              <NuxtLink v-if="adminLayoutModules.siteLink" to="/" class="admin-link admin-link--sidebar" @click="utilBarOpen = false">сайт</NuxtLink>
+              <a v-if="adminLayoutModules.logoutLink" href="#" class="admin-link admin-link--sidebar" @click.prevent="utilBarOpen = false; logout()">выйти</a>
             </div>
           </div>
         </div>
-
-        <button
-          v-if="adminLayoutModules.themeSwitch"
-          type="button"
-          class="admin-theme-btn"
-          :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
-          @click="toggleTheme"
-        >{{ isDark ? 'светло' : 'темно' }}</button>
-        <NuxtLink v-if="adminLayoutModules.siteLink" to="/" class="admin-link">сайт</NuxtLink>
-        <a v-if="adminLayoutModules.logoutLink" href="#" class="admin-link" @click.prevent="logout">выйти</a>
       </div>
     </header>
 
-    <!-- Fixed hamburger for brutalist (headless) mode -->
-    <button v-if="isBrutalistShell" type="button" class="adm-hamburger adm-hamburger--fixed" :class="{ 'adm-hamburger--open': drawerOpen }" aria-label="Открыть меню" @click="drawerOpen = !drawerOpen">
-      <span /><span /><span />
-    </button>
-    <!-- Drawer backdrop -->
-    <Transition name="adm-fade">
-      <div v-if="drawerOpen" class="adm-backdrop" @click="drawerOpen = false" />
-    </Transition>
     <!-- ── App shell body ── -->
     <div class="adm-body">
       <!-- Global navigation sidebar — persists across all admin routes -->
       <aside
         ref="sidebarRef"
         class="proj-nav-col adm-sidebar"
-        :class="{ 'adm-sidebar--open': drawerOpen }"
+        :class="{ 'adm-sidebar--collapsed': isSidebarCollapsed }"
+        @pointerenter="handleSidebarPointerEnter"
       >
-        <div class="adm-drawer-header">
-          <span class="adm-drawer-brand">меню</span>
-          <button type="button" class="adm-drawer-close" aria-label="Закрыть меню" @click="drawerOpen = false">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-        <div class="adm-edit-section">
-          <button type="button" class="adm-edit-btn" :class="{ 'adm-edit-btn--on': editMode }" @click="toggleEditMode">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            {{ editMode ? 'редактирование вкл' : 'редактировать' }}
-          </button>
-          <p v-if="editMode" class="adm-edit-hint">Карточки и блоки контента доступны для редактирования</p>
-        </div>
-        <div class="adm-sidebar-inner">
+        <button
+          v-if="canAutoCollapseSidebar"
+          type="button"
+          class="adm-sidebar-rail"
+          :class="{ 'adm-sidebar-rail--visible': isSidebarCollapsed }"
+          aria-label="Раскрыть меню"
+          @pointerenter="handleSidebarRailPointerEnter"
+          @focus="expandSidebar"
+        />
+        <div class="adm-sidebar-inner" :class="{ 'adm-sidebar-inner--collapsed': isSidebarCollapsed }">
         <div v-if="adminLayoutModules.sidebarMenu && isBrutalistShell" ref="adminMenuRef" class="admin-sidebar-menu-wrap">
           <button
             type="button"
@@ -205,7 +207,7 @@
         />
         </div>
       </aside>
-      <main class="adm-main admin-with-nav">
+      <main class="adm-main admin-with-nav" @pointerenter="handleMainPointerEnter">
         <div class="admin-container">
           <slot />
         </div>
@@ -232,8 +234,32 @@ const isBrutalistShell = computed(() => designSystem.currentDesignMode.value ===
 
 const isLiquidGlassShell = computed(() => designSystem.currentDesignMode.value === 'liquid-glass')
 const sidebarRef = ref<HTMLElement | null>(null)
-const drawerOpen = ref(false)
+const isSidebarCollapsed = ref(false)
+const isDesktopSidebar = ref(false)
+const utilBarOpen = ref(false)
+const utilBarRef = ref<HTMLElement | null>(null)
 const { editMode, toggleEditMode } = useEditMode()
+
+const canAutoCollapseSidebar = computed(() =>
+  isDesktopSidebar.value && adminLayoutModules.value.nestedNav)
+
+function collapseSidebar() {
+  if (!canAutoCollapseSidebar.value) return
+  isSidebarCollapsed.value = true
+}
+function expandSidebar() {
+  isSidebarCollapsed.value = false
+}
+function handleMainPointerEnter() { collapseSidebar() }
+function handleSidebarPointerEnter() {
+  if (!isSidebarCollapsed.value) return
+  expandSidebar()
+}
+function handleSidebarRailPointerEnter() { expandSidebar() }
+function syncDesktopSidebarState() {
+  isDesktopSidebar.value = window.innerWidth >= 1024
+  if (!isDesktopSidebar.value) isSidebarCollapsed.value = false
+}
 
 
 function shouldResetDesignPanelFromQuery(value: unknown): boolean {
@@ -619,11 +645,11 @@ const adminMenuRef      = ref<HTMLElement | null>(null)
 function closeAll() {
   projectsOpen.value = contractorsOpen.value = clientsOpen.value =
     galleryOpen.value = designersOpen.value = sellersOpen.value =
-    notifOpen.value = adminShellMenuOpen.value = false
+    notifOpen.value = adminShellMenuOpen.value = utilBarOpen.value = false
 }
 
 function onDocClick(e: MouseEvent) {
-  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value, sellersTabRef.value, notifWrapRef.value, adminMenuRef.value]
+  const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value, sellersTabRef.value, notifWrapRef.value, adminMenuRef.value, utilBarRef.value]
   if (refs.every(r => !r || !r.contains(e.target as Node))) closeAll()
 }
 
@@ -649,10 +675,13 @@ onMounted(() => {
   }
   useUITheme().initTheme()
   designSystem.initDesignSystem()
+  syncDesktopSidebarState()
+  window.addEventListener('resize', syncDesktopSidebarState)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onSearchKeydown)
+  window.removeEventListener('resize', syncDesktopSidebarState)
   if (_notifInterval) clearInterval(_notifInterval)
 })
 
@@ -682,7 +711,7 @@ watch(() => adminLayoutModules.value.sidebarMenu, (enabled) => {
     adminShellMenuOpen.value = false
   }
 })
-watch(() => route.fullPath, () => { closeAll(); drawerOpen.value = false })
+watch(() => route.fullPath, () => { closeAll() })
 
 // ── Pickers ─────────────────────────────────────────────────────
 function pickProject(slug: string) { closeAll(); navigateTo(`/admin/projects/${slug}`) }
@@ -797,30 +826,31 @@ async function logout() {
 
 /* ── App shell body ── */
 .adm-body {
+  display: flex;
+  align-items: flex-start;
   min-height: calc(100vh - var(--admin-header-h, 48px));
 }
 
-/* ── Hamburger toggle ── */
+/* ── Utility bar hamburger ── */
 .adm-hamburger {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
   background: color-mix(in srgb, var(--glass-text) 5%, transparent);
-  backdrop-filter: blur(10px);
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 6px;
   flex-shrink: 0;
   transition: background 160ms, border-color 160ms;
 }
 .adm-hamburger span {
   display: block;
-  width: 18px;
+  width: 16px;
   height: 2px;
   background: var(--glass-text);
   border-radius: 1px;
@@ -831,110 +861,76 @@ async function logout() {
   background: color-mix(in srgb, var(--glass-text) 10%, transparent);
   border-color: color-mix(in srgb, var(--glass-text) 30%, transparent);
 }
-.adm-hamburger--open span:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-.adm-hamburger--open span:nth-child(2) {
-  opacity: 0;
-  width: 0;
-}
-.adm-hamburger--open span:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
-}
-.adm-hamburger--fixed {
-  position: fixed;
-  top: calc(var(--dp-panel-h, 0px) + 14px);
-  left: 14px;
+.adm-hamburger--open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.adm-hamburger--open span:nth-child(2) { opacity: 0; width: 0; }
+.adm-hamburger--open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Utility dropdown panel ── */
+.adm-util-wrap { position: relative; }
+.adm-util-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 240px;
+  padding: 8px;
   z-index: 500;
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--glass-text) 14%, transparent);
-}
-
-/* ── Drawer backdrop ── */
-.adm-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  z-index: 409;
-}
-.adm-fade-enter-active,
-.adm-fade-leave-active { transition: opacity 200ms ease; }
-.adm-fade-enter-from,
-.adm-fade-leave-to   { opacity: 0; }
-
-/* ── Sidebar as left drawer ── */
-.adm-sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: var(--ds-sidebar-width, 264px);
-  max-width: 84vw;
-  z-index: 410;
-  transform: translateX(calc(-100% - 10px));
-  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 280ms ease;
-  background: var(--glass-bg, hsl(0 0% 98%));
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  overflow-y: auto;
-  overflow-x: hidden;
-  border-right: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
-  box-shadow: none;
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--glass-text) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
-.adm-sidebar--open {
-  transform: translateX(0);
-  box-shadow: 4px 0 40px color-mix(in srgb, var(--glass-text) 22%, transparent);
+
+/* ── Navigation sidebar (sticky) ── */
+.adm-sidebar {
+  position: sticky;
+  top: calc(var(--dp-panel-h, 0px) + var(--admin-header-h, 48px));
+  height: calc(100vh - var(--dp-panel-h, 0px) - var(--admin-header-h, 48px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: var(--ds-sidebar-width, 232px);
+  min-width: var(--ds-sidebar-width, 232px);
+  flex-shrink: 0;
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-bg) 85%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  transition: width 220ms ease, min-width 220ms ease;
+}
+.adm-sidebar--collapsed {
+  width: 6px;
+  min-width: 6px;
+}
+.adm-sidebar-rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  z-index: 5;
+  cursor: ew-resize;
+  background: transparent;
+  border: none;
+  padding: 0;
+  opacity: 0;
+}
+.adm-sidebar-rail--visible {
+  opacity: 1;
+  background: color-mix(in srgb, var(--ds-accent, oklch(60% 0.20 255)) 20%, transparent);
 }
 .adm-sidebar-inner {
-  flex: 1;
-  padding: 0 0 24px;
+  padding: 12px 0 24px;
+  min-width: var(--ds-sidebar-width, 232px);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.adm-sidebar-inner--collapsed {
+  opacity: 0;
+  transform: translateX(-18px);
+  pointer-events: none;
 }
 
-/* Drawer header row */
-.adm-drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 14px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  position: sticky;
-  top: 0;
-  background: inherit;
-  z-index: 2;
-}
-.adm-drawer-brand {
-  font-size: .68rem;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--glass-text);
-  opacity: .4;
-  font-weight: 500;
-}
-.adm-drawer-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
-  background: transparent;
-  cursor: pointer;
-  border-radius: 6px;
-  color: var(--glass-text);
-  opacity: .5;
-  padding: 0;
-  transition: opacity 150ms, border-color 150ms;
-}
-.adm-drawer-close:hover { opacity: 1; border-color: color-mix(in srgb, var(--glass-text) 35%, transparent); }
-
-/* Edit mode section */
-.adm-edit-section {
-  padding: 10px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-}
+/* Edit mode button */
 .adm-edit-btn {
   width: 100%;
   min-height: 38px;
@@ -970,16 +966,11 @@ async function logout() {
   line-height: 1.45;
 }
 
-/* Main content — always full width */
+/* Main content area */
 .adm-main {
-  width: 100%;
+  flex: 1;
   min-width: 0;
   min-height: 100%;
-}
-.admin-header-start {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 .admin-brand {
   font-size: .72rem;
@@ -1249,9 +1240,22 @@ async function logout() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .adm-sidebar {
-    /* drawer is always fixed, no override needed */
+  .adm-sidebar,
+  .adm-sidebar--collapsed {
+    position: static;
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+    transition: none;
   }
+  .adm-sidebar-inner,
+  .adm-sidebar-inner--collapsed {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    min-width: 100%;
+  }
+  .adm-sidebar-rail { display: none; }
 
   .admin-sidebar-menu-wrap {
     padding-bottom: 10px;
@@ -1282,7 +1286,7 @@ async function logout() {
   }
 
   .adm-body {
-    display: block;
+    flex-direction: column;
   }
 
   .admin-container {
