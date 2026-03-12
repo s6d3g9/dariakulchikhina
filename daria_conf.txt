@@ -1,0 +1,250 @@
+# SSE location block — используется во всех серверах
+map $request_uri $is_sse {
+    default 0;
+    ~^/api/ai/document-stream 1;
+    ~^/api/ai/chat-stream 1;
+}
+
+# Main site — dariakulchikhina.com
+server {
+    listen 8082;
+    server_name dariakulchikhina.com www.dariakulchikhina.com;
+    charset utf-8;
+    client_max_body_size 32m;
+    port_in_redirect off;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/daria;
+    }
+
+    location /_nuxt/ {
+        alias /opt/daria-nuxt/.output/public/_nuxt/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /uploads/ {
+        alias /opt/daria-nuxt/public/uploads/;
+        expires 30d;
+        add_header Cache-Control "public";
+    }
+
+    # SSE: стриминг AI — без буферизации, большой таймаут
+    location /api/ai/document-stream {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_connect_timeout 30s;
+        proxy_buffering off;
+        proxy_cache off;
+        add_header X-Accel-Buffering no;
+        client_max_body_size 4m;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        client_max_body_size 32m;
+    }
+}
+
+# Admin panel — admin.dariakulchikhina.com
+server {
+    listen 8082;
+    server_name admin.dariakulchikhina.com;
+    charset utf-8;
+    client_max_body_size 32m;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/daria;
+    }
+
+    location /_nuxt/ {
+        alias /opt/daria-nuxt/.output/public/_nuxt/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /uploads/ {
+        alias /opt/daria-nuxt/public/uploads/;
+        expires 30d;
+        add_header Cache-Control "public";
+    }
+
+    location /api/ai/document-stream {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_connect_timeout 30s;
+        proxy_buffering off;
+        proxy_cache off;
+        add_header X-Accel-Buffering no;
+        client_max_body_size 4m;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        client_max_body_size 32m;
+    }
+}
+
+# Fallback for direct IP access on port 8082
+server {
+    listen 8082 default_server;
+    server_name _;
+    charset utf-8;
+    client_max_body_size 32m;
+
+    location /_nuxt/ {
+        alias /opt/daria-nuxt/.output/public/_nuxt/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /uploads/ {
+        alias /opt/daria-nuxt/public/uploads/;
+        expires 30d;
+        add_header Cache-Control "public";
+    }
+
+    location /api/ai/document-stream {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_connect_timeout 30s;
+        proxy_buffering off;
+        proxy_cache off;
+        add_header X-Accel-Buffering no;
+        client_max_body_size 4m;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        client_max_body_size 32m;
+    }
+}
+
+# === Nuxt 4 — порт 8083 ===
+server {
+    listen 8083;
+    server_name dariakulchikhina.com www.dariakulchikhina.com admin.dariakulchikhina.com _;
+    charset utf-8;
+    client_max_body_size 32m;
+
+    location /_nuxt/ {
+        alias /opt/daria-nuxt/.output/public/_nuxt/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /uploads/ {
+        alias /opt/daria-nuxt/public/uploads/;
+        expires 30d;
+        add_header Cache-Control "public";
+    }
+
+    location /api/ai/document-stream {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_connect_timeout 30s;
+        proxy_buffering off;
+        proxy_cache off;
+        add_header X-Accel-Buffering no;
+        client_max_body_size 4m;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        client_max_body_size 32m;
+    }
+}
+
+# lizzz.dariakulchikhina.com — port 3002
+server {
+    listen 8082;
+    server_name lizzz.dariakulchikhina.com;
+    charset utf-8;
+    client_max_body_size 32m;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/daria;
+    }
+
+    location /_nuxt/ {
+        alias /opt/lizzz-nuxt/.output/public/_nuxt/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri /;
+    }
+
+    location /uploads/ {
+        alias /opt/lizzz-nuxt/public/uploads/;
+        expires 30d;
+        add_header Cache-Control "public";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3002;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        client_max_body_size 32m;
+    }
+}

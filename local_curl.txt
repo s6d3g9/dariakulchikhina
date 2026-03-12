@@ -1,0 +1,17 @@
+HTTP/2 401 
+server: nginx/1.26.3
+date: Thu, 12 Mar 2026 16:20:45 GMT
+content-type: text/html
+content-length: 179
+www-authenticate: Basic realm="3x-ui panel"
+x-content-type-options: nosniff
+referrer-policy: no-referrer
+alt-svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+
+<html>
+<head><title>401 Authorization Required</title></head>
+<body>
+<center><h1>401 Authorization Required</h1></center>
+<hr><center>nginx/1.26.3</center>
+</body>
+</html>

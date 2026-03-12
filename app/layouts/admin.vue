@@ -2,7 +2,12 @@
   <div class="admin-bg glass-page" :class="{ 'admin-bg--brutalist': isBrutalistShell, 'admin-bg--glass': isLiquidGlassShell }">
     <UIDesignPanel v-if="adminLayoutModules.designPanel" />
     <header v-if="adminLayoutModules.header && !isBrutalistShell" class="admin-header glass-surface">
-      <span class="admin-brand">админ-панель</span>
+      <div class="admin-header-start">
+        <button type="button" class="adm-hamburger" :class="{ 'adm-hamburger--open': drawerOpen }" aria-label="Открыть меню" @click="drawerOpen = !drawerOpen">
+          <span /><span /><span />
+        </button>
+        <span class="admin-brand">админ-панель</span>
+      </div>
       <div class="admin-header-links">
         <!-- Search trigger -->
         <button
@@ -69,25 +74,41 @@
       </div>
     </header>
 
-    <!-- ── App shell body: global nav sidebar + main ── -->
-    <div class="adm-body" :class="{ 'adm-body--sidebar-collapsed': isSidebarCollapsed }">
+    <!-- Fixed hamburger for brutalist (headless) mode -->
+    <button v-if="isBrutalistShell" type="button" class="adm-hamburger adm-hamburger--fixed" :class="{ 'adm-hamburger--open': drawerOpen }" aria-label="Открыть меню" @click="drawerOpen = !drawerOpen">
+      <span /><span /><span />
+    </button>
+    <!-- Drawer backdrop -->
+    <Transition name="adm-fade">
+      <div v-if="drawerOpen" class="adm-backdrop" @click="drawerOpen = false" />
+    </Transition>
+    <!-- ── App shell body ── -->
+    <div class="adm-body">
       <!-- Global navigation sidebar — persists across all admin routes -->
       <aside
         ref="sidebarRef"
         class="proj-nav-col adm-sidebar"
-        :class="{ 'adm-sidebar--collapsed': isSidebarCollapsed }"
-        @pointerenter="handleSidebarPointerEnter"
+        :class="{ 'adm-sidebar--open': drawerOpen }"
       >
-        <button
-          v-if="canAutoCollapseSidebar"
-          type="button"
-          class="adm-sidebar-rail"
-          :class="{ 'adm-sidebar-rail--visible': isSidebarCollapsed }"
-          aria-label="Раскрыть меню"
-          @pointerenter="handleSidebarRailPointerEnter"
-          @focus="expandSidebar"
-        />
-        <div class="adm-sidebar-inner" :class="{ 'adm-sidebar-inner--collapsed': isSidebarCollapsed }">
+        <div class="adm-drawer-header">
+          <span class="adm-drawer-brand">меню</span>
+          <button type="button" class="adm-drawer-close" aria-label="Закрыть меню" @click="drawerOpen = false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="adm-edit-section">
+          <button type="button" class="adm-edit-btn" :class="{ 'adm-edit-btn--on': editMode }" @click="toggleEditMode">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            {{ editMode ? 'редактирование вкл' : 'редактировать' }}
+          </button>
+          <p v-if="editMode" class="adm-edit-hint">Карточки и блоки контента доступны для редактирования</p>
+        </div>
+        <div class="adm-sidebar-inner">
         <div v-if="adminLayoutModules.sidebarMenu && isBrutalistShell" ref="adminMenuRef" class="admin-sidebar-menu-wrap">
           <button
             type="button"
@@ -184,7 +205,7 @@
         />
         </div>
       </aside>
-      <main class="adm-main admin-with-nav" @pointerenter="handleMainPointerEnter">
+      <main class="adm-main admin-with-nav">
         <div class="admin-container">
           <slot />
         </div>
@@ -211,44 +232,9 @@ const isBrutalistShell = computed(() => designSystem.currentDesignMode.value ===
 
 const isLiquidGlassShell = computed(() => designSystem.currentDesignMode.value === 'liquid-glass')
 const sidebarRef = ref<HTMLElement | null>(null)
-const isSidebarCollapsed = ref(false)
-const isDesktopSidebar = ref(false)
+const drawerOpen = ref(false)
+const { editMode, toggleEditMode } = useEditMode()
 
-const canAutoCollapseSidebar = computed(() => {
-  return isDesktopSidebar.value
-    && adminLayoutModules.value.nestedNav
-    && route.path !== ADMIN_SECTION_ROUTES.projects
-})
-
-function syncDesktopSidebarState() {
-  if (typeof window === 'undefined') return
-  isDesktopSidebar.value = window.matchMedia('(min-width: 700px) and (hover: hover) and (pointer: fine)').matches
-  if (!isDesktopSidebar.value) {
-    isSidebarCollapsed.value = false
-  }
-}
-
-function collapseSidebar() {
-  if (!canAutoCollapseSidebar.value) return
-  isSidebarCollapsed.value = true
-}
-
-function expandSidebar() {
-  isSidebarCollapsed.value = false
-}
-
-function handleMainPointerEnter() {
-  collapseSidebar()
-}
-
-function handleSidebarPointerEnter() {
-  if (!isSidebarCollapsed.value) return
-  expandSidebar()
-}
-
-function handleSidebarRailPointerEnter() {
-  expandSidebar()
-}
 
 function shouldResetDesignPanelFromQuery(value: unknown): boolean {
   if (Array.isArray(value)) {
@@ -663,14 +649,11 @@ onMounted(() => {
   }
   useUITheme().initTheme()
   designSystem.initDesignSystem()
-  syncDesktopSidebarState()
-  window.addEventListener('resize', syncDesktopSidebarState)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onSearchKeydown)
   if (_notifInterval) clearInterval(_notifInterval)
-  window.removeEventListener('resize', syncDesktopSidebarState)
 })
 
 watch(() => adminLayoutModules.value.notifications, (enabled) => {
@@ -699,12 +682,7 @@ watch(() => adminLayoutModules.value.sidebarMenu, (enabled) => {
     adminShellMenuOpen.value = false
   }
 })
-watch(canAutoCollapseSidebar, (enabled) => {
-  if (!enabled) {
-    isSidebarCollapsed.value = false
-  }
-})
-watch(() => route.fullPath, closeAll)
+watch(() => route.fullPath, () => { closeAll(); drawerOpen.value = false })
 
 // ── Pickers ─────────────────────────────────────────────────────
 function pickProject(slug: string) { closeAll(); navigateTo(`/admin/projects/${slug}`) }
@@ -804,7 +782,7 @@ async function logout() {
 
 /* ── Header ── */
 .admin-header {
-  padding: 12px 24px;
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -819,76 +797,189 @@ async function logout() {
 
 /* ── App shell body ── */
 .adm-body {
-  display: flex;
-  align-items: flex-start;
-  min-height: calc(100vh - var(--admin-header-h));
+  min-height: calc(100vh - var(--admin-header-h, 48px));
 }
 
+/* ── Hamburger toggle ── */
+.adm-hamburger {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: background 160ms, border-color 160ms;
+}
+.adm-hamburger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--glass-text);
+  border-radius: 1px;
+  transition: transform 220ms ease, opacity 180ms ease, width 180ms ease;
+  transform-origin: center;
+}
+.adm-hamburger:hover {
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 30%, transparent);
+}
+.adm-hamburger--open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.adm-hamburger--open span:nth-child(2) {
+  opacity: 0;
+  width: 0;
+}
+.adm-hamburger--open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+.adm-hamburger--fixed {
+  position: fixed;
+  top: calc(var(--dp-panel-h, 0px) + 14px);
+  left: 14px;
+  z-index: 500;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--glass-text) 14%, transparent);
+}
+
+/* ── Drawer backdrop ── */
+.adm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 409;
+}
+.adm-fade-enter-active,
+.adm-fade-leave-active { transition: opacity 200ms ease; }
+.adm-fade-enter-from,
+.adm-fade-leave-to   { opacity: 0; }
+
+/* ── Sidebar as left drawer ── */
 .adm-sidebar {
-  position: sticky;
-  top: var(--admin-nav-top, calc(var(--dp-panel-h, 28px) + 14px));
-  align-self: flex-start;
-  width: var(--ds-sidebar-width, 232px);
-  min-width: var(--ds-sidebar-width, 232px);
-  flex: 0 0 var(--ds-sidebar-width, 232px);
-  overflow: hidden;
-}
-
-.adm-sidebar-inner {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  transition: opacity 180ms ease, transform 220ms ease;
-  transform-origin: left center;
-}
-
-.adm-sidebar-rail {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  bottom: 0;
-  width: 14px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: e-resize;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 4;
+  height: 100%;
+  width: var(--ds-sidebar-width, 264px);
+  max-width: 84vw;
+  z-index: 410;
+  transform: translateX(calc(-100% - 10px));
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 280ms ease;
+  background: var(--glass-bg, hsl(0 0% 98%));
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
 }
-
-.adm-sidebar-rail::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 6px;
-  width: 2px;
-  background: color-mix(in srgb, var(--glass-text) 24%, transparent);
+.adm-sidebar--open {
+  transform: translateX(0);
+  box-shadow: 4px 0 40px color-mix(in srgb, var(--glass-text) 22%, transparent);
 }
-
-.adm-sidebar--collapsed {
-  width: var(--ds-sidebar-width, 232px);
-  min-width: var(--ds-sidebar-width, 232px);
-  flex-basis: var(--ds-sidebar-width, 232px);
-}
-
-.adm-sidebar--collapsed .adm-sidebar-inner {
-  opacity: 0;
-  transform: translateX(-18px) scaleX(.04);
-  pointer-events: none;
-}
-
-.adm-sidebar-rail--visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Main scrollable area */
-.adm-main {
+.adm-sidebar-inner {
   flex: 1;
+  padding: 0 0 24px;
+}
+
+/* Drawer header row */
+.adm-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  position: sticky;
+  top: 0;
+  background: inherit;
+  z-index: 2;
+}
+.adm-drawer-brand {
+  font-size: .68rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--glass-text);
+  opacity: .4;
+  font-weight: 500;
+}
+.adm-drawer-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--glass-text);
+  opacity: .5;
+  padding: 0;
+  transition: opacity 150ms, border-color 150ms;
+}
+.adm-drawer-close:hover { opacity: 1; border-color: color-mix(in srgb, var(--glass-text) 35%, transparent); }
+
+/* Edit mode section */
+.adm-edit-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+.adm-edit-btn {
+  width: 100%;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  background: transparent;
+  cursor: pointer;
+  color: var(--glass-text);
+  font: inherit;
+  font-size: .74rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  border-radius: 6px;
+  transition: background 150ms, border-color 150ms, color 150ms;
+}
+.adm-edit-btn:hover {
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 32%, transparent);
+}
+.adm-edit-btn--on {
+  background: color-mix(in srgb, var(--ds-accent, oklch(60% 0.20 255)) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ds-accent, oklch(60% 0.20 255)) 45%, transparent);
+  color: var(--ds-accent, oklch(60% 0.20 255));
+}
+.adm-edit-hint {
+  font-size: .70rem;
+  color: var(--ds-accent, oklch(60% 0.20 255));
+  opacity: .8;
+  margin: 6px 2px 0;
+  line-height: 1.45;
+}
+
+/* Main content — always full width */
+.adm-main {
+  width: 100%;
   min-width: 0;
   min-height: 100%;
+}
+.admin-header-start {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .admin-brand {
   font-size: .72rem;
@@ -1158,24 +1249,8 @@ async function logout() {
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
-  .adm-sidebar,
-  .adm-sidebar--collapsed {
-    position: static;
-    width: 100%;
-    min-width: 100%;
-    flex-basis: auto;
-  }
-
-  .adm-sidebar-inner,
-  .adm-sidebar--collapsed .adm-sidebar-inner {
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
-  }
-
-  .adm-sidebar-rail,
-  .adm-sidebar-rail--visible {
-    display: none;
+  .adm-sidebar {
+    /* drawer is always fixed, no override needed */
   }
 
   .admin-sidebar-menu-wrap {
@@ -1207,7 +1282,7 @@ async function logout() {
   }
 
   .adm-body {
-    flex-direction: column;
+    display: block;
   }
 
   .admin-container {
