@@ -3,14 +3,9 @@
  * Добавляет колонку project_type в таблицу projects.
  * Идемпотентный: повторный запуск безопасен.
  */
-import 'dotenv/config'
 import postgres from 'postgres'
 
-const DATABASE_URL = process.env.DATABASE_URL
-if (!DATABASE_URL) {
-  console.error('DATABASE_URL is not set')
-  process.exit(1)
-}
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://daria:daria_secret_2026@localhost:5433/daria_admin'
 
 const sql = postgres(DATABASE_URL)
 
