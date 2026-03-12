@@ -3,7 +3,14 @@
     <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
-      <div v-for="section in activeSections" :key="section.key" class="asb-section">
+      <!-- Баннер режима редактирования -->
+      <div v-if="editMode" class="asb-edit-banner">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z"/></svg>
+        <span class="asb-edit-banner-text">редактирование структуры брифа</span>
+        <button type="button" class="asb-reset-btn" @click="resetBriefConfig" title="Сбросить все кастомизации к шаблону по типу объекта">сбросить к шаблону</button>
+      </div>
+
+      <div v-for="(section, sIdx) in activeSections" :key="section.key" class="asb-section" :class="{ 'asb-section--edit': editMode }">
         <!-- Заголовок секции -->
         <div class="asb-section-title">
           {{ section.title }}
@@ -11,7 +18,13 @@
             <span v-if="form.objectType" class="asb-type-hint">{{ objectTypeLabel }}</span>
             <span v-else class="asb-type-hint asb-type-hint--warn">⚠ укажите тип объекта в параметрах (0.1) для точных тегов</span>
           </template>
-          <button v-if="editMode" class="asb-section-rm" type="button" @click="hideSection(section.key)" title="Скрыть раздел">×</button>
+          <template v-if="editMode">
+            <div class="asb-section-move">
+              <button type="button" class="asb-move-btn" :disabled="sIdx === 0" @click="moveSectionUp(section.key)" title="Переместить вверх">↑</button>
+              <button type="button" class="asb-move-btn" :disabled="sIdx === activeSections.length - 1" @click="moveSectionDown(section.key)" title="Переместить вниз">↓</button>
+            </div>
+            <button class="asb-section-rm" type="button" @click="hideSection(section.key)" title="Скрыть раздел">×</button>
+          </template>
         </div>
 
         <!-- Обычные поля формы -->
@@ -164,24 +177,30 @@
 
       <!-- Footer -->
       <div class="asb-footer">
+        <div class="asb-progress-wrap" :title="`Заполнено ${completionPercent}% вопросов`">
+          <div class="asb-progress-track"><div class="asb-progress-bar" :style="{ width: completionPercent + '%' }"/></div>
+          <span class="asb-progress-label">{{ completionPercent }}%</span>
+        </div>
         <span v-if="savedAt" class="asb-saved">✓ сохранено {{ savedAt }}</span>
         <button class="asb-btn-save" @click="save" :disabled="saving">
           {{ saving ? 'сохранение...' : 'сохранить бриф' }}
         </button>
       </div>
 
-      <!-- Плавающая кнопка редактирования -->
-      <button
-        type="button"
-        class="asb-fab-edit"
-        :class="{ 'asb-fab-edit--on': editMode }"
-        @click="editMode = !editMode"
-        :title="editMode ? 'Завершить редактирование' : 'Редактировать структуру'"
-      >
-        <span v-if="editMode" class="asb-fab-icon">✓</span>
-        <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z"/></svg>
-        <span class="asb-fab-label">{{ editMode ? 'готово' : 'изменить' }}</span>
-      </button>
+      <!-- FAB редактирования структуры -->
+      <div class="asb-fab-wrap">
+        <button
+          type="button"
+          class="asb-fab-edit"
+          :class="{ 'asb-fab-edit--on': editMode }"
+          @click="editMode = !editMode"
+          :title="editMode ? 'Завершить редактирование' : 'Редактировать структуру'"
+        >
+          <span v-if="editMode" class="asb-fab-icon">✓</span>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z"/></svg>
+          <span class="asb-fab-label">{{ editMode ? 'готово' : 'изменить' }}</span>
+        </button>
+      </div>
 
     </template>
   </div>
@@ -333,6 +352,46 @@ function removeCustomField(id: string) {
   setBriefCfg(cfg)
 }
 
+function moveSectionUp(sectionKey: string) {
+  const cfg = getBriefCfg()
+  if (!cfg.active) cfg.active = activeSections.value.map(s => s.key)
+  const idx = cfg.active.indexOf(sectionKey)
+  if (idx > 0) {
+    const item = cfg.active.splice(idx, 1)[0]!
+    cfg.active.splice(idx - 1, 0, item)
+    setBriefCfg(cfg)
+  }
+}
+function moveSectionDown(sectionKey: string) {
+  const cfg = getBriefCfg()
+  if (!cfg.active) cfg.active = activeSections.value.map(s => s.key)
+  const idx = cfg.active.indexOf(sectionKey)
+  if (idx !== -1 && idx < cfg.active.length - 1) {
+    const item = cfg.active.splice(idx, 1)[0]!
+    cfg.active.splice(idx + 1, 0, item)
+    setBriefCfg(cfg)
+  }
+}
+function resetBriefConfig() {
+  setBriefCfg({})
+}
+
+const completionPercent = computed(() => {
+  const allKeys = activeSections.value.flatMap(s => {
+    if (s.type !== 'fields') return []
+    return [
+      ...getVisibleFields(s).map(f => f.key),
+      ...getCustomFields(s.key).map(c => c.id),
+    ]
+  })
+  if (!allKeys.length) return 0
+  const filled = allKeys.filter(k => {
+    const v = form[k]
+    return typeof v === 'string' ? v.trim().length > 0 : !!v
+  }).length
+  return Math.round(filled / allKeys.length * 100)
+})
+
 // Теги-требования для секции requirements
 const filteredRequirements = computed(() => {
   const objType = String(form.objectType || '') as keyof typeof BRIEF_REQUIREMENTS
@@ -407,15 +466,33 @@ async function save() {
 .asb-checks-grid {
   display: flex; flex-wrap: wrap; gap: 6px;
 }
-
-
-/* Form rows */
+.asb-tagopt {
+  padding: 6px 14px; font-size: .76rem; cursor: pointer; user-select: none;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 15%, transparent);
+  border-radius: 999px; font-family: inherit;
+  background: color-mix(in srgb, var(--glass-bg, #fff) 80%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
+  transition: background .16s, color .16s, border-color .16s;
+}
+.asb-tagopt:hover { color: var(--glass-text); border-color: color-mix(in srgb, var(--glass-text) 35%, transparent); }
+.asb-tagopt--on {
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  color: var(--glass-text); border: 1.5px solid var(--glass-text); font-weight: 500;
+}
 
 /* Footer */
 .asb-footer {
-  display: flex; align-items: center; justify-content: flex-end; gap: 16px;
+  display: flex; align-items: center; gap: 16px;
   padding-top: 20px; border-top: 1px solid var(--border, #ececec); margin-top: 8px;
 }
+.asb-progress-wrap { display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.asb-progress-track {
+  width: 72px; height: 3px;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 99px; overflow: hidden;
+}
+.asb-progress-bar { height: 100%; background: var(--ds-accent); border-radius: 99px; transition: width .4s ease; }
+.asb-progress-label { font-size: .7rem; color: color-mix(in srgb, var(--glass-text) 38%, transparent); min-width: 28px; }
 .asb-saved { font-size: .76rem; color: var(--ds-success); }
 .asb-btn-save {
   border: 1px solid var(--text, #1a1a1a); background: var(--text, #1a1a1a);
@@ -457,8 +534,8 @@ async function save() {
 
 /* ── Edit mode ── */
 .asb-section-rm {
-  margin-left: auto; background: none; border: none; cursor: pointer;
-  font-size: 1.05rem; line-height: 1; padding: 0 2px;
+  background: none; border: none; cursor: pointer;
+  font-size: 1.05rem; line-height: 1; padding: 0 4px;
   color: color-mix(in srgb, var(--glass-text) 30%, transparent);
   transition: color .15s;
 }
@@ -547,19 +624,24 @@ async function save() {
   background: color-mix(in srgb, var(--ds-accent) 8%, transparent);
 }
 
-/* Кнопка редактирования — FAB правый нижний угол */
-.asb-fab-edit {
+/* FAB редактирования структуры — правый нижний угол */
+.asb-fab-wrap {
   position: sticky;
-  bottom: 24px;
-  float: right;
-  margin-top: -48px;
+  bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+  margin-top: 16px;
   z-index: 20;
+}
+.asb-fab-edit {
+  pointer-events: all;
   display: flex; align-items: center; gap: 6px;
   padding: 9px 16px 9px 12px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
   background: var(--glass-bg, #fff);
-  box-shadow: 0 2px 12px color-mix(in srgb, var(--glass-text) 10%, transparent);
+  box-shadow: 0 2px 14px color-mix(in srgb, var(--glass-text) 10%, transparent);
   color: color-mix(in srgb, var(--glass-text) 55%, transparent);
   cursor: pointer; font-family: inherit; font-size: .78rem;
   transition: all .18s;
@@ -581,6 +663,54 @@ async function save() {
 
 html.dark .asb-fab-edit {
   background: color-mix(in srgb, var(--glass-bg) 80%, transparent);
+}
+
+/* ── Баннер режима редактирования ── */
+.asb-edit-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; margin-bottom: 20px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ds-accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ds-accent) 22%, transparent);
+  font-size: .78rem; color: var(--ds-accent);
+}
+.asb-edit-banner-text { flex: 1; font-weight: 500; }
+.asb-reset-btn {
+  padding: 4px 12px; font-size: .72rem; cursor: pointer; font-family: inherit;
+  border: 1px solid color-mix(in srgb, var(--ds-accent) 35%, transparent);
+  border-radius: 99px; background: none; color: var(--ds-accent);
+  transition: all .15s; white-space: nowrap;
+}
+.asb-reset-btn:hover { background: color-mix(in srgb, var(--ds-accent) 14%, transparent); }
+
+/* Подсветка раздела в режиме редактирования */
+.asb-section--edit {
+  border-radius: 8px;
+  outline: 1.5px dashed color-mix(in srgb, var(--ds-accent) 22%, transparent);
+  outline-offset: 8px;
+  transition: outline-color .2s;
+}
+
+/* Кнопки перемещения раздела */
+.asb-section-move { display: flex; gap: 2px; margin-left: auto; }
+.asb-move-btn {
+  width: 22px; height: 22px; border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: none; cursor: pointer; font-family: inherit; font-size: .8rem;
+  color: color-mix(in srgb, var(--glass-text) 40%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s;
+}
+.asb-move-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  color: var(--glass-text);
+}
+.asb-move-btn:disabled { opacity: .22; cursor: default; }
+
+/* Mobile дополнения */
+@media (max-width: 768px) {
+  .asb-progress-track { width: 48px; }
+  .asb-edit-banner { flex-wrap: wrap; }
 }
 
 </style>
