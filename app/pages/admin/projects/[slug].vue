@@ -93,7 +93,7 @@
                 </button>
               </div>
               <div v-else class="proj-client-link-inline proj-client-link-inline--name">
-                <span class="proj-client-linked-name">{{ linkedClients.map(c => c.name).join(', ') }}</span>
+                <span class="proj-client-linked-name">{{ linkedClients.map((c: any) => c.name).join(', ') }}</span>
               </div>
             </div>
             <!-- scrollable list -->

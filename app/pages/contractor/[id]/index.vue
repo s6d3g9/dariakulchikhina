@@ -646,7 +646,7 @@
                 <div class="cab-doc-info">
                   <div class="cab-doc-title">{{ doc.title }}</div>
                   <div class="cab-doc-meta">
-                    <span class="cab-doc-cat">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}</span>
+                    <span class="cab-doc-cat">{{ DOC_CATEGORIES.find((c: any) => c.value === doc.category)?.label || doc.category }}</span>
                     <span v-if="doc.notes" class="cab-doc-notes">{{ doc.notes }}</span>
                     <span v-if="doc.expiresAt" class="cab-doc-expires">до {{ doc.expiresAt }}</span>
                     <span v-if="doc.createdAt" class="cab-doc-notes">{{ formatDocDate(doc.createdAt) }}</span>
@@ -841,7 +841,7 @@
               <div class="cab-portfolio-spec-title">Специализации</div>
               <div class="cab-portfolio-chips">
                 <span v-for="wt in contractor.workTypes" :key="wt" class="glass-chip">
-                  {{ CONTRACTOR_WORK_TYPE_OPTIONS.find(o => o.value === wt)?.label || wt }}
+                  {{ CONTRACTOR_WORK_TYPE_OPTIONS.find((o: any) => o.value === wt)?.label || wt }}
                 </span>
               </div>
             </div>
@@ -855,7 +855,7 @@
                     <span class="cab-portfolio-proj-progress">{{ proj.doneCount }}/{{ proj.totalCount }}</span>
                   </div>
                   <div v-for="wt in proj.wtGroups" :key="wt.workType">
-                    <div v-for="item in wt.items.filter(i => i.status === 'done')" :key="item.id" class="cab-portfolio-item">
+                    <div v-for="item in wt.items.filter((i: any) => i.status === 'done')" :key="item.id" class="cab-portfolio-item">
                       <span class="cab-portfolio-item-check">✓</span>
                       <span class="cab-portfolio-item-name">{{ item.title }}</span>
                       <span class="cab-portfolio-item-wt">{{ wt.label }}</span>

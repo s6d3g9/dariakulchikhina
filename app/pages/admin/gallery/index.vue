@@ -4,7 +4,7 @@
         <AdminGallery
           :key="activeCategory"
           :category="activeCategory"
-          :title="GALLERY_ITEMS.find(g => g.key === activeCategory)?.title ?? activeCategory"
+          :title="GALLERY_ITEMS.find((g: any) => g.key === activeCategory)?.title ?? activeCategory"
         />
       </template>
       <div v-else class="ent-empty-detail">

@@ -152,7 +152,7 @@
                 <label class="u-field">
                   <span class="u-field__label">Категория</span>
                   <select v-model="uploadForm.category" class="glass-input docs-input">
-                    <option v-for="c in CATEGORIES.filter(cat => cat.key !== 'all')" :key="c.key" :value="c.key">
+                    <option v-for="c in CATEGORIES.filter((cat: any) => cat.key !== 'all')" :key="c.key" :value="c.key">
                       {{ c.num }} {{ c.label }}
                     </option>
                   </select>

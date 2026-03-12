@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
     .limit(1)
   if (!service) throw createError({ statusCode: 404, message: 'Service not found' })
 
-  const body = await readBody<Record<string, unknown>>(event)
+  const body = (await readBody<Record<string, unknown>>(event)) ?? {}
   const update: Record<string, unknown> = { updatedAt: new Date() }
 
   if (auth.role === 'admin') {

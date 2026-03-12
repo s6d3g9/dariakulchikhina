@@ -23,7 +23,7 @@
           <input v-model="sec.image" class="atz-inp glass-input" type="text" placeholder="имя файла" @input="markDirty">
           <label class="atz-btn-upload glass-chip">
             загрузить
-            <input type="file" accept="image/*" style="display:none" @change="(e) => uploadSecImg(e, si)">
+            <input type="file" accept="image/*" style="display:none" @change="(e: Event) => uploadSecImg(e, si)">
           </label>
           <img v-if="sec.image" :src="`/uploads/${sec.image}`" class="atz-img-prev">
         </div>
@@ -52,7 +52,7 @@
             <input v-model="q.image" class="atz-inp glass-input" type="text" placeholder="имя файла" @input="markDirty">
             <label class="atz-btn-upload glass-chip">
               загрузить
-              <input type="file" accept="image/*" style="display:none" @change="(e) => uploadQImg(e, si, qi)">
+              <input type="file" accept="image/*" style="display:none" @change="(e: Event) => uploadQImg(e, si, qi)">
             </label>
             <img v-if="q.image" :src="`/uploads/${q.image}`" class="atz-img-prev">
           </div>

@@ -116,7 +116,7 @@
               <div class="apl-photos-header">
                 <span class="apl-photos-label">фото замечания</span>
                 <label class="apl-upload-btn">
-                  <input type="file" multiple accept="image/*" class="apl-file-input" @change="e => uploadPhotos(item, e)">
+                  <input type="file" multiple accept="image/*" class="apl-file-input" @change="(e: Event) => uploadPhotos(item, e)">
                   + фото
                 </label>
               </div>

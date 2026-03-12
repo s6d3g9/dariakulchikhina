@@ -53,7 +53,7 @@
         <!-- Фото для новой записи -->
         <div class="awl-new-photos">
           <label class="awl-upload-btn">
-            <input type="file" multiple accept="image/*" @change="e => uploadNewPhotos(e)" class="awl-file-input">
+            <input type="file" multiple accept="image/*" @change="(e: Event) => uploadNewPhotos(e)" class="awl-file-input">
             + прикрепить фото
           </label>
           <div v-if="newEntry.photos.length" class="awl-thumb-row">

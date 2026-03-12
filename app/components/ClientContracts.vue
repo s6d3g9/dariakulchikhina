@@ -52,7 +52,7 @@
 
         <!-- Send request row -->
         <div v-if="selectedTariff && selectedTariff !== profile.service_tariff && !pendingRequest" class="cct-tariff-req-row">
-          <span class="cct-tariff-req-hint">выбран <strong>{{ DESIGNER_TARIFFS.find(t => t.key === selectedTariff)?.label }}</strong> — отправьте запрос дизайнеру</span>
+          <span class="cct-tariff-req-hint">выбран <strong>{{ DESIGNER_TARIFFS.find((t: any) => t.key === selectedTariff)?.label }}</strong> — отправьте запрос дизайнеру</span>
           <button type="button" class="cct-tariff-req-btn" :disabled="reqSaving" @click="sendRequest">
             {{ reqSaving ? '...' : 'запросить тариф →' }}
           </button>

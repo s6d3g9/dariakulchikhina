@@ -23,7 +23,7 @@
           <input v-model="tab.image" class="am-inp glass-input" type="text" placeholder="имя файла" @input="markDirty">
           <label class="am-btn-upload glass-chip">
             загрузить
-            <input type="file" accept="image/*" style="display:none" @change="(e) => uploadTabImg(e, ti)">
+            <input type="file" accept="image/*" style="display:none" @change="(e: Event) => uploadTabImg(e, ti)">
           </label>
           <img v-if="tab.image" :src="`/uploads/${tab.image}`" class="am-img-prev">
         </div>
