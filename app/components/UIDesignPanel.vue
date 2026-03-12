@@ -2351,6 +2351,7 @@ const contentViewModes = [
   { id: 'paged' as const, label: 'экраны', description: 'Листание контента по высоте видимой зоны.' },
   { id: 'flow' as const, label: 'поток', description: 'Экранное листание и переход к следующему пункту активного меню.' },
   { id: 'wipe' as const, label: 'wipe', description: 'Фиксированное окно и последовательное открытие частей контента через вайп-переход.' },
+  { id: 'wipe2' as const, label: 'wipe 2', description: 'Алгоритм 2×8: данные компонента превращаются в карточки по 16 полей.' },
 ]
 const wipeTransitions = [
   { id: 'slide' as const, label: 'шторка' },

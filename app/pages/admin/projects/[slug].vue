@@ -483,7 +483,10 @@
           </Transition>
           </div><!-- /proj-wipe-inner -->
 
-          <div v-if="isProjectViewportPaged" class="proj-pager-rail">
+          <!-- Wipe 2: data-driven card overlay (positioned absolute over content) -->
+          <Wipe2Renderer v-if="contentViewMode === 'wipe2'" />
+
+          <div v-if="isProjectViewportPaged && contentViewMode !== 'wipe2'" class="proj-pager-rail">
             <div class="proj-pager-rail__meta">
               <span class="proj-pager-rail__mode">{{ projectPagerModeLabel }}</span>
               <span>экран {{ viewportPageIndex }} / {{ viewportPageCount }}</span>
@@ -544,6 +547,7 @@ import {
 } from '~~/shared/constants/admin-navigation'
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
 import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportPagerRailInset, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
+import { createWipe2Slot } from '~/composables/useWipe2'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -592,6 +596,7 @@ definePageMeta({ layout: 'admin', middleware: ['admin', 'admin-project-canonical
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 const designSystem = useDesignSystem()
+createWipe2Slot()
 const isBrutalistProjectMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const showLegacyMobileNav = computed(() => !contractorPreviewMode.value && !isBrutalistProjectMode.value)
 const showBrutalistHero = computed(() => isBrutalistProjectMode.value && !clientPreviewMode.value && !contractorPreviewMode.value)
@@ -608,11 +613,14 @@ const contentViewMode = computed(() => {
 const isProjectViewportPaged = computed(() => !clientPreviewMode.value && !contractorPreviewMode.value && contentViewMode.value !== 'scroll')
 const projectHeroPrompt = computed(() => {
   if (!isProjectViewportPaged.value) return '↓ прокрутка / swipe ↓'
-  return contentViewMode.value === 'wipe' ? '↓ лист / PgDn ↓' : '↓ экран / PgDn ↓'
+  if (contentViewMode.value === 'wipe')  return '↓ лист / PgDn ↓'
+  if (contentViewMode.value === 'wipe2') return '← карточки →'
+  return '↓ экран / PgDn ↓'
 })
 const projectPagerModeLabel = computed(() => {
-  if (contentViewMode.value === 'flow') return 'поток'
-  if (contentViewMode.value === 'wipe') return 'листы'
+  if (contentViewMode.value === 'flow')  return 'поток'
+  if (contentViewMode.value === 'wipe')  return 'листы'
+  if (contentViewMode.value === 'wipe2') return 'cards'
   return 'экраны'
 })
 const projectPagerNextLabel = computed(() => {
@@ -1056,7 +1064,7 @@ function syncProjectViewportAttrs() {
 
   const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
   const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
-  const isWipe = contentViewMode.value === 'wipe'
+  const isWipe = contentViewMode.value === 'wipe' || contentViewMode.value === 'wipe2'
 
   // In wipe mode, use design tokens for insets; otherwise compute from viewport
   let sheetTop: number
@@ -1255,6 +1263,7 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
 
 function handleProjectViewportWheel(event: WheelEvent) {
   if (!isProjectViewportPaged.value || !projectViewport.value) return
+  if (contentViewMode.value === 'wipe2') return  // wipe2 renderer handles navigation
   if (Math.abs(event.deltaY) < 12) return
   event.preventDefault()
   if (!canFlipProjectViewport()) return
@@ -1271,6 +1280,7 @@ function handleProjectViewportTouchStart(e: TouchEvent) {
 
 function handleProjectViewportTouchEnd(e: TouchEvent) {
   if (!isProjectViewportPaged.value) return
+  if (contentViewMode.value === 'wipe2') return  // wipe2 renderer handles navigation
   const deltaY = projTouchStartY - e.changedTouches[0].clientY
   const deltaX = Math.abs(projTouchStartX - e.changedTouches[0].clientX)
   if (Math.abs(deltaY) < 40 || deltaX > Math.abs(deltaY) * 0.8) return
@@ -2504,6 +2514,27 @@ html.dark .proj-sheet-frame__card {
 }
 .proj-entity-btn--remove:hover {
   background: rgba(200, 60, 60, .24);
+}
+
+/* ── Wipe 2 mode ─────────────────────────────────────────────── */
+.proj-main--paged[data-cv-mode="wipe2"] {
+  /* Same as wipe1: overflow:hidden so absolute overlay clips correctly. */
+  overflow: hidden;
+  scrollbar-width: none;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+.proj-main--paged[data-cv-mode="wipe2"]::-webkit-scrollbar { display: none; }
+
+/* Keep the card-shape clip-path background for wipe2 */
+.proj-main--paged[data-cv-mode="wipe2"]::before {
+  clip-path: polygon(
+    var(--wipe-side-margin, 20px) var(--cv-sheet-top, 48px),
+    var(--wipe-side-margin, 20px) calc(100% - var(--cv-sheet-bottom, 64px)),
+    calc(100% - var(--wipe-side-margin, 20px)) calc(100% - var(--cv-sheet-bottom, 64px)),
+    calc(100% - var(--wipe-side-margin, 20px)) var(--cv-sheet-top, 48px),
+    var(--wipe-side-margin, 20px) var(--cv-sheet-top, 48px)
+  );
 }
 
 </style>

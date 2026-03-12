@@ -94,6 +94,8 @@
 </template>
 
 <script setup lang="ts">
+import { registerWipe2Data } from '~/composables/useWipe2'
+
 const props = defineProps<{ slug: string }>()
 
 const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`)
@@ -123,6 +125,50 @@ watch(project, (p) => {
 }, { immediate: true })
 
 const statusColor = useStatusColor(form, 'sp_status')
+
+// ── Wipe 2 data ─────────────────────────────────────────────────
+const STATUS_LABELS_SP: Record<string, string> = {
+  '': 'не задан', in_work: 'в работе', sent_to_client: 'отправлен клиенту',
+  revision: 'на доработке', approved: 'согласован',
+}
+const STATUS_COLOR_SP: Record<string, string> = {
+  '': 'muted', in_work: 'blue', sent_to_client: 'amber', revision: 'red', approved: 'green',
+}
+registerWipe2Data(computed(() => ({
+  entityTitle: 'Планировочные решения',
+  entitySubtitle: form.sp_version ? `версия ${form.sp_version}` : undefined,
+  entityStatus: (STATUS_LABELS_SP[form.sp_status] ?? form.sp_status) || undefined,
+  entityStatusColor: STATUS_COLOR_SP[form.sp_status] ?? 'muted',
+  sections: [
+    {
+      title: 'Общая информация',
+      fields: [
+        { label: 'Версия комплекта', value: form.sp_version },
+        { label: 'Статус', value: form.sp_status, type: 'status' as const },
+        { label: 'Отправлено клиенту', value: form.sp_sent_date, type: 'date' as const },
+        { label: 'Согласовано', value: form.sp_approved_date, type: 'date' as const },
+        { label: 'Комментарий архитектора', value: form.sp_architect_notes, type: 'multiline' as const },
+        { label: 'Замечания клиента', value: form.sp_client_notes, type: 'multiline' as const },
+      ],
+    },
+    {
+      title: 'Согласование',
+      fields: [
+        { label: 'Размеры проверены', value: form.sp_dimensions_checked, type: 'boolean' as const },
+        { label: 'Зонирование согласовано', value: form.sp_zones_approved, type: 'boolean' as const },
+        { label: 'Геометрия заморожена', value: form.sp_geometry_locked, type: 'boolean' as const },
+      ],
+    },
+    ...(form.sp_files?.length ? [{
+      title: 'Файлы планировок',
+      fields: (form.sp_files as any[]).map(f => ({
+        label: f.label || f.filename || 'файл',
+        value: f.approval ? STATUS_LABELS_SP[f.approval] ?? f.approval : 'на рассмотрении',
+        type: 'status' as const,
+      })),
+    }] : []),
+  ],
+})))
 
 async function save() {
   await $fetch(`/api/projects/${props.slug}`, {
