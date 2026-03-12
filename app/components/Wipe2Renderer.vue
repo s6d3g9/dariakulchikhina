@@ -5,6 +5,10 @@
     class="w2-overlay"
     tabindex="-1"
     @keydown="onKey"
+    @wheel.prevent="onWheel"
+    @touchstart.passive="onTouchStart"
+    @touchend.passive="onTouchEnd"
+    @click="refocus"
   >
     <!-- ── КАРТОЧКА ── -->
     <div v-if="cards.length > 0" class="w2-card">
@@ -126,6 +130,36 @@ function next() {
 function onKey(e: KeyboardEvent) {
   if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); next() }
   if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   { e.preventDefault(); prev() }
+}
+
+// ── Wheel (mouse scroll) ─────────────────────────────────────
+let wheelCooldown = false
+function onWheel(e: WheelEvent) {
+  if (wheelCooldown) return
+  if (Math.abs(e.deltaY) < 10) return
+  if (e.deltaY > 0) next()
+  else              prev()
+  wheelCooldown = true
+  setTimeout(() => { wheelCooldown = false }, 320)
+}
+
+// ── Touch (swipe) ────────────────────────────────────────────
+let touchStartY = 0
+let touchStartX = 0
+
+function onTouchStart(e: TouchEvent) {
+  touchStartY = e.touches[0].clientY
+  touchStartX = e.touches[0].clientX
+}
+function onTouchEnd(e: TouchEvent) {
+  const deltaY = touchStartY - e.changedTouches[0].clientY
+  const deltaX = Math.abs(touchStartX - e.changedTouches[0].clientX)
+  if (Math.abs(deltaY) < 35 || deltaX > Math.abs(deltaY) * 0.9) return
+  if (deltaY > 0) next(); else prev()
+}
+
+function refocus() {
+  overlayEl.value?.focus({ preventScroll: true })
 }
 
 onMounted(() => overlayEl.value?.focus({ preventScroll: true }))

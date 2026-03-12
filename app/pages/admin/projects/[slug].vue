@@ -2518,11 +2518,11 @@ html.dark .proj-sheet-frame__card {
 
 /* ── Wipe 2 mode ─────────────────────────────────────────────── */
 .proj-main--paged[data-cv-mode="wipe2"] {
-  /* Same as wipe1: overflow:hidden so absolute overlay clips correctly. */
+  /* overflow:hidden so absolute overlay clips correctly. */
   overflow: hidden;
   scrollbar-width: none;
   overscroll-behavior: none;
-  touch-action: none;
+  /* touch-action: none is NOT set here — overlay handles its own touch */
 }
 .proj-main--paged[data-cv-mode="wipe2"]::-webkit-scrollbar { display: none; }
 
