@@ -165,16 +165,23 @@
       <!-- Footer -->
       <div class="asb-footer">
         <span v-if="savedAt" class="asb-saved">✓ сохранено {{ savedAt }}</span>
-        <button
-          type="button"
-          class="asb-btn-edit"
-          :class="{ 'asb-btn-edit--on': editMode }"
-          @click="editMode = !editMode"
-        >{{ editMode ? 'готово' : 'редактировать' }}</button>
         <button class="asb-btn-save" @click="save" :disabled="saving">
           {{ saving ? 'сохранение...' : 'сохранить бриф' }}
         </button>
       </div>
+
+      <!-- Плавающая кнопка редактирования -->
+      <button
+        type="button"
+        class="asb-fab-edit"
+        :class="{ 'asb-fab-edit--on': editMode }"
+        @click="editMode = !editMode"
+        :title="editMode ? 'Завершить редактирование' : 'Редактировать структуру'"
+      >
+        <span v-if="editMode" class="asb-fab-icon">✓</span>
+        <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z"/></svg>
+        <span class="asb-fab-label">{{ editMode ? 'готово' : 'изменить' }}</span>
+      </button>
 
     </template>
   </div>
@@ -540,17 +547,40 @@ async function save() {
   background: color-mix(in srgb, var(--ds-accent) 8%, transparent);
 }
 
-/* Кнопка редактирования */
-.asb-btn-edit {
-  padding: 8px 20px; font-size: .82rem; cursor: pointer; font-family: inherit;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 22%, transparent);
-  background: none; color: color-mix(in srgb, var(--glass-text) 55%, transparent);
-  transition: all .15s;
+/* Кнопка редактирования — FAB правый нижний угол */
+.asb-fab-edit {
+  position: sticky;
+  bottom: 24px;
+  float: right;
+  margin-top: -48px;
+  z-index: 20;
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 16px 9px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  background: var(--glass-bg, #fff);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--glass-text) 10%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 55%, transparent);
+  cursor: pointer; font-family: inherit; font-size: .78rem;
+  transition: all .18s;
+  backdrop-filter: blur(8px);
 }
-.asb-btn-edit:hover { border-color: var(--glass-text); color: var(--glass-text); }
-.asb-btn-edit--on {
-  border-color: var(--ds-accent); color: var(--ds-accent);
+.asb-fab-edit:hover {
+  border-color: var(--glass-text);
+  color: var(--glass-text);
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--glass-text) 16%, transparent);
+}
+.asb-fab-edit--on {
+  border-color: var(--ds-accent);
+  color: var(--ds-accent);
   background: color-mix(in srgb, var(--ds-accent) 8%, transparent);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--ds-accent) 20%, transparent);
+}
+.asb-fab-icon { font-size: .9rem; line-height: 1; }
+.asb-fab-label { font-weight: 500; }
+
+html.dark .asb-fab-edit {
+  background: color-mix(in srgb, var(--glass-bg) 80%, transparent);
 }
 
 </style>
