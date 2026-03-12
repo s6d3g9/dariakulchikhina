@@ -12,24 +12,25 @@
           </div>
         </div>
       </div>
+      <div class="apo-welcome-type" v-if="projectPreset">
+        <span class="apo-type-icon">{{ projectPreset.icon }}</span>
+        <span class="apo-type-name">{{ projectPreset.label }}</span>
+      </div>
       <div class="apo-progress-ring" :style="{ '--pct': progressPct }">
         <span class="apo-progress-val">{{ progressPct }}%</span>
       </div>
     </div>
 
-    <!-- Quick actions -->
+    <!-- Quick actions — top-3 active pages -->
     <div class="apo-quick-nav" data-cv-unit="atomic">
-      <button class="apo-quick-btn glass-surface" @click="emit('navigate', 'first_contact')">
-        <span class="apo-quick-icon">◍</span>
-        <span class="apo-quick-label">Первичный контакт</span>
-      </button>
-      <button class="apo-quick-btn glass-surface" @click="emit('navigate', 'space_planning')">
-        <span class="apo-quick-icon">◖</span>
-        <span class="apo-quick-label">Планировки</span>
-      </button>
-      <button class="apo-quick-btn glass-surface" @click="emit('navigate', 'construction_plan')">
-        <span class="apo-quick-icon">◰</span>
-        <span class="apo-quick-label">План работ</span>
+      <button
+        v-for="qb in quickButtons"
+        :key="qb.slug"
+        class="apo-quick-btn glass-surface"
+        @click="emit('navigate', qb.slug)"
+      >
+        <span class="apo-quick-icon">{{ qb.icon }}</span>
+        <span class="apo-quick-label">{{ qb.title }}</span>
       </button>
     </div>
 
@@ -93,7 +94,8 @@
 </template>
 
 <script setup lang="ts">
-import { PHASE_LABELS, getAdminNavGroups } from '~~/shared/constants/pages'
+import { PHASE_LABELS, getAdminNavGroups, findPage } from '~~/shared/constants/pages'
+import { findPreset } from '~~/shared/constants/presets'
 
 const props = defineProps<{
   slug: string
@@ -110,11 +112,31 @@ function phaseLabel(s: string | undefined): string {
   return PHASE_LABELS[s] || s
 }
 
+const projectPreset = computed(() => findPreset(props.project?.projectType || 'apartment'))
+
+// Быстрые действия — 3 первых активных страниц проекта
+const quickButtons = computed(() => {
+  const activePages: string[] = props.project?.pages || []
+  const fallback = ['first_contact', 'smart_brief', 'space_planning']
+  const slugs = activePages.length ? activePages.slice(0, 3) : fallback
+  return slugs.map(slug => {
+    const page = findPage(slug)
+    return {
+      slug,
+      title: page?.title?.replace(/^\d+\.\d+\s*/, '') ?? slug,
+      icon: page?.icon ?? '●',
+    }
+  })
+})
+
 const phases = computed(() => {
   const groups = getAdminNavGroups()
+  const activePages: string[] = props.project?.pages || []
   return groups.map(g => {
     const total = g.pages.length
-    const done = 0
+    const done = activePages.length
+      ? g.pages.filter(p => activePages.includes(p.slug)).length
+      : 0
     const pct = total > 0 ? Math.round((done / total) * 100) : 0
     return { key: g.label, label: g.label, pct, done, total }
   })
@@ -145,12 +167,16 @@ const progressPct = computed(() => {
 .apo-welcome-name { font-size: 1.05rem; font-weight: 600; color: var(--glass-text); }
 .apo-welcome-status { font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
 .apo-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ds-accent); flex-shrink: 0; }
-.apo-status--lead .apo-status-dot, .apo-status--lead { }
-.apo-status--concept { }
-.apo-status--working_project { }
-.apo-status--procurement { }
-.apo-status--construction { }
-.apo-status--commissioning { }
+
+/* тип объекта */
+.apo-welcome-type {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  margin-left: auto; padding: 8px 12px;
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+  border-radius: 10px; min-width: 64px;
+}
+.apo-type-icon { font-size: 1.4rem; line-height: 1; }
+.apo-type-name { font-size: .64rem; color: color-mix(in srgb, var(--glass-text) 50%, transparent); text-align: center; }
 
 .apo-progress-ring {
   width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
