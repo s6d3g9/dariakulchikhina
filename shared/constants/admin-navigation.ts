@@ -70,6 +70,7 @@ export function getRegistryItemLabel(entity: Record<string, any>) {
 
 export const PROJECT_SECTION_TO_PAGE: Record<string, string> = {
   overview: 'overview',
+  settings: 'settings',
   clients: 'project_clients',
   firstcontact: 'first_contact',
   smartbrief: 'brief',
@@ -98,6 +99,7 @@ export const PROJECT_SECTION_TO_PAGE: Record<string, string> = {
 
 export const PROJECT_PAGE_TO_NAV_TARGET: Record<string, { branchId?: string; leafId?: string }> = {
   overview: {},
+  settings: { leafId: 'prj_settings' },
   project_clients: { branchId: 'alpha_clients' },
   project_contractors: { branchId: 'alpha_contractors' },
   project_designers: { branchId: 'alpha_designers' },

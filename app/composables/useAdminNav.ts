@@ -136,6 +136,7 @@ const MANAGER_CABINET_ITEMS: PayloadItem[] = [
 
 // Кабинет проекта — узлы верхнего уровня (alpha_*)
 const PROJECT_CABINET_ITEMS: PayloadItem[] = [
+  { id: 'prj_settings',      name: 'Настройки проекта',        type: 'leaf' },
   { id: 'alpha_phases',      name: 'Фазы (прогресс проекта)', type: 'node' },
   { id: 'alpha_clients',     name: 'Клиенты',                  type: 'node' },
   { id: 'alpha_contractors', name: 'Подрядчики',                type: 'node' },

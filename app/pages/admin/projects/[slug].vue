@@ -580,6 +580,7 @@ import {
   ClientWorkProgress,
   ClientPassport,
   AdminProjectOverview,
+  AdminProjectSettings,
 } from '#components'
 
 definePageMeta({ layout: 'admin', middleware: ['admin', 'admin-project-canonical'] })
@@ -712,6 +713,7 @@ const editForm = reactive({
 })
 
 const pageComponentMap: Record<string, Component> = {
+  settings: AdminProjectSettings,
   work_status: AdminWorkStatus,
   profile_customer: AdminClientProfile,
   first_contact: AdminFirstContact,

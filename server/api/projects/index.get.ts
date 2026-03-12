@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
       slug: projects.slug,
       title: projects.title,
       status: projects.status,
+      projectType: projects.projectType,
       pages: projects.pages,
       createdAt: projects.createdAt,
       taskTotal: sql<number>`cast(count(${workStatusItems.id}) as int)`,
