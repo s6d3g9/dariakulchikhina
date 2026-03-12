@@ -162,6 +162,8 @@
           @wheel="handleProjectViewportWheel"
           @keydown="handleProjectViewportKeydown"
           @scroll="updateProjectViewportPageIndex"
+          @touchstart.passive="handleProjectViewportTouchStart"
+          @touchend.passive="handleProjectViewportTouchEnd"
         >
           <div v-if="contentViewMode === 'wipe'" class="proj-sheet-frame" aria-hidden="true">
             <div class="proj-sheet-frame__card"></div>
@@ -1228,6 +1230,23 @@ function handleProjectViewportWheel(event: WheelEvent) {
   void moveProjectViewport(event.deltaY > 0 ? 'next' : 'prev')
 }
 
+let projTouchStartY = 0
+let projTouchStartX = 0
+
+function handleProjectViewportTouchStart(e: TouchEvent) {
+  projTouchStartY = e.touches[0].clientY
+  projTouchStartX = e.touches[0].clientX
+}
+
+function handleProjectViewportTouchEnd(e: TouchEvent) {
+  if (!isProjectViewportPaged.value) return
+  const deltaY = projTouchStartY - e.changedTouches[0].clientY
+  const deltaX = Math.abs(projTouchStartX - e.changedTouches[0].clientX)
+  if (Math.abs(deltaY) < 40 || deltaX > Math.abs(deltaY) * 0.8) return
+  if (!canFlipProjectViewport()) return
+  void moveProjectViewport(deltaY > 0 ? 'next' : 'prev')
+}
+
 function handleProjectViewportKeydown(event: KeyboardEvent) {
   if (!isProjectViewportPaged.value) return
   if (isViewportEditableTarget(event.target)) return
@@ -1772,6 +1791,8 @@ async function saveProject() {
   overflow-y: scroll;
   scroll-behavior: auto;
   scrollbar-width: none;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 .proj-main--paged[data-cv-mode="wipe"]::-webkit-scrollbar { display: none; }
 

@@ -642,7 +642,9 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
   const preservedScrollTop = viewport.scrollTop
   clearZoneOffsets(viewport)
 
-  // In wipe/book mode, use token-based insets for spacer (not generic)
+  // In wipe/book mode, use token-based insets for spacer (not generic).
+  // Content flows naturally through the card window — no margin injection needed.
+  // Page stops are uniform multiples of step (buildViewportPageStops handles this).
   if (viewport.dataset.cvMode === 'wipe') {
     const vpStyle = getComputedStyle(viewport)
     const vpHeight = Math.max(viewport.clientHeight, 1)
@@ -650,7 +652,6 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
     const wipeBottom = parseCssPixels(vpStyle.getPropertyValue('--cv-sheet-bottom')) || 106
     const wipeStep = Math.max(120, vpHeight - wipeTop - wipeBottom)
     ensureViewportBottomSpacer(viewport, wipeStep)
-    applyWipeContentBreaks(viewport)
     return
   }
 

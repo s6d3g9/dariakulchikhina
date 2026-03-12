@@ -246,10 +246,10 @@ export function useContentViewport(options: {
     const atEnd = targetIndex >= stops.length
 
     if (direction === 'next' && atEnd) {
-      return contentViewMode.value === 'flow' ? navigateSibling('next') : false
+      return contentViewMode.value === 'flow' || contentViewMode.value === 'wipe' ? navigateSibling('next') : false
     }
     if (direction === 'prev' && atStart) {
-      return contentViewMode.value === 'flow' ? navigateSibling('prev') : false
+      return contentViewMode.value === 'flow' || contentViewMode.value === 'wipe' ? navigateSibling('prev') : false
     }
 
     const targetTop = stops[Math.max(0, Math.min(stops.length - 1, targetIndex))] ?? 0
@@ -294,13 +294,39 @@ export function useContentViewport(options: {
     syncViewportAttrs()
   }, { immediate: true })
 
-  watch(viewportRef, () => {
+  watch(viewportRef, (newEl, oldEl) => {
     reconnectPagerObserver()
+    if (oldEl) {
+      oldEl.removeEventListener('touchstart', handleTouchStart)
+      oldEl.removeEventListener('touchend', handleTouchEnd)
+    }
+    if (newEl) {
+      newEl.addEventListener('touchstart', handleTouchStart, { passive: true })
+      newEl.addEventListener('touchend', handleTouchEnd, { passive: true })
+    }
   })
 
   function handleWindowKeydown(event: KeyboardEvent) {
     if (!viewportRef.value || !isPaged.value) return
     handleKeydown(event)
+  }
+
+  let touchStartY = 0
+  let touchStartX = 0
+
+  function handleTouchStart(e: TouchEvent) {
+    touchStartY = e.touches[0].clientY
+    touchStartX = e.touches[0].clientX
+  }
+
+  function handleTouchEnd(e: TouchEvent) {
+    if (!isPaged.value) return
+    const deltaY = touchStartY - e.changedTouches[0].clientY
+    const deltaX = Math.abs(touchStartX - e.changedTouches[0].clientX)
+    // Ignore mostly-horizontal swipes
+    if (Math.abs(deltaY) < 40 || deltaX > Math.abs(deltaY) * 0.8) return
+    if (!canMove()) return
+    void move(deltaY > 0 ? 'next' : 'prev')
   }
 
   onMounted(() => {
@@ -320,6 +346,28 @@ export function useContentViewport(options: {
     pagerObserver = null
     window.removeEventListener('resize', syncPager)
     window.removeEventListener('keydown', handleWindowKeydown)
+    const el = viewportRef.value
+    if (el) {
+      el.removeEventListener('touchstart', handleTouchStart)
+      el.removeEventListener('touchend', handleTouchEnd)
+    }
+  })
+
+  onBeforeUnmount(() => {
+    clearWipeTimers()
+    if (pagerSyncFrame) {
+      window.cancelAnimationFrame(pagerSyncFrame)
+      pagerSyncFrame = 0
+    }
+    pagerObserver?.disconnect()
+    pagerObserver = null
+    window.removeEventListener('resize', syncPager)
+    window.removeEventListener('keydown', handleWindowKeydown)
+    const el = viewportRef.value
+    if (el) {
+      el.removeEventListener('touchstart', handleTouchStart)
+      el.removeEventListener('touchend', handleTouchEnd)
+    }
   })
 
   return {
