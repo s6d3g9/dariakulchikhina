@@ -884,8 +884,6 @@ function applyMap(map: Record<string, string>) {
 // ── Editor ──
 function generateText(): string {
   if (!selectedTpl.value) return ''
-  // Auto-compute derived fields before rendering
-  computeDerivedFields()
   let text = selectedTpl.value.template
   for (const [k, v] of Object.entries(fieldValues.value)) {
     text = text.split(`{{${k}}}`).join(v || '__________')
@@ -906,14 +904,16 @@ const THOU  = ['','одна','две','три','четыре','пять','шес
                 'десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать',
                 'шестнадцать','семнадцать','восемнадцать','девятнадцать']
 const THOUS_SFX = (n: number) => {
-  if (n >= 11 && n <= 14) return 'тысяч'
+  const r100 = n % 100
+  if (r100 >= 11 && r100 <= 14) return 'тысяч'
   const r = n % 10
   if (r === 1) return 'тысяча'
   if (r >= 2 && r <= 4) return 'тысячи'
   return 'тысяч'
 }
 const MILL_SFX = (n: number) => {
-  if (n >= 11 && n <= 14) return 'миллионов'
+  const r100 = n % 100
+  if (r100 >= 11 && r100 <= 14) return 'миллионов'
   const r = n % 10
   if (r === 1) return 'миллион'
   if (r >= 2 && r <= 4) return 'миллиона'
@@ -1039,6 +1039,7 @@ watch(
 )
 
 function syncEditorContent() {
+  computeDerivedFields()
   editorContent.value = generateText()
   nextTick(() => {
     if (editorEl.value) editorEl.value.innerText = editorContent.value
@@ -1056,7 +1057,8 @@ function buildPaymentTable(vals: Record<string,string>): string {
   const adv   = vals['advance_amount'] || computedRemaining.value ? (vals['advance_amount'] || '__________') : '__________'
   const rem   = computedRemaining.value || '__________'
   const advPct = vals['advance'] || '50'
-  const remPct = vals['advance'] ? String(100 - parseFloat(vals['advance'].replace('%','').replace(',','.')) || 50) : '50'
+  const advPctNum = parseFloat((vals['advance'] || '50').replace('%', '').replace(',', '.'))
+  const remPct = isNaN(advPctNum) ? '50' : String(100 - advPctNum)
   return `<table class="pay-table">
 <thead><tr><th>№</th><th>Платёж</th><th>Сумма, руб.</th><th>Срок</th></tr></thead>
 <tbody>

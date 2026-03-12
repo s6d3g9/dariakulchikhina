@@ -696,7 +696,7 @@ const MODERN_PROJECT_PAGES = [
 
 const LEGACY_PROJECT_PAGES = new Set(['materials', 'tz', 'profile_customer'])
 
-const { data: project, pending: projectPending, refresh } = await useFetch<any>(`/api/projects/${slug.value}`)
+const { data: project, pending: projectPending, refresh } = await useFetch<any>(() => `/api/projects/${slug.value}`)
 watch(slug, () => {
   syncNavToProject()
 }, { immediate: true })

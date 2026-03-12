@@ -36,7 +36,7 @@ const { data: meData } = await useFetch<any>('/api/auth/me')
 const contractorId = computed(() => meData.value?.contractorId)
 
 const { data: contractor } = await useFetch<any>(
-  () => contractorId.value ? `/api/contractors/${contractorId.value}` : '',
+  () => contractorId.value ? `/api/contractors/${contractorId.value}` : null,
   { watch: [contractorId], immediate: true }
 )
 

@@ -192,7 +192,6 @@ function preloadNeighbors() {
     ((props.index ?? 0) + 1) % props.total,
     ((props.index ?? 0) - 1 + props.total) % props.total,
   ]
-  // This is a no-op if images are already cached
   indices.forEach(() => {
     // Preloading is handled by the browser with <link rel="preload"> or Image()
     // We'll use the simple Image() approach
@@ -311,6 +310,10 @@ function onTouchEnd() {
   isSwiping = false
   touchDeltaX = 0
 }
+
+onBeforeUnmount(() => {
+  document.body.style.overflow = ''
+})
 
 onUnmounted(() => {
   document.body.style.overflow = ''

@@ -260,9 +260,9 @@ onBeforeUnmount(() => {
   if (saveTimer) clearTimeout(saveTimer)
 })
 
-watch(selections, scheduleSave, { deep: true })
-watch(textAnswers, scheduleSave, { deep: true })
-watch(numberAnswers, scheduleSave, { deep: true })
+watch(selections, scheduleSave, { deep: true, flush: 'post' })
+watch(textAnswers, scheduleSave, { deep: true, flush: 'post' })
+watch(numberAnswers, scheduleSave, { deep: true, flush: 'post' })
 </script>
 
 <style scoped>

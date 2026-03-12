@@ -1009,6 +1009,9 @@ const PAYMENT_METHOD_OPTIONS = [
 definePageMeta({ layout: 'contractor', middleware: ['contractor'] })
 const route = useRoute()
 const contractorId = Number(route.params.id)
+if (isNaN(contractorId) || contractorId <= 0) {
+  throw createError({ statusCode: 400, statusMessage: 'Неверный ID подрядчика' })
+}
 
 const { data: contractor, pending, refresh } = await useFetch<any>(`/api/contractors/${contractorId}`)
 const { data: workItems, refresh: refreshItems } = await useFetch<any[]>(
@@ -1246,7 +1249,7 @@ function lsKey(projectSlug: string, wt: string) {
   return `cab_stages_${contractorId}_${projectSlug}_${wt}`
 }
 function loadStageDone(projectSlug: string, wt: string): Set<string> {
-  if (process.server) return new Set()
+  if (import.meta.server) return new Set()
   try { const r = localStorage.getItem(lsKey(projectSlug, wt)); return new Set(r ? JSON.parse(r) : []) }
   catch { return new Set() }
 }
@@ -1260,7 +1263,7 @@ function toggleStage(projectSlug: string, wt: string, stageKey: string) {
   const s = getStageDone(projectSlug, wt)
   if (s.has(stageKey)) s.delete(stageKey)
   else s.add(stageKey)
-  if (!process.server) localStorage.setItem(lsKey(projectSlug, wt), JSON.stringify([...s]))
+  if (!import.meta.server) localStorage.setItem(lsKey(projectSlug, wt), JSON.stringify([...s]))
 }
 function isStageDone(projectSlug: string, wt: string, key: string) {
   return getStageDone(projectSlug, wt).has(key)
@@ -1522,7 +1525,7 @@ const portfolioStats = computed(() => {
 // ── Notification settings (localStorage) ─────────────────────────
 const NOTIF_LS_KEY = `cab_notif_${contractorId}`
 function loadNotifSettings() {
-  if (process.server) return { newTasks: true, deadlines: true, comments: true, statusChanges: false }
+  if (import.meta.server) return { newTasks: true, deadlines: true, comments: true, statusChanges: false }
   try {
     const raw = localStorage.getItem(NOTIF_LS_KEY)
     return raw ? JSON.parse(raw) : { newTasks: true, deadlines: true, comments: true, statusChanges: false }
@@ -1530,7 +1533,7 @@ function loadNotifSettings() {
 }
 const notifSettings = reactive(loadNotifSettings())
 function saveNotifSettings() {
-  if (!process.server) localStorage.setItem(NOTIF_LS_KEY, JSON.stringify({ ...notifSettings }))
+  if (!import.meta.server) localStorage.setItem(NOTIF_LS_KEY, JSON.stringify({ ...notifSettings }))
 }
 
 // ── Photos ────────────────────────────────────────────────────────

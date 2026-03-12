@@ -38,7 +38,7 @@
 
     <!-- Sort dropdown -->
     <div class="gfb-sort-wrap">
-      <button class="gfb-sort-btn" :class="{ 'gfb-sort-btn--active': sortOpen }" @click="sortOpen = !sortOpen">
+      <button class="gfb-sort-btn" :class="{ 'gfb-sort-btn--active': sortOpen }" @click.stop="sortOpen = !sortOpen">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h12M3 18h6"/></svg>
         {{ sortLabel }}
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="gfb-sort-chevron" :class="{ 'gfb-sort-chevron--open': sortOpen }"><polyline points="6 9 12 15 18 9"/></svg>

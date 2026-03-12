@@ -187,7 +187,7 @@ interface ChipsFieldDef {
 
 const props = defineProps<{ slug: string }>()
 
-const { data: project, pending, refresh } = await useFetch<any>(`/api/projects/${props.slug}`)
+const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`)
 const { data: clientsData } = await useFetch<any[]>('/api/clients', { default: () => [] })
 const saving = ref(false)
 const error = ref('')

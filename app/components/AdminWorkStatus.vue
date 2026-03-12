@@ -199,9 +199,21 @@ watch(rawItems, (v) => {
   }))
 }, { immediate: true })
 
+function parseDate(s: string): Date | null {
+  if (!s) return null
+  // DD.MM.YYYY
+  const dmyMatch = s.match(/^(\d{2})\.(\d{2})\.(\d{4})/)
+  if (dmyMatch) return new Date(Number(dmyMatch[3]), Number(dmyMatch[2]) - 1, Number(dmyMatch[1]))
+  const d = new Date(s)
+  return isNaN(d.getTime()) ? null : d
+}
+
 function isOverdue(item: any): boolean {
   if (!item.dateEnd || item.status === 'done' || item.status === 'cancelled') return false
-  return new Date(item.dateEnd) < new Date(new Date().toDateString())
+  const due = parseDate(item.dateEnd)
+  if (!due) return false
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  return due < today
 }
 
 const statCounts = computed(() => ({
