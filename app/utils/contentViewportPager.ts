@@ -642,14 +642,20 @@ export function applyViewportZoneLayout(viewport: HTMLElement) {
   const preservedScrollTop = viewport.scrollTop
   clearZoneOffsets(viewport)
 
-  const zoneInsets = resolveZoneInsets(Math.max(viewport.clientHeight, 1), resolveViewportPagerRailInset(viewport))
-  ensureViewportBottomSpacer(viewport, zoneInsets.visibleHeight)
-
-  // In wipe/book mode, apply content-aware page breaks
+  // In wipe/book mode, use token-based insets for spacer (not generic)
   if (viewport.dataset.cvMode === 'wipe') {
+    const vpStyle = getComputedStyle(viewport)
+    const vpHeight = Math.max(viewport.clientHeight, 1)
+    const wipeTop = parseCssPixels(vpStyle.getPropertyValue('--cv-sheet-top')) || 48
+    const wipeBottom = parseCssPixels(vpStyle.getPropertyValue('--cv-sheet-bottom')) || 106
+    const wipeStep = Math.max(120, vpHeight - wipeTop - wipeBottom)
+    ensureViewportBottomSpacer(viewport, wipeStep)
     applyWipeContentBreaks(viewport)
     return
   }
+
+  const zoneInsets = resolveZoneInsets(Math.max(viewport.clientHeight, 1), resolveViewportPagerRailInset(viewport))
+  ensureViewportBottomSpacer(viewport, zoneInsets.visibleHeight)
 
   const nextMaxTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight)
   const targetTop = Math.min(preservedScrollTop, nextMaxTop)

@@ -1990,16 +1990,26 @@ html.dark .glass-input::placeholder {
 }
 
 .cv-viewport--paged[data-cv-mode="wipe"] {
-  overflow-y: hidden;
+  /* scroll (not hidden) — чтобы sticky-элементы работали и scrollTo() работал во всех браузерах */
+  overflow-y: scroll;
   scroll-behavior: auto;
+  scrollbar-width: none;
 }
+.cv-viewport--paged[data-cv-mode="wipe"]::-webkit-scrollbar { display: none; }
 
+/* Вайп оверлей: sticky + отрицательный margin чтобы не занимать место в потоке */
 .cv-viewport--paged[data-cv-mode="wipe"]::after {
   content: '';
-  position: absolute;
-  inset: 0;
+  position: sticky;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: calc(100vh - var(--dp-panel-h, 28px));
+  margin-bottom: calc(-100vh + var(--dp-panel-h, 28px));
   z-index: 3;
   pointer-events: none;
+  overflow: hidden;
   opacity: 0;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--glass-page-bg) 96%, transparent), color-mix(in srgb, var(--glass-page-bg) 88%, transparent)),
@@ -2010,6 +2020,19 @@ html.dark .glass-input::placeholder {
   transition:
     transform calc(var(--cv-transition-ms, 320ms) * 0.48) cubic-bezier(.2, .7, .16, 1),
     opacity 120ms ease;
+}
+
+/* Клип-маска для вайп: показываем только карточку */
+.cv-viewport--paged[data-cv-mode="wipe"]::before {
+  background: var(--glass-page-bg);
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
+    var(--wipe-side-margin, 20px) var(--cv-sheet-top, 48px),
+    var(--wipe-side-margin, 20px) calc(100% - var(--cv-sheet-bottom, 64px)),
+    calc(100% - var(--wipe-side-margin, 20px)) calc(100% - var(--cv-sheet-bottom, 64px)),
+    calc(100% - var(--wipe-side-margin, 20px)) var(--cv-sheet-top, 48px),
+    var(--wipe-side-margin, 20px) var(--cv-sheet-top, 48px)
+  );
 }
 
 .cv-viewport--paged[data-cv-mode="wipe"][data-cv-dir="next"] {

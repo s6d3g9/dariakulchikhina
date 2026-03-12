@@ -1768,9 +1768,12 @@ async function saveProject() {
 }
 
 .proj-main--paged[data-cv-mode="wipe"] {
-  overflow-y: hidden;
+  /* scroll, not hidden — sticky + scrollTo() должны работать во всех браузерах */
+  overflow-y: scroll;
   scroll-behavior: auto;
+  scrollbar-width: none;
 }
+.proj-main--paged[data-cv-mode="wipe"]::-webkit-scrollbar { display: none; }
 
 /* ── Card frame: visible card boundary for wipe sheets ── */
 .proj-sheet-frame {

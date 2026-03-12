@@ -68,7 +68,29 @@ export function useContentViewport(options: {
 
     const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
     const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
-    const sheetInsets = resolveViewportSheetInsets(viewportHeight, resolveViewportPagerRailInset(el))
+    const isWipe = contentViewMode.value === 'wipe'
+
+    let sheetTop: number
+    let sheetBottom: number
+
+    if (isWipe) {
+      // Читаем wipe-токены с root (устанавливаются дизайн-системой)
+      const rootStyle = getComputedStyle(document.documentElement)
+      const rawTop = parseFloat(rootStyle.getPropertyValue('--wipe-top-inset'))
+      const rawBottom = parseFloat(rootStyle.getPropertyValue('--wipe-bottom-inset'))
+      sheetTop = Number.isFinite(rawTop) && rawTop > 0 ? rawTop : 48
+      sheetBottom = Math.max(
+        Number.isFinite(rawBottom) && rawBottom > 0 ? rawBottom : 106,
+        resolveViewportPagerRailInset(el) + 14,
+      )
+      el.dataset.cvWipeTransition = rootStyle.getPropertyValue('--wipe-transition').trim() || 'slide'
+      el.style.setProperty('--wipe-page-fill', rootStyle.getPropertyValue('--wipe-page-fill').trim() || '0.85')
+    } else {
+      const sheetInsets = resolveViewportSheetInsets(viewportHeight, resolveViewportPagerRailInset(el))
+      sheetTop = sheetInsets.top
+      sheetBottom = sheetInsets.bottom
+      delete el.dataset.cvWipeTransition
+    }
 
     el.dataset.cvMode = contentViewMode.value
     el.dataset.cvDir = wipeDirection.value
@@ -79,8 +101,8 @@ export function useContentViewport(options: {
     }
     el.style.setProperty('--cv-transition-ms', `${transitionMs.value}ms`)
     el.style.setProperty('--cv-viewport-height', `${viewportHeight}px`)
-    el.style.setProperty('--cv-sheet-top', `${sheetInsets.top}px`)
-    el.style.setProperty('--cv-sheet-bottom', `${sheetInsets.bottom}px`)
+    el.style.setProperty('--cv-sheet-top', `${sheetTop}px`)
+    el.style.setProperty('--cv-sheet-bottom', `${sheetBottom}px`)
   }
 
   function syncPager() {
