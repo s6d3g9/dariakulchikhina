@@ -2262,10 +2262,10 @@ const tabList = [
   { id: 'badges',    label: 'значки' },
   { id: 'arch',      label: 'архитектура' },
 ]
-const visibleTabList = computed(() => tabList.filter(tab => tab.id === 'modules' || isPanelTabEnabled(tab.id)))
+const visibleTabList = computed(() => tabList.filter(tab => tab.id === 'modules' || isPanelTabEnabled(tab.id as PanelTabId)))
 // Tab keying — sections object kept only for inspect-mode quick-jump compatibility
 const sections = reactive({ presets: true, concept: false, palette: true, colors: false, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false, arch: false })
-function toggle(key: keyof typeof sections) { activeTab.value = key as string }
+function toggle(key: keyof typeof sections) { activeTab.value = key as unknown as PanelTabId }
 
 /* ── Option lists ────────────────────────────────── */
 const btnStyles = [
@@ -3066,7 +3066,7 @@ watch(visibleTabList, (tabs) => {
   }
 
   if (!tabs.some(tab => tab.id === activeTab.value)) {
-    activeTab.value = firstVisibleTab
+    activeTab.value = firstVisibleTab as PanelTabId
   }
 }, { immediate: true })
 
@@ -3132,7 +3132,7 @@ watch(searchQuery, (q) => {
     return ws.some(w => w.includes(lower) || lower.includes(w))
   })
   if (matchingTab && activeTab.value !== matchingTab.id) {
-    activeTab.value = matchingTab.id
+    activeTab.value = matchingTab.id as PanelTabId
   }
 })
 
@@ -3806,7 +3806,7 @@ function jumpToSection(sec: string) {
     return
   }
   if (!open.value) open.value = true
-  activeTab.value = sec
+  activeTab.value = sec as PanelTabId
   disableInspect()
 }
 

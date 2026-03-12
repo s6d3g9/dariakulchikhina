@@ -208,7 +208,7 @@ function asOptions<T extends readonly string[]>(
   values: T,
   labels: Record<T[number], string>,
 ): Array<Option<T[number]>> {
-  return values.map(value => ({ value, label: labels[value] }))
+  return values.map(value => ({ value, label: labels[value as T[number]] }))
 }
 
 export const CLIENT_TYPE_OPTIONS = asOptions(CLIENT_TYPES, {

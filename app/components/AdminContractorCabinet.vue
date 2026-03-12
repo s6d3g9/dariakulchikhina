@@ -339,7 +339,7 @@
                         @click="toggleStage(proj.slug, wtGroup.workType, stage.key)"
                       >
                         <span class="cab-stage-check-icon">{{ isStageDone(proj.slug, wtGroup.workType, stage.key) ? '✓' : '○' }}</span>
-                        <span class="cab-stage-num">{{ idx + 1 }}</span>
+                        <span class="cab-stage-num">{{ (idx as number) + 1 }}</span>
                         <span class="cab-stage-label">{{ stage.label }}</span>
                         <span v-if="stage.hint" class="cab-stage-hint">{{ stage.hint }}</span>
                       </div>
@@ -554,7 +554,7 @@
                 <div class="cab-doc-info">
                   <div class="cab-doc-title">{{ doc.title }}</div>
                   <div class="cab-doc-meta">
-                    <span class="cab-doc-cat">{{ DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}</span>
+                    <span class="cab-doc-cat">{{ getDocCategoryLabel(doc.category) }}</span>
                     <span v-if="doc.notes" class="cab-doc-notes">{{ doc.notes }}</span>
                     <span v-if="doc.expiresAt" class="cab-doc-expires">до {{ doc.expiresAt }}</span>
                     <span v-if="doc.createdAt" class="cab-doc-notes">{{ formatDocDate(doc.createdAt) }}</span>
@@ -712,7 +712,7 @@
                     <span class="cab-portfolio-proj-progress">{{ proj.doneCount }}/{{ proj.totalCount }}</span>
                   </div>
                   <div v-for="wt in proj.wtGroups" :key="wt.workType">
-                    <div v-for="item in wt.items.filter(i => i.status === 'done')" :key="item.id" class="cab-portfolio-item">
+                    <div v-for="item in wt.items.filter((i: any) => i.status === 'done')" :key="item.id" class="cab-portfolio-item">
                       <span class="cab-portfolio-item-check">✓</span>
                       <span class="cab-portfolio-item-name">{{ item.title }}</span>
                       <span class="cab-portfolio-item-wt">{{ wt.label }}</span>
@@ -955,6 +955,10 @@ function formatDocDate(value: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleDateString('ru-RU')
+}
+
+function getDocCategoryLabel(category: string): string {
+  return DOC_CATEGORIES.find(c => c.value === category)?.label ?? category
 }
 </script>
 

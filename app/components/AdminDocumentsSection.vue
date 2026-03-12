@@ -152,7 +152,7 @@
                 <label class="u-field">
                   <span class="u-field__label">Категория</span>
                   <select v-model="uploadForm.category" class="glass-input docs-input">
-                    <option v-for="c in CATEGORIES.filter(c => c.key !== 'all')" :key="c.key" :value="c.key">
+                    <option v-for="c in CATEGORIES.filter(cat => cat.key !== 'all')" :key="c.key" :value="c.key">
                       {{ c.num }} {{ c.label }}
                     </option>
                   </select>
@@ -316,7 +316,7 @@ const adminNav = useAdminNav()
 // ══════════════════════════════════════════════════════════════════
 // CATEGORIES — numbered, professional
 // ══════════════════════════════════════════════════════════════════
-const CATEGORIES = [
+const CATEGORIES: { key: string; num: string; label: string; icon: string }[] = [
   { key: 'all',             num: '',   label: 'все документы',                   icon: '📂' },
   { key: 'contract',        num: '01', label: 'договоры на дизайн-проект',       icon: '📝' },
   { key: 'contract_supply', num: '02', label: 'договоры поставки',               icon: '📦' },

@@ -34,11 +34,11 @@ export default defineEventHandler(async (event) => {
     })
     .from(projects)
 
-  const allClients = Array.isArray(allClientsRaw)
+  const allClients: any[] = Array.isArray(allClientsRaw)
     ? allClientsRaw
     : (allClientsRaw ? Array.from(allClientsRaw as any) : [])
 
-  const allProjects = Array.isArray(allProjectsRaw)
+  const allProjects: any[] = Array.isArray(allProjectsRaw)
     ? allProjectsRaw
     : (allProjectsRaw ? Array.from(allProjectsRaw as any) : [])
 

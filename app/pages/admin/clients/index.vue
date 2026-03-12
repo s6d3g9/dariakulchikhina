@@ -211,7 +211,7 @@ const { clients, pending, refresh } = clientsDirectory
 const adminCatalogs = useAdminCatalogs()
 const allProjects = adminCatalogs.getCatalog('projects')
 const projectsCatalogLoading = adminCatalogs.isCatalogLoading('projects')
-const DOC_CATEGORIES = [{ value: 'passport', label: 'Паспорт' },{ value: 'contract', label: 'Договор' },{ value: 'invoice', label: 'Счёт' },{ value: 'act', label: 'Акт' },{ value: 'other', label: 'Другое' }]
+const DOC_CATEGORIES: { value: string; label: string }[] = [{ value: 'passport', label: 'Паспорт' },{ value: 'contract', label: 'Договор' },{ value: 'invoice', label: 'Счёт' },{ value: 'act', label: 'Акт' },{ value: 'other', label: 'Другое' }]
 
 // ── Search & selection ─────────────────────────────────
 const selectedClientId = ref<number | null>(null)
@@ -239,10 +239,10 @@ watch(clients, () => applyClientIdQuery(), { immediate: true })
 watch(clientIdFromQuery, () => applyClientIdQuery())
 
 // ── Embedded client cabinet ────────────────────────────
-const { data: clientProject } = useFetch<any>(
+const { data: clientProject } = (useFetch as any)(
   () => selectedClientSlug.value ? `/api/projects/${selectedClientSlug.value}` : null,
   { watch: [selectedClientSlug], default: () => null }
-)
+) as { data: Ref<any> }
 const PAGE_COMPONENT_MAP: Record<string, Component> = {
   phase_init:      ClientInitiation,
   self_profile:    ClientSelfProfile,
@@ -319,10 +319,10 @@ const docsClientId = ref<number | null>(null)
 const docsTitle = ref(''); const docsCategory = ref('other'); const docsNotes = ref(''); const docsUploading = ref(false)
 const docsSearch = ref(''); const docsFilter = ref(''); const docsSort = ref<'new'|'old'>('new')
 const shouldLoadClientDocs = computed(() => currentClientPage.value === 'documents' && !!docsClientId.value)
-const { data: clientDocs, pending: docsPending, refresh: refreshClientDocs } = await useFetch<any[]>(
+const { data: clientDocs, pending: docsPending, refresh: refreshClientDocs } = (await (useFetch as any)(
   () => shouldLoadClientDocs.value ? `/api/clients/${docsClientId.value}/documents` : null,
-  { default: () => [] },
-)
+  { default: () => [] as any[] },
+)) as { data: Ref<any[]>, pending: Ref<boolean>, refresh: () => Promise<void> }
 watch(selectedClientId, (id) => { docsClientId.value = id }, { immediate: true })
 watch(() => adminNav.contentSpec.value.documentCategory, (category) => {
   if (!category) return

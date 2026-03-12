@@ -27,7 +27,7 @@ export default defineNuxtPlugin(() => {
           if (options.headers instanceof Headers) {
             options.headers.set('x-csrf-token', token)
           } else if (Array.isArray(options.headers)) {
-            options.headers.push(['x-csrf-token', token])
+            (options.headers as [string, string][]).push(['x-csrf-token', token])
           } else {
             ;(options.headers as Record<string, string>)['x-csrf-token'] = token
           }

@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const [updated] = await db.update(projects)
-    .set({ profile: updatedProfile, updatedAt: new Date() })
+    .set({ profile: updatedProfile as unknown as Record<string, string>, updatedAt: new Date() })
     .where(eq(projects.slug, projectSlug))
     .returning()
 

@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
       role: managerProjects.role,
       assignedAt: managerProjects.assignedAt,
       projectId: projects.id,
-      projectName: projects.name,
+      projectName: projects.title,
       projectSlug: projects.slug,
     })
     .from(managerProjects)

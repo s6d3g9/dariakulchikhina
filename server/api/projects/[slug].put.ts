@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
 
   const db = useDb()
   const [updated] = await db.update(projects)
-    .set({ ...body, updatedAt: new Date() })
+    .set({ ...body, updatedAt: new Date() } as any)
     .where(eq(projects.slug, slug))
     .returning()
   if (!updated) throw createError({ statusCode: 404, statusMessage: 'Project not found' })

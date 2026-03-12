@@ -9,7 +9,7 @@ export const PAYMENT_METHOD_OPTIONS = [
   { value: 'crypto', label: 'Криптовалюта' },
 ]
 
-export const DOC_CATEGORIES = [
+export const DOC_CATEGORIES: { value: string; label: string }[] = [
   { value: 'passport', label: 'Паспорт' },
   { value: 'inn_doc', label: 'ИНН' },
   { value: 'snils', label: 'СНИЛС' },

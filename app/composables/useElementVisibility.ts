@@ -106,7 +106,7 @@ export function useElementVisibility() {
       clearTimeout(persistTimer)
     }
 
-    persistTimer = window.setTimeout(() => {
+    persistTimer = setTimeout(() => {
       const payload = pendingPersistPayload.value
       pendingPersistPayload.value = ''
       if (!payload) {

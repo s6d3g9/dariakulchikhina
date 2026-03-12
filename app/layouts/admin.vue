@@ -250,7 +250,7 @@ function handleSidebarRailPointerEnter() {
   expandSidebar()
 }
 
-function shouldResetDesignPanelFromQuery(value: unknown) {
+function shouldResetDesignPanelFromQuery(value: unknown): boolean {
   if (Array.isArray(value)) {
     return value.some(item => shouldResetDesignPanelFromQuery(item))
   }
@@ -310,11 +310,11 @@ if (activeProjectSlug.value) {
 }
 
 // Current project info for linking/unlinking
-const { data: projectData, refresh: refreshProjectData } = await useAsyncData(
+const { data: projectData, refresh: refreshProjectData } = (await (useAsyncData as any)(
   'admin-layout-project-data',
   () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}`) : null,
   { watch: [activeProjectSlug], default: () => null, server: false },
-)
+)) as { data: Ref<any>, refresh: () => Promise<void> }
 
 // ── Gallery tabs config ─────────────────────────────────────────
 const GALLERY_TABS = [
@@ -378,19 +378,19 @@ const { data: sellersData } = useFetch<any[]>('/api/sellers', { server: false, d
 const quickSellers = computed(() => (sellersData.value || []).slice(0, 12))
 const { data: linkedSellersData, refresh: refreshLinkedSellers } = await useAsyncData<any[]>(
   'admin-layout-linked-sellers',
-  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}/sellers`) : [],
-  { watch: [activeProjectSlug], server: false, default: () => [] },
+  () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/sellers`) : Promise.resolve<any[]>([]),
+  { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
 )
 
 const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await useAsyncData<any[]>(
   'admin-layout-linked-designers',
-  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}/designers`) : [],
-  { watch: [activeProjectSlug], server: false, default: () => [] },
+  () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/designers`) : Promise.resolve<any[]>([]),
+  { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
 )
 const { data: linkedContractorsData, refresh: refreshLinkedContractors } = await useAsyncData<any[]>(
   'admin-layout-linked-contractors',
-  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}/contractors`) : [],
-  { watch: [activeProjectSlug], server: false, default: () => [] },
+  () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/contractors`) : Promise.resolve<any[]>([]),
+  { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
 )
 
 const clientActionLoading = ref(false)

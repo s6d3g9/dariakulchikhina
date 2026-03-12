@@ -172,7 +172,6 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick } from 'vue'
 import { CONTRACTOR_WORK_TYPE_OPTIONS } from '~~/shared/types/catalogs'
 const WORK_TYPE_OPTIONS = CONTRACTOR_WORK_TYPE_OPTIONS
 const props = defineProps<{ slug: string }>()

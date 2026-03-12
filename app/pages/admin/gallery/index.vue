@@ -17,7 +17,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', middleware: 'admin', pageTransition: false })
 
-const GALLERY_ITEMS = [
+const GALLERY_ITEMS: { key: string; icon: string; title: string }[] = [
   { key: 'interiors',  icon: '◈', title: 'галерея интерьеров' },
   { key: 'furniture',  icon: '◐', title: 'галерея мебели' },
   { key: 'moodboards', icon: '◒', title: 'мудборды' },

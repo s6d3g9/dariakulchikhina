@@ -132,7 +132,7 @@ const slug    = computed(() => route.params.slug as string)
 const reqHeaders = useRequestHeaders(['cookie'])
 
 // ── Fetch project ────────────────────────────────────────────────────────
-const { data: project, pending, error, refresh } = await useFetch(
+const { data: project, pending, error, refresh } = await useFetch<any>(
   () => `/api/projects/${slug.value}`,
   {
     watch: [slug],

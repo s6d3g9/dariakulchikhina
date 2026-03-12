@@ -8,7 +8,24 @@ const relationCatalogByProjectPage: Partial<Record<string, ProjectRelationCatalo
   project_managers: 'managers',
 }
 
-function emptyProjectRelations() {
+type ProjectRelationsData = {
+  linked: {
+    clients: any[]
+    contractors: any[]
+    designers: any[]
+    sellers: any[]
+    managers: any[]
+  }
+  summary: {
+    clients: number
+    contractors: number
+    designers: number
+    sellers: number
+    managers: number
+  }
+}
+
+function emptyProjectRelations(): ProjectRelationsData {
   return {
     linked: {
       clients: [],
@@ -40,10 +57,10 @@ export function useAdminProjectRelations(options: {
   refreshProject?: () => Promise<unknown>
 }) {
   const adminCatalogs = useAdminCatalogs()
-  const { data: projectRelationsData, refresh: refreshProjectRelations } = useFetch<any>(
+  const { data: projectRelationsData, refresh: refreshProjectRelations } = (useFetch as any)(
     () => options.projectSlug.value ? `/api/projects/${options.projectSlug.value}/relations` : null,
     { default: emptyProjectRelations },
-  )
+  ) as { data: Ref<ProjectRelationsData>, refresh: () => Promise<void> }
 
   const selectedClientId = ref('')
   const linkingClient = ref(false)

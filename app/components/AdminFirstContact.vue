@@ -160,7 +160,7 @@
 <script setup lang="ts">
 const { slug } = defineProps<{ slug: string }>()
 
-const { data: project, pending } = await useFetch(() => `/api/projects/${slug}`, {
+const { data: project, pending } = await useFetch<any>(() => `/api/projects/${slug}`, {
   server: false
 })
 

@@ -345,13 +345,79 @@ export function useAdminNav() {
     activeLeafId.value = undefined
   }
 
+  // ── Счётчики для кабинетных разделов (des_*, cli_*, etc.) ──────────────────
+  const cabinetCounts = useState<Record<string, number>>('nav-v2-counts', () => ({}))
+
+  function setCabinetCounts(counts: Record<string, number>) {
+    for (const [key, val] of Object.entries(counts)) {
+      cabinetCounts.value[key] = val
+    }
+  }
+
+  // ── Прямой переход в кабинет сущности (клиент, подрядчик и т.д.) ──────────
+  function drillToEntityCabinet(
+    entityType: 'clients' | 'contractors' | 'sellers' | 'managers',
+    id: number,
+    name?: string,
+  ) {
+    const entityName = name ?? String(id)
+    const sectionTitles: Record<string, string> = {
+      clients:     'Клиенты',
+      contractors: 'Подрядчики',
+      sellers:     'Поставщики',
+      managers:    'Менеджеры',
+    }
+    const cabinetItems: Record<string, PayloadItem[]> = {
+      clients:     CLIENT_CABINET_ITEMS,
+      contractors: CONTRACTOR_CABINET_ITEMS,
+      sellers:     SELLER_CABINET_ITEMS,
+      managers:    MANAGER_CABINET_ITEMS,
+    }
+    const sectionTitle = sectionTitles[entityType] ?? entityType
+
+    const regNode: NavigationNode = {
+      step: 'B',
+      nodeId: `reg_${entityType}`,
+      nodeType: 'registry',
+      context: { title: sectionTitle, breadcrumbs: ['меню', sectionTitle] },
+      filter: { placeholder: `Поиск по ${sectionTitle.toLowerCase()}...`, value: '' },
+      payload: [],
+    }
+    const ctxForSection: NavCtx = { section: entityType }
+
+    const ctxForCabinet: NavCtx = {
+      ...ctxForSection,
+      ...(entityType === 'clients'     ? { clientId:     id, clientName:     entityName } : {}),
+      ...(entityType === 'contractors' ? { contractorId: id, contractorName: entityName } : {}),
+      ...(entityType === 'sellers'     ? { sellerId:     id, sellerName:     entityName } : {}),
+      ...(entityType === 'managers'    ? { managerId:    id, managerName:    entityName } : {}),
+    }
+    const cabNode: NavigationNode = {
+      step: 'C',
+      nodeId: `cab_${entityType.slice(0, -1)}_${id}`,
+      nodeType: 'cabinet',
+      context: { title: entityName, breadcrumbs: ['меню', sectionTitle, entityName] },
+      filter: { placeholder: 'Поиск по разделам...', value: '' },
+      payload: cabinetItems[entityType] ?? [],
+    }
+
+    slideDir.value = 'fwd'
+    nodeStack.value  = [rootNode(), regNode, cabNode]
+    ctxStack.value   = [{ section: '' }, ctxForSection, ctxForCabinet]
+    activeLeafId.value = undefined
+
+    const route = getAdminSectionRoute(entityType)
+    if (route) router.push(route)
+  }
+
   return {
     currentNode,
     canGoBack,
-    slideDir:     computed(() => slideDir.value),
-    activeLeafId: computed(() => activeLeafId.value),
-    loading:      readonly(loading),
+    slideDir:      computed(() => slideDir.value),
+    activeLeafId:  computed(() => activeLeafId.value),
+    loading:       readonly(loading),
     contentSpec,
+    cabinetCounts: readonly(cabinetCounts),
     drill,
     back,
     select,
@@ -359,6 +425,8 @@ export function useAdminNav() {
     ensureSection,
     ensureProject,
     setProjectView,
+    drillToEntityCabinet,
+    setCabinetCounts,
     nodeStack: readonly(nodeStack),
   }
 }

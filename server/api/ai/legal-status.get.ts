@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     return {
       ready,
       totalChunks: count,
-      sources: sources.rows,
+      sources: (sources as unknown as any[]),
     }
   } catch (err: any) {
     // Таблица ещё не создана

@@ -29,7 +29,6 @@ export default defineEventHandler(async (event) => {
     linkedSellers = await db
       .select({
         id: sellers.id,
-        slug: sellers.slug,
         name: sellers.name,
         companyName: sellers.companyName,
         phone: sellers.phone,

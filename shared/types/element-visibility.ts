@@ -33,12 +33,12 @@ export function normalizeElementVisibilityConfig(value: unknown): ElementVisibil
 
   const candidate = value as Partial<ElementVisibilityConfig>
   const rules = Array.isArray(candidate.rules)
-    ? candidate.rules
+    ? (candidate.rules as unknown[])
         .filter((rule): rule is Partial<ElementVisibilityRule> => Boolean(rule && typeof rule === 'object'))
         .map((rule) => ({
           id: typeof rule.id === 'string' && rule.id ? rule.id : `rule_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
           selector: typeof rule.selector === 'string' ? rule.selector.trim() : '',
-          scope: rule.scope === 'page' ? 'page' : 'global',
+          scope: (rule.scope === 'page' ? 'page' : 'global') as 'page' | 'global',
           path: typeof rule.path === 'string' && rule.path.trim() ? rule.path.trim() : null,
           label: typeof rule.label === 'string' ? rule.label : '',
           tag: typeof rule.tag === 'string' ? rule.tag : '',

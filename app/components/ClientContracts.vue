@@ -149,7 +149,7 @@ import { CONTRACT_STATUS_MAP, PAYMENT_STATUS_MAP } from '~~/shared/utils/status-
 import { DESIGNER_TARIFFS, DESIGNER_SERVICE_TYPE_OPTIONS } from '~~/shared/types/catalogs'
 const props = defineProps<{ slug: string }>()
 const reqHeaders = useRequestHeaders(['cookie'])
-const { data: project, pending } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
+const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`, { headers: reqHeaders })
 
 const profile = computed(() => project.value?.profile || {})
 

@@ -2,13 +2,17 @@
   "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "strict": true,
+    "noUncheckedIndexedAccess": false,
     "paths": {
       "~/server/*": ["./server/*"],
       "~/shared/*": ["./shared/*"],
       "~/*": ["./app/*"],
       "~": ["./app"],
       "~~/*": ["./*"],
-      "~~": ["."]
+      "~~": ["."],
+      "vue": ["./node_modules/.pnpm/vue@3.5.29_typescript@5.9.3/node_modules/vue"],
+      "vue-router": ["./node_modules/.pnpm/vue-router@4.6.4_vue@3.5.29_typescript@5.9.3_/node_modules/vue-router"],
+      "#components": ["./.nuxt/components"]
     }
   }
 }

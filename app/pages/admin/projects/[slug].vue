@@ -743,10 +743,10 @@ const pageComponentMap: Record<string, Component> = {
 const contractorPreviewMode = computed(() => route.query.view === 'contractor')
 const contractorPreviewId   = computed(() => route.query.cid ? Number(route.query.cid) : null)
 
-const { data: contractorData, pending: contractorPending } = useFetch<any>(
+const { data: contractorData, pending: contractorPending } = (useFetch as any)(
   () => contractorPreviewId.value ? `/api/contractors/${contractorPreviewId.value}` : null,
   { watch: [contractorPreviewId] },
-)
+) as { data: Ref<any>, pending: Ref<boolean> }
 
 // ── Client preview mode ────────────────────────────────────────
 const clientPreviewMode = computed(() => route.query.view === 'client')

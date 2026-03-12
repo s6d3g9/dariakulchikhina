@@ -372,6 +372,8 @@ export const DEFAULT_TOKENS: DesignTokens = {
   wipeCardShadow: 0.4,
   wipePageFill: 0.85,
   wipeTransition: 'slide',
+  archContentReveal: 'none',
+  archTextReveal: 'none',
 }
 
 /* ═══════════════════════════════════════════════════════════

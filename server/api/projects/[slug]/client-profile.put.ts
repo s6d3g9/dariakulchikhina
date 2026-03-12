@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
   const merged: Record<string, string | null> = { ...(current.profile as Record<string, string> || {}), ...safeFields }
 
   await db.update(projects)
-    .set({ profile: merged, updatedAt: new Date() })
+    .set({ profile: merged as Record<string, string>, updatedAt: new Date() })
     .where(eq(projects.slug, slug))
 
   return { ok: true }

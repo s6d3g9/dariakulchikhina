@@ -51,7 +51,7 @@ export async function setAdminSetting<T>(key: string, value: T) {
   if (existing) {
     const [updated] = await db
       .update(adminSettings)
-      .set({ value, updatedAt: new Date() })
+      .set({ value: value as any, updatedAt: new Date() })
       .where(eq(adminSettings.id, existing.id))
       .returning({ value: adminSettings.value })
 
@@ -60,7 +60,7 @@ export async function setAdminSetting<T>(key: string, value: T) {
 
   const [created] = await db
     .insert(adminSettings)
-    .values({ key, value })
+    .values({ key, value: value as any })
     .returning({ value: adminSettings.value })
 
   return created?.value as T

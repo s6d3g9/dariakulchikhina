@@ -506,7 +506,7 @@
                 <div class="cab-doc-info">
                   <div class="cab-doc-title">{{ doc.title }}</div>
                   <div class="cab-doc-meta">
-                    <span class="cab-doc-cat">{{ DESIGNER_DOC_CATEGORIES.find(c => c.value === doc.category)?.label || doc.category }}</span>
+                    <span class="cab-doc-cat">{{ getDesignerDocCategoryLabel(doc.category) }}</span>
                     <span v-if="doc.notes" class="cab-doc-notes">{{ doc.notes }}</span>
                     <span v-if="doc.createdAt" class="cab-doc-notes">{{ formatDocDate(doc.createdAt) }}</span>
                   </div>
@@ -975,7 +975,7 @@ const SERVICE_CATEGORY_OPTIONS = Object.entries(DESIGNER_SERVICE_CATEGORY_LABELS
   label,
 })) as { value: DesignerServiceCategory; label: string }[]
 const BILLING_PERIODS_LIST = Object.entries(BILLING_PERIOD_LABELS).map(([value, label]) => ({ value, label }))
-const DESIGNER_DOC_CATEGORIES = [
+const DESIGNER_DOC_CATEGORIES: { value: string; label: string }[] = [
   { value: 'contract', label: 'Договор' },
   { value: 'tz', label: 'ТЗ' },
   { value: 'invoice', label: 'Счёт' },
@@ -1193,7 +1193,7 @@ function addCustomService() {
 function duplicateEditService(key: string) {
   const index = editServicesList.value.findIndex(s => s.serviceKey === key)
   if (index < 0) return
-  const source = editServicesList.value[index]
+  const source = editServicesList.value[index]!
   const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
   const copy: DesignerServicePrice = {
     ...JSON.parse(JSON.stringify(source)),
@@ -1305,7 +1305,7 @@ function addCustomPackage() {
 function duplicateEditPackage(key: string) {
   const index = editPackagesList.value.findIndex(p => p.key === key)
   if (index < 0) return
-  const source = editPackagesList.value[index]
+  const source = editPackagesList.value[index]!
   const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
   const copy: DesignerPackage = {
     ...JSON.parse(JSON.stringify(source)),
@@ -1411,7 +1411,7 @@ function addCustomSubscription() {
 function duplicateEditSubscription(key: string) {
   const index = editSubscriptionsList.value.findIndex(s => s.key === key)
   if (index < 0) return
-  const source = editSubscriptionsList.value[index]
+  const source = editSubscriptionsList.value[index]!
   const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
   const copy: DesignerSubscription = {
     ...JSON.parse(JSON.stringify(source)),
@@ -1619,6 +1619,10 @@ async function saveDesignerProjectEdits() {
   } finally {
     savingProject.value = false
   }
+}
+
+function getDesignerDocCategoryLabel(category: string): string {
+  return DESIGNER_DOC_CATEGORIES.find(c => c.value === category)?.label ?? category
 }
 
 </script>
