@@ -233,6 +233,7 @@ function valueClass(f: Wipe2Field): string {
   display: flex;
   flex-direction: column;
   outline: none;
+  touch-action: none;  /* renderer handles its own touch */
 }
 
 /* ── Card shell ──────────────────────────────────────────────── */

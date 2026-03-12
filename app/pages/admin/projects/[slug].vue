@@ -165,13 +165,13 @@
           @touchstart.passive="handleProjectViewportTouchStart"
           @touchend.passive="handleProjectViewportTouchEnd"
         >
-          <div v-if="contentViewMode === 'wipe'" class="proj-sheet-frame" aria-hidden="true">
+          <div v-if="contentViewMode === 'wipe' || contentViewMode === 'wipe2'" class="proj-sheet-frame" aria-hidden="true">
             <div class="proj-sheet-frame__card"></div>
           </div>
           <div v-if="contentViewMode === 'wipe'" class="proj-wipe-overlay" aria-hidden="true">
             <div class="proj-wipe-overlay__sheet"></div>
           </div>
-          <div class="proj-wipe-inner">
+          <div v-show="contentViewMode !== 'wipe2'" class="proj-wipe-inner">
           <AdminEntityHero
             v-if="showBrutalistHero"
             :kicker="activeGroupLabel || 'архитектура проекта'"
@@ -483,7 +483,9 @@
           </Transition>
           </div><!-- /proj-wipe-inner -->
 
-          <!-- Wipe 2: data-driven card overlay (positioned absolute over content) -->
+          <!-- Wipe 2: shows cards instead of raw form content.
+               proj-wipe-inner is hidden (v-show) when active so the overlay
+               doesn't cover interactive elements. -->
           <Wipe2Renderer v-if="contentViewMode === 'wipe2'" />
 
           <div v-if="isProjectViewportPaged && contentViewMode !== 'wipe2'" class="proj-pager-rail">
