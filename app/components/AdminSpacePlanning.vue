@@ -98,31 +98,22 @@ import { registerWipe2Data } from '~/composables/useWipe2'
 
 const props = defineProps<{ slug: string }>()
 
-const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`)
-
+// ── form + wipe2 регистрируются ДО await, чтобы inject работал синхронно ──
 const { savedAt, touch: markSaved } = useTimestamp()
 const uploading = ref(false)
 
 const form = reactive<any>({
-  sp_status:           '',
-  sp_version:          '',
-  sp_sent_date:        '',
-  sp_approved_date:    '',
-  sp_architect_notes:  '',
-  sp_client_notes:     '',
-  sp_files:            [],
+  sp_status:             '',
+  sp_version:            '',
+  sp_sent_date:          '',
+  sp_approved_date:      '',
+  sp_architect_notes:    '',
+  sp_client_notes:       '',
+  sp_files:              [],
   sp_dimensions_checked: false,
-  sp_zones_approved:   false,
-  sp_geometry_locked:  false,
+  sp_zones_approved:     false,
+  sp_geometry_locked:    false,
 })
-
-watch(project, (p) => {
-  if (!p?.profile) return
-  const pf = p.profile
-  Object.keys(form).forEach(k => {
-    if (pf[k] !== undefined) (form as any)[k] = pf[k]
-  })
-}, { immediate: true })
 
 const statusColor = useStatusColor(form, 'sp_status')
 
@@ -169,6 +160,18 @@ registerWipe2Data(computed(() => ({
     }] : []),
   ],
 })))
+
+// ── Данные проекта — после await ──────────────────────────────────
+const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`)
+
+// Заполняем форму когда данные загружены
+watch(project, (p) => {
+  if (!p?.profile) return
+  const pf = p.profile
+  Object.keys(form).forEach(k => {
+    if (pf[k] !== undefined) (form as any)[k] = pf[k]
+  })
+}, { immediate: true })
 
 async function save() {
   await $fetch(`/api/projects/${props.slug}`, {
