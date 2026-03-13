@@ -94,9 +94,22 @@
 </template>
 
 <script setup lang="ts">
-import { registerWipe2Data } from '~/composables/useWipe2'
+import { buildWipe2Cards } from '~/composables/useWipe2'
+import type { Wipe2EntityData } from '~/shared/types/wipe2'
 
 const props = defineProps<{ slug: string }>()
+
+// ── Wipe 2 global state — пишем ДО await ──────────────────────
+// useState работает как глобальный синглтон, доступный без provide/inject
+const _w2 = useState<Wipe2EntityData | null>('wipe2-entity-data', () => null)
+
+const STATUS_LABELS_SP: Record<string, string> = {
+  '': 'не задан', in_work: 'в работе', sent_to_client: 'отправлен клиенту',
+  revision: 'на доработке', approved: 'согласован',
+}
+const STATUS_COLOR_SP: Record<string, string> = {
+  '': 'muted', in_work: 'blue', sent_to_client: 'amber', revision: 'red', approved: 'green',
+}
 
 // ── form + wipe2 регистрируются ДО await, чтобы inject работал синхронно ──
 const { savedAt, touch: markSaved } = useTimestamp()
@@ -117,49 +130,62 @@ const form = reactive<any>({
 
 const statusColor = useStatusColor(form, 'sp_status')
 
-// ── Wipe 2 data ─────────────────────────────────────────────────
-const STATUS_LABELS_SP: Record<string, string> = {
-  '': 'не задан', in_work: 'в работе', sent_to_client: 'отправлен клиенту',
-  revision: 'на доработке', approved: 'согласован',
-}
-const STATUS_COLOR_SP: Record<string, string> = {
-  '': 'muted', in_work: 'blue', sent_to_client: 'amber', revision: 'red', approved: 'green',
-}
-registerWipe2Data(computed(() => ({
-  entityTitle: 'Планировочные решения',
-  entitySubtitle: form.sp_version ? `версия ${form.sp_version}` : undefined,
-  entityStatus: (STATUS_LABELS_SP[form.sp_status] ?? form.sp_status) || undefined,
-  entityStatusColor: STATUS_COLOR_SP[form.sp_status] ?? 'muted',
-  sections: [
-    {
-      title: 'Общая информация',
-      fields: [
-        { label: 'Версия комплекта', value: form.sp_version },
-        { label: 'Статус', value: form.sp_status, type: 'status' as const },
-        { label: 'Отправлено клиенту', value: form.sp_sent_date, type: 'date' as const },
-        { label: 'Согласовано', value: form.sp_approved_date, type: 'date' as const },
-        { label: 'Комментарий архитектора', value: form.sp_architect_notes, type: 'multiline' as const },
-        { label: 'Замечания клиента', value: form.sp_client_notes, type: 'multiline' as const },
+// ── Синхронизируем wipe2 данные при изменении формы ─────────────
+// watch вместо watchEffect — явные зависимости, гарантированно реактивно
+watch(
+  () => ({
+    status: form.sp_status,
+    version: form.sp_version,
+    sentDate: form.sp_sent_date,
+    approvedDate: form.sp_approved_date,
+    architectNotes: form.sp_architect_notes,
+    clientNotes: form.sp_client_notes,
+    files: form.sp_files ? [...form.sp_files] : [],
+    dimChecked: form.sp_dimensions_checked,
+    zonesApproved: form.sp_zones_approved,
+    geoLocked: form.sp_geometry_locked,
+  }),
+  (v) => {
+    _w2.value = {
+      entityTitle: 'Планировочные решения',
+      entitySubtitle: v.version ? `версия ${v.version}` : undefined,
+      entityStatus: (STATUS_LABELS_SP[v.status] ?? v.status) || undefined,
+      entityStatusColor: STATUS_COLOR_SP[v.status] ?? 'muted',
+      sections: [
+        {
+          title: 'Общая информация',
+          fields: [
+            { label: 'Версия комплекта', value: v.version },
+            { label: 'Статус', value: v.status, type: 'status' as const },
+            { label: 'Отправлено клиенту', value: v.sentDate, type: 'date' as const },
+            { label: 'Согласовано', value: v.approvedDate, type: 'date' as const },
+            { label: 'Комментарий архитектора', value: v.architectNotes, type: 'multiline' as const },
+            { label: 'Замечания клиента', value: v.clientNotes, type: 'multiline' as const },
+          ],
+        },
+        {
+          title: 'Согласование',
+          fields: [
+            { label: 'Размеры проверены', value: v.dimChecked, type: 'boolean' as const },
+            { label: 'Зонирование согласовано', value: v.zonesApproved, type: 'boolean' as const },
+            { label: 'Геометрия заморожена', value: v.geoLocked, type: 'boolean' as const },
+          ],
+        },
+        ...(v.files.length ? [{
+          title: 'Файлы планировок',
+          fields: v.files.map((f: any) => ({
+            label: f.label || f.filename || 'файл',
+            value: f.approval ? (STATUS_LABELS_SP[f.approval] ?? f.approval) : 'на рассмотрении',
+            type: 'status' as const,
+          })),
+        }] : []),
       ],
-    },
-    {
-      title: 'Согласование',
-      fields: [
-        { label: 'Размеры проверены', value: form.sp_dimensions_checked, type: 'boolean' as const },
-        { label: 'Зонирование согласовано', value: form.sp_zones_approved, type: 'boolean' as const },
-        { label: 'Геометрия заморожена', value: form.sp_geometry_locked, type: 'boolean' as const },
-      ],
-    },
-    ...(form.sp_files?.length ? [{
-      title: 'Файлы планировок',
-      fields: (form.sp_files as any[]).map(f => ({
-        label: f.label || f.filename || 'файл',
-        value: f.approval ? STATUS_LABELS_SP[f.approval] ?? f.approval : 'на рассмотрении',
-        type: 'status' as const,
-      })),
-    }] : []),
-  ],
-})))
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+onUnmounted(() => { _w2.value = null })
 
 // ── Данные проекта — после await ──────────────────────────────────
 const { data: project, pending, refresh } = await useFetch<any>(() => `/api/projects/${props.slug}`)

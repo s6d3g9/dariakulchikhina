@@ -108,14 +108,18 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useWipe2Cards, type Wipe2Field } from '~/composables/useWipe2'
+import { buildWipe2Cards, type Wipe2Field } from '~/composables/useWipe2'
+import type { Wipe2EntityData } from '~/shared/types/wipe2'
 
-const cards = useWipe2Cards()
+// Читаем из глобального useState напрямую — никаких inject/provide
+const _w2 = useState<Wipe2EntityData | null>('wipe2-entity-data', () => null)
+
+const cards = computed(() => _w2.value ? buildWipe2Cards(_w2.value) : [])
 
 const currentIndex = ref(0)
 const overlayEl = ref<HTMLElement | null>(null)
 
-// Сброс индекса при смене списка карточек
+// Сброс индекса при смене данных
 watch(cards, () => { currentIndex.value = 0 })
 
 const card = computed(() => cards.value[currentIndex.value])
