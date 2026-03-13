@@ -6,7 +6,6 @@
       <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
     </div>
     <!-- Content: selected contractor or empty state -->
-    <div v-show="contentViewMode !== 'wipe2'">
     <template v-if="selectedId">
       <AdminEntityCabinetShell
         :show-hero="showBrutalistContractorHero"
@@ -35,9 +34,8 @@
       action-label="+ добавить"
       :brutalist="isBrutalistContractorsMode"
       @action="openCreate"
-    />    </div><!-- /v-show wipe2 -->
+    />
 
-    <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2ContractorEntityData" />
     <Teleport to="body">
       <div v-if="showModal" class="ct-backdrop" :class="{ 'ct-backdrop--brutalist': isBrutalistContractorsMode }" @click.self="closeModal">
         <div class="ct-modal glass-surface" :class="{ 'ct-modal--brutalist': isBrutalistContractorsMode }">

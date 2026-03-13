@@ -1,6 +1,5 @@
 <template>
-  <div>
-  <AdminEntityPageShell v-show="contentViewMode !== 'wipe2'" class="ds-page" :class="{ 'ds-page--brutalist': isBrutalistDesignersMode }" :has-selection="Boolean(selectedDesignerId)" :show-create="showCreate">
+  <AdminEntityPageShell class="ds-page" :class="{ 'ds-page--brutalist': isBrutalistDesignersMode }" :has-selection="Boolean(selectedDesignerId)" :show-create="showCreate">
     <template #selected>
       <AdminEntityCabinetShell
         :show-hero="showBrutalistDesignerHero"
@@ -46,8 +45,6 @@
       />
     </template>
   </AdminEntityPageShell>
-  <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2DesignerEntityData" />
-  </div>
 </template>
 
 <script setup lang="ts">

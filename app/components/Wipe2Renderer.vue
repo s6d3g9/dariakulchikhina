@@ -25,6 +25,7 @@
             class="w2-badge"
             :class="`w2-badge--${card.statusColor || 'muted'}`"
           >{{ card.status }}</span>
+          <button type="button" class="w2-edit-btn" @click.stop="$emit('edit')" title="Редактировать">✎</button>
         </div>
       </div>
 
@@ -102,6 +103,7 @@
       <div class="w2-empty__icon">⊟</div>
       <div class="w2-empty__title">Этот раздел не поддерживает карточный режим</div>
       <div class="w2-empty__sub">переключите вид в настройках дизайна</div>
+      <button type="button" class="w2-edit-btn w2-edit-btn--empty" @click.stop="$emit('edit')">✎ открыть форму</button>
     </div>
   </div>
 </template>
@@ -114,6 +116,8 @@ import type { Wipe2EntityData } from '~/shared/types/wipe2'
 const props = defineProps<{
   entity?: Wipe2EntityData | null
 }>()
+
+const emit = defineEmits<{ edit: [] }>()
 
 const cards = computed(() => props.entity ? buildWipe2Cards(props.entity) : [])
 
@@ -310,6 +314,37 @@ html.dark .w2-badge--blue   { background: hsl(214, 50%, 20%); color: hsl(214, 80
 html.dark .w2-badge--yellow,
 html.dark .w2-badge--amber  { background: hsl(38,  60%, 20%); color: hsl(38,  90%, 75%); }
 html.dark .w2-badge--red    { background: hsl(0,   50%, 22%); color: hsl(0,   70%, 75%); }
+
+/* ── Edit button ─────────────────────────────────────────────── */
+.w2-edit-btn {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--glass-text, #111) 14%, transparent);
+  background: color-mix(in srgb, var(--glass-text, #111) 5%, transparent);
+  color: var(--glass-text, #111);
+  border-radius: 7px;
+  padding: 3px 10px;
+  font-size: .72rem;
+  cursor: pointer;
+  line-height: 1.6;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.w2-edit-btn:hover {
+  background: color-mix(in srgb, var(--glass-text, #111) 12%, transparent);
+}
+.w2-edit-btn--empty {
+  margin-top: 14px;
+  padding: 6px 18px;
+  font-size: .8rem;
+}
+html.dark .w2-edit-btn {
+  border-color: color-mix(in srgb, #fff 18%, transparent);
+  background: color-mix(in srgb, #fff 6%, transparent);
+  color: #fff;
+}
+html.dark .w2-edit-btn:hover {
+  background: color-mix(in srgb, #fff 14%, transparent);
+}
 
 /* ── Body grid ───────────────────────────────────────────────── */
 .w2-body {

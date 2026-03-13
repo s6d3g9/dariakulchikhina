@@ -1,6 +1,5 @@
 <template>
-  <div>
-  <AdminEntityPageShell v-show="contentViewMode !== 'wipe2'" :has-selection="Boolean(selectedManagerId)" :show-create="showCreate">
+  <AdminEntityPageShell :has-selection="Boolean(selectedManagerId)" :show-create="showCreate">
     <template #selected>
       <AdminEntityCabinetShell
         :show-hero="showBrutalistManagerHero"
@@ -79,8 +78,6 @@
       </div>
     </Teleport>
   </AdminEntityPageShell>
-  <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2ManagerEntityData" />
-  </div>
 </template>
 
 <script setup lang="ts">

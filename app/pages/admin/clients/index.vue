@@ -7,7 +7,6 @@
     </div>
 
     <!-- Content: selected client or empty state -->
-    <div v-show="contentViewMode !== 'wipe2'">
     <template v-if="selectedClient">
           <AdminEntityHero
             v-if="showBrutalistClientHero"
@@ -129,9 +128,6 @@
           :brutalist="isBrutalistClientsMode"
           @action="openAdd"
         />
-    </div><!-- /v-show wipe2 -->
-
-    <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2ClientEntityData" />
 
     <Teleport to="body">
     <div v-if="showModal" class="cl-backdrop" :class="{ 'cl-backdrop--brutalist': isBrutalistClientsMode }" @click.self="closeModal">
