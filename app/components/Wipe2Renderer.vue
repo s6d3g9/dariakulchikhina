@@ -100,8 +100,8 @@
     <!-- Пустое состояние -->
     <div v-else class="w2-empty">
       <div class="w2-empty__icon">⊟</div>
-      <div class="w2-empty__title">Нет данных для wipe 2</div>
-      <div class="w2-empty__sub">entity: {{ entity === null ? 'null' : entity === undefined ? 'undefined' : entity.entityTitle }}</div>
+      <div class="w2-empty__title">Этот раздел не поддерживает карточный режим</div>
+      <div class="w2-empty__sub">переключите вид в настройках дизайна</div>
     </div>
   </div>
 </template>

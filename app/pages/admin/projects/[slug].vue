@@ -552,6 +552,7 @@ import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportPagerRa
 import { createWipe2Slot, buildWipe2Cards } from '~/composables/useWipe2'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { getBriefSections } from '~~/shared/constants/brief-sections'
+import { presetLabel } from '~~/shared/constants/presets'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -624,6 +625,10 @@ const _W2_SP_LABELS: Record<string, string> = {
 const _W2_SP_COLORS: Record<string, string> = {
   '': 'muted', in_work: 'blue', sent_to_client: 'amber', revision: 'red', approved: 'green',
 }
+// Данные для разделов с отдельными API (extra_services, work_status)
+// Заполняются через watch после объявления currentProjectPage
+const _wipe2ExtraServicesData = ref<any[]>([])
+const _wipe2WorkStatusData = ref<any[]>([])
 const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
   const p = project.value
   if (!p) return null
@@ -1174,6 +1179,169 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
     }
   }
 
+  if (currentProjectPage.value === 'overview') {
+    const statusLabels: Record<string, string> = {
+      lead: 'лид', active: 'активен', paused: 'на паузе', done: 'завершён', archived: 'архив',
+    }
+    const statusColors: Record<string, string> = {
+      lead: 'muted', active: 'green', paused: 'amber', done: 'blue', archived: 'muted',
+    }
+    return {
+      entityTitle: p.title,
+      entitySubtitle: presetLabel(p.projectType ?? ''),
+      entityStatus: statusLabels[p.status] ?? p.status,
+      entityStatusColor: statusColors[p.status] ?? 'muted',
+      sections: [
+        {
+          title: 'Проект',
+          fields: [
+            { label: 'Название', value: p.title, span: 2 as const },
+            { label: 'Тип объекта', value: presetLabel(p.projectType ?? '') },
+            { label: 'Статус', value: statusLabels[p.status] ?? p.status, type: 'status' as const },
+            { label: 'Slug', value: p.slug },
+            { label: 'Разделов', value: String((p.pages ?? []).length) },
+          ],
+        },
+        {
+          title: 'Участники',
+          fields: [
+            {
+              label: 'Клиенты',
+              value: linkedClients.value.length
+                ? linkedClients.value.map((c: any) => c.name).join(', ')
+                : 'не привязан',
+              span: 2 as const,
+            },
+            {
+              label: 'Подрядчики',
+              value: linkedContractorsList.value.length
+                ? linkedContractorsList.value.map((c: any) => c.name).join(', ')
+                : 'не привязаны',
+              span: 2 as const,
+            },
+            {
+              label: 'Дизайнеры',
+              value: linkedDesignersList.value.length
+                ? linkedDesignersList.value.map((d: any) => d.name).join(', ')
+                : 'не привязаны',
+              span: 2 as const,
+            },
+          ],
+        },
+      ],
+    }
+  }
+
+  if (currentProjectPage.value === 'procurement_list') {
+    const items: any[] = pf.proc_items ?? []
+    const pending = items.filter((i: any) => i.status === 'pending').length
+    const ordered = items.filter((i: any) => ['ordered', 'shipped', 'received'].includes(i.status)).length
+    const received = items.filter((i: any) => i.status === 'received').length
+    const total = items.reduce((s: number, i: any) => {
+      const qty = parseFloat(i.quantity) || 1
+      const price = parseFloat(i.unitPrice) || 0
+      return s + qty * price
+    }, 0)
+    return {
+      entityTitle: 'Список закупок',
+      entitySubtitle: `${items.length} позиций`,
+      entityStatus: received === items.length && items.length > 0 ? 'получено' : ordered > 0 ? 'в заказе' : 'ожидание',
+      entityStatusColor: received === items.length && items.length > 0 ? 'green' : ordered > 0 ? 'amber' : 'muted',
+      sections: [
+        {
+          title: 'Итоги',
+          fields: [
+            { label: 'Позиций', value: String(items.length), type: 'number' as const },
+            { label: 'Ожидание', value: String(pending), type: 'number' as const },
+            { label: 'Заказано', value: String(ordered), type: 'number' as const },
+            { label: 'Получено', value: String(received), type: 'number' as const },
+            { label: 'Сумма', value: total > 0 ? `${total.toLocaleString('ru')} ₽` : '—', span: 2 as const },
+          ],
+        },
+        ...(items.slice(0, 12).map((item: any) => ({
+          title: item.name || 'позиция',
+          fields: [
+            { label: 'Статус', value: item.status ?? '', type: 'status' as const },
+            { label: 'Кол-во', value: item.quantity ? `${item.quantity} ${item.unit ?? ''}`.trim() : '—' },
+            { label: 'Цена', value: item.unitPrice ? `${item.unitPrice} ₽` : '—' },
+            { label: 'Заметки', value: item.notes ?? '', type: 'multiline' as const },
+          ],
+        }))),
+      ],
+    }
+  }
+
+  if (currentProjectPage.value === 'extra_services') {
+    const svcs = _wipe2ExtraServicesData.value
+    const paid = svcs.filter((s: any) => s.status === 'paid').length
+    const approved = svcs.filter((s: any) => s.status === 'approved').length
+    const totalCost = svcs.reduce((s: number, i: any) => {
+      const qty = parseFloat(i.quantity) || 1
+      const price = parseFloat(i.unitPrice) || 0
+      return s + qty * price
+    }, 0)
+    return {
+      entityTitle: 'Доп. услуги',
+      entitySubtitle: `${svcs.length} услуг`,
+      entityStatus: paid > 0 ? 'оплачено' : approved > 0 ? 'согласовано' : 'ожидание',
+      entityStatusColor: paid > 0 ? 'green' : approved > 0 ? 'amber' : 'muted',
+      sections: [
+        {
+          title: 'Итоги',
+          fields: [
+            { label: 'Услуг', value: String(svcs.length), type: 'number' as const },
+            { label: 'Оплачено', value: String(paid), type: 'number' as const },
+            { label: 'Согласовано', value: String(approved), type: 'number' as const },
+            { label: 'Сумма', value: totalCost > 0 ? `${totalCost.toLocaleString('ru')} ₽` : '—' },
+          ],
+        },
+        ...(svcs.slice(0, 10).map((svc: any) => ({
+          title: svc.title || svc.serviceKey || 'услуга',
+          fields: [
+            { label: 'Статус', value: svc.status ?? '', type: 'status' as const },
+            { label: 'Кол-во', value: svc.quantity ? `${svc.quantity} ${svc.unit ?? ''}`.trim() : '—' },
+            { label: 'Цена', value: svc.unitPrice ? `${svc.unitPrice} ₽` : '—' },
+            { label: 'Описание', value: svc.description ?? '', type: 'multiline' as const },
+          ],
+        }))),
+      ],
+    }
+  }
+
+  if (currentProjectPage.value === 'work_status') {
+    const items = _wipe2WorkStatusData.value
+    const inProgress = items.filter((i: any) => i.status === 'in_progress').length
+    const done = items.filter((i: any) => i.status === 'done').length
+    const planned = items.filter((i: any) => i.status === 'planned').length
+    return {
+      entityTitle: 'Ход работ',
+      entitySubtitle: `${items.length} задач`,
+      entityStatus: done === items.length && items.length > 0 ? 'выполнено' : inProgress > 0 ? 'в работе' : 'запланировано',
+      entityStatusColor: done === items.length && items.length > 0 ? 'green' : inProgress > 0 ? 'blue' : 'muted',
+      sections: [
+        {
+          title: 'Итоги',
+          fields: [
+            { label: 'Задач', value: String(items.length), type: 'number' as const },
+            { label: 'В работе', value: String(inProgress), type: 'number' as const },
+            { label: 'Выполнено', value: String(done), type: 'number' as const },
+            { label: 'Запланировано', value: String(planned), type: 'number' as const },
+          ],
+        },
+        ...(items.slice(0, 10).map((item: any) => ({
+          title: item.title || 'задача',
+          fields: [
+            { label: 'Статус', value: item.status ?? '', type: 'status' as const },
+            { label: 'Тип', value: item.workType ?? '' },
+            { label: 'Подрядчик', value: item.contractorName ?? '—' },
+            { label: 'Дедлайн', value: item.dateEnd ?? '', type: 'date' as const },
+            { label: 'Бюджет', value: item.budget ? `${item.budget} ₽` : '—' },
+          ],
+        }))),
+      ],
+    }
+  }
+
   return null
 })
 
@@ -1497,6 +1665,23 @@ const resolvedProjectPageFromNav = computed(() => {
 })
 
 const currentProjectPage = computed(() => resolvedProjectPageFromNav.value || activePage.value)
+
+// ── Wipe 2: ленивые fetch для разделов с отдельным API ─────────────────────
+const { data: _w2ExtraSvcs } = useFetch<any[]>(
+  () => contentViewMode.value === 'wipe2' && currentProjectPage.value === 'extra_services'
+    ? `/api/projects/${slug.value}/extra-services`
+    : null,
+  { server: false, default: () => [] },
+)
+watch(_w2ExtraSvcs, (v) => { _wipe2ExtraServicesData.value = v || [] }, { immediate: true })
+
+const { data: _w2WorkStatus } = useFetch<any[]>(
+  () => contentViewMode.value === 'wipe2' && currentProjectPage.value === 'work_status'
+    ? `/api/projects/${slug.value}/work-status`
+    : null,
+  { server: false, default: () => [] },
+)
+watch(_w2WorkStatus, (v) => { _wipe2WorkStatusData.value = v || [] }, { immediate: true })
 
 const currentProjectLeafItems = computed(() =>
   adminNav.currentNode.value.payload.filter((item) => item.type === 'leaf' && item.id.startsWith('prj_')),
