@@ -111,10 +111,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { buildWipe2Cards, type Wipe2Field } from '~/composables/useWipe2'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 
-// Читаем из глобального useState напрямую — никаких inject/provide
-const _w2 = useState<Wipe2EntityData | null>('wipe2-entity-data', () => null)
+const props = defineProps<{
+  entity?: Wipe2EntityData | null
+}>()
 
-const cards = computed(() => _w2.value ? buildWipe2Cards(_w2.value) : [])
+const cards = computed(() => props.entity ? buildWipe2Cards(props.entity) : [])
 
 const currentIndex = ref(0)
 const overlayEl = ref<HTMLElement | null>(null)

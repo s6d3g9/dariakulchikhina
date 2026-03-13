@@ -486,7 +486,7 @@
           <!-- Wipe 2: shows cards instead of raw form content.
                proj-wipe-inner is hidden (v-show) when active so the overlay
                doesn't cover interactive elements. -->
-          <Wipe2Renderer v-if="contentViewMode === 'wipe2'" />
+          <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2EntityData" />
 
           <div v-if="isProjectViewportPaged && contentViewMode !== 'wipe2'" class="proj-pager-rail">
             <div class="proj-pager-rail__meta">
@@ -549,7 +549,8 @@ import {
 } from '~~/shared/constants/admin-navigation'
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
 import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportPagerRailInset, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
-import { createWipe2Slot } from '~/composables/useWipe2'
+import { createWipe2Slot, buildWipe2Cards } from '~/composables/useWipe2'
+import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -613,6 +614,61 @@ const contentViewMode = computed(() => {
   return designSystem.tokens.value.contentViewMode ?? 'scroll'
 })
 const isProjectViewportPaged = computed(() => !clientPreviewMode.value && !contractorPreviewMode.value && contentViewMode.value !== 'scroll')
+
+// ── Wipe 2: строим данные карточек из project.value (без зависимости от lifecycle) ───────
+const _W2_SP_LABELS: Record<string, string> = {
+  '': 'не задан', in_work: 'в работе', sent_to_client: 'отправлен клиенту',
+  revision: 'на доработке', approved: 'согласован',
+}
+const _W2_SP_COLORS: Record<string, string> = {
+  '': 'muted', in_work: 'blue', sent_to_client: 'amber', revision: 'red', approved: 'green',
+}
+const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
+  const p = project.value
+  if (!p?.profile) return null
+  const pf = p.profile
+  if (currentProjectPage.value === 'space_planning') {
+    const status = pf.sp_status ?? ''
+    const files: any[] = pf.sp_files ?? []
+    return {
+      entityTitle: 'Планировочные решения',
+      entitySubtitle: pf.sp_version ? `версия ${pf.sp_version}` : undefined,
+      entityStatus: (_W2_SP_LABELS[status] ?? status) || undefined,
+      entityStatusColor: _W2_SP_COLORS[status] ?? 'muted',
+      sections: [
+        {
+          title: 'Общая информация',
+          fields: [
+            { label: 'Версия комплекта', value: pf.sp_version ?? '' },
+            { label: 'Статус', value: status, type: 'status' as const },
+            { label: 'Отправлено клиенту', value: pf.sp_sent_date ?? '', type: 'date' as const },
+            { label: 'Согласовано', value: pf.sp_approved_date ?? '', type: 'date' as const },
+            { label: 'Комментарий архитектора', value: pf.sp_architect_notes ?? '', type: 'multiline' as const },
+            { label: 'Замечания клиента', value: pf.sp_client_notes ?? '', type: 'multiline' as const },
+          ],
+        },
+        {
+          title: 'Согласование',
+          fields: [
+            { label: 'Размеры проверены', value: !!pf.sp_dimensions_checked, type: 'boolean' as const },
+            { label: 'Зонирование согласовано', value: !!pf.sp_zones_approved, type: 'boolean' as const },
+            { label: 'Геометрия заморожена', value: !!pf.sp_geometry_locked, type: 'boolean' as const },
+          ],
+        },
+        ...(files.length ? [{
+          title: 'Файлы планировок',
+          fields: files.map((f: any) => ({
+            label: f.label || f.filename || 'файл',
+            value: f.approval ? (_W2_SP_LABELS[f.approval] ?? f.approval) : 'на рассмотрении',
+            type: 'status' as const,
+          })),
+        }] : []),
+      ],
+    }
+  }
+  return null
+})
+
 const projectHeroPrompt = computed(() => {
   if (!isProjectViewportPaged.value) return '↓ прокрутка / swipe ↓'
   if (contentViewMode.value === 'wipe')  return '↓ лист / PgDn ↓'
