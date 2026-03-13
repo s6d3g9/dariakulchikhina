@@ -8,6 +8,7 @@
 
     <!-- Content: selected client or empty state -->
     <template v-if="selectedClient">
+      <div class="cl-wipe-host">
           <AdminEntityHero
             v-if="showBrutalistClientHero"
             :kicker="selectedClientSlug ? 'клиентский кабинет' : 'карточка клиента'"
@@ -115,6 +116,8 @@
               <div v-else class="ent-detail-row" style="opacity:.48">документов пока нет</div>
             </div>
           </section>
+          <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2ClientEntityData" @edit="designSystem.set('contentViewMode', 'scroll')" />
+      </div>
         </template>
 
         <!-- Nothing selected -->
@@ -172,6 +175,8 @@
 
 <script setup lang="ts">
 import type { Component } from 'vue'
+import type { Wipe2EntityData } from '~/shared/types/wipe2'
+import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
 import { getClientPages } from '~~/shared/constants/pages'
 import ClientInitiation      from '~/components/ClientInitiation.vue'
 import ClientSelfProfile     from '~/components/ClientSelfProfile.vue'
@@ -204,6 +209,38 @@ watch(() => adminNav.contentSpec.value.clientSection, (section) => {
 const route = useRoute()
 const designSystem = useDesignSystem()
 const isBrutalistClientsMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
+const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
+
+const wipe2ClientEntityData = computed<Wipe2EntityData | null>(() => {
+  const c = selectedClient.value
+  if (!c) return null
+  return {
+    entityTitle: c.name,
+    entitySubtitle: c.phone || c.email || undefined,
+    entityStatus: c.linkedProjects?.length ? 'привязан' : 'без проекта',
+    entityStatusColor: c.linkedProjects?.length ? 'green' : 'muted',
+    sections: [
+      {
+        title: 'Контакты',
+        fields: [
+          { label: 'Телефон', value: c.phone ?? '' },
+          { label: 'Email', value: c.email ?? '' },
+          { label: 'Мессенджер', value: c.messengerNick ? `${c.messenger ?? ''} ${c.messengerNick}`.trim() : '' },
+          { label: 'Адрес', value: c.address ?? '', span: 2 as const },
+          { label: 'Заметки', value: c.notes ?? '', type: 'multiline' as const, span: 2 as const },
+        ],
+      },
+      ...(c.linkedProjects?.length ? [{
+        title: 'Проекты',
+        fields: c.linkedProjects.map((p: any) => ({
+          label: p.title || p.slug,
+          value: p.slug,
+          span: 2 as const,
+        })),
+      }] : []),
+    ],
+  }
+})
 
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
 const clientsDirectory = useAdminClientsDirectory(projectSlugFilter)
@@ -339,6 +376,7 @@ async function deleteClientDoc(docId: number) { if (!docsClientId.value) return;
 .cl-page {
   width: 100%;
 }
+.cl-wipe-host { position: relative; }
 
 .cl-page--brutalist {
   display: flex;
