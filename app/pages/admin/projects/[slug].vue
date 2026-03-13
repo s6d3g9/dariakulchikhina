@@ -625,8 +625,8 @@ const _W2_SP_COLORS: Record<string, string> = {
 }
 const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
   const p = project.value
-  if (!p?.profile) return null
-  const pf = p.profile
+  if (!p) return null
+  const pf: Record<string, any> = p.profile ?? {}
   if (currentProjectPage.value === 'space_planning') {
     const status = pf.sp_status ?? ''
     const files: any[] = pf.sp_files ?? []
