@@ -551,6 +551,7 @@ import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/cons
 import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportPagerRailInset, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
 import { createWipe2Slot, buildWipe2Cards } from '~/composables/useWipe2'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
+import { getBriefSections } from '~~/shared/constants/brief-sections'
 import type { Component } from 'vue'
 import {
   AdminWorkStatus,
@@ -666,6 +667,31 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
       ],
     }
   }
+
+  // ── Брифинг (self_profile / brief) ──────────────────────────
+  if (currentProjectPage.value === 'self_profile' || currentProjectPage.value === 'brief') {
+    const projectType = p.projectType || 'apartment'
+    const sections = getBriefSections(projectType)
+    const filled = sections
+      .filter(s => s.type === 'fields' && s.fields?.length)
+      .map(s => ({
+        title: s.title,
+        fields: (s.fields ?? []).map(f => ({
+          label: f.label,
+          value: pf[f.key] ?? '',
+          type: (f.type === 'textarea' ? 'multiline' : 'text') as 'multiline' | 'text',
+        })),
+      }))
+    const completedCount = Object.keys(pf).filter(k => k.startsWith('brief_') && pf[k]).length
+    return {
+      entityTitle: 'Брифинг',
+      entitySubtitle: `тип: ${projectType}`,
+      entityStatus: pf.brief_completed ? 'заполнен' : completedCount > 0 ? 'в процессе' : 'не заполнен',
+      entityStatusColor: pf.brief_completed ? 'green' : completedCount > 0 ? 'amber' : 'muted',
+      sections: filled,
+    }
+  }
+
   return null
 })
 
