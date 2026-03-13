@@ -83,8 +83,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Wipe2EntityData } from '~/shared/types/wipe2'
-import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
@@ -106,35 +104,6 @@ const route = useRoute()
 const router = useRouter()
 const designSystem = useDesignSystem()
 const isBrutalistSellersMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
-const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
-
-const wipe2SellerEntityData = computed<Wipe2EntityData | null>(() => {
-  const s = selectedSeller.value
-  if (!s) {
-    const all = allSellers.value ?? []
-    return {
-      entityTitle: 'База поставщиков',
-      entitySubtitle: `${all.length} поставщиков`,
-      sections: [{ title: 'Статистика', fields: [{ label: 'Всего', value: String(all.length), type: 'number' as const }] }],
-    }
-  }
-  return {
-    entityTitle: s.name,
-    entitySubtitle: s.city || undefined,
-    entityStatus: 'поставщик',
-    entityStatusColor: 'amber',
-    sections: [{
-      title: 'Контакты',
-      fields: [
-        { label: 'Телефон', value: s.phone ?? '' },
-        { label: 'Email', value: s.email ?? '' },
-        { label: 'Город', value: s.city ?? '' },
-        { label: 'Сайт', value: s.website ?? '' },
-        { label: 'Заметки', value: s.notes ?? '', type: 'multiline' as const, span: 2 as const },
-      ],
-    }],
-  }
-})
 
 const sellersDirectory = useAdminEntityDirectory<any>('sellers')
 await sellersDirectory.ensureLoaded()

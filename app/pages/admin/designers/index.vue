@@ -48,8 +48,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Wipe2EntityData } from '~/shared/types/wipe2'
-import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
@@ -81,35 +79,7 @@ const route = useRoute()
 const router = useRouter()
 const designSystem = useDesignSystem()
 const isBrutalistDesignersMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
-const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
 
-const wipe2DesignerEntityData = computed<Wipe2EntityData | null>(() => {
-  const d = selectedDesigner.value
-  if (!d) {
-    const all = allDesigners.value ?? []
-    return {
-      entityTitle: 'База дизайнеров',
-      entitySubtitle: `${all.length} дизайнеров`,
-      sections: [{ title: 'Статистика', fields: [{ label: 'Всего', value: String(all.length), type: 'number' as const }] }],
-    }
-  }
-  return {
-    entityTitle: d.name,
-    entitySubtitle: d.city || undefined,
-    entityStatus: 'дизайнер',
-    entityStatusColor: 'blue',
-    sections: [{
-      title: 'Контакты',
-      fields: [
-        { label: 'Телефон', value: d.phone ?? '' },
-        { label: 'Email', value: d.email ?? '' },
-        { label: 'Город', value: d.city ?? '' },
-        { label: 'Специализация', value: Array.isArray(d.specializations) ? d.specializations.join(', ') : (d.specializations ?? ''), span: 2 as const },
-        { label: 'Заметки', value: d.notes ?? '', type: 'multiline' as const, span: 2 as const },
-      ],
-    }],
-  }
-})
 const showBrutalistDesignerHero = computed(() => isBrutalistDesignersMode.value && !!selectedDesigner.value)
 const designerSectionLabel = computed(() => {
   if (activeSection.value === 'dashboard') return 'кабинет дизайнера'

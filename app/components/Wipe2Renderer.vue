@@ -25,7 +25,7 @@
             class="w2-badge"
             :class="`w2-badge--${card.statusColor || 'muted'}`"
           >{{ card.status }}</span>
-          <button type="button" class="w2-edit-btn" @click.stop="$emit('edit')" title="Редактировать">✎</button>
+          <button type="button" class="w2-edit-btn" @click.stop="$emit('edit')" title="Редактировать (E)">✎ редактировать</button>
         </div>
       </div>
 
@@ -139,6 +139,7 @@ function next() {
 function onKey(e: KeyboardEvent) {
   if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); next() }
   if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   { e.preventDefault(); prev() }
+  if (e.key === 'e' || e.key === 'E')                  { e.preventDefault(); emit('edit') }
 }
 
 // ── Wheel (mouse scroll) ─────────────────────────────────────

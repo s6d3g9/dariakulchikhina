@@ -172,8 +172,6 @@
 
 <script setup lang="ts">
 import type { Component } from 'vue'
-import type { Wipe2EntityData } from '~/shared/types/wipe2'
-import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
 import { getClientPages } from '~~/shared/constants/pages'
 import ClientInitiation      from '~/components/ClientInitiation.vue'
 import ClientSelfProfile     from '~/components/ClientSelfProfile.vue'
@@ -206,51 +204,7 @@ watch(() => adminNav.contentSpec.value.clientSection, (section) => {
 const route = useRoute()
 const designSystem = useDesignSystem()
 const isBrutalistClientsMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
-const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
 
-const wipe2ClientEntityData = computed<Wipe2EntityData | null>(() => {
-  const c = selectedClient.value
-  if (!c) {
-    const all = clients.value ?? []
-    return {
-      entityTitle: 'База клиентов',
-      entitySubtitle: `${all.length} клиентов`,
-      sections: [{
-        title: 'Статистика',
-        fields: [
-          { label: 'Всего', value: String(all.length), type: 'number' as const },
-          { label: 'С проектами', value: String(all.filter((cl: any) => cl.linkedProjects?.length).length), type: 'number' as const },
-        ],
-      }],
-    }
-  }
-  return {
-    entityTitle: c.name,
-    entitySubtitle: c.phone || c.email || undefined,
-    entityStatus: c.linkedProjects?.length ? 'привязан' : 'без проекта',
-    entityStatusColor: c.linkedProjects?.length ? 'green' : 'muted',
-    sections: [
-      {
-        title: 'Контакты',
-        fields: [
-          { label: 'Телефон', value: c.phone ?? '' },
-          { label: 'Email', value: c.email ?? '' },
-          { label: 'Мессенджер', value: c.messengerNick ? `${c.messenger ?? ''} ${c.messengerNick}`.trim() : '' },
-          { label: 'Адрес', value: c.address ?? '', span: 2 as const },
-          { label: 'Заметки', value: c.notes ?? '', type: 'multiline' as const, span: 2 as const },
-        ],
-      },
-      ...(c.linkedProjects?.length ? [{
-        title: 'Проекты',
-        fields: c.linkedProjects.map((p: any) => ({
-          label: p.title || p.slug,
-          value: p.slug,
-          span: 2 as const,
-        })),
-      }] : []),
-    ],
-  }
-})
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
 const clientsDirectory = useAdminClientsDirectory(projectSlugFilter)
 const { clients, pending, refresh } = clientsDirectory
