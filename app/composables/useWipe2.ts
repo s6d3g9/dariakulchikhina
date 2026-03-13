@@ -1,100 +1,83 @@
 /**
  * useWipe2 — Data-driven card renderer for wipe2 mode.
  *
- * ## Provide / inject "slot" pattern
+ * Uses Nuxt's useState() instead of provide/inject to avoid issues with
+ * Vue's currentInstance being null after `await` in <script setup>.
  *
- *  1. slug.vue calls createWipe2Slot() once in setup().
- *     This creates a shared Ref<Wipe2EntityData | null> and provides it to all
- *     descendants via Vue's provide().
- *
- *  2. Entity components (AdminSpacePlanning, etc.) call registerWipe2Data(computed(...))
- *     in their setup(). This injects the slot from the ancestor and writes
- *     their data into it. On unmount it clears the slot.
- *
- *  3. Wipe2Renderer.vue calls useWipe2Cards() to get a ComputedRef<Wipe2Card[]>
- *     derived from the same slot.
+ * ## API
+ *  - registerWipe2Data(source)  — called in entity components, writes data to shared state
+ *  - useWipe2Cards()            — called in Wipe2Renderer, reads computed cards
+ *  - buildWipe2Cards(entity)    — pure packing algorithm (exported for tests)
  *
  * ## Packing rules (2-col × 8-row = 16 slots per card)
  *   section header  → full row = 2 slots
- *   field span:2 or type:multiline → full row = 2 slots
- *   two narrow fields → 1 row = 2 slots (packed side-by-side)
+ *   field type:multiline or span:2 → full row = 2 slots
+ *   two narrow fields → 1 row = 2 slots (side-by-side)
  *   one leftover narrow field → 1 row = 2 slots
- *
- * When a card is full, a new card starts. If the overflow happened mid-section,
- * the new card gets a "(продолжение)" section header.
  */
 
 import {
   computed,
-  inject,
   onUnmounted,
-  provide,
-  ref,
   watchEffect,
   type ComputedRef,
   type MaybeRefOrGetter,
-  type Ref,
 } from 'vue'
 import { toValue } from 'vue'
 import type { Wipe2Card, Wipe2EntityData, Wipe2Field, Wipe2Row, Wipe2Section } from '~/shared/types/wipe2'
 
 export type { Wipe2Card, Wipe2EntityData, Wipe2Field, Wipe2Row, Wipe2Section }
 
-const WIPE2_SLOT = Symbol('wipe2-slot')
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared reactive state via useState (SSR-safe Nuxt singleton)
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────
-// 1. CREATE SLOT (call from ancestor, e.g. slug.vue)
-// ─────────────────────────────────────────────
-
-/**
- * Creates a reactive entity data slot and provides it to all descendants.
- * Call once in setup() of the page that owns the Wipe2Renderer.
- * Returns the raw ref so the page can inspect it if needed.
- */
-export function createWipe2Slot(): Ref<Wipe2EntityData | null> {
-  const slot = ref<Wipe2EntityData | null>(null)
-  provide(WIPE2_SLOT, slot)
-  return slot
+function useWipe2State() {
+  return useState<Wipe2EntityData | null>('wipe2-entity-data', () => null)
 }
 
-// ─────────────────────────────────────────────
-// 2. REGISTER DATA (call from entity components)
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. REGISTER (call from entity components, before any await)
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Entity components call this in setup() to expose their data in wipe2 mode.
- * Automatically clears the slot when the component unmounts.
+ * Works even after await — uses watchEffect bound to component lifecycle.
+ * Automatically clears state when the component unmounts.
  */
 export function registerWipe2Data(
   source: MaybeRefOrGetter<Wipe2EntityData | null>
 ): void {
-  const slot = inject<Ref<Wipe2EntityData | null>>(WIPE2_SLOT)
-  if (!slot) return
+  const state = useWipe2State()
 
   watchEffect(() => {
-    slot.value = toValue(source)
+    state.value = toValue(source)
   })
 
   onUnmounted(() => {
-    slot.value = null
+    state.value = null
   })
 }
 
-// ─────────────────────────────────────────────
-// 3. READ CARDS (call from Wipe2Renderer)
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. READ CARDS (call from Wipe2Renderer)
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Returns a ComputedRef<Wipe2Card[]> derived from the slot.
- * Call in setup() of Wipe2Renderer.vue.
+ * Returns a ComputedRef<Wipe2Card[]> that reacts to state changes.
  */
 export function useWipe2Cards(): ComputedRef<Wipe2Card[]> {
-  const slot = inject<Ref<Wipe2EntityData | null>>(WIPE2_SLOT, null as any)
+  const state = useWipe2State()
   return computed(() => {
-    const data = slot?.value ?? null
+    const data = state.value
     return data ? buildWipe2Cards(data) : []
   })
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Legacy no-op kept so slug.vue compiles without changes
+// ─────────────────────────────────────────────────────────────────────────────
+export function createWipe2Slot() { /* no-op: state is now global via useState */ }
 
 // ─────────────────────────────────────────────
 // 4. PACKING ALGORITHM
