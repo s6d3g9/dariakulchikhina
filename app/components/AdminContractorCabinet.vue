@@ -35,6 +35,7 @@
       >
         <div v-show="!isWipe2Mode" class="cab-inner cv-wipe-inner" :class="{ 'cab-inner--ribbon': showAll }">
           <template v-if="(section === 'dashboard') || showAll">
+            <div class="cab-section">
             <section v-if="showBrutalistContractorDashboardHero" class="ct-cab-hero">
               <div class="ct-cab-hero-topline">кабинет подрядчика</div>
               <div class="ct-cab-hero-grid">
@@ -146,9 +147,11 @@
                 <span class="dash-nodue-proj">{{ item.projectTitle }}</span>
               </div>
             </div>
+            </div>
           </template>
 
           <template v-if="(section === 'tasks') || showAll">
+            <div class="cab-section">
             <div class="cab-add-task-row" :class="{ 'cab-add-task-row--brutalist': isBrutalistContractorCabinetMode }">
               <button class="cab-add-task-btn" @click="openNewTaskModal">＋ Добавить задачу</button>
             </div>
@@ -348,9 +351,11 @@
                 </div>
               </div>
             </template>
+            </div>
           </template>
 
           <template v-if="(section === 'contacts') || showAll">
+            <div class="cab-section">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Основные контакты</h3>
@@ -379,9 +384,11 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
           <template v-if="(section === 'passport') || showAll">
+            <div class="cab-section">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Паспорт гражданина РФ</h3>
@@ -440,9 +447,11 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
           <template v-if="(section === 'requisites') || showAll">
+            <div class="cab-section">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Юридические данные</h3>
@@ -497,9 +506,11 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
           <template v-if="(section === 'documents') || showAll">
+            <div class="cab-section">
             <div class="cab-docs-panel" :class="{ 'cab-docs-panel--brutalist': isBrutalistContractorCabinetMode }">
             <div class="u-grid-2" style="margin-bottom:12px">
               <div class="u-field">
@@ -575,9 +586,11 @@
               <p>Документов пока нет.<br>Загрузите паспорт, лицензии, сертификаты и другие документы.</p>
             </div>
             </div>
+            </div>
           </template>
 
           <template v-if="(section === 'specialization') || showAll">
+            <div class="cab-section">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Роль / профессия</h3>
@@ -622,9 +635,11 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
           <template v-if="(section === 'finances') || showAll">
+            <div class="cab-section">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Система налогообложения</h3>
@@ -681,9 +696,11 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
           <template v-if="(section === 'portfolio') || showAll">
+            <div class="cab-section">
             <div class="cab-portfolio-stats glass-surface" :class="{ 'cab-portfolio-stats--brutalist': isBrutalistContractorCabinetMode }">
               <div class="cab-portfolio-stat">
                 <span class="cab-portfolio-stat-val">{{ portfolioStats.doneCount }}</span>
@@ -721,9 +738,11 @@
                 </div>
               </div>
             </div>
+            </div>
           </template>
 
           <template v-if="(section === 'settings') || showAll">
+            <div class="cab-section">
             <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
               <h3>Аккаунт</h3>
               <div class="u-grid-2">
@@ -758,9 +777,11 @@
               </div>
               <button class="a-btn-sm" style="margin-top:12px" @click="saveNotifSettings">Сохранить настройки</button>
             </div>
+            </div>
           </template>
 
           <template v-if="(section === 'staff') || showAll">
+            <div class="cab-section">
             <div v-if="!staff?.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistContractorCabinetMode }">
               <span>◔</span>
               <p>Сотрудников пока нет.<br>Администратор добавит мастеров за вашей компанией.</p>
@@ -782,6 +803,7 @@
                 </div>
                 <div class="cab-staff-arrow">›</div>
               </NuxtLink>
+            </div>
             </div>
           </template>
 

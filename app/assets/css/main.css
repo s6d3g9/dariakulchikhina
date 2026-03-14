@@ -1297,10 +1297,13 @@ html.dark .glass-input::placeholder {
 .cab-empty-icon { font-size: 2rem; margin-bottom: 10px; }
 
 /* ── Ribbon mode: all sections stacked vertically ── */
-.cab-inner--ribbon > * {
-  padding-top: 0;
+.cab-section {
+  display: contents; /* transparent wrapper — not a new stacking context */
 }
-.cab-inner--ribbon > * + * {
+.cab-inner--ribbon .cab-section {
+  display: block;
+}
+.cab-inner--ribbon .cab-section + .cab-section {
   margin-top: 28px;
   padding-top: 28px;
   border-top: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);

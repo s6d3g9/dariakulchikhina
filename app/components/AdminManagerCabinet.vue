@@ -35,6 +35,7 @@
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
           <template v-if="(section === 'dashboard') || showAll">
+            <div class="cab-section">
             <div class="dash-welcome glass-surface">
               <div class="dash-welcome-left">
                 <div class="dash-avatar">{{ manager?.name?.charAt(0)?.toUpperCase() || '◎' }}</div>
@@ -105,10 +106,12 @@
                 </div>
               </div>
             </div>
+            </div>
           </template>
 
           <!-- ═══════════════ PROJECTS ═══════════════ -->
           <template v-if="(section === 'projects') || showAll">
+            <div class="cab-section">
             <div class="u-section-title">Проекты менеджера</div>
             <div v-if="!linkedProjects.length" class="cab-empty">
               <span class="ent-empty-icon">📂</span>
@@ -129,37 +132,45 @@
                 </div>
               </div>
             </div>
+            </div>
           </template>
 
           <!-- ═══════════════ FEED ═══════════════ -->
           <template v-if="(section === 'feed') || showAll">
+            <div class="cab-section">
             <div class="u-section-title">Лента событий</div>
             <div class="cab-empty">
               <span class="ent-empty-icon">📋</span>
               <span>Лента событий будет доступна позже</span>
             </div>
+            </div>
           </template>
 
           <!-- ═══════════════ APPROVALS ═══════════════ -->
           <template v-if="(section === 'approvals') || showAll">
+            <div class="cab-section">
             <div class="u-section-title">Согласования</div>
             <div class="cab-empty">
               <span class="ent-empty-icon">✅</span>
               <span>Нет активных согласований</span>
             </div>
+            </div>
           </template>
 
           <!-- ═══════════════ REPORTS ═══════════════ -->
           <template v-if="(section === 'reports') || showAll">
+            <div class="cab-section">
             <div class="u-section-title">Отчёты</div>
             <div class="cab-empty">
               <span class="ent-empty-icon">📊</span>
               <span>Отчёты будут доступны позже</span>
             </div>
+            </div>
           </template>
 
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-if="(section === 'profile') || showAll">
+            <div class="cab-section">
             <div class="u-section-title">Профиль менеджера</div>
             <form class="man-profile-form glass-surface" @submit.prevent="saveProfile">
               <div class="u-grid-2">
@@ -201,6 +212,7 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
         </div>

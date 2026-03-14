@@ -35,6 +35,7 @@
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
           <template v-if="(section === 'dashboard') || showAll">
+            <div class="cab-section">
             <div class="dash-welcome glass-surface">
               <div class="dash-welcome-left">
                 <div class="dash-avatar">{{ seller?.name?.charAt(0)?.toUpperCase() || '◑' }}</div>
@@ -102,10 +103,12 @@
                 <span v-for="cat in seller.categories" :key="cat" class="u-tag">{{ CATEGORY_LABELS[cat] || cat }}</span>
               </div>
             </div>
+            </div>
           </template>
 
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-if="(section === 'profile') || showAll">
+            <div class="cab-section">
             <form @submit.prevent="saveProfile" class="cab-form">
               <div class="u-form-section">
                 <h3>Основные данные</h3>
@@ -188,10 +191,12 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
           <!-- ═══════════════ REQUISITES ═══════════════ -->
           <template v-if="(section === 'requisites') || showAll">
+            <div class="cab-section">
             <form @submit.prevent="saveProfile" class="cab-form">
               <div class="u-form-section">
                 <h3>Юридические реквизиты</h3>
@@ -222,10 +227,12 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
           <!-- ═══════════════ TERMS ═══════════════ -->
           <template v-if="(section === 'terms') || showAll">
+            <div class="cab-section">
             <form @submit.prevent="saveProfile" class="cab-form">
               <div class="u-form-section">
                 <h3>Условия работы</h3>
@@ -257,10 +264,12 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
           <!-- ═══════════════ PROJECTS ═══════════════ -->
           <template v-if="(section === 'projects') || showAll">
+            <div class="cab-section">
             <div v-if="!linkedProjects.length" class="u-empty glass-surface">
               <span>◎</span>
               <p>Нет привязанных проектов.<br>Привяжите поставщика к проекту через верхнее меню.</p>
@@ -270,6 +279,7 @@
                 <span class="dash-project-name">{{ p.title || p.name }}</span>
                 <span class="dash-project-slug">{{ p.slug }}</span>
               </div>
+            </div>
             </div>
           </template>
 

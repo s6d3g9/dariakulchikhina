@@ -19,6 +19,7 @@
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
           <template v-if="(section === 'dashboard') || showAll">
+            <div class="cab-section">
             <section v-if="showBrutalistDashboardHero" class="ds-cab-hero">
               <div class="ds-cab-hero-topline">дизайнерский кабинет</div>
               <div class="ds-cab-hero-grid">
@@ -146,10 +147,12 @@
                 </NuxtLink>
               </div>
             </div>
+            </div>
           </template>
 
           <!-- ═══════════════ SERVICES & PRICING ═══════════════ -->
           <template v-if="(section === 'services') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Услуги и прайс-лист</h2>
               <div>
@@ -240,10 +243,12 @@
                 </div>
               </div>
             </template>
+            </div>
           </template>
 
           <!-- ═══════════════ PACKAGES ═══════════════ -->
           <template v-if="(section === 'packages') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Пакеты услуг</h2>
               <div>
@@ -321,10 +326,12 @@
                 </div>
               </div>
             </template>
+            </div>
           </template>
 
           <!-- ═══════════════ SUBSCRIPTIONS ═══════════════ -->
           <template v-if="(section === 'subscriptions') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Подписки и абонементы</h2>
               <div>
@@ -445,10 +452,12 @@
                 </div>
               </div>
             </template>
+            </div>
           </template>
 
           <!-- ═══════════════ DOCUMENTS ═══════════════ -->
           <template v-if="(section === 'documents') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Документы</h2>
             </div>
@@ -525,10 +534,12 @@
               <span>📂</span>
               <p>Документов пока нет.<br>Загрузите договоры, ТЗ, референсы и акты.</p>
             </div>
+            </div>
           </template>
 
           <!-- ═══════════════ PROJECTS ═══════════════ -->
           <template v-if="(section === 'projects') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Мои проекты</h2>
               <button class="a-btn-save" @click="showNewProjectModal = true">＋ Новый проект</button>
@@ -666,10 +677,12 @@
               <div v-if="dp.notes" class="proj-notes">{{ dp.notes }}</div>
             </div>
 
+            </div>
           </template>
 
           <!-- ═══════════════ CLIENTS (Flat Registry pivot) ═══════════════ -->
           <template v-if="(section === 'clients') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Клиенты</h2></div>
             <div v-if="uniqueClients.length" class="pivot-list">
               <div v-for="c in uniqueClients" :key="c.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToClient(c.id, c.name)">
@@ -683,10 +696,12 @@
               </div>
             </div>
             <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Клиентов пока нет. Добавьте клиента в проект.</p></div>
+            </div>
           </template>
 
           <!-- ═══════════════ CONTRACTORS (Flat Registry pivot) ═══════════════ -->
           <template v-if="(section === 'contractors') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Подрядчики</h2></div>
             <div v-if="uniqueContractors.length" class="pivot-list">
               <div v-for="c in uniqueContractors" :key="c.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToContractor(c.id, c.name)">
@@ -698,10 +713,12 @@
               </div>
             </div>
             <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Подрядчиков пока нет. Добавьте подрядчика в проект.</p></div>
+            </div>
           </template>
 
           <!-- ═══════════════ SELLERS (Flat Registry pivot) ═══════════════ -->
           <template v-if="(section === 'sellers') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Продавцы / Поставщики</h2></div>
             <div v-if="linkedData?.sellers?.length" class="pivot-list">
               <div v-for="s in linkedData.sellers" :key="s.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToSeller(s.id, s.name)">
@@ -720,10 +737,12 @@
               </div>
             </div>
             <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Поставщиков пока нет.</p></div>
+            </div>
           </template>
 
           <!-- ═══════════════ MANAGERS (Flat Registry) ═══════════════ -->
           <template v-if="(section === 'managers') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Менеджеры</h2></div>
             <div v-if="linkedData?.managers?.length" class="pivot-list">
               <div v-for="m in linkedData.managers" :key="m.id" class="pivot-banner glass-surface" :class="{ 'pivot-banner--brutalist': isBrutalistDesignerCabinetMode }" @click="goToManager(m.id, m.name)">
@@ -742,10 +761,12 @@
               </div>
             </div>
             <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Менеджеров пока нет.</p></div>
+            </div>
           </template>
 
           <!-- ═══════════════ GALLERY (Flat Registry) ═══════════════ -->
           <template v-if="(section === 'gallery') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Галерея</h2></div>
             <div v-if="galleryList.length" class="gallery-grid">
               <div v-for="g in galleryList" :key="g.id" class="gallery-card glass-surface" :class="{ 'gallery-card--brutalist': isBrutalistDesignerCabinetMode }">
@@ -763,10 +784,12 @@
               </div>
             </div>
             <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Элементов галереи пока нет.</p></div>
+            </div>
           </template>
 
           <!-- ═══════════════ MOODBOARDS (Flat Registry) ═══════════════ -->
           <template v-if="(section === 'moodboards') || showAll">
+            <div class="cab-section">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }"><h2>Мудборды</h2></div>
             <div v-if="moodboardList.length" class="gallery-grid">
               <div v-for="g in moodboardList" :key="g.id" class="gallery-card glass-surface" :class="{ 'gallery-card--brutalist': isBrutalistDesignerCabinetMode }">
@@ -783,10 +806,12 @@
               </div>
             </div>
             <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }"><p>Мудбордов пока нет.</p></div>
+            </div>
           </template>
 
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-if="(section === 'profile') || showAll">
+            <div class="cab-section">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistDesignerCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistDesignerCabinetMode }">
                 <h3>Основные данные</h3>
@@ -852,6 +877,7 @@
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
+            </div>
           </template>
 
         </div>
