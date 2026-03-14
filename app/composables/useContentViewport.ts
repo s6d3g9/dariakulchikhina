@@ -1,7 +1,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue'
 import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportPagerRailInset, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
 
-type ViewMode = 'scroll' | 'paged' | 'flow' | 'wipe'
+type ViewMode = 'scroll' | 'paged' | 'flow' | 'wipe' | 'wipe2'
 type Direction = 'next' | 'prev'
 
 function isEditableTarget(target: EventTarget | null) {
@@ -31,7 +31,7 @@ export function useContentViewport(options: {
 
   const contentViewMode = computed<ViewMode>(() => {
     const mode = toValue(options.mode)
-    return mode === 'paged' || mode === 'flow' || mode === 'wipe' ? mode : 'scroll'
+    return (mode === 'paged' || mode === 'flow' || mode === 'wipe' || mode === 'wipe2') ? (mode as ViewMode) : 'scroll'
   })
 
   const isPaged = computed(() => {
@@ -131,6 +131,15 @@ export function useContentViewport(options: {
     }
 
     syncViewportAttrs()
+
+    // wipe2: Wipe2Renderer handles its own navigation — no page stops needed
+    if (contentViewMode.value === 'wipe2') {
+      pageStops.value = [0]
+      pageIndex.value = 1
+      pageCount.value = 1
+      return
+    }
+
     applyViewportZoneLayout(el)
     pageStops.value = buildViewportPageStops(el)
     pageCount.value = pageStops.value.length
@@ -264,6 +273,8 @@ export function useContentViewport(options: {
   async function move(direction: Direction) {
     const el = viewportRef.value
     if (!el) return false
+    // wipe2 mode: Wipe2Renderer handles its own card navigation
+    if (contentViewMode.value === 'wipe2') return false
 
     const stops = pageStops.value.length ? pageStops.value : [0]
     const currentPos = contentViewMode.value === 'wipe' ? getCurrentWipeOffset() : el.scrollTop
@@ -297,6 +308,7 @@ export function useContentViewport(options: {
 
   function handleWheel(event: WheelEvent) {
     if (!isPaged.value || !viewportRef.value) return
+    if (contentViewMode.value === 'wipe2') return  // handled by Wipe2Renderer
     if (Math.abs(event.deltaY) < 12) return
     event.preventDefault()
     if (!canMove()) return
@@ -305,6 +317,7 @@ export function useContentViewport(options: {
 
   function handleKeydown(event: KeyboardEvent) {
     if (!isPaged.value) return
+    if (contentViewMode.value === 'wipe2') return  // handled by Wipe2Renderer
     if (isEditableTarget(event.target)) return
     const isNext = event.key === 'PageDown' || event.key === 'ArrowDown' || event.key === ' '
     const isPrev = event.key === 'PageUp' || event.key === 'ArrowUp'
