@@ -2,22 +2,30 @@
   <!--
     AdminNestedNav — fractal drill-down navigator
     Реализует NavigationNode schema (shared/types/navigation.ts)
-    ПРАВИЛА: только текст в меню, никаких иконок/эмодзи, только левый сайдбар
+    ПРАВИЛА: навигация живет только в левом сайдбаре; в compact-режиме используются только текстовые монограммы
   -->
-  <div class="nav-shell" :class="`nav-shell--${navTransitionMode}`" :style="navMotionStyle">
+  <div
+    class="nav-shell"
+    :class="[`nav-shell--${navTransitionMode}`, { 'nav-shell--collapsed': collapsed }]"
+    :style="navMotionStyle"
+  >
     <Transition name="nav-pane" mode="out-in">
       <div :key="node.nodeId" class="nav-panel">
 
         <!-- Назад + заголовок -->
         <div class="nav-hd">
-          <button v-if="canGoBack" class="nav-back" @click="emit('back')">
+          <button v-if="canGoBack" class="nav-back" :aria-label="`Назад: ${node.context.title}`" @click="emit('back')">
             <span class="nav-back-arrow">‹</span>
-            <span class="nav-back-label">{{ node.context.title }}</span>
+            <span v-if="!collapsed" class="nav-back-label">{{ node.context.title }}</span>
           </button>
+          <div v-else class="nav-context" :title="node.context.title">
+            <span class="nav-context-glyph" aria-hidden="true">{{ toMonogram(node.context.title) }}</span>
+            <span v-if="!collapsed" class="nav-context-label">{{ node.context.title }}</span>
+          </div>
         </div>
 
         <!-- Поиск -->
-        <div class="nav-search-wrap">
+        <div v-if="!collapsed" class="nav-search-wrap">
           <input
             v-model="search"
             type="search"
@@ -41,10 +49,13 @@
               'nav-item--node': item.type === 'node',
             }"
             :style="{ '--nav-item-index': index }"
+            :title="collapsed ? item.name : undefined"
+            :aria-label="item.name"
             @click="onItemClick(item)"
           >
-            <span class="nav-item-name">{{ item.name }}</span>
-            <span v-if="item.type === 'node'" class="nav-item-arrow">›</span>
+            <span class="nav-item-glyph" aria-hidden="true">{{ toMonogram(item.name) }}</span>
+            <span v-if="!collapsed" class="nav-item-name">{{ item.name }}</span>
+            <span v-if="item.type === 'node' && !collapsed" class="nav-item-arrow">›</span>
           </button>
         </div>
 
@@ -61,6 +72,7 @@ const props = defineProps<{
   direction?: 'fwd' | 'back'
   canGoBack?: boolean
   activeId?: string
+  collapsed?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -68,6 +80,8 @@ const emit = defineEmits<{
   select: [item: PayloadItem]
   back: []
 }>()
+
+const collapsed = computed(() => Boolean(props.collapsed))
 
 const { tokens } = useDesignSystem()
 
@@ -98,6 +112,23 @@ const filteredPayload = computed(() => {
   return props.node.payload.filter(i => i.name.toLowerCase().includes(q))
 })
 
+function toMonogram(value: string) {
+  const parts = String(value || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  if (!parts.length) {
+    return '•'
+  }
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase()
+  }
+
+  return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase()
+}
+
 function onItemClick(item: PayloadItem) {
   if (item.type === 'node') emit('drill', item)
   else emit('select', item)
@@ -124,6 +155,20 @@ function onItemClick(item: PayloadItem) {
   gap: 4px;
 }
 
+.nav-context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.nav-context-label {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .5;
+}
+
 .nav-back {
   display: flex;
   align-items: center;
@@ -142,6 +187,19 @@ function onItemClick(item: PayloadItem) {
 .nav-back:hover { opacity: .8; }
 .nav-back-arrow { font-size: .9rem; line-height: 1; }
 .nav-back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+.nav-context-glyph,
+.nav-item-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
+  font-size: .62rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 
 /* ── Search ── */
 .nav-search-wrap {
@@ -182,6 +240,7 @@ function onItemClick(item: PayloadItem) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   width: 100%;
   min-height: 44px;
   padding: var(--nav-item-padding-v, 12px) var(--nav-item-padding-h, 16px);
@@ -222,6 +281,38 @@ function onItemClick(item: PayloadItem) {
   opacity: .3;
   flex-shrink: 0;
   margin-left: 4px;
+}
+
+.nav-shell--collapsed .nav-hd {
+  align-items: center;
+  padding-top: 4px;
+}
+
+.nav-shell--collapsed .nav-back,
+.nav-shell--collapsed .nav-context {
+  justify-content: center;
+}
+
+.nav-shell--collapsed .nav-list {
+  align-items: center;
+}
+
+.nav-shell--collapsed .nav-item {
+  width: 44px;
+  min-width: 44px;
+  padding: 6px;
+  justify-content: center;
+}
+
+.nav-shell--collapsed .nav-context-glyph,
+.nav-shell--collapsed .nav-item-glyph {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+}
+
+.nav-shell--collapsed .nav-empty {
+  text-align: center;
 }
 
 /* ── Transitions ── */

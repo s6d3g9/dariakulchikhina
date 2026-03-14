@@ -1,5 +1,9 @@
 <template>
-  <div class="admin-bg glass-page" :class="{ 'admin-bg--brutalist': isBrutalistShell, 'admin-bg--glass': isLiquidGlassShell }">
+  <div
+    class="admin-bg glass-page"
+    :class="{ 'admin-bg--brutalist': isBrutalistShell, 'admin-bg--glass': isLiquidGlassShell }"
+    :style="sidebarLayoutStyle"
+  >
     <UIDesignPanel v-if="adminLayoutModules.designPanel" />
     <header v-if="adminLayoutModules.header && !isBrutalistShell" class="admin-header glass-surface">
       <span class="admin-brand">админ-панель</span>
@@ -99,23 +103,36 @@
         ref="sidebarRef"
         class="proj-nav-col adm-sidebar"
         :class="{ 'adm-sidebar--collapsed': isSidebarCollapsed }"
-        @pointerenter="handleSidebarPointerEnter"
       >
-        <button
-          v-if="canAutoCollapseSidebar"
-          type="button"
-          class="adm-sidebar-rail"
-          :class="{ 'adm-sidebar-rail--visible': isSidebarCollapsed }"
-          aria-label="Раскрыть меню"
-          @pointerenter="handleSidebarRailPointerEnter"
-          @focus="expandSidebar"
-        />
         <div class="adm-sidebar-inner" :class="{ 'adm-sidebar-inner--collapsed': isSidebarCollapsed }">
-        <div v-if="adminLayoutModules.sidebarMenu && isBrutalistShell" ref="adminMenuRef" class="admin-sidebar-menu-wrap">
+        <div class="adm-sidebar-toolbar">
+          <button
+            v-if="canAutoCollapseSidebar"
+            type="button"
+            class="adm-sidebar-toggle"
+            :aria-expanded="(!isSidebarCollapsed).toString()"
+            :aria-label="isSidebarCollapsed ? 'Раскрыть меню' : 'Свернуть меню'"
+            @click="toggleSidebarCollapsed"
+          >
+            <span class="adm-sidebar-toggle-glyph" aria-hidden="true">{{ isSidebarCollapsed ? '›' : '‹' }}</span>
+            <span v-if="!isSidebarCollapsed" class="adm-sidebar-toggle-label">
+              {{ isSidebarCollapsed ? 'раскрыть' : 'свернуть' }}
+            </span>
+          </button>
+        </div>
+        <div
+          v-if="adminLayoutModules.sidebarMenu && isBrutalistShell"
+          ref="adminMenuRef"
+          class="admin-sidebar-menu-wrap"
+          :class="{ 'admin-sidebar-menu-wrap--collapsed': isSidebarCollapsed }"
+        >
           <button
             type="button"
             class="admin-sidebar-menu-btn"
-            :class="{ 'admin-sidebar-menu-btn--open': adminShellMenuOpen }"
+            :class="{
+              'admin-sidebar-menu-btn--open': adminShellMenuOpen,
+              'admin-sidebar-menu-btn--collapsed': isSidebarCollapsed,
+            }"
             aria-label="Открыть меню админ-панели"
             :aria-expanded="adminShellMenuOpen ? 'true' : 'false'"
             @click.stop="adminShellMenuOpen = !adminShellMenuOpen"
@@ -125,10 +142,10 @@
               <span />
               <span />
             </span>
-            <span class="admin-sidebar-menu-label">меню админки</span>
+            <span v-if="!isSidebarCollapsed" class="admin-sidebar-menu-label">меню админки</span>
           </button>
 
-          <div v-if="adminShellMenuOpen" class="admin-sidebar-menu-panel" @click.stop>
+          <div v-if="adminShellMenuOpen && !isSidebarCollapsed" class="admin-sidebar-menu-panel" @click.stop>
             <div class="admin-sidebar-brand">админ-панель</div>
             <button
               v-if="adminLayoutModules.search"
@@ -201,13 +218,14 @@
           :direction="adminNav.slideDir.value"
           :can-go-back="adminNav.canGoBack.value"
           :active-id="adminNav.activeLeafId.value"
+          :collapsed="isSidebarCollapsed"
           @drill="adminNav.drill"
           @back="adminNav.back"
           @select="adminNav.select"
         />
         </div>
       </aside>
-      <main class="adm-main admin-with-nav" @pointerenter="handleMainPointerEnter">
+      <main class="adm-main admin-with-nav">
         <div class="admin-container">
           <slot />
         </div>
@@ -243,19 +261,24 @@ const { editMode, toggleEditMode } = useEditMode()
 const canAutoCollapseSidebar = computed(() =>
   isDesktopSidebar.value && adminLayoutModules.value.nestedNav)
 
-function collapseSidebar() {
+const sidebarLayoutStyle = computed(() => {
+  if (!isDesktopSidebar.value) {
+    return {
+      '--adm-sidebar-current-width': '100%',
+      '--adm-sidebar-offset': '0px',
+    }
+  }
+
+  return {
+    '--adm-sidebar-current-width': isSidebarCollapsed.value ? '78px' : '248px',
+    '--adm-sidebar-offset': isSidebarCollapsed.value ? '126px' : '296px',
+  }
+})
+
+function toggleSidebarCollapsed() {
   if (!canAutoCollapseSidebar.value) return
-  isSidebarCollapsed.value = true
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
 }
-function expandSidebar() {
-  isSidebarCollapsed.value = false
-}
-function handleMainPointerEnter() { collapseSidebar() }
-function handleSidebarPointerEnter() {
-  if (!isSidebarCollapsed.value) return
-  expandSidebar()
-}
-function handleSidebarRailPointerEnter() { expandSidebar() }
 function syncDesktopSidebarState() {
   isDesktopSidebar.value = window.innerWidth >= 1024
   if (!isDesktopSidebar.value) isSidebarCollapsed.value = false
@@ -711,6 +734,11 @@ watch(() => adminLayoutModules.value.sidebarMenu, (enabled) => {
     adminShellMenuOpen.value = false
   }
 })
+watch(isSidebarCollapsed, (collapsed) => {
+  if (collapsed) {
+    adminShellMenuOpen.value = false
+  }
+})
 watch(() => route.fullPath, () => { closeAll() })
 
 // ── Pickers ─────────────────────────────────────────────────────
@@ -809,6 +837,11 @@ async function logout() {
   --admin-container-mt: 22px;
 }
 
+.admin-with-nav {
+  padding-left: var(--adm-sidebar-offset, calc(var(--ds-sidebar-width, 200px) + 48px));
+  transition: padding-left 220ms ease;
+}
+
 /* ── Header ── */
 .admin-header {
   padding: 10px 20px;
@@ -884,50 +917,79 @@ async function logout() {
 
 /* ── Navigation sidebar (sticky) ── */
 .adm-sidebar {
-  position: sticky;
+  position: fixed;
+  left: max(16px, calc((100vw - var(--ds-container-width, 1140px)) / 2 + 16px));
   top: calc(var(--dp-panel-h, 0px) + var(--admin-header-h, 48px));
-  height: calc(100vh - var(--dp-panel-h, 0px) - var(--admin-header-h, 48px));
+  bottom: 18px;
+  height: auto;
+  max-height: calc(100vh - var(--dp-panel-h, 0px) - var(--admin-header-h, 48px) - 18px);
   overflow-y: auto;
   overflow-x: hidden;
-  width: var(--ds-sidebar-width, 232px);
-  min-width: var(--ds-sidebar-width, 232px);
+  width: var(--adm-sidebar-current-width, 248px);
+  min-width: var(--adm-sidebar-current-width, 248px);
   flex-shrink: 0;
-  border-right: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
   background: color-mix(in srgb, var(--glass-bg) 85%, transparent);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
-  transition: width 220ms ease, min-width 220ms ease;
+  z-index: 40;
+  transition: width 220ms ease, min-width 220ms ease, left 220ms ease;
 }
 .adm-sidebar--collapsed {
-  width: 6px;
-  min-width: 6px;
-}
-.adm-sidebar-rail {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 6px;
-  height: 100%;
-  z-index: 5;
-  cursor: ew-resize;
-  background: transparent;
-  border: none;
-  padding: 0;
-  opacity: 0;
-}
-.adm-sidebar-rail--visible {
-  opacity: 1;
-  background: color-mix(in srgb, var(--ds-accent, oklch(60% 0.20 255)) 20%, transparent);
+  width: var(--adm-sidebar-current-width, 78px);
+  min-width: var(--adm-sidebar-current-width, 78px);
 }
 .adm-sidebar-inner {
-  padding: 12px 0 24px;
-  min-width: var(--ds-sidebar-width, 232px);
-  transition: opacity 200ms ease, transform 200ms ease;
+  padding: 12px 10px 20px;
+  min-width: 0;
+  transition: padding 200ms ease;
 }
 .adm-sidebar-inner--collapsed {
-  opacity: 0;
-  transform: translateX(-18px);
-  pointer-events: none;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.adm-sidebar-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.adm-sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+  color: var(--glass-text);
+  font: inherit;
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.adm-sidebar-toggle:hover {
+  border-color: color-mix(in srgb, var(--glass-text) 26%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent);
+}
+
+.adm-sidebar-toggle-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.adm-sidebar-toggle-label {
+  white-space: nowrap;
 }
 
 /* Edit mode button */
@@ -990,6 +1052,10 @@ async function logout() {
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
 }
 
+.admin-sidebar-menu-wrap--collapsed {
+  align-items: center;
+}
+
 .admin-sidebar-menu-btn {
   width: 100%;
   min-height: 44px;
@@ -1004,6 +1070,12 @@ async function logout() {
   font: inherit;
   text-transform: uppercase;
   letter-spacing: .1em;
+}
+
+.admin-sidebar-menu-btn--collapsed {
+  width: 44px;
+  padding: 10px 0;
+  justify-content: center;
 }
 
 .admin-sidebar-menu-btn--open {
@@ -1245,17 +1317,23 @@ async function logout() {
     position: static;
     width: 100%;
     min-width: 100%;
+    max-height: none;
+    bottom: auto;
+    left: auto;
     height: auto;
     transition: none;
   }
   .adm-sidebar-inner,
   .adm-sidebar-inner--collapsed {
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
     min-width: 100%;
   }
-  .adm-sidebar-rail { display: none; }
+  .adm-sidebar-toolbar {
+    justify-content: flex-start;
+  }
+  .adm-sidebar-toggle {
+    width: 100%;
+    justify-content: space-between;
+  }
 
   .admin-sidebar-menu-wrap {
     padding-bottom: 10px;
@@ -1287,6 +1365,10 @@ async function logout() {
 
   .adm-body {
     flex-direction: column;
+  }
+
+  .admin-with-nav {
+    padding-left: 0;
   }
 
   .admin-container {

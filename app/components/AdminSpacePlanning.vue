@@ -17,8 +17,8 @@
       </div>
 
       <!-- Section: General info -->
-      <div class="asp-section">
-        <div class="asp-section-title">общая информация</div>
+      <div class="u-form-section" data-cv-unit="section">
+        <div class="u-section-title">общая информация</div>
         <div class="u-grid-2">
           <div class="u-field">
             <label class="u-field__label">версия комплекта</label>
@@ -44,10 +44,11 @@
       </div>
 
       <!-- Section: Layout files -->
-      <div class="asp-section">
-        <div class="asp-section-title">файлы планировок</div>
+      <div class="u-form-section" data-cv-unit="section">
+        <div class="u-section-title">файлы планировок</div>
 
-        <div class="asp-files-list" v-if="form.sp_files && form.sp_files.length">
+        <!-- data-cv-unit="item" — pager treats the whole list as one block, prevents freeze -->
+        <div v-if="form.sp_files && form.sp_files.length" class="asp-files-list" data-cv-unit="item">
           <div v-for="(file, idx) in form.sp_files" :key="idx" class="asp-file-item">
             <div class="asp-file-icon">{{ fileIcon(file) }}</div>
             <div class="asp-file-meta">
@@ -74,9 +75,9 @@
       </div>
 
       <!-- Section: Approval options -->
-      <div class="asp-section">
-        <div class="asp-section-title">согласование</div>
-        <div class="asp-checks-row">
+      <div class="u-form-section" data-cv-unit="section">
+        <div class="u-section-title">согласование</div>
+        <div class="asp-checks-row" data-cv-unit="item">
           <label class="asp-check-item">
             <input type="checkbox" v-model="form.sp_dimensions_checked" @change="save"> размеры проверены
           </label>
@@ -178,9 +179,112 @@ function fileIcon(f: any) {
 
 <style scoped>
 .asp-wrap { padding: 4px 0 40px; }
-.asp-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
 
 .asp-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .asp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
+.asp-saved { font-size: .75rem; opacity: .5; }
+
+/* ── File list ── */
+.asp-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.asp-file-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--card-radius, 10px);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+}
+
+.asp-file-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  width: 30px;
+  text-align: center;
+  line-height: 1;
+  padding-top: 2px;
+}
+
+.asp-file-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.asp-file-name {
+  font-size: .88rem;
+  font-weight: 500;
+  color: var(--glass-text);
+  text-decoration: none;
+  word-break: break-all;
+  opacity: .85;
+}
+.asp-file-name:hover { opacity: 1; text-decoration: underline; }
+
+.asp-file-row2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.asp-file-del {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--glass-text);
+  opacity: .35;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: opacity .15s;
+}
+.asp-file-del:hover { opacity: 1; }
+
+.asp-files-empty {
+  padding: 12px 0;
+  font-size: .82rem;
+  opacity: .4;
+}
+
+/* ── Upload button ── */
+.asp-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 16px;
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--card-radius, 8px);
+  font-size: .8rem;
+  cursor: pointer;
+  opacity: .6;
+  transition: opacity .15s, border-color .15s;
+}
+.asp-upload-btn:hover { opacity: 1; border-color: var(--glass-text); }
+.asp-upload-btn--loading { opacity: .35; cursor: default; pointer-events: none; }
+
+/* ── Checkboxes ── */
+.asp-checks-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.asp-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .85rem;
+  cursor: pointer;
+}
 </style>
