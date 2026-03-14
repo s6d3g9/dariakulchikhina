@@ -31,8 +31,8 @@
         </div>
       </div>
 
-      <!-- Поле-сетка 2×8 -->
-      <div class="w2-body">
+      <!-- Поле-сетка 2×8: клик по любому полю = переход в режим редактирования -->
+      <div class="w2-body" role="button" tabindex="-1" title="Нажмите для редактирования" @click.stop="$emit('edit')">
         <template v-for="(row, ri) in card.rows" :key="ri">
 
           <!-- Заголовок секции (на всю ширину) -->
@@ -90,6 +90,7 @@
           aria-label="предыдущая карточка"
         >←</button>
         <span class="w2-pager">{{ card.index }} / {{ card.total }}</span>
+        <span class="w2-edit-hint" @click.stop="$emit('edit')">✎ редактировать</span>
         <button
           type="button"
           class="w2-nav-btn"
@@ -369,6 +370,15 @@ html.dark .w2-edit-btn:hover {
   row-gap: 10px;
   overflow: hidden;
   align-content: start;
+  cursor: pointer;
+}
+.w2-body:hover .w2-field__value {
+  opacity: .75;
+}
+.w2-body:hover .w2-field {
+  outline: 1px dashed color-mix(in srgb, var(--glass-text) 18%, transparent);
+  outline-offset: 3px;
+  border-radius: 3px;
 }
 
 /* ── Section separator ───────────────────────────────────────── */
@@ -446,6 +456,17 @@ html.dark .w2-edit-btn:hover {
   opacity: .5;
   letter-spacing: .03em;
 }
+.w2-edit-hint {
+  font-size: var(--ds-text-xs, .694rem);
+  opacity: .45;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 5px;
+  transition: opacity .15s;
+  flex: 1;
+  text-align: center;
+}
+.w2-edit-hint:hover { opacity: 1; }
 .w2-nav-btn {
   font-size: var(--ds-text-xs, .694rem);
   padding: 3px 10px;
