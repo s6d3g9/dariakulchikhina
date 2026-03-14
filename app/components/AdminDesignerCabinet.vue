@@ -868,7 +868,6 @@
     <Wipe2Renderer
       v-if="isWipe2Mode"
       :entity="wipe2CabinetData"
-      :fixed-mode="true"
       @edit="designSystem.set('contentViewMode', 'scroll')"
     />
     </main>
@@ -894,6 +893,7 @@ import {
   PRICE_UNITS,
 } from '~~/shared/types/designer'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
+import { registerWipe2Data } from '~/composables/useWipe2'
 
 const props = defineProps<{ designerId: number; modelValue?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
@@ -1784,6 +1784,7 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
     ]}],
   }
 })
+registerWipe2Data(wipe2CabinetData)
 
 </script>
 

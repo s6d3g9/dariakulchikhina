@@ -287,7 +287,6 @@
       <Wipe2Renderer
         v-if="isWipe2Mode"
         :entity="wipe2CabinetData"
-        :fixed-mode="true"
         @edit="designSystem.set('contentViewMode', 'scroll')"
       />
       </main>
@@ -297,6 +296,7 @@
 
 <script setup lang="ts">
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
+import { registerWipe2Data } from '~/composables/useWipe2'
 
 const props = defineProps<{ sellerId: number; modelValue?: string; showSidebar?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
@@ -523,6 +523,7 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
     ]}],
   }
 })
+registerWipe2Data(wipe2CabinetData)
 </script>
 
 <style scoped>

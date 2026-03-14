@@ -2078,6 +2078,15 @@ html.dark .glass-input::placeholder {
   transform: translate3d(0, var(--cv-wipe-to, -102%), 0);
 }
 
+/* ── wipe2 cabinet mode: overlay stays fixed inside the viewport ── */
+.cv-viewport--paged[data-cv-mode="wipe2"] {
+  overflow: hidden;
+  scrollbar-width: none;
+  overscroll-behavior: none;
+}
+.cv-viewport--paged[data-cv-mode="wipe2"]::-webkit-scrollbar { display: none; }
+.cv-viewport--paged[data-cv-mode="wipe2"] .cv-wipe-inner { display: none; }
+
 .cv-pager-rail {
   position: sticky;
   bottom: 14px;
