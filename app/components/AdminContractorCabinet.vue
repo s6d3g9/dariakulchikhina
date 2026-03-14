@@ -1015,12 +1015,7 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const active = items.filter((i: any) => ['planned', 'in_progress'].includes(i.status))
   const docs = contractorDocs.value || []
   const members = staff.value || []
-  return {
-    entityTitle: c.name,
-    entitySubtitle: form.companyName || (c.contractorType === 'company' ? 'организация' : 'мастер'),
-    entityStatus: c.contractorType === 'company' ? 'организация' : 'мастер',
-    entityStatusColor: c.contractorType === 'company' ? 'blue' as const : 'amber' as const,
-    sections: [
+  const allSections = [
       { title: 'Обзор', fields: [
         { label: 'Задач всего', value: String(dashStats.value?.total ?? 0) },
         { label: 'В работе', value: String(dashStats.value?.inProgress ?? 0) },
@@ -1090,8 +1085,20 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         ? members.slice(0, 8).map((m: any) => ({ label: m.name ?? '', value: m.role ?? m.specialization ?? '' }))
         : [{ label: 'Сотрудники', value: 'нет сотрудников', span: 2 as const }],
       },
-    ],
-  }
+    ]
+    const W2_SECTION: Record<string, string> = {
+      tasks: 'Активные задачи', contacts: 'Контакты', passport: 'Паспортные данные',
+      requisites: 'Реквизиты', documents: 'Документы', specialization: 'Специализация',
+      finances: 'Финансы', portfolio: 'Портфолио', settings: 'Настройки', staff: 'Бригада',
+    }
+    const sectionTitle = W2_SECTION[section.value]
+    return {
+      entityTitle: c.name,
+      entitySubtitle: form.companyName || (c.contractorType === 'company' ? 'организация' : 'мастер'),
+      entityStatus: c.contractorType === 'company' ? 'организация' : 'мастер',
+      entityStatusColor: c.contractorType === 'company' ? 'blue' as const : 'amber' as const,
+      sections: sectionTitle ? allSections.filter(s => s.title === sectionTitle) : allSections,
+    }
 })
 registerWipe2Data(wipe2CabinetData)
 </script>

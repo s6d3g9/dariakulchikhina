@@ -481,12 +481,7 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const s = seller.value
   if (!s) return null
   const projs = linkedProjects.value || []
-  return {
-    entityTitle: s.name,
-    entitySubtitle: form.city || undefined,
-    entityStatus: 'поставщик',
-    entityStatusColor: 'amber' as const,
-    sections: [
+  const allSections = [
       { title: 'Обзор', fields: [
         { label: 'Телефон', value: form.phone },
         { label: 'Email', value: form.email },
@@ -524,8 +519,18 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         ? projs.slice(0, 8).map((p: any) => ({ label: p.title ?? p.name ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const }))
         : [{ label: '', value: 'нет связанных проектов', span: 2 as const }],
       },
-    ],
-  }
+    ]
+    const W2_SECTION: Record<string, string> = {
+      profile: 'Профиль', terms: 'Условия работы', requisites: 'Реквизиты', projects: 'Проекты',
+    }
+    const sectionTitle = W2_SECTION[section.value]
+    return {
+      entityTitle: s.name,
+      entitySubtitle: form.city || undefined,
+      entityStatus: 'поставщик',
+      entityStatusColor: 'amber' as const,
+      sections: sectionTitle ? allSections.filter(s => s.title === sectionTitle) : allSections,
+    }
 })
 registerWipe2Data(wipe2CabinetData)
 </script>

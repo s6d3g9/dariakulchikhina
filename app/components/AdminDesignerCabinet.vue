@@ -1684,12 +1684,7 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const contractors = uniqueContractors.value || []
   const sellers = linkedData.value?.sellers || []
   const managers = linkedData.value?.managers || []
-  return {
-    entityTitle: d.name,
-    entitySubtitle: form.city || d.city || undefined,
-    entityStatus: 'дизайнер',
-    entityStatusColor: 'blue' as const,
-    sections: [
+  const allSections = [
       { title: 'Обзор', fields: [
         { label: 'Активных проектов', value: String(dashStats.value?.active ?? 0) },
         { label: 'Всего проектов', value: String(dashStats.value?.total ?? 0) },
@@ -1758,8 +1753,21 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         ? moodboardList.value.slice(0, 8).map((m: any) => ({ label: m.title ?? m.name ?? '', value: m.description ?? '' }))
         : [{ label: 'Мудборды', value: 'нет мудбордов', span: 2 as const }],
       },
-    ],
-  }
+    ]
+    const W2_SECTION: Record<string, string> = {
+      services: 'Услуги и прайс', packages: 'Пакеты', subscriptions: 'Подписки',
+      documents: 'Документы', projects: 'Проекты', clients: 'Клиенты',
+      contractors: 'Подрядчики', sellers: 'Поставщики', managers: 'Менеджеры',
+      gallery: 'Галерея', moodboards: 'Мудборды', profile: 'Профиль',
+    }
+    const sectionTitle = W2_SECTION[section.value]
+    return {
+      entityTitle: d.name,
+      entitySubtitle: form.city || d.city || undefined,
+      entityStatus: 'дизайнер',
+      entityStatusColor: 'blue' as const,
+      sections: sectionTitle ? allSections.filter(s => s.title === sectionTitle) : allSections,
+    }
 })
 registerWipe2Data(wipe2CabinetData)
 

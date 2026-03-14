@@ -370,12 +370,7 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const projs = linkedProjects.value || []
   const pending = projs.filter((p: any) => p.status === 'pending' || p.status === 'revision')
   const done = projs.filter((p: any) => p.status === 'done' || p.status === 'completed').length
-  return {
-    entityTitle: m.name,
-    entitySubtitle: form.role || undefined,
-    entityStatus: form.role ?? 'менеджер',
-    entityStatusColor: 'blue' as const,
-    sections: [
+    const allSections = [
       { title: 'Обзор', fields: [
         { label: 'Всего проектов', value: String(projs.length) },
         { label: 'Как лид', value: String(activeProjectsCount.value) },
@@ -408,8 +403,19 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Проектов', value: String(projs.length) },
         { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
       ]},
-    ],
-  }
+    ]
+    const W2_SECTION: Record<string, string> = {
+      projects: 'Проекты', feed: 'Лента событий', approvals: 'Согласования',
+      reports: 'Отчёты', profile: 'Профиль',
+    }
+    const sectionTitle = W2_SECTION[section.value]
+    return {
+      entityTitle: m.name,
+      entitySubtitle: form.role || undefined,
+      entityStatus: form.role ?? 'менеджер',
+      entityStatusColor: 'blue' as const,
+      sections: sectionTitle ? allSections.filter(s => s.title === sectionTitle) : allSections,
+    }
 })
 registerWipe2Data(wipe2CabinetData)
 </script>
