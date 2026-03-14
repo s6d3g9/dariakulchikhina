@@ -31,10 +31,10 @@
         @keydown="handleKeydown"
         @scroll="syncPager"
       >
-        <div v-show="!isWipe2Mode" class="cab-inner cv-wipe-inner">
+        <div v-show="!isWipe2Mode" class="cab-inner cv-wipe-inner" :class="{ 'cab-inner--ribbon': showAll }">
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
-          <template v-if="section === 'dashboard'">
+          <template v-if="(section === 'dashboard') || showAll">
             <div class="dash-welcome glass-surface">
               <div class="dash-welcome-left">
                 <div class="dash-avatar">{{ seller?.name?.charAt(0)?.toUpperCase() || '◑' }}</div>
@@ -57,7 +57,7 @@
               </div>
             </div>
 
-            <div class="dash-quick-nav">
+            <div class="dash-quick-nav" v-show="!showAll">
               <button class="dash-quick-btn glass-surface" @click="section = 'profile'">
                 <span class="dash-quick-icon">◓</span>
                 <span class="dash-quick-label">Профиль</span>
@@ -105,7 +105,7 @@
           </template>
 
           <!-- ═══════════════ PROFILE ═══════════════ -->
-          <template v-else-if="section === 'profile'">
+          <template v-if="(section === 'profile') || showAll">
             <form @submit.prevent="saveProfile" class="cab-form">
               <div class="u-form-section">
                 <h3>Основные данные</h3>
@@ -191,7 +191,7 @@
           </template>
 
           <!-- ═══════════════ REQUISITES ═══════════════ -->
-          <template v-else-if="section === 'requisites'">
+          <template v-if="(section === 'requisites') || showAll">
             <form @submit.prevent="saveProfile" class="cab-form">
               <div class="u-form-section">
                 <h3>Юридические реквизиты</h3>
@@ -225,7 +225,7 @@
           </template>
 
           <!-- ═══════════════ TERMS ═══════════════ -->
-          <template v-else-if="section === 'terms'">
+          <template v-if="(section === 'terms') || showAll">
             <form @submit.prevent="saveProfile" class="cab-form">
               <div class="u-form-section">
                 <h3>Условия работы</h3>
@@ -260,7 +260,7 @@
           </template>
 
           <!-- ═══════════════ PROJECTS ═══════════════ -->
-          <template v-else-if="section === 'projects'">
+          <template v-if="(section === 'projects') || showAll">
             <div v-if="!linkedProjects.length" class="u-empty glass-surface">
               <span>◎</span>
               <p>Нет привязанных проектов.<br>Привяжите поставщика к проекту через верхнее меню.</p>
@@ -446,6 +446,7 @@ async function saveProfile() {
 
 // ── Wipe2 card view ──
 const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
+const showAll = computed(() => !isWipe2Mode.value)
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const s = seller.value
   if (!s) return null

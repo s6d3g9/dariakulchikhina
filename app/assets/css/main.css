@@ -1296,6 +1296,16 @@ html.dark .glass-input::placeholder {
 }
 .cab-empty-icon { font-size: 2rem; margin-bottom: 10px; }
 
+/* ── Ribbon mode: all sections stacked vertically ── */
+.cab-inner--ribbon > * {
+  padding-top: 0;
+}
+.cab-inner--ribbon > * + * {
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
 /* ── Cabinet section title ── */
 .cab-section-title {
   font-size: var(--ds-text-xs, .64rem);

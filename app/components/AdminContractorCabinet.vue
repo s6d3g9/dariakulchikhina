@@ -33,8 +33,8 @@
         @keydown="handleKeydown"
         @scroll="syncPager"
       >
-        <div v-show="!isWipe2Mode" class="cab-inner cv-wipe-inner">
-          <template v-if="section === 'dashboard'">
+        <div v-show="!isWipe2Mode" class="cab-inner cv-wipe-inner" :class="{ 'cab-inner--ribbon': showAll }">
+          <template v-if="(section === 'dashboard') || showAll">
             <section v-if="showBrutalistContractorDashboardHero" class="ct-cab-hero">
               <div class="ct-cab-hero-topline">кабинет подрядчика</div>
               <div class="ct-cab-hero-grid">
@@ -76,7 +76,7 @@
               </div>
             </div>
 
-            <div class="dash-quick-nav" :class="{ 'dash-quick-nav--brutalist': isBrutalistContractorCabinetMode }">
+            <div class="dash-quick-nav" :class="{ 'dash-quick-nav--brutalist': isBrutalistContractorCabinetMode }" v-show="!showAll">
               <button v-for="item in quickActions" :key="item.key" class="dash-quick-btn glass-surface" :class="{ 'dash-quick-btn--brutalist': isBrutalistContractorCabinetMode }" @click="section = item.key">
                 <span class="dash-quick-icon">{{ item.icon }}</span>
                 <span class="dash-quick-label">{{ item.label }}</span>
@@ -148,7 +148,7 @@
             </div>
           </template>
 
-          <template v-else-if="section === 'tasks'">
+          <template v-if="(section === 'tasks') || showAll">
             <div class="cab-add-task-row" :class="{ 'cab-add-task-row--brutalist': isBrutalistContractorCabinetMode }">
               <button class="cab-add-task-btn" @click="openNewTaskModal">＋ Добавить задачу</button>
             </div>
@@ -350,7 +350,7 @@
             </template>
           </template>
 
-          <template v-else-if="section === 'contacts'">
+          <template v-if="(section === 'contacts') || showAll">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Основные контакты</h3>
@@ -381,7 +381,7 @@
             </form>
           </template>
 
-          <template v-else-if="section === 'passport'">
+          <template v-if="(section === 'passport') || showAll">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Паспорт гражданина РФ</h3>
@@ -442,7 +442,7 @@
             </form>
           </template>
 
-          <template v-else-if="section === 'requisites'">
+          <template v-if="(section === 'requisites') || showAll">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Юридические данные</h3>
@@ -499,7 +499,7 @@
             </form>
           </template>
 
-          <template v-else-if="section === 'documents'">
+          <template v-if="(section === 'documents') || showAll">
             <div class="cab-docs-panel" :class="{ 'cab-docs-panel--brutalist': isBrutalistContractorCabinetMode }">
             <div class="u-grid-2" style="margin-bottom:12px">
               <div class="u-field">
@@ -577,7 +577,7 @@
             </div>
           </template>
 
-          <template v-else-if="section === 'specialization'">
+          <template v-if="(section === 'specialization') || showAll">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Роль / профессия</h3>
@@ -624,7 +624,7 @@
             </form>
           </template>
 
-          <template v-else-if="section === 'finances'">
+          <template v-if="(section === 'finances') || showAll">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Система налогообложения</h3>
@@ -683,7 +683,7 @@
             </form>
           </template>
 
-          <template v-else-if="section === 'portfolio'">
+          <template v-if="(section === 'portfolio') || showAll">
             <div class="cab-portfolio-stats glass-surface" :class="{ 'cab-portfolio-stats--brutalist': isBrutalistContractorCabinetMode }">
               <div class="cab-portfolio-stat">
                 <span class="cab-portfolio-stat-val">{{ portfolioStats.doneCount }}</span>
@@ -723,7 +723,7 @@
             </div>
           </template>
 
-          <template v-else-if="section === 'settings'">
+          <template v-if="(section === 'settings') || showAll">
             <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
               <h3>Аккаунт</h3>
               <div class="u-grid-2">
@@ -760,7 +760,7 @@
             </div>
           </template>
 
-          <template v-else-if="section === 'staff'">
+          <template v-if="(section === 'staff') || showAll">
             <div v-if="!staff?.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistContractorCabinetMode }">
               <span>◔</span>
               <p>Сотрудников пока нет.<br>Администратор добавит мастеров за вашей компанией.</p>
@@ -965,6 +965,7 @@ function getDocCategoryLabel(category: string): string {
 
 // ── Wipe2 card view ──
 const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
+const showAll = computed(() => !isWipe2Mode.value)
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const c = contractor.value
   if (!c) return null
