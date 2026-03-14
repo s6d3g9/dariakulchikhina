@@ -1,5 +1,6 @@
 <template>
-  <!-- Overlay, абсолютно позиционирован поверх контента в wipe2 режиме -->
+  <!-- Overlay: когда fixedMode=true — телепортируем в body чтобы backdrop-filter предков не ломал position:fixed -->
+  <Teleport to="body" :disabled="!fixedMode">
   <div
     ref="overlayEl"
     class="w2-overlay"
@@ -107,6 +108,7 @@
       <button type="button" class="w2-edit-btn w2-edit-btn--empty" @click.stop="$emit('edit')">✎ открыть форму</button>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">

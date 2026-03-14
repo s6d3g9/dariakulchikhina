@@ -202,6 +202,10 @@ textarea, select {
   --ws-bg-paused:        color-mix(in srgb, var(--ds-accent)  10%, transparent);
   --ws-bg-cancelled:     color-mix(in srgb, var(--ds-error)   12%, transparent);
   --ws-bg-skipped:       color-mix(in srgb, var(--glass-text)  5%, transparent);
+
+  /* ── Admin layout vars (fallbacks for Teleported elements) ── */
+  --admin-header-h: 48px;
+  --adm-sidebar-offset: 272px;
 }
 
 /* ── Work-status global utility classes ──────────────────── */

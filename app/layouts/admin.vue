@@ -700,6 +700,12 @@ onMounted(() => {
   designSystem.initDesignSystem()
   syncDesktopSidebarState()
   window.addEventListener('resize', syncDesktopSidebarState)
+  // Синхронизируем CSS vars на :root, чтобы Teleport-ed элементы (Wipe2Renderer) могли их читать
+  watch(sidebarLayoutStyle, (style) => {
+    for (const [key, val] of Object.entries(style)) {
+      document.documentElement.style.setProperty(key, String(val))
+    }
+  }, { immediate: true })
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
