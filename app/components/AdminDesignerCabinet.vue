@@ -1661,14 +1661,14 @@ const showAll = computed(() => !isWipe2Mode.value)
 // ── Ribbon nav: scroll to section on click ──
 watch(section, (key) => {
   if (!showAll.value) return
-  nextTick(() => {
+  requestAnimationFrame(() => {
     const el = document.querySelector<HTMLElement>(`.cab-section[data-section="${key}"]`)
     if (!el) return
     const style = getComputedStyle(document.documentElement)
     const headerH = parseFloat(style.getPropertyValue('--admin-header-h') || '48')
     const dpH    = parseFloat(style.getPropertyValue('--dp-panel-h') || '0')
     const offset = headerH + dpH + 16
-    window.scrollBy({ top: el.getBoundingClientRect().top - offset, behavior: 'smooth' })
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: 'smooth' })
   })
 })
 
