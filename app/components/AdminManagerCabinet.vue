@@ -6,7 +6,7 @@
     </div>
 
     <div v-else-if="manager" class="cab-body" :class="{ 'cab-body--content-only': !showSidebar }">
-      <aside v-if="showSidebar" class="cab-sidebar glass-surface std-sidenav">
+      <aside v-if="showSidebar" v-show="!isWipe2Mode" class="cab-sidebar glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav"
@@ -31,7 +31,7 @@
         @keydown="handleKeydown"
         @scroll="syncPager"
       >
-        <div class="cab-inner cv-wipe-inner">
+        <div v-show="!isWipe2Mode" class="cab-inner cv-wipe-inner">
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
           <template v-if="section === 'dashboard'">

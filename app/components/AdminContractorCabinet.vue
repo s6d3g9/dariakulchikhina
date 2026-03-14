@@ -6,7 +6,7 @@
     </div>
 
     <div v-else-if="contractor" class="cab-body" :class="{ 'cab-body--content-only': !showSidebar }">
-      <aside v-if="showSidebar" class="cab-sidebar glass-surface std-sidenav">
+      <aside v-if="showSidebar" v-show="!isWipe2Mode" class="cab-sidebar glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav"
@@ -33,7 +33,7 @@
         @keydown="handleKeydown"
         @scroll="syncPager"
       >
-        <div class="cab-inner cv-wipe-inner">
+        <div v-show="!isWipe2Mode" class="cab-inner cv-wipe-inner">
           <template v-if="section === 'dashboard'">
             <section v-if="showBrutalistContractorDashboardHero" class="ct-cab-hero">
               <div class="ct-cab-hero-topline">кабинет подрядчика</div>
@@ -1097,8 +1097,8 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
     return {
       ...base,
       sections: [{ title: 'Настройки', fields: [
-        { label: 'Уведомления: новые задачи', value: notifSettings.value?.newTasks ? 'включено' : 'выключено' },
-        { label: 'Уведомления: дедлайны', value: notifSettings.value?.deadlines ? 'включено' : 'выключено' },
+        { label: 'Уведомления: новые задачи', value: notifSettings.newTasks ? 'включено' : 'выключено' },
+        { label: 'Уведомления: дедлайны', value: notifSettings.deadlines ? 'включено' : 'выключено' },
       ]}],
     }
   }
