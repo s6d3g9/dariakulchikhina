@@ -35,7 +35,7 @@
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
           <template v-if="(section === 'dashboard') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="dashboard">
             <div class="dash-welcome glass-surface">
               <div class="dash-welcome-left">
                 <div class="dash-avatar">{{ seller?.name?.charAt(0)?.toUpperCase() || '◑' }}</div>
@@ -108,7 +108,7 @@
 
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-if="(section === 'profile') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="profile">
             <form @submit.prevent="saveProfile" class="cab-form">
               <div class="u-form-section">
                 <h3>Основные данные</h3>
@@ -196,7 +196,7 @@
 
           <!-- ═══════════════ REQUISITES ═══════════════ -->
           <template v-if="(section === 'requisites') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="requisites">
             <form @submit.prevent="saveProfile" class="cab-form">
               <div class="u-form-section">
                 <h3>Юридические реквизиты</h3>
@@ -232,7 +232,7 @@
 
           <!-- ═══════════════ TERMS ═══════════════ -->
           <template v-if="(section === 'terms') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="terms">
             <form @submit.prevent="saveProfile" class="cab-form">
               <div class="u-form-section">
                 <h3>Условия работы</h3>
@@ -269,7 +269,7 @@
 
           <!-- ═══════════════ PROJECTS ═══════════════ -->
           <template v-if="(section === 'projects') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="projects">
             <div v-if="!linkedProjects.length" class="u-empty glass-surface">
               <span>◎</span>
               <p>Нет привязанных проектов.<br>Привяжите поставщика к проекту через верхнее меню.</p>
@@ -300,6 +300,7 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { registerWipe2Data } from '~/composables/useWipe2'
 
@@ -457,6 +458,16 @@ async function saveProfile() {
 // ── Wipe2 card view ──
 const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
 const showAll = computed(() => !isWipe2Mode.value)
+
+// ── Ribbon nav: scroll to section on click ──
+watch(section, (key) => {
+  if (!showAll.value) return
+  nextTick(() => {
+    const el = document.querySelector<HTMLElement>(`.cab-section[data-section="${key}"]`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+})
+
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const s = seller.value
   if (!s) return null

@@ -35,7 +35,7 @@
 
           <!-- ═══════════════ DASHBOARD ═══════════════ -->
           <template v-if="(section === 'dashboard') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="dashboard">
             <div class="dash-welcome glass-surface">
               <div class="dash-welcome-left">
                 <div class="dash-avatar">{{ manager?.name?.charAt(0)?.toUpperCase() || '◎' }}</div>
@@ -111,7 +111,7 @@
 
           <!-- ═══════════════ PROJECTS ═══════════════ -->
           <template v-if="(section === 'projects') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="projects">
             <div class="u-section-title">Проекты менеджера</div>
             <div v-if="!linkedProjects.length" class="cab-empty">
               <span class="ent-empty-icon">📂</span>
@@ -137,7 +137,7 @@
 
           <!-- ═══════════════ FEED ═══════════════ -->
           <template v-if="(section === 'feed') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="feed">
             <div class="u-section-title">Лента событий</div>
             <div class="cab-empty">
               <span class="ent-empty-icon">📋</span>
@@ -148,7 +148,7 @@
 
           <!-- ═══════════════ APPROVALS ═══════════════ -->
           <template v-if="(section === 'approvals') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="approvals">
             <div class="u-section-title">Согласования</div>
             <div class="cab-empty">
               <span class="ent-empty-icon">✅</span>
@@ -159,7 +159,7 @@
 
           <!-- ═══════════════ REPORTS ═══════════════ -->
           <template v-if="(section === 'reports') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="reports">
             <div class="u-section-title">Отчёты</div>
             <div class="cab-empty">
               <span class="ent-empty-icon">📊</span>
@@ -170,7 +170,7 @@
 
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-if="(section === 'profile') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="profile">
             <div class="u-section-title">Профиль менеджера</div>
             <form class="man-profile-form glass-surface" @submit.prevent="saveProfile">
               <div class="u-grid-2">
@@ -237,6 +237,7 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { registerWipe2Data } from '~/composables/useWipe2'
 
@@ -344,6 +345,16 @@ function fmtDate(d: string) {
 // ── Wipe2 card view ──
 const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
 const showAll = computed(() => !isWipe2Mode.value)
+
+// ── Ribbon nav: scroll to section on click ──
+watch(section, (key) => {
+  if (!showAll.value) return
+  nextTick(() => {
+    const el = document.querySelector<HTMLElement>(`.cab-section[data-section="${key}"]`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+})
+
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const m = manager.value
   if (!m) return null

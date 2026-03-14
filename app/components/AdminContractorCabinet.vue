@@ -35,7 +35,7 @@
       >
         <div v-show="!isWipe2Mode" class="cab-inner cv-wipe-inner" :class="{ 'cab-inner--ribbon': showAll }">
           <template v-if="(section === 'dashboard') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="dashboard">
             <section v-if="showBrutalistContractorDashboardHero" class="ct-cab-hero">
               <div class="ct-cab-hero-topline">кабинет подрядчика</div>
               <div class="ct-cab-hero-grid">
@@ -151,7 +151,7 @@
           </template>
 
           <template v-if="(section === 'tasks') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="tasks">
             <div class="cab-add-task-row" :class="{ 'cab-add-task-row--brutalist': isBrutalistContractorCabinetMode }">
               <button class="cab-add-task-btn" @click="openNewTaskModal">＋ Добавить задачу</button>
             </div>
@@ -355,7 +355,7 @@
           </template>
 
           <template v-if="(section === 'contacts') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="contacts">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Основные контакты</h3>
@@ -388,7 +388,7 @@
           </template>
 
           <template v-if="(section === 'passport') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="passport">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Паспорт гражданина РФ</h3>
@@ -451,7 +451,7 @@
           </template>
 
           <template v-if="(section === 'requisites') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="requisites">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Юридические данные</h3>
@@ -510,7 +510,7 @@
           </template>
 
           <template v-if="(section === 'documents') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="documents">
             <div class="cab-docs-panel" :class="{ 'cab-docs-panel--brutalist': isBrutalistContractorCabinetMode }">
             <div class="u-grid-2" style="margin-bottom:12px">
               <div class="u-field">
@@ -590,7 +590,7 @@
           </template>
 
           <template v-if="(section === 'specialization') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="specialization">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Роль / профессия</h3>
@@ -639,7 +639,7 @@
           </template>
 
           <template v-if="(section === 'finances') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="finances">
             <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Система налогообложения</h3>
@@ -700,7 +700,7 @@
           </template>
 
           <template v-if="(section === 'portfolio') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="portfolio">
             <div class="cab-portfolio-stats glass-surface" :class="{ 'cab-portfolio-stats--brutalist': isBrutalistContractorCabinetMode }">
               <div class="cab-portfolio-stat">
                 <span class="cab-portfolio-stat-val">{{ portfolioStats.doneCount }}</span>
@@ -742,7 +742,7 @@
           </template>
 
           <template v-if="(section === 'settings') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="settings">
             <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
               <h3>Аккаунт</h3>
               <div class="u-grid-2">
@@ -781,7 +781,7 @@
           </template>
 
           <template v-if="(section === 'staff') || showAll">
-            <div class="cab-section">
+            <div class="cab-section" data-section="staff">
             <div v-if="!staff?.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistContractorCabinetMode }">
               <span>◔</span>
               <p>Сотрудников пока нет.<br>Администратор добавит мастеров за вашей компанией.</p>
@@ -831,6 +831,7 @@
 </template>
 
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import {
   useContractorCabinet,
   STATUSES,
@@ -988,6 +989,16 @@ function getDocCategoryLabel(category: string): string {
 // ── Wipe2 card view ──
 const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
 const showAll = computed(() => !isWipe2Mode.value)
+
+// ── Ribbon nav: scroll to section on click ──
+watch(section, (key) => {
+  if (!showAll.value) return
+  nextTick(() => {
+    const el = document.querySelector<HTMLElement>(`.cab-section[data-section="${key}"]`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+})
+
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const c = contractor.value
   if (!c) return null
