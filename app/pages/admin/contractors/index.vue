@@ -25,7 +25,6 @@
         </template>
         <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" :show-sidebar="false" v-model="activeContractorSection" />
       </AdminEntityCabinetShell>
-      <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2ContractorEntityData" @edit="designSystem.set('contentViewMode', 'scroll')" />
       </div>
     </template>
     <AdminEntityEmptyState
@@ -183,9 +182,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Wipe2EntityData } from '~/shared/types/wipe2'
-import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
-
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
@@ -207,30 +203,6 @@ const route = useRoute()
 const designSystem = useDesignSystem()
 const isBrutalistContractorsMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
-
-const wipe2ContractorEntityData = computed<Wipe2EntityData | null>(() => {
-  const c = selected.value
-  if (!c) return null
-  return {
-    entityTitle: c.name,
-    entitySubtitle: c.companyName || (c.contractorType === 'company' ? 'организация' : 'мастер'),
-    entityStatus: c.contractorType === 'company' ? 'организация' : 'мастер',
-    entityStatusColor: c.contractorType === 'company' ? 'blue' : 'amber',
-    sections: [
-      {
-        title: 'Контакты',
-        fields: [
-          { label: 'Телефон', value: c.phone ?? '' },
-          { label: 'Email', value: c.email ?? '' },
-          { label: 'Контактное лицо', value: c.contactPerson ?? '' },
-          { label: 'ИНН', value: c.inn ?? '' },
-          { label: 'Специализация', value: Array.isArray(c.specializations) ? c.specializations.join(', ') : (c.specializations ?? ''), span: 2 as const },
-          { label: 'Заметки', value: c.notes ?? '', type: 'multiline' as const, span: 2 as const },
-        ],
-      },
-    ],
-  }
-})
 
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
 const contractorsCacheByProject = useState<Record<string, any[]>>('cache-admin-contractors-by-project', () => ({}))

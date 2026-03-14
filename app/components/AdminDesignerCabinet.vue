@@ -865,6 +865,11 @@
             <button type="button" class="a-btn-sm" @click="move('next')">{{ pagerNextLabel }}</button>
           </div>
         </div>
+    <Wipe2Renderer
+      v-if="isWipe2Mode"
+      :entity="wipe2CabinetData"
+      @edit="designSystem.set('contentViewMode', 'scroll')"
+    />
     </main>
   </div>
 </template>
@@ -887,6 +892,7 @@ import {
   type BillingPeriod,
   PRICE_UNITS,
 } from '~~/shared/types/designer'
+import type { Wipe2EntityData } from '~/shared/types/wipe2'
 
 const props = defineProps<{ designerId: number; modelValue?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
@@ -1624,6 +1630,81 @@ async function saveDesignerProjectEdits() {
 function getDesignerDocCategoryLabel(category: string): string {
   return DESIGNER_DOC_CATEGORIES.find(c => c.value === category)?.label ?? category
 }
+
+// ── Wipe2 card view ──
+const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
+const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
+  const d = designer.value
+  if (!d) return null
+  const base = {
+    entityTitle: d.name,
+    entitySubtitle: form.city || d.city || undefined,
+    entityStatus: 'дизайнер',
+    entityStatusColor: 'blue' as const,
+  }
+  if (section.value === 'profile') {
+    return {
+      ...base,
+      sections: [{ title: 'Профиль', fields: [
+        { label: 'Телефон', value: form.phone },
+        { label: 'Email', value: form.email },
+        { label: 'Город', value: form.city },
+        { label: 'Компания', value: form.companyName },
+        { label: 'Telegram', value: form.telegram },
+        { label: 'Сайт', value: form.website },
+        { label: 'Опыт', value: form.experience, span: 2 as const },
+        { label: 'Специализация', value: form.specializations.join(', '), span: 2 as const },
+        { label: 'О себе', value: form.about, type: 'multiline' as const, span: 2 as const },
+      ]}],
+    }
+  }
+  if (section.value === 'services') {
+    const svcs = (services.value || []).filter((s: any) => s.enabled !== false)
+    return {
+      ...base,
+      sections: [{ title: 'Услуги и прайс', fields: svcs.length
+        ? svcs.slice(0, 8).map((s: any) => ({ label: s.title ?? '', value: formatPrice(s.price, s.unit) }))
+        : [{ label: 'Услуги', value: 'не настроены', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'packages') {
+    const pkgs = packages.value || []
+    return {
+      ...base,
+      sections: [{ title: 'Пакеты', fields: pkgs.length
+        ? pkgs.slice(0, 6).map((p: any) => ({ label: p.title ?? '', value: p.description ?? '' }))
+        : [{ label: 'Пакеты', value: 'не настроены', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'projects') {
+    const projs = designerProjects.value || []
+    return {
+      ...base,
+      sections: projs.length
+        ? [{ title: 'Проекты', fields: (projs.slice(0, 5).flatMap((p: any) => ([
+            { label: p.projectTitle ?? '', value: p.status, type: 'status' as const, span: 2 as const },
+            { label: 'Стоимость', value: p.totalPrice ? String(p.totalPrice) : '', type: 'currency' as const },
+            { label: 'Площадь', value: p.area ? `${p.area} м²` : '' },
+          ] as any[]))).slice(0, 18) }]
+        : [{ title: 'Проекты', fields: [{ label: '', value: 'нет проектов', span: 2 as const }] }],
+    }
+  }
+  // Default: дашборд
+  return {
+    ...base,
+    sections: [{ title: 'Обзор', fields: [
+      { label: 'Активных проектов', value: String(dashStats.value?.active ?? 0) },
+      { label: 'Всего проектов', value: String(dashStats.value?.total ?? 0) },
+      { label: 'Клиентов', value: String(uniqueClients.value.length) },
+      { label: 'Подрядчиков', value: String(uniqueContractors.value.length) },
+      { label: 'Общая выручка', value: String(dashStats.value?.totalRevenue ?? 0), type: 'currency' as const, span: 2 as const },
+      { label: 'Услуг настроено', value: String(services.value?.length ?? 0) },
+      { label: 'Пакетов', value: String(packages.value?.length ?? 0) },
+    ]}],
+  }
+})
 
 </script>
 

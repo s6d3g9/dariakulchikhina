@@ -284,12 +284,19 @@
             <button type="button" class="a-btn-sm" @click="move('next')">{{ pagerNextLabel }}</button>
           </div>
         </div>
+      <Wipe2Renderer
+        v-if="isWipe2Mode"
+        :entity="wipe2CabinetData"
+        @edit="designSystem.set('contentViewMode', 'scroll')"
+      />
       </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { Wipe2EntityData } from '~/shared/types/wipe2'
+
 const props = defineProps<{ sellerId: number; modelValue?: string; showSidebar?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
 const showSidebar = computed(() => props.showSidebar !== false)
@@ -440,6 +447,56 @@ async function saveProfile() {
     saveMsg.value = 'Ошибка: ' + (e?.data?.message || e.message || 'неизвестная')
   } finally { saving.value = false }
 }
+
+// ── Wipe2 card view ──
+const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
+const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
+  const s = seller.value
+  if (!s) return null
+  const base = {
+    entityTitle: s.name,
+    entitySubtitle: form.city || undefined,
+    entityStatus: 'поставщик',
+    entityStatusColor: 'amber' as const,
+  }
+  if (section.value === 'profile') {
+    return {
+      ...base,
+      sections: [{ title: 'Профиль', fields: [
+        { label: 'Телефон', value: form.phone },
+        { label: 'Email', value: form.email },
+        { label: 'Город', value: form.city },
+        { label: 'Контактное лицо', value: form.contactPerson },
+        { label: 'Telegram', value: form.telegram },
+        { label: 'Сайт', value: form.website },
+        { label: 'Категории', value: form.categories.join(', '), span: 2 as const },
+        { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
+      ]}],
+    }
+  }
+  if (section.value === 'terms') {
+    return {
+      ...base,
+      sections: [{ title: 'Условия работы', fields: [
+        { label: 'Условия доставки', value: form.deliveryTerms, span: 2 as const },
+        { label: 'Условия оплаты', value: form.paymentTerms, span: 2 as const },
+        { label: 'Мин. заказ', value: form.minOrder },
+        { label: 'Скидка', value: form.discount },
+      ]}],
+    }
+  }
+  return {
+    ...base,
+    sections: [{ title: 'Обзор', fields: [
+      { label: 'Телефон', value: form.phone },
+      { label: 'Email', value: form.email },
+      { label: 'Город', value: form.city },
+      { label: 'Рейтинг', value: form.rating != null ? String(form.rating) : '—' },
+      { label: 'Проектов', value: String(linkedProjects.value?.length ?? 0), span: 2 as const },
+      { label: 'Категории', value: form.categories.join(', '), span: 2 as const },
+    ]}],
+  }
+})
 </script>
 
 <style scoped>

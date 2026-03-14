@@ -802,6 +802,11 @@
             <button type="button" class="a-btn-sm" @click="move('next')">{{ pagerNextLabel }}</button>
           </div>
         </div>
+      <Wipe2Renderer
+        v-if="isWipe2Mode"
+        :entity="wipe2CabinetData"
+        @edit="designSystem.set('contentViewMode', 'scroll')"
+      />
       </main>
     </div>
 
@@ -817,6 +822,7 @@ import {
   ROLE_GROUPS,
   WORK_GROUPS,
 } from '~/composables/useContractorCabinet'
+import type { Wipe2EntityData } from '~/shared/types/wipe2'
 
 const props = defineProps<{
   contractorId: number | null
@@ -960,6 +966,45 @@ function formatDocDate(value: string) {
 function getDocCategoryLabel(category: string): string {
   return DOC_CATEGORIES.find(c => c.value === category)?.label ?? category
 }
+
+// ── Wipe2 card view ──
+const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
+const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
+  const c = contractor.value
+  if (!c) return null
+  const base = {
+    entityTitle: c.name,
+    entitySubtitle: form.companyName || (c.contractorType === 'company' ? 'организация' : 'мастер'),
+    entityStatus: c.contractorType === 'company' ? 'организация' : 'мастер',
+    entityStatusColor: c.contractorType === 'company' ? 'blue' as const : 'amber' as const,
+  }
+  if (section.value === 'dashboard') {
+    return {
+      ...base,
+      sections: [{ title: 'Обзор', fields: [
+        { label: 'Задач всего', value: String(dashStats.value?.total ?? 0) },
+        { label: 'В работе', value: String(dashStats.value?.inProgress ?? 0) },
+        { label: 'Выполнено', value: String(dashStats.value?.done ?? 0) },
+        { label: 'Просрочено', value: String(dashStats.value?.overdue ?? 0) },
+        { label: 'Проектов', value: String(linkedProjects.value?.length ?? 0), span: 2 as const },
+        { label: 'Профиль заполнен', value: `${profilePct.value}%`, span: 2 as const },
+      ]}],
+    }
+  }
+  return {
+    ...base,
+    sections: [{ title: 'Контакты', fields: [
+      { label: 'Телефон', value: form.phone },
+      { label: 'Email', value: form.email },
+      { label: 'Компания', value: form.companyName },
+      { label: 'Telegram', value: (form as any).telegram ?? '' },
+      { label: 'Сайт', value: form.website },
+      { label: 'Виды работ', value: Array.isArray(form.workTypes) ? form.workTypes.join(', ') : '', span: 2 as const },
+      { label: 'Роли', value: Array.isArray(form.roleTypes) ? form.roleTypes.join(', ') : '', span: 2 as const },
+      { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
+    ]}],
+  }
+})
 </script>
 
 <style scoped>

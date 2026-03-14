@@ -214,6 +214,11 @@
             <button type="button" class="a-btn-sm" @click="move('next')">{{ pagerNextLabel }}</button>
           </div>
         </div>
+      <Wipe2Renderer
+        v-if="isWipe2Mode"
+        :entity="wipe2CabinetData"
+        @edit="designSystem.set('contentViewMode', 'scroll')"
+      />
       </main>
     </div>
 
@@ -225,6 +230,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Wipe2EntityData } from '~/shared/types/wipe2'
+
 const props = defineProps<{ managerId: number; showSidebar?: boolean }>()
 const model = defineModel<string>()
 const showSidebar = computed(() => props.showSidebar !== false)
@@ -325,6 +332,42 @@ function fmtDate(d: string) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+// ── Wipe2 card view ──
+const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
+const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
+  const m = manager.value
+  if (!m) return null
+  const base = {
+    entityTitle: m.name,
+    entitySubtitle: form.role || undefined,
+    entityStatus: form.role ?? 'менеджер',
+    entityStatusColor: 'blue' as const,
+  }
+  if (section.value === 'projects') {
+    const projs = linkedProjects.value || []
+    return {
+      ...base,
+      sections: projs.length
+        ? [{ title: 'Проекты', fields: (projs.slice(0, 6).flatMap((p: any) => ([
+            { label: p.title ?? p.name ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const },
+          ] as any[]))) }]
+        : [{ title: 'Проекты', fields: [{ label: '', value: 'нет проектов', span: 2 as const }] }],
+    }
+  }
+  return {
+    ...base,
+    sections: [{ title: 'Профиль', fields: [
+      { label: 'Роль', value: form.role },
+      { label: 'Телефон', value: form.phone },
+      { label: 'Email', value: form.email },
+      { label: 'Telegram', value: form.telegram },
+      { label: 'Город', value: form.city },
+      { label: 'Проектов', value: String(linkedProjects.value?.length ?? 0) },
+      { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
+    ]}],
+  }
+})
 </script>
 
 <style scoped>

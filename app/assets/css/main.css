@@ -1263,6 +1263,7 @@ html.dark .glass-input::placeholder {
 .cab-main {
   flex: 1;
   min-width: 0;
+  position: relative;
 }
 
 .cab-inner {

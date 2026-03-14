@@ -19,7 +19,6 @@
         </template>
         <AdminManagerCabinet :key="selectedManagerId" :manager-id="selectedManagerId" :show-sidebar="false" v-model="activeManagerSection" />
       </AdminEntityCabinetShell>
-      <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2ManagerEntityData" @edit="designSystem.set('contentViewMode', 'scroll')" />
       </div>
     </template>
     <template #create>
@@ -84,9 +83,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Wipe2EntityData } from '~/shared/types/wipe2'
-import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
-
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
@@ -107,26 +103,6 @@ const router = useRouter()
 const designSystem = useDesignSystem()
 const isBrutalistManagersMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
-
-const wipe2ManagerEntityData = computed<Wipe2EntityData | null>(() => {
-  const m = selectedManager.value
-  if (!m) return null
-  return {
-    entityTitle: m.name,
-    entitySubtitle: m.role || undefined,
-    entityStatus: m.role ?? 'менеджер',
-    entityStatusColor: 'blue',
-    sections: [{
-      title: 'Контакты',
-      fields: [
-        { label: 'Роль', value: m.role ?? '' },
-        { label: 'Телефон', value: m.phone ?? '' },
-        { label: 'Email', value: m.email ?? '' },
-        { label: 'Заметки', value: m.notes ?? '', type: 'multiline' as const, span: 2 as const },
-      ],
-    }],
-  }
-})
 
 const managersDirectory = useAdminEntityDirectory<any>('managers')
 await managersDirectory.ensureLoaded()
