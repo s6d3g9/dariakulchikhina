@@ -1659,18 +1659,27 @@ const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode ===
 const showAll = computed(() => !isWipe2Mode.value)
 
 // ── Ribbon nav: scroll to section on click ──
-watch(section, (key) => {
-  if (!showAll.value) return
-  requestAnimationFrame(() => {
-    const el = document.querySelector<HTMLElement>(`.cab-section[data-section="${key}"]`)
-    if (!el) return
+function scrollToSection(key: string) {
+  const el = document.querySelector<HTMLElement>(`.cab-section[data-section="${key}"]`)
+  if (!el) return
+  // detect actual scroll container: cab-main (paged/flow) or window (scroll mode)
+  const vp = viewportRef.value
+  const vpOverflow = vp ? getComputedStyle(vp).overflowY : 'visible'
+  if (vp && (vpOverflow === 'auto' || vpOverflow === 'scroll')) {
+    const vpRect = vp.getBoundingClientRect()
+    const elRect = el.getBoundingClientRect()
+    vp.scrollTo({ top: vp.scrollTop + elRect.top - vpRect.top - 16, behavior: 'smooth' })
+  } else {
     const style = getComputedStyle(document.documentElement)
     const headerH = parseFloat(style.getPropertyValue('--admin-header-h') || '48')
     const dpH    = parseFloat(style.getPropertyValue('--dp-panel-h') || '0')
-    const offset = headerH + dpH + 16
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: 'smooth' })
-  })
-})
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - headerH - dpH - 16, behavior: 'smooth' })
+  }
+}
+watch(section, (key) => {
+  if (!showAll.value) return
+  requestAnimationFrame(() => scrollToSection(key))
+}, { flush: 'post' })
 
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const d = designer.value
