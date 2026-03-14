@@ -32,7 +32,7 @@ export type { Wipe2Card, Wipe2EntityData, Wipe2Field, Wipe2Row, Wipe2Section }
 // Shared reactive state via useState (SSR-safe Nuxt singleton)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function useWipe2State() {
+export function useWipe2State() {
   return useState<Wipe2EntityData | null>('wipe2-entity-data', () => null)
 }
 

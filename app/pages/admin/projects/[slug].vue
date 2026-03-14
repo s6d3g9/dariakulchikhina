@@ -549,7 +549,7 @@ import {
 } from '~~/shared/constants/admin-navigation'
 import { getAdminPages, getAdminNavGroups, getClientPages } from '~~/shared/constants/pages'
 import { applyViewportZoneLayout, buildViewportPageStops, resolveViewportPagerRailInset, resolveViewportSheetInsets } from '~/utils/contentViewportPager'
-import { createWipe2Slot, buildWipe2Cards } from '~/composables/useWipe2'
+import { createWipe2Slot, buildWipe2Cards, useWipe2State } from '~/composables/useWipe2'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { getBriefSections } from '~~/shared/constants/brief-sections'
 import { presetLabel } from '~~/shared/constants/presets'
@@ -629,6 +629,8 @@ const _W2_SP_COLORS: Record<string, string> = {
 // Заполняются через watch после объявления currentProjectPage
 const _wipe2ExtraServicesData = ref<any[]>([])
 const _wipe2WorkStatusData = ref<any[]>([])
+// Глобальный стейт — резервный источник (заполняется компонентами через registerWipe2Data)
+const _globalWipe2State = useWipe2State()
 const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
   const p = project.value
   if (!p) return null
@@ -1342,7 +1344,8 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
     }
   }
 
-  return null
+  // Fallback: компонент мог зарегистрировать данные через registerWipe2Data
+  return _globalWipe2State.value
 })
 
 const projectHeroPrompt = computed(() => {
