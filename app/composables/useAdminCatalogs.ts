@@ -45,7 +45,8 @@ export function useAdminCatalogs() {
 
     loading.value = { ...loading.value, [key]: true }
     try {
-      const rows = await $fetch<any[]>(ADMIN_CATALOG_ENDPOINTS[key])
+      const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
+      const rows = await $fetch<any[]>(ADMIN_CATALOG_ENDPOINTS[key], { headers })
       items.value = { ...items.value, [key]: Array.isArray(rows) ? rows : [] }
       loaded.value = { ...loaded.value, [key]: true }
       return items.value[key]
