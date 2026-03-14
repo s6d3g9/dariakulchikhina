@@ -31,8 +31,8 @@
         </div>
       </div>
 
-      <!-- Поле-сетка 2×8: клик по любому полю = переход в режим редактирования -->
-      <div class="w2-body" role="button" tabindex="-1" title="Нажмите для редактирования" @click.stop="$emit('edit')">
+      <!-- Поле-сетка 2×8 -->
+      <div class="w2-body">
         <template v-for="(row, ri) in card.rows" :key="ri">
 
           <!-- Заголовок секции (на всю ширину) -->
@@ -370,15 +370,6 @@ html.dark .w2-edit-btn:hover {
   row-gap: 10px;
   overflow: hidden;
   align-content: start;
-  cursor: pointer;
-}
-.w2-body:hover .w2-field__value {
-  opacity: .75;
-}
-.w2-body:hover .w2-field {
-  outline: 1px dashed color-mix(in srgb, var(--glass-text) 18%, transparent);
-  outline-offset: 3px;
-  border-radius: 3px;
 }
 
 /* ── Section separator ───────────────────────────────────────── */
