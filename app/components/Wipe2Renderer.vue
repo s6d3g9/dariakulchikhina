@@ -3,6 +3,7 @@
   <div
     ref="overlayEl"
     class="w2-overlay"
+    :class="{ 'w2-overlay--fixed': fixedMode }"
     tabindex="-1"
     @keydown="onKey"
     @wheel.prevent="onWheel"
@@ -115,6 +116,7 @@ import type { Wipe2EntityData } from '~/shared/types/wipe2'
 
 const props = defineProps<{
   entity?: Wipe2EntityData | null
+  fixedMode?: boolean
 }>()
 
 const emit = defineEmits<{ edit: [] }>()
@@ -244,6 +246,15 @@ function valueClass(f: Wipe2Field): string {
   flex-direction: column;
   outline: none;
   touch-action: none;  /* renderer handles its own touch */
+}
+/* Cabinet fixed mode: anchors to viewport accounting for admin header + sidebar */
+.w2-overlay--fixed {
+  position: fixed;
+  top:    calc(var(--dp-panel-h, 0px) + var(--admin-header-h, 48px) + 12px);
+  bottom: 12px;
+  left:   calc(var(--adm-sidebar-offset, 0px) + var(--wipe-side-margin, 16px));
+  right:  var(--wipe-side-margin, 16px);
+  z-index: 200;
 }
 
 /* ── Card shell ──────────────────────────────────────────────── */

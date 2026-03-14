@@ -805,6 +805,7 @@
       <Wipe2Renderer
         v-if="isWipe2Mode"
         :entity="wipe2CabinetData"
+        :fixed-mode="true"
         @edit="designSystem.set('contentViewMode', 'scroll')"
       />
       </main>
@@ -989,6 +990,126 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Проектов', value: String(linkedProjects.value?.length ?? 0), span: 2 as const },
         { label: 'Профиль заполнен', value: `${profilePct.value}%`, span: 2 as const },
       ]}],
+    }
+  }
+  if (section.value === 'tasks') {
+    const items = workItems.value || []
+    const active = items.filter((i: any) => ['planned', 'in_progress'].includes(i.status))
+    return {
+      ...base,
+      sections: active.length
+        ? [{ title: 'Активные задачи', fields: active.slice(0, 6).map((i: any) => ({
+            label: i.title ?? '', value: i.status, type: 'status' as const, span: 2 as const,
+          })) }]
+        : [{ title: 'Задачи', fields: [
+            { label: 'Всего задач', value: String(items.length) },
+            { label: 'Выполнено', value: String(dashStats.value?.done ?? 0) },
+            { label: 'Нет активных задач', value: '', span: 2 as const },
+          ] }],
+    }
+  }
+  if (section.value === 'contacts') {
+    return {
+      ...base,
+      sections: [{ title: 'Контакты', fields: [
+        { label: 'Телефон', value: form.phone },
+        { label: 'Email', value: form.email },
+        { label: 'Компания', value: form.companyName },
+        { label: 'Telegram', value: (form as any).telegram ?? '' },
+        { label: 'Сайт', value: form.website },
+        { label: 'Виды работ', value: Array.isArray(form.workTypes) ? form.workTypes.join(', ') : '', span: 2 as const },
+        { label: 'Роли', value: Array.isArray(form.roleTypes) ? form.roleTypes.join(', ') : '', span: 2 as const },
+        { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
+      ]}],
+    }
+  }
+  if (section.value === 'passport') {
+    return {
+      ...base,
+      sections: [{ title: 'Паспортные данные', fields: [
+        { label: 'Серия', value: form.passportSeries },
+        { label: 'Номер', value: form.passportNumber },
+        { label: 'Выдан', value: form.passportIssuedBy, span: 2 as const },
+        { label: 'Дата выдачи', value: form.passportIssueDate },
+        { label: 'Код подразделения', value: form.passportDepartmentCode },
+        { label: 'Дата рождения', value: form.birthDate },
+        { label: 'Место рождения', value: form.birthPlace, span: 2 as const },
+        { label: 'СНИЛС', value: form.snils },
+        { label: 'ИНН', value: form.inn },
+      ]}],
+    }
+  }
+  if (section.value === 'requisites') {
+    return {
+      ...base,
+      sections: [{ title: 'Реквизиты', fields: [
+        { label: 'ИНН', value: form.inn },
+        { label: 'КПП', value: form.kpp },
+        { label: 'ОГРН', value: form.ogrn },
+        { label: 'Банк', value: form.bankName, span: 2 as const },
+        { label: 'БИК', value: form.bik },
+        { label: 'Р/с', value: form.settlementAccount, span: 2 as const },
+        { label: 'Юр. адрес', value: form.legalAddress, span: 2 as const },
+      ]}],
+    }
+  }
+  if (section.value === 'documents') {
+    const docs = contractorDocs.value || []
+    return {
+      ...base,
+      sections: [{ title: 'Документы', fields: docs.length
+        ? docs.slice(0, 8).map((d: any) => ({ label: d.title ?? d.name ?? '', value: d.category ?? '' }))
+        : [{ label: 'Документы', value: 'нет загруженных документов', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'specialization') {
+    return {
+      ...base,
+      sections: [{ title: 'Специализация', fields: [
+        { label: 'Виды работ', value: Array.isArray(form.workTypes) ? form.workTypes.join(', ') : '', span: 2 as const },
+        { label: 'Роли', value: Array.isArray(form.roleTypes) ? form.roleTypes.join(', ') : '', span: 2 as const },
+        { label: 'Сертификаты', value: (form as any).certifications?.length ? String((form as any).certifications.length) : '—' },
+      ]}],
+    }
+  }
+  if (section.value === 'finances') {
+    return {
+      ...base,
+      sections: [{ title: 'Финансы', fields: [
+        { label: 'Система налогообложения', value: form.taxSystem ?? '', span: 2 as const },
+        { label: 'Ставка в час', value: form.hourlyRate ?? '' },
+        { label: 'Способы оплаты', value: Array.isArray(form.paymentMethods) ? form.paymentMethods.join(', ') : '', span: 2 as const },
+      ]}],
+    }
+  }
+  if (section.value === 'portfolio') {
+    return {
+      ...base,
+      sections: [{ title: 'Портфолио', fields: [
+        { label: 'Выполненных задач', value: String(portfolioStats.value?.doneCount ?? 0) },
+        { label: 'Проектов', value: String(portfolioStats.value?.projectCount ?? 0) },
+        { label: 'Фотографий', value: String(portfolioStats.value?.photoCount ?? 0) },
+      ]}],
+    }
+  }
+  if (section.value === 'settings') {
+    return {
+      ...base,
+      sections: [{ title: 'Настройки', fields: [
+        { label: 'Уведомления: новые задачи', value: notifSettings.value?.newTasks ? 'включено' : 'выключено' },
+        { label: 'Уведомления: дедлайны', value: notifSettings.value?.deadlines ? 'включено' : 'выключено' },
+      ]}],
+    }
+  }
+  if (section.value === 'staff') {
+    const members = staff.value || []
+    return {
+      ...base,
+      sections: [{ title: 'Бригада', fields: members.length
+        ? members.slice(0, 8).map((m: any) => ({ label: m.name ?? '', value: m.role ?? m.specialization ?? '' }))
+        : [{ label: 'Сотрудники', value: 'нет сотрудников', span: 2 as const }],
+      }],
     }
   }
   return {

@@ -287,6 +287,7 @@
       <Wipe2Renderer
         v-if="isWipe2Mode"
         :entity="wipe2CabinetData"
+        :fixed-mode="true"
         @edit="designSystem.set('contentViewMode', 'scroll')"
       />
       </main>
@@ -483,6 +484,31 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Мин. заказ', value: form.minOrder },
         { label: 'Скидка', value: form.discount },
       ]}],
+    }
+  }
+  if (section.value === 'requisites') {
+    return {
+      ...base,
+      sections: [{ title: 'Реквизиты', fields: [
+        { label: 'ИНН', value: form.inn },
+        { label: 'КПП', value: form.kpp },
+        { label: 'ОГРН', value: form.ogrn },
+        { label: 'Банк', value: form.bankName, span: 2 as const },
+        { label: 'БИК', value: form.bik },
+        { label: 'Р/с', value: form.settlementAccount, span: 2 as const },
+        { label: 'Юр. адрес', value: form.legalAddress, span: 2 as const },
+      ]}],
+    }
+  }
+  if (section.value === 'projects') {
+    const projs = linkedProjects.value || []
+    return {
+      ...base,
+      sections: projs.length
+        ? [{ title: 'Проекты', fields: projs.slice(0, 8).map((p: any) => ({
+            label: p.title ?? p.name ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const,
+          })) }]
+        : [{ title: 'Проекты', fields: [{ label: '', value: 'нет связанных проектов', span: 2 as const }] }],
     }
   }
   return {

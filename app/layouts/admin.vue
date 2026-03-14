@@ -271,7 +271,7 @@ const sidebarLayoutStyle = computed(() => {
 
   return {
     '--adm-sidebar-current-width': isSidebarCollapsed.value ? '78px' : '248px',
-    '--adm-sidebar-offset': isSidebarCollapsed.value ? '126px' : '296px',
+    '--adm-sidebar-offset': isSidebarCollapsed.value ? '102px' : '272px',
   }
 })
 
@@ -918,7 +918,7 @@ async function logout() {
 /* ── Navigation sidebar (sticky) ── */
 .adm-sidebar {
   position: fixed;
-  left: max(16px, calc((100vw - var(--ds-container-width, 1140px)) / 2 + 16px));
+  left: 0;
   top: calc(var(--dp-panel-h, 0px) + var(--admin-header-h, 48px));
   bottom: 18px;
   height: auto;
@@ -929,6 +929,7 @@ async function logout() {
   min-width: var(--adm-sidebar-current-width, 248px);
   flex-shrink: 0;
   border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  border-left: none;
   background: color-mix(in srgb, var(--glass-bg) 85%, transparent);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);

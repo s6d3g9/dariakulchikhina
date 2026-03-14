@@ -868,6 +868,7 @@
     <Wipe2Renderer
       v-if="isWipe2Mode"
       :entity="wipe2CabinetData"
+      :fixed-mode="true"
       @edit="designSystem.set('contentViewMode', 'scroll')"
     />
     </main>
@@ -1689,6 +1690,84 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
             { label: 'Площадь', value: p.area ? `${p.area} м²` : '' },
           ] as any[]))).slice(0, 18) }]
         : [{ title: 'Проекты', fields: [{ label: '', value: 'нет проектов', span: 2 as const }] }],
+    }
+  }
+  if (section.value === 'subscriptions') {
+    const subs = subscriptions.value || []
+    return {
+      ...base,
+      sections: [{ title: 'Подписки', fields: subs.length
+        ? subs.slice(0, 6).map((s: any) => ({ label: s.title ?? '', value: s.price != null ? `${s.price} ₽ / ${s.billingPeriod}` : '' }))
+        : [{ label: 'Подписки', value: 'не настроены', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'documents') {
+    const docs = designerDocs.value || []
+    return {
+      ...base,
+      sections: [{ title: 'Документы', fields: docs.length
+        ? docs.slice(0, 8).map((d: any) => ({ label: d.title ?? d.name ?? '', value: d.category ?? '' }))
+        : [{ label: 'Документы', value: 'нет загруженных документов', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'clients') {
+    const clients = uniqueClients.value || []
+    return {
+      ...base,
+      sections: [{ title: 'Клиенты', fields: clients.length
+        ? clients.slice(0, 8).map((cl: any) => ({ label: cl.name ?? '', value: cl.phone ?? cl.email ?? '' }))
+        : [{ label: 'Клиенты', value: 'нет клиентов', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'contractors') {
+    const contractors = uniqueContractors.value || []
+    return {
+      ...base,
+      sections: [{ title: 'Подрядчики', fields: contractors.length
+        ? contractors.slice(0, 8).map((ct: any) => ({ label: ct.name ?? '', value: ct.role ?? '' }))
+        : [{ label: 'Подрядчики', value: 'нет подрядчиков', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'sellers') {
+    const sellers = linkedData.value?.sellers || []
+    return {
+      ...base,
+      sections: [{ title: 'Поставщики', fields: sellers.length
+        ? sellers.slice(0, 8).map((s: any) => ({ label: s.name ?? '', value: String(s.projects?.length ?? 0) + ' проектов' }))
+        : [{ label: 'Поставщики', value: 'нет поставщиков', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'managers') {
+    const managers = linkedData.value?.managers || []
+    return {
+      ...base,
+      sections: [{ title: 'Менеджеры', fields: managers.length
+        ? managers.slice(0, 8).map((m: any) => ({ label: m.name ?? '', value: String(m.projects?.length ?? 0) + ' проектов' }))
+        : [{ label: 'Менеджеры', value: 'нет менеджеров', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'gallery') {
+    return {
+      ...base,
+      sections: [{ title: 'Галерея', fields: [
+        { label: 'Объектов в галерее', value: String(galleryList.value.length), span: 2 as const },
+        { label: 'Мудбордов', value: String(moodboardList.value.length), span: 2 as const },
+      ]}],
+    }
+  }
+  if (section.value === 'moodboards') {
+    return {
+      ...base,
+      sections: [{ title: 'Мудборды', fields: moodboardList.value.length
+        ? moodboardList.value.slice(0, 8).map((m: any) => ({ label: m.title ?? m.name ?? '', value: m.description ?? '' }))
+        : [{ label: 'Мудборды', value: 'нет мудбордов', span: 2 as const }],
+      }],
     }
   }
   // Default: дашборд

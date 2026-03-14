@@ -217,6 +217,7 @@
       <Wipe2Renderer
         v-if="isWipe2Mode"
         :entity="wipe2CabinetData"
+        :fixed-mode="true"
         @edit="designSystem.set('contentViewMode', 'scroll')"
       />
       </main>
@@ -344,6 +345,18 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
     entityStatus: form.role ?? 'менеджер',
     entityStatusColor: 'blue' as const,
   }
+  if (section.value === 'dashboard') {
+    const projs = linkedProjects.value || []
+    return {
+      ...base,
+      sections: [{ title: 'Обзор', fields: [
+        { label: 'Всего проектов', value: String(projs.length) },
+        { label: 'Как лид', value: String(activeProjectsCount.value) },
+        { label: 'Профиль заполнен', value: `${profilePct.value}%` },
+        { label: 'Заметки', value: form.notes ? 'есть' : '—' },
+      ]}],
+    }
+  }
   if (section.value === 'projects') {
     const projs = linkedProjects.value || []
     return {
@@ -353,6 +366,52 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
             { label: p.title ?? p.name ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const },
           ] as any[]))) }]
         : [{ title: 'Проекты', fields: [{ label: '', value: 'нет проектов', span: 2 as const }] }],
+    }
+  }
+  if (section.value === 'feed') {
+    const recent = (linkedProjects.value || []).slice(0, 5)
+    return {
+      ...base,
+      sections: [{ title: 'Лента событий', fields: recent.length
+        ? recent.map((p: any) => ({ label: p.title ?? p.name ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const }))
+        : [{ label: '', value: 'нет событий', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'approvals') {
+    const pending = (linkedProjects.value || []).filter((p: any) => p.status === 'pending' || p.status === 'revision')
+    return {
+      ...base,
+      sections: [{ title: 'Согласования', fields: pending.length
+        ? pending.slice(0, 6).map((p: any) => ({ label: p.title ?? p.name ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const }))
+        : [{ label: '', value: 'нет ожидающих согласований', span: 2 as const }],
+      }],
+    }
+  }
+  if (section.value === 'reports') {
+    const projs = linkedProjects.value || []
+    const done = projs.filter((p: any) => p.status === 'done' || p.status === 'completed').length
+    return {
+      ...base,
+      sections: [{ title: 'Отчёты', fields: [
+        { label: 'Всего проектов', value: String(projs.length) },
+        { label: 'Завершено', value: String(done) },
+        { label: 'В работе', value: String(projs.length - done) },
+      ]}],
+    }
+  }
+  if (section.value === 'profile') {
+    return {
+      ...base,
+      sections: [{ title: 'Профиль', fields: [
+        { label: 'Роль', value: form.role },
+        { label: 'Телефон', value: form.phone },
+        { label: 'Email', value: form.email },
+        { label: 'Telegram', value: form.telegram },
+        { label: 'Город', value: form.city },
+        { label: 'Проектов', value: String(linkedProjects.value?.length ?? 0) },
+        { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
+      ]}],
     }
   }
   return {
