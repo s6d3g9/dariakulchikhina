@@ -9,6 +9,7 @@
     <template v-if="selectedId">
       <div class="ct-wipe-host">
       <AdminEntityCabinetShell
+        v-show="!isWipe2Mode"
         :show-hero="showBrutalistContractorHero"
         :title="selected?.name || ''"
         :kicker="contractorSectionLabel"
@@ -25,6 +26,12 @@
         </template>
         <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" :show-sidebar="false" v-model="activeContractorSection" />
       </AdminEntityCabinetShell>
+      <Wipe2Renderer
+        v-if="isWipe2Mode && wipe2State"
+        :entity="wipe2State"
+        :fixed-mode="true"
+        @edit="designSystem.set('contentViewMode', 'scroll')"
+      />
       </div>
     </template>
     <AdminEntityEmptyState
@@ -182,6 +189,8 @@
 </template>
 
 <script setup lang="ts">
+import { useWipe2State } from '~/composables/useWipe2'
+import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
@@ -203,6 +212,8 @@ const route = useRoute()
 const designSystem = useDesignSystem()
 const isBrutalistContractorsMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
+const isWipe2Mode = computed(() => contentViewMode.value === 'wipe2')
+const wipe2State = useWipe2State()
 
 const projectSlugFilter = computed(() => typeof route.query.projectSlug === 'string' ? route.query.projectSlug : '')
 const contractorsCacheByProject = useState<Record<string, any[]>>('cache-admin-contractors-by-project', () => ({}))

@@ -3,6 +3,7 @@
     <template #selected>
       <div class="ent-wipe-host">
       <AdminEntityCabinetShell
+        v-show="!isWipe2Mode"
         :show-hero="showBrutalistDesignerHero"
         :title="selectedDesigner?.name || ''"
         :kicker="designerSectionLabel"
@@ -19,6 +20,12 @@
           v-model="activeSection"
         />
       </AdminEntityCabinetShell>
+      <Wipe2Renderer
+        v-if="isWipe2Mode && wipe2State"
+        :entity="wipe2State"
+        :fixed-mode="true"
+        @edit="designSystem.set('contentViewMode', 'scroll')"
+      />
       </div>
     </template>
 
@@ -50,6 +57,8 @@
 </template>
 
 <script setup lang="ts">
+import { useWipe2State } from '~/composables/useWipe2'
+import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
@@ -82,6 +91,8 @@ const router = useRouter()
 const designSystem = useDesignSystem()
 const isBrutalistDesignersMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
+const isWipe2Mode = computed(() => contentViewMode.value === 'wipe2')
+const wipe2State = useWipe2State()
 
 const showBrutalistDesignerHero = computed(() => isBrutalistDesignersMode.value && !!selectedDesigner.value)
 const designerSectionLabel = computed(() => {

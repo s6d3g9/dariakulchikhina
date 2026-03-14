@@ -3,6 +3,7 @@
     <template #selected>
       <div class="ent-wipe-host">
       <AdminEntityCabinetShell
+        v-show="!isWipe2Mode"
         :show-hero="showBrutalistSellerHero"
         :title="selectedSeller?.name || ''"
         :kicker="sellerSectionLabel"
@@ -19,6 +20,12 @@
         </template>
         <AdminSellerCabinet :key="selectedSellerId" :seller-id="selectedSellerId" :show-sidebar="false" v-model="activeSellerSection" />
       </AdminEntityCabinetShell>
+      <Wipe2Renderer
+        v-if="isWipe2Mode && wipe2State"
+        :entity="wipe2State"
+        :fixed-mode="true"
+        @edit="designSystem.set('contentViewMode', 'scroll')"
+      />
       </div>
     </template>
     <template #create>
@@ -85,6 +92,8 @@
 </template>
 
 <script setup lang="ts">
+import { useWipe2State } from '~/composables/useWipe2'
+import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
@@ -107,6 +116,8 @@ const router = useRouter()
 const designSystem = useDesignSystem()
 const isBrutalistSellersMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
+const isWipe2Mode = computed(() => contentViewMode.value === 'wipe2')
+const wipe2State = useWipe2State()
 
 const sellersDirectory = useAdminEntityDirectory<any>('sellers')
 await sellersDirectory.ensureLoaded()

@@ -865,11 +865,6 @@
             <button type="button" class="a-btn-sm" @click="move('next')">{{ pagerNextLabel }}</button>
           </div>
         </div>
-    <Wipe2Renderer
-      v-if="isWipe2Mode"
-      :entity="wipe2CabinetData"
-      @edit="designSystem.set('contentViewMode', 'scroll')"
-    />
     </main>
   </div>
 </template>

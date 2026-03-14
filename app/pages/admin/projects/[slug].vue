@@ -485,8 +485,15 @@
 
           <!-- Wipe 2: shows cards instead of raw form content.
                proj-wipe-inner is hidden (v-show) when active so the overlay
-               doesn't cover interactive elements. -->
-          <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2EntityData" @edit="designSystem.set('contentViewMode', 'scroll')" />
+               doesn't cover interactive elements.
+               fixed-mode is used in preview modes (contractor/client) where
+               proj-main has no position:relative (isProjectViewportPaged=false) -->
+          <Wipe2Renderer
+            v-if="contentViewMode === 'wipe2'"
+            :entity="wipe2EntityData"
+            :fixed-mode="contractorPreviewMode || clientPreviewMode"
+            @edit="designSystem.set('contentViewMode', 'scroll')"
+          />
 
           <div v-if="isProjectViewportPaged && contentViewMode !== 'wipe2'" class="proj-pager-rail">
             <div class="proj-pager-rail__meta">
