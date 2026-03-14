@@ -460,16 +460,22 @@ const showAll = computed(() => !isWipe2Mode.value)
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const s = seller.value
   if (!s) return null
-  const base = {
+  const projs = linkedProjects.value || []
+  return {
     entityTitle: s.name,
     entitySubtitle: form.city || undefined,
     entityStatus: 'поставщик',
     entityStatusColor: 'amber' as const,
-  }
-  if (section.value === 'profile') {
-    return {
-      ...base,
-      sections: [{ title: 'Профиль', fields: [
+    sections: [
+      { title: 'Обзор', fields: [
+        { label: 'Телефон', value: form.phone },
+        { label: 'Email', value: form.email },
+        { label: 'Город', value: form.city },
+        { label: 'Рейтинг', value: form.rating != null ? String(form.rating) : '—' },
+        { label: 'Проектов', value: String(projs.length), span: 2 as const },
+        { label: 'Категории', value: form.categories.join(', '), span: 2 as const },
+      ]},
+      { title: 'Профиль', fields: [
         { label: 'Телефон', value: form.phone },
         { label: 'Email', value: form.email },
         { label: 'Город', value: form.city },
@@ -478,24 +484,14 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Сайт', value: form.website },
         { label: 'Категории', value: form.categories.join(', '), span: 2 as const },
         { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
-      ]}],
-    }
-  }
-  if (section.value === 'terms') {
-    return {
-      ...base,
-      sections: [{ title: 'Условия работы', fields: [
+      ]},
+      { title: 'Условия работы', fields: [
         { label: 'Условия доставки', value: form.deliveryTerms, span: 2 as const },
         { label: 'Условия оплаты', value: form.paymentTerms, span: 2 as const },
         { label: 'Мин. заказ', value: form.minOrder },
         { label: 'Скидка', value: form.discount },
-      ]}],
-    }
-  }
-  if (section.value === 'requisites') {
-    return {
-      ...base,
-      sections: [{ title: 'Реквизиты', fields: [
+      ]},
+      { title: 'Реквизиты', fields: [
         { label: 'ИНН', value: form.inn },
         { label: 'КПП', value: form.kpp },
         { label: 'ОГРН', value: form.ogrn },
@@ -503,30 +499,12 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'БИК', value: form.bik },
         { label: 'Р/с', value: form.settlementAccount, span: 2 as const },
         { label: 'Юр. адрес', value: form.legalAddress, span: 2 as const },
-      ]}],
-    }
-  }
-  if (section.value === 'projects') {
-    const projs = linkedProjects.value || []
-    return {
-      ...base,
-      sections: projs.length
-        ? [{ title: 'Проекты', fields: projs.slice(0, 8).map((p: any) => ({
-            label: p.title ?? p.name ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const,
-          })) }]
-        : [{ title: 'Проекты', fields: [{ label: '', value: 'нет связанных проектов', span: 2 as const }] }],
-    }
-  }
-  return {
-    ...base,
-    sections: [{ title: 'Обзор', fields: [
-      { label: 'Телефон', value: form.phone },
-      { label: 'Email', value: form.email },
-      { label: 'Город', value: form.city },
-      { label: 'Рейтинг', value: form.rating != null ? String(form.rating) : '—' },
-      { label: 'Проектов', value: String(linkedProjects.value?.length ?? 0), span: 2 as const },
-      { label: 'Категории', value: form.categories.join(', '), span: 2 as const },
-    ]}],
+      ]},
+      { title: 'Проекты', fields: projs.length
+        ? projs.slice(0, 8).map((p: any) => ({ label: p.title ?? p.name ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const }))
+        : [{ label: '', value: 'нет связанных проектов', span: 2 as const }],
+      },
+    ],
   }
 })
 registerWipe2Data(wipe2CabinetData)

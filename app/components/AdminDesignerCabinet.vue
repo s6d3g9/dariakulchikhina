@@ -1659,16 +1659,31 @@ const showAll = computed(() => !isWipe2Mode.value)
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const d = designer.value
   if (!d) return null
-  const base = {
+  const svcs = (services.value || []).filter((s: any) => s.enabled !== false)
+  const pkgs = packages.value || []
+  const projs = designerProjects.value || []
+  const subs = subscriptions.value || []
+  const docs = designerDocs.value || []
+  const clients = uniqueClients.value || []
+  const contractors = uniqueContractors.value || []
+  const sellers = linkedData.value?.sellers || []
+  const managers = linkedData.value?.managers || []
+  return {
     entityTitle: d.name,
     entitySubtitle: form.city || d.city || undefined,
     entityStatus: 'дизайнер',
     entityStatusColor: 'blue' as const,
-  }
-  if (section.value === 'profile') {
-    return {
-      ...base,
-      sections: [{ title: 'Профиль', fields: [
+    sections: [
+      { title: 'Обзор', fields: [
+        { label: 'Активных проектов', value: String(dashStats.value?.active ?? 0) },
+        { label: 'Всего проектов', value: String(dashStats.value?.total ?? 0) },
+        { label: 'Клиентов', value: String(clients.length) },
+        { label: 'Подрядчиков', value: String(contractors.length) },
+        { label: 'Общая выручка', value: String(dashStats.value?.totalRevenue ?? 0), type: 'currency' as const, span: 2 as const },
+        { label: 'Услуг настроено', value: String(services.value?.length ?? 0) },
+        { label: 'Пакетов', value: String(pkgs.length) },
+      ]},
+      { title: 'Профиль', fields: [
         { label: 'Телефон', value: form.phone },
         { label: 'Email', value: form.email },
         { label: 'Город', value: form.city },
@@ -1678,132 +1693,56 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Опыт', value: form.experience, span: 2 as const },
         { label: 'Специализация', value: form.specializations.join(', '), span: 2 as const },
         { label: 'О себе', value: form.about, type: 'multiline' as const, span: 2 as const },
-      ]}],
-    }
-  }
-  if (section.value === 'services') {
-    const svcs = (services.value || []).filter((s: any) => s.enabled !== false)
-    return {
-      ...base,
-      sections: [{ title: 'Услуги и прайс', fields: svcs.length
+      ]},
+      { title: 'Услуги и прайс', fields: svcs.length
         ? svcs.slice(0, 8).map((s: any) => ({ label: s.title ?? '', value: formatPrice(s.price, s.unit) }))
         : [{ label: 'Услуги', value: 'не настроены', span: 2 as const }],
-      }],
-    }
-  }
-  if (section.value === 'packages') {
-    const pkgs = packages.value || []
-    return {
-      ...base,
-      sections: [{ title: 'Пакеты', fields: pkgs.length
+      },
+      { title: 'Пакеты', fields: pkgs.length
         ? pkgs.slice(0, 6).map((p: any) => ({ label: p.title ?? '', value: p.description ?? '' }))
         : [{ label: 'Пакеты', value: 'не настроены', span: 2 as const }],
-      }],
-    }
-  }
-  if (section.value === 'projects') {
-    const projs = designerProjects.value || []
-    return {
-      ...base,
-      sections: projs.length
-        ? [{ title: 'Проекты', fields: (projs.slice(0, 5).flatMap((p: any) => ([
+      },
+      { title: 'Проекты', fields: projs.length
+        ? (projs.slice(0, 5).flatMap((p: any) => ([
             { label: p.projectTitle ?? '', value: p.status, type: 'status' as const, span: 2 as const },
             { label: 'Стоимость', value: p.totalPrice ? String(p.totalPrice) : '', type: 'currency' as const },
             { label: 'Площадь', value: p.area ? `${p.area} м²` : '' },
-          ] as any[]))).slice(0, 18) }]
-        : [{ title: 'Проекты', fields: [{ label: '', value: 'нет проектов', span: 2 as const }] }],
-    }
-  }
-  if (section.value === 'subscriptions') {
-    const subs = subscriptions.value || []
-    return {
-      ...base,
-      sections: [{ title: 'Подписки', fields: subs.length
+          ] as any[]))).slice(0, 18)
+        : [{ label: '', value: 'нет проектов', span: 2 as const }],
+      },
+      { title: 'Подписки', fields: subs.length
         ? subs.slice(0, 6).map((s: any) => ({ label: s.title ?? '', value: s.price != null ? `${s.price} ₽ / ${s.billingPeriod}` : '' }))
         : [{ label: 'Подписки', value: 'не настроены', span: 2 as const }],
-      }],
-    }
-  }
-  if (section.value === 'documents') {
-    const docs = designerDocs.value || []
-    return {
-      ...base,
-      sections: [{ title: 'Документы', fields: docs.length
-        ? docs.slice(0, 8).map((d: any) => ({ label: d.title ?? d.name ?? '', value: d.category ?? '' }))
+      },
+      { title: 'Документы', fields: docs.length
+        ? docs.slice(0, 8).map((doc: any) => ({ label: doc.title ?? doc.name ?? '', value: doc.category ?? '' }))
         : [{ label: 'Документы', value: 'нет загруженных документов', span: 2 as const }],
-      }],
-    }
-  }
-  if (section.value === 'clients') {
-    const clients = uniqueClients.value || []
-    return {
-      ...base,
-      sections: [{ title: 'Клиенты', fields: clients.length
+      },
+      { title: 'Клиенты', fields: clients.length
         ? clients.slice(0, 8).map((cl: any) => ({ label: cl.name ?? '', value: cl.phone ?? cl.email ?? '' }))
         : [{ label: 'Клиенты', value: 'нет клиентов', span: 2 as const }],
-      }],
-    }
-  }
-  if (section.value === 'contractors') {
-    const contractors = uniqueContractors.value || []
-    return {
-      ...base,
-      sections: [{ title: 'Подрядчики', fields: contractors.length
+      },
+      { title: 'Подрядчики', fields: contractors.length
         ? contractors.slice(0, 8).map((ct: any) => ({ label: ct.name ?? '', value: ct.role ?? '' }))
         : [{ label: 'Подрядчики', value: 'нет подрядчиков', span: 2 as const }],
-      }],
-    }
-  }
-  if (section.value === 'sellers') {
-    const sellers = linkedData.value?.sellers || []
-    return {
-      ...base,
-      sections: [{ title: 'Поставщики', fields: sellers.length
+      },
+      { title: 'Поставщики', fields: sellers.length
         ? sellers.slice(0, 8).map((s: any) => ({ label: s.name ?? '', value: String(s.projects?.length ?? 0) + ' проектов' }))
         : [{ label: 'Поставщики', value: 'нет поставщиков', span: 2 as const }],
-      }],
-    }
-  }
-  if (section.value === 'managers') {
-    const managers = linkedData.value?.managers || []
-    return {
-      ...base,
-      sections: [{ title: 'Менеджеры', fields: managers.length
+      },
+      { title: 'Менеджеры', fields: managers.length
         ? managers.slice(0, 8).map((m: any) => ({ label: m.name ?? '', value: String(m.projects?.length ?? 0) + ' проектов' }))
         : [{ label: 'Менеджеры', value: 'нет менеджеров', span: 2 as const }],
-      }],
-    }
-  }
-  if (section.value === 'gallery') {
-    return {
-      ...base,
-      sections: [{ title: 'Галерея', fields: [
+      },
+      { title: 'Галерея', fields: [
         { label: 'Объектов в галерее', value: String(galleryList.value.length), span: 2 as const },
         { label: 'Мудбордов', value: String(moodboardList.value.length), span: 2 as const },
-      ]}],
-    }
-  }
-  if (section.value === 'moodboards') {
-    return {
-      ...base,
-      sections: [{ title: 'Мудборды', fields: moodboardList.value.length
+      ]},
+      { title: 'Мудборды', fields: moodboardList.value.length
         ? moodboardList.value.slice(0, 8).map((m: any) => ({ label: m.title ?? m.name ?? '', value: m.description ?? '' }))
         : [{ label: 'Мудборды', value: 'нет мудбордов', span: 2 as const }],
-      }],
-    }
-  }
-  // Default: дашборд
-  return {
-    ...base,
-    sections: [{ title: 'Обзор', fields: [
-      { label: 'Активных проектов', value: String(dashStats.value?.active ?? 0) },
-      { label: 'Всего проектов', value: String(dashStats.value?.total ?? 0) },
-      { label: 'Клиентов', value: String(uniqueClients.value.length) },
-      { label: 'Подрядчиков', value: String(uniqueContractors.value.length) },
-      { label: 'Общая выручка', value: String(dashStats.value?.totalRevenue ?? 0), type: 'currency' as const, span: 2 as const },
-      { label: 'Услуг настроено', value: String(services.value?.length ?? 0) },
-      { label: 'Пакетов', value: String(packages.value?.length ?? 0) },
-    ]}],
+      },
+    ],
   }
 })
 registerWipe2Data(wipe2CabinetData)

@@ -991,45 +991,29 @@ const showAll = computed(() => !isWipe2Mode.value)
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const c = contractor.value
   if (!c) return null
-  const base = {
+  const items = workItems.value || []
+  const active = items.filter((i: any) => ['planned', 'in_progress'].includes(i.status))
+  const docs = contractorDocs.value || []
+  const members = staff.value || []
+  return {
     entityTitle: c.name,
     entitySubtitle: form.companyName || (c.contractorType === 'company' ? 'организация' : 'мастер'),
     entityStatus: c.contractorType === 'company' ? 'организация' : 'мастер',
     entityStatusColor: c.contractorType === 'company' ? 'blue' as const : 'amber' as const,
-  }
-  if (section.value === 'dashboard') {
-    return {
-      ...base,
-      sections: [{ title: 'Обзор', fields: [
+    sections: [
+      { title: 'Обзор', fields: [
         { label: 'Задач всего', value: String(dashStats.value?.total ?? 0) },
         { label: 'В работе', value: String(dashStats.value?.inProgress ?? 0) },
         { label: 'Выполнено', value: String(dashStats.value?.done ?? 0) },
         { label: 'Просрочено', value: String(dashStats.value?.overdue ?? 0) },
         { label: 'Проектов', value: String(linkedProjects.value?.length ?? 0), span: 2 as const },
         { label: 'Профиль заполнен', value: `${profilePct.value}%`, span: 2 as const },
-      ]}],
-    }
-  }
-  if (section.value === 'tasks') {
-    const items = workItems.value || []
-    const active = items.filter((i: any) => ['planned', 'in_progress'].includes(i.status))
-    return {
-      ...base,
-      sections: active.length
-        ? [{ title: 'Активные задачи', fields: active.slice(0, 6).map((i: any) => ({
-            label: i.title ?? '', value: i.status, type: 'status' as const, span: 2 as const,
-          })) }]
-        : [{ title: 'Задачи', fields: [
-            { label: 'Всего задач', value: String(items.length) },
-            { label: 'Выполнено', value: String(dashStats.value?.done ?? 0) },
-            { label: 'Нет активных задач', value: '', span: 2 as const },
-          ] }],
-    }
-  }
-  if (section.value === 'contacts') {
-    return {
-      ...base,
-      sections: [{ title: 'Контакты', fields: [
+      ]},
+      { title: 'Активные задачи', fields: active.length
+        ? active.slice(0, 6).map((i: any) => ({ label: i.title ?? '', value: i.status, type: 'status' as const, span: 2 as const }))
+        : [{ label: 'Всего задач', value: String(items.length) }, { label: 'Нет активных', value: '', span: 2 as const }],
+      },
+      { title: 'Контакты', fields: [
         { label: 'Телефон', value: form.phone },
         { label: 'Email', value: form.email },
         { label: 'Компания', value: form.companyName },
@@ -1038,13 +1022,8 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Виды работ', value: Array.isArray(form.workTypes) ? form.workTypes.join(', ') : '', span: 2 as const },
         { label: 'Роли', value: Array.isArray(form.roleTypes) ? form.roleTypes.join(', ') : '', span: 2 as const },
         { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
-      ]}],
-    }
-  }
-  if (section.value === 'passport') {
-    return {
-      ...base,
-      sections: [{ title: 'Паспортные данные', fields: [
+      ]},
+      { title: 'Паспортные данные', fields: [
         { label: 'Серия', value: form.passportSeries },
         { label: 'Номер', value: form.passportNumber },
         { label: 'Выдан', value: form.passportIssuedBy, span: 2 as const },
@@ -1054,13 +1033,8 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Место рождения', value: form.birthPlace, span: 2 as const },
         { label: 'СНИЛС', value: form.snils },
         { label: 'ИНН', value: form.inn },
-      ]}],
-    }
-  }
-  if (section.value === 'requisites') {
-    return {
-      ...base,
-      sections: [{ title: 'Реквизиты', fields: [
+      ]},
+      { title: 'Реквизиты', fields: [
         { label: 'ИНН', value: form.inn },
         { label: 'КПП', value: form.kpp },
         { label: 'ОГРН', value: form.ogrn },
@@ -1068,80 +1042,35 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'БИК', value: form.bik },
         { label: 'Р/с', value: form.settlementAccount, span: 2 as const },
         { label: 'Юр. адрес', value: form.legalAddress, span: 2 as const },
-      ]}],
-    }
-  }
-  if (section.value === 'documents') {
-    const docs = contractorDocs.value || []
-    return {
-      ...base,
-      sections: [{ title: 'Документы', fields: docs.length
+      ]},
+      { title: 'Документы', fields: docs.length
         ? docs.slice(0, 8).map((d: any) => ({ label: d.title ?? d.name ?? '', value: d.category ?? '' }))
         : [{ label: 'Документы', value: 'нет загруженных документов', span: 2 as const }],
-      }],
-    }
-  }
-  if (section.value === 'specialization') {
-    return {
-      ...base,
-      sections: [{ title: 'Специализация', fields: [
+      },
+      { title: 'Специализация', fields: [
         { label: 'Виды работ', value: Array.isArray(form.workTypes) ? form.workTypes.join(', ') : '', span: 2 as const },
         { label: 'Роли', value: Array.isArray(form.roleTypes) ? form.roleTypes.join(', ') : '', span: 2 as const },
         { label: 'Сертификаты', value: (form as any).certifications?.length ? String((form as any).certifications.length) : '—' },
-      ]}],
-    }
-  }
-  if (section.value === 'finances') {
-    return {
-      ...base,
-      sections: [{ title: 'Финансы', fields: [
+      ]},
+      { title: 'Финансы', fields: [
         { label: 'Система налогообложения', value: form.taxSystem ?? '', span: 2 as const },
         { label: 'Ставка в час', value: form.hourlyRate ?? '' },
         { label: 'Способы оплаты', value: Array.isArray(form.paymentMethods) ? form.paymentMethods.join(', ') : '', span: 2 as const },
-      ]}],
-    }
-  }
-  if (section.value === 'portfolio') {
-    return {
-      ...base,
-      sections: [{ title: 'Портфолио', fields: [
+      ]},
+      { title: 'Портфолио', fields: [
         { label: 'Выполненных задач', value: String(portfolioStats.value?.doneCount ?? 0) },
         { label: 'Проектов', value: String(portfolioStats.value?.projectCount ?? 0) },
         { label: 'Фотографий', value: String(portfolioStats.value?.photoCount ?? 0) },
-      ]}],
-    }
-  }
-  if (section.value === 'settings') {
-    return {
-      ...base,
-      sections: [{ title: 'Настройки', fields: [
+      ]},
+      { title: 'Настройки', fields: [
         { label: 'Уведомления: новые задачи', value: notifSettings.newTasks ? 'включено' : 'выключено' },
         { label: 'Уведомления: дедлайны', value: notifSettings.deadlines ? 'включено' : 'выключено' },
-      ]}],
-    }
-  }
-  if (section.value === 'staff') {
-    const members = staff.value || []
-    return {
-      ...base,
-      sections: [{ title: 'Бригада', fields: members.length
+      ]},
+      { title: 'Бригада', fields: members.length
         ? members.slice(0, 8).map((m: any) => ({ label: m.name ?? '', value: m.role ?? m.specialization ?? '' }))
         : [{ label: 'Сотрудники', value: 'нет сотрудников', span: 2 as const }],
-      }],
-    }
-  }
-  return {
-    ...base,
-    sections: [{ title: 'Контакты', fields: [
-      { label: 'Телефон', value: form.phone },
-      { label: 'Email', value: form.email },
-      { label: 'Компания', value: form.companyName },
-      { label: 'Telegram', value: (form as any).telegram ?? '' },
-      { label: 'Сайт', value: form.website },
-      { label: 'Виды работ', value: Array.isArray(form.workTypes) ? form.workTypes.join(', ') : '', span: 2 as const },
-      { label: 'Роли', value: Array.isArray(form.roleTypes) ? form.roleTypes.join(', ') : '', span: 2 as const },
-      { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
-    ]}],
+      },
+    ],
   }
 })
 registerWipe2Data(wipe2CabinetData)
