@@ -1302,7 +1302,7 @@ html.dark .glass-input::placeholder {
 }
 .cab-inner--ribbon .cab-section {
   display: block;
-  scroll-margin-top: 20px; /* offset below sticky util-bar */
+  scroll-margin-top: calc(var(--admin-header-h, 48px) + var(--dp-panel-h, 0px) + 16px);
 }
 .cab-inner--ribbon .cab-section + .cab-section {
   margin-top: 28px;
