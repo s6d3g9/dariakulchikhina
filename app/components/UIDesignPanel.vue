@@ -2202,11 +2202,64 @@
     </Teleport>
   </div>
 
-  <!-- ═══ Global alignment grid overlay ═══ -->
+  <!-- ═══ Global alignment drag mode ═══ -->
   <Teleport to="body">
     <Transition name="dp-align-overlay">
-      <div v-if="aspAlignMode" class="dp-align-overlay" @click.self="toggleAlignMode">
-        <div class="dp-align-badge">⊞ режим выравнивания — <kbd>Esc</kbd> для выхода</div>
+      <div v-if="aspAlignMode" class="dp-align-overlay">
+        <div
+          v-if="alignHover.visible || alignDrag.active"
+          class="dp-align-highlight"
+          :style="alignHighlightStyle"
+        />
+        <Transition name="dp-fade">
+          <div
+            v-if="alignHover.visible && !alignDrag.active"
+            class="dp-align-tooltip"
+            :style="alignTooltipStyle"
+          >
+            <span class="dp-align-tag">{{ alignHover.tag }}</span>
+            <span v-if="alignHover.classes" class="dp-align-classes">.{{ alignHover.classes }}</span>
+            <div class="dp-align-hover-path">страница: {{ alignHover.pageSelector }}</div>
+            <div class="dp-align-hover-path">везде: {{ alignHover.globalSelector }}</div>
+            <div class="dp-align-hint">зажмите и перетащите — элемент привяжется к сетке 20px</div>
+          </div>
+        </Transition>
+        <Transition name="dp-fade">
+          <div v-if="alignResult" class="dp-align-result" :style="alignResultStyle">
+            <div class="dp-align-result-header">
+              <span class="dp-align-result-tag">{{ alignResult.tag }}</span>
+              <span v-if="alignResult.classes" class="dp-align-result-tag dp-align-result-tag--classes">.{{ alignResult.classes }}</span>
+              <button type="button" class="dp-inspect-result-close" @click="alignResult = null">✕</button>
+            </div>
+            <div class="dp-align-result-label">смещение</div>
+            <div class="dp-align-offset">{{ alignOffsetLabel }}</div>
+            <div class="dp-align-actions">
+              <button type="button" class="dp-align-action" :class="{ 'dp-align-action--active': alignScope === 'page' }" @click="setAlignScope('page')">на странице</button>
+              <button type="button" class="dp-align-action" :class="{ 'dp-align-action--active': alignScope === 'global' }" @click="setAlignScope('global')">везде</button>
+              <button type="button" class="dp-align-action" @click="resetAlignment()">сбросить</button>
+            </div>
+            <div class="dp-inspect-paths dp-inspect-paths--visibility">
+              <div class="dp-inspect-paths-label">селекторы выравнивания</div>
+              <div class="dp-inspect-path-row">
+                <span class="dp-inspect-path-kind">страница</span>
+                <code class="dp-inspect-path-code">{{ alignResult.pageSelector }}</code>
+                <button type="button" class="dp-inspect-path-copy" @click="copyPath(alignResult.pageSelector)" :title="copiedPath === alignResult.pageSelector ? 'Скопировано!' : 'Копировать'">
+                  <svg v-if="copiedPath !== alignResult.pageSelector" width="10" height="10" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg v-else width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+              <div class="dp-inspect-path-row">
+                <span class="dp-inspect-path-kind">везде</span>
+                <code class="dp-inspect-path-code">{{ alignResult.globalSelector }}</code>
+                <button type="button" class="dp-inspect-path-copy" @click="copyPath(alignResult.globalSelector)" :title="copiedPath === alignResult.globalSelector ? 'Скопировано!' : 'Копировать'">
+                  <svg v-if="copiedPath !== alignResult.globalSelector" width="10" height="10" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg v-else width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+        <button type="button" class="dp-align-badge" @click="toggleAlignMode">⊞ режим выравнивания — Esc для выхода</button>
       </div>
     </Transition>
   </Teleport>
@@ -2221,6 +2274,7 @@ import {
   TYPE_SCALE_OPTIONS,
   type DesignTokens, type DesignPreset,
 } from '~/composables/useDesignSystem'
+import { useElementAlignment } from '~/composables/useElementAlignment'
 import type { DesignPanelTabId } from '~/composables/useDesignModules'
 
 type PanelTabId = DesignPanelTabId | 'modules'
@@ -2233,18 +2287,13 @@ const {
 } = useDesignSystem()
 const { designPanel: designPanelModules, isPanelTabEnabled } = useDesignModules()
 const { currentPath, findRule: findVisibilityRule, addRule: addVisibilityRule, removeMatchingRule } = useElementVisibility()
+const { currentPath: alignmentPath, findRule: findAlignmentRule, setRulePosition, removeMatchingRule: removeAlignmentRule } = useElementAlignment()
 const { themeId, applyThemeWithTokens, UI_THEMES } = useUITheme()
 const { isDark } = useThemeToggle()
 const route = useRoute()
 const panelEnabled = computed(() => designPanelModules.value.enabled || route.query.designPanelTab === 'modules')
 
-const aspAlignMode   = useState('asp-align-mode',   () => false)
-function toggleAlignMode() { aspAlignMode.value = !aspAlignMode.value }
-onMounted(() => {
-  document.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && aspAlignMode.value) aspAlignMode.value = false
-  })
-})
+const aspAlignMode = useState('asp-align-mode', () => false)
 
 const open = ref(false)
 const showExport = ref(false)
@@ -2256,15 +2305,6 @@ const animPlaying = ref(false)
 const searchQuery = ref('')
 const appliedFlash = ref(false)
 const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
-
-// close align mode on Escape
-if (import.meta.client) {
-  const onKeydown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && aspAlignMode.value) aspAlignMode.value = false
-  }
-  onMounted(() => document.addEventListener('keydown', onKeydown))
-  onUnmounted(() => document.removeEventListener('keydown', onKeydown))
-}
 const tabList = [
   { id: 'modules',   label: 'модули ui' },
   { id: 'presets',   label: 'образы' },
@@ -3143,6 +3183,9 @@ watch(panelEnabled, (enabled) => {
 
   open.value = false
   showExport.value = false
+  if (aspAlignMode.value) {
+    disableAlignMode()
+  }
   if (inspectMode.value) {
     disableInspect()
   }
@@ -3348,6 +3391,40 @@ interface InspectResult {
 }
 const inspectResult = ref<InspectResult | null>(null)
 const copiedPath = ref<string | null>(null)
+
+interface AlignResult {
+  tag: string
+  classes: string
+  rect: { x: number; y: number; w: number; h: number }
+  pageSelector: string
+  globalSelector: string
+}
+
+const ALIGN_GRID = 20
+const alignScope = ref<'page' | 'global'>('page')
+const alignHover = reactive({
+  visible: false,
+  rect: { x: 0, y: 0, w: 0, h: 0 },
+  tag: '',
+  classes: '',
+  pageSelector: '',
+  globalSelector: '',
+})
+const alignResult = ref<AlignResult | null>(null)
+const alignDrag = reactive({
+  active: false,
+  moved: false,
+  target: null as HTMLElement | null,
+  tag: '',
+  classes: '',
+  pageSelector: '',
+  globalSelector: '',
+  startX: 0,
+  startY: 0,
+  baseX: 0,
+  baseY: 0,
+  rect: { x: 0, y: 0, w: 0, h: 0 },
+})
 
 const sectionLabels: Record<string, string> = {
   modules: 'Модули UI',
@@ -3786,7 +3863,122 @@ function getTokenInfo(el: HTMLElement, secs: string[]): { name: string; value: s
 function isInsidePanel(el: HTMLElement): boolean {
   return !!el.closest('.dp-panel') || !!el.closest('.dp-inspect-result') ||
          !!el.closest('.dp-inspect-tooltip') || !!el.closest('.dp-visibility-result') ||
-         !!el.closest('.dp-visibility-tooltip') || !!el.closest('.dp-overlay')
+         !!el.closest('.dp-visibility-tooltip') || !!el.closest('.dp-align-result') ||
+         !!el.closest('.dp-align-tooltip') || !!el.closest('.dp-align-badge') ||
+         !!el.closest('.dp-overlay') || !!el.closest('.dp-topbar')
+}
+
+function snapAlign(value: number) {
+  return Math.round(value / ALIGN_GRID) * ALIGN_GRID
+}
+
+function readAlignClasses(el: HTMLElement) {
+  return (el.className?.toString?.() || '')
+    .split(/\s+/)
+    .filter(className => className && !className.startsWith('dp-'))
+    .slice(0, 4)
+    .join('.')
+}
+
+function getAlignTarget(el: HTMLElement | null): HTMLElement | null {
+  let node = el
+  while (node && node !== document.body) {
+    if (isInsidePanel(node) || node.closest('.dp-comp-layer') || node.closest('.asp-canvas')) {
+      return null
+    }
+
+    const rect = node.getBoundingClientRect()
+    const cls = node.className?.toString?.() || ''
+    const hasIdentity = Boolean(node.id || cls.split(/\s+/).filter(className => className && !className.startsWith('dp-')).length)
+    const tag = node.tagName.toLowerCase()
+    const isUtilityTag = ['path', 'svg', 'use', 'small', 'strong', 'em', 'b', 'i'].includes(tag)
+
+    if (rect.width >= 24 && rect.height >= 24 && (hasIdentity || !isUtilityTag)) {
+      return node
+    }
+
+    node = node.parentElement
+  }
+
+  return null
+}
+
+function openAlignResult(el: HTMLElement, preferredScope?: 'page' | 'global') {
+  const rect = el.getBoundingClientRect()
+  const pageSelector = getCssSelector(el)
+  const globalSelector = getGlobalSelector(el)
+  const globalRule = findAlignmentRule(globalSelector, 'global')
+  alignScope.value = preferredScope || (globalRule ? 'global' : 'page')
+  alignResult.value = {
+    tag: el.tagName.toLowerCase(),
+    classes: readAlignClasses(el),
+    rect: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
+    pageSelector,
+    globalSelector,
+  }
+}
+
+const currentAlignmentRule = computed(() => {
+  if (!alignResult.value) {
+    return null
+  }
+
+  return alignScope.value === 'global'
+    ? findAlignmentRule(alignResult.value.globalSelector, 'global')
+    : findAlignmentRule(alignResult.value.pageSelector, 'page', alignmentPath.value)
+})
+
+const alignHighlightStyle = computed(() => {
+  const rect = alignDrag.active && alignResult.value ? alignResult.value.rect : alignHover.rect
+  return {
+    left: `${rect.x}px`,
+    top: `${rect.y}px`,
+    width: `${rect.w}px`,
+    height: `${rect.h}px`,
+  }
+})
+
+const alignTooltipStyle = computed(() => {
+  const rect = alignHover.rect
+  const left = Math.min(rect.x, window.innerWidth - 280)
+  const top = rect.y > 64 ? rect.y - 8 : rect.y + rect.h + 8
+  return {
+    left: `${Math.max(8, left)}px`,
+    top: `${top}px`,
+    transform: rect.y > 64 ? 'translateY(-100%)' : 'none',
+  }
+})
+
+const alignResultStyle = computed(() => {
+  if (!alignResult.value) {
+    return {}
+  }
+
+  const rect = alignResult.value.rect
+  const panelW = 280
+  const leftEdge = rect.x + rect.w + 12
+  const useLeft = leftEdge + panelW < window.innerWidth
+  return {
+    top: `${Math.max(8, Math.min(rect.y, window.innerHeight - 220))}px`,
+    left: useLeft ? `${leftEdge}px` : `${Math.max(8, rect.x - panelW - 12)}px`,
+    width: `${panelW}px`,
+  }
+})
+
+const alignOffsetLabel = computed(() => {
+  const x = currentAlignmentRule.value?.x || 0
+  const y = currentAlignmentRule.value?.y || 0
+  return `x ${x}px · y ${y}px`
+})
+
+function updateAlignHover(el: HTMLElement) {
+  const rect = el.getBoundingClientRect()
+  alignHover.rect = { x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+  alignHover.tag = el.tagName.toLowerCase()
+  alignHover.classes = readAlignClasses(el)
+  alignHover.pageSelector = getCssSelector(el)
+  alignHover.globalSelector = getGlobalSelector(el)
+  alignHover.visible = true
 }
 
 function onInspectMove(e: MouseEvent) {
@@ -3876,6 +4068,171 @@ function disableInspect() {
   document.removeEventListener('mousemove', onInspectMove, true)
   document.removeEventListener('click', onInspectClick, true)
   document.body.style.cursor = ''
+}
+
+function setAlignScope(scope: 'page' | 'global') {
+  alignScope.value = scope
+}
+
+function resetAlignment(scope: 'page' | 'global' = alignScope.value) {
+  if (!alignResult.value) {
+    return
+  }
+
+  if (scope === 'global') {
+    removeAlignmentRule(alignResult.value.globalSelector, 'global')
+  } else {
+    removeAlignmentRule(alignResult.value.pageSelector, 'page', alignmentPath.value)
+  }
+}
+
+function onAlignPointerMove(e: PointerEvent) {
+  if (alignDrag.active && alignResult.value) {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const nextX = snapAlign(alignDrag.baseX + (e.clientX - alignDrag.startX))
+    const nextY = snapAlign(alignDrag.baseY + (e.clientY - alignDrag.startY))
+    alignDrag.moved = alignDrag.moved || nextX !== alignDrag.baseX || nextY !== alignDrag.baseY
+
+    const selector = alignScope.value === 'global' ? alignDrag.globalSelector : alignDrag.pageSelector
+    setRulePosition({
+      selector,
+      scope: alignScope.value,
+      path: alignScope.value === 'page' ? alignmentPath.value : null,
+      label: alignDrag.classes || alignDrag.tag,
+      tag: alignDrag.tag,
+      classes: alignDrag.classes,
+      x: nextX,
+      y: nextY,
+    }, { persist: false })
+
+    alignResult.value.rect = {
+      x: alignDrag.rect.x + (nextX - alignDrag.baseX),
+      y: alignDrag.rect.y + (nextY - alignDrag.baseY),
+      w: alignDrag.rect.w,
+      h: alignDrag.rect.h,
+    }
+    return
+  }
+
+  const el = getAlignTarget(document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)
+  if (!el) {
+    alignHover.visible = false
+    return
+  }
+
+  updateAlignHover(el)
+}
+
+function onAlignPointerDown(e: PointerEvent) {
+  const target = e.target as HTMLElement | null
+  if (target && isInsidePanel(target)) {
+    return
+  }
+
+  const el = getAlignTarget(document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)
+  if (!el) {
+    return
+  }
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  const pageSelector = getCssSelector(el)
+  const globalSelector = getGlobalSelector(el)
+  openAlignResult(el)
+  const rule = alignScope.value === 'global'
+    ? findAlignmentRule(globalSelector, 'global')
+    : findAlignmentRule(pageSelector, 'page', alignmentPath.value)
+  const rect = el.getBoundingClientRect()
+
+  alignDrag.active = true
+  alignDrag.moved = false
+  alignDrag.target = el
+  alignDrag.tag = el.tagName.toLowerCase()
+  alignDrag.classes = readAlignClasses(el)
+  alignDrag.pageSelector = pageSelector
+  alignDrag.globalSelector = globalSelector
+  alignDrag.startX = e.clientX
+  alignDrag.startY = e.clientY
+  alignDrag.baseX = rule?.x || 0
+  alignDrag.baseY = rule?.y || 0
+  alignDrag.rect = { x: rect.left, y: rect.top, w: rect.width, h: rect.height }
+  document.body.style.cursor = 'grabbing'
+}
+
+function onAlignPointerUp(e: PointerEvent) {
+  if (!alignDrag.active) {
+    return
+  }
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  const selector = alignScope.value === 'global' ? alignDrag.globalSelector : alignDrag.pageSelector
+  const rule = alignScope.value === 'global'
+    ? findAlignmentRule(alignDrag.globalSelector, 'global')
+    : findAlignmentRule(alignDrag.pageSelector, 'page', alignmentPath.value)
+
+  setRulePosition({
+    selector,
+    scope: alignScope.value,
+    path: alignScope.value === 'page' ? alignmentPath.value : null,
+    label: alignDrag.classes || alignDrag.tag,
+    tag: alignDrag.tag,
+    classes: alignDrag.classes,
+    x: rule?.x || 0,
+    y: rule?.y || 0,
+  })
+
+  if (alignDrag.target) {
+    openAlignResult(alignDrag.target, alignScope.value)
+  }
+
+  alignDrag.active = false
+  alignDrag.target = null
+  document.body.style.cursor = 'crosshair'
+}
+
+function enableAlignMode() {
+  if (inspectMode.value) {
+    disableInspect()
+  }
+  if (visibilityMode.value) {
+    disableVisibilityMode()
+  }
+  if (compMode.value) {
+    toggleComp()
+  }
+
+  aspAlignMode.value = true
+  alignHover.visible = false
+  alignResult.value = null
+  document.addEventListener('pointermove', onAlignPointerMove, true)
+  document.addEventListener('pointerdown', onAlignPointerDown, true)
+  document.addEventListener('pointerup', onAlignPointerUp, true)
+  document.body.style.cursor = 'crosshair'
+}
+
+function disableAlignMode() {
+  aspAlignMode.value = false
+  alignHover.visible = false
+  alignResult.value = null
+  alignDrag.active = false
+  alignDrag.target = null
+  document.removeEventListener('pointermove', onAlignPointerMove, true)
+  document.removeEventListener('pointerdown', onAlignPointerDown, true)
+  document.removeEventListener('pointerup', onAlignPointerUp, true)
+  document.body.style.cursor = ''
+}
+
+function toggleAlignMode() {
+  if (aspAlignMode.value) {
+    disableAlignMode()
+  } else {
+    enableAlignMode()
+  }
 }
 
 function onVisibilityMove(e: MouseEvent) {
@@ -4241,6 +4598,7 @@ function toggleComp() {
 
 /* ── Keyboard ────────────────────────────────────── */
 function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && aspAlignMode.value) { disableAlignMode(); return }
   if (e.key === 'Escape' && compMode.value) { toggleComp(); return }
   if (e.key === 'Escape' && visibilityMode.value) { disableVisibilityMode(); return }
   if (e.key === 'Escape' && inspectMode.value) { disableInspect(); return }
@@ -4256,6 +4614,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey)
   document.removeEventListener('mousedown', onOutsideClick, true)
+  if (aspAlignMode.value) disableAlignMode()
   if (inspectMode.value) disableInspect()
   if (visibilityMode.value) disableVisibilityMode()
   if (compMode.value) toggleComp()
@@ -5309,6 +5668,58 @@ onBeforeUnmount(() => {
     linear-gradient(90deg, rgba(74,128,240,.08) 1px, transparent 1px);
   background-size: 20px 20px;
 }
+.dp-align-highlight {
+  position: fixed;
+  border: 2px solid rgba(74,128,240,.95);
+  background: rgba(74,128,240,.08);
+  box-sizing: border-box;
+}
+.dp-align-tooltip,
+.dp-align-result {
+  position: fixed;
+  z-index: 9002;
+  background: var(--glass-bg, #fff);
+  border: 1px solid var(--glass-border);
+  color: var(--glass-text);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+.dp-align-tooltip {
+  max-width: 280px;
+  padding: 10px 12px;
+  font-size: .72rem;
+}
+.dp-align-tag,
+.dp-align-classes,
+.dp-align-result-tag { font-size: .64rem; text-transform: uppercase; letter-spacing: .08em; }
+.dp-align-classes,
+.dp-align-result-tag--classes { color: hsl(35 80% 70%); }
+.dp-align-hover-path { margin-top: 4px; font-size: .64rem; opacity: .72; word-break: break-all; }
+.dp-align-hint { margin-top: 8px; font-size: .64rem; opacity: .78; }
+.dp-align-result { padding: 12px; }
+.dp-align-result-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.dp-align-result-label { font-size: .58rem; text-transform: uppercase; letter-spacing: .1em; opacity: .5; }
+.dp-align-offset { margin-top: 4px; font-size: .78rem; }
+.dp-align-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 12px; }
+.dp-align-action {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--glass-text);
+  font: inherit;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.dp-align-action--active {
+  border-color: rgba(74,128,240,.9);
+  color: rgba(74,128,240,.95);
+  background: rgba(74,128,240,.08);
+}
 .dp-align-badge {
   position: fixed;
   bottom: 16px;
@@ -5321,9 +5732,9 @@ onBeforeUnmount(() => {
   font-size: .78rem;
   color: var(--glass-text);
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px -4px rgba(0,0,0,.15);
   pointer-events: auto;
   white-space: nowrap;
+  cursor: pointer;
 }
 .dp-align-overlay-enter-active { transition: opacity .2s ease; }
 .dp-align-overlay-leave-active { transition: opacity .15s ease; }
