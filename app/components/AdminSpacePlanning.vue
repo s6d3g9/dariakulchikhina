@@ -120,11 +120,11 @@
               height: block.h + 'px',
               '--block-color': block.color,
             }"
-            @mousedown.stop="startBlockDrag(block, $event)"
+            @pointerdown.prevent.stop="startBlockDrag(block, $event)"
           >
             <span class="asp-block__lbl">{{ block.label }}</span>
             <button v-if="alignMode" class="asp-block__del" @click.stop="removeBlock(block.id)">×</button>
-            <div v-if="alignMode" class="asp-block__rsz" @mousedown.stop="startBlockResize(block, $event)" />
+            <div v-if="alignMode" class="asp-block__rsz" @pointerdown.prevent.stop="startBlockResize(block, $event)" />
           </div>
           <div v-if="!layoutBlocks.length" class="asp-canvas-empty">
             <span v-if="alignMode">введите название зоны и нажмите «+ добавить»</span>
@@ -322,49 +322,63 @@ function canvasBounds() {
 interface DragState { block: LayoutBlock; startMX: number; startMY: number; origX: number; origY: number }
 const dragState = ref<DragState | null>(null)
 
-function startBlockDrag(block: LayoutBlock, e: MouseEvent) {
+function startBlockDrag(block: LayoutBlock, e: PointerEvent) {
   if (!alignMode.value) return
-  e.preventDefault()
-  dragState.value = { block, startMX: e.clientX, startMY: e.clientY, origX: block.x, origY: block.y }
-  const bounds = canvasBounds()
-  function onMove(e: MouseEvent) {
-    if (!dragState.value) return
-    const { startMX, startMY, origX, origY } = dragState.value
-    block.x = snap(Math.max(0, Math.min(bounds.w - block.w, origX + e.clientX - startMX)))
-    block.y = snap(Math.max(0, Math.min(bounds.h - block.h, origY + e.clientY - startMY)))
+  const el = e.currentTarget as HTMLElement
+  el.setPointerCapture(e.pointerId)
+  const blockId = block.id
+  const startMX = e.clientX
+  const startMY = e.clientY
+  const origX = block.x
+  const origY = block.y
+  dragState.value = { block, startMX, startMY, origX, origY }
+
+  function onMove(ev: PointerEvent) {
+    const b = layoutBlocks.value.find(x => x.id === blockId)
+    if (!b) return
+    const bounds = canvasBounds()
+    b.x = snap(Math.max(0, Math.min(bounds.w - b.w, origX + ev.clientX - startMX)))
+    b.y = snap(Math.max(0, Math.min(bounds.h - b.h, origY + ev.clientY - startMY)))
   }
   function onUp() {
     dragState.value = null
-    window.removeEventListener('mousemove', onMove)
-    window.removeEventListener('mouseup', onUp)
+    el.removeEventListener('pointermove', onMove as any)
+    el.removeEventListener('pointerup', onUp)
     persistLayout()
   }
-  window.addEventListener('mousemove', onMove)
-  window.addEventListener('mouseup', onUp)
+  el.addEventListener('pointermove', onMove as any)
+  el.addEventListener('pointerup', onUp)
 }
 
 // ── Resize ──────────────────────────────────────────────────────
 interface ResizeState { block: LayoutBlock; startMX: number; startMY: number; origW: number; origH: number }
 const resizeState = ref<ResizeState | null>(null)
 
-function startBlockResize(block: LayoutBlock, e: MouseEvent) {
-  e.preventDefault()
-  resizeState.value = { block, startMX: e.clientX, startMY: e.clientY, origW: block.w, origH: block.h }
-  const bounds = canvasBounds()
-  function onMove(e: MouseEvent) {
-    if (!resizeState.value) return
-    const { startMX, startMY, origW, origH } = resizeState.value
-    block.w = snap(Math.max(GRID * 2, Math.min(bounds.w - block.x, origW + e.clientX - startMX)))
-    block.h = snap(Math.max(GRID * 2, Math.min(bounds.h - block.y, origH + e.clientY - startMY)))
+function startBlockResize(block: LayoutBlock, e: PointerEvent) {
+  const el = e.currentTarget as HTMLElement
+  el.setPointerCapture(e.pointerId)
+  const blockId = block.id
+  const startMX = e.clientX
+  const startMY = e.clientY
+  const origW = block.w
+  const origH = block.h
+  resizeState.value = { block, startMX, startMY, origW, origH }
+
+  function onMove(ev: PointerEvent) {
+    const b = layoutBlocks.value.find(x => x.id === blockId)
+    if (!b) return
+    const bounds = canvasBounds()
+    b.w = snap(Math.max(GRID * 2, Math.min(bounds.w - b.x, origW + ev.clientX - startMX)))
+    b.h = snap(Math.max(GRID * 2, Math.min(bounds.h - b.y, origH + ev.clientY - startMY)))
   }
   function onUp() {
     resizeState.value = null
-    window.removeEventListener('mousemove', onMove)
-    window.removeEventListener('mouseup', onUp)
+    el.removeEventListener('pointermove', onMove as any)
+    el.removeEventListener('pointerup', onUp)
     persistLayout()
   }
-  window.addEventListener('mousemove', onMove)
-  window.addEventListener('mouseup', onUp)
+  el.addEventListener('pointermove', onMove as any)
+  el.addEventListener('pointerup', onUp)
 }
 
 function addBlock() {
