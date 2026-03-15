@@ -90,6 +90,74 @@
         </div>
       </div>
 
+      <!-- Section: Zone layout canvas -->
+      <div class="u-form-section asp-layout-section" data-cv-unit="section">
+        <div class="asp-layout-header">
+          <span class="u-section-title">схема зонирования</span>
+          <div class="asp-layout-btns">
+            <button
+              class="a-btn-sm"
+              :class="{ 'asp-align-on': alignMode }"
+              @click="alignMode = !alignMode"
+            >{{ alignMode ? '⊞ режим выравнивания' : '⊞ выровнять' }}</button>
+            <button
+              v-if="alignMode && layoutBlocks.length"
+              class="a-btn-sm a-btn-danger"
+              @click="clearLayout"
+            >↺ очистить</button>
+          </div>
+        </div>
+
+        <!-- Canvas -->
+        <div ref="canvasRef" class="asp-canvas" :class="{ 'asp-canvas--align': alignMode }">
+          <div
+            v-for="block in layoutBlocks"
+            :key="block.id"
+            class="asp-block"
+            :class="{ 'asp-block--active': dragState?.block.id === block.id || resizeState?.block.id === block.id }"
+            :style="{
+              left: block.x + 'px',
+              top: block.y + 'px',
+              width: block.w + 'px',
+              height: block.h + 'px',
+              '--block-color': block.color,
+            }"
+            @mousedown.stop="startBlockDrag(block, $event)"
+          >
+            <span class="asp-block__lbl">{{ block.label }}</span>
+            <button v-if="alignMode" class="asp-block__del" @click.stop="removeBlock(block.id)">×</button>
+            <div v-if="alignMode" class="asp-block__rsz" @mousedown.stop="startBlockResize(block, $event)" />
+          </div>
+          <div v-if="!layoutBlocks.length" class="asp-canvas-empty">
+            <span v-if="alignMode">введите название зоны и нажмите «+ добавить»</span>
+            <span v-else>нажмите «выровнять» чтобы добавить зоны на схему</span>
+          </div>
+        </div>
+
+        <!-- Add-block toolbar -->
+        <Transition name="asp-slide">
+          <div v-if="alignMode" class="asp-add-bar">
+            <input
+              v-model="newBlockLabel"
+              class="glass-input"
+              placeholder="название зоны (гостиная, кухня, санузел...)"
+              @keydown.enter="addBlock"
+            >
+            <div class="asp-presets">
+              <button
+                v-for="ps in BLOCK_PRESETS"
+                :key="ps.key"
+                class="a-btn-sm"
+                :class="{ 'asp-preset--on': selectedPreset === ps.key }"
+                :title="`${ps.w / GRID}×${ps.h / GRID} ячеек`"
+                @click="selectedPreset = ps.key"
+              >{{ ps.key }}</button>
+            </div>
+            <button class="a-btn-sm" @click="addBlock">+ добавить</button>
+          </div>
+        </Transition>
+      </div>
+
     </template>
   </div>
 </template>
@@ -113,6 +181,7 @@ const form = reactive<any>({
   sp_dimensions_checked: false,
   sp_zones_approved:     false,
   sp_geometry_locked:    false,
+  sp_layout:             null as any,
 })
 
 const statusColor = useStatusColor(form, 'sp_status')
@@ -220,6 +289,118 @@ function fileIcon(f: any) {
   if (t === 'cad')   return '📐'
   if (t === 'pdf')   return '📄'
   return '🖼'
+}
+
+// ─── Alignment canvas ──────────────────────────────────────────
+const GRID = 20
+const CANVAS_H = 400
+const BLOCK_COLORS = ['#4a80f0','#f57c00','#43a047','#e53935','#8e24aa','#00897b','#f5a623','#0288d1']
+const BLOCK_PRESETS = [
+  { key: 'S',  w: 3 * GRID, h: 2 * GRID },
+  { key: 'M',  w: 6 * GRID, h: 4 * GRID },
+  { key: 'L',  w: 8 * GRID, h: 5 * GRID },
+  { key: 'XL', w: 12 * GRID, h: 8 * GRID },
+]
+
+interface LayoutBlock { id: string; label: string; x: number; y: number; w: number; h: number; color: string }
+
+const alignMode      = ref(false)
+const canvasRef      = ref<HTMLElement | null>(null)
+const newBlockLabel  = ref('')
+const selectedPreset = ref('M')
+const layoutBlocks   = ref<LayoutBlock[]>([])
+
+watch(() => form.sp_layout, (val: any) => {
+  if (Array.isArray(val?.blocks)) layoutBlocks.value = val.blocks
+}, { immediate: true })
+
+function snap(v: number) { return Math.round(v / GRID) * GRID }
+function canvasBounds() {
+  return { w: canvasRef.value?.clientWidth ?? 700, h: CANVAS_H }
+}
+
+// ── Drag ────────────────────────────────────────────────────────
+interface DragState { block: LayoutBlock; startMX: number; startMY: number; origX: number; origY: number }
+const dragState = ref<DragState | null>(null)
+
+function startBlockDrag(block: LayoutBlock, e: MouseEvent) {
+  if (!alignMode.value) return
+  e.preventDefault()
+  dragState.value = { block, startMX: e.clientX, startMY: e.clientY, origX: block.x, origY: block.y }
+  const bounds = canvasBounds()
+  function onMove(e: MouseEvent) {
+    if (!dragState.value) return
+    const { startMX, startMY, origX, origY } = dragState.value
+    block.x = snap(Math.max(0, Math.min(bounds.w - block.w, origX + e.clientX - startMX)))
+    block.y = snap(Math.max(0, Math.min(bounds.h - block.h, origY + e.clientY - startMY)))
+  }
+  function onUp() {
+    dragState.value = null
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+    persistLayout()
+  }
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+}
+
+// ── Resize ──────────────────────────────────────────────────────
+interface ResizeState { block: LayoutBlock; startMX: number; startMY: number; origW: number; origH: number }
+const resizeState = ref<ResizeState | null>(null)
+
+function startBlockResize(block: LayoutBlock, e: MouseEvent) {
+  e.preventDefault()
+  resizeState.value = { block, startMX: e.clientX, startMY: e.clientY, origW: block.w, origH: block.h }
+  const bounds = canvasBounds()
+  function onMove(e: MouseEvent) {
+    if (!resizeState.value) return
+    const { startMX, startMY, origW, origH } = resizeState.value
+    block.w = snap(Math.max(GRID * 2, Math.min(bounds.w - block.x, origW + e.clientX - startMX)))
+    block.h = snap(Math.max(GRID * 2, Math.min(bounds.h - block.y, origH + e.clientY - startMY)))
+  }
+  function onUp() {
+    resizeState.value = null
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+    persistLayout()
+  }
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+}
+
+function addBlock() {
+  const label = newBlockLabel.value.trim()
+  if (!label) return
+  const preset = BLOCK_PRESETS.find(p => p.key === selectedPreset.value) ?? BLOCK_PRESETS[1]
+  const col = layoutBlocks.value.length % 3
+  const row = Math.floor(layoutBlocks.value.length / 3)
+  layoutBlocks.value.push({
+    id: `b-${Date.now()}`,
+    label,
+    x: snap(GRID + col * (preset.w + GRID * 2)),
+    y: snap(GRID + row * (preset.h + GRID * 2)),
+    w: preset.w,
+    h: preset.h,
+    color: BLOCK_COLORS[layoutBlocks.value.length % BLOCK_COLORS.length],
+  })
+  newBlockLabel.value = ''
+  persistLayout()
+}
+
+function removeBlock(id: string) {
+  layoutBlocks.value = layoutBlocks.value.filter(b => b.id !== id)
+  persistLayout()
+}
+
+function clearLayout() {
+  if (!window.confirm('Очистить холст? Все блоки будут удалены.')) return
+  layoutBlocks.value = []
+  persistLayout()
+}
+
+function persistLayout() {
+  form.sp_layout = { blocks: layoutBlocks.value.map(b => ({ ...b })) }
+  save()
 }
 </script>
 
@@ -333,4 +514,128 @@ function fileIcon(f: any) {
   font-size: .85rem;
   cursor: pointer;
 }
+
+/* ─── Layout canvas ────────────────────────────────────────────── */
+.asp-layout-section { margin-top: 8px; }
+
+.asp-layout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.asp-layout-btns { display: flex; gap: 8px; align-items: center; }
+
+.asp-align-on {
+  background: color-mix(in srgb, var(--ds-accent, #4a80f0) 16%, transparent) !important;
+  border-color: color-mix(in srgb, var(--ds-accent, #4a80f0) 60%, var(--glass-border)) !important;
+  color: var(--ds-accent, #4a80f0) !important;
+}
+
+/* Canvas */
+.asp-canvas {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  border-radius: var(--card-radius, 10px);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  overflow: hidden;
+  user-select: none;
+  transition: background .2s;
+}
+.asp-canvas--align {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--glass-text) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--glass-text) 7%, transparent) 1px, transparent 1px);
+  background-size: 20px 20px;
+  cursor: default;
+}
+
+.asp-canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .82rem;
+  opacity: .35;
+  pointer-events: none;
+}
+
+/* Block */
+.asp-block {
+  position: absolute;
+  border: 2px solid var(--block-color);
+  background: color-mix(in srgb, var(--block-color) 13%, transparent);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow .12s;
+  overflow: hidden;
+}
+.asp-canvas--align .asp-block { cursor: move; }
+.asp-block--active {
+  box-shadow: 0 0 0 2px var(--block-color), 0 6px 24px -4px color-mix(in srgb, var(--block-color) 35%, transparent);
+  z-index: 10;
+}
+
+.asp-block__lbl {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--block-color);
+  text-align: center;
+  padding: 4px 20px 4px 6px;
+  word-break: break-word;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.asp-block__del {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  background: none;
+  border: none;
+  color: var(--block-color);
+  opacity: .4;
+  font-size: .88rem;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  transition: opacity .12s;
+}
+.asp-block__del:hover { opacity: 1; }
+
+.asp-block__rsz {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  cursor: se-resize;
+  opacity: .55;
+  background: linear-gradient(-45deg, var(--block-color) 35%, transparent 35%);
+  border-radius: 0 0 4px 0;
+}
+.asp-block__rsz:hover { opacity: 1; }
+
+/* Add toolbar */
+.asp-add-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.asp-presets { display: flex; gap: 4px; }
+.asp-preset--on {
+  background: color-mix(in srgb, var(--ds-accent, #4a80f0) 16%, transparent) !important;
+  border-color: color-mix(in srgb, var(--ds-accent, #4a80f0) 50%, var(--glass-border)) !important;
+  color: var(--ds-accent, #4a80f0) !important;
+}
+
+/* Transition */
+.asp-slide-enter-active, .asp-slide-leave-active { transition: all .18s ease; }
+.asp-slide-enter-from, .asp-slide-leave-to { opacity: 0; transform: translateY(-6px); }
 </style>
