@@ -120,11 +120,11 @@
               height: block.h + 'px',
               '--block-color': block.color,
             }"
-            @pointerdown.prevent.stop="startBlockDrag(block, $event)"
+            @pointerdown.stop="startBlockDrag(block, $event)"
           >
             <span class="asp-block__lbl">{{ block.label }}</span>
             <button v-if="alignMode" class="asp-block__del" @click.stop="removeBlock(block.id)">×</button>
-            <div v-if="alignMode" class="asp-block__rsz" @pointerdown.prevent.stop="startBlockResize(block, $event)" />
+            <div v-if="alignMode" class="asp-block__rsz" @pointerdown.stop="startBlockResize(block, $event)" />
           </div>
           <div v-if="!layoutBlocks.length" class="asp-canvas-empty">
             <span v-if="alignMode">введите название зоны и нажмите «+ добавить»</span>
@@ -324,8 +324,6 @@ const dragState = ref<DragState | null>(null)
 
 function startBlockDrag(block: LayoutBlock, e: PointerEvent) {
   if (!alignMode.value) return
-  const el = e.currentTarget as HTMLElement
-  el.setPointerCapture(e.pointerId)
   const blockId = block.id
   const startMX = e.clientX
   const startMY = e.clientY
@@ -342,12 +340,12 @@ function startBlockDrag(block: LayoutBlock, e: PointerEvent) {
   }
   function onUp() {
     dragState.value = null
-    el.removeEventListener('pointermove', onMove as any)
-    el.removeEventListener('pointerup', onUp)
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
     persistLayout()
   }
-  el.addEventListener('pointermove', onMove as any)
-  el.addEventListener('pointerup', onUp)
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onUp)
 }
 
 // ── Resize ──────────────────────────────────────────────────────
@@ -355,8 +353,6 @@ interface ResizeState { block: LayoutBlock; startMX: number; startMY: number; or
 const resizeState = ref<ResizeState | null>(null)
 
 function startBlockResize(block: LayoutBlock, e: PointerEvent) {
-  const el = e.currentTarget as HTMLElement
-  el.setPointerCapture(e.pointerId)
   const blockId = block.id
   const startMX = e.clientX
   const startMY = e.clientY
@@ -373,12 +369,12 @@ function startBlockResize(block: LayoutBlock, e: PointerEvent) {
   }
   function onUp() {
     resizeState.value = null
-    el.removeEventListener('pointermove', onMove as any)
-    el.removeEventListener('pointerup', onUp)
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
     persistLayout()
   }
-  el.addEventListener('pointermove', onMove as any)
-  el.addEventListener('pointerup', onUp)
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onUp)
 }
 
 function addBlock() {
@@ -581,7 +577,7 @@ function persistLayout() {
   transition: box-shadow .12s;
   overflow: hidden;
 }
-.asp-canvas--align .asp-block { cursor: move; }
+.asp-canvas--align .asp-block { cursor: move; touch-action: none; }
 .asp-block--active {
   box-shadow: 0 0 0 2px var(--block-color), 0 6px 24px -4px color-mix(in srgb, var(--block-color) 35%, transparent);
   z-index: 10;
