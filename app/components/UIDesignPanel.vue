@@ -2292,6 +2292,9 @@ const visibleTabList = computed(() => tabList.filter(tab => tab.id === 'modules'
 const sections = reactive({ presets: true, concept: false, palette: true, colors: false, buttons: false, type: false, typeScale: false, surface: false, radii: false, anim: false, grid: false, darkMode: false, inputs: false, tags: false, nav: false, statuses: false, popups: false, scrollbar: false, tables: false, badges: false, arch: false })
 function toggle(key: keyof typeof sections) { activeTab.value = key as unknown as PanelTabId }
 
+/* ── Tab navigation ─────────────────────────────── */
+const activeTab = ref<PanelTabId>('presets')
+
 /* ── Option lists ────────────────────────────────── */
 const btnStyles = [
   { id: 'filled'  as const, label: 'залитый' },
