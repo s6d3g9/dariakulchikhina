@@ -16,6 +16,10 @@
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 2l4.5 10 1.5-3.5L11.5 7z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8l3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span>css</span>
       </button>
+      <button v-if="aspAlignActive" type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': aspAlignMode }" @click="aspAlignMode = !aspAlignMode" title="Режим выравнивания по сетке (схема зонирования)">
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="4" height="4" rx="0.7" stroke="currentColor" stroke-width="1.1"/><rect x="8.5" y="1.5" width="4" height="4" rx="0.7" stroke="currentColor" stroke-width="1.1"/><rect x="1.5" y="8.5" width="4" height="4" rx="0.7" stroke="currentColor" stroke-width="1.1"/><rect x="8.5" y="8.5" width="4" height="4" rx="0.7" stroke="currentColor" stroke-width="1.1"/></svg>
+        <span>выровнять</span>
+      </button>
       <button v-if="designPanelModules.elementVisibility" type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active-alt': visibilityMode }" @click="toggleVisibilityMode" title="Скрыть элемент на странице или везде">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 7c1.6-2.3 3.4-3.5 5-3.5S10.4 4.7 12 7c-1.6 2.3-3.4 3.5-5 3.5S3.6 9.3 2 7Z" stroke="currentColor" stroke-width="1.1"/><path d="M1.8 12.2 12.2 1.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span>скрыть</span>
@@ -2224,6 +2228,9 @@ const { themeId, applyThemeWithTokens, UI_THEMES } = useUITheme()
 const { isDark } = useThemeToggle()
 const route = useRoute()
 const panelEnabled = computed(() => designPanelModules.value.enabled || route.query.designPanelTab === 'modules')
+
+const aspAlignActive = useState('asp-align-active', () => false)
+const aspAlignMode   = useState('asp-align-mode',   () => false)
 
 const open = ref(false)
 const showExport = ref(false)

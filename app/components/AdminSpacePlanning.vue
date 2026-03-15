@@ -289,7 +289,7 @@ function fileIcon(f: any) {
   return '🖼'
 }
 
-// ─── Alignment canvas ──────────────────────────────────────────
+// ─── Alignment canvas ────────────────────────────────────────────────────────
 const GRID = 20
 const CANVAS_H = 400
 const BLOCK_COLORS = ['#4a80f0','#f57c00','#43a047','#e53935','#8e24aa','#00897b','#f5a623','#0288d1']
@@ -302,7 +302,10 @@ const BLOCK_PRESETS = [
 
 interface LayoutBlock { id: string; label: string; x: number; y: number; w: number; h: number; color: string }
 
-const alignMode      = ref(false)
+// shared with UIDesignPanel dp-topbar button
+const alignMode = useState('asp-align-mode', () => false)
+onMounted(() => { useState('asp-align-active', () => false).value = true })
+onUnmounted(() => { useState<boolean>('asp-align-active').value = false; alignMode.value = false })
 const canvasRef      = ref<HTMLElement | null>(null)
 const newBlockLabel  = ref('')
 const selectedPreset = ref('M')
