@@ -2240,11 +2240,11 @@ const panelEnabled = computed(() => designPanelModules.value.enabled || route.qu
 
 const aspAlignMode   = useState('asp-align-mode',   () => false)
 function toggleAlignMode() { aspAlignMode.value = !aspAlignMode.value }
-if (import.meta.client) {
-  useEventListener(document, 'keydown', (e: KeyboardEvent) => {
+onMounted(() => {
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Escape' && aspAlignMode.value) aspAlignMode.value = false
   })
-}
+})
 
 const open = ref(false)
 const showExport = ref(false)
