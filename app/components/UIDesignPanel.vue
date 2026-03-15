@@ -2259,9 +2259,11 @@ const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
 
 // close align mode on Escape
 if (import.meta.client) {
-  useEventListener('keydown', (e: KeyboardEvent) => {
+  const onKeydown = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && aspAlignMode.value) aspAlignMode.value = false
-  })
+  }
+  onMounted(() => document.addEventListener('keydown', onKeydown))
+  onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 }
 const tabList = [
   { id: 'modules',   label: 'модули ui' },
