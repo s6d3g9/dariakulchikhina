@@ -14,6 +14,18 @@
           <option value="approved">согласован ✓</option>
         </select>
         <span v-if="savedAt" class="asp-saved">✓ {{ savedAt }}</span>
+        <div class="asp-status-row__spacer" />
+        <button
+          class="a-btn-sm"
+          :class="{ 'asp-align-on': alignMode }"
+          :title="alignMode ? 'Выключить режим выравнивания' : 'Включить драг-выравнивание по сетке'"
+          @click="alignMode = !alignMode"
+        >⊞ {{ alignMode ? 'выравнивание' : 'выровнять' }}</button>
+        <button
+          v-if="alignMode && layoutBlocks.length"
+          class="a-btn-sm a-btn-danger"
+          @click="clearLayout"
+        >↺</button>
       </div>
 
       <!-- Section: General info -->
@@ -92,21 +104,7 @@
 
       <!-- Section: Zone layout canvas -->
       <div class="u-form-section asp-layout-section" data-cv-unit="section">
-        <div class="asp-layout-header">
-          <span class="u-section-title">схема зонирования</span>
-          <div class="asp-layout-btns">
-            <button
-              class="a-btn-sm"
-              :class="{ 'asp-align-on': alignMode }"
-              @click="alignMode = !alignMode"
-            >{{ alignMode ? '⊞ режим выравнивания' : '⊞ выровнять' }}</button>
-            <button
-              v-if="alignMode && layoutBlocks.length"
-              class="a-btn-sm a-btn-danger"
-              @click="clearLayout"
-            >↺ очистить</button>
-          </div>
-        </div>
+        <div class="u-section-title">схема зонирования</div>
 
         <!-- Canvas -->
         <div ref="canvasRef" class="asp-canvas" :class="{ 'asp-canvas--align': alignMode }">
@@ -407,7 +405,8 @@ function persistLayout() {
 <style scoped>
 .asp-wrap { padding: 4px 0 40px; }
 
-.asp-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.asp-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
+.asp-status-row__spacer { flex: 1; }
 .asp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 /* dot colors: → main.css [class*="-dot--*"] */
 .asp-saved { font-size: .75rem; opacity: .5; }
@@ -517,14 +516,6 @@ function persistLayout() {
 
 /* ─── Layout canvas ────────────────────────────────────────────── */
 .asp-layout-section { margin-top: 8px; }
-
-.asp-layout-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.asp-layout-btns { display: flex; gap: 8px; align-items: center; }
 
 .asp-align-on {
   background: color-mix(in srgb, var(--ds-accent, #4a80f0) 16%, transparent) !important;
