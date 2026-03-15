@@ -12,6 +12,8 @@ export const ElementAlignmentRuleSchema = z.object({
   classes: z.string().default(''),
   x: z.number().finite().default(0),
   y: z.number().finite().default(0),
+  width: z.number().finite().nullable().optional(),
+  height: z.number().finite().nullable().optional(),
   createdAt: z.string().default(''),
 })
 
@@ -47,9 +49,11 @@ export function normalizeElementAlignmentConfig(value: unknown): ElementAlignmen
           classes: typeof rule.classes === 'string' ? rule.classes : '',
           x: Number.isFinite(rule.x) ? Math.round(Number(rule.x)) : 0,
           y: Number.isFinite(rule.y) ? Math.round(Number(rule.y)) : 0,
+          width: Number.isFinite(rule.width) ? Math.max(24, Math.round(Number(rule.width))) : null,
+          height: Number.isFinite(rule.height) ? Math.max(24, Math.round(Number(rule.height))) : null,
           createdAt: typeof rule.createdAt === 'string' ? rule.createdAt : '',
         }))
-        .filter((rule) => Boolean(rule.selector) && (rule.x !== 0 || rule.y !== 0))
+        .filter((rule) => Boolean(rule.selector) && (rule.x !== 0 || rule.y !== 0 || rule.width !== null || rule.height !== null))
     : []
 
   const seen = new Set<string>()

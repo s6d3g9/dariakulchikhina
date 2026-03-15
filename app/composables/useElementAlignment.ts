@@ -35,7 +35,16 @@ export function useElementAlignment() {
   const rules = computed(() => config.value.rules)
   const activeRules = computed(() => rules.value.filter((rule) => rule.scope === 'global' || rule.path === currentPath.value))
   const styleText = computed(() => activeRules.value
-    .map((rule) => `${rule.selector} { translate: ${rule.x}px ${rule.y}px !important; }`)
+    .map((rule) => {
+      const chunks = [`translate: ${rule.x}px ${rule.y}px !important;`]
+      if (rule.width !== null && rule.width !== undefined) {
+        chunks.push(`width: ${rule.width}px !important;`)
+      }
+      if (rule.height !== null && rule.height !== undefined) {
+        chunks.push(`height: ${rule.height}px !important;`)
+      }
+      return `${rule.selector} { ${chunks.join(' ')} }`
+    })
     .join('\n'))
 
   function syncLocalConfig(value: ElementAlignmentConfig) {
@@ -164,6 +173,8 @@ export function useElementAlignment() {
     classes?: string
     x: number
     y: number
+    width?: number | null
+    height?: number | null
   }, options: { persist?: boolean } = {}) {
     const selector = input.selector.trim()
     if (!selector) {
@@ -173,9 +184,11 @@ export function useElementAlignment() {
     const normalizedPath = input.scope === 'page' ? (input.path || currentPath.value) : null
     const x = Math.round(input.x)
     const y = Math.round(input.y)
+    const width = Number.isFinite(input.width) ? Math.max(24, Math.round(Number(input.width))) : null
+    const height = Number.isFinite(input.height) ? Math.max(24, Math.round(Number(input.height))) : null
     const existing = findRule(selector, input.scope, normalizedPath)
 
-    if (x === 0 && y === 0) {
+    if (x === 0 && y === 0 && width === null && height === null) {
       if (existing) {
         commitConfig({
           rules: rules.value.filter((rule) => rule.id !== existing.id),
@@ -194,6 +207,8 @@ export function useElementAlignment() {
       classes: input.classes || existing?.classes || '',
       x,
       y,
+      width,
+      height,
       createdAt: existing?.createdAt || new Date().toISOString(),
     }
 

@@ -2210,7 +2210,15 @@
           v-if="alignHover.visible || alignDrag.active"
           class="dp-align-highlight"
           :style="alignHighlightStyle"
-        />
+        >
+          <button
+            v-if="alignResult"
+            type="button"
+            class="dp-align-resize"
+            title="Изменить размер"
+            @pointerdown.stop.prevent="startAlignResize($event)"
+          />
+        </div>
         <Transition name="dp-fade">
           <div
             v-if="alignHover.visible && !alignDrag.active"
@@ -2233,6 +2241,8 @@
             </div>
             <div class="dp-align-result-label">смещение</div>
             <div class="dp-align-offset">{{ alignOffsetLabel }}</div>
+            <div class="dp-align-result-label" style="margin-top:8px">размер</div>
+            <div class="dp-align-offset">{{ alignSizeLabel }}</div>
             <div class="dp-align-actions">
               <button type="button" class="dp-align-action" :class="{ 'dp-align-action--active': alignScope === 'page' }" @click="setAlignScope('page')">на странице</button>
               <button type="button" class="dp-align-action" :class="{ 'dp-align-action--active': alignScope === 'global' }" @click="setAlignScope('global')">везде</button>
@@ -3425,6 +3435,21 @@ const alignDrag = reactive({
   baseY: 0,
   rect: { x: 0, y: 0, w: 0, h: 0 },
 })
+const alignResize = reactive({
+  active: false,
+  target: null as HTMLElement | null,
+  tag: '',
+  classes: '',
+  pageSelector: '',
+  globalSelector: '',
+  startX: 0,
+  startY: 0,
+  baseX: 0,
+  baseY: 0,
+  baseW: 0,
+  baseH: 0,
+  rect: { x: 0, y: 0, w: 0, h: 0 },
+})
 
 const sectionLabels: Record<string, string> = {
   modules: 'Модули UI',
@@ -3888,12 +3913,16 @@ function getAlignTarget(el: HTMLElement | null): HTMLElement | null {
     }
 
     const rect = node.getBoundingClientRect()
+    const styles = getComputedStyle(node)
     const cls = node.className?.toString?.() || ''
     const hasIdentity = Boolean(node.id || cls.split(/\s+/).filter(className => className && !className.startsWith('dp-')).length)
     const tag = node.tagName.toLowerCase()
-    const isUtilityTag = ['path', 'svg', 'use', 'small', 'strong', 'em', 'b', 'i'].includes(tag)
+    const isUtilityTag = ['path', 'svg', 'use', 'small', 'strong', 'em', 'b', 'i', 'br'].includes(tag)
+    const isInline = styles.display === 'inline'
+    const fillsViewport = rect.width >= window.innerWidth * 0.96 && rect.height >= window.innerHeight * 0.9
+    const isStructuralTag = ['section', 'article', 'main', 'aside', 'nav', 'header', 'footer', 'div', 'button', 'a', 'li'].includes(tag)
 
-    if (rect.width >= 24 && rect.height >= 24 && (hasIdentity || !isUtilityTag)) {
+    if (!fillsViewport && rect.width >= 24 && rect.height >= 24 && !isInline && !isUtilityTag && (hasIdentity || isStructuralTag)) {
       return node
     }
 
@@ -3969,6 +3998,12 @@ const alignOffsetLabel = computed(() => {
   const x = currentAlignmentRule.value?.x || 0
   const y = currentAlignmentRule.value?.y || 0
   return `x ${x}px · y ${y}px`
+})
+
+const alignSizeLabel = computed(() => {
+  const width = currentAlignmentRule.value?.width ?? Math.round(alignResult.value?.rect.w || 0)
+  const height = currentAlignmentRule.value?.height ?? Math.round(alignResult.value?.rect.h || 0)
+  return `${width}px × ${height}px`
 })
 
 function updateAlignHover(el: HTMLElement) {
@@ -4087,6 +4122,35 @@ function resetAlignment(scope: 'page' | 'global' = alignScope.value) {
 }
 
 function onAlignPointerMove(e: PointerEvent) {
+  if (alignResize.active && alignResult.value) {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const nextWidth = Math.max(24, snapAlign(alignResize.baseW + (e.clientX - alignResize.startX)))
+    const nextHeight = Math.max(24, snapAlign(alignResize.baseH + (e.clientY - alignResize.startY)))
+    const selector = alignScope.value === 'global' ? alignResize.globalSelector : alignResize.pageSelector
+    setRulePosition({
+      selector,
+      scope: alignScope.value,
+      path: alignScope.value === 'page' ? alignmentPath.value : null,
+      label: alignResize.classes || alignResize.tag,
+      tag: alignResize.tag,
+      classes: alignResize.classes,
+      x: alignResize.baseX,
+      y: alignResize.baseY,
+      width: nextWidth,
+      height: nextHeight,
+    }, { persist: false })
+
+    alignResult.value.rect = {
+      x: alignResize.rect.x,
+      y: alignResize.rect.y,
+      w: nextWidth,
+      h: nextHeight,
+    }
+    return
+  }
+
   if (alignDrag.active && alignResult.value) {
     e.preventDefault()
     e.stopPropagation()
@@ -4105,6 +4169,8 @@ function onAlignPointerMove(e: PointerEvent) {
       classes: alignDrag.classes,
       x: nextX,
       y: nextY,
+      width: currentAlignmentRule.value?.width ?? alignDrag.rect.w,
+      height: currentAlignmentRule.value?.height ?? alignDrag.rect.h,
     }, { persist: false })
 
     alignResult.value.rect = {
@@ -4162,13 +4228,73 @@ function onAlignPointerDown(e: PointerEvent) {
   document.body.style.cursor = 'grabbing'
 }
 
-function onAlignPointerUp(e: PointerEvent) {
-  if (!alignDrag.active) {
+function startAlignResize(e: PointerEvent) {
+  if (!alignResult.value || !alignDrag.target) {
     return
   }
 
   e.preventDefault()
   e.stopPropagation()
+
+  const target = alignDrag.target
+  const rect = alignResult.value.rect
+  const rule = alignScope.value === 'global'
+    ? findAlignmentRule(alignResult.value.globalSelector, 'global')
+    : findAlignmentRule(alignResult.value.pageSelector, 'page', alignmentPath.value)
+
+  alignResize.active = true
+  alignResize.target = target
+  alignResize.tag = alignResult.value.tag
+  alignResize.classes = alignResult.value.classes
+  alignResize.pageSelector = alignResult.value.pageSelector
+  alignResize.globalSelector = alignResult.value.globalSelector
+  alignResize.startX = e.clientX
+  alignResize.startY = e.clientY
+  alignResize.baseX = rule?.x || 0
+  alignResize.baseY = rule?.y || 0
+  alignResize.baseW = rule?.width ?? Math.round(rect.w)
+  alignResize.baseH = rule?.height ?? Math.round(rect.h)
+  alignResize.rect = { x: rect.x, y: rect.y, w: rect.w, h: rect.h }
+  document.body.style.cursor = 'se-resize'
+}
+
+function onAlignPointerUp(e: PointerEvent) {
+  if (!alignDrag.active && !alignResize.active) {
+    return
+  }
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  if (alignResize.active) {
+    const selector = alignScope.value === 'global' ? alignResize.globalSelector : alignResize.pageSelector
+    const rule = alignScope.value === 'global'
+      ? findAlignmentRule(alignResize.globalSelector, 'global')
+      : findAlignmentRule(alignResize.pageSelector, 'page', alignmentPath.value)
+
+    setRulePosition({
+      selector,
+      scope: alignScope.value,
+      path: alignScope.value === 'page' ? alignmentPath.value : null,
+      label: alignResize.classes || alignResize.tag,
+      tag: alignResize.tag,
+      classes: alignResize.classes,
+      x: rule?.x || 0,
+      y: rule?.y || 0,
+      width: rule?.width ?? alignResize.baseW,
+      height: rule?.height ?? alignResize.baseH,
+    })
+
+    if (alignResize.target) {
+      openAlignResult(alignResize.target, alignScope.value)
+      alignDrag.target = alignResize.target
+    }
+
+    alignResize.active = false
+    alignResize.target = null
+    document.body.style.cursor = 'crosshair'
+    return
+  }
 
   const selector = alignScope.value === 'global' ? alignDrag.globalSelector : alignDrag.pageSelector
   const rule = alignScope.value === 'global'
@@ -4184,6 +4310,8 @@ function onAlignPointerUp(e: PointerEvent) {
     classes: alignDrag.classes,
     x: rule?.x || 0,
     y: rule?.y || 0,
+    width: rule?.width ?? alignDrag.rect.w,
+    height: rule?.height ?? alignDrag.rect.h,
   })
 
   if (alignDrag.target) {
@@ -4221,6 +4349,8 @@ function disableAlignMode() {
   alignResult.value = null
   alignDrag.active = false
   alignDrag.target = null
+  alignResize.active = false
+  alignResize.target = null
   document.removeEventListener('pointermove', onAlignPointerMove, true)
   document.removeEventListener('pointerdown', onAlignPointerDown, true)
   document.removeEventListener('pointerup', onAlignPointerUp, true)
@@ -4598,6 +4728,38 @@ function toggleComp() {
 
 /* ── Keyboard ────────────────────────────────────── */
 function onKey(e: KeyboardEvent) {
+  const target = e.target as HTMLElement | null
+  const targetTag = target?.tagName?.toLowerCase?.() || ''
+  const targetEditable = target?.isContentEditable || ['input', 'textarea', 'select'].includes(targetTag)
+  if (aspAlignMode.value && alignResult.value && !targetEditable && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+    e.preventDefault()
+    const step = e.altKey ? 1 : ALIGN_GRID
+    const currentRule = alignScope.value === 'global'
+      ? findAlignmentRule(alignResult.value.globalSelector, 'global')
+      : findAlignmentRule(alignResult.value.pageSelector, 'page', alignmentPath.value)
+    const nextX = (currentRule?.x || 0) + (e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0)
+    const nextY = (currentRule?.y || 0) + (e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0)
+    const selector = alignScope.value === 'global' ? alignResult.value.globalSelector : alignResult.value.pageSelector
+    setRulePosition({
+      selector,
+      scope: alignScope.value,
+      path: alignScope.value === 'page' ? alignmentPath.value : null,
+      label: alignResult.value.classes || alignResult.value.tag,
+      tag: alignResult.value.tag,
+      classes: alignResult.value.classes,
+      x: nextX,
+      y: nextY,
+      width: currentRule?.width ?? Math.round(alignResult.value.rect.w),
+      height: currentRule?.height ?? Math.round(alignResult.value.rect.h),
+    })
+    alignResult.value.rect = {
+      x: alignResult.value.rect.x + (nextX - (currentRule?.x || 0)),
+      y: alignResult.value.rect.y + (nextY - (currentRule?.y || 0)),
+      w: currentRule?.width ?? alignResult.value.rect.w,
+      h: currentRule?.height ?? alignResult.value.rect.h,
+    }
+    return
+  }
   if (e.key === 'Escape' && aspAlignMode.value) { disableAlignMode(); return }
   if (e.key === 'Escape' && compMode.value) { toggleComp(); return }
   if (e.key === 'Escape' && visibilityMode.value) { disableVisibilityMode(); return }
@@ -5673,6 +5835,17 @@ onBeforeUnmount(() => {
   border: 2px solid rgba(74,128,240,.95);
   background: rgba(74,128,240,.08);
   box-sizing: border-box;
+}
+.dp-align-resize {
+  position: absolute;
+  right: -9px;
+  bottom: -9px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(74,128,240,.95);
+  background: #fff;
+  cursor: se-resize;
+  pointer-events: auto;
 }
 .dp-align-tooltip,
 .dp-align-result {
