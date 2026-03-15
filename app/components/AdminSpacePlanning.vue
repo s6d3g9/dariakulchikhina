@@ -304,8 +304,6 @@ interface LayoutBlock { id: string; label: string; x: number; y: number; w: numb
 
 // shared with UIDesignPanel dp-topbar button
 const alignMode = useState('asp-align-mode', () => false)
-onMounted(() => { useState('asp-align-active', () => false).value = true })
-onUnmounted(() => { useState<boolean>('asp-align-active').value = false; alignMode.value = false })
 const canvasRef      = ref<HTMLElement | null>(null)
 const newBlockLabel  = ref('')
 const selectedPreset = ref('M')
