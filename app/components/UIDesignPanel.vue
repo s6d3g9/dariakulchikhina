@@ -16,7 +16,7 @@
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2 2l4.5 10 1.5-3.5L11.5 7z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 8l3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
         <span>css</span>
       </button>
-      <button type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': aspAlignMode }" @click="aspAlignMode = !aspAlignMode" title="Режим выравнивания по сетке">
+      <button type="button" class="dp-topbar-btn" :class="{ 'dp-topbar-btn--active': aspAlignMode }" @click="toggleAlignMode" title="Режим выравнивания по сетке">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="4" height="4" rx="0.7" stroke="currentColor" stroke-width="1.1"/><rect x="8.5" y="1.5" width="4" height="4" rx="0.7" stroke="currentColor" stroke-width="1.1"/><rect x="1.5" y="8.5" width="4" height="4" rx="0.7" stroke="currentColor" stroke-width="1.1"/><rect x="8.5" y="8.5" width="4" height="4" rx="0.7" stroke="currentColor" stroke-width="1.1"/></svg>
         <span>выровнять</span>
       </button>
@@ -2201,6 +2201,15 @@
       </div>
     </Teleport>
   </div>
+
+  <!-- ═══ Global alignment grid overlay ═══ -->
+  <Teleport to="body">
+    <Transition name="dp-align-overlay">
+      <div v-if="aspAlignMode" class="dp-align-overlay" @click.self="toggleAlignMode">
+        <div class="dp-align-badge">⊞ режим выравнивания — <kbd>Esc</kbd> для выхода</div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -2230,6 +2239,12 @@ const route = useRoute()
 const panelEnabled = computed(() => designPanelModules.value.enabled || route.query.designPanelTab === 'modules')
 
 const aspAlignMode   = useState('asp-align-mode',   () => false)
+function toggleAlignMode() { aspAlignMode.value = !aspAlignMode.value }
+if (import.meta.client) {
+  useEventListener(document, 'keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && aspAlignMode.value) aspAlignMode.value = false
+  })
+}
 
 const open = ref(false)
 const showExport = ref(false)
@@ -2242,8 +2257,12 @@ const searchQuery = ref('')
 const appliedFlash = ref(false)
 const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
 
-/* ── Tab navigation ─────────────────────────────── */
-const activeTab = ref<PanelTabId>('presets')
+// close align mode on Escape
+if (import.meta.client) {
+  useEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && aspAlignMode.value) aspAlignMode.value = false
+  })
+}
 const tabList = [
   { id: 'modules',   label: 'модули ui' },
   { id: 'presets',   label: 'образы' },
@@ -5273,6 +5292,38 @@ onBeforeUnmount(() => {
 .dp-slide-leave-active { transition: opacity .14s ease, transform .14s ease; }
 .dp-slide-enter-from { opacity: 0; transform: translateY(-12px); }
 .dp-slide-leave-to { opacity: 0; transform: translateY(-8px); }
+
+/* ── Global align overlay ── */
+.dp-align-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9000;
+  background-image:
+    linear-gradient(rgba(74,128,240,.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74,128,240,.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.dp-align-badge {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-bg, #fff);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 6px 18px;
+  font-size: .78rem;
+  color: var(--glass-text);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px -4px rgba(0,0,0,.15);
+  pointer-events: auto;
+  white-space: nowrap;
+}
+.dp-align-overlay-enter-active { transition: opacity .2s ease; }
+.dp-align-overlay-leave-active { transition: opacity .15s ease; }
+.dp-align-overlay-enter-from, .dp-align-overlay-leave-to { opacity: 0; }
+
 
 .dp-collapse-enter-active { transition: max-height .2s ease, opacity .2s ease; overflow: hidden; }
 .dp-collapse-leave-active { transition: max-height .15s ease, opacity .15s ease; overflow: hidden; }
