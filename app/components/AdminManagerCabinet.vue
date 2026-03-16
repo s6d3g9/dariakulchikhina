@@ -378,15 +378,45 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Заметки', value: form.notes ? 'есть' : '—' },
       ]},
       { title: 'Проекты', fields: projs.length
-        ? projs.slice(0, 6).map((p: any) => ({ label: p.projectName ?? p.title ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const }))
+        ? projs.slice(0, 6).map((p: any) => ({
+            label: p.projectName ?? p.title ?? 'Проект',
+            value: p.status ?? '',
+            type: 'status' as const,
+            span: 2 as const,
+            description: p.address ?? '',
+            badge: p.role || 'manager',
+            caption: p.projectSlug || 'без slug',
+            eyebrow: 'проект',
+            tone: p.role === 'lead' ? 'accent' as const : 'default' as const,
+          }))
         : [{ label: '', value: 'нет проектов', span: 2 as const }],
       },
       { title: 'Лента событий', fields: projs.slice(0, 5).length
-        ? projs.slice(0, 5).map((p: any) => ({ label: p.projectName ?? p.title ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const }))
+        ? projs.slice(0, 5).map((p: any) => ({
+            label: p.projectName ?? p.title ?? 'Событие',
+            value: p.status ?? '',
+            type: 'status' as const,
+            span: 2 as const,
+            description: p.address ?? 'операционный апдейт проекта',
+            badge: p.role || 'update',
+            caption: p.projectSlug || 'карточка проекта',
+            eyebrow: 'лента',
+            tone: 'default' as const,
+          }))
         : [{ label: '', value: 'нет событий', span: 2 as const }],
       },
       { title: 'Согласования', fields: pending.length
-        ? pending.slice(0, 6).map((p: any) => ({ label: p.projectName ?? p.title ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const }))
+        ? pending.slice(0, 6).map((p: any) => ({
+            label: p.projectName ?? p.title ?? 'Согласование',
+            value: p.status ?? '',
+            type: 'status' as const,
+            span: 2 as const,
+            description: p.address ?? 'требует решения менеджера',
+            badge: 'pending',
+            caption: p.role || 'координация',
+            eyebrow: 'approval',
+            tone: 'accent' as const,
+          }))
         : [{ label: '', value: 'нет ожидающих согласований', span: 2 as const }],
       },
       { title: 'Отчёты', fields: [

@@ -491,20 +491,20 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Категории', value: form.categories.join(', '), span: 2 as const },
       ]},
       { title: 'Профиль', fields: [
-        { label: 'Телефон', value: form.phone },
-        { label: 'Email', value: form.email },
-        { label: 'Город', value: form.city },
-        { label: 'Контактное лицо', value: form.contactPerson },
-        { label: 'Telegram', value: form.telegram },
-        { label: 'Сайт', value: form.website },
+        { label: 'Телефон', value: form.phone, description: 'основной контакт поставщика', badge: 'контакт', caption: 'связь', eyebrow: 'профиль', tone: 'default' as const },
+        { label: 'Email', value: form.email, description: 'почта для коммерческих запросов', badge: 'mail', caption: 'канал', eyebrow: 'профиль', tone: 'default' as const },
+        { label: 'Город', value: form.city, description: 'основная география работы', badge: 'geo', caption: 'регион', eyebrow: 'профиль', tone: 'default' as const },
+        { label: 'Контактное лицо', value: form.contactPerson, description: 'человек, который ведёт клиента', badge: 'owner', caption: 'менеджер', eyebrow: 'профиль', tone: 'accent' as const },
+        { label: 'Telegram', value: form.telegram, description: 'оперативная связь', badge: 'tg', caption: 'чат', eyebrow: 'профиль', tone: 'default' as const },
+        { label: 'Сайт', value: form.website, description: 'витрина поставщика', badge: 'web', caption: 'url', eyebrow: 'профиль', tone: 'default' as const },
         { label: 'Категории', value: form.categories.join(', '), span: 2 as const },
         { label: 'Заметки', value: form.notes, type: 'multiline' as const, span: 2 as const },
       ]},
       { title: 'Условия работы', fields: [
-        { label: 'Условия доставки', value: form.deliveryTerms, span: 2 as const },
-        { label: 'Условия оплаты', value: form.paymentTerms, span: 2 as const },
-        { label: 'Мин. заказ', value: form.minOrder },
-        { label: 'Скидка', value: form.discount },
+        { label: 'Условия доставки', value: form.deliveryTerms, span: 2 as const, description: 'логистика и сроки поставки', badge: 'delivery', caption: 'исполнение', eyebrow: 'условия', tone: 'accent' as const },
+        { label: 'Условия оплаты', value: form.paymentTerms, span: 2 as const, description: 'аванс, постоплата и график', badge: 'finance', caption: 'расчёты', eyebrow: 'условия', tone: 'success' as const },
+        { label: 'Мин. заказ', value: form.minOrder, description: 'минимальный порог по заявке', badge: 'min', caption: 'порог', eyebrow: 'условия', tone: 'default' as const },
+        { label: 'Скидка', value: form.discount, description: 'базовая коммерческая уступка', badge: 'discount', caption: 'коммерция', eyebrow: 'условия', tone: 'success' as const },
       ]},
       { title: 'Реквизиты', fields: [
         { label: 'ИНН', value: form.inn },
@@ -516,7 +516,17 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Юр. адрес', value: form.legalAddress, span: 2 as const },
       ]},
       { title: 'Проекты', fields: projs.length
-        ? projs.slice(0, 8).map((p: any) => ({ label: p.title ?? p.name ?? '', value: p.status ?? '', type: 'status' as const, span: 2 as const }))
+        ? projs.slice(0, 8).map((p: any) => ({
+            label: p.title ?? p.name ?? 'Проект',
+            value: p.status ?? '',
+            type: 'status' as const,
+            span: 2 as const,
+            description: p.address ?? '',
+            badge: p.slug ? 'live' : 'draft',
+            caption: p.area ? `${p.area} м²` : 'без площади',
+            eyebrow: 'проект',
+            tone: 'accent' as const,
+          }))
         : [{ label: '', value: 'нет связанных проектов', span: 2 as const }],
       },
     ]

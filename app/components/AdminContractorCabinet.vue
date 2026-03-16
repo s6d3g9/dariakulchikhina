@@ -1025,7 +1025,17 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Профиль заполнен', value: `${profilePct.value}%`, span: 2 as const },
       ]},
       { title: 'Активные задачи', fields: active.length
-        ? active.slice(0, 6).map((i: any) => ({ label: i.title ?? '', value: i.status, type: 'status' as const, span: 2 as const }))
+        ? active.slice(0, 8).map((i: any) => ({
+            label: i.title ?? 'Задача',
+            value: i.status,
+            type: 'status' as const,
+            span: 2 as const,
+            description: i.description ?? i.notes ?? '',
+            badge: i.priority ? `приоритет ${i.priority}` : 'в работе',
+            caption: i.deadline ? formatDocDate(i.deadline) : 'без дедлайна',
+            eyebrow: 'задача',
+            tone: i.status === 'done' ? 'success' as const : 'accent' as const,
+          }))
         : [{ label: 'Всего задач', value: String(items.length) }, { label: 'Нет активных', value: '', span: 2 as const }],
       },
       { title: 'Контакты', fields: [
@@ -1059,7 +1069,15 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Юр. адрес', value: form.legalAddress, span: 2 as const },
       ]},
       { title: 'Документы', fields: docs.length
-        ? docs.slice(0, 8).map((d: any) => ({ label: d.title ?? d.name ?? '', value: d.category ?? '' }))
+        ? docs.slice(0, 8).map((d: any) => ({
+            label: d.title ?? d.name ?? 'Документ',
+            value: getDocCategoryLabel(d.category ?? ''),
+            description: d.notes ?? '',
+            badge: d.fileName ? 'файл' : 'запись',
+            caption: d.createdAt ? formatDocDate(d.createdAt) : 'без даты',
+            eyebrow: 'документы',
+            tone: 'default' as const,
+          }))
         : [{ label: 'Документы', value: 'нет загруженных документов', span: 2 as const }],
       },
       { title: 'Специализация', fields: [
@@ -1073,16 +1091,24 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Способы оплаты', value: Array.isArray(form.paymentMethods) ? form.paymentMethods.join(', ') : '', span: 2 as const },
       ]},
       { title: 'Портфолио', fields: [
-        { label: 'Выполненных задач', value: String(portfolioStats.value?.doneCount ?? 0) },
-        { label: 'Проектов', value: String(portfolioStats.value?.projectCount ?? 0) },
-        { label: 'Фотографий', value: String(portfolioStats.value?.photoCount ?? 0) },
+        { label: 'Выполненных задач', value: String(portfolioStats.value?.doneCount ?? 0), description: 'закрытые позиции в work log', badge: 'портфолио', caption: 'за всё время', eyebrow: 'результат', tone: 'success' as const },
+        { label: 'Проектов', value: String(portfolioStats.value?.projectCount ?? 0), description: 'объекты, где подрядчик участвовал', badge: 'кейсы', caption: 'в базе', eyebrow: 'проектный след', tone: 'accent' as const },
+        { label: 'Фотографий', value: String(portfolioStats.value?.photoCount ?? 0), description: 'визуальные подтверждения работ', badge: 'медиа', caption: 'загружено', eyebrow: 'архив', tone: 'default' as const },
       ]},
       { title: 'Настройки', fields: [
         { label: 'Уведомления: новые задачи', value: notifSettings.newTasks ? 'включено' : 'выключено' },
         { label: 'Уведомления: дедлайны', value: notifSettings.deadlines ? 'включено' : 'выключено' },
       ]},
       { title: 'Бригада', fields: members.length
-        ? members.slice(0, 8).map((m: any) => ({ label: m.name ?? '', value: m.role ?? m.specialization ?? '' }))
+        ? members.slice(0, 8).map((m: any) => ({
+            label: m.name ?? 'Сотрудник',
+            value: m.role ?? m.specialization ?? '',
+            description: m.phone ?? m.email ?? '',
+            badge: m.specialization ? 'спец' : 'команда',
+            caption: m.specialization ?? 'роль не указана',
+            eyebrow: 'бригада',
+            tone: 'default' as const,
+          }))
         : [{ label: 'Сотрудники', value: 'нет сотрудников', span: 2 as const }],
       },
     ]
