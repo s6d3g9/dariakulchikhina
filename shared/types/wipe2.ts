@@ -22,6 +22,16 @@ export interface Wipe2Field {
   span?: 2
   /** Empty-state placeholder */
   empty?: string
+  /** Short explanatory line shown in card/grid modes */
+  description?: string
+  /** Small badge shown on mini cards */
+  badge?: string
+  /** Secondary compact metric or unit */
+  caption?: string
+  /** Optional eyebrow for spotlight mode */
+  eyebrow?: string
+  /** Visual tone for value emphasis */
+  tone?: 'default' | 'accent' | 'success' | 'muted'
 }
 
 /** A named group of fields (appears as a section header inside a card) */

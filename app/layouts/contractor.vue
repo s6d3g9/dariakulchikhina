@@ -27,17 +27,26 @@
 </template>
 
 <script setup lang="ts">
+import type { Contractor } from '~~/shared/types/contractor'
+
 const router = useRouter()
 const route = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
 
+interface AuthMePayload {
+  contractorId?: number | null
+}
+
 // Получаем данные текущего авторизованного подрядчика
-const { data: meData } = await useFetch<any>('/api/auth/me')
+const { data: meData } = await useFetch<AuthMePayload>('/api/auth/me')
 const contractorId = computed(() => meData.value?.contractorId)
 
-const { data: contractor } = await useFetch<any>(
-  () => contractorId.value ? `/api/contractors/${contractorId.value}` : null,
-  { watch: [contractorId], immediate: true }
+const { data: contractor } = await useAsyncData<Contractor | null>(
+  'contractor-layout-profile',
+  () => contractorId.value
+    ? $fetch<Contractor>(`/api/contractors/${contractorId.value}`)
+    : Promise.resolve(null),
+  { watch: [contractorId], default: () => null }
 )
 
 const contractorName = computed(() => contractor.value?.name || '')

@@ -148,6 +148,10 @@
                 </div>
               </div>
 
+              <div v-show="isTabVisible('builder')" class="dp-page">
+                <UIAppBlueprintBuilder />
+              </div>
+
               <!-- ═══ Рецепты дизайна ═══ -->
               <div v-show="isTabVisible('presets')" class="dp-page">
                 <div class="dp-presets-grid">
@@ -2277,6 +2281,7 @@
 
 <script setup lang="ts">
 import UIDesignModulesMatrix from '~/components/UIDesignModulesMatrix.vue'
+import UIAppBlueprintBuilder from '~/components/UIAppBlueprintBuilder.vue'
 import UIDesignVisibilityRules from '~/components/UIDesignVisibilityRules.vue'
 import {
   useDesignSystem, FONT_OPTIONS, BTN_SIZE_MAP, EASING_OPTIONS, DESIGN_PRESETS,
@@ -2317,6 +2322,7 @@ const appliedFlash = ref(false)
 const typeCtx = ref<'text' | 'headings' | 'buttons' | 'inputs'>('text')
 const tabList = [
   { id: 'modules',   label: 'модули ui' },
+  { id: 'builder',   label: 'сборщик app' },
   { id: 'presets',   label: 'образы' },
   { id: 'concept',   label: 'концепция' },
   { id: 'palette',   label: 'палитра' },
@@ -3114,6 +3120,7 @@ function formatTransitionDuration(value: number) {
 
 /* ── Section search filter ──────────────────────── */
 const sectionSearchMap: Record<string, string[]> = {
+  builder:  ['blueprint', 'app builder', 'catalog', 'app-catalog', 'сборка', 'приложение', 'menu groups', 'featured blocks', 'типизация', 'конструктор'],
   presets:  ['образ', 'рецепт', 'preset', 'minimal', 'soft', 'brutalist', 'corporate', 'editorial', 'neomorph', 'glass', 'luxury', 'playful', 'swiss', 'monochrome', 'scandinavian', 'dashboard', 'material', 'apple', 'retro', 'terminal', 'minale', 'bauhaus', 'artdeco', 'cyberpunk', 'zen', 'y2k', 'newspaper', 'pastel', 'tokyo', 'terracotta', 'arctic', 'glow', 'ink', 'bubblegum', 'blueprint', 'snohetta', 'olsonkundig', 'mvrdv', 'som', 'mad', 'архитектура'],
   palette:  ['палитра', 'цвет', 'акцент', 'color', 'theme', 'accent', 'hue', 'статусы', 'success', 'успех', 'ошибка', 'error', 'warning', 'предупреждение', 'фон', 'навигация', 'карточка', 'кнопка', 'поле', 'тег', 'ссылка', 'заголовок', 'мьютед', 'мутед', 'background', 'nav', 'input', 'tag', 'heading', 'muted', 'link', 'элементы'],
   colors:   ['цвета', 'элемент', 'фон', 'кнопк', 'текст', 'ссылк', 'заголовк', 'граница', 'background', 'surface', 'heading', 'link', 'border', 'button', 'colour', 'цвет элементов'],
@@ -3453,6 +3460,7 @@ const alignResize = reactive({
 
 const sectionLabels: Record<string, string> = {
   modules: 'Модули UI',
+  builder: 'Сборщик App',
   presets: 'Рецепты', palette: 'Палитра', buttons: 'Кнопки',
   type: 'Типографика', typeScale: 'Шкала', surface: 'Поверхности',
   radii: 'Скругления', anim: 'Анимация', grid: 'Сетка', darkMode: 'Тёмная тема',

@@ -216,30 +216,59 @@
 
             <template v-else-if="services.length">
               <div v-for="[cat, catServices] in servicesByCat" :key="cat" class="svc-category glass-surface" :class="{ 'svc-category--brutalist': isBrutalistDesignerCabinetMode }">
-                <h3 class="svc-cat-title">{{ DESIGNER_SERVICE_CATEGORY_LABELS[cat] || cat }}</h3>
-                <div class="svc-list">
-                  <div v-for="svc in catServices" :key="svc.serviceKey" class="svc-row" :class="{ disabled: !svc.enabled, 'svc-row--brutalist': isBrutalistDesignerCabinetMode }">
-                    <div class="svc-name">{{ svc.title }}</div>
-                    <div class="svc-desc">{{ svc.description }}</div>
-                    <div class="svc-price svc-price-inline" @click="startInlinePrice(svc)">
-                      <template v-if="inlinePriceKey === svc.serviceKey">
-                        <input
-                          v-model.number="inlinePriceVal"
-                          class="glass-input glass-input--inline"
-                          type="number"
-                          min="0"
-                          @blur="commitInlinePrice(svc)"
-                          @keyup.enter="commitInlinePrice(svc)"
-                          @keyup.escape="cancelInlinePrice"
-                          @click.stop
-                        />
-                      </template>
-                      <template v-else>
-                        {{ formatPrice(svc.price, svc.unit) }}
-                        <span class="svc-price-edit-icon">✎</span>
-                      </template>
-                    </div>
+                <div class="svc-cat-head">
+                  <div class="svc-cat-copy">
+                    <span class="svc-cat-eyebrow">категория</span>
+                    <h3 class="svc-cat-title">{{ DESIGNER_SERVICE_CATEGORY_LABELS[cat] || cat }}</h3>
                   </div>
+                  <div class="svc-cat-stats">
+                    <span class="svc-cat-stat">{{ getServiceCountLabel(catServices.length) }}</span>
+                    <span class="svc-cat-stat">{{ getCategoryActiveLabel(catServices) }}</span>
+                    <span v-if="getCategoryStartingPrice(catServices)" class="svc-cat-stat svc-cat-stat--accent">
+                      от {{ getCategoryStartingPrice(catServices) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="svc-list svc-list--cards">
+                  <article v-for="svc in catServices" :key="svc.serviceKey" class="svc-card" :class="{ disabled: !svc.enabled, 'svc-card--brutalist': isBrutalistDesignerCabinetMode }">
+                    <div class="svc-card-topline">
+                      <span class="svc-state-badge" :class="{ 'svc-state-badge--muted': !svc.enabled }">
+                        {{ svc.enabled ? 'В продаже' : 'Скрыта' }}
+                      </span>
+                      <span class="svc-unit-chip">{{ getPriceUnitLabel(svc.unit) }}</span>
+                    </div>
+                    <div class="svc-card-body">
+                      <h4 class="svc-name">{{ svc.title }}</h4>
+                      <p class="svc-desc">{{ svc.description }}</p>
+                    </div>
+                    <div class="svc-card-meta">
+                      <span class="svc-meta-chip">{{ getServiceMarketLabel(svc) }}</span>
+                      <span class="svc-meta-chip">{{ getServiceOriginLabel(svc) }}</span>
+                    </div>
+                    <div class="svc-card-foot">
+                      <div class="svc-price-block">
+                        <span class="svc-price-caption">текущий тариф</span>
+                        <div class="svc-price svc-price-inline" @click="startInlinePrice(svc)">
+                          <template v-if="inlinePriceKey === svc.serviceKey">
+                            <input
+                              v-model.number="inlinePriceVal"
+                              class="glass-input glass-input--inline svc-price-inline-input"
+                              type="number"
+                              min="0"
+                              @blur="commitInlinePrice(svc)"
+                              @keyup.enter="commitInlinePrice(svc)"
+                              @keyup.escape="cancelInlinePrice"
+                              @click.stop
+                            />
+                          </template>
+                          <template v-else>
+                            {{ formatServicePrice(svc.price, svc.unit) }}
+                            <span class="svc-price-edit-icon">✎</span>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
                 </div>
               </div>
             </template>
@@ -308,22 +337,44 @@
 
             <template v-else-if="packages.length">
               <div class="pkg-grid" :class="{ 'pkg-grid--brutalist': isBrutalistDesignerCabinetMode }">
-                <div v-for="pkg in packages" :key="pkg.key" class="pkg-card glass-surface" :class="{ disabled: !pkg.enabled, 'pkg-card--brutalist': isBrutalistDesignerCabinetMode }">
+                <article v-for="pkg in packages" :key="pkg.key" class="pkg-card glass-surface" :class="{ disabled: !pkg.enabled, 'pkg-card--brutalist': isBrutalistDesignerCabinetMode }">
+                  <div class="pkg-card-topline">
+                    <span class="pkg-state-badge" :class="{ 'pkg-state-badge--muted': !pkg.enabled }">
+                      {{ pkg.enabled ? 'Готов к продаже' : 'Черновик' }}
+                    </span>
+                    <span class="pkg-service-count">{{ getServiceCountLabel((pkg.serviceKeys || []).length) }}</span>
+                  </div>
                   <div class="pkg-card-head">
-                    <h3 class="pkg-card-title">{{ pkg.title }}</h3>
-                    <div class="pkg-card-price">{{ (pkg.pricePerSqm ?? 0).toLocaleString('ru-RU') }} <span>₽/м²</span></div>
+                    <div>
+                      <h3 class="pkg-card-title">{{ pkg.title }}</h3>
+                      <p class="pkg-card-subtitle">{{ getPackageCoverageLabel(pkg) }}</p>
+                    </div>
+                    <div class="pkg-card-price">{{ formatRubles(pkg.pricePerSqm ?? 0) }} <span>₽/м²</span></div>
                   </div>
                   <p class="pkg-card-desc">{{ pkg.description }}</p>
+                  <div class="pkg-card-metrics">
+                    <div class="pkg-metric glass-surface">
+                      <span class="pkg-metric-label">80 м²</span>
+                      <strong>{{ getPackageExamplePrice(pkg, 80) }}</strong>
+                    </div>
+                    <div class="pkg-metric glass-surface">
+                      <span class="pkg-metric-label">120 м²</span>
+                      <strong>{{ getPackageExamplePrice(pkg, 120) }}</strong>
+                    </div>
+                  </div>
                   <div class="pkg-card-services">
-                    <span v-for="sk in pkg.serviceKeys" :key="sk" class="pkg-svc-chip">
+                    <span v-for="sk in getPackageVisibleServiceKeys(pkg)" :key="sk" class="pkg-svc-chip">
                       {{ getServiceTitle(sk) }}
                     </span>
+                    <span v-if="getPackageHiddenServiceCount(pkg) > 0" class="pkg-svc-chip pkg-svc-chip--more">
+                      +{{ getPackageHiddenServiceCount(pkg) }} ещё
+                    </span>
                   </div>
-                  <div class="pkg-card-example">
-                    <span class="pkg-example-label">Пример: 80 м²</span>
-                    <span class="pkg-example-price">{{ ((pkg.pricePerSqm || 0) * 80).toLocaleString('ru-RU') }} ₽</span>
+                  <div class="pkg-card-notes">
+                    <p class="pkg-card-note">{{ getPackageCategoryLabel(pkg) }}</p>
+                    <p class="pkg-card-note">{{ getPackageBudgetLabel(pkg) }}</p>
                   </div>
-                </div>
+                </article>
               </div>
             </template>
             </div>
@@ -912,6 +963,7 @@ import {
   type DesignerSubscription,
   type DesignerServiceCategory,
   type BillingPeriod,
+  type PriceUnit,
   PRICE_UNITS,
 } from '~~/shared/types/designer'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
@@ -1568,6 +1620,98 @@ function getPackageTitle(key: string): string {
   return tmpl?.title || key
 }
 
+function formatRubles(value: number): string {
+  return Math.max(0, Number(value) || 0).toLocaleString('ru-RU')
+}
+
+function formatServicePrice(price: number, unit?: string | null): string {
+  const normalizedPrice = Math.max(0, Number(price) || 0)
+  if (!unit) return `${formatRubles(normalizedPrice)} ₽`
+  if (unit in PRICE_UNIT_LABELS) {
+    return `${formatRubles(normalizedPrice)} ${PRICE_UNIT_LABELS[unit as PriceUnit]}`
+  }
+  return `${formatRubles(normalizedPrice)} ${String(unit).trim()}`
+}
+
+function getPriceUnitLabel(unit?: string | null): string {
+  if (!unit) return 'без единицы'
+  if (unit in PRICE_UNIT_LABELS) return PRICE_UNIT_LABELS[unit as PriceUnit]
+  return String(unit).trim()
+}
+
+function getServiceCountLabel(count: number): string {
+  if (count % 10 === 1 && count % 100 !== 11) return `${count} услуга`
+  if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return `${count} услуги`
+  return `${count} услуг`
+}
+
+function getCategoryActiveLabel(list: DesignerServicePrice[]): string {
+  const activeCount = list.filter(item => item.enabled).length
+  return `${activeCount} активны`
+}
+
+function getCategoryStartingPrice(list: DesignerServicePrice[]): string {
+  const enabledServices = list.filter(item => item.enabled)
+  if (!enabledServices.length) return ''
+  const cheapest = enabledServices.reduce((best, current) => current.price < best.price ? current : best)
+  return formatServicePrice(cheapest.price, cheapest.unit)
+}
+
+function getServiceTemplate(key: string) {
+  return DESIGNER_SERVICE_TEMPLATES.find(template => template.key === key)
+}
+
+function getServiceMarketLabel(service: DesignerServicePrice): string {
+  const template = getServiceTemplate(service.serviceKey)
+  if (!template) return 'Индивидуальная услуга'
+  return `Рынок ${formatRubles(template.priceRangeMin)}–${formatRubles(template.priceRangeMax)} ${getPriceUnitLabel(template.defaultUnit)}`
+}
+
+function getServiceOriginLabel(service: DesignerServicePrice): string {
+  return getServiceTemplate(service.serviceKey) ? 'Типовая позиция' : 'Собственная настройка'
+}
+
+function getPackageExamplePrice(pkg: DesignerPackage, area: number): string {
+  return `${formatRubles((pkg.pricePerSqm || 0) * area)} ₽`
+}
+
+function getPackageVisibleServiceKeys(pkg: DesignerPackage): string[] {
+  return (pkg.serviceKeys || []).slice(0, 5)
+}
+
+function getPackageHiddenServiceCount(pkg: DesignerPackage): number {
+  return Math.max(0, (pkg.serviceKeys || []).length - getPackageVisibleServiceKeys(pkg).length)
+}
+
+function getPackageCoverageLabel(pkg: DesignerPackage): string {
+  const count = pkg.serviceKeys?.length || 0
+  if (count >= 6) return 'Полный пакет для проекта под ключ'
+  if (count >= 4) return 'Сбалансированный пакет для основных этапов'
+  if (count >= 2) return 'Компактный пакет для конкретной задачи'
+  return 'Точечная услуга для отдельного этапа'
+}
+
+function getPackageCategoryLabel(pkg: DesignerPackage): string {
+  const labels = Array.from(new Set((pkg.serviceKeys || []).map((key) => {
+    const service = services.value.find(item => item.serviceKey === key)
+    if (service) return DESIGNER_SERVICE_CATEGORY_LABELS[service.category]
+    const template = getServiceTemplate(key)
+    return template ? DESIGNER_SERVICE_CATEGORY_LABELS[template.category] : ''
+  }).filter(Boolean)))
+
+  if (!labels.length) return 'Категории пока не определены'
+  if (labels.length <= 2) return labels.join(' + ')
+  return `${labels.slice(0, 2).join(' + ')} и ещё ${labels.length - 2}`
+}
+
+function getPackageBudgetLabel(pkg: DesignerPackage): string {
+  const price = Number(pkg.pricePerSqm) || 0
+  if (price >= 4000) return 'Премиальный сегмент и плотное сопровождение'
+  if (price >= 2500) return 'Средний+ сегмент для подробной проработки'
+  if (price >= 1200) return 'Рациональный пакет для жилых интерьеров'
+  return 'Лёгкий входной пакет для первых этапов'
+}
+
 // ── Available packages for project creation ──
 const availablePackages = computed(() => {
   if (packages.value.length) return packages.value.filter(p => p.enabled)
@@ -1706,27 +1850,86 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'О себе', value: form.about, type: 'multiline' as const, span: 2 as const },
       ]},
       { title: 'Услуги и прайс', fields: svcs.length
-        ? svcs.slice(0, 8).map((s: any) => ({ label: s.title ?? '', value: formatPrice(s.price, s.unit) }))
+        ? svcs.slice(0, 10).map((s: any) => ({
+            label: s.title ?? 'Услуга',
+            value: formatServicePrice(s.price, s.unit),
+            description: s.description ?? '',
+            badge: s.enabled === false ? 'скрыта' : 'активна',
+            caption: getPriceUnitLabel(s.unit),
+            eyebrow: DESIGNER_SERVICE_CATEGORY_LABELS[s.category as DesignerServiceCategory] || 'услуга',
+            tone: s.enabled === false ? 'muted' as const : 'accent' as const,
+          }))
         : [{ label: 'Услуги', value: 'не настроены', span: 2 as const }],
       },
       { title: 'Пакеты', fields: pkgs.length
-        ? pkgs.slice(0, 6).map((p: any) => ({ label: p.title ?? '', value: p.description ?? '' }))
+        ? pkgs.slice(0, 8).map((p: any) => ({
+            label: p.title ?? 'Пакет',
+            value: `${formatRubles(p.pricePerSqm ?? 0)} ₽/м²`,
+            description: p.description ?? '',
+            badge: p.enabled === false ? 'черновик' : 'готов',
+            caption: getServiceCountLabel((p.serviceKeys || []).length),
+            eyebrow: 'пакет услуг',
+            tone: p.enabled === false ? 'muted' as const : 'success' as const,
+          }))
         : [{ label: 'Пакеты', value: 'не настроены', span: 2 as const }],
       },
       { title: 'Проекты', fields: projs.length
         ? (projs.slice(0, 5).flatMap((p: any) => ([
-            { label: p.projectTitle ?? '', value: p.status, type: 'status' as const, span: 2 as const },
-            { label: 'Стоимость', value: p.totalPrice ? String(p.totalPrice) : '', type: 'currency' as const },
-            { label: 'Площадь', value: p.area ? `${p.area} м²` : '' },
+            {
+              label: p.projectTitle ?? 'Проект',
+              value: DESIGNER_PROJECT_STATUS_LABELS[p.status as keyof typeof DESIGNER_PROJECT_STATUS_LABELS] || p.status || 'черновик',
+              type: 'status' as const,
+              span: 2 as const,
+              description: p.notes ?? '',
+              badge: p.packageKey ? getPackageTitle(p.packageKey) : 'без пакета',
+              caption: p.area ? `${p.area} м²` : 'площадь не задана',
+              eyebrow: 'проект',
+              tone: p.totalPrice ? 'accent' as const : 'muted' as const,
+            },
+            {
+              label: 'Стоимость',
+              value: p.totalPrice ? String(p.totalPrice) : '',
+              type: 'currency' as const,
+              description: p.address || '',
+              badge: p.area ? `${p.area} м²` : undefined,
+              caption: p.packageKey ? getPackageTitle(p.packageKey) : 'индивидуально',
+              eyebrow: 'бюджет',
+              tone: p.totalPrice ? 'success' as const : 'muted' as const,
+            },
+            {
+              label: 'Площадь',
+              value: p.area ? `${p.area} м²` : '',
+              description: p.address || 'адрес не указан',
+              badge: p.status ? 'статус' : undefined,
+              caption: p.status || 'черновик',
+              eyebrow: 'геометрия',
+              tone: 'default' as const,
+            },
           ] as any[]))).slice(0, 18)
         : [{ label: '', value: 'нет проектов', span: 2 as const }],
       },
       { title: 'Подписки', fields: subs.length
-        ? subs.slice(0, 6).map((s: any) => ({ label: s.title ?? '', value: s.price != null ? `${s.price} ₽ / ${s.billingPeriod}` : '' }))
+        ? subs.slice(0, 8).map((s: any) => ({
+            label: s.title ?? 'Подписка',
+            value: s.price != null ? `${formatRubles(s.price)} ₽` : '',
+            description: s.description ?? '',
+            badge: s.enabled === false ? 'скрыта' : 'активна',
+            caption: getBillingLabel(s.billingPeriod),
+            eyebrow: 'подписка',
+            tone: s.discount ? 'success' as const : 'accent' as const,
+          }))
         : [{ label: 'Подписки', value: 'не настроены', span: 2 as const }],
       },
       { title: 'Документы', fields: docs.length
-        ? docs.slice(0, 8).map((doc: any) => ({ label: doc.title ?? doc.name ?? '', value: doc.category ?? '' }))
+        ? docs.slice(0, 8).map((doc: any) => ({
+            label: doc.title ?? doc.name ?? 'Документ',
+            value: doc.category ?? 'документ',
+            description: doc.notes ?? '',
+            badge: doc.fileName ? 'файл' : 'запись',
+            caption: doc.createdAt ? formatDocDate(doc.createdAt) : 'без даты',
+            eyebrow: 'документы',
+            tone: 'default' as const,
+          }))
         : [{ label: 'Документы', value: 'нет загруженных документов', span: 2 as const }],
       },
       { title: 'Клиенты', fields: clients.length
@@ -1956,22 +2159,142 @@ registerWipe2Data(wipe2CabinetData)
   border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
   background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
-.svc-cat-title { font-size: 1rem; font-weight: 600; margin-bottom: 14px; color: var(--ds-accent, #646cff); }
-.svc-list { display: flex; flex-direction: column; gap: 8px; }
-.svc-row {
-  display: grid; grid-template-columns: 1fr 2fr auto; gap: 12px;
-  padding: 10px 14px; border-radius: 8px;
-  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
-  align-items: center;
+.svc-cat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
 }
-.svc-row.disabled { opacity: .4; }
-.svc-row--brutalist {
-  border-radius: 0;
+.svc-cat-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.svc-cat-eyebrow {
+  font-size: .64rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 48%, transparent);
+}
+.svc-cat-title { font-size: 1rem; font-weight: 700; margin: 0; color: var(--ds-accent, #646cff); }
+.svc-cat-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.svc-cat-stat {
+  padding: 6px 10px;
+  border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+  font-size: .72rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
 }
-.svc-name  { font-weight: 500; font-size: .92rem; }
-.svc-desc  { font-size: .82rem; opacity: .55; }
-.svc-price { font-weight: 600; color: var(--ds-success, var(--ds-success)); text-align: right; white-space: nowrap; }
+.svc-cat-stat--accent {
+  color: var(--ds-accent, #646cff);
+  border-color: color-mix(in srgb, var(--ds-accent, #646cff) 24%, transparent);
+}
+.svc-list { display: flex; flex-direction: column; gap: 8px; }
+.svc-list--cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+.svc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ds-accent, #646cff) 5%, transparent), transparent 38%),
+    color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+.svc-card.disabled { opacity: .48; }
+.svc-card--brutalist {
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--glass-text) 5%, transparent), transparent 34%),
+    color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+.svc-card-topline,
+.pkg-card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.svc-state-badge,
+.pkg-state-badge,
+.svc-unit-chip,
+.pkg-service-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.svc-state-badge,
+.pkg-state-badge {
+  background: color-mix(in srgb, var(--ds-success, #34d399) 14%, transparent);
+  color: var(--ds-success, #34d399);
+}
+.svc-state-badge--muted,
+.pkg-state-badge--muted {
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 60%, transparent);
+}
+.svc-unit-chip,
+.pkg-service-count {
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+  color: color-mix(in srgb, var(--glass-text) 78%, transparent);
+}
+.svc-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.svc-name  { margin: 0; font-weight: 700; font-size: 1rem; line-height: 1.15; }
+.svc-desc  { margin: 0; font-size: .84rem; line-height: 1.55; opacity: .66; }
+.svc-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.svc-meta-chip {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+  font-size: .74rem;
+  color: color-mix(in srgb, var(--glass-text) 74%, transparent);
+}
+.svc-card-foot {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+.svc-price-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.svc-price-caption {
+  font-size: .62rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 48%, transparent);
+}
+.svc-price { font-weight: 700; color: var(--ds-success, var(--ds-success)); text-align: right; white-space: nowrap; }
 
 .svc-edit-row  { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--glass-border); }
 .svc-edit-name  { flex: 2; }
@@ -2001,8 +2324,15 @@ registerWipe2Data(wipe2CabinetData)
   gap: 0;
 }
 .pkg-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 100%;
   padding: 22px 20px; border-radius: 14px;
   border: 1px solid var(--glass-border); transition: all .15s;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--ds-accent, #646cff) 14%, transparent), transparent 34%),
+    color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 .pkg-card--brutalist,
 .pkg-edit--brutalist,
@@ -2010,26 +2340,72 @@ registerWipe2Data(wipe2CabinetData)
 .sub-edit--brutalist {
   border-radius: 0;
   border-color: color-mix(in srgb, var(--glass-text) 12%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--glass-text) 4%, transparent), transparent 34%),
+    color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 .pkg-card:hover  { border-color: color-mix(in srgb, var(--ds-accent) 30%, var(--glass-border)); }
 .pkg-card.disabled { opacity: .4; }
-.pkg-card-head  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-.pkg-card-title { font-size: 1.05rem; font-weight: 600; }
-.pkg-card-price { font-size: 1.2rem; font-weight: 700; color: var(--ds-accent, #646cff); white-space: nowrap; }
+.pkg-card-head  { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.pkg-card-title { margin: 0 0 6px; font-size: 1.08rem; font-weight: 700; line-height: 1.1; }
+.pkg-card-subtitle {
+  margin: 0;
+  font-size: .78rem;
+  line-height: 1.45;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 58%, transparent);
+}
+.pkg-card-price { font-size: 1.35rem; font-weight: 800; color: var(--ds-accent, #646cff); white-space: nowrap; text-align: right; }
 .pkg-card-price span { font-size: .75rem; font-weight: 400; opacity: .55; }
-.pkg-card-desc  { font-size: .85rem; opacity: .55; margin-bottom: 14px; line-height: 1.4; }
-.pkg-card-services { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+.pkg-card-desc  { margin: 0; font-size: .86rem; opacity: .66; line-height: 1.55; }
+.pkg-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.pkg-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
+.pkg-metric-label {
+  font-size: .66rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 48%, transparent);
+}
+.pkg-metric strong {
+  font-size: 1rem;
+  color: color-mix(in srgb, var(--glass-text) 90%, transparent);
+}
+.pkg-card-services { display: flex; flex-wrap: wrap; gap: 6px; }
 .pkg-svc-chip {
-  font-size: .72rem; padding: 2px 8px; border-radius: 6px;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent); opacity: .7;
+  font-size: .72rem; padding: 5px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent); opacity: .82;
 }
-.pkg-card-example {
-  display: flex; justify-content: space-between; padding: 10px 12px;
-  border-radius: 8px; background: color-mix(in srgb, var(--ds-accent) 6%, transparent); font-size: .82rem;
+.pkg-svc-chip--more {
+  color: var(--ds-accent, #646cff);
+  background: color-mix(in srgb, var(--ds-accent, #646cff) 10%, transparent);
 }
-.pkg-example-label { opacity: .55; }
-.pkg-example-price { font-weight: 600; color: var(--ds-accent, #646cff); }
+.pkg-card-notes {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pkg-card-note {
+  margin: 0;
+  font-size: .78rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--glass-text) 74%, transparent);
+}
 
 .pkg-edit { padding: 20px 24px; border-radius: 12px; margin-bottom: 14px; }
 .pkg-edit-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
@@ -2170,6 +2546,7 @@ registerWipe2Data(wipe2CabinetData)
   .sub-grid { grid-template-columns: 1fr; }
   .gallery-grid { grid-template-columns: 1fr; }
   .ds-cab-hero-grid { grid-template-columns: 1fr; }
+  .svc-list--cards { grid-template-columns: 1fr; }
 }
 
 /* ── Pivot banner (Flat Registry rows) ── */
@@ -2215,6 +2592,22 @@ registerWipe2Data(wipe2CabinetData)
 .gallery-card-feat { font-size: .7rem; font-weight: 600; opacity: .7; }
 
 @media (max-width: 640px) {
+  .svc-cat-head,
+  .pkg-card-head,
+  .svc-card-topline,
+  .pkg-card-topline {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .svc-cat-stats {
+    justify-content: flex-start;
+  }
+
+  .pkg-card-metrics {
+    grid-template-columns: 1fr;
+  }
+
   .ds-cab-hero-main {
     flex-direction: column;
     align-items: flex-start;

@@ -3,8 +3,9 @@
     <div class="ent-empty-detail">
       <span class="ent-empty-icon">📁</span>
       <span v-if="projects?.length">Выберите проект из списка</span>
+      <span v-else-if="pending || isBootstrapping">[ LOADING... ]</span>
       <span v-else>Нет проектов — создайте первый</span>
-      <button v-if="!projects?.length" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ создать проект</button>
+      <button v-if="!projects?.length && !pending && !isBootstrapping" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ создать проект</button>
     </div>
     <Teleport to="body">
       <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
@@ -141,19 +142,32 @@ import { PROJECT_PRESETS, getPresetsByCategory, findPreset } from '~~/shared/con
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
+const adminCatalogs = useAdminCatalogs()
 
-const projectsCache = useState<any[]>('cache-admin-projects', () => [])
-const { data: projects, pending, refresh } = await useFetch<any[]>('/api/projects', {
-  server: false, default: () => projectsCache.value,
-})
-const hasProjectsCache = computed(() => projectsCache.value.length > 0)
-watch(projects, (value) => { if (Array.isArray(value)) projectsCache.value = value }, { deep: true })
+const projects = adminCatalogs.getCatalog('projects')
+const pending = adminCatalogs.isCatalogLoading('projects')
+const isBootstrapping = ref(true)
 
 async function reloadProjects() {
-  try { const result = await $fetch<any[]>('/api/projects'); if (Array.isArray(result)) { projects.value = result; projectsCache.value = result } } catch { /* silent */ }
+  try {
+    await adminCatalogs.ensureCatalog('projects', true)
+  } catch {
+    // silent: empty state already covers unavailable data
+  } finally {
+    isBootstrapping.value = false
+  }
 }
-onMounted(async () => { await adminNav.ensureSection('projects'); reloadProjects() })
-onActivated(async () => { await adminNav.ensureSection('projects'); reloadProjects() })
+
+onMounted(async () => {
+  isBootstrapping.value = true
+  await adminNav.ensureSection('projects')
+  await reloadProjects()
+})
+onActivated(async () => {
+  isBootstrapping.value = true
+  await adminNav.ensureSection('projects')
+  await reloadProjects()
+})
 
 // ── Пресеты ──────────────────────────────────────────
 const residentialPresets = getPresetsByCategory('residential')
@@ -234,7 +248,7 @@ async function createProject() {
       },
     })
     closeCreate()
-    refresh()
+    await reloadProjects()
   } catch (e: any) {
     createError.value = e.data?.message || e.data?.statusMessage || e.statusMessage || e.message || 'Ошибка создания проекта'
     wizardStep.value = 2

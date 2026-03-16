@@ -4,6 +4,7 @@ import {
   type DesignModulesConfig,
   type DesignPanelTabId,
 } from '~~/shared/types/design-modules'
+import type { AppBlueprintModulesOverride } from '~~/shared/types/app-catalog'
 
 export type { DesignModulesConfig, DesignPanelTabId } from '~~/shared/types/design-modules'
 
@@ -41,15 +42,47 @@ function wouldBreakRecoveryPath(path: string, enabled: boolean, next: DesignModu
   return !hasAdminRecoveryPath(next)
 }
 
+function applyBlueprintModules(base: DesignModulesConfig, override?: AppBlueprintModulesOverride): DesignModulesConfig {
+  if (!override) {
+    return base
+  }
+
+  const next: DesignModulesConfig = {
+    adminLayout: {
+      ...base.adminLayout,
+      ...(override.adminLayout || {}),
+    },
+    designPanel: {
+      ...base.designPanel,
+      ...(override.designPanel || {}),
+      tabs: {
+        ...base.designPanel.tabs,
+        ...(override.designPanel?.tabs || {}),
+      },
+    },
+  }
+
+  // Builder remains available from the base config so runtime blueprint switching does not self-lock the editor.
+  next.designPanel.tabs.builder = base.designPanel.tabs.builder
+
+  if (!hasAdminRecoveryPath(next)) {
+    next.adminLayout.nestedNav = base.adminLayout.nestedNav || true
+  }
+
+  return next
+}
+
 export function useDesignModules() {
   const modules = useState<DesignModulesConfig>('design-modules-config', createDefaultDesignModules)
   const isHydrated = useState<boolean>('design-modules-config-hydrated', () => false)
   const isSyncing = useState<boolean>('design-modules-config-syncing', () => false)
   const isLoadedFromServer = useState<boolean>('design-modules-config-loaded-from-server', () => false)
   const pendingPersistPayload = useState<string>('design-modules-config-pending-persist', () => '')
+  const { activeBlueprint } = useAppBlueprintCatalog()
 
-  const adminLayout = computed(() => modules.value.adminLayout)
-  const designPanel = computed(() => modules.value.designPanel)
+  const effectiveModules = computed(() => applyBlueprintModules(modules.value, activeBlueprint.value?.modules))
+  const adminLayout = computed(() => effectiveModules.value.adminLayout)
+  const designPanel = computed(() => effectiveModules.value.designPanel)
 
   function syncLocalModules(value: DesignModulesConfig) {
     if (!import.meta.client) {
@@ -206,6 +239,7 @@ export function useDesignModules() {
 
   return {
     modules,
+    effectiveModules,
     adminLayout,
     designPanel,
     isLoadedFromServer,

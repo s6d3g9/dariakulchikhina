@@ -212,17 +212,22 @@
           </div>
         </div>
 
-        <AdminNestedNav
-          v-if="adminLayoutModules.nestedNav"
-          :node="adminNav.currentNode.value"
-          :direction="adminNav.slideDir.value"
-          :can-go-back="adminNav.canGoBack.value"
-          :active-id="adminNav.activeLeafId.value"
-          :collapsed="isSidebarCollapsed"
-          @drill="adminNav.drill"
-          @back="adminNav.back"
-          @select="adminNav.select"
-        />
+        <ClientOnly>
+          <AdminNestedNav
+            v-if="adminLayoutModules.nestedNav"
+            :node="adminNav.currentNode.value"
+            :direction="adminNav.slideDir.value"
+            :can-go-back="adminNav.canGoBack.value"
+            :active-id="adminNav.activeLeafId.value"
+            :collapsed="isSidebarCollapsed"
+            @drill="adminNav.drill"
+            @back="adminNav.back"
+            @select="adminNav.select"
+          />
+          <template #fallback>
+            <div v-if="adminLayoutModules.nestedNav" class="nav-shell" aria-hidden="true" />
+          </template>
+        </ClientOnly>
         </div>
       </aside>
       <main class="adm-main admin-with-nav">
@@ -245,6 +250,7 @@ const route  = useRoute()
 const { isDark, toggleTheme } = useThemeToggle()
 const designSystem = useDesignSystem()
 const { adminLayout, restoreModules } = useDesignModules()
+const blueprintRuntime = useAppBlueprintRuntime()
 useElementVisibility()
 const adminLayoutModules = computed(() => adminLayout.value)
 
@@ -746,6 +752,18 @@ watch(isSidebarCollapsed, (collapsed) => {
   }
 })
 watch(() => route.fullPath, () => { closeAll() })
+
+watch([
+  () => route.fullPath,
+  () => blueprintRuntime.activeBlueprintId.value,
+], async () => {
+  const fallbackPath = blueprintRuntime.getAdminRouteFallback(route)
+  if (!fallbackPath || fallbackPath === route.path) {
+    return
+  }
+
+  await router.replace(fallbackPath)
+}, { immediate: true })
 
 // ── Pickers ─────────────────────────────────────────────────────
 function pickProject(slug: string) { closeAll(); navigateTo(`/admin/projects/${slug}`) }

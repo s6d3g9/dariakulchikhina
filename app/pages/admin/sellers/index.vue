@@ -3,7 +3,6 @@
     <template #selected>
       <div class="ent-wipe-host">
       <AdminEntityCabinetShell
-        v-show="!isWipe2Mode"
         :show-hero="showBrutalistSellerHero"
         :title="selectedSeller?.name || ''"
         :kicker="sellerSectionLabel"
@@ -18,14 +17,14 @@
         <template #headerActions>
           <button class="ent-entity-hd-action" @click="openEdit(selectedSeller)">ред.</button>
         </template>
-        <AdminSellerCabinet :key="selectedSellerId" :seller-id="selectedSellerId" :show-sidebar="false" v-model="activeSellerSection" />
+        <AdminSellerCabinet v-show="!isWipe2Mode" :key="selectedSellerId" :seller-id="selectedSellerId" :show-sidebar="false" v-model="activeSellerSection" />
+        <Wipe2Renderer
+          v-if="isWipe2Mode && wipe2State"
+          :entity="wipe2State"
+          layout="inline"
+          @edit="designSystem.set('contentViewMode', 'scroll')"
+        />
       </AdminEntityCabinetShell>
-      <Wipe2Renderer
-        v-if="isWipe2Mode && wipe2State"
-        :entity="wipe2State"
-        :fixed-mode="true"
-        @edit="designSystem.set('contentViewMode', 'scroll')"
-      />
       </div>
     </template>
     <template #create>

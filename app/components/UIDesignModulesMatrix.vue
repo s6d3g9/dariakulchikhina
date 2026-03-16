@@ -34,6 +34,7 @@
       </section>
     </div>
 
+    <p v-if="runtimeNotice" class="ui-modules-notice">{{ runtimeNotice }}</p>
     <p v-if="notice" class="ui-modules-notice">{{ notice }}</p>
   </section>
 </template>
@@ -63,11 +64,15 @@ withDefaults(defineProps<{
 })
 
 const { modules, isLoadedFromServer, setModule, resetModules } = useDesignModules()
+const { activeBlueprint } = useAppBlueprintCatalog()
 const notice = ref('')
 
 const syncNotice = computed(() => isLoadedFromServer.value
   ? 'синхронизируется между администраторами через сервер'
   : 'локальный fallback до восстановления серверной синхронизации')
+const runtimeNotice = computed(() => activeBlueprint.value?.modules
+  ? `runtime blueprint дополнительно переопределяет модули: ${activeBlueprint.value.title}`
+  : '')
 
 const recoveryPathsEnabled = computed(() => [
   modules.value.adminLayout.designPanel,
@@ -129,6 +134,7 @@ const sections = computed<ToggleSection[]>(() => [
     title: 'вкладки панели',
     copy: 'Тонкое управление содержимым панели дизайна. Отключённые вкладки исчезают из навигации и поиска.',
     fields: [
+      { path: 'designPanel.tabs.builder', label: 'сборщик app', help: 'Типизированные сборки приложений, группы меню и экспорт конфигураций.', enabled: modules.value.designPanel.tabs.builder },
       { path: 'designPanel.tabs.presets', label: 'образы', help: 'Готовые сценарии и быстрые конфигурации.', enabled: modules.value.designPanel.tabs.presets },
       { path: 'designPanel.tabs.concept', label: 'концепция', help: 'Переключение концептов и базового режима дизайна.', enabled: modules.value.designPanel.tabs.concept },
       { path: 'designPanel.tabs.palette', label: 'палитра', help: 'Базовая палитра акцентов и тонов поверхностей.', enabled: modules.value.designPanel.tabs.palette },

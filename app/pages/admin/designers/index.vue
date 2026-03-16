@@ -3,7 +3,6 @@
     <template #selected>
       <div class="ent-wipe-host">
       <AdminEntityCabinetShell
-        v-show="!isWipe2Mode"
         :show-hero="showBrutalistDesignerHero"
         :title="selectedDesigner?.name || ''"
         :kicker="designerSectionLabel"
@@ -15,17 +14,18 @@
           <button class="admin-entity-hero__action" @click="showCreate = true">новый дизайнер</button>
         </template>
         <AdminDesignerCabinet
+          v-show="!isWipe2Mode"
           :key="selectedDesignerId"
           :designer-id="selectedDesignerId"
           v-model="activeSection"
         />
+        <Wipe2Renderer
+          v-if="isWipe2Mode && wipe2State"
+          :entity="wipe2State"
+          layout="inline"
+          @edit="designSystem.set('contentViewMode', 'scroll')"
+        />
       </AdminEntityCabinetShell>
-      <Wipe2Renderer
-        v-if="isWipe2Mode && wipe2State"
-        :entity="wipe2State"
-        :fixed-mode="true"
-        @edit="designSystem.set('contentViewMode', 'scroll')"
-      />
       </div>
     </template>
 

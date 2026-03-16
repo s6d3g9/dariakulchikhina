@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const designPanelTabIds = [
+  'builder',
   'presets',
   'concept',
   'palette',
@@ -45,6 +46,7 @@ export const DesignModulesConfigSchema = z.object({
     componentInspector: z.boolean(),
     exportImport: z.boolean(),
     tabs: z.object({
+      builder: z.boolean(),
       presets: z.boolean(),
       concept: z.boolean(),
       palette: z.boolean(),
@@ -92,6 +94,7 @@ export function createDefaultDesignModules(): DesignModulesConfig {
       componentInspector: true,
       exportImport: true,
       tabs: {
+        builder: true,
         presets: true,
         concept: true,
         palette: true,

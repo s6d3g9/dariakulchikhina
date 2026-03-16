@@ -8,6 +8,7 @@
  */
 
 import type { NavigationNode, PayloadItem } from '~~/shared/types/navigation'
+import type { AppBlueprintDef, MenuBlockDef } from '~~/shared/types/app-catalog'
 import {
   getAdminCategoryRoute,
   getAdminSectionRoute,
@@ -15,6 +16,19 @@ import {
   getRegistryItemId,
   getRegistryItemLabel,
 } from '~~/shared/constants/admin-navigation'
+import {
+  ADMIN_ROOT_MENU_GROUP,
+  CLIENT_CABINET_BLOCKS,
+  CONTRACTOR_CABINET_BLOCKS,
+  DESIGNER_CABINET_BLOCKS,
+  DOCUMENT_LIBRARY_BLOCKS,
+  GALLERY_LIBRARY_BLOCKS,
+  MANAGER_CABINET_BLOCKS,
+  PROJECT_CABINET_BLOCKS,
+  PROJECT_PHASE_BLOCKS,
+  SELLER_CABINET_BLOCKS,
+  toPayloadItems,
+} from '~~/shared/constants/app-catalog'
 
 interface NavCtx {
   section: string
@@ -51,6 +65,20 @@ export interface ContentSpec {
   activeLeafId: string | null
 }
 
+interface NavRuntimeCatalog {
+  root: PayloadItem[]
+  designerCabinet: PayloadItem[]
+  clientCabinet: PayloadItem[]
+  contractorCabinet: PayloadItem[]
+  sellerCabinet: PayloadItem[]
+  managerCabinet: PayloadItem[]
+  projectCabinet: PayloadItem[]
+  projectPhases: PayloadItem[]
+  documents: PayloadItem[]
+  gallery: PayloadItem[]
+  moodboards: PayloadItem[]
+}
+
 function normalizeAdminSectionKey(sectionKey: string) {
   return sectionKey === 'tariffs' ? 'ui-modules' : sectionKey
 }
@@ -59,152 +87,66 @@ function getAdminCategoryIdBySectionKey(sectionKey: string) {
   return `cat_${sectionKey}`
 }
 
-function rootNode(): NavigationNode {
+function isBlockVisibleForBlueprint(block: MenuBlockDef, blueprint: AppBlueprintDef | null) {
+  if (!blueprint) {
+    return true
+  }
+
+  if (blueprint.featuredBlockIds.includes(block.id)) {
+    return true
+  }
+
+  return block.appScopes.some(scope => blueprint.scopes.includes(scope))
+}
+
+function getBlueprintPayload(groupId: string, blocks: MenuBlockDef[], blueprint: AppBlueprintDef | null) {
+  if (!blueprint) {
+    return toPayloadItems(blocks)
+  }
+
+  if (!blueprint.menuGroupIds.includes(groupId)) {
+    return []
+  }
+
+  return toPayloadItems(blocks.filter(block => isBlockVisibleForBlueprint(block, blueprint)))
+}
+
+function createNavRuntimeCatalog(blueprint: AppBlueprintDef | null): NavRuntimeCatalog {
+  const gallery = getBlueprintPayload('gallery-library', GALLERY_LIBRARY_BLOCKS, blueprint)
+
+  return {
+    root: getBlueprintPayload('admin-root', ADMIN_ROOT_MENU_GROUP.items, blueprint),
+    designerCabinet: getBlueprintPayload('designer-cabinet', DESIGNER_CABINET_BLOCKS, blueprint),
+    clientCabinet: getBlueprintPayload('client-cabinet', CLIENT_CABINET_BLOCKS, blueprint),
+    contractorCabinet: getBlueprintPayload('contractor-cabinet', CONTRACTOR_CABINET_BLOCKS, blueprint),
+    sellerCabinet: getBlueprintPayload('seller-cabinet', SELLER_CABINET_BLOCKS, blueprint),
+    managerCabinet: getBlueprintPayload('manager-cabinet', MANAGER_CABINET_BLOCKS, blueprint),
+    projectCabinet: getBlueprintPayload('project-cabinet', PROJECT_CABINET_BLOCKS, blueprint),
+    projectPhases: getBlueprintPayload('project-phases', PROJECT_PHASE_BLOCKS, blueprint),
+    documents: getBlueprintPayload('documents-library', DOCUMENT_LIBRARY_BLOCKS, blueprint),
+    gallery,
+    moodboards: gallery.filter(item => item.id === 'gal_moodboards'),
+  }
+}
+
+function rootNode(payload: PayloadItem[]): NavigationNode {
   return {
     step: 'A',
     nodeId: 'root',
     nodeType: 'system_root',
     context: { title: 'меню', breadcrumbs: ['меню'] },
     filter: { placeholder: 'поиск...', value: '' },
-    payload: [
-      { id: 'cat_projects',    name: 'Проекты',     type: 'node' },
-      { id: 'cat_clients',     name: 'Клиенты',     type: 'node' },
-      { id: 'cat_designers',   name: 'Дизайнеры',   type: 'node' },
-      { id: 'cat_contractors', name: 'Подрядчики',  type: 'node' },
-      { id: 'cat_sellers',     name: 'Поставщики',  type: 'node' },
-      { id: 'cat_managers',    name: 'Менеджеры',   type: 'node' },
-      { id: 'cat_docs',        name: 'Документы',   type: 'node' },
-      { id: 'cat_gallery',     name: 'Галереи',     type: 'node' },
-      { id: 'cat_moodboards',  name: 'Мудборды',    type: 'node' },
-    ],
+    payload,
   }
 }
-
-const DESIGNER_CABINET_ITEMS: PayloadItem[] = [
-  { id: 'des_dashboard',     name: 'Обзор',         type: 'leaf' },
-  { id: 'des_services',      name: 'Услуги и цены', type: 'leaf' },
-  { id: 'des_packages',      name: 'Пакеты',        type: 'leaf' },
-  { id: 'des_subscriptions', name: 'Подписки',      type: 'leaf' },
-  { id: 'des_projects',      name: 'Проекты',       type: 'leaf' },
-  { id: 'des_clients',       name: 'Клиенты',       type: 'leaf' },
-  { id: 'des_contractors',   name: 'Подрядчики',    type: 'leaf' },
-  { id: 'des_sellers',       name: 'Продавцы',      type: 'leaf' },
-  { id: 'des_managers',      name: 'Менеджеры',     type: 'leaf' },
-  { id: 'des_documents',     name: 'Документы',     type: 'leaf' },
-  { id: 'des_gallery',       name: 'Галерея',       type: 'leaf' },
-  { id: 'des_moodboards',    name: 'Мудборды',      type: 'leaf' },
-  { id: 'des_profile',       name: 'Профиль',       type: 'leaf' },
-]
-
-const CLIENT_CABINET_ITEMS: PayloadItem[] = [
-  { id: 'cli_dashboard',  name: 'Обзор',      type: 'leaf' },
-  { id: 'cli_profile',    name: 'Профиль',    type: 'leaf' },
-  { id: 'cli_signoff',    name: 'Подписание', type: 'leaf' },
-  { id: 'cli_projects',   name: 'Проекты',    type: 'node' },
-  { id: 'cli_documents',  name: 'Документы',  type: 'node' },
-]
-
-const CONTRACTOR_CABINET_ITEMS: PayloadItem[] = [
-  { id: 'con_dashboard',       name: 'Обзор',            type: 'leaf' },
-  { id: 'con_tasks',           name: 'Задачи',           type: 'leaf' },
-  { id: 'con_contacts',        name: 'Контактные данные',type: 'leaf' },
-  { id: 'con_passport',        name: 'Паспортные данные',type: 'leaf' },
-  { id: 'con_requisites',      name: 'Реквизиты',        type: 'leaf' },
-  { id: 'con_documents',       name: 'Документы',        type: 'leaf' },
-  { id: 'con_specialization',  name: 'Специализации',    type: 'leaf' },
-  { id: 'con_finances',        name: 'Финансы',          type: 'leaf' },
-  { id: 'con_portfolio',       name: 'Портфолио',        type: 'leaf' },
-  { id: 'con_settings',        name: 'Настройки',        type: 'leaf' },
-]
-
-const SELLER_CABINET_ITEMS: PayloadItem[] = [
-  { id: 'sel_dashboard',   name: 'Обзор',      type: 'leaf' },
-  { id: 'sel_profile',     name: 'Профиль',    type: 'leaf' },
-  { id: 'sel_requisites',  name: 'Реквизиты',  type: 'leaf' },
-  { id: 'sel_terms',       name: 'Условия',    type: 'leaf' },
-  { id: 'sel_projects',    name: 'Проекты',    type: 'leaf' },
-]
-
-const MANAGER_CABINET_ITEMS: PayloadItem[] = [
-  { id: 'man_dashboard',  name: 'Обзор',         type: 'leaf' },
-  { id: 'man_projects',   name: 'Проекты',       type: 'leaf' },
-  { id: 'man_feed',       name: 'Лента событий', type: 'leaf' },
-  { id: 'man_approvals',  name: 'Согласования',  type: 'leaf' },
-  { id: 'man_reports',    name: 'Отчёты',        type: 'leaf' },
-  { id: 'man_profile',    name: 'Профиль',       type: 'leaf' },
-]
-
-// Кабинет проекта — узлы верхнего уровня (alpha_*)
-const PROJECT_CABINET_ITEMS: PayloadItem[] = [
-  { id: 'prj_settings',      name: 'Настройки проекта',        type: 'leaf' },
-  { id: 'alpha_phases',      name: 'Фазы (прогресс проекта)', type: 'node' },
-  { id: 'alpha_clients',     name: 'Клиенты',                  type: 'node' },
-  { id: 'alpha_contractors', name: 'Подрядчики',                type: 'node' },
-  { id: 'alpha_sellers',     name: 'Поставщики',                type: 'node' },
-  { id: 'alpha_designers',   name: 'Дизайнеры',                 type: 'node' },
-  { id: 'alpha_managers',    name: 'Менеджеры',                 type: 'node' },
-  { id: 'alpha_docs',        name: 'Документы',                 type: 'node' },
-  { id: 'alpha_gallery',     name: 'Галереи',                   type: 'node' },
-  { id: 'alpha_moodboards',  name: 'Мудборды',                  type: 'node' },
-]
-
-// Фазы проекта — листья (привязаны к компонентам страницы)
-const PHASES_ITEMS: PayloadItem[] = [
-  { id: 'prj_overview',      name: 'Обзор',                  type: 'leaf' },
-  { id: 'prj_firstcontact',  name: 'Первый контакт',         type: 'leaf' },
-  { id: 'prj_smartbrief',    name: 'Смарт-бриф / ТЗ',        type: 'leaf' },
-  { id: 'prj_sitesurvey',    name: 'Обмеры / аудит',         type: 'leaf' },
-  { id: 'prj_torcontract',   name: 'ТЗ и договор',           type: 'leaf' },
-  { id: 'prj_concept',       name: 'Концепция',               type: 'leaf' },
-  { id: 'prj_spaceplanning', name: 'Планировочное решение',   type: 'leaf' },
-  { id: 'prj_moodboard',     name: 'Мудборд',                 type: 'leaf' },
-  { id: 'prj_plan',          name: 'Строительный план',       type: 'leaf' },
-  { id: 'prj_drawings',      name: 'Рабочие чертежи',         type: 'leaf' },
-  { id: 'prj_specifications',name: 'Спецификации',            type: 'leaf' },
-  { id: 'prj_mep',           name: 'MEP-интеграция',          type: 'leaf' },
-  { id: 'prj_materials',     name: 'Материалы',               type: 'leaf' },
-  { id: 'prj_procurement',   name: 'Закупки',                 type: 'leaf' },
-  { id: 'prj_suppliers',     name: 'Поставщики',              type: 'leaf' },
-  { id: 'prj_procurementstatus', name: 'Статус закупок',      type: 'leaf' },
-  { id: 'prj_workstatus',    name: 'Строительные работы',     type: 'leaf' },
-  { id: 'prj_worklog',       name: 'Журнал работ',            type: 'leaf' },
-  { id: 'prj_sitephotos',    name: 'Фото объекта',            type: 'leaf' },
-  { id: 'prj_punchlist',     name: 'Замечания (punch-list)',  type: 'leaf' },
-  { id: 'prj_commissioning', name: 'Акт ввода',               type: 'leaf' },
-  { id: 'prj_clientsignoff', name: 'Подпись клиента',         type: 'leaf' },
-  { id: 'prj_album',         name: 'Финальный альбом',        type: 'leaf' },
-  { id: 'prj_extraservices', name: 'Доп. услуги',             type: 'leaf' },
-]
-
-const DOCUMENT_ITEMS: PayloadItem[] = [
-  { id: 'doc_all',             name: 'Все документы',                type: 'leaf' },
-  { id: 'doc_contract',        name: '01 Договоры дизайн-проект',    type: 'leaf' },
-  { id: 'doc_contract_supply', name: '02 Договоры поставки',         type: 'leaf' },
-  { id: 'doc_contract_work',   name: '03 Договоры подряда',          type: 'leaf' },
-  { id: 'doc_act',             name: '04 Акты выполненных работ',    type: 'leaf' },
-  { id: 'doc_act_defect',      name: '05 Акты о дефектах',           type: 'leaf' },
-  { id: 'doc_invoice',         name: '06 Счета на оплату',           type: 'leaf' },
-  { id: 'doc_estimate',        name: '07 Сметы',                     type: 'leaf' },
-  { id: 'doc_specification',   name: '08 Спецификации',              type: 'leaf' },
-  { id: 'doc_tz',              name: '09 Техническое задание',       type: 'leaf' },
-  { id: 'doc_approval',        name: '10 Согласования',              type: 'leaf' },
-  { id: 'doc_template',        name: '14 Шаблоны',                   type: 'leaf' },
-  { id: 'doc_other',           name: '15 Прочее',                    type: 'leaf' },
-]
-
-const GALLERY_ITEMS: PayloadItem[] = [
-  { id: 'gal_interiors',  name: 'Интерьеры',   type: 'leaf' },
-  { id: 'gal_furniture',  name: 'Мебель',       type: 'leaf' },
-  { id: 'gal_moodboards', name: 'Мудборды',     type: 'leaf' },
-  { id: 'gal_materials',  name: 'Материалы',    type: 'leaf' },
-  { id: 'gal_art',        name: 'Арт и декор',  type: 'leaf' },
-]
 
 // ─── Composable ───────────────────────────────────────────────────────────────
 export function useAdminNav() {
   const router = useRouter()
+  const { activeBlueprint } = useAppBlueprintCatalog()
+  const navCatalog = computed(() => createNavRuntimeCatalog(activeBlueprint.value))
 
-  const nodeStack    = useState<NavigationNode[]>('nav-v2-nodes', () => [rootNode()])
+  const nodeStack    = useState<NavigationNode[]>('nav-v2-nodes', () => [rootNode(navCatalog.value.root)])
   const ctxStack     = useState<NavCtx[]>('nav-v2-ctx',  () => [{ section: '' }])
   const activeLeafId = useState<string | undefined>('nav-v2-leaf', () => undefined)
   const slideDir     = useState<'fwd' | 'back'>('nav-v2-dir', () => 'fwd')
@@ -242,7 +184,7 @@ export function useAdminNav() {
     loading.value = true
     slideDir.value = 'fwd'
     try {
-      const result = await buildNextNode(currentNode.value, currentCtx.value, item, router)
+      const result = await buildNextNode(currentNode.value, currentCtx.value, item, router, navCatalog.value)
       if (!result) return
       nodeStack.value = [...nodeStack.value, result.node]
       ctxStack.value  = [...ctxStack.value,  result.ctx]
@@ -266,7 +208,7 @@ export function useAdminNav() {
 
   function goRoot() {
     slideDir.value = 'back'
-    nodeStack.value = [rootNode()]
+    nodeStack.value = [rootNode(navCatalog.value.root)]
     ctxStack.value  = [{ section: '' }]
     activeLeafId.value = undefined
   }
@@ -275,15 +217,15 @@ export function useAdminNav() {
     const normalizedSectionKey = normalizeAdminSectionKey(sectionKey)
     const catId = getAdminCategoryIdBySectionKey(normalizedSectionKey)
     if (normalizeAdminSectionKey(currentCtx.value.section) === normalizedSectionKey) return
-    nodeStack.value = [rootNode()]
+    nodeStack.value = [rootNode(navCatalog.value.root)]
     ctxStack.value  = [{ section: '' }]
     activeLeafId.value = undefined
-    const item = rootNode().payload.find(p => p.id === catId)
+    const item = navCatalog.value.root.find(payloadItem => payloadItem.id === catId)
     if (item) await drill(item)
   }
 
   function buildProjectBaseState(projectSlug: string, projectTitle: string) {
-    const root = rootNode()
+    const root = rootNode(navCatalog.value.root)
     const regNode: NavigationNode = {
       step: 'B', nodeId: 'reg_projects', nodeType: 'registry',
       context: { title: 'Проекты', breadcrumbs: ['меню', 'Проекты'] },
@@ -294,7 +236,7 @@ export function useAdminNav() {
       step: 'C', nodeId: `cab_project_${projectSlug}`, nodeType: 'project_root',
       context: { title: projectTitle, breadcrumbs: ['меню', 'Проекты', projectTitle] },
       filter: { placeholder: 'Поиск по разделам проекта...', value: '' },
-      payload: PROJECT_CABINET_ITEMS,
+      payload: navCatalog.value.projectCabinet,
     }
 
     return {
@@ -316,9 +258,9 @@ export function useAdminNav() {
     const { nodes, ctxs, cabNode } = buildProjectBaseState(projectSlug, projectTitle)
 
     if (options.branchId) {
-      const branchItem = PROJECT_CABINET_ITEMS.find(item => item.id === options.branchId)
+      const branchItem = navCatalog.value.projectCabinet.find(item => item.id === options.branchId)
       if (branchItem) {
-        const result = await buildNextNode(cabNode, ctxs[2], branchItem, router)
+        const result = await buildNextNode(cabNode, ctxs[2], branchItem, router, navCatalog.value)
         if (result) {
           nodes.push(result.node)
           ctxs.push(result.ctx)
@@ -368,10 +310,10 @@ export function useAdminNav() {
       managers:    'Менеджеры',
     }
     const cabinetItems: Record<string, PayloadItem[]> = {
-      clients:     CLIENT_CABINET_ITEMS,
-      contractors: CONTRACTOR_CABINET_ITEMS,
-      sellers:     SELLER_CABINET_ITEMS,
-      managers:    MANAGER_CABINET_ITEMS,
+      clients:     navCatalog.value.clientCabinet,
+      contractors: navCatalog.value.contractorCabinet,
+      sellers:     navCatalog.value.sellerCabinet,
+      managers:    navCatalog.value.managerCabinet,
     }
     const sectionTitle = sectionTitles[entityType] ?? entityType
 
@@ -402,13 +344,30 @@ export function useAdminNav() {
     }
 
     slideDir.value = 'fwd'
-    nodeStack.value  = [rootNode(), regNode, cabNode]
+  nodeStack.value  = [rootNode(navCatalog.value.root), regNode, cabNode]
     ctxStack.value   = [{ section: '' }, ctxForSection, ctxForCabinet]
     activeLeafId.value = undefined
 
     const route = getAdminSectionRoute(entityType)
     if (route) router.push(route)
   }
+
+  watch(() => activeBlueprint.value?.id, async () => {
+    const spec = contentSpec.value
+    const currentProjectTitle = currentCtx.value.projectTitle ?? spec.projectSlug ?? ''
+
+    if (spec.projectSlug && navCatalog.value.projectCabinet.length) {
+      ensureProject(spec.projectSlug, currentProjectTitle || spec.projectSlug, { force: true })
+      return
+    }
+
+    if (spec.section) {
+      await ensureSection(spec.section)
+      return
+    }
+
+    goRoot()
+  })
 
   return {
     currentNode,
@@ -437,6 +396,7 @@ async function buildNextNode(
   ctx: NavCtx,
   item: PayloadItem,
   router: ReturnType<typeof useRouter>,
+  catalog: NavRuntimeCatalog,
 ): Promise<{ node: NavigationNode; ctx: NavCtx } | null> {
   const newCtx: NavCtx = { ...ctx }
   const crumbs = [...current.context.breadcrumbs]
@@ -456,7 +416,7 @@ async function buildNextNode(
         step: 'B', nodeId: 'reg_docs_root', nodeType: 'registry',
         context: { title: 'Документы', breadcrumbs: [...crumbs, 'Документы'] },
         filter: { placeholder: 'Поиск по типу документа...', value: '' },
-        payload: DOCUMENT_ITEMS,
+        payload: catalog.documents,
       }}
     }
     if (item.id === 'cat_gallery') {
@@ -464,7 +424,7 @@ async function buildNextNode(
         step: 'B', nodeId: 'reg_gallery', nodeType: 'registry',
         context: { title: 'Галереи', breadcrumbs: [...crumbs, 'Галереи'] },
         filter: { placeholder: 'Поиск по разделу...', value: '' },
-        payload: GALLERY_ITEMS,
+        payload: catalog.gallery,
       }}
     }
     if (item.id === 'cat_moodboards') {
@@ -472,7 +432,7 @@ async function buildNextNode(
         step: 'B', nodeId: 'reg_moodboards', nodeType: 'registry',
         context: { title: 'Мудборды', breadcrumbs: [...crumbs, 'Мудборды'] },
         filter: { placeholder: 'Поиск по мудбордам...', value: '' },
-        payload: GALLERY_ITEMS.filter(g => g.id === 'gal_moodboards'),
+        payload: catalog.moodboards,
       }}
     }
     const apiMap: Record<string, string> = {
@@ -516,7 +476,7 @@ async function buildNextNode(
         step: 'C', nodeId: `cab_designer_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
         filter: { placeholder: 'Поиск по разделам...', value: '' },
-        payload: DESIGNER_CABINET_ITEMS,
+        payload: catalog.designerCabinet,
       }}
     }
     if (section === 'clients') {
@@ -527,7 +487,7 @@ async function buildNextNode(
         step: 'C', nodeId: `cab_client_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
         filter: { placeholder: 'Поиск по разделам...', value: '' },
-        payload: CLIENT_CABINET_ITEMS,
+        payload: catalog.clientCabinet,
       }}
     }
     if (section === 'contractors') {
@@ -538,7 +498,7 @@ async function buildNextNode(
         step: 'C', nodeId: `cab_contractor_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
         filter: { placeholder: 'Поиск по разделам...', value: '' },
-        payload: CONTRACTOR_CABINET_ITEMS,
+        payload: catalog.contractorCabinet,
       }}
     }
     if (section === 'sellers') {
@@ -549,7 +509,7 @@ async function buildNextNode(
         step: 'C', nodeId: `cab_seller_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
         filter: { placeholder: 'Поиск по разделам...', value: '' },
-        payload: SELLER_CABINET_ITEMS,
+        payload: catalog.sellerCabinet,
       }}
     }
     if (section === 'managers') {
@@ -560,7 +520,7 @@ async function buildNextNode(
         step: 'C', nodeId: `cab_manager_${item.id}`, nodeType: 'cabinet',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
         filter: { placeholder: 'Поиск по разделам...', value: '' },
-        payload: MANAGER_CABINET_ITEMS,
+        payload: catalog.managerCabinet,
       }}
     }
     if (section === 'projects') {
@@ -571,7 +531,7 @@ async function buildNextNode(
         step: 'C', nodeId: `cab_project_${item.id}`, nodeType: 'project_root',
         context: { title: item.name, breadcrumbs: [...crumbs, item.name] },
         filter: { placeholder: 'Поиск по разделам проекта...', value: '' },
-        payload: PROJECT_CABINET_ITEMS,
+        payload: catalog.projectCabinet,
       }}
     }
     return null
@@ -586,7 +546,7 @@ async function buildNextNode(
         step: 'F', nodeId: `reg_phases_${current.nodeId}`, nodeType: 'registry',
         context: { title: `Фазы — ${current.context.title}`, breadcrumbs: [...crumbs, 'Фазы'] },
         filter: { placeholder: 'Поиск по фазам проекта...', value: '' },
-        payload: PHASES_ITEMS,
+        payload: catalog.projectPhases,
       }}
     }
     if (sub === 'docs') {
@@ -657,7 +617,7 @@ async function buildNextNode(
         step: 'D', nodeId: `reg_docs_${current.nodeId}`, nodeType: 'registry',
         context: { title: `Документы — ${current.context.title}`, breadcrumbs: [...crumbs, 'Документы'] },
         filter: { placeholder: 'Поиск по типу...', value: '' },
-        payload: DOCUMENT_ITEMS,
+        payload: catalog.documents,
       }}
     }
     if (sub === 'gallery') {
@@ -665,7 +625,7 @@ async function buildNextNode(
         step: 'D', nodeId: `reg_gallery_${current.nodeId}`, nodeType: 'registry',
         context: { title: `Галереи — ${current.context.title}`, breadcrumbs: [...crumbs, 'Галереи'] },
         filter: { placeholder: 'Поиск по разделу...', value: '' },
-        payload: GALLERY_ITEMS,
+        payload: catalog.gallery,
       }}
     }
     if (sub === 'moodboards') {
@@ -673,7 +633,7 @@ async function buildNextNode(
         step: 'D', nodeId: `reg_moodboards_${current.nodeId}`, nodeType: 'registry',
         context: { title: `Мудборды — ${current.context.title}`, breadcrumbs: [...crumbs, 'Мудборды'] },
         filter: { placeholder: 'Поиск по мудбордам...', value: '' },
-        payload: GALLERY_ITEMS.filter(g => g.id === 'gal_moodboards'),
+        payload: catalog.moodboards,
       }}
     }
     if (sub === 'managers') {

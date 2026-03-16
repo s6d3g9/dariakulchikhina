@@ -122,7 +122,10 @@
             }"
             @pointerdown.stop="startBlockDrag(block, $event)"
           >
-            <span class="asp-block__lbl">{{ block.label }}</span>
+            <div class="asp-block__body">
+              <span class="asp-block__lbl">{{ block.label }}</span>
+              <span class="asp-block__meta">{{ categoryLabel(block.category) }}</span>
+            </div>
             <button v-if="alignMode" class="asp-block__del" @click.stop="removeBlock(block.id)">×</button>
             <div v-if="alignMode" class="asp-block__rsz" @pointerdown.stop="startBlockResize(block, $event)" />
           </div>
@@ -135,19 +138,34 @@
         <!-- Add-block toolbar -->
         <Transition name="asp-slide">
           <div v-if="alignMode" class="asp-add-bar">
+            <div class="asp-template-groups">
+              <div v-for="group in groupedTemplates" :key="group.category" class="asp-template-group">
+                <span class="asp-template-group__title">{{ group.title }}</span>
+                <div class="asp-template-list">
+                  <button
+                    v-for="template in group.items"
+                    :key="template.id"
+                    class="a-btn-sm"
+                    :class="{ 'asp-template--on': selectedTemplateId === template.id }"
+                    :title="template.description"
+                    @click="selectedTemplateId = template.id"
+                  >{{ template.title }}</button>
+                </div>
+              </div>
+            </div>
             <input
               v-model="newBlockLabel"
               class="glass-input"
-              placeholder="название зоны (гостиная, кухня, санузел...)"
+              :placeholder="`${getLayoutTemplateById(selectedTemplateId).defaultLabel} или своё название`"
               @keydown.enter="addBlock"
             >
             <div class="asp-presets">
               <button
-                v-for="ps in BLOCK_PRESETS"
+                v-for="ps in layoutPresetOptions"
                 :key="ps.key"
                 class="a-btn-sm"
                 :class="{ 'asp-preset--on': selectedPreset === ps.key }"
-                :title="`${ps.w / GRID}×${ps.h / GRID} ячеек`"
+                :title="`${ps.cellsX}×${ps.cellsY} ячеек`"
                 @click="selectedPreset = ps.key"
               >{{ ps.key }}</button>
             </div>
@@ -162,6 +180,18 @@
 
 <script setup lang="ts">
 import { registerWipe2Data } from '~/composables/useWipe2'
+import {
+  getLayoutTemplateById,
+  LAYOUT_BLOCK_CATEGORY_LABELS,
+  LAYOUT_BLOCK_PRESETS,
+  LAYOUT_BLOCK_TEMPLATES,
+} from '~~/shared/constants/app-catalog'
+import type {
+  LayoutBlockCategory,
+  LayoutBlockConfig,
+  LayoutBlockPresetKey,
+  LayoutBlockTemplateDef,
+} from '~~/shared/types/app-catalog'
 
 const props = defineProps<{ slug: string }>()
 
@@ -292,37 +322,81 @@ function fileIcon(f: any) {
 // ─── Alignment canvas ────────────────────────────────────────────────────────
 const GRID = 20
 const CANVAS_H = 400
-const BLOCK_COLORS = ['#4a80f0','#f57c00','#43a047','#e53935','#8e24aa','#00897b','#f5a623','#0288d1']
-const BLOCK_PRESETS = [
-  { key: 'S',  w: 3 * GRID, h: 2 * GRID },
-  { key: 'M',  w: 6 * GRID, h: 4 * GRID },
-  { key: 'L',  w: 8 * GRID, h: 5 * GRID },
-  { key: 'XL', w: 12 * GRID, h: 8 * GRID },
-]
-
-interface LayoutBlock { id: string; label: string; x: number; y: number; w: number; h: number; color: string }
 
 // shared with UIDesignPanel dp-topbar button
 const alignMode = useState('asp-align-mode', () => false)
 const canvasRef      = ref<HTMLElement | null>(null)
 const newBlockLabel  = ref('')
-const selectedPreset = ref('M')
-const layoutBlocks   = ref<LayoutBlock[]>([])
+const selectedTemplateId = ref<string>('custom')
+const selectedPreset = ref<LayoutBlockPresetKey>('M')
+const layoutBlocks   = ref<LayoutBlockConfig[]>([])
+
+const layoutPresetOptions = Object.values(LAYOUT_BLOCK_PRESETS)
+
+const groupedTemplates = computed(() => {
+  const groups = new Map<LayoutBlockCategory, LayoutBlockTemplateDef[]>()
+  for (const template of LAYOUT_BLOCK_TEMPLATES) {
+    const items = groups.get(template.category) ?? []
+    items.push(template)
+    groups.set(template.category, items)
+  }
+
+  return Array.from(groups.entries()).map(([category, items]) => ({
+    category,
+    title: LAYOUT_BLOCK_CATEGORY_LABELS[category] ?? category,
+    items,
+  }))
+})
 
 watch(() => form.sp_layout, (val: any) => {
-  if (Array.isArray(val?.blocks)) layoutBlocks.value = val.blocks
+  if (!Array.isArray(val?.blocks)) return
+
+  layoutBlocks.value = val.blocks.map((block: Partial<LayoutBlockConfig> & { id: string }) => {
+    const template = getLayoutTemplateById(block.templateId || 'custom')
+    const preset = LAYOUT_BLOCK_PRESETS[template.preset]
+
+    return {
+      id: block.id,
+      templateId: block.templateId || template.id,
+      category: block.category || template.category,
+      label: block.label || template.defaultLabel,
+      x: block.x ?? GRID,
+      y: block.y ?? GRID,
+      w: block.w ?? preset.cellsX * GRID,
+      h: block.h ?? preset.cellsY * GRID,
+      color: block.color || template.color,
+    }
+  })
+}, { immediate: true })
+
+watch(selectedTemplateId, (templateId) => {
+  const template = getLayoutTemplateById(templateId)
+  selectedPreset.value = template.preset
+  if (!newBlockLabel.value.trim()) {
+    newBlockLabel.value = template.defaultLabel
+  }
 }, { immediate: true })
 
 function snap(v: number) { return Math.round(v / GRID) * GRID }
 function canvasBounds() {
   return { w: canvasRef.value?.clientWidth ?? 700, h: CANVAS_H }
 }
+function presetSize(key: LayoutBlockPresetKey) {
+  const preset = LAYOUT_BLOCK_PRESETS[key]
+  return {
+    w: preset.cellsX * GRID,
+    h: preset.cellsY * GRID,
+  }
+}
+function categoryLabel(category: LayoutBlockCategory) {
+  return LAYOUT_BLOCK_CATEGORY_LABELS[category] ?? category
+}
 
 // ── Drag ────────────────────────────────────────────────────────
-interface DragState { block: LayoutBlock; startMX: number; startMY: number; origX: number; origY: number }
+interface DragState { block: LayoutBlockConfig; startMX: number; startMY: number; origX: number; origY: number }
 const dragState = ref<DragState | null>(null)
 
-function startBlockDrag(block: LayoutBlock, e: PointerEvent) {
+function startBlockDrag(block: LayoutBlockConfig, e: PointerEvent) {
   if (!alignMode.value) return
   const blockId = block.id
   const startMX = e.clientX
@@ -349,10 +423,10 @@ function startBlockDrag(block: LayoutBlock, e: PointerEvent) {
 }
 
 // ── Resize ──────────────────────────────────────────────────────
-interface ResizeState { block: LayoutBlock; startMX: number; startMY: number; origW: number; origH: number }
+interface ResizeState { block: LayoutBlockConfig; startMX: number; startMY: number; origW: number; origH: number }
 const resizeState = ref<ResizeState | null>(null)
 
-function startBlockResize(block: LayoutBlock, e: PointerEvent) {
+function startBlockResize(block: LayoutBlockConfig, e: PointerEvent) {
   const blockId = block.id
   const startMX = e.clientX
   const startMY = e.clientY
@@ -378,21 +452,23 @@ function startBlockResize(block: LayoutBlock, e: PointerEvent) {
 }
 
 function addBlock() {
-  const label = newBlockLabel.value.trim()
-  if (!label) return
-  const preset = BLOCK_PRESETS.find(p => p.key === selectedPreset.value) ?? BLOCK_PRESETS[1]
+  const template = getLayoutTemplateById(selectedTemplateId.value)
+  const label = newBlockLabel.value.trim() || template.defaultLabel
+  const preset = presetSize(selectedPreset.value)
   const col = layoutBlocks.value.length % 3
   const row = Math.floor(layoutBlocks.value.length / 3)
   layoutBlocks.value.push({
     id: `b-${Date.now()}`,
+    templateId: template.id,
+    category: template.category,
     label,
     x: snap(GRID + col * (preset.w + GRID * 2)),
     y: snap(GRID + row * (preset.h + GRID * 2)),
     w: preset.w,
     h: preset.h,
-    color: BLOCK_COLORS[layoutBlocks.value.length % BLOCK_COLORS.length],
+    color: template.color,
   })
-  newBlockLabel.value = ''
+  newBlockLabel.value = template.defaultLabel
   persistLayout()
 }
 
@@ -583,14 +659,32 @@ function persistLayout() {
   z-index: 10;
 }
 
+.asp-block__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+}
+
 .asp-block__lbl {
   font-size: .75rem;
   font-weight: 700;
   color: var(--block-color);
   text-align: center;
-  padding: 4px 20px 4px 6px;
+  padding: 4px 20px 0 6px;
   word-break: break-word;
   line-height: 1.2;
+  pointer-events: none;
+}
+.asp-block__meta {
+  font-size: .62rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--block-color) 75%, white);
+  opacity: .9;
   pointer-events: none;
 }
 .asp-block__del {
@@ -625,13 +719,40 @@ function persistLayout() {
 /* Add toolbar */
 .asp-add-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-top: 12px;
   flex-wrap: wrap;
 }
+.asp-template-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  width: 100%;
+}
+.asp-template-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.asp-template-group__title {
+  font-size: .72rem;
+  opacity: .6;
+  text-transform: uppercase;
+}
+.asp-template-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 .asp-presets { display: flex; gap: 4px; }
 .asp-preset--on {
+  background: color-mix(in srgb, var(--ds-accent, #4a80f0) 16%, transparent) !important;
+  border-color: color-mix(in srgb, var(--ds-accent, #4a80f0) 50%, var(--glass-border)) !important;
+  color: var(--ds-accent, #4a80f0) !important;
+}
+.asp-template--on {
   background: color-mix(in srgb, var(--ds-accent, #4a80f0) 16%, transparent) !important;
   border-color: color-mix(in srgb, var(--ds-accent, #4a80f0) 50%, var(--glass-border)) !important;
   color: var(--ds-accent, #4a80f0) !important;

@@ -9,7 +9,6 @@
     <template v-if="selectedId">
       <div class="ct-wipe-host">
       <AdminEntityCabinetShell
-        v-show="!isWipe2Mode"
         :show-hero="showBrutalistContractorHero"
         :title="selected?.name || ''"
         :kicker="contractorSectionLabel"
@@ -24,14 +23,14 @@
         <template #headerActions>
           <button class="ent-entity-hd-action" @click="openEdit(selected)">ред.</button>
         </template>
-        <AdminContractorCabinet :key="selectedId" :contractor-id="selectedId" :show-sidebar="false" v-model="activeContractorSection" />
+        <AdminContractorCabinet v-show="!isWipe2Mode" :key="selectedId" :contractor-id="selectedId" :show-sidebar="false" v-model="activeContractorSection" />
+        <Wipe2Renderer
+          v-if="isWipe2Mode && wipe2State"
+          :entity="wipe2State"
+          layout="inline"
+          @edit="designSystem.set('contentViewMode', 'scroll')"
+        />
       </AdminEntityCabinetShell>
-      <Wipe2Renderer
-        v-if="isWipe2Mode && wipe2State"
-        :entity="wipe2State"
-        :fixed-mode="true"
-        @edit="designSystem.set('contentViewMode', 'scroll')"
-      />
       </div>
     </template>
     <AdminEntityEmptyState

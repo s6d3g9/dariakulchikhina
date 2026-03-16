@@ -4,7 +4,10 @@
   <div
     ref="overlayEl"
     class="w2-overlay"
-    :class="{ 'w2-overlay--fixed': fixedMode }"
+    :class="{
+      'w2-overlay--fixed': fixedMode,
+      'w2-overlay--inline': layout === 'inline',
+    }"
     tabindex="-1"
     @keydown="onKey"
     @wheel.prevent="onWheel"
@@ -27,12 +30,105 @@
             class="w2-badge"
             :class="`w2-badge--${card.statusColor || 'muted'}`"
           >{{ card.status }}</span>
+          <div v-if="canSwitchDisplayMode" class="w2-view-switch" @click.stop>
+            <button
+              v-for="mode in DISPLAY_MODES"
+              :key="mode.value"
+              type="button"
+              class="w2-view-switch__btn"
+              :class="{ 'w2-view-switch__btn--active': displayMode === mode.value }"
+              @click="setDisplayMode(mode.value)"
+            >{{ mode.label }}</button>
+          </div>
           <button type="button" class="w2-edit-btn" @click.stop="$emit('edit')" title="Редактировать (E)">✎ редактировать</button>
         </div>
       </div>
 
       <!-- Поле-сетка 2×8 -->
-      <div class="w2-body">
+      <div class="w2-body" :class="{ 'w2-body--display': canSwitchDisplayMode }">
+        <template v-if="canSwitchDisplayMode && displayMode === 'list'">
+          <div class="w2-mini-stack">
+            <article
+              v-for="(item, index) in cardItems"
+              :key="item.id"
+              class="w2-mini-card w2-mini-card--list"
+              :class="miniCardToneClass(item.field)"
+            >
+              <div class="w2-mini-card__head">
+                <div>
+                  <div v-if="item.field.eyebrow || item.sectionTitle" class="w2-mini-card__eyebrow">{{ item.field.eyebrow || item.sectionTitle }}</div>
+                  <h4 class="w2-mini-card__title">{{ item.field.label }}</h4>
+                </div>
+                <span v-if="item.field.badge" class="w2-mini-card__badge">{{ item.field.badge }}</span>
+              </div>
+              <p v-if="item.field.description" class="w2-mini-card__desc">{{ item.field.description }}</p>
+              <div class="w2-mini-card__foot">
+                <strong class="w2-mini-card__value" :class="valueClass(item.field)">{{ displayValue(item.field) }}</strong>
+                <span v-if="item.field.caption" class="w2-mini-card__caption">{{ item.field.caption }}</span>
+                <span v-else class="w2-mini-card__caption">позиция {{ index + 1 }} из {{ cardItems.length }}</span>
+              </div>
+            </article>
+          </div>
+        </template>
+
+        <template v-else-if="canSwitchDisplayMode && displayMode === 'grid'">
+          <div class="w2-mini-grid">
+            <article
+              v-for="item in cardItems"
+              :key="item.id"
+              class="w2-mini-card w2-mini-card--grid"
+              :class="miniCardToneClass(item.field)"
+            >
+              <div class="w2-mini-card__head">
+                <span v-if="item.field.badge" class="w2-mini-card__badge">{{ item.field.badge }}</span>
+                <span v-else-if="item.field.caption" class="w2-mini-card__caption">{{ item.field.caption }}</span>
+              </div>
+              <div class="w2-mini-card__value-row">
+                <strong class="w2-mini-card__value" :class="valueClass(item.field)">{{ displayValue(item.field) }}</strong>
+              </div>
+              <h4 class="w2-mini-card__title">{{ item.field.label }}</h4>
+              <p v-if="item.field.description" class="w2-mini-card__desc">{{ item.field.description }}</p>
+            </article>
+          </div>
+        </template>
+
+        <template v-else-if="canSwitchDisplayMode && displayMode === 'focus' && activeDetailItem">
+          <div class="w2-focus-card" :class="miniCardToneClass(activeDetailItem.field)">
+            <div class="w2-focus-card__hero">
+              <div class="w2-focus-card__eyebrow">{{ activeDetailItem.field.eyebrow || activeDetailItem.sectionTitle || 'детальная карточка' }}</div>
+              <div class="w2-focus-card__topline">
+                <h3 class="w2-focus-card__title">{{ activeDetailItem.field.label }}</h3>
+                <span v-if="activeDetailItem.field.badge" class="w2-mini-card__badge">{{ activeDetailItem.field.badge }}</span>
+              </div>
+              <div class="w2-focus-card__value" :class="valueClass(activeDetailItem.field)">{{ displayValue(activeDetailItem.field) }}</div>
+              <div v-if="activeDetailItem.field.caption" class="w2-focus-card__caption">{{ activeDetailItem.field.caption }}</div>
+              <p v-if="activeDetailItem.field.description" class="w2-focus-card__desc">{{ activeDetailItem.field.description }}</p>
+            </div>
+
+            <div class="w2-focus-card__stats">
+              <div class="w2-focus-stat">
+                <span class="w2-focus-stat__label">позиция</span>
+                <strong class="w2-focus-stat__value">{{ detailIndex + 1 }}</strong>
+              </div>
+              <div class="w2-focus-stat">
+                <span class="w2-focus-stat__label">в карточке</span>
+                <strong class="w2-focus-stat__value">{{ cardItems.length }}</strong>
+              </div>
+              <div class="w2-focus-stat">
+                <span class="w2-focus-stat__label">раздел</span>
+                <strong class="w2-focus-stat__value">{{ activeDetailItem.sectionTitle || 'данные' }}</strong>
+              </div>
+            </div>
+
+            <div class="w2-focus-card__nav">
+              <button type="button" class="w2-nav-btn" :disabled="detailIndex <= 0" @click="prevDetail">← позиция</button>
+              <span class="w2-pager">{{ detailIndex + 1 }} / {{ cardItems.length }}</span>
+              <button type="button" class="w2-nav-btn" :disabled="detailIndex >= cardItems.length - 1" @click="nextDetail">позиция →</button>
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
         <template v-for="(row, ri) in card.rows" :key="ri">
 
           <!-- Заголовок секции (на всю ширину) -->
@@ -78,6 +174,7 @@
           </div>
 
         </template>
+        </template>
       </div>
 
       <!-- Навигация внизу -->
@@ -120,25 +217,112 @@ import type { Wipe2EntityData } from '~/shared/types/wipe2'
 const props = defineProps<{
   entity?: Wipe2EntityData | null
   fixedMode?: boolean
+  layout?: 'overlay' | 'inline'
 }>()
 
 const emit = defineEmits<{ edit: [] }>()
+
+type Wipe2DisplayMode = 'list' | 'grid' | 'focus'
+
+interface Wipe2DisplayItem {
+  id: string
+  field: Wipe2Field
+  sectionTitle?: string
+  sectionSubtitle?: string
+}
+
+const DISPLAY_MODES: Array<{ value: Wipe2DisplayMode; label: string }> = [
+  { value: 'list', label: 'список' },
+  { value: 'grid', label: 'сетка' },
+  { value: 'focus', label: 'по одной' },
+]
+const DISPLAY_MODE_STORAGE_KEY = 'wipe2-display-mode'
 
 const cards = computed(() => props.entity ? buildWipe2Cards(props.entity) : [])
 
 const currentIndex = ref(0)
 const overlayEl = ref<HTMLElement | null>(null)
+const displayMode = ref<Wipe2DisplayMode>('list')
+const detailIndex = ref(0)
 
 // Сброс индекса при смене данных
 watch(cards, () => { currentIndex.value = 0 })
 
 const card = computed(() => cards.value[currentIndex.value])
+const cardItems = computed<Wipe2DisplayItem[]>(() => {
+  const currentCard = card.value
+  if (!currentCard) return []
+
+  const items: Wipe2DisplayItem[] = []
+  let activeSectionTitle = ''
+  let activeSectionSubtitle = ''
+
+  currentCard.rows.forEach((row, index) => {
+    if (row.type === 'section') {
+      activeSectionTitle = row.title.replace(/\s*\(продолжение\)$/, '')
+      activeSectionSubtitle = row.subtitle || ''
+      return
+    }
+
+    if (row.type === 'full') {
+      items.push({
+        id: `${currentCard.index}-full-${index}`,
+        field: row.field,
+        sectionTitle: activeSectionTitle,
+        sectionSubtitle: activeSectionSubtitle,
+      })
+      return
+    }
+
+    items.push({
+      id: `${currentCard.index}-left-${index}`,
+      field: row.left,
+      sectionTitle: activeSectionTitle,
+      sectionSubtitle: activeSectionSubtitle,
+    })
+    if (row.right) {
+      items.push({
+        id: `${currentCard.index}-right-${index}`,
+        field: row.right,
+        sectionTitle: activeSectionTitle,
+        sectionSubtitle: activeSectionSubtitle,
+      })
+    }
+  })
+
+  return items.filter(item => item.field.label || item.field.value || item.field.description)
+})
+const cardSectionTitles = computed(() => {
+  const currentCard = card.value
+  if (!currentCard) return []
+  return currentCard.rows
+    .filter((row): row is Extract<typeof row, { type: 'section' }> => row.type === 'section')
+    .map(row => row.title.replace(/\s*\(продолжение\)$/, ''))
+})
+const canSwitchDisplayMode = computed(() => cardSectionTitles.value.length === 1 && cardItems.value.length > 0)
+const activeDetailItem = computed(() => cardItems.value[detailIndex.value] || null)
+
+watch([currentIndex, cardItems, canSwitchDisplayMode], () => {
+  detailIndex.value = 0
+  if (!canSwitchDisplayMode.value && displayMode.value === 'focus') displayMode.value = 'list'
+})
 
 function prev() {
   if (currentIndex.value > 0) currentIndex.value--
 }
 function next() {
   if (currentIndex.value < cards.value.length - 1) currentIndex.value++
+}
+
+function prevDetail() {
+  if (detailIndex.value > 0) detailIndex.value--
+}
+function nextDetail() {
+  if (detailIndex.value < cardItems.value.length - 1) detailIndex.value++
+}
+function setDisplayMode(mode: Wipe2DisplayMode) {
+  displayMode.value = mode
+  detailIndex.value = 0
 }
 
 function onKey(e: KeyboardEvent) {
@@ -177,7 +361,20 @@ function refocus() {
   overlayEl.value?.focus({ preventScroll: true })
 }
 
-onMounted(() => overlayEl.value?.focus({ preventScroll: true }))
+onMounted(() => {
+  overlayEl.value?.focus({ preventScroll: true })
+  if (import.meta.client) {
+    const savedMode = localStorage.getItem(DISPLAY_MODE_STORAGE_KEY)
+    if (savedMode === 'list' || savedMode === 'grid' || savedMode === 'focus') {
+      displayMode.value = savedMode
+    }
+  }
+})
+
+watch(displayMode, (value) => {
+  if (!import.meta.client) return
+  localStorage.setItem(DISPLAY_MODE_STORAGE_KEY, value)
+})
 
 // ── Форматирование значений ───────────────────────────────────
 const STATUS_LABELS: Record<string, string> = {
@@ -234,6 +431,13 @@ function valueClass(f: Wipe2Field): string {
   if (f.type === 'status') return 'w2-field__value--status'
   return ''
 }
+
+function miniCardToneClass(f: Wipe2Field): string {
+  if (f.tone === 'accent') return 'w2-mini-card--accent'
+  if (f.tone === 'success') return 'w2-mini-card--success'
+  if (f.tone === 'muted') return 'w2-mini-card--muted'
+  return ''
+}
 </script>
 
 <style scoped>
@@ -249,6 +453,15 @@ function valueClass(f: Wipe2Field): string {
   flex-direction: column;
   outline: none;
   touch-action: none;  /* renderer handles its own touch */
+}
+.w2-overlay--inline {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  min-height: min(860px, calc(100vh - var(--dp-panel-h, 0px) - var(--admin-header-h, 48px) - 96px));
+  width: 100%;
 }
 /* Cabinet fixed mode: anchors to viewport accounting for admin header + sidebar */
 .w2-overlay--fixed {
@@ -276,6 +489,9 @@ function valueClass(f: Wipe2Field): string {
   padding: var(--wipe-content-padding, 20px);
   gap: 12px;
 }
+.w2-overlay--inline .w2-card {
+  min-height: inherit;
+}
 
 /* ── Header ──────────────────────────────────────────────────── */
 .w2-header {
@@ -289,6 +505,31 @@ function valueClass(f: Wipe2Field): string {
 }
 .w2-header-left { min-width: 0; }
 .w2-header-right { display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.w2-view-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--glass-text, #111) 10%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--glass-text, #111) 4%, transparent);
+}
+.w2-view-switch__btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text, #111) 65%, transparent);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: .67rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.w2-view-switch__btn--active {
+  background: color-mix(in srgb, var(--glass-text, #111) 12%, transparent);
+  color: var(--glass-text, #111);
+}
 
 .w2-title {
   font-size: var(--ds-text-sm, .833rem);
@@ -370,6 +611,146 @@ html.dark .w2-edit-btn:hover {
   row-gap: 10px;
   overflow: hidden;
   align-content: start;
+}
+.w2-body--display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+}
+.w2-mini-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.w2-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.w2-mini-card,
+.w2-focus-card {
+  border: 1px solid color-mix(in srgb, var(--glass-text, #111) 10%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--glass-text, #111) 4%, transparent), transparent 44%),
+    color-mix(in srgb, var(--glass-text, #111) 2%, transparent);
+  border-radius: 12px;
+}
+.w2-mini-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+.w2-mini-card--accent,
+.w2-focus-card.w2-mini-card--accent {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ds-accent, #646cff) 12%, transparent), transparent 44%),
+    color-mix(in srgb, var(--glass-text, #111) 2%, transparent);
+}
+.w2-mini-card--success,
+.w2-focus-card.w2-mini-card--success {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ds-success, #34d399) 12%, transparent), transparent 44%),
+    color-mix(in srgb, var(--glass-text, #111) 2%, transparent);
+}
+.w2-mini-card--muted,
+.w2-focus-card.w2-mini-card--muted {
+  opacity: .74;
+}
+.w2-mini-card__head,
+.w2-mini-card__foot,
+.w2-focus-card__topline,
+.w2-focus-card__nav {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.w2-mini-card__eyebrow,
+.w2-focus-card__eyebrow,
+.w2-focus-stat__label {
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  color: color-mix(in srgb, var(--glass-text, #111) 46%, transparent);
+}
+.w2-mini-card__title,
+.w2-focus-card__title {
+  margin: 0;
+  font-size: .92rem;
+  line-height: 1.15;
+  color: var(--glass-text, #111);
+}
+.w2-mini-card__desc,
+.w2-focus-card__desc {
+  margin: 0;
+  font-size: .77rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--glass-text, #111) 72%, transparent);
+}
+.w2-mini-card__value,
+.w2-focus-card__value {
+  font-size: 1.08rem;
+  line-height: 1.1;
+  color: var(--glass-text, #111);
+}
+.w2-focus-card__value {
+  font-size: clamp(1.8rem, 4.4vw, 3.3rem);
+  font-weight: 700;
+}
+.w2-mini-card__caption,
+.w2-focus-card__caption {
+  font-size: .7rem;
+  color: color-mix(in srgb, var(--glass-text, #111) 54%, transparent);
+}
+.w2-mini-card__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--glass-text, #111) 8%, transparent);
+  font-size: .66rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--glass-text, #111) 78%, transparent);
+}
+.w2-mini-card__value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.w2-focus-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+  padding: 18px;
+}
+.w2-focus-card__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.w2-focus-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.w2-focus-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--glass-text, #111) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text, #111) 4%, transparent);
+}
+.w2-focus-stat__value {
+  font-size: .9rem;
+  line-height: 1.2;
+  color: var(--glass-text, #111);
 }
 
 /* ── Section separator ───────────────────────────────────────── */
@@ -488,4 +869,28 @@ html.dark .w2-edit-btn:hover {
 .w2-empty__icon  { font-size: 1.8rem; opacity: .25; }
 .w2-empty__title { font-size: var(--ds-text-sm, .833rem); font-weight: 600; opacity: .45; }
 .w2-empty__sub   { font-size: var(--ds-text-xs, .694rem); opacity: .3; }
+
+@media (max-width: 900px) {
+  .w2-mini-grid,
+  .w2-focus-card__stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .w2-header,
+  .w2-header-right,
+  .w2-mini-card__head,
+  .w2-mini-card__foot,
+  .w2-focus-card__topline,
+  .w2-focus-card__nav,
+  .w2-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .w2-edit-hint {
+    order: 3;
+  }
+}
 </style>

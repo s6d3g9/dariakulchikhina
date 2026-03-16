@@ -116,7 +116,7 @@
               <div v-else class="ent-detail-row" style="opacity:.48">документов пока нет</div>
             </div>
           </section>
-          <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2ClientEntityData" @edit="designSystem.set('contentViewMode', 'scroll')" />
+          <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2ClientEntityData" layout="inline" @edit="designSystem.set('contentViewMode', 'scroll')" />
       </div>
         </template>
 

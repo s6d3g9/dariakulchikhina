@@ -608,6 +608,7 @@ definePageMeta({ layout: 'admin', middleware: ['admin', 'admin-project-canonical
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 const designSystem = useDesignSystem()
+const blueprintRuntime = useAppBlueprintRuntime()
 createWipe2Slot()
 const isBrutalistProjectMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const showLegacyMobileNav = computed(() => !contractorPreviewMode.value && !isBrutalistProjectMode.value)
@@ -1523,6 +1524,9 @@ const defaultPhasePage = computed(() => {
   const firstVisiblePhasePage = getAdminNavGroups()
     .flatMap(group => group.pages)
     .find((page) => {
+      if (!blueprintRuntime.isProjectPageAllowed(page.slug)) {
+        return false
+      }
       if (page.slug === 'self_profile' && pages.includes('brief')) {
         return true
       }
@@ -1532,7 +1536,24 @@ const defaultPhasePage = computed(() => {
   return firstVisiblePhasePage?.slug || 'overview'
 })
 
+watch([
+  () => blueprintRuntime.activeBlueprintId.value,
+  defaultPhasePage,
+], async () => {
+  if (blueprintRuntime.isProjectPageAllowed(activePage.value)) {
+    return
+  }
+
+  await selectAdminPage(defaultPhasePage.value)
+}, { immediate: true })
+
 async function selectAdminPage(pageSlug: string) {
+  if (!blueprintRuntime.isProjectPageAllowed(pageSlug)) {
+    activePage.value = defaultPhasePage.value
+    scrollMobileBarToActive()
+    return
+  }
+
   activePage.value = pageSlug
   const normalizedPage = pageSlug === 'self_profile' ? 'brief' : pageSlug
   const target = PROJECT_PAGE_TO_NAV_TARGET[normalizedPage] || {}
@@ -1680,19 +1701,29 @@ const resolvedProjectPageFromNav = computed(() => {
 const currentProjectPage = computed(() => resolvedProjectPageFromNav.value || activePage.value)
 
 // ── Wipe 2: ленивые fetch для разделов с отдельным API ─────────────────────
-const { data: _w2ExtraSvcs } = useFetch<any[]>(
+const { data: _w2ExtraSvcs } = useAsyncData<any[]>(
+  'project-wipe2-extra-services',
   () => contentViewMode.value === 'wipe2' && currentProjectPage.value === 'extra_services'
-    ? `/api/projects/${slug.value}/extra-services`
-    : null,
-  { server: false, default: () => [] },
+    ? $fetch<any[]>(`/api/projects/${slug.value}/extra-services`)
+    : Promise.resolve([]),
+  {
+    server: false,
+    default: () => [],
+    watch: [contentViewMode, currentProjectPage, slug],
+  },
 )
 watch(_w2ExtraSvcs, (v) => { _wipe2ExtraServicesData.value = v || [] }, { immediate: true })
 
-const { data: _w2WorkStatus } = useFetch<any[]>(
+const { data: _w2WorkStatus } = useAsyncData<any[]>(
+  'project-wipe2-work-status',
   () => contentViewMode.value === 'wipe2' && currentProjectPage.value === 'work_status'
-    ? `/api/projects/${slug.value}/work-status`
-    : null,
-  { server: false, default: () => [] },
+    ? $fetch<any[]>(`/api/projects/${slug.value}/work-status`)
+    : Promise.resolve([]),
+  {
+    server: false,
+    default: () => [],
+    watch: [contentViewMode, currentProjectPage, slug],
+  },
 )
 watch(_w2WorkStatus, (v) => { _wipe2WorkStatusData.value = v || [] }, { immediate: true })
 

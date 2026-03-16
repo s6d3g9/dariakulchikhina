@@ -9,7 +9,7 @@
     :class="[`nav-shell--${navTransitionMode}`, { 'nav-shell--collapsed': collapsed }]"
     :style="navMotionStyle"
   >
-    <Transition name="nav-pane" mode="out-in">
+    <Transition name="nav-pane" :mode="transitionReady ? 'out-in' : undefined">
       <div :key="node.nodeId" class="nav-panel">
 
         <!-- Назад + заголовок -->
@@ -88,6 +88,7 @@ const { tokens } = useDesignSystem()
 const search = ref('')
 
 const navTransitionMode = computed(() => tokens.value.archNavTransition || 'slide')
+const transitionReady = ref(false)
 
 const navDistance = computed(() => Math.min(56, Math.max(0, tokens.value.navTransitDistance ?? 18)))
 
@@ -101,6 +102,12 @@ const navMotionStyle = computed(() => {
     '--nav-leave-x': `${leave}px`,
     '--nav-trans-duration': `${navDuration.value}ms`,
   }
+})
+
+onMounted(() => {
+  requestAnimationFrame(() => {
+    transitionReady.value = true
+  })
 })
 
 // Сбрасываем поиск при смене узла
