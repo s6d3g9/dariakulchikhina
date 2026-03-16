@@ -184,7 +184,7 @@ run_healthcheck_with_retry() {
 
   for ((attempt = 1; attempt <= HEALTHCHECK_ATTEMPTS; attempt++)); do
     status_code="$(curl -o /dev/null -s -w '%{http_code}' --max-time 20 "$HEALTHCHECK_URL" || true)"
-    echo "[deploy] health attempt ${attempt}/${HEALTHCHECK_ATTEMPTS}: ${status_code}"
+    echo "[deploy] health attempt ${attempt}/${HEALTHCHECK_ATTEMPTS}: ${status_code}" >&2
 
     if is_healthy_status "$status_code"; then
       echo "$status_code"
