@@ -5,6 +5,9 @@ DEPLOY_HOST="${DEPLOY_HOST:-daria-deploy}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/daria-nuxt}"
 APP_NAME="${APP_NAME:-daria-nuxt}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://152.53.176.165:3000/admin}"
+REMOTE_HEALTHCHECK_URL="${REMOTE_HEALTHCHECK_URL:-http://127.0.0.1:3000/admin}"
+HEALTHCHECK_ATTEMPTS="${HEALTHCHECK_ATTEMPTS:-6}"
+HEALTHCHECK_DELAY="${HEALTHCHECK_DELAY:-5}"
 AUTO_GIT_SAVE="${AUTO_GIT_SAVE:-1}"
 LOCAL_SNAPSHOT_BEFORE_DEPLOY="${LOCAL_SNAPSHOT_BEFORE_DEPLOY:-1}"
 LOCAL_SNAPSHOT_KEEP="${LOCAL_SNAPSHOT_KEEP:-10}"
@@ -163,6 +166,49 @@ log_stage_time() {
   esac
 }
 
+is_healthy_status() {
+  local status_code="$1"
+  case "$status_code" in
+    200|301|302) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+run_remote_healthcheck() {
+  ssh "$DEPLOY_HOST" "curl -o /dev/null -s -w '%{http_code}' --max-time 20 '$REMOTE_HEALTHCHECK_URL'" 2>/dev/null || true
+}
+
+run_healthcheck_with_retry() {
+  local status_code=""
+  local attempt
+
+  for ((attempt = 1; attempt <= HEALTHCHECK_ATTEMPTS; attempt++)); do
+    status_code="$(curl -o /dev/null -s -w '%{http_code}' --max-time 20 "$HEALTHCHECK_URL" || true)"
+    echo "[deploy] health attempt ${attempt}/${HEALTHCHECK_ATTEMPTS}: ${status_code}"
+
+    if is_healthy_status "$status_code"; then
+      echo "$status_code"
+      return 0
+    fi
+
+    if (( attempt < HEALTHCHECK_ATTEMPTS )); then
+      sleep "$HEALTHCHECK_DELAY"
+    fi
+  done
+
+  local remote_status_code
+  remote_status_code="$(run_remote_healthcheck)"
+  echo "[deploy] remote localhost health status: ${remote_status_code}" >&2
+
+  if is_healthy_status "$remote_status_code"; then
+    echo "$remote_status_code"
+    return 0
+  fi
+
+  echo "$status_code"
+  return 1
+}
+
 run_preflight() {
   echo "[preflight] local tools"
   command -v ssh >/dev/null
@@ -237,12 +283,11 @@ ssh "$DEPLOY_HOST" "pm2 status '$APP_NAME' --no-color"
 
 echo "[deploy] healthcheck ${HEALTHCHECK_URL}"
 HEALTH_START_TS=$(date +%s)
-status_code="$(curl -o /dev/null -s -w '%{http_code}' --max-time 20 "$HEALTHCHECK_URL" || true)"
+status_code="$(run_healthcheck_with_retry || true)"
 echo "[deploy] health status: ${status_code}"
 log_stage_time "health" "$HEALTH_START_TS"
 
-case "$status_code" in
-  200|301|302)
+if is_healthy_status "$status_code"; then
     echo "[deploy] done"
     log_stage_time "total" "$SCRIPT_START_TS"
     write_metrics "ok"
@@ -261,11 +306,9 @@ case "$status_code" in
       rm -f "$BUILD_ARCHIVE"
     fi
     # ────────────────────────────────────────────────────────────────────────
-    ;;
-  *)
-    echo "[deploy] warning: unexpected health status ${status_code}" >&2
-    log_stage_time "total" "$SCRIPT_START_TS"
-    write_metrics "failed"
-    exit 1
-    ;;
-esac
+else
+  echo "[deploy] warning: unexpected health status ${status_code}" >&2
+  log_stage_time "total" "$SCRIPT_START_TS"
+  write_metrics "failed"
+  exit 1
+fi
