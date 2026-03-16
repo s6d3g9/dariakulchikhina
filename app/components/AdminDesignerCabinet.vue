@@ -230,7 +230,16 @@
                   </div>
                 </div>
                 <div class="svc-list svc-list--cards">
-                  <article v-for="svc in catServices" :key="svc.serviceKey" class="svc-card" :class="{ disabled: !svc.enabled, 'svc-card--brutalist': isBrutalistDesignerCabinetMode }">
+                  <div v-for="svc in catServices" :key="svc.serviceKey" class="svc-card-stack">
+                  <article
+                    class="svc-card"
+                    :class="{ disabled: !svc.enabled, 'svc-card--brutalist': isBrutalistDesignerCabinetMode, 'svc-card--active': serviceCardEditorKey === getServiceActionKey(svc) }"
+                    role="button"
+                    tabindex="0"
+                    @click="toggleServiceCardEditor(svc)"
+                    @keyup.enter.prevent="toggleServiceCardEditor(svc)"
+                    @keyup.space.prevent="toggleServiceCardEditor(svc)"
+                  >
                     <div class="svc-card-topline">
                       <span class="svc-state-badge" :class="{ 'svc-state-badge--muted': !svc.enabled }">
                         {{ svc.enabled ? 'В продаже' : 'Скрыта' }}
@@ -248,7 +257,7 @@
                     <div class="svc-card-foot">
                       <div class="svc-price-block">
                         <span class="svc-price-caption">текущий тариф</span>
-                        <div class="svc-price svc-price-inline" @click="startInlinePrice(svc)">
+                        <div class="svc-price svc-price-inline" @click.stop="startInlinePrice(svc)">
                           <template v-if="inlinePriceKey === svc.serviceKey">
                             <input
                               v-model.number="inlinePriceVal"
@@ -269,6 +278,50 @@
                       </div>
                     </div>
                   </article>
+                  <div v-if="serviceCardEditorKey === getServiceActionKey(svc) && serviceCardDraft" class="svc-card-editor glass-surface" :class="{ 'svc-card-editor--brutalist': isBrutalistDesignerCabinetMode }">
+                    <div class="svc-card-editor__head">
+                      <div>
+                        <div class="svc-card-editor__eyebrow">редактор услуги</div>
+                        <strong class="svc-card-editor__title">{{ serviceCardDraft.title || svc.title }}</strong>
+                      </div>
+                      <div class="svc-card-editor__actions">
+                        <button type="button" class="a-btn-sm" @click="closeServiceCardEditor">свернуть</button>
+                        <button type="button" class="a-btn-save" :disabled="serviceCardSaving" @click="saveServiceCardEditor">{{ serviceCardSaving ? 'сохранение…' : 'сохранить' }}</button>
+                      </div>
+                    </div>
+                    <p v-if="serviceCardError" class="cab-inline-error">{{ serviceCardError }}</p>
+                    <div class="svc-card-editor__grid">
+                      <div class="u-field">
+                        <label class="u-field__label">Название</label>
+                        <input v-model="serviceCardDraft.title" class="glass-input" placeholder="Название услуги" />
+                      </div>
+                      <div class="u-field">
+                        <label class="u-field__label">Категория</label>
+                        <select v-model="serviceCardDraft.category" class="glass-input">
+                          <option v-for="opt in SERVICE_CATEGORY_OPTIONS" :key="`svc-inline-${opt.value}`" :value="opt.value">{{ opt.label }}</option>
+                        </select>
+                      </div>
+                      <div class="u-field">
+                        <label class="u-field__label">Цена</label>
+                        <input v-model.number="serviceCardDraft.price" type="number" min="0" class="glass-input" />
+                      </div>
+                      <div class="u-field">
+                        <label class="u-field__label">Единица</label>
+                        <select v-model="serviceCardDraft.unit" class="glass-input">
+                          <option v-for="unit in PRICE_UNITS_LIST" :key="`svc-inline-unit-${unit.value}`" :value="unit.value">{{ unit.label }}</option>
+                        </select>
+                      </div>
+                      <div class="u-field u-field--full">
+                        <label class="u-field__label">Описание</label>
+                        <textarea v-model="serviceCardDraft.description" class="glass-input u-ta" rows="3" placeholder="Что входит в услугу" />
+                      </div>
+                    </div>
+                    <label class="svc-enable svc-enable--editor">
+                      <input v-model="serviceCardDraft.enabled" type="checkbox" />
+                      <span>{{ serviceCardDraft.enabled ? 'услуга активна в продаже' : 'услуга скрыта из выдачи' }}</span>
+                    </label>
+                  </div>
+                  </div>
                 </div>
               </div>
             </template>
@@ -337,7 +390,16 @@
 
             <template v-else-if="packages.length">
               <div class="pkg-grid" :class="{ 'pkg-grid--brutalist': isBrutalistDesignerCabinetMode }">
-                <article v-for="pkg in packages" :key="pkg.key" class="pkg-card glass-surface" :class="{ disabled: !pkg.enabled, 'pkg-card--brutalist': isBrutalistDesignerCabinetMode }">
+                <div v-for="pkg in packages" :key="pkg.key" class="pkg-card-stack">
+                <article
+                  class="pkg-card glass-surface"
+                  :class="{ disabled: !pkg.enabled, 'pkg-card--brutalist': isBrutalistDesignerCabinetMode, 'pkg-card--active': packageCardEditorKey === getPackageActionKey(pkg) }"
+                  role="button"
+                  tabindex="0"
+                  @click="togglePackageCardEditor(pkg)"
+                  @keyup.enter.prevent="togglePackageCardEditor(pkg)"
+                  @keyup.space.prevent="togglePackageCardEditor(pkg)"
+                >
                   <div class="pkg-card-topline">
                     <span class="pkg-state-badge" :class="{ 'pkg-state-badge--muted': !pkg.enabled }">
                       {{ pkg.enabled ? 'Готов к продаже' : 'Черновик' }}
@@ -375,6 +437,63 @@
                     <p class="pkg-card-note">{{ getPackageBudgetLabel(pkg) }}</p>
                   </div>
                 </article>
+                <div v-if="packageCardEditorKey === getPackageActionKey(pkg) && packageCardDraft" class="pkg-card-editor glass-surface" :class="{ 'pkg-card-editor--brutalist': isBrutalistDesignerCabinetMode }">
+                  <div class="pkg-card-editor__head">
+                    <div>
+                      <div class="svc-card-editor__eyebrow">редактор пакета</div>
+                      <strong class="svc-card-editor__title">{{ packageCardDraft.title || pkg.title }}</strong>
+                    </div>
+                    <div class="svc-card-editor__actions">
+                      <button type="button" class="a-btn-sm" @click="closePackageCardEditor">свернуть</button>
+                      <button type="button" class="a-btn-save" :disabled="packageCardSaving" @click="savePackageCardEditor">{{ packageCardSaving ? 'сохранение…' : 'сохранить' }}</button>
+                    </div>
+                  </div>
+                  <p v-if="packageCardError" class="cab-inline-error">{{ packageCardError }}</p>
+                  <div class="svc-card-editor__grid">
+                    <div class="u-field">
+                      <label class="u-field__label">Название пакета</label>
+                      <input v-model="packageCardDraft.title" class="glass-input" placeholder="Название пакета" />
+                    </div>
+                    <div class="u-field">
+                      <label class="u-field__label">Цена за м²</label>
+                      <input v-model.number="packageCardDraft.pricePerSqm" type="number" min="0" class="glass-input" />
+                    </div>
+                    <div class="u-field u-field--full">
+                      <label class="u-field__label">Описание</label>
+                      <textarea v-model="packageCardDraft.description" class="glass-input u-ta" rows="3" placeholder="Что входит в пакет" />
+                    </div>
+                  </div>
+                  <label class="svc-enable svc-enable--editor">
+                    <input v-model="packageCardDraft.enabled" type="checkbox" />
+                    <span>{{ packageCardDraft.enabled ? 'пакет доступен клиентам' : 'пакет скрыт из выдачи' }}</span>
+                  </label>
+                  <div class="pkg-card-editor__services">
+                    <div class="pkg-card-editor__services-head">
+                      <strong>Состав пакета</strong>
+                      <span>{{ getServiceCountLabel((packageCardDraft.serviceKeys || []).length) }}</span>
+                    </div>
+                    <div class="pkg-svc-tags">
+                      <button
+                        v-for="svcOption in allServiceKeys"
+                        :key="`pkg-inline-${packageCardDraft.key}-${svcOption.key}`"
+                        type="button"
+                        class="pkg-tag-picker"
+                        :class="{ 'pkg-tag-picker--active': (packageCardDraft.serviceKeys || []).includes(svcOption.key) }"
+                        @click="togglePackageCardDraftService(svcOption.key)"
+                      >{{ svcOption.title }}</button>
+                    </div>
+                    <div v-if="packageCardDraftServices.length" class="pkg-card-editor__service-list">
+                      <div v-for="svcItem in packageCardDraftServices" :key="`pkg-inline-row-${svcItem.key}`" class="pkg-card-editor__service-row">
+                        <div>
+                          <strong>{{ svcItem.title }}</strong>
+                          <span>{{ svcItem.category }}</span>
+                        </div>
+                        <span>{{ svcItem.price }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                </div>
               </div>
             </template>
             </div>
@@ -472,33 +591,110 @@
             <!-- View mode -->
             <template v-else-if="subscriptions.length">
               <div class="sub-grid" :class="{ 'sub-grid--brutalist': isBrutalistDesignerCabinetMode }">
-                <div v-for="sub in subscriptions" :key="sub.key" class="sub-card glass-surface" :class="{ disabled: !sub.enabled, 'sub-card--brutalist': isBrutalistDesignerCabinetMode }">
-                  <div class="sub-card-head">
-                    <h3 class="sub-card-title">{{ sub.title }}</h3>
-                    <span class="sub-period-badge">{{ getBillingLabel(sub.billingPeriod) }}</span>
-                  </div>
-                  <div class="sub-card-price-row">
-                    <span class="sub-card-price">{{ (Number(sub.price) || 0).toLocaleString('ru-RU') }} <small>₽</small></span>
-                    <span v-if="sub.discount > 0" class="sub-card-discount">−{{ sub.discount }}%</span>
-                  </div>
-                  <div v-if="sub.discount > 0" class="sub-card-effective">
-                    Итого: {{ Math.round((Number(sub.price) || 0) * (1 - (sub.discount || 0) / 100)).toLocaleString('ru-RU') }} ₽
-                  </div>
-                  <p class="sub-card-desc">{{ sub.description }}</p>
-                  <div v-if="Object.keys(sub.limits || {}).length" class="sub-card-limits">
-                    <div v-for="(val, lk) in sub.limits" :key="lk" class="sub-limit-chip">
-                      <span class="sub-limit-key">{{ formatLimitKey(String(lk)) }}</span>
-                      <span class="sub-limit-val">{{ val }}</span>
+                <div v-for="sub in subscriptions" :key="sub.key" class="sub-card-stack">
+                  <article
+                    class="sub-card glass-surface"
+                    :class="{ disabled: !sub.enabled, 'sub-card--brutalist': isBrutalistDesignerCabinetMode, 'sub-card--active': subscriptionCardEditorKey === getSubscriptionActionKey(sub) }"
+                    role="button"
+                    tabindex="0"
+                    @click="toggleSubscriptionCardEditor(sub)"
+                    @keyup.enter.prevent="toggleSubscriptionCardEditor(sub)"
+                    @keyup.space.prevent="toggleSubscriptionCardEditor(sub)"
+                  >
+                    <div class="sub-card-head">
+                      <h3 class="sub-card-title">{{ sub.title }}</h3>
+                      <span class="sub-period-badge">{{ getBillingLabel(sub.billingPeriod) }}</span>
                     </div>
-                  </div>
-                  <div v-if="sub.serviceKeys?.length" class="pkg-card-services">
-                    <span v-for="sk in sub.serviceKeys" :key="sk" class="pkg-svc-chip">
-                      {{ getServiceTitle(sk) }}
-                    </span>
-                  </div>
-                  <div class="sub-card-monthly">
-                    <span class="sub-m-label">В месяц:</span>
-                    <span class="sub-m-val">{{ getMonthlyPrice(sub).toLocaleString('ru-RU') }} ₽</span>
+                    <div class="sub-card-price-row">
+                      <span class="sub-card-price">{{ (Number(sub.price) || 0).toLocaleString('ru-RU') }} <small>₽</small></span>
+                      <span v-if="sub.discount > 0" class="sub-card-discount">−{{ sub.discount }}%</span>
+                    </div>
+                    <div v-if="sub.discount > 0" class="sub-card-effective">
+                      Итого: {{ Math.round((Number(sub.price) || 0) * (1 - (sub.discount || 0) / 100)).toLocaleString('ru-RU') }} ₽
+                    </div>
+                    <p class="sub-card-desc">{{ sub.description }}</p>
+                    <div v-if="Object.keys(sub.limits || {}).length" class="sub-card-limits">
+                      <div v-for="(val, lk) in sub.limits" :key="lk" class="sub-limit-chip">
+                        <span class="sub-limit-key">{{ formatLimitKey(String(lk)) }}</span>
+                        <span class="sub-limit-val">{{ val }}</span>
+                      </div>
+                    </div>
+                    <div v-if="sub.serviceKeys?.length" class="pkg-card-services">
+                      <span v-for="sk in sub.serviceKeys" :key="sk" class="pkg-svc-chip">
+                        {{ getServiceTitle(sk) }}
+                      </span>
+                    </div>
+                    <div class="sub-card-monthly">
+                      <span class="sub-m-label">В месяц:</span>
+                      <span class="sub-m-val">{{ getMonthlyPrice(sub).toLocaleString('ru-RU') }} ₽</span>
+                    </div>
+                  </article>
+                  <div v-if="subscriptionCardEditorKey === getSubscriptionActionKey(sub) && subscriptionCardDraft" class="sub-card-editor glass-surface" :class="{ 'sub-card-editor--brutalist': isBrutalistDesignerCabinetMode }">
+                    <div class="sub-card-editor__head">
+                      <div>
+                        <div class="sub-card-editor__eyebrow">редактор подписки</div>
+                        <strong class="sub-card-editor__title">{{ subscriptionCardDraft.title || sub.title }}</strong>
+                      </div>
+                      <div class="sub-card-editor__actions">
+                        <button type="button" class="a-btn-sm" @click="closeSubscriptionCardEditor">свернуть</button>
+                        <button type="button" class="a-btn-save" :disabled="subscriptionCardSaving" @click="saveSubscriptionCardEditor">{{ subscriptionCardSaving ? 'сохранение…' : 'сохранить' }}</button>
+                      </div>
+                    </div>
+                    <p v-if="subscriptionCardError" class="cab-inline-error">{{ subscriptionCardError }}</p>
+                    <div class="svc-card-editor__grid">
+                      <div class="u-field">
+                        <label class="u-field__label">Название</label>
+                        <input v-model="subscriptionCardDraft.title" class="glass-input" placeholder="Название подписки" />
+                      </div>
+                      <div class="u-field">
+                        <label class="u-field__label">Период</label>
+                        <select v-model="subscriptionCardDraft.billingPeriod" class="glass-input">
+                          <option v-for="bp in BILLING_PERIODS_LIST" :key="`sub-inline-${bp.value}`" :value="bp.value">{{ bp.label }}</option>
+                        </select>
+                      </div>
+                      <div class="u-field">
+                        <label class="u-field__label">Цена</label>
+                        <input v-model.number="subscriptionCardDraft.price" type="number" min="0" class="glass-input" />
+                      </div>
+                      <div class="u-field">
+                        <label class="u-field__label">Скидка</label>
+                        <input v-model.number="subscriptionCardDraft.discount" type="number" min="0" max="100" class="glass-input" />
+                      </div>
+                      <div class="u-field u-field--full">
+                        <label class="u-field__label">Описание</label>
+                        <textarea v-model="subscriptionCardDraft.description" class="glass-input u-ta" rows="3" placeholder="Что входит в подписку" />
+                      </div>
+                    </div>
+                    <div class="sub-card-editor__limits">
+                      <div class="sub-card-editor__limits-head">
+                        <strong>Лимиты</strong>
+                        <button type="button" class="a-btn-sm" @click="addSubscriptionCardDraftLimit">＋ лимит</button>
+                      </div>
+                      <div v-if="Object.keys(subscriptionCardDraft.limits || {}).length" class="sub-limits-grid">
+                        <div v-for="(val, lk) in subscriptionCardDraft.limits" :key="`sub-inline-limit-${lk}`" class="sub-limit-row">
+                          <input :value="lk" class="glass-input svc-inp" readonly />
+                          <input :value="val" class="glass-input svc-inp svc-inp--num" type="number" min="0" @input="updateSubscriptionDraftLimit(String(lk), Number(($event.target as HTMLInputElement).value))" />
+                          <button type="button" class="svc-del" @click="removeSubscriptionDraftLimit(String(lk))">✕</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="pkg-services-edit">
+                      <strong>Включённые услуги:</strong>
+                      <div class="pkg-svc-tags">
+                        <button
+                          v-for="svcOption in allServiceKeys"
+                          :key="`sub-inline-service-${svcOption.key}`"
+                          type="button"
+                          class="pkg-tag-picker"
+                          :class="{ 'pkg-tag-picker--active': (subscriptionCardDraft.serviceKeys || []).includes(svcOption.key) }"
+                          @click="toggleSubscriptionCardDraftService(svcOption.key)"
+                        >{{ svcOption.title }}</button>
+                      </div>
+                    </div>
+                    <label class="svc-enable svc-enable--editor">
+                      <input v-model="subscriptionCardDraft.enabled" type="checkbox" />
+                      <span>{{ subscriptionCardDraft.enabled ? 'подписка доступна для продажи' : 'подписка скрыта из выдачи' }}</span>
+                    </label>
                   </div>
                 </div>
               </div>
@@ -969,7 +1165,13 @@ import {
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { registerWipe2Data } from '~/composables/useWipe2'
 
-const props = defineProps<{ designerId: number; modelValue?: string }>()
+type DesignerCabinetFocusTarget = {
+  kind: 'service' | 'package' | 'subscription'
+  key: string
+  requestId: number
+} | null
+
+const props = defineProps<{ designerId: number; modelValue?: string; focusTarget?: DesignerCabinetFocusTarget }>()
 const emit = defineEmits<{ 'update:modelValue': [section: string] }>()
 
 const designerIdRef = computed(() => props.designerId)
@@ -1193,6 +1395,42 @@ const svcEditSuccess = ref('')
 // ── Inline price editing ──
 const inlinePriceKey = ref<string | null>(null)
 const inlinePriceVal = ref(0)
+
+function getServiceActionKey(service: DesignerServicePrice, index = services.value.findIndex((item) => item === service)) {
+  return service.serviceKey || `service-index-${Math.max(index, 0)}`
+}
+
+function findServiceByActionKey(actionKey: string) {
+  if (actionKey.startsWith('service-index-')) {
+    const index = Number(actionKey.replace('service-index-', ''))
+    return Number.isInteger(index) ? services.value[index] || null : null
+  }
+  return services.value.find((item) => item.serviceKey === actionKey) || null
+}
+
+function getPackageActionKey(pkg: DesignerPackage, index = packages.value.findIndex((item) => item === pkg)) {
+  return pkg.key || `package-index-${Math.max(index, 0)}`
+}
+
+function findPackageByActionKey(actionKey: string) {
+  if (actionKey.startsWith('package-index-')) {
+    const index = Number(actionKey.replace('package-index-', ''))
+    return Number.isInteger(index) ? packages.value[index] || null : null
+  }
+  return packages.value.find((item) => item.key === actionKey) || null
+}
+
+function getSubscriptionActionKey(subscription: DesignerSubscription, index = subscriptions.value.findIndex((item) => item === subscription)) {
+  return subscription.key || `subscription-index-${Math.max(index, 0)}`
+}
+
+function findSubscriptionByActionKey(actionKey: string) {
+  if (actionKey.startsWith('subscription-index-')) {
+    const index = Number(actionKey.replace('subscription-index-', ''))
+    return Number.isInteger(index) ? subscriptions.value[index] || null : null
+  }
+  return subscriptions.value.find((item) => item.key === actionKey) || null
+}
 
 function startInlinePrice(svc: DesignerServicePrice) {
   if (inlinePriceKey.value === svc.serviceKey) return
@@ -1438,6 +1676,243 @@ async function initPackages() {
   await savePackages(pkgs)
 }
 
+// ── Card editors (view mode) ──
+
+const serviceCardEditorKey = ref<string | null>(null)
+const serviceCardDraft = ref<DesignerServicePrice | null>(null)
+const serviceCardSaving = ref(false)
+const serviceCardError = ref('')
+
+const packageCardEditorKey = ref<string | null>(null)
+const packageCardDraft = ref<DesignerPackage | null>(null)
+const packageCardSaving = ref(false)
+const packageCardError = ref('')
+
+const subscriptionCardEditorKey = ref<string | null>(null)
+const subscriptionCardDraft = ref<DesignerSubscription | null>(null)
+const subscriptionCardSaving = ref(false)
+const subscriptionCardError = ref('')
+
+function closeServiceCardEditor() {
+  serviceCardEditorKey.value = null
+  serviceCardDraft.value = null
+  serviceCardError.value = ''
+}
+
+function openServiceCardEditor(service: DesignerServicePrice) {
+  packageCardEditorKey.value = null
+  packageCardDraft.value = null
+  packageCardError.value = ''
+  subscriptionCardEditorKey.value = null
+  subscriptionCardDraft.value = null
+  subscriptionCardError.value = ''
+  serviceCardEditorKey.value = getServiceActionKey(service)
+  serviceCardDraft.value = JSON.parse(JSON.stringify(service))
+  serviceCardError.value = ''
+}
+
+function toggleServiceCardEditor(service: DesignerServicePrice) {
+  if (serviceCardEditorKey.value === getServiceActionKey(service)) {
+    closeServiceCardEditor()
+    return
+  }
+  openServiceCardEditor(service)
+}
+
+async function saveServiceCardEditor() {
+  if (!serviceCardDraft.value) return
+  serviceCardError.value = ''
+  const activeKey = serviceCardEditorKey.value
+  const updatedList = services.value.map((item) => (
+    getServiceActionKey(item) === activeKey
+      ? JSON.parse(JSON.stringify(serviceCardDraft.value))
+      : JSON.parse(JSON.stringify(item))
+  ))
+  const normalized = normalizeServicesForSave(updatedList)
+  if (!normalized.ok) {
+    serviceCardError.value = normalized.error
+    return
+  }
+  serviceCardSaving.value = true
+  try {
+    await saveServices(normalized.list)
+    closeServiceCardEditor()
+    svcEditSuccess.value = 'Услуга сохранена'
+    setTimeout(() => { svcEditSuccess.value = '' }, 2500)
+  } finally {
+    serviceCardSaving.value = false
+  }
+}
+
+function closePackageCardEditor() {
+  packageCardEditorKey.value = null
+  packageCardDraft.value = null
+  packageCardError.value = ''
+}
+
+function openPackageCardEditor(pkg: DesignerPackage) {
+  closeServiceCardEditor()
+  closeSubscriptionCardEditor()
+  packageCardEditorKey.value = getPackageActionKey(pkg)
+  packageCardDraft.value = {
+    ...JSON.parse(JSON.stringify(pkg)),
+    serviceKeys: Array.isArray(pkg.serviceKeys) ? [...pkg.serviceKeys] : [],
+  }
+  packageCardError.value = ''
+}
+
+function togglePackageCardEditor(pkg: DesignerPackage) {
+  if (packageCardEditorKey.value === getPackageActionKey(pkg)) {
+    closePackageCardEditor()
+    return
+  }
+  openPackageCardEditor(pkg)
+}
+
+function togglePackageCardDraftService(key: string) {
+  if (!packageCardDraft.value) return
+  const idx = packageCardDraft.value.serviceKeys.indexOf(key)
+  if (idx >= 0) packageCardDraft.value.serviceKeys.splice(idx, 1)
+  else packageCardDraft.value.serviceKeys.push(key)
+}
+
+const packageCardDraftServices = computed(() => {
+  const keys = packageCardDraft.value?.serviceKeys || []
+  return keys.map((key) => {
+    const service = services.value.find((item) => item.serviceKey === key)
+    return {
+      key,
+      title: getServiceTitle(key),
+      price: service ? formatServicePrice(service.price, service.unit) : 'не задано',
+      category: service ? (DESIGNER_SERVICE_CATEGORY_LABELS[service.category] || service.category) : 'услуга',
+    }
+  })
+})
+
+async function savePackageCardEditor() {
+  if (!packageCardDraft.value) return
+  packageCardError.value = ''
+  const activeKey = packageCardEditorKey.value
+  const updatedList = packages.value.map((item) => (
+    getPackageActionKey(item) === activeKey
+      ? JSON.parse(JSON.stringify(packageCardDraft.value))
+      : JSON.parse(JSON.stringify(item))
+  ))
+  const normalized = normalizePackagesForSave(updatedList)
+  if (!normalized.ok) {
+    packageCardError.value = normalized.error
+    return
+  }
+  packageCardSaving.value = true
+  try {
+    await savePackages(normalized.list)
+    closePackageCardEditor()
+    pkgEditSuccess.value = 'Пакет сохранен'
+    setTimeout(() => { pkgEditSuccess.value = '' }, 2500)
+  } finally {
+    packageCardSaving.value = false
+  }
+}
+
+function closeSubscriptionCardEditor() {
+  subscriptionCardEditorKey.value = null
+  subscriptionCardDraft.value = null
+  subscriptionCardError.value = ''
+}
+
+function openSubscriptionCardEditor(subscription: DesignerSubscription) {
+  closeServiceCardEditor()
+  closePackageCardEditor()
+  subscriptionCardEditorKey.value = getSubscriptionActionKey(subscription)
+  subscriptionCardDraft.value = {
+    ...JSON.parse(JSON.stringify(subscription)),
+    serviceKeys: Array.isArray(subscription.serviceKeys) ? [...subscription.serviceKeys] : [],
+    limits: { ...(subscription.limits || {}) },
+  }
+  subscriptionCardError.value = ''
+}
+
+function toggleSubscriptionCardEditor(subscription: DesignerSubscription) {
+  if (subscriptionCardEditorKey.value === getSubscriptionActionKey(subscription)) {
+    closeSubscriptionCardEditor()
+    return
+  }
+  openSubscriptionCardEditor(subscription)
+}
+
+function toggleSubscriptionCardDraftService(key: string) {
+  if (!subscriptionCardDraft.value) return
+  const idx = subscriptionCardDraft.value.serviceKeys.indexOf(key)
+  if (idx >= 0) subscriptionCardDraft.value.serviceKeys.splice(idx, 1)
+  else subscriptionCardDraft.value.serviceKeys.push(key)
+}
+
+function updateSubscriptionDraftLimit(limitKey: string, value: number) {
+  if (!subscriptionCardDraft.value) return
+  if (!subscriptionCardDraft.value.limits) subscriptionCardDraft.value.limits = {}
+  subscriptionCardDraft.value.limits[limitKey] = Math.max(0, Number(value) || 0)
+}
+
+function removeSubscriptionDraftLimit(limitKey: string) {
+  if (!subscriptionCardDraft.value?.limits) return
+  delete subscriptionCardDraft.value.limits[limitKey]
+}
+
+function addSubscriptionCardDraftLimit() {
+  const name = prompt('Ключ лимита (например: visits, online_hours, renders)')
+  if (!name || !subscriptionCardDraft.value) return
+  if (!subscriptionCardDraft.value.limits) subscriptionCardDraft.value.limits = {}
+  subscriptionCardDraft.value.limits[name] = 0
+}
+
+async function saveSubscriptionCardEditor() {
+  if (!subscriptionCardDraft.value) return
+  subscriptionCardError.value = ''
+  const activeKey = subscriptionCardEditorKey.value
+  const updatedList = subscriptions.value.map((item) => (
+    getSubscriptionActionKey(item) === activeKey
+      ? JSON.parse(JSON.stringify(subscriptionCardDraft.value))
+      : JSON.parse(JSON.stringify(item))
+  ))
+  const normalized = normalizeSubscriptionsForSave(updatedList)
+  if (!normalized.ok) {
+    subscriptionCardError.value = normalized.error
+    return
+  }
+  subscriptionCardSaving.value = true
+  try {
+    await saveSubscriptions(normalized.list)
+    closeSubscriptionCardEditor()
+    subEditSuccess.value = 'Подписка сохранена'
+    setTimeout(() => { subEditSuccess.value = '' }, 2500)
+  } finally {
+    subscriptionCardSaving.value = false
+  }
+}
+
+watch(() => props.focusTarget?.requestId, async () => {
+  const target = props.focusTarget
+  if (!target?.key) return
+  section.value = target.kind === 'service'
+    ? 'services'
+    : target.kind === 'package'
+      ? 'packages'
+      : 'subscriptions'
+  await nextTick()
+  if (target.kind === 'service') {
+    const service = findServiceByActionKey(target.key)
+    if (service) openServiceCardEditor(service)
+    return
+  }
+  if (target.kind === 'package') {
+    const pkg = findPackageByActionKey(target.key)
+    if (pkg) openPackageCardEditor(pkg)
+    return
+  }
+  const subscription = findSubscriptionByActionKey(target.key)
+  if (subscription) openSubscriptionCardEditor(subscription)
+})
+
 // ── Subscriptions editing ──
 
 const editingSubscriptions = ref(false)
@@ -1613,6 +2088,31 @@ function getServiceTitle(key: string): string {
   return tmpl?.title || key
 }
 
+function getServiceDisplayTitle(service: DesignerServicePrice, index = 0): string {
+  const title = String(service.title || '').trim()
+  if (title) return title
+  const template = getServiceTemplate(service.serviceKey)
+  if (template?.title) return template.title
+  return `Услуга ${index + 1}`
+}
+
+function getServiceDisplayDescription(service: DesignerServicePrice): string {
+  const description = String(service.description || '').trim()
+  if (description) return description
+  const template = getServiceTemplate(service.serviceKey)
+  return template?.description || ''
+}
+
+function getServiceCategoryValue(service: DesignerServicePrice): DesignerServiceCategory {
+  if (service.category) return service.category
+  const template = getServiceTemplate(service.serviceKey)
+  return (template?.category || 'additional') as DesignerServiceCategory
+}
+
+function getServiceCategoryLabel(service: DesignerServicePrice): string {
+  return DESIGNER_SERVICE_CATEGORY_LABELS[getServiceCategoryValue(service)] || 'услуга'
+}
+
 function getPackageTitle(key: string): string {
   const pkg = packages.value.find(p => p.key === key)
   if (pkg) return pkg.title
@@ -1710,6 +2210,40 @@ function getPackageBudgetLabel(pkg: DesignerPackage): string {
   if (price >= 2500) return 'Средний+ сегмент для подробной проработки'
   if (price >= 1200) return 'Рациональный пакет для жилых интерьеров'
   return 'Лёгкий входной пакет для первых этапов'
+}
+
+function getPackageGroupLabel(pkg: DesignerPackage): string {
+  const count = (pkg.serviceKeys || []).length
+  if (pkg.enabled === false) return 'Черновики пакетов'
+  if (count >= 6) return 'Полные пакеты'
+  if (count >= 4) return 'Сбалансированные пакеты'
+  if (count >= 2) return 'Компактные пакеты'
+  return 'Точечные пакеты'
+}
+
+function getPackageListDescription(pkg: DesignerPackage): string {
+  const parts = [getPackageCoverageLabel(pkg), getPackageCategoryLabel(pkg)]
+  const visibleServices = getPackageVisibleServiceKeys(pkg).map((key) => getServiceTitle(key)).filter(Boolean)
+  if (visibleServices.length) parts.push(`Состав: ${visibleServices.join(', ')}`)
+  return parts.filter(Boolean).join('. ')
+}
+
+function getSubscriptionGroupLabel(sub: DesignerSubscription): string {
+  if (sub.enabled === false) return 'Черновики подписок'
+  return `Подписки ${getBillingLabel(sub.billingPeriod).toLowerCase()}`
+}
+
+function getSubscriptionListDescription(sub: DesignerSubscription): string {
+  const parts: string[] = []
+  if (sub.description) parts.push(sub.description)
+  if (sub.serviceKeys?.length) {
+    parts.push(`Сервисы: ${sub.serviceKeys.slice(0, 4).map((key) => getServiceTitle(key)).join(', ')}`)
+  }
+  const limitKeys = Object.keys(sub.limits || {})
+  if (limitKeys.length) {
+    parts.push(limitKeys.slice(0, 3).map((key) => `${formatLimitKey(key)}: ${sub.limits?.[key]}`).join(' · '))
+  }
+  return parts.join('. ')
 }
 
 // ── Available packages for project creation ──
@@ -1819,7 +2353,7 @@ watch(section, (key) => {
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const d = designer.value
   if (!d) return null
-  const svcs = (services.value || []).filter((s: any) => s.enabled !== false)
+  const svcs = services.value || []
   const pkgs = packages.value || []
   const projs = designerProjects.value || []
   const subs = subscriptions.value || []
@@ -1828,6 +2362,83 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const contractors = uniqueContractors.value || []
   const sellers = linkedData.value?.sellers || []
   const managers = linkedData.value?.managers || []
+  const serviceCategorySections = SERVICE_CATEGORY_OPTIONS
+    .map((option) => {
+      const items = svcs
+        .map((service, index) => ({ service, index }))
+        .filter(({ service }) => getServiceCategoryValue(service) === option.value)
+
+      if (!items.length) return null
+
+      return {
+        title: option.label,
+        subtitle: `${items.length} в категории`,
+        fields: items.map(({ service, index }) => ({
+          label: getServiceDisplayTitle(service, index),
+          value: formatServicePrice(service.price, service.unit),
+          description: getServiceDisplayDescription(service),
+          badge: service.enabled === false ? 'скрыта' : 'активна',
+          caption: getPriceUnitLabel(service.unit),
+          eyebrow: getServiceCategoryLabel(service),
+          tone: service.enabled === false ? 'muted' as const : 'accent' as const,
+          itemType: 'service' as const,
+          itemKey: getServiceActionKey(service, index),
+        })),
+      }
+    })
+    .filter(Boolean) as Array<{ title: string; subtitle?: string; fields: any[] }>
+
+  const packageSections = Array.from(new Set(pkgs.map((pkg) => getPackageGroupLabel(pkg))))
+    .map((groupTitle) => {
+      const items = pkgs
+        .map((pkg, index) => ({ pkg, index }))
+        .filter(({ pkg }) => getPackageGroupLabel(pkg) === groupTitle)
+
+      if (!items.length) return null
+
+      return {
+        title: groupTitle,
+        subtitle: `${items.length} в разделе`,
+        fields: items.map(({ pkg, index }) => ({
+          label: pkg.title || `Пакет ${index + 1}`,
+          value: `${formatRubles(pkg.pricePerSqm ?? 0)} ₽/м²`,
+          description: getPackageListDescription(pkg),
+          badge: pkg.enabled === false ? 'черновик' : 'готов',
+          caption: `${getServiceCountLabel((pkg.serviceKeys || []).length)} · 80 м²: ${getPackageExamplePrice(pkg, 80)}`,
+          eyebrow: getPackageBudgetLabel(pkg),
+          tone: pkg.enabled === false ? 'muted' as const : 'success' as const,
+          itemType: 'package' as const,
+          itemKey: getPackageActionKey(pkg, index),
+          relatedItemKeys: pkg.serviceKeys || [],
+        })),
+      }
+    })
+    .filter(Boolean) as Array<{ title: string; subtitle?: string; fields: any[] }>
+
+  const subscriptionSections = Array.from(new Set(subs.map((sub) => getSubscriptionGroupLabel(sub))))
+    .map((groupTitle) => {
+      const items = subs.filter((sub) => getSubscriptionGroupLabel(sub) === groupTitle)
+      if (!items.length) return null
+
+      return {
+        title: groupTitle,
+        subtitle: `${items.length} в разделе`,
+        fields: items.map((sub, index) => ({
+          label: sub.title || `Подписка ${index + 1}`,
+          value: sub.price != null ? `${formatRubles(sub.price)} ₽` : '—',
+          description: getSubscriptionListDescription(sub),
+          badge: sub.enabled === false ? 'скрыта' : 'активна',
+          caption: `${getBillingLabel(sub.billingPeriod)} · ${getMonthlyPrice(sub).toLocaleString('ru-RU')} ₽/мес`,
+          eyebrow: sub.discount ? `скидка ${sub.discount}%` : 'подписка',
+          tone: sub.enabled === false ? 'muted' as const : sub.discount ? 'success' as const : 'accent' as const,
+          itemType: 'subscription' as const,
+          itemKey: getSubscriptionActionKey(sub, index),
+          relatedItemKeys: sub.serviceKeys || [],
+        })),
+      }
+    })
+    .filter(Boolean) as Array<{ title: string; subtitle?: string; fields: any[] }>
+
   const allSections = [
       { title: 'Обзор', fields: [
         { label: 'Активных проектов', value: String(dashStats.value?.active ?? 0) },
@@ -1849,30 +2460,12 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         { label: 'Специализация', value: form.specializations.join(', '), span: 2 as const },
         { label: 'О себе', value: form.about, type: 'multiline' as const, span: 2 as const },
       ]},
-      { title: 'Услуги и прайс', fields: svcs.length
-        ? svcs.slice(0, 10).map((s: any) => ({
-            label: s.title ?? 'Услуга',
-            value: formatServicePrice(s.price, s.unit),
-            description: s.description ?? '',
-            badge: s.enabled === false ? 'скрыта' : 'активна',
-            caption: getPriceUnitLabel(s.unit),
-            eyebrow: DESIGNER_SERVICE_CATEGORY_LABELS[s.category as DesignerServiceCategory] || 'услуга',
-            tone: s.enabled === false ? 'muted' as const : 'accent' as const,
-          }))
-        : [{ label: 'Услуги', value: 'не настроены', span: 2 as const }],
-      },
-      { title: 'Пакеты', fields: pkgs.length
-        ? pkgs.slice(0, 8).map((p: any) => ({
-            label: p.title ?? 'Пакет',
-            value: `${formatRubles(p.pricePerSqm ?? 0)} ₽/м²`,
-            description: p.description ?? '',
-            badge: p.enabled === false ? 'черновик' : 'готов',
-            caption: getServiceCountLabel((p.serviceKeys || []).length),
-            eyebrow: 'пакет услуг',
-            tone: p.enabled === false ? 'muted' as const : 'success' as const,
-          }))
-        : [{ label: 'Пакеты', value: 'не настроены', span: 2 as const }],
-      },
+      ...(serviceCategorySections.length
+        ? serviceCategorySections
+        : [{ title: 'Услуги и прайс', fields: [{ label: 'Услуги', value: 'не настроены', span: 2 as const }] }]),
+      ...(packageSections.length
+        ? packageSections
+        : [{ title: 'Пакеты', fields: [{ label: 'Пакеты', value: 'не настроены', span: 2 as const }] }]),
       { title: 'Проекты', fields: projs.length
         ? (projs.slice(0, 5).flatMap((p: any) => ([
             {
@@ -1908,18 +2501,9 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
           ] as any[]))).slice(0, 18)
         : [{ label: '', value: 'нет проектов', span: 2 as const }],
       },
-      { title: 'Подписки', fields: subs.length
-        ? subs.slice(0, 8).map((s: any) => ({
-            label: s.title ?? 'Подписка',
-            value: s.price != null ? `${formatRubles(s.price)} ₽` : '',
-            description: s.description ?? '',
-            badge: s.enabled === false ? 'скрыта' : 'активна',
-            caption: getBillingLabel(s.billingPeriod),
-            eyebrow: 'подписка',
-            tone: s.discount ? 'success' as const : 'accent' as const,
-          }))
-        : [{ label: 'Подписки', value: 'не настроены', span: 2 as const }],
-      },
+      ...(subscriptionSections.length
+        ? subscriptionSections
+        : [{ title: 'Подписки', fields: [{ label: 'Подписки', value: 'не настроены', span: 2 as const }] }]),
       { title: 'Документы', fields: docs.length
         ? docs.slice(0, 8).map((doc: any) => ({
             label: doc.title ?? doc.name ?? 'Документ',
@@ -1964,12 +2548,23 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
       gallery: 'Галерея', moodboards: 'Мудборды', profile: 'Профиль',
     }
     const sectionTitle = W2_SECTION[section.value]
+    const activeServiceSectionTitles = new Set((serviceCategorySections.length ? serviceCategorySections : [{ title: 'Услуги и прайс' }]).map((item) => item.title))
+    const activePackageSectionTitles = new Set((packageSections.length ? packageSections : [{ title: 'Пакеты' }]).map((item) => item.title))
+    const activeSubscriptionSectionTitles = new Set((subscriptionSections.length ? subscriptionSections : [{ title: 'Подписки' }]).map((item) => item.title))
     return {
       entityTitle: d.name,
       entitySubtitle: form.city || d.city || undefined,
       entityStatus: 'дизайнер',
       entityStatusColor: 'blue' as const,
-      sections: sectionTitle ? allSections.filter(s => s.title === sectionTitle) : allSections,
+      sections: section.value === 'services'
+        ? allSections.filter(s => activeServiceSectionTitles.has(s.title))
+        : section.value === 'packages'
+          ? allSections.filter(s => activePackageSectionTitles.has(s.title))
+          : section.value === 'subscriptions'
+            ? allSections.filter(s => activeSubscriptionSectionTitles.has(s.title))
+        : sectionTitle
+          ? allSections.filter(s => s.title === sectionTitle)
+          : allSections,
     }
 })
 registerWipe2Data(wipe2CabinetData)
@@ -2211,6 +2806,7 @@ registerWipe2Data(wipe2CabinetData)
   padding: 16px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  cursor: pointer;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--ds-accent, #646cff) 5%, transparent), transparent 38%),
     color-mix(in srgb, var(--glass-text) 3%, transparent);
@@ -2259,6 +2855,17 @@ registerWipe2Data(wipe2CabinetData)
   background: color-mix(in srgb, var(--glass-text) 4%, transparent);
   color: color-mix(in srgb, var(--glass-text) 78%, transparent);
 }
+.svc-card-stack,
+.pkg-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.svc-card--active,
+.pkg-card--active {
+  border-color: color-mix(in srgb, var(--ds-accent) 36%, var(--glass-border));
+  box-shadow: 0 18px 36px color-mix(in srgb, var(--ds-accent) 14%, transparent);
+}
 .svc-card-body {
   display: flex;
   flex-direction: column;
@@ -2295,6 +2902,81 @@ registerWipe2Data(wipe2CabinetData)
   color: color-mix(in srgb, var(--glass-text) 48%, transparent);
 }
 .svc-price { font-weight: 700; color: var(--ds-success, var(--ds-success)); text-align: right; white-space: nowrap; }
+.svc-card-editor,
+.pkg-card-editor {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent) 18%, var(--glass-border));
+  background: color-mix(in srgb, var(--glass-bg) 94%, white 6%);
+}
+.svc-card-editor--brutalist,
+.pkg-card-editor--brutalist {
+  border-radius: 0;
+  box-shadow: none;
+}
+.svc-card-editor__head,
+.pkg-card-editor__services-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.svc-card-editor__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.svc-card-editor__eyebrow {
+  font-size: .66rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  opacity: .52;
+}
+.svc-card-editor__title {
+  display: block;
+  margin-top: 4px;
+  font-size: .95rem;
+}
+.svc-card-editor__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.svc-enable--editor {
+  margin-top: 12px;
+}
+.pkg-card-editor__services {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+.pkg-card-editor__service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pkg-card-editor__service-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
+.pkg-card-editor__service-row div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pkg-card-editor__service-row span {
+  font-size: .75rem;
+  opacity: .62;
+}
 
 .svc-edit-row  { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--glass-border); }
 .svc-edit-name  { flex: 2; }
@@ -2330,6 +3012,7 @@ registerWipe2Data(wipe2CabinetData)
   min-height: 100%;
   padding: 22px 20px; border-radius: 14px;
   border: 1px solid var(--glass-border); transition: all .15s;
+  cursor: pointer;
   background:
     radial-gradient(circle at top right, color-mix(in srgb, var(--ds-accent, #646cff) 14%, transparent), transparent 34%),
     color-mix(in srgb, var(--glass-text) 2%, transparent);
@@ -2346,6 +3029,11 @@ registerWipe2Data(wipe2CabinetData)
 }
 .pkg-card:hover  { border-color: color-mix(in srgb, var(--ds-accent) 30%, var(--glass-border)); }
 .pkg-card.disabled { opacity: .4; }
+.svc-card:focus-visible,
+.pkg-card:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ds-accent) 44%, transparent);
+  outline-offset: 2px;
+}
 .pkg-card-head  { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
 .pkg-card-title { margin: 0 0 6px; font-size: 1.08rem; font-weight: 700; line-height: 1.1; }
 .pkg-card-subtitle {
@@ -2472,9 +3160,14 @@ registerWipe2Data(wipe2CabinetData)
 
 /* ── Subscriptions ── */
 .sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.sub-card-stack { display: flex; flex-direction: column; gap: 12px; }
 .sub-card { padding: 22px 20px; border-radius: 14px; border: 1px solid var(--glass-border); transition: all .15s; }
 .sub-card:hover   { border-color: color-mix(in srgb, var(--ds-accent) 30%, var(--glass-border)); }
 .sub-card.disabled { opacity: .4; }
+.sub-card--active {
+  border-color: color-mix(in srgb, var(--ds-accent) 44%, var(--glass-border));
+  background: color-mix(in srgb, var(--ds-accent) 5%, transparent);
+}
 .sub-card-head  { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
 .sub-card-title { font-size: 1.05rem; font-weight: 600; }
 .sub-period-badge { font-size: .72rem; padding: 3px 10px; border-radius: 6px; background: color-mix(in srgb, var(--ds-accent) 12%, transparent); color: var(--ds-accent-light, #a0a8ff); white-space: nowrap; }
@@ -2504,6 +3197,45 @@ registerWipe2Data(wipe2CabinetData)
 .sub-limits-grid { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .sub-limit-row { display: flex; align-items: center; gap: 8px; }
 .sub-limit-row .svc-inp { max-width: 160px; }
+.sub-card-editor {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--ds-accent) 26%, var(--glass-border));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sub-card-editor--brutalist {
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+.sub-card-editor__head,
+.sub-card-editor__limits-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sub-card-editor__eyebrow {
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 52%, transparent);
+}
+.sub-card-editor__title {
+  display: block;
+  margin-top: 4px;
+  font-size: 1rem;
+}
+.sub-card-editor__actions {
+  display: flex;
+  gap: 8px;
+}
+.sub-card-editor__limits {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 /* ── Inline price editing ── */
 .svc-price-inline { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; position: relative; }
@@ -2594,10 +3326,17 @@ registerWipe2Data(wipe2CabinetData)
 @media (max-width: 640px) {
   .svc-cat-head,
   .pkg-card-head,
+  .svc-card-editor__grid { grid-template-columns: 1fr; }
   .svc-card-topline,
   .pkg-card-topline {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .svc-card-editor__head,
+  .pkg-card-editor__services-head {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .svc-cat-stats {

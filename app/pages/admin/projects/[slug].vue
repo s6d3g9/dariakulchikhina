@@ -639,6 +639,25 @@ const _wipe2ExtraServicesData = ref<any[]>([])
 const _wipe2WorkStatusData = ref<any[]>([])
 // Глобальный стейт — резервный источник (заполняется компонентами через registerWipe2Data)
 const _globalWipe2State = useWipe2State()
+
+function _w2FormatMoney(value: unknown) {
+  const amount = typeof value === 'number' ? value : parseFloat(String(value ?? ''))
+  if (!Number.isFinite(amount) || amount <= 0) return '—'
+  return `${amount.toLocaleString('ru-RU')} ₽`
+}
+
+function _w2StatusTone(status: unknown): 'default' | 'accent' | 'success' | 'muted' {
+  const normalized = String(status ?? '').toLowerCase()
+  if (!normalized) return 'muted'
+  if (['approved', 'done', 'paid', 'received', 'signed', 'issued', 'active'].includes(normalized)) return 'success'
+  if (['in_work', 'sent', 'ordered', 'shipped', 'revision', 'paused'].includes(normalized)) return 'accent'
+  return 'default'
+}
+
+function _w2BoolDescription(value: unknown, positive: string, negative: string) {
+  return value ? positive : negative
+}
+
 const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
   const p = project.value
   if (!p) return null
@@ -655,20 +674,20 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
         {
           title: 'Общая информация',
           fields: [
-            { label: 'Версия комплекта', value: pf.sp_version ?? '' },
-            { label: 'Статус', value: status, type: 'status' as const },
-            { label: 'Отправлено клиенту', value: pf.sp_sent_date ?? '', type: 'date' as const },
-            { label: 'Согласовано', value: pf.sp_approved_date ?? '', type: 'date' as const },
-            { label: 'Комментарий архитектора', value: pf.sp_architect_notes ?? '', type: 'multiline' as const },
-            { label: 'Замечания клиента', value: pf.sp_client_notes ?? '', type: 'multiline' as const },
+            { label: 'Версия комплекта', value: pf.sp_version ?? '', description: 'Текущая версия планировочного пакета.', eyebrow: 'версия', tone: pf.sp_version ? 'accent' as const : 'muted' as const },
+            { label: 'Статус', value: status, type: 'status' as const, description: 'Этап согласования планировочных решений.', eyebrow: 'процесс', tone: _w2StatusTone(status) },
+            { label: 'Отправлено клиенту', value: pf.sp_sent_date ?? '', type: 'date' as const, description: pf.sp_sent_date ? 'Дата последней отправки комплекта.' : 'Пакет еще не отправлялся.', eyebrow: 'коммуникация', tone: pf.sp_sent_date ? 'success' as const : 'muted' as const },
+            { label: 'Согласовано', value: pf.sp_approved_date ?? '', type: 'date' as const, description: pf.sp_approved_date ? 'Клиент подтвердил текущую версию.' : 'Ожидается согласование.', eyebrow: 'решение клиента', tone: pf.sp_approved_date ? 'success' as const : 'muted' as const },
+            { label: 'Комментарий архитектора', value: pf.sp_architect_notes ?? '', type: 'multiline' as const, description: 'Внутренние пояснения по логике планировки.', eyebrow: 'архитектор', tone: pf.sp_architect_notes ? 'default' as const : 'muted' as const },
+            { label: 'Замечания клиента', value: pf.sp_client_notes ?? '', type: 'multiline' as const, description: 'Фидбек по сценарию жизни и составу помещений.', eyebrow: 'обратная связь', tone: pf.sp_client_notes ? 'accent' as const : 'muted' as const },
           ],
         },
         {
           title: 'Согласование',
           fields: [
-            { label: 'Размеры проверены', value: !!pf.sp_dimensions_checked, type: 'boolean' as const },
-            { label: 'Зонирование согласовано', value: !!pf.sp_zones_approved, type: 'boolean' as const },
-            { label: 'Геометрия заморожена', value: !!pf.sp_geometry_locked, type: 'boolean' as const },
+            { label: 'Размеры проверены', value: !!pf.sp_dimensions_checked, type: 'boolean' as const, description: _w2BoolDescription(pf.sp_dimensions_checked, 'Ключевые размеры проверены на объекте.', 'Проверка размеров еще не завершена.'), eyebrow: 'контроль', tone: pf.sp_dimensions_checked ? 'success' as const : 'muted' as const },
+            { label: 'Зонирование согласовано', value: !!pf.sp_zones_approved, type: 'boolean' as const, description: _w2BoolDescription(pf.sp_zones_approved, 'Клиент утвердил функциональные зоны.', 'Зонирование пока в обсуждении.'), eyebrow: 'сценарий', tone: pf.sp_zones_approved ? 'success' as const : 'accent' as const },
+            { label: 'Геометрия заморожена', value: !!pf.sp_geometry_locked, type: 'boolean' as const, description: _w2BoolDescription(pf.sp_geometry_locked, 'Планировку можно брать в дальнейшую разработку.', 'Геометрия еще может меняться.'), eyebrow: 'фиксация', tone: pf.sp_geometry_locked ? 'success' as const : 'muted' as const },
           ],
         },
         ...(files.length ? [{
@@ -677,6 +696,11 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
             label: f.label || f.filename || 'файл',
             value: f.approval ? (_W2_SP_LABELS[f.approval] ?? f.approval) : 'на рассмотрении',
             type: 'status' as const,
+            description: f.filename || 'Файл приложен к текущей версии планировки.',
+            caption: f.updatedAt || f.createdAt || '',
+            eyebrow: 'файл комплекта',
+            badge: f.ext || 'plan',
+            tone: _w2StatusTone(f.approval),
           })),
         }] : []),
       ],
@@ -1205,11 +1229,11 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
         {
           title: 'Проект',
           fields: [
-            { label: 'Название', value: p.title, span: 2 as const },
-            { label: 'Тип объекта', value: presetLabel(p.projectType ?? '') },
-            { label: 'Статус', value: statusLabels[p.status] ?? p.status, type: 'status' as const },
-            { label: 'Slug', value: p.slug },
-            { label: 'Разделов', value: String((p.pages ?? []).length) },
+            { label: 'Название', value: p.title, description: 'Рабочее имя проекта в админке и кабинетах.', eyebrow: 'identity', badge: p.slug, tone: 'accent' as const, span: 2 as const },
+            { label: 'Тип объекта', value: presetLabel(p.projectType ?? ''), description: 'Определяет шаблоны страниц и brief-секции.', eyebrow: 'preset', tone: 'default' as const },
+            { label: 'Статус', value: statusLabels[p.status] ?? p.status, type: 'status' as const, description: 'Текущий жизненный цикл проекта.', eyebrow: 'pipeline', tone: _w2StatusTone(p.status) },
+            { label: 'Slug', value: p.slug, description: 'Используется в ссылках и маршрутах кабинета.', eyebrow: 'route', tone: 'muted' as const },
+            { label: 'Разделов', value: String((p.pages ?? []).length), type: 'number' as const, description: 'Сколько страниц подключено в проекте.', eyebrow: 'structure', tone: 'success' as const },
           ],
         },
         {
@@ -1220,6 +1244,10 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
               value: linkedClients.value.length
                 ? linkedClients.value.map((c: any) => c.name).join(', ')
                 : 'не привязан',
+              description: linkedClients.value.length ? `Привязано клиентов: ${linkedClients.value.length}.` : 'Для клиентского кабинета нужен хотя бы один клиент.',
+              eyebrow: 'client side',
+              badge: linkedClients.value.length ? String(linkedClients.value.length) : '0',
+              tone: linkedClients.value.length ? 'success' as const : 'muted' as const,
               span: 2 as const,
             },
             {
@@ -1227,6 +1255,10 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
               value: linkedContractorsList.value.length
                 ? linkedContractorsList.value.map((c: any) => c.name).join(', ')
                 : 'не привязаны',
+              description: linkedContractorsList.value.length ? `В работе ${linkedContractorsList.value.length} подрядчиков.` : 'Подрядчики пока не назначены.',
+              eyebrow: 'delivery',
+              badge: linkedContractorsList.value.length ? String(linkedContractorsList.value.length) : '0',
+              tone: linkedContractorsList.value.length ? 'accent' as const : 'muted' as const,
               span: 2 as const,
             },
             {
@@ -1234,6 +1266,10 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
               value: linkedDesignersList.value.length
                 ? linkedDesignersList.value.map((d: any) => d.name).join(', ')
                 : 'не привязаны',
+              description: linkedDesignersList.value.length ? `Ответственных дизайнеров: ${linkedDesignersList.value.length}.` : 'Команда дизайна еще не указана.',
+              eyebrow: 'creative team',
+              badge: linkedDesignersList.value.length ? String(linkedDesignersList.value.length) : '0',
+              tone: linkedDesignersList.value.length ? 'success' as const : 'muted' as const,
               span: 2 as const,
             },
           ],
@@ -1261,20 +1297,20 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
         {
           title: 'Итоги',
           fields: [
-            { label: 'Позиций', value: String(items.length), type: 'number' as const },
-            { label: 'Ожидание', value: String(pending), type: 'number' as const },
-            { label: 'Заказано', value: String(ordered), type: 'number' as const },
-            { label: 'Получено', value: String(received), type: 'number' as const },
-            { label: 'Сумма', value: total > 0 ? `${total.toLocaleString('ru')} ₽` : '—', span: 2 as const },
+            { label: 'Позиций', value: String(items.length), type: 'number' as const, description: 'Всего строк в закупочном листе.', eyebrow: 'масштаб', tone: items.length ? 'success' as const : 'muted' as const },
+            { label: 'Ожидание', value: String(pending), type: 'number' as const, description: 'Позиции без размещенного заказа.', eyebrow: 'backlog', tone: pending ? 'accent' as const : 'muted' as const },
+            { label: 'Заказано', value: String(ordered), type: 'number' as const, description: 'Уже отправлено поставщикам.', eyebrow: 'execution', tone: ordered ? 'success' as const : 'muted' as const },
+            { label: 'Получено', value: String(received), type: 'number' as const, description: 'Фактически закрытые поставки.', eyebrow: 'receipt', tone: received ? 'success' as const : 'muted' as const },
+            { label: 'Сумма', value: _w2FormatMoney(total), description: 'Оценка бюджета по всем позициям списка.', eyebrow: 'budget', tone: total > 0 ? 'accent' as const : 'muted' as const, span: 2 as const },
           ],
         },
         ...(items.slice(0, 12).map((item: any) => ({
           title: item.name || 'позиция',
           fields: [
-            { label: 'Статус', value: item.status ?? '', type: 'status' as const },
-            { label: 'Кол-во', value: item.quantity ? `${item.quantity} ${item.unit ?? ''}`.trim() : '—' },
-            { label: 'Цена', value: item.unitPrice ? `${item.unitPrice} ₽` : '—' },
-            { label: 'Заметки', value: item.notes ?? '', type: 'multiline' as const },
+            { label: 'Статус', value: item.status ?? '', type: 'status' as const, description: item.vendor ? `Поставщик: ${item.vendor}.` : 'Поставщик еще не указан.', eyebrow: 'logistics', badge: item.vendor || 'vendor', tone: _w2StatusTone(item.status) },
+            { label: 'Кол-во', value: item.quantity ? `${item.quantity} ${item.unit ?? ''}`.trim() : '—', description: 'Планируемый объем закупки.', eyebrow: 'quantity', tone: item.quantity ? 'default' as const : 'muted' as const },
+            { label: 'Цена', value: _w2FormatMoney(item.unitPrice), description: item.quantity && item.unitPrice ? `Сумма строки: ${_w2FormatMoney((parseFloat(item.quantity) || 1) * (parseFloat(item.unitPrice) || 0))}.` : 'Цена еще не заполнена.', eyebrow: 'unit price', tone: item.unitPrice ? 'accent' as const : 'muted' as const },
+            { label: 'Заметки', value: item.notes ?? '', type: 'multiline' as const, description: 'Комментарий по артикулу, замене или срокам.', eyebrow: 'details', tone: item.notes ? 'default' as const : 'muted' as const },
           ],
         }))),
       ],
@@ -1299,19 +1335,19 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
         {
           title: 'Итоги',
           fields: [
-            { label: 'Услуг', value: String(svcs.length), type: 'number' as const },
-            { label: 'Оплачено', value: String(paid), type: 'number' as const },
-            { label: 'Согласовано', value: String(approved), type: 'number' as const },
-            { label: 'Сумма', value: totalCost > 0 ? `${totalCost.toLocaleString('ru')} ₽` : '—' },
+            { label: 'Услуг', value: String(svcs.length), type: 'number' as const, description: 'Всего дополнительных позиций сверх основного договора.', eyebrow: 'объем', tone: svcs.length ? 'success' as const : 'muted' as const },
+            { label: 'Оплачено', value: String(paid), type: 'number' as const, description: 'Позиции с подтвержденной оплатой.', eyebrow: 'cashflow', tone: paid ? 'success' as const : 'muted' as const },
+            { label: 'Согласовано', value: String(approved), type: 'number' as const, description: 'Услуги, которые клиент уже одобрил.', eyebrow: 'approval', tone: approved ? 'accent' as const : 'muted' as const },
+            { label: 'Сумма', value: _w2FormatMoney(totalCost), description: 'Сумма всех дополнительных услуг.', eyebrow: 'budget', tone: totalCost > 0 ? 'accent' as const : 'muted' as const },
           ],
         },
         ...(svcs.slice(0, 10).map((svc: any) => ({
           title: svc.title || svc.serviceKey || 'услуга',
           fields: [
-            { label: 'Статус', value: svc.status ?? '', type: 'status' as const },
-            { label: 'Кол-во', value: svc.quantity ? `${svc.quantity} ${svc.unit ?? ''}`.trim() : '—' },
-            { label: 'Цена', value: svc.unitPrice ? `${svc.unitPrice} ₽` : '—' },
-            { label: 'Описание', value: svc.description ?? '', type: 'multiline' as const },
+            { label: 'Статус', value: svc.status ?? '', type: 'status' as const, description: svc.serviceKey ? `Ключ услуги: ${svc.serviceKey}.` : 'Дополнительная услуга проекта.', eyebrow: 'workflow', badge: svc.serviceKey || 'extra', tone: _w2StatusTone(svc.status) },
+            { label: 'Кол-во', value: svc.quantity ? `${svc.quantity} ${svc.unit ?? ''}`.trim() : '—', description: 'Объем согласованной услуги.', eyebrow: 'scope', tone: svc.quantity ? 'default' as const : 'muted' as const },
+            { label: 'Цена', value: _w2FormatMoney(svc.unitPrice), description: svc.quantity && svc.unitPrice ? `Итог по позиции: ${_w2FormatMoney((parseFloat(svc.quantity) || 1) * (parseFloat(svc.unitPrice) || 0))}.` : 'Стоимость еще не зафиксирована.', eyebrow: 'стоимость', tone: svc.unitPrice ? 'accent' as const : 'muted' as const },
+            { label: 'Описание', value: svc.description ?? '', type: 'multiline' as const, description: 'Что именно входит в дополнительную услугу.', eyebrow: 'value', tone: svc.description ? 'default' as const : 'muted' as const },
           ],
         }))),
       ],

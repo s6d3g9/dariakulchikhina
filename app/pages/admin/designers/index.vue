@@ -17,6 +17,7 @@
           v-show="!isWipe2Mode"
           :key="selectedDesignerId"
           :designer-id="selectedDesignerId"
+          :focus-target="pendingEditorTarget"
           v-model="activeSection"
         />
         <Wipe2Renderer
@@ -24,6 +25,7 @@
           :entity="wipe2State"
           layout="inline"
           @edit="designSystem.set('contentViewMode', 'scroll')"
+          @open-item="handleWipe2OpenItem"
         />
       </AdminEntityCabinetShell>
       </div>
@@ -93,6 +95,7 @@ const isBrutalistDesignersMode = computed(() => designSystem.currentDesignMode.v
 const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
 const isWipe2Mode = computed(() => contentViewMode.value === 'wipe2')
 const wipe2State = useWipe2State()
+const pendingEditorTarget = ref<{ kind: 'service' | 'package' | 'subscription'; key: string; requestId: number } | null>(null)
 
 const showBrutalistDesignerHero = computed(() => isBrutalistDesignersMode.value && !!selectedDesigner.value)
 const designerSectionLabel = computed(() => {
@@ -107,6 +110,21 @@ const designerHeroFacts = computed(() => [
 
 // ── Pending list state ──
 const isPending = computed(() => pending.value && !allDesigners.value?.length)
+
+function handleWipe2OpenItem(payload: { itemType: 'service' | 'package' | 'subscription' | 'project' | 'document' | 'custom'; itemKey: string }) {
+  if (payload.itemType !== 'service' && payload.itemType !== 'package' && payload.itemType !== 'subscription') return
+  pendingEditorTarget.value = {
+    kind: payload.itemType,
+    key: payload.itemKey,
+    requestId: Date.now(),
+  }
+  activeSection.value = payload.itemType === 'service'
+    ? 'services'
+    : payload.itemType === 'package'
+      ? 'packages'
+      : 'subscriptions'
+  designSystem.set('contentViewMode', 'scroll')
+}
 
 // ── Create ──
 async function doCreate() {

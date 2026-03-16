@@ -32,6 +32,12 @@ export interface Wipe2Field {
   eyebrow?: string
   /** Visual tone for value emphasis */
   tone?: 'default' | 'accent' | 'success' | 'muted'
+  /** Optional semantic type used to reopen native editor from wipe2 */
+  itemType?: 'service' | 'package' | 'subscription' | 'project' | 'document' | 'custom'
+  /** Stable item key for native editor */
+  itemKey?: string
+  /** Related entities, for example services inside a package */
+  relatedItemKeys?: string[]
 }
 
 /** A named group of fields (appears as a section header inside a card) */

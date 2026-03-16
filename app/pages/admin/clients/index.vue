@@ -211,9 +211,199 @@ const designSystem = useDesignSystem()
 const isBrutalistClientsMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
 
+function getClientDocCategoryLabel(category?: string | null) {
+  return DOC_CATEGORIES.find((item) => item.value === category)?.label || category || 'Документ'
+}
+
+function getClientProjectStatus(project: any) {
+  if (!project) return 'не привязан'
+  const statusMap: Record<string, string> = {
+    lead: 'лид',
+    active: 'активен',
+    paused: 'на паузе',
+    done: 'завершен',
+    archived: 'архив',
+  }
+  return statusMap[project.status] || project.status || 'в работе'
+}
+
+function getClientProjectTone(project: any): 'default' | 'accent' | 'success' | 'muted' {
+  if (!project) return 'muted'
+  if (project.status === 'active' || project.status === 'done') return 'success'
+  if (project.status === 'paused') return 'accent'
+  return 'default'
+}
+
+const clientProfileStats = computed(() => {
+  const c = selectedClient.value
+  if (!c) return { filled: 0, total: 5 }
+  const checks = [c.phone, c.email, c.messengerNick, c.address, c.notes]
+  return {
+    filled: checks.filter(Boolean).length,
+    total: checks.length,
+  }
+})
+
 const wipe2ClientEntityData = computed<Wipe2EntityData | null>(() => {
   const c = selectedClient.value
   if (!c) return null
+  const projects = c.linkedProjects || []
+  const primaryProject = projects[0] || null
+  const docs = filteredClientDocs.value || []
+
+  if (currentClientPage.value === 'documents') {
+    return {
+      entityTitle: 'Документы клиента',
+      entitySubtitle: docs.length ? `${docs.length} файлов` : 'архив пока пуст',
+      entityStatus: docs.length ? 'загружены' : 'пусто',
+      entityStatusColor: docs.length ? 'green' : 'muted',
+      sections: [
+        {
+          title: 'Документы',
+          fields: docs.length
+            ? docs.slice(0, 18).map((doc: any) => ({
+                label: doc.title || 'Документ',
+                value: getClientDocCategoryLabel(doc.category),
+                type: 'badge' as const,
+                description: doc.notes || 'Без заметок',
+                caption: doc.createdAt ? formatDocDate(doc.createdAt) : 'без даты',
+                eyebrow: 'документ клиента',
+                badge: doc.url ? 'файл' : 'черновик',
+                tone: doc.url ? 'success' as const : 'muted' as const,
+                span: 2 as const,
+              }))
+            : [{
+                label: 'Архив',
+                value: 'Документов пока нет',
+                description: 'Загрузите паспорт, договор, счета или акты для клиента.',
+                eyebrow: 'пустое состояние',
+                tone: 'muted' as const,
+                span: 2 as const,
+              }],
+        },
+      ],
+    }
+  }
+
+  if (currentClientPage.value === 'projects') {
+    return {
+      entityTitle: 'Проекты клиента',
+      entitySubtitle: projects.length ? `${projects.length} связанных проектов` : 'без привязки',
+      entityStatus: projects.length ? 'привязан' : 'без проекта',
+      entityStatusColor: projects.length ? 'green' : 'muted',
+      sections: [
+        {
+          title: 'Проекты',
+          fields: projects.length
+            ? projects.map((project: any) => ({
+                label: project.title || project.slug,
+                value: getClientProjectStatus(project),
+                type: 'status' as const,
+                description: project.slug || 'slug не задан',
+                caption: project.projectType || 'тип не указан',
+                eyebrow: 'карточка проекта',
+                badge: project.slug || 'project',
+                tone: getClientProjectTone(project),
+                span: 2 as const,
+              }))
+            : [{
+                label: 'Привязка проекта',
+                value: 'Клиент пока не связан с проектом',
+                description: 'Через действие «привязать» можно сразу открыть кабинет проекта и документы.',
+                eyebrow: 'следующий шаг',
+                tone: 'muted' as const,
+                span: 2 as const,
+              }],
+        },
+      ],
+    }
+  }
+
+  if (currentClientPage.value === 'signoff') {
+    return {
+      entityTitle: 'Подписание и согласование',
+      entitySubtitle: primaryProject?.title || 'проект не выбран',
+      entityStatus: primaryProject ? 'готово к согласованию' : 'нужен проект',
+      entityStatusColor: primaryProject ? 'blue' : 'muted',
+      sections: [
+        {
+          title: 'Сценарий работы',
+          fields: [
+            {
+              label: 'Проект',
+              value: primaryProject?.title || 'не привязан',
+              description: primaryProject?.slug || 'сначала привяжите клиента к проекту',
+              eyebrow: 'контекст',
+              tone: primaryProject ? 'success' as const : 'muted' as const,
+            },
+            {
+              label: 'Кабинет клиента',
+              value: primaryProject ? 'можно открыть' : 'недоступен',
+              description: primaryProject ? 'Клиент сможет согласовывать документы через кабинет проекта.' : 'Пока нет связанного проекта.',
+              eyebrow: 'доступ',
+              badge: primaryProject ? 'online' : 'offline',
+              tone: primaryProject ? 'accent' as const : 'muted' as const,
+            },
+          ],
+        },
+      ],
+    }
+  }
+
+  if (currentClientPage.value === 'profile') {
+    return {
+      entityTitle: c.name,
+      entitySubtitle: c.phone || c.email || undefined,
+      entityStatus: `${clientProfileStats.value.filled}/${clientProfileStats.value.total} полей`,
+      entityStatusColor: clientProfileStats.value.filled >= 3 ? 'green' : 'amber',
+      sections: [
+        {
+          title: 'Профиль',
+          fields: [
+            {
+              label: 'Телефон',
+              value: c.phone ?? 'не указан',
+              description: c.phone ? 'Основной быстрый контакт.' : 'Добавьте телефон для быстрой связи.',
+              eyebrow: 'контакт',
+              tone: c.phone ? 'success' as const : 'muted' as const,
+            },
+            {
+              label: 'Email',
+              value: c.email ?? 'не указан',
+              description: c.email ? 'Используется для документов и уведомлений.' : 'Email пока не заполнен.',
+              eyebrow: 'контакт',
+              tone: c.email ? 'success' as const : 'muted' as const,
+            },
+            {
+              label: 'Мессенджер',
+              value: c.messengerNick ? `${c.messenger ?? ''} ${c.messengerNick}`.trim() : 'не указан',
+              description: c.messengerNick ? 'Канал для быстрых согласований.' : 'Можно добавить Telegram или WhatsApp.',
+              eyebrow: 'оперативная связь',
+              tone: c.messengerNick ? 'accent' as const : 'muted' as const,
+            },
+            {
+              label: 'Адрес',
+              value: c.address ?? 'не указан',
+              description: c.address ? 'Основной адрес клиента или объекта.' : 'Адрес еще не сохранен.',
+              eyebrow: 'локация',
+              tone: c.address ? 'default' as const : 'muted' as const,
+              span: 2 as const,
+            },
+            {
+              label: 'Заметки',
+              value: c.notes ?? 'без заметок',
+              type: 'multiline' as const,
+              description: c.notes ? 'Контекст по коммуникации и особенностям клиента.' : 'Внутренних заметок пока нет.',
+              eyebrow: 'комментарий команды',
+              tone: c.notes ? 'accent' as const : 'muted' as const,
+              span: 2 as const,
+            },
+          ],
+        },
+      ],
+    }
+  }
+
   return {
     entityTitle: c.name,
     entitySubtitle: c.phone || c.email || undefined,
@@ -221,23 +411,68 @@ const wipe2ClientEntityData = computed<Wipe2EntityData | null>(() => {
     entityStatusColor: c.linkedProjects?.length ? 'green' : 'muted',
     sections: [
       {
-        title: 'Контакты',
+        title: 'Обзор',
         fields: [
-          { label: 'Телефон', value: c.phone ?? '' },
-          { label: 'Email', value: c.email ?? '' },
-          { label: 'Мессенджер', value: c.messengerNick ? `${c.messenger ?? ''} ${c.messengerNick}`.trim() : '' },
-          { label: 'Адрес', value: c.address ?? '', span: 2 as const },
-          { label: 'Заметки', value: c.notes ?? '', type: 'multiline' as const, span: 2 as const },
+          {
+            label: 'Контакт',
+            value: c.phone || c.email || 'не указан',
+            description: c.phone && c.email ? 'Телефон и email заполнены.' : 'Есть только один канал связи.',
+            eyebrow: 'коммуникация',
+            badge: c.messengerNick ? 'messenger' : 'direct',
+            tone: c.phone || c.email ? 'success' as const : 'muted' as const,
+          },
+          {
+            label: 'Профиль',
+            value: `${clientProfileStats.value.filled}/${clientProfileStats.value.total}`,
+            description: 'Заполненность базовой карточки клиента.',
+            caption: 'контактные поля',
+            eyebrow: 'готовность данных',
+            tone: clientProfileStats.value.filled >= 3 ? 'accent' as const : 'muted' as const,
+          },
+          {
+            label: 'Основной проект',
+            value: primaryProject?.title || 'не привязан',
+            description: primaryProject ? getClientProjectStatus(primaryProject) : 'Нужна привязка к проекту для кабинета и согласований.',
+            caption: primaryProject?.slug || 'project required',
+            eyebrow: 'статус проекта',
+            badge: primaryProject ? 'linked' : 'pending',
+            tone: getClientProjectTone(primaryProject),
+            span: 2 as const,
+          },
+          {
+            label: 'Заметки',
+            value: c.notes ?? 'без заметок',
+            type: 'multiline' as const,
+            description: c.address ? `Адрес: ${c.address}` : 'Адрес не указан.',
+            eyebrow: 'контекст',
+            tone: c.notes ? 'default' as const : 'muted' as const,
+            span: 2 as const,
+          },
         ],
       },
-      ...(c.linkedProjects?.length ? [{
+      {
         title: 'Проекты',
-        fields: c.linkedProjects.map((p: any) => ({
-          label: p.title || p.slug,
-          value: p.slug,
-          span: 2 as const,
-        })),
-      }] : []),
+        fields: projects.length
+          ? projects.slice(0, 8).map((project: any) => ({
+              label: project.title || project.slug,
+              value: getClientProjectStatus(project),
+              type: 'status' as const,
+              description: project.slug || 'slug не задан',
+              caption: project.projectType || 'тип не указан',
+              badge: project.slug || 'project',
+              eyebrow: 'связанный проект',
+              tone: getClientProjectTone(project),
+              span: 2 as const,
+            }))
+          : [{
+              label: 'Проекты',
+              value: 'Связей пока нет',
+              description: 'Привяжите клиента к проекту, чтобы открыть кабинет и документы.',
+              eyebrow: 'пустое состояние',
+              tone: 'muted' as const,
+              span: 2 as const,
+            }],
+      },
     ],
   }
 })
