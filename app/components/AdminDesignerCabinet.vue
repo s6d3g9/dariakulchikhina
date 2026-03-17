@@ -476,6 +476,7 @@
                     </div>
                   </div>
                   <p v-if="packageCardError" class="cab-inline-error">{{ packageCardError }}</p>
+                  <p v-if="packageEditorUsage.total" class="svc-template-switch__warning">{{ formatPackageUsageHint(packageEditorUsage) }}</p>
                   <div class="svc-card-editor__grid">
                     <div class="u-field">
                       <label class="u-field__label">Название пакета</label>
@@ -1655,6 +1656,11 @@ const EMPTY_SERVICE_USAGE = {
   total: 0,
 }
 
+const EMPTY_PACKAGE_USAGE = {
+  projectTitles: [] as string[],
+  total: 0,
+}
+
 const serviceCatalogTargetUsage = computed(() => {
   if (serviceCatalogMode.value !== 'replace' || !serviceCatalogTargetKey.value) return EMPTY_SERVICE_USAGE
   return getServiceUsageInfo(serviceCatalogTargetKey.value)
@@ -1663,6 +1669,11 @@ const serviceCatalogTargetUsage = computed(() => {
 const serviceEditorUsage = computed(() => {
   if (!serviceCardEditorKey.value) return EMPTY_SERVICE_USAGE
   return getServiceUsageInfo(serviceCardEditorKey.value)
+})
+
+const packageEditorUsage = computed(() => {
+  if (!packageCardEditorKey.value) return EMPTY_PACKAGE_USAGE
+  return getPackageUsageInfo(packageCardEditorKey.value)
 })
 
 function normalizePackagesForSave(list: DesignerPackage[]): { ok: true; list: DesignerPackage[] } | { ok: false; error: string } {
@@ -2077,11 +2088,11 @@ async function removeServiceCard(service: DesignerServicePrice) {
       nextPackages.some((pkg, index) => (pkg.serviceKeys || []).length !== (packages.value[index]?.serviceKeys || []).length)
       || nextSubscriptions.some((subscription, index) => (subscription.serviceKeys || []).length !== (subscriptions.value[index]?.serviceKeys || []).length)
 
-    await saveServices(nextServices)
-    await Promise.all([
-      savePackages(nextPackages),
-      saveSubscriptions(nextSubscriptions),
-    ])
+    await savePricingCatalog({
+      services: nextServices,
+      packages: nextPackages,
+      subscriptions: nextSubscriptions,
+    })
     closeServiceCardEditor()
     showTransientMessage(svcEditSuccess, cleanedReferences ? 'Услуга удалена и убрана из пакетов и подписок' : 'Услуга удалена')
   } catch (error: any) {
@@ -2264,9 +2275,20 @@ async function removePackageCard(pkg: DesignerPackage) {
   pkgEditError.value = ''
   packageCardSaving.value = true
   try {
-    await savePackages(packages.value.filter((item) => getPackageActionKey(item) !== getPackageActionKey(pkg)).map((item) => cloneDraft(item)))
+    const removedKey = getPackageActionKey(pkg)
+    const nextPackages = packages.value
+      .filter((item) => getPackageActionKey(item) !== removedKey)
+      .map((item) => cloneDraft(item))
+    const affectedProjectIds = designerProjects.value
+      .filter((project) => project.packageKey === removedKey)
+      .map((project) => project.id)
+
+    await savePricingCatalog({
+      packages: nextPackages,
+      clearProjectPackageKeysForIds: affectedProjectIds,
+    })
     closePackageCardEditor()
-    showTransientMessage(pkgEditSuccess, 'Пакет удалён')
+    showTransientMessage(pkgEditSuccess, affectedProjectIds.length ? 'Пакет удалён и убран из связанных проектов' : 'Пакет удалён')
   } catch (error: any) {
     pkgEditError.value = getRequestErrorMessage(error, 'Не удалось удалить пакет')
   } finally {
@@ -2644,6 +2666,25 @@ function formatServiceUsageHint(usage: { packageTitles: string[]; subscriptionTi
   if (usage.packageTitles.length) parts.push(`пакеты: ${formatUsageNames(usage.packageTitles)}`)
   if (usage.subscriptionTitles.length) parts.push(`подписки: ${formatUsageNames(usage.subscriptionTitles)}`)
   return `Связанные позиции обновятся автоматически: ${parts.join(' · ')}.`
+}
+
+function getPackageUsageInfo(packageKey: string | null | undefined) {
+  if (!packageKey) return EMPTY_PACKAGE_USAGE
+
+  const projectTitles = Array.from(new Set(designerProjects.value
+    .filter((project) => project.packageKey === packageKey)
+    .map((project) => String(project.projectTitle || project.projectSlug || `Проект ${project.id}`).trim())
+    .filter(Boolean)))
+
+  return {
+    projectTitles,
+    total: projectTitles.length,
+  }
+}
+
+function formatPackageUsageHint(usage: { projectTitles: string[]; total: number }) {
+  if (!usage.total) return ''
+  return `Связанные проекты обновятся автоматически: ${formatUsageNames(usage.projectTitles)}.`
 }
 
 function formatLeadTimeDays(days?: number | null): string {

@@ -153,6 +153,7 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     services?: DesignerServicePrice[]
     packages?: DesignerPackage[]
     subscriptions?: DesignerSubscription[]
+    clearProjectPackageKeysForIds?: number[]
   }) {
     if (!did.value) return
     await $fetch(`/api/designers/${did.value}`, {

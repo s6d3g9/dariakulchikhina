@@ -1,6 +1,6 @@
 import { useDb } from '~/server/db/index'
-import { designers } from '~/server/db/schema'
-import { eq } from 'drizzle-orm'
+import { designerProjects, designers } from '~/server/db/schema'
+import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer-catalogs'
 
@@ -18,6 +18,7 @@ const UpdateDesignerSchema = z.object({
   services: z.array(z.any()).optional(),
   packages: z.array(z.any()).optional(),
   subscriptions: z.array(z.any()).optional(),
+  clearProjectPackageKeysForIds: z.array(z.number().int().positive()).optional(),
 })
 
 export default defineEventHandler(async (event) => {
@@ -43,7 +44,25 @@ export default defineEventHandler(async (event) => {
   if (body.packages !== undefined) updates.packages = normalizeDesignerPackages(body.packages)
   if (body.subscriptions !== undefined) updates.subscriptions = normalizeDesignerSubscriptions(body.subscriptions)
 
-  const [updated] = await db.update(designers).set(updates).where(eq(designers.id, id)).returning()
-  if (!updated) throw createError({ statusCode: 404, statusMessage: 'Designer not found' })
+  const clearProjectPackageKeysForIds = Array.from(new Set(body.clearProjectPackageKeysForIds || []))
+
+  const updated = await db.transaction(async (tx) => {
+    const [designer] = await tx.update(designers).set(updates).where(eq(designers.id, id)).returning()
+    if (!designer) {
+      throw createError({ statusCode: 404, statusMessage: 'Designer not found' })
+    }
+
+    if (clearProjectPackageKeysForIds.length) {
+      await tx.update(designerProjects)
+        .set({ packageKey: null })
+        .where(and(
+          eq(designerProjects.designerId, id),
+          inArray(designerProjects.id, clearProjectPackageKeysForIds),
+        ))
+    }
+
+    return designer
+  })
+
   return updated
 })
