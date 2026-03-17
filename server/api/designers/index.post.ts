@@ -1,7 +1,7 @@
 import { useDb } from '~/server/db/index'
 import { designers } from '~/server/db/schema'
 import { z } from 'zod'
-import { normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer-catalogs'
+import { getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer-catalogs'
 
 const CreateDesignerSchema = z.object({
   name: z.string().min(1),
@@ -23,6 +23,8 @@ export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const body = await readValidatedNodeBody(event, CreateDesignerSchema)
   const db = useDb()
+  const normalizedServices = normalizeDesignerServices(body.services)
+  const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizedServices)
 
   const [designer] = await db.insert(designers).values({
     name: body.name,
@@ -35,9 +37,9 @@ export default defineEventHandler(async (event) => {
     experience: body.experience || null,
     about: body.about || null,
     specializations: body.specializations,
-    services: normalizeDesignerServices(body.services),
-    packages: normalizeDesignerPackages(body.packages),
-    subscriptions: normalizeDesignerSubscriptions(body.subscriptions),
+    services: normalizedServices,
+    packages: normalizeDesignerPackages(body.packages, { validServiceKeys }),
+    subscriptions: normalizeDesignerSubscriptions(body.subscriptions, { validServiceKeys }),
   }).returning()
 
   return designer

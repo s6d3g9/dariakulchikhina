@@ -1528,6 +1528,10 @@ function getSubscriptionActionKey(subscription: DesignerSubscription, index = su
   return getSubscriptionPersistedKey(subscription, index)
 }
 
+function getValidServiceSelectionKeys() {
+  return new Set(services.value.map((service, index) => getServicePersistedKey(service, index)))
+}
+
 function findSubscriptionByActionKey(actionKey: string) {
   return subscriptions.value.find((item, index) => getSubscriptionPersistedKey(item, index) === actionKey) || null
 }
@@ -1677,7 +1681,7 @@ const packageEditorUsage = computed(() => {
 })
 
 function normalizePackagesForSave(list: DesignerPackage[]): { ok: true; list: DesignerPackage[] } | { ok: false; error: string } {
-  const cleaned = normalizeDesignerPackages(list)
+  const cleaned = normalizeDesignerPackages(list, { validServiceKeys: getValidServiceSelectionKeys() })
     .filter(pkg => pkg.title || pkg.pricePerSqm > 0 || pkg.serviceKeys.length > 0)
 
   if (!cleaned.length) {
@@ -2522,7 +2526,7 @@ const subEditError = ref('')
 const subEditSuccess = ref('')
 
 function normalizeSubscriptionsForSave(list: DesignerSubscription[]): { ok: true; list: DesignerSubscription[] } | { ok: false; error: string } {
-  const cleaned = normalizeDesignerSubscriptions(list)
+  const cleaned = normalizeDesignerSubscriptions(list, { validServiceKeys: getValidServiceSelectionKeys() })
     .filter(sub => sub.title || sub.price > 0)
 
   if (!cleaned.length) {

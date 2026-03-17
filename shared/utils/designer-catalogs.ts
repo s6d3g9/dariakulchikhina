@@ -17,6 +17,10 @@ const serviceTemplateMap = new Map(DESIGNER_SERVICE_TEMPLATES.map((item) => [ite
 const packageTemplateMap = new Map(DESIGNER_PACKAGE_TEMPLATES.map((item) => [item.key, item]))
 const subscriptionTemplateMap = new Map(DESIGNER_SUBSCRIPTION_TEMPLATES.map((item) => [item.key, item]))
 
+type ServiceReferenceOptions = {
+  validServiceKeys?: Iterable<string>
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
@@ -65,6 +69,15 @@ function normalizeStringList(value: unknown) {
   return Array.from(new Set(value.map(asTrimmedString).filter(Boolean)))
 }
 
+function normalizeServiceKeyList(value: unknown, options?: ServiceReferenceOptions) {
+  const keys = normalizeStringList(value)
+  const validServiceKeys = options?.validServiceKeys ? new Set(options.validServiceKeys) : null
+  if (!validServiceKeys) {
+    return keys
+  }
+  return keys.filter((key) => validServiceKeys.has(key))
+}
+
 function normalizeLimits(value: unknown) {
   if (!isRecord(value)) return {}
   const entries = Object.entries(value)
@@ -111,14 +124,19 @@ export function normalizeDesignerServices(value: unknown): DesignerServicePrice[
   })
 }
 
-export function normalizeDesignerPackages(value: unknown): DesignerPackage[] {
+export function getNormalizedDesignerServiceKeySet(value: unknown) {
+  return new Set(normalizeDesignerServices(value).map((service) => service.serviceKey))
+}
+
+export function normalizeDesignerPackages(value: unknown, options?: ServiceReferenceOptions): DesignerPackage[] {
   return coerceArray(value).map((item, index) => {
     const source = isRecord(item) ? item : {}
     const rawKey = asTrimmedString(source.key)
     const template = packageTemplateMap.get(rawKey)
     const title = asTrimmedString(source.title) || template?.title || `Пакет ${index + 1}`
     const description = asTrimmedString(source.description) || template?.description || ''
-    const serviceKeys = normalizeStringList(source.serviceKeys)
+    const serviceKeys = normalizeServiceKeyList(source.serviceKeys, options)
+    const templateServiceKeys = normalizeServiceKeyList(template?.serviceKeys, options)
     return {
       key: getDesignerPackagePersistedKey({
         key: rawKey,
@@ -127,14 +145,14 @@ export function normalizeDesignerPackages(value: unknown): DesignerPackage[] {
       }, index),
       title,
       description,
-      serviceKeys: serviceKeys.length ? serviceKeys : normalizeStringList(template?.serviceKeys),
+      serviceKeys: serviceKeys.length ? serviceKeys : templateServiceKeys,
       pricePerSqm: asNonNegativeNumber(source.pricePerSqm) || template?.suggestedPricePerSqm || 0,
       enabled: asBoolean(source.enabled, true),
     }
   })
 }
 
-export function normalizeDesignerSubscriptions(value: unknown): DesignerSubscription[] {
+export function normalizeDesignerSubscriptions(value: unknown, options?: ServiceReferenceOptions): DesignerSubscription[] {
   return coerceArray(value).map((item, index) => {
     const source = isRecord(item) ? item : {}
     const rawKey = asTrimmedString(source.key)
@@ -142,7 +160,8 @@ export function normalizeDesignerSubscriptions(value: unknown): DesignerSubscrip
     const title = asTrimmedString(source.title) || template?.title || `Подписка ${index + 1}`
     const description = asTrimmedString(source.description) || template?.description || ''
     const billingPeriod = asTrimmedString(source.billingPeriod)
-    const serviceKeys = normalizeStringList(source.serviceKeys)
+    const serviceKeys = normalizeServiceKeyList(source.serviceKeys, options)
+    const templateServiceKeys = normalizeServiceKeyList(template?.serviceKeys, options)
     return {
       key: getDesignerSubscriptionPersistedKey({
         key: rawKey,
@@ -154,7 +173,7 @@ export function normalizeDesignerSubscriptions(value: unknown): DesignerSubscrip
       billingPeriod: billingPeriodSet.has(billingPeriod) ? billingPeriod as DesignerSubscription['billingPeriod'] : (template?.billingPeriod || 'monthly'),
       price: asNonNegativeNumber(source.price) || template?.price || 0,
       discount: Math.min(100, asNonNegativeNumber(source.discount) || template?.discount || 0),
-      serviceKeys: serviceKeys.length ? serviceKeys : normalizeStringList(template?.serviceKeys),
+      serviceKeys: serviceKeys.length ? serviceKeys : templateServiceKeys,
       limits: Object.keys(normalizeLimits(source.limits)).length ? normalizeLimits(source.limits) : (template?.limits || {}),
       enabled: asBoolean(source.enabled, true),
     }
