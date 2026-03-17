@@ -3445,6 +3445,7 @@ registerWipe2Data(wipe2CabinetData)
 }
 .svc-card-stack,
 .pkg-card-stack {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -3492,6 +3493,8 @@ registerWipe2Data(wipe2CabinetData)
 .svc-price { font-weight: 700; color: var(--ds-success, var(--ds-success)); text-align: right; white-space: nowrap; }
 .svc-card-editor,
 .pkg-card-editor {
+  position: relative;
+  z-index: 2;
   padding: 16px 18px;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--ds-accent) 18%, var(--glass-border));
