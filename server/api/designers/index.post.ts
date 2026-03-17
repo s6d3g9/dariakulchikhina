@@ -1,6 +1,7 @@
 import { useDb } from '~/server/db/index'
 import { designers } from '~/server/db/schema'
 import { z } from 'zod'
+import { normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer-catalogs'
 
 const CreateDesignerSchema = z.object({
   name: z.string().min(1),
@@ -34,9 +35,9 @@ export default defineEventHandler(async (event) => {
     experience: body.experience || null,
     about: body.about || null,
     specializations: body.specializations,
-    services: body.services,
-    packages: body.packages,
-    subscriptions: body.subscriptions,
+    services: normalizeDesignerServices(body.services),
+    packages: normalizeDesignerPackages(body.packages),
+    subscriptions: normalizeDesignerSubscriptions(body.subscriptions),
   }).returning()
 
   return designer

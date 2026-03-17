@@ -1,6 +1,7 @@
 import { useDb } from '~/server/db/index'
 import { designers, designerProjects, designerProjectClients, designerProjectContractors, projects, clients, contractors } from '~/server/db/schema'
 import { eq, sql } from 'drizzle-orm'
+import { normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer-catalogs'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -60,6 +61,9 @@ export default defineEventHandler(async (event) => {
 
   return {
     ...designer,
+    services: normalizeDesignerServices(designer.services),
+    packages: normalizeDesignerPackages(designer.packages),
+    subscriptions: normalizeDesignerSubscriptions(designer.subscriptions),
     designerProjects: dpList,
   }
 })

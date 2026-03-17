@@ -64,8 +64,12 @@ import Wipe2Renderer from '~/components/Wipe2Renderer.vue'
 definePageMeta({ layout: 'admin', middleware: ['admin'], pageTransition: false })
 
 const adminNav = useAdminNav()
-onMounted(() => adminNav.ensureSection('designers'))
-onActivated(() => adminNav.ensureSection('designers'))
+onMounted(() => {
+  if (!hasDesignerRouteState()) adminNav.ensureSection('designers')
+})
+onActivated(() => {
+  if (!hasDesignerRouteState()) adminNav.ensureSection('designers')
+})
 
 // Sync from global nav contentSpec
 watch(() => adminNav.contentSpec.value.designerId, (id) => {
@@ -96,6 +100,23 @@ const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode
 const isWipe2Mode = computed(() => contentViewMode.value === 'wipe2')
 const wipe2State = useWipe2State()
 const pendingEditorTarget = ref<{ kind: 'service' | 'package' | 'subscription'; key: string; requestId: number } | null>(null)
+const DESIGNER_SECTIONS = new Set([
+  'dashboard',
+  'services',
+  'packages',
+  'subscriptions',
+  'projects',
+  'clients',
+  'contractors',
+  'sellers',
+  'managers',
+  'documents',
+  'gallery',
+  'moodboards',
+  'profile',
+])
+
+let syncingFromRoute = false
 
 const showBrutalistDesignerHero = computed(() => isBrutalistDesignersMode.value && !!selectedDesigner.value)
 const designerSectionLabel = computed(() => {
@@ -107,6 +128,64 @@ const designerHeroFacts = computed(() => [
   { label: 'город', value: selectedDesigner.value?.city || 'не указан' },
   { label: 'контакт', value: selectedDesigner.value?.phone || selectedDesigner.value?.email || 'не указан' },
 ])
+
+function parseDesignerIdQuery(value: unknown): number | null {
+  const raw = Array.isArray(value) ? value[0] : value
+  const parsed = Number(raw)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+function hasDesignerRouteState() {
+  return parseDesignerIdQuery(route.query.designer) !== null
+}
+
+function parseDesignerSectionQuery(value: unknown): string {
+  const raw = Array.isArray(value) ? value[0] : value
+  return typeof raw === 'string' && DESIGNER_SECTIONS.has(raw) ? raw : 'dashboard'
+}
+
+function readDesignerStateFromRoute() {
+  syncingFromRoute = true
+  selectedDesignerId.value = parseDesignerIdQuery(route.query.designer)
+  activeSection.value = selectedDesignerId.value
+    ? parseDesignerSectionQuery(route.query.section)
+    : 'dashboard'
+  syncingFromRoute = false
+}
+
+async function syncDesignerStateToRoute() {
+  if (syncingFromRoute) return
+  const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>
+
+  if (selectedDesignerId.value) {
+    nextQuery.designer = String(selectedDesignerId.value)
+    if (activeSection.value !== 'dashboard') nextQuery.section = activeSection.value
+    else delete nextQuery.section
+  } else {
+    delete nextQuery.designer
+    delete nextQuery.section
+  }
+
+  const currentDesigner = Array.isArray(route.query.designer) ? route.query.designer[0] : route.query.designer
+  const currentSection = Array.isArray(route.query.section) ? route.query.section[0] : route.query.section
+  const nextDesigner = typeof nextQuery.designer === 'string' ? nextQuery.designer : undefined
+  const nextSection = typeof nextQuery.section === 'string' ? nextQuery.section : undefined
+
+  if (currentDesigner === nextDesigner && currentSection === nextSection) return
+  await router.replace({ query: nextQuery })
+}
+
+watch(() => [route.query.designer, route.query.section], () => {
+  readDesignerStateFromRoute()
+}, { immediate: true })
+
+watch(selectedDesignerId, async () => {
+  await syncDesignerStateToRoute()
+})
+
+watch(activeSection, async () => {
+  await syncDesignerStateToRoute()
+})
 
 // ── Pending list state ──
 const isPending = computed(() => pending.value && !allDesigners.value?.length)

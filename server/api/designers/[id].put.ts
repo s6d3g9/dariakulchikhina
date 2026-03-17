@@ -2,6 +2,7 @@ import { useDb } from '~/server/db/index'
 import { designers } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer-catalogs'
 
 const UpdateDesignerSchema = z.object({
   name: z.string().min(1).optional(),
@@ -38,9 +39,9 @@ export default defineEventHandler(async (event) => {
   if (body.experience !== undefined) updates.experience = body.experience || null
   if (body.about !== undefined) updates.about = body.about || null
   if (body.specializations !== undefined) updates.specializations = body.specializations
-  if (body.services !== undefined) updates.services = body.services
-  if (body.packages !== undefined) updates.packages = body.packages
-  if (body.subscriptions !== undefined) updates.subscriptions = body.subscriptions
+  if (body.services !== undefined) updates.services = normalizeDesignerServices(body.services)
+  if (body.packages !== undefined) updates.packages = normalizeDesignerPackages(body.packages)
+  if (body.subscriptions !== undefined) updates.subscriptions = normalizeDesignerSubscriptions(body.subscriptions)
 
   const [updated] = await db.update(designers).set(updates).where(eq(designers.id, id)).returning()
   if (!updated) throw createError({ statusCode: 404, statusMessage: 'Designer not found' })

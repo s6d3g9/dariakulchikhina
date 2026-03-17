@@ -155,66 +155,23 @@
             <div class="cab-section" data-section="services">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Услуги и прайс-лист</h2>
-              <div>
+              <div class="cab-section-actions">
                 <button v-if="!services.length" class="a-btn-save" @click="initFromTemplates">
                   Загрузить шаблон (Москва)
                 </button>
-                <button v-if="!editingServices" class="a-btn-sm" @click="startEditServices">
-                  {{ services.length ? 'Редактировать' : 'Создать вручную' }}
-                </button>
-                <button v-if="editingServices" class="a-btn-save" @click="saveEditedServices">
-                  {{ savingSvc ? 'Сохранение…' : 'Сохранить' }}
-                </button>
-                <button v-if="editingServices" class="a-btn-sm" @click="addCustomService">＋ Услуга</button>
-                <button v-if="editingServices" class="a-btn-sm" @click="cancelEditServices">Отмена</button>
+                <button class="a-btn-sm" :disabled="serviceCardSaving" @click="createServiceCard">＋ Услуга</button>
+                <span class="cab-section-note">Изменения сохраняются автоматически</span>
               </div>
             </div>
             <p v-if="svcEditError" class="cab-inline-error">{{ svcEditError }}</p>
             <p v-if="svcEditSuccess" class="cab-inline-success">{{ svcEditSuccess }}</p>
 
-            <div v-if="!services.length && !editingServices" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
+            <div v-if="!services.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>◎</span>
               <p>Услуги не настроены.<br>Загрузите шаблон московских расценок или добавьте вручную.</p>
             </div>
 
-            <template v-if="editingServices">
-              <div v-for="[cat, catServices] in editServicesByCat" :key="cat" class="svc-category glass-surface" :class="{ 'svc-category--brutalist': isBrutalistDesignerCabinetMode }">
-                <h3 class="svc-cat-title">{{ DESIGNER_SERVICE_CATEGORY_LABELS[cat] || cat }}</h3>
-                <div v-for="(svc, idx) in catServices" :key="svc.serviceKey" class="svc-edit-row">
-                  <label class="svc-enable">
-                    <input type="checkbox" v-model="svc.enabled" />
-                    <span>{{ svc.enabled ? 'вкл' : 'выкл' }}</span>
-                  </label>
-                  <div class="svc-edit-name">
-                    <input v-model="svc.title" class="glass-input svc-inp" placeholder="Название" />
-                  </div>
-                  <div class="svc-edit-desc">
-                    <input v-model="svc.description" class="glass-input svc-inp" placeholder="Описание" />
-                  </div>
-                  <div class="svc-edit-cat">
-                    <select v-model="svc.category" class="glass-input svc-inp">
-                      <option v-for="opt in SERVICE_CATEGORY_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                    </select>
-                  </div>
-                  <div class="svc-edit-price">
-                    <input v-model.number="svc.price" class="glass-input svc-inp svc-inp--num" type="number" min="0" />
-                  </div>
-                  <div class="svc-edit-unit">
-                    <select v-model="svc.unit" class="glass-input svc-inp">
-                      <option v-for="u in PRICE_UNITS_LIST" :key="u.value" :value="u.value">{{ u.label }}</option>
-                    </select>
-                  </div>
-                  <div class="edit-actions">
-                    <button type="button" class="svc-mini" title="Дублировать" @click="duplicateEditService(svc.serviceKey)">⎘</button>
-                    <button type="button" class="svc-mini" title="Вверх" @click="moveEditService(svc.serviceKey, -1)">↑</button>
-                    <button type="button" class="svc-mini" title="Вниз" @click="moveEditService(svc.serviceKey, 1)">↓</button>
-                  </div>
-                  <button class="svc-del" @click="removeEditService(svc.serviceKey)">✕</button>
-                </div>
-              </div>
-            </template>
-
-            <template v-else-if="services.length">
+            <template v-if="services.length">
               <div v-for="[cat, catServices] in servicesByCat" :key="cat" class="svc-category glass-surface" :class="{ 'svc-category--brutalist': isBrutalistDesignerCabinetMode }">
                 <div class="svc-cat-head">
                   <div class="svc-cat-copy">
@@ -230,7 +187,7 @@
                   </div>
                 </div>
                 <div class="svc-list svc-list--cards">
-                  <div v-for="svc in catServices" :key="svc.serviceKey" class="svc-card-stack">
+                  <div v-for="svc in catServices" :key="getServiceActionKey(svc)" class="svc-card-stack">
                   <article
                     class="svc-card"
                     :class="{ disabled: !svc.enabled, 'svc-card--brutalist': isBrutalistDesignerCabinetMode, 'svc-card--active': serviceCardEditorKey === getServiceActionKey(svc) }"
@@ -247,8 +204,8 @@
                       <span class="svc-unit-chip">{{ getPriceUnitLabel(svc.unit) }}</span>
                     </div>
                     <div class="svc-card-body">
-                      <h4 class="svc-name">{{ svc.title }}</h4>
-                      <p class="svc-desc">{{ svc.description }}</p>
+                      <h4 class="svc-name">{{ getServiceDisplayTitle(svc) }}</h4>
+                      <p class="svc-desc">{{ getServiceDisplayDescription(svc) || 'Добавьте описание, чтобы карточка объясняла состав и ценность услуги.' }}</p>
                     </div>
                     <div class="svc-card-meta">
                       <span class="svc-meta-chip">{{ getServiceMarketLabel(svc) }}</span>
@@ -258,7 +215,7 @@
                       <div class="svc-price-block">
                         <span class="svc-price-caption">текущий тариф</span>
                         <div class="svc-price svc-price-inline" @click.stop="startInlinePrice(svc)">
-                          <template v-if="inlinePriceKey === svc.serviceKey">
+                          <template v-if="inlinePriceKey === getServiceActionKey(svc)">
                             <input
                               v-model.number="inlinePriceVal"
                               class="glass-input glass-input--inline svc-price-inline-input"
@@ -282,42 +239,46 @@
                     <div class="svc-card-editor__head">
                       <div>
                         <div class="svc-card-editor__eyebrow">редактор услуги</div>
-                        <strong class="svc-card-editor__title">{{ serviceCardDraft.title || svc.title }}</strong>
+                        <strong class="svc-card-editor__title">{{ getServiceDisplayTitle(serviceCardDraft) }}</strong>
                       </div>
                       <div class="svc-card-editor__actions">
+                        <span class="cab-autosave-status" :class="autosaveStatusClass(serviceCardSaveState)">{{ autosaveStatusLabel(serviceCardSaveState) }}</span>
+                        <button type="button" class="a-btn-sm" :disabled="serviceCardSaving" @click="duplicateServiceCard(svc)">дублировать</button>
+                        <button type="button" class="a-btn-sm" :disabled="serviceCardSaving" @click="moveServiceCard(svc, -1)">выше</button>
+                        <button type="button" class="a-btn-sm" :disabled="serviceCardSaving" @click="moveServiceCard(svc, 1)">ниже</button>
+                        <button type="button" class="a-btn-sm a-btn-danger" :disabled="serviceCardSaving" @click="removeServiceCard(svc)">удалить</button>
                         <button type="button" class="a-btn-sm" @click="closeServiceCardEditor">свернуть</button>
-                        <button type="button" class="a-btn-save" :disabled="serviceCardSaving" @click="saveServiceCardEditor">{{ serviceCardSaving ? 'сохранение…' : 'сохранить' }}</button>
                       </div>
                     </div>
                     <p v-if="serviceCardError" class="cab-inline-error">{{ serviceCardError }}</p>
                     <div class="svc-card-editor__grid">
                       <div class="u-field">
                         <label class="u-field__label">Название</label>
-                        <input v-model="serviceCardDraft.title" class="glass-input" placeholder="Название услуги" />
+                        <input v-model="serviceCardDraft.title" class="glass-input" placeholder="Название услуги" @blur="queueServiceCardSave" />
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Категория</label>
-                        <select v-model="serviceCardDraft.category" class="glass-input">
+                        <select v-model="serviceCardDraft.category" class="glass-input" @change="queueServiceCardSave">
                           <option v-for="opt in SERVICE_CATEGORY_OPTIONS" :key="`svc-inline-${opt.value}`" :value="opt.value">{{ opt.label }}</option>
                         </select>
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Цена</label>
-                        <input v-model.number="serviceCardDraft.price" type="number" min="0" class="glass-input" />
+                        <input v-model.number="serviceCardDraft.price" type="number" min="0" class="glass-input" @blur="queueServiceCardSave" />
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Единица</label>
-                        <select v-model="serviceCardDraft.unit" class="glass-input">
+                        <select v-model="serviceCardDraft.unit" class="glass-input" @change="queueServiceCardSave">
                           <option v-for="unit in PRICE_UNITS_LIST" :key="`svc-inline-unit-${unit.value}`" :value="unit.value">{{ unit.label }}</option>
                         </select>
                       </div>
                       <div class="u-field u-field--full">
                         <label class="u-field__label">Описание</label>
-                        <textarea v-model="serviceCardDraft.description" class="glass-input u-ta" rows="3" placeholder="Что входит в услугу" />
+                        <textarea v-model="serviceCardDraft.description" class="glass-input u-ta" rows="3" placeholder="Что входит в услугу" @blur="queueServiceCardSave" />
                       </div>
                     </div>
                     <label class="svc-enable svc-enable--editor">
-                      <input v-model="serviceCardDraft.enabled" type="checkbox" />
+                      <input v-model="serviceCardDraft.enabled" type="checkbox" @change="queueServiceCardSave" />
                       <span>{{ serviceCardDraft.enabled ? 'услуга активна в продаже' : 'услуга скрыта из выдачи' }}</span>
                     </label>
                   </div>
@@ -333,64 +294,25 @@
             <div class="cab-section" data-section="packages">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Пакеты услуг</h2>
-              <div>
+              <div class="cab-section-actions">
                 <button v-if="!packages.length" class="a-btn-save" @click="initPackages">
                   Загрузить стандартные пакеты
                 </button>
-                <button v-if="!editingPackages" class="a-btn-sm" @click="startEditPackages">
-                  {{ packages.length ? 'Редактировать' : 'Создать вручную' }}
-                </button>
-                <button v-if="editingPackages" class="a-btn-save" @click="saveEditedPackages">
-                  {{ savingPkg ? 'Сохранение…' : 'Сохранить' }}
-                </button>
-                <button v-if="editingPackages" class="a-btn-sm" @click="addCustomPackage">＋ Пакет</button>
-                <button v-if="editingPackages" class="a-btn-sm" @click="cancelEditPackages">Отмена</button>
+                <button class="a-btn-sm" :disabled="packageCardSaving" @click="createPackageCard">＋ Пакет</button>
+                <span class="cab-section-note">Изменения сохраняются автоматически</span>
               </div>
             </div>
             <p v-if="pkgEditError" class="cab-inline-error">{{ pkgEditError }}</p>
             <p v-if="pkgEditSuccess" class="cab-inline-success">{{ pkgEditSuccess }}</p>
 
-            <div v-if="!packages.length && !editingPackages" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
+            <div v-if="!packages.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>◑</span>
               <p>Пакеты не настроены.<br>Загрузите стандартные или создайте собственные.</p>
             </div>
 
-            <template v-if="editingPackages">
-              <div v-for="pkg in editPackagesList" :key="pkg.key" class="pkg-edit glass-surface" :class="{ 'pkg-edit--brutalist': isBrutalistDesignerCabinetMode }">
-                <div class="pkg-edit-head">
-                  <label class="svc-enable"><input type="checkbox" v-model="pkg.enabled" /><span>{{ pkg.enabled ? 'вкл' : 'выкл' }}</span></label>
-                  <input v-model="pkg.title" class="glass-input pkg-title-inp" placeholder="Название пакета" />
-                  <div class="pkg-price-edit">
-                    <input v-model.number="pkg.pricePerSqm" class="glass-input svc-inp svc-inp--num" type="number" min="0" />
-                    <span class="pkg-unit">₽/м²</span>
-                  </div>
-                  <div class="edit-actions">
-                    <button type="button" class="svc-mini" title="Дублировать" @click="duplicateEditPackage(pkg.key)">⎘</button>
-                    <button type="button" class="svc-mini" title="Вверх" @click="moveEditPackage(pkg.key, -1)">↑</button>
-                    <button type="button" class="svc-mini" title="Вниз" @click="moveEditPackage(pkg.key, 1)">↓</button>
-                  </div>
-                  <button type="button" class="svc-del" @click="removeEditPackage(pkg.key)">✕</button>
-                </div>
-                <textarea v-model="pkg.description" class="glass-input pkg-desc-inp" rows="2" placeholder="Описание пакета" />
-                <div class="pkg-services-edit">
-                  <strong>Включённые услуги:</strong>
-                  <div class="pkg-svc-tags">
-                    <button
-                      v-for="svc in allServiceKeys"
-                      :key="`pkg-${pkg.key}-${svc.key}`"
-                      type="button"
-                      class="pkg-tag-picker"
-                      :class="{ 'pkg-tag-picker--active': pkg.serviceKeys.includes(svc.key) }"
-                      @click="togglePkgService(pkg, svc.key)"
-                    >{{ svc.title }}</button>
-                  </div>
-                </div>
-              </div>
-            </template>
-
-            <template v-else-if="packages.length">
+            <template v-if="packages.length">
               <div class="pkg-grid" :class="{ 'pkg-grid--brutalist': isBrutalistDesignerCabinetMode }">
-                <div v-for="pkg in packages" :key="pkg.key" class="pkg-card-stack">
+                <div v-for="pkg in packages" :key="getPackageActionKey(pkg)" class="pkg-card-stack">
                 <article
                   class="pkg-card glass-surface"
                   :class="{ disabled: !pkg.enabled, 'pkg-card--brutalist': isBrutalistDesignerCabinetMode, 'pkg-card--active': packageCardEditorKey === getPackageActionKey(pkg) }"
@@ -408,12 +330,12 @@
                   </div>
                   <div class="pkg-card-head">
                     <div>
-                      <h3 class="pkg-card-title">{{ pkg.title }}</h3>
+                      <h3 class="pkg-card-title">{{ getPackageDisplayTitle(pkg) }}</h3>
                       <p class="pkg-card-subtitle">{{ getPackageCoverageLabel(pkg) }}</p>
                     </div>
                     <div class="pkg-card-price">{{ formatRubles(pkg.pricePerSqm ?? 0) }} <span>₽/м²</span></div>
                   </div>
-                  <p class="pkg-card-desc">{{ pkg.description }}</p>
+                  <p class="pkg-card-desc">{{ getPackageDisplayDescription(pkg) }}</p>
                   <div class="pkg-card-metrics">
                     <div class="pkg-metric glass-surface">
                       <span class="pkg-metric-label">80 м²</span>
@@ -441,30 +363,34 @@
                   <div class="pkg-card-editor__head">
                     <div>
                       <div class="svc-card-editor__eyebrow">редактор пакета</div>
-                      <strong class="svc-card-editor__title">{{ packageCardDraft.title || pkg.title }}</strong>
+                      <strong class="svc-card-editor__title">{{ getPackageDisplayTitle(packageCardDraft) }}</strong>
                     </div>
                     <div class="svc-card-editor__actions">
+                      <span class="cab-autosave-status" :class="autosaveStatusClass(packageCardSaveState)">{{ autosaveStatusLabel(packageCardSaveState) }}</span>
+                      <button type="button" class="a-btn-sm" :disabled="packageCardSaving" @click="duplicatePackageCard(pkg)">дублировать</button>
+                      <button type="button" class="a-btn-sm" :disabled="packageCardSaving" @click="movePackageCard(pkg, -1)">выше</button>
+                      <button type="button" class="a-btn-sm" :disabled="packageCardSaving" @click="movePackageCard(pkg, 1)">ниже</button>
+                      <button type="button" class="a-btn-sm a-btn-danger" :disabled="packageCardSaving" @click="removePackageCard(pkg)">удалить</button>
                       <button type="button" class="a-btn-sm" @click="closePackageCardEditor">свернуть</button>
-                      <button type="button" class="a-btn-save" :disabled="packageCardSaving" @click="savePackageCardEditor">{{ packageCardSaving ? 'сохранение…' : 'сохранить' }}</button>
                     </div>
                   </div>
                   <p v-if="packageCardError" class="cab-inline-error">{{ packageCardError }}</p>
                   <div class="svc-card-editor__grid">
                     <div class="u-field">
                       <label class="u-field__label">Название пакета</label>
-                      <input v-model="packageCardDraft.title" class="glass-input" placeholder="Название пакета" />
+                        <input v-model="packageCardDraft.title" class="glass-input" placeholder="Название пакета" @blur="queuePackageCardSave" />
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Цена за м²</label>
-                      <input v-model.number="packageCardDraft.pricePerSqm" type="number" min="0" class="glass-input" />
+                        <input v-model.number="packageCardDraft.pricePerSqm" type="number" min="0" class="glass-input" @blur="queuePackageCardSave" />
                     </div>
                     <div class="u-field u-field--full">
                       <label class="u-field__label">Описание</label>
-                      <textarea v-model="packageCardDraft.description" class="glass-input u-ta" rows="3" placeholder="Что входит в пакет" />
+                        <textarea v-model="packageCardDraft.description" class="glass-input u-ta" rows="3" placeholder="Что входит в пакет" @blur="queuePackageCardSave" />
                     </div>
                   </div>
                   <label class="svc-enable svc-enable--editor">
-                    <input v-model="packageCardDraft.enabled" type="checkbox" />
+                    <input v-model="packageCardDraft.enabled" type="checkbox" @change="queuePackageCardSave" />
                     <span>{{ packageCardDraft.enabled ? 'пакет доступен клиентам' : 'пакет скрыт из выдачи' }}</span>
                   </label>
                   <div class="pkg-card-editor__services">
@@ -479,7 +405,7 @@
                         type="button"
                         class="pkg-tag-picker"
                         :class="{ 'pkg-tag-picker--active': (packageCardDraft.serviceKeys || []).includes(svcOption.key) }"
-                        @click="togglePackageCardDraftService(svcOption.key)"
+                        @click="togglePackageCardDraftService(svcOption.key); queuePackageCardSave()"
                       >{{ svcOption.title }}</button>
                     </div>
                     <div v-if="packageCardDraftServices.length" class="pkg-card-editor__service-list">
@@ -504,94 +430,25 @@
             <div class="cab-section" data-section="subscriptions">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Подписки и абонементы</h2>
-              <div>
+              <div class="cab-section-actions">
                 <button v-if="!subscriptions.length" class="a-btn-save" @click="initSubs">
                   Загрузить шаблоны подписок
                 </button>
-                <button v-if="!editingSubscriptions" class="a-btn-sm" @click="startEditSubscriptions">
-                  {{ subscriptions.length ? 'Редактировать' : 'Создать вручную' }}
-                </button>
-                <button v-if="editingSubscriptions" class="a-btn-save" @click="saveEditedSubscriptions">
-                  {{ savingSub ? 'Сохранение…' : 'Сохранить' }}
-                </button>
-                <button v-if="editingSubscriptions" class="a-btn-sm" @click="addCustomSubscription">＋ Подписка</button>
-                <button v-if="editingSubscriptions" class="a-btn-sm" @click="cancelEditSubscriptions">Отмена</button>
+                <button class="a-btn-sm" :disabled="subscriptionCardSaving" @click="createSubscriptionCard">＋ Подписка</button>
+                <span class="cab-section-note">Изменения сохраняются автоматически</span>
               </div>
             </div>
             <p v-if="subEditError" class="cab-inline-error">{{ subEditError }}</p>
             <p v-if="subEditSuccess" class="cab-inline-success">{{ subEditSuccess }}</p>
 
-            <div v-if="!subscriptions.length && !editingSubscriptions" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
+            <div v-if="!subscriptions.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>⟳</span>
               <p>Подписки не настроены.<br>Загрузите шаблоны или создайте собственный абонемент.</p>
             </div>
 
-            <!-- Edit mode -->
-            <template v-if="editingSubscriptions">
-              <div v-for="sub in editSubscriptionsList" :key="sub.key" class="sub-edit glass-surface" :class="{ 'sub-edit--brutalist': isBrutalistDesignerCabinetMode }">
-                <div class="sub-edit-head">
-                  <label class="svc-enable"><input type="checkbox" v-model="sub.enabled" /><span>{{ sub.enabled ? 'вкл' : 'выкл' }}</span></label>
-                  <input v-model="sub.title" class="glass-input pkg-title-inp" placeholder="Название подписки" />
-                  <div class="edit-actions">
-                    <button type="button" class="svc-mini" title="Дублировать" @click="duplicateEditSubscription(sub.key)">⎘</button>
-                    <button type="button" class="svc-mini" title="Вверх" @click="moveEditSubscription(sub.key, -1)">↑</button>
-                    <button type="button" class="svc-mini" title="Вниз" @click="moveEditSubscription(sub.key, 1)">↓</button>
-                  </div>
-                  <button type="button" class="svc-del" @click="removeEditSubscription(sub.key)">✕</button>
-                </div>
-                <textarea v-model="sub.description" class="glass-input pkg-desc-inp" rows="2" placeholder="Описание подписки" />
-                <div class="sub-edit-pricing">
-                  <div class="u-field">
-                    <label class="u-field__label">Период</label>
-                    <select v-model="sub.billingPeriod" class="glass-input svc-inp">
-                      <option v-for="bp in BILLING_PERIODS_LIST" :key="bp.value" :value="bp.value">{{ bp.label }}</option>
-                    </select>
-                  </div>
-                  <div class="u-field">
-                    <label class="u-field__label">Цена (₽)</label>
-                    <input v-model.number="sub.price" class="glass-input svc-inp svc-inp--num" type="number" min="0" />
-                  </div>
-                  <div class="u-field">
-                    <label class="u-field__label">Скидка (%)</label>
-                    <input v-model.number="sub.discount" class="glass-input svc-inp svc-inp--num" type="number" min="0" max="100" />
-                  </div>
-                  <div v-if="sub.discount > 0" class="sub-effective-price">
-                    <span class="sub-eff-label">Итого со скидкой:</span>
-                    <span class="sub-eff-val">{{ Math.round(sub.price * (1 - sub.discount / 100)).toLocaleString('ru-RU') }} ₽</span>
-                  </div>
-                </div>
-                <div class="sub-edit-limits">
-                  <strong>Лимиты:</strong>
-                  <div class="sub-limits-grid">
-                    <div v-for="(val, lk) in sub.limits" :key="lk" class="sub-limit-row">
-                      <input :value="lk" class="glass-input svc-inp" readonly />
-                      <input :value="val" class="glass-input svc-inp svc-inp--num" type="number" min="0"
-                        @input="sub.limits[lk] = Number(($event.target as HTMLInputElement).value)" />
-                      <button type="button" class="svc-del" @click="delete sub.limits[lk]">✕</button>
-                    </div>
-                  </div>
-                  <button type="button" class="a-btn-sm" @click="addSubLimit(sub)">＋ Лимит</button>
-                </div>
-                <div class="pkg-services-edit">
-                  <strong>Включённые услуги:</strong>
-                  <div class="pkg-svc-tags">
-                    <button
-                      v-for="svc in allServiceKeys"
-                      :key="`sub-${sub.key}-${svc.key}`"
-                      type="button"
-                      class="pkg-tag-picker"
-                      :class="{ 'pkg-tag-picker--active': sub.serviceKeys.includes(svc.key) }"
-                      @click="toggleSubService(sub, svc.key)"
-                    >{{ svc.title }}</button>
-                  </div>
-                </div>
-              </div>
-            </template>
-
-            <!-- View mode -->
-            <template v-else-if="subscriptions.length">
+            <template v-if="subscriptions.length">
               <div class="sub-grid" :class="{ 'sub-grid--brutalist': isBrutalistDesignerCabinetMode }">
-                <div v-for="sub in subscriptions" :key="sub.key" class="sub-card-stack">
+                <div v-for="sub in subscriptions" :key="getSubscriptionActionKey(sub)" class="sub-card-stack">
                   <article
                     class="sub-card glass-surface"
                     :class="{ disabled: !sub.enabled, 'sub-card--brutalist': isBrutalistDesignerCabinetMode, 'sub-card--active': subscriptionCardEditorKey === getSubscriptionActionKey(sub) }"
@@ -602,7 +459,7 @@
                     @keyup.space.prevent="toggleSubscriptionCardEditor(sub)"
                   >
                     <div class="sub-card-head">
-                      <h3 class="sub-card-title">{{ sub.title }}</h3>
+                      <h3 class="sub-card-title">{{ getSubscriptionDisplayTitle(sub) }}</h3>
                       <span class="sub-period-badge">{{ getBillingLabel(sub.billingPeriod) }}</span>
                     </div>
                     <div class="sub-card-price-row">
@@ -612,7 +469,7 @@
                     <div v-if="sub.discount > 0" class="sub-card-effective">
                       Итого: {{ Math.round((Number(sub.price) || 0) * (1 - (sub.discount || 0) / 100)).toLocaleString('ru-RU') }} ₽
                     </div>
-                    <p class="sub-card-desc">{{ sub.description }}</p>
+                    <p class="sub-card-desc">{{ getSubscriptionDisplayDescription(sub) }}</p>
                     <div v-if="Object.keys(sub.limits || {}).length" class="sub-card-limits">
                       <div v-for="(val, lk) in sub.limits" :key="lk" class="sub-limit-chip">
                         <span class="sub-limit-key">{{ formatLimitKey(String(lk)) }}</span>
@@ -633,48 +490,52 @@
                     <div class="sub-card-editor__head">
                       <div>
                         <div class="sub-card-editor__eyebrow">редактор подписки</div>
-                        <strong class="sub-card-editor__title">{{ subscriptionCardDraft.title || sub.title }}</strong>
+                        <strong class="sub-card-editor__title">{{ getSubscriptionDisplayTitle(subscriptionCardDraft) }}</strong>
                       </div>
                       <div class="sub-card-editor__actions">
+                        <span class="cab-autosave-status" :class="autosaveStatusClass(subscriptionCardSaveState)">{{ autosaveStatusLabel(subscriptionCardSaveState) }}</span>
+                        <button type="button" class="a-btn-sm" :disabled="subscriptionCardSaving" @click="duplicateSubscriptionCard(sub)">дублировать</button>
+                        <button type="button" class="a-btn-sm" :disabled="subscriptionCardSaving" @click="moveSubscriptionCard(sub, -1)">выше</button>
+                        <button type="button" class="a-btn-sm" :disabled="subscriptionCardSaving" @click="moveSubscriptionCard(sub, 1)">ниже</button>
+                        <button type="button" class="a-btn-sm a-btn-danger" :disabled="subscriptionCardSaving" @click="removeSubscriptionCard(sub)">удалить</button>
                         <button type="button" class="a-btn-sm" @click="closeSubscriptionCardEditor">свернуть</button>
-                        <button type="button" class="a-btn-save" :disabled="subscriptionCardSaving" @click="saveSubscriptionCardEditor">{{ subscriptionCardSaving ? 'сохранение…' : 'сохранить' }}</button>
                       </div>
                     </div>
                     <p v-if="subscriptionCardError" class="cab-inline-error">{{ subscriptionCardError }}</p>
                     <div class="svc-card-editor__grid">
                       <div class="u-field">
                         <label class="u-field__label">Название</label>
-                        <input v-model="subscriptionCardDraft.title" class="glass-input" placeholder="Название подписки" />
+                        <input v-model="subscriptionCardDraft.title" class="glass-input" placeholder="Название подписки" @blur="queueSubscriptionCardSave" />
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Период</label>
-                        <select v-model="subscriptionCardDraft.billingPeriod" class="glass-input">
+                        <select v-model="subscriptionCardDraft.billingPeriod" class="glass-input" @change="queueSubscriptionCardSave">
                           <option v-for="bp in BILLING_PERIODS_LIST" :key="`sub-inline-${bp.value}`" :value="bp.value">{{ bp.label }}</option>
                         </select>
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Цена</label>
-                        <input v-model.number="subscriptionCardDraft.price" type="number" min="0" class="glass-input" />
+                        <input v-model.number="subscriptionCardDraft.price" type="number" min="0" class="glass-input" @blur="queueSubscriptionCardSave" />
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Скидка</label>
-                        <input v-model.number="subscriptionCardDraft.discount" type="number" min="0" max="100" class="glass-input" />
+                        <input v-model.number="subscriptionCardDraft.discount" type="number" min="0" max="100" class="glass-input" @blur="queueSubscriptionCardSave" />
                       </div>
                       <div class="u-field u-field--full">
                         <label class="u-field__label">Описание</label>
-                        <textarea v-model="subscriptionCardDraft.description" class="glass-input u-ta" rows="3" placeholder="Что входит в подписку" />
+                        <textarea v-model="subscriptionCardDraft.description" class="glass-input u-ta" rows="3" placeholder="Что входит в подписку" @blur="queueSubscriptionCardSave" />
                       </div>
                     </div>
                     <div class="sub-card-editor__limits">
                       <div class="sub-card-editor__limits-head">
                         <strong>Лимиты</strong>
-                        <button type="button" class="a-btn-sm" @click="addSubscriptionCardDraftLimit">＋ лимит</button>
+                        <button type="button" class="a-btn-sm" @click="addSubscriptionCardDraftLimit(); queueSubscriptionCardSave()">＋ лимит</button>
                       </div>
                       <div v-if="Object.keys(subscriptionCardDraft.limits || {}).length" class="sub-limits-grid">
                         <div v-for="(val, lk) in subscriptionCardDraft.limits" :key="`sub-inline-limit-${lk}`" class="sub-limit-row">
-                          <input :value="lk" class="glass-input svc-inp" readonly />
-                          <input :value="val" class="glass-input svc-inp svc-inp--num" type="number" min="0" @input="updateSubscriptionDraftLimit(String(lk), Number(($event.target as HTMLInputElement).value))" />
-                          <button type="button" class="svc-del" @click="removeSubscriptionDraftLimit(String(lk))">✕</button>
+                          <input :value="lk" class="glass-input svc-inp" @change="renameSubscriptionDraftLimit(String(lk), ($event.target as HTMLInputElement).value); queueSubscriptionCardSave()" />
+                          <input :value="val" class="glass-input svc-inp svc-inp--num" type="number" min="0" @blur="queueSubscriptionCardSave" @input="updateSubscriptionDraftLimit(String(lk), Number(($event.target as HTMLInputElement).value))" />
+                          <button type="button" class="svc-del" @click="removeSubscriptionDraftLimit(String(lk)); queueSubscriptionCardSave()">✕</button>
                         </div>
                       </div>
                     </div>
@@ -687,12 +548,12 @@
                           type="button"
                           class="pkg-tag-picker"
                           :class="{ 'pkg-tag-picker--active': (subscriptionCardDraft.serviceKeys || []).includes(svcOption.key) }"
-                          @click="toggleSubscriptionCardDraftService(svcOption.key)"
+                          @click="toggleSubscriptionCardDraftService(svcOption.key); queueSubscriptionCardSave()"
                         >{{ svcOption.title }}</button>
                       </div>
                     </div>
                     <label class="svc-enable svc-enable--editor">
-                      <input v-model="subscriptionCardDraft.enabled" type="checkbox" />
+                        <input v-model="subscriptionCardDraft.enabled" type="checkbox" @change="queueSubscriptionCardSave" />
                       <span>{{ subscriptionCardDraft.enabled ? 'подписка доступна для продажи' : 'подписка скрыта из выдачи' }}</span>
                     </label>
                   </div>
@@ -814,7 +675,7 @@
                   <select v-model="newProject.packageKey" class="glass-input">
                     <option value="">— без пакета —</option>
                     <option v-for="pkg in availablePackages" :key="pkg.key" :value="pkg.key">
-                      {{ pkg.title }} ({{ (pkg.pricePerSqm ?? 0).toLocaleString('ru-RU') }} ₽/м²)
+                      {{ getPackageDisplayTitle(pkg) }} ({{ (pkg.pricePerSqm ?? 0).toLocaleString('ru-RU') }} ₽/м²)
                     </option>
                   </select>
                 </div>
@@ -876,11 +737,11 @@
                   <div class="u-modal__row2">
                     <div class="u-field">
                       <label class="u-field__label">Название проекта</label>
-                      <input v-model="projectEdit.title" class="glass-input" />
+                      <input v-model="projectEdit.title" class="glass-input" @blur="queueProjectEditSave" />
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Статус</label>
-                      <select v-model="projectEdit.status" class="glass-input">
+                      <select v-model="projectEdit.status" class="glass-input" @change="queueProjectEditSave">
                         <option value="draft">Черновик</option>
                         <option value="active">В работе</option>
                         <option value="paused">Пауза</option>
@@ -890,18 +751,18 @@
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Пакет</label>
-                      <select v-model="projectEdit.packageKey" class="glass-input">
+                      <select v-model="projectEdit.packageKey" class="glass-input" @change="queueProjectEditSave">
                         <option value="">— без пакета —</option>
-                        <option v-for="pkg in packages" :key="pkg.key" :value="pkg.key">{{ pkg.title }}</option>
+                        <option v-for="pkg in packages" :key="pkg.key" :value="pkg.key">{{ getPackageDisplayTitle(pkg) }}</option>
                       </select>
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Цена за м²</label>
-                      <input v-model.number="projectEdit.pricePerSqm" type="number" min="0" class="glass-input" />
+                      <input v-model.number="projectEdit.pricePerSqm" type="number" min="0" class="glass-input" @blur="queueProjectEditSave" />
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Площадь (м²)</label>
-                      <input v-model.number="projectEdit.area" type="number" min="0" class="glass-input" />
+                      <input v-model.number="projectEdit.area" type="number" min="0" class="glass-input" @blur="queueProjectEditSave" />
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Итого</label>
@@ -910,14 +771,12 @@
                   </div>
                   <div class="u-field" style="margin-top:8px">
                     <label class="u-field__label">Примечание</label>
-                    <textarea v-model="projectEdit.notes" class="glass-input u-ta" rows="2" />
+                    <textarea v-model="projectEdit.notes" class="glass-input u-ta" rows="2" @blur="queueProjectEditSave" />
                   </div>
                 </div>
                 <div class="u-modal__foot">
-                  <button type="button" class="a-btn-sm" @click="cancelEditDesignerProject">Отмена</button>
-                  <button type="button" class="a-btn-save" :disabled="savingProject" @click="saveDesignerProjectEdits">
-                    {{ savingProject ? 'Сохранение…' : 'Сохранить проект' }}
-                  </button>
+                  <span class="cab-autosave-status" :class="autosaveStatusClass(projectEditState)">{{ autosaveStatusLabel(projectEditState) }}</span>
+                  <button type="button" class="a-btn-sm" @click="cancelEditDesignerProject">свернуть</button>
                 </div>
               </div>
 
@@ -1059,41 +918,41 @@
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-if="(section === 'profile') || showAll">
             <div class="cab-section" data-section="profile">
-            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistDesignerCabinetMode }">
+            <form @submit.prevent class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistDesignerCabinetMode }">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistDesignerCabinetMode }">
                 <h3>Основные данные</h3>
                 <div class="u-modal__row2">
                   <div class="u-field">
                     <label class="u-field__label">Имя / Студия *</label>
-                    <input v-model="form.name" class="glass-input" required />
+                    <input v-model="form.name" class="glass-input" required @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Компания</label>
-                    <input v-model="form.companyName" class="glass-input" placeholder="ООО / ИП…" />
+                    <input v-model="form.companyName" class="glass-input" placeholder="ООО / ИП…" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Телефон</label>
-                    <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" />
+                    <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Email</label>
-                    <input v-model="form.email" class="glass-input" type="email" placeholder="mail@example.com" />
+                    <input v-model="form.email" class="glass-input" type="email" placeholder="mail@example.com" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Telegram</label>
-                    <input v-model="form.telegram" class="glass-input" placeholder="@username" />
+                    <input v-model="form.telegram" class="glass-input" placeholder="@username" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Сайт / портфолио</label>
-                    <input v-model="form.website" class="glass-input" placeholder="https://…" />
+                    <input v-model="form.website" class="glass-input" placeholder="https://…" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Город</label>
-                    <input v-model="form.city" class="glass-input" placeholder="Москва" />
+                    <input v-model="form.city" class="glass-input" placeholder="Москва" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Опыт работы</label>
-                    <input v-model="form.experience" class="glass-input" placeholder="10 лет" />
+                    <input v-model="form.experience" class="glass-input" placeholder="10 лет" @blur="queueProfileAutosave" />
                   </div>
                 </div>
               </div>
@@ -1101,7 +960,7 @@
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistDesignerCabinetMode }">
                 <h3>О себе</h3>
                 <div class="u-field u-field--full">
-                  <textarea v-model="form.about" class="glass-input u-ta" rows="4" placeholder="Расскажите о своём подходе к дизайну, стилях, специализации…" />
+                  <textarea v-model="form.about" class="glass-input u-ta" rows="4" placeholder="Расскажите о своём подходе к дизайну, стилях, специализации…" @blur="queueProfileAutosave" />
                 </div>
               </div>
 
@@ -1113,14 +972,14 @@
                     :key="`spec-${sp}`"
                     type="button"
                     class="pkg-tag-picker"
-                    :class="{ 'pkg-tag-picker--active': form.specializations.includes(sp) }"
+                    :class="{ 'pkg-tag-picker--active': renderedProfileSpecializations.includes(sp) }"
                     @click="toggleSpec(sp)"
                   >{{ sp }}</button>
                 </div>
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <span class="cab-autosave-status" :class="autosaveStatusClass(profileSaveState)">{{ autosaveStatusLabel(profileSaveState) }}</span>
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -1162,6 +1021,14 @@ import {
   type PriceUnit,
   PRICE_UNITS,
 } from '~~/shared/types/designer'
+import {
+  getDesignerPackagePersistedKey,
+  getDesignerServicePersistedKey,
+  getDesignerSubscriptionPersistedKey,
+  normalizeDesignerPackages,
+  normalizeDesignerServices,
+  normalizeDesignerSubscriptions,
+} from '~~/shared/utils/designer-catalogs'
 import type { Wipe2EntityData } from '~/shared/types/wipe2'
 import { registerWipe2Data } from '~/composables/useWipe2'
 
@@ -1318,11 +1185,80 @@ function formatDocDate(value: string) {
   return date.toLocaleDateString('ru-RU')
 }
 
+const profileSpecDirty = ref(false)
+const renderedProfileSpecializations = computed(() => (
+  profileSpecDirty.value
+    ? form.specializations
+    : (Array.isArray(designer.value?.specializations) ? designer.value.specializations : form.specializations)
+))
+
+watch(() => designer.value?.specializations, () => {
+  profileSpecDirty.value = false
+}, { immediate: true, deep: true })
+
 function toggleSpec(sp: string) {
+  profileSpecDirty.value = true
   const idx = form.specializations.indexOf(sp)
   if (idx >= 0) form.specializations.splice(idx, 1)
   else form.specializations.push(sp)
+  queueProfileAutosave()
 }
+
+const profileSaveState = ref<InlineAutosaveState>('')
+const profileSnapshot = ref('')
+let profileSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearProfileSaveTimer() {
+  if (!profileSaveTimer) return
+  clearTimeout(profileSaveTimer)
+  profileSaveTimer = null
+}
+
+function serializeProfileForm() {
+  return JSON.stringify({
+    name: form.name,
+    companyName: form.companyName,
+    phone: form.phone,
+    email: form.email,
+    telegram: form.telegram,
+    website: form.website,
+    city: form.city,
+    experience: form.experience,
+    about: form.about,
+    specializations: [...form.specializations],
+  })
+}
+
+async function autoSaveProfile() {
+  clearProfileSaveTimer()
+  profileSaveState.value = 'saving'
+  try {
+    const nextSnapshot = serializeProfileForm()
+    await saveProfile()
+    profileSnapshot.value = nextSnapshot
+    profileSaveState.value = 'saved'
+    setAutosaveSettled(profileSaveState, 'saved')
+  } catch (error) {
+    profileSaveState.value = 'error'
+  }
+}
+
+function queueProfileAutosave() {
+  if (!designer.value) return
+  const nextSnapshot = serializeProfileForm()
+  if (nextSnapshot === profileSnapshot.value) return
+  clearProfileSaveTimer()
+  profileSaveTimer = setTimeout(() => {
+    autoSaveProfile()
+  }, 120)
+}
+
+watch(designerIdRef, async () => {
+  clearProfileSaveTimer()
+  await nextTick()
+  profileSnapshot.value = serializeProfileForm()
+  profileSaveState.value = ''
+}, { immediate: true })
 
 // ── Linked entities (pivot lists) ──
 
@@ -1386,9 +1322,6 @@ watch([designerProjects, linkedData], () => {
 
 // ── Services editing ──
 
-const editingServices = ref(false)
-const savingSvc = ref(false)
-const editServicesList = ref<DesignerServicePrice[]>([])
 const svcEditError = ref('')
 const svcEditSuccess = ref('')
 
@@ -1396,45 +1329,78 @@ const svcEditSuccess = ref('')
 const inlinePriceKey = ref<string | null>(null)
 const inlinePriceVal = ref(0)
 
+type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
+
+function cloneDraft<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value))
+}
+
+function makeEditorId() {
+  return `${Date.now()}_${Math.floor(Math.random() * 1000)}`
+}
+
+function getRequestErrorMessage(error: any, fallback: string) {
+  return error?.data?.message || error?.message || fallback
+}
+
+function showTransientMessage(target: { value: string }, message: string) {
+  target.value = message
+  setTimeout(() => {
+    if (target.value === message) target.value = ''
+  }, 2500)
+}
+
+function autosaveStatusLabel(state: InlineAutosaveState) {
+  if (state === 'saving') return '[ СОХРАНЕНИЕ... ]'
+  if (state === 'saved') return '[ СОХРАНЕНО ]'
+  if (state === 'error') return '[ ОШИБКА СОХРАНЕНИЯ ]'
+  return '[ AUTOSAVE ]'
+}
+
+function autosaveStatusClass(state: InlineAutosaveState) {
+  return state ? `cab-autosave-status--${state}` : 'cab-autosave-status--idle'
+}
+
+function getServicePersistedKey(service: DesignerServicePrice, index = services.value.findIndex((item) => item === service)) {
+  return getDesignerServicePersistedKey(service, Math.max(index, 0))
+}
+
 function getServiceActionKey(service: DesignerServicePrice, index = services.value.findIndex((item) => item === service)) {
-  return service.serviceKey || `service-index-${Math.max(index, 0)}`
+  return getServicePersistedKey(service, index)
 }
 
 function findServiceByActionKey(actionKey: string) {
-  if (actionKey.startsWith('service-index-')) {
-    const index = Number(actionKey.replace('service-index-', ''))
-    return Number.isInteger(index) ? services.value[index] || null : null
-  }
-  return services.value.find((item) => item.serviceKey === actionKey) || null
+  return services.value.find((item, index) => getServicePersistedKey(item, index) === actionKey) || null
+}
+
+function getPackagePersistedKey(pkg: DesignerPackage, index = packages.value.findIndex((item) => item === pkg)) {
+  return getDesignerPackagePersistedKey(pkg, Math.max(index, 0))
 }
 
 function getPackageActionKey(pkg: DesignerPackage, index = packages.value.findIndex((item) => item === pkg)) {
-  return pkg.key || `package-index-${Math.max(index, 0)}`
+  return getPackagePersistedKey(pkg, index)
 }
 
 function findPackageByActionKey(actionKey: string) {
-  if (actionKey.startsWith('package-index-')) {
-    const index = Number(actionKey.replace('package-index-', ''))
-    return Number.isInteger(index) ? packages.value[index] || null : null
-  }
-  return packages.value.find((item) => item.key === actionKey) || null
+  return packages.value.find((item, index) => getPackagePersistedKey(item, index) === actionKey) || null
+}
+
+function getSubscriptionPersistedKey(subscription: DesignerSubscription, index = subscriptions.value.findIndex((item) => item === subscription)) {
+  return getDesignerSubscriptionPersistedKey(subscription, Math.max(index, 0))
 }
 
 function getSubscriptionActionKey(subscription: DesignerSubscription, index = subscriptions.value.findIndex((item) => item === subscription)) {
-  return subscription.key || `subscription-index-${Math.max(index, 0)}`
+  return getSubscriptionPersistedKey(subscription, index)
 }
 
 function findSubscriptionByActionKey(actionKey: string) {
-  if (actionKey.startsWith('subscription-index-')) {
-    const index = Number(actionKey.replace('subscription-index-', ''))
-    return Number.isInteger(index) ? subscriptions.value[index] || null : null
-  }
-  return subscriptions.value.find((item) => item.key === actionKey) || null
+  return subscriptions.value.find((item, index) => getSubscriptionPersistedKey(item, index) === actionKey) || null
 }
 
 function startInlinePrice(svc: DesignerServicePrice) {
-  if (inlinePriceKey.value === svc.serviceKey) return
-  inlinePriceKey.value = svc.serviceKey
+  const actionKey = getServiceActionKey(svc)
+  if (inlinePriceKey.value === actionKey) return
+  inlinePriceKey.value = actionKey
   inlinePriceVal.value = svc.price
   nextTick(() => {
     const inp = document.querySelector('.svc-price-inline-input') as HTMLInputElement
@@ -1446,7 +1412,7 @@ function cancelInlinePrice() {
   inlinePriceKey.value = null
 }
 async function commitInlinePrice(svc: DesignerServicePrice) {
-  if (inlinePriceKey.value !== svc.serviceKey) return
+  if (inlinePriceKey.value !== getServiceActionKey(svc)) return
   const newPrice = Math.max(0, Number(inlinePriceVal.value) || 0)
   inlinePriceKey.value = null
   if (newPrice === svc.price) return
@@ -1456,88 +1422,8 @@ async function commitInlinePrice(svc: DesignerServicePrice) {
   await saveServices(updated)
 }
 
-const editServicesByCat = computed(() => {
-  const map = new Map<DesignerServiceCategory, DesignerServicePrice[]>()
-  for (const svc of editServicesList.value) {
-    if (!map.has(svc.category)) map.set(svc.category, [])
-    map.get(svc.category)!.push(svc)
-  }
-  return map
-})
-
-function startEditServices() {
-  svcEditError.value = ''
-  svcEditSuccess.value = ''
-  editServicesList.value = JSON.parse(JSON.stringify(services.value))
-  if (!editServicesList.value.length) addCustomService()
-  editingServices.value = true
-}
-function cancelEditServices() {
-  svcEditError.value = ''
-  editingServices.value = false
-}
-async function saveEditedServices() {
-  svcEditError.value = ''
-  svcEditSuccess.value = ''
-  const normalized = normalizeServicesForSave(editServicesList.value)
-  if (!normalized.ok) {
-    svcEditError.value = normalized.error
-    return
-  }
-  savingSvc.value = true
-  try {
-    await saveServices(normalized.list)
-    editingServices.value = false
-    svcEditSuccess.value = 'Услуги сохранены'
-    setTimeout(() => { svcEditSuccess.value = '' }, 2500)
-  } finally {
-    savingSvc.value = false
-  }
-}
-function removeEditService(key: string) {
-  editServicesList.value = editServicesList.value.filter(s => s.serviceKey !== key)
-}
-function addCustomService() {
-  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
-  editServicesList.value.push({
-    serviceKey: `custom_${id}`,
-    title: '',
-    description: '',
-    category: 'additional',
-    unit: 'fixed',
-    price: 0,
-    enabled: true,
-  })
-}
-function duplicateEditService(key: string) {
-  const index = editServicesList.value.findIndex(s => s.serviceKey === key)
-  if (index < 0) return
-  const source = editServicesList.value[index]!
-  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
-  const copy: DesignerServicePrice = {
-    ...JSON.parse(JSON.stringify(source)),
-    serviceKey: `${source.serviceKey}_copy_${id}`,
-    title: source.title ? `${source.title} (копия)` : 'Новая услуга',
-  }
-  editServicesList.value.splice(index + 1, 0, copy)
-}
-function moveEditService(key: string, direction: -1 | 1) {
-  const index = editServicesList.value.findIndex(s => s.serviceKey === key)
-  if (index < 0) return
-  const targetIndex = index + direction
-  if (targetIndex < 0 || targetIndex >= editServicesList.value.length) return
-  const [item] = editServicesList.value.splice(index, 1)
-  editServicesList.value.splice(targetIndex, 0, item)
-}
-
 function normalizeServicesForSave(list: DesignerServicePrice[]): { ok: true; list: DesignerServicePrice[] } | { ok: false; error: string } {
-  const cleaned = list
-    .map(item => ({
-      ...item,
-      title: String(item.title || '').trim(),
-      description: String(item.description || '').trim(),
-      price: Number.isFinite(Number(item.price)) ? Math.max(0, Number(item.price)) : 0,
-    }))
+  const cleaned = normalizeDesignerServices(list)
     .filter(item => item.title || item.description || item.price > 0)
 
   if (!cleaned.length) {
@@ -1547,7 +1433,6 @@ function normalizeServicesForSave(list: DesignerServicePrice[]): { ok: true; lis
   const seen = new Set<string>()
   for (const item of cleaned) {
     if (!item.title) return { ok: false, error: 'У всех услуг должно быть заполнено название' }
-    if (!item.serviceKey) return { ok: false, error: 'Ошибка ключа услуги, добавьте услугу заново' }
     if (seen.has(item.serviceKey)) return { ok: false, error: 'Найдены дубли услуг, удалите повторения' }
     seen.add(item.serviceKey)
   }
@@ -1563,98 +1448,15 @@ async function initFromTemplates() {
 
 // ── Packages editing ──
 
-const editingPackages = ref(false)
-const savingPkg = ref(false)
-const editPackagesList = ref<DesignerPackage[]>([])
 const pkgEditError = ref('')
 const pkgEditSuccess = ref('')
 
 const allServiceKeys = computed(() => {
-  if (editingServices.value) {
-    return editServicesList.value.map(s => ({ key: s.serviceKey, title: s.title }))
-  }
-  return services.value.map(s => ({ key: s.serviceKey, title: s.title }))
+  return services.value.map((service, index) => ({ key: getServicePersistedKey(service, index), title: service.title }))
 })
 
-function startEditPackages() {
-  pkgEditError.value = ''
-  pkgEditSuccess.value = ''
-  editPackagesList.value = JSON.parse(JSON.stringify(packages.value))
-  if (!editPackagesList.value.length) addCustomPackage()
-  editingPackages.value = true
-}
-function cancelEditPackages() {
-  pkgEditError.value = ''
-  editingPackages.value = false
-}
-async function saveEditedPackages() {
-  pkgEditError.value = ''
-  pkgEditSuccess.value = ''
-  const normalized = normalizePackagesForSave(editPackagesList.value)
-  if (!normalized.ok) {
-    pkgEditError.value = normalized.error
-    return
-  }
-  savingPkg.value = true
-  try {
-    await savePackages(normalized.list)
-    editingPackages.value = false
-    pkgEditSuccess.value = 'Пакеты сохранены'
-    setTimeout(() => { pkgEditSuccess.value = '' }, 2500)
-  } finally {
-    savingPkg.value = false
-  }
-}
-function togglePkgService(pkg: DesignerPackage, key: string) {
-  const idx = pkg.serviceKeys.indexOf(key)
-  if (idx >= 0) pkg.serviceKeys.splice(idx, 1)
-  else pkg.serviceKeys.push(key)
-}
-function addCustomPackage() {
-  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
-  editPackagesList.value.push({
-    key: `custom_package_${id}`,
-    title: '',
-    description: '',
-    serviceKeys: [],
-    pricePerSqm: 0,
-    enabled: true,
-  })
-}
-function duplicateEditPackage(key: string) {
-  const index = editPackagesList.value.findIndex(p => p.key === key)
-  if (index < 0) return
-  const source = editPackagesList.value[index]!
-  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
-  const copy: DesignerPackage = {
-    ...JSON.parse(JSON.stringify(source)),
-    key: `${source.key}_copy_${id}`,
-    title: source.title ? `${source.title} (копия)` : 'Новый пакет',
-  }
-  editPackagesList.value.splice(index + 1, 0, copy)
-}
-function moveEditPackage(key: string, direction: -1 | 1) {
-  const index = editPackagesList.value.findIndex(p => p.key === key)
-  if (index < 0) return
-  const targetIndex = index + direction
-  if (targetIndex < 0 || targetIndex >= editPackagesList.value.length) return
-  const [item] = editPackagesList.value.splice(index, 1)
-  editPackagesList.value.splice(targetIndex, 0, item)
-}
-function removeEditPackage(key: string) {
-  editPackagesList.value = editPackagesList.value.filter(p => p.key !== key)
-}
-
 function normalizePackagesForSave(list: DesignerPackage[]): { ok: true; list: DesignerPackage[] } | { ok: false; error: string } {
-  const cleaned = list
-    .map(pkg => ({
-      ...pkg,
-      key: String(pkg.key || '').trim(),
-      title: String(pkg.title || '').trim(),
-      description: String(pkg.description || '').trim(),
-      pricePerSqm: Number.isFinite(Number(pkg.pricePerSqm)) ? Math.max(0, Number(pkg.pricePerSqm)) : 0,
-      serviceKeys: Array.from(new Set((pkg.serviceKeys || []).filter(Boolean))),
-    }))
+  const cleaned = normalizeDesignerPackages(list)
     .filter(pkg => pkg.title || pkg.pricePerSqm > 0 || pkg.serviceKeys.length > 0)
 
   if (!cleaned.length) {
@@ -1663,7 +1465,6 @@ function normalizePackagesForSave(list: DesignerPackage[]): { ok: true; list: De
 
   const seen = new Set<string>()
   for (const pkg of cleaned) {
-    if (!pkg.key) return { ok: false, error: 'Ошибка ключа пакета, добавьте пакет заново' }
     if (!pkg.title) return { ok: false, error: 'У всех пакетов должно быть заполнено название' }
     if (seen.has(pkg.key)) return { ok: false, error: 'Найдены дубли пакетов, удалите повторения' }
     seen.add(pkg.key)
@@ -1682,21 +1483,97 @@ const serviceCardEditorKey = ref<string | null>(null)
 const serviceCardDraft = ref<DesignerServicePrice | null>(null)
 const serviceCardSaving = ref(false)
 const serviceCardError = ref('')
+const serviceCardSaveState = ref<InlineAutosaveState>('')
+const serviceCardSnapshot = ref('')
+let serviceCardTimer: ReturnType<typeof setTimeout> | null = null
 
 const packageCardEditorKey = ref<string | null>(null)
 const packageCardDraft = ref<DesignerPackage | null>(null)
 const packageCardSaving = ref(false)
 const packageCardError = ref('')
+const packageCardSaveState = ref<InlineAutosaveState>('')
+const packageCardSnapshot = ref('')
+let packageCardTimer: ReturnType<typeof setTimeout> | null = null
 
 const subscriptionCardEditorKey = ref<string | null>(null)
 const subscriptionCardDraft = ref<DesignerSubscription | null>(null)
 const subscriptionCardSaving = ref(false)
 const subscriptionCardError = ref('')
+const subscriptionCardSaveState = ref<InlineAutosaveState>('')
+const subscriptionCardSnapshot = ref('')
+let subscriptionCardTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearServiceCardTimer() {
+  if (!serviceCardTimer) return
+  clearTimeout(serviceCardTimer)
+  serviceCardTimer = null
+}
+
+function clearPackageCardTimer() {
+  if (!packageCardTimer) return
+  clearTimeout(packageCardTimer)
+  packageCardTimer = null
+}
+
+function clearSubscriptionCardTimer() {
+  if (!subscriptionCardTimer) return
+  clearTimeout(subscriptionCardTimer)
+  subscriptionCardTimer = null
+}
+
+function setAutosaveSettled(state: { value: InlineAutosaveState }, expected: InlineAutosaveState) {
+  setTimeout(() => {
+    if (state.value === expected) state.value = ''
+  }, 2200)
+}
+
+function buildCustomServiceDraft(): DesignerServicePrice {
+  const id = makeEditorId()
+  return {
+    serviceKey: `custom_${id}`,
+    title: 'Новая услуга',
+    description: '',
+    category: 'additional',
+    unit: 'fixed',
+    price: 0,
+    enabled: true,
+  }
+}
+
+function buildCustomPackageDraft(): DesignerPackage {
+  const id = makeEditorId()
+  return {
+    key: `custom_package_${id}`,
+    title: 'Новый пакет',
+    description: '',
+    serviceKeys: [],
+    pricePerSqm: 0,
+    enabled: true,
+  }
+}
+
+function buildCustomSubscriptionDraft(): DesignerSubscription {
+  const id = makeEditorId()
+  return {
+    key: `custom_sub_${id}`,
+    title: 'Новая подписка',
+    description: '',
+    billingPeriod: 'monthly',
+    price: 0,
+    discount: 0,
+    serviceKeys: [],
+    limits: {},
+    enabled: true,
+  }
+}
 
 function closeServiceCardEditor() {
+  clearServiceCardTimer()
   serviceCardEditorKey.value = null
   serviceCardDraft.value = null
   serviceCardError.value = ''
+  serviceCardSaveState.value = ''
+  serviceCardSnapshot.value = ''
 }
 
 function openServiceCardEditor(service: DesignerServicePrice) {
@@ -1707,8 +1584,13 @@ function openServiceCardEditor(service: DesignerServicePrice) {
   subscriptionCardDraft.value = null
   subscriptionCardError.value = ''
   serviceCardEditorKey.value = getServiceActionKey(service)
-  serviceCardDraft.value = JSON.parse(JSON.stringify(service))
+  serviceCardDraft.value = {
+    ...cloneDraft(service),
+    serviceKey: getServicePersistedKey(service),
+  }
   serviceCardError.value = ''
+  serviceCardSaveState.value = ''
+  serviceCardSnapshot.value = JSON.stringify(serviceCardDraft.value)
 }
 
 function toggleServiceCardEditor(service: DesignerServicePrice) {
@@ -1721,33 +1603,128 @@ function toggleServiceCardEditor(service: DesignerServicePrice) {
 
 async function saveServiceCardEditor() {
   if (!serviceCardDraft.value) return
+  clearServiceCardTimer()
   serviceCardError.value = ''
   const activeKey = serviceCardEditorKey.value
+  const draft = cloneDraft(serviceCardDraft.value)
   const updatedList = services.value.map((item) => (
     getServiceActionKey(item) === activeKey
-      ? JSON.parse(JSON.stringify(serviceCardDraft.value))
-      : JSON.parse(JSON.stringify(item))
+      ? draft
+      : cloneDraft(item)
   ))
   const normalized = normalizeServicesForSave(updatedList)
   if (!normalized.ok) {
     serviceCardError.value = normalized.error
+    serviceCardSaveState.value = 'error'
     return
   }
   serviceCardSaving.value = true
+  serviceCardSaveState.value = 'saving'
   try {
     await saveServices(normalized.list)
+    serviceCardSnapshot.value = JSON.stringify(serviceCardDraft.value)
+    serviceCardSaveState.value = 'saved'
+    setAutosaveSettled(serviceCardSaveState, 'saved')
+  } catch (error: any) {
+    serviceCardError.value = getRequestErrorMessage(error, 'Не удалось сохранить услугу')
+    serviceCardSaveState.value = 'error'
+  } finally {
+    serviceCardSaving.value = false
+  }
+}
+
+function queueServiceCardSave() {
+  if (!serviceCardDraft.value || !serviceCardEditorKey.value) return
+  const nextSnapshot = JSON.stringify(serviceCardDraft.value)
+  if (nextSnapshot === serviceCardSnapshot.value) return
+  clearServiceCardTimer()
+  serviceCardTimer = setTimeout(() => {
+    saveServiceCardEditor()
+  }, 120)
+}
+
+async function createServiceCard() {
+  svcEditError.value = ''
+  const draft = buildCustomServiceDraft()
+  serviceCardSaving.value = true
+  try {
+    await saveServices([...services.value.map((item) => cloneDraft(item)), draft])
+    showTransientMessage(svcEditSuccess, 'Услуга добавлена')
+    await nextTick()
+    openServiceCardEditor(findServiceByActionKey(draft.serviceKey) || draft)
+  } catch (error: any) {
+    svcEditError.value = getRequestErrorMessage(error, 'Не удалось добавить услугу')
+  } finally {
+    serviceCardSaving.value = false
+  }
+}
+
+async function duplicateServiceCard(service: DesignerServicePrice) {
+  svcEditError.value = ''
+  const source = serviceCardDraft.value && serviceCardEditorKey.value === getServiceActionKey(service)
+    ? cloneDraft(serviceCardDraft.value)
+    : cloneDraft(service)
+  const list = services.value.map((item) => cloneDraft(item))
+  const index = services.value.findIndex((item) => getServiceActionKey(item) === getServiceActionKey(service))
+  if (index < 0) return
+  source.serviceKey = `${service.serviceKey || 'service'}_copy_${makeEditorId()}`
+  source.title = source.title ? `${source.title} (копия)` : 'Новая услуга'
+  serviceCardSaving.value = true
+  try {
+    list.splice(index + 1, 0, source)
+    await saveServices(list)
+    showTransientMessage(svcEditSuccess, 'Услуга продублирована')
+    await nextTick()
+    openServiceCardEditor(findServiceByActionKey(source.serviceKey) || source)
+  } catch (error: any) {
+    svcEditError.value = getRequestErrorMessage(error, 'Не удалось продублировать услугу')
+  } finally {
+    serviceCardSaving.value = false
+  }
+}
+
+async function moveServiceCard(service: DesignerServicePrice, direction: -1 | 1) {
+  svcEditError.value = ''
+  const index = services.value.findIndex((item) => getServiceActionKey(item) === getServiceActionKey(service))
+  const targetIndex = index + direction
+  if (index < 0 || targetIndex < 0 || targetIndex >= services.value.length) return
+  const list = services.value.map((item) => cloneDraft(item))
+  const [moved] = list.splice(index, 1)
+  list.splice(targetIndex, 0, moved)
+  serviceCardSaving.value = true
+  try {
+    await saveServices(list)
+    showTransientMessage(svcEditSuccess, 'Порядок услуг обновлён')
+    await nextTick()
+    openServiceCardEditor(findServiceByActionKey(getServiceActionKey(service)) || moved)
+  } catch (error: any) {
+    svcEditError.value = getRequestErrorMessage(error, 'Не удалось изменить порядок услуг')
+  } finally {
+    serviceCardSaving.value = false
+  }
+}
+
+async function removeServiceCard(service: DesignerServicePrice) {
+  svcEditError.value = ''
+  serviceCardSaving.value = true
+  try {
+    await saveServices(services.value.filter((item) => getServiceActionKey(item) !== getServiceActionKey(service)).map((item) => cloneDraft(item)))
     closeServiceCardEditor()
-    svcEditSuccess.value = 'Услуга сохранена'
-    setTimeout(() => { svcEditSuccess.value = '' }, 2500)
+    showTransientMessage(svcEditSuccess, 'Услуга удалена')
+  } catch (error: any) {
+    svcEditError.value = getRequestErrorMessage(error, 'Не удалось удалить услугу')
   } finally {
     serviceCardSaving.value = false
   }
 }
 
 function closePackageCardEditor() {
+  clearPackageCardTimer()
   packageCardEditorKey.value = null
   packageCardDraft.value = null
   packageCardError.value = ''
+  packageCardSaveState.value = ''
+  packageCardSnapshot.value = ''
 }
 
 function openPackageCardEditor(pkg: DesignerPackage) {
@@ -1755,10 +1732,13 @@ function openPackageCardEditor(pkg: DesignerPackage) {
   closeSubscriptionCardEditor()
   packageCardEditorKey.value = getPackageActionKey(pkg)
   packageCardDraft.value = {
-    ...JSON.parse(JSON.stringify(pkg)),
+    ...cloneDraft(pkg),
+    key: getPackagePersistedKey(pkg),
     serviceKeys: Array.isArray(pkg.serviceKeys) ? [...pkg.serviceKeys] : [],
   }
   packageCardError.value = ''
+  packageCardSaveState.value = ''
+  packageCardSnapshot.value = JSON.stringify(packageCardDraft.value)
 }
 
 function togglePackageCardEditor(pkg: DesignerPackage) {
@@ -1791,33 +1771,128 @@ const packageCardDraftServices = computed(() => {
 
 async function savePackageCardEditor() {
   if (!packageCardDraft.value) return
+  clearPackageCardTimer()
   packageCardError.value = ''
   const activeKey = packageCardEditorKey.value
+  const draft = cloneDraft(packageCardDraft.value)
   const updatedList = packages.value.map((item) => (
     getPackageActionKey(item) === activeKey
-      ? JSON.parse(JSON.stringify(packageCardDraft.value))
-      : JSON.parse(JSON.stringify(item))
+      ? draft
+      : cloneDraft(item)
   ))
   const normalized = normalizePackagesForSave(updatedList)
   if (!normalized.ok) {
     packageCardError.value = normalized.error
+    packageCardSaveState.value = 'error'
     return
   }
   packageCardSaving.value = true
+  packageCardSaveState.value = 'saving'
   try {
     await savePackages(normalized.list)
+    packageCardSnapshot.value = JSON.stringify(packageCardDraft.value)
+    packageCardSaveState.value = 'saved'
+    setAutosaveSettled(packageCardSaveState, 'saved')
+  } catch (error: any) {
+    packageCardError.value = getRequestErrorMessage(error, 'Не удалось сохранить пакет')
+    packageCardSaveState.value = 'error'
+  } finally {
+    packageCardSaving.value = false
+  }
+}
+
+function queuePackageCardSave() {
+  if (!packageCardDraft.value || !packageCardEditorKey.value) return
+  const nextSnapshot = JSON.stringify(packageCardDraft.value)
+  if (nextSnapshot === packageCardSnapshot.value) return
+  clearPackageCardTimer()
+  packageCardTimer = setTimeout(() => {
+    savePackageCardEditor()
+  }, 120)
+}
+
+async function createPackageCard() {
+  pkgEditError.value = ''
+  const draft = buildCustomPackageDraft()
+  packageCardSaving.value = true
+  try {
+    await savePackages([...packages.value.map((item) => cloneDraft(item)), draft])
+    showTransientMessage(pkgEditSuccess, 'Пакет добавлен')
+    await nextTick()
+    openPackageCardEditor(findPackageByActionKey(draft.key) || draft)
+  } catch (error: any) {
+    pkgEditError.value = getRequestErrorMessage(error, 'Не удалось добавить пакет')
+  } finally {
+    packageCardSaving.value = false
+  }
+}
+
+async function duplicatePackageCard(pkg: DesignerPackage) {
+  pkgEditError.value = ''
+  const source = packageCardDraft.value && packageCardEditorKey.value === getPackageActionKey(pkg)
+    ? cloneDraft(packageCardDraft.value)
+    : cloneDraft(pkg)
+  const list = packages.value.map((item) => cloneDraft(item))
+  const index = packages.value.findIndex((item) => getPackageActionKey(item) === getPackageActionKey(pkg))
+  if (index < 0) return
+  source.key = `${pkg.key || 'package'}_copy_${makeEditorId()}`
+  source.title = source.title ? `${source.title} (копия)` : 'Новый пакет'
+  packageCardSaving.value = true
+  try {
+    list.splice(index + 1, 0, source)
+    await savePackages(list)
+    showTransientMessage(pkgEditSuccess, 'Пакет продублирован')
+    await nextTick()
+    openPackageCardEditor(findPackageByActionKey(source.key) || source)
+  } catch (error: any) {
+    pkgEditError.value = getRequestErrorMessage(error, 'Не удалось продублировать пакет')
+  } finally {
+    packageCardSaving.value = false
+  }
+}
+
+async function movePackageCard(pkg: DesignerPackage, direction: -1 | 1) {
+  pkgEditError.value = ''
+  const index = packages.value.findIndex((item) => getPackageActionKey(item) === getPackageActionKey(pkg))
+  const targetIndex = index + direction
+  if (index < 0 || targetIndex < 0 || targetIndex >= packages.value.length) return
+  const list = packages.value.map((item) => cloneDraft(item))
+  const [moved] = list.splice(index, 1)
+  list.splice(targetIndex, 0, moved)
+  packageCardSaving.value = true
+  try {
+    await savePackages(list)
+    showTransientMessage(pkgEditSuccess, 'Порядок пакетов обновлён')
+    await nextTick()
+    openPackageCardEditor(findPackageByActionKey(getPackageActionKey(pkg)) || moved)
+  } catch (error: any) {
+    pkgEditError.value = getRequestErrorMessage(error, 'Не удалось изменить порядок пакетов')
+  } finally {
+    packageCardSaving.value = false
+  }
+}
+
+async function removePackageCard(pkg: DesignerPackage) {
+  pkgEditError.value = ''
+  packageCardSaving.value = true
+  try {
+    await savePackages(packages.value.filter((item) => getPackageActionKey(item) !== getPackageActionKey(pkg)).map((item) => cloneDraft(item)))
     closePackageCardEditor()
-    pkgEditSuccess.value = 'Пакет сохранен'
-    setTimeout(() => { pkgEditSuccess.value = '' }, 2500)
+    showTransientMessage(pkgEditSuccess, 'Пакет удалён')
+  } catch (error: any) {
+    pkgEditError.value = getRequestErrorMessage(error, 'Не удалось удалить пакет')
   } finally {
     packageCardSaving.value = false
   }
 }
 
 function closeSubscriptionCardEditor() {
+  clearSubscriptionCardTimer()
   subscriptionCardEditorKey.value = null
   subscriptionCardDraft.value = null
   subscriptionCardError.value = ''
+  subscriptionCardSaveState.value = ''
+  subscriptionCardSnapshot.value = ''
 }
 
 function openSubscriptionCardEditor(subscription: DesignerSubscription) {
@@ -1825,11 +1900,14 @@ function openSubscriptionCardEditor(subscription: DesignerSubscription) {
   closePackageCardEditor()
   subscriptionCardEditorKey.value = getSubscriptionActionKey(subscription)
   subscriptionCardDraft.value = {
-    ...JSON.parse(JSON.stringify(subscription)),
+    ...cloneDraft(subscription),
+    key: getSubscriptionPersistedKey(subscription),
     serviceKeys: Array.isArray(subscription.serviceKeys) ? [...subscription.serviceKeys] : [],
     limits: { ...(subscription.limits || {}) },
   }
   subscriptionCardError.value = ''
+  subscriptionCardSaveState.value = ''
+  subscriptionCardSnapshot.value = JSON.stringify(subscriptionCardDraft.value)
 }
 
 function toggleSubscriptionCardEditor(subscription: DesignerSubscription) {
@@ -1853,42 +1931,157 @@ function updateSubscriptionDraftLimit(limitKey: string, value: number) {
   subscriptionCardDraft.value.limits[limitKey] = Math.max(0, Number(value) || 0)
 }
 
+function renameSubscriptionDraftLimit(limitKey: string, nextKeyRaw: string) {
+  if (!subscriptionCardDraft.value?.limits) return
+  const nextKey = String(nextKeyRaw || '').trim()
+  if (!nextKey || nextKey === limitKey) return
+  if (limitKey !== nextKey && nextKey in subscriptionCardDraft.value.limits) {
+    subscriptionCardError.value = 'Лимит с таким ключом уже существует'
+    subscriptionCardSaveState.value = 'error'
+    return
+  }
+  const nextLimits: Record<string, number> = {}
+  for (const [key, value] of Object.entries(subscriptionCardDraft.value.limits)) {
+    nextLimits[key === limitKey ? nextKey : key] = Number(value) || 0
+  }
+  subscriptionCardDraft.value.limits = nextLimits
+  if (subscriptionCardError.value === 'Лимит с таким ключом уже существует') subscriptionCardError.value = ''
+}
+
 function removeSubscriptionDraftLimit(limitKey: string) {
   if (!subscriptionCardDraft.value?.limits) return
   delete subscriptionCardDraft.value.limits[limitKey]
 }
 
 function addSubscriptionCardDraftLimit() {
-  const name = prompt('Ключ лимита (например: visits, online_hours, renders)')
-  if (!name || !subscriptionCardDraft.value) return
+  if (!subscriptionCardDraft.value) return
   if (!subscriptionCardDraft.value.limits) subscriptionCardDraft.value.limits = {}
-  subscriptionCardDraft.value.limits[name] = 0
+  let index = 1
+  let nextKey = `limit_${index}`
+  while (nextKey in subscriptionCardDraft.value.limits) {
+    index += 1
+    nextKey = `limit_${index}`
+  }
+  subscriptionCardDraft.value.limits[nextKey] = 0
 }
 
 async function saveSubscriptionCardEditor() {
   if (!subscriptionCardDraft.value) return
+  clearSubscriptionCardTimer()
   subscriptionCardError.value = ''
   const activeKey = subscriptionCardEditorKey.value
+  const draft = cloneDraft(subscriptionCardDraft.value)
   const updatedList = subscriptions.value.map((item) => (
     getSubscriptionActionKey(item) === activeKey
-      ? JSON.parse(JSON.stringify(subscriptionCardDraft.value))
-      : JSON.parse(JSON.stringify(item))
+      ? draft
+      : cloneDraft(item)
   ))
   const normalized = normalizeSubscriptionsForSave(updatedList)
   if (!normalized.ok) {
     subscriptionCardError.value = normalized.error
+    subscriptionCardSaveState.value = 'error'
     return
   }
   subscriptionCardSaving.value = true
+  subscriptionCardSaveState.value = 'saving'
   try {
     await saveSubscriptions(normalized.list)
-    closeSubscriptionCardEditor()
-    subEditSuccess.value = 'Подписка сохранена'
-    setTimeout(() => { subEditSuccess.value = '' }, 2500)
+    subscriptionCardSnapshot.value = JSON.stringify(subscriptionCardDraft.value)
+    subscriptionCardSaveState.value = 'saved'
+    setAutosaveSettled(subscriptionCardSaveState, 'saved')
+  } catch (error: any) {
+    subscriptionCardError.value = getRequestErrorMessage(error, 'Не удалось сохранить подписку')
+    subscriptionCardSaveState.value = 'error'
   } finally {
     subscriptionCardSaving.value = false
   }
 }
+
+function queueSubscriptionCardSave() {
+  if (!subscriptionCardDraft.value || !subscriptionCardEditorKey.value) return
+  const nextSnapshot = JSON.stringify(subscriptionCardDraft.value)
+  if (nextSnapshot === subscriptionCardSnapshot.value) return
+  clearSubscriptionCardTimer()
+  subscriptionCardTimer = setTimeout(() => {
+    saveSubscriptionCardEditor()
+  }, 120)
+}
+
+async function createSubscriptionCard() {
+  subEditError.value = ''
+  const draft = buildCustomSubscriptionDraft()
+  subscriptionCardSaving.value = true
+  try {
+    await saveSubscriptions([...subscriptions.value.map((item) => cloneDraft(item)), draft])
+    showTransientMessage(subEditSuccess, 'Подписка добавлена')
+    await nextTick()
+    openSubscriptionCardEditor(findSubscriptionByActionKey(draft.key) || draft)
+  } catch (error: any) {
+    subEditError.value = getRequestErrorMessage(error, 'Не удалось добавить подписку')
+  } finally {
+    subscriptionCardSaving.value = false
+  }
+}
+
+async function duplicateSubscriptionCard(subscription: DesignerSubscription) {
+  subEditError.value = ''
+  const source = subscriptionCardDraft.value && subscriptionCardEditorKey.value === getSubscriptionActionKey(subscription)
+    ? cloneDraft(subscriptionCardDraft.value)
+    : cloneDraft(subscription)
+  const list = subscriptions.value.map((item) => cloneDraft(item))
+  const index = subscriptions.value.findIndex((item) => getSubscriptionActionKey(item) === getSubscriptionActionKey(subscription))
+  if (index < 0) return
+  source.key = `${subscription.key || 'subscription'}_copy_${makeEditorId()}`
+  source.title = source.title ? `${source.title} (копия)` : 'Новая подписка'
+  subscriptionCardSaving.value = true
+  try {
+    list.splice(index + 1, 0, source)
+    await saveSubscriptions(list)
+    showTransientMessage(subEditSuccess, 'Подписка продублирована')
+    await nextTick()
+    openSubscriptionCardEditor(findSubscriptionByActionKey(source.key) || source)
+  } catch (error: any) {
+    subEditError.value = getRequestErrorMessage(error, 'Не удалось продублировать подписку')
+  } finally {
+    subscriptionCardSaving.value = false
+  }
+}
+
+async function moveSubscriptionCard(subscription: DesignerSubscription, direction: -1 | 1) {
+  subEditError.value = ''
+  const index = subscriptions.value.findIndex((item) => getSubscriptionActionKey(item) === getSubscriptionActionKey(subscription))
+  const targetIndex = index + direction
+  if (index < 0 || targetIndex < 0 || targetIndex >= subscriptions.value.length) return
+  const list = subscriptions.value.map((item) => cloneDraft(item))
+  const [moved] = list.splice(index, 1)
+  list.splice(targetIndex, 0, moved)
+  subscriptionCardSaving.value = true
+  try {
+    await saveSubscriptions(list)
+    showTransientMessage(subEditSuccess, 'Порядок подписок обновлён')
+    await nextTick()
+    openSubscriptionCardEditor(findSubscriptionByActionKey(getSubscriptionActionKey(subscription)) || moved)
+  } catch (error: any) {
+    subEditError.value = getRequestErrorMessage(error, 'Не удалось изменить порядок подписок')
+  } finally {
+    subscriptionCardSaving.value = false
+  }
+}
+
+async function removeSubscriptionCard(subscription: DesignerSubscription) {
+  subEditError.value = ''
+  subscriptionCardSaving.value = true
+  try {
+    await saveSubscriptions(subscriptions.value.filter((item) => getSubscriptionActionKey(item) !== getSubscriptionActionKey(subscription)).map((item) => cloneDraft(item)))
+    closeSubscriptionCardEditor()
+    showTransientMessage(subEditSuccess, 'Подписка удалена')
+  } catch (error: any) {
+    subEditError.value = getRequestErrorMessage(error, 'Не удалось удалить подписку')
+  } finally {
+    subscriptionCardSaving.value = false
+  }
+}
+
 
 watch(() => props.focusTarget?.requestId, async () => {
   const target = props.focusTarget
@@ -1915,102 +2108,11 @@ watch(() => props.focusTarget?.requestId, async () => {
 
 // ── Subscriptions editing ──
 
-const editingSubscriptions = ref(false)
-const savingSub = ref(false)
-const editSubscriptionsList = ref<DesignerSubscription[]>([])
 const subEditError = ref('')
 const subEditSuccess = ref('')
 
-function startEditSubscriptions() {
-  subEditError.value = ''
-  subEditSuccess.value = ''
-  editSubscriptionsList.value = JSON.parse(JSON.stringify(subscriptions.value))
-  if (!editSubscriptionsList.value.length) addCustomSubscription()
-  editingSubscriptions.value = true
-}
-function cancelEditSubscriptions() {
-  subEditError.value = ''
-  editingSubscriptions.value = false
-}
-async function saveEditedSubscriptions() {
-  subEditError.value = ''
-  subEditSuccess.value = ''
-  const normalized = normalizeSubscriptionsForSave(editSubscriptionsList.value)
-  if (!normalized.ok) {
-    subEditError.value = normalized.error
-    return
-  }
-  savingSub.value = true
-  try {
-    await saveSubscriptions(normalized.list)
-    editingSubscriptions.value = false
-    subEditSuccess.value = 'Подписки сохранены'
-    setTimeout(() => { subEditSuccess.value = '' }, 2500)
-  } finally {
-    savingSub.value = false
-  }
-}
-function addCustomSubscription() {
-  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
-  editSubscriptionsList.value.push({
-    key: `custom_sub_${id}`,
-    title: '',
-    description: '',
-    billingPeriod: 'monthly',
-    price: 0,
-    discount: 0,
-    serviceKeys: [],
-    limits: {},
-    enabled: true,
-  })
-}
-function duplicateEditSubscription(key: string) {
-  const index = editSubscriptionsList.value.findIndex(s => s.key === key)
-  if (index < 0) return
-  const source = editSubscriptionsList.value[index]!
-  const id = `${Date.now()}_${Math.floor(Math.random() * 1000)}`
-  const copy: DesignerSubscription = {
-    ...JSON.parse(JSON.stringify(source)),
-    key: `${source.key}_copy_${id}`,
-    title: source.title ? `${source.title} (копия)` : 'Новая подписка',
-  }
-  editSubscriptionsList.value.splice(index + 1, 0, copy)
-}
-function moveEditSubscription(key: string, direction: -1 | 1) {
-  const index = editSubscriptionsList.value.findIndex(s => s.key === key)
-  if (index < 0) return
-  const targetIndex = index + direction
-  if (targetIndex < 0 || targetIndex >= editSubscriptionsList.value.length) return
-  const [item] = editSubscriptionsList.value.splice(index, 1)
-  editSubscriptionsList.value.splice(targetIndex, 0, item)
-}
-function removeEditSubscription(key: string) {
-  editSubscriptionsList.value = editSubscriptionsList.value.filter(s => s.key !== key)
-}
-function toggleSubService(sub: DesignerSubscription, key: string) {
-  const idx = sub.serviceKeys.indexOf(key)
-  if (idx >= 0) sub.serviceKeys.splice(idx, 1)
-  else sub.serviceKeys.push(key)
-}
-function addSubLimit(sub: DesignerSubscription) {
-  const name = prompt('Ключ лимита (например: visits, online_hours, renders)')
-  if (!name) return
-  if (!sub.limits) sub.limits = {}
-  sub.limits[name] = 0
-}
-
 function normalizeSubscriptionsForSave(list: DesignerSubscription[]): { ok: true; list: DesignerSubscription[] } | { ok: false; error: string } {
-  const cleaned = list
-    .map(sub => ({
-      ...sub,
-      key: String(sub.key || '').trim(),
-      title: String(sub.title || '').trim(),
-      description: String(sub.description || '').trim(),
-      price: Number.isFinite(Number(sub.price)) ? Math.max(0, Number(sub.price)) : 0,
-      discount: Number.isFinite(Number(sub.discount)) ? Math.min(100, Math.max(0, Number(sub.discount))) : 0,
-      serviceKeys: Array.from(new Set((sub.serviceKeys || []).filter(Boolean))),
-      limits: sub.limits || {},
-    }))
+  const cleaned = normalizeDesignerSubscriptions(list)
     .filter(sub => sub.title || sub.price > 0)
 
   if (!cleaned.length) {
@@ -2019,7 +2121,6 @@ function normalizeSubscriptionsForSave(list: DesignerSubscription[]): { ok: true
 
   const seen = new Set<string>()
   for (const sub of cleaned) {
-    if (!sub.key) return { ok: false, error: 'Ошибка ключа подписки, добавьте подписку заново' }
     if (!sub.title) return { ok: false, error: 'У всех подписок должно быть заполнено название' }
     if (seen.has(sub.key)) return { ok: false, error: 'Найдены дубли подписок, удалите повторения' }
     seen.add(sub.key)
@@ -2118,6 +2219,40 @@ function getPackageTitle(key: string): string {
   if (pkg) return pkg.title
   const tmpl = DESIGNER_PACKAGE_TEMPLATES.find(t => t.key === key)
   return tmpl?.title || key
+}
+
+function getPackageDisplayTitle(pkg: DesignerPackage | null | undefined, index = 0): string {
+  if (!pkg) return `Пакет ${index + 1}`
+  const title = String(pkg.title || '').trim()
+  if (title) return title
+  const template = DESIGNER_PACKAGE_TEMPLATES.find((item) => item.key === pkg.key)
+  if (template?.title) return template.title
+  return `Пакет ${index + 1}`
+}
+
+function getPackageDisplayDescription(pkg: DesignerPackage | null | undefined): string {
+  if (!pkg) return 'Опишите состав пакета, объём сопровождения и для какого сценария он подходит.'
+  const description = String(pkg.description || '').trim()
+  if (description) return description
+  const template = DESIGNER_PACKAGE_TEMPLATES.find((item) => item.key === pkg.key)
+  return template?.description || 'Опишите состав пакета, объём сопровождения и для какого сценария он подходит.'
+}
+
+function getSubscriptionDisplayTitle(sub: DesignerSubscription | null | undefined, index = 0): string {
+  if (!sub) return `Подписка ${index + 1}`
+  const title = String(sub.title || '').trim()
+  if (title) return title
+  const template = DESIGNER_SUBSCRIPTION_TEMPLATES.find((item) => item.key === sub.key)
+  if (template?.title) return template.title
+  return `Подписка ${index + 1}`
+}
+
+function getSubscriptionDisplayDescription(sub: DesignerSubscription | null | undefined): string {
+  if (!sub) return 'Опишите формат сопровождения, частоту контакта и результат для клиента.'
+  const description = String(sub.description || '').trim()
+  if (description) return description
+  const template = DESIGNER_SUBSCRIPTION_TEMPLATES.find((item) => item.key === sub.key)
+  return template?.description || 'Опишите формат сопровождения, частоту контакта и результат для клиента.'
 }
 
 function formatRubles(value: number): string {
@@ -2235,7 +2370,7 @@ function getSubscriptionGroupLabel(sub: DesignerSubscription): string {
 
 function getSubscriptionListDescription(sub: DesignerSubscription): string {
   const parts: string[] = []
-  if (sub.description) parts.push(sub.description)
+  if (getSubscriptionDisplayDescription(sub)) parts.push(getSubscriptionDisplayDescription(sub))
   if (sub.serviceKeys?.length) {
     parts.push(`Сервисы: ${sub.serviceKeys.slice(0, 4).map((key) => getServiceTitle(key)).join(', ')}`)
   }
@@ -2266,6 +2401,9 @@ const editingDesignerProjectId = ref<number | null>(null)
 const savingProject = ref(false)
 const projectEditError = ref('')
 const projectEditSuccess = ref('')
+const projectEditState = ref<InlineAutosaveState>('')
+const projectEditSnapshot = ref('')
+let projectEditTimer: ReturnType<typeof setTimeout> | null = null
 const projectEdit = reactive({
   designerProjectId: 0,
   title: '',
@@ -2276,6 +2414,24 @@ const projectEdit = reactive({
   notes: '',
 })
 
+function clearProjectEditTimer() {
+  if (!projectEditTimer) return
+  clearTimeout(projectEditTimer)
+  projectEditTimer = null
+}
+
+function serializeProjectEdit() {
+  return JSON.stringify({
+    designerProjectId: projectEdit.designerProjectId,
+    title: projectEdit.title,
+    packageKey: projectEdit.packageKey,
+    pricePerSqm: projectEdit.pricePerSqm,
+    area: projectEdit.area,
+    status: projectEdit.status,
+    notes: projectEdit.notes,
+  })
+}
+
 async function doCreateProject() {
   await createProject()
   showNewProjectModal.value = false
@@ -2284,6 +2440,7 @@ async function doCreateProject() {
 function startEditDesignerProject(dp: any) {
   projectEditError.value = ''
   projectEditSuccess.value = ''
+  projectEditState.value = ''
   editingDesignerProjectId.value = dp.id
   projectEdit.designerProjectId = dp.id
   projectEdit.title = String(dp.projectTitle || '')
@@ -2292,22 +2449,27 @@ function startEditDesignerProject(dp: any) {
   projectEdit.area = Number(dp.area || 0)
   projectEdit.status = (dp.status || 'draft') as any
   projectEdit.notes = String(dp.notes || '')
+  projectEditSnapshot.value = serializeProjectEdit()
 }
 
 function cancelEditDesignerProject() {
+  clearProjectEditTimer()
   editingDesignerProjectId.value = null
   projectEditError.value = ''
+  projectEditState.value = ''
 }
 
 async function saveDesignerProjectEdits() {
+  clearProjectEditTimer()
   projectEditError.value = ''
-  projectEditSuccess.value = ''
   if (!projectEdit.title.trim()) {
     projectEditError.value = 'Укажите название проекта'
+    projectEditState.value = 'error'
     return
   }
 
   savingProject.value = true
+  projectEditState.value = 'saving'
   try {
     await updateDesignerProject({
       designerProjectId: projectEdit.designerProjectId,
@@ -2318,14 +2480,25 @@ async function saveDesignerProjectEdits() {
       status: projectEdit.status,
       notes: projectEdit.notes || null,
     })
-    editingDesignerProjectId.value = null
-    projectEditSuccess.value = 'Проект обновлён'
-    setTimeout(() => { projectEditSuccess.value = '' }, 2500)
+    projectEditSnapshot.value = serializeProjectEdit()
+    projectEditState.value = 'saved'
+    setAutosaveSettled(projectEditState, 'saved')
   } catch (e: any) {
     projectEditError.value = e?.data?.message || 'Не удалось сохранить проект'
+    projectEditState.value = 'error'
   } finally {
     savingProject.value = false
   }
+}
+
+function queueProjectEditSave() {
+  if (!editingDesignerProjectId.value) return
+  const nextSnapshot = serializeProjectEdit()
+  if (nextSnapshot === projectEditSnapshot.value) return
+  clearProjectEditTimer()
+  projectEditTimer = setTimeout(() => {
+    saveDesignerProjectEdits()
+  }, 120)
 }
 
 function getDesignerDocCategoryLabel(category: string): string {
@@ -2400,7 +2573,7 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         title: groupTitle,
         subtitle: `${items.length} в разделе`,
         fields: items.map(({ pkg, index }) => ({
-          label: pkg.title || `Пакет ${index + 1}`,
+          label: getPackageDisplayTitle(pkg, index),
           value: `${formatRubles(pkg.pricePerSqm ?? 0)} ₽/м²`,
           description: getPackageListDescription(pkg),
           badge: pkg.enabled === false ? 'черновик' : 'готов',
@@ -2424,7 +2597,7 @@ const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
         title: groupTitle,
         subtitle: `${items.length} в разделе`,
         fields: items.map((sub, index) => ({
-          label: sub.title || `Подписка ${index + 1}`,
+          label: getSubscriptionDisplayTitle(sub, index),
           value: sub.price != null ? `${formatRubles(sub.price)} ₽` : '—',
           description: getSubscriptionListDescription(sub),
           badge: sub.enabled === false ? 'скрыта' : 'активна',
@@ -2575,6 +2748,39 @@ registerWipe2Data(wipe2CabinetData)
 /* ── Inline feedback ── */
 .cab-inline-error  { margin: -10px 0 12px; color: var(--ds-error, var(--ds-error)); font-size: .82rem; }
 .cab-inline-success { margin: -10px 0 12px; color: var(--ds-success, var(--ds-success)); font-size: .82rem; }
+.cab-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cab-section-note {
+  font-size: .7rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 42%, transparent);
+}
+
+.cab-autosave-status {
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 45%, transparent);
+}
+
+.cab-autosave-status--saving {
+  color: color-mix(in srgb, var(--glass-text) 76%, transparent);
+}
+
+.cab-autosave-status--saved {
+  color: var(--ds-success, #2f7d32);
+}
+
+.cab-autosave-status--error {
+  color: var(--ds-error, #b42318);
+}
 
 /* ── Form accent ── */
 .cab-form { display: flex; flex-direction: column; gap: 24px; }
