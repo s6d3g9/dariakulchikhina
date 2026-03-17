@@ -128,6 +128,10 @@ export function getNormalizedDesignerServiceKeySet(value: unknown) {
   return new Set(normalizeDesignerServices(value).map((service) => service.serviceKey))
 }
 
+export function getNormalizedDesignerPackageKeySet(value: unknown, options?: ServiceReferenceOptions) {
+  return new Set(normalizeDesignerPackages(value, options).map((pkg) => pkg.key))
+}
+
 export function normalizeDesignerPackages(value: unknown, options?: ServiceReferenceOptions): DesignerPackage[] {
   return coerceArray(value).map((item, index) => {
     const source = isRecord(item) ? item : {}

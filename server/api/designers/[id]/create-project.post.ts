@@ -1,8 +1,9 @@
 import { useDb } from '~/server/db/index'
-import { designerProjects, projects } from '~/server/db/schema'
+import { designerProjects, designers, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { CORE_PAGES } from '~/shared/constants/pages'
+import { getNormalizedDesignerPackageKeySet, getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices } from '~/shared/utils/designer-catalogs'
 
 const CreateDesignerProjectSchema = z.object({
   designerId: z.number(),
@@ -17,8 +18,25 @@ const CreateDesignerProjectSchema = z.object({
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
+  const routeDesignerId = Number(getRouterParam(event, 'id'))
+  if (!routeDesignerId || !Number.isFinite(routeDesignerId)) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid designer id' })
+  }
+
   const body = await readValidatedNodeBody(event, CreateDesignerProjectSchema)
+  if (body.designerId !== routeDesignerId) {
+    throw createError({ statusCode: 400, statusMessage: 'Designer id mismatch' })
+  }
+
   const db = useDb()
+  const [designer] = await db.select().from(designers).where(eq(designers.id, routeDesignerId)).limit(1)
+  if (!designer) {
+    throw createError({ statusCode: 404, statusMessage: 'Designer not found' })
+  }
+
+  const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizeDesignerServices(designer.services))
+  const validPackageKeys = getNormalizedDesignerPackageKeySet(designer.packages, { validServiceKeys })
+  const normalizedPackageKey = validPackageKeys.has(String(body.packageKey || '').trim()) ? String(body.packageKey).trim() : null
 
   // 1. Create the project in projects table
   let project: any
@@ -54,7 +72,7 @@ export default defineEventHandler(async (event) => {
     ;[dp] = await db.insert(designerProjects).values({
       designerId: body.designerId,
       projectId: project.id,
-      packageKey: body.packageKey || null,
+      packageKey: normalizedPackageKey,
       pricePerSqm: body.pricePerSqm || null,
       area: body.area || null,
       totalPrice: totalPrice,

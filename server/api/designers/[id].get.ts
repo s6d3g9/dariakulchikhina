@@ -1,7 +1,13 @@
 import { useDb } from '~/server/db/index'
 import { designers, designerProjects, designerProjectClients, designerProjectContractors, projects, clients, contractors } from '~/server/db/schema'
 import { eq, sql } from 'drizzle-orm'
-import { getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices, normalizeDesignerSubscriptions } from '~/shared/utils/designer-catalogs'
+import {
+  getNormalizedDesignerPackageKeySet,
+  getNormalizedDesignerServiceKeySet,
+  normalizeDesignerPackages,
+  normalizeDesignerServices,
+  normalizeDesignerSubscriptions,
+} from '~/shared/utils/designer-catalogs'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -23,6 +29,11 @@ export default defineEventHandler(async (event) => {
     .from(designerProjects)
     .leftJoin(projects, eq(projects.id, designerProjects.projectId))
     .where(eq(designerProjects.designerId, id))
+
+  const normalizedServices = normalizeDesignerServices(designer.services)
+  const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizedServices)
+  const normalizedPackages = normalizeDesignerPackages(designer.packages, { validServiceKeys })
+  const validPackageKeys = getNormalizedDesignerPackageKeySet(normalizedPackages, { validServiceKeys })
 
   const dpList = []
   for (const row of dpRows) {
@@ -51,6 +62,7 @@ export default defineEventHandler(async (event) => {
 
     dpList.push({
       ...row.dp,
+      packageKey: validPackageKeys.has(String(row.dp.packageKey || '').trim()) ? row.dp.packageKey : null,
       projectSlug: row.projectSlug,
       projectTitle: row.projectTitle,
       projectStatus: row.projectStatus,
@@ -59,13 +71,10 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const normalizedServices = normalizeDesignerServices(designer.services)
-  const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizedServices)
-
   return {
     ...designer,
     services: normalizedServices,
-    packages: normalizeDesignerPackages(designer.packages, { validServiceKeys }),
+    packages: normalizedPackages,
     subscriptions: normalizeDesignerSubscriptions(designer.subscriptions, { validServiceKeys }),
     designerProjects: dpList,
   }

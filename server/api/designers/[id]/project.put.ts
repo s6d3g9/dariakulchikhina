@@ -1,7 +1,8 @@
 import { useDb } from '~/server/db/index'
-import { designerProjects, projects } from '~/server/db/schema'
+import { designerProjects, designers, projects } from '~/server/db/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { getNormalizedDesignerPackageKeySet, getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices } from '~/shared/utils/designer-catalogs'
 
 const BodySchema = z.object({
   designerProjectId: z.number().int().positive(),
@@ -25,6 +26,14 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedNodeBody(event, BodySchema)
   const db = useDb()
 
+  const [designer] = await db.select().from(designers).where(eq(designers.id, designerId)).limit(1)
+  if (!designer) {
+    throw createError({ statusCode: 404, statusMessage: 'Designer not found' })
+  }
+
+  const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizeDesignerServices(designer.services))
+  const validPackageKeys = getNormalizedDesignerPackageKeySet(designer.packages, { validServiceKeys })
+
   const [dp] = await db
     .select()
     .from(designerProjects)
@@ -41,10 +50,13 @@ export default defineEventHandler(async (event) => {
   const nextPrice = body.pricePerSqm ?? dp.pricePerSqm
   const nextArea = body.area ?? dp.area
   const computedTotal = (nextPrice && nextArea) ? nextPrice * nextArea : null
+  const normalizedPackageKey = body.packageKey !== undefined
+    ? (validPackageKeys.has(String(body.packageKey || '').trim()) ? String(body.packageKey).trim() : null)
+    : dp.packageKey
 
   await db.update(designerProjects)
     .set({
-      packageKey: body.packageKey !== undefined ? (body.packageKey || null) : dp.packageKey,
+      packageKey: normalizedPackageKey,
       pricePerSqm: body.pricePerSqm !== undefined ? body.pricePerSqm : dp.pricePerSqm,
       area: body.area !== undefined ? body.area : dp.area,
       totalPrice: body.totalPrice !== undefined ? body.totalPrice : computedTotal,
