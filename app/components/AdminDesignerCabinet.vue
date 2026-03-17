@@ -159,6 +159,7 @@
                 <button v-if="!services.length" class="a-btn-save" @click="initFromTemplates">
                   Загрузить шаблон (Москва)
                 </button>
+                <button class="a-btn-sm" :disabled="serviceCardSaving" @click="openServiceCatalog('create')">＋ Из каталога</button>
                 <button class="a-btn-sm" :disabled="serviceCardSaving" @click="createServiceCard">＋ Своя услуга</button>
                 <span class="cab-section-note">Изменения сохраняются автоматически</span>
               </div>
@@ -166,15 +167,41 @@
             <p v-if="svcEditError" class="cab-inline-error">{{ svcEditError }}</p>
             <p v-if="svcEditSuccess" class="cab-inline-success">{{ svcEditSuccess }}</p>
 
-            <div class="svc-catalog glass-surface" :class="{ 'svc-catalog--brutalist': isBrutalistDesignerCabinetMode }">
+            <Transition name="svc-catalog-pop">
+            <div v-if="serviceCatalogOpen" class="svc-catalog glass-surface" :class="{ 'svc-catalog--brutalist': isBrutalistDesignerCabinetMode }">
               <div class="svc-catalog__head">
                 <div>
                   <div class="svc-card-editor__eyebrow">каталог услуг</div>
-                  <strong class="svc-card-editor__title">Добавить типовую услугу в прайс</strong>
+                  <strong class="svc-card-editor__title">{{ serviceCatalogMode === 'create' ? 'Добавить типовую услугу в прайс' : 'Заменить услугу из каталога' }}</strong>
                 </div>
-                <span class="svc-catalog__count">{{ availableServiceCatalogEntries.length }} из {{ DESIGNER_SERVICE_TEMPLATES.length }}</span>
+                <div class="svc-catalog__head-actions">
+                  <span class="svc-catalog__count">{{ filteredServiceCatalogEntries.length }} из {{ DESIGNER_SERVICE_TEMPLATES.length }}</span>
+                  <button type="button" class="a-btn-sm" @click="closeServiceCatalog">закрыть</button>
+                </div>
               </div>
-              <p class="svc-catalog__note">Сначала добавьте услугу из каталога, потом настройте свою цену и срок. Пакеты будут использовать уже отредактированные значения.</p>
+              <p class="svc-catalog__note">{{ serviceCatalogMode === 'create' ? 'Сначала добавьте услугу из каталога, потом настройте свою цену и срок. Пакеты будут использовать уже отредактированные значения.' : 'Выберите другую типовую услугу. После замены можно сразу скорректировать цену, описание, срок и категорию под конкретного дизайнера.' }}</p>
+              <div class="svc-catalog-toolbar">
+                <div class="u-field svc-catalog-toolbar__search">
+                  <label class="u-field__label">Поиск по услугам</label>
+                  <input v-model="serviceCatalogSearch" class="glass-input" placeholder="Название, описание, категория" />
+                </div>
+                <div class="svc-catalog-toolbar__filters">
+                  <button
+                    type="button"
+                    class="pkg-tag-picker"
+                    :class="{ 'pkg-tag-picker--active': serviceCatalogCategory === 'all' }"
+                    @click="serviceCatalogCategory = 'all'"
+                  >Все категории</button>
+                  <button
+                    v-for="option in SERVICE_CATEGORY_OPTIONS"
+                    :key="`svc-catalog-filter-${option.value}`"
+                    type="button"
+                    class="pkg-tag-picker"
+                    :class="{ 'pkg-tag-picker--active': serviceCatalogCategory === option.value }"
+                    @click="serviceCatalogCategory = option.value"
+                  >{{ option.label }}</button>
+                </div>
+              </div>
               <div v-if="groupedServiceCatalogEntries.length" class="svc-catalog__groups">
                 <section
                   v-for="group in groupedServiceCatalogEntries"
@@ -195,7 +222,7 @@
                       type="button"
                       class="svc-catalog-card"
                       :class="{ 'svc-catalog-card--brutalist': isBrutalistDesignerCabinetMode }"
-                      @click="addServiceFromCatalog(entry.key)"
+                      @click="selectServiceCatalogEntry(entry.key)"
                     >
                       <div class="svc-catalog-card__topline">
                         <span>{{ entry.category }}</span>
@@ -203,16 +230,17 @@
                       </div>
                       <strong class="svc-catalog-card__title">{{ entry.title }}</strong>
                       <p class="svc-catalog-card__desc">{{ entry.description }}</p>
-                      <span class="svc-catalog-card__action">[+ ДОБАВИТЬ В ПРАЙС]</span>
+                      <span class="svc-catalog-card__action">{{ serviceCatalogMode === 'create' ? '[+ ДОБАВИТЬ В ПРАЙС]' : '[ ВЫБРАТЬ УСЛУГУ ]' }}</span>
                     </button>
                   </div>
                 </section>
               </div>
               <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
-                <span>[ КАТАЛОГ УЖЕ ПОДКЛЮЧЁН ]</span>
-                <p>Все типовые услуги уже добавлены в прайс. Можно редактировать цены, сроки или создавать свои позиции.</p>
+                <span>{{ serviceCatalogMode === 'create' ? '[ КАТАЛОГ УЖЕ ПОДКЛЮЧЁН ]' : '[ НЕТ УСЛУГ ПОД ФИЛЬТР ]' }}</span>
+                <p>{{ serviceCatalogMode === 'create' ? 'Все типовые услуги уже добавлены в прайс. Можно редактировать цены, сроки или создавать свои позиции.' : 'Смените поиск или категорию. Занятые шаблоны уже закреплены за другими услугами этого дизайнера.' }}</p>
               </div>
             </div>
+            </Transition>
 
             <div v-if="!services.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>◎</span>
@@ -301,6 +329,16 @@
                     </div>
                     <p v-if="serviceCardError" class="cab-inline-error">{{ serviceCardError }}</p>
                     <div class="svc-card-editor__grid">
+                      <div class="u-field u-field--full">
+                        <label class="u-field__label">Типовая услуга</label>
+                        <div class="svc-template-switch glass-surface" :class="{ 'svc-template-switch--brutalist': isBrutalistDesignerCabinetMode }">
+                          <div class="svc-template-switch__copy">
+                            <strong>{{ getServiceTemplateLabel(serviceCardDraft) }}</strong>
+                            <span>{{ getServiceTemplateHint(serviceCardDraft) }}</span>
+                          </div>
+                          <button type="button" class="a-btn-sm" :disabled="serviceCardSaving" @click="openServiceCatalog('replace', svc)">выбрать из каталога</button>
+                        </div>
+                      </div>
                       <div class="u-field">
                         <label class="u-field__label">Название</label>
                         <input v-model="serviceCardDraft.title" class="glass-input" placeholder="Название услуги" @blur="queueServiceCardSave" />
@@ -1553,17 +1591,36 @@ const allServiceOptions = computed(() => {
     })
 })
 
-const availableServiceCatalogEntries = computed(() => {
+const serviceCatalogOpen = ref(false)
+const serviceCatalogSearch = ref('')
+const serviceCatalogCategory = ref<'all' | DesignerServiceCategory>('all')
+const serviceCatalogMode = ref<'create' | 'replace'>('create')
+const serviceCatalogTargetKey = ref<string | null>(null)
+
+const filteredServiceCatalogEntries = computed(() => {
   const usedKeys = new Set(services.value.map((service, index) => getServicePersistedKey(service, index)))
+  if (serviceCatalogMode.value === 'replace' && serviceCatalogTargetKey.value) {
+    usedKeys.delete(serviceCatalogTargetKey.value)
+  }
+
+  const search = serviceCatalogSearch.value.trim().toLowerCase()
+
   return DESIGNER_SERVICE_TEMPLATES
     .filter((template) => !usedKeys.has(template.key))
     .map((template) => ({
       key: template.key,
+      categoryKey: template.category,
       title: template.title,
       description: template.description,
       category: DESIGNER_SERVICE_CATEGORY_LABELS[template.category],
       price: formatServicePrice(template.defaultPrice, template.defaultUnit),
     }))
+    .filter((entry) => {
+      if (serviceCatalogCategory.value !== 'all' && entry.categoryKey !== serviceCatalogCategory.value) return false
+      if (!search) return true
+      const haystack = `${entry.title} ${entry.description} ${entry.category}`.toLowerCase()
+      return haystack.includes(search)
+    })
     .sort((left, right) => {
       const categoryDiff = left.category.localeCompare(right.category, 'ru')
       if (categoryDiff !== 0) return categoryDiff
@@ -1576,10 +1633,7 @@ const groupedServiceCatalogEntries = computed(() => {
     .map((option) => ({
       categoryKey: option.value,
       categoryLabel: option.label,
-      entries: availableServiceCatalogEntries.value.filter((entry) => {
-        const template = DESIGNER_SERVICE_TEMPLATES.find((item) => item.key === entry.key)
-        return template?.category === option.value
-      }),
+      entries: filteredServiceCatalogEntries.value.filter((entry) => entry.categoryKey === option.value),
     }))
     .filter((group) => group.entries.length > 0)
 })
@@ -1719,6 +1773,7 @@ function closeServiceCardEditor() {
   serviceCardError.value = ''
   serviceCardSaveState.value = ''
   serviceCardSnapshot.value = ''
+  if (serviceCatalogMode.value === 'replace') closeServiceCatalog()
 }
 
 function openServiceCardEditor(service: DesignerServicePrice) {
@@ -1746,6 +1801,66 @@ function toggleServiceCardEditor(service: DesignerServicePrice) {
   openServiceCardEditor(service)
 }
 
+function openServiceCatalog(mode: 'create' | 'replace', service?: DesignerServicePrice) {
+  if (mode === 'replace' && !service && !serviceCardDraft.value) return
+  serviceCatalogMode.value = mode
+  serviceCatalogSearch.value = ''
+  serviceCatalogCategory.value = 'all'
+  serviceCatalogTargetKey.value = mode === 'replace'
+    ? (service ? getServiceActionKey(service) : serviceCardEditorKey.value)
+    : null
+  serviceCatalogOpen.value = true
+}
+
+function closeServiceCatalog() {
+  serviceCatalogOpen.value = false
+  serviceCatalogSearch.value = ''
+  serviceCatalogCategory.value = 'all'
+  serviceCatalogTargetKey.value = null
+  if (serviceCardError.value === 'Выберите другую услугу: этот шаблон уже занят в прайсе') {
+    serviceCardError.value = ''
+  }
+  serviceCatalogMode.value = 'create'
+}
+
+function applyCatalogTemplateToDraft(templateKey: string) {
+  if (!serviceCardDraft.value) return
+  const template = DESIGNER_SERVICE_TEMPLATES.find((item) => item.key === templateKey)
+  if (!template) return
+
+  const occupied = services.value.find((item, index) => {
+    const persistedKey = getServicePersistedKey(item, index)
+    return persistedKey === templateKey && persistedKey !== serviceCatalogTargetKey.value
+  })
+  if (occupied) {
+    serviceCardError.value = 'Выберите другую услугу: этот шаблон уже занят в прайсе'
+    serviceCardSaveState.value = 'error'
+    return
+  }
+
+  serviceCardDraft.value = {
+    ...serviceCardDraft.value,
+    serviceKey: template.key,
+    title: template.title,
+    description: template.description,
+    category: template.category,
+    unit: template.defaultUnit,
+    price: template.defaultPrice,
+  }
+  serviceCardError.value = ''
+  queueServiceCardSave()
+  closeServiceCatalog()
+}
+
+function selectServiceCatalogEntry(templateKey: string) {
+  if (serviceCatalogMode.value === 'replace') {
+    applyCatalogTemplateToDraft(templateKey)
+    return
+  }
+  void addServiceFromCatalog(templateKey)
+  closeServiceCatalog()
+}
+
 async function saveServiceCardEditor() {
   if (!serviceCardDraft.value) return
   clearServiceCardTimer()
@@ -1767,6 +1882,8 @@ async function saveServiceCardEditor() {
   serviceCardSaveState.value = 'saving'
   try {
     await saveServices(normalized.list)
+    serviceCardEditorKey.value = draft.serviceKey
+    serviceCatalogTargetKey.value = draft.serviceKey
     serviceCardSnapshot.value = JSON.stringify(serviceCardDraft.value)
     serviceCardSaveState.value = 'saved'
     setAutosaveSettled(serviceCardSaveState, 'saved')
@@ -2410,6 +2527,17 @@ function getServiceDisplayDescription(service: DesignerServicePrice): string {
   if (description) return description
   const template = getServiceTemplate(service.serviceKey)
   return template?.description || ''
+}
+
+function getServiceTemplateLabel(service: DesignerServicePrice): string {
+  const template = getServiceTemplate(service.serviceKey)
+  return template?.title || 'Своя услуга'
+}
+
+function getServiceTemplateHint(service: DesignerServicePrice): string {
+  const template = getServiceTemplate(service.serviceKey)
+  if (!template) return 'Позиция создана вручную. Можно выбрать типовую услугу из каталога и затем скорректировать цену, описание и срок.'
+  return `${DESIGNER_SERVICE_CATEGORY_LABELS[template.category]} · ${formatServicePrice(template.defaultPrice, template.defaultUnit)}`
 }
 
 function formatLeadTimeDays(days?: number | null): string {
@@ -3717,10 +3845,34 @@ registerWipe2Data(wipe2CabinetData)
   flex-wrap: wrap;
 }
 
+.svc-catalog__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .svc-catalog__count,
 .svc-catalog__note {
   font-size: .78rem;
   color: color-mix(in srgb, var(--glass-text) 62%, transparent);
+}
+
+.svc-catalog-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.svc-catalog-toolbar__search {
+  margin: 0;
+}
+
+.svc-catalog-toolbar__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .svc-catalog__grid {
@@ -3832,6 +3984,47 @@ registerWipe2Data(wipe2CabinetData)
   font-size: .72rem;
   letter-spacing: .12em;
   text-transform: uppercase;
+}
+
+.svc-template-switch {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 86%, transparent);
+}
+
+.svc-template-switch--brutalist {
+  border-width: 2px;
+}
+
+.svc-template-switch__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.svc-template-switch__copy strong {
+  font-size: .92rem;
+  line-height: 1.3;
+}
+
+.svc-template-switch__copy span {
+  font-size: .78rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--glass-text) 68%, transparent);
+}
+
+.svc-catalog-pop-enter-active,
+.svc-catalog-pop-leave-active {
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.svc-catalog-pop-enter-from,
+.svc-catalog-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 
 .sub-card-editor__actions {
