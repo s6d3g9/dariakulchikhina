@@ -149,13 +149,21 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     return designer.value.services as DesignerServicePrice[]
   })
 
-  async function saveServices(newServices: DesignerServicePrice[]) {
+  async function savePricingCatalog(payload: {
+    services?: DesignerServicePrice[]
+    packages?: DesignerPackage[]
+    subscriptions?: DesignerSubscription[]
+  }) {
     if (!did.value) return
     await $fetch(`/api/designers/${did.value}`, {
       method: 'PUT' as any,
-      body: { services: newServices },
+      body: payload,
     })
     await refresh()
+  }
+
+  async function saveServices(newServices: DesignerServicePrice[]) {
+    await savePricingCatalog({ services: newServices })
   }
 
   function initServicesFromTemplates(): DesignerServicePrice[] {
@@ -178,12 +186,7 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
   })
 
   async function savePackages(newPackages: DesignerPackage[]) {
-    if (!did.value) return
-    await $fetch(`/api/designers/${did.value}`, {
-      method: 'PUT' as any,
-      body: { packages: newPackages },
-    })
-    await refresh()
+    await savePricingCatalog({ packages: newPackages })
   }
 
   function initPackagesFromTemplates(): DesignerPackage[] {
@@ -204,12 +207,7 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
   })
 
   async function saveSubscriptions(newSubs: DesignerSubscription[]) {
-    if (!did.value) return
-    await $fetch(`/api/designers/${did.value}`, {
-      method: 'PUT' as any,
-      body: { subscriptions: newSubs },
-    })
-    await refresh()
+    await savePricingCatalog({ subscriptions: newSubs })
   }
 
   function initSubscriptionsFromTemplates(): DesignerSubscription[] {
@@ -418,6 +416,7 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
     saveProfile,
 
     // Services
+    savePricingCatalog,
     saveServices,
     initServicesFromTemplates,
 

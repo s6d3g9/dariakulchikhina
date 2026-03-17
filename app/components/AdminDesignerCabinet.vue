@@ -180,6 +180,10 @@
                 </div>
               </div>
               <p class="svc-catalog__note">{{ serviceCatalogMode === 'create' ? 'Сначала добавьте услугу из каталога, потом настройте свою цену и срок. Пакеты будут использовать уже отредактированные значения.' : 'Выберите другую типовую услугу. После замены можно сразу скорректировать цену, описание, срок и категорию под конкретного дизайнера.' }}</p>
+              <div v-if="serviceCatalogMode === 'replace' && serviceCatalogTargetUsage.total" class="svc-catalog__warning glass-surface" :class="{ 'svc-catalog__warning--brutalist': isBrutalistDesignerCabinetMode }">
+                <strong>Услуга уже используется в пакетах или подписках</strong>
+                <span>{{ formatServiceUsageHint(serviceCatalogTargetUsage) }}</span>
+              </div>
               <div class="svc-catalog-toolbar">
                 <div class="u-field svc-catalog-toolbar__search">
                   <label class="u-field__label">Поиск по услугам</label>
@@ -230,6 +234,10 @@
                       </div>
                       <strong class="svc-catalog-card__title">{{ entry.title }}</strong>
                       <p class="svc-catalog-card__desc">{{ entry.description }}</p>
+                      <div class="svc-catalog-card__range">
+                        <span>рынок</span>
+                        <strong>{{ entry.priceRange }}</strong>
+                      </div>
                       <span class="svc-catalog-card__action">{{ serviceCatalogMode === 'create' ? '[+ ДОБАВИТЬ В ПРАЙС]' : '[ ВЫБРАТЬ УСЛУГУ ]' }}</span>
                     </button>
                   </div>
@@ -338,6 +346,7 @@
                           </div>
                           <button type="button" class="a-btn-sm" :disabled="serviceCardSaving" @click="openServiceCatalog('replace', svc)">выбрать из каталога</button>
                         </div>
+                        <p v-if="serviceEditorUsage.total" class="svc-template-switch__warning">{{ formatServiceUsageHint(serviceEditorUsage) }}</p>
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Название</label>
@@ -1184,6 +1193,7 @@ const {
   saving,
   saveMsg,
   saveProfile,
+  savePricingCatalog,
   saveServices,
   initServicesFromTemplates,
   savePackages,
@@ -1614,6 +1624,7 @@ const filteredServiceCatalogEntries = computed(() => {
       description: template.description,
       category: DESIGNER_SERVICE_CATEGORY_LABELS[template.category],
       price: formatServicePrice(template.defaultPrice, template.defaultUnit),
+      priceRange: formatServiceTemplateRange(template),
     }))
     .filter((entry) => {
       if (serviceCatalogCategory.value !== 'all' && entry.categoryKey !== serviceCatalogCategory.value) return false
@@ -1636,6 +1647,22 @@ const groupedServiceCatalogEntries = computed(() => {
       entries: filteredServiceCatalogEntries.value.filter((entry) => entry.categoryKey === option.value),
     }))
     .filter((group) => group.entries.length > 0)
+})
+
+const EMPTY_SERVICE_USAGE = {
+  packageTitles: [] as string[],
+  subscriptionTitles: [] as string[],
+  total: 0,
+}
+
+const serviceCatalogTargetUsage = computed(() => {
+  if (serviceCatalogMode.value !== 'replace' || !serviceCatalogTargetKey.value) return EMPTY_SERVICE_USAGE
+  return getServiceUsageInfo(serviceCatalogTargetKey.value)
+})
+
+const serviceEditorUsage = computed(() => {
+  if (!serviceCardEditorKey.value) return EMPTY_SERVICE_USAGE
+  return getServiceUsageInfo(serviceCardEditorKey.value)
 })
 
 function normalizePackagesForSave(list: DesignerPackage[]): { ok: true; list: DesignerPackage[] } | { ok: false; error: string } {
@@ -1852,8 +1879,25 @@ function applyCatalogTemplateToDraft(templateKey: string) {
   closeServiceCatalog()
 }
 
+function confirmServiceTemplateReplacement() {
+  const usage = serviceCatalogTargetUsage.value
+  if (!usage.total) return true
+
+  const scopes = []
+  if (usage.packageTitles.length) scopes.push(`Пакеты: ${formatUsageNames(usage.packageTitles)}`)
+  if (usage.subscriptionTitles.length) scopes.push(`Подписки: ${formatUsageNames(usage.subscriptionTitles)}`)
+
+  return confirm([
+    'Эта услуга уже используется в пакетах или подписках.',
+    ...scopes,
+    '',
+    'Заменить типовую услугу и автоматически обновить все связанные ссылки?',
+  ].join('\n'))
+}
+
 function selectServiceCatalogEntry(templateKey: string) {
   if (serviceCatalogMode.value === 'replace') {
+    if (!confirmServiceTemplateReplacement()) return
     applyCatalogTemplateToDraft(templateKey)
     return
   }
@@ -1866,6 +1910,7 @@ async function saveServiceCardEditor() {
   clearServiceCardTimer()
   serviceCardError.value = ''
   const activeKey = serviceCardEditorKey.value
+  const activeIndex = services.value.findIndex((item) => getServiceActionKey(item) === activeKey)
   const draft = cloneDraft(serviceCardDraft.value)
   const updatedList = services.value.map((item) => (
     getServiceActionKey(item) === activeKey
@@ -1881,10 +1926,32 @@ async function saveServiceCardEditor() {
   serviceCardSaving.value = true
   serviceCardSaveState.value = 'saving'
   try {
-    await saveServices(normalized.list)
-    serviceCardEditorKey.value = draft.serviceKey
-    serviceCatalogTargetKey.value = draft.serviceKey
-    serviceCardSnapshot.value = JSON.stringify(serviceCardDraft.value)
+    const nextEditorItem = activeIndex >= 0 ? normalized.list[activeIndex] : draft
+    const nextSelectionKey = activeIndex >= 0
+      ? getServicePersistedKey(nextEditorItem, activeIndex)
+      : draft.serviceKey
+
+    if (activeKey && nextSelectionKey && activeKey !== nextSelectionKey) {
+      const nextPackages = packages.value.map((pkg) => ({
+        ...cloneDraft(pkg),
+        serviceKeys: (pkg.serviceKeys || []).map((key) => key === activeKey ? nextSelectionKey : key),
+      }))
+      const nextSubscriptions = subscriptions.value.map((subscription) => ({
+        ...cloneDraft(subscription),
+        serviceKeys: (subscription.serviceKeys || []).map((key) => key === activeKey ? nextSelectionKey : key),
+      }))
+      await savePricingCatalog({
+        services: normalized.list,
+        packages: nextPackages,
+        subscriptions: nextSubscriptions,
+      })
+    } else {
+      await saveServices(normalized.list)
+    }
+
+    serviceCardEditorKey.value = nextSelectionKey
+    serviceCatalogTargetKey.value = nextSelectionKey
+    serviceCardSnapshot.value = JSON.stringify(nextEditorItem)
     serviceCardSaveState.value = 'saved'
     setAutosaveSettled(serviceCardSaveState, 'saved')
   } catch (error: any) {
@@ -2538,6 +2605,45 @@ function getServiceTemplateHint(service: DesignerServicePrice): string {
   const template = getServiceTemplate(service.serviceKey)
   if (!template) return 'Позиция создана вручную. Можно выбрать типовую услугу из каталога и затем скорректировать цену, описание и срок.'
   return `${DESIGNER_SERVICE_CATEGORY_LABELS[template.category]} · ${formatServicePrice(template.defaultPrice, template.defaultUnit)}`
+}
+
+function formatServiceTemplateRange(template: { priceRangeMin?: number | null; priceRangeMax?: number | null; defaultUnit: PriceUnit }): string {
+  const min = Math.max(0, Number(template.priceRangeMin) || 0)
+  const max = Math.max(0, Number(template.priceRangeMax) || 0)
+  if (!min && !max) return 'диапазон не задан'
+  if (!min || min === max) return formatServicePrice(max || min, template.defaultUnit)
+  return `${formatServicePrice(min, template.defaultUnit)} - ${formatServicePrice(max, template.defaultUnit)}`
+}
+
+function formatUsageNames(list: string[]): string {
+  if (list.length <= 2) return list.join(', ')
+  return `${list.slice(0, 2).join(', ')} +${list.length - 2}`
+}
+
+function getServiceUsageInfo(serviceKey: string | null | undefined) {
+  if (!serviceKey) return EMPTY_SERVICE_USAGE
+
+  const packageTitles = Array.from(new Set(packages.value
+    .filter((pkg) => (pkg.serviceKeys || []).includes(serviceKey))
+    .map((pkg, index) => getPackageDisplayTitle(pkg, index))))
+
+  const subscriptionTitles = Array.from(new Set(subscriptions.value
+    .filter((subscription) => (subscription.serviceKeys || []).includes(serviceKey))
+    .map((subscription, index) => getSubscriptionDisplayTitle(subscription, index))))
+
+  return {
+    packageTitles,
+    subscriptionTitles,
+    total: packageTitles.length + subscriptionTitles.length,
+  }
+}
+
+function formatServiceUsageHint(usage: { packageTitles: string[]; subscriptionTitles: string[]; total: number }): string {
+  if (!usage.total) return ''
+  const parts = []
+  if (usage.packageTitles.length) parts.push(`пакеты: ${formatUsageNames(usage.packageTitles)}`)
+  if (usage.subscriptionTitles.length) parts.push(`подписки: ${formatUsageNames(usage.subscriptionTitles)}`)
+  return `Связанные позиции обновятся автоматически: ${parts.join(' · ')}.`
 }
 
 function formatLeadTimeDays(days?: number | null): string {
@@ -3983,10 +4089,58 @@ registerWipe2Data(wipe2CabinetData)
   color: color-mix(in srgb, var(--glass-text) 74%, transparent);
 }
 
+.svc-catalog-card__range {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-border) 78%, transparent);
+  font-size: .76rem;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--glass-text) 72%, transparent);
+}
+
+.svc-catalog-card__range span {
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.svc-catalog-card__range strong {
+  font-size: .8rem;
+  color: inherit;
+}
+
 .svc-catalog-card__action {
   font-size: .72rem;
   letter-spacing: .12em;
   text-transform: uppercase;
+}
+
+.svc-catalog__warning {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, #d97706 40%, var(--glass-border));
+  background: color-mix(in srgb, #d97706 8%, transparent);
+}
+
+.svc-catalog__warning--brutalist {
+  border-width: 2px;
+}
+
+.svc-catalog__warning strong,
+.svc-template-switch__warning {
+  font-size: .8rem;
+  line-height: 1.45;
+}
+
+.svc-catalog__warning span,
+.svc-template-switch__warning {
+  color: color-mix(in srgb, var(--glass-text) 82%, transparent);
 }
 
 .svc-template-switch {
@@ -4017,6 +4171,10 @@ registerWipe2Data(wipe2CabinetData)
   font-size: .78rem;
   line-height: 1.5;
   color: color-mix(in srgb, var(--glass-text) 68%, transparent);
+}
+
+.svc-template-switch__warning {
+  margin: 8px 0 0;
 }
 
 .svc-catalog-pop-enter-active,
