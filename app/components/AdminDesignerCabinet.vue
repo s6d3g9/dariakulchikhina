@@ -1819,12 +1819,9 @@ function closeServiceCardEditor() {
 }
 
 function openServiceCardEditor(service: DesignerServicePrice) {
-  packageCardEditorKey.value = null
-  packageCardDraft.value = null
-  packageCardError.value = ''
-  subscriptionCardEditorKey.value = null
-  subscriptionCardDraft.value = null
-  subscriptionCardError.value = ''
+  clearServiceCardTimer()
+  closePackageCardEditor()
+  closeSubscriptionCardEditor()
   serviceCardEditorKey.value = getServiceActionKey(service)
   serviceCardDraft.value = {
     ...cloneDraft(service),
