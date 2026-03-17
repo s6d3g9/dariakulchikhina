@@ -105,6 +105,7 @@ export function normalizeDesignerServices(value: unknown): DesignerServicePrice[
       category: serviceCategorySet.has(category) ? category as DesignerServicePrice['category'] : (template?.category || 'additional'),
       unit: priceUnitSet.has(unit) ? unit as DesignerServicePrice['unit'] : (template?.defaultUnit || 'fixed'),
       price: asNonNegativeNumber(source.price),
+      leadTimeDays: asNonNegativeNumber(source.leadTimeDays),
       enabled: asBoolean(source.enabled, true),
     }
   })

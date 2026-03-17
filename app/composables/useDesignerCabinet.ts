@@ -166,6 +166,7 @@ export function useDesignerCabinet(designerId: Ref<number | null>) {
       category: t.category,
       unit: t.defaultUnit,
       price: t.defaultPrice,
+      leadTimeDays: 0,
       enabled: true,
     }))
   }

@@ -170,6 +170,7 @@ function normalizeDesignerServices(value) {
       category: DESIGNER_SERVICE_CATEGORIES.has(category) ? category : (template?.category || 'additional'),
       unit: PRICE_UNITS.has(unit) ? unit : (template?.unit || 'fixed'),
       price: asNonNegativeNumber(source.price),
+      leadTimeDays: asNonNegativeNumber(source.leadTimeDays),
       enabled: asBoolean(source.enabled, true),
     }
   })

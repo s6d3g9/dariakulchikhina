@@ -421,6 +421,7 @@ export const DesignerServicePriceSchema = z.object({
   category: z.enum(DESIGNER_SERVICE_CATEGORIES),
   unit: z.enum(PRICE_UNITS),
   price: z.number().min(0),
+  leadTimeDays: z.number().min(0).optional().default(0),
   enabled: z.boolean().default(true),
 })
 

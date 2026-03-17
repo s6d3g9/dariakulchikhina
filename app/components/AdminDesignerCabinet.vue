@@ -159,12 +159,60 @@
                 <button v-if="!services.length" class="a-btn-save" @click="initFromTemplates">
                   Загрузить шаблон (Москва)
                 </button>
-                <button class="a-btn-sm" :disabled="serviceCardSaving" @click="createServiceCard">＋ Услуга</button>
+                <button class="a-btn-sm" :disabled="serviceCardSaving" @click="createServiceCard">＋ Своя услуга</button>
                 <span class="cab-section-note">Изменения сохраняются автоматически</span>
               </div>
             </div>
             <p v-if="svcEditError" class="cab-inline-error">{{ svcEditError }}</p>
             <p v-if="svcEditSuccess" class="cab-inline-success">{{ svcEditSuccess }}</p>
+
+            <div class="svc-catalog glass-surface" :class="{ 'svc-catalog--brutalist': isBrutalistDesignerCabinetMode }">
+              <div class="svc-catalog__head">
+                <div>
+                  <div class="svc-card-editor__eyebrow">каталог услуг</div>
+                  <strong class="svc-card-editor__title">Добавить типовую услугу в прайс</strong>
+                </div>
+                <span class="svc-catalog__count">{{ availableServiceCatalogEntries.length }} из {{ DESIGNER_SERVICE_TEMPLATES.length }}</span>
+              </div>
+              <p class="svc-catalog__note">Сначала добавьте услугу из каталога, потом настройте свою цену и срок. Пакеты будут использовать уже отредактированные значения.</p>
+              <div v-if="groupedServiceCatalogEntries.length" class="svc-catalog__groups">
+                <section
+                  v-for="group in groupedServiceCatalogEntries"
+                  :key="`svc-catalog-group-${group.categoryKey}`"
+                  class="svc-catalog-group"
+                >
+                  <div class="svc-catalog-group__head">
+                    <div>
+                      <div class="svc-cat-eyebrow">категория каталога</div>
+                      <strong class="svc-catalog-group__title">{{ group.categoryLabel }}</strong>
+                    </div>
+                    <span class="svc-catalog-group__count">{{ getServiceCountLabel(group.entries.length) }}</span>
+                  </div>
+                  <div class="svc-catalog__grid">
+                    <button
+                      v-for="entry in group.entries"
+                      :key="`svc-catalog-${entry.key}`"
+                      type="button"
+                      class="svc-catalog-card"
+                      :class="{ 'svc-catalog-card--brutalist': isBrutalistDesignerCabinetMode }"
+                      @click="addServiceFromCatalog(entry.key)"
+                    >
+                      <div class="svc-catalog-card__topline">
+                        <span>{{ entry.category }}</span>
+                        <span>{{ entry.price }}</span>
+                      </div>
+                      <strong class="svc-catalog-card__title">{{ entry.title }}</strong>
+                      <p class="svc-catalog-card__desc">{{ entry.description }}</p>
+                      <span class="svc-catalog-card__action">[+ ДОБАВИТЬ В ПРАЙС]</span>
+                    </button>
+                  </div>
+                </section>
+              </div>
+              <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
+                <span>[ КАТАЛОГ УЖЕ ПОДКЛЮЧЁН ]</span>
+                <p>Все типовые услуги уже добавлены в прайс. Можно редактировать цены, сроки или создавать свои позиции.</p>
+              </div>
+            </div>
 
             <div v-if="!services.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
               <span>◎</span>
@@ -210,6 +258,7 @@
                     <div class="svc-card-meta">
                       <span class="svc-meta-chip">{{ getServiceMarketLabel(svc) }}</span>
                       <span class="svc-meta-chip">{{ getServiceOriginLabel(svc) }}</span>
+                      <span class="svc-meta-chip">{{ getServiceLeadTimeLabel(svc) }}</span>
                     </div>
                     <div class="svc-card-foot">
                       <div class="svc-price-block">
@@ -271,6 +320,10 @@
                         <select v-model="serviceCardDraft.unit" class="glass-input" @change="queueServiceCardSave">
                           <option v-for="unit in PRICE_UNITS_LIST" :key="`svc-inline-unit-${unit.value}`" :value="unit.value">{{ unit.label }}</option>
                         </select>
+                      </div>
+                      <div class="u-field">
+                        <label class="u-field__label">Срок, дней</label>
+                        <input v-model.number="serviceCardDraft.leadTimeDays" type="number" min="0" class="glass-input" @blur="queueServiceCardSave" />
                       </div>
                       <div class="u-field u-field--full">
                         <label class="u-field__label">Описание</label>
@@ -356,6 +409,7 @@
                   </div>
                   <div class="pkg-card-notes">
                     <p class="pkg-card-note">{{ getPackageCategoryLabel(pkg) }}</p>
+                    <p class="pkg-card-note">{{ getPackageLeadTimeLabel(pkg) }}</p>
                     <p class="pkg-card-note">{{ getPackageBudgetLabel(pkg) }}</p>
                   </div>
                 </article>
@@ -398,21 +452,31 @@
                       <strong>Состав пакета</strong>
                       <span>{{ getServiceCountLabel((packageCardDraft.serviceKeys || []).length) }}</span>
                     </div>
-                    <div class="pkg-svc-tags">
+                    <p class="pkg-card-editor__summary">{{ getDraftServiceBundleSummary(packageCardDraft.serviceKeys || []) }}</p>
+                    <div class="pkg-service-picker-list">
                       <button
-                        v-for="svcOption in allServiceKeys"
+                        v-for="svcOption in allServiceOptions"
                         :key="`pkg-inline-${packageCardDraft.key}-${svcOption.key}`"
                         type="button"
-                        class="pkg-tag-picker"
-                        :class="{ 'pkg-tag-picker--active': (packageCardDraft.serviceKeys || []).includes(svcOption.key) }"
+                        class="pkg-service-picker"
+                        :class="{ 'pkg-service-picker--active': (packageCardDraft.serviceKeys || []).includes(svcOption.key) }"
                         @click="togglePackageCardDraftService(svcOption.key); queuePackageCardSave()"
-                      >{{ svcOption.title }}</button>
+                      >
+                        <div class="pkg-service-picker__main">
+                          <strong>{{ svcOption.title }}</strong>
+                          <span>{{ svcOption.category }}</span>
+                        </div>
+                        <div class="pkg-service-picker__meta">
+                          <span>{{ svcOption.price }}</span>
+                          <span>{{ svcOption.leadTime }}</span>
+                        </div>
+                      </button>
                     </div>
                     <div v-if="packageCardDraftServices.length" class="pkg-card-editor__service-list">
                       <div v-for="svcItem in packageCardDraftServices" :key="`pkg-inline-row-${svcItem.key}`" class="pkg-card-editor__service-row">
                         <div>
                           <strong>{{ svcItem.title }}</strong>
-                          <span>{{ svcItem.category }}</span>
+                          <span>{{ svcItem.category }} · {{ svcItem.term }}</span>
                         </div>
                         <span>{{ svcItem.price }}</span>
                       </div>
@@ -485,6 +549,7 @@
                       <span class="sub-m-label">В месяц:</span>
                       <span class="sub-m-val">{{ getMonthlyPrice(sub).toLocaleString('ru-RU') }} ₽</span>
                     </div>
+                    <p class="pkg-card-note">{{ getSubscriptionLeadTimeLabel(sub) }}</p>
                   </article>
                   <div v-if="subscriptionCardEditorKey === getSubscriptionActionKey(sub) && subscriptionCardDraft" class="sub-card-editor glass-surface" :class="{ 'sub-card-editor--brutalist': isBrutalistDesignerCabinetMode }">
                     <div class="sub-card-editor__head">
@@ -539,23 +604,45 @@
                         </div>
                       </div>
                     </div>
-                    <div class="pkg-services-edit">
-                      <strong>Включённые услуги:</strong>
-                      <div class="pkg-svc-tags">
-                        <button
-                          v-for="svcOption in allServiceKeys"
-                          :key="`sub-inline-service-${svcOption.key}`"
-                          type="button"
-                          class="pkg-tag-picker"
-                          :class="{ 'pkg-tag-picker--active': (subscriptionCardDraft.serviceKeys || []).includes(svcOption.key) }"
-                          @click="toggleSubscriptionCardDraftService(svcOption.key); queueSubscriptionCardSave()"
-                        >{{ svcOption.title }}</button>
-                      </div>
-                    </div>
                     <label class="svc-enable svc-enable--editor">
-                        <input v-model="subscriptionCardDraft.enabled" type="checkbox" @change="queueSubscriptionCardSave" />
+                      <input v-model="subscriptionCardDraft.enabled" type="checkbox" @change="queueSubscriptionCardSave" />
                       <span>{{ subscriptionCardDraft.enabled ? 'подписка доступна для продажи' : 'подписка скрыта из выдачи' }}</span>
                     </label>
+                    <div class="pkg-card-editor__services">
+                      <div class="pkg-card-editor__services-head">
+                        <strong>Услуги в подписке</strong>
+                        <span>{{ getServiceCountLabel((subscriptionCardDraft.serviceKeys || []).length) }}</span>
+                      </div>
+                      <p class="pkg-card-editor__summary">{{ getDraftServiceBundleSummary(subscriptionCardDraft.serviceKeys || []) }}</p>
+                      <div class="pkg-service-picker-list">
+                        <button
+                          v-for="svcOption in allServiceOptions"
+                          :key="`sub-inline-service-${svcOption.key}`"
+                          type="button"
+                          class="pkg-service-picker"
+                          :class="{ 'pkg-service-picker--active': (subscriptionCardDraft.serviceKeys || []).includes(svcOption.key) }"
+                          @click="toggleSubscriptionCardDraftService(svcOption.key); queueSubscriptionCardSave()"
+                        >
+                          <div class="pkg-service-picker__main">
+                            <strong>{{ svcOption.title }}</strong>
+                            <span>{{ svcOption.category }}</span>
+                          </div>
+                          <div class="pkg-service-picker__meta">
+                            <span>{{ svcOption.price }}</span>
+                            <span>{{ svcOption.leadTime }}</span>
+                          </div>
+                        </button>
+                      </div>
+                      <div v-if="subscriptionCardDraftServices.length" class="pkg-card-editor__service-list">
+                        <div v-for="svcItem in subscriptionCardDraftServices" :key="`sub-inline-row-${svcItem.key}`" class="pkg-card-editor__service-row">
+                          <div>
+                            <strong>{{ svcItem.title }}</strong>
+                            <span>{{ svcItem.category }} · {{ svcItem.term }}</span>
+                          </div>
+                          <span>{{ svcItem.price }}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -563,7 +650,6 @@
             </div>
           </template>
 
-          <!-- ═══════════════ DOCUMENTS ═══════════════ -->
           <template v-if="(section === 'documents') || showAll">
             <div class="cab-section" data-section="documents">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
@@ -1451,8 +1537,51 @@ async function initFromTemplates() {
 const pkgEditError = ref('')
 const pkgEditSuccess = ref('')
 
-const allServiceKeys = computed(() => {
-  return services.value.map((service, index) => ({ key: getServicePersistedKey(service, index), title: service.title }))
+const allServiceOptions = computed(() => {
+  return services.value
+    .map((service, index) => ({
+      key: getServicePersistedKey(service, index),
+      title: getServiceDisplayTitle(service, index),
+      category: getServiceCategoryLabel(service),
+      price: formatServicePrice(service.price, service.unit),
+      leadTime: getServiceLeadTimeLabel(service),
+    }))
+    .sort((left, right) => {
+      const categoryDiff = left.category.localeCompare(right.category, 'ru')
+      if (categoryDiff !== 0) return categoryDiff
+      return left.title.localeCompare(right.title, 'ru')
+    })
+})
+
+const availableServiceCatalogEntries = computed(() => {
+  const usedKeys = new Set(services.value.map((service, index) => getServicePersistedKey(service, index)))
+  return DESIGNER_SERVICE_TEMPLATES
+    .filter((template) => !usedKeys.has(template.key))
+    .map((template) => ({
+      key: template.key,
+      title: template.title,
+      description: template.description,
+      category: DESIGNER_SERVICE_CATEGORY_LABELS[template.category],
+      price: formatServicePrice(template.defaultPrice, template.defaultUnit),
+    }))
+    .sort((left, right) => {
+      const categoryDiff = left.category.localeCompare(right.category, 'ru')
+      if (categoryDiff !== 0) return categoryDiff
+      return left.title.localeCompare(right.title, 'ru')
+    })
+})
+
+const groupedServiceCatalogEntries = computed(() => {
+  return SERVICE_CATEGORY_OPTIONS
+    .map((option) => ({
+      categoryKey: option.value,
+      categoryLabel: option.label,
+      entries: availableServiceCatalogEntries.value.filter((entry) => {
+        const template = DESIGNER_SERVICE_TEMPLATES.find((item) => item.key === entry.key)
+        return template?.category === option.value
+      }),
+    }))
+    .filter((group) => group.entries.length > 0)
 })
 
 function normalizePackagesForSave(list: DesignerPackage[]): { ok: true; list: DesignerPackage[] } | { ok: false; error: string } {
@@ -1536,6 +1665,22 @@ function buildCustomServiceDraft(): DesignerServicePrice {
     category: 'additional',
     unit: 'fixed',
     price: 0,
+    leadTimeDays: 0,
+    enabled: true,
+  }
+}
+
+function buildCatalogServiceDraft(templateKey: string): DesignerServicePrice | null {
+  const template = DESIGNER_SERVICE_TEMPLATES.find((item) => item.key === templateKey)
+  if (!template) return null
+  return {
+    serviceKey: template.key,
+    title: template.title,
+    description: template.description,
+    category: template.category,
+    unit: template.defaultUnit,
+    price: template.defaultPrice,
+    leadTimeDays: 0,
     enabled: true,
   }
 }
@@ -1659,6 +1804,30 @@ async function createServiceCard() {
   }
 }
 
+async function addServiceFromCatalog(templateKey: string) {
+  svcEditError.value = ''
+  const existing = findServiceByActionKey(templateKey)
+  if (existing) {
+    openServiceCardEditor(existing)
+    return
+  }
+
+  const draft = buildCatalogServiceDraft(templateKey)
+  if (!draft) return
+
+  serviceCardSaving.value = true
+  try {
+    await saveServices([...services.value.map((item) => cloneDraft(item)), draft])
+    showTransientMessage(svcEditSuccess, 'Услуга добавлена из каталога')
+    await nextTick()
+    openServiceCardEditor(findServiceByActionKey(templateKey) || draft)
+  } catch (error: any) {
+    svcEditError.value = getRequestErrorMessage(error, 'Не удалось добавить услугу из каталога')
+  } finally {
+    serviceCardSaving.value = false
+  }
+}
+
 async function duplicateServiceCard(service: DesignerServicePrice) {
   svcEditError.value = ''
   const source = serviceCardDraft.value && serviceCardEditorKey.value === getServiceActionKey(service)
@@ -1708,9 +1877,29 @@ async function removeServiceCard(service: DesignerServicePrice) {
   svcEditError.value = ''
   serviceCardSaving.value = true
   try {
-    await saveServices(services.value.filter((item) => getServiceActionKey(item) !== getServiceActionKey(service)).map((item) => cloneDraft(item)))
+    const removedKey = getServiceActionKey(service)
+    const nextServices = services.value
+      .filter((item) => getServiceActionKey(item) !== removedKey)
+      .map((item) => cloneDraft(item))
+    const nextPackages = packages.value.map((pkg) => ({
+      ...cloneDraft(pkg),
+      serviceKeys: (pkg.serviceKeys || []).filter((key) => key !== removedKey),
+    }))
+    const nextSubscriptions = subscriptions.value.map((subscription) => ({
+      ...cloneDraft(subscription),
+      serviceKeys: (subscription.serviceKeys || []).filter((key) => key !== removedKey),
+    }))
+    const cleanedReferences =
+      nextPackages.some((pkg, index) => (pkg.serviceKeys || []).length !== (packages.value[index]?.serviceKeys || []).length)
+      || nextSubscriptions.some((subscription, index) => (subscription.serviceKeys || []).length !== (subscriptions.value[index]?.serviceKeys || []).length)
+
+    await saveServices(nextServices)
+    await Promise.all([
+      savePackages(nextPackages),
+      saveSubscriptions(nextSubscriptions),
+    ])
     closeServiceCardEditor()
-    showTransientMessage(svcEditSuccess, 'Услуга удалена')
+    showTransientMessage(svcEditSuccess, cleanedReferences ? 'Услуга удалена и убрана из пакетов и подписок' : 'Услуга удалена')
   } catch (error: any) {
     svcEditError.value = getRequestErrorMessage(error, 'Не удалось удалить услугу')
   } finally {
@@ -1759,11 +1948,26 @@ function togglePackageCardDraftService(key: string) {
 const packageCardDraftServices = computed(() => {
   const keys = packageCardDraft.value?.serviceKeys || []
   return keys.map((key) => {
-    const service = services.value.find((item) => item.serviceKey === key)
+    const service = getServiceBySelectionKey(key)
     return {
       key,
       title: getServiceTitle(key),
       price: service ? formatServicePrice(service.price, service.unit) : 'не задано',
+      term: service ? getServiceLeadTimeLabel(service) : 'срок не задан',
+      category: service ? (DESIGNER_SERVICE_CATEGORY_LABELS[service.category] || service.category) : 'услуга',
+    }
+  })
+})
+
+const subscriptionCardDraftServices = computed(() => {
+  const keys = subscriptionCardDraft.value?.serviceKeys || []
+  return keys.map((key) => {
+    const service = getServiceBySelectionKey(key)
+    return {
+      key,
+      title: getServiceTitle(key),
+      price: service ? formatServicePrice(service.price, service.unit) : 'не задано',
+      term: service ? getServiceLeadTimeLabel(service) : 'срок не задан',
       category: service ? (DESIGNER_SERVICE_CATEGORY_LABELS[service.category] || service.category) : 'услуга',
     }
   })
@@ -2183,10 +2387,14 @@ async function deleteDesignerDoc(docId: number) {
 }
 
 function getServiceTitle(key: string): string {
-  const svc = services.value.find(s => s.serviceKey === key)
+  const svc = getServiceBySelectionKey(key)
   if (svc) return svc.title
   const tmpl = DESIGNER_SERVICE_TEMPLATES.find(t => t.key === key)
   return tmpl?.title || key
+}
+
+function getServiceBySelectionKey(key: string): DesignerServicePrice | undefined {
+  return services.value.find((service, index) => getServicePersistedKey(service, index) === key)
 }
 
 function getServiceDisplayTitle(service: DesignerServicePrice, index = 0): string {
@@ -2202,6 +2410,18 @@ function getServiceDisplayDescription(service: DesignerServicePrice): string {
   if (description) return description
   const template = getServiceTemplate(service.serviceKey)
   return template?.description || ''
+}
+
+function formatLeadTimeDays(days?: number | null): string {
+  const normalized = Math.max(0, Number(days) || 0)
+  if (!normalized) return 'срок не задан'
+  if (normalized % 10 === 1 && normalized % 100 !== 11) return `${normalized} день`
+  if (normalized % 10 >= 2 && normalized % 10 <= 4 && (normalized % 100 < 10 || normalized % 100 >= 20)) return `${normalized} дня`
+  return `${normalized} дней`
+}
+
+function getServiceLeadTimeLabel(service: DesignerServicePrice): string {
+  return formatLeadTimeDays(service.leadTimeDays)
 }
 
 function getServiceCategoryValue(service: DesignerServicePrice): DesignerServiceCategory {
@@ -2345,6 +2565,40 @@ function getPackageBudgetLabel(pkg: DesignerPackage): string {
   if (price >= 2500) return 'Средний+ сегмент для подробной проработки'
   if (price >= 1200) return 'Рациональный пакет для жилых интерьеров'
   return 'Лёгкий входной пакет для первых этапов'
+}
+
+function getLeadTimeStats(keys: string[]) {
+  const days = keys
+    .map((key) => getServiceBySelectionKey(key)?.leadTimeDays || 0)
+    .filter((value) => value > 0)
+
+  if (!days.length) return null
+
+  return {
+    min: Math.min(...days),
+    max: Math.max(...days),
+  }
+}
+
+function getDraftServiceBundleSummary(keys: string[]) {
+  const stats = getLeadTimeStats(keys)
+  if (!stats) return 'Выбирайте уже настроенные услуги: пакет и подписка подтянут их текущую цену и срок.'
+  if (stats.min === stats.max) return `Срок набора услуг: ${formatLeadTimeDays(stats.max)}.`
+  return `Срок набора услуг: от ${formatLeadTimeDays(stats.min)} до ${formatLeadTimeDays(stats.max)}.`
+}
+
+function getPackageLeadTimeLabel(pkg: DesignerPackage): string {
+  const stats = getLeadTimeStats(pkg.serviceKeys || [])
+  if (!stats) return 'Срок пакета будет собран из сроков выбранных услуг.'
+  if (stats.min === stats.max) return `Срок пакета: ${formatLeadTimeDays(stats.max)}`
+  return `Срок пакета: ${formatLeadTimeDays(stats.min)}–${formatLeadTimeDays(stats.max)}`
+}
+
+function getSubscriptionLeadTimeLabel(sub: DesignerSubscription): string {
+  const stats = getLeadTimeStats(sub.serviceKeys || [])
+  if (!stats) return 'Срок закрытия задач зависит от выбранных услуг.'
+  if (stats.min === stats.max) return `Ориентир по сроку услуги: ${formatLeadTimeDays(stats.max)}`
+  return `Ориентир по сроку услуги: ${formatLeadTimeDays(stats.min)}–${formatLeadTimeDays(stats.max)}`
 }
 
 function getPackageGroupLabel(pkg: DesignerPackage): string {
@@ -3159,6 +3413,17 @@ registerWipe2Data(wipe2CabinetData)
   gap: 12px;
   margin-top: 14px;
 }
+.pkg-card-editor__summary {
+  margin: 0;
+  font-size: .78rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--glass-text) 68%, transparent);
+}
+.pkg-service-picker-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
 .pkg-card-editor__service-list {
   display: flex;
   flex-direction: column;
@@ -3433,6 +3698,142 @@ registerWipe2Data(wipe2CabinetData)
   margin-top: 4px;
   font-size: 1rem;
 }
+.svc-catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0 0 18px;
+}
+
+.svc-catalog--brutalist {
+  border-width: 2px;
+}
+
+.svc-catalog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.svc-catalog__count,
+.svc-catalog__note {
+  font-size: .78rem;
+  color: color-mix(in srgb, var(--glass-text) 62%, transparent);
+}
+
+.svc-catalog__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.svc-catalog__groups {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.svc-catalog-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.svc-catalog-group__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.svc-catalog-group__title {
+  display: block;
+  margin-top: 4px;
+  font-size: .96rem;
+  line-height: 1.3;
+}
+
+.svc-catalog-group__count {
+  font-size: .74rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 58%, transparent);
+}
+
+.svc-catalog-card,
+.pkg-service-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 86%, transparent);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, transform .18s ease, background-color .18s ease;
+}
+
+.svc-catalog-card:hover,
+.pkg-service-picker:hover {
+  border-color: color-mix(in srgb, var(--ds-accent, #646cff) 34%, var(--glass-border));
+  transform: translateY(-1px);
+}
+
+.svc-catalog-card--brutalist {
+  border-width: 2px;
+}
+
+.pkg-service-picker--active {
+  border-color: color-mix(in srgb, var(--ds-accent, #646cff) 48%, var(--glass-border));
+  background: color-mix(in srgb, var(--ds-accent, #646cff) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-accent, #646cff) 12%, transparent);
+}
+
+.svc-catalog-card__topline,
+.pkg-service-picker__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: color-mix(in srgb, var(--glass-text) 62%, transparent);
+}
+
+.svc-catalog-card__title,
+.pkg-service-picker__main strong {
+  font-size: .95rem;
+  line-height: 1.3;
+}
+
+.pkg-service-picker__main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.svc-catalog-card__desc,
+.pkg-service-picker__main span {
+  font-size: .82rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--glass-text) 74%, transparent);
+}
+
+.svc-catalog-card__action {
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
 .sub-card-editor__actions {
   display: flex;
   gap: 8px;
@@ -3533,6 +3934,8 @@ registerWipe2Data(wipe2CabinetData)
   .svc-cat-head,
   .pkg-card-head,
   .svc-card-editor__grid { grid-template-columns: 1fr; }
+  .svc-catalog__grid,
+  .pkg-service-picker-list { grid-template-columns: 1fr; }
   .svc-card-topline,
   .pkg-card-topline {
     flex-direction: column;
