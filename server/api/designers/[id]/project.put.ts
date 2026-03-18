@@ -2,7 +2,7 @@ import { useDb } from '~/server/db/index'
 import { designerProjects, designers, projects } from '~/server/db/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { getNormalizedDesignerPackageKeySet, getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices } from '~/shared/utils/designer-catalogs'
+import { getAvailableDesignerPackageKeySet, getNormalizedDesignerServiceKeySet, normalizeDesignerServices } from '~/shared/utils/designer-catalogs'
 
 const BodySchema = z.object({
   designerProjectId: z.number().int().positive(),
@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizeDesignerServices(designer.services))
-  const validPackageKeys = getNormalizedDesignerPackageKeySet(designer.packages, { validServiceKeys })
+  const validPackageKeys = getAvailableDesignerPackageKeySet(designer.packages, { validServiceKeys })
 
   const [dp] = await db
     .select()

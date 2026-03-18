@@ -132,6 +132,14 @@ export function getNormalizedDesignerPackageKeySet(value: unknown, options?: Ser
   return new Set(normalizeDesignerPackages(value, options).map((pkg) => pkg.key))
 }
 
+export function getAvailableDesignerPackageKeySet(value: unknown, options?: ServiceReferenceOptions) {
+  const keys = getNormalizedDesignerPackageKeySet(value, options)
+  for (const template of DESIGNER_PACKAGE_TEMPLATES) {
+    keys.add(template.key)
+  }
+  return keys
+}
+
 export function normalizeDesignerPackages(value: unknown, options?: ServiceReferenceOptions): DesignerPackage[] {
   return coerceArray(value).map((item, index) => {
     const source = isRecord(item) ? item : {}

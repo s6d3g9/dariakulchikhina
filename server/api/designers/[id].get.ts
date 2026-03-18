@@ -2,6 +2,7 @@ import { useDb } from '~/server/db/index'
 import { designers, designerProjects, designerProjectClients, designerProjectContractors, projects, clients, contractors } from '~/server/db/schema'
 import { eq, sql } from 'drizzle-orm'
 import {
+  getAvailableDesignerPackageKeySet,
   getNormalizedDesignerPackageKeySet,
   getNormalizedDesignerServiceKeySet,
   normalizeDesignerPackages,
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
   const normalizedServices = normalizeDesignerServices(designer.services)
   const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizedServices)
   const normalizedPackages = normalizeDesignerPackages(designer.packages, { validServiceKeys })
-  const validPackageKeys = getNormalizedDesignerPackageKeySet(normalizedPackages, { validServiceKeys })
+  const validPackageKeys = getAvailableDesignerPackageKeySet(normalizedPackages, { validServiceKeys })
 
   const dpList = []
   for (const row of dpRows) {

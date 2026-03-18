@@ -3,7 +3,7 @@ import { designerProjects, designers, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { CORE_PAGES } from '~/shared/constants/pages'
-import { getNormalizedDesignerPackageKeySet, getNormalizedDesignerServiceKeySet, normalizeDesignerPackages, normalizeDesignerServices } from '~/shared/utils/designer-catalogs'
+import { getAvailableDesignerPackageKeySet, getNormalizedDesignerServiceKeySet, normalizeDesignerServices } from '~/shared/utils/designer-catalogs'
 
 const CreateDesignerProjectSchema = z.object({
   designerId: z.number(),
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const validServiceKeys = getNormalizedDesignerServiceKeySet(normalizeDesignerServices(designer.services))
-  const validPackageKeys = getNormalizedDesignerPackageKeySet(designer.packages, { validServiceKeys })
+  const validPackageKeys = getAvailableDesignerPackageKeySet(designer.packages, { validServiceKeys })
   const normalizedPackageKey = validPackageKeys.has(String(body.packageKey || '').trim()) ? String(body.packageKey).trim() : null
 
   // 1. Create the project in projects table
