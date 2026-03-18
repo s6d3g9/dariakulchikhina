@@ -206,42 +206,28 @@
                   >{{ option.label }}</button>
                 </div>
               </div>
-              <div v-if="groupedServiceCatalogEntries.length" class="svc-catalog__groups">
-                <section
-                  v-for="group in groupedServiceCatalogEntries"
-                  :key="`svc-catalog-group-${group.categoryKey}`"
-                  class="svc-catalog-group"
+              <div v-if="filteredServiceCatalogEntries.length" class="svc-catalog__results">
+                <button
+                  v-for="entry in filteredServiceCatalogEntries"
+                  :key="`svc-catalog-${entry.key}`"
+                  type="button"
+                  class="svc-catalog-row"
+                  :class="{ 'svc-catalog-row--brutalist': isBrutalistDesignerCabinetMode }"
+                  @click="selectServiceCatalogEntry(entry.key)"
                 >
-                  <div class="svc-catalog-group__head">
-                    <div>
-                      <div class="svc-cat-eyebrow">категория каталога</div>
-                      <strong class="svc-catalog-group__title">{{ group.categoryLabel }}</strong>
+                  <div class="svc-catalog-row__main">
+                    <div class="svc-catalog-row__head">
+                      <strong class="svc-catalog-row__title">{{ entry.title }}</strong>
+                      <span class="svc-catalog-row__price">{{ entry.price }}</span>
                     </div>
-                    <span class="svc-catalog-group__count">{{ getServiceCountLabel(group.entries.length) }}</span>
+                    <p class="svc-catalog-row__desc">{{ entry.description }}</p>
+                    <div class="svc-catalog-row__meta">
+                      <span class="svc-catalog-row__tag">{{ entry.category }}</span>
+                      <span class="svc-catalog-row__tag">рынок: {{ entry.priceRange }}</span>
+                    </div>
                   </div>
-                  <div class="svc-catalog__grid">
-                    <button
-                      v-for="entry in group.entries"
-                      :key="`svc-catalog-${entry.key}`"
-                      type="button"
-                      class="svc-catalog-card"
-                      :class="{ 'svc-catalog-card--brutalist': isBrutalistDesignerCabinetMode }"
-                      @click="selectServiceCatalogEntry(entry.key)"
-                    >
-                      <div class="svc-catalog-card__topline">
-                        <span>{{ entry.category }}</span>
-                        <span>{{ entry.price }}</span>
-                      </div>
-                      <strong class="svc-catalog-card__title">{{ entry.title }}</strong>
-                      <p class="svc-catalog-card__desc">{{ entry.description }}</p>
-                      <div class="svc-catalog-card__range">
-                        <span>рынок</span>
-                        <strong>{{ entry.priceRange }}</strong>
-                      </div>
-                      <span class="svc-catalog-card__action">{{ serviceCatalogMode === 'create' ? '[+ ДОБАВИТЬ В ПРАЙС]' : '[ ВЫБРАТЬ УСЛУГУ ]' }}</span>
-                    </button>
-                  </div>
-                </section>
+                  <span class="svc-catalog-row__action">{{ serviceCatalogMode === 'create' ? '[+ В ПРАЙС]' : '[ ВЫБРАТЬ ]' }}</span>
+                </button>
               </div>
               <div v-else class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistDesignerCabinetMode }">
                 <span>{{ serviceCatalogMode === 'create' ? '[ КАТАЛОГ УЖЕ ПОДКЛЮЧЁН ]' : '[ НЕТ УСЛУГ ПОД ФИЛЬТР ]' }}</span>
@@ -1642,16 +1628,6 @@ const filteredServiceCatalogEntries = computed(() => {
       if (categoryDiff !== 0) return categoryDiff
       return left.title.localeCompare(right.title, 'ru')
     })
-})
-
-const groupedServiceCatalogEntries = computed(() => {
-  return SERVICE_CATEGORY_OPTIONS
-    .map((option) => ({
-      categoryKey: option.value,
-      categoryLabel: option.label,
-      entries: filteredServiceCatalogEntries.value.filter((entry) => entry.categoryKey === option.value),
-    }))
-    .filter((group) => group.entries.length > 0)
 })
 
 const EMPTY_SERVICE_USAGE = {
@@ -4026,51 +4002,21 @@ registerWipe2Data(wipe2CabinetData)
   gap: 8px;
 }
 
-.svc-catalog__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.svc-catalog__groups {
+.svc-catalog__results {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 10px;
+  max-height: min(62vh, 860px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
-.svc-catalog-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.svc-catalog-group__head {
+.svc-catalog-row,
+.pkg-service-picker {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-}
-
-.svc-catalog-group__title {
-  display: block;
-  margin-top: 4px;
-  font-size: .96rem;
-  line-height: 1.3;
-}
-
-.svc-catalog-group__count {
-  font-size: .74rem;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--glass-text) 58%, transparent);
-}
-
-.svc-catalog-card,
-.pkg-service-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-start;
+  gap: 14px;
   width: 100%;
   min-height: 44px;
   padding: 14px;
@@ -4082,13 +4028,13 @@ registerWipe2Data(wipe2CabinetData)
   transition: border-color .18s ease, transform .18s ease, background-color .18s ease;
 }
 
-.svc-catalog-card:hover,
+.svc-catalog-row:hover,
 .pkg-service-picker:hover {
   border-color: color-mix(in srgb, var(--ds-accent, #646cff) 34%, var(--glass-border));
   transform: translateY(-1px);
 }
 
-.svc-catalog-card--brutalist {
+.svc-catalog-row--brutalist {
   border-width: 2px;
 }
 
@@ -4098,20 +4044,36 @@ registerWipe2Data(wipe2CabinetData)
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ds-accent, #646cff) 12%, transparent);
 }
 
-.svc-catalog-card__topline,
+.svc-catalog-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.svc-catalog-row__head,
 .pkg-service-picker__meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   width: 100%;
+}
+
+.svc-catalog-row__head {
+  align-items: flex-start;
+}
+
+.svc-catalog-row__price {
+  flex: 0 0 auto;
   font-size: .72rem;
   text-transform: uppercase;
   letter-spacing: .1em;
   color: color-mix(in srgb, var(--glass-text) 62%, transparent);
 }
 
-.svc-catalog-card__title,
+.svc-catalog-row__title,
 .pkg-service-picker__main strong {
   font-size: .95rem;
   line-height: 1.3;
@@ -4124,37 +4086,36 @@ registerWipe2Data(wipe2CabinetData)
   width: 100%;
 }
 
-.svc-catalog-card__desc,
+.svc-catalog-row__desc,
 .pkg-service-picker__main span {
   font-size: .82rem;
   line-height: 1.45;
   color: color-mix(in srgb, var(--glass-text) 74%, transparent);
 }
 
-.svc-catalog-card__range {
+.svc-catalog-row__meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
-  width: 100%;
-  padding-top: 8px;
-  border-top: 1px solid color-mix(in srgb, var(--glass-border) 78%, transparent);
   font-size: .76rem;
   line-height: 1.35;
   color: color-mix(in srgb, var(--glass-text) 72%, transparent);
 }
 
-.svc-catalog-card__range span {
+.svc-catalog-row__tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 80%, transparent);
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: .08em;
 }
 
-.svc-catalog-card__range strong {
-  font-size: .8rem;
-  color: inherit;
-}
-
-.svc-catalog-card__action {
+.svc-catalog-row__action {
+  flex: 0 0 auto;
+  align-self: center;
   font-size: .72rem;
   letter-spacing: .12em;
   text-transform: uppercase;

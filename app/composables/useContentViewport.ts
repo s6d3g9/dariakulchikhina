@@ -9,6 +9,11 @@ function isEditableTarget(target: EventTarget | null) {
   return target.isContentEditable || target.matches('input, textarea, select, [contenteditable="true"]')
 }
 
+function isInteractiveTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return Boolean(target.closest('input, textarea, select, button, a, [contenteditable="true"], [data-cv-interactive="true"]'))
+}
+
 export function useContentViewport(options: {
   mode: MaybeRefOrGetter<ViewMode | string | undefined>
   currentSection: Ref<string>
@@ -309,6 +314,7 @@ export function useContentViewport(options: {
   function handleWheel(event: WheelEvent) {
     if (!isPaged.value || !viewportRef.value) return
     if (contentViewMode.value === 'wipe2') return  // handled by Wipe2Renderer
+    if (isInteractiveTarget(event.target)) return
     if (Math.abs(event.deltaY) < 12) return
     event.preventDefault()
     if (!canMove()) return
@@ -350,6 +356,8 @@ export function useContentViewport(options: {
 
   function handleWindowKeydown(event: KeyboardEvent) {
     if (!viewportRef.value || !isPaged.value) return
+    const target = event.target
+    if (target instanceof Node && !viewportRef.value.contains(target)) return
     handleKeydown(event)
   }
 
@@ -376,23 +384,6 @@ export function useContentViewport(options: {
     nextTick(reconnectPagerObserver)
     window.addEventListener('resize', syncPager)
     window.addEventListener('keydown', handleWindowKeydown)
-  })
-
-  onBeforeUnmount(() => {
-    clearWipeTimers()
-    if (pagerSyncFrame) {
-      window.cancelAnimationFrame(pagerSyncFrame)
-      pagerSyncFrame = 0
-    }
-    pagerObserver?.disconnect()
-    pagerObserver = null
-    window.removeEventListener('resize', syncPager)
-    window.removeEventListener('keydown', handleWindowKeydown)
-    const el = viewportRef.value
-    if (el) {
-      el.removeEventListener('touchstart', handleTouchStart)
-      el.removeEventListener('touchend', handleTouchEnd)
-    }
   })
 
   onBeforeUnmount(() => {
