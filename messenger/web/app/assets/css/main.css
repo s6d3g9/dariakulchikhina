@@ -40,7 +40,7 @@
   --messenger-glass-button-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
   --messenger-control-size: 40px;
   --messenger-control-radius: 15px;
-  --messenger-bottom-nav-height: 68px;
+  --messenger-bottom-nav-height: 60px;
   --messenger-composer-attach-width: auto;
   --messenger-composer-actions-width: auto;
   --messenger-message-peer-bg: rgba(255, 255, 255, 0.05);
@@ -214,34 +214,53 @@ html[data-messenger-theme='gray'] {
 
 html[data-messenger-theme='black'] {
   color-scheme: dark;
-  --messenger-bg: #050608;
-  --messenger-bg-secondary: #101114;
-  --messenger-panel: rgba(20, 22, 28, 0.54);
-  --messenger-panel-strong: rgba(16, 18, 22, 0.74);
-  --messenger-panel-soft: rgba(255, 255, 255, 0.08);
-  --messenger-border: rgba(255, 255, 255, 0.14);
-  --messenger-border-strong: rgba(255, 255, 255, 0.24);
-  --messenger-text: #f5f7fb;
-  --messenger-muted: rgba(226, 232, 240, 0.7);
-  --messenger-accent: #7dd3fc;
-  --messenger-accent-strong: #d8b4fe;
-  --messenger-success: #86efac;
-  --messenger-shadow: 0 20px 80px rgba(0, 0, 0, 0.34);
-  --messenger-accent-fill: linear-gradient(135deg, rgba(125, 211, 252, 0.9), rgba(216, 180, 254, 0.92));
-  --messenger-accent-soft-fill: linear-gradient(135deg, rgba(125, 211, 252, 0.18), rgba(216, 180, 254, 0.16));
-  --messenger-accent-ink: #08111f;
-  --messenger-success-fill: linear-gradient(135deg, rgba(134, 239, 172, 0.9), rgba(125, 211, 252, 0.9));
-  --messenger-success-ink: #08111f;
-  --messenger-slab-bg: linear-gradient(180deg, rgba(16, 24, 40, 0.94), rgba(9, 17, 31, 0.9));
-  --messenger-slab-bg-soft: linear-gradient(180deg, rgba(16, 24, 40, 0.72), rgba(16, 24, 40, 0.94));
-  --messenger-slab-bg-strong: linear-gradient(180deg, rgba(16, 24, 40, 0.96), rgba(16, 24, 40, 0.82));
-  --messenger-slab-border: rgba(255, 255, 255, 0.14);
-  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02));
-  --messenger-slab-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
-  --messenger-divider: rgba(255, 255, 255, 0.14);
-  --messenger-field-header-bg: rgba(255, 255, 255, 0.06);
-  --messenger-field-header-bg-focus: rgba(255, 255, 255, 0.08);
-  --messenger-field-header-border: rgba(255, 255, 255, 0.1);
+  --messenger-bg: #000000;
+  --messenger-bg-secondary: #050608;
+  --messenger-panel: rgba(8, 9, 11, 0.78);
+  --messenger-panel-strong: rgba(10, 11, 14, 0.92);
+  --messenger-panel-soft: rgba(255, 255, 255, 0.03);
+  --messenger-border: rgba(255, 255, 255, 0.08);
+  --messenger-border-strong: rgba(255, 255, 255, 0.16);
+  --messenger-text: #f3f5f7;
+  --messenger-muted: rgba(196, 203, 212, 0.62);
+  --messenger-accent: #9fd7ff;
+  --messenger-accent-strong: #c7d2fe;
+  --messenger-success: #8de2b3;
+  --messenger-shadow: 0 24px 80px rgba(0, 0, 0, 0.52);
+  --messenger-accent-fill: linear-gradient(135deg, rgba(159, 215, 255, 0.92), rgba(199, 210, 254, 0.9));
+  --messenger-accent-soft-fill: linear-gradient(135deg, rgba(159, 215, 255, 0.14), rgba(199, 210, 254, 0.1));
+  --messenger-accent-ink: #030507;
+  --messenger-success-fill: linear-gradient(135deg, rgba(141, 226, 179, 0.88), rgba(159, 215, 255, 0.82));
+  --messenger-success-ink: #04110a;
+  --messenger-slab-bg: linear-gradient(180deg, rgba(7, 8, 10, 0.98), rgba(2, 3, 4, 0.98));
+  --messenger-slab-bg-soft: linear-gradient(180deg, rgba(10, 11, 14, 0.86), rgba(2, 3, 4, 0.96));
+  --messenger-slab-bg-strong: linear-gradient(180deg, rgba(11, 13, 16, 0.96), rgba(4, 5, 7, 0.94));
+  --messenger-slab-border: rgba(255, 255, 255, 0.07);
+  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.01));
+  --messenger-slab-shadow: 0 18px 40px rgba(0, 0, 0, 0.46);
+  --messenger-divider: rgba(255, 255, 255, 0.08);
+  --messenger-field-header-bg: rgba(255, 255, 255, 0.03);
+  --messenger-field-header-bg-focus: rgba(255, 255, 255, 0.05);
+  --messenger-field-header-border: rgba(255, 255, 255, 0.08);
+  --messenger-glass-button-bg: linear-gradient(180deg, rgba(18, 20, 24, 0.92), rgba(7, 8, 10, 0.92));
+  --messenger-glass-button-bg-hover: linear-gradient(180deg, rgba(24, 27, 32, 0.96), rgba(9, 10, 13, 0.94));
+  --messenger-glass-button-border: rgba(255, 255, 255, 0.08);
+  --messenger-glass-button-border-strong: rgba(159, 215, 255, 0.18);
+  --messenger-glass-button-shadow: 0 14px 28px rgba(0, 0, 0, 0.34);
+  --messenger-message-peer-bg: rgba(255, 255, 255, 0.03);
+  --messenger-message-peer-border: rgba(255, 255, 255, 0.08);
+  --messenger-message-own-bg: rgba(159, 215, 255, 0.1);
+  --messenger-message-own-border: rgba(159, 215, 255, 0.22);
+  --messenger-popup-bg: linear-gradient(180deg, rgba(10, 11, 13, 0.98), rgba(3, 4, 5, 0.98));
+  --messenger-popup-border: rgba(255, 255, 255, 0.08);
+  --messenger-popup-shadow: 0 22px 46px rgba(0, 0, 0, 0.46);
+  --messenger-scene-overlay: radial-gradient(circle at top left, rgba(159, 215, 255, 0.08), transparent 26%), radial-gradient(circle at top right, rgba(199, 210, 254, 0.06), transparent 24%), radial-gradient(circle at bottom center, rgba(255, 255, 255, 0.03), transparent 28%);
+  --messenger-scene-grid-opacity: 0.03;
+  --messenger-aurora-one: rgba(159, 215, 255, 0.08);
+  --messenger-aurora-two: rgba(199, 210, 254, 0.06);
+  --messenger-aurora-three: rgba(255, 255, 255, 0.03);
+  --messenger-aurora-blur: 28px;
+  --messenger-aurora-opacity: 0.48;
 }
 
 * {
@@ -867,8 +886,8 @@ textarea {
   justify-items: center;
   align-content: end;
   gap: 0;
-  min-height: 52px;
-  padding: 8px 6px 2px;
+  min-height: 46px;
+  padding: 6px 4px 1px;
   border: 0 !important;
   background: transparent !important;
   color: var(--messenger-text);
@@ -882,15 +901,15 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 999px;
   color: inherit;
 }
 
 .bottom-nav__icon svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   display: block;
 }
 
@@ -915,12 +934,12 @@ textarea {
 
 .bottom-nav .bottom-nav__item--active {
   background: var(--messenger-accent-soft-fill) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 24px rgba(0, 0, 0, 0.24) !important;
 }
 
 .bottom-nav .bottom-nav__item--active .bottom-nav__icon {
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(159, 215, 255, 0.08);
 }
 
 .bottom-nav .bottom-nav__item--active .bottom-nav__label {
