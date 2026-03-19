@@ -418,12 +418,18 @@ export async function addAttachmentMessageToConversation(
     throw new Error('CONVERSATION_FORBIDDEN')
   }
 
+  const attachmentLabel = attachment.mimeType.startsWith('audio/')
+    ? 'Аудиосообщение'
+    : attachment.mimeType.startsWith('image/')
+      ? 'Фото'
+      : attachment.name
+
   const now = new Date().toISOString()
   const message: MessengerMessageRecord = {
     id: randomUUID(),
     conversationId,
     senderUserId: actor.id,
-    body: attachment.name,
+    body: attachmentLabel,
     kind: 'file',
     attachment,
     createdAt: now,

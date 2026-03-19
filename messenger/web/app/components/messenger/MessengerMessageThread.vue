@@ -34,12 +34,16 @@ const depthStyle = computed(() => ({
   '--message-comment-depth': String(Math.min(props.depth, 4)),
 }))
 
-function relationPreviewText(message: { body: string; kind: 'text' | 'file'; attachment?: { name: string } } | null) {
+function relationPreviewText(message: { body: string; kind: 'text' | 'file'; attachment?: { name: string, mimeType: string } } | null) {
   if (!message) {
     return ''
   }
 
   if (message.kind === 'file') {
+    if (message.attachment?.mimeType.startsWith('audio/')) {
+      return 'Аудиосообщение'
+    }
+
     return message.attachment?.name || 'Файл'
   }
 
@@ -146,6 +150,7 @@ function handleEditInput(event: Event) {
         :src="entry.attachment.absoluteUrl"
       />
       <button
+        v-if="!entry.attachment.mimeType.startsWith('audio/')"
         type="button"
         class="attachment-card attachment-card--button"
         @click.stop="emit('copy-link', entry.attachment.absoluteUrl, entry.attachment.name)"
