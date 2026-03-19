@@ -92,6 +92,10 @@ const contactSuggestions = computed(() => {
   return Array.from(suggestions.values()).slice(0, normalizedSearchQuery.value ? 10 : 8)
 })
 
+const incomingInvites = computed(() => contacts.overview.value.invites.filter(invite => invite.direction === 'incoming' && invite.status === 'pending'))
+
+const outgoingInvites = computed(() => contacts.overview.value.invites.filter(invite => invite.direction === 'outgoing' && invite.status === 'pending'))
+
 const discoverResults = computed(() => {
   if (!hasSearchQuery.value) {
     return []
@@ -164,6 +168,27 @@ async function removeContact(peerUserId: string) {
     await contacts.removeContact(peerUserId)
   } catch {
     actionError.value = 'Не удалось удалить контакт.'
+  }
+}
+
+async function acceptInvite(inviteId: string, peerUserId: string) {
+  actionError.value = ''
+
+  try {
+    await contacts.accept(inviteId)
+    await openDirectChat(peerUserId)
+  } catch {
+    actionError.value = 'Не удалось принять заявку.'
+  }
+}
+
+async function rejectInvite(inviteId: string) {
+  actionError.value = ''
+
+  try {
+    await contacts.reject(inviteId)
+  } catch {
+    actionError.value = 'Не удалось отклонить заявку.'
   }
 }
 
@@ -267,6 +292,49 @@ function startHold(contactId: string, event?: Event) {
 
     <div class="list-stack list-stack--screen-scroll">
       <article
+        v-for="invite in incomingInvites"
+        :key="invite.id"
+        class="list-card list-card--action list-card--chat-row"
+      >
+        <div class="list-card__main">
+          <div class="list-card__row">
+            <p class="list-card__title">{{ invite.displayName }}</p>
+            <div class="list-card__row">
+              <button
+                type="button"
+                class="action-btn action-btn--accept"
+                @click="acceptInvite(invite.id, invite.peerUserId)"
+              >
+                Принять
+              </button>
+              <button
+                type="button"
+                class="action-btn action-btn--danger"
+                @click="rejectInvite(invite.id)"
+              >
+                Отклонить
+              </button>
+            </div>
+          </div>
+          <p class="list-card__text">@{{ invite.login }} · входящая заявка</p>
+        </div>
+      </article>
+
+      <article
+        v-for="invite in outgoingInvites"
+        :key="invite.id"
+        class="list-card list-card--panel list-card--chat-row"
+      >
+        <div class="list-card__main">
+          <div class="list-card__row">
+            <p class="list-card__title">{{ invite.displayName }}</p>
+            <span class="list-card__meta">Ожидает</span>
+          </div>
+          <p class="list-card__text">@{{ invite.login }} · исходящая заявка</p>
+        </div>
+      </article>
+
+      <article
         v-for="contact in contacts.overview.value.contacts"
         :key="contact.id"
         class="list-card list-card--action list-card--clickable list-card--chat-row"
@@ -297,7 +365,7 @@ function startHold(contactId: string, event?: Event) {
         </div>
       </article>
 
-      <article v-if="!hasSearchQuery && !contacts.overview.value.contacts.length" class="list-card list-card--panel">
+      <article v-if="!hasSearchQuery && !incomingInvites.length && !outgoingInvites.length && !contacts.overview.value.contacts.length" class="list-card list-card--panel">
         <div class="list-card__main">
           <p class="list-card__title">Контакты пока пусты</p>
           <p class="list-card__text">Когда появятся подтвержденные контакты, они будут показаны здесь.</p>
