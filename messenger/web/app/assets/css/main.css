@@ -1399,6 +1399,10 @@ html[data-messenger-motion='reduced'] *::after {
     height: calc(var(--messenger-viewport-height) - 112px);
   }
 
+  .messenger-shell[data-messenger-keyboard='open'] .section-block--chat {
+    height: calc(var(--messenger-viewport-height) - 56px);
+  }
+
   .chat-user-trigger--profile {
     gap: 12px;
   }
@@ -1450,6 +1454,11 @@ html[data-messenger-motion='reduced'] *::after {
 
   .messenger-shell[data-messenger-keyboard='open'] .composer-bar--dock {
     bottom: 0;
+  }
+
+  .messenger-shell[data-messenger-keyboard='open'] .section-block--chats-screen,
+  .messenger-shell[data-messenger-keyboard='open'] .section-block--contacts-screen {
+    height: calc(var(--messenger-viewport-height) - 64px - max(12px, env(safe-area-inset-bottom)));
   }
 }
 

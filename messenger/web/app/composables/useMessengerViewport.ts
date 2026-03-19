@@ -19,6 +19,14 @@ function isEditableElement(target: EventTarget | null) {
   return target.isContentEditable
 }
 
+function isMobileViewport() {
+  if (!import.meta.client) {
+    return false
+  }
+
+  return window.matchMedia('(max-width: 767px)').matches || navigator.maxTouchPoints > 0
+}
+
 export function useMessengerViewport() {
   const viewportHeight = useState<number>('messenger-viewport-height', () => 0)
   const keyboardInset = useState<number>('messenger-keyboard-inset', () => 0)
@@ -44,7 +52,10 @@ export function useMessengerViewport() {
     const nextViewportHeight = Math.max(0, Math.round(visualViewport?.height ?? window.innerHeight))
     const offsetTop = Math.max(0, Math.round(visualViewport?.offsetTop ?? 0))
     const rawKeyboardInset = Math.max(0, Math.round(window.innerHeight - nextViewportHeight - offsetTop))
-    const nextKeyboardOpen = isEditableElement(document.activeElement) && rawKeyboardInset > 96
+    const focusedEditable = isEditableElement(document.activeElement)
+    const mobileViewport = isMobileViewport()
+    const viewportCompressed = nextViewportHeight < window.innerHeight - 24
+    const nextKeyboardOpen = mobileViewport && focusedEditable && (rawKeyboardInset > 24 || viewportCompressed)
     const nextKeyboardInset = nextKeyboardOpen ? rawKeyboardInset : 0
 
     viewportHeight.value = nextViewportHeight
