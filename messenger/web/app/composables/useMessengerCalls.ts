@@ -41,6 +41,7 @@ let remoteStream: MediaStream | null = null
 let localVideoEl: HTMLVideoElement | null = null
 let remoteVideoEl: HTMLVideoElement | null = null
 let remoteAudioEl: HTMLAudioElement | null = null
+let peerConnectionCallId = ''
 const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
 
 async function resolvePermissionState(kind: 'microphone' | 'camera'): Promise<MessengerMediaPermissionState> {
@@ -67,14 +68,18 @@ function resolveCallMode(value: unknown): MessengerCallMode {
 function assignMediaTargets() {
   if (localVideoEl) {
     localVideoEl.srcObject = localStream
+    void localVideoEl.play().catch(() => {})
   }
 
   if (remoteVideoEl) {
     remoteVideoEl.srcObject = remoteStream
+    void remoteVideoEl.play().catch(() => {})
   }
 
   if (remoteAudioEl) {
     remoteAudioEl.srcObject = remoteStream
+    remoteAudioEl.autoplay = true
+    void remoteAudioEl.play().catch(() => {})
   }
 }
 
@@ -176,6 +181,7 @@ export function useMessengerCalls() {
   function resetPeerConnection() {
     peerConnection?.close()
     peerConnection = null
+    peerConnectionCallId = ''
     pendingIceCandidates.clear()
 
     if (remoteStream) {
@@ -349,6 +355,12 @@ export function useMessengerCalls() {
   }
 
   function buildPeerConnection(callId: string, conversationId: string, mode: MessengerCallMode) {
+    if (peerConnection && peerConnectionCallId === callId) {
+      return peerConnection
+    }
+
+    resetPeerConnection()
+
     const connection = new RTCPeerConnection({
       bundlePolicy: 'max-bundle',
       iceCandidatePoolSize: 4,
@@ -356,6 +368,7 @@ export function useMessengerCalls() {
     })
 
     peerConnection = connection
+    peerConnectionCallId = callId
     remoteStream = new MediaStream()
     assignMediaTargets()
 
@@ -375,7 +388,10 @@ export function useMessengerCalls() {
 
     connection.ontrack = (event) => {
       for (const track of event.streams[0]?.getTracks() || []) {
-        remoteStream?.addTrack(track)
+        const alreadyAdded = remoteStream?.getTracks().some(existingTrack => existingTrack.id === track.id)
+        if (!alreadyAdded) {
+          remoteStream?.addTrack(track)
+        }
       }
       assignMediaTargets()
     }
@@ -398,6 +414,10 @@ export function useMessengerCalls() {
     connection.onconnectionstatechange = () => {
       if (connection.connectionState) {
         callStatusText.value = `Соединение: ${connection.connectionState}`
+      }
+
+      if (connection.connectionState === 'failed') {
+        callError.value = 'Не удалось установить аудиосоединение. Попробуйте перезвонить.'
       }
     }
 
@@ -452,6 +472,8 @@ export function useMessengerCalls() {
     if (!granted) {
       return
     }
+
+    await initMedia(mode)
 
     const callId = crypto.randomUUID()
     activeCall.value = {
@@ -585,69 +607,92 @@ export function useMessengerCalls() {
     }
 
     if (event.signal.kind === 'ringing' && activeCall.value?.initiator) {
-      await selectConversationForCall(event.conversationId)
-      await initMedia(mode)
-      const connection = buildPeerConnection(event.signal.callId, event.conversationId, mode)
-      const offer = await connection.createOffer()
-      await connection.setLocalDescription(offer)
-      await sendSignal(event.conversationId, {
-        kind: 'offer',
-        callId: event.signal.callId,
-        payload: {
-          sdp: offer.sdp,
-          type: offer.type,
-          mode,
-        },
-      })
-      callStatusText.value = 'Отправлен offer'
+      try {
+        await selectConversationForCall(event.conversationId)
+        if (!localStream) {
+          await initMedia(mode)
+        }
+        const connection = buildPeerConnection(event.signal.callId, event.conversationId, mode)
+        if (connection.signalingState !== 'stable') {
+          return
+        }
+        const offer = await connection.createOffer()
+        await connection.setLocalDescription(offer)
+        await sendSignal(event.conversationId, {
+          kind: 'offer',
+          callId: event.signal.callId,
+          payload: {
+            sdp: offer.sdp,
+            type: offer.type,
+            mode,
+          },
+        })
+        callStatusText.value = 'Отправлен offer'
+      } catch {
+        callError.value = 'Не удалось подготовить исходящий звонок.'
+        teardownCall('')
+      }
       return
     }
 
     if (event.signal.kind === 'offer') {
-      await selectConversationForCall(event.conversationId)
-      if (!activeCall.value) {
-        activeCall.value = {
-          callId: event.signal.callId,
-          conversationId: event.conversationId,
-          peerUserId: event.sender.userId,
-          peerDisplayName: event.sender.displayName,
-          mode,
-          initiator: false,
+      try {
+        await selectConversationForCall(event.conversationId)
+        if (!activeCall.value) {
+          activeCall.value = {
+            callId: event.signal.callId,
+            conversationId: event.conversationId,
+            peerUserId: event.sender.userId,
+            peerDisplayName: event.sender.displayName,
+            mode,
+            initiator: false,
+          }
         }
+        if (!localStream) {
+          await initMedia(mode)
+        }
+        const connection = buildPeerConnection(event.signal.callId, event.conversationId, mode)
+        if (connection.signalingState === 'have-remote-offer') {
+          return
+        }
+        await connection.setRemoteDescription({
+          type: 'offer',
+          sdp: String(event.signal.payload?.sdp || ''),
+        })
+        await flushPendingIceCandidates(event.signal.callId, connection)
+        const answer = await connection.createAnswer()
+        await connection.setLocalDescription(answer)
+        await sendSignal(event.conversationId, {
+          kind: 'answer',
+          callId: event.signal.callId,
+          payload: {
+            sdp: answer.sdp,
+            type: answer.type,
+            mode,
+          },
+        })
+        callStatusText.value = 'Отправлен answer'
+        busy.value = false
+      } catch {
+        callError.value = 'Не удалось обработать входящий звонок.'
+        teardownCall('')
       }
-      if (!localStream) {
-        await initMedia(mode)
-      }
-      const connection = buildPeerConnection(event.signal.callId, event.conversationId, mode)
-      await connection.setRemoteDescription({
-        type: 'offer',
-        sdp: String(event.signal.payload?.sdp || ''),
-      })
-      await flushPendingIceCandidates(event.signal.callId, connection)
-      const answer = await connection.createAnswer()
-      await connection.setLocalDescription(answer)
-      await sendSignal(event.conversationId, {
-        kind: 'answer',
-        callId: event.signal.callId,
-        payload: {
-          sdp: answer.sdp,
-          type: answer.type,
-          mode,
-        },
-      })
-      callStatusText.value = 'Отправлен answer'
-      busy.value = false
       return
     }
 
     if (event.signal.kind === 'answer' && peerConnection) {
-      await peerConnection.setRemoteDescription({
-        type: 'answer',
-        sdp: String(event.signal.payload?.sdp || ''),
-      })
-      await flushPendingIceCandidates(event.signal.callId, peerConnection)
-      callStatusText.value = 'Канал установлен'
-      busy.value = false
+      try {
+        await peerConnection.setRemoteDescription({
+          type: 'answer',
+          sdp: String(event.signal.payload?.sdp || ''),
+        })
+        await flushPendingIceCandidates(event.signal.callId, peerConnection)
+        callStatusText.value = 'Канал установлен'
+        busy.value = false
+      } catch {
+        callError.value = 'Не удалось завершить установку соединения.'
+        teardownCall('')
+      }
       return
     }
 

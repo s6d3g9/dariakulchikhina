@@ -92,6 +92,14 @@ interface SharedAssetItem {
   previewUrl?: string
 }
 
+function resolveAttachmentTitle(attachment: { name: string, mimeType: string }) {
+  if (attachment.mimeType.startsWith('audio/')) {
+    return 'Аудиосообщение'
+  }
+
+  return attachment.name
+}
+
 function extractLinks(text: string) {
   return Array.from(text.matchAll(/https?:\/\/[^\s]+/g), match => match[0])
 }
@@ -119,7 +127,7 @@ const sharedContent = computed(() => {
     if (entry.attachment) {
       const item: SharedAssetItem = {
         id: entry.id,
-        title: entry.attachment.name,
+        title: resolveAttachmentTitle(entry.attachment),
         meta: `${entry.attachment.mimeType} · ${Math.ceil(entry.attachment.size / 1024)} KB`,
         href: entry.attachment.absoluteUrl,
         previewUrl: entry.attachment.mimeType.startsWith('image/') ? entry.attachment.absoluteUrl : undefined,
@@ -724,12 +732,16 @@ function relationTitle(mode: 'reply' | 'comment' | null) {
   return ''
 }
 
-function relationPreviewText(message: { body: string; kind: 'text' | 'file'; attachment?: { name: string } } | null) {
+function relationPreviewText(message: { body: string; kind: 'text' | 'file'; attachment?: { name: string, mimeType?: string } } | null) {
   if (!message) {
     return ''
   }
 
   if (message.kind === 'file') {
+    if (message.attachment?.mimeType?.startsWith('audio/')) {
+      return 'Аудиосообщение'
+    }
+
     return message.attachment?.name || 'Файл'
   }
 
