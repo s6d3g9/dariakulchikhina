@@ -1,6 +1,7 @@
 type MessengerCallMode = 'audio' | 'video'
 type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
 type MessengerMediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
+type MessengerPermissionTarget = 'microphone' | 'camera' | 'media'
 
 interface MessengerCallSignalEvent {
   type: 'call.signal'
@@ -86,6 +87,7 @@ export function useMessengerCalls() {
   const callError = useState<string>('messenger-call-error', () => '')
   const busy = useState<boolean>('messenger-call-busy', () => false)
   const requestingPermissions = useState<boolean>('messenger-call-requesting-permissions', () => false)
+  const permissionHelp = useState<string>('messenger-call-permission-help', () => '')
   const mediaPermissionState = useState<Record<'microphone' | 'camera', MessengerMediaPermissionState>>('messenger-call-media-permissions', () => ({
     microphone: 'unknown',
     camera: 'unknown',
@@ -94,6 +96,36 @@ export function useMessengerCalls() {
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
   const canStartAudioCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied')
   const canStartVideoCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied' && mediaPermissionState.value.camera !== 'denied')
+  const audioReadiness = computed(() => {
+    if (!supported.value) {
+      return 'Браузер не поддерживает WebRTC или доступ к медиа.'
+    }
+
+    if (mediaPermissionState.value.microphone === 'granted') {
+      return 'Микрофон разрешён. Аудиозвонки готовы.'
+    }
+
+    if (mediaPermissionState.value.microphone === 'denied') {
+      return 'Микрофон заблокирован. Нужен доступ в site permissions.'
+    }
+
+    return 'Нужно подтвердить доступ к микрофону для аудиозвонков.'
+  })
+  const videoReadiness = computed(() => {
+    if (!supported.value) {
+      return 'Браузер не поддерживает WebRTC или доступ к медиа.'
+    }
+
+    if (mediaPermissionState.value.microphone === 'granted' && mediaPermissionState.value.camera === 'granted') {
+      return 'Микрофон и камера разрешены. Видеозвонки готовы.'
+    }
+
+    if (mediaPermissionState.value.microphone === 'denied' || mediaPermissionState.value.camera === 'denied') {
+      return 'Камера или микрофон заблокированы. Откройте site permissions.'
+    }
+
+    return 'Нужно подтвердить доступ к микрофону и камере для видеозвонков.'
+  })
 
   function attachElements(elements: { localVideo?: HTMLVideoElement | null; remoteVideo?: HTMLVideoElement | null; remoteAudio?: HTMLAudioElement | null }) {
     localVideoEl = elements.localVideo ?? localVideoEl
@@ -162,6 +194,57 @@ export function useMessengerCalls() {
     }
   }
 
+  function getSitePermissionsUrl(target: MessengerPermissionTarget) {
+    if (!import.meta.client) {
+      return null
+    }
+
+    const site = encodeURIComponent(window.location.origin)
+    const ua = navigator.userAgent
+
+    if (ua.includes('Edg/')) {
+      return `edge://settings/content/siteDetails?site=${site}`
+    }
+
+    if (ua.includes('Chrome')) {
+      return `chrome://settings/content/siteDetails?site=${site}`
+    }
+
+    if (ua.includes('Firefox')) {
+      return 'about:preferences#privacy'
+    }
+
+    if (ua.includes('Safari')) {
+      return target === 'camera'
+        ? 'x-apple.systempreferences:com.apple.preference.security?Privacy_Camera'
+        : 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone'
+    }
+
+    return null
+  }
+
+  function openSitePermissions(target: MessengerPermissionTarget) {
+    if (!import.meta.client) {
+      return false
+    }
+
+    const nextUrl = getSitePermissionsUrl(target)
+    if (!nextUrl) {
+      permissionHelp.value = 'Автопереход в site permissions не поддерживается этим браузером. Откройте настройки сайта вручную.'
+      return false
+    }
+
+    permissionHelp.value = ''
+
+    const popup = window.open(nextUrl, '_blank', 'noopener,noreferrer')
+    if (popup) {
+      return true
+    }
+
+    window.location.href = nextUrl
+    return true
+  }
+
   function describePermissionError(mode: MessengerCallMode) {
     const microphoneDenied = mediaPermissionState.value.microphone === 'denied'
     const cameraDenied = mediaPermissionState.value.camera === 'denied'
@@ -181,6 +264,7 @@ export function useMessengerCalls() {
 
   async function ensureMediaAccess(mode: MessengerCallMode) {
     callError.value = ''
+    permissionHelp.value = ''
 
     if (!supported.value) {
       callError.value = 'Звонки недоступны в этом браузере.'
@@ -204,10 +288,30 @@ export function useMessengerCalls() {
     } catch {
       await refreshMediaPermissions()
       callError.value = describePermissionError(mode)
+
+      const shouldOpenPermissions = mode === 'video'
+        ? mediaPermissionState.value.microphone === 'denied' || mediaPermissionState.value.camera === 'denied'
+        : mediaPermissionState.value.microphone === 'denied'
+
+      if (shouldOpenPermissions) {
+        const opened = openSitePermissions(mode === 'video' ? 'media' : 'microphone')
+        if (!opened && !permissionHelp.value) {
+          permissionHelp.value = 'Откройте настройки сайта в браузере и разрешите доступ к микрофону и камере.'
+        }
+      }
+
       return false
     } finally {
       requestingPermissions.value = false
     }
+  }
+
+  async function ensureMicrophoneAccess() {
+    return await ensureMediaAccess('audio')
+  }
+
+  async function ensureCameraAccess() {
+    return await ensureMediaAccess('video')
   }
 
   function buildPeerConnection(callId: string, conversationId: string, mode: MessengerCallMode) {
@@ -515,6 +619,10 @@ export function useMessengerCalls() {
     callError.value = ''
   }
 
+  function clearPermissionHelp() {
+    permissionHelp.value = ''
+  }
+
   function reset() {
     clearError()
     teardownCall('')
@@ -531,16 +639,23 @@ export function useMessengerCalls() {
     callStatusText,
     callError,
     requestingPermissions,
+    permissionHelp,
     mediaPermissionState,
     supported,
     inConversationCall,
     canStartAudioCall,
     canStartVideoCall,
+    audioReadiness,
+    videoReadiness,
     attachElements,
     clearElements,
     clearError,
+    clearPermissionHelp,
     refreshMediaPermissions,
     ensureMediaAccess,
+    ensureMicrophoneAccess,
+    ensureCameraAccess,
+    openSitePermissions,
     startOutgoingCall,
     acceptIncomingCall,
     rejectIncomingCall,

@@ -2,7 +2,9 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { basename, extname, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
-export const MESSENGER_UPLOADS_ROOT = resolve(process.cwd(), 'data', 'uploads')
+import { resolveMessengerDataPath } from './storage-paths.ts'
+
+export const MESSENGER_UPLOADS_ROOT = resolveMessengerDataPath('uploads')
 
 export interface StoredMediaFile {
   name: string

@@ -6,6 +6,7 @@ const envSchema = z.object({
   MESSENGER_CORE_LOG_LEVEL: z.string().default('info'),
   MESSENGER_CORE_AUTH_SECRET: z.string().default('messenger-dev-secret'),
   MESSENGER_CORE_CORS_ORIGIN: z.string().default('http://localhost:3300'),
+  MESSENGER_CORE_DATA_DIR: z.string().default(''),
 })
 
 export function readMessengerConfig() {

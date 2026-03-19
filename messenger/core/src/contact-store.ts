@@ -1,8 +1,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
 import type { MessengerUserRecord } from './auth-store.ts'
+import { resolveMessengerDataPath } from './storage-paths.ts'
 
 export interface MessengerContactRecord {
   id: string
@@ -25,7 +26,7 @@ interface ContactsFile {
   invites: MessengerInviteRecord[]
 }
 
-const STORAGE_PATH = resolve(process.cwd(), 'data', 'contacts.json')
+const STORAGE_PATH = resolveMessengerDataPath('contacts.json')
 
 function normalizePair(leftId: string, rightId: string) {
   return [leftId, rightId].sort()

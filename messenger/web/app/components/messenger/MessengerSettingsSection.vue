@@ -2,6 +2,7 @@
 const auth = useMessengerAuth()
 const realtime = useMessengerRealtime()
 const calls = useMessengerCalls()
+const install = useMessengerInstall()
 const settingsModel = useMessengerSettings()
 const permissionActionMessage = ref('')
 const mediaStatus = ref({ microphone: 'Не проверялось', camera: 'Не проверялось' })
@@ -40,6 +41,25 @@ const sessionPersistenceLabel = computed(() => auth.persistenceMode.value === 'l
 const notificationPermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.notifications])
 const microphonePermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.microphone])
 const cameraPermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.camera])
+const callPermissionLabelMap = {
+  granted: 'Разрешено',
+  denied: 'Заблокировано',
+  prompt: 'Нужно подтвердить',
+  unsupported: 'Не поддерживается',
+  unknown: 'Неизвестно',
+} as const
+const audioCallPermissionLabel = computed(() => callPermissionLabelMap[calls.mediaPermissionState.value.microphone])
+const videoCallPermissionLabel = computed(() => {
+  if (calls.mediaPermissionState.value.microphone === 'granted' && calls.mediaPermissionState.value.camera === 'granted') {
+    return 'Микрофон и камера разрешены'
+  }
+
+  if (calls.mediaPermissionState.value.microphone === 'denied' || calls.mediaPermissionState.value.camera === 'denied') {
+    return 'Микрофон или камера заблокированы'
+  }
+
+  return 'Нужно подтвердить микрофон и камеру'
+})
 
 function formatUserId(value: string | undefined) {
   if (!value) {
@@ -96,6 +116,43 @@ async function probeMedia(kind: 'microphone' | 'camera') {
   }
 
   await settingsModel.refreshPermissionStates()
+}
+
+async function requestCallPermission(kind: 'microphone' | 'camera') {
+  permissionActionMessage.value = ''
+  calls.clearError()
+  calls.clearPermissionHelp()
+
+  const granted = kind === 'microphone'
+    ? await calls.ensureMicrophoneAccess()
+    : await calls.ensureCameraAccess()
+
+  await calls.refreshMediaPermissions()
+  await settingsModel.refreshPermissionStates()
+
+  if (granted) {
+    permissionActionMessage.value = kind === 'microphone'
+      ? 'Микрофон готов для аудиозвонков.'
+      : 'Микрофон и камера готовы для видеозвонков.'
+    return
+  }
+
+  permissionActionMessage.value = calls.permissionHelp.value || calls.callError.value || 'Не удалось получить доступ к медиа.'
+}
+
+function openCallSitePermissions(kind: 'microphone' | 'camera') {
+  const opened = calls.openSitePermissions(kind)
+  permissionActionMessage.value = opened
+    ? 'Открываем настройки сайта в браузере.'
+    : calls.permissionHelp.value || 'Не удалось автоматически открыть настройки сайта.'
+}
+
+async function installMessengerApp() {
+  await install.installApp()
+}
+
+function showManualInstallHelp() {
+  install.noteManualInstall()
 }
 </script>
 
@@ -342,6 +399,16 @@ async function probeMedia(kind: 'microphone' | 'camera') {
                 <strong>{{ settingsModel.browserCapabilities.value.vibration ? 'Поддерживается' : 'Недоступна' }}</strong>
               </div>
             </div>
+            <div class="device-status-grid">
+              <div class="device-status-item">
+                <span class="setting-fact-label">Audio readiness</span>
+                <strong>{{ calls.audioReadiness.value }}</strong>
+              </div>
+              <div class="device-status-item">
+                <span class="setting-fact-label">Video readiness</span>
+                <strong>{{ calls.videoReadiness.value }}</strong>
+              </div>
+            </div>
             <label class="setting-toggle">
               <span class="setting-toggle__copy">
                 <span class="setting-field__label">Доверять этому устройству</span>
@@ -386,6 +453,74 @@ async function probeMedia(kind: 'microphone' | 'camera') {
                 <strong>{{ cameraPermissionStateLabel }}</strong>
               </div>
             </div>
+          </article>
+
+          <article class="setting-card setting-card--glass setting-card--stacked">
+            <p class="setting-card__title">Call readiness</p>
+            <p class="setting-card__text">Отдельный быстрый сценарий для звонков: сначала микрофон для аудио, затем камера для видео.</p>
+            <div class="setting-facts">
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Аудиозвонки</span>
+                <strong>{{ audioCallPermissionLabel }}</strong>
+              </div>
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Видеозвонки</span>
+                <strong>{{ videoCallPermissionLabel }}</strong>
+              </div>
+            </div>
+            <div class="settings-actions-row">
+              <button type="button" class="action-btn action-btn--accept" @click="requestCallPermission('microphone')">Разрешить микрофон для звонков</button>
+              <button type="button" class="action-btn action-btn--ghost" @click="requestCallPermission('camera')">Разрешить камеру для видеозвонков</button>
+            </div>
+            <div class="settings-actions-row">
+              <button
+                v-if="calls.mediaPermissionState.value.microphone === 'denied'"
+                type="button"
+                class="action-btn action-btn--ghost"
+                @click="openCallSitePermissions('microphone')"
+              >
+                Открыть site permissions для микрофона
+              </button>
+              <button
+                v-if="calls.mediaPermissionState.value.camera === 'denied' || calls.mediaPermissionState.value.microphone === 'denied'"
+                type="button"
+                class="action-btn action-btn--ghost"
+                @click="openCallSitePermissions('camera')"
+              >
+                Открыть site permissions для видеозвонков
+              </button>
+            </div>
+            <p v-if="calls.permissionHelp.value || calls.callError.value || permissionActionMessage" class="setting-inline-note">
+              {{ permissionActionMessage || calls.permissionHelp.value || calls.callError.value }}
+            </p>
+          </article>
+
+          <article class="setting-card setting-card--glass setting-card--stacked">
+            <p class="setting-card__title">App mode</p>
+            <p class="setting-card__text">Установите messenger как отдельное приложение, чтобы он открывался без адресной строки браузера.</p>
+            <div class="setting-facts">
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Standalone mode</span>
+                <strong>{{ install.isStandalone.value ? 'Уже открыт как приложение' : 'Открыт во вкладке браузера' }}</strong>
+              </div>
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Install prompt</span>
+                <strong>{{ install.installSupported.value ? 'Готов к установке' : 'Нужен ручной запуск из меню браузера' }}</strong>
+              </div>
+            </div>
+            <div class="settings-actions-row">
+              <button
+                type="button"
+                class="action-btn action-btn--accept"
+                :disabled="install.installPending.value || install.isStandalone.value"
+                @click="installMessengerApp()"
+              >
+                {{ install.installPending.value ? 'Устанавливаем…' : install.isStandalone.value ? 'Приложение уже установлено' : 'Установить приложение' }}
+              </button>
+              <button type="button" class="action-btn action-btn--ghost" @click="showManualInstallHelp()">Как установить вручную</button>
+            </div>
+            <p v-if="install.installMessage.value" class="setting-inline-note">{{ install.installMessage.value }}</p>
+            <p class="setting-inline-note">Для полноценной установки на проде браузеру обычно нужен HTTPS. На localhost standalone-режим и установка доступны лучше всего.</p>
           </article>
         </section>
       </div>

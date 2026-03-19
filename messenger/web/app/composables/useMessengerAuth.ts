@@ -36,6 +36,17 @@ type MessengerAuthPersistenceMode = 'local' | 'session'
 
 const LOCAL_STORAGE_KEY = 'daria-messenger-token'
 const SESSION_STORAGE_KEY = 'daria-messenger-token-session'
+const LOCAL_USER_STORAGE_KEY = 'daria-messenger-user'
+const SESSION_USER_STORAGE_KEY = 'daria-messenger-user-session'
+
+function isUnauthorizedError(error: unknown) {
+  return Boolean(
+    error
+    && typeof error === 'object'
+    && 'statusCode' in error
+    && (error as { statusCode?: number }).statusCode === 401,
+  )
+}
 
 export function useMessengerAuth() {
   const config = useRuntimeConfig()
@@ -53,6 +64,7 @@ export function useMessengerAuth() {
     if (sessionToken) {
       return {
         token: sessionToken,
+        user: JSON.parse(window.sessionStorage.getItem(SESSION_USER_STORAGE_KEY) || 'null') as MessengerAuthUser | null,
         mode: 'session' as const,
       }
     }
@@ -61,6 +73,7 @@ export function useMessengerAuth() {
     if (localToken) {
       return {
         token: localToken,
+        user: JSON.parse(window.localStorage.getItem(LOCAL_USER_STORAGE_KEY) || 'null') as MessengerAuthUser | null,
         mode: 'local' as const,
       }
     }
@@ -74,21 +87,29 @@ export function useMessengerAuth() {
     }
 
     window.localStorage.removeItem(LOCAL_STORAGE_KEY)
+    window.localStorage.removeItem(LOCAL_USER_STORAGE_KEY)
     window.sessionStorage.removeItem(SESSION_STORAGE_KEY)
+    window.sessionStorage.removeItem(SESSION_USER_STORAGE_KEY)
   }
 
-  function writeStoredToken(value: string | null, mode = persistenceMode.value) {
+  function writeStoredAuth(value: { token: string | null; user: MessengerAuthUser | null }, mode = persistenceMode.value) {
     if (!import.meta.client) {
       return
     }
 
     clearStoredTokens()
 
-    if (value) {
+    if (value.token) {
       if (mode === 'session') {
-        window.sessionStorage.setItem(SESSION_STORAGE_KEY, value)
+        window.sessionStorage.setItem(SESSION_STORAGE_KEY, value.token)
+        if (value.user) {
+          window.sessionStorage.setItem(SESSION_USER_STORAGE_KEY, JSON.stringify(value.user))
+        }
       } else {
-        window.localStorage.setItem(LOCAL_STORAGE_KEY, value)
+        window.localStorage.setItem(LOCAL_STORAGE_KEY, value.token)
+        if (value.user) {
+          window.localStorage.setItem(LOCAL_USER_STORAGE_KEY, JSON.stringify(value.user))
+        }
       }
       return
     }
@@ -113,6 +134,7 @@ export function useMessengerAuth() {
 
     const stored = readStoredToken()
     token.value = stored?.token || null
+    user.value = stored?.user || null
     persistenceMode.value = stored?.mode || 'local'
 
     if (!token.value) {
@@ -123,10 +145,13 @@ export function useMessengerAuth() {
     try {
       const response = await request<{ user: MessengerAuthUser }>('/auth/me')
       user.value = response.user
-    } catch {
-      token.value = null
-      user.value = null
-      writeStoredToken(null, persistenceMode.value)
+      writeStoredAuth({ token: token.value, user: user.value }, persistenceMode.value)
+    } catch (error) {
+      if (isUnauthorizedError(error)) {
+        token.value = null
+        user.value = null
+        writeStoredAuth({ token: null, user: null }, persistenceMode.value)
+      }
     } finally {
       ready.value = true
     }
@@ -135,7 +160,7 @@ export function useMessengerAuth() {
   function acceptAuth(response: MessengerAuthResponse) {
     token.value = response.token
     user.value = response.user
-    writeStoredToken(response.token, persistenceMode.value)
+    writeStoredAuth({ token: response.token, user: response.user }, persistenceMode.value)
     ready.value = true
   }
 
@@ -143,7 +168,7 @@ export function useMessengerAuth() {
     persistenceMode.value = mode
 
     if (token.value) {
-      writeStoredToken(token.value, mode)
+      writeStoredAuth({ token: token.value, user: user.value }, mode)
     }
   }
 
@@ -166,7 +191,7 @@ export function useMessengerAuth() {
   function logout() {
     token.value = null
     user.value = null
-    writeStoredToken(null, persistenceMode.value)
+    writeStoredAuth({ token: null, user: null }, persistenceMode.value)
   }
 
   return {

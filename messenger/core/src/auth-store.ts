@@ -1,6 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { dirname } from 'node:path'
 import { randomUUID, scryptSync, timingSafeEqual, randomBytes } from 'node:crypto'
+
+import { resolveMessengerDataPath } from './storage-paths.ts'
 
 export interface MessengerUserRecord {
   id: string
@@ -20,7 +22,7 @@ export interface RegisterMessengerUserInput {
   displayName: string
 }
 
-const STORAGE_PATH = resolve(process.cwd(), 'data', 'users.json')
+const STORAGE_PATH = resolveMessengerDataPath('users.json')
 
 function normalizeLogin(value: string) {
   return value.trim().toLowerCase()
