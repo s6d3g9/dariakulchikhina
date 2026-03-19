@@ -774,7 +774,7 @@ onBeforeUnmount(() => {
           </span>
         </button>
 
-        <div class="section-actions">
+        <div class="section-actions section-actions--cluster">
           <button
             type="button"
             class="icon-btn"
@@ -890,31 +890,37 @@ onBeforeUnmount(() => {
 
       <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock">
         <input ref="fileInput" type="file" class="sr-only" @change="handleFileSelect">
-        <button type="button" class="composer-btn" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @click="openFilePicker">+</button>
-        <textarea
-          ref="composerInputEl"
-          v-model="draft"
-          rows="1"
-          class="composer-input"
-          placeholder="Сообщение"
-          :disabled="!conversations.activeConversation.value"
-          @focus="expandComposer"
-          @blur="collapseComposer"
-          @input="syncComposerInputHeight"
-        />
-        <button
-          type="button"
-          class="composer-btn"
-          :class="{ 'composer-btn--recording': isRecording }"
-          :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !canRecordAudio"
-          @click="toggleAudioRecording"
-        >
-          <span v-if="isRecording">{{ `${recordingSeconds}s` }}</span>
-          <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V7a3.5 3.5 0 1 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm-6-3.9a1 1 0 1 1 2 0 4 4 0 1 0 8 0 1 1 0 1 1 2 0 6 6 0 0 1-5 5.91V21a1 1 0 1 1-2 0v-2.49A6 6 0 0 1 6 11.6Z" fill="currentColor"/>
-          </svg>
-        </button>
-        <button type="button" class="composer-btn composer-btn--accent" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @pointerdown="preserveComposerFocus" @click="submit">↑</button>
+        <div class="composer-segment composer-segment--attach">
+          <button type="button" class="composer-btn" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @click="openFilePicker">+</button>
+        </div>
+        <div class="composer-field">
+          <textarea
+            ref="composerInputEl"
+            v-model="draft"
+            rows="1"
+            class="composer-input"
+            placeholder="Сообщение"
+            :disabled="!conversations.activeConversation.value"
+            @focus="expandComposer"
+            @blur="collapseComposer"
+            @input="syncComposerInputHeight"
+          />
+        </div>
+        <div class="composer-segment composer-segment--actions">
+          <button
+            type="button"
+            class="composer-btn"
+            :class="{ 'composer-btn--recording': isRecording }"
+            :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !canRecordAudio"
+            @click="toggleAudioRecording"
+          >
+            <span v-if="isRecording">{{ `${recordingSeconds}s` }}</span>
+            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V7a3.5 3.5 0 1 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm-6-3.9a1 1 0 1 1 2 0 4 4 0 1 0 8 0 1 1 0 1 1 2 0 6 6 0 0 1-5 5.91V21a1 1 0 1 1-2 0v-2.49A6 6 0 0 1 6 11.6Z" fill="currentColor"/>
+            </svg>
+          </button>
+          <button type="button" class="composer-btn composer-btn--accent" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @pointerdown="preserveComposerFocus" @click="submit">↑</button>
+        </div>
       </div>
     </section>
   </section>
