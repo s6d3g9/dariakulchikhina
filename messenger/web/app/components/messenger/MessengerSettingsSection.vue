@@ -17,6 +17,7 @@ watch(() => settingsModel.settings.value.devices.keepSignedIn, (enabled) => {
 })
 
 const activeSectionMeta = computed(() => settingsModel.sections.find(section => section.key === settingsModel.activeSection.value) ?? settingsModel.sections[0])
+const activeThemeMeta = computed(() => settingsModel.themeOptions.find(theme => theme.key === settingsModel.settings.value.themes.active) ?? settingsModel.themeOptions[0])
 const permissionLabelMap = {
   granted: 'Разрешено',
   denied: 'Запрещено',
@@ -187,6 +188,12 @@ function showManualInstallHelp() {
         <p class="setting-card__text">{{ activeSectionMeta.title }}</p>
         <p class="setting-card__meta">{{ activeSectionMeta.hint }}</p>
       </article>
+
+      <article class="setting-card setting-card--glass setting-card--summary">
+        <p class="setting-card__title">Активная тема</p>
+        <p class="setting-card__text">{{ activeThemeMeta.title }}</p>
+        <p class="setting-card__meta">{{ activeThemeMeta.hint }}</p>
+      </article>
     </div>
 
     <div class="settings-layout">
@@ -349,6 +356,55 @@ function showManualInstallHelp() {
             <p class="setting-card__title">Локальная модель приватности</p>
             <p class="setting-card__text">Этот экран уже хранит твои privacy preferences локально и готов к следующему шагу, когда появится backend sync профиля и устройств.</p>
             <p class="setting-card__meta">Сейчас настройки влияют на клиентский UX и служат базой для будущего server-side профиля.</p>
+          </article>
+        </section>
+
+        <section v-else-if="settingsModel.activeSection.value === 'themes'" class="settings-grid">
+          <article class="setting-card setting-card--glass setting-card--stacked">
+            <p class="setting-card__title">Темы интерфейса</p>
+            <p class="setting-card__text">Выберите общую палитру messenger. Переключение применяется сразу ко всему интерфейсу и сохраняется локально на этом устройстве.</p>
+            <div class="theme-grid">
+              <button
+                v-for="theme in settingsModel.themeOptions"
+                :key="theme.key"
+                type="button"
+                class="theme-card"
+                :class="[
+                  `theme-card--${theme.key}`,
+                  { 'theme-card--active': settingsModel.settings.value.themes.active === theme.key }
+                ]"
+                @click="settingsModel.settings.value.themes.active = theme.key"
+              >
+                <span class="theme-card__swatches" aria-hidden="true">
+                  <span class="theme-card__swatch theme-card__swatch--one" />
+                  <span class="theme-card__swatch theme-card__swatch--two" />
+                  <span class="theme-card__swatch theme-card__swatch--three" />
+                </span>
+                <span class="theme-card__copy">
+                  <span class="theme-card__title">{{ theme.title }}</span>
+                  <span class="theme-card__meta">{{ theme.hint }}</span>
+                </span>
+              </button>
+            </div>
+          </article>
+
+          <article class="setting-card setting-card--glass setting-card--stacked">
+            <p class="setting-card__title">Как это работает</p>
+            <div class="setting-facts">
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Текущая тема</span>
+                <strong>{{ activeThemeMeta.title }}</strong>
+              </div>
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Хранение</span>
+                <strong>{{ settingsModel.settings.value.devices.trustThisDevice ? 'localStorage' : 'sessionStorage' }}</strong>
+              </div>
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Применение</span>
+                <strong>Мгновенно ко всему messenger</strong>
+              </div>
+            </div>
+            <p class="setting-card__meta">Бежевая тема делает интерфейс почти белым и мягким, серая даёт нейтральный glass-режим, чёрная оставляет максимально тёмный вид.</p>
           </article>
         </section>
 

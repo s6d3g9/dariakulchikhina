@@ -1,5 +1,6 @@
-type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'devices'
+type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
+type MessengerThemeKey = 'beige' | 'gray' | 'black'
 
 interface MessengerSettingsSnapshot {
   profile: {
@@ -20,6 +21,9 @@ interface MessengerSettingsSnapshot {
     readReceipts: boolean
     linkPreviews: boolean
     allowDiscoveryByLogin: boolean
+  }
+  themes: {
+    active: MessengerThemeKey
   }
   devices: {
     trustThisDevice: boolean
@@ -51,6 +55,9 @@ function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
       readReceipts: true,
       linkPreviews: true,
       allowDiscoveryByLogin: true,
+    },
+    themes: {
+      active: 'black',
     },
     devices: {
       trustThisDevice: true,
@@ -85,6 +92,14 @@ function applyReduceMotionPreference(enabled: boolean) {
   document.documentElement.dataset.messengerMotion = enabled ? 'reduced' : 'default'
 }
 
+function applyMessengerThemePreference(theme: MessengerThemeKey) {
+  if (!import.meta.client) {
+    return
+  }
+
+  document.documentElement.dataset.messengerTheme = theme
+}
+
 function mergeMessengerSettings(source: Partial<MessengerSettingsSnapshot> | null): MessengerSettingsSnapshot {
   const defaults = createDefaultMessengerSettings()
 
@@ -100,6 +115,10 @@ function mergeMessengerSettings(source: Partial<MessengerSettingsSnapshot> | nul
     privacy: {
       ...defaults.privacy,
       ...(source?.privacy || {}),
+    },
+    themes: {
+      ...defaults.themes,
+      ...(source?.themes || {}),
     },
     devices: {
       ...defaults.devices,
@@ -136,9 +155,32 @@ export function useMessengerSettings() {
       hint: 'Видимость и поведение переписки',
     },
     {
+      key: 'themes' as const,
+      title: 'Темы',
+      hint: 'Палитры интерфейса и общий тон messenger',
+    },
+    {
       key: 'devices' as const,
       title: 'Устройства',
       hint: 'Текущая сессия и этот браузер',
+    },
+  ]
+
+  const themeOptions = [
+    {
+      key: 'beige' as const,
+      title: 'Бежевая',
+      hint: 'Почти белая, мягкая и тёплая glass-палитра.',
+    },
+    {
+      key: 'gray' as const,
+      title: 'Серая',
+      hint: 'Нейтральная холодная палитра без сильного контраста.',
+    },
+    {
+      key: 'black' as const,
+      title: 'Чёрная',
+      hint: 'Глубокая тёмная тема с максимальной контрастностью.',
     },
   ]
 
@@ -165,6 +207,7 @@ export function useMessengerSettings() {
 
     settings.value = mergeMessengerSettings(readStoredMessengerSettings())
     applyReduceMotionPreference(settings.value.devices.reduceMotion)
+    applyMessengerThemePreference(settings.value.themes.active)
     ready.value = true
     void refreshPermissionStates()
   }
@@ -218,6 +261,7 @@ export function useMessengerSettings() {
 
     persist()
     applyReduceMotionPreference(settings.value.devices.reduceMotion)
+    applyMessengerThemePreference(settings.value.themes.active)
   }, { deep: true })
 
   const currentDevice = computed(() => {
@@ -280,6 +324,7 @@ export function useMessengerSettings() {
   return {
     settings,
     sections,
+    themeOptions,
     activeSection,
     sessionStartedAt,
     currentDevice,

@@ -20,6 +20,57 @@
   --messenger-shadow: 0 20px 80px rgba(0, 0, 0, 0.34);
 }
 
+html[data-messenger-theme='beige'] {
+  color-scheme: light;
+  --messenger-bg: #f5efe6;
+  --messenger-bg-secondary: #ede4d8;
+  --messenger-panel: rgba(255, 250, 244, 0.7);
+  --messenger-panel-strong: rgba(248, 241, 233, 0.86);
+  --messenger-panel-soft: rgba(255, 255, 255, 0.58);
+  --messenger-border: rgba(123, 96, 64, 0.16);
+  --messenger-border-strong: rgba(123, 96, 64, 0.28);
+  --messenger-text: #34281f;
+  --messenger-muted: rgba(73, 57, 42, 0.72);
+  --messenger-accent: #b17a4a;
+  --messenger-accent-strong: #d4a574;
+  --messenger-success: #4f8a5b;
+  --messenger-shadow: 0 20px 60px rgba(120, 96, 72, 0.14);
+}
+
+html[data-messenger-theme='gray'] {
+  color-scheme: dark;
+  --messenger-bg: #d8dde4;
+  --messenger-bg-secondary: #aab3bf;
+  --messenger-panel: rgba(244, 247, 250, 0.36);
+  --messenger-panel-strong: rgba(232, 237, 242, 0.56);
+  --messenger-panel-soft: rgba(255, 255, 255, 0.18);
+  --messenger-border: rgba(62, 74, 88, 0.18);
+  --messenger-border-strong: rgba(62, 74, 88, 0.3);
+  --messenger-text: #17212b;
+  --messenger-muted: rgba(31, 45, 61, 0.72);
+  --messenger-accent: #5b84a8;
+  --messenger-accent-strong: #7e96b4;
+  --messenger-success: #4f8a72;
+  --messenger-shadow: 0 20px 60px rgba(34, 45, 57, 0.16);
+}
+
+html[data-messenger-theme='black'] {
+  color-scheme: dark;
+  --messenger-bg: #050608;
+  --messenger-bg-secondary: #101114;
+  --messenger-panel: rgba(20, 22, 28, 0.54);
+  --messenger-panel-strong: rgba(16, 18, 22, 0.74);
+  --messenger-panel-soft: rgba(255, 255, 255, 0.08);
+  --messenger-border: rgba(255, 255, 255, 0.14);
+  --messenger-border-strong: rgba(255, 255, 255, 0.24);
+  --messenger-text: #f5f7fb;
+  --messenger-muted: rgba(226, 232, 240, 0.7);
+  --messenger-accent: #7dd3fc;
+  --messenger-accent-strong: #d8b4fe;
+  --messenger-success: #86efac;
+  --messenger-shadow: 0 20px 80px rgba(0, 0, 0, 0.34);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -863,6 +914,112 @@ textarea {
   background: rgba(134, 239, 172, 0.08);
 }
 
+.theme-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.theme-card {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  min-height: 108px;
+  padding: 14px;
+  border: 1px solid var(--messenger-border);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+  color: var(--messenger-text);
+  text-align: left;
+  backdrop-filter: blur(22px) saturate(155%);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.theme-card:hover,
+.theme-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--messenger-border-strong);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
+  outline: none;
+}
+
+.theme-card--active {
+  border-color: rgba(125, 211, 252, 0.34);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18);
+}
+
+.theme-card__swatches {
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  min-height: 78px;
+}
+
+.theme-card__swatch {
+  display: block;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.theme-card__copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.theme-card__title,
+.theme-card__meta {
+  display: block;
+}
+
+.theme-card__title {
+  font-weight: 700;
+}
+
+.theme-card__meta {
+  color: var(--messenger-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.theme-card--beige .theme-card__swatch--one {
+  background: #f7f2ea;
+}
+
+.theme-card--beige .theme-card__swatch--two {
+  background: #e7d9c8;
+}
+
+.theme-card--beige .theme-card__swatch--three {
+  background: #b98b62;
+}
+
+.theme-card--gray .theme-card__swatch--one {
+  background: #dbe1e8;
+}
+
+.theme-card--gray .theme-card__swatch--two {
+  background: #9eabb8;
+}
+
+.theme-card--gray .theme-card__swatch--three {
+  background: #64788d;
+}
+
+.theme-card--black .theme-card__swatch--one {
+  background: #0b0c10;
+}
+
+.theme-card--black .theme-card__swatch--two {
+  background: #1a1d24;
+}
+
+.theme-card--black .theme-card__swatch--three {
+  background: #7dd3fc;
+}
+
 @media (min-width: 900px) {
   .settings-overview-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -904,6 +1061,10 @@ textarea {
   .search-row {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
+  }
+
+  .theme-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
