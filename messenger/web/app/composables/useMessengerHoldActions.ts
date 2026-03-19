@@ -21,12 +21,8 @@ export function useMessengerHoldActions() {
     activeItemId.value = null
   }
 
-  function startHold(itemId: string, event: PointerEvent) {
-    if (event.pointerType === 'mouse' && event.button !== 0) {
-      return
-    }
-
-    if (isHoldActionMenuTarget(event.target)) {
+  function startHold(itemId: string, target?: EventTarget | null) {
+    if (isHoldActionMenuTarget(target ?? null)) {
       return
     }
 
@@ -37,6 +33,11 @@ export function useMessengerHoldActions() {
       suppressRootClickUntil = Date.now() + 800
       holdTimer = null
     }, HOLD_DELAY_MS)
+  }
+
+  function open(itemId: string) {
+    activeItemId.value = itemId
+    suppressRootClickUntil = Date.now() + 800
   }
 
   function cancelHold() {
@@ -75,5 +76,6 @@ export function useMessengerHoldActions() {
     cancelHold,
     consumeSuppressedClick,
     dismiss,
+    open,
   }
 }

@@ -91,6 +91,10 @@ function closeSearch() {
     searchOpen.value = false
   }, 120)
 }
+
+function startHold(contactId: string, event?: Event) {
+  holdActions.startHold(contactId, event?.target)
+}
 </script>
 
 <template>
@@ -131,10 +135,14 @@ function closeSearch() {
         :class="{ 'list-card--hold-open': holdActions.activeItemId.value === contact.id }"
         data-hold-actions-root="true"
         @click="openDirectChat(contact.id)"
-        @pointerdown="holdActions.startHold(contact.id, $event)"
-        @pointerup="holdActions.cancelHold()"
-        @pointerleave="holdActions.cancelHold()"
-        @pointercancel="holdActions.cancelHold()"
+        @mousedown.left="startHold(contact.id, $event)"
+        @mouseup="holdActions.cancelHold()"
+        @mouseleave="holdActions.cancelHold()"
+        @touchstart.passive="startHold(contact.id, $event)"
+        @touchend="holdActions.cancelHold()"
+        @touchcancel="holdActions.cancelHold()"
+        @touchmove="holdActions.cancelHold()"
+        @contextmenu.prevent="holdActions.open(contact.id)"
       >
         <div class="list-card__main">
           <p class="list-card__title">{{ contact.displayName }}</p>

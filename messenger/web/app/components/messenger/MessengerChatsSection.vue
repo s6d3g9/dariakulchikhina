@@ -86,6 +86,10 @@ function closeSearch() {
     searchOpen.value = false
   }, 120)
 }
+
+function startHold(conversationId: string, event?: Event) {
+  holdActions.startHold(conversationId, event?.target)
+}
 </script>
 
 <template>
@@ -126,10 +130,14 @@ function closeSearch() {
         :class="{ 'list-card--hold-open': holdActions.activeItemId.value === chat.id }"
         data-hold-actions-root="true"
         @click="openChat(chat.id)"
-        @pointerdown="holdActions.startHold(chat.id, $event)"
-        @pointerup="holdActions.cancelHold()"
-        @pointerleave="holdActions.cancelHold()"
-        @pointercancel="holdActions.cancelHold()"
+        @mousedown.left="startHold(chat.id, $event)"
+        @mouseup="holdActions.cancelHold()"
+        @mouseleave="holdActions.cancelHold()"
+        @touchstart.passive="startHold(chat.id, $event)"
+        @touchend="holdActions.cancelHold()"
+        @touchcancel="holdActions.cancelHold()"
+        @touchmove="holdActions.cancelHold()"
+        @contextmenu.prevent="holdActions.open(chat.id)"
       >
         <div class="list-card__main">
           <div class="list-card__row">

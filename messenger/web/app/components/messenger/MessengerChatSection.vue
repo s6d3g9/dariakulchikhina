@@ -1,11 +1,12 @@
 <script setup lang="ts">
 const conversations = useMessengerConversations()
-const holdActions = useMessengerHoldActions()
+const viewport = useMessengerViewport()
 const draft = ref('')
 const actionError = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const messageListEl = ref<HTMLElement | null>(null)
 const composerInputEl = ref<HTMLTextAreaElement | null>(null)
+const composerBarEl = ref<HTMLElement | null>(null)
 const detailsOpen = ref(false)
 const copiedLabel = ref('')
 const isRecording = ref(false)
@@ -15,11 +16,14 @@ const calls = useMessengerCalls()
 const composerExpanded = ref(false)
 const editingMessageId = ref<string | null>(null)
 const editingDraft = ref('')
+const activeMessageActionsId = ref<string | null>(null)
+const composerHeight = ref(76)
 
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
 let recordingTimer: ReturnType<typeof setInterval> | null = null
 let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
+let composerResizeObserver: ResizeObserver | null = null
 
 interface SharedAssetItem {
   id: string
@@ -86,6 +90,10 @@ const sharedContent = computed(() => {
   }
 })
 
+const chatLayoutStyle = computed(() => ({
+  '--messenger-composer-height': `${composerHeight.value}px`,
+}))
+
 onMounted(async () => {
   canRecordAudio.value = Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined')
   await conversations.refresh()
@@ -102,6 +110,8 @@ onBeforeUnmount(() => {
     clearTimeout(composerAlignTimer)
     composerAlignTimer = null
   }
+  composerResizeObserver?.disconnect()
+  composerResizeObserver = null
   mediaRecorder = null
 })
 
@@ -120,6 +130,7 @@ watch(() => detailsOpen.value, (opened) => {
 watch(() => conversations.activeConversationId.value, () => {
   editingMessageId.value = null
   editingDraft.value = ''
+  activeMessageActionsId.value = null
 })
 
 watch(() => conversations.messages.value.length, async (currentLength, previousLength) => {
@@ -128,6 +139,14 @@ watch(() => conversations.messages.value.length, async (currentLength, previousL
   }
 
   await scrollMessagesToBottom(previousLength > 0 ? 'smooth' : 'auto')
+})
+
+watch(() => viewport.keyboardOpen.value, () => {
+  scheduleComposerAlignment()
+})
+
+watch(() => viewport.viewportHeight.value, () => {
+  scheduleComposerAlignment()
 })
 
 async function submit() {
@@ -140,6 +159,7 @@ async function submit() {
     await conversations.sendMessage(draft.value)
     draft.value = ''
     composerExpanded.value = false
+    activeMessageActionsId.value = null
   } catch {
     actionError.value = 'Не удалось отправить сообщение.'
   }
@@ -282,6 +302,12 @@ function toggleComposerExpanded() {
   }
 
   composerExpanded.value = !composerExpanded.value
+  scheduleComposerAlignment()
+}
+
+function updateComposerHeight() {
+  const nextHeight = composerBarEl.value?.offsetHeight ?? 76
+  composerHeight.value = nextHeight
 }
 
 function scheduleComposerAlignment() {
@@ -290,8 +316,10 @@ function scheduleComposerAlignment() {
   }
 
   const alignComposer = async () => {
+    updateComposerHeight()
     await scrollMessagesToBottom('auto')
-    composerInputEl.value?.scrollIntoView({ block: 'nearest' })
+    composerInputEl.value?.scrollIntoView({ block: 'center' })
+    window.scrollTo({ top: 0, behavior: 'auto' })
   }
 
   void alignComposer()
@@ -308,6 +336,7 @@ function scheduleComposerAlignment() {
 
 function expandComposer() {
   composerExpanded.value = true
+  viewport.scheduleViewportSync()
   scheduleComposerAlignment()
 }
 
@@ -315,6 +344,11 @@ function collapseComposer() {
   if (!draft.value.trim()) {
     composerExpanded.value = false
   }
+
+  setTimeout(() => {
+    viewport.scheduleViewportSync()
+    updateComposerHeight()
+  }, 40)
 }
 
 async function scrollMessagesToBottom(behavior: ScrollBehavior) {
@@ -384,7 +418,7 @@ async function startCall(mode: 'audio' | 'video') {
 }
 
 function startEditingMessage(messageId: string, body: string) {
-  holdActions.dismiss()
+  activeMessageActionsId.value = null
   editingMessageId.value = messageId
   editingDraft.value = body
 }
@@ -414,7 +448,7 @@ async function removeMessage(messageId: string) {
   actionError.value = ''
 
   try {
-    holdActions.dismiss()
+    activeMessageActionsId.value = null
     await conversations.deleteMessage(messageId)
     if (editingMessageId.value === messageId) {
       cancelEditingMessage()
@@ -436,6 +470,46 @@ async function handleEditKeydown(event: KeyboardEvent) {
     await saveEditedMessage()
   }
 }
+
+function toggleMessageActions(messageId: string, event: MouseEvent) {
+  const target = event.target
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+
+  if (target.closest('button, textarea, audio, img, input, [data-message-action-menu="true"]')) {
+    return
+  }
+
+  activeMessageActionsId.value = activeMessageActionsId.value === messageId ? null : messageId
+}
+
+function handleDocumentPointerDown(event: PointerEvent) {
+  if (event.target instanceof Element && event.target.closest('[data-message-action-root="true"]')) {
+    return
+  }
+
+  activeMessageActionsId.value = null
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleDocumentPointerDown)
+
+  nextTick(() => {
+    updateComposerHeight()
+
+    if (composerBarEl.value && typeof ResizeObserver !== 'undefined') {
+      composerResizeObserver = new ResizeObserver(() => {
+        updateComposerHeight()
+      })
+      composerResizeObserver.observe(composerBarEl.value)
+    }
+  })
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleDocumentPointerDown)
+})
 </script>
 
 <template>
@@ -443,6 +517,7 @@ async function handleEditKeydown(event: KeyboardEvent) {
     <section
       class="section-block section-block--chat"
       :class="{ 'section-block--chat-details-open': detailsOpen && conversations.activeConversation.value }"
+      :style="chatLayoutStyle"
     >
       <header class="section-head section-head--chat-header">
         <button
@@ -494,22 +569,19 @@ async function handleEditKeydown(event: KeyboardEvent) {
             v-for="entry in conversations.messages.value"
             :key="entry.id"
             class="message-bubble"
-            :class="{ 'message-bubble--own': entry.own, 'message-bubble--deleted': Boolean(entry.deletedAt), 'message-bubble--hold-open': holdActions.activeItemId.value === entry.id }"
-            data-hold-actions-root="true"
-            @pointerdown="entry.own && !entry.deletedAt ? holdActions.startHold(entry.id, $event) : undefined"
-            @pointerup="holdActions.cancelHold()"
-            @pointerleave="holdActions.cancelHold()"
-            @pointercancel="holdActions.cancelHold()"
+            :class="{ 'message-bubble--own': entry.own, 'message-bubble--deleted': Boolean(entry.deletedAt), 'message-bubble--actions-open': activeMessageActionsId === entry.id }"
+            data-message-action-root="true"
+            @click="entry.own && !entry.deletedAt ? toggleMessageActions(entry.id, $event) : undefined"
           >
             <div class="message-bubble__topline">
               <p class="message-bubble__author">{{ entry.own ? 'Вы' : entry.senderDisplayName }}</p>
-              <div v-if="entry.own && !entry.deletedAt && holdActions.activeItemId.value === entry.id" class="message-bubble__actions" data-hold-actions-menu="true" @pointerdown.stop>
+              <div v-if="entry.own && !entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__actions" data-message-action-menu="true" @pointerdown.stop>
                 <button
                   v-if="entry.kind === 'text'"
                   type="button"
                   class="message-action-btn"
                   :disabled="conversations.editingMessageId.value === entry.id"
-                  @click="startEditingMessage(entry.id, entry.body)"
+                  @click.stop="startEditingMessage(entry.id, entry.body)"
                 >
                   Ред.
                 </button>
@@ -517,7 +589,7 @@ async function handleEditKeydown(event: KeyboardEvent) {
                   type="button"
                   class="message-action-btn"
                   :disabled="conversations.editingMessageId.value === entry.id"
-                  @click="removeMessage(entry.id)"
+                  @click.stop="removeMessage(entry.id)"
                 >
                   Удал.
                 </button>
@@ -655,7 +727,7 @@ async function handleEditKeydown(event: KeyboardEvent) {
         </section>
       </div>
 
-      <div v-if="!detailsOpen || !conversations.activeConversation.value" class="composer-bar composer-bar--dock" :class="{ 'composer-bar--expanded': composerExpanded }">
+      <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock" :class="{ 'composer-bar--expanded': composerExpanded }">
         <input ref="fileInput" type="file" class="sr-only" @change="handleFileSelect">
         <button type="button" class="composer-btn" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @click="openFilePicker">+</button>
         <textarea

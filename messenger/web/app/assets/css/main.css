@@ -1119,7 +1119,7 @@ html[data-messenger-motion='reduced'] *::after {
   letter-spacing: 0.08em;
 }
 
-.message-bubble--hold-open {
+.message-bubble--actions-open {
   border-color: rgba(125, 211, 252, 0.34);
 }
 
@@ -1243,8 +1243,8 @@ html[data-messenger-motion='reduced'] *::after {
   min-height: 0;
   overflow-y: auto;
   align-content: start;
-  padding: 8px 0 156px;
-  scroll-padding-bottom: 156px;
+  padding: 8px 0 calc(var(--messenger-composer-height, 84px) + 20px);
+  scroll-padding-bottom: calc(var(--messenger-composer-height, 84px) + 20px);
   transition: opacity 160ms ease, filter 160ms ease;
 }
 
@@ -1325,7 +1325,7 @@ html[data-messenger-motion='reduced'] *::after {
 
 @media (max-width: 767px) {
   .section-block--chat {
-    height: calc(var(--messenger-viewport-height) - 160px - max(12px, env(safe-area-inset-bottom)));
+    height: calc(var(--messenger-viewport-height) - 112px);
   }
 
   .chat-user-trigger--profile {
@@ -1342,7 +1342,16 @@ html[data-messenger-motion='reduced'] *::after {
   }
 
   .composer-bar--dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(72px + max(12px, env(safe-area-inset-bottom)));
+    z-index: 46;
     grid-template-columns: 44px minmax(0, 1fr) auto 44px 44px;
+    margin-top: 0;
+    padding-right: 12px;
+    padding-left: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   .composer-btn--toggle {
@@ -1358,6 +1367,15 @@ html[data-messenger-motion='reduced'] *::after {
 
   .chat-screen {
     gap: 0;
+  }
+
+  .list-card--action,
+  .message-bubble--own {
+    -webkit-touch-callout: none;
+  }
+
+  .messenger-shell[data-messenger-keyboard='open'] .composer-bar--dock {
+    bottom: 0;
   }
 }
 
