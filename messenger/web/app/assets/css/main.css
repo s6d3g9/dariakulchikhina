@@ -635,7 +635,176 @@ textarea {
   min-height: 164px;
 }
 
+.settings-shell {
+  align-content: start;
+}
+
+.setting-section-intro {
+  margin: 0;
+  color: var(--messenger-muted);
+}
+
+.settings-overview-grid,
+.settings-layout,
+.settings-nav,
+.settings-panel,
+.setting-field,
+.setting-toggle,
+.setting-toggle__copy,
+.setting-facts,
+.device-status-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-overview-grid,
+.settings-layout {
+  gap: 14px;
+}
+
+.settings-nav {
+  align-content: start;
+}
+
+.settings-nav__item {
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 16px;
+  border: 1px solid var(--messenger-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--messenger-text);
+  text-align: left;
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+.settings-nav__item--active {
+  border-color: rgba(125, 211, 252, 0.36);
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.16), rgba(216, 180, 254, 0.12));
+}
+
+.settings-nav__title,
+.settings-nav__hint,
+.setting-field__label,
+.setting-fact-label,
+.setting-card__meta,
+.setting-pill {
+  display: block;
+}
+
+.settings-nav__title,
+.setting-field__label {
+  font-weight: 700;
+}
+
+.settings-nav__hint,
+.setting-fact-label,
+.setting-card__meta {
+  color: var(--messenger-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.settings-panel {
+  min-width: 0;
+}
+
+.setting-card--stacked,
+.setting-card--summary {
+  display: grid;
+  align-content: start;
+}
+
+.setting-select,
+.setting-textarea {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--messenger-border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--messenger-text);
+  padding: 12px 14px;
+  border-radius: 18px;
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
+.setting-textarea {
+  resize: vertical;
+}
+
+.setting-toggle {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.setting-toggle:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.setting-toggle input {
+  width: 20px;
+  height: 20px;
+}
+
+.setting-fact-row,
+.device-status-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.setting-fact-row strong,
+.device-status-item strong {
+  text-align: right;
+}
+
+.setting-pill-row,
+.settings-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.setting-inline-note {
+  margin: 0;
+  color: var(--messenger-muted);
+}
+
+.setting-pill {
+  min-height: 30px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--messenger-muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.setting-pill--ok {
+  color: var(--messenger-success);
+  border-color: rgba(134, 239, 172, 0.24);
+  background: rgba(134, 239, 172, 0.08);
+}
+
 @media (min-width: 900px) {
+  .settings-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .settings-layout {
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+  }
+
   .call-layer {
     left: 32px;
     right: 32px;
@@ -664,6 +833,16 @@ textarea {
 }
 
 @media (max-width: 767px) {
+  .setting-toggle {
+    grid-template-columns: 1fr;
+  }
+
+  .setting-fact-row,
+  .device-status-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .call-layer {
     left: 12px;
     right: 12px;
@@ -702,6 +881,14 @@ textarea {
   .auth-card {
     border-radius: 24px;
   }
+}
+
+html[data-messenger-motion='reduced'] *,
+html[data-messenger-motion='reduced'] *::before,
+html[data-messenger-motion='reduced'] *::after {
+  transition-duration: 0ms !important;
+  animation-duration: 0ms !important;
+  scroll-behavior: auto !important;
 }
 .section-head--chat-header {
   align-items: center;

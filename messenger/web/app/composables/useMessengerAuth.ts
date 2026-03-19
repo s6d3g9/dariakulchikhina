@@ -32,33 +32,66 @@ interface MessengerAuthResponse {
   user: MessengerAuthUser
 }
 
-const STORAGE_KEY = 'daria-messenger-token'
+type MessengerAuthPersistenceMode = 'local' | 'session'
+
+const LOCAL_STORAGE_KEY = 'daria-messenger-token'
+const SESSION_STORAGE_KEY = 'daria-messenger-token-session'
 
 export function useMessengerAuth() {
   const config = useRuntimeConfig()
   const token = useState<string | null>('messenger-auth-token', () => null)
   const user = useState<MessengerAuthUser | null>('messenger-auth-user', () => null)
   const ready = useState<boolean>('messenger-auth-ready', () => false)
+  const persistenceMode = useState<MessengerAuthPersistenceMode>('messenger-auth-persistence-mode', () => 'local')
 
   function readStoredToken() {
     if (!import.meta.client) {
       return null
     }
 
-    return window.localStorage.getItem(STORAGE_KEY)
+    const sessionToken = window.sessionStorage.getItem(SESSION_STORAGE_KEY)
+    if (sessionToken) {
+      return {
+        token: sessionToken,
+        mode: 'session' as const,
+      }
+    }
+
+    const localToken = window.localStorage.getItem(LOCAL_STORAGE_KEY)
+    if (localToken) {
+      return {
+        token: localToken,
+        mode: 'local' as const,
+      }
+    }
+
+    return null
   }
 
-  function writeStoredToken(value: string | null) {
+  function clearStoredTokens() {
     if (!import.meta.client) {
       return
     }
 
-    if (value) {
-      window.localStorage.setItem(STORAGE_KEY, value)
+    window.localStorage.removeItem(LOCAL_STORAGE_KEY)
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY)
+  }
+
+  function writeStoredToken(value: string | null, mode = persistenceMode.value) {
+    if (!import.meta.client) {
       return
     }
 
-    window.localStorage.removeItem(STORAGE_KEY)
+    clearStoredTokens()
+
+    if (value) {
+      if (mode === 'session') {
+        window.sessionStorage.setItem(SESSION_STORAGE_KEY, value)
+      } else {
+        window.localStorage.setItem(LOCAL_STORAGE_KEY, value)
+      }
+      return
+    }
   }
 
   async function request<T>(path: string, options: Parameters<typeof $fetch<T>>[1] = {}) {
@@ -78,7 +111,10 @@ export function useMessengerAuth() {
       return
     }
 
-    token.value = readStoredToken()
+    const stored = readStoredToken()
+    token.value = stored?.token || null
+    persistenceMode.value = stored?.mode || 'local'
+
     if (!token.value) {
       ready.value = true
       return
@@ -90,7 +126,7 @@ export function useMessengerAuth() {
     } catch {
       token.value = null
       user.value = null
-      writeStoredToken(null)
+      writeStoredToken(null, persistenceMode.value)
     } finally {
       ready.value = true
     }
@@ -99,8 +135,16 @@ export function useMessengerAuth() {
   function acceptAuth(response: MessengerAuthResponse) {
     token.value = response.token
     user.value = response.user
-    writeStoredToken(response.token)
+    writeStoredToken(response.token, persistenceMode.value)
     ready.value = true
+  }
+
+  function setPersistence(mode: MessengerAuthPersistenceMode) {
+    persistenceMode.value = mode
+
+    if (token.value) {
+      writeStoredToken(token.value, mode)
+    }
   }
 
   async function login(payload: { login: string; password: string }) {
@@ -122,17 +166,19 @@ export function useMessengerAuth() {
   function logout() {
     token.value = null
     user.value = null
-    writeStoredToken(null)
+    writeStoredToken(null, persistenceMode.value)
   }
 
   return {
     token,
     user,
     ready,
+    persistenceMode,
     request,
     hydrate,
     login,
     register,
+    setPersistence,
     logout,
   }
 }
