@@ -94,7 +94,9 @@ export function useMessengerRealtime() {
     socket.addEventListener('message', (message) => {
       try {
         const event = JSON.parse(String(message.data)) as MessengerRealtimeEvent
-        void handleEvent(event)
+        void handleEvent(event).catch(() => {
+          // ignore transport-side handler failures in alpha stage
+        })
       } catch {
         // ignore malformed events in alpha stage
       }

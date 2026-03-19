@@ -3,6 +3,16 @@ const calls = useMessengerCalls()
 
 const activeModeLabel = computed(() => calls.activeCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
 const incomingModeLabel = computed(() => calls.incomingCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
+const permissionStateLabel = computed(() => {
+  const microphone = calls.mediaPermissionState.value.microphone
+  const camera = calls.mediaPermissionState.value.camera
+
+  if (calls.activeCall.value?.mode === 'video' || calls.incomingCall.value?.mode === 'video') {
+    return `Микрофон: ${microphone} · Камера: ${camera}`
+  }
+
+  return `Микрофон: ${microphone}`
+})
 
 const localVideoEl = useTemplateRef<HTMLVideoElement>('localVideoEl')
 const remoteVideoEl = useTemplateRef<HTMLVideoElement>('remoteVideoEl')
@@ -28,6 +38,7 @@ onBeforeUnmount(() => {
         <p class="call-banner__eyebrow">{{ incomingModeLabel }}</p>
         <h3>{{ calls.incomingCall.value.fromDisplayName }}</h3>
         <p>{{ calls.callStatusText.value || 'Входящий звонок' }}</p>
+        <p>{{ permissionStateLabel }}</p>
       </div>
       <div class="call-banner__actions">
         <button type="button" class="action-btn" @click="calls.rejectIncomingCall()">Отклонить</button>
@@ -40,6 +51,7 @@ onBeforeUnmount(() => {
         <p class="call-banner__eyebrow">{{ activeModeLabel }}</p>
         <h3>{{ calls.activeCall.value.peerDisplayName }}</h3>
         <p>{{ calls.callStatusText.value || 'Соединяем…' }}</p>
+        <p v-if="calls.requestingPermissions.value">Запрашиваем доступ к микрофону{{ calls.activeCall.value.mode === 'video' ? ' и камере' : '' }}…</p>
       </div>
 
       <div v-if="calls.activeCall.value.mode === 'video'" class="call-stage__videos">
@@ -58,5 +70,9 @@ onBeforeUnmount(() => {
     </section>
 
     <p v-if="calls.callError.value" class="call-error">{{ calls.callError.value }}</p>
+    <div v-if="calls.callError.value && !calls.activeCall.value" class="call-stage__actions">
+      <button type="button" class="action-btn action-btn--ghost" @click="calls.refreshMediaPermissions()">Обновить статусы доступа</button>
+      <button type="button" class="action-btn action-btn--accept" @click="calls.ensureMediaAccess(calls.incomingCall.value?.mode || 'audio')">Запросить доступ</button>
+    </div>
   </div>
 </template>

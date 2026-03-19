@@ -310,6 +310,7 @@ async function copyLink(href: string, label: string) {
 async function startCall(mode: 'audio' | 'video') {
   actionError.value = ''
   calls.clearError()
+  await calls.refreshMediaPermissions()
 
   try {
     await calls.startOutgoingCall(mode)
@@ -339,7 +340,7 @@ async function startCall(mode: 'audio' | 'video') {
           type="button"
           class="icon-btn"
           aria-label="Аудиозвонок"
-          :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value"
+          :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
           @click="startCall('audio')"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -350,7 +351,7 @@ async function startCall(mode: 'audio' | 'video') {
           type="button"
           class="icon-btn"
           aria-label="Видеозвонок"
-          :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value"
+          :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
           @click="startCall('video')"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -366,6 +367,7 @@ async function startCall(mode: 'audio' | 'video') {
     >
 
       <p v-if="actionError" class="auth-error">{{ actionError }}</p>
+  <p v-else-if="calls.requestingPermissions.value" class="copy-toast">Запрашиваем доступ к микрофону{{ conversations.activeConversation.value ? '' : '' }}…</p>
       <p v-else-if="copiedLabel" class="copy-toast">{{ copiedLabel }}</p>
 
       <div ref="messageListEl" class="message-list message-list--chat-scroll">

@@ -1,5 +1,6 @@
 type MessengerCallMode = 'audio' | 'video'
 type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
+type MessengerMediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 
 interface MessengerCallSignalEvent {
   type: 'call.signal'
@@ -40,6 +41,23 @@ let localVideoEl: HTMLVideoElement | null = null
 let remoteVideoEl: HTMLVideoElement | null = null
 let remoteAudioEl: HTMLAudioElement | null = null
 
+async function resolvePermissionState(kind: 'microphone' | 'camera'): Promise<MessengerMediaPermissionState> {
+  if (!import.meta.client) {
+    return 'unknown'
+  }
+
+  if (!navigator.permissions?.query) {
+    return 'unknown'
+  }
+
+  try {
+    const status = await navigator.permissions.query({ name: kind as PermissionName })
+    return status.state
+  } catch {
+    return 'unknown'
+  }
+}
+
 function resolveCallMode(value: unknown): MessengerCallMode {
   return value === 'video' ? 'video' : 'audio'
 }
@@ -67,8 +85,15 @@ export function useMessengerCalls() {
   const callStatusText = useState<string>('messenger-call-status', () => '')
   const callError = useState<string>('messenger-call-error', () => '')
   const busy = useState<boolean>('messenger-call-busy', () => false)
+  const requestingPermissions = useState<boolean>('messenger-call-requesting-permissions', () => false)
+  const mediaPermissionState = useState<Record<'microphone' | 'camera', MessengerMediaPermissionState>>('messenger-call-media-permissions', () => ({
+    microphone: 'unknown',
+    camera: 'unknown',
+  }))
   const supported = computed(() => Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof RTCPeerConnection !== 'undefined'))
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
+  const canStartAudioCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied')
+  const canStartVideoCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied' && mediaPermissionState.value.camera !== 'denied')
 
   function attachElements(elements: { localVideo?: HTMLVideoElement | null; remoteVideo?: HTMLVideoElement | null; remoteAudio?: HTMLAudioElement | null }) {
     localVideoEl = elements.localVideo ?? localVideoEl
@@ -128,6 +153,61 @@ export function useMessengerCalls() {
     })
     assignMediaTargets()
     return localStream
+  }
+
+  async function refreshMediaPermissions() {
+    mediaPermissionState.value = {
+      microphone: await resolvePermissionState('microphone'),
+      camera: await resolvePermissionState('camera'),
+    }
+  }
+
+  function describePermissionError(mode: MessengerCallMode) {
+    const microphoneDenied = mediaPermissionState.value.microphone === 'denied'
+    const cameraDenied = mediaPermissionState.value.camera === 'denied'
+
+    if (mode === 'video' && (microphoneDenied || cameraDenied)) {
+      return 'Браузер заблокировал микрофон или камеру. Разрешите доступ для этого сайта и повторите видеозвонок.'
+    }
+
+    if (mode === 'audio' && microphoneDenied) {
+      return 'Браузер заблокировал микрофон. Разрешите доступ для этого сайта и повторите аудиозвонок.'
+    }
+
+    return mode === 'video'
+      ? 'Нужен доступ к микрофону и камере, чтобы использовать видеозвонки.'
+      : 'Нужен доступ к микрофону, чтобы использовать аудиозвонки.'
+  }
+
+  async function ensureMediaAccess(mode: MessengerCallMode) {
+    callError.value = ''
+
+    if (!supported.value) {
+      callError.value = 'Звонки недоступны в этом браузере.'
+      return false
+    }
+
+    requestingPermissions.value = true
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: mode === 'video',
+      })
+
+      for (const track of stream.getTracks()) {
+        track.stop()
+      }
+
+      await refreshMediaPermissions()
+      return true
+    } catch {
+      await refreshMediaPermissions()
+      callError.value = describePermissionError(mode)
+      return false
+    } finally {
+      requestingPermissions.value = false
+    }
   }
 
   function buildPeerConnection(callId: string, conversationId: string, mode: MessengerCallMode) {
@@ -210,6 +290,11 @@ export function useMessengerCalls() {
       return
     }
 
+    const granted = await ensureMediaAccess(mode)
+    if (!granted) {
+      return
+    }
+
     const callId = crypto.randomUUID()
     activeCall.value = {
       callId,
@@ -242,6 +327,11 @@ export function useMessengerCalls() {
 
     try {
       await selectConversationForCall(incomingCall.value.conversationId)
+      const granted = await ensureMediaAccess(incomingCall.value.mode)
+      if (!granted) {
+        await rejectIncomingCall(describePermissionError(incomingCall.value.mode))
+        return
+      }
       await initMedia(incomingCall.value.mode)
       activeCall.value = {
         callId: incomingCall.value.callId,
@@ -431,16 +521,26 @@ export function useMessengerCalls() {
     clearElements()
   }
 
+  if (import.meta.client) {
+    void refreshMediaPermissions()
+  }
+
   return {
     incomingCall,
     activeCall,
     callStatusText,
     callError,
+    requestingPermissions,
+    mediaPermissionState,
     supported,
     inConversationCall,
+    canStartAudioCall,
+    canStartVideoCall,
     attachElements,
     clearElements,
     clearError,
+    refreshMediaPermissions,
+    ensureMediaAccess,
     startOutgoingCall,
     acceptIncomingCall,
     rejectIncomingCall,
