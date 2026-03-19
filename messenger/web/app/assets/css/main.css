@@ -3248,9 +3248,20 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 
   .messenger-shell[data-messenger-keyboard='open'] .composer-bar--dock {
     bottom: max(0px, var(--messenger-keyboard-inset));
-    width: auto;
+    width: min(calc(100vw - 24px), 560px);
+    max-width: min(calc(100vw - 24px), 560px);
     border-bottom: 1px solid var(--messenger-slab-border);
     border-radius: 24px 24px 0 0;
+  }
+
+  .messenger-shell[data-messenger-keyboard='open'] .composer-field {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .messenger-shell[data-messenger-keyboard='open'] .composer-input {
+    width: 100%;
+    min-width: 0;
   }
 
   .messenger-shell[data-messenger-keyboard='open'] .composer-bar--dock::after {
