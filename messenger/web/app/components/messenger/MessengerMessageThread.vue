@@ -74,6 +74,9 @@ function handleEditInput(event: Event) {
             class="message-action-btn"
             @click.stop="emit('comment', entry.id)"
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7.5 18.25 4.75 19l.75-2.55V8.25A2.5 2.5 0 0 1 8 5.75h8A2.5 2.5 0 0 1 18.5 8.25v5.5a2.5 2.5 0 0 1-2.5 2.5H9.45l-1.95 2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+            </svg>
             Комм.
           </button>
           <button
@@ -81,6 +84,10 @@ function handleEditInput(event: Event) {
             class="message-action-btn"
             @click.stop="emit('reply', entry.id)"
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 8.25 5.5 12 10 15.75" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+              <path d="M6 12h6.75a5.75 5.75 0 0 1 5.75 5.75" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+            </svg>
             Ответ
           </button>
           <button
@@ -88,6 +95,10 @@ function handleEditInput(event: Event) {
             class="message-action-btn"
             @click.stop="emit('forward', entry.id)"
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M13.25 5.75 18.5 11l-5.25 5.25" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+              <path d="M5.5 11H18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+            </svg>
             Пересл.
           </button>
           <button
@@ -97,6 +108,10 @@ function handleEditInput(event: Event) {
             :disabled="editingMessageId === entry.id"
             @click.stop="emit('edit', entry.id, entry.body)"
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m8 16 6.8-6.8 1.95 1.95L10 17.95H8V16Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+              <path d="M13.7 7.25 15 5.95a1.38 1.38 0 1 1 1.95 1.95l-1.3 1.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+            </svg>
             Ред.
           </button>
           <button
@@ -106,6 +121,9 @@ function handleEditInput(event: Event) {
             :disabled="editingMessageId === entry.id || messagePending"
             @click.stop="emit('remove', entry.id)"
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 8.5h8M9.25 8.5V7a1.25 1.25 0 0 1 1.25-1.25h3a1.25 1.25 0 0 1 1.25 1.25v1.5M7.25 8.5l.55 8.1A1.5 1.5 0 0 0 9.3 18h5.4a1.5 1.5 0 0 0 1.5-1.4l.55-8.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+            </svg>
             Удал.
           </button>
         </div>

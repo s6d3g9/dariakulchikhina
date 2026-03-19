@@ -783,7 +783,7 @@ onBeforeUnmount(() => {
             @click="startCall('audio')"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6.8 4.5h2.8l1.4 3.8-1.8 1.7a14.7 14.7 0 0 0 4.8 4.8l1.7-1.8 3.8 1.4v2.8a1.7 1.7 0 0 1-1.8 1.7C10.6 18.9 5.1 13.4 5.1 6.3A1.7 1.7 0 0 1 6.8 4.5Z" fill="currentColor"/>
+              <path d="M7.42 5.25h2.12c.32 0 .61.2.72.5l1.06 2.87a.78.78 0 0 1-.18.82l-1.62 1.63a12.8 12.8 0 0 0 5.4 5.4l1.63-1.62a.78.78 0 0 1 .82-.18l2.87 1.06c.3.11.5.4.5.72v2.12a1.9 1.9 0 0 1-2.05 1.9c-7.92-.5-14.2-6.78-14.7-14.7a1.9 1.9 0 0 1 1.9-2.05Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
             </svg>
           </button>
           <button
@@ -794,7 +794,7 @@ onBeforeUnmount(() => {
             @click="startCall('video')"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4.5 7.5A2.5 2.5 0 0 1 7 5h7a2.5 2.5 0 0 1 2.5 2.5v1.4l3-1.9a.9.9 0 0 1 1.4.8v8.4a.9.9 0 0 1-1.4.8l-3-1.9v1.4A2.5 2.5 0 0 1 14 19H7a2.5 2.5 0 0 1-2.5-2.5v-9Z" fill="currentColor"/>
+              <path d="M4.75 8A2.75 2.75 0 0 1 7.5 5.25h6A2.75 2.75 0 0 1 16.25 8v1.33l3.1-1.76c.58-.33 1.3.09 1.3.76v7.34c0 .67-.72 1.09-1.3.76l-3.1-1.76V16a2.75 2.75 0 0 1-2.75 2.75h-6A2.75 2.75 0 0 1 4.75 16V8Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
             </svg>
           </button>
         </div>
@@ -893,7 +893,7 @@ onBeforeUnmount(() => {
         <div class="composer-segment composer-segment--attach">
           <button type="button" class="composer-btn" aria-label="Прикрепить файл" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @click="openFilePicker">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M15.75 6.75 8.56 13.94a3.25 3.25 0 1 0 4.6 4.6l7.02-7.02a5.25 5.25 0 0 0-7.42-7.42l-8 8a7 7 0 0 0 9.9 9.9l6.3-6.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"/>
+              <path d="M9.1 12.9 15.8 6.2a3.35 3.35 0 1 1 4.74 4.73l-8.1 8.1a5.2 5.2 0 1 1-7.35-7.36l7.05-7.05" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"/>
             </svg>
           </button>
         </div>
@@ -920,13 +920,14 @@ onBeforeUnmount(() => {
           >
             <span v-if="isRecording">{{ `${recordingSeconds}s` }}</span>
             <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V7a3.5 3.5 0 1 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm-6-3.9a1 1 0 1 1 2 0 4 4 0 1 0 8 0 1 1 0 1 1 2 0 6 6 0 0 1-5 5.91V21a1 1 0 1 1-2 0v-2.49A6 6 0 0 1 6 11.6Z" fill="currentColor"/>
+              <path d="M12 15.25a3.25 3.25 0 0 0 3.25-3.25V7.5a3.25 3.25 0 1 0-6.5 0V12A3.25 3.25 0 0 0 12 15.25Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+              <path d="M6.75 11.75a5.25 5.25 0 0 0 10.5 0M12 17v2.5M9 19.5h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
             </svg>
           </button>
           <button type="button" class="composer-btn composer-btn--accent" aria-label="Отправить сообщение" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @pointerdown="preserveComposerFocus" @click="submit">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4.75 11.25 18.92 5.58c.86-.34 1.75.53 1.42 1.4l-5.47 14.31c-.34.9-1.61.96-2.03.1l-2.48-5.07-5.05-2.48c-.86-.42-.8-1.68.1-2.04Z" fill="currentColor"/>
-              <path d="M10.9 15.98 20.01 6.87" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
+              <path d="M5 12.1 19.36 5.9c.8-.35 1.58.43 1.23 1.23L14.4 21.49c-.36.84-1.57.82-1.91-.03l-1.93-4.82-4.82-1.93c-.85-.34-.87-1.55-.03-1.91Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+              <path d="M10.37 16.63 20.08 6.92" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
             </svg>
           </button>
         </div>
