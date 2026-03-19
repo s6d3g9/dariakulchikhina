@@ -1624,12 +1624,23 @@ html[data-messenger-motion='reduced'] *::after {
 .message-bubble__editor::before {
   content: '';
   position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.message-bubble__content::before,
+.message-bubble__editor::before {
   top: 0;
   bottom: 0;
   left: 0;
   width: 56%;
-  padding: 1px;
-  border-radius: inherit;
   background: conic-gradient(
     from 205deg,
     transparent 0deg,
@@ -1639,16 +1650,9 @@ html[data-messenger-motion='reduced'] *::after {
     rgba(134, 239, 172, 0.72) 340deg,
     transparent 360deg
   );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  opacity: 0;
-  pointer-events: none;
   animation: message-border-sweep 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.message-bubble--own .message-bubble__actions::before,
 .message-bubble--own .message-bubble__content::before,
 .message-bubble--own .message-bubble__editor::before {
   left: auto;
@@ -1656,7 +1660,17 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .message-bubble__actions::before {
+  background: conic-gradient(
+    from 180deg,
+    transparent 0deg,
+    transparent 190deg,
+    rgba(125, 211, 252, 0.92) 248deg,
+    rgba(216, 180, 254, 0.95) 300deg,
+    rgba(134, 239, 172, 0.76) 336deg,
+    transparent 360deg
+  );
   animation-duration: 420ms;
+  animation-name: message-actions-border-sweep;
 }
 
 .message-bubble__text,
@@ -1727,10 +1741,13 @@ html[data-messenger-motion='reduced'] *::after {
   }
 }
 
-.message-bubble--own .message-bubble__actions::before,
 .message-bubble--own .message-bubble__content::before,
 .message-bubble--own .message-bubble__editor::before {
   animation-name: message-border-sweep-own;
+}
+
+.message-bubble--own .message-bubble__actions::before {
+  animation-name: message-actions-border-sweep-own;
 }
 
 @keyframes message-border-sweep-own {
@@ -1751,6 +1768,50 @@ html[data-messenger-motion='reduced'] *::after {
   100% {
     opacity: 0;
     transform: translateX(-12%) scaleX(1.08);
+    filter: blur(0);
+  }
+}
+
+@keyframes message-actions-border-sweep {
+  0% {
+    opacity: 0;
+    transform: translateY(-6%) scale(0.96);
+    filter: blur(2px);
+  }
+
+  24% {
+    opacity: 1;
+  }
+
+  82% {
+    opacity: 0.94;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(1.02);
+    filter: blur(0);
+  }
+}
+
+@keyframes message-actions-border-sweep-own {
+  0% {
+    opacity: 0;
+    transform: translateY(-6%) scale(0.96);
+    filter: blur(2px);
+  }
+
+  24% {
+    opacity: 1;
+  }
+
+  82% {
+    opacity: 0.94;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(0) scale(1.02);
     filter: blur(0);
   }
 }
