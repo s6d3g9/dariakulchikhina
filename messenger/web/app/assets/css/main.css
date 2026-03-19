@@ -1485,7 +1485,7 @@ html[data-messenger-motion='reduced'] *::after {
   }
 
   .messenger-shell[data-messenger-keyboard='open'] .composer-bar--dock {
-    bottom: 0;
+    bottom: max(0px, var(--messenger-keyboard-inset));
   }
 
   .messenger-shell[data-messenger-keyboard='open'] .section-block--chat .message-list--chat-scroll {
