@@ -1067,6 +1067,11 @@ html[data-messenger-motion='reduced'] *::after {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.content-grid--gallery {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+}
+
 .content-card {
   display: grid;
   gap: 6px;
@@ -1083,12 +1088,75 @@ html[data-messenger-motion='reduced'] *::after {
   padding: 8px;
 }
 
+.content-card--tile {
+  align-content: start;
+  min-height: 132px;
+  padding: 12px;
+}
+
 .content-card__image {
   display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
   border-radius: 14px;
+}
+
+.content-gallery {
+  gap: 16px;
+}
+
+.content-drawer__head--gallery {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.content-gallery__nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.content-gallery__tab {
+  display: grid;
+  gap: 6px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--messenger-text);
+  text-align: left;
+}
+
+.content-gallery__tab--active {
+  border-color: rgba(125, 211, 252, 0.34);
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.16), rgba(255, 255, 255, 0.06));
+}
+
+.content-gallery__tab-count {
+  color: var(--messenger-muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.content-gallery__viewport {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.content-gallery__track {
+  display: flex;
+  width: 100%;
+  transition: transform 200ms ease;
+}
+
+.content-gallery__panel {
+  flex: 0 0 100%;
+  min-width: 100%;
+  display: grid;
+  align-content: start;
 }
 
 .copy-toast {
@@ -1360,6 +1428,15 @@ html[data-messenger-motion='reduced'] *::after {
   .section-block--chat-details-open .content-drawer--dock {
     inset: 0;
     padding: 16px;
+  }
+
+  .content-grid--gallery {
+    gap: 8px;
+  }
+
+  .content-card--tile {
+    min-height: 120px;
+    padding: 10px;
   }
 
   .chat-screen {

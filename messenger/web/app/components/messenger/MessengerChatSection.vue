@@ -661,81 +661,16 @@ onBeforeUnmount(() => {
           </article>
         </div>
 
-        <section v-if="detailsOpen && conversations.activeConversation.value" class="content-drawer content-drawer--dock" aria-label="Shared content menu">
-          <div class="content-drawer__head">
-            <div class="content-drawer__copy">
-              <p class="content-drawer__title">Контент от {{ conversations.activeConversation.value.peerDisplayName }}</p>
-              <p class="content-drawer__hint">Полноэкранный режим внутри окна чата. Нажатие на карточку копирует ссылку.</p>
-            </div>
-            <button type="button" class="icon-btn" aria-label="Закрыть контент" @click="closeDetails">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6.7 6.7a1 1 0 0 1 1.4 0L12 10.6l3.9-3.9a1 1 0 1 1 1.4 1.4L13.4 12l3.9 3.9a1 1 0 0 1-1.4 1.4L12 13.4l-3.9 3.9a1 1 0 0 1-1.4-1.4l3.9-3.9-3.9-3.9a1 1 0 0 1 0-1.4Z" fill="currentColor"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="content-groups">
-            <section class="content-group">
-              <div class="content-group__header">
-                <p class="content-group__title">Фото</p>
-                <span class="content-group__count">{{ sharedContent.photos.length }}</span>
-              </div>
-              <div v-if="sharedContent.photos.length" class="content-grid content-grid--photos">
-                <button
-                  v-for="photo in sharedContent.photos"
-                  :key="photo.id"
-                  type="button"
-                  class="content-card content-card--photo"
-                  @click="copyLink(photo.href, photo.title)"
-                >
-                  <img :src="photo.previewUrl" :alt="photo.title" class="content-card__image">
-                  <span class="content-card__caption">{{ photo.title }}</span>
-                </button>
-              </div>
-              <p v-else class="content-empty">Пока нет фотографий.</p>
-            </section>
-
-            <section class="content-group">
-              <div class="content-group__header">
-                <p class="content-group__title">Документы</p>
-                <span class="content-group__count">{{ sharedContent.documents.length }}</span>
-              </div>
-              <div v-if="sharedContent.documents.length" class="content-grid">
-                <button
-                  v-for="doc in sharedContent.documents"
-                  :key="doc.id"
-                  type="button"
-                  class="content-card"
-                  @click="copyLink(doc.href, doc.title)"
-                >
-                  <span class="content-card__title">{{ doc.title }}</span>
-                  <span class="content-card__meta">{{ doc.meta }}</span>
-                </button>
-              </div>
-              <p v-else class="content-empty">Пока нет документов.</p>
-            </section>
-
-            <section class="content-group">
-              <div class="content-group__header">
-                <p class="content-group__title">Ссылки</p>
-                <span class="content-group__count">{{ sharedContent.links.length }}</span>
-              </div>
-              <div v-if="sharedContent.links.length" class="content-grid">
-                <button
-                  v-for="link in sharedContent.links"
-                  :key="link.id"
-                  type="button"
-                  class="content-card"
-                  @click="copyLink(link.href, link.title)"
-                >
-                  <span class="content-card__title">{{ link.title }}</span>
-                  <span class="content-card__meta">{{ link.meta }}</span>
-                </button>
-              </div>
-              <p v-else class="content-empty">Пока нет ссылок.</p>
-            </section>
-          </div>
-        </section>
+        <MessengerSharedGallery
+          v-if="detailsOpen && conversations.activeConversation.value"
+          :title="`Галерея ${conversations.activeConversation.value.peerDisplayName}`"
+          hint="Свайпайте влево и вправо между разделами. Нажатие на карточку копирует ссылку."
+          :photos="sharedContent.photos"
+          :documents="sharedContent.documents"
+          :links="sharedContent.links"
+          @close="closeDetails"
+          @select="copyLink($event.href, $event.title)"
+        />
       </div>
 
       <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock">
