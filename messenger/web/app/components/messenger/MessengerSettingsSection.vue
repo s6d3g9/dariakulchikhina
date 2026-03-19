@@ -18,6 +18,7 @@ watch(() => settingsModel.settings.value.devices.keepSignedIn, (enabled) => {
 
 const activeSectionMeta = computed(() => settingsModel.sections.find(section => section.key === settingsModel.activeSection.value) ?? settingsModel.sections[0])
 const activeThemeMeta = computed(() => settingsModel.themeOptions.find(theme => theme.key === settingsModel.settings.value.themes.active) ?? settingsModel.themeOptions[0])
+const activeStyleMeta = computed(() => settingsModel.styleOptions.find(style => style.key === settingsModel.settings.value.themes.style) ?? settingsModel.styleOptions[0])
 const permissionLabelMap = {
   granted: 'Разрешено',
   denied: 'Запрещено',
@@ -193,6 +194,12 @@ function showManualInstallHelp() {
         <p class="setting-card__title">Активная тема</p>
         <p class="setting-card__text">{{ activeThemeMeta.title }}</p>
         <p class="setting-card__meta">{{ activeThemeMeta.hint }}</p>
+      </article>
+
+      <article class="setting-card setting-card--glass setting-card--summary">
+        <p class="setting-card__title">Стиль интерфейса</p>
+        <p class="setting-card__text">{{ activeStyleMeta.title }}</p>
+        <p class="setting-card__meta">{{ activeStyleMeta.hint }}</p>
       </article>
     </div>
 
@@ -396,11 +403,50 @@ function showManualInstallHelp() {
           </article>
 
           <article class="setting-card setting-card--glass setting-card--stacked">
+            <p class="setting-card__title">Стиль дизайна</p>
+            <p class="setting-card__text">Отдельно от палитры можно переключать характер стекла: более чистый, более матовый или более контрастный.</p>
+            <div class="style-grid">
+              <button
+                v-for="style in settingsModel.styleOptions"
+                :key="style.key"
+                type="button"
+                class="style-card"
+                :class="[
+                  `style-card--${style.key}`,
+                  { 'style-card--active': settingsModel.settings.value.themes.style === style.key }
+                ]"
+                :aria-pressed="settingsModel.settings.value.themes.style === style.key"
+                @click="settingsModel.setStyle(style.key)"
+              >
+                <span class="style-card__preview" aria-hidden="true">
+                  <span class="style-card__preview-topbar" />
+                  <span class="style-card__preview-panel" />
+                  <span class="style-card__preview-row">
+                    <span class="style-card__preview-dot" />
+                    <span class="style-card__preview-button" />
+                  </span>
+                </span>
+                <span class="style-card__copy">
+                  <span class="style-card__title">{{ style.title }}</span>
+                  <span class="style-card__meta">{{ style.hint }}</span>
+                </span>
+                <span class="style-card__state">
+                  {{ settingsModel.settings.value.themes.style === style.key ? 'Активен' : 'Выбрать' }}
+                </span>
+              </button>
+            </div>
+          </article>
+
+          <article class="setting-card setting-card--glass setting-card--stacked">
             <p class="setting-card__title">Как это работает</p>
             <div class="setting-facts">
               <div class="setting-fact-row">
                 <span class="setting-fact-label">Текущая тема</span>
                 <strong>{{ activeThemeMeta.title }}</strong>
+              </div>
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Текущий стиль</span>
+                <strong>{{ activeStyleMeta.title }}</strong>
               </div>
               <div class="setting-fact-row">
                 <span class="setting-fact-label">Хранение</span>
@@ -411,7 +457,7 @@ function showManualInstallHelp() {
                 <strong>Мгновенно ко всему messenger</strong>
               </div>
             </div>
-            <p class="setting-card__meta">Бежевая тема делает интерфейс почти белым и мягким, серая даёт нейтральный glass-режим, чёрная оставляет максимально тёмный вид.</p>
+            <p class="setting-card__meta">Тема управляет палитрой, а стиль управляет характером поверхностей. Можно, например, оставить чёрную тему и переключать между кристальным, матовым и контрастным стеклом.</p>
           </article>
         </section>
 

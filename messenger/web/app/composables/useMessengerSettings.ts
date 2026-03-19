@@ -1,6 +1,7 @@
 type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerThemeKey = 'beige' | 'gray' | 'black'
+type MessengerStyleKey = 'crystal' | 'mist' | 'contrast'
 
 interface MessengerSettingsSnapshot {
   profile: {
@@ -24,6 +25,7 @@ interface MessengerSettingsSnapshot {
   }
   themes: {
     active: MessengerThemeKey
+    style: MessengerStyleKey
   }
   devices: {
     trustThisDevice: boolean
@@ -58,6 +60,7 @@ function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
     },
     themes: {
       active: 'black',
+      style: 'crystal',
     },
     devices: {
       trustThisDevice: true,
@@ -98,6 +101,14 @@ function applyMessengerThemePreference(theme: MessengerThemeKey) {
   }
 
   document.documentElement.dataset.messengerTheme = theme
+}
+
+function applyMessengerStylePreference(style: MessengerStyleKey) {
+  if (!import.meta.client) {
+    return
+  }
+
+  document.documentElement.dataset.messengerStyle = style
 }
 
 function mergeMessengerSettings(source: Partial<MessengerSettingsSnapshot> | null): MessengerSettingsSnapshot {
@@ -184,6 +195,24 @@ export function useMessengerSettings() {
     },
   ]
 
+  const styleOptions = [
+    {
+      key: 'crystal' as const,
+      title: 'Кристалл',
+      hint: 'Чистый liquid glass с яркими бликами и более воздушными поверхностями.',
+    },
+    {
+      key: 'mist' as const,
+      title: 'Туман',
+      hint: 'Мягкий матовый режим с приглушённым стеклом и спокойной глубиной.',
+    },
+    {
+      key: 'contrast' as const,
+      title: 'Контраст',
+      hint: 'Более собранный режим с жёстче очерченными границами и плотными панелями.',
+    },
+  ]
+
   function persist() {
     if (!import.meta.client) {
       return
@@ -208,6 +237,7 @@ export function useMessengerSettings() {
     settings.value = mergeMessengerSettings(readStoredMessengerSettings())
     applyReduceMotionPreference(settings.value.devices.reduceMotion)
     applyMessengerThemePreference(settings.value.themes.active)
+    applyMessengerStylePreference(settings.value.themes.style)
     ready.value = true
     void refreshPermissionStates()
   }
@@ -219,6 +249,15 @@ export function useMessengerSettings() {
   function setTheme(theme: MessengerThemeKey) {
     settings.value.themes.active = theme
     applyMessengerThemePreference(theme)
+
+    if (ready.value) {
+      persist()
+    }
+  }
+
+  function setStyle(style: MessengerStyleKey) {
+    settings.value.themes.style = style
+    applyMessengerStylePreference(style)
 
     if (ready.value) {
       persist()
@@ -271,6 +310,7 @@ export function useMessengerSettings() {
     persist()
     applyReduceMotionPreference(settings.value.devices.reduceMotion)
     applyMessengerThemePreference(settings.value.themes.active)
+    applyMessengerStylePreference(settings.value.themes.style)
   }, { deep: true })
 
   const currentDevice = computed(() => {
@@ -334,6 +374,7 @@ export function useMessengerSettings() {
     settings,
     sections,
     themeOptions,
+    styleOptions,
     activeSection,
     sessionStartedAt,
     currentDevice,
@@ -343,6 +384,7 @@ export function useMessengerSettings() {
     hydrate,
     openSection,
     setTheme,
+    setStyle,
     resetLocalSettings,
     refreshPermissionStates,
   }
