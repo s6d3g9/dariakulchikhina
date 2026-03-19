@@ -891,7 +891,11 @@ onBeforeUnmount(() => {
       <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock">
         <input ref="fileInput" type="file" class="sr-only" @change="handleFileSelect">
         <div class="composer-segment composer-segment--attach">
-          <button type="button" class="composer-btn" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @click="openFilePicker">+</button>
+          <button type="button" class="composer-btn" aria-label="Прикрепить файл" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @click="openFilePicker">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15.75 6.75 8.56 13.94a3.25 3.25 0 1 0 4.6 4.6l7.02-7.02a5.25 5.25 0 0 0-7.42-7.42l-8 8a7 7 0 0 0 9.9 9.9l6.3-6.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"/>
+            </svg>
+          </button>
         </div>
         <div class="composer-field">
           <textarea
@@ -919,7 +923,12 @@ onBeforeUnmount(() => {
               <path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V7a3.5 3.5 0 1 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm-6-3.9a1 1 0 1 1 2 0 4 4 0 1 0 8 0 1 1 0 1 1 2 0 6 6 0 0 1-5 5.91V21a1 1 0 1 1-2 0v-2.49A6 6 0 0 1 6 11.6Z" fill="currentColor"/>
             </svg>
           </button>
-          <button type="button" class="composer-btn composer-btn--accent" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @pointerdown="preserveComposerFocus" @click="submit">↑</button>
+          <button type="button" class="composer-btn composer-btn--accent" aria-label="Отправить сообщение" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @pointerdown="preserveComposerFocus" @click="submit">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4.75 11.25 18.92 5.58c.86-.34 1.75.53 1.42 1.4l-5.47 14.31c-.34.9-1.61.96-2.03.1l-2.48-5.07-5.05-2.48c-.86-.42-.8-1.68.1-2.04Z" fill="currentColor"/>
+              <path d="M10.9 15.98 20.01 6.87" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
+            </svg>
+          </button>
         </div>
       </div>
     </section>

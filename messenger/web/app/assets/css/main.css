@@ -18,6 +18,21 @@
   --messenger-accent-strong: #d8b4fe;
   --messenger-success: #86efac;
   --messenger-shadow: 0 20px 80px rgba(0, 0, 0, 0.34);
+  --messenger-accent-fill: linear-gradient(135deg, rgba(125, 211, 252, 0.9), rgba(216, 180, 254, 0.92));
+  --messenger-accent-soft-fill: linear-gradient(135deg, rgba(125, 211, 252, 0.18), rgba(216, 180, 254, 0.16));
+  --messenger-accent-ink: #08111f;
+  --messenger-success-fill: linear-gradient(135deg, rgba(134, 239, 172, 0.9), rgba(125, 211, 252, 0.9));
+  --messenger-success-ink: #08111f;
+  --messenger-slab-bg: linear-gradient(180deg, rgba(16, 24, 40, 0.94), rgba(9, 17, 31, 0.9));
+  --messenger-slab-bg-soft: linear-gradient(180deg, rgba(16, 24, 40, 0.72), rgba(16, 24, 40, 0.94));
+  --messenger-slab-bg-strong: linear-gradient(180deg, rgba(16, 24, 40, 0.96), rgba(16, 24, 40, 0.82));
+  --messenger-slab-border: rgba(255, 255, 255, 0.14);
+  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02));
+  --messenger-slab-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
+  --messenger-divider: rgba(255, 255, 255, 0.14);
+  --messenger-field-header-bg: rgba(255, 255, 255, 0.06);
+  --messenger-field-header-bg-focus: rgba(255, 255, 255, 0.08);
+  --messenger-field-header-border: rgba(255, 255, 255, 0.1);
   --messenger-glass-button-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
   --messenger-glass-button-bg-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
   --messenger-glass-button-border: rgba(255, 255, 255, 0.16);
@@ -121,6 +136,21 @@ html[data-messenger-theme='beige'] {
   --messenger-accent-strong: #d8a370;
   --messenger-success: #4f8a5b;
   --messenger-shadow: 0 20px 54px rgba(143, 111, 79, 0.12);
+  --messenger-accent-fill: linear-gradient(135deg, rgba(180, 122, 71, 0.94), rgba(216, 163, 112, 0.94));
+  --messenger-accent-soft-fill: linear-gradient(135deg, rgba(180, 122, 71, 0.18), rgba(216, 163, 112, 0.2));
+  --messenger-accent-ink: #fffaf4;
+  --messenger-success-fill: linear-gradient(135deg, rgba(79, 138, 91, 0.92), rgba(113, 171, 123, 0.92));
+  --messenger-success-ink: #fffdf8;
+  --messenger-slab-bg: linear-gradient(180deg, rgba(255, 252, 247, 0.96), rgba(244, 233, 216, 0.92));
+  --messenger-slab-bg-soft: linear-gradient(180deg, rgba(255, 250, 245, 0.82), rgba(244, 233, 216, 0.94));
+  --messenger-slab-bg-strong: linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(244, 233, 216, 0.9));
+  --messenger-slab-border: rgba(163, 128, 93, 0.16);
+  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 248, 241, 0.08));
+  --messenger-slab-shadow: 0 16px 32px rgba(145, 113, 79, 0.12);
+  --messenger-divider: rgba(163, 128, 93, 0.16);
+  --messenger-field-header-bg: rgba(255, 255, 255, 0.7);
+  --messenger-field-header-bg-focus: rgba(255, 255, 255, 0.88);
+  --messenger-field-header-border: rgba(163, 128, 93, 0.14);
   --messenger-glass-button-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 246, 236, 0.7));
   --messenger-glass-button-bg-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 242, 227, 0.78));
   --messenger-glass-button-border: rgba(141, 112, 79, 0.18);
@@ -150,6 +180,21 @@ html[data-messenger-theme='gray'] {
   --messenger-accent-strong: #7f90a3;
   --messenger-success: #4d7e68;
   --messenger-shadow: 0 20px 54px rgba(57, 68, 80, 0.12);
+  --messenger-accent-fill: linear-gradient(135deg, rgba(88, 115, 142, 0.94), rgba(127, 144, 163, 0.94));
+  --messenger-accent-soft-fill: linear-gradient(135deg, rgba(88, 115, 142, 0.18), rgba(127, 144, 163, 0.2));
+  --messenger-accent-ink: #f8fbff;
+  --messenger-success-fill: linear-gradient(135deg, rgba(77, 126, 104, 0.92), rgba(113, 160, 139, 0.92));
+  --messenger-success-ink: #f8fffb;
+  --messenger-slab-bg: linear-gradient(180deg, rgba(247, 249, 251, 0.96), rgba(226, 232, 239, 0.92));
+  --messenger-slab-bg-soft: linear-gradient(180deg, rgba(244, 247, 250, 0.82), rgba(226, 232, 239, 0.94));
+  --messenger-slab-bg-strong: linear-gradient(180deg, rgba(247, 249, 251, 0.98), rgba(226, 232, 239, 0.9));
+  --messenger-slab-border: rgba(92, 105, 121, 0.16);
+  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.08));
+  --messenger-slab-shadow: 0 16px 32px rgba(59, 71, 84, 0.12);
+  --messenger-divider: rgba(92, 105, 121, 0.16);
+  --messenger-field-header-bg: rgba(255, 255, 255, 0.64);
+  --messenger-field-header-bg-focus: rgba(255, 255, 255, 0.84);
+  --messenger-field-header-border: rgba(92, 105, 121, 0.14);
   --messenger-glass-button-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(236, 240, 245, 0.62));
   --messenger-glass-button-bg-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(230, 235, 241, 0.74));
   --messenger-glass-button-border: rgba(83, 95, 110, 0.18);
@@ -179,6 +224,21 @@ html[data-messenger-theme='black'] {
   --messenger-accent-strong: #d8b4fe;
   --messenger-success: #86efac;
   --messenger-shadow: 0 20px 80px rgba(0, 0, 0, 0.34);
+  --messenger-accent-fill: linear-gradient(135deg, rgba(125, 211, 252, 0.9), rgba(216, 180, 254, 0.92));
+  --messenger-accent-soft-fill: linear-gradient(135deg, rgba(125, 211, 252, 0.18), rgba(216, 180, 254, 0.16));
+  --messenger-accent-ink: #08111f;
+  --messenger-success-fill: linear-gradient(135deg, rgba(134, 239, 172, 0.9), rgba(125, 211, 252, 0.9));
+  --messenger-success-ink: #08111f;
+  --messenger-slab-bg: linear-gradient(180deg, rgba(16, 24, 40, 0.94), rgba(9, 17, 31, 0.9));
+  --messenger-slab-bg-soft: linear-gradient(180deg, rgba(16, 24, 40, 0.72), rgba(16, 24, 40, 0.94));
+  --messenger-slab-bg-strong: linear-gradient(180deg, rgba(16, 24, 40, 0.96), rgba(16, 24, 40, 0.82));
+  --messenger-slab-border: rgba(255, 255, 255, 0.14);
+  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02));
+  --messenger-slab-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
+  --messenger-divider: rgba(255, 255, 255, 0.14);
+  --messenger-field-header-bg: rgba(255, 255, 255, 0.06);
+  --messenger-field-header-bg-focus: rgba(255, 255, 255, 0.08);
+  --messenger-field-header-border: rgba(255, 255, 255, 0.1);
 }
 
 * {
@@ -478,8 +538,8 @@ textarea {
 .composer-btn--accent,
 .bottom-nav__item--active,
 .badge {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.9), rgba(216, 180, 254, 0.92));
-  color: #08111f;
+  background: var(--messenger-accent-fill);
+  color: var(--messenger-accent-ink);
   border-color: rgba(255, 255, 255, 0.24);
 }
 
@@ -724,11 +784,11 @@ textarea {
   width: min(100%, 560px);
   margin: 0 auto;
   padding: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--messenger-slab-border);
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(16, 24, 40, 0.94), rgba(9, 17, 31, 0.9));
+  background: var(--messenger-slab-bg);
   backdrop-filter: blur(28px) saturate(160%);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
+  box-shadow: var(--messenger-slab-shadow);
   z-index: 50;
   transition: bottom 180ms ease, opacity 180ms ease, transform 180ms ease;
 }
@@ -738,7 +798,7 @@ textarea {
   position: absolute;
   inset: 1px;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02));
+  background: var(--messenger-slab-overlay);
   opacity: 0.62;
   pointer-events: none;
 }
@@ -776,7 +836,7 @@ textarea {
   right: 0;
   bottom: 8px;
   width: 1px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--messenger-divider);
 }
 
 .bottom-nav__label {
@@ -798,7 +858,7 @@ textarea {
 }
 
 .bottom-nav .bottom-nav__item--active {
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.18), rgba(216, 180, 254, 0.16)) !important;
+  background: var(--messenger-accent-soft-fill) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
 }
 
@@ -813,11 +873,11 @@ textarea {
   gap: 0;
   min-height: calc(var(--messenger-control-size) + 10px);
   padding: 4px;
-  border: 1px solid var(--messenger-glass-button-border);
+  border: 1px solid var(--messenger-slab-border);
   border-radius: calc(var(--messenger-control-radius) + 4px);
-  background: var(--messenger-glass-button-bg);
+  background: var(--messenger-slab-bg);
   backdrop-filter: blur(22px) saturate(165%);
-  box-shadow: var(--messenger-glass-button-shadow);
+  box-shadow: var(--messenger-slab-shadow);
 }
 
 .section-actions--cluster::before {
@@ -825,7 +885,7 @@ textarea {
   position: absolute;
   inset: 1px;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02));
+  background: var(--messenger-slab-overlay);
   opacity: 0.62;
   pointer-events: none;
 }
@@ -850,18 +910,18 @@ textarea {
   left: 0;
   bottom: 8px;
   width: 1px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--messenger-divider);
 }
 
 .composer-bar--dock {
   position: relative;
   gap: 0;
   padding: 6px 8px max(6px, env(safe-area-inset-bottom));
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--messenger-slab-border);
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(16, 24, 40, 0.94), rgba(9, 17, 31, 0.9));
+  background: var(--messenger-slab-bg);
   backdrop-filter: blur(28px) saturate(160%);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
+  box-shadow: var(--messenger-slab-shadow);
 }
 
 .composer-bar--dock .composer-input {
@@ -968,8 +1028,8 @@ textarea {
 }
 
 .action-btn--accept {
-  background: linear-gradient(135deg, rgba(134, 239, 172, 0.9), rgba(125, 211, 252, 0.9));
-  color: #08111f;
+  background: var(--messenger-success-fill);
+  color: var(--messenger-success-ink);
   border-color: rgba(255, 255, 255, 0.22);
 }
 
@@ -1429,8 +1489,8 @@ textarea {
 
 .theme-card--active .theme-card__state,
 .style-card--active .style-card__state {
-  color: #08111f;
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.92), rgba(216, 180, 254, 0.92));
+  color: var(--messenger-accent-ink);
+  background: var(--messenger-accent-fill);
   border-color: rgba(255, 255, 255, 0.24);
 }
 
@@ -2818,10 +2878,10 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   min-height: 64px;
   padding: max(10px, env(safe-area-inset-top)) 12px 10px;
   border: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--messenger-slab-border);
   border-radius: 0;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-  background: linear-gradient(180deg, rgba(16, 24, 40, 0.95), rgba(16, 24, 40, 0.82));
+  box-shadow: var(--messenger-slab-shadow);
+  background: var(--messenger-slab-bg-strong);
   backdrop-filter: blur(28px) saturate(160%);
 }
 
@@ -2891,7 +2951,7 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   bottom: 0;
   z-index: 3;
   margin-top: auto;
-  background: linear-gradient(180deg, rgba(16, 24, 40, 0.72), rgba(16, 24, 40, 0.94));
+  background: var(--messenger-slab-bg-soft);
   backdrop-filter: blur(28px) saturate(150%);
 }
 
@@ -2905,8 +2965,8 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   align-content: start;
   overscroll-behavior: contain;
   border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(180deg, rgba(16, 24, 40, 0.94), rgba(16, 24, 40, 0.88));
+  border: 1px solid var(--messenger-slab-border);
+  background: var(--messenger-slab-bg);
 }
 
 .section-block--chat-details-open .content-groups {
@@ -2920,7 +2980,7 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   padding-bottom: 12px;
-  background: linear-gradient(180deg, rgba(16, 24, 40, 0.96), rgba(16, 24, 40, 0.82));
+  background: var(--messenger-slab-bg-strong);
 }
 
 .section-block--chat-details-open .message-list--chat-scroll,
@@ -3184,11 +3244,11 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   display: grid;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--messenger-slab-border);
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(16, 24, 40, 0.95), rgba(16, 24, 40, 0.82));
+  background: var(--messenger-slab-bg-strong);
   backdrop-filter: blur(28px) saturate(160%);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--messenger-slab-shadow);
 }
 
 .search-dock--screen-header {
@@ -3198,7 +3258,7 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   right: 0;
   top: 0;
   border: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--messenger-slab-border);
   border-radius: 0;
   box-shadow: none;
   min-height: var(--screen-header-height);
@@ -3232,13 +3292,13 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   min-height: 44px;
   padding: 10px 14px;
   border-radius: 16px;
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--messenger-field-header-border);
+  background: var(--messenger-field-header-bg);
 }
 
 .search-dock__input--header:focus {
   border-color: rgba(125, 211, 252, 0.34);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--messenger-field-header-bg-focus);
   outline: none;
 }
 
@@ -3250,9 +3310,9 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   display: grid;
   gap: 6px;
   padding: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--messenger-slab-border);
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(16, 24, 40, 0.98), rgba(16, 24, 40, 0.92));
+  background: var(--messenger-slab-bg);
   backdrop-filter: blur(24px) saturate(150%);
   max-height: min(320px, 46vh);
   overflow-y: auto;
