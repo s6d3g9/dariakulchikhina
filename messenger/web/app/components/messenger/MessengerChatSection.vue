@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import type { MessengerConversationMessage } from '../../composables/useMessengerConversations'
+
+interface MessengerThreadMessage extends MessengerConversationMessage {
+  comments: MessengerThreadMessage[]
+}
+
 const conversations = useMessengerConversations()
 const viewport = useMessengerViewport()
 const draft = ref('')
@@ -21,6 +27,7 @@ const composerRelationMode = ref<'reply' | 'comment' | null>(null)
 const composerRelationMessageId = ref<string | null>(null)
 const forwardingMessageId = ref<string | null>(null)
 const galleryPhotoId = ref<string | null>(null)
+const pendingScrollMessageId = ref<string | null>(null)
 
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
@@ -146,6 +153,29 @@ const chatLayoutStyle = computed(() => ({
   '--messenger-composer-height': `${composerHeight.value}px`,
 }))
 
+const threadedMessages = computed<MessengerThreadMessage[]>(() => {
+  const nodes = conversations.messages.value.map(message => ({
+    ...message,
+    comments: [] as MessengerThreadMessage[],
+  }))
+  const nodeById = new Map(nodes.map(node => [node.id, node]))
+  const roots: MessengerThreadMessage[] = []
+
+  for (const node of nodes) {
+    const parentId = node.commentOn?.id
+    const parent = parentId ? nodeById.get(parentId) : null
+
+    if (parent && parent.id !== node.id) {
+      parent.comments.push(node)
+      continue
+    }
+
+    roots.push(node)
+  }
+
+  return roots
+})
+
 const composerRelationMessage = computed(() => {
   if (!composerRelationMessageId.value) {
     return null
@@ -209,6 +239,16 @@ watch(() => conversations.messages.value.length, async (currentLength, previousL
     return
   }
 
+  if (pendingScrollMessageId.value) {
+    const targetMessageId = pendingScrollMessageId.value
+    pendingScrollMessageId.value = null
+    const scrolled = await scrollMessageIntoView(targetMessageId, previousLength > 0 ? 'smooth' : 'auto')
+
+    if (scrolled) {
+      return
+    }
+  }
+
   await scrollMessagesToBottom(previousLength > 0 ? 'smooth' : 'auto')
 })
 
@@ -235,11 +275,14 @@ async function submit() {
     return
   }
 
+  const commentTargetId = composerRelationMode.value === 'comment' ? composerRelationMessageId.value : null
+
   try {
     await conversations.sendMessage(draft.value, {
       replyToMessageId: composerRelationMode.value === 'reply' ? composerRelationMessageId.value || undefined : undefined,
       commentOnMessageId: composerRelationMode.value === 'comment' ? composerRelationMessageId.value || undefined : undefined,
     })
+    pendingScrollMessageId.value = commentTargetId
     draft.value = ''
     activeMessageActionsId.value = null
     composerRelationMode.value = null
@@ -522,6 +565,23 @@ async function scrollMessagesToBottom(behavior: ScrollBehavior) {
   })
 }
 
+async function scrollMessageIntoView(messageId: string, behavior: ScrollBehavior) {
+  await nextTick()
+  const list = messageListEl.value
+  const target = list?.querySelector<HTMLElement>(`[data-message-id="${messageId}"]`)
+
+  if (!list || !target) {
+    return false
+  }
+
+  target.scrollIntoView({
+    block: 'nearest',
+    behavior,
+  })
+
+  return true
+}
+
 async function copyText(value: string) {
   if (navigator.clipboard?.writeText && window.isSecureContext) {
     await navigator.clipboard.writeText(value)
@@ -778,109 +838,26 @@ onBeforeUnmount(() => {
 
       <div class="chat-reading-shell">
         <div ref="messageListEl" class="message-list message-list--chat-scroll">
-          <article
-            v-for="entry in conversations.messages.value"
+          <MessengerMessageThread
+            v-for="entry in threadedMessages"
             :key="entry.id"
-            class="message-bubble"
-            :class="{ 'message-bubble--own': entry.own, 'message-bubble--deleted': Boolean(entry.deletedAt), 'message-bubble--actions-open': activeMessageActionsId === entry.id }"
-            data-message-action-root="true"
-            @click="!entry.deletedAt ? toggleMessageActions(entry.id, $event) : undefined"
-          >
-            <div class="message-bubble__topline">
-              <p class="message-bubble__author">{{ entry.own ? 'Вы' : entry.senderDisplayName }}</p>
-              <div v-if="!entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__actions" data-message-action-menu="true" @pointerdown.stop>
-                <button
-                  type="button"
-                  class="message-action-btn"
-                  @click.stop="activateComposerRelation('comment', entry.id)"
-                >
-                  Комм.
-                </button>
-                <button
-                  type="button"
-                  class="message-action-btn"
-                  @click.stop="activateComposerRelation('reply', entry.id)"
-                >
-                  Ответ
-                </button>
-                <button
-                  type="button"
-                  class="message-action-btn"
-                  @click.stop="openForwardPicker(entry.id)"
-                >
-                  Пересл.
-                </button>
-                <button
-                  v-if="entry.own && entry.kind === 'text'"
-                  type="button"
-                  class="message-action-btn"
-                  :disabled="conversations.editingMessageId.value === entry.id"
-                  @click.stop="startEditingMessage(entry.id, entry.body)"
-                >
-                  Ред.
-                </button>
-                <button
-                  v-if="entry.own"
-                  type="button"
-                  class="message-action-btn"
-                  :disabled="conversations.editingMessageId.value === entry.id"
-                  @click.stop="removeMessage(entry.id)"
-                >
-                  Удал.
-                </button>
-              </div>
-            </div>
-            <div v-if="entry.forwardedFrom" class="message-relation-card message-relation-card--forwarded">
-              <p class="message-relation-card__label">Переслано от {{ entry.forwardedFrom.senderDisplayName }}</p>
-              <p class="message-relation-card__text">{{ relationPreviewText(entry.forwardedFrom) }}</p>
-            </div>
-            <div v-if="entry.commentOn" class="message-relation-card">
-              <p class="message-relation-card__label">Комментарий к сообщению {{ entry.commentOn.own ? 'от вас' : `от ${entry.commentOn.senderDisplayName}` }}</p>
-              <p class="message-relation-card__text">{{ relationPreviewText(entry.commentOn) }}</p>
-            </div>
-            <div v-if="entry.replyTo" class="message-relation-card message-relation-card--reply">
-              <p class="message-relation-card__label">Ответ на сообщение {{ entry.replyTo.own ? 'от вас' : `от ${entry.replyTo.senderDisplayName}` }}</p>
-              <p class="message-relation-card__text">{{ relationPreviewText(entry.replyTo) }}</p>
-            </div>
-            <template v-if="entry.kind === 'file' && entry.attachment">
-              <audio
-                v-if="entry.attachment.mimeType.startsWith('audio/')"
-                class="voice-player"
-                controls
-                preload="metadata"
-                :src="entry.attachment.absoluteUrl"
-              />
-              <button
-                type="button"
-                class="attachment-card attachment-card--button"
-                @click="copyLink(entry.attachment.absoluteUrl, entry.attachment.name)"
-              >
-                <span class="attachment-card__title">{{ entry.attachment.name }}</span>
-                <span class="attachment-card__meta">{{ entry.attachment.mimeType }} · {{ Math.ceil(entry.attachment.size / 1024) }} KB</span>
-              </button>
-              <img
-                v-if="entry.attachment.mimeType.startsWith('image/')"
-                class="attachment-preview"
-                :src="entry.attachment.absoluteUrl"
-                :alt="entry.attachment.name"
-                @click.stop="openPhotoGallery(entry.id)"
-              >
-            </template>
-            <div v-else-if="editingMessageId === entry.id" class="message-bubble__editor">
-              <textarea
-                v-model="editingDraft"
-                rows="3"
-                class="composer-input message-bubble__textarea"
-                @keydown="handleEditKeydown"
-                @blur="saveEditedMessage"
-              />
-            </div>
-            <div v-else class="message-bubble__content">
-              <p class="message-bubble__text">{{ entry.body }}</p>
-              <p v-if="entry.editedAt && !entry.deletedAt" class="message-bubble__status">Изменено</p>
-              <p v-if="entry.deletedAt" class="message-bubble__status">Удалено</p>
-            </div>
-          </article>
+            :entry="entry"
+            :active-message-actions-id="activeMessageActionsId"
+            :editing-message-id="editingMessageId"
+            :editing-draft="editingDraft"
+            :message-pending="conversations.messagePending.value"
+            @toggle-actions="toggleMessageActions"
+            @comment="activateComposerRelation('comment', $event)"
+            @reply="activateComposerRelation('reply', $event)"
+            @forward="openForwardPicker"
+            @edit="startEditingMessage"
+            @remove="removeMessage"
+            @edit-draft="editingDraft = $event"
+            @edit-keydown="handleEditKeydown"
+            @save-edit="saveEditedMessage"
+            @copy-link="copyLink($event[0], $event[1])"
+            @open-photo="openPhotoGallery"
+          />
 
           <article v-if="!conversations.activeConversation.value" class="list-card list-card--panel">
             <div class="list-card__main">
@@ -889,7 +866,7 @@ onBeforeUnmount(() => {
             </div>
           </article>
 
-          <article v-else-if="!conversations.messages.value.length" class="list-card list-card--panel">
+          <article v-else-if="!threadedMessages.length" class="list-card list-card--panel">
             <div class="list-card__main">
               <p class="list-card__title">Пока пусто</p>
               <p class="list-card__text">Отправьте первое текстовое сообщение в этом direct-чате.</p>

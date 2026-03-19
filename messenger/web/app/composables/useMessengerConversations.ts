@@ -44,7 +44,7 @@ interface MessengerForwardedMessagePreview {
   }
 }
 
-interface MessengerConversationMessage {
+export interface MessengerConversationMessage {
   id: string
   body: string
   kind: 'text' | 'file'

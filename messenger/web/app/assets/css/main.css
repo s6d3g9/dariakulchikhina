@@ -332,6 +332,14 @@ textarea {
   background: linear-gradient(180deg, rgba(125, 211, 252, 0.18), rgba(216, 180, 254, 0.14));
 }
 
+.message-bubble--comment {
+  margin-top: 10px;
+  margin-left: calc(var(--message-comment-depth, 1) * 12px);
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .message-bubble__author {
   color: var(--messenger-accent);
   font-size: 12px;
@@ -1272,6 +1280,12 @@ html[data-messenger-motion='reduced'] *::after {
 .forward-targets {
   display: grid;
   gap: 10px;
+}
+
+.message-comments {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .composer-context {
