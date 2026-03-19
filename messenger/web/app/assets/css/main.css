@@ -2435,7 +2435,7 @@ html[data-messenger-motion='reduced'] *::after {
   flex: 0 0 auto;
   min-height: 38px;
   min-width: 0;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 0;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   color: var(--messenger-text);
   padding: 0 13px;
@@ -2906,7 +2906,6 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 }
 
 .message-action-btn:hover:not([disabled]) {
-  border-color: var(--messenger-border-strong);
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -3156,16 +3155,31 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
     pointer-events: none;
   }
 
+  .composer-segment--attach::after,
+  .composer-segment--actions::before {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .composer-segment--actions .composer-btn + .composer-btn::before {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
   .bottom-nav {
     border-top: 0;
     border-radius: 0 0 22px 22px;
-    padding-top: 2px;
+    padding-top: 0;
     min-height: var(--messenger-bottom-nav-height);
   }
 
   .bottom-nav::before {
     inset: 0 1px 1px;
     border-radius: 0 0 21px 21px;
+  }
+
+  .bottom-nav__item:not(:last-child)::after {
+    top: 14px;
+    bottom: 14px;
+    opacity: 0.34;
   }
 
   .section-block--chat .message-list--chat-scroll {
