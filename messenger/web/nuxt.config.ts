@@ -1,3 +1,5 @@
+const appBaseUrl = process.env.NUXT_APP_BASE_URL || '/'
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-03-19',
   devtools: { enabled: true },
@@ -5,6 +7,7 @@ export default defineNuxtConfig({
   modules: ['@pinia/nuxt'],
   ssr: false,
   app: {
+    baseURL: appBaseUrl,
     head: {
       title: 'Daria Messenger',
       meta: [
@@ -17,9 +20,9 @@ export default defineNuxtConfig({
         { name: 'format-detection', content: 'telephone=no' },
       ],
       link: [
-        { rel: 'manifest', href: '/manifest.webmanifest' },
-        { rel: 'icon', type: 'image/svg+xml', href: '/icons/messenger-app.svg' },
-        { rel: 'apple-touch-icon', href: '/icons/messenger-app-512.svg' },
+        { rel: 'manifest', href: `${appBaseUrl}manifest.webmanifest` },
+        { rel: 'icon', type: 'image/svg+xml', href: `${appBaseUrl}icons/messenger-app.svg` },
+        { rel: 'apple-touch-icon', href: `${appBaseUrl}icons/messenger-app-512.svg` },
       ],
     },
   },

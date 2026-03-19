@@ -12,6 +12,8 @@ interface MessengerConversationItem {
   } | null
 }
 
+import { buildMessengerUrl } from '../utils/messenger-url'
+
 interface MessengerConversationMessage {
   id: string
   body: string
@@ -40,7 +42,7 @@ function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: st
     ...item,
     attachment: {
       ...item.attachment,
-      absoluteUrl: new URL(item.attachment.url, config.public.messengerCoreBaseUrl).toString(),
+      absoluteUrl: buildMessengerUrl(config.public.messengerCoreBaseUrl, item.attachment.url),
     },
   }
 }

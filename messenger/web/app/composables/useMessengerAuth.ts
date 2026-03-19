@@ -4,6 +4,8 @@ interface MessengerAuthUser {
   displayName: string
 }
 
+import { buildMessengerUrl } from '../utils/messenger-url'
+
 export interface MessengerContactsOverview {
   contacts: Array<{
     id: string
@@ -121,7 +123,7 @@ export function useMessengerAuth() {
       headers.set('Authorization', `Bearer ${token.value}`)
     }
 
-    return await $fetch<T>(`${config.public.messengerCoreBaseUrl}${path}`, {
+    return await $fetch<T>(buildMessengerUrl(config.public.messengerCoreBaseUrl, path), {
       ...options,
       headers,
     })

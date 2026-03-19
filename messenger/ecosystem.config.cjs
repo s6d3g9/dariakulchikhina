@@ -13,7 +13,7 @@ module.exports = {
         MESSENGER_CORE_PORT: '4300',
         MESSENGER_CORE_LOG_LEVEL: 'info',
         MESSENGER_CORE_AUTH_SECRET: 'change-me-before-production',
-        MESSENGER_CORE_CORS_ORIGIN: 'http://152.53.176.165:3300',
+        MESSENGER_CORE_CORS_ORIGIN: 'https://dariakulchikhina.com',
         MESSENGER_CORE_DATA_DIR: '/opt/daria-messenger-data',
       },
     },
@@ -26,7 +26,8 @@ module.exports = {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        NUXT_PUBLIC_MESSENGER_CORE_BASE_URL: 'http://152.53.176.165:4300',
+        NUXT_PUBLIC_MESSENGER_CORE_BASE_URL: 'https://dariakulchikhina.com/messenger-api',
+        NUXT_APP_BASE_URL: '/messenger/',
         PORT: '3300',
         HOST: '0.0.0.0',
       },

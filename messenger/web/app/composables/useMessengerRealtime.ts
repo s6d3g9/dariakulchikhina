@@ -14,6 +14,8 @@ type MessengerRealtimeEvent = {
   }
 }
 
+import { buildMessengerWsUrl } from '../utils/messenger-url'
+
 let messengerSocket: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -79,8 +81,7 @@ export function useMessengerRealtime() {
     clearReconnect()
     connecting.value = true
 
-    const wsUrl = new URL('/ws', config.public.messengerCoreBaseUrl)
-    wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsUrl = buildMessengerWsUrl(config.public.messengerCoreBaseUrl, '/ws')
     wsUrl.searchParams.set('token', auth.token.value)
 
     const socket = new WebSocket(wsUrl.toString())
