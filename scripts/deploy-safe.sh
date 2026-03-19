@@ -4,6 +4,12 @@ set -euo pipefail
 DEPLOY_HOST="${DEPLOY_HOST:-daria-deploy}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/daria-nuxt}"
 APP_NAME="${APP_NAME:-daria-nuxt}"
+MESSENGER_ECOSYSTEM_PATH="${MESSENGER_ECOSYSTEM_PATH:-messenger/ecosystem.config.cjs}"
+MESSENGER_PM2_CORE_NAME="${MESSENGER_PM2_CORE_NAME:-daria-messenger-core}"
+MESSENGER_PM2_WEB_NAME="${MESSENGER_PM2_WEB_NAME:-daria-messenger-web}"
+MESSENGER_PUBLIC_HEALTHCHECK_URL="${MESSENGER_PUBLIC_HEALTHCHECK_URL:-https://dariakulchikhina.com/messenger/login}"
+MESSENGER_REMOTE_HEALTHCHECK_URL="${MESSENGER_REMOTE_HEALTHCHECK_URL:-http://127.0.0.1:3300/messenger/login}"
+DEPLOY_MESSENGER="${DEPLOY_MESSENGER:-1}"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://152.53.176.165:3000/admin}"
 REMOTE_HEALTHCHECK_URL="${REMOTE_HEALTHCHECK_URL:-http://127.0.0.1:3000/admin}"
 HEALTHCHECK_ATTEMPTS="${HEALTHCHECK_ATTEMPTS:-6}"
@@ -257,7 +263,7 @@ log_stage_time "sync" "$SYNC_START_TS"
 
 echo "[deploy] remote install + build"
 BUILD_START_TS=$(date +%s)
-if ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pnpm install --frozen-lockfile; pnpm build"; then
+if ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pnpm install --frozen-lockfile; pnpm build$(if [[ "$DEPLOY_MESSENGER" == "1" ]]; then printf '; pnpm messenger:core:build; pnpm messenger:web:build'; fi)"; then
   echo "[deploy] remote build success"
 else
   echo "[deploy] remote build failed" >&2
@@ -276,6 +282,9 @@ fi
 
 RESTART_START_TS=$(date +%s)
 ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pm2 restart '$APP_NAME' --update-env --silent"
+if [[ "$DEPLOY_MESSENGER" == "1" ]]; then
+  ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pm2 startOrRestart '$MESSENGER_ECOSYSTEM_PATH' --only '$MESSENGER_PM2_CORE_NAME' --update-env; pm2 startOrRestart '$MESSENGER_ECOSYSTEM_PATH' --only '$MESSENGER_PM2_WEB_NAME' --update-env; pm2 save --force >/dev/null"
+fi
 log_stage_time "restart" "$RESTART_START_TS"
 
 echo "[deploy] pm2 status"
@@ -285,9 +294,22 @@ echo "[deploy] healthcheck ${HEALTHCHECK_URL}"
 HEALTH_START_TS=$(date +%s)
 status_code="$(run_healthcheck_with_retry || true)"
 echo "[deploy] health status: ${status_code}"
+
+if [[ "$DEPLOY_MESSENGER" == "1" ]]; then
+  messenger_status_code="$(curl -o /dev/null -s -w '%{http_code}' --max-time 20 "$MESSENGER_PUBLIC_HEALTHCHECK_URL" || true)"
+  echo "[deploy] messenger health status: ${messenger_status_code}"
+
+  if ! is_healthy_status "$messenger_status_code"; then
+    messenger_status_code="$(ssh "$DEPLOY_HOST" "curl -o /dev/null -s -w '%{http_code}' --max-time 20 '$MESSENGER_REMOTE_HEALTHCHECK_URL'" 2>/dev/null || true)"
+    echo "[deploy] messenger remote localhost health status: ${messenger_status_code}"
+  fi
+else
+  messenger_status_code="200"
+fi
+
 log_stage_time "health" "$HEALTH_START_TS"
 
-if is_healthy_status "$status_code"; then
+if is_healthy_status "$status_code" && is_healthy_status "$messenger_status_code"; then
     echo "[deploy] done"
     log_stage_time "total" "$SCRIPT_START_TS"
     write_metrics "ok"
