@@ -373,16 +373,23 @@ function showManualInstallHelp() {
                   `theme-card--${theme.key}`,
                   { 'theme-card--active': settingsModel.settings.value.themes.active === theme.key }
                 ]"
-                @click="settingsModel.settings.value.themes.active = theme.key"
+                :aria-pressed="settingsModel.settings.value.themes.active === theme.key"
+                @click="settingsModel.setTheme(theme.key)"
               >
-                <span class="theme-card__swatches" aria-hidden="true">
-                  <span class="theme-card__swatch theme-card__swatch--one" />
-                  <span class="theme-card__swatch theme-card__swatch--two" />
-                  <span class="theme-card__swatch theme-card__swatch--three" />
+                <span class="theme-card__preview" aria-hidden="true">
+                  <span class="theme-card__preview-topbar" />
+                  <span class="theme-card__preview-bubbles">
+                    <span class="theme-card__bubble theme-card__bubble--peer" />
+                    <span class="theme-card__bubble theme-card__bubble--own" />
+                    <span class="theme-card__bubble theme-card__bubble--peer theme-card__bubble--short" />
+                  </span>
                 </span>
                 <span class="theme-card__copy">
                   <span class="theme-card__title">{{ theme.title }}</span>
                   <span class="theme-card__meta">{{ theme.hint }}</span>
+                </span>
+                <span class="theme-card__state">
+                  {{ settingsModel.settings.value.themes.active === theme.key ? 'Активна' : 'Выбрать' }}
                 </span>
               </button>
             </div>

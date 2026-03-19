@@ -216,6 +216,15 @@ export function useMessengerSettings() {
     activeSection.value = section
   }
 
+  function setTheme(theme: MessengerThemeKey) {
+    settings.value.themes.active = theme
+    applyMessengerThemePreference(theme)
+
+    if (ready.value) {
+      persist()
+    }
+  }
+
   function resetLocalSettings() {
     settings.value = createDefaultMessengerSettings()
     persist()
@@ -333,6 +342,7 @@ export function useMessengerSettings() {
     ready,
     hydrate,
     openSection,
+    setTheme,
     resetLocalSettings,
     refreshPermissionStates,
   }
