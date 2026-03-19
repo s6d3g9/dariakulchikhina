@@ -23,6 +23,55 @@ let mediaStream: MediaStream | null = null
 let recordingTimer: ReturnType<typeof setInterval> | null = null
 let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
 let composerResizeObserver: ResizeObserver | null = null
+let lockedPageScrollY = 0
+
+function isMobileChatViewport() {
+  if (!import.meta.client) {
+    return false
+  }
+
+  return window.matchMedia('(max-width: 767px)').matches || navigator.maxTouchPoints > 0
+}
+
+function lockPageScroll() {
+  if (!import.meta.client || !isMobileChatViewport()) {
+    return
+  }
+
+  const body = document.body
+  if (body.dataset.messengerScrollLocked === 'true') {
+    return
+  }
+
+  lockedPageScrollY = window.scrollY
+  body.dataset.messengerScrollLocked = 'true'
+  body.style.position = 'fixed'
+  body.style.top = `-${lockedPageScrollY}px`
+  body.style.left = '0'
+  body.style.right = '0'
+  body.style.width = '100%'
+  body.style.overflow = 'hidden'
+}
+
+function unlockPageScroll() {
+  if (!import.meta.client) {
+    return
+  }
+
+  const body = document.body
+  if (body.dataset.messengerScrollLocked !== 'true') {
+    return
+  }
+
+  body.dataset.messengerScrollLocked = 'false'
+  body.style.position = ''
+  body.style.top = ''
+  body.style.left = ''
+  body.style.right = ''
+  body.style.width = ''
+  body.style.overflow = ''
+  window.scrollTo({ top: lockedPageScrollY, behavior: 'auto' })
+}
 
 interface SharedAssetItem {
   id: string
@@ -94,6 +143,7 @@ const chatLayoutStyle = computed(() => ({
 }))
 
 onMounted(async () => {
+  lockPageScroll()
   canRecordAudio.value = Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined')
   await conversations.refresh()
   if (conversations.activeConversationId.value) {
@@ -103,6 +153,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  unlockPageScroll()
   stopRecordingTimer()
   stopStreamTracks()
   if (composerAlignTimer) {
@@ -141,6 +192,19 @@ watch(() => conversations.messages.value.length, async (currentLength, previousL
 
 watch(draft, () => {
   syncComposerInputHeight()
+})
+
+watch(() => viewport.keyboardOpen.value, async (opened) => {
+  if (!import.meta.client || !isMobileChatViewport()) {
+    return
+  }
+
+  lockPageScroll()
+  window.scrollTo({ top: 0, behavior: 'auto' })
+
+  if (opened) {
+    await scrollMessagesToBottom('auto')
+  }
 })
 
 async function submit() {

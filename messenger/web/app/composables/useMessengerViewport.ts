@@ -29,16 +29,18 @@ function isMobileViewport() {
 
 export function useMessengerViewport() {
   const viewportHeight = useState<number>('messenger-viewport-height', () => 0)
+  const viewportOffsetTop = useState<number>('messenger-viewport-offset-top', () => 0)
   const keyboardInset = useState<number>('messenger-keyboard-inset', () => 0)
   const keyboardOpen = useState<boolean>('messenger-keyboard-open', () => false)
 
-  function applyViewportStyles(nextViewportHeight: number, nextKeyboardInset: number, nextKeyboardOpen: boolean) {
+  function applyViewportStyles(nextViewportHeight: number, nextViewportOffsetTop: number, nextKeyboardInset: number, nextKeyboardOpen: boolean) {
     if (!import.meta.client) {
       return
     }
 
     const root = document.documentElement
     root.style.setProperty('--messenger-viewport-height', `${nextViewportHeight}px`)
+    root.style.setProperty('--messenger-viewport-offset-top', `${nextViewportOffsetTop}px`)
     root.style.setProperty('--messenger-keyboard-inset', `${nextKeyboardInset}px`)
     root.dataset.messengerKeyboard = nextKeyboardOpen ? 'open' : 'closed'
   }
@@ -59,9 +61,10 @@ export function useMessengerViewport() {
     const nextKeyboardInset = nextKeyboardOpen ? rawKeyboardInset : 0
 
     viewportHeight.value = nextViewportHeight
+    viewportOffsetTop.value = offsetTop
     keyboardInset.value = nextKeyboardInset
     keyboardOpen.value = nextKeyboardOpen
-    applyViewportStyles(nextViewportHeight, nextKeyboardInset, nextKeyboardOpen)
+    applyViewportStyles(nextViewportHeight, offsetTop, nextKeyboardInset, nextKeyboardOpen)
   }
 
   function scheduleViewportSync() {
@@ -134,6 +137,7 @@ export function useMessengerViewport() {
 
   return {
     viewportHeight,
+    viewportOffsetTop,
     keyboardInset,
     keyboardOpen,
     syncViewport,

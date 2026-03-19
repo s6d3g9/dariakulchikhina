@@ -3,6 +3,7 @@
 :root {
   color-scheme: dark;
   --messenger-viewport-height: 100vh;
+  --messenger-viewport-offset-top: 0px;
   --messenger-keyboard-inset: 0px;
   --messenger-bg: #09111f;
   --messenger-bg-secondary: #0e1630;
@@ -1399,7 +1400,9 @@ html[data-messenger-motion='reduced'] *::after {
 @media (max-width: 767px) {
   .chat-screen {
     position: fixed;
-    inset: 0;
+    top: var(--messenger-viewport-offset-top);
+    left: 0;
+    right: 0;
     z-index: 20;
     min-height: var(--messenger-viewport-height);
     height: var(--messenger-viewport-height);
