@@ -1397,12 +1397,22 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 @media (max-width: 767px) {
+  .chat-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    min-height: var(--messenger-viewport-height);
+    height: var(--messenger-viewport-height);
+    overflow: hidden;
+  }
+
   .section-block--chat {
-    height: calc(var(--messenger-viewport-height) - 112px);
+    min-height: 0;
+    height: 100%;
   }
 
   .messenger-shell[data-messenger-keyboard='open'] .section-block--chat {
-    height: calc(var(--messenger-viewport-height) - 56px);
+    height: 100%;
   }
 
   .chat-user-trigger--profile {
