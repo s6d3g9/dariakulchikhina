@@ -41,6 +41,8 @@
   --messenger-control-size: 40px;
   --messenger-control-radius: 15px;
   --messenger-bottom-nav-height: 68px;
+  --messenger-composer-attach-width: 50px;
+  --messenger-composer-actions-width: 98px;
   --messenger-message-peer-bg: rgba(255, 255, 255, 0.05);
   --messenger-message-peer-border: rgba(245, 158, 11, 0.34);
   --messenger-message-own-bg: rgba(125, 211, 252, 0.12);
@@ -651,7 +653,7 @@ textarea {
 
 .composer-bar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: var(--messenger-composer-attach-width) minmax(0, 1fr) var(--messenger-composer-actions-width);
   gap: 8px;
   align-items: center;
 }
@@ -661,9 +663,11 @@ textarea {
   display: flex;
   align-items: center;
   min-height: var(--messenger-control-size);
+  width: 100%;
 }
 
 .composer-segment--attach {
+  justify-content: center;
   padding-right: 10px;
 }
 
@@ -685,6 +689,7 @@ textarea {
 }
 
 .composer-segment--actions {
+  justify-content: flex-end;
   padding-left: 10px;
   gap: 0;
 }
@@ -3076,7 +3081,7 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 }
 
 .composer-bar--dock {
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-columns: var(--messenger-composer-attach-width) minmax(0, 1fr) var(--messenger-composer-actions-width);
   align-items: end;
   padding-top: 10px;
   padding-bottom: max(2px, env(safe-area-inset-bottom));
@@ -3136,7 +3141,7 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
     bottom: calc(var(--messenger-bottom-nav-height) - 1px + max(0px, env(safe-area-inset-bottom)));
     width: min(calc(100vw - 24px), 560px);
     z-index: 46;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: var(--messenger-composer-attach-width) minmax(0, 1fr) var(--messenger-composer-actions-width);
     margin: 0;
     align-items: end;
     padding-top: 6px;
