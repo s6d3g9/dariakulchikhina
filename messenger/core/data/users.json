@@ -1,0 +1,18 @@
+{
+  "users": [
+    {
+      "id": "72c7707f-0db9-4b9d-9202-884af1190e2b",
+      "login": "alpha1773917619",
+      "displayName": "Alpha 1773917619",
+      "passwordHash": "1412bbaa881fc4362805a47a2ed58fe1:77fa23ccb08a043c24825239a5d2d75af71dd5f759b282cfcbcb69dc76239da4bbccc3cbdd39c7b49c8099ffa0a8db837e68c9118901a74bbff0ff02e28a8b0c",
+      "createdAt": "2026-03-19T10:53:39.239Z"
+    },
+    {
+      "id": "74d12d8e-9115-4ab9-af71-f6c4dc2f2b38",
+      "login": "beta1773917619",
+      "displayName": "Beta 1773917619",
+      "passwordHash": "42166a2768c7987b2f5bc638e260eaf8:826c5bfac360000907c4b50558627c3c5295dd4f276eb36b30a15507b6487901f9aff1edcba04ed645f31f1fe5c724953607aa9a18fab8c07fde555afc9d8842",
+      "createdAt": "2026-03-19T10:53:39.296Z"
+    }
+  ]
+}

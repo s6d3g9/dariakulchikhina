@@ -165,13 +165,13 @@
           @touchstart.passive="handleProjectViewportTouchStart"
           @touchend.passive="handleProjectViewportTouchEnd"
         >
-          <div v-if="contentViewMode === 'wipe' || contentViewMode === 'wipe2'" class="proj-sheet-frame" aria-hidden="true">
+          <div v-if="contentViewMode === 'wipe' || shouldUseProjectWipe2" class="proj-sheet-frame" aria-hidden="true">
             <div class="proj-sheet-frame__card"></div>
           </div>
           <div v-if="contentViewMode === 'wipe'" class="proj-wipe-overlay" aria-hidden="true">
             <div class="proj-wipe-overlay__sheet"></div>
           </div>
-          <div v-show="contentViewMode !== 'wipe2'" class="proj-wipe-inner">
+          <div v-show="!shouldUseProjectWipe2" class="proj-wipe-inner">
           <AdminEntityHero
             v-if="showBrutalistHero"
             :kicker="activeGroupLabel || 'архитектура проекта'"
@@ -494,13 +494,13 @@
                fixed-mode is used in preview modes (contractor/client) where
                proj-main has no position:relative (isProjectViewportPaged=false) -->
           <Wipe2Renderer
-            v-if="contentViewMode === 'wipe2'"
+            v-if="shouldUseProjectWipe2"
             :entity="wipe2EntityData"
             :fixed-mode="contractorPreviewMode || clientPreviewMode"
             @edit="designSystem.set('contentViewMode', 'scroll')"
           />
 
-          <div v-if="isProjectViewportPaged && contentViewMode !== 'wipe2'" class="proj-pager-rail">
+          <div v-if="isProjectViewportPaged && !shouldUseProjectWipe2" class="proj-pager-rail">
             <div class="proj-pager-rail__meta">
               <span class="proj-pager-rail__mode">{{ projectPagerModeLabel }}</span>
               <span>экран {{ viewportPageIndex }} / {{ viewportPageCount }}</span>
@@ -1739,6 +1739,8 @@ const resolvedProjectPageFromNav = computed(() => {
   return null
 })
 
+const shouldUseProjectWipe2 = computed(() => contentViewMode.value === 'wipe2' && Boolean(wipe2EntityData.value))
+
 const currentProjectPage = computed(() => resolvedProjectPageFromNav.value || activePage.value)
 
 // ── Wipe 2: ленивые fetch для разделов с отдельным API ─────────────────────
@@ -1907,9 +1909,15 @@ function syncProjectViewportAttrs() {
   const el = projectViewport.value
   if (!el) return
 
+  const resolvedContentViewMode = shouldUseProjectWipe2.value
+    ? 'wipe2'
+    : contentViewMode.value === 'wipe2'
+      ? 'scroll'
+      : contentViewMode.value
+
   const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
   const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
-  const isWipe = contentViewMode.value === 'wipe' || contentViewMode.value === 'wipe2'
+  const isWipe = resolvedContentViewMode === 'wipe' || resolvedContentViewMode === 'wipe2'
 
   // In wipe mode, use design tokens for insets; otherwise compute from viewport
   let sheetTop: number
@@ -1924,7 +1932,7 @@ function syncProjectViewportAttrs() {
     sheetBottom = sheetInsets.bottom
   }
 
-  el.dataset.cvMode = contentViewMode.value
+  el.dataset.cvMode = resolvedContentViewMode
   el.dataset.cvDir = projectViewportWipeDirection.value
   if (projectViewportWipePhase.value === 'idle') {
     delete el.dataset.cvPhase

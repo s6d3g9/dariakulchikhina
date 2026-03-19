@@ -34,7 +34,7 @@
             </template>
           </AdminEntityHeader>
 
-          <section class="cl-main-shell" :class="{ 'cl-main-shell--brutalist': isBrutalistClientsMode }">
+          <section v-show="!isWipe2Mode" class="cl-main-shell" :class="{ 'cl-main-shell--brutalist': isBrutalistClientsMode }">
             <div v-if="currentClientPage === 'dashboard'" class="cl-section-grid">
               <div class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
                 <div class="ent-detail-section">клиент</div>
@@ -210,6 +210,7 @@ const route = useRoute()
 const designSystem = useDesignSystem()
 const isBrutalistClientsMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const contentViewMode = computed(() => designSystem.tokens.value.contentViewMode ?? 'scroll')
+const isWipe2Mode = computed(() => contentViewMode.value === 'wipe2')
 
 function getClientDocCategoryLabel(category?: string | null) {
   return DOC_CATEGORIES.find((item) => item.value === category)?.label || category || 'Документ'

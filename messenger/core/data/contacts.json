@@ -1,0 +1,20 @@
+{
+  "contacts": [
+    {
+      "id": "77ae1fd7-ccb6-4bb9-bba7-3c34ca82ed8b",
+      "userAId": "72c7707f-0db9-4b9d-9202-884af1190e2b",
+      "userBId": "74d12d8e-9115-4ab9-af71-f6c4dc2f2b38",
+      "createdAt": "2026-03-19T10:54:16.893Z"
+    }
+  ],
+  "invites": [
+    {
+      "id": "8edf679c-8612-4df0-96e8-5888a885559f",
+      "fromUserId": "72c7707f-0db9-4b9d-9202-884af1190e2b",
+      "toUserId": "74d12d8e-9115-4ab9-af71-f6c4dc2f2b38",
+      "status": "accepted",
+      "createdAt": "2026-03-19T10:54:08.985Z",
+      "updatedAt": "2026-03-19T10:54:16.893Z"
+    }
+  ]
+}

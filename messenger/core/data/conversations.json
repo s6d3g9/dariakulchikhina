@@ -1,0 +1,60 @@
+{
+  "conversations": [
+    {
+      "id": "0a847d7a-fa17-4ca1-abdb-5764f68ae659",
+      "kind": "direct",
+      "userAId": "72c7707f-0db9-4b9d-9202-884af1190e2b",
+      "userBId": "74d12d8e-9115-4ab9-af71-f6c4dc2f2b38",
+      "createdAt": "2026-03-19T10:54:33.130Z",
+      "updatedAt": "2026-03-19T12:30:54.007Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": "b2d71051-c0fd-4ab6-8827-ba59f58f7e43",
+      "conversationId": "0a847d7a-fa17-4ca1-abdb-5764f68ae659",
+      "senderUserId": "72c7707f-0db9-4b9d-9202-884af1190e2b",
+      "body": "Привет из alpha, direct-чат работает.",
+      "kind": "text",
+      "createdAt": "2026-03-19T10:54:33.828Z"
+    },
+    {
+      "id": "15f39d83-b483-407f-837f-88781423abec",
+      "conversationId": "0a847d7a-fa17-4ca1-abdb-5764f68ae659",
+      "senderUserId": "74d12d8e-9115-4ab9-af71-f6c4dc2f2b38",
+      "body": "Ответ beta прилетел по live sync.",
+      "kind": "text",
+      "createdAt": "2026-03-19T11:05:50.540Z"
+    },
+    {
+      "id": "73a039f3-474f-41f5-b5b6-989ab5792b5c",
+      "conversationId": "0a847d7a-fa17-4ca1-abdb-5764f68ae659",
+      "senderUserId": "74d12d8e-9115-4ab9-af71-f6c4dc2f2b38",
+      "body": "Ответ beta прилетел по live sync.",
+      "kind": "text",
+      "createdAt": "2026-03-19T11:06:03.783Z"
+    },
+    {
+      "id": "20c75ba4-af2b-4b56-9c5d-756cbfa30646",
+      "conversationId": "0a847d7a-fa17-4ca1-abdb-5764f68ae659",
+      "senderUserId": "72c7707f-0db9-4b9d-9202-884af1190e2b",
+      "body": "test-upload-note.txt",
+      "kind": "file",
+      "attachment": {
+        "name": "test-upload-note.txt",
+        "mimeType": "text/plain",
+        "size": 46,
+        "url": "/uploads/test-upload-note-d5915635-4627-4bc1-a423-d2548df9d5b0.txt"
+      },
+      "createdAt": "2026-03-19T11:47:00.534Z"
+    },
+    {
+      "id": "430deb14-91e9-4af9-828c-ef8b8991ea1c",
+      "conversationId": "0a847d7a-fa17-4ca1-abdb-5764f68ae659",
+      "senderUserId": "72c7707f-0db9-4b9d-9202-884af1190e2b",
+      "body": "олоо",
+      "kind": "text",
+      "createdAt": "2026-03-19T12:30:54.007Z"
+    }
+  ]
+}

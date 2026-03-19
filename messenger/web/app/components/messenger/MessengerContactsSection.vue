@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const contacts = useMessengerContacts()
+const conversations = useMessengerConversations()
 const searchDraft = ref('')
 const actionError = ref('')
 
@@ -25,6 +26,16 @@ async function sendInvite(targetUserId: string) {
     await contacts.invite(targetUserId)
   } catch {
     actionError.value = 'Не удалось отправить приглашение.'
+  }
+}
+
+async function openDirectChat(targetUserId: string) {
+  actionError.value = ''
+
+  try {
+    await conversations.openDirectConversation(targetUserId)
+  } catch {
+    actionError.value = 'Не удалось открыть direct-чат.'
   }
 }
 
@@ -90,8 +101,8 @@ async function rejectInvite(inviteId: string) {
             <p class="list-card__title">{{ contact.displayName }}</p>
             <p class="list-card__text">@{{ contact.login }}</p>
           </div>
-          <button type="button" class="action-btn" disabled>
-            Чат скоро
+          <button type="button" class="action-btn" @click="openDirectChat(contact.id)">
+            Открыть чат
           </button>
         </article>
       </div>

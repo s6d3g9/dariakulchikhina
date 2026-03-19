@@ -408,7 +408,13 @@ function onTouchEnd(e: TouchEvent) {
   if (deltaY > 0) next(); else prev()
 }
 
-function refocus() {
+function isInteractiveTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return Boolean(target.closest('input, textarea, select, button, a, label, [contenteditable="true"], [data-w2-interactive="true"]'))
+}
+
+function refocus(event?: MouseEvent) {
+  if (event && isInteractiveTarget(event.target)) return
   overlayEl.value?.focus({ preventScroll: true })
 }
 

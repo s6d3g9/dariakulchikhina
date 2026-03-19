@@ -1,12 +1,18 @@
+import { randomUUID } from 'node:crypto'
+
 import Fastify, { type FastifyRequest } from 'fastify'
 import cors from '@fastify/cors'
+import multipart from '@fastify/multipart'
+import fastifyStatic from '@fastify/static'
 import websocket from '@fastify/websocket'
 import { z } from 'zod'
 
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from './auth.ts'
+import { addAttachmentMessageToConversation, addMessageToConversation, findConversationById, findOrCreateDirectConversation, listConversationsForUser, listMessagesForConversation } from './conversation-store.ts'
 import { buildContactsOverview, createInvite, respondToInvite } from './contact-store.ts'
 import { readMessengerConfig } from './config.ts'
+import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
 
 export async function createMessengerServer() {
   const config = readMessengerConfig()
@@ -19,7 +25,36 @@ export async function createMessengerServer() {
   await app.register(cors, {
     origin: config.MESSENGER_CORE_CORS_ORIGIN,
   })
+  await app.register(multipart, {
+    limits: {
+      files: 1,
+      fileSize: 20 * 1024 * 1024,
+    },
+  })
+  await app.register(fastifyStatic, {
+    root: MESSENGER_UPLOADS_ROOT,
+    prefix: '/uploads/',
+  })
   await app.register(websocket)
+
+  const clients = new Map<string, { userId: string; socket: { send: (payload: string) => void; close: () => void; readyState: number; on: (event: string, cb: () => void) => void } }>()
+
+  function emitToUsers(userIds: string[], event: Record<string, unknown>) {
+    const uniqueUserIds = new Set(userIds)
+    const payload = JSON.stringify(event)
+
+    for (const client of clients.values()) {
+      if (!uniqueUserIds.has(client.userId)) {
+        continue
+      }
+
+      if (client.socket.readyState !== 1) {
+        continue
+      }
+
+      client.socket.send(payload)
+    }
+  }
 
   const authSchema = z.object({
     login: z.string().trim().min(3).max(32),
@@ -34,6 +69,23 @@ export async function createMessengerServer() {
   })
   const inviteParamsSchema = z.object({
     inviteId: z.string().uuid(),
+  })
+  const conversationsQuerySchema = z.object({
+    query: z.string().trim().max(80).optional(),
+  })
+  const directConversationSchema = z.object({
+    peerUserId: z.string().uuid(),
+  })
+  const conversationParamsSchema = z.object({
+    conversationId: z.string().uuid(),
+  })
+  const messageSchema = z.object({
+    body: z.string().trim().min(1).max(4000),
+  })
+  const callSignalSchema = z.object({
+    kind: z.enum(['invite', 'ringing', 'offer', 'answer', 'ice-candidate', 'reject', 'hangup', 'busy']),
+    callId: z.string().min(1).max(120),
+    payload: z.record(z.string(), z.unknown()).optional(),
   })
 
   async function resolveSession(request: FastifyRequest) {
@@ -167,6 +219,10 @@ export async function createMessengerServer() {
 
     try {
       const invite = await createInvite(session.user.id, parsedBody.data.targetUserId)
+      emitToUsers([session.user.id, parsedBody.data.targetUserId], {
+        type: 'contacts.updated',
+        timestamp: new Date().toISOString(),
+      })
       return {
         invite,
       }
@@ -202,6 +258,14 @@ export async function createMessengerServer() {
 
     try {
       const invite = await respondToInvite(parsedParams.data.inviteId, session.user.id, 'accepted')
+      emitToUsers([invite.fromUserId, invite.toUserId], {
+        type: 'contacts.updated',
+        timestamp: new Date().toISOString(),
+      })
+      emitToUsers([invite.fromUserId, invite.toUserId], {
+        type: 'conversations.updated',
+        timestamp: new Date().toISOString(),
+      })
       return { invite }
     } catch (error) {
       if (error instanceof Error) {
@@ -235,6 +299,10 @@ export async function createMessengerServer() {
 
     try {
       const invite = await respondToInvite(parsedParams.data.inviteId, session.user.id, 'rejected')
+      emitToUsers([invite.fromUserId, invite.toUserId], {
+        type: 'contacts.updated',
+        timestamp: new Date().toISOString(),
+      })
       return { invite }
     } catch (error) {
       if (error instanceof Error) {
@@ -255,10 +323,254 @@ export async function createMessengerServer() {
     }
   })
 
-  app.get('/ws', { websocket: true }, (socket) => {
+  app.get('/conversations', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedQuery = conversationsQuerySchema.safeParse(request.query)
+    if (!parsedQuery.success) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    const users = await listMessengerUsers()
+    return {
+      conversations: await listConversationsForUser(session.user, users, parsedQuery.data.query || ''),
+    }
+  })
+
+  app.post('/conversations/direct', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedBody = directConversationSchema.safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const peer = await findMessengerUserById(parsedBody.data.peerUserId)
+    if (!peer) {
+      return reply.code(404).send({ error: 'USER_NOT_FOUND' })
+    }
+
+    const overview = await buildContactsOverview(session.user, await listMessengerUsers(), '')
+    const isContact = overview.contacts.some(item => item.id === peer.id)
+    if (!isContact) {
+      return reply.code(403).send({ error: 'DIRECT_CHAT_REQUIRES_CONTACT' })
+    }
+
+    const conversation = await findOrCreateDirectConversation(session.user.id, peer.id)
+    emitToUsers([conversation.userAId, conversation.userBId], {
+      type: 'conversations.updated',
+      conversationId: conversation.id,
+      timestamp: new Date().toISOString(),
+    })
+    return { conversation }
+  })
+
+  app.get('/conversations/:conversationId/messages', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = conversationParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    try {
+      const users = await listMessengerUsers()
+      const conversation = await findConversationById(parsedParams.data.conversationId)
+      if (!conversation) {
+        return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+      }
+
+      return {
+        conversation,
+        messages: await listMessagesForConversation(parsedParams.data.conversationId, session.user, users),
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'CONVERSATION_FORBIDDEN') {
+        return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+      }
+
+      throw error
+    }
+  })
+
+  app.post('/conversations/:conversationId/messages', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = conversationParamsSchema.safeParse(request.params)
+    const parsedBody = messageSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    try {
+      const message = await addMessageToConversation(parsedParams.data.conversationId, session.user, parsedBody.data.body)
+      const conversation = await findConversationById(parsedParams.data.conversationId)
+      if (conversation) {
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'conversations.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'messages.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
+      }
+      return { message }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'CONVERSATION_NOT_FOUND') {
+          return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+        }
+
+        if (error.message === 'CONVERSATION_FORBIDDEN') {
+          return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+        }
+      }
+
+      throw error
+    }
+  })
+
+  app.post('/conversations/:conversationId/attachments', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = conversationParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const file = await request.file()
+    if (!file) {
+      return reply.code(400).send({ error: 'FILE_REQUIRED' })
+    }
+
+    const chunks: Buffer[] = []
+    for await (const chunk of file.file) {
+      chunks.push(chunk)
+    }
+
+    try {
+      const stored = await storeUploadedMedia({
+        filename: file.filename,
+        mimeType: file.mimetype,
+        buffer: Buffer.concat(chunks),
+      })
+
+      const message = await addAttachmentMessageToConversation(parsedParams.data.conversationId, session.user, stored)
+      const conversation = await findConversationById(parsedParams.data.conversationId)
+      if (conversation) {
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'conversations.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'messages.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
+      }
+
+      return { message }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'CONVERSATION_NOT_FOUND') {
+          return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+        }
+
+        if (error.message === 'CONVERSATION_FORBIDDEN') {
+          return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+        }
+      }
+
+      throw error
+    }
+  })
+
+  app.post('/conversations/:conversationId/call-signal', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = conversationParamsSchema.safeParse(request.params)
+    const parsedBody = callSignalSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const conversation = await findConversationById(parsedParams.data.conversationId)
+    if (!conversation) {
+      return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+    }
+
+    if (conversation.userAId !== session.user.id && conversation.userBId !== session.user.id) {
+      return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+    }
+
+    const targetUserId = conversation.userAId === session.user.id ? conversation.userBId : conversation.userAId
+
+    emitToUsers([targetUserId], {
+      type: 'call.signal',
+      timestamp: new Date().toISOString(),
+      conversationId: conversation.id,
+      signal: {
+        kind: parsedBody.data.kind,
+        callId: parsedBody.data.callId,
+        payload: parsedBody.data.payload || {},
+      },
+      sender: {
+        userId: session.user.id,
+        displayName: session.user.displayName,
+        login: session.user.login,
+      },
+    })
+
+    return { ok: true }
+  })
+
+  app.get('/ws', { websocket: true }, async (socket, request) => {
+    const requestUrl = new URL(request.url || '/ws', `http://${request.headers.host || 'localhost'}`)
+    const token = requestUrl.searchParams.get('token')
+    const payload = token ? verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET) : null
+    const user = payload ? await findMessengerUserById(payload.sub) : null
+
+    if (!payload || !user) {
+      socket.send(JSON.stringify({
+        type: 'error',
+        error: 'UNAUTHORIZED',
+      }))
+      socket.close()
+      return
+    }
+
+    const clientId = randomUUID()
+    clients.set(clientId, {
+      userId: user.id,
+      socket,
+    })
+
     socket.send(JSON.stringify({
       type: 'hello',
-      message: 'messenger-core websocket shell is ready',
+      message: 'messenger-core realtime channel is ready',
+      userId: user.id,
       timestamp: new Date().toISOString(),
     }))
 
@@ -267,6 +579,10 @@ export async function createMessengerServer() {
         type: 'echo',
         payload: value.toString(),
       }))
+    })
+
+    socket.on('close', () => {
+      clients.delete(clientId)
     })
   })
 
