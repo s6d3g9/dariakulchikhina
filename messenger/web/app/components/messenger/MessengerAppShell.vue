@@ -77,7 +77,7 @@ async function logout() {
         :class="{ 'bottom-nav__item--active': navigation.activeSection.value === section.key }"
         @click="navigation.openSection(section.key as MessengerSectionKey)"
       >
-        {{ section.shortTitle }}
+        <span class="bottom-nav__label">{{ section.shortTitle }}</span>
       </button>
     </nav>
   </div>
