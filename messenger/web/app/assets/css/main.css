@@ -2,6 +2,8 @@
 
 :root {
   color-scheme: dark;
+  --messenger-viewport-height: 100vh;
+  --messenger-keyboard-inset: 0px;
   --messenger-bg: #09111f;
   --messenger-bg-secondary: #0e1630;
   --messenger-panel: rgba(16, 24, 40, 0.44);
@@ -60,7 +62,7 @@ textarea {
 .messenger-shell {
   position: relative;
   overflow: hidden;
-  min-height: 100vh;
+  min-height: var(--messenger-viewport-height);
   padding: 24px 16px calc(148px + env(safe-area-inset-bottom));
   display: grid;
   gap: 16px;
@@ -416,6 +418,12 @@ textarea {
 
 .list-card--action {
   align-items: flex-start;
+  position: relative;
+}
+
+.list-card--hold-open {
+  border-color: rgba(125, 211, 252, 0.34);
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.12), rgba(255, 255, 255, 0.06));
 }
 
 .list-card__main {
@@ -453,7 +461,7 @@ textarea {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: max(0px, var(--messenger-keyboard-inset));
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
@@ -461,6 +469,13 @@ textarea {
   background: linear-gradient(180deg, rgba(9, 17, 31, 0), rgba(9, 17, 31, 0.85));
   backdrop-filter: blur(22px);
   z-index: 50;
+  transition: bottom 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.messenger-shell[data-messenger-keyboard='open'] .bottom-nav {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(16px);
 }
 
 .bottom-nav__item {
@@ -474,7 +489,7 @@ textarea {
 
 .auth-shell,
 .loading-shell {
-  min-height: 100vh;
+  min-height: var(--messenger-viewport-height);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -1071,6 +1086,57 @@ html[data-messenger-motion='reduced'] *::after {
   cursor: pointer;
 }
 
+.hold-actions,
+.message-bubble__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hold-actions {
+  align-self: center;
+  justify-content: flex-end;
+}
+
+.message-bubble__topline,
+.message-bubble__content,
+.message-bubble__editor {
+  display: grid;
+  gap: 8px;
+}
+
+.message-bubble__topline {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.message-bubble__status {
+  margin: 0;
+  font-size: 12px;
+  color: var(--messenger-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.message-bubble--hold-open {
+  border-color: rgba(125, 211, 252, 0.34);
+}
+
+.message-action-btn {
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--messenger-text);
+  padding: 0 12px;
+  border-radius: 999px;
+}
+
+.message-action-btn:hover:not([disabled]) {
+  border-color: var(--messenger-border-strong);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .voice-player {
   display: block;
   width: min(100%, 320px);
@@ -1088,13 +1154,13 @@ html[data-messenger-motion='reduced'] *::after {
 .chat-screen {
   display: grid;
   gap: 0;
-  min-height: calc(100vh - 148px - max(12px, env(safe-area-inset-bottom)));
+  min-height: calc(var(--messenger-viewport-height) - 148px - max(12px, env(safe-area-inset-bottom)));
 }
 
 .section-block--chat {
   position: relative;
   grid-template-rows: auto auto auto minmax(0, 1fr);
-  height: calc(100vh - 184px - max(12px, env(safe-area-inset-bottom)));
+  height: calc(var(--messenger-viewport-height) - 184px - max(12px, env(safe-area-inset-bottom)));
   overflow: hidden;
   margin-top: 0;
   padding: 0;
@@ -1232,7 +1298,7 @@ html[data-messenger-motion='reduced'] *::after {
 .composer-bar--dock {
   grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   padding-top: 10px;
-  padding-bottom: 2px;
+  padding-bottom: max(2px, env(safe-area-inset-bottom));
 }
 
 .composer-bar--expanded {
@@ -1253,13 +1319,13 @@ html[data-messenger-motion='reduced'] *::after {
 
 @media (min-width: 900px) {
   .section-block--chat {
-    height: calc(100vh - 184px);
+    height: calc(var(--messenger-viewport-height) - 184px);
   }
 }
 
 @media (max-width: 767px) {
   .section-block--chat {
-    height: calc(100vh - 160px - max(12px, env(safe-area-inset-bottom)));
+    height: calc(var(--messenger-viewport-height) - 160px - max(12px, env(safe-area-inset-bottom)));
   }
 
   .chat-user-trigger--profile {
@@ -1337,7 +1403,7 @@ html[data-messenger-motion='reduced'] *::after {
 
 @media (min-width: 900px) {
   .section-block--chat {
-    height: calc(100vh - 184px);
+    height: calc(var(--messenger-viewport-height) - 184px);
   }
 }
 
@@ -1350,7 +1416,7 @@ html[data-messenger-motion='reduced'] *::after {
   --screen-header-height: 76px;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  height: calc(100dvh - 148px - max(12px, env(safe-area-inset-bottom)));
+  height: calc(var(--messenger-viewport-height) - 148px - max(12px, env(safe-area-inset-bottom)));
   padding-top: 0;
   padding-right: 0;
   padding-left: 0;
@@ -1365,7 +1431,7 @@ html[data-messenger-motion='reduced'] *::after {
   --screen-header-height: 76px;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  height: calc(100dvh - 148px - max(12px, env(safe-area-inset-bottom)));
+  height: calc(var(--messenger-viewport-height) - 148px - max(12px, env(safe-area-inset-bottom)));
   padding-top: 0;
   padding-right: 0;
   padding-left: 0;
@@ -1555,7 +1621,7 @@ html[data-messenger-motion='reduced'] *::after {
   .section-block--chats-screen,
   .section-block--contacts-screen {
     --screen-header-height: 64px;
-    height: calc(100dvh - 136px - max(12px, env(safe-area-inset-bottom)));
+    height: calc(var(--messenger-viewport-height) - 136px - max(12px, env(safe-area-inset-bottom)));
   }
 
   .section-block--chats-screen .auth-error,

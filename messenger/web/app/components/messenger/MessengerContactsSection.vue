@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const contacts = useMessengerContacts()
 const conversations = useMessengerConversations()
+const holdActions = useMessengerHoldActions()
 const searchDraft = ref('')
 const actionError = ref('')
 const searchOpen = ref(false)
@@ -51,9 +52,14 @@ async function runSearch() {
 }
 
 async function openDirectChat(targetUserId: string) {
+  if (holdActions.consumeSuppressedClick()) {
+    return
+  }
+
   actionError.value = ''
 
   try {
+    holdActions.dismiss()
     await conversations.openDirectConversation(targetUserId)
   } catch {
     actionError.value = 'Не удалось открыть direct-чат.'
@@ -64,6 +70,7 @@ async function removeContact(peerUserId: string) {
   actionError.value = ''
 
   try {
+    holdActions.dismiss()
     await contacts.removeContact(peerUserId)
   } catch {
     actionError.value = 'Не удалось удалить контакт.'
@@ -121,19 +128,27 @@ function closeSearch() {
         v-for="contact in contacts.overview.value.contacts"
         :key="contact.id"
         class="list-card list-card--action list-card--clickable list-card--chat-row"
+        :class="{ 'list-card--hold-open': holdActions.activeItemId.value === contact.id }"
+        data-hold-actions-root="true"
         @click="openDirectChat(contact.id)"
+        @pointerdown="holdActions.startHold(contact.id, $event)"
+        @pointerup="holdActions.cancelHold()"
+        @pointerleave="holdActions.cancelHold()"
+        @pointercancel="holdActions.cancelHold()"
       >
         <div class="list-card__main">
           <p class="list-card__title">{{ contact.displayName }}</p>
           <p class="list-card__text">@{{ contact.login }}</p>
         </div>
-        <button
-          type="button"
-          class="action-btn action-btn--danger"
-          @click.stop="removeContact(contact.id)"
-        >
-          Удалить
-        </button>
+        <div v-if="holdActions.activeItemId.value === contact.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
+          <button
+            type="button"
+            class="action-btn action-btn--danger"
+            @click.stop="removeContact(contact.id)"
+          >
+            Удалить
+          </button>
+        </div>
       </article>
 
       <article v-if="!contacts.overview.value.contacts.length" class="list-card list-card--panel">

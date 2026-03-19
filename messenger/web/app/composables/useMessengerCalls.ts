@@ -41,6 +41,7 @@ let remoteStream: MediaStream | null = null
 let localVideoEl: HTMLVideoElement | null = null
 let remoteVideoEl: HTMLVideoElement | null = null
 let remoteAudioEl: HTMLAudioElement | null = null
+const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
 
 async function resolvePermissionState(kind: 'microphone' | 'camera'): Promise<MessengerMediaPermissionState> {
   if (!import.meta.client) {
@@ -74,6 +75,25 @@ function assignMediaTargets() {
 
   if (remoteAudioEl) {
     remoteAudioEl.srcObject = remoteStream
+  }
+}
+
+function queueIceCandidate(callId: string, candidate: RTCIceCandidateInit) {
+  const queue = pendingIceCandidates.get(callId) || []
+  queue.push(candidate)
+  pendingIceCandidates.set(callId, queue)
+}
+
+async function flushPendingIceCandidates(callId: string, connection: RTCPeerConnection) {
+  const queue = pendingIceCandidates.get(callId)
+  if (!queue?.length) {
+    return
+  }
+
+  pendingIceCandidates.delete(callId)
+
+  for (const candidate of queue) {
+    await connection.addIceCandidate(candidate).catch(() => {})
   }
 }
 
@@ -156,6 +176,7 @@ export function useMessengerCalls() {
   function resetPeerConnection() {
     peerConnection?.close()
     peerConnection = null
+    pendingIceCandidates.clear()
 
     if (remoteStream) {
       for (const track of remoteStream.getTracks()) {
@@ -180,9 +201,22 @@ export function useMessengerCalls() {
     }
 
     localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+        sampleRate: 48000,
+        sampleSize: 16,
+        latency: 0.02,
+      },
       video: mode === 'video',
     })
+
+    for (const track of localStream.getAudioTracks()) {
+      track.contentHint = 'speech'
+    }
+
     assignMediaTargets()
     return localStream
   }
@@ -316,6 +350,8 @@ export function useMessengerCalls() {
 
   function buildPeerConnection(callId: string, conversationId: string, mode: MessengerCallMode) {
     const connection = new RTCPeerConnection({
+      bundlePolicy: 'max-bundle',
+      iceCandidatePoolSize: 4,
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     })
 
@@ -325,7 +361,15 @@ export function useMessengerCalls() {
 
     if (localStream) {
       for (const track of localStream.getTracks()) {
-        connection.addTrack(track, localStream)
+        const sender = connection.addTrack(track, localStream)
+        if (track.kind === 'audio') {
+          const parameters = sender.getParameters()
+          parameters.encodings = [{
+            ...(parameters.encodings?.[0] || {}),
+            maxBitrate: 32000,
+          }]
+          void sender.setParameters(parameters).catch(() => {})
+        }
       }
     }
 
@@ -354,6 +398,16 @@ export function useMessengerCalls() {
     connection.onconnectionstatechange = () => {
       if (connection.connectionState) {
         callStatusText.value = `Соединение: ${connection.connectionState}`
+      }
+    }
+
+    connection.oniceconnectionstatechange = () => {
+      if (!connection.iceConnectionState) {
+        return
+      }
+
+      if (connection.iceConnectionState === 'failed' || connection.iceConnectionState === 'disconnected') {
+        callError.value = 'Аудиоканал нестабилен. Проверьте соединение и попробуйте перезвонить.'
       }
     }
 
@@ -569,6 +623,7 @@ export function useMessengerCalls() {
         type: 'offer',
         sdp: String(event.signal.payload?.sdp || ''),
       })
+      await flushPendingIceCandidates(event.signal.callId, connection)
       const answer = await connection.createAnswer()
       await connection.setLocalDescription(answer)
       await sendSignal(event.conversationId, {
@@ -590,13 +645,24 @@ export function useMessengerCalls() {
         type: 'answer',
         sdp: String(event.signal.payload?.sdp || ''),
       })
+      await flushPendingIceCandidates(event.signal.callId, peerConnection)
       callStatusText.value = 'Канал установлен'
       busy.value = false
       return
     }
 
-    if (event.signal.kind === 'ice-candidate' && peerConnection && event.signal.payload?.candidate) {
-      await peerConnection.addIceCandidate(event.signal.payload.candidate as RTCIceCandidateInit).catch(() => {})
+    if (event.signal.kind === 'ice-candidate' && event.signal.payload?.candidate) {
+      const candidate = event.signal.payload.candidate as RTCIceCandidateInit
+      const remoteDescriptionReady = Boolean(peerConnection?.remoteDescription)
+
+      if (!peerConnection || !remoteDescriptionReady) {
+        queueIceCandidate(event.signal.callId, candidate)
+        return
+      }
+
+      await peerConnection.addIceCandidate(candidate).catch(() => {
+        queueIceCandidate(event.signal.callId, candidate)
+      })
       return
     }
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const conversations = useMessengerConversations()
+const holdActions = useMessengerHoldActions()
 const searchDraft = ref('')
 const actionError = ref('')
 const searchOpen = ref(false)
@@ -46,9 +47,14 @@ async function runSearch() {
 }
 
 async function openChat(conversationId: string) {
+  if (holdActions.consumeSuppressedClick()) {
+    return
+  }
+
   actionError.value = ''
 
   try {
+    holdActions.dismiss()
     await conversations.selectConversation(conversationId)
   } catch {
     actionError.value = 'Не удалось открыть чат.'
@@ -59,6 +65,7 @@ async function removeChat(conversationId: string) {
   actionError.value = ''
 
   try {
+    holdActions.dismiss()
     await conversations.deleteConversation(conversationId)
   } catch {
     actionError.value = 'Не удалось удалить чат.'
@@ -116,7 +123,13 @@ function closeSearch() {
         v-for="chat in conversations.conversations.value"
         :key="chat.id"
         class="list-card list-card--action list-card--clickable list-card--chat-row"
+        :class="{ 'list-card--hold-open': holdActions.activeItemId.value === chat.id }"
+        data-hold-actions-root="true"
         @click="openChat(chat.id)"
+        @pointerdown="holdActions.startHold(chat.id, $event)"
+        @pointerup="holdActions.cancelHold()"
+        @pointerleave="holdActions.cancelHold()"
+        @pointercancel="holdActions.cancelHold()"
       >
         <div class="list-card__main">
           <div class="list-card__row">
@@ -125,13 +138,15 @@ function closeSearch() {
           </div>
           <p class="list-card__text">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</p>
         </div>
-        <button
-          type="button"
-          class="action-btn action-btn--danger"
-          @click.stop="removeChat(chat.id)"
-        >
-          Удалить
-        </button>
+        <div v-if="holdActions.activeItemId.value === chat.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
+          <button
+            type="button"
+            class="action-btn action-btn--danger"
+            @click.stop="removeChat(chat.id)"
+          >
+            Удалить
+          </button>
+        </div>
       </article>
 
       <article v-if="!conversations.conversations.value.length" class="list-card list-card--panel">

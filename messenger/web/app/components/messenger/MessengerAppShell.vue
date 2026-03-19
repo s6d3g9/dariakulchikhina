@@ -6,12 +6,21 @@ const auth = useMessengerAuth()
 const navigation = useMessengerConversationState()
 const realtime = useMessengerRealtime()
 const calls = useMessengerCalls()
+const viewport = useMessengerViewport()
 
 const activeTitle = computed(() => sections.find(section => section.key === navigation.activeSection.value)?.shortTitle ?? 'Чаты')
 const showHero = computed(() => navigation.activeSection.value === 'settings')
 
+let detachViewport: (() => void) | null = null
+
 onMounted(() => {
+  detachViewport = viewport.attach()
   void realtime.connect()
+})
+
+onBeforeUnmount(() => {
+  detachViewport?.()
+  detachViewport = null
 })
 
 async function logout() {
@@ -23,7 +32,11 @@ async function logout() {
 </script>
 
 <template>
-  <div class="messenger-shell" :class="{ 'messenger-shell--immersive': !showHero }">
+  <div
+    class="messenger-shell"
+    :class="{ 'messenger-shell--immersive': !showHero }"
+    :data-messenger-keyboard="viewport.keyboardOpen.value ? 'open' : 'closed'"
+  >
     <div class="messenger-aurora messenger-aurora--one" />
     <div class="messenger-aurora messenger-aurora--two" />
     <div class="messenger-aurora messenger-aurora--three" />
