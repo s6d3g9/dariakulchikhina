@@ -20,6 +20,7 @@ const composerHeight = ref(76)
 const composerRelationMode = ref<'reply' | 'comment' | null>(null)
 const composerRelationMessageId = ref<string | null>(null)
 const forwardingMessageId = ref<string | null>(null)
+const galleryPhotoId = ref<string | null>(null)
 
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
@@ -421,11 +422,19 @@ function toggleDetails() {
     return
   }
 
+  galleryPhotoId.value = null
   detailsOpen.value = !detailsOpen.value
 }
 
 function closeDetails() {
+  galleryPhotoId.value = null
   detailsOpen.value = false
+}
+
+function openPhotoGallery(messageId: string) {
+  galleryPhotoId.value = messageId
+  detailsOpen.value = true
+  activeMessageActionsId.value = null
 }
 
 function updateComposerHeight() {
@@ -854,7 +863,7 @@ onBeforeUnmount(() => {
                 class="attachment-preview"
                 :src="entry.attachment.absoluteUrl"
                 :alt="entry.attachment.name"
-                @click="copyLink(entry.attachment.absoluteUrl, entry.attachment.name)"
+                @click.stop="openPhotoGallery(entry.id)"
               >
             </template>
             <div v-else-if="editingMessageId === entry.id" class="message-bubble__editor">
@@ -891,10 +900,12 @@ onBeforeUnmount(() => {
         <MessengerSharedGallery
           v-if="detailsOpen && conversations.activeConversation.value"
           :title="`Галерея ${conversations.activeConversation.value.peerDisplayName}`"
-          hint="Свайпайте влево и вправо между разделами. Нажатие на карточку копирует ссылку."
+          hint="Свайпайте влево и вправо между разделами. Фото идут в порядке отправки в чате."
           :photos="sharedContent.photos"
           :documents="sharedContent.documents"
           :links="sharedContent.links"
+          :initial-section="galleryPhotoId ? 'photos' : undefined"
+          :initial-photo-id="galleryPhotoId"
           @close="closeDetails"
           @select="copyLink($event.href, $event.title)"
         />

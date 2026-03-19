@@ -15,6 +15,8 @@ const props = defineProps<{
   photos: GalleryItem[]
   documents: GalleryItem[]
   links: GalleryItem[]
+  initialSection?: GallerySectionKey
+  initialPhotoId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -22,7 +24,8 @@ const emit = defineEmits<{
   select: [item: GalleryItem]
 }>()
 
-const activeSection = ref<GallerySectionKey>('photos')
+const activeSection = ref<GallerySectionKey>(props.initialSection || 'photos')
+const activePhotoId = ref<string | null>(props.initialPhotoId || props.photos[0]?.id || null)
 const touchStartX = ref<number | null>(null)
 const touchStartY = ref<number | null>(null)
 
@@ -48,9 +51,52 @@ const sections = computed(() => ([
 ]))
 
 const activeIndex = computed(() => sections.value.findIndex(section => section.key === activeSection.value))
+const activePhotoIndex = computed(() => props.photos.findIndex(item => item.id === activePhotoId.value))
+const activePhoto = computed(() => props.photos.find(item => item.id === activePhotoId.value) ?? props.photos[0] ?? null)
+
+watch(() => props.initialSection, (nextSection) => {
+  if (nextSection) {
+    activeSection.value = nextSection
+  }
+})
+
+watch(() => props.initialPhotoId, (nextPhotoId) => {
+  if (nextPhotoId) {
+    activeSection.value = 'photos'
+    activePhotoId.value = nextPhotoId
+    return
+  }
+
+  activePhotoId.value = props.photos[0]?.id || null
+})
+
+watch(() => props.photos, (nextPhotos) => {
+  if (!nextPhotos.length) {
+    activePhotoId.value = null
+    return
+  }
+
+  if (!nextPhotos.some(item => item.id === activePhotoId.value)) {
+    activePhotoId.value = nextPhotos[0]?.id || null
+  }
+}, { deep: true })
 
 function openSection(key: GallerySectionKey) {
   activeSection.value = key
+}
+
+function openPhoto(photoId: string) {
+  activeSection.value = 'photos'
+  activePhotoId.value = photoId
+}
+
+function movePhoto(direction: 1 | -1) {
+  if (!props.photos.length) {
+    return
+  }
+
+  const nextIndex = Math.min(props.photos.length - 1, Math.max(0, activePhotoIndex.value + direction))
+  activePhotoId.value = props.photos[nextIndex]?.id || activePhotoId.value
 }
 
 function moveSection(direction: 1 | -1) {
@@ -119,7 +165,30 @@ function handleTouchEnd(event: TouchEvent) {
     <div class="content-gallery__viewport" @touchstart.passive="handleTouchStart" @touchend.passive="handleTouchEnd">
       <div class="content-gallery__track" :style="{ transform: `translateX(-${activeIndex * 100}%)` }">
         <section v-for="section in sections" :key="section.key" class="content-gallery__panel">
-          <div v-if="section.items.length" class="content-grid content-grid--gallery">
+          <div v-if="section.key === 'photos' && section.items.length" class="photo-strip-shell">
+            <div v-if="activePhoto" class="photo-strip-stage">
+              <button type="button" class="photo-strip-nav" :disabled="activePhotoIndex <= 0" @click="movePhoto(-1)">‹</button>
+              <img :src="activePhoto.previewUrl || activePhoto.href" :alt="activePhoto.title" class="photo-strip-stage__image">
+              <button type="button" class="photo-strip-nav" :disabled="activePhotoIndex >= props.photos.length - 1" @click="movePhoto(1)">›</button>
+            </div>
+            <div class="photo-strip-rail" aria-label="Лента фотографий">
+              <button
+                v-for="item in section.items"
+                :key="item.id"
+                type="button"
+                class="photo-strip-thumb"
+                :class="{ 'photo-strip-thumb--active': item.id === activePhotoId }"
+                @click="openPhoto(item.id)"
+              >
+                <img
+                  :src="item.previewUrl || item.href"
+                  :alt="item.title"
+                  class="photo-strip-thumb__image"
+                >
+              </button>
+            </div>
+          </div>
+          <div v-else-if="section.items.length" class="content-grid content-grid--gallery">
             <button
               v-for="item in section.items"
               :key="item.id"
@@ -129,7 +198,7 @@ function handleTouchEnd(event: TouchEvent) {
                 'content-card--photo': section.key === 'photos',
                 'content-card--tile': section.key !== 'photos',
               }"
-              @click="emit('select', item)"
+              @click="section.key === 'photos' ? openPhoto(item.id) : emit('select', item)"
             >
               <img
                 v-if="section.key === 'photos' && item.previewUrl"
