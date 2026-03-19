@@ -1347,9 +1347,10 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .section-block--chats-screen {
+  --screen-header-height: 76px;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  height: calc(100vh - 148px - max(12px, env(safe-area-inset-bottom)));
+  height: calc(100dvh - 148px - max(12px, env(safe-area-inset-bottom)));
   padding-top: 0;
   padding-right: 0;
   padding-left: 0;
@@ -1361,9 +1362,10 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .section-block--contacts-screen {
+  --screen-header-height: 76px;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  height: calc(100vh - 148px - max(12px, env(safe-area-inset-bottom)));
+  height: calc(100dvh - 148px - max(12px, env(safe-area-inset-bottom)));
   padding-top: 0;
   padding-right: 0;
   padding-left: 0;
@@ -1387,12 +1389,18 @@ html[data-messenger-motion='reduced'] *::after {
   padding-left: 16px;
 }
 
+.section-block--chats-screen .auth-error,
+.section-block--contacts-screen .auth-error {
+  margin: 0;
+  padding-top: calc(var(--screen-header-height) + 8px);
+}
+
 .section-block--chats-screen .list-stack {
-  padding-top: 8px;
+  padding-top: calc(var(--screen-header-height) + 8px);
 }
 
 .section-block--contacts-screen .list-stack {
-  padding-top: 8px;
+  padding-top: calc(var(--screen-header-height) + 8px);
 }
 
 .list-stack--screen-scroll {
@@ -1436,13 +1444,18 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .search-dock--screen-header {
+  position: fixed;
   margin: 0;
+  left: 0;
+  right: 0;
+  top: 0;
   border: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0;
   box-shadow: none;
-  min-height: 64px;
+  min-height: var(--screen-header-height);
   gap: 0;
+  z-index: 80;
 }
 
 .search-dock--chats-header {
@@ -1541,7 +1554,8 @@ html[data-messenger-motion='reduced'] *::after {
 
   .section-block--chats-screen,
   .section-block--contacts-screen {
-    height: calc(100vh - 136px - max(12px, env(safe-area-inset-bottom)));
+    --screen-header-height: 64px;
+    height: calc(100dvh - 136px - max(12px, env(safe-area-inset-bottom)));
   }
 
   .section-block--chats-screen .auth-error,
@@ -1554,14 +1568,6 @@ html[data-messenger-motion='reduced'] *::after {
   .section-block--contacts-screen .list-stack {
     padding-right: 12px;
     padding-left: 12px;
-  }
-
-  .section-block--chats-screen .list-stack {
-    padding-top: 6px;
-  }
-
-  .section-block--contacts-screen .list-stack {
-    padding-top: 6px;
   }
 
   .search-dock {
