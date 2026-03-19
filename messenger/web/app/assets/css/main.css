@@ -40,6 +40,7 @@
   --messenger-glass-button-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
   --messenger-control-size: 40px;
   --messenger-control-radius: 15px;
+  --messenger-bottom-nav-height: 76px;
   --messenger-message-peer-bg: rgba(255, 255, 255, 0.05);
   --messenger-message-peer-border: rgba(245, 158, 11, 0.34);
   --messenger-message-own-bg: rgba(125, 211, 252, 0.12);
@@ -3127,23 +3128,49 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 
   .composer-bar--dock {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: calc(70px + max(0px, env(safe-area-inset-bottom)));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(var(--messenger-bottom-nav-height) - 1px + max(0px, env(safe-area-inset-bottom)));
+    width: min(100%, 560px);
     z-index: 46;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    margin-top: 0;
+    margin: 0 auto;
     padding-top: 6px;
     padding-right: 12px;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-bottom: 10px;
     padding-left: 12px;
-    border-top: 0;
+    border-bottom: 0;
     border-radius: 24px 24px 0 0;
   }
 
+  .composer-bar--dock::after {
+    content: '';
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    bottom: -14px;
+    height: 16px;
+    border-left: 1px solid var(--messenger-slab-border);
+    border-right: 1px solid var(--messenger-slab-border);
+    background: var(--messenger-slab-bg);
+    pointer-events: none;
+  }
+
+  .bottom-nav {
+    border-top: 0;
+    border-radius: 0 0 22px 22px;
+    padding-top: 2px;
+    min-height: var(--messenger-bottom-nav-height);
+  }
+
+  .bottom-nav::before {
+    inset: 0 1px 1px;
+    border-radius: 0 0 21px 21px;
+  }
+
   .section-block--chat .message-list--chat-scroll {
-    padding-bottom: calc(var(--messenger-composer-height, 84px) + 82px);
-    scroll-padding-bottom: calc(var(--messenger-composer-height, 84px) + 82px);
+    padding-bottom: calc(var(--messenger-composer-height, 84px) + var(--messenger-bottom-nav-height) + 8px);
+    scroll-padding-bottom: calc(var(--messenger-composer-height, 84px) + var(--messenger-bottom-nav-height) + 8px);
   }
 
   .section-block--chat-details-open .content-drawer--dock {
@@ -3171,6 +3198,13 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 
   .messenger-shell[data-messenger-keyboard='open'] .composer-bar--dock {
     bottom: max(0px, var(--messenger-keyboard-inset));
+    width: auto;
+    border-bottom: 1px solid var(--messenger-slab-border);
+    border-radius: 24px 24px 0 0;
+  }
+
+  .messenger-shell[data-messenger-keyboard='open'] .composer-bar--dock::after {
+    display: none;
   }
 
   .messenger-shell[data-messenger-keyboard='open'] .section-block--chat .message-list--chat-scroll {
