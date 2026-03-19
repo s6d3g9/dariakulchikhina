@@ -495,10 +495,12 @@ function syncComposerInputHeight() {
     return
   }
 
+  const maxHeight = window.matchMedia('(max-width: 767px)').matches ? 104 : 144
+
   input.style.height = '0px'
-  const nextHeight = Math.min(Math.max(input.scrollHeight, 48), 144)
+  const nextHeight = Math.min(Math.max(input.scrollHeight, 48), maxHeight)
   input.style.height = `${nextHeight}px`
-  input.style.overflowY = input.scrollHeight > 144 ? 'auto' : 'hidden'
+  input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden'
   updateComposerHeight()
 }
 
