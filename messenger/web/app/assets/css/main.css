@@ -1343,10 +1343,13 @@ html[data-messenger-motion='reduced'] *::after {
 
 .section-block--search-screen {
   position: relative;
-  padding-top: 84px;
+  padding-top: 0;
 }
 
 .section-block--chats-screen {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: calc(100vh - 148px - max(12px, env(safe-area-inset-bottom)));
   padding-top: 0;
   padding-right: 0;
   padding-left: 0;
@@ -1358,6 +1361,9 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .section-block--contacts-screen {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: calc(100vh - 148px - max(12px, env(safe-area-inset-bottom)));
   padding-top: 0;
   padding-right: 0;
   padding-left: 0;
@@ -1366,6 +1372,7 @@ html[data-messenger-motion='reduced'] *::after {
   background: transparent;
   backdrop-filter: none;
   box-shadow: none;
+  overflow: hidden;
 }
 
 .section-block--chats-screen .auth-error,
@@ -1388,6 +1395,14 @@ html[data-messenger-motion='reduced'] *::after {
   padding-top: 8px;
 }
 
+.list-stack--screen-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+  padding-bottom: 20px;
+  overscroll-behavior: contain;
+}
+
 .list-card--chat-row {
   padding: 14px 12px;
   border-right: 0;
@@ -1406,10 +1421,10 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .search-dock {
-  position: sticky;
-  top: max(8px, env(safe-area-inset-top));
+  position: relative;
+  top: auto;
   z-index: 34;
-  margin: -64px 0 4px;
+  margin: 0;
   display: grid;
   gap: 10px;
   padding: 10px 12px;
@@ -1421,12 +1436,13 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .search-dock--screen-header {
-  top: 0;
   margin: 0;
   border: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 0;
   box-shadow: none;
+  min-height: 64px;
+  gap: 0;
 }
 
 .search-dock--chats-header {
@@ -1441,8 +1457,28 @@ html[data-messenger-motion='reduced'] *::after {
   position: relative;
 }
 
+.search-dock__field--header {
+  display: grid;
+  align-items: center;
+  min-height: 44px;
+}
+
 .search-dock__input {
   min-height: 52px;
+}
+
+.search-dock__input--header {
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.search-dock__input--header:focus {
+  border-color: rgba(125, 211, 252, 0.34);
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
 }
 
 .search-dropdown {
@@ -1500,7 +1536,12 @@ html[data-messenger-motion='reduced'] *::after {
 
 @media (max-width: 767px) {
   .section-block--search-screen {
-    padding-top: 76px;
+    padding-top: 0;
+  }
+
+  .section-block--chats-screen,
+  .section-block--contacts-screen {
+    height: calc(100vh - 136px - max(12px, env(safe-area-inset-bottom)));
   }
 
   .section-block--chats-screen .auth-error,
@@ -1524,12 +1565,12 @@ html[data-messenger-motion='reduced'] *::after {
   }
 
   .search-dock {
-    margin-top: -56px;
     padding: 8px 10px;
   }
 
   .search-dock--screen-header {
     margin-top: 0;
+    min-height: 56px;
   }
 
   .search-dock--chats-header {
@@ -1538,5 +1579,10 @@ html[data-messenger-motion='reduced'] *::after {
 
   .search-dock--contacts-header {
     padding: max(8px, env(safe-area-inset-top)) 12px 8px;
+  }
+
+  .search-dock__input--header {
+    min-height: 42px;
+    padding: 8px 12px;
   }
 }

@@ -89,11 +89,11 @@ function closeSearch() {
 <template>
   <section class="section-block section-block--search-screen section-block--contacts-screen" aria-label="Contacts section">
     <header class="search-dock search-dock--screen-header search-dock--contacts-header">
-      <div class="search-dock__field">
+      <div class="search-dock__field search-dock__field--header">
         <input
           v-model="searchDraft"
           type="text"
-          class="inline-input search-dock__input"
+          class="inline-input search-dock__input search-dock__input--header"
           placeholder="Поиск пользователей"
           @focus="openSearch"
           @blur="closeSearch"
@@ -116,7 +116,7 @@ function closeSearch() {
 
     <p v-if="actionError" class="auth-error">{{ actionError }}</p>
 
-    <div class="list-stack">
+    <div class="list-stack list-stack--screen-scroll">
       <article
         v-for="contact in contacts.overview.value.contacts"
         :key="contact.id"

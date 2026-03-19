@@ -84,11 +84,11 @@ function closeSearch() {
 <template>
   <section class="section-block section-block--search-screen section-block--chats-screen" aria-label="Chats section">
     <header class="search-dock search-dock--screen-header search-dock--chats-header">
-      <div class="search-dock__field">
+      <div class="search-dock__field search-dock__field--header">
         <input
           v-model="searchDraft"
           type="text"
-          class="inline-input search-dock__input"
+          class="inline-input search-dock__input search-dock__input--header"
           placeholder="Поиск по чатам"
           @focus="openSearch"
           @blur="closeSearch"
@@ -111,7 +111,7 @@ function closeSearch() {
 
     <p v-if="actionError" class="auth-error">{{ actionError }}</p>
 
-    <div class="list-stack">
+    <div class="list-stack list-stack--screen-scroll">
       <article
         v-for="chat in conversations.conversations.value"
         :key="chat.id"
