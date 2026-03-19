@@ -926,8 +926,8 @@ onBeforeUnmount(() => {
           </button>
           <button type="button" class="composer-btn composer-btn--accent" aria-label="Отправить сообщение" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @pointerdown="preserveComposerFocus" @click="submit">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 12.1 19.36 5.9c.8-.35 1.58.43 1.23 1.23L14.4 21.49c-.36.84-1.57.82-1.91-.03l-1.93-4.82-4.82-1.93c-.85-.34-.87-1.55-.03-1.91Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
-              <path d="M10.37 16.63 20.08 6.92" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
+              <path d="M4.95 11.8 18.84 5.65c1.08-.48 2.16.6 1.69 1.69l-6.15 13.89c-.45 1.03-1.93 1.06-2.42.05l-1.9-3.98a1.75 1.75 0 0 0-.86-.86l-3.98-1.9c-1.01-.49-.98-1.97.05-2.42Z" fill="currentColor"/>
+              <path d="M9.78 16.3 20.1 5.98" fill="none" stroke="rgba(255,255,255,0.72)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
             </svg>
           </button>
         </div>

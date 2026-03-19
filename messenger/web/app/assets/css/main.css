@@ -1834,6 +1834,15 @@ html[data-messenger-style='contrast'] .attachment-card--button {
   box-shadow: 0 16px 34px rgba(92, 161, 214, 0.22);
 }
 
+.composer-btn--accent {
+  color: #fff;
+}
+
+.composer-btn--accent svg {
+  width: 20px;
+  height: 20px;
+}
+
 .chat-user-trigger {
   padding: 8px 10px;
   border-radius: 18px;
@@ -3120,7 +3129,7 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: calc(72px + max(12px, env(safe-area-inset-bottom)));
+    bottom: calc(70px + max(0px, env(safe-area-inset-bottom)));
     z-index: 46;
     grid-template-columns: auto minmax(0, 1fr) auto;
     margin-top: 0;
@@ -3133,8 +3142,8 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   }
 
   .section-block--chat .message-list--chat-scroll {
-    padding-bottom: calc(var(--messenger-composer-height, 84px) + 96px);
-    scroll-padding-bottom: calc(var(--messenger-composer-height, 84px) + 96px);
+    padding-bottom: calc(var(--messenger-composer-height, 84px) + 82px);
+    scroll-padding-bottom: calc(var(--messenger-composer-height, 84px) + 82px);
   }
 
   .section-block--chat-details-open .content-drawer--dock {
