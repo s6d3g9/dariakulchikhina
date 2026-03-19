@@ -357,6 +357,10 @@ textarea {
   align-items: center;
 }
 
+.hero-row > .action-btn {
+  align-self: flex-start;
+}
+
 .hero-badge-row {
   display: flex;
   gap: 10px;
@@ -495,6 +499,11 @@ textarea {
 .action-btn,
 .composer-btn {
   min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
   border: 1px solid var(--messenger-border);
   background: rgba(255, 255, 255, 0.08);
   color: var(--messenger-text);
@@ -505,14 +514,21 @@ textarea {
 }
 
 .composer-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: var(--messenger-control-size);
   min-width: var(--messenger-control-size);
   min-height: var(--messenger-control-size);
   padding: 0;
   aspect-ratio: 1 / 1;
+}
+
+.action-btn svg,
+.composer-btn svg,
+.icon-btn svg,
+.message-action-btn svg {
+  display: block;
+  flex: none;
+  width: 18px;
+  height: 18px;
 }
 
 .action-btn:not([disabled]):hover,
@@ -1025,6 +1041,11 @@ textarea {
 
 .call-banner__actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.call-banner__actions .action-btn,
+.call-stage__actions .action-btn {
+  width: 100%;
 }
 
 .action-btn--accept {
@@ -2819,8 +2840,8 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 }
 
 .section-block--chat > .section-head--chat-header .icon-btn svg {
-  width: 16px !important;
-  height: 16px !important;
+  width: 18px !important;
+  height: 18px !important;
 }
 
 .message-action-btn:hover:not([disabled]) {
@@ -3139,8 +3160,8 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 }
 
 .section-block--chat > .section-head--chat-header .icon-btn svg {
-  width: 16px !important;
-  height: 16px !important;
+  width: 18px !important;
+  height: 18px !important;
 }
 
 @media (min-width: 900px) {
