@@ -200,6 +200,14 @@ function showManualInstallHelp() {
         <p class="setting-card__title">Стиль интерфейса</p>
         <p class="setting-card__text">{{ activeStyleMeta.title }}</p>
         <p class="setting-card__meta">{{ activeStyleMeta.hint }}</p>
+        <span class="setting-style-preview" :class="`setting-style-preview--${settingsModel.settings.value.themes.style}`" aria-hidden="true">
+          <span class="setting-style-preview__topbar" />
+          <span class="setting-style-preview__panel" />
+          <span class="setting-style-preview__row">
+            <span class="setting-style-preview__dot" />
+            <span class="setting-style-preview__button" />
+          </span>
+        </span>
       </article>
     </div>
 
