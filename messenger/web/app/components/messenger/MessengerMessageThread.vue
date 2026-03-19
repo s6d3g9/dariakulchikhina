@@ -66,9 +66,8 @@ function handleEditInput(event: Event) {
     :data-message-id="entry.id"
     @click.stop="!entry.deletedAt ? emit('toggle-actions', entry.id, $event) : undefined"
   >
-    <div class="message-bubble__topline">
-      <p class="message-bubble__author">{{ entry.own ? 'Вы' : entry.senderDisplayName }}</p>
-      <div v-if="!entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__actions" data-message-action-menu="true" @pointerdown.stop>
+    <div v-if="!entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__topline" data-message-action-menu="true" @pointerdown.stop>
+      <div class="message-bubble__actions">
         <button
           type="button"
           class="message-action-btn"

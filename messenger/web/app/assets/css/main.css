@@ -318,33 +318,32 @@ textarea {
 }
 
 .message-bubble {
+  display: grid;
+  justify-items: start;
   width: 100%;
   max-width: 100%;
-  padding: 14px;
-  border: 1px solid var(--messenger-border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.06));
-  backdrop-filter: blur(20px) saturate(155%);
-  border-radius: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+  border-radius: 0;
 }
 
 .message-bubble--own {
-  border-color: rgba(125, 211, 252, 0.24);
-  background: linear-gradient(180deg, rgba(125, 211, 252, 0.18), rgba(216, 180, 254, 0.14));
+  justify-items: end;
 }
 
 .message-bubble--comment {
   margin-top: 10px;
-  margin-left: calc(var(--message-comment-depth, 1) * 12px);
-  padding: 12px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
+  max-width: calc(100% - (var(--message-comment-depth, 1) * 12px));
 }
 
-.message-bubble__author {
-  color: var(--messenger-accent);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+.message-bubble--comment:not(.message-bubble--own) {
+  margin-left: calc(var(--message-comment-depth, 1) * 12px);
+}
+
+.message-bubble--comment.message-bubble--own {
+  margin-right: calc(var(--message-comment-depth, 1) * 12px);
 }
 
 .message-bubble__text,
@@ -1373,11 +1372,28 @@ html[data-messenger-motion='reduced'] *::after {
 .message-bubble__editor {
   display: grid;
   gap: 8px;
+  width: fit-content;
+  max-width: min(100%, 520px);
+  padding: 12px 14px;
+  border: 1px solid rgba(245, 158, 11, 0.42);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
 }
 
 .message-bubble__topline {
+  width: min(100%, 520px);
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
+}
+
+.message-bubble--own .message-bubble__content,
+.message-bubble--own .message-bubble__editor {
+  border-color: rgba(125, 211, 252, 0.44);
+  background: rgba(125, 211, 252, 0.1);
+}
+
+.message-bubble--own .message-bubble__topline {
+  justify-self: end;
 }
 
 .message-bubble__status {
@@ -1389,7 +1405,12 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .message-bubble--actions-open {
-  border-color: rgba(125, 211, 252, 0.34);
+  border-color: transparent;
+}
+
+.message-bubble--actions-open .message-bubble__content,
+.message-bubble--actions-open .message-bubble__editor {
+  border-color: rgba(125, 211, 252, 0.54);
 }
 
 .message-action-btn {
@@ -1408,6 +1429,8 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .message-bubble__actions {
+  width: auto;
+  max-width: min(100%, 520px);
   flex-wrap: nowrap;
   overflow-x: auto;
   overscroll-behavior-x: contain;
