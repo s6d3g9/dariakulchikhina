@@ -66,6 +66,13 @@ textarea {
   gap: 16px;
 }
 
+.messenger-shell--immersive {
+  padding-top: 0;
+  padding-right: 0;
+  padding-left: 0;
+  gap: 0;
+}
+
 .messenger-aurora {
   position: absolute;
   border-radius: 999px;
@@ -812,6 +819,13 @@ textarea {
 
   .messenger-shell {
     padding: 32px 32px calc(156px + env(safe-area-inset-bottom));
+  }
+
+  .messenger-shell--immersive {
+    padding-top: 0;
+    padding-right: 0;
+    padding-left: 0;
+    gap: 0;
   }
 
   .screen-grid {

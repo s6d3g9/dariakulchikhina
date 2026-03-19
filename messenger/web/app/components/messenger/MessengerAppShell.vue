@@ -23,7 +23,7 @@ async function logout() {
 </script>
 
 <template>
-  <div class="messenger-shell">
+  <div class="messenger-shell" :class="{ 'messenger-shell--immersive': !showHero }">
     <div class="messenger-aurora messenger-aurora--one" />
     <div class="messenger-aurora messenger-aurora--two" />
     <div class="messenger-aurora messenger-aurora--three" />
