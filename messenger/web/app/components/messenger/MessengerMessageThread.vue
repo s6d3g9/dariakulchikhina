@@ -66,49 +66,51 @@ function handleEditInput(event: Event) {
     :data-message-id="entry.id"
     @click.stop="!entry.deletedAt ? emit('toggle-actions', entry.id, $event) : undefined"
   >
-    <div v-if="!entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__topline" data-message-action-menu="true" @pointerdown.stop>
-      <div class="message-bubble__actions">
-        <button
-          type="button"
-          class="message-action-btn"
-          @click.stop="emit('comment', entry.id)"
-        >
-          Комм.
-        </button>
-        <button
-          type="button"
-          class="message-action-btn"
-          @click.stop="emit('reply', entry.id)"
-        >
-          Ответ
-        </button>
-        <button
-          type="button"
-          class="message-action-btn"
-          @click.stop="emit('forward', entry.id)"
-        >
-          Пересл.
-        </button>
-        <button
-          v-if="entry.own && entry.kind === 'text'"
-          type="button"
-          class="message-action-btn"
-          :disabled="editingMessageId === entry.id"
-          @click.stop="emit('edit', entry.id, entry.body)"
-        >
-          Ред.
-        </button>
-        <button
-          v-if="entry.own"
-          type="button"
-          class="message-action-btn"
-          :disabled="editingMessageId === entry.id || messagePending"
-          @click.stop="emit('remove', entry.id)"
-        >
-          Удал.
-        </button>
+    <Transition name="message-actions-pop">
+      <div v-if="!entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__topline" data-message-action-menu="true" @pointerdown.stop>
+        <div class="message-bubble__actions">
+          <button
+            type="button"
+            class="message-action-btn"
+            @click.stop="emit('comment', entry.id)"
+          >
+            Комм.
+          </button>
+          <button
+            type="button"
+            class="message-action-btn"
+            @click.stop="emit('reply', entry.id)"
+          >
+            Ответ
+          </button>
+          <button
+            type="button"
+            class="message-action-btn"
+            @click.stop="emit('forward', entry.id)"
+          >
+            Пересл.
+          </button>
+          <button
+            v-if="entry.own && entry.kind === 'text'"
+            type="button"
+            class="message-action-btn"
+            :disabled="editingMessageId === entry.id"
+            @click.stop="emit('edit', entry.id, entry.body)"
+          >
+            Ред.
+          </button>
+          <button
+            v-if="entry.own"
+            type="button"
+            class="message-action-btn"
+            :disabled="editingMessageId === entry.id || messagePending"
+            @click.stop="emit('remove', entry.id)"
+          >
+            Удал.
+          </button>
+        </div>
       </div>
-    </div>
+    </Transition>
     <div v-if="entry.forwardedFrom" class="message-relation-card message-relation-card--forwarded">
       <p class="message-relation-card__label">Переслано от {{ entry.forwardedFrom.senderDisplayName }}</p>
       <p class="message-relation-card__text">{{ relationPreviewText(entry.forwardedFrom) }}</p>
