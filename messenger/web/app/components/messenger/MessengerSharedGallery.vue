@@ -143,7 +143,7 @@ function handleTouchEnd(event: TouchEvent) {
       </div>
       <button type="button" class="icon-btn" aria-label="Закрыть галерею" @click="emit('close')">
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6.7 6.7a1 1 0 0 1 1.4 0L12 10.6l3.9-3.9a1 1 0 1 1 1.4 1.4L13.4 12l3.9 3.9a1 1 0 0 1-1.4 1.4L12 13.4l-3.9 3.9a1 1 0 0 1-1.4-1.4l3.9-3.9-3.9-3.9a1 1 0 0 1 0-1.4Z" fill="currentColor"/>
+          <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"/>
         </svg>
       </button>
     </div>
