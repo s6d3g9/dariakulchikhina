@@ -13,7 +13,6 @@ const isRecording = ref(false)
 const recordingSeconds = ref(0)
 const canRecordAudio = ref(false)
 const calls = useMessengerCalls()
-const composerExpanded = ref(false)
 const editingMessageId = ref<string | null>(null)
 const editingDraft = ref('')
 const activeMessageActionsId = ref<string | null>(null)
@@ -117,13 +116,12 @@ onBeforeUnmount(() => {
 
 watch(() => conversations.activeConversationId.value, async () => {
   detailsOpen.value = false
-  composerExpanded.value = false
   await scrollMessagesToBottom('auto')
 })
 
 watch(() => detailsOpen.value, (opened) => {
   if (opened) {
-    composerExpanded.value = false
+    resetComposerInputHeight()
   }
 })
 
@@ -141,12 +139,8 @@ watch(() => conversations.messages.value.length, async (currentLength, previousL
   await scrollMessagesToBottom(previousLength > 0 ? 'smooth' : 'auto')
 })
 
-watch(() => viewport.keyboardOpen.value, () => {
-  scheduleComposerAlignment()
-})
-
-watch(() => viewport.viewportHeight.value, () => {
-  scheduleComposerAlignment()
+watch(draft, () => {
+  syncComposerInputHeight()
 })
 
 async function submit() {
@@ -158,8 +152,8 @@ async function submit() {
   try {
     await conversations.sendMessage(draft.value)
     draft.value = ''
-    composerExpanded.value = false
     activeMessageActionsId.value = null
+    resetComposerInputHeight()
   } catch {
     actionError.value = 'Не удалось отправить сообщение.'
   }
@@ -296,58 +290,75 @@ function closeDetails() {
   detailsOpen.value = false
 }
 
-function toggleComposerExpanded() {
-  if (!conversations.activeConversation.value) {
-    return
-  }
-
-  composerExpanded.value = !composerExpanded.value
-  scheduleComposerAlignment()
-}
-
 function updateComposerHeight() {
   const nextHeight = composerBarEl.value?.offsetHeight ?? 76
   composerHeight.value = nextHeight
 }
 
-function scheduleComposerAlignment() {
+function syncComposerInputHeight() {
   if (!import.meta.client) {
     return
   }
 
-  const alignComposer = async () => {
-    updateComposerHeight()
-    await scrollMessagesToBottom('auto')
-    composerInputEl.value?.scrollIntoView({ block: 'center' })
-    window.scrollTo({ top: 0, behavior: 'auto' })
+  const input = composerInputEl.value
+  if (!input) {
+    return
   }
 
-  void alignComposer()
+  input.style.height = '0px'
+  const nextHeight = Math.min(Math.max(input.scrollHeight, 48), 144)
+  input.style.height = `${nextHeight}px`
+  input.style.overflowY = input.scrollHeight > 144 ? 'auto' : 'hidden'
+  updateComposerHeight()
+}
+
+function resetComposerInputHeight() {
+  const input = composerInputEl.value
+  if (!input) {
+    return
+  }
+
+  input.style.height = '48px'
+  input.style.overflowY = 'hidden'
+  updateComposerHeight()
+}
+
+function scheduleComposerMetricsSync() {
+  if (!import.meta.client) {
+    return
+  }
+
+  const syncComposer = async () => {
+    await nextTick()
+    syncComposerInputHeight()
+  }
+
+  void syncComposer()
 
   if (composerAlignTimer) {
     clearTimeout(composerAlignTimer)
   }
 
   composerAlignTimer = setTimeout(() => {
-    void alignComposer()
+    void syncComposer()
     composerAlignTimer = null
   }, 260)
 }
 
 function expandComposer() {
-  composerExpanded.value = true
   viewport.scheduleViewportSync()
-  scheduleComposerAlignment()
+  scheduleComposerMetricsSync()
 }
 
 function collapseComposer() {
-  if (!draft.value.trim()) {
-    composerExpanded.value = false
-  }
-
   setTimeout(() => {
     viewport.scheduleViewportSync()
-    updateComposerHeight()
+    if (!draft.value.trim()) {
+      resetComposerInputHeight()
+      return
+    }
+
+    syncComposerInputHeight()
   }, 40)
 }
 
@@ -496,7 +507,7 @@ onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown)
 
   nextTick(() => {
-    updateComposerHeight()
+    resetComposerInputHeight()
 
     if (composerBarEl.value && typeof ResizeObserver !== 'undefined') {
       composerResizeObserver = new ResizeObserver(() => {
@@ -727,27 +738,20 @@ onBeforeUnmount(() => {
         </section>
       </div>
 
-      <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock" :class="{ 'composer-bar--expanded': composerExpanded }">
+      <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock">
         <input ref="fileInput" type="file" class="sr-only" @change="handleFileSelect">
         <button type="button" class="composer-btn" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @click="openFilePicker">+</button>
         <textarea
           ref="composerInputEl"
           v-model="draft"
-          :rows="composerExpanded ? 4 : 1"
+          rows="1"
           class="composer-input"
           placeholder="Сообщение"
           :disabled="!conversations.activeConversation.value"
           @focus="expandComposer"
           @blur="collapseComposer"
+          @input="syncComposerInputHeight"
         />
-        <button
-          type="button"
-          class="composer-btn composer-btn--toggle"
-          :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
-          @click="toggleComposerExpanded"
-        >
-          {{ composerExpanded ? 'Сверн.' : 'Разверн.' }}
-        </button>
         <button
           type="button"
           class="composer-btn"
