@@ -29,6 +29,22 @@ export interface MessengerMessageRecord {
   createdAt: string
   editedAt?: string
   deletedAt?: string
+  replyToMessageId?: string
+  commentOnMessageId?: string
+  forwardedFrom?: {
+    messageId: string
+    conversationId: string
+    senderUserId: string
+    senderDisplayName: string
+    body: string
+    kind: 'text' | 'file'
+    attachment?: {
+      name: string
+      mimeType: string
+      size: number
+      url: string
+    }
+  }
 }
 
 interface ConversationsFile {
@@ -64,6 +80,45 @@ export interface ConversationMessageOverviewItem {
     mimeType: string
     size: number
     url: string
+  }
+  replyTo?: {
+    id: string
+    body: string
+    kind: 'text' | 'file'
+    own: boolean
+    senderDisplayName: string
+    attachment?: {
+      name: string
+      mimeType: string
+      size: number
+      url: string
+    }
+  }
+  commentOn?: {
+    id: string
+    body: string
+    kind: 'text' | 'file'
+    own: boolean
+    senderDisplayName: string
+    attachment?: {
+      name: string
+      mimeType: string
+      size: number
+      url: string
+    }
+  }
+  forwardedFrom?: {
+    messageId: string
+    conversationId: string
+    body: string
+    kind: 'text' | 'file'
+    senderDisplayName: string
+    attachment?: {
+      name: string
+      mimeType: string
+      size: number
+      url: string
+    }
   }
 }
 
@@ -106,6 +161,45 @@ function isParticipant(conversation: MessengerConversationRecord, userId: string
 
 function getPeerId(conversation: MessengerConversationRecord, userId: string) {
   return conversation.userAId === userId ? conversation.userBId : conversation.userAId
+}
+
+function buildMessageRelationPreview(
+  message: MessengerMessageRecord,
+  actorId: string,
+  users: MessengerUserRecord[],
+) {
+  const sender = users.find(item => item.id === message.senderUserId)
+
+  return {
+    id: message.id,
+    body: message.deletedAt ? 'Сообщение удалено' : message.body,
+    kind: message.kind,
+    own: message.senderUserId === actorId,
+    senderDisplayName: sender?.displayName || 'Unknown',
+    attachment: message.deletedAt ? undefined : message.attachment,
+  }
+}
+
+function assertMessageRelation(
+  payload: ConversationsFile,
+  conversation: MessengerConversationRecord,
+  relationMessageId: string | undefined,
+  actorId: string,
+) {
+  if (!relationMessageId) {
+    return undefined
+  }
+
+  const relationMessage = payload.messages.find(item => item.id === relationMessageId && item.conversationId === conversation.id)
+  if (!relationMessage) {
+    throw new Error('MESSAGE_NOT_FOUND')
+  }
+
+  if (!isParticipant(conversation, actorId)) {
+    throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  return relationMessage.id
 }
 
 export async function findConversationById(conversationId: string) {
@@ -191,6 +285,13 @@ export async function listMessagesForConversation(conversationId: string, actor:
     .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime())
     .map((message) => {
       const sender = users.find(item => item.id === message.senderUserId)
+      const replyTo = message.replyToMessageId
+        ? payload.messages.find(item => item.id === message.replyToMessageId && item.conversationId === conversationId)
+        : undefined
+      const commentOn = message.commentOnMessageId
+        ? payload.messages.find(item => item.id === message.commentOnMessageId && item.conversationId === conversationId)
+        : undefined
+
       return {
         id: message.id,
         body: message.deletedAt ? 'Сообщение удалено' : message.body,
@@ -201,11 +302,22 @@ export async function listMessagesForConversation(conversationId: string, actor:
         own: message.senderUserId === actor.id,
         senderDisplayName: sender?.displayName || 'Unknown',
         attachment: message.deletedAt ? undefined : message.attachment,
+        replyTo: replyTo ? buildMessageRelationPreview(replyTo, actor.id, users) : undefined,
+        commentOn: commentOn ? buildMessageRelationPreview(commentOn, actor.id, users) : undefined,
+        forwardedFrom: message.forwardedFrom,
       } satisfies ConversationMessageOverviewItem
     })
 }
 
-export async function addMessageToConversation(conversationId: string, actor: MessengerUserRecord, body: string) {
+export async function addMessageToConversation(
+  conversationId: string,
+  actor: MessengerUserRecord,
+  body: string,
+  options?: {
+    replyToMessageId?: string
+    commentOnMessageId?: string
+  },
+) {
   const payload = await readConversationsFile()
   const conversation = payload.conversations.find(item => item.id === conversationId)
   if (!conversation) {
@@ -224,10 +336,69 @@ export async function addMessageToConversation(conversationId: string, actor: Me
     body: body.trim(),
     kind: 'text',
     createdAt: now,
+    replyToMessageId: assertMessageRelation(payload, conversation, options?.replyToMessageId, actor.id),
+    commentOnMessageId: assertMessageRelation(payload, conversation, options?.commentOnMessageId, actor.id),
   }
 
   payload.messages.push(message)
   conversation.updatedAt = now
+  await writeConversationsFile(payload)
+  return message
+}
+
+export async function forwardMessageToConversation(
+  conversationId: string,
+  sourceMessageId: string,
+  actor: MessengerUserRecord,
+  users: MessengerUserRecord[],
+) {
+  const payload = await readConversationsFile()
+  const targetConversation = payload.conversations.find(item => item.id === conversationId)
+  if (!targetConversation) {
+    throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  if (!isParticipant(targetConversation, actor.id)) {
+    throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  const sourceMessage = payload.messages.find(item => item.id === sourceMessageId)
+  if (!sourceMessage) {
+    throw new Error('MESSAGE_NOT_FOUND')
+  }
+
+  const sourceConversation = payload.conversations.find(item => item.id === sourceMessage.conversationId)
+  if (!sourceConversation) {
+    throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  if (!isParticipant(sourceConversation, actor.id)) {
+    throw new Error('MESSAGE_FORBIDDEN')
+  }
+
+  const sender = users.find(item => item.id === sourceMessage.senderUserId)
+  const now = new Date().toISOString()
+  const message: MessengerMessageRecord = {
+    id: randomUUID(),
+    conversationId,
+    senderUserId: actor.id,
+    body: sourceMessage.deletedAt ? 'Сообщение удалено' : sourceMessage.body,
+    kind: sourceMessage.kind,
+    attachment: sourceMessage.deletedAt ? undefined : sourceMessage.attachment,
+    createdAt: now,
+    forwardedFrom: {
+      messageId: sourceMessage.id,
+      conversationId: sourceMessage.conversationId,
+      senderUserId: sourceMessage.senderUserId,
+      senderDisplayName: sender?.displayName || 'Unknown',
+      body: sourceMessage.deletedAt ? 'Сообщение удалено' : sourceMessage.body,
+      kind: sourceMessage.kind,
+      attachment: sourceMessage.deletedAt ? undefined : sourceMessage.attachment,
+    },
+  }
+
+  payload.messages.push(message)
+  targetConversation.updatedAt = now
   await writeConversationsFile(payload)
   return message
 }

@@ -9,7 +9,7 @@ import { z } from 'zod'
 
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from './auth.ts'
-import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, listConversationsForUser, listMessagesForConversation } from './conversation-store.ts'
+import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, forwardMessageToConversation, listConversationsForUser, listMessagesForConversation } from './conversation-store.ts'
 import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from './contact-store.ts'
 import { readMessengerConfig } from './config.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
@@ -87,6 +87,22 @@ export async function createMessengerServer() {
     messageId: z.string().uuid(),
   })
   const messageSchema = z.object({
+    body: z.string().trim().max(4000).optional(),
+    replyToMessageId: z.string().uuid().optional(),
+    commentOnMessageId: z.string().uuid().optional(),
+    forwardedMessageId: z.string().uuid().optional(),
+  }).superRefine((value, ctx) => {
+    const hasBody = Boolean(value.body?.trim())
+    const hasForward = Boolean(value.forwardedMessageId)
+
+    if (!hasBody && !hasForward) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'MESSAGE_BODY_OR_FORWARD_REQUIRED',
+      })
+    }
+  })
+  const editMessageSchema = z.object({
     body: z.string().trim().min(1).max(4000),
   })
   const callSignalSchema = z.object({
@@ -487,7 +503,13 @@ export async function createMessengerServer() {
     }
 
     try {
-      const message = await addMessageToConversation(parsedParams.data.conversationId, session.user, parsedBody.data.body)
+      const users = await listMessengerUsers()
+      const message = parsedBody.data.forwardedMessageId
+        ? await forwardMessageToConversation(parsedParams.data.conversationId, parsedBody.data.forwardedMessageId, session.user, users)
+        : await addMessageToConversation(parsedParams.data.conversationId, session.user, parsedBody.data.body || '', {
+          replyToMessageId: parsedBody.data.replyToMessageId,
+          commentOnMessageId: parsedBody.data.commentOnMessageId,
+        })
       const conversation = await findConversationById(parsedParams.data.conversationId)
       if (conversation) {
         emitToUsers([conversation.userAId, conversation.userBId], {
@@ -504,12 +526,12 @@ export async function createMessengerServer() {
       return { message }
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === 'CONVERSATION_NOT_FOUND') {
-          return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+        if (error.message === 'CONVERSATION_NOT_FOUND' || error.message === 'MESSAGE_NOT_FOUND') {
+          return reply.code(404).send({ error: error.message })
         }
 
-        if (error.message === 'CONVERSATION_FORBIDDEN') {
-          return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+        if (error.message === 'CONVERSATION_FORBIDDEN' || error.message === 'MESSAGE_FORBIDDEN') {
+          return reply.code(403).send({ error: error.message })
         }
       }
 
@@ -524,7 +546,7 @@ export async function createMessengerServer() {
     }
 
     const parsedParams = messageParamsSchema.safeParse(request.params)
-    const parsedBody = messageSchema.safeParse(request.body)
+    const parsedBody = editMessageSchema.safeParse(request.body)
     if (!parsedParams.success || !parsedBody.success) {
       return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
     }

@@ -17,6 +17,9 @@ const editingMessageId = ref<string | null>(null)
 const editingDraft = ref('')
 const activeMessageActionsId = ref<string | null>(null)
 const composerHeight = ref(76)
+const composerRelationMode = ref<'reply' | 'comment' | null>(null)
+const composerRelationMessageId = ref<string | null>(null)
+const forwardingMessageId = ref<string | null>(null)
 
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
@@ -142,6 +145,24 @@ const chatLayoutStyle = computed(() => ({
   '--messenger-composer-height': `${composerHeight.value}px`,
 }))
 
+const composerRelationMessage = computed(() => {
+  if (!composerRelationMessageId.value) {
+    return null
+  }
+
+  return conversations.messages.value.find(item => item.id === composerRelationMessageId.value) ?? null
+})
+
+const forwardingMessage = computed(() => {
+  if (!forwardingMessageId.value) {
+    return null
+  }
+
+  return conversations.messages.value.find(item => item.id === forwardingMessageId.value) ?? null
+})
+
+const availableForwardTargets = computed(() => conversations.conversations.value)
+
 onMounted(async () => {
   lockPageScroll()
   canRecordAudio.value = Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined')
@@ -214,9 +235,14 @@ async function submit() {
   }
 
   try {
-    await conversations.sendMessage(draft.value)
+    await conversations.sendMessage(draft.value, {
+      replyToMessageId: composerRelationMode.value === 'reply' ? composerRelationMessageId.value || undefined : undefined,
+      commentOnMessageId: composerRelationMode.value === 'comment' ? composerRelationMessageId.value || undefined : undefined,
+    })
     draft.value = ''
     activeMessageActionsId.value = null
+    composerRelationMode.value = null
+    composerRelationMessageId.value = null
     resetComposerInputHeight()
     await nextTick()
     composerInputEl.value?.focus({ preventScroll: true })
@@ -229,6 +255,46 @@ async function submit() {
 function preserveComposerFocus(event: PointerEvent) {
   event.preventDefault()
   composerInputEl.value?.focus({ preventScroll: true })
+}
+
+function clearComposerRelation() {
+  composerRelationMode.value = null
+  composerRelationMessageId.value = null
+}
+
+async function activateComposerRelation(mode: 'reply' | 'comment', messageId: string) {
+  composerRelationMode.value = mode
+  composerRelationMessageId.value = messageId
+  forwardingMessageId.value = null
+  activeMessageActionsId.value = null
+  await nextTick()
+  composerInputEl.value?.focus({ preventScroll: true })
+  viewport.scheduleViewportSync()
+}
+
+function openForwardPicker(messageId: string) {
+  forwardingMessageId.value = messageId
+  clearComposerRelation()
+  activeMessageActionsId.value = null
+}
+
+function closeForwardPicker() {
+  forwardingMessageId.value = null
+}
+
+async function forwardMessage(targetConversationId: string) {
+  if (!forwardingMessageId.value) {
+    return
+  }
+
+  actionError.value = ''
+
+  try {
+    await conversations.forwardMessage(forwardingMessageId.value, targetConversationId)
+    closeForwardPicker()
+  } catch {
+    actionError.value = 'Не удалось переслать сообщение.'
+  }
 }
 
 function openFilePicker() {
@@ -575,6 +641,30 @@ function handleDocumentPointerDown(event: PointerEvent) {
   activeMessageActionsId.value = null
 }
 
+function relationTitle(mode: 'reply' | 'comment' | null) {
+  if (mode === 'reply') {
+    return 'Ответ'
+  }
+
+  if (mode === 'comment') {
+    return 'Комментарий'
+  }
+
+  return ''
+}
+
+function relationPreviewText(message: { body: string; kind: 'text' | 'file'; attachment?: { name: string } } | null) {
+  if (!message) {
+    return ''
+  }
+
+  if (message.kind === 'file') {
+    return message.attachment?.name || 'Файл'
+  }
+
+  return message.body
+}
+
 onMounted(() => {
   document.addEventListener('pointerdown', handleDocumentPointerDown)
 
@@ -646,6 +736,37 @@ onBeforeUnmount(() => {
   <p v-else-if="calls.requestingPermissions.value" class="copy-toast">Запрашиваем доступ к микрофону{{ conversations.activeConversation.value ? '' : '' }}…</p>
       <p v-else-if="copiedLabel" class="copy-toast">{{ copiedLabel }}</p>
 
+      <div v-if="composerRelationMode && composerRelationMessage && !detailsOpen" class="composer-context composer-context--active">
+        <div class="composer-context__copy">
+          <p class="composer-context__eyebrow">{{ relationTitle(composerRelationMode) }}</p>
+          <p class="composer-context__title">{{ composerRelationMessage.own ? 'Вы' : composerRelationMessage.senderDisplayName }}</p>
+          <p class="composer-context__text">{{ relationPreviewText(composerRelationMessage) }}</p>
+        </div>
+        <button type="button" class="message-action-btn" @click="clearComposerRelation">Отмена</button>
+      </div>
+
+      <div v-if="forwardingMessage && !detailsOpen" class="composer-context composer-context--forward">
+        <div class="composer-context__copy">
+          <p class="composer-context__eyebrow">Переслать сообщение</p>
+          <p class="composer-context__title">{{ forwardingMessage.own ? 'Вы' : forwardingMessage.senderDisplayName }}</p>
+          <p class="composer-context__text">{{ relationPreviewText(forwardingMessage) }}</p>
+        </div>
+        <button type="button" class="message-action-btn" @click="closeForwardPicker">Закрыть</button>
+        <div class="forward-targets">
+          <button
+            v-for="conversation in availableForwardTargets"
+            :key="conversation.id"
+            type="button"
+            class="forward-target-btn"
+            :disabled="conversations.messagePending.value"
+            @click="forwardMessage(conversation.id)"
+          >
+            <span class="forward-target-btn__title">{{ conversation.peerDisplayName }}</span>
+            <span class="forward-target-btn__meta">{{ conversation.id === conversations.activeConversationId.value ? 'Текущий чат' : `@${conversation.peerLogin}` }}</span>
+          </button>
+        </div>
+      </div>
+
       <div class="chat-reading-shell">
         <div ref="messageListEl" class="message-list message-list--chat-scroll">
           <article
@@ -654,13 +775,34 @@ onBeforeUnmount(() => {
             class="message-bubble"
             :class="{ 'message-bubble--own': entry.own, 'message-bubble--deleted': Boolean(entry.deletedAt), 'message-bubble--actions-open': activeMessageActionsId === entry.id }"
             data-message-action-root="true"
-            @click="entry.own && !entry.deletedAt ? toggleMessageActions(entry.id, $event) : undefined"
+            @click="!entry.deletedAt ? toggleMessageActions(entry.id, $event) : undefined"
           >
             <div class="message-bubble__topline">
               <p class="message-bubble__author">{{ entry.own ? 'Вы' : entry.senderDisplayName }}</p>
-              <div v-if="entry.own && !entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__actions" data-message-action-menu="true" @pointerdown.stop>
+              <div v-if="!entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__actions" data-message-action-menu="true" @pointerdown.stop>
                 <button
-                  v-if="entry.kind === 'text'"
+                  type="button"
+                  class="message-action-btn"
+                  @click.stop="activateComposerRelation('comment', entry.id)"
+                >
+                  Комм.
+                </button>
+                <button
+                  type="button"
+                  class="message-action-btn"
+                  @click.stop="activateComposerRelation('reply', entry.id)"
+                >
+                  Ответ
+                </button>
+                <button
+                  type="button"
+                  class="message-action-btn"
+                  @click.stop="openForwardPicker(entry.id)"
+                >
+                  Пересл.
+                </button>
+                <button
+                  v-if="entry.own && entry.kind === 'text'"
                   type="button"
                   class="message-action-btn"
                   :disabled="conversations.editingMessageId.value === entry.id"
@@ -669,6 +811,7 @@ onBeforeUnmount(() => {
                   Ред.
                 </button>
                 <button
+                  v-if="entry.own"
                   type="button"
                   class="message-action-btn"
                   :disabled="conversations.editingMessageId.value === entry.id"
@@ -677,6 +820,18 @@ onBeforeUnmount(() => {
                   Удал.
                 </button>
               </div>
+            </div>
+            <div v-if="entry.forwardedFrom" class="message-relation-card message-relation-card--forwarded">
+              <p class="message-relation-card__label">Переслано от {{ entry.forwardedFrom.senderDisplayName }}</p>
+              <p class="message-relation-card__text">{{ relationPreviewText(entry.forwardedFrom) }}</p>
+            </div>
+            <div v-if="entry.commentOn" class="message-relation-card">
+              <p class="message-relation-card__label">Комментарий к сообщению {{ entry.commentOn.own ? 'от вас' : `от ${entry.commentOn.senderDisplayName}` }}</p>
+              <p class="message-relation-card__text">{{ relationPreviewText(entry.commentOn) }}</p>
+            </div>
+            <div v-if="entry.replyTo" class="message-relation-card message-relation-card--reply">
+              <p class="message-relation-card__label">Ответ на сообщение {{ entry.replyTo.own ? 'от вас' : `от ${entry.replyTo.senderDisplayName}` }}</p>
+              <p class="message-relation-card__text">{{ relationPreviewText(entry.replyTo) }}</p>
             </div>
             <template v-if="entry.kind === 'file' && entry.attachment">
               <audio

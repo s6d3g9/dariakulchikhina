@@ -14,6 +14,36 @@ interface MessengerConversationItem {
 
 import { buildMessengerUrl } from '../utils/messenger-url'
 
+interface MessengerMessageRelationPreview {
+  id: string
+  body: string
+  kind: 'text' | 'file'
+  own: boolean
+  senderDisplayName: string
+  attachment?: {
+    name: string
+    mimeType: string
+    size: number
+    url: string
+    absoluteUrl: string
+  }
+}
+
+interface MessengerForwardedMessagePreview {
+  messageId: string
+  conversationId: string
+  body: string
+  kind: 'text' | 'file'
+  senderDisplayName: string
+  attachment?: {
+    name: string
+    mimeType: string
+    size: number
+    url: string
+    absoluteUrl: string
+  }
+}
+
 interface MessengerConversationMessage {
   id: string
   body: string
@@ -30,6 +60,9 @@ interface MessengerConversationMessage {
     url: string
     absoluteUrl: string
   }
+  replyTo?: MessengerMessageRelationPreview
+  commentOn?: MessengerMessageRelationPreview
+  forwardedFrom?: MessengerForwardedMessagePreview
 }
 
 function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: string; size: number; url: string } }>(
@@ -47,6 +80,45 @@ function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: st
       absoluteUrl: buildMessengerUrl(config.public.messengerCoreBaseUrl, item.attachment.url),
     },
   }
+}
+
+function attachRelationPreview(
+  config: ReturnType<typeof useRuntimeConfig>,
+  preview?: MessengerMessageRelationPreview,
+) {
+  if (!preview) {
+    return undefined
+  }
+
+  return attachAbsoluteUrl(config, preview)
+}
+
+function attachForwardedPreview(
+  config: ReturnType<typeof useRuntimeConfig>,
+  preview?: MessengerForwardedMessagePreview,
+) {
+  if (!preview) {
+    return undefined
+  }
+
+  return attachAbsoluteUrl(config, preview)
+}
+
+function attachMessageRelations(
+  config: ReturnType<typeof useRuntimeConfig>,
+  message: MessengerConversationMessage,
+) {
+  return {
+    ...attachAbsoluteUrl(config, message),
+    replyTo: attachRelationPreview(config, message.replyTo),
+    commentOn: attachRelationPreview(config, message.commentOn),
+    forwardedFrom: attachForwardedPreview(config, message.forwardedFrom),
+  }
+}
+
+interface MessengerMessageSendOptions {
+  replyToMessageId?: string
+  commentOnMessageId?: string
 }
 
 export function useMessengerConversations() {
@@ -113,7 +185,7 @@ export function useMessengerConversations() {
     const response = await auth.request<{ messages: MessengerConversationMessage[] }>(`/conversations/${conversationId}/messages`, {
       method: 'GET',
     })
-    messages.value = response.messages.map(message => attachAbsoluteUrl(config, message))
+    messages.value = response.messages.map(message => attachMessageRelations(config, message))
   }
 
   async function selectConversation(conversationId: string) {
@@ -121,7 +193,7 @@ export function useMessengerConversations() {
     await loadMessages(conversationId)
   }
 
-  async function sendMessage(body: string) {
+  async function sendMessage(body: string, options: MessengerMessageSendOptions = {}) {
     const conversationId = state.activeConversationId.value
     if (!conversationId) {
       throw new Error('NO_ACTIVE_CONVERSATION')
@@ -131,12 +203,34 @@ export function useMessengerConversations() {
     try {
       await auth.request(`/conversations/${conversationId}/messages`, {
         method: 'POST',
-        body: { body },
+        body: {
+          body,
+          ...options,
+        },
       })
       await Promise.all([
         refresh(query.value),
         loadMessages(conversationId),
       ])
+    } finally {
+      messagePending.value = false
+    }
+  }
+
+  async function forwardMessage(sourceMessageId: string, targetConversationId: string) {
+    messagePending.value = true
+    try {
+      await auth.request(`/conversations/${targetConversationId}/messages`, {
+        method: 'POST',
+        body: {
+          forwardedMessageId: sourceMessageId,
+        },
+      })
+      await refresh(query.value)
+
+      if (targetConversationId === state.activeConversationId.value) {
+        await loadMessages(targetConversationId)
+      }
     } finally {
       messagePending.value = false
     }
@@ -240,6 +334,7 @@ export function useMessengerConversations() {
     selectConversation,
     loadMessages,
     sendMessage,
+    forwardMessage,
     deleteConversation,
     uploadAttachment,
     editMessage,
