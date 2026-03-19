@@ -8,11 +8,55 @@ const searchOpen = ref(false)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
-const contactSuggestions = computed(() => contacts.overview.value.contacts.slice(0, 8).map(contact => ({
-  id: contact.id,
-  title: contact.displayName,
-  meta: `@${contact.login}`,
-})))
+function getRelationshipLabel(relationship: 'none' | 'incoming' | 'outgoing' | 'contact') {
+  switch (relationship) {
+    case 'contact':
+      return 'контакт'
+    case 'incoming':
+      return 'входящая заявка'
+    case 'outgoing':
+      return 'заявка отправлена'
+    default:
+      return 'пользователь'
+  }
+}
+
+const normalizedSearchQuery = computed(() => searchDraft.value.trim().toLowerCase())
+
+const contactSuggestions = computed(() => {
+  const suggestions = new Map<string, { id: string, title: string, meta: string }>()
+
+  for (const contact of contacts.overview.value.contacts) {
+    suggestions.set(contact.id, {
+      id: contact.id,
+      title: contact.displayName,
+      meta: `@${contact.login} · контакт`,
+    })
+  }
+
+  if (normalizedSearchQuery.value) {
+    for (const candidate of contacts.overview.value.discover) {
+      if (suggestions.has(candidate.id)) {
+        continue
+      }
+
+      suggestions.set(candidate.id, {
+        id: candidate.id,
+        title: candidate.displayName,
+        meta: `@${candidate.login} · ${getRelationshipLabel(candidate.relationship)}`,
+      })
+    }
+  }
+
+  return Array.from(suggestions.values()).slice(0, normalizedSearchQuery.value ? 10 : 8)
+})
+
+const discoverResults = computed(() => {
+  const contactIds = new Set(contacts.overview.value.contacts.map(contact => contact.id))
+  return contacts.overview.value.discover.filter(candidate => !contactIds.has(candidate.id))
+})
+
+const hasSearchQuery = computed(() => Boolean(normalizedSearchQuery.value))
 
 onMounted(async () => {
   await contacts.refresh()
@@ -46,6 +90,7 @@ async function runSearch() {
 
   try {
     await contacts.refresh(searchDraft.value)
+    searchOpen.value = true
   } catch {
     actionError.value = 'Не удалось обновить список пользователей.'
   }
@@ -110,7 +155,7 @@ function startHold(contactId: string, event?: Event) {
           @blur="closeSearch"
           @keydown.enter.prevent="runSearch"
         >
-        <div v-if="searchOpen && contactSuggestions.length" class="search-dropdown" aria-label="Результаты поиска по контактам">
+        <div v-if="searchOpen" class="search-dropdown" aria-label="Результаты поиска пользователей">
           <button
             v-for="item in contactSuggestions"
             :key="item.id"
@@ -120,6 +165,15 @@ function startHold(contactId: string, event?: Event) {
           >
             <span class="search-dropdown__title">{{ item.title }}</span>
             <span class="search-dropdown__meta">{{ item.meta }}</span>
+          </button>
+          <button
+            v-if="!contactSuggestions.length && hasSearchQuery"
+            type="button"
+            class="search-dropdown__item"
+            disabled
+          >
+            <span class="search-dropdown__title">Ничего не найдено</span>
+            <span class="search-dropdown__meta">Попробуйте логин или имя пользователя.</span>
           </button>
         </div>
       </div>
@@ -159,10 +213,29 @@ function startHold(contactId: string, event?: Event) {
         </div>
       </article>
 
-      <article v-if="!contacts.overview.value.contacts.length" class="list-card list-card--panel">
+      <article v-if="!hasSearchQuery && !contacts.overview.value.contacts.length" class="list-card list-card--panel">
         <div class="list-card__main">
           <p class="list-card__title">Контакты пока пусты</p>
           <p class="list-card__text">Когда появятся подтвержденные контакты, они будут показаны здесь.</p>
+        </div>
+      </article>
+
+      <article
+        v-for="candidate in discoverResults"
+        :key="candidate.id"
+        class="list-card list-card--action list-card--clickable list-card--chat-row"
+        @click="openDirectChat(candidate.id)"
+      >
+        <div class="list-card__main">
+          <p class="list-card__title">{{ candidate.displayName }}</p>
+          <p class="list-card__text">@{{ candidate.login }} · {{ getRelationshipLabel(candidate.relationship) }}</p>
+        </div>
+      </article>
+
+      <article v-if="hasSearchQuery && !contacts.overview.value.contacts.length && !discoverResults.length" class="list-card list-card--panel">
+        <div class="list-card__main">
+          <p class="list-card__title">Поиск не дал результатов</p>
+          <p class="list-card__text">Проверьте логин или имя пользователя и попробуйте ещё раз.</p>
         </div>
       </article>
     </div>
