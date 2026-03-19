@@ -19,6 +19,8 @@ interface MessengerConversationMessage {
   body: string
   kind: 'text' | 'file'
   createdAt: string
+  editedAt?: string
+  deletedAt?: string
   own: boolean
   senderDisplayName: string
   attachment?: {
@@ -56,6 +58,7 @@ export function useMessengerConversations() {
   const query = useState<string>('messenger-conversations-query', () => '')
   const pending = useState<boolean>('messenger-conversations-pending', () => false)
   const messagePending = useState<boolean>('messenger-conversation-message-pending', () => false)
+  const editingMessageId = useState<string | null>('messenger-conversation-editing-message-id', () => null)
 
   const activeConversation = computed(() => conversations.value.find(item => item.id === state.activeConversationId.value) ?? null)
 
@@ -139,6 +142,25 @@ export function useMessengerConversations() {
     }
   }
 
+  async function deleteConversation(conversationId: string) {
+    pending.value = true
+
+    try {
+      await auth.request(`/conversations/${conversationId}`, {
+        method: 'DELETE',
+      })
+
+      if (state.activeConversationId.value === conversationId) {
+        state.activeConversationId.value = null
+        messages.value = []
+      }
+
+      await refresh(query.value)
+    } finally {
+      pending.value = false
+    }
+  }
+
   async function uploadAttachment(file: File) {
     const conversationId = state.activeConversationId.value
     if (!conversationId) {
@@ -163,12 +185,54 @@ export function useMessengerConversations() {
     }
   }
 
+  async function editMessage(messageId: string, body: string) {
+    const conversationId = state.activeConversationId.value
+    if (!conversationId) {
+      throw new Error('NO_ACTIVE_CONVERSATION')
+    }
+
+    editingMessageId.value = messageId
+    try {
+      await auth.request(`/conversations/${conversationId}/messages/${messageId}`, {
+        method: 'PATCH',
+        body: { body },
+      })
+      await Promise.all([
+        refresh(query.value),
+        loadMessages(conversationId),
+      ])
+    } finally {
+      editingMessageId.value = null
+    }
+  }
+
+  async function deleteMessage(messageId: string) {
+    const conversationId = state.activeConversationId.value
+    if (!conversationId) {
+      throw new Error('NO_ACTIVE_CONVERSATION')
+    }
+
+    editingMessageId.value = messageId
+    try {
+      await auth.request(`/conversations/${conversationId}/messages/${messageId}`, {
+        method: 'DELETE',
+      })
+      await Promise.all([
+        refresh(query.value),
+        loadMessages(conversationId),
+      ])
+    } finally {
+      editingMessageId.value = null
+    }
+  }
+
   return {
     conversations,
     messages,
     query,
     pending,
     messagePending,
+    editingMessageId,
     activeConversation: readonly(activeConversation),
     activeConversationId: state.activeConversationId,
     refresh,
@@ -176,6 +240,9 @@ export function useMessengerConversations() {
     selectConversation,
     loadMessages,
     sendMessage,
+    deleteConversation,
     uploadAttachment,
+    editMessage,
+    deleteMessage,
   }
 }

@@ -15,6 +15,7 @@ export interface MessengerContactsOverview {
   }>
   invites: Array<{
     id: string
+    peerUserId: string
     displayName: string
     login: string
     direction: 'incoming' | 'outgoing'

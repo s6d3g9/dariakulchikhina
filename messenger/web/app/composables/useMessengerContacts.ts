@@ -46,6 +46,13 @@ export function useMessengerContacts() {
     await refresh(query.value)
   }
 
+  async function removeContact(peerUserId: string) {
+    await auth.request(`/contacts/${peerUserId}`, {
+      method: 'DELETE',
+    })
+    await refresh(query.value)
+  }
+
   return {
     overview,
     query,
@@ -54,5 +61,6 @@ export function useMessengerContacts() {
     invite,
     accept,
     reject,
+    removeContact,
   }
 }

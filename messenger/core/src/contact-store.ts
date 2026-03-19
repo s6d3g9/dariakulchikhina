@@ -147,6 +147,25 @@ export async function respondToInvite(inviteId: string, actorUserId: string, nex
   return invite
 }
 
+export async function deleteContactForUser(actorUserId: string, peerUserId: string) {
+  const payload = await readContactsFile()
+  const [userAId, userBId] = normalizePair(actorUserId, peerUserId)
+  const contactIndex = payload.contacts.findIndex(contact => contact.userAId === userAId && contact.userBId === userBId)
+
+  if (contactIndex === -1) {
+    throw new Error('CONTACT_NOT_FOUND')
+  }
+
+  payload.contacts.splice(contactIndex, 1)
+  payload.invites = payload.invites.filter((invite) => {
+    const [inviteUserAId, inviteUserBId] = normalizePair(invite.fromUserId, invite.toUserId)
+    return inviteUserAId !== userAId || inviteUserBId !== userBId
+  })
+
+  await writeContactsFile(payload)
+  return { peerUserId }
+}
+
 export interface ContactOverviewItem {
   id: string
   displayName: string
@@ -156,6 +175,7 @@ export interface ContactOverviewItem {
 
 export interface InviteOverviewItem {
   id: string
+  peerUserId: string
   displayName: string
   login: string
   direction: 'incoming' | 'outgoing'
@@ -210,6 +230,7 @@ export async function buildContactsOverview(user: MessengerUserRecord, users: Me
 
       return {
         id: invite.id,
+        peerUserId: peer.id,
         displayName: peer.displayName,
         login: peer.login,
         direction: invite.toUserId === user.id ? 'incoming' : 'outgoing',

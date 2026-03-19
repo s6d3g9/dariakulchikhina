@@ -27,6 +27,8 @@ export interface MessengerMessageRecord {
     url: string
   }
   createdAt: string
+  editedAt?: string
+  deletedAt?: string
 }
 
 interface ConversationsFile {
@@ -53,6 +55,8 @@ export interface ConversationMessageOverviewItem {
   body: string
   kind: 'text' | 'file'
   createdAt: string
+  editedAt?: string
+  deletedAt?: string
   own: boolean
   senderDisplayName: string
   attachment?: {
@@ -189,12 +193,14 @@ export async function listMessagesForConversation(conversationId: string, actor:
       const sender = users.find(item => item.id === message.senderUserId)
       return {
         id: message.id,
-        body: message.body,
+        body: message.deletedAt ? 'Сообщение удалено' : message.body,
         kind: message.kind,
         createdAt: message.createdAt,
+        editedAt: message.editedAt,
+        deletedAt: message.deletedAt,
         own: message.senderUserId === actor.id,
         senderDisplayName: sender?.displayName || 'Unknown',
-        attachment: message.attachment,
+        attachment: message.deletedAt ? undefined : message.attachment,
       } satisfies ConversationMessageOverviewItem
     })
 }
@@ -256,4 +262,88 @@ export async function addAttachmentMessageToConversation(
   conversation.updatedAt = now
   await writeConversationsFile(payload)
   return message
+}
+
+export async function editMessageInConversation(conversationId: string, messageId: string, actor: MessengerUserRecord, body: string) {
+  const payload = await readConversationsFile()
+  const conversation = payload.conversations.find(item => item.id === conversationId)
+  if (!conversation) {
+    throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  if (!isParticipant(conversation, actor.id)) {
+    throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  const message = payload.messages.find(item => item.id === messageId && item.conversationId === conversationId)
+  if (!message) {
+    throw new Error('MESSAGE_NOT_FOUND')
+  }
+
+  if (message.senderUserId !== actor.id) {
+    throw new Error('MESSAGE_FORBIDDEN')
+  }
+
+  if (message.kind !== 'text' || message.deletedAt) {
+    throw new Error('MESSAGE_NOT_EDITABLE')
+  }
+
+  const now = new Date().toISOString()
+  message.body = body.trim()
+  message.editedAt = now
+  conversation.updatedAt = now
+  await writeConversationsFile(payload)
+  return message
+}
+
+export async function deleteMessageFromConversation(conversationId: string, messageId: string, actor: MessengerUserRecord) {
+  const payload = await readConversationsFile()
+  const conversation = payload.conversations.find(item => item.id === conversationId)
+  if (!conversation) {
+    throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  if (!isParticipant(conversation, actor.id)) {
+    throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  const message = payload.messages.find(item => item.id === messageId && item.conversationId === conversationId)
+  if (!message) {
+    throw new Error('MESSAGE_NOT_FOUND')
+  }
+
+  if (message.senderUserId !== actor.id) {
+    throw new Error('MESSAGE_FORBIDDEN')
+  }
+
+  if (message.deletedAt) {
+    return message
+  }
+
+  const now = new Date().toISOString()
+  message.body = ''
+  message.attachment = undefined
+  message.deletedAt = now
+  message.editedAt = undefined
+  conversation.updatedAt = now
+  await writeConversationsFile(payload)
+  return message
+}
+
+export async function deleteConversationForUser(conversationId: string, actor: MessengerUserRecord) {
+  const payload = await readConversationsFile()
+  const conversationIndex = payload.conversations.findIndex(item => item.id === conversationId)
+  if (conversationIndex === -1) {
+    throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  const conversation = payload.conversations[conversationIndex]
+  if (!isParticipant(conversation, actor.id)) {
+    throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  payload.conversations.splice(conversationIndex, 1)
+  payload.messages = payload.messages.filter(item => item.conversationId !== conversationId)
+  await writeConversationsFile(payload)
+  return conversation
 }

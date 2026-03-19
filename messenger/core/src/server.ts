@@ -9,8 +9,8 @@ import { z } from 'zod'
 
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from './auth.ts'
-import { addAttachmentMessageToConversation, addMessageToConversation, findConversationById, findOrCreateDirectConversation, listConversationsForUser, listMessagesForConversation } from './conversation-store.ts'
-import { buildContactsOverview, createInvite, respondToInvite } from './contact-store.ts'
+import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, listConversationsForUser, listMessagesForConversation } from './conversation-store.ts'
+import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from './contact-store.ts'
 import { readMessengerConfig } from './config.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
 
@@ -76,8 +76,15 @@ export async function createMessengerServer() {
   const directConversationSchema = z.object({
     peerUserId: z.string().uuid(),
   })
+  const contactParamsSchema = z.object({
+    peerUserId: z.string().uuid(),
+  })
   const conversationParamsSchema = z.object({
     conversationId: z.string().uuid(),
+  })
+  const messageParamsSchema = z.object({
+    conversationId: z.string().uuid(),
+    messageId: z.string().uuid(),
   })
   const messageSchema = z.object({
     body: z.string().trim().min(1).max(4000),
@@ -323,6 +330,33 @@ export async function createMessengerServer() {
     }
   })
 
+  app.delete('/contacts/:peerUserId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = contactParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    try {
+      const result = await deleteContactForUser(session.user.id, parsedParams.data.peerUserId)
+      emitToUsers([session.user.id, parsedParams.data.peerUserId], {
+        type: 'contacts.updated',
+        timestamp: new Date().toISOString(),
+      })
+      return result
+    } catch (error) {
+      if (error instanceof Error && error.message === 'CONTACT_NOT_FOUND') {
+        return reply.code(404).send({ error: 'CONTACT_NOT_FOUND' })
+      }
+
+      throw error
+    }
+  })
+
   app.get('/conversations', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -369,6 +403,44 @@ export async function createMessengerServer() {
       timestamp: new Date().toISOString(),
     })
     return { conversation }
+  })
+
+  app.delete('/conversations/:conversationId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = conversationParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    try {
+      const conversation = await deleteConversationForUser(parsedParams.data.conversationId, session.user)
+      emitToUsers([conversation.userAId, conversation.userBId], {
+        type: 'conversations.updated',
+        timestamp: new Date().toISOString(),
+      })
+      emitToUsers([conversation.userAId, conversation.userBId], {
+        type: 'messages.updated',
+        conversationId: conversation.id,
+        timestamp: new Date().toISOString(),
+      })
+      return { conversation }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'CONVERSATION_NOT_FOUND') {
+          return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+        }
+
+        if (error.message === 'CONVERSATION_FORBIDDEN') {
+          return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+        }
+      }
+
+      throw error
+    }
   })
 
   app.get('/conversations/:conversationId/messages', async (request, reply) => {
@@ -438,6 +510,95 @@ export async function createMessengerServer() {
 
         if (error.message === 'CONVERSATION_FORBIDDEN') {
           return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+        }
+      }
+
+      throw error
+    }
+  })
+
+  app.patch('/conversations/:conversationId/messages/:messageId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = messageParamsSchema.safeParse(request.params)
+    const parsedBody = messageSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    try {
+      const message = await editMessageInConversation(parsedParams.data.conversationId, parsedParams.data.messageId, session.user, parsedBody.data.body)
+      const conversation = await findConversationById(parsedParams.data.conversationId)
+      if (conversation) {
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'conversations.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'messages.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
+      }
+      return { message }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'CONVERSATION_NOT_FOUND' || error.message === 'MESSAGE_NOT_FOUND') {
+          return reply.code(404).send({ error: error.message })
+        }
+
+        if (error.message === 'CONVERSATION_FORBIDDEN' || error.message === 'MESSAGE_FORBIDDEN') {
+          return reply.code(403).send({ error: 'MESSAGE_FORBIDDEN' })
+        }
+
+        if (error.message === 'MESSAGE_NOT_EDITABLE') {
+          return reply.code(409).send({ error: 'MESSAGE_NOT_EDITABLE' })
+        }
+      }
+
+      throw error
+    }
+  })
+
+  app.delete('/conversations/:conversationId/messages/:messageId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = messageParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    try {
+      const message = await deleteMessageFromConversation(parsedParams.data.conversationId, parsedParams.data.messageId, session.user)
+      const conversation = await findConversationById(parsedParams.data.conversationId)
+      if (conversation) {
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'conversations.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'messages.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
+      }
+      return { message }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'CONVERSATION_NOT_FOUND' || error.message === 'MESSAGE_NOT_FOUND') {
+          return reply.code(404).send({ error: error.message })
+        }
+
+        if (error.message === 'CONVERSATION_FORBIDDEN' || error.message === 'MESSAGE_FORBIDDEN') {
+          return reply.code(403).send({ error: 'MESSAGE_FORBIDDEN' })
         }
       }
 

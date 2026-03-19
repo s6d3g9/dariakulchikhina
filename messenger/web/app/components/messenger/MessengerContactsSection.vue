@@ -3,10 +3,41 @@ const contacts = useMessengerContacts()
 const conversations = useMessengerConversations()
 const searchDraft = ref('')
 const actionError = ref('')
+const searchOpen = ref(false)
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+const contactSuggestions = computed(() => contacts.overview.value.contacts.slice(0, 8).map(contact => ({
+  id: contact.id,
+  title: contact.displayName,
+  meta: `@${contact.login}`,
+})))
 
 onMounted(async () => {
   await contacts.refresh()
   searchDraft.value = contacts.query.value
+})
+
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+    searchTimer = null
+  }
+})
+
+watch(searchDraft, (value) => {
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+  }
+
+  searchTimer = setTimeout(async () => {
+    try {
+      await contacts.refresh(value.trim())
+      searchOpen.value = true
+    } catch {
+      actionError.value = 'Не удалось обновить список пользователей.'
+    }
+  }, 180)
 })
 
 async function runSearch() {
@@ -16,16 +47,6 @@ async function runSearch() {
     await contacts.refresh(searchDraft.value)
   } catch {
     actionError.value = 'Не удалось обновить список пользователей.'
-  }
-}
-
-async function sendInvite(targetUserId: string) {
-  actionError.value = ''
-
-  try {
-    await contacts.invite(targetUserId)
-  } catch {
-    actionError.value = 'Не удалось отправить приглашение.'
   }
 }
 
@@ -39,132 +60,87 @@ async function openDirectChat(targetUserId: string) {
   }
 }
 
-async function acceptInvite(inviteId: string) {
+async function removeContact(peerUserId: string) {
   actionError.value = ''
 
   try {
-    await contacts.accept(inviteId)
+    await contacts.removeContact(peerUserId)
   } catch {
-    actionError.value = 'Не удалось принять приглашение.'
+    actionError.value = 'Не удалось удалить контакт.'
   }
 }
 
-async function rejectInvite(inviteId: string) {
-  actionError.value = ''
+async function selectSuggestion(item: { id: string }) {
+  searchOpen.value = false
+  await openDirectChat(item.id)
+}
 
-  try {
-    await contacts.reject(inviteId)
-  } catch {
-    actionError.value = 'Не удалось отклонить приглашение.'
-  }
+function openSearch() {
+  searchOpen.value = true
+}
+
+function closeSearch() {
+  setTimeout(() => {
+    searchOpen.value = false
+  }, 120)
 }
 </script>
 
 <template>
-  <section class="section-block" aria-label="Contacts section">
-    <header class="section-head section-head--stacked">
-      <div>
-        <p class="section-kicker">Contacts</p>
-        <h2>Контакты и приглашения</h2>
-      </div>
-      <div class="search-row">
+  <section class="section-block section-block--search-screen section-block--contacts-screen" aria-label="Contacts section">
+    <header class="search-dock search-dock--screen-header search-dock--contacts-header">
+      <div class="search-dock__field">
         <input
           v-model="searchDraft"
           type="text"
-          class="inline-input"
+          class="inline-input search-dock__input"
           placeholder="Поиск пользователей"
+          @focus="openSearch"
+          @blur="closeSearch"
           @keydown.enter.prevent="runSearch"
         >
-        <button type="button" class="action-btn" :disabled="contacts.pending.value" @click="runSearch">
-          {{ contacts.pending.value ? 'Ищем...' : 'Найти' }}
-        </button>
+        <div v-if="searchOpen && contactSuggestions.length" class="search-dropdown" aria-label="Результаты поиска по контактам">
+          <button
+            v-for="item in contactSuggestions"
+            :key="item.id"
+            type="button"
+            class="search-dropdown__item"
+            @click="selectSuggestion(item)"
+          >
+            <span class="search-dropdown__title">{{ item.title }}</span>
+            <span class="search-dropdown__meta">{{ item.meta }}</span>
+          </button>
+        </div>
       </div>
     </header>
 
     <p v-if="actionError" class="auth-error">{{ actionError }}</p>
 
-    <div class="section-split">
-      <div class="list-stack">
-        <article class="list-card list-card--panel">
-          <div class="list-card__main">
-            <p class="list-card__title">Контакты</p>
-            <p class="list-card__text">{{ contacts.overview.value.contacts.length }} пользователей в direct-сети.</p>
-          </div>
-        </article>
-
-        <article
-          v-for="contact in contacts.overview.value.contacts"
-          :key="contact.id"
-          class="list-card list-card--action"
-        >
-          <div class="list-card__main">
-            <p class="list-card__title">{{ contact.displayName }}</p>
-            <p class="list-card__text">@{{ contact.login }}</p>
-          </div>
-          <button type="button" class="action-btn" @click="openDirectChat(contact.id)">
-            Открыть чат
-          </button>
-        </article>
-      </div>
-
-      <div class="list-stack">
-        <article class="list-card list-card--panel">
-          <div class="list-card__main">
-            <p class="list-card__title">Приглашения</p>
-            <p class="list-card__text">Входящие и исходящие заявки в контакты.</p>
-          </div>
-        </article>
-
-        <article
-          v-for="invite in contacts.overview.value.invites"
-          :key="invite.id"
-          class="list-card list-card--action"
-        >
-          <div class="list-card__main">
-            <p class="list-card__title">{{ invite.displayName }}</p>
-            <p class="list-card__text">
-              @{{ invite.login }} · {{ invite.direction === 'incoming' ? 'Входящее приглашение' : 'Исходящее приглашение' }}
-            </p>
-          </div>
-          <div class="section-actions" v-if="invite.direction === 'incoming' && invite.status === 'pending'">
-            <button type="button" class="action-btn" @click="acceptInvite(invite.id)">Принять</button>
-            <button type="button" class="action-btn" @click="rejectInvite(invite.id)">Отклонить</button>
-          </div>
-          <button v-else type="button" class="action-btn" disabled>
-            {{ invite.status === 'pending' ? 'Ожидание' : invite.status === 'accepted' ? 'Принято' : 'Отклонено' }}
-          </button>
-        </article>
-      </div>
-    </div>
-
     <div class="list-stack">
-      <article class="list-card list-card--panel">
-        <div class="list-card__main">
-          <p class="list-card__title">Найденные пользователи</p>
-          <p class="list-card__text">Поиск по displayName и login в отдельном messenger контуре.</p>
-        </div>
-      </article>
-
       <article
-        v-for="candidate in contacts.overview.value.discover"
-        :key="candidate.id"
-        class="list-card list-card--action"
+        v-for="contact in contacts.overview.value.contacts"
+        :key="contact.id"
+        class="list-card list-card--action list-card--clickable list-card--chat-row"
+        @click="openDirectChat(contact.id)"
       >
         <div class="list-card__main">
-          <p class="list-card__title">{{ candidate.displayName }}</p>
-          <p class="list-card__text">@{{ candidate.login }}</p>
+          <p class="list-card__title">{{ contact.displayName }}</p>
+          <p class="list-card__text">@{{ contact.login }}</p>
         </div>
         <button
-          v-if="candidate.relationship === 'none'"
           type="button"
-          class="action-btn"
-          @click="sendInvite(candidate.id)"
+          class="action-btn action-btn--danger"
+          @click.stop="removeContact(contact.id)"
         >
-          Пригласить
+          Удалить
         </button>
-        <button v-else type="button" class="action-btn" disabled>
-          {{ candidate.relationship === 'contact' ? 'Уже в контактах' : candidate.relationship === 'incoming' ? 'Ждет вашего ответа' : 'Приглашение отправлено' }}
-        </button>
+      </article>
+
+      <article v-if="!contacts.overview.value.contacts.length" class="list-card list-card--panel">
+        <div class="list-card__main">
+          <p class="list-card__title">Контакты пока пусты</p>
+          <p class="list-card__text">Когда появятся подтвержденные контакты, они будут показаны здесь.</p>
+        </div>
       </article>
     </div>
   </section>
