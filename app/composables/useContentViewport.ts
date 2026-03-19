@@ -371,6 +371,7 @@ export function useContentViewport(options: {
 
   function handleTouchEnd(e: TouchEvent) {
     if (!isPaged.value) return
+    if (contentViewMode.value === 'wipe2') return
     const deltaY = touchStartY - e.changedTouches[0].clientY
     const deltaX = Math.abs(touchStartX - e.changedTouches[0].clientX)
     // Ignore mostly-horizontal swipes

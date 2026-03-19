@@ -63,6 +63,7 @@ export const PROJECT_PAGES: ProjectPageDef[] = [
   { slug: 'work_progress',       title: 'ход работ',              icon: '◈', phase: undefined },
   { slug: 'design_timeline',     title: 'таймлайн',               icon: '◷', phase: undefined },
   { slug: 'design_album',        title: 'альбом',                 icon: '▣', phase: undefined },
+  { slug: 'communications',      title: 'коммуникации',           icon: '◉', phase: undefined },
   { slug: 'materials',           title: 'материалы',              icon: '◫', phase: undefined },
   { slug: 'tz',                  title: 'ТЗ',                     icon: '◧', phase: undefined, clientVisible: false },
 ]
@@ -122,6 +123,7 @@ export const CORE_PAGES = [
   'specifications',
   'mep_integration',
   'design_album_final',
+  'communications',
   'procurement_list',
   'suppliers',
   'procurement_status',

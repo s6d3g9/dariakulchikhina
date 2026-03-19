@@ -37,12 +37,15 @@
     <Transition name="tab-fade" mode="out-in">
       <section v-if="viewMode === 'editor'" key="editor" class="docs-editor-stage">
         <div class="docs-stage-head">
-          <AdminEntityHeader title="Генератор документов">
+          <CabSectionHeader
+            title="Генератор документов"
+            eyebrow="documents"
+            note="Шаблон открывается в рабочей зоне и остаётся частью общего реестра документов."
+          >
             <template #actions>
               <button class="docs-inline-action" type="button" @click="viewMode = 'list'">назад к реестру</button>
             </template>
-          </AdminEntityHeader>
-          <p class="docs-stage-hint">Шаблон открывается в рабочей зоне и остаётся частью общего реестра документов.</p>
+          </CabSectionHeader>
         </div>
 
         <AdminDocumentEditor
@@ -57,9 +60,11 @@
       <section v-else key="registry" class="docs-registry">
         <div class="docs-registry-head">
           <div class="docs-registry-copy">
-            <p class="docs-registry-kicker">реестр</p>
-            <h2 class="docs-registry-title">{{ currentCategoryLabel }}</h2>
-            <p class="docs-registry-note">{{ registryNote }}</p>
+            <CabSectionHeader
+              :title="currentCategoryLabel"
+              eyebrow="реестр"
+              :note="registryNote"
+            />
           </div>
 
           <div class="docs-registry-controls">
@@ -1239,11 +1244,19 @@ function onEditorSaved() {
 .docs-stage-head {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   margin-bottom: 18px;
 }
 
-.docs-stage-hint,
+.docs-stage-head :deep(.cab-section-head),
+.docs-registry-copy :deep(.cab-section-head) {
+  margin-bottom: 0;
+}
+
+.docs-registry-copy :deep(.cab-section-head__note) {
+  max-width: 58ch;
+}
+
 .docs-registry-note,
 .docs-summary-text,
 .doc-notes,
@@ -1263,7 +1276,7 @@ function onEditorSaved() {
   justify-content: center;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
   background: transparent;
   color: var(--glass-text);
   text-transform: uppercase;
@@ -1271,10 +1284,23 @@ function onEditorSaved() {
   font-size: .68rem;
   text-decoration: none;
   cursor: pointer;
+  border-radius: 0;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease;
+}
+
+.docs-inline-action:hover,
+.docs-primary-action:hover,
+.doc-action:hover {
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
 }
 
 .docs-primary-action {
   background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
+.docs-primary-action:disabled {
+  opacity: .5;
+  cursor: default;
 }
 
 .docs-inline-action--danger,
@@ -1300,8 +1326,9 @@ function onEditorSaved() {
 .docs-column,
 .docs-panel,
 .doc-card {
-  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
   background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+  border-radius: 0;
 }
 
 .docs-registry-copy,
@@ -1310,7 +1337,6 @@ function onEditorSaved() {
   padding: 16px;
 }
 
-.docs-registry-kicker,
 .docs-panel-kicker,
 .docs-meta-label,
 .docs-stat__label,
@@ -1324,17 +1350,12 @@ function onEditorSaved() {
   color: color-mix(in srgb, var(--glass-text) 54%, transparent);
 }
 
-.docs-registry-title,
 .docs-panel-title,
 .doc-title {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: .08em;
   line-height: 1.08;
-}
-
-.docs-registry-title {
-  font-size: clamp(1.6rem, 3vw, 2.7rem);
 }
 
 .docs-search-field {
@@ -1374,7 +1395,9 @@ function onEditorSaved() {
   gap: 6px;
   min-height: 88px;
   padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 
 .docs-stat__value,
@@ -1439,6 +1462,7 @@ function onEditorSaved() {
 .doc-badge {
   padding: 4px 8px;
   border: 1px solid currentColor;
+  border-radius: 0;
   font-size: .68rem;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -1506,8 +1530,9 @@ function onEditorSaved() {
 .docs-preview {
   margin-top: 16px;
   padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
   background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+  border-radius: 0;
 }
 
 .docs-preview {
@@ -1523,6 +1548,9 @@ function onEditorSaved() {
   justify-content: center;
   min-height: 260px;
   text-align: center;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+  border-radius: 0;
 }
 
 .docs-empty {

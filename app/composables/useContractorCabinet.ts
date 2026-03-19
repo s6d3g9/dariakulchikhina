@@ -104,6 +104,8 @@ interface WtGroup {
   stages: any[]
 }
 
+type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
+
 export function useContractorCabinet(contractorId: Ref<number | null>) {
   const cid = computed(() => contractorId.value)
 
@@ -230,8 +232,9 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
         body: { ...form },
       })
       await refresh()
-      saveMsg.value = 'Сохранено!'
-      setTimeout(() => (saveMsg.value = ''), 3000)
+    } catch (error: any) {
+      saveMsg.value = 'Ошибка: ' + (error?.data?.message || error.message || 'неизвестная')
+      throw error
     } finally {
       saving.value = false
     }
@@ -242,6 +245,8 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
   const expandedId = ref<number | null>(null)
   const savingItem = ref<number | null>(null)
   const editMap = reactive<Record<number, { notes: string; dateStart: string; dateEnd: string }>>({})
+  const taskSaveStates = reactive<Record<number, InlineAutosaveState>>({})
+  const taskSaveTimers = new Map<number, ReturnType<typeof setTimeout>>()
 
   // ── Wt group open state ──
   const wtGroupOpenSet = reactive(new Set<string>())
@@ -364,6 +369,7 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
     if (!cid.value) return
     const itemId = Number(item.id)
     savingItem.value = itemId
+    taskSaveStates[itemId] = 'saving'
     const notes = editMap[itemId]?.notes ?? item.notes ?? ''
     const dateStart = editMap[itemId]?.dateStart ?? item.dateStart ?? ''
     const dateEnd = editMap[itemId]?.dateEnd ?? item.dateEnd ?? ''
@@ -375,10 +381,32 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
       item.notes = updated.notes
       item.dateStart = updated.dateStart
       item.dateEnd = updated.dateEnd
-      expandedId.value = null
+      taskSaveStates[itemId] = 'saved'
+      setTimeout(() => {
+        if (taskSaveStates[itemId] === 'saved') taskSaveStates[itemId] = ''
+      }, 1400)
+    } catch (error) {
+      taskSaveStates[itemId] = 'error'
+      throw error
     } finally {
       savingItem.value = null
     }
+  }
+
+  function clearTaskDetailsTimer(itemId: number) {
+    const timer = taskSaveTimers.get(itemId)
+    if (!timer) return
+    clearTimeout(timer)
+    taskSaveTimers.delete(itemId)
+  }
+
+  function queueTaskDetailsSave(item: any) {
+    const itemId = Number(item.id)
+    clearTaskDetailsTimer(itemId)
+    taskSaveTimers.set(itemId, setTimeout(() => {
+      taskSaveTimers.delete(itemId)
+      saveTaskDetails(item)
+    }, 420))
   }
 
   // ── Dashboard ──
@@ -675,9 +703,39 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
     } catch { return { newTasks: true, deadlines: true, comments: true, statusChanges: false } }
   }
   const notifSettings = reactive(loadNotifSettings())
+  const notificationSaveState = ref<InlineAutosaveState>('')
+  let notificationSaveTimer: ReturnType<typeof setTimeout> | null = null
   function saveNotifSettings() {
     if (!import.meta.server) localStorage.setItem(NOTIF_LS_KEY.value, JSON.stringify({ ...notifSettings }))
   }
+
+  function clearNotificationSaveTimer() {
+    if (!notificationSaveTimer) return
+    clearTimeout(notificationSaveTimer)
+    notificationSaveTimer = null
+  }
+
+  function queueNotifSettingsSave() {
+    clearNotificationSaveTimer()
+    notificationSaveState.value = 'saving'
+    notificationSaveTimer = setTimeout(() => {
+      try {
+        saveNotifSettings()
+        notificationSaveState.value = 'saved'
+        setTimeout(() => {
+          if (notificationSaveState.value === 'saved') notificationSaveState.value = ''
+        }, 1400)
+      } catch {
+        notificationSaveState.value = 'error'
+      }
+    }, 280)
+  }
+
+  onBeforeUnmount(() => {
+    clearNotificationSaveTimer()
+    for (const timer of taskSaveTimers.values()) clearTimeout(timer)
+    taskSaveTimers.clear()
+  })
 
   return {
     // Data
@@ -686,7 +744,7 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
     form, section, nav, saving, saveMsg, saveProfile,
     // Tasks
     statusFilter, expandedId, savingItem, editMap, FILTERS, byProject,
-    activeCount, toggleExpand, updateStatus, saveTaskDetails,
+    activeCount, toggleExpand, updateStatus, saveTaskDetails, queueTaskDetailsSave, taskSaveStates,
     // Wt groups
     isWtGroupOpen, toggleWtGroup,
     // Stages
@@ -708,7 +766,7 @@ export function useContractorCabinet(contractorId: Ref<number | null>) {
     // New task
     showNewTaskModal, creatingTask, newTask, allProjects, openNewTaskModal, createTask,
     // Notifications
-    notifSettings, saveNotifSettings,
+    notifSettings, saveNotifSettings, queueNotifSettingsSave, notificationSaveState,
     // Re-export constants
     workTypeLabel,
     CONTRACTOR_WORK_TYPE_OPTIONS,

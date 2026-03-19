@@ -473,6 +473,11 @@
                   </div>
                 </div>
               </template>
+              <template v-else-if="currentProjectPage === 'project_communications'">
+                <section class="proj-section-shell" :class="{ 'proj-section-shell--brutalist': isBrutalistProjectMode }">
+                  <ProjectCommunicationsPanel :project-slug="slug" />
+                </section>
+              </template>
               <section v-else class="proj-section-shell" :class="{ 'proj-section-shell--brutalist': isBrutalistProjectMode }">
                 <component
                   :is="activeComponent"
@@ -1803,6 +1808,15 @@ function syncProjectViewportPager() {
 
   projectViewportLayoutInProgress = true
   syncProjectViewportAttrs()
+
+  if (contentViewMode.value === 'wipe2') {
+    projectViewportStops.value = [0]
+    viewportPageIndex.value = 1
+    viewportPageCount.value = 1
+    projectViewportLayoutInProgress = false
+    return
+  }
+
   applyViewportZoneLayout(el)
   projectViewportStops.value = buildViewportPageStops(el)
   viewportPageCount.value = projectViewportStops.value.length
@@ -2121,6 +2135,7 @@ function handleProjectViewportTouchEnd(e: TouchEvent) {
 
 function handleProjectViewportKeydown(event: KeyboardEvent) {
   if (!isProjectViewportPaged.value) return
+  if (contentViewMode.value === 'wipe2') return
   if (isViewportEditableTarget(event.target)) return
 
   const isNext = event.key === 'PageDown' || event.key === 'ArrowDown' || event.key === ' '
@@ -2668,6 +2683,14 @@ async function saveProject() {
   touch-action: none;
 }
 .proj-main--paged[data-cv-mode="wipe"]::-webkit-scrollbar { display: none; }
+
+.proj-main--paged[data-cv-mode="wipe2"] {
+  overflow: hidden;
+  scrollbar-width: none;
+  overscroll-behavior: none;
+}
+.proj-main--paged[data-cv-mode="wipe2"]::-webkit-scrollbar { display: none; }
+.proj-main--paged[data-cv-mode="wipe2"] .proj-wipe-inner { display: none; }
 
 /* Content wrapper that shifts to reveal each page */
 .proj-main--paged[data-cv-mode="wipe"] .proj-wipe-inner {

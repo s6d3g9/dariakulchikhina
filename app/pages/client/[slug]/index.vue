@@ -9,12 +9,12 @@
     <div v-else-if="error || !project" class="cc-error glass-surface">
       <template v-if="(error as any)?.statusCode === 401 || (error as any)?.status === 401">
         <p>Сессия истекла. Войдите снова.</p>
-        <NuxtLink to="/client/login" class="a-btn-save">Войти</NuxtLink>
+        <NuxtLink to="/login?role=client" class="a-btn-save">Войти</NuxtLink>
       </template>
       <template v-else>
         <p>Не удалось загрузить данные проекта.</p>
         <button @click="refresh" class="a-btn-sm">Повторить</button>
-        <NuxtLink to="/client/login" class="a-btn-sm">Выйти</NuxtLink>
+        <NuxtLink to="/login?role=client" class="a-btn-sm">Выйти</NuxtLink>
       </template>
     </div>
 
@@ -121,6 +121,7 @@ import ClientTimeline      from '~/components/ClientTimeline.vue'
 import ClientDesignAlbum   from '~/components/ClientDesignAlbum.vue'
 import ClientPageContent   from '~/components/ClientPageContent.vue'
 import ClientOverview      from '~/components/ClientOverview.vue'
+import ProjectCommunicationsPanel from '~~/app/components/ProjectCommunicationsPanel.vue'
 
 definePageMeta({ middleware: 'client', layout: 'default' })
 
@@ -160,6 +161,7 @@ const PAGE_COMPONENT_MAP: Record<string, Component> = {
   work_progress:   ClientWorkProgress,
   design_timeline: ClientTimeline,
   design_album:    ClientDesignAlbum,
+  communications:  ProjectCommunicationsPanel,
 }
 
 // ── Navigation ───────────────────────────────────────────────────────────
@@ -168,11 +170,14 @@ const allClientPages = getClientPages()
 const navPages = computed(() => {
   const pages = project.value?.pages || []
   return allClientPages.filter(p => {
+    if (p.slug === 'communications') return true
     if (!p.phase) return true
     if (p.slug === 'self_profile' && pages.includes('brief')) return true
     return pages.includes(p.slug)
   })
 })
+
+const rmMap = computed<Record<string, string>>(() => ({}))
 
 // ── Active page state ────────────────────────────────────────────────────
 const activePage = ref('overview')
@@ -200,6 +205,9 @@ const activeComponent = computed<Component>(() =>
 
 const activeProps = computed(() => {
   const base = { slug: slug.value }
+  if (activeComponent.value === ProjectCommunicationsPanel) {
+    return { projectSlug: slug.value }
+  }
   if (activeComponent.value === ClientPageContent) {
     return { ...base, page: normalizedPage.value }
   }
@@ -221,7 +229,7 @@ function statusLabel(s: string) {
 
 async function logout() {
   await $fetch('/api/auth/client-id-logout', { method: 'POST' }).catch(() => {})
-  router.push('/client/login')
+  router.push('/login?role=client')
 }
 </script>
 

@@ -12,11 +12,17 @@
     <!-- ─── Header ─────────────────────────────────────── -->
     <div class="agal-header glass-surface glass-card">
       <div class="agal-header-left">
-        <span class="agal-title">{{ title }}</span>
-        <span v-if="gallery.items.value.length" class="agal-badge">{{ gallery.items.value.length }}</span>
-        <span v-if="gallery.filtered.value.length !== gallery.items.value.length" class="agal-badge agal-badge--filter">
-          {{ gallery.filtered.value.length }} из {{ gallery.items.value.length }}
-        </span>
+        <CabSectionHeader
+          :title="title"
+          eyebrow="gallery"
+          note="Реестр объектов и материалов сохраняет текущие фильтры и режим просмотра в общей правой зоне."
+        />
+        <div class="agal-header-stats">
+          <span v-if="gallery.items.value.length" class="agal-badge">{{ gallery.items.value.length }}</span>
+          <span v-if="gallery.filtered.value.length !== gallery.items.value.length" class="agal-badge agal-badge--filter">
+            {{ gallery.filtered.value.length }} из {{ gallery.items.value.length }}
+          </span>
+        </div>
       </div>
       <div class="agal-header-right">
         <!-- Batch mode toggle -->
@@ -53,14 +59,14 @@
 
     <!-- ─── Empty state ────────────────────────────────── -->
     <div v-if="!gallery.loading.value && !gallery.filtered.value.length" class="agal-empty glass-card glass-surface">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-      <span v-if="gallery.items.value.length">ничего не найдено по текущим фильтрам</span>
-      <span v-else>пока пусто — добавьте первый объект</span>
+      <span class="agal-empty__title">[ NO DATA ATTACHED ]</span>
+      <span class="agal-empty__text" v-if="gallery.items.value.length">По текущим фильтрам ничего не найдено.</span>
+      <span class="agal-empty__text" v-else>Реестр пока пуст. Добавьте первый объект в галерею.</span>
     </div>
 
     <!-- ─── Loading ────────────────────────────────────── -->
     <div v-else-if="gallery.loading.value" class="agal-loading">
-      <div class="agal-spinner" />
+      <span>[ LOADING... ]</span>
     </div>
 
     <!-- ─── Masonry view ───────────────────────────────── -->
@@ -633,69 +639,109 @@ async function del(id: number) {
 
 /* ─── Header ───────────────────────────────────────────── */
 .agal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 14px; flex-wrap: wrap;
-  padding: 14px 20px; margin-bottom: 12px;
-  border-radius: 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
-.agal-header-left { display: flex; align-items: center; gap: 8px; }
+.agal-header-left { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.agal-header-stats { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.agal-header-left :deep(.cab-section-head) { margin-bottom: 0; }
+.agal-header-left :deep(.cab-section-head__note) { max-width: 52ch; }
 .agal-header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-.agal-title {
-  font-size: .72rem; letter-spacing: 1.2px;
-  text-transform: uppercase; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .55;
-}
 .agal-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 20px; height: 20px; padding: 0 5px;
-  border-radius: 999px; font-size: .62rem;
-  background: color-mix(in srgb, var(--glass-text) 9%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 0;
+  font-size: .64rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
 }
 .agal-badge--filter { background: color-mix(in srgb, var(--ds-accent) 15%, transparent); color: var(--ds-accent); }
 
 .agal-add-btn {
-  display: inline-flex; align-items: center; justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 34px; height: 34px;
   padding: 0;
   font-size: 1rem; line-height: 1;
   font-family: inherit; cursor: pointer;
-  border-radius: 8px; white-space: nowrap;
-  border: none;
-  background: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); color: var(--glass-page-bg, #f4f4f2);
-  transition: opacity .15s;
+  border-radius: 0;
+  white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  background: transparent;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
+  transition: border-color .15s, background .15s;
 }
-.agal-add-btn:hover { opacity: .82; }
+.agal-add-btn:hover { background: color-mix(in srgb, var(--glass-text) 8%, transparent); }
 
 /* ─── Batch mode button ────────────────────────────────── */
 .agal-batch-btn {
   display: flex; align-items: center; gap: 5px;
-  padding: 7px 12px; border-radius: 8px;
-  border: none; cursor: pointer;
-  font-family: inherit; font-size: .72rem;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
-  transition: background .13s, opacity .13s;
+  min-height: 34px;
+  padding: 7px 12px;
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .7rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
+  transition: background .13s, border-color .13s;
 }
 .agal-batch-btn:hover { background: color-mix(in srgb, var(--glass-text) 10%, transparent); }
 .agal-batch-btn--active { background: color-mix(in srgb, var(--ds-accent) 12%, transparent); color: var(--ds-accent); }
 
 /* ─── Batch toolbar ────────────────────────────────────── */
 .agal-batch-bar {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 10px 16px; margin-bottom: 8px;
-  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 .agal-batch-count {
-  font-size: .72rem; font-weight: 600;
-  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .7;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
   margin-right: 4px;
 }
 .agal-batch-action {
-  padding: 5px 10px; border-radius: 6px;
-  border: none; cursor: pointer;
-  font-family: inherit; font-size: .7rem;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
-  transition: background .13s;
+  min-height: 34px;
+  padding: 5px 10px;
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
+  transition: background .13s, border-color .13s;
 }
 .agal-batch-action:hover { background: color-mix(in srgb, var(--glass-text) 12%, transparent); }
 .agal-batch-action--del { background: color-mix(in srgb, var(--ds-error) 10%, transparent); color: var(--ds-error); }
@@ -713,10 +759,9 @@ async function del(id: number) {
 }
 .agal-round-check {
   width: 24px; height: 24px;
-  border-radius: 50%;
-  border: 2px solid color-mix(in srgb, white 60%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 20%, transparent);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 24%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
   display: flex; align-items: center; justify-content: center;
   transition: background .15s, border-color .15s, transform .15s;
 }
@@ -739,7 +784,7 @@ async function del(id: number) {
 .agal-drop-zone {
   position: absolute; inset: 0;
   border: 2px dashed transparent;
-  border-radius: 12px;
+  border-radius: 0;
   pointer-events: none;
   transition: border-color .15s;
 }
@@ -750,24 +795,42 @@ async function del(id: number) {
 
 /* ─── Loading ──────────────────────────────────────────── */
 .agal-loading {
-  display: flex; justify-content: center; padding: 80px 0;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-size: .82rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--glass-muted, #7a766f);
 }
-.agal-spinner {
-  width: 32px; height: 32px;
-  border: 2px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
-  border-top-color: color-mix(in srgb, var(--glass-text) 50%, transparent);
-  border-radius: 50%;
-  animation: agalSpin .7s linear infinite;
-}
-@keyframes agalSpin { to { transform: rotate(360deg); } }
 
 /* ─── Empty ─────────────────────────────────────────────── */
 .agal-empty {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 12px; padding: 80px 24px;
-  text-align: center; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .3;
-  font-size: .82rem; letter-spacing: .4px;
-  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 40px 24px;
+  text-align: left;
+  color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
+  font-size: .82rem;
+  letter-spacing: .04em;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.agal-empty__title {
+  font-size: .74rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--glass-muted, #7a766f);
+}
+
+.agal-empty__text {
+  color: color-mix(in srgb, var(--glass-text) 72%, transparent);
 }
 
 /* ─── Grid view ─────────────────────────────────────────── */
@@ -778,20 +841,19 @@ async function del(id: number) {
 }
 
 .agal-card {
-  background: var(--glass-bg, rgba(255,255,255,.48));
-  border: none;
-  box-shadow: var(--glass-shadow, 0 10px 28px rgba(18,18,18,.08));
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
-  backdrop-filter: blur(18px) saturate(145%);
-  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+  border-radius: 0;
   overflow: hidden;
-  display: flex; flex-direction: column;
-  transition: transform .18s ease, box-shadow .18s ease;
   cursor: pointer;
+  transition: border-color .15s, background .15s;
 }
+
 .agal-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 40px color-mix(in srgb, black 13%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 28%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
 
 
@@ -806,9 +868,7 @@ async function del(id: number) {
 .agal-img {
   width: 100%; height: 100%;
   object-fit: cover; display: block;
-  transition: transform .35s ease;
 }
-.agal-card:hover .agal-img { transform: scale(1.04); }
 
 .agal-no-img {
   width: 100%; height: 100%;
@@ -820,31 +880,29 @@ async function del(id: number) {
 .agal-btns {
   position: absolute; top: 8px; right: 8px;
   display: flex; gap: 5px;
-  opacity: 0; transform: translateY(-4px);
-  transition: opacity .16s ease, transform .16s ease;
+  opacity: 0;
+  transition: opacity .16s ease;
   z-index: 2;
 }
 .agal-card:hover .agal-btns,
 .msn-card:hover .agal-btns {
-  opacity: 1; transform: translateY(0);
+  opacity: 1;
 }
 
 .agal-icon-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: 8px; border: none; cursor: pointer;
-  background: var(--glass-bg, rgba(255,255,255,.82));
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  width: 30px; height: 30px; border-radius: 0; border: 1px solid color-mix(in srgb, var(--glass-text) 20%, transparent); cursor: pointer;
+  background: rgba(255,255,255,.92);
   color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent));
-  box-shadow: 0 2px 8px color-mix(in srgb, black 18%, transparent);
-  transition: background .13s, transform .13s, color .13s;
+  transition: background .13s, border-color .13s, color .13s;
 }
-.agal-icon-btn:hover { background: var(--glass-bg, #fff); transform: scale(1.08); }
+.agal-icon-btn:hover { background: color-mix(in srgb, var(--glass-text) 8%, white); }
 .agal-icon-btn--del { background: color-mix(in srgb, var(--ds-error, var(--ds-error)) 80%, transparent); color: #fff; }
 .agal-icon-btn--del:hover { background: color-mix(in srgb, var(--ds-error) 97%, transparent); }
 
 .agal-icon-btn--star {
   font-size: .72rem; color: color-mix(in srgb, black 25%, transparent);
-  background: color-mix(in srgb, white 70%, transparent);
+  background: rgba(255,255,255,.92);
 }
 .agal-icon-btn--starred {
   color: var(--ds-star, var(--ds-warning)) !important;
@@ -872,9 +930,9 @@ async function del(id: number) {
 .agal-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .agal-tag {
   font-size: .65rem; padding: 3px 8px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--glass-text) 7%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .7;
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 0;
+  background: transparent; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .7;
   letter-spacing: .1px; white-space: nowrap;
 }
 
@@ -884,17 +942,19 @@ async function del(id: number) {
 }
 .agal-list-row {
   display: flex; align-items: center; gap: 14px;
-  padding: 10px 14px; border-radius: 12px;
+  padding: 10px 14px; border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
   cursor: pointer;
-  transition: transform .13s, box-shadow .13s;
+  transition: border-color .13s, background .13s;
 }
 .agal-list-row:hover {
-  transform: translateX(3px);
-  box-shadow: 0 4px 16px color-mix(in srgb, black 8%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 28%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
 .agal-list-thumb {
   width: 64px; height: 48px; flex-shrink: 0;
-  border-radius: 8px; overflow: hidden;
+  border-radius: 0; overflow: hidden;
   background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
 .agal-list-thumb img {
@@ -924,19 +984,16 @@ async function del(id: number) {
 
 /* ─── Masonry card overrides (inside slot) ──────────────── */
 .msn-card {
-  background: var(--glass-bg, rgba(255,255,255,.48));
-  border: none;
-  box-shadow: var(--glass-shadow, 0 10px 28px rgba(18,18,18,.08));
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
-  backdrop-filter: blur(18px) saturate(145%);
-  border-radius: 14px;
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  border-radius: 0;
   overflow: hidden;
-  transition: transform .2s ease, box-shadow .2s ease;
+  transition: border-color .15s, background .15s;
   cursor: pointer;
 }
 .msn-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 44px color-mix(in srgb, black 14%, transparent);
+  border-color: color-mix(in srgb, var(--glass-text) 28%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
 
 
@@ -949,10 +1006,9 @@ async function del(id: number) {
   width: 100%; height: 100%;
   object-fit: cover; display: block;
   opacity: 0;
-  transition: opacity .4s ease, transform .35s ease;
+  transition: opacity .4s ease;
 }
 .msn-img--loaded { opacity: 1; }
-.msn-card:hover .msn-img { transform: scale(1.03); }
 
 .msn-placeholder {
   width: 100%; aspect-ratio: 4/3;
@@ -963,21 +1019,21 @@ async function del(id: number) {
 .msn-overlay {
   position: absolute; top: 8px; right: 8px;
   display: flex; gap: 5px;
-  opacity: 0; transform: translateY(-4px);
-  transition: opacity .18s ease, transform .18s ease;
+  opacity: 0;
+  transition: opacity .18s ease;
 }
-.msn-card:hover .msn-overlay { opacity: 1; transform: translateY(0); }
+.msn-card:hover .msn-overlay { opacity: 1; }
 
 .msn-overlay--always {
   top: 8px; left: 8px; right: auto;
-  opacity: 1; transform: none;
+  opacity: 1;
 }
 
 .msn-multi {
   display: flex; align-items: center; gap: 3px;
-  padding: 4px 8px; border-radius: 8px;
-  background: var(--glass-bg, rgba(255,255,255,.82));
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  padding: 4px 8px; border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
+  background: rgba(255,255,255,.92);
   color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); font-size: .64rem; font-weight: 600;
 }
 
@@ -998,9 +1054,9 @@ async function del(id: number) {
 }
 .msn-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .msn-tag {
-  font-size: .62rem; padding: 2px 7px; border-radius: 5px;
-  background: color-mix(in srgb, var(--glass-text) 6%, transparent); color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .65;
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  font-size: .62rem; padding: 2px 7px; border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: transparent; color: var(--glass-text, color-mix(in srgb, var(--glass-text) 10%, transparent)); opacity: .65;
   letter-spacing: .1px; white-space: nowrap;
 }
 

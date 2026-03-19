@@ -98,7 +98,7 @@
             </div>
 
             <div v-if="linkedProjects.length" class="dash-recent glass-surface">
-              <div class="u-section-title">Последние проекты</div>
+              <CabSectionHeader title="Последние проекты" eyebrow="manager" />
               <div class="dash-recent-list">
                 <div v-for="p in linkedProjects.slice(0, 5)" :key="p.projectId" class="dash-recent-item" @click="goToProject(p.projectSlug)">
                   <span class="dash-recent-name">{{ p.projectName }}</span>
@@ -112,7 +112,11 @@
           <!-- ═══════════════ PROJECTS ═══════════════ -->
           <template v-if="(section === 'projects') || showAll">
             <div class="cab-section" data-section="projects">
-            <div class="u-section-title">Проекты менеджера</div>
+            <CabSectionHeader
+              title="Проекты менеджера"
+              eyebrow="manager"
+              note="Лента проектов и статус назначения собраны в том же shell, что и остальные кабинеты."
+            />
             <div v-if="!linkedProjects.length" class="cab-empty">
               <span class="ent-empty-icon">📂</span>
               <span>Нет привязанных проектов</span>
@@ -138,7 +142,7 @@
           <!-- ═══════════════ FEED ═══════════════ -->
           <template v-if="(section === 'feed') || showAll">
             <div class="cab-section" data-section="feed">
-            <div class="u-section-title">Лента событий</div>
+            <CabSectionHeader title="Лента событий" eyebrow="manager" note="Операционная лента будет добавлена в этот же стандартный shell." />
             <div class="cab-empty">
               <span class="ent-empty-icon">📋</span>
               <span>Лента событий будет доступна позже</span>
@@ -149,7 +153,7 @@
           <!-- ═══════════════ APPROVALS ═══════════════ -->
           <template v-if="(section === 'approvals') || showAll">
             <div class="cab-section" data-section="approvals">
-            <div class="u-section-title">Согласования</div>
+            <CabSectionHeader title="Согласования" eyebrow="manager" note="Блок оставлен в общей архитектуре правой зоны без отдельного layout-ответвления." />
             <div class="cab-empty">
               <span class="ent-empty-icon">✅</span>
               <span>Нет активных согласований</span>
@@ -160,7 +164,7 @@
           <!-- ═══════════════ REPORTS ═══════════════ -->
           <template v-if="(section === 'reports') || showAll">
             <div class="cab-section" data-section="reports">
-            <div class="u-section-title">Отчёты</div>
+            <CabSectionHeader title="Отчёты" eyebrow="manager" note="Раздел уже оформлен тем же section-shell и готов к дальнейшему наполнению." />
             <div class="cab-empty">
               <span class="ent-empty-icon">📊</span>
               <span>Отчёты будут доступны позже</span>
@@ -171,8 +175,12 @@
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-if="(section === 'profile') || showAll">
             <div class="cab-section" data-section="profile">
-            <div class="u-section-title">Профиль менеджера</div>
-            <form class="man-profile-form glass-surface" @submit.prevent="saveProfile">
+            <CabSectionHeader
+              title="Профиль менеджера"
+              eyebrow="manager"
+              note="Контакты и заметки сохраняются автоматически, без отдельного подтверждения."
+            />
+            <form class="man-profile-form glass-surface" @submit.prevent="saveProfile" @focusout="queueProfileAutosave" @change="queueProfileAutosave">
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Имя *</label>
@@ -208,7 +216,7 @@
                 <textarea v-model="form.notes" class="glass-input u-ta" rows="4" placeholder="заметки о менеджере"></textarea>
               </div>
               <div class="man-profile-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '…' : 'Сохранить' }}</button>
+                <CabAutosaveStatus :state="profileSaveState" />
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -308,6 +316,9 @@ const profilePct = computed(() => {
 const form = reactive({ name: '', role: '', phone: '', email: '', telegram: '', city: '', notes: '' })
 const saving = ref(false)
 const saveMsg = ref('')
+type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
+const profileSaveState = ref<InlineAutosaveState>('')
+let profileSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 watch(manager, (m) => {
   if (!m) return
@@ -326,10 +337,47 @@ async function saveProfile() {
   try {
     await $fetch(`/api/managers/${mid.value}`, { method: 'PUT', body: { ...form } })
     await refresh()
-    saveMsg.value = 'Сохранено!'
-    setTimeout(() => (saveMsg.value = ''), 3000)
+  } catch (error: any) {
+    saveMsg.value = 'Ошибка: ' + (error?.data?.message || error.message || 'неизвестная')
+    throw error
   } finally { saving.value = false }
 }
+
+function clearProfileSaveTimer() {
+  if (!profileSaveTimer) return
+  clearTimeout(profileSaveTimer)
+  profileSaveTimer = null
+}
+
+function setAutosaveSettled(expected: InlineAutosaveState) {
+  setTimeout(() => {
+    if (profileSaveState.value === expected) profileSaveState.value = ''
+  }, 1400)
+}
+
+async function autoSaveProfile() {
+  clearProfileSaveTimer()
+  profileSaveState.value = 'saving'
+  try {
+    await saveProfile()
+    profileSaveState.value = 'saved'
+    setAutosaveSettled('saved')
+  } catch {
+    profileSaveState.value = 'error'
+  }
+}
+
+function queueProfileAutosave() {
+  clearProfileSaveTimer()
+  saveMsg.value = ''
+  profileSaveTimer = setTimeout(() => {
+    autoSaveProfile()
+  }, 420)
+}
+
+onBeforeUnmount(() => {
+  clearProfileSaveTimer()
+})
 
 const router = useRouter()
 function goToProject(slug: string) {

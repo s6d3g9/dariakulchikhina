@@ -98,7 +98,7 @@
             </div>
 
             <div v-if="seller?.categories?.length" class="dash-cats glass-surface">
-              <div class="u-section-title">Категории товаров</div>
+              <CabSectionHeader title="Категории товаров" eyebrow="seller" />
               <div class="u-tags">
                 <span v-for="cat in seller.categories" :key="cat" class="u-tag">{{ CATEGORY_LABELS[cat] || cat }}</span>
               </div>
@@ -109,7 +109,12 @@
           <!-- ═══════════════ PROFILE ═══════════════ -->
           <template v-if="(section === 'profile') || showAll">
             <div class="cab-section" data-section="profile">
-            <form @submit.prevent="saveProfile" class="cab-form">
+            <CabSectionHeader
+              title="Профиль поставщика"
+              eyebrow="seller"
+              note="Контакты, категории и заметки сохраняются автоматически после изменения поля."
+            />
+            <form @submit.prevent="saveProfile" class="cab-form" @focusout="queueProfileAutosave" @change="queueProfileAutosave">
               <div class="u-form-section">
                 <h3>Основные данные</h3>
                 <div class="u-modal__row2">
@@ -187,7 +192,7 @@
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <CabAutosaveStatus :state="profileSaveState" />
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -197,7 +202,12 @@
           <!-- ═══════════════ REQUISITES ═══════════════ -->
           <template v-if="(section === 'requisites') || showAll">
             <div class="cab-section" data-section="requisites">
-            <form @submit.prevent="saveProfile" class="cab-form">
+            <CabSectionHeader
+              title="Реквизиты"
+              eyebrow="seller"
+              note="Юридические и банковские данные синхронизируются без отдельной кнопки сохранения."
+            />
+            <form @submit.prevent="saveProfile" class="cab-form" @focusout="queueProfileAutosave" @change="queueProfileAutosave">
               <div class="u-form-section">
                 <h3>Юридические реквизиты</h3>
                 <div class="u-modal__row2">
@@ -223,7 +233,7 @@
                 </div>
               </div>
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <CabAutosaveStatus :state="profileSaveState" />
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -233,7 +243,12 @@
           <!-- ═══════════════ TERMS ═══════════════ -->
           <template v-if="(section === 'terms') || showAll">
             <div class="cab-section" data-section="terms">
-            <form @submit.prevent="saveProfile" class="cab-form">
+            <CabSectionHeader
+              title="Условия работы"
+              eyebrow="seller"
+              note="Сроки, оплата и коммерческие условия обновляются в фоне по мере редактирования."
+            />
+            <form @submit.prevent="saveProfile" class="cab-form" @focusout="queueProfileAutosave" @change="queueProfileAutosave">
               <div class="u-form-section">
                 <h3>Условия работы</h3>
                 <div class="u-modal__row2">
@@ -372,6 +387,9 @@ watch(section, (val) => {
 
 const saving = ref(false)
 const saveMsg = ref('')
+type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
+const profileSaveState = ref<InlineAutosaveState>('')
+let profileSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 const { data: seller, pending, refresh } = useFetch<any>(() => `/api/sellers/${props.sellerId}`, {
   server: false,
@@ -437,6 +455,7 @@ function toggleCategory(cat: string) {
   const idx = form.categories.indexOf(cat)
   if (idx === -1) form.categories.push(cat)
   else form.categories.splice(idx, 1)
+  queueProfileAutosave()
 }
 
 async function saveProfile() {
@@ -446,13 +465,48 @@ async function saveProfile() {
       method: 'PUT',
       body: JSON.parse(JSON.stringify(form)),
     })
-    saveMsg.value = '✓ Сохранено'
     refresh()
-    setTimeout(() => { saveMsg.value = '' }, 2000)
   } catch (e: any) {
     saveMsg.value = 'Ошибка: ' + (e?.data?.message || e.message || 'неизвестная')
+    throw e
   } finally { saving.value = false }
 }
+
+function clearProfileSaveTimer() {
+  if (!profileSaveTimer) return
+  clearTimeout(profileSaveTimer)
+  profileSaveTimer = null
+}
+
+function setAutosaveSettled(expected: InlineAutosaveState) {
+  setTimeout(() => {
+    if (profileSaveState.value === expected) profileSaveState.value = ''
+  }, 1400)
+}
+
+async function autoSaveProfile() {
+  clearProfileSaveTimer()
+  profileSaveState.value = 'saving'
+  try {
+    await saveProfile()
+    profileSaveState.value = 'saved'
+    setAutosaveSettled('saved')
+  } catch {
+    profileSaveState.value = 'error'
+  }
+}
+
+function queueProfileAutosave() {
+  clearProfileSaveTimer()
+  saveMsg.value = ''
+  profileSaveTimer = setTimeout(() => {
+    autoSaveProfile()
+  }, 420)
+}
+
+onBeforeUnmount(() => {
+  clearProfileSaveTimer()
+})
 
 // ── Wipe2 card view ──
 const isWipe2Mode = computed(() => designSystem.tokens.value.contentViewMode === 'wipe2')
@@ -597,8 +651,6 @@ registerWipe2Data(wipe2CabinetData)
 .u-form-section h3 { font-size: .88rem; font-weight: 500; margin: 0 0 12px; }
 .u-form-foot { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
 .u-save-msg { font-size: .78rem; color: #5caa7f; }
-.u-section-title { font-size: .82rem; font-weight: 500; margin-bottom: 10px; }
-
 .pkg-tag-picker { display: inline-flex; padding: 4px 12px; border: 1px solid var(--border, #e0e0e0); background: none; border-radius: 8px; font-size: .78rem; cursor: pointer; color: #666; transition: all .15s; }
 .pkg-tag-picker:hover { border-color: #aaa; }
 .pkg-tag-picker--active { background: #e8e4e0; border-color: #c8c4c0; color: #333; font-weight: 500; }

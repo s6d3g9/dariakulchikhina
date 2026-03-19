@@ -45,8 +45,14 @@ withDefaults(defineProps<{
 </script>
 
 <style scoped>
+.admin-entity-cabinet-shell__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .admin-entity-cabinet-shell__body--brutalist {
-  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
   padding-top: 18px;
 }
 </style>

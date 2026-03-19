@@ -4,17 +4,22 @@
       <h1 class="lp-logo">dariakulchikhina</h1>
       <p class="lp-sub">дизайн интерьеров</p>
       <div class="lp-links">
-        <NuxtLink to="/client/login" class="lp-btn lp-btn--primary">
+        <NuxtLink to="/register" class="lp-btn">
+          <span class="lp-btn-icon">◍</span>
+          <span>Регистрация</span>
+          <span class="lp-btn-hint">все роли</span>
+        </NuxtLink>
+        <NuxtLink to="/login?role=client" class="lp-btn lp-btn--primary">
           <span class="lp-btn-icon">◌</span>
           <span>Личный кабинет</span>
           <span class="lp-btn-hint">клиенты</span>
         </NuxtLink>
-        <NuxtLink to="/contractor/login" class="lp-btn">
+        <NuxtLink to="/login?role=contractor" class="lp-btn">
           <span class="lp-btn-icon">◑</span>
           <span>Кабинет подрядчика</span>
           <span class="lp-btn-hint">мастера</span>
         </NuxtLink>
-        <NuxtLink to="/admin/login" class="lp-btn lp-btn--muted">
+        <NuxtLink to="/login?role=designer" class="lp-btn lp-btn--muted">
           <span class="lp-btn-icon">◎</span>
           <span>Вход для дизайнера</span>
         </NuxtLink>

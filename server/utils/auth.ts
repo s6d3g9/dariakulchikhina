@@ -10,6 +10,7 @@ import { createHmac, randomBytes } from 'crypto'
 const ADMIN_COOKIE = 'daria_admin_session'
 const CLIENT_COOKIE = 'daria_client_session'
 const CONTRACTOR_COOKIE = 'daria_contractor_session'
+const CHAT_COOKIE = 'daria_chat_session'
 
 // --- HMAC session signing ---
 
@@ -207,6 +208,45 @@ export function requireAdminOrClient(event: H3Event, projectSlug: string) {
   const slug = getClientSession(event)
   if (slug && slug === projectSlug) return { role: 'client' as const, projectSlug: slug }
   throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+}
+
+// --- Standalone chat session ---
+
+export function setChatSession(event: H3Event, chatUserId: string) {
+  const payload = Buffer.from(JSON.stringify({ chatUserId, ts: Date.now() })).toString('base64url')
+  const signed = _sign(payload)
+  _writeCookie(event, CHAT_COOKIE, signed, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: _isSecure(event),
+    maxAge: 60 * 60 * 24 * 30,
+    path: '/',
+  })
+}
+
+export function getChatSession(event: H3Event): { chatUserId: string } | null {
+  const raw = _readCookie(event, CHAT_COOKIE)
+  if (!raw) return null
+  try {
+    const payload = _verifyAndParse(raw)
+    if (!payload) return null
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString())
+    if (!data || typeof data.chatUserId !== 'string' || !data.chatUserId.trim()) return null
+    if (typeof data.ts === 'number' && Date.now() - data.ts > SESSION_MAX_AGE_MS) return null
+    return { chatUserId: data.chatUserId }
+  } catch {
+    return null
+  }
+}
+
+export function clearChatSession(event: H3Event) {
+  _deleteCookie(event, CHAT_COOKIE)
+}
+
+export function requireChatSession(event: H3Event) {
+  const session = getChatSession(event)
+  if (!session) throw createError({ statusCode: 401, statusMessage: 'Chat not authenticated' })
+  return session
 }
 
 // --- Password helpers ---

@@ -17,6 +17,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   login: varchar('login', { length: 100 }).unique(),
   passwordHash: text('password_hash').notNull(),
+  recoveryPhraseHash: text('recovery_phrase_hash'),
   name: text('name'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
@@ -36,6 +37,9 @@ export const projects = pgTable('projects', {
   status: text('status').default('lead').notNull(),
   projectType: text('project_type').default('apartment').notNull(),
   userId: integer('user_id').references(() => users.id),
+  clientLogin: varchar('client_login', { length: 100 }).unique(),
+  clientPasswordHash: text('client_password_hash'),
+  clientRecoveryPhraseHash: text('client_recovery_phrase_hash'),
   pages: text('pages').array().default([]).notNull(),
   profile: jsonb('profile').$type<Record<string, string>>().default({}).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -62,6 +66,9 @@ export const pageContent = pgTable('page_content', {
 export const contractors = pgTable('contractors', {
   id: serial('id').primaryKey(),
   slug: text('slug').notNull().unique(),
+  login: varchar('login', { length: 100 }).unique(),
+  passwordHash: text('password_hash'),
+  recoveryPhraseHash: text('recovery_phrase_hash'),
   name: text('name').notNull(),
   companyName: text('company_name'),
   contactPerson: text('contact_person'),

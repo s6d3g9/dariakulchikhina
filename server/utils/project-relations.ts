@@ -19,6 +19,7 @@ type ProjectLinkedClient = {
   name: string
   phone: string | null
   email: string | null
+  messengerNick: string | null
 }
 
 type ProjectLinkedContractor = {
@@ -27,6 +28,8 @@ type ProjectLinkedContractor = {
   companyName: string | null
   phone: string | null
   email: string | null
+  messengerNick: string | null
+  login: string | null
 }
 
 type ProjectLinkedDesigner = {
@@ -43,6 +46,7 @@ type ProjectLinkedSeller = {
   companyName: string | null
   city: string | null
   contactPerson: string | null
+  messengerNick: string | null
 }
 
 type ProjectLinkedManager = {
@@ -116,6 +120,7 @@ export async function getProjectRelationsSnapshot(projectSlug: string): Promise<
             name: clients.name,
             phone: clients.phone,
             email: clients.email,
+            messengerNick: clients.messengerNick,
           })
           .from(clients)
           .where(inArray(clients.id, linkedClientIds))
@@ -128,6 +133,8 @@ export async function getProjectRelationsSnapshot(projectSlug: string): Promise<
         companyName: contractors.companyName,
         phone: contractors.phone,
         email: contractors.email,
+        messengerNick: contractors.messengerNick,
+        login: contractors.login,
       })
       .from(projectContractors)
       .innerJoin(contractors, eq(projectContractors.contractorId, contractors.id))
@@ -152,6 +159,7 @@ export async function getProjectRelationsSnapshot(projectSlug: string): Promise<
         companyName: sellers.companyName,
         city: sellers.city,
         contactPerson: sellers.contactPerson,
+        messengerNick: sellers.messengerNick,
       })
       .from(sellerProjects)
       .innerJoin(sellers, eq(sellerProjects.sellerId, sellers.id))

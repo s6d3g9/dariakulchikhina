@@ -750,6 +750,7 @@ html.dark .w2-edit-btn:hover {
   line-height: 1.35;
   color: color-mix(in srgb, var(--glass-text, #111) 70%, transparent);
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;

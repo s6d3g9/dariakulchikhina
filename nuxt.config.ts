@@ -28,12 +28,14 @@ export default defineNuxtConfig({
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,
     sessionSecret: process.env.NUXT_SESSION_SECRET,
+    communicationsServiceSecret: process.env.COMMUNICATIONS_SERVICE_SECRET,
     // AI: Gemma 3 27B через Ollama (можно переопределить через GEMMA_URL в .env)
     gemmaUrl: process.env.GEMMA_URL || 'http://localhost:11434',
     // Public
     public: {
       appName: 'Daria Kulchikhina',
       yandexMapsApiKey: process.env.YANDEX_MAPS_API_KEY,
+      communicationsServiceUrl: process.env.NUXT_PUBLIC_COMMUNICATIONS_SERVICE_URL || 'http://localhost:4100',
     },
   },
 

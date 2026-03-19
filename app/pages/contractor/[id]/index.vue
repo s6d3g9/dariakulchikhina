@@ -388,6 +388,34 @@
             </template>
           </template>
 
+          <!-- ── Коммуникации ─────────────────────────────────── -->
+          <template v-else-if="section === 'communications'">
+            <div class="cab-form">
+              <div class="u-form-section">
+                <h3>Защищённая связь</h3>
+                <div class="u-grid-2">
+                  <div class="u-field">
+                    <label>Проект для связи</label>
+                    <select v-model="selectedCommunicationProjectSlug" class="glass-input cab-select">
+                      <option v-for="projectOption in allProjects" :key="projectOption.slug" :value="projectOption.slug">
+                        {{ projectOption.title }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <ProjectCommunicationsPanel
+                v-if="selectedCommunicationProjectSlug"
+                :project-slug="selectedCommunicationProjectSlug"
+              />
+              <div v-else class="cab-empty">
+                <div class="cab-empty-icon">◉</div>
+                <p>Нет доступных проектов для защищённой связи.</p>
+              </div>
+            </div>
+          </template>
+
           <!-- ── Контактные данные ──────────────────────────────── -->
           <template v-else-if="section === 'contacts'">
             <form @submit.prevent="saveProfile" class="cab-form">
@@ -1217,6 +1245,7 @@ const nav = computed(() => {
   const items: { key: string; icon: string; label: string }[] = [
     { key: 'dashboard',     icon: '◈', label: 'Обзор' },
     { key: 'tasks',         icon: '◎', label: 'Мои задачи' },
+    { key: 'communications', icon: '◉', label: 'Коммуникации' },
     { key: 'contacts',      icon: '☎', label: 'Контактные данные' },
     { key: 'passport',      icon: '◑', label: 'Паспортные данные' },
     { key: 'requisites',    icon: '◒', label: 'Реквизиты' },
@@ -1366,6 +1395,19 @@ const allProjects = computed(() => {
   }
   return result
 })
+
+const selectedCommunicationProjectSlug = ref('')
+
+watch(allProjects, (projects) => {
+  if (!projects.length) {
+    selectedCommunicationProjectSlug.value = ''
+    return
+  }
+
+  if (!projects.some(project => project.slug === selectedCommunicationProjectSlug.value)) {
+    selectedCommunicationProjectSlug.value = projects[0].slug
+  }
+}, { immediate: true })
 
 // ── Новая задача мастеру ─────────────────────────────────────────
 const showNewTaskModal = ref(false)

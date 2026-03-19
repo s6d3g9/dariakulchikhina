@@ -1062,43 +1062,51 @@ html.dark .glass-input::placeholder {
 /* ── Minimal entity context strip (replaces topbar) ── */
 .ent-entity-hd {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  padding-bottom: 16px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 7%, transparent);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
   flex-wrap: wrap;
 }
 .ent-entity-hd-name {
-  font-size: .72rem;
-  letter-spacing: 0.18em;
+  font-size: .68rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--glass-text);
-  opacity: .75;
-  font-weight: 400;
+  opacity: .78;
+  font-weight: 500;
 }
 .ent-entity-hd-actions {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   align-items: center;
   flex-wrap: wrap;
+}
+.ent-entity-hd-actions > * {
+  min-height: 44px;
 }
 .ent-entity-hd-action {
   font-size: .65rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  background: none;
-  border: none;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
   color: var(--glass-text);
-  opacity: .35;
+  opacity: .62;
   cursor: pointer;
-  padding: 0;
+  padding: 0 12px;
   text-decoration: none;
-  transition: opacity .15s;
+  transition: opacity .15s, background-color .15s, border-color .15s;
   font-family: inherit;
+  border-radius: 0;
 }
-.ent-entity-hd-action:hover { opacity: .85; }
+.ent-entity-hd-action:hover {
+  opacity: .9;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
 
 /* ent-entity-hd before cab-body: add breathing room */
 .ent-entity-hd + .cab-body {
@@ -2135,7 +2143,15 @@ html.dark .glass-input::placeholder {
   .cv-viewport--paged {
     height: auto;
     max-height: none;
+  }
+  .cv-viewport--paged:not([data-cv-mode="wipe"]):not([data-cv-mode="wipe2"]) {
     overflow: visible;
+  }
+  .cv-viewport--paged[data-cv-mode="wipe"],
+  .cv-viewport--paged[data-cv-mode="wipe2"] {
+    height: var(--cv-viewport-height, calc(100vh - var(--dp-panel-h, 28px)));
+    max-height: var(--cv-viewport-height, calc(100vh - var(--dp-panel-h, 28px)));
+    overflow: hidden;
   }
   .cv-pager-rail {
     position: static;
@@ -5710,20 +5726,23 @@ html[data-concept="minale"] [class*="-badge"] {
 
 /* ── ator (ToR contract) component — dark bg ────────────── */
 html[data-concept="minale"] .ent-entity-hd {
-  border-bottom-color: rgba(255,255,255,0.07) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  background: rgba(255,255,255,0.02) !important;
 }
 html[data-concept="minale"] .ent-entity-hd-name {
   color: #ffffff !important;
-  opacity: 0.65 !important;
+  opacity: 0.7 !important;
   letter-spacing: 0.22em !important;
 }
 html[data-concept="minale"] .ent-entity-hd-action {
   color: #ffffff !important;
-  opacity: 0.28 !important;
+  opacity: 0.5 !important;
   letter-spacing: 0.14em !important;
+  border-color: rgba(255,255,255,0.12) !important;
 }
 html[data-concept="minale"] .ent-entity-hd-action:hover {
-  opacity: 0.80 !important;
+  opacity: 0.85 !important;
+  background: rgba(255,255,255,0.08) !important;
 }
 html[data-concept="minale"] .ator-transition-banner {
   background: transparent !important;

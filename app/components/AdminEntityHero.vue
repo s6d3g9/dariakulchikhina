@@ -80,14 +80,16 @@ const metaStyle = computed(() => ({
   justify-content: center;
   min-height: min(72vh, 720px);
   padding: 32px 20px;
+  border-radius: 0;
 }
 
 .admin-entity-hero--framed {
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
 
 .admin-entity-hero--divided {
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
 }
 
 .admin-entity-hero--full {
@@ -134,8 +136,9 @@ const metaStyle = computed(() => ({
   flex-direction: column;
   gap: 4px;
   padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
   background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+  min-height: 84px;
 }
 
 .admin-entity-hero__meta-label {
@@ -186,17 +189,24 @@ const metaStyle = computed(() => ({
   justify-content: center;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
   background: transparent;
   color: var(--glass-text);
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: .12em;
   font-size: .68rem;
+  border-radius: 0;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease;
 }
 
 .admin-entity-hero__actions :deep(button.admin-entity-hero__action) {
   cursor: pointer;
+}
+
+.admin-entity-hero__actions :deep(.admin-entity-hero__action:hover),
+.admin-entity-hero__notices :deep(.admin-entity-hero__notice:hover) {
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
 }
 
 .admin-entity-hero__notices :deep(.admin-entity-hero__notice--success) {

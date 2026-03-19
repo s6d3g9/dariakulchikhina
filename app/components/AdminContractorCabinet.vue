@@ -115,7 +115,11 @@
             </div>
 
             <div v-if="linkedProjects?.length" class="dash-projects glass-surface" :class="{ 'dash-projects--brutalist': isBrutalistContractorCabinetMode }">
-              <div class="u-section-title">Мои проекты ({{ linkedProjects.length }})</div>
+              <CabSectionHeader
+                :title="`Мои проекты (${linkedProjects.length})`"
+                eyebrow="contractor"
+                :brutalist="isBrutalistContractorCabinetMode"
+              />
               <div class="dash-projects-grid">
                 <div v-for="p in linkedProjects" :key="p.slug" class="dash-project-card" :class="{ 'dash-project-card--brutalist': isBrutalistContractorCabinetMode }">
                   <span class="dash-project-name">{{ p.title }}</span>
@@ -125,7 +129,11 @@
             </div>
 
             <div v-if="dashDeadlines.length" class="dash-deadlines glass-surface" :class="{ 'dash-deadlines--brutalist': isBrutalistContractorCabinetMode }">
-              <div class="u-section-title">Ближайшие дедлайны</div>
+              <CabSectionHeader
+                title="Ближайшие дедлайны"
+                eyebrow="contractor"
+                :brutalist="isBrutalistContractorCabinetMode"
+              />
               <div
                 v-for="item in dashDeadlines"
                 :key="item.id"
@@ -140,7 +148,11 @@
             </div>
 
             <div v-if="dashNoDue.length" class="dash-nodue glass-surface" :class="{ 'dash-nodue--brutalist': isBrutalistContractorCabinetMode }">
-              <div class="u-section-title">Без срока ({{ dashNoDue.length }})</div>
+              <CabSectionHeader
+                :title="`Без срока (${dashNoDue.length})`"
+                eyebrow="contractor"
+                :brutalist="isBrutalistContractorCabinetMode"
+              />
               <div v-for="item in dashNoDue" :key="item.id" class="dash-nodue-row">
                 <span class="dash-nodue-dot" />
                 <span class="dash-nodue-title">{{ item.title }}</span>
@@ -152,8 +164,18 @@
 
           <template v-if="(section === 'tasks') || showAll">
             <div class="cab-section" data-section="tasks">
+            <CabSectionHeader
+              title="Задачи"
+              eyebrow="contractor"
+              :brutalist="isBrutalistContractorCabinetMode"
+              note="Статусы меняются сразу, а даты и заметки внутри карточки сохраняются автоматически."
+            >
+              <template #actions>
+                <button class="cab-add-task-btn" @click="openNewTaskModal">＋ Добавить задачу</button>
+              </template>
+            </CabSectionHeader>
             <div class="cab-add-task-row" :class="{ 'cab-add-task-row--brutalist': isBrutalistContractorCabinetMode }">
-              <button class="cab-add-task-btn" @click="openNewTaskModal">＋ Добавить задачу</button>
+              <div class="cab-add-task-row__hint">[ TASK FLOW ]</div>
             </div>
 
             <div v-if="showNewTaskModal" class="u-modal glass-surface" :class="{ 'u-modal--brutalist-task': isBrutalistContractorCabinetMode }">
@@ -298,11 +320,11 @@
                             <div class="cab-task-edit-row">
                               <div class="cab-task-edit-field">
                                 <label>Дата начала</label>
-                                <input v-model="editMap[item.id].dateStart" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
+                                <input v-model="editMap[item.id].dateStart" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" @blur="queueTaskDetailsSave(item)" @change="queueTaskDetailsSave(item)" />
                               </div>
                               <div class="cab-task-edit-field">
                                 <label>Дата окончания</label>
-                                <input v-model="editMap[item.id].dateEnd" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
+                                <input v-model="editMap[item.id].dateEnd" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" @blur="queueTaskDetailsSave(item)" @change="queueTaskDetailsSave(item)" />
                               </div>
                               <div v-if="item.budget" class="cab-task-edit-field">
                                 <label>Бюджет</label>
@@ -312,13 +334,11 @@
 
                             <div class="cab-task-edit-field">
                               <label>Заметка для дизайнера</label>
-                              <textarea v-model="editMap[item.id].notes" class="glass-input u-ta" rows="3" placeholder="Статус работ, вопросы, уточнения…" />
+                              <textarea v-model="editMap[item.id].notes" class="glass-input u-ta" rows="3" placeholder="Статус работ, вопросы, уточнения…" @blur="queueTaskDetailsSave(item)" />
                             </div>
 
                             <div class="cab-task-edit-actions">
-                              <button type="button" class="cab-task-save" :disabled="savingItem === item.id" @click.stop="saveTaskDetails(item)">
-                                {{ savingItem === item.id ? 'Сохранение…' : 'Сохранить' }}
-                              </button>
+                              <CabAutosaveStatus :state="taskSaveStates[item.id] || (savingItem === item.id ? 'saving' : '')" idle-label="[ TASK AUTOSAVE ]" />
                               <button type="button" class="cab-task-cancel" @click.stop="expandedId = null">Отмена</button>
                             </div>
                           </div>
@@ -356,7 +376,13 @@
 
           <template v-if="(section === 'contacts') || showAll">
             <div class="cab-section" data-section="contacts">
-            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+            <CabSectionHeader
+              title="Контактные данные"
+              eyebrow="contractor"
+              :brutalist="isBrutalistContractorCabinetMode"
+              note="Основные контакты подрядчика обновляются автоматически при изменении полей."
+            />
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }" @focusout="queueProfileAutosave" @change="queueProfileAutosave">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Основные контакты</h3>
                 <div class="u-modal__row2">
@@ -380,7 +406,7 @@
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <CabAutosaveStatus :state="profileSaveState" />
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -389,7 +415,13 @@
 
           <template v-if="(section === 'passport') || showAll">
             <div class="cab-section" data-section="passport">
-            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+            <CabSectionHeader
+              title="Паспортные данные"
+              eyebrow="contractor"
+              :brutalist="isBrutalistContractorCabinetMode"
+              note="Паспорт и персональные данные синхронизируются без ручной кнопки сохранения."
+            />
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }" @focusout="queueProfileAutosave" @change="queueProfileAutosave">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Паспорт гражданина РФ</h3>
                 <div class="u-modal__row2">
@@ -443,7 +475,7 @@
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <CabAutosaveStatus :state="profileSaveState" />
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -452,7 +484,13 @@
 
           <template v-if="(section === 'requisites') || showAll">
             <div class="cab-section" data-section="requisites">
-            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+            <CabSectionHeader
+              title="Реквизиты"
+              eyebrow="contractor"
+              :brutalist="isBrutalistContractorCabinetMode"
+              note="Юридические и банковские реквизиты приведены к тому же autosave-потоку, что и профиль."
+            />
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }" @focusout="queueProfileAutosave" @change="queueProfileAutosave">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Юридические данные</h3>
                 <div class="u-grid-2">
@@ -502,7 +540,7 @@
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <CabAutosaveStatus :state="profileSaveState" />
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -591,7 +629,13 @@
 
           <template v-if="(section === 'specialization') || showAll">
             <div class="cab-section" data-section="specialization">
-            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+            <CabSectionHeader
+              title="Специализации"
+              eyebrow="contractor"
+              :brutalist="isBrutalistContractorCabinetMode"
+              note="Роли, виды работ и набор компетенций сохраняются в фоне и отображаются единообразно с другими кабинетами."
+            />
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }" @focusout="queueProfileAutosave" @change="queueProfileAutosave">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Роль / профессия</h3>
                 <div class="u-field u-field--full">
@@ -604,7 +648,7 @@
                         type="button"
                         class="u-tag u-tag--picker"
                         :class="{ 'u-tag--active': form.roleTypes.includes(r.value) }"
-                        @click="toggleArr(form.roleTypes, r.value)"
+                        @click="toggleProfileArray(form.roleTypes, r.value)"
                       >{{ r.label }}</button>
                     </div>
                   </div>
@@ -623,7 +667,7 @@
                         type="button"
                         class="u-tag u-tag--picker"
                         :class="{ 'u-tag--active': form.workTypes.includes(w.value) }"
-                        @click="toggleArr(form.workTypes, w.value)"
+                        @click="toggleProfileArray(form.workTypes, w.value)"
                       >{{ w.label }}</button>
                     </div>
                   </div>
@@ -631,7 +675,7 @@
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <CabAutosaveStatus :state="profileSaveState" />
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -640,7 +684,13 @@
 
           <template v-if="(section === 'finances') || showAll">
             <div class="cab-section" data-section="finances">
-            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }">
+            <CabSectionHeader
+              title="Финансы"
+              eyebrow="contractor"
+              :brutalist="isBrutalistContractorCabinetMode"
+              note="Налоговый режим, способы оплаты и сертификаты теперь живут в том же autosave-shell."
+            />
+            <form @submit.prevent="saveProfile" class="cab-form" :class="{ 'cab-form--brutalist': isBrutalistContractorCabinetMode }" @focusout="queueProfileAutosave" @change="queueProfileAutosave">
               <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
                 <h3>Система налогообложения</h3>
                 <div class="u-grid-2">
@@ -672,7 +722,7 @@
                     type="button"
                     class="u-tag u-tag--picker"
                     :class="{ 'u-tag--active': form.paymentMethods.includes(pm.value) }"
-                    @click="toggleArr(form.paymentMethods, pm.value)"
+                    @click="toggleProfileArray(form.paymentMethods, pm.value)"
                   >{{ pm.label }}</button>
                 </div>
               </div>
@@ -682,17 +732,17 @@
                 <div class="cab-certs-list">
                   <div v-for="(cert, idx) in form.certifications" :key="idx" class="cab-cert-item">
                     <span>{{ cert }}</span>
-                    <button type="button" class="cab-cert-del" @click="removeCert(idx)">✕</button>
+                    <button type="button" class="cab-cert-del" @click="removeCertification(idx)">✕</button>
                   </div>
                 </div>
                 <div class="cab-cert-add">
-                  <input v-model="newCert" class="glass-input" placeholder="Новый сертификат / допуск" @keydown.enter.prevent="addCert" />
-                  <button type="button" class="cab-task-save" @click="addCert">+</button>
+                  <input v-model="newCert" class="glass-input" placeholder="Новый сертификат / допуск" @keydown.enter.prevent="addCertification" />
+                  <button type="button" class="cab-task-save" @click="addCertification">+</button>
                 </div>
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <CabAutosaveStatus :state="profileSaveState" />
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -743,6 +793,12 @@
 
           <template v-if="(section === 'settings') || showAll">
             <div class="cab-section" data-section="settings">
+            <CabSectionHeader
+              title="Настройки"
+              eyebrow="contractor"
+              :brutalist="isBrutalistContractorCabinetMode"
+              note="Локальные настройки кабинета и уведомлений сохраняются автоматически тем же паттерном, что и профиль."
+            />
             <div class="u-form-section" :class="{ 'u-form-section--brutalist': isBrutalistContractorCabinetMode }">
               <h3>Аккаунт</h3>
               <div class="u-grid-2">
@@ -765,23 +821,31 @@
               <h3>Уведомления</h3>
               <div class="cab-settings-toggles">
                 <label class="cab-toggle-row">
-                  <input type="checkbox" v-model="notifSettings.newTasks" class="cab-toggle-checkbox" />
+                  <input type="checkbox" v-model="notifSettings.newTasks" class="cab-toggle-checkbox" @change="queueNotifSettingsSave" />
                   <span class="cab-toggle-label">Новые задачи</span>
                   <span class="cab-toggle-hint">Уведомлять о назначении новых задач</span>
                 </label>
                 <label class="cab-toggle-row">
-                  <input type="checkbox" v-model="notifSettings.deadlines" class="cab-toggle-checkbox" />
+                  <input type="checkbox" v-model="notifSettings.deadlines" class="cab-toggle-checkbox" @change="queueNotifSettingsSave" />
                   <span class="cab-toggle-label">Дедлайны</span>
                   <span class="cab-toggle-hint">Напоминание за 1 день до срока</span>
                 </label>
               </div>
-              <button class="a-btn-sm" style="margin-top:12px" @click="saveNotifSettings">Сохранить настройки</button>
+              <div class="u-form-foot">
+                <CabAutosaveStatus :state="notificationSaveState" idle-label="[ SETTINGS AUTOSAVE ]" />
+              </div>
             </div>
             </div>
           </template>
 
           <template v-if="(section === 'staff') || showAll">
             <div class="cab-section" data-section="staff">
+            <CabSectionHeader
+              title="Бригада"
+              eyebrow="contractor"
+              :brutalist="isBrutalistContractorCabinetMode"
+              note="Список мастеров выведен в том же section shell, что и остальные правые зоны кабинета."
+            />
             <div v-if="!staff?.length" class="u-empty glass-surface" :class="{ 'u-empty--brutalist': isBrutalistContractorCabinetMode }">
               <span>◔</span>
               <p>Сотрудников пока нет.<br>Администратор добавит мастеров за вашей компанией.</p>
@@ -877,7 +941,8 @@ const {
   activeCount,
   toggleExpand,
   updateStatus,
-  saveTaskDetails,
+  queueTaskDetailsSave,
+  taskSaveStates,
   isWtGroupOpen,
   toggleWtGroup,
   isStageDone,
@@ -902,7 +967,8 @@ const {
   addCert,
   removeCert,
   notifSettings,
-  saveNotifSettings,
+  queueNotifSettingsSave,
+  notificationSaveState,
   workTypeLabel,
   showNewTaskModal,
   creatingTask,
@@ -974,6 +1040,9 @@ const contractorDashboardFacts = computed(() => [
   { label: 'проекты', value: String(linkedProjects.value?.length || 0) },
   { label: 'документы', value: String(contractorDocs.value?.length || 0) },
 ])
+type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
+const profileSaveState = ref<InlineAutosaveState>('')
+let profileSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 function formatDocDate(value: string) {
   const date = new Date(value)
@@ -983,6 +1052,55 @@ function formatDocDate(value: string) {
 
 function getDocCategoryLabel(category: string): string {
   return DOC_CATEGORIES.find(c => c.value === category)?.label ?? category
+}
+
+function clearProfileSaveTimer() {
+  if (!profileSaveTimer) return
+  clearTimeout(profileSaveTimer)
+  profileSaveTimer = null
+}
+
+function setAutosaveSettled(expected: InlineAutosaveState) {
+  setTimeout(() => {
+    if (profileSaveState.value === expected) profileSaveState.value = ''
+  }, 1400)
+}
+
+async function autoSaveProfile() {
+  clearProfileSaveTimer()
+  profileSaveState.value = 'saving'
+  try {
+    await saveProfile()
+    profileSaveState.value = 'saved'
+    setAutosaveSettled('saved')
+  } catch {
+    profileSaveState.value = 'error'
+  }
+}
+
+function queueProfileAutosave() {
+  clearProfileSaveTimer()
+  saveMsg.value = ''
+  profileSaveTimer = setTimeout(() => {
+    autoSaveProfile()
+  }, 420)
+}
+
+function toggleProfileArray(target: string[], value: string) {
+  toggleArr(target, value)
+  queueProfileAutosave()
+}
+
+function addCertification() {
+  const hasValue = !!newCert.value.trim()
+  addCert()
+  if (!hasValue) return
+  queueProfileAutosave()
+}
+
+function removeCertification(index: number) {
+  removeCert(index)
+  queueProfileAutosave()
 }
 
 // ── Wipe2 card view ──
@@ -1007,6 +1125,10 @@ watch(section, (key) => {
   if (!showAll.value) return
   requestAnimationFrame(() => scrollToSection(key))
 }, { flush: 'post' })
+
+onBeforeUnmount(() => {
+  clearProfileSaveTimer()
+})
 
 const wipe2CabinetData = computed<Wipe2EntityData | null>(() => {
   const c = contractor.value

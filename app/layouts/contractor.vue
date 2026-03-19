@@ -72,7 +72,7 @@ const profilePct = computed(() => {
 
 async function logout() {
   await $fetch('/api/auth/contractor-logout', { method: 'POST' })
-  router.push('/contractor/login')
+  router.push('/login?role=contractor')
 }
 </script>
 

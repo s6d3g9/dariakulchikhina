@@ -1,0 +1,28 @@
+{
+  "users": [
+    {
+      "id": "c88583b7-b52f-46a8-a0ad-96b54f66af8c",
+      "login": "standalone1773908842",
+      "displayName": "Standalone Smoke",
+      "nickname": "standalone1773908842",
+      "passwordHash": "$2b$12$CN0iANIRk3Cz7y.HwOyeNu3e91RAcJ2CiW6Inxa1ZcYzKFjP.HtUO",
+      "createdAt": "2026-03-19T08:27:22.787Z"
+    },
+    {
+      "id": "dd6f9dff-b170-412c-8add-1b48a7f7db14",
+      "login": "standalone1773908843",
+      "displayName": "Standalone Bootstrap",
+      "nickname": "standalone1773908843",
+      "passwordHash": "$2b$12$LeXdCBwibQDI/T2ht.cmL.mOiKjRtSs.AZsmCb1cwccguHNiyMwC.",
+      "createdAt": "2026-03-19T08:27:23.915Z"
+    },
+    {
+      "id": "61969e8a-db16-4e65-82ff-8233b25a288c",
+      "login": "uismoke1903260828",
+      "displayName": "UI Smoke",
+      "nickname": "uismoke1903260828",
+      "passwordHash": "$2b$12$plqt0Ux7oE89Vug.0dJgkuXNuvCKckRh3lGy70zElhR.XoAOuLUTG",
+      "createdAt": "2026-03-19T08:28:27.765Z"
+    }
+  ]
+}
