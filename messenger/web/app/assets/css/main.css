@@ -40,7 +40,7 @@
   --messenger-glass-button-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
   --messenger-control-size: 40px;
   --messenger-control-radius: 15px;
-  --messenger-bottom-nav-height: 76px;
+  --messenger-bottom-nav-height: 68px;
   --messenger-message-peer-bg: rgba(255, 255, 255, 0.05);
   --messenger-message-peer-border: rgba(245, 158, 11, 0.34);
   --messenger-message-own-bg: rgba(125, 211, 252, 0.12);
@@ -803,21 +803,22 @@ textarea {
 
 .bottom-nav {
   position: fixed;
-  left: max(12px, env(safe-area-inset-left));
-  right: max(12px, env(safe-area-inset-right));
+  left: 50%;
+  right: auto;
   bottom: max(0px, var(--messenger-keyboard-inset));
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
-  width: min(100%, 560px);
-  margin: 0 auto;
-  padding: 6px;
+  width: min(calc(100vw - 24px), 560px);
+  margin: 0;
+  padding: 4px;
   border: 1px solid var(--messenger-slab-border);
   border-radius: 22px;
   background: var(--messenger-slab-bg);
   backdrop-filter: blur(28px) saturate(160%);
   box-shadow: var(--messenger-slab-shadow);
   z-index: 50;
+  transform: translateX(-50%);
   transition: bottom 180ms ease, opacity 180ms ease, transform 180ms ease;
 }
 
@@ -836,7 +837,7 @@ textarea {
   visibility: hidden;
   display: none;
   pointer-events: none;
-  transform: translateY(16px);
+  transform: translateX(-50%) translateY(16px);
 }
 
 .bottom-nav__item {
@@ -845,14 +846,14 @@ textarea {
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 4px;
-  min-height: 62px;
-  padding: 6px 8px;
+  gap: 2px;
+  min-height: 56px;
+  padding: 4px 6px;
   border: 0 !important;
   background: transparent !important;
   color: var(--messenger-text);
   border-radius: var(--messenger-control-radius);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.01em;
   backdrop-filter: none;
@@ -864,15 +865,15 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
   color: inherit;
 }
 
 .bottom-nav__icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   display: block;
 }
 
@@ -893,7 +894,7 @@ textarea {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .bottom-nav .bottom-nav__item::before {
@@ -3127,19 +3128,20 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 
   .composer-bar--dock {
     position: fixed;
-    left: max(12px, env(safe-area-inset-left));
-    right: max(12px, env(safe-area-inset-right));
+    left: 50%;
+    right: auto;
     bottom: calc(var(--messenger-bottom-nav-height) - 1px + max(0px, env(safe-area-inset-bottom)));
-    width: min(100%, 560px);
+    width: min(calc(100vw - 24px), 560px);
     z-index: 46;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    margin: 0 auto;
+    margin: 0;
     padding-top: 6px;
     padding-right: 12px;
     padding-bottom: 10px;
     padding-left: 12px;
     border-bottom: 0;
     border-radius: 24px 24px 0 0;
+    transform: translateX(-50%);
   }
 
   .composer-bar--dock::after {
