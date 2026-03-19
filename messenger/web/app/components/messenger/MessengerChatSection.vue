@@ -154,9 +154,17 @@ async function submit() {
     draft.value = ''
     activeMessageActionsId.value = null
     resetComposerInputHeight()
+    await nextTick()
+    composerInputEl.value?.focus({ preventScroll: true })
+    viewport.scheduleViewportSync()
   } catch {
     actionError.value = 'Не удалось отправить сообщение.'
   }
+}
+
+function preserveComposerFocus(event: PointerEvent) {
+  event.preventDefault()
+  composerInputEl.value?.focus({ preventScroll: true })
 }
 
 function openFilePicker() {
@@ -699,7 +707,7 @@ onBeforeUnmount(() => {
             <path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V7a3.5 3.5 0 1 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Zm-6-3.9a1 1 0 1 1 2 0 4 4 0 1 0 8 0 1 1 0 1 1 2 0 6 6 0 0 1-5 5.91V21a1 1 0 1 1-2 0v-2.49A6 6 0 0 1 6 11.6Z" fill="currentColor"/>
           </svg>
         </button>
-        <button type="button" class="composer-btn composer-btn--accent" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @click="submit">↑</button>
+        <button type="button" class="composer-btn composer-btn--accent" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @pointerdown="preserveComposerFocus" @click="submit">↑</button>
       </div>
     </section>
   </section>
