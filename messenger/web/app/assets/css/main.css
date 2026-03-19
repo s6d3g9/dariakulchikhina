@@ -1243,6 +1243,10 @@ html[data-messenger-motion='reduced'] *::after {
   display: grid;
   gap: 0;
   min-height: calc(var(--messenger-viewport-height) - 148px - max(12px, env(safe-area-inset-bottom)));
+  background:
+    radial-gradient(circle at top left, rgba(125, 211, 252, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(216, 180, 254, 0.14), transparent 24%),
+    linear-gradient(180deg, var(--messenger-bg) 0%, var(--messenger-bg-secondary) 100%);
 }
 
 .section-block--chat {
@@ -1407,6 +1411,12 @@ html[data-messenger-motion='reduced'] *::after {
     min-height: var(--messenger-viewport-height);
     height: var(--messenger-viewport-height);
     overflow: hidden;
+    background:
+      radial-gradient(circle at top left, rgba(125, 211, 252, 0.14), transparent 28%),
+      radial-gradient(circle at top right, rgba(216, 180, 254, 0.14), transparent 24%),
+      linear-gradient(180deg, var(--messenger-bg) 0%, var(--messenger-bg-secondary) 100%);
+    background-repeat: no-repeat;
+    background-size: cover;
   }
 
   .section-block--chat {
