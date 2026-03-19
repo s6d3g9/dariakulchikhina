@@ -8,6 +8,16 @@ const searchOpen = ref(false)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
+type ContactRelationship = 'none' | 'incoming' | 'outgoing' | 'contact'
+
+interface ContactSearchItem {
+  id: string
+  title: string
+  login: string
+  relationship: ContactRelationship
+  meta: string
+}
+
 function getRelationshipLabel(relationship: 'none' | 'incoming' | 'outgoing' | 'contact') {
   switch (relationship) {
     case 'contact':
@@ -23,13 +33,42 @@ function getRelationshipLabel(relationship: 'none' | 'incoming' | 'outgoing' | '
 
 const normalizedSearchQuery = computed(() => searchDraft.value.trim().toLowerCase())
 
+const inviteByPeerUserId = computed(() => {
+  const inviteMap = new Map<string, { id: string, direction: 'incoming' | 'outgoing', status: 'pending' | 'accepted' | 'rejected' }>()
+
+  for (const invite of contacts.overview.value.invites) {
+    inviteMap.set(invite.peerUserId, {
+      id: invite.id,
+      direction: invite.direction,
+      status: invite.status,
+    })
+  }
+
+  return inviteMap
+})
+
+function getActionLabel(relationship: ContactRelationship) {
+  switch (relationship) {
+    case 'contact':
+      return 'Открыть чат'
+    case 'incoming':
+      return 'Принять'
+    case 'outgoing':
+      return 'Отправлено'
+    default:
+      return 'Добавить'
+  }
+}
+
 const contactSuggestions = computed(() => {
-  const suggestions = new Map<string, { id: string, title: string, meta: string }>()
+  const suggestions = new Map<string, ContactSearchItem>()
 
   for (const contact of contacts.overview.value.contacts) {
     suggestions.set(contact.id, {
       id: contact.id,
       title: contact.displayName,
+      login: contact.login,
+      relationship: 'contact',
       meta: `@${contact.login} · контакт`,
     })
   }
@@ -43,6 +82,8 @@ const contactSuggestions = computed(() => {
       suggestions.set(candidate.id, {
         id: candidate.id,
         title: candidate.displayName,
+        login: candidate.login,
+        relationship: candidate.relationship,
         meta: `@${candidate.login} · ${getRelationshipLabel(candidate.relationship)}`,
       })
     }
@@ -52,6 +93,10 @@ const contactSuggestions = computed(() => {
 })
 
 const discoverResults = computed(() => {
+  if (!hasSearchQuery.value) {
+    return []
+  }
+
   const contactIds = new Set(contacts.overview.value.contacts.map(contact => contact.id))
   return contacts.overview.value.discover.filter(candidate => !contactIds.has(candidate.id))
 })
@@ -122,9 +167,48 @@ async function removeContact(peerUserId: string) {
   }
 }
 
-async function selectSuggestion(item: { id: string }) {
+async function handleSearchAction(targetUserId: string, relationship: ContactRelationship) {
+  actionError.value = ''
+
+  try {
+    if (relationship === 'contact') {
+      await openDirectChat(targetUserId)
+      return
+    }
+
+    if (relationship === 'incoming') {
+      const invite = inviteByPeerUserId.value.get(targetUserId)
+      if (!invite || invite.direction !== 'incoming' || invite.status !== 'pending') {
+        throw new Error('INVITE_NOT_FOUND')
+      }
+
+      await contacts.accept(invite.id)
+      await openDirectChat(targetUserId)
+      return
+    }
+
+    if (relationship === 'outgoing') {
+      actionError.value = 'Заявка уже отправлена этому пользователю.'
+      return
+    }
+
+    await contacts.invite(targetUserId)
+  } catch {
+    if (!actionError.value) {
+      actionError.value = relationship === 'contact'
+        ? 'Не удалось открыть direct-чат.'
+        : 'Не удалось обработать заявку в контакты.'
+    }
+  }
+}
+
+async function selectSuggestion(item: ContactSearchItem) {
   searchOpen.value = false
-  await openDirectChat(item.id)
+  await handleSearchAction(item.id, item.relationship)
+}
+
+async function selectSuggestionPointer(item: ContactSearchItem) {
+  await selectSuggestion(item)
 }
 
 function openSearch() {
@@ -161,7 +245,7 @@ function startHold(contactId: string, event?: Event) {
             :key="item.id"
             type="button"
             class="search-dropdown__item"
-            @click="selectSuggestion(item)"
+            @pointerdown.prevent="selectSuggestionPointer(item)"
           >
             <span class="search-dropdown__title">{{ item.title }}</span>
             <span class="search-dropdown__meta">{{ item.meta }}</span>
@@ -223,11 +307,21 @@ function startHold(contactId: string, event?: Event) {
       <article
         v-for="candidate in discoverResults"
         :key="candidate.id"
-        class="list-card list-card--action list-card--clickable list-card--chat-row"
-        @click="openDirectChat(candidate.id)"
+        class="list-card list-card--action list-card--chat-row"
       >
         <div class="list-card__main">
-          <p class="list-card__title">{{ candidate.displayName }}</p>
+          <div class="list-card__row">
+            <p class="list-card__title">{{ candidate.displayName }}</p>
+            <button
+              type="button"
+              class="action-btn"
+              :class="{ 'action-btn--accept': candidate.relationship === 'incoming' }"
+              :disabled="candidate.relationship === 'outgoing'"
+              @click="handleSearchAction(candidate.id, candidate.relationship)"
+            >
+              {{ getActionLabel(candidate.relationship) }}
+            </button>
+          </div>
           <p class="list-card__text">@{{ candidate.login }} · {{ getRelationshipLabel(candidate.relationship) }}</p>
         </div>
       </article>

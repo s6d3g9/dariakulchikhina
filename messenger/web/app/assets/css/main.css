@@ -668,6 +668,8 @@ textarea {
 
 .composer-segment--attach {
   flex: 0 0 auto;
+  width: auto;
+  justify-self: start;
   justify-content: center;
   padding-right: 10px;
 }
@@ -692,6 +694,8 @@ textarea {
 
 .composer-segment--actions {
   flex: 0 0 auto;
+  width: auto;
+  justify-self: end;
   justify-content: flex-end;
   padding-left: 10px;
   gap: 0;
@@ -737,9 +741,15 @@ textarea {
 }
 
 .composer-input {
+  min-width: 0;
   min-height: 48px;
   max-height: 144px;
   line-height: 1.4;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: anywhere;
   overflow-y: hidden;
 }
 
