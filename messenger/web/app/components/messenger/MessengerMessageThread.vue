@@ -180,7 +180,7 @@ function handleEditInput(event: Event) {
         :src="entry.attachment.absoluteUrl"
       />
       <button
-        v-if="!entry.attachment.mimeType.startsWith('audio/')"
+        v-if="!entry.attachment.mimeType.startsWith('audio/') && !entry.attachment.mimeType.startsWith('image/')"
         type="button"
         class="attachment-card attachment-card--button"
         @click.stop="emit('copy-link', entry.attachment.absoluteUrl, entry.attachment.name)"

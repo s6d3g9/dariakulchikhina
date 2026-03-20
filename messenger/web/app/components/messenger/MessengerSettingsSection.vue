@@ -412,7 +412,7 @@ function showManualInstallHelp() {
 
           <article class="setting-card setting-card--glass setting-card--stacked">
             <p class="setting-card__title">Стиль дизайна</p>
-            <p class="setting-card__text">Отдельно от палитры можно переключать характер стекла: более чистый, более матовый или более контрастный.</p>
+            <p class="setting-card__text">Отдельно от палитры можно переключать характер интерфейса: glass-режимы или строгий минималистичный вариант без стекла.</p>
             <div class="style-grid">
               <button
                 v-for="style in settingsModel.styleOptions"
@@ -465,7 +465,7 @@ function showManualInstallHelp() {
                 <strong>Мгновенно ко всему messenger</strong>
               </div>
             </div>
-            <p class="setting-card__meta">Тема управляет палитрой, а стиль управляет характером поверхностей. Можно, например, оставить чёрную тему и переключать между кристальным, матовым и контрастным стеклом.</p>
+            <p class="setting-card__meta">Тема управляет палитрой, а стиль управляет характером поверхностей. Можно, например, выбрать Void и включить минималистичный режим без liquid glass.</p>
           </article>
         </section>
 

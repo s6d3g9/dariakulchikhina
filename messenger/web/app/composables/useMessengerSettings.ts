@@ -1,7 +1,7 @@
 type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
-type MessengerThemeKey = 'beige' | 'gray' | 'black'
-type MessengerStyleKey = 'crystal' | 'mist' | 'contrast'
+type MessengerThemeKey = 'beige' | 'gray' | 'black' | 'void'
+type MessengerStyleKey = 'crystal' | 'mist' | 'contrast' | 'minimal'
 
 interface MessengerSettingsSnapshot {
   profile: {
@@ -193,6 +193,11 @@ export function useMessengerSettings() {
       title: 'Чёрная',
       hint: 'Глубокая тёмная тема с максимальной контрастностью.',
     },
+    {
+      key: 'void' as const,
+      title: 'Void',
+      hint: 'Сверхминималистичная почти монохромная чёрная тема без лишнего свечения.',
+    },
   ]
 
   const styleOptions = [
@@ -210,6 +215,11 @@ export function useMessengerSettings() {
       key: 'contrast' as const,
       title: 'Контраст',
       hint: 'Более собранный режим с жёстче очерченными границами и плотными панелями.',
+    },
+    {
+      key: 'minimal' as const,
+      title: 'Минимал',
+      hint: 'Строгий плоский режим без liquid glass, с чёткими границами и тихой монохромной подачей.',
     },
   ]
 

@@ -124,6 +124,40 @@ html[data-messenger-style='contrast'] {
   --messenger-control-active-shadow: 0 9px 18px rgba(0, 0, 0, 0.18);
 }
 
+html[data-messenger-style='minimal'] {
+  --messenger-surface-bg: rgba(255, 255, 255, 0.02);
+  --messenger-surface-bg-strong: rgba(255, 255, 255, 0.03);
+  --messenger-surface-border: rgba(255, 255, 255, 0.1);
+  --messenger-surface-shadow: none;
+  --messenger-surface-filter: none;
+  --messenger-scene-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 22%);
+  --messenger-scene-grid-opacity: 0.02;
+  --messenger-aurora-one: rgba(255, 255, 255, 0.02);
+  --messenger-aurora-two: rgba(255, 255, 255, 0.01);
+  --messenger-aurora-three: rgba(255, 255, 255, 0);
+  --messenger-aurora-blur: 0px;
+  --messenger-aurora-opacity: 0.18;
+  --messenger-slab-bg: #070707;
+  --messenger-slab-bg-soft: #0a0a0a;
+  --messenger-slab-bg-strong: #050505;
+  --messenger-slab-border: rgba(255, 255, 255, 0.08);
+  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+  --messenger-slab-shadow: none;
+  --messenger-glass-button-bg: rgba(255, 255, 255, 0.03);
+  --messenger-glass-button-bg-hover: rgba(255, 255, 255, 0.05);
+  --messenger-glass-button-border: rgba(255, 255, 255, 0.1);
+  --messenger-glass-button-border-strong: rgba(255, 255, 255, 0.18);
+  --messenger-glass-button-shadow: none;
+  --messenger-popup-bg: #0a0a0a;
+  --messenger-popup-border: rgba(255, 255, 255, 0.1);
+  --messenger-popup-shadow: none;
+  --messenger-control-hover-transform: translateY(0);
+  --messenger-control-hover-filter: none;
+  --messenger-control-hover-shadow: none;
+  --messenger-control-active-transform: translateY(0);
+  --messenger-control-active-shadow: none;
+}
+
 html[data-messenger-theme='beige'] {
   color-scheme: light;
   --messenger-bg: #faf4ea;
@@ -261,6 +295,62 @@ html[data-messenger-theme='black'] {
   --messenger-aurora-three: rgba(255, 255, 255, 0.03);
   --messenger-aurora-blur: 28px;
   --messenger-aurora-opacity: 0.48;
+}
+
+html[data-messenger-theme='void'] {
+  color-scheme: dark;
+  --messenger-bg: #000000;
+  --messenger-bg-secondary: #020202;
+  --messenger-panel: rgba(5, 5, 5, 0.96);
+  --messenger-panel-strong: rgba(8, 8, 8, 0.98);
+  --messenger-panel-soft: rgba(255, 255, 255, 0.02);
+  --messenger-border: rgba(255, 255, 255, 0.08);
+  --messenger-border-strong: rgba(255, 255, 255, 0.14);
+  --messenger-text: #f5f5f5;
+  --messenger-muted: rgba(229, 229, 229, 0.58);
+  --messenger-accent: #f3f4f6;
+  --messenger-accent-strong: #9ca3af;
+  --messenger-success: #a7f3d0;
+  --messenger-shadow: none;
+  --messenger-accent-fill: linear-gradient(135deg, rgba(245, 245, 245, 0.96), rgba(161, 161, 170, 0.92));
+  --messenger-accent-soft-fill: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  --messenger-accent-ink: #050505;
+  --messenger-success-fill: linear-gradient(135deg, rgba(167, 243, 208, 0.88), rgba(209, 250, 229, 0.82));
+  --messenger-success-ink: #04110a;
+  --messenger-slab-bg: #050505;
+  --messenger-slab-bg-soft: #080808;
+  --messenger-slab-bg-strong: #020202;
+  --messenger-slab-border: rgba(255, 255, 255, 0.08);
+  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+  --messenger-slab-shadow: none;
+  --messenger-divider: rgba(255, 255, 255, 0.08);
+  --messenger-field-header-bg: rgba(255, 255, 255, 0.02);
+  --messenger-field-header-bg-focus: rgba(255, 255, 255, 0.04);
+  --messenger-field-header-border: rgba(255, 255, 255, 0.08);
+  --messenger-glass-button-bg: rgba(255, 255, 255, 0.03);
+  --messenger-glass-button-bg-hover: rgba(255, 255, 255, 0.05);
+  --messenger-glass-button-border: rgba(255, 255, 255, 0.08);
+  --messenger-glass-button-border-strong: rgba(255, 255, 255, 0.14);
+  --messenger-glass-button-shadow: none;
+  --messenger-message-peer-bg: rgba(255, 255, 255, 0.02);
+  --messenger-message-peer-border: rgba(255, 255, 255, 0.08);
+  --messenger-message-own-bg: rgba(255, 255, 255, 0.06);
+  --messenger-message-own-border: rgba(255, 255, 255, 0.14);
+  --messenger-popup-bg: #050505;
+  --messenger-popup-border: rgba(255, 255, 255, 0.09);
+  --messenger-popup-shadow: none;
+  --messenger-surface-bg: rgba(255, 255, 255, 0.02);
+  --messenger-surface-bg-strong: rgba(255, 255, 255, 0.03);
+  --messenger-surface-border: rgba(255, 255, 255, 0.08);
+  --messenger-surface-shadow: none;
+  --messenger-surface-filter: none;
+  --messenger-scene-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%);
+  --messenger-scene-grid-opacity: 0.015;
+  --messenger-aurora-one: rgba(255, 255, 255, 0.015);
+  --messenger-aurora-two: rgba(255, 255, 255, 0.01);
+  --messenger-aurora-three: rgba(255, 255, 255, 0);
+  --messenger-aurora-blur: 0px;
+  --messenger-aurora-opacity: 0.12;
 }
 
 * {
@@ -1383,6 +1473,22 @@ textarea {
   border-color: rgba(255, 255, 255, 0.24);
 }
 
+.setting-style-preview--minimal {
+  background: #060606;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.setting-style-preview--minimal .setting-style-preview__panel {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.setting-style-preview--minimal .setting-style-preview__dot,
+.setting-style-preview--minimal .setting-style-preview__button {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 .setting-select,
 .setting-textarea {
   width: 100%;
@@ -1684,6 +1790,25 @@ textarea {
   border-color: rgba(125, 211, 252, 0.28);
 }
 
+.theme-card--void .theme-card__preview {
+  background: linear-gradient(180deg, rgba(3, 3, 3, 0.98), rgba(10, 10, 10, 0.96));
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.theme-card--void .theme-card__preview-topbar {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.theme-card--void .theme-card__bubble--peer {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.theme-card--void .theme-card__bubble--own {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 .style-card__preview {
   display: grid;
   gap: 10px;
@@ -1760,6 +1885,23 @@ textarea {
   border-color: rgba(255, 255, 255, 0.24);
 }
 
+.style-card--minimal .style-card__preview {
+  background: #060606;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.style-card--minimal .style-card__preview-topbar,
+.style-card--minimal .style-card__preview-dot,
+.style-card--minimal .style-card__preview-button {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.style-card--minimal .style-card__preview-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 .action-btn,
 .composer-btn,
 .icon-btn,
@@ -1820,6 +1962,21 @@ html[data-messenger-style='contrast'] .attachment-card--button {
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
 }
 
+html[data-messenger-style='minimal'] .action-btn,
+html[data-messenger-style='minimal'] .composer-btn,
+html[data-messenger-style='minimal'] .icon-btn,
+html[data-messenger-style='minimal'] .message-action-btn,
+html[data-messenger-style='minimal'] .forward-target-btn,
+html[data-messenger-style='minimal'] .settings-nav__item,
+html[data-messenger-style='minimal'] .chat-user-trigger,
+html[data-messenger-style='minimal'] .bottom-nav__item,
+html[data-messenger-style='minimal'] .attachment-card--button {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
 .action-btn::before,
 .composer-btn::before,
 .icon-btn::before,
@@ -1836,6 +1993,18 @@ html[data-messenger-style='contrast'] .attachment-card--button {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02));
   opacity: 0.62;
   pointer-events: none;
+}
+
+html[data-messenger-style='minimal'] .action-btn::before,
+html[data-messenger-style='minimal'] .composer-btn::before,
+html[data-messenger-style='minimal'] .icon-btn::before,
+html[data-messenger-style='minimal'] .message-action-btn::before,
+html[data-messenger-style='minimal'] .forward-target-btn::before,
+html[data-messenger-style='minimal'] .settings-nav__item::before,
+html[data-messenger-style='minimal'] .chat-user-trigger::before,
+html[data-messenger-style='minimal'] .bottom-nav__item::before,
+html[data-messenger-style='minimal'] .attachment-card--button::before {
+  opacity: 0;
 }
 
 .action-btn:not([disabled]):hover,
@@ -2632,6 +2801,13 @@ html[data-messenger-style='contrast'] .message-bubble__actions {
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.16);
 }
 
+html[data-messenger-style='minimal'] .message-bubble__content,
+html[data-messenger-style='minimal'] .message-bubble__editor,
+html[data-messenger-style='minimal'] .message-bubble__actions {
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
 .message-bubble__actions::before,
 .message-bubble__content::before,
 .message-bubble__editor::before {
@@ -2646,6 +2822,12 @@ html[data-messenger-style='contrast'] .message-bubble__actions {
   mask-composite: exclude;
   opacity: 0;
   pointer-events: none;
+}
+
+html[data-messenger-style='minimal'] .message-bubble__actions::before,
+html[data-messenger-style='minimal'] .message-bubble__content::before,
+html[data-messenger-style='minimal'] .message-bubble__editor::before {
+  display: none;
 }
 
 .message-bubble__content::before,
@@ -2885,12 +3067,78 @@ html[data-messenger-style='contrast'] .message-bubble--own .message-bubble__edit
   animation-name: message-bubble-rise-own-contrast;
 }
 
+html[data-messenger-style='minimal'] .message-bubble__content,
+html[data-messenger-style='minimal'] .message-bubble__editor,
+html[data-messenger-style='minimal'] .message-bubble__actions,
+html[data-messenger-style='minimal'] .message-bubble__text,
+html[data-messenger-style='minimal'] .message-bubble__status,
+html[data-messenger-style='minimal'] .message-bubble__time,
+html[data-messenger-style='minimal'] .message-relation-card,
+html[data-messenger-style='minimal'] .attachment-card,
+html[data-messenger-style='minimal'] .attachment-preview,
+html[data-messenger-style='minimal'] .voice-player {
+  animation: none;
+}
+
 .message-bubble__topline {
   margin-bottom: 2px;
 }
 
 .message-bubble__actions {
   margin-top: -4px;
+}
+
+html[data-messenger-style='minimal'] .section-actions--cluster,
+html[data-messenger-style='minimal'] .composer-bar--dock,
+html[data-messenger-style='minimal'] .auth-card,
+html[data-messenger-style='minimal'] .call-banner,
+html[data-messenger-style='minimal'] .call-stage,
+html[data-messenger-style='minimal'] .theme-card,
+html[data-messenger-style='minimal'] .style-card,
+html[data-messenger-style='minimal'] .setting-select,
+html[data-messenger-style='minimal'] .setting-textarea,
+html[data-messenger-style='minimal'] .setting-fact-row,
+html[data-messenger-style='minimal'] .device-status-item,
+html[data-messenger-style='minimal'] .message-relation-card,
+html[data-messenger-style='minimal'] .attachment-card,
+html[data-messenger-style='minimal'] .forward-target-btn {
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+html[data-messenger-style='minimal'] .section-actions--cluster,
+html[data-messenger-style='minimal'] .composer-bar--dock,
+html[data-messenger-style='minimal'] .call-banner,
+html[data-messenger-style='minimal'] .call-stage,
+html[data-messenger-style='minimal'] .auth-card {
+  background: #050505;
+}
+
+html[data-messenger-style='minimal'] .theme-card,
+html[data-messenger-style='minimal'] .style-card,
+html[data-messenger-style='minimal'] .setting-fact-row,
+html[data-messenger-style='minimal'] .device-status-item,
+html[data-messenger-style='minimal'] .message-relation-card,
+html[data-messenger-style='minimal'] .attachment-card,
+html[data-messenger-style='minimal'] .forward-target-btn,
+html[data-messenger-style='minimal'] .setting-select,
+html[data-messenger-style='minimal'] .setting-textarea {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html[data-messenger-style='minimal'] .messenger-shell::before,
+html[data-messenger-style='minimal'] .chat-user-trigger--audio-live::after,
+html[data-messenger-style='minimal'] .bottom-nav .bottom-nav__item--active {
+  box-shadow: none !important;
+}
+
+html[data-messenger-style='minimal'] .chat-user-name--audio-live,
+html[data-messenger-style='minimal'] .chat-call-panel {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+  animation: none !important;
 }
 
 .message-actions-pop-enter-from,
