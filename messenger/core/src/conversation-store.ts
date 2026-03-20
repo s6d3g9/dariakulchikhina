@@ -3,7 +3,22 @@ import { dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
 import type { MessengerUserRecord } from './auth-store.ts'
+import type { MessengerDevicePublicKeyRecord } from './crypto-store.ts'
 import { resolveMessengerDataPath } from './storage-paths.ts'
+
+export interface MessengerEncryptedPayload {
+  algorithm: 'aes-gcm-256'
+  ciphertext: string
+  iv: string
+}
+
+export interface MessengerConversationKeyPackageRecord {
+  recipientUserId: string
+  wrappedKey: string
+  iv: string
+  senderPublicKey: MessengerDevicePublicKeyRecord
+  createdAt: string
+}
 
 export interface MessengerConversationRecord {
   id: string
@@ -12,6 +27,10 @@ export interface MessengerConversationRecord {
   userBId: string
   createdAt: string
   updatedAt: string
+  encryption?: {
+    algorithm: 'aes-gcm-256'
+    keyPackages: Record<string, MessengerConversationKeyPackageRecord>
+  }
 }
 
 export interface MessengerMessageRecord {
@@ -19,6 +38,7 @@ export interface MessengerMessageRecord {
   conversationId: string
   senderUserId: string
   body: string
+  encryptedBody?: MessengerEncryptedPayload
   kind: 'text' | 'file'
   attachment?: {
     name: string
@@ -38,6 +58,7 @@ export interface MessengerMessageRecord {
     senderUserId: string
     senderDisplayName: string
     body: string
+    encryptedBody?: MessengerEncryptedPayload
     kind: 'text' | 'file'
     attachment?: {
       name: string
@@ -62,6 +83,7 @@ export interface ConversationOverviewItem {
   lastMessage: {
     id: string
     body: string
+    encryptedBody?: MessengerEncryptedPayload
     createdAt: string
     own: boolean
   } | null
@@ -70,6 +92,7 @@ export interface ConversationOverviewItem {
 export interface ConversationMessageOverviewItem {
   id: string
   body: string
+  encryptedBody?: MessengerEncryptedPayload
   kind: 'text' | 'file'
   createdAt: string
   readAt?: string
@@ -113,6 +136,7 @@ export interface ConversationMessageOverviewItem {
     messageId: string
     conversationId: string
     body: string
+    encryptedBody?: MessengerEncryptedPayload
     kind: 'text' | 'file'
     senderDisplayName: string
     attachment?: {
@@ -174,12 +198,37 @@ function buildMessageRelationPreview(
 
   return {
     id: message.id,
-    body: message.deletedAt ? 'Сообщение удалено' : message.body,
+    body: getMessageBodyPreview(message),
+    encryptedBody: message.deletedAt ? undefined : message.encryptedBody,
     kind: message.kind,
     own: message.senderUserId === actorId,
     senderDisplayName: sender?.displayName || 'Unknown',
     attachment: message.deletedAt ? undefined : message.attachment,
   }
+}
+
+function getMessageBodyPreview(message: Pick<MessengerMessageRecord, 'body' | 'kind' | 'attachment' | 'deletedAt' | 'encryptedBody'>) {
+  if (message.deletedAt) {
+    return 'Сообщение удалено'
+  }
+
+  if (message.kind === 'file' && message.attachment) {
+    if (message.attachment.mimeType.startsWith('audio/')) {
+      return 'Аудиосообщение'
+    }
+
+    if (message.attachment.mimeType.startsWith('image/')) {
+      return 'Фото'
+    }
+
+    return message.attachment.name
+  }
+
+  if (message.encryptedBody) {
+    return 'Защищённое сообщение'
+  }
+
+  return message.body
 }
 
 function assertMessageRelation(
@@ -236,7 +285,7 @@ export async function listConversationsForUser(user: MessengerUserRecord, users:
   const payload = await readConversationsFile()
   const normalizedQuery = query.trim().toLowerCase()
 
-  return payload.conversations
+  const items: Array<ConversationOverviewItem | null> = payload.conversations
     .filter(conversation => isParticipant(conversation, user.id))
     .map((conversation) => {
       const peerUserId = getPeerId(conversation, user.id)
@@ -261,13 +310,16 @@ export async function listConversationsForUser(user: MessengerUserRecord, users:
         updatedAt: lastMessage?.createdAt || conversation.updatedAt,
         lastMessage: lastMessage ? {
           id: lastMessage.id,
-          body: lastMessage.kind === 'file' && lastMessage.attachment ? `Файл: ${lastMessage.attachment.name}` : lastMessage.body,
+          body: getMessageBodyPreview(lastMessage),
+          encryptedBody: lastMessage.deletedAt ? undefined : lastMessage.encryptedBody ?? undefined,
           createdAt: lastMessage.createdAt,
           own: lastMessage.senderUserId === user.id,
         } : null,
-      } satisfies ConversationOverviewItem
+      }
     })
-    .filter((item): item is ConversationOverviewItem => Boolean(item))
+
+  return items
+    .filter((item): item is ConversationOverviewItem => item !== null)
     .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
 }
 
@@ -296,7 +348,8 @@ export async function listMessagesForConversation(conversationId: string, actor:
 
       return {
         id: message.id,
-        body: message.deletedAt ? 'Сообщение удалено' : message.body,
+        body: getMessageBodyPreview(message),
+        encryptedBody: message.deletedAt ? undefined : message.encryptedBody,
         kind: message.kind,
         createdAt: message.createdAt,
         readAt: message.readAt,
@@ -354,8 +407,10 @@ export async function addMessageToConversation(
   actor: MessengerUserRecord,
   body: string,
   options?: {
+    encryptedBody?: MessengerEncryptedPayload
     replyToMessageId?: string
     commentOnMessageId?: string
+    forwardedFrom?: MessengerMessageRecord['forwardedFrom']
   },
 ) {
   const payload = await readConversationsFile()
@@ -374,10 +429,12 @@ export async function addMessageToConversation(
     conversationId,
     senderUserId: actor.id,
     body: body.trim(),
+    encryptedBody: options?.encryptedBody,
     kind: 'text',
     createdAt: now,
     replyToMessageId: assertMessageRelation(payload, conversation, options?.replyToMessageId, actor.id),
     commentOnMessageId: assertMessageRelation(payload, conversation, options?.commentOnMessageId, actor.id),
+    forwardedFrom: options?.forwardedFrom,
   }
 
   payload.messages.push(message)
@@ -417,6 +474,10 @@ export async function forwardMessageToConversation(
   }
 
   const sender = users.find(item => item.id === sourceMessage.senderUserId)
+  if (sourceMessage.encryptedBody) {
+    throw new Error('MESSAGE_ENCRYPTED_FORWARD_REQUIRES_CLIENT_PAYLOAD')
+  }
+
   const now = new Date().toISOString()
   const message: MessengerMessageRecord = {
     id: randomUUID(),
@@ -432,6 +493,7 @@ export async function forwardMessageToConversation(
       senderUserId: sourceMessage.senderUserId,
       senderDisplayName: sender?.displayName || 'Unknown',
       body: sourceMessage.deletedAt ? 'Сообщение удалено' : sourceMessage.body,
+      encryptedBody: sourceMessage.deletedAt ? undefined : sourceMessage.encryptedBody,
       kind: sourceMessage.kind,
       attachment: sourceMessage.deletedAt ? undefined : sourceMessage.attachment,
     },
@@ -481,7 +543,13 @@ export async function addAttachmentMessageToConversation(
   return message
 }
 
-export async function editMessageInConversation(conversationId: string, messageId: string, actor: MessengerUserRecord, body: string) {
+export async function editMessageInConversation(
+  conversationId: string,
+  messageId: string,
+  actor: MessengerUserRecord,
+  body: string,
+  encryptedBody?: MessengerEncryptedPayload,
+) {
   const payload = await readConversationsFile()
   const conversation = payload.conversations.find(item => item.id === conversationId)
   if (!conversation) {
@@ -507,6 +575,7 @@ export async function editMessageInConversation(conversationId: string, messageI
 
   const now = new Date().toISOString()
   message.body = body.trim()
+  message.encryptedBody = encryptedBody
   message.editedAt = now
   conversation.updatedAt = now
   await writeConversationsFile(payload)
@@ -539,6 +608,7 @@ export async function deleteMessageFromConversation(conversationId: string, mess
 
   const now = new Date().toISOString()
   message.body = ''
+  message.encryptedBody = undefined
   message.attachment = undefined
   message.deletedAt = now
   message.editedAt = undefined
@@ -563,4 +633,52 @@ export async function deleteConversationForUser(conversationId: string, actor: M
   payload.messages = payload.messages.filter(item => item.conversationId !== conversationId)
   await writeConversationsFile(payload)
   return conversation
+}
+
+export async function getConversationKeyPackageForUser(conversationId: string, actor: MessengerUserRecord) {
+  const conversation = await findConversationById(conversationId)
+  if (!conversation) {
+    throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  if (!isParticipant(conversation, actor.id)) {
+    throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  return conversation.encryption?.keyPackages[actor.id] ?? null
+}
+
+export async function saveConversationKeyPackages(
+  conversationId: string,
+  actor: MessengerUserRecord,
+  packages: MessengerConversationKeyPackageRecord[],
+) {
+  const payload = await readConversationsFile()
+  const conversation = payload.conversations.find(item => item.id === conversationId)
+  if (!conversation) {
+    throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  if (!isParticipant(conversation, actor.id)) {
+    throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  const nextPackages = conversation.encryption?.keyPackages ?? {}
+
+  for (const item of packages) {
+    if (!isParticipant(conversation, item.recipientUserId)) {
+      throw new Error('CONVERSATION_FORBIDDEN')
+    }
+
+    if (!nextPackages[item.recipientUserId]) {
+      nextPackages[item.recipientUserId] = item
+    }
+  }
+
+  conversation.encryption = {
+    algorithm: 'aes-gcm-256',
+    keyPackages: nextPackages,
+  }
+  await writeConversationsFile(payload)
+  return conversation.encryption
 }

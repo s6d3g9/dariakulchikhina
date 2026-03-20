@@ -10,6 +10,7 @@ const viewport = useMessengerViewport()
 const draft = ref('')
 const actionError = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
+const composerMediaMenuEl = ref<HTMLElement | null>(null)
 const messageListEl = ref<HTMLElement | null>(null)
 const composerInputEl = ref<HTMLTextAreaElement | null>(null)
 const composerBarEl = ref<HTMLElement | null>(null)
@@ -30,6 +31,10 @@ const galleryPhotoId = ref<string | null>(null)
 const pendingScrollMessageId = ref<string | null>(null)
 const dragDropDepth = ref(0)
 const dragDropPending = ref(false)
+const composerMediaMenuOpen = ref(false)
+const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif'>('emoji')
+
+const composerEmojiOptions = ['😀', '😉', '😍', '🔥', '👍', '👏', '🙏', '❤️', '🎉', '🤝', '✨', '😎']
 
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
@@ -237,6 +242,31 @@ const desktopDropEnabled = computed(() => Boolean(
   && !photoFeedOpen.value,
 ))
 const desktopDropActive = computed(() => dragDropDepth.value > 0 && desktopDropEnabled.value)
+const hasComposerText = computed(() => Boolean(draft.value.trim()))
+const composerPrimaryMode = computed<'record' | 'send' | 'stop-recording'>(() => {
+  if (isRecording.value) {
+    return 'stop-recording'
+  }
+
+  return hasComposerText.value ? 'send' : 'record'
+})
+const composerPrimaryDisabled = computed(() => {
+  if (!conversations.activeConversation.value || conversations.messagePending.value) {
+    return true
+  }
+
+  if (composerPrimaryMode.value === 'record') {
+    return !canRecordAudio.value
+  }
+
+  return false
+})
+const composerMediaMenuVisible = computed(() => Boolean(
+  composerMediaMenuOpen.value
+  && conversations.activeConversation.value
+  && !detailsOpen.value
+  && !photoFeedOpen.value,
+))
 
 onMounted(async () => {
   lockPageScroll()
@@ -300,6 +330,10 @@ watch(draft, () => {
   syncComposerInputHeight()
 })
 
+watch([detailsOpen, photoFeedOpen, () => conversations.activeConversationId.value], () => {
+  composerMediaMenuOpen.value = false
+})
+
 watch(() => viewport.keyboardOpen.value, async (opened) => {
   if (!import.meta.client || !isMobileChatViewport()) {
     return
@@ -318,6 +352,8 @@ async function submit() {
   if (!draft.value.trim()) {
     return
   }
+
+  composerMediaMenuOpen.value = false
 
   const commentTargetId = composerRelationMode.value === 'comment' ? composerRelationMessageId.value : null
 
@@ -343,6 +379,59 @@ async function submit() {
 function preserveComposerFocus(event: PointerEvent) {
   event.preventDefault()
   composerInputEl.value?.focus({ preventScroll: true })
+}
+
+function toggleComposerMediaMenu() {
+  if (!conversations.activeConversation.value || conversations.messagePending.value) {
+    return
+  }
+
+  composerMediaMenuOpen.value = !composerMediaMenuOpen.value
+}
+
+function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif') {
+  composerMediaMenuTab.value = tab
+}
+
+function insertEmojiToDraft(emoji: string) {
+  const input = composerInputEl.value
+
+  if (!input) {
+    draft.value = `${draft.value}${emoji}`
+    composerMediaMenuOpen.value = false
+    return
+  }
+
+  const selectionStart = input.selectionStart ?? draft.value.length
+  const selectionEnd = input.selectionEnd ?? selectionStart
+  draft.value = `${draft.value.slice(0, selectionStart)}${emoji}${draft.value.slice(selectionEnd)}`
+  composerMediaMenuOpen.value = false
+
+  void nextTick(() => {
+    const nextCaret = selectionStart + emoji.length
+    input.focus({ preventScroll: true })
+    input.setSelectionRange(nextCaret, nextCaret)
+    syncComposerInputHeight()
+  })
+}
+
+function handleComposerPrimaryPointerDown(event: PointerEvent) {
+  if (composerPrimaryMode.value !== 'send') {
+    return
+  }
+
+  preserveComposerFocus(event)
+}
+
+async function handleComposerPrimaryAction() {
+  composerMediaMenuOpen.value = false
+
+  if (composerPrimaryMode.value === 'send') {
+    await submit()
+    return
+  }
+
+  await toggleAudioRecording()
 }
 
 function clearComposerRelation() {
@@ -385,8 +474,24 @@ async function forwardMessage(targetConversationId: string) {
   }
 }
 
-function openFilePicker() {
-  fileInput.value?.click()
+function openFilePicker(accept = '') {
+  if (!fileInput.value) {
+    return
+  }
+
+  fileInput.value.accept = accept
+  fileInput.value.value = ''
+  fileInput.value.click()
+}
+
+function openStickerPicker() {
+  composerMediaMenuOpen.value = false
+  openFilePicker('image/webp,image/png,image/jpeg')
+}
+
+function openGifPicker() {
+  composerMediaMenuOpen.value = false
+  openFilePicker('image/gif')
 }
 
 async function handleFileSelect(event: Event) {
@@ -399,9 +504,11 @@ async function handleFileSelect(event: Event) {
 
   try {
     await conversations.uploadAttachment(file)
+    input.accept = ''
     input.value = ''
   } catch {
     actionError.value = 'Не удалось загрузить файл.'
+    input.accept = ''
   }
 }
 
@@ -1060,12 +1167,77 @@ onBeforeUnmount(() => {
         />
       </div>
 
+      <div
+        v-if="composerMediaMenuVisible"
+        ref="composerMediaMenuEl"
+        class="composer-media-menu"
+      >
+        <div class="composer-media-menu__tabs">
+          <button
+            type="button"
+            class="composer-media-menu__tab"
+            :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'emoji' }"
+            @click="openComposerMediaTab('emoji')"
+          >
+            Смайлы
+          </button>
+          <button
+            type="button"
+            class="composer-media-menu__tab"
+            :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'stickers' }"
+            @click="openComposerMediaTab('stickers')"
+          >
+            Стикеры
+          </button>
+          <button
+            type="button"
+            class="composer-media-menu__tab"
+            :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'gif' }"
+            @click="openComposerMediaTab('gif')"
+          >
+            GIF
+          </button>
+        </div>
+
+        <div v-if="composerMediaMenuTab === 'emoji'" class="composer-media-menu__emoji-grid">
+          <button
+            v-for="emoji in composerEmojiOptions"
+            :key="emoji"
+            type="button"
+            class="composer-media-menu__emoji"
+            @click="insertEmojiToDraft(emoji)"
+          >
+            {{ emoji }}
+          </button>
+        </div>
+
+        <div v-else-if="composerMediaMenuTab === 'stickers'" class="composer-media-menu__action-group">
+          <p class="composer-media-menu__hint">Выберите изображение, чтобы отправить его как стикер.</p>
+          <button type="button" class="composer-media-menu__action" @click="openStickerPicker">
+            Выбрать стикер
+          </button>
+        </div>
+
+        <div v-else class="composer-media-menu__action-group">
+          <p class="composer-media-menu__hint">Откройте GIF-файл из галереи или файлового менеджера.</p>
+          <button type="button" class="composer-media-menu__action" @click="openGifPicker">
+            Выбрать GIF
+          </button>
+        </div>
+      </div>
+
       <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock">
         <input ref="fileInput" type="file" class="sr-only" @change="handleFileSelect">
         <div class="composer-segment composer-segment--attach">
-          <button type="button" class="composer-btn" aria-label="Прикрепить файл" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @click="openFilePicker">
+          <button
+            type="button"
+            class="composer-btn"
+            :aria-label="composerMediaMenuOpen ? 'Закрыть меню смайлов, стикеров и GIF' : 'Открыть меню смайлов, стикеров и GIF'"
+            :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
+            @click="toggleComposerMediaMenu"
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9.1 12.9 15.8 6.2a3.35 3.35 0 1 1 4.74 4.73l-8.1 8.1a5.2 5.2 0 1 1-7.35-7.36l7.05-7.05" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"/>
+              <path d="M8.25 13.25a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5ZM15.75 13.25a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5ZM6 17.5c1.02-.98 2.35-1.5 3.75-1.5s2.73.52 3.75 1.5M13.5 17.5c.7-.66 1.61-1.06 2.6-1.17" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.65"/>
             </svg>
           </button>
         </div>
@@ -1086,18 +1258,33 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="composer-btn"
-            :class="{ 'composer-btn--recording': isRecording }"
-            :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !canRecordAudio"
-            @click="toggleAudioRecording"
+            aria-label="Прикрепить файл"
+            :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
+            @click="openFilePicker()"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9.1 12.9 15.8 6.2a3.35 3.35 0 1 1 4.74 4.73l-8.1 8.1a5.2 5.2 0 1 1-7.35-7.36l7.05-7.05" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"/>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="composer-btn"
+            :class="{
+              'composer-btn--recording': isRecording,
+              'composer-btn--accent': composerPrimaryMode === 'send',
+              'composer-btn--audio-primary': composerPrimaryMode === 'record',
+            }"
+            :aria-label="composerPrimaryMode === 'send' ? 'Отправить сообщение' : composerPrimaryMode === 'stop-recording' ? 'Остановить запись аудиосообщения' : 'Записать аудиосообщение'"
+            :disabled="composerPrimaryDisabled"
+            @pointerdown="handleComposerPrimaryPointerDown"
+            @click="handleComposerPrimaryAction"
           >
             <span v-if="isRecording">{{ `${recordingSeconds}s` }}</span>
-            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+            <svg v-else-if="composerPrimaryMode === 'record'" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 15.25a3.25 3.25 0 0 0 3.25-3.25V7.5a3.25 3.25 0 1 0-6.5 0V12A3.25 3.25 0 0 0 12 15.25Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
               <path d="M6.75 11.75a5.25 5.25 0 0 0 10.5 0M12 17v2.5M9 19.5h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
             </svg>
-          </button>
-          <button type="button" class="composer-btn composer-btn--accent" aria-label="Отправить сообщение" :disabled="!conversations.activeConversation.value || conversations.messagePending.value" @pointerdown="preserveComposerFocus" @click="submit">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
+            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
               <path d="M4.95 11.8 18.84 5.65c1.08-.48 2.16.6 1.69 1.69l-6.15 13.89c-.45 1.03-1.93 1.06-2.42.05l-1.9-3.98a1.75 1.75 0 0 0-.86-.86l-3.98-1.9c-1.01-.49-.98-1.97.05-2.42Z" fill="currentColor"/>
               <path d="M9.78 16.3 20.1 5.98" fill="none" stroke="rgba(255,255,255,0.72)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
             </svg>

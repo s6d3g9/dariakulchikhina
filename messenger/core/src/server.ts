@@ -9,8 +9,9 @@ import { z } from 'zod'
 
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from './auth.ts'
-import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, forwardMessageToConversation, listConversationsForUser, listMessagesForConversation, markConversationReadByUser } from './conversation-store.ts'
+import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages } from './conversation-store.ts'
 import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from './contact-store.ts'
+import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } from './crypto-store.ts'
 import { readMessengerConfig } from './config.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
 
@@ -76,6 +77,9 @@ export async function createMessengerServer() {
   const directConversationSchema = z.object({
     peerUserId: z.string().uuid(),
   })
+  const userParamsSchema = z.object({
+    userId: z.string().uuid(),
+  })
   const contactParamsSchema = z.object({
     peerUserId: z.string().uuid(),
   })
@@ -86,16 +90,48 @@ export async function createMessengerServer() {
     conversationId: z.string().uuid(),
     messageId: z.string().uuid(),
   })
+  const publicKeySchema = z.object({
+    kty: z.literal('EC'),
+    crv: z.literal('P-256'),
+    x: z.string().min(1).max(512),
+    y: z.string().min(1).max(512),
+    ext: z.boolean().optional(),
+    key_ops: z.array(z.string().min(1).max(24)).max(8).optional(),
+  })
+  const encryptedPayloadSchema = z.object({
+    algorithm: z.literal('aes-gcm-256'),
+    ciphertext: z.string().min(1).max(32768),
+    iv: z.string().min(1).max(512),
+  })
+  const forwardedSnapshotSchema = z.object({
+    messageId: z.string().uuid(),
+    conversationId: z.string().uuid(),
+    senderUserId: z.string().uuid(),
+    senderDisplayName: z.string().trim().min(1).max(80),
+    body: z.string().trim().max(4000).optional().default(''),
+    encryptedBody: encryptedPayloadSchema.optional(),
+    kind: z.enum(['text', 'file']),
+    attachment: z.object({
+      name: z.string().trim().min(1).max(255),
+      mimeType: z.string().trim().min(1).max(120),
+      size: z.number().int().nonnegative(),
+      url: z.string().trim().min(1).max(2048),
+    }).optional(),
+  })
   const messageSchema = z.object({
     body: z.string().trim().max(4000).optional(),
+    encryptedBody: encryptedPayloadSchema.optional(),
     replyToMessageId: z.string().uuid().optional(),
     commentOnMessageId: z.string().uuid().optional(),
     forwardedMessageId: z.string().uuid().optional(),
+    forwardedFrom: forwardedSnapshotSchema.optional(),
   }).superRefine((value, ctx) => {
     const hasBody = Boolean(value.body?.trim())
     const hasForward = Boolean(value.forwardedMessageId)
+    const hasEncryptedBody = Boolean(value.encryptedBody)
+    const hasForwardSnapshot = Boolean(value.forwardedFrom)
 
-    if (!hasBody && !hasForward) {
+    if (!hasBody && !hasForward && !hasEncryptedBody && !hasForwardSnapshot) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'MESSAGE_BODY_OR_FORWARD_REQUIRED',
@@ -103,7 +139,26 @@ export async function createMessengerServer() {
     }
   })
   const editMessageSchema = z.object({
-    body: z.string().trim().min(1).max(4000),
+    body: z.string().trim().max(4000).optional(),
+    encryptedBody: encryptedPayloadSchema.optional(),
+  }).superRefine((value, ctx) => {
+    const hasBody = Boolean(value.body?.trim())
+    const hasEncryptedBody = Boolean(value.encryptedBody)
+
+    if (!hasBody && !hasEncryptedBody) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'MESSAGE_BODY_REQUIRED',
+      })
+    }
+  })
+  const conversationEncryptionSchema = z.object({
+    packages: z.array(z.object({
+      recipientUserId: z.string().uuid(),
+      wrappedKey: z.string().min(1).max(8192),
+      iv: z.string().min(1).max(512),
+      senderPublicKey: publicKeySchema,
+    })).min(1).max(4),
   })
   const callSignalSchema = z.object({
     kind: z.enum(['invite', 'ringing', 'offer', 'answer', 'ice-candidate', 'reject', 'hangup', 'busy']),
@@ -206,6 +261,42 @@ export async function createMessengerServer() {
         login: session.user.login,
         displayName: session.user.displayName,
       },
+    }
+  })
+
+  app.put('/crypto/device-key', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedBody = z.object({ publicKey: publicKeySchema }).safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const publicKey = await saveMessengerDevicePublicKey(session.user.id, parsedBody.data.publicKey)
+    return { publicKey }
+  })
+
+  app.get('/users/:userId/device-key', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = userParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const targetUser = await findMessengerUserById(parsedParams.data.userId)
+    if (!targetUser) {
+      return reply.code(404).send({ error: 'USER_NOT_FOUND' })
+    }
+
+    return {
+      publicKey: await findMessengerDevicePublicKeyByUserId(parsedParams.data.userId),
     }
   })
 
@@ -459,6 +550,74 @@ export async function createMessengerServer() {
     }
   })
 
+  app.get('/conversations/:conversationId/encryption', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = conversationParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    try {
+      return {
+        keyPackage: await getConversationKeyPackageForUser(parsedParams.data.conversationId, session.user),
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'CONVERSATION_NOT_FOUND') {
+          return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+        }
+
+        if (error.message === 'CONVERSATION_FORBIDDEN') {
+          return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+        }
+      }
+
+      throw error
+    }
+  })
+
+  app.post('/conversations/:conversationId/encryption', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = conversationParamsSchema.safeParse(request.params)
+    const parsedBody = conversationEncryptionSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    try {
+      const encryption = await saveConversationKeyPackages(
+        parsedParams.data.conversationId,
+        session.user,
+        parsedBody.data.packages.map(item => ({
+          ...item,
+          createdAt: new Date().toISOString(),
+        })),
+      )
+
+      return { encryption }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'CONVERSATION_NOT_FOUND') {
+          return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+        }
+
+        if (error.message === 'CONVERSATION_FORBIDDEN') {
+          return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+        }
+      }
+
+      throw error
+    }
+  })
+
   app.get('/conversations/:conversationId/messages', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -516,8 +675,10 @@ export async function createMessengerServer() {
       const message = parsedBody.data.forwardedMessageId
         ? await forwardMessageToConversation(parsedParams.data.conversationId, parsedBody.data.forwardedMessageId, session.user, users)
         : await addMessageToConversation(parsedParams.data.conversationId, session.user, parsedBody.data.body || '', {
+          encryptedBody: parsedBody.data.encryptedBody,
           replyToMessageId: parsedBody.data.replyToMessageId,
           commentOnMessageId: parsedBody.data.commentOnMessageId,
+          forwardedFrom: parsedBody.data.forwardedFrom,
         })
       const conversation = await findConversationById(parsedParams.data.conversationId)
       if (conversation) {
@@ -542,6 +703,10 @@ export async function createMessengerServer() {
         if (error.message === 'CONVERSATION_FORBIDDEN' || error.message === 'MESSAGE_FORBIDDEN') {
           return reply.code(403).send({ error: error.message })
         }
+
+        if (error.message === 'MESSAGE_ENCRYPTED_FORWARD_REQUIRES_CLIENT_PAYLOAD') {
+          return reply.code(409).send({ error: 'MESSAGE_ENCRYPTED_FORWARD_REQUIRES_CLIENT_PAYLOAD' })
+        }
       }
 
       throw error
@@ -561,7 +726,13 @@ export async function createMessengerServer() {
     }
 
     try {
-      const message = await editMessageInConversation(parsedParams.data.conversationId, parsedParams.data.messageId, session.user, parsedBody.data.body)
+      const message = await editMessageInConversation(
+        parsedParams.data.conversationId,
+        parsedParams.data.messageId,
+        session.user,
+        parsedBody.data.body || '',
+        parsedBody.data.encryptedBody,
+      )
       const conversation = await findConversationById(parsedParams.data.conversationId)
       if (conversation) {
         emitToUsers([conversation.userAId, conversation.userBId], {

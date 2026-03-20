@@ -7,16 +7,19 @@ interface MessengerConversationItem {
   lastMessage: {
     id: string
     body: string
+    encryptedBody?: MessengerEncryptedPayload
     createdAt: string
     own: boolean
   } | null
 }
 
 import { buildMessengerUrl } from '../utils/messenger-url'
+import type { MessengerEncryptedPayload } from './useMessengerCrypto'
 
 interface MessengerMessageRelationPreview {
   id: string
   body: string
+  encryptedBody?: MessengerEncryptedPayload
   kind: 'text' | 'file'
   own: boolean
   senderDisplayName: string
@@ -32,7 +35,9 @@ interface MessengerMessageRelationPreview {
 interface MessengerForwardedMessagePreview {
   messageId: string
   conversationId: string
+  senderUserId: string
   body: string
+  encryptedBody?: MessengerEncryptedPayload
   kind: 'text' | 'file'
   senderDisplayName: string
   attachment?: {
@@ -47,6 +52,7 @@ interface MessengerForwardedMessagePreview {
 export interface MessengerConversationMessage {
   id: string
   body: string
+  encryptedBody?: MessengerEncryptedPayload
   kind: 'text' | 'file'
   createdAt: string
   readAt?: string
@@ -124,6 +130,7 @@ interface MessengerMessageSendOptions {
 
 export function useMessengerConversations() {
   const auth = useMessengerAuth()
+  const messengerCrypto = useMessengerCrypto()
   const config = useRuntimeConfig()
   const state = useMessengerConversationState()
   const conversations = useState<MessengerConversationItem[]>('messenger-conversations-list', () => [])
@@ -135,6 +142,75 @@ export function useMessengerConversations() {
 
   const activeConversation = computed(() => conversations.value.find(item => item.id === state.activeConversationId.value) ?? null)
 
+  async function decryptMessageBody(conversation: MessengerConversationItem, body: string, encryptedBody?: MessengerEncryptedPayload) {
+    if (!encryptedBody || !auth.user.value) {
+      return body
+    }
+
+    try {
+      return await messengerCrypto.decryptText(
+        auth.request,
+        auth.user.value.id,
+        conversation.id,
+        conversation.peerUserId,
+        encryptedBody,
+      )
+    } catch {
+      return 'Не удалось расшифровать сообщение'
+    }
+  }
+
+  async function decryptRelationPreview(
+    conversation: MessengerConversationItem,
+    preview?: MessengerMessageRelationPreview,
+  ) {
+    if (!preview) {
+      return undefined
+    }
+
+    return {
+      ...attachRelationPreview(config, preview),
+      body: await decryptMessageBody(conversation, preview.body, preview.encryptedBody),
+    }
+  }
+
+  async function decryptForwardedPreview(
+    conversation: MessengerConversationItem,
+    preview?: MessengerForwardedMessagePreview,
+  ) {
+    if (!preview) {
+      return undefined
+    }
+
+    return {
+      ...attachForwardedPreview(config, preview),
+      body: await decryptMessageBody(conversation, preview.body, preview.encryptedBody),
+    }
+  }
+
+  async function decryptMessage(conversation: MessengerConversationItem, message: MessengerConversationMessage) {
+    const attachedMessage = attachAbsoluteUrl(config, message)
+    return {
+      ...attachedMessage,
+      body: await decryptMessageBody(conversation, message.body, message.encryptedBody),
+      replyTo: await decryptRelationPreview(conversation, message.replyTo),
+      commentOn: await decryptRelationPreview(conversation, message.commentOn),
+      forwardedFrom: await decryptForwardedPreview(conversation, message.forwardedFrom),
+    }
+  }
+
+  async function decryptConversationList(conversationItems: MessengerConversationItem[]) {
+    return await Promise.all(conversationItems.map(async (item) => ({
+      ...item,
+      lastMessage: item.lastMessage
+        ? {
+          ...item.lastMessage,
+          body: await decryptMessageBody(item, item.lastMessage.body, item.lastMessage.encryptedBody),
+        }
+        : null,
+    })))
+  }
+
   async function refresh(nextQuery = query.value) {
     pending.value = true
     query.value = nextQuery
@@ -145,7 +221,7 @@ export function useMessengerConversations() {
         query: nextQuery ? { query: nextQuery } : undefined,
       })
 
-      conversations.value = response.conversations
+      conversations.value = await decryptConversationList(response.conversations)
       const nextActiveConversationId = conversations.value.some(item => item.id === state.activeConversationId.value)
         ? state.activeConversationId.value
         : conversations.value[0]?.id || null
@@ -186,7 +262,13 @@ export function useMessengerConversations() {
     const response = await auth.request<{ messages: MessengerConversationMessage[] }>(`/conversations/${conversationId}/messages`, {
       method: 'GET',
     })
-    messages.value = response.messages.map(message => attachMessageRelations(config, message))
+    const conversation = conversations.value.find(item => item.id === conversationId)
+    if (!conversation) {
+      messages.value = response.messages.map(message => attachMessageRelations(config, message))
+      return
+    }
+
+    messages.value = await Promise.all(response.messages.map(message => decryptMessage(conversation, message)))
   }
 
   async function selectConversation(conversationId: string) {
@@ -196,16 +278,25 @@ export function useMessengerConversations() {
 
   async function sendMessage(body: string, options: MessengerMessageSendOptions = {}) {
     const conversationId = state.activeConversationId.value
-    if (!conversationId) {
+    const conversation = activeConversation.value
+    if (!conversationId || !conversation || !auth.user.value) {
       throw new Error('NO_ACTIVE_CONVERSATION')
     }
 
     messagePending.value = true
     try {
+      const encryptedBody = await messengerCrypto.encryptText(
+        auth.request,
+        auth.user.value.id,
+        conversationId,
+        conversation.peerUserId,
+        body,
+      )
       await auth.request(`/conversations/${conversationId}/messages`, {
         method: 'POST',
         body: {
-          body,
+          body: '',
+          encryptedBody,
           ...options,
         },
       })
@@ -219,12 +310,46 @@ export function useMessengerConversations() {
   }
 
   async function forwardMessage(sourceMessageId: string, targetConversationId: string) {
+    const targetConversation = conversations.value.find(item => item.id === targetConversationId)
+    const sourceMessage = messages.value.find(item => item.id === sourceMessageId)
+    if (!targetConversation || !sourceMessage || !auth.user.value) {
+      throw new Error('MESSAGE_NOT_FOUND')
+    }
+
     messagePending.value = true
     try {
+      const encryptedBody = sourceMessage.kind === 'text'
+        ? await messengerCrypto.encryptText(
+          auth.request,
+          auth.user.value.id,
+          targetConversationId,
+          targetConversation.peerUserId,
+          sourceMessage.body,
+        )
+        : undefined
+
       await auth.request(`/conversations/${targetConversationId}/messages`, {
         method: 'POST',
         body: {
-          forwardedMessageId: sourceMessageId,
+          body: sourceMessage.kind === 'text' ? '' : sourceMessage.body,
+          encryptedBody,
+          forwardedFrom: {
+            messageId: sourceMessage.id,
+            conversationId: activeConversation.value?.id || targetConversationId,
+            senderUserId: sourceMessage.own ? auth.user.value.id : activeConversation.value?.peerUserId || targetConversation.peerUserId,
+            senderDisplayName: sourceMessage.senderDisplayName,
+            body: sourceMessage.kind === 'text' ? '' : sourceMessage.body,
+            encryptedBody,
+            kind: sourceMessage.kind,
+            attachment: sourceMessage.attachment
+              ? {
+                name: sourceMessage.attachment.name,
+                mimeType: sourceMessage.attachment.mimeType,
+                size: sourceMessage.attachment.size,
+                url: sourceMessage.attachment.url,
+              }
+              : undefined,
+          },
         },
       })
       await refresh(query.value)
@@ -282,15 +407,26 @@ export function useMessengerConversations() {
 
   async function editMessage(messageId: string, body: string) {
     const conversationId = state.activeConversationId.value
-    if (!conversationId) {
+    const conversation = activeConversation.value
+    if (!conversationId || !conversation || !auth.user.value) {
       throw new Error('NO_ACTIVE_CONVERSATION')
     }
 
     editingMessageId.value = messageId
     try {
+      const encryptedBody = await messengerCrypto.encryptText(
+        auth.request,
+        auth.user.value.id,
+        conversationId,
+        conversation.peerUserId,
+        body,
+      )
       await auth.request(`/conversations/${conversationId}/messages/${messageId}`, {
         method: 'PATCH',
-        body: { body },
+        body: {
+          body: '',
+          encryptedBody,
+        },
       })
       await Promise.all([
         refresh(query.value),

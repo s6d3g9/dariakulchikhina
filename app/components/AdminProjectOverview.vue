@@ -21,7 +21,23 @@
       </div>
     </div>
 
-    <!-- Quick actions — top-3 active pages -->
+    <!-- Cabinet actions -->
+    <div class="apo-section" data-cv-unit="section">
+      <div class="apo-section-title">Кабинет проекта</div>
+      <div class="apo-action-grid" data-cv-unit="list">
+        <button
+          v-for="action in projectActions"
+          :key="action.slug"
+          class="apo-action-btn glass-surface"
+          @click="emit('navigate', action.slug)"
+        >
+          <span class="apo-action-label">{{ action.title }}</span>
+          <span v-if="action.meta" class="apo-action-meta">{{ action.meta }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick actions — top active phase pages -->
     <div class="apo-quick-nav" data-cv-unit="atomic">
       <button
         v-for="qb in quickButtons"
@@ -90,6 +106,30 @@
         </div>
       </div>
     </div>
+
+    <div class="apo-section" data-cv-unit="section">
+      <div class="apo-section-title">Фазы проекта</div>
+      <div class="apo-phase-groups" data-cv-unit="list">
+        <div v-for="group in phaseGroups" :key="group.label" class="apo-phase-group glass-surface" data-cv-unit="item">
+          <div class="apo-phase-group__head">
+            <span class="apo-phase-group__title">{{ group.label }}</span>
+            <span class="apo-phase-group__meta">{{ group.enabledCount }} / {{ group.total }} активных</span>
+          </div>
+          <div class="apo-phase-group__pages">
+            <button
+              v-for="page in group.pages"
+              :key="page.slug"
+              type="button"
+              class="apo-phase-page"
+              :class="{ 'apo-phase-page--enabled': page.enabled }"
+              @click="emit('navigate', page.slug)"
+            >
+              {{ page.title }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -114,17 +154,45 @@ function phaseLabel(s: string | undefined): string {
 
 const projectPreset = computed(() => findPreset(props.project?.projectType || 'apartment'))
 
-// Быстрые действия — 3 первых активных страниц проекта
+const enabledPages = computed(() => new Set<string>(props.project?.pages || []))
+
+const projectActions = computed(() => [
+  { slug: 'settings', title: 'Настройки проекта', meta: props.project?.projectType || 'без типа' },
+  { slug: 'project_communications', title: 'Коммуникации', meta: 'чат и звонки' },
+  { slug: 'project_clients', title: 'Клиенты', meta: `${props.clients.length}` },
+  { slug: 'project_contractors', title: 'Подрядчики', meta: `${props.contractors.length}` },
+  { slug: 'project_designers', title: 'Дизайнеры', meta: `${props.designers.length}` },
+])
+
+// Быстрые действия — первые активные фазовые страницы проекта
 const quickButtons = computed(() => {
   const activePages: string[] = props.project?.pages || []
-  const fallback = ['first_contact', 'smart_brief', 'space_planning']
-  const slugs = activePages.length ? activePages.slice(0, 3) : fallback
+  const fallback = ['first_contact', 'brief', 'space_planning']
+  const phasePages = activePages.filter(slug => Boolean(findPage(slug)?.phase))
+  const slugs = phasePages.length ? phasePages.slice(0, 4) : fallback
   return slugs.map(slug => {
     const page = findPage(slug)
     return {
       slug,
       title: page?.title?.replace(/^\d+\.\d+\s*/, '') ?? slug,
       icon: page?.icon ?? '●',
+    }
+  })
+})
+
+const phaseGroups = computed(() => {
+  return getAdminNavGroups().map((group) => {
+    const pages = group.pages.map((page) => ({
+      slug: page.slug,
+      title: page.title.replace(/^\d+\.\d+\s*/, ''),
+      enabled: enabledPages.value.has(page.slug),
+    }))
+
+    return {
+      label: group.label,
+      total: pages.length,
+      enabledCount: pages.filter(page => page.enabled).length,
+      pages,
     }
   })
 })
@@ -194,6 +262,28 @@ const progressPct = computed(() => {
 }
 
 .apo-quick-nav { display: flex; gap: 10px; flex-wrap: wrap; }
+.apo-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+.apo-action-btn {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.apo-action-label {
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--glass-text);
+}
+.apo-action-meta {
+  font-size: .72rem;
+  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
+}
 .apo-quick-btn {
   display: flex; align-items: center; gap: 8px; padding: 10px 16px;
   border-radius: 10px; border: none; cursor: pointer; font-size: .82rem;
@@ -228,6 +318,45 @@ const progressPct = computed(() => {
 
 .apo-phases { display: flex; flex-direction: column; gap: 10px; }
 .apo-phase-row { display: flex; align-items: center; gap: 10px; }
+.apo-phase-groups { display: grid; gap: 12px; }
+.apo-phase-group {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+}
+.apo-phase-group__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.apo-phase-group__title {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--glass-text);
+}
+.apo-phase-group__meta {
+  font-size: .72rem;
+  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
+}
+.apo-phase-group__pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.apo-phase-page {
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text) 58%, transparent);
+  cursor: pointer;
+  font: inherit;
+}
+.apo-phase-page--enabled {
+  color: var(--glass-text);
+  border-color: color-mix(in srgb, var(--glass-text) 32%, transparent);
+}
 .apo-phase-bar-wrap { flex: 1; min-width: 0; }
 .apo-phase-label { font-size: .74rem; color: var(--glass-text); margin-bottom: 4px; }
 .apo-phase-bar {
@@ -245,5 +374,6 @@ const progressPct = computed(() => {
 @media (max-width: 768px) {
   .apo-welcome { flex-direction: column; align-items: flex-start; }
   .apo-quick-nav { flex-direction: column; }
+  .apo-phase-group__head { flex-direction: column; align-items: flex-start; }
 }
 </style>

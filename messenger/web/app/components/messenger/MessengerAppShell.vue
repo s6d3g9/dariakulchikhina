@@ -10,6 +10,7 @@ const viewport = useMessengerViewport()
 
 const activeTitle = computed(() => sections.find(section => section.key === navigation.activeSection.value)?.shortTitle ?? 'Чаты')
 const showHero = computed(() => navigation.activeSection.value === 'settings')
+const showUnifiedBottomControls = computed(() => navigation.activeSection.value === 'chat' && !viewport.keyboardOpen.value)
 
 function navIconName(section: MessengerSectionKey) {
   switch (section) {
@@ -47,7 +48,10 @@ async function logout() {
 <template>
   <div
     class="messenger-shell"
-    :class="{ 'messenger-shell--immersive': !showHero }"
+    :class="{
+      'messenger-shell--immersive': !showHero,
+      'messenger-shell--chat-idle-controls': showUnifiedBottomControls,
+    }"
     :data-messenger-keyboard="viewport.keyboardOpen.value ? 'open' : 'closed'"
   >
     <div class="messenger-aurora messenger-aurora--one" />

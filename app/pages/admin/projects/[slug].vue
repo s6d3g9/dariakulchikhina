@@ -617,7 +617,7 @@ const blueprintRuntime = useAppBlueprintRuntime()
 createWipe2Slot()
 const isBrutalistProjectMode = computed(() => designSystem.currentDesignMode.value === 'brutalist')
 const showLegacyMobileNav = computed(() => !contractorPreviewMode.value && !isBrutalistProjectMode.value)
-const showBrutalistHero = computed(() => isBrutalistProjectMode.value && !clientPreviewMode.value && !contractorPreviewMode.value)
+const showBrutalistHero = computed(() => false)
 const projectContentTransitionEffect = computed(() => {
   const effect = designSystem.tokens.value.archPageEnter ?? 'fade'
   if (effect === 'slide') return 'slide-r'
@@ -2840,7 +2840,7 @@ html.dark .proj-sheet-frame__card {
 }
 .proj-main-inner { /* wrapper for Transition — no extra layout effect */ }
 .proj-main-inner--after-hero {
-  min-height: 100vh;
+  min-height: auto;
   padding-bottom: max(3rem, env(safe-area-inset-bottom));
 }
 
