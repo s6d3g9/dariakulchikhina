@@ -5,10 +5,24 @@ const navigation = useMessengerConversationState()
 
 const activeModeLabel = computed(() => calls.activeCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
 const verificationEmojiLine = computed(() => calls.security.value.verificationEmojis.join(' '))
+const headerIncomingCall = computed(() => Boolean(
+  navigation.activeSection.value === 'chat'
+  && calls.incomingCall.value
+  && calls.incomingCall.value.conversationId === conversations.activeConversationId.value,
+))
 const headerActiveCall = computed(() => Boolean(
   navigation.activeSection.value === 'chat'
   && calls.activeCall.value
   && calls.activeCall.value.conversationId === conversations.activeConversationId.value,
+))
+const showIncomingFallbackControls = computed(() => Boolean(
+  calls.incomingCall.value
+  && !headerIncomingCall.value,
+))
+const showActiveAudioFallbackControls = computed(() => Boolean(
+  calls.activeCall.value
+  && calls.activeCall.value.mode === 'audio'
+  && !headerActiveCall.value,
 ))
 
 const localVideoEl = useTemplateRef<HTMLVideoElement>('localVideoEl')
@@ -30,7 +44,38 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="call-layer">
-    <section v-if="calls.activeCall.value && (!headerActiveCall || calls.activeCall.value.mode === 'video')" class="call-stage" :class="{ 'call-stage--video': calls.activeCall.value.mode === 'video' }" aria-label="Активный звонок">
+    <div v-if="showIncomingFallbackControls" class="call-floating-controls" aria-label="Входящий звонок">
+      <button type="button" class="action-btn" @click="calls.rejectIncomingCall()">
+        Отклонить
+      </button>
+      <button type="button" class="action-btn action-btn--accept" @click="calls.acceptIncomingCall()">
+        Принять
+      </button>
+    </div>
+
+    <div v-else-if="showActiveAudioFallbackControls" class="call-floating-controls call-floating-controls--active" aria-label="Управление звонком">
+      <button
+        type="button"
+        class="action-btn chat-call-panel__control"
+        :class="{ 'chat-call-panel__control--active': calls.controls.value.microphoneEnabled }"
+        @click="calls.toggleMicrophone()"
+      >
+        {{ calls.controls.value.microphoneEnabled ? 'Микрофон вкл' : 'Микрофон выкл' }}
+      </button>
+      <button
+        type="button"
+        class="action-btn chat-call-panel__control"
+        :class="{ 'chat-call-panel__control--active': calls.controls.value.speakerEnabled }"
+        @click="calls.toggleSpeaker()"
+      >
+        {{ calls.controls.value.speakerEnabled ? 'Звук вкл' : 'Звук выкл' }}
+      </button>
+      <button type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
+        Завершить
+      </button>
+    </div>
+
+    <section v-if="calls.activeCall.value?.mode === 'video'" class="call-stage call-stage--video" aria-label="Активный звонок">
       <div v-if="!headerActiveCall" class="call-stage__meta">
         <p class="call-banner__eyebrow">{{ activeModeLabel }}</p>
         <h3>{{ calls.activeCall.value.peerDisplayName }}</h3>
@@ -46,9 +91,6 @@ onBeforeUnmount(() => {
       <div v-if="calls.activeCall.value.mode === 'video'" class="call-stage__videos">
         <video ref="remoteVideoEl" class="call-video call-video--remote" autoplay playsinline />
         <video ref="localVideoEl" class="call-video call-video--local" autoplay muted playsinline />
-      </div>
-      <div v-else-if="!headerActiveCall" class="call-stage__audio-note">
-        <p>Аудиопоток идёт через WebRTC. Если E2EE активно, поверх transport encryption дополнительно шифруются encoded audio frames.</p>
       </div>
 
       <div v-if="!headerActiveCall" class="call-stage__actions">
