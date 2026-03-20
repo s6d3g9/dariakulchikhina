@@ -914,10 +914,14 @@ onBeforeUnmount(() => {
         >
           <span class="chat-avatar">{{ activePeerAvatar }}</span>
           <span class="chat-user-meta">
-            <span class="chat-user-name">{{ activePeerName }}</span>
-            <span v-if="headerAudioCall" class="chat-call-panel" aria-live="polite">
-              <span class="chat-call-panel__label">Аудиозвонок</span>
-              <span class="chat-call-panel__status">{{ headerAudioCallStatus }}</span>
+            <span
+              class="chat-user-name"
+              :class="{ 'chat-user-name--audio-live': headerAudioCall }"
+            >
+              <span class="chat-user-name__text">{{ activePeerName }}</span>
+              <span v-if="headerAudioCall" class="chat-user-name__call" aria-live="polite">
+                {{ headerAudioCallStatus }}
+              </span>
             </span>
           </span>
         </button>

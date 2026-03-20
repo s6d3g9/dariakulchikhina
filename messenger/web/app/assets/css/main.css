@@ -3189,63 +3189,71 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 }
 
 .chat-user-name {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
   font-size: clamp(20px, 4.8vw, 28px);
   line-height: 1.05;
+}
+
+.chat-user-name__text {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.chat-call-panel {
-  display: grid;
-  gap: 1px;
-  width: fit-content;
-  max-width: 100%;
-  min-height: var(--messenger-control-size);
-  padding: 6px 12px;
-  border-radius: var(--messenger-control-radius);
-  border: 1px solid rgba(251, 113, 133, 0.22);
-  background: linear-gradient(115deg, rgba(15, 23, 42, 0.82), rgba(30, 41, 59, 0.64), rgba(15, 23, 42, 0.82));
+.chat-user-name--audio-live {
+  padding: 7px 12px;
+  border-radius: calc(var(--messenger-control-radius) - 1px);
+  border: 1px solid rgba(251, 113, 133, 0.28);
+  background: linear-gradient(115deg, rgba(15, 23, 42, 0.86), rgba(45, 16, 28, 0.74), rgba(15, 23, 42, 0.86));
   background-size: 220% 220%;
-  align-content: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
   animation: messenger-call-glow 4.6s linear infinite;
 }
 
-.chat-call-panel__label,
-.chat-call-panel__status {
-  display: block;
+.chat-user-name__call {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  max-width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.92), rgba(190, 24, 93, 0.9));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.chat-call-panel__label {
-  font-size: 9px;
-  line-height: 1.1;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(253, 164, 175, 0.92);
-}
-
-.chat-call-panel__status {
-  font-size: 11px;
-  line-height: 1.15;
-  color: rgba(255, 255, 255, 0.92);
-}
-
 .icon-btn--call-live {
-  border-color: rgba(248, 113, 113, 0.78);
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.98), rgba(185, 28, 28, 0.98));
-  color: #fff;
-  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.12), 0 10px 22px rgba(127, 29, 29, 0.34);
+  border-color: rgba(254, 202, 202, 0.34) !important;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.98), rgba(185, 28, 28, 0.98)) !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.16), 0 12px 26px rgba(127, 29, 29, 0.42) !important;
   animation: messenger-call-button-pulse 1.8s ease-in-out infinite;
+}
+
+.icon-btn--call-live::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04)) !important;
+  opacity: 0.34 !important;
 }
 
 .icon-btn--call-live:hover,
 .icon-btn--call-live:not([disabled]):hover {
-  border-color: rgba(252, 165, 165, 0.9);
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.98), rgba(185, 28, 28, 0.98));
+  border-color: rgba(254, 226, 226, 0.48) !important;
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.98), rgba(185, 28, 28, 0.98)) !important;
+}
+
+.icon-btn--call-live svg {
+  color: currentColor;
 }
 
 .message-list--chat-scroll {
@@ -3552,12 +3560,28 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 }
 
 .section-block--chat > .section-head--chat-header .chat-user-name {
-  display: block !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  max-width: 100% !important;
   font-size: 14px !important;
   line-height: 1.1 !important;
-  white-space: nowrap !important;
+}
+
+.section-block--chat > .section-head--chat-header .chat-user-name__text {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.section-block--chat > .section-head--chat-header .chat-user-name--audio-live {
+  padding: 5px 9px !important;
+}
+
+.section-block--chat > .section-head--chat-header .chat-user-name__call {
+  min-height: 18px !important;
+  padding: 0 7px !important;
+  font-size: 9px !important;
 }
 
 .section-block--chat > .section-head--chat-header .section-actions {
