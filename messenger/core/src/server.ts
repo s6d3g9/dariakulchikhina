@@ -103,6 +103,15 @@ export async function createMessengerServer() {
     ciphertext: z.string().min(1).max(32768),
     iv: z.string().min(1).max(512),
   })
+  const encryptedBinaryPayloadSchema = z.object({
+    algorithm: z.literal('aes-gcm-256'),
+    iv: z.string().min(1).max(512),
+  })
+  const attachmentMetadataSchema = z.object({
+    encryptedFile: encryptedBinaryPayloadSchema.optional(),
+    originalName: z.string().trim().min(1).max(255).optional(),
+    originalMimeType: z.string().trim().min(1).max(120).optional(),
+  })
   const forwardedSnapshotSchema = z.object({
     messageId: z.string().uuid(),
     conversationId: z.string().uuid(),
@@ -116,6 +125,7 @@ export async function createMessengerServer() {
       mimeType: z.string().trim().min(1).max(120),
       size: z.number().int().nonnegative(),
       url: z.string().trim().min(1).max(2048),
+      encryptedFile: encryptedBinaryPayloadSchema.optional(),
     }).optional(),
   })
   const messageSchema = z.object({
@@ -576,6 +586,10 @@ export async function createMessengerServer() {
           return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
         }
 
+        if (error.message === 'MESSAGE_ENCRYPTION_REQUIRED') {
+          return reply.code(409).send({ error: 'MESSAGE_ENCRYPTION_REQUIRED' })
+        }
+
         if (error.message === 'SECRET_CHAT_ATTACHMENTS_DISABLED') {
           return reply.code(409).send({ error: 'SECRET_CHAT_ATTACHMENTS_DISABLED' })
         }
@@ -876,14 +890,40 @@ export async function createMessengerServer() {
       chunks.push(chunk)
     }
 
+    const metadataField = Array.isArray(file.fields.metadata) ? file.fields.metadata[0] : file.fields.metadata
+    const metadataValue = metadataField && 'value' in metadataField && typeof metadataField.value === 'string'
+      ? metadataField.value
+      : undefined
+
+    let encryptedFile: z.infer<typeof encryptedBinaryPayloadSchema> | undefined
+    let originalName: string | undefined
+    let originalMimeType: string | undefined
+    if (metadataValue) {
+      try {
+        const parsedMetadata = attachmentMetadataSchema.safeParse(JSON.parse(metadataValue))
+        if (!parsedMetadata.success) {
+          return reply.code(400).send({ error: 'INVALID_ATTACHMENT_METADATA' })
+        }
+
+        encryptedFile = parsedMetadata.data.encryptedFile
+        originalName = parsedMetadata.data.originalName
+        originalMimeType = parsedMetadata.data.originalMimeType
+      } catch {
+        return reply.code(400).send({ error: 'INVALID_ATTACHMENT_METADATA' })
+      }
+    }
+
     try {
       const stored = await storeUploadedMedia({
-        filename: file.filename,
-        mimeType: file.mimetype,
+        filename: originalName || file.filename,
+        mimeType: originalMimeType || file.mimetype,
         buffer: Buffer.concat(chunks),
       })
 
-      const message = await addAttachmentMessageToConversation(parsedParams.data.conversationId, session.user, stored)
+      const message = await addAttachmentMessageToConversation(parsedParams.data.conversationId, session.user, {
+        ...stored,
+        encryptedFile,
+      })
       const conversation = await findConversationById(parsedParams.data.conversationId)
       if (conversation) {
         emitToUsers([conversation.userAId, conversation.userBId], {

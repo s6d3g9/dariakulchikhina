@@ -12,6 +12,11 @@ export interface MessengerEncryptedPayload {
   iv: string
 }
 
+export interface MessengerEncryptedBinaryPayload {
+  algorithm: 'aes-gcm-256'
+  iv: string
+}
+
 export interface MessengerConversationKeyPackageRecord {
   recipientUserId: string
   wrappedKey: string
@@ -57,6 +62,7 @@ export interface MessengerMessageRecord {
     mimeType: string
     size: number
     url: string
+    encryptedFile?: MessengerEncryptedBinaryPayload
   }
   createdAt: string
   readAt?: string
@@ -77,6 +83,7 @@ export interface MessengerMessageRecord {
       mimeType: string
       size: number
       url: string
+      encryptedFile?: MessengerEncryptedBinaryPayload
     }
   }
 }
@@ -154,6 +161,7 @@ export interface ConversationMessageOverviewItem {
     mimeType: string
     size: number
     url: string
+    encryptedFile?: MessengerEncryptedBinaryPayload
   }
   replyTo?: {
     id: string
@@ -166,6 +174,7 @@ export interface ConversationMessageOverviewItem {
       mimeType: string
       size: number
       url: string
+      encryptedFile?: MessengerEncryptedBinaryPayload
     }
   }
   commentOn?: {
@@ -179,6 +188,7 @@ export interface ConversationMessageOverviewItem {
       mimeType: string
       size: number
       url: string
+      encryptedFile?: MessengerEncryptedBinaryPayload
     }
   }
   forwardedFrom?: {
@@ -193,6 +203,7 @@ export interface ConversationMessageOverviewItem {
       mimeType: string
       size: number
       url: string
+      encryptedFile?: MessengerEncryptedBinaryPayload
     }
   }
 }
@@ -623,7 +634,7 @@ export async function forwardMessageToConversation(
 export async function addAttachmentMessageToConversation(
   conversationId: string,
   actor: MessengerUserRecord,
-  attachment: { name: string; mimeType: string; size: number; url: string },
+  attachment: { name: string; mimeType: string; size: number; url: string; encryptedFile?: MessengerEncryptedBinaryPayload },
 ) {
   const payload = await readConversationsFile()
   const conversation = payload.conversations.find(item => item.id === conversationId)
@@ -635,8 +646,9 @@ export async function addAttachmentMessageToConversation(
     throw new Error('CONVERSATION_FORBIDDEN')
   }
 
-  if (getConversationPolicy(conversation).secret) {
-    throw new Error('SECRET_CHAT_ATTACHMENTS_DISABLED')
+  const policy = getConversationPolicy(conversation)
+  if (policy.secret && !attachment.encryptedFile) {
+    throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
   }
 
   const attachmentLabel = attachment.mimeType.startsWith('audio/')

@@ -182,13 +182,13 @@ function handleEditInput(event: Event) {
         class="voice-player"
         controls
         preload="metadata"
-        :src="entry.attachment.absoluteUrl"
+        :src="entry.attachment.resolvedUrl"
       />
       <button
         v-if="!entry.attachment.mimeType.startsWith('audio/') && !entry.attachment.mimeType.startsWith('image/')"
         type="button"
         class="attachment-card attachment-card--button"
-        @click.stop="emit('copy-link', entry.attachment.absoluteUrl, entry.attachment.name)"
+        @click.stop="emit('copy-link', entry.attachment.resolvedUrl, entry.attachment.name)"
       >
         <span class="attachment-card__title">{{ entry.attachment.name }}</span>
         <span class="attachment-card__meta">{{ entry.attachment.mimeType }} · {{ Math.ceil(entry.attachment.size / 1024) }} KB</span>
@@ -196,7 +196,7 @@ function handleEditInput(event: Event) {
       <img
         v-if="entry.attachment.mimeType.startsWith('image/')"
         class="attachment-preview"
-        :src="entry.attachment.absoluteUrl"
+        :src="entry.attachment.resolvedUrl"
         :alt="entry.attachment.name"
         @click.stop="emit('open-photo', entry.id)"
       >

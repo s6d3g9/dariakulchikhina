@@ -15,6 +15,11 @@ export interface MessengerEncryptedPayload {
   iv: string
 }
 
+export interface MessengerEncryptedBinaryPayload {
+  algorithm: 'aes-gcm-256'
+  iv: string
+}
+
 export interface MessengerConversationKeyPackage {
   recipientUserId: string
   wrappedKey: string
@@ -325,6 +330,46 @@ export function useMessengerCrypto() {
     return new TextDecoder().decode(plaintext)
   }
 
+  async function encryptBinary(
+    request: MessengerRequest,
+    userId: string,
+    conversationId: string,
+    peerUserId: string,
+    input: ArrayBuffer,
+  ) {
+    const conversationKey = await ensureConversationKey(request, userId, conversationId, peerUserId)
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      conversationKey,
+      input,
+    )
+
+    return {
+      payload: new Blob([ciphertext], { type: 'application/octet-stream' }),
+      encryption: {
+        algorithm: 'aes-gcm-256' as const,
+        iv: encodeBase64(iv),
+      },
+    }
+  }
+
+  async function decryptBinary(
+    request: MessengerRequest,
+    userId: string,
+    conversationId: string,
+    peerUserId: string,
+    encryptedFile: MessengerEncryptedBinaryPayload,
+    input: ArrayBuffer,
+  ) {
+    const conversationKey = await ensureConversationKey(request, userId, conversationId, peerUserId)
+    return await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: decodeBase64(encryptedFile.iv) },
+      conversationKey,
+      input,
+    )
+  }
+
   async function getConversationSecuritySummary(
     request: MessengerRequest,
     userId: string,
@@ -366,6 +411,8 @@ export function useMessengerCrypto() {
     ensureConversationKey,
     encryptText,
     decryptText,
+    encryptBinary,
+    decryptBinary,
     getConversationSecuritySummary,
   }
 }

@@ -28,7 +28,7 @@ export interface MessengerConversationItem {
 }
 
 import { buildMessengerUrl } from '../utils/messenger-url'
-import type { MessengerEncryptedPayload } from './useMessengerCrypto'
+import type { MessengerEncryptedBinaryPayload, MessengerEncryptedPayload } from './useMessengerCrypto'
 
 interface MessengerMessageRelationPreview {
   id: string
@@ -43,6 +43,8 @@ interface MessengerMessageRelationPreview {
     size: number
     url: string
     absoluteUrl: string
+    resolvedUrl: string
+    encryptedFile?: MessengerEncryptedBinaryPayload
   }
 }
 
@@ -60,6 +62,8 @@ interface MessengerForwardedMessagePreview {
     size: number
     url: string
     absoluteUrl: string
+    resolvedUrl: string
+    encryptedFile?: MessengerEncryptedBinaryPayload
   }
 }
 
@@ -80,6 +84,8 @@ export interface MessengerConversationMessage {
     size: number
     url: string
     absoluteUrl: string
+    resolvedUrl: string
+    encryptedFile?: MessengerEncryptedBinaryPayload
   }
   replyTo?: MessengerMessageRelationPreview
   commentOn?: MessengerMessageRelationPreview
@@ -99,6 +105,7 @@ function attachAbsoluteUrl<T extends { attachment?: { name: string; mimeType: st
     attachment: {
       ...item.attachment,
       absoluteUrl: buildMessengerUrl(config.public.messengerCoreBaseUrl, item.attachment.url),
+      resolvedUrl: buildMessengerUrl(config.public.messengerCoreBaseUrl, item.attachment.url),
     },
   }
 }
@@ -153,6 +160,7 @@ export function useMessengerConversations() {
   const pending = useState<boolean>('messenger-conversations-pending', () => false)
   const messagePending = useState<boolean>('messenger-conversation-message-pending', () => false)
   const editingMessageId = useState<string | null>('messenger-conversation-editing-message-id', () => null)
+  const mediaObjectUrls = useState<string[]>('messenger-media-object-urls', () => [])
 
   const activeConversation = computed(() => conversations.value.find(item => item.id === state.activeConversationId.value) ?? null)
 
@@ -170,6 +178,50 @@ export function useMessengerConversations() {
     }
 
     return 'Не удалось расшифровать защищённое сообщение'
+  }
+
+  function revokeMediaObjectUrls() {
+    if (!import.meta.client) {
+      mediaObjectUrls.value = []
+      return
+    }
+
+    for (const url of mediaObjectUrls.value) {
+      URL.revokeObjectURL(url)
+    }
+
+    mediaObjectUrls.value = []
+  }
+
+  async function decryptAttachment(conversation: MessengerConversationItem, attachment: MessengerConversationMessage['attachment']) {
+    if (!attachment || !attachment.encryptedFile || !conversation.secret || !auth.user.value || !import.meta.client) {
+      return attachment
+    }
+
+    try {
+      const encryptedResponse = await fetch(attachment.absoluteUrl)
+      const encryptedBuffer = await encryptedResponse.arrayBuffer()
+      const decryptedBuffer = await messengerCrypto.decryptBinary(
+        auth.request,
+        auth.user.value.id,
+        conversation.id,
+        conversation.peerUserId,
+        attachment.encryptedFile,
+        encryptedBuffer,
+      )
+      const objectUrl = URL.createObjectURL(new Blob([decryptedBuffer], { type: attachment.mimeType || 'application/octet-stream' }))
+      mediaObjectUrls.value = [...mediaObjectUrls.value, objectUrl]
+
+      return {
+        ...attachment,
+        resolvedUrl: objectUrl,
+      }
+    } catch {
+      return {
+        ...attachment,
+        resolvedUrl: attachment.absoluteUrl,
+      }
+    }
   }
 
   async function decryptMessageBody(conversation: MessengerConversationItem, body: string, encryptedBody?: MessengerEncryptedPayload) {
@@ -215,6 +267,7 @@ export function useMessengerConversations() {
     return {
       ...attachRelationPreview(config, preview),
       body: await decryptMessageBody(conversation, preview.body, preview.encryptedBody),
+      attachment: await decryptAttachment(conversation, attachRelationPreview(config, preview)?.attachment),
     }
   }
 
@@ -229,6 +282,7 @@ export function useMessengerConversations() {
     return {
       ...attachForwardedPreview(config, preview),
       body: await decryptMessageBody(conversation, preview.body, preview.encryptedBody),
+      attachment: await decryptAttachment(conversation, attachForwardedPreview(config, preview)?.attachment),
     }
   }
 
@@ -237,6 +291,7 @@ export function useMessengerConversations() {
     return {
       ...attachedMessage,
       body: await decryptMessageBody(conversation, message.body, message.encryptedBody),
+      attachment: await decryptAttachment(conversation, attachedMessage.attachment),
       replyTo: await decryptRelationPreview(conversation, message.replyTo),
       commentOn: await decryptRelationPreview(conversation, message.commentOn),
       forwardedFrom: await decryptForwardedPreview(conversation, message.forwardedFrom),
@@ -317,6 +372,7 @@ export function useMessengerConversations() {
     const response = await auth.request<{ messages: MessengerConversationMessage[] }>(`/conversations/${conversationId}/messages`, {
       method: 'GET',
     })
+    revokeMediaObjectUrls()
     const conversation = conversations.value.find(item => item.id === conversationId)
     if (!conversation) {
       messages.value = response.messages.map(message => attachMessageRelations(config, message))
@@ -438,12 +494,31 @@ export function useMessengerConversations() {
 
   async function uploadAttachment(file: File) {
     const conversationId = state.activeConversationId.value
+    const conversation = activeConversation.value
     if (!conversationId) {
       throw new Error('NO_ACTIVE_CONVERSATION')
     }
 
     const formData = new FormData()
-    formData.set('file', file)
+
+    if (conversation?.secret && auth.user.value) {
+      const encryptedFile = await messengerCrypto.encryptBinary(
+        auth.request,
+        auth.user.value.id,
+        conversationId,
+        conversation.peerUserId,
+        await file.arrayBuffer(),
+      )
+      const ciphertextFile = new File([encryptedFile.payload], `${file.name}.bin`, { type: 'application/octet-stream' })
+      formData.set('file', ciphertextFile)
+      formData.set('metadata', JSON.stringify({
+        encryptedFile: encryptedFile.encryption,
+        originalName: file.name,
+        originalMimeType: file.type,
+      }))
+    } else {
+      formData.set('file', file)
+    }
 
     messagePending.value = true
     try {

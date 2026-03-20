@@ -164,8 +164,8 @@ const sharedContent = computed(() => {
         id: entry.id,
         title: resolveAttachmentTitle(entry.attachment),
         meta: `${entry.attachment.mimeType} · ${Math.ceil(entry.attachment.size / 1024)} KB`,
-        href: entry.attachment.absoluteUrl,
-        previewUrl: entry.attachment.mimeType.startsWith('image/') ? entry.attachment.absoluteUrl : undefined,
+        href: entry.attachment.resolvedUrl,
+        previewUrl: entry.attachment.mimeType.startsWith('image/') ? entry.attachment.resolvedUrl : undefined,
       }
 
       if (entry.attachment.mimeType.startsWith('image/')) {
@@ -406,7 +406,7 @@ const composerPrimaryDisabled = computed(() => {
   }
 
   if (composerPrimaryMode.value === 'record') {
-    return !canRecordAudio.value || activeConversationSecret.value
+    return !canRecordAudio.value
   }
 
   return false
@@ -677,23 +677,11 @@ function openFilePicker(accept = '') {
 }
 
 function openStickerPicker() {
-  if (activeConversationSecret.value) {
-    actionError.value = 'Стикеры в secret-чате появятся после включения зашифрованных медиа.'
-    composerMediaMenuOpen.value = false
-    return
-  }
-
   composerMediaMenuOpen.value = false
   openFilePicker('image/webp,image/png,image/jpeg')
 }
 
 function openGifPicker() {
-  if (activeConversationSecret.value) {
-    actionError.value = 'GIF в secret-чате появятся после включения зашифрованных медиа.'
-    composerMediaMenuOpen.value = false
-    return
-  }
-
   composerMediaMenuOpen.value = false
   openFilePicker('image/gif')
 }
@@ -703,13 +691,6 @@ async function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) {
-    return
-  }
-
-  if (activeConversationSecret.value) {
-    actionError.value = 'Вложения в secret-чате появятся после включения зашифрованных медиа.'
-    input.accept = ''
-    input.value = ''
     return
   }
 
@@ -730,11 +711,6 @@ function eventHasFiles(event: DragEvent) {
 
 async function uploadDroppedFiles(fileList: FileList | null) {
   if (!fileList?.length || !desktopDropEnabled.value) {
-    return
-  }
-
-  if (activeConversationSecret.value) {
-    actionError.value = 'Вложения в secret-чате пока отключены до encrypted media.'
     return
   }
 
@@ -836,11 +812,6 @@ async function toggleAudioRecording() {
   calls.clearError()
 
   if (!conversations.activeConversation.value || conversations.messagePending.value) {
-    return
-  }
-
-  if (activeConversationSecret.value && !isRecording.value) {
-    actionError.value = 'Голосовые сообщения в secret-чате появятся после включения зашифрованных медиа.'
     return
   }
 
@@ -1092,6 +1063,23 @@ async function copyLink(href: string, label: string) {
   actionError.value = ''
 
   try {
+    if (href.startsWith('blob:')) {
+      const link = document.createElement('a')
+      link.href = href
+      link.download = label
+      link.rel = 'noopener'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      copiedLabel.value = `Файл подготовлен: ${label}`
+      setTimeout(() => {
+        if (copiedLabel.value === `Файл подготовлен: ${label}`) {
+          copiedLabel.value = ''
+        }
+      }, 2200)
+      return
+    }
+
     await copyText(href)
     copiedLabel.value = `Ссылка скопирована: ${label}`
     setTimeout(() => {
@@ -1369,7 +1357,7 @@ onBeforeUnmount(() => {
         <div class="composer-context__copy">
           <p class="composer-context__eyebrow">Secret chat</p>
           <p class="composer-context__title">Первое сообщение запустит защищённый диалог</p>
-          <p class="composer-context__text">Текст в этом чате шифруется end-to-end. Пересылка, вложения и голосовые пока отключены, пока для них не включено отдельное encrypted media.</p>
+          <p class="composer-context__text">Текст, вложения и голосовые в этом чате шифруются end-to-end. Пересылка отключена, а любой участник может удалить любое сообщение.</p>
         </div>
       </div>
 
@@ -1525,14 +1513,14 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-else-if="composerMediaMenuTab === 'stickers'" class="composer-media-menu__action-group">
-          <p class="composer-media-menu__hint">{{ activeConversationSecret ? 'Стикеры будут доступны после encrypted media для secret chat.' : 'Выберите изображение, чтобы отправить его как стикер.' }}</p>
+          <p class="composer-media-menu__hint">Выберите изображение, чтобы отправить его как стикер.</p>
           <button type="button" class="composer-media-menu__action" @click="openStickerPicker">
             Выбрать стикер
           </button>
         </div>
 
         <div v-else class="composer-media-menu__action-group">
-          <p class="composer-media-menu__hint">{{ activeConversationSecret ? 'GIF будут доступны после encrypted media для secret chat.' : 'Откройте GIF-файл из галереи или файлового менеджера.' }}</p>
+          <p class="composer-media-menu__hint">Откройте GIF-файл из галереи или файлового менеджера.</p>
           <button type="button" class="composer-media-menu__action" @click="openGifPicker">
             Выбрать GIF
           </button>
@@ -1572,7 +1560,7 @@ onBeforeUnmount(() => {
             type="button"
             class="composer-btn"
             aria-label="Прикрепить файл"
-            :disabled="!conversations.activeConversation.value || conversations.messagePending.value || activeConversationSecret"
+            :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
             @click="openFilePicker()"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
