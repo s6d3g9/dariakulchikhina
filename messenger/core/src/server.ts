@@ -9,7 +9,7 @@ import { z } from 'zod'
 
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from './auth.ts'
-import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages } from './conversation-store.ts'
+import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, findOrCreateSecretConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages } from './conversation-store.ts'
 import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from './contact-store.ts'
 import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } from './crypto-store.ts'
 import { readMessengerConfig } from './config.ts'
@@ -512,6 +512,37 @@ export async function createMessengerServer() {
     return { conversation }
   })
 
+  app.post('/conversations/secret', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedBody = directConversationSchema.safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const peer = await findMessengerUserById(parsedBody.data.peerUserId)
+    if (!peer) {
+      return reply.code(404).send({ error: 'USER_NOT_FOUND' })
+    }
+
+    const overview = await buildContactsOverview(session.user, await listMessengerUsers(), '')
+    const isContact = overview.contacts.some(item => item.id === peer.id)
+    if (!isContact) {
+      return reply.code(403).send({ error: 'DIRECT_CHAT_REQUIRES_CONTACT' })
+    }
+
+    const conversation = await findOrCreateSecretConversation(session.user.id, peer.id)
+    emitToUsers([conversation.userAId, conversation.userBId], {
+      type: 'conversations.updated',
+      conversationId: conversation.id,
+      timestamp: new Date().toISOString(),
+    })
+    return { conversation }
+  })
+
   app.delete('/conversations/:conversationId', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -543,6 +574,10 @@ export async function createMessengerServer() {
 
         if (error.message === 'CONVERSATION_FORBIDDEN') {
           return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+        }
+
+        if (error.message === 'SECRET_CHAT_ATTACHMENTS_DISABLED') {
+          return reply.code(409).send({ error: 'SECRET_CHAT_ATTACHMENTS_DISABLED' })
         }
       }
 
@@ -704,6 +739,14 @@ export async function createMessengerServer() {
           return reply.code(403).send({ error: error.message })
         }
 
+        if (error.message === 'FORWARD_FORBIDDEN_IN_SECRET_CHAT') {
+          return reply.code(403).send({ error: 'FORWARD_FORBIDDEN_IN_SECRET_CHAT' })
+        }
+
+        if (error.message === 'MESSAGE_ENCRYPTION_REQUIRED') {
+          return reply.code(409).send({ error: 'MESSAGE_ENCRYPTION_REQUIRED' })
+        }
+
         if (error.message === 'MESSAGE_ENCRYPTED_FORWARD_REQUIRES_CLIENT_PAYLOAD') {
           return reply.code(409).send({ error: 'MESSAGE_ENCRYPTED_FORWARD_REQUIRES_CLIENT_PAYLOAD' })
         }
@@ -755,6 +798,10 @@ export async function createMessengerServer() {
 
         if (error.message === 'CONVERSATION_FORBIDDEN' || error.message === 'MESSAGE_FORBIDDEN') {
           return reply.code(403).send({ error: 'MESSAGE_FORBIDDEN' })
+        }
+
+        if (error.message === 'MESSAGE_ENCRYPTION_REQUIRED') {
+          return reply.code(409).send({ error: 'MESSAGE_ENCRYPTION_REQUIRED' })
         }
 
         if (error.message === 'MESSAGE_NOT_EDITABLE') {

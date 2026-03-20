@@ -12,8 +12,12 @@ const props = withDefaults(defineProps<{
   editingMessageId: string | null
   editingDraft: string
   messagePending: boolean
+  allowForward?: boolean
+  allowMutualDelete?: boolean
 }>(), {
   depth: 0,
+  allowForward: true,
+  allowMutualDelete: false,
 })
 
 const emit = defineEmits<{
@@ -125,6 +129,7 @@ function handleEditInput(event: Event) {
             Ответить
           </button>
           <button
+            v-if="allowForward"
             type="button"
             class="message-action-btn"
             @click.stop="emit('forward', entry.id)"
@@ -149,7 +154,7 @@ function handleEditInput(event: Event) {
             Изменить
           </button>
           <button
-            v-if="entry.own"
+            v-if="entry.own || allowMutualDelete"
             type="button"
             class="message-action-btn"
             :disabled="editingMessageId === entry.id || messagePending"
@@ -225,6 +230,8 @@ function handleEditInput(event: Event) {
         :editing-message-id="editingMessageId"
         :editing-draft="editingDraft"
         :message-pending="messagePending"
+        :allow-forward="allowForward"
+        :allow-mutual-delete="allowMutualDelete"
         @toggle-actions="emit('toggle-actions', $event[0], $event[1])"
         @comment="emit('comment', $event)"
         @reply="emit('reply', $event)"

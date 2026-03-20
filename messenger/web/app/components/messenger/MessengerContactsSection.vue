@@ -160,6 +160,17 @@ async function openDirectChat(targetUserId: string) {
   }
 }
 
+async function openSecretChat(targetUserId: string) {
+  actionError.value = ''
+
+  try {
+    holdActions.dismiss()
+    await conversations.openSecretConversation(targetUserId)
+  } catch {
+    actionError.value = 'Не удалось открыть secret-чат.'
+  }
+}
+
 async function removeContact(peerUserId: string) {
   actionError.value = ''
 
@@ -355,6 +366,20 @@ function startHold(contactId: string, event?: Event) {
           <p class="list-card__text">@{{ contact.login }}</p>
         </div>
         <div v-if="holdActions.activeItemId.value === contact.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
+          <button
+            type="button"
+            class="action-btn"
+            @click.stop="openDirectChat(contact.id)"
+          >
+            Чат
+          </button>
+          <button
+            type="button"
+            class="action-btn action-btn--accept"
+            @click.stop="openSecretChat(contact.id)"
+          >
+            Secret chat
+          </button>
           <button
             type="button"
             class="action-btn action-btn--danger"

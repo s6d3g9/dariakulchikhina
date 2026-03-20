@@ -19,6 +19,7 @@ const composerInputEl = ref<HTMLTextAreaElement | null>(null)
 const composerBarEl = ref<HTMLElement | null>(null)
 const detailsOpen = ref(false)
 const copiedLabel = ref('')
+const secretIntroSeen = useState<Record<string, boolean>>('messenger-secret-intro-seen', () => ({}))
 const isRecording = ref(false)
 const recordingSeconds = ref(0)
 const canRecordAudio = ref(false)
@@ -129,6 +130,27 @@ const activePeerAvatar = computed(() => {
     .slice(0, 2)
     .map(part => part[0]?.toUpperCase() || '')
     .join('')
+})
+
+const activeConversationPolicy = computed(() => conversations.activeConversation.value?.policy ?? null)
+const activeConversationSecret = computed(() => Boolean(conversations.activeConversation.value?.secret))
+const canForwardFromActiveConversation = computed(() => activeConversationPolicy.value?.allowForwardOut !== false)
+const allowMutualDelete = computed(() => Boolean(activeConversationPolicy.value?.allowMutualDelete))
+const secretIntroStorageKey = computed(() => {
+  if (!import.meta.client || !auth.user.value || !conversations.activeConversation.value || !activeConversationSecret.value) {
+    return ''
+  }
+
+  return `daria-messenger-secret-intro:${auth.user.value.id}:${conversations.activeConversation.value.id}`
+})
+const hasOwnMessagesInActiveConversation = computed(() => conversations.messages.value.some(item => item.own && !item.deletedAt))
+const showSecretIntro = computed(() => {
+  const conversation = conversations.activeConversation.value
+  if (!conversation || !activeConversationSecret.value || detailsOpen.value || photoFeedOpen.value) {
+    return false
+  }
+
+  return !hasOwnMessagesInActiveConversation.value && !secretIntroSeen.value[conversation.id]
 })
 
 const sharedContent = computed(() => {
@@ -276,7 +298,7 @@ const forwardingMessage = computed(() => {
   return conversations.messages.value.find(item => item.id === forwardingMessageId.value) ?? null
 })
 
-const availableForwardTargets = computed(() => conversations.conversations.value)
+const availableForwardTargets = computed(() => conversations.conversations.value.filter(item => !item.secret))
 const photoFeedOpen = computed(() => Boolean(galleryPhotoId.value && conversations.activeConversation.value))
 const headerIncomingCall = computed(() => Boolean(
   calls.incomingCall.value
@@ -384,7 +406,7 @@ const composerPrimaryDisabled = computed(() => {
   }
 
   if (composerPrimaryMode.value === 'record') {
-    return !canRecordAudio.value
+    return !canRecordAudio.value || activeConversationSecret.value
   }
 
   return false
@@ -422,6 +444,35 @@ onBeforeUnmount(() => {
 watch(() => conversations.activeConversationId.value, async () => {
   detailsOpen.value = false
   await scrollMessagesToBottom('auto')
+})
+
+watch(() => conversations.activeConversationId.value, () => {
+  const conversation = conversations.activeConversation.value
+  if (!import.meta.client || !conversation || !activeConversationSecret.value) {
+    return
+  }
+
+  const storageKey = secretIntroStorageKey.value
+  secretIntroSeen.value = {
+    ...secretIntroSeen.value,
+    [conversation.id]: storageKey ? localStorage.getItem(storageKey) === '1' : false,
+  }
+}, { immediate: true })
+
+watch(hasOwnMessagesInActiveConversation, (hasOwnMessages) => {
+  if (!hasOwnMessages || !activeConversationSecret.value || !conversations.activeConversation.value) {
+    return
+  }
+
+  const storageKey = secretIntroStorageKey.value
+  if (storageKey && import.meta.client) {
+    localStorage.setItem(storageKey, '1')
+  }
+
+  secretIntroSeen.value = {
+    ...secretIntroSeen.value,
+    [conversations.activeConversation.value.id]: true,
+  }
 })
 
 watch(() => detailsOpen.value, (opened) => {
@@ -586,6 +637,11 @@ async function activateComposerRelation(mode: 'reply' | 'comment', messageId: st
 }
 
 function openForwardPicker(messageId: string) {
+  if (!canForwardFromActiveConversation.value) {
+    actionError.value = 'В secret-чате пересылка отключена.'
+    return
+  }
+
   forwardingMessageId.value = messageId
   clearComposerRelation()
   activeMessageActionsId.value = null
@@ -621,11 +677,23 @@ function openFilePicker(accept = '') {
 }
 
 function openStickerPicker() {
+  if (activeConversationSecret.value) {
+    actionError.value = 'Стикеры в secret-чате появятся после включения зашифрованных медиа.'
+    composerMediaMenuOpen.value = false
+    return
+  }
+
   composerMediaMenuOpen.value = false
   openFilePicker('image/webp,image/png,image/jpeg')
 }
 
 function openGifPicker() {
+  if (activeConversationSecret.value) {
+    actionError.value = 'GIF в secret-чате появятся после включения зашифрованных медиа.'
+    composerMediaMenuOpen.value = false
+    return
+  }
+
   composerMediaMenuOpen.value = false
   openFilePicker('image/gif')
 }
@@ -635,6 +703,13 @@ async function handleFileSelect(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) {
+    return
+  }
+
+  if (activeConversationSecret.value) {
+    actionError.value = 'Вложения в secret-чате появятся после включения зашифрованных медиа.'
+    input.accept = ''
+    input.value = ''
     return
   }
 
@@ -655,6 +730,11 @@ function eventHasFiles(event: DragEvent) {
 
 async function uploadDroppedFiles(fileList: FileList | null) {
   if (!fileList?.length || !desktopDropEnabled.value) {
+    return
+  }
+
+  if (activeConversationSecret.value) {
+    actionError.value = 'Вложения в secret-чате пока отключены до encrypted media.'
     return
   }
 
@@ -756,6 +836,11 @@ async function toggleAudioRecording() {
   calls.clearError()
 
   if (!conversations.activeConversation.value || conversations.messagePending.value) {
+    return
+  }
+
+  if (activeConversationSecret.value && !isRecording.value) {
+    actionError.value = 'Голосовые сообщения в secret-чате появятся после включения зашифрованных медиа.'
     return
   }
 
@@ -1196,6 +1281,9 @@ onBeforeUnmount(() => {
               :class="{ 'chat-user-name--audio-live': headerCallVisible }"
             >
               <span class="chat-user-name__text">{{ activePeerName }}</span>
+              <span v-if="activeConversationSecret" class="chat-secret-badge chat-secret-badge--header">
+                Secret
+              </span>
               <span v-if="headerCallVisible" class="chat-user-name__call" aria-live="polite">
                 {{ headerCallBadge }}
               </span>
@@ -1277,6 +1365,14 @@ onBeforeUnmount(() => {
   <p v-else-if="calls.requestingPermissions.value" class="copy-toast">Запрашиваем доступ к микрофону{{ conversations.activeConversation.value ? '' : '' }}…</p>
       <p v-else-if="copiedLabel" class="copy-toast">{{ copiedLabel }}</p>
 
+      <div v-if="showSecretIntro" class="composer-context composer-context--secret-intro">
+        <div class="composer-context__copy">
+          <p class="composer-context__eyebrow">Secret chat</p>
+          <p class="composer-context__title">Первое сообщение запустит защищённый диалог</p>
+          <p class="composer-context__text">Текст в этом чате шифруется end-to-end. Пересылка, вложения и голосовые пока отключены, пока для них не включено отдельное encrypted media.</p>
+        </div>
+      </div>
+
       <div v-if="composerRelationMode && composerRelationMessage && !detailsOpen" class="composer-context composer-context--active">
         <div class="composer-context__copy">
           <p class="composer-context__eyebrow">{{ relationTitle(composerRelationMode) }}</p>
@@ -1305,6 +1401,7 @@ onBeforeUnmount(() => {
             <span class="forward-target-btn__title">{{ conversation.peerDisplayName }}</span>
             <span class="forward-target-btn__meta">{{ conversation.id === conversations.activeConversationId.value ? 'Текущий чат' : `@${conversation.peerLogin}` }}</span>
           </button>
+          <p v-if="!availableForwardTargets.length" class="composer-context__text">Доступных чатов для пересылки нет.</p>
         </div>
       </div>
 
@@ -1323,6 +1420,8 @@ onBeforeUnmount(() => {
             :editing-message-id="editingMessageId"
             :editing-draft="editingDraft"
             :message-pending="conversations.messagePending.value"
+            :allow-forward="canForwardFromActiveConversation"
+            :allow-mutual-delete="allowMutualDelete"
             @toggle-actions="toggleMessageActions"
             @comment="activateComposerRelation('comment', $event)"
             @reply="activateComposerRelation('reply', $event)"
@@ -1346,7 +1445,7 @@ onBeforeUnmount(() => {
           <article v-else-if="!threadedMessages.length" class="list-card list-card--panel">
             <div class="list-card__main">
               <p class="list-card__title">Пока пусто</p>
-              <p class="list-card__text">Отправьте первое текстовое сообщение в этом direct-чате.</p>
+              <p class="list-card__text">{{ activeConversationSecret ? 'Отправьте первое защищённое сообщение в этом secret-чате.' : 'Отправьте первое текстовое сообщение в этом direct-чате.' }}</p>
             </div>
           </article>
         </div>
@@ -1426,14 +1525,14 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-else-if="composerMediaMenuTab === 'stickers'" class="composer-media-menu__action-group">
-          <p class="composer-media-menu__hint">Выберите изображение, чтобы отправить его как стикер.</p>
+          <p class="composer-media-menu__hint">{{ activeConversationSecret ? 'Стикеры будут доступны после encrypted media для secret chat.' : 'Выберите изображение, чтобы отправить его как стикер.' }}</p>
           <button type="button" class="composer-media-menu__action" @click="openStickerPicker">
             Выбрать стикер
           </button>
         </div>
 
         <div v-else class="composer-media-menu__action-group">
-          <p class="composer-media-menu__hint">Откройте GIF-файл из галереи или файлового менеджера.</p>
+          <p class="composer-media-menu__hint">{{ activeConversationSecret ? 'GIF будут доступны после encrypted media для secret chat.' : 'Откройте GIF-файл из галереи или файлового менеджера.' }}</p>
           <button type="button" class="composer-media-menu__action" @click="openGifPicker">
             Выбрать GIF
           </button>
@@ -1473,7 +1572,7 @@ onBeforeUnmount(() => {
             type="button"
             class="composer-btn"
             aria-label="Прикрепить файл"
-            :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
+            :disabled="!conversations.activeConversation.value || conversations.messagePending.value || activeConversationSecret"
             @click="openFilePicker()"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">

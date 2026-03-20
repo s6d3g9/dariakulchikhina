@@ -20,13 +20,25 @@ export interface MessengerConversationKeyPackageRecord {
   createdAt: string
 }
 
+export interface MessengerConversationPolicy {
+  secret: boolean
+  allowMutualDelete: boolean
+  encryptedMessages: boolean
+  encryptedAttachments: boolean
+  encryptedVoice: boolean
+  callsSecurityMode: 'webrtc-only' | 'beta-e2ee'
+  allowForwardOut: boolean
+  hideListPreview: boolean
+}
+
 export interface MessengerConversationRecord {
   id: string
-  kind: 'direct'
+  kind: 'direct' | 'direct-secret'
   userAId: string
   userBId: string
   createdAt: string
   updatedAt: string
+  policy?: MessengerConversationPolicy
   encryption?: {
     algorithm: 'aes-gcm-256'
     keyPackages: Record<string, MessengerConversationKeyPackageRecord>
@@ -74,12 +86,49 @@ interface ConversationsFile {
   messages: MessengerMessageRecord[]
 }
 
+function buildDirectPolicy(): MessengerConversationPolicy {
+  return {
+    secret: false,
+    allowMutualDelete: false,
+    encryptedMessages: true,
+    encryptedAttachments: false,
+    encryptedVoice: false,
+    callsSecurityMode: 'webrtc-only',
+    allowForwardOut: true,
+    hideListPreview: false,
+  }
+}
+
+function buildSecretPolicy(): MessengerConversationPolicy {
+  return {
+    secret: true,
+    allowMutualDelete: true,
+    encryptedMessages: true,
+    encryptedAttachments: false,
+    encryptedVoice: false,
+    callsSecurityMode: 'webrtc-only',
+    allowForwardOut: false,
+    hideListPreview: true,
+  }
+}
+
+function getConversationPolicy(conversation: Pick<MessengerConversationRecord, 'kind' | 'policy'>): MessengerConversationPolicy {
+  if (conversation.policy) {
+    return conversation.policy
+  }
+
+  return conversation.kind === 'direct-secret' ? buildSecretPolicy() : buildDirectPolicy()
+}
+
 export interface ConversationOverviewItem {
   id: string
+  kind: 'direct' | 'direct-secret'
+  secret: boolean
   peerUserId: string
   peerDisplayName: string
   peerLogin: string
   updatedAt: string
+  policy: MessengerConversationPolicy
   lastMessage: {
     id: string
     body: string
@@ -193,12 +242,13 @@ function buildMessageRelationPreview(
   message: MessengerMessageRecord,
   actorId: string,
   users: MessengerUserRecord[],
+  conversation?: Pick<MessengerConversationRecord, 'kind' | 'policy'>,
 ) {
   const sender = users.find(item => item.id === message.senderUserId)
 
   return {
     id: message.id,
-    body: getMessageBodyPreview(message),
+    body: getMessageBodyPreview(message, conversation),
     encryptedBody: message.deletedAt ? undefined : message.encryptedBody,
     kind: message.kind,
     own: message.senderUserId === actorId,
@@ -207,9 +257,24 @@ function buildMessageRelationPreview(
   }
 }
 
-function getMessageBodyPreview(message: Pick<MessengerMessageRecord, 'body' | 'kind' | 'attachment' | 'deletedAt' | 'encryptedBody'>) {
+function getMessageBodyPreview(
+  message: Pick<MessengerMessageRecord, 'body' | 'kind' | 'attachment' | 'deletedAt' | 'encryptedBody'>,
+  conversation?: Pick<MessengerConversationRecord, 'kind' | 'policy'>,
+) {
   if (message.deletedAt) {
     return 'Сообщение удалено'
+  }
+
+  if (conversation?.policy?.hideListPreview || conversation?.kind === 'direct-secret') {
+    if (message.kind === 'file' && message.attachment) {
+      if (message.attachment.mimeType.startsWith('audio/')) {
+        return 'Голосовое сообщение защищено'
+      }
+
+      return 'Вложение защищено'
+    }
+
+    return 'Секретное сообщение'
   }
 
   if (message.kind === 'file' && message.attachment) {
@@ -263,6 +328,10 @@ export async function findOrCreateDirectConversation(userId: string, peerUserId:
   const [userAId, userBId] = normalizePair(userId, peerUserId)
   const existing = payload.conversations.find(item => item.kind === 'direct' && item.userAId === userAId && item.userBId === userBId)
   if (existing) {
+    if (!existing.policy) {
+      existing.policy = buildDirectPolicy()
+      await writeConversationsFile(payload)
+    }
     return existing
   }
 
@@ -274,6 +343,35 @@ export async function findOrCreateDirectConversation(userId: string, peerUserId:
     userBId,
     createdAt: now,
     updatedAt: now,
+    policy: buildDirectPolicy(),
+  }
+
+  payload.conversations.push(conversation)
+  await writeConversationsFile(payload)
+  return conversation
+}
+
+export async function findOrCreateSecretConversation(userId: string, peerUserId: string) {
+  const payload = await readConversationsFile()
+  const [userAId, userBId] = normalizePair(userId, peerUserId)
+  const existing = payload.conversations.find(item => item.kind === 'direct-secret' && item.userAId === userAId && item.userBId === userBId)
+  if (existing) {
+    if (!existing.policy) {
+      existing.policy = buildSecretPolicy()
+      await writeConversationsFile(payload)
+    }
+    return existing
+  }
+
+  const now = new Date().toISOString()
+  const conversation: MessengerConversationRecord = {
+    id: randomUUID(),
+    kind: 'direct-secret',
+    userAId,
+    userBId,
+    createdAt: now,
+    updatedAt: now,
+    policy: buildSecretPolicy(),
   }
 
   payload.conversations.push(conversation)
@@ -288,6 +386,7 @@ export async function listConversationsForUser(user: MessengerUserRecord, users:
   const items: Array<ConversationOverviewItem | null> = payload.conversations
     .filter(conversation => isParticipant(conversation, user.id))
     .map((conversation) => {
+      const policy = getConversationPolicy(conversation)
       const peerUserId = getPeerId(conversation, user.id)
       const peer = users.find(item => item.id === peerUserId)
       if (!peer) {
@@ -304,13 +403,16 @@ export async function listConversationsForUser(user: MessengerUserRecord, users:
 
       return {
         id: conversation.id,
+        kind: conversation.kind,
+        secret: policy.secret,
         peerUserId,
         peerDisplayName: peer.displayName,
         peerLogin: peer.login,
         updatedAt: lastMessage?.createdAt || conversation.updatedAt,
+        policy,
         lastMessage: lastMessage ? {
           id: lastMessage.id,
-          body: getMessageBodyPreview(lastMessage),
+          body: getMessageBodyPreview(lastMessage, conversation),
           encryptedBody: lastMessage.deletedAt ? undefined : lastMessage.encryptedBody ?? undefined,
           createdAt: lastMessage.createdAt,
           own: lastMessage.senderUserId === user.id,
@@ -358,8 +460,8 @@ export async function listMessagesForConversation(conversationId: string, actor:
         own: message.senderUserId === actor.id,
         senderDisplayName: sender?.displayName || 'Unknown',
         attachment: message.deletedAt ? undefined : message.attachment,
-        replyTo: replyTo ? buildMessageRelationPreview(replyTo, actor.id, users) : undefined,
-        commentOn: commentOn ? buildMessageRelationPreview(commentOn, actor.id, users) : undefined,
+        replyTo: replyTo ? buildMessageRelationPreview(replyTo, actor.id, users, conversation) : undefined,
+        commentOn: commentOn ? buildMessageRelationPreview(commentOn, actor.id, users, conversation) : undefined,
         forwardedFrom: message.forwardedFrom,
       } satisfies ConversationMessageOverviewItem
     })
@@ -423,6 +525,11 @@ export async function addMessageToConversation(
     throw new Error('CONVERSATION_FORBIDDEN')
   }
 
+  const policy = getConversationPolicy(conversation)
+  if (policy.secret && !options?.encryptedBody) {
+    throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
+  }
+
   const now = new Date().toISOString()
   const message: MessengerMessageRecord = {
     id: randomUUID(),
@@ -467,6 +574,10 @@ export async function forwardMessageToConversation(
   const sourceConversation = payload.conversations.find(item => item.id === sourceMessage.conversationId)
   if (!sourceConversation) {
     throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  if (getConversationPolicy(targetConversation).secret || !getConversationPolicy(sourceConversation).allowForwardOut) {
+    throw new Error('FORWARD_FORBIDDEN_IN_SECRET_CHAT')
   }
 
   if (!isParticipant(sourceConversation, actor.id)) {
@@ -518,6 +629,10 @@ export async function addAttachmentMessageToConversation(
 
   if (!isParticipant(conversation, actor.id)) {
     throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  if (getConversationPolicy(conversation).secret) {
+    throw new Error('SECRET_CHAT_ATTACHMENTS_DISABLED')
   }
 
   const attachmentLabel = attachment.mimeType.startsWith('audio/')
@@ -573,6 +688,11 @@ export async function editMessageInConversation(
     throw new Error('MESSAGE_NOT_EDITABLE')
   }
 
+  const policy = getConversationPolicy(conversation)
+  if (policy.secret && !encryptedBody) {
+    throw new Error('MESSAGE_ENCRYPTION_REQUIRED')
+  }
+
   const now = new Date().toISOString()
   message.body = body.trim()
   message.encryptedBody = encryptedBody
@@ -598,7 +718,8 @@ export async function deleteMessageFromConversation(conversationId: string, mess
     throw new Error('MESSAGE_NOT_FOUND')
   }
 
-  if (message.senderUserId !== actor.id) {
+  const policy = getConversationPolicy(conversation)
+  if (message.senderUserId !== actor.id && !policy.allowMutualDelete) {
     throw new Error('MESSAGE_FORBIDDEN')
   }
 

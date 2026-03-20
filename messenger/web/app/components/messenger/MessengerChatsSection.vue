@@ -113,7 +113,10 @@ function startHold(conversationId: string, event?: Event) {
             class="search-dropdown__item"
             @click="selectSuggestion(chat.id)"
           >
-            <span class="search-dropdown__title">{{ chat.peerDisplayName }}</span>
+            <span class="search-dropdown__title">
+              {{ chat.peerDisplayName }}
+              <span v-if="chat.secret" class="chat-secret-badge">Secret</span>
+            </span>
             <span class="search-dropdown__meta">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</span>
           </button>
         </div>
@@ -141,7 +144,10 @@ function startHold(conversationId: string, event?: Event) {
       >
         <div class="list-card__main">
           <div class="list-card__row">
-            <p class="list-card__title">{{ chat.peerDisplayName }}</p>
+            <p class="list-card__title">
+              {{ chat.peerDisplayName }}
+              <span v-if="chat.secret" class="chat-secret-badge">Secret</span>
+            </p>
             <p class="list-card__meta">{{ new Date(chat.updatedAt).toLocaleDateString('ru-RU') }}</p>
           </div>
           <p class="list-card__text">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</p>

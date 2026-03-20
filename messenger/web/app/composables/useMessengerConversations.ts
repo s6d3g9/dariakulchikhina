@@ -1,9 +1,23 @@
-interface MessengerConversationItem {
+interface MessengerConversationPolicy {
+  secret: boolean
+  allowMutualDelete: boolean
+  encryptedMessages: boolean
+  encryptedAttachments: boolean
+  encryptedVoice: boolean
+  callsSecurityMode: 'webrtc-only' | 'beta-e2ee'
+  allowForwardOut: boolean
+  hideListPreview: boolean
+}
+
+export interface MessengerConversationItem {
   id: string
+  kind: 'direct' | 'direct-secret'
+  secret: boolean
   peerUserId: string
   peerDisplayName: string
   peerLogin: string
   updatedAt: string
+  policy: MessengerConversationPolicy
   lastMessage: {
     id: string
     body: string
@@ -253,6 +267,17 @@ export function useMessengerConversations() {
     await loadMessages(response.conversation.id)
   }
 
+  async function openSecretConversation(peerUserId: string) {
+    const response = await auth.request<{ conversation: { id: string } }>('/conversations/secret', {
+      method: 'POST',
+      body: { peerUserId },
+    })
+
+    await refresh(query.value)
+    state.openConversation(response.conversation.id)
+    await loadMessages(response.conversation.id)
+  }
+
   async function loadMessages(conversationId = state.activeConversationId.value) {
     if (!conversationId) {
       messages.value = []
@@ -468,6 +493,7 @@ export function useMessengerConversations() {
     activeConversationId: state.activeConversationId,
     refresh,
     openDirectConversation,
+    openSecretConversation,
     selectConversation,
     loadMessages,
     sendMessage,
