@@ -3,6 +3,7 @@ const calls = useMessengerCalls()
 
 const activeModeLabel = computed(() => calls.activeCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
 const incomingModeLabel = computed(() => calls.incomingCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
+const verificationEmojiLine = computed(() => calls.security.value.verificationEmojis.join(' '))
 const permissionStateLabel = computed(() => {
   const microphone = calls.mediaPermissionState.value.microphone
   const camera = calls.mediaPermissionState.value.camera
@@ -39,6 +40,11 @@ onBeforeUnmount(() => {
         <h3>{{ calls.incomingCall.value.fromDisplayName }}</h3>
         <p>{{ calls.callStatusText.value || 'Входящий звонок' }}</p>
         <p>{{ permissionStateLabel }}</p>
+        <div class="call-security">
+          <p class="call-security__status">{{ calls.security.value.status }}</p>
+          <p v-if="verificationEmojiLine" class="call-security__emojis">{{ verificationEmojiLine }}</p>
+          <p v-if="calls.security.value.fallbackReason" class="call-security__fallback">{{ calls.security.value.fallbackReason }}</p>
+        </div>
       </div>
       <div class="call-banner__actions">
         <button type="button" class="action-btn" @click="calls.rejectIncomingCall()">
@@ -56,17 +62,25 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <section v-if="calls.activeCall.value?.mode === 'video'" class="call-stage call-stage--video" aria-label="Активный звонок">
+    <section v-if="calls.activeCall.value" class="call-stage" :class="{ 'call-stage--video': calls.activeCall.value.mode === 'video' }" aria-label="Активный звонок">
       <div class="call-stage__meta">
         <p class="call-banner__eyebrow">{{ activeModeLabel }}</p>
         <h3>{{ calls.activeCall.value.peerDisplayName }}</h3>
         <p>{{ calls.callStatusText.value || 'Соединяем…' }}</p>
         <p v-if="calls.requestingPermissions.value">Запрашиваем доступ к микрофону{{ calls.activeCall.value.mode === 'video' ? ' и камере' : '' }}…</p>
+        <div class="call-security">
+          <p class="call-security__status">{{ calls.security.value.status }}</p>
+          <p v-if="verificationEmojiLine" class="call-security__emojis">{{ verificationEmojiLine }}</p>
+          <p v-if="calls.security.value.fallbackReason" class="call-security__fallback">{{ calls.security.value.fallbackReason }}</p>
+        </div>
       </div>
 
-      <div class="call-stage__videos">
+      <div v-if="calls.activeCall.value.mode === 'video'" class="call-stage__videos">
         <video ref="remoteVideoEl" class="call-video call-video--remote" autoplay playsinline />
         <video ref="localVideoEl" class="call-video call-video--local" autoplay muted playsinline />
+      </div>
+      <div v-else class="call-stage__audio-note">
+        <p>Аудиопоток идёт через WebRTC. Если E2EE активно, поверх transport encryption дополнительно шифруются encoded audio frames.</p>
       </div>
 
       <div class="call-stage__actions">

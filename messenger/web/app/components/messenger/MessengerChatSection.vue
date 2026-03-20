@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { MessengerConversationMessage } from '../../composables/useMessengerConversations'
+import type { MessengerConversationSecuritySummary } from '../../composables/useMessengerCrypto'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
 }
 
 const conversations = useMessengerConversations()
+const auth = useMessengerAuth()
+const messengerCrypto = useMessengerCrypto()
 const viewport = useMessengerViewport()
 const draft = ref('')
 const actionError = ref('')
@@ -35,6 +38,9 @@ const composerMediaMenuOpen = ref(false)
 const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif'>('emoji')
 
 const composerEmojiOptions = ['😀', '😉', '😍', '🔥', '👍', '👏', '🙏', '❤️', '🎉', '🤝', '✨', '😎']
+const securitySummary = ref<MessengerConversationSecuritySummary | null>(null)
+const securitySummaryPending = ref(false)
+const securitySummaryUpdatedAt = ref<string | null>(null)
 
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
@@ -162,6 +168,69 @@ const sharedContent = computed(() => {
     documents,
     links,
   }
+})
+
+const securityItems = computed(() => {
+  if (!securitySummary.value) {
+    return []
+  }
+
+  return [
+    {
+      id: 'protocol',
+      title: securitySummary.value.protocolLabel,
+      meta: securitySummary.value.protocolMeta,
+      state: 'Защищено',
+      icon: 'shield' as const,
+      tone: 'ok' as const,
+    },
+    {
+      id: 'device-key',
+      title: 'Ключ этого устройства',
+      meta: securitySummary.value.deviceKeyMeta,
+      state: securitySummary.value.deviceKeyReady ? 'Активен' : 'Ожидание',
+      icon: 'device' as const,
+      tone: securitySummary.value.deviceKeyReady ? 'ok' as const : 'neutral' as const,
+    },
+    {
+      id: 'peer-device-key',
+      title: 'Ключ устройства собеседника',
+      meta: securitySummary.value.peerDeviceKeyMeta,
+      state: securitySummary.value.peerDeviceKeyReady ? 'Найден' : 'Нет данных',
+      icon: 'peer' as const,
+      tone: securitySummary.value.peerDeviceKeyReady ? 'ok' as const : 'neutral' as const,
+    },
+    {
+      id: 'conversation-key',
+      title: 'Ключ этого чата',
+      meta: securitySummary.value.conversationKeyMeta,
+      state: securitySummary.value.conversationKeyReady ? 'Готов' : 'Ещё не создан',
+      icon: 'key' as const,
+      tone: securitySummary.value.conversationKeyReady ? 'ok' as const : 'neutral' as const,
+    },
+    ...(securitySummary.value.keyPackageCreatedAt
+      ? [{
+        id: 'key-package-time',
+        title: 'Последний пакет ключа',
+        meta: 'Время создания зашифрованного пакета ключа для этого чата.',
+        state: new Date(securitySummary.value.keyPackageCreatedAt).toLocaleString('ru-RU'),
+        icon: 'clock' as const,
+        tone: 'neutral' as const,
+      }]
+      : []),
+  ]
+})
+
+const securitySummaryText = computed(() => {
+  if (securitySummaryPending.value) {
+    return 'Проверяем состояние шифрования для этого чата.'
+  }
+
+  if (!securitySummary.value) {
+    return 'Данные о шифровании появятся, когда чат будет готов к проверке.'
+  }
+
+  return 'Показаны только статусы и метаданные. Фактические ключи не выводятся и остаются только на устройствах пользователей.'
 })
 
 const chatLayoutStyle = computed(() => ({
@@ -300,6 +369,14 @@ watch(() => detailsOpen.value, (opened) => {
   if (opened) {
     resetComposerInputHeight()
   }
+})
+
+watch([detailsOpen, () => conversations.activeConversation.value?.id], async ([opened]) => {
+  if (!opened) {
+    return
+  }
+
+  await refreshSecuritySummary()
 })
 
 watch(() => conversations.activeConversationId.value, () => {
@@ -702,6 +779,40 @@ function openPhotoGallery(messageId: string) {
 
 function closePhotoFeed() {
   galleryPhotoId.value = null
+}
+
+async function refreshSecuritySummary() {
+  const activeConversation = conversations.activeConversation.value
+  if (!activeConversation || !auth.user.value) {
+    securitySummary.value = null
+    return
+  }
+
+  securitySummaryPending.value = true
+
+  try {
+    securitySummary.value = await messengerCrypto.getConversationSecuritySummary(
+      auth.request,
+      auth.user.value.id,
+      activeConversation.id,
+      activeConversation.peerUserId,
+    )
+    securitySummaryUpdatedAt.value = new Date().toISOString()
+  } catch {
+    securitySummary.value = {
+      protocolLabel: 'E2EE недоступно',
+      protocolMeta: 'Не удалось получить статус ключей для этого чата.',
+      deviceKeyReady: false,
+      deviceKeyMeta: 'Проверка ключа устройства не удалась.',
+      peerDeviceKeyReady: false,
+      peerDeviceKeyMeta: 'Не удалось проверить ключ собеседника.',
+      conversationKeyReady: false,
+      conversationKeyMeta: 'Не удалось проверить ключ этого чата.',
+    }
+    securitySummaryUpdatedAt.value = new Date().toISOString()
+  } finally {
+    securitySummaryPending.value = false
+  }
 }
 
 function updateComposerHeight() {
@@ -1160,10 +1271,12 @@ onBeforeUnmount(() => {
           :photos="sharedContent.photos"
           :documents="sharedContent.documents"
           :links="sharedContent.links"
+          :security="{ summary: securitySummaryText, items: securityItems, pending: securitySummaryPending, updatedAt: securitySummaryUpdatedAt }"
           :initial-section="galleryPhotoId ? 'photos' : undefined"
           :initial-photo-id="galleryPhotoId"
           @close="closeDetails"
           @select="copyLink($event.href, $event.title)"
+          @refresh-security="refreshSecuritySummary"
         />
       </div>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type GallerySectionKey = 'photos' | 'documents' | 'links'
+type GallerySectionKey = 'photos' | 'documents' | 'links' | 'keys'
 
 interface GalleryItem {
   id: string
@@ -9,12 +9,27 @@ interface GalleryItem {
   previewUrl?: string
 }
 
+interface SecurityItem {
+  id: string
+  title: string
+  meta: string
+  state: string
+  icon: 'shield' | 'device' | 'peer' | 'key' | 'clock'
+  tone?: 'ok' | 'neutral'
+}
+
 const props = defineProps<{
   title: string
   hint: string
   photos: GalleryItem[]
   documents: GalleryItem[]
   links: GalleryItem[]
+  security?: {
+    summary: string
+    items: SecurityItem[]
+    pending?: boolean
+    updatedAt?: string | null
+  }
   initialSection?: GallerySectionKey
   initialPhotoId?: string | null
   photoOnly?: boolean
@@ -23,7 +38,16 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   select: [item: GalleryItem]
+  'refresh-security': []
 }>()
+
+const formattedSecurityUpdatedAt = computed(() => {
+  if (!props.security?.updatedAt) {
+    return ''
+  }
+
+  return new Date(props.security.updatedAt).toLocaleString('ru-RU')
+})
 
 const activeSection = ref<GallerySectionKey>(props.initialSection || 'photos')
 const activePhotoId = ref<string | null>(props.initialPhotoId || props.photos[0]?.id || null)
@@ -60,6 +84,12 @@ const sections = computed(() => {
       title: 'Ссылки',
       emptyLabel: 'Пока нет ссылок.',
       items: props.links,
+    },
+    {
+      key: 'keys' as const,
+      title: 'Ключи',
+      emptyLabel: 'Пока нет данных о ключах.',
+      items: props.security?.items || [],
     },
   ]
 })
@@ -224,6 +254,59 @@ function handleTouchEnd(event: TouchEvent) {
                 <span class="file-strip-card__title">{{ item.title }}</span>
                 <span class="file-strip-card__meta">{{ item.meta }}</span>
               </button>
+            </div>
+          </div>
+          <div v-else-if="section.key === 'keys'" class="content-security">
+            <div class="content-security__toolbar">
+              <div class="content-security__toolbar-copy">
+                <p v-if="props.security?.summary" class="content-security__summary">{{ props.security.summary }}</p>
+                <p v-if="formattedSecurityUpdatedAt" class="content-security__timestamp">Обновлено: {{ formattedSecurityUpdatedAt }}</p>
+              </div>
+              <button
+                type="button"
+                class="content-security__refresh"
+                :disabled="props.security?.pending"
+                @click="emit('refresh-security')"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M19.25 8.5A7.25 7.25 0 0 0 6.6 6.12M4.75 8.25V5.5h2.75M4.75 15.5A7.25 7.25 0 0 0 17.4 17.88M19.25 15.75v2.75H16.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+                </svg>
+                <span>{{ props.security?.pending ? 'Обновляем…' : 'Обновить' }}</span>
+              </button>
+            </div>
+            <div v-if="section.items.length" class="content-security__grid">
+              <article
+                v-for="item in section.items"
+                :key="item.id"
+                class="content-security__card"
+                :class="{ 'content-security__card--ok': item.tone === 'ok' }"
+              >
+                <div class="content-security__head">
+                  <div class="content-security__heading">
+                    <span class="content-security__icon" :class="{ 'content-security__icon--ok': item.tone === 'ok' }">
+                      <svg v-if="item.icon === 'shield'" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3.75c2.18 1.53 4.7 2.37 7.35 2.45v5.05c0 4.18-2.47 7.94-6.3 9.58l-1.05.45-1.05-.45c-3.83-1.64-6.3-5.4-6.3-9.58V6.2c2.65-.08 5.17-.92 7.35-2.45Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                      </svg>
+                      <svg v-else-if="item.icon === 'device'" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="7.25" y="3.75" width="9.5" height="16.5" rx="2.25" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                        <path d="M10 6.75h4M11.1 17.75h1.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                      </svg>
+                      <svg v-else-if="item.icon === 'peer'" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M8.25 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM15.75 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM4.75 18a4.5 4.5 0 0 1 7 0M12.75 18a3.75 3.75 0 0 1 6 0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                      </svg>
+                      <svg v-else-if="item.icon === 'key'" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M14.5 8.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM11 11.5l7.25 7.25M15.5 15.5h2.25v2.25" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                      </svg>
+                      <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 6.25v5.75l3.5 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+                      </svg>
+                    </span>
+                    <p class="content-security__title">{{ item.title }}</p>
+                  </div>
+                  <span class="content-security__state">{{ item.state }}</span>
+                </div>
+                <p class="content-security__meta">{{ item.meta }}</p>
+              </article>
             </div>
           </div>
           <div v-else-if="section.items.length" class="content-grid content-grid--gallery">

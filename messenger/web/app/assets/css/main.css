@@ -1247,7 +1247,8 @@ textarea {
 .call-stage__meta,
 .call-stage__actions,
 .call-banner__actions,
-.call-stage__audio-note {
+.call-stage__audio-note,
+.call-security {
   display: grid;
   gap: 8px;
 }
@@ -1257,8 +1258,37 @@ textarea {
 .call-banner__copy p,
 .call-stage__meta p,
 .call-stage__audio-note p,
-.call-error {
+.call-error,
+.call-security__status,
+.call-security__emojis,
+.call-security__fallback {
   margin: 0;
+}
+
+.call-security {
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.call-security__status {
+  color: var(--messenger-text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.call-security__emojis {
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+}
+
+.call-security__fallback {
+  color: var(--messenger-muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .call-banner__eyebrow {
@@ -2492,7 +2522,9 @@ html[data-messenger-motion='reduced'] *::after {
 .photo-strip-stage,
 .photo-strip-rail,
 .file-strip-shell,
-.file-strip-rail {
+.file-strip-rail,
+.content-security,
+.content-security__grid {
   display: grid;
   gap: 10px;
 }
@@ -2585,6 +2617,153 @@ html[data-messenger-motion='reduced'] *::after {
 .file-strip-card__meta {
   color: var(--messenger-muted);
   font-size: 13px;
+}
+
+.content-security__summary,
+.content-security__timestamp,
+.content-security__title,
+.content-security__meta {
+  margin: 0;
+}
+
+.content-security__toolbar,
+.content-security__toolbar-copy,
+.content-security__heading {
+  display: grid;
+  gap: 10px;
+}
+
+.content-security__toolbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.content-security__summary {
+  color: var(--messenger-muted);
+  line-height: 1.45;
+}
+
+.content-security__timestamp {
+  color: var(--messenger-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.content-security__refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--messenger-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.content-security__refresh svg {
+  width: 15px;
+  height: 15px;
+}
+
+.content-security__grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.content-security__card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  min-height: 120px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.content-security__card--ok {
+  border-color: rgba(134, 239, 172, 0.22);
+  background: rgba(134, 239, 172, 0.08);
+}
+
+.content-security__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.content-security__heading {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.content-security__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--messenger-text);
+}
+
+.content-security__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.content-security__icon--ok {
+  border-color: rgba(134, 239, 172, 0.22);
+  background: rgba(134, 239, 172, 0.14);
+  color: var(--messenger-success);
+}
+
+.content-security__title {
+  font-weight: 700;
+}
+
+.content-security__state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--messenger-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.content-security__card--ok .content-security__state {
+  border-color: rgba(134, 239, 172, 0.24);
+  background: rgba(134, 239, 172, 0.14);
+  color: var(--messenger-success);
+}
+
+.content-security__meta {
+  color: var(--messenger-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+@media (max-width: 767px) {
+  .content-security__toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .content-security__refresh {
+    width: 100%;
+  }
 }
 
 .copy-toast {

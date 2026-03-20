@@ -23,6 +23,18 @@ export interface MessengerConversationKeyPackage {
   createdAt: string
 }
 
+export interface MessengerConversationSecuritySummary {
+  protocolLabel: string
+  protocolMeta: string
+  deviceKeyReady: boolean
+  deviceKeyMeta: string
+  peerDeviceKeyReady: boolean
+  peerDeviceKeyMeta: string
+  conversationKeyReady: boolean
+  conversationKeyMeta: string
+  keyPackageCreatedAt?: string
+}
+
 interface MessengerStoredDeviceKeyPair {
   publicKey: MessengerDevicePublicKey
   privateKey: JsonWebKey
@@ -313,10 +325,47 @@ export function useMessengerCrypto() {
     return new TextDecoder().decode(plaintext)
   }
 
+  async function getConversationSecuritySummary(
+    request: MessengerRequest,
+    userId: string,
+    conversationId: string,
+    peerUserId: string,
+  ): Promise<MessengerConversationSecuritySummary> {
+    const storedDeviceKey = deviceKeys.value[userId] || readStoredDeviceKey(userId)
+    const storedConversationKey = conversationKeys.value[`${userId}:${conversationId}`] || readStoredConversationKey(userId, conversationId)
+    const keyPackageResponse = await request<{ keyPackage: MessengerConversationKeyPackage | null }>(`/conversations/${conversationId}/encryption`, {
+      method: 'GET',
+    })
+    const peerKeyResponse = await request<{ publicKey: MessengerDevicePublicKey | null }>(`/users/${peerUserId}/device-key`, {
+      method: 'GET',
+    })
+
+    return {
+      protocolLabel: 'E2EE активно',
+      protocolMeta: 'Для текста используется AES-GCM 256, а обмен ключом чата идёт через ECDH P-256.',
+      deviceKeyReady: Boolean(storedDeviceKey),
+      deviceKeyMeta: storedDeviceKey
+        ? 'Ключ устройства хранится только в браузере на этом устройстве и не показывается в интерфейсе.'
+        : 'Ключ устройства ещё не подготовлен.',
+      peerDeviceKeyReady: Boolean(peerKeyResponse.publicKey),
+      peerDeviceKeyMeta: peerKeyResponse.publicKey
+        ? 'Публичный ключ собеседника зарегистрирован и используется только для обмена ключом чата.'
+        : 'Публичный ключ собеседника пока недоступен.',
+      conversationKeyReady: Boolean(storedConversationKey || keyPackageResponse.keyPackage),
+      conversationKeyMeta: storedConversationKey
+        ? 'Ключ этого чата уже сохранён локально на устройстве.'
+        : keyPackageResponse.keyPackage
+          ? 'Для этого чата есть зашифрованный пакет ключа. Он будет расшифрован только на устройстве.'
+          : 'Ключ чата появится после первого защищённого сообщения.',
+      keyPackageCreatedAt: keyPackageResponse.keyPackage?.createdAt,
+    }
+  }
+
   return {
     ensureDeviceIdentity,
     ensureConversationKey,
     encryptText,
     decryptText,
+    getConversationSecuritySummary,
   }
 }
