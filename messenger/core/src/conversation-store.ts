@@ -296,6 +296,10 @@ function getMessageBodyPreview(
   return message.body
 }
 
+function getStoredTextBody(body: string, conversation: Pick<MessengerConversationRecord, 'kind' | 'policy'>) {
+  return getConversationPolicy(conversation).secret ? '' : body.trim()
+}
+
 function assertMessageRelation(
   payload: ConversationsFile,
   conversation: MessengerConversationRecord,
@@ -450,7 +454,7 @@ export async function listMessagesForConversation(conversationId: string, actor:
 
       return {
         id: message.id,
-        body: getMessageBodyPreview(message),
+        body: getMessageBodyPreview(message, conversation),
         encryptedBody: message.deletedAt ? undefined : message.encryptedBody,
         kind: message.kind,
         createdAt: message.createdAt,
@@ -535,7 +539,7 @@ export async function addMessageToConversation(
     id: randomUUID(),
     conversationId,
     senderUserId: actor.id,
-    body: body.trim(),
+    body: getStoredTextBody(body, conversation),
     encryptedBody: options?.encryptedBody,
     kind: 'text',
     createdAt: now,
@@ -694,7 +698,7 @@ export async function editMessageInConversation(
   }
 
   const now = new Date().toISOString()
-  message.body = body.trim()
+  message.body = getStoredTextBody(body, conversation)
   message.encryptedBody = encryptedBody
   message.editedAt = now
   conversation.updatedAt = now

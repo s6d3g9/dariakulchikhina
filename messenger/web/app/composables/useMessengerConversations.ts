@@ -156,21 +156,51 @@ export function useMessengerConversations() {
 
   const activeConversation = computed(() => conversations.value.find(item => item.id === state.activeConversationId.value) ?? null)
 
+  function getProtectedFallbackBody(conversation: MessengerConversationItem, reason: 'missing-payload' | 'decrypt-failed' | 'locked') {
+    if (!conversation.secret) {
+      return reason === 'decrypt-failed' ? 'Не удалось расшифровать сообщение' : ''
+    }
+
+    if (reason === 'missing-payload') {
+      return 'Незащищённое сообщение заблокировано'
+    }
+
+    if (reason === 'locked') {
+      return 'Секретное сообщение недоступно на этом устройстве'
+    }
+
+    return 'Не удалось расшифровать защищённое сообщение'
+  }
+
   async function decryptMessageBody(conversation: MessengerConversationItem, body: string, encryptedBody?: MessengerEncryptedPayload) {
-    if (!encryptedBody || !auth.user.value) {
-      return body
+    if (!encryptedBody) {
+      return conversation.secret ? getProtectedFallbackBody(conversation, 'missing-payload') : body
+    }
+
+    if (!auth.user.value) {
+      return conversation.secret ? getProtectedFallbackBody(conversation, 'locked') : body
+    }
+
+    if (conversation.secret && !conversation.policy.encryptedMessages) {
+      return getProtectedFallbackBody(conversation, 'missing-payload')
     }
 
     try {
-      return await messengerCrypto.decryptText(
+      const decryptedBody = await messengerCrypto.decryptText(
         auth.request,
         auth.user.value.id,
         conversation.id,
         conversation.peerUserId,
         encryptedBody,
       )
+
+      if (!decryptedBody.trim() && conversation.secret) {
+        return getProtectedFallbackBody(conversation, 'decrypt-failed')
+      }
+
+      return decryptedBody
     } catch {
-      return 'Не удалось расшифровать сообщение'
+      return getProtectedFallbackBody(conversation, conversation.secret ? 'decrypt-failed' : 'locked') || 'Не удалось расшифровать сообщение'
     }
   }
 
