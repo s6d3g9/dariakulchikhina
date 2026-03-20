@@ -313,6 +313,35 @@ const headerCallBadge = computed(() => {
 
   return headerCallMode.value === 'video' ? 'Видео' : 'Звонок'
 })
+const headerCallSecurityEmojis = computed(() => {
+  if (!calls.security.value.active || !calls.security.value.verificationEmojis.length) {
+    return ''
+  }
+
+  return calls.security.value.verificationEmojis.join(' ')
+})
+const headerCallSecurityLabel = computed(() => {
+  if (!headerCallVisible.value) {
+    return ''
+  }
+
+  if (headerCallSecurityEmojis.value) {
+    return headerCallSecurityEmojis.value
+  }
+
+  return 'WebRTC'
+})
+const headerCallSecurityTitle = computed(() => {
+  if (!headerCallVisible.value) {
+    return ''
+  }
+
+  if (calls.security.value.active && headerCallSecurityEmojis.value) {
+    return calls.security.value.status
+  }
+
+  return 'Звонок защищён штатным шифрованием WebRTC. Emoji-верификация появляется только для дополнительного E2EE.'
+})
 const headerAudioCallStatus = computed(() => {
   if (!headerAudioCall.value) {
     return ''
@@ -1169,6 +1198,16 @@ onBeforeUnmount(() => {
               <span class="chat-user-name__text">{{ activePeerName }}</span>
               <span v-if="headerCallVisible" class="chat-user-name__call" aria-live="polite">
                 {{ headerCallBadge }}
+              </span>
+              <span
+                v-if="headerCallVisible"
+                class="chat-user-name__security"
+                :class="{ 'chat-user-name__security--verified': !!headerCallSecurityEmojis }"
+                :title="headerCallSecurityTitle"
+                aria-live="polite"
+              >
+                <span class="chat-user-name__security-icon" aria-hidden="true">{{ headerCallSecurityEmojis ? '🔐' : '🛡️' }}</span>
+                <span class="chat-user-name__security-text">{{ headerCallSecurityLabel }}</span>
               </span>
             </span>
           </span>

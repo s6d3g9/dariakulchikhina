@@ -3808,6 +3808,50 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   white-space: nowrap;
 }
 
+.chat-user-name__security {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 0 9px;
+  max-width: min(100%, 220px);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-user-name__security--verified {
+  border-color: rgba(253, 224, 71, 0.3);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.24), rgba(244, 114, 182, 0.2), rgba(59, 130, 246, 0.2));
+  background-size: 200% 200%;
+  animation: messenger-call-glow 5.2s linear infinite;
+}
+
+.chat-user-name__security-icon {
+  flex: 0 0 auto;
+  font-size: 11px;
+}
+
+.chat-user-name__security-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-user-name__security--verified .chat-user-name__security-text {
+  letter-spacing: 0.12em;
+  animation: messenger-call-button-pulse 2.2s ease-in-out infinite;
+}
+
 .icon-btn--call-live {
   border-color: rgba(254, 202, 202, 0.34) !important;
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.98), rgba(185, 28, 28, 0.98)) !important;
@@ -3962,6 +4006,15 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
     gap: 0;
     padding: 6px 0 0;
     border-top-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .chat-user-name {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .chat-user-name__security {
+    max-width: 100%;
   }
 
   .chat-user-name {
