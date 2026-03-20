@@ -93,8 +93,24 @@ interface MessengerCallSecurityContext {
 
 let callSecurityContext: MessengerCallSecurityContext | null = null
 
+function isExperimentalCallE2EEEnabled() {
+  if (!import.meta.client) {
+    return false
+  }
+
+  try {
+    return window.localStorage.getItem('daria-messenger-call-e2ee') === '1'
+  } catch {
+    return false
+  }
+}
+
 function supportsInsertableCallEncryption() {
   if (!import.meta.client || typeof RTCRtpSender === 'undefined' || typeof RTCRtpReceiver === 'undefined') {
+    return false
+  }
+
+  if (!isExperimentalCallE2EEEnabled()) {
     return false
   }
 
