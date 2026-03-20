@@ -49,6 +49,7 @@ export interface MessengerConversationMessage {
   body: string
   kind: 'text' | 'file'
   createdAt: string
+  readAt?: string
   editedAt?: string
   deletedAt?: string
   own: boolean

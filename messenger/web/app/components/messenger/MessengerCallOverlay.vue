@@ -56,7 +56,7 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <section v-if="calls.activeCall.value" class="call-stage" :class="{ 'call-stage--video': calls.activeCall.value.mode === 'video' }" aria-label="Активный звонок">
+    <section v-if="calls.activeCall.value?.mode === 'video'" class="call-stage call-stage--video" aria-label="Активный звонок">
       <div class="call-stage__meta">
         <p class="call-banner__eyebrow">{{ activeModeLabel }}</p>
         <h3>{{ calls.activeCall.value.peerDisplayName }}</h3>
@@ -64,15 +64,10 @@ onBeforeUnmount(() => {
         <p v-if="calls.requestingPermissions.value">Запрашиваем доступ к микрофону{{ calls.activeCall.value.mode === 'video' ? ' и камере' : '' }}…</p>
       </div>
 
-      <div v-if="calls.activeCall.value.mode === 'video'" class="call-stage__videos">
+      <div class="call-stage__videos">
         <video ref="remoteVideoEl" class="call-video call-video--remote" autoplay playsinline />
         <video ref="localVideoEl" class="call-video call-video--local" autoplay muted playsinline />
       </div>
-      <div v-else class="call-stage__audio-note">
-        <p>Голосовой канал активен. Можно продолжать чат параллельно со звонком.</p>
-      </div>
-
-      <audio ref="remoteAudioEl" autoplay />
 
       <div class="call-stage__actions">
         <button type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
@@ -85,6 +80,7 @@ onBeforeUnmount(() => {
     </section>
 
     <p v-if="calls.callError.value" class="call-error">{{ calls.callError.value }}</p>
+    <audio ref="remoteAudioEl" autoplay />
     <div v-if="calls.callError.value && !calls.activeCall.value" class="call-stage__actions">
       <button type="button" class="action-btn action-btn--ghost" @click="calls.refreshMediaPermissions()">
         <svg viewBox="0 0 24 24" aria-hidden="true">

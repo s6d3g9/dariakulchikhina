@@ -9,7 +9,7 @@ import { z } from 'zod'
 
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from './auth.ts'
-import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, forwardMessageToConversation, listConversationsForUser, listMessagesForConversation } from './conversation-store.ts'
+import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, forwardMessageToConversation, listConversationsForUser, listMessagesForConversation, markConversationReadByUser } from './conversation-store.ts'
 import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from './contact-store.ts'
 import { readMessengerConfig } from './config.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
@@ -475,6 +475,15 @@ export async function createMessengerServer() {
       const conversation = await findConversationById(parsedParams.data.conversationId)
       if (!conversation) {
         return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+      }
+
+      const readResult = await markConversationReadByUser(parsedParams.data.conversationId, session.user)
+      if (readResult.updated) {
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'messages.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
       }
 
       return {

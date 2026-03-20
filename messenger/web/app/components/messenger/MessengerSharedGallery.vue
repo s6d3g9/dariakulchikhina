@@ -17,6 +17,7 @@ const props = defineProps<{
   links: GalleryItem[]
   initialSection?: GallerySectionKey
   initialPhotoId?: string | null
+  photoOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -29,26 +30,39 @@ const activePhotoId = ref<string | null>(props.initialPhotoId || props.photos[0]
 const touchStartX = ref<number | null>(null)
 const touchStartY = ref<number | null>(null)
 
-const sections = computed(() => ([
-  {
-    key: 'photos' as const,
-    title: 'Фото',
-    emptyLabel: 'Пока нет фотографий.',
-    items: props.photos,
-  },
-  {
-    key: 'documents' as const,
-    title: 'Файлы',
-    emptyLabel: 'Пока нет файлов.',
-    items: props.documents,
-  },
-  {
-    key: 'links' as const,
-    title: 'Ссылки',
-    emptyLabel: 'Пока нет ссылок.',
-    items: props.links,
-  },
-]))
+const sections = computed(() => {
+  if (props.photoOnly) {
+    return [
+      {
+        key: 'photos' as const,
+        title: 'Фото',
+        emptyLabel: 'Пока нет фотографий.',
+        items: props.photos,
+      },
+    ]
+  }
+
+  return [
+    {
+      key: 'photos' as const,
+      title: 'Фото',
+      emptyLabel: 'Пока нет фотографий.',
+      items: props.photos,
+    },
+    {
+      key: 'documents' as const,
+      title: 'Файлы',
+      emptyLabel: 'Пока нет файлов.',
+      items: props.documents,
+    },
+    {
+      key: 'links' as const,
+      title: 'Ссылки',
+      emptyLabel: 'Пока нет ссылок.',
+      items: props.links,
+    },
+  ]
+})
 
 const activeIndex = computed(() => sections.value.findIndex(section => section.key === activeSection.value))
 const activePhotoIndex = computed(() => props.photos.findIndex(item => item.id === activePhotoId.value))
@@ -82,6 +96,11 @@ watch(() => props.photos, (nextPhotos) => {
 }, { deep: true })
 
 function openSection(key: GallerySectionKey) {
+  if (props.photoOnly) {
+    activeSection.value = 'photos'
+    return
+  }
+
   activeSection.value = key
 }
 
@@ -100,6 +119,11 @@ function movePhoto(direction: 1 | -1) {
 }
 
 function moveSection(direction: 1 | -1) {
+  if (props.photoOnly) {
+    movePhoto(direction)
+    return
+  }
+
   const nextIndex = activeIndex.value + direction
   if (nextIndex < 0 || nextIndex >= sections.value.length) {
     return
@@ -148,7 +172,7 @@ function handleTouchEnd(event: TouchEvent) {
       </button>
     </div>
 
-    <div class="content-gallery__nav" aria-label="Разделы галереи">
+    <div v-if="!photoOnly" class="content-gallery__nav" aria-label="Разделы галереи">
       <button
         v-for="section in sections"
         :key="section.key"
@@ -188,6 +212,20 @@ function handleTouchEnd(event: TouchEvent) {
               </button>
             </div>
           </div>
+          <div v-else-if="section.key === 'documents' && section.items.length" class="file-strip-shell">
+            <div class="file-strip-rail" aria-label="Лента файлов">
+              <button
+                v-for="item in section.items"
+                :key="item.id"
+                type="button"
+                class="file-strip-card"
+                @click="emit('select', item)"
+              >
+                <span class="file-strip-card__title">{{ item.title }}</span>
+                <span class="file-strip-card__meta">{{ item.meta }}</span>
+              </button>
+            </div>
+          </div>
           <div v-else-if="section.items.length" class="content-grid content-grid--gallery">
             <button
               v-for="item in section.items"
@@ -206,8 +244,8 @@ function handleTouchEnd(event: TouchEvent) {
                 :alt="item.title"
                 class="content-card__image"
               >
-              <span class="content-card__title">{{ item.title }}</span>
-              <span class="content-card__meta">{{ item.meta }}</span>
+              <span v-if="section.key !== 'photos'" class="content-card__title">{{ item.title }}</span>
+              <span v-if="section.key !== 'photos'" class="content-card__meta">{{ item.meta }}</span>
             </button>
           </div>
           <p v-else class="content-empty">{{ section.emptyLabel }}</p>

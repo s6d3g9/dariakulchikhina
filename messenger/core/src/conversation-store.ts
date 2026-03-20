@@ -27,6 +27,7 @@ export interface MessengerMessageRecord {
     url: string
   }
   createdAt: string
+  readAt?: string
   editedAt?: string
   deletedAt?: string
   replyToMessageId?: string
@@ -71,6 +72,7 @@ export interface ConversationMessageOverviewItem {
   body: string
   kind: 'text' | 'file'
   createdAt: string
+  readAt?: string
   editedAt?: string
   deletedAt?: string
   own: boolean
@@ -297,6 +299,7 @@ export async function listMessagesForConversation(conversationId: string, actor:
         body: message.deletedAt ? 'Сообщение удалено' : message.body,
         kind: message.kind,
         createdAt: message.createdAt,
+        readAt: message.readAt,
         editedAt: message.editedAt,
         deletedAt: message.deletedAt,
         own: message.senderUserId === actor.id,
@@ -307,6 +310,43 @@ export async function listMessagesForConversation(conversationId: string, actor:
         forwardedFrom: message.forwardedFrom,
       } satisfies ConversationMessageOverviewItem
     })
+}
+
+export async function markConversationReadByUser(conversationId: string, actor: MessengerUserRecord) {
+  const payload = await readConversationsFile()
+  const conversation = payload.conversations.find(item => item.id === conversationId)
+  if (!conversation) {
+    throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  if (!isParticipant(conversation, actor.id)) {
+    throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  const now = new Date().toISOString()
+  let updated = false
+
+  for (const message of payload.messages) {
+    if (message.conversationId !== conversationId) {
+      continue
+    }
+
+    if (message.senderUserId === actor.id || message.deletedAt || message.readAt) {
+      continue
+    }
+
+    message.readAt = now
+    updated = true
+  }
+
+  if (updated) {
+    await writeConversationsFile(payload)
+  }
+
+  return {
+    updated,
+    conversation,
+  }
 }
 
 export async function addMessageToConversation(

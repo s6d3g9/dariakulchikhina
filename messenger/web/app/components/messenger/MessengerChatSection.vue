@@ -28,6 +28,8 @@ const composerRelationMessageId = ref<string | null>(null)
 const forwardingMessageId = ref<string | null>(null)
 const galleryPhotoId = ref<string | null>(null)
 const pendingScrollMessageId = ref<string | null>(null)
+const dragDropDepth = ref(0)
+const dragDropPending = ref(false)
 
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
@@ -201,6 +203,40 @@ const forwardingMessage = computed(() => {
 })
 
 const availableForwardTargets = computed(() => conversations.conversations.value)
+const photoFeedOpen = computed(() => Boolean(galleryPhotoId.value && conversations.activeConversation.value))
+const headerAudioCall = computed(() => Boolean(
+  calls.activeCall.value
+  && calls.activeCall.value.mode === 'audio'
+  && calls.activeCall.value.conversationId === conversations.activeConversationId.value,
+))
+const headerAudioCallStatus = computed(() => {
+  if (!headerAudioCall.value) {
+    return ''
+  }
+
+  return calls.callStatusText.value || 'Аудиозвонок активен'
+})
+const canToggleAudioCall = computed(() => {
+  if (headerAudioCall.value) {
+    return true
+  }
+
+  return Boolean(
+    conversations.activeConversation.value
+    && !conversations.messagePending.value
+    && calls.supported.value
+    && !calls.activeCall.value
+    && !calls.requestingPermissions.value
+  )
+})
+const desktopDropEnabled = computed(() => Boolean(
+  import.meta.client
+  && !isMobileChatViewport()
+  && conversations.activeConversation.value
+  && !detailsOpen.value
+  && !photoFeedOpen.value,
+))
+const desktopDropActive = computed(() => dragDropDepth.value > 0 && desktopDropEnabled.value)
 
 onMounted(async () => {
   lockPageScroll()
@@ -369,6 +405,75 @@ async function handleFileSelect(event: Event) {
   }
 }
 
+function eventHasFiles(event: DragEvent) {
+  const types = event.dataTransfer?.types
+  return Boolean(types && Array.from(types).includes('Files'))
+}
+
+async function uploadDroppedFiles(fileList: FileList | null) {
+  if (!fileList?.length || !desktopDropEnabled.value) {
+    return
+  }
+
+  actionError.value = ''
+  dragDropPending.value = true
+
+  try {
+    for (const file of Array.from(fileList)) {
+      await conversations.uploadAttachment(file)
+    }
+  } catch {
+    actionError.value = 'Не удалось загрузить перетащенные файлы.'
+  } finally {
+    dragDropPending.value = false
+  }
+}
+
+function handleDesktopDragEnter(event: DragEvent) {
+  if (!desktopDropEnabled.value || !eventHasFiles(event)) {
+    return
+  }
+
+  event.preventDefault()
+  dragDropDepth.value += 1
+}
+
+function handleDesktopDragOver(event: DragEvent) {
+  if (!desktopDropEnabled.value || !eventHasFiles(event)) {
+    return
+  }
+
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'copy'
+  }
+}
+
+function handleDesktopDragLeave(event: DragEvent) {
+  if (!eventHasFiles(event)) {
+    return
+  }
+
+  event.preventDefault()
+  const currentTarget = event.currentTarget as HTMLElement | null
+  const nextTarget = event.relatedTarget
+  if (currentTarget && nextTarget instanceof Node && currentTarget.contains(nextTarget)) {
+    return
+  }
+
+  dragDropDepth.value = Math.max(0, dragDropDepth.value - 1)
+}
+
+async function handleDesktopDrop(event: DragEvent) {
+  if (!desktopDropEnabled.value || !eventHasFiles(event)) {
+    return
+  }
+
+  event.preventDefault()
+  dragDropDepth.value = 0
+  await uploadDroppedFiles(event.dataTransfer?.files || null)
+}
+
 function stopRecordingTimer() {
   if (recordingTimer) {
     clearInterval(recordingTimer)
@@ -484,8 +589,12 @@ function closeDetails() {
 
 function openPhotoGallery(messageId: string) {
   galleryPhotoId.value = messageId
-  detailsOpen.value = true
+  detailsOpen.value = false
   activeMessageActionsId.value = null
+}
+
+function closePhotoFeed() {
+  galleryPhotoId.value = null
 }
 
 function updateComposerHeight() {
@@ -645,6 +754,17 @@ async function startCall(mode: 'audio' | 'video') {
   }
 }
 
+async function toggleAudioCall() {
+  actionError.value = ''
+
+  if (headerAudioCall.value) {
+    await calls.hangupCall()
+    return
+  }
+
+  await startCall('audio')
+}
+
 function startEditingMessage(messageId: string, body: string) {
   activeMessageActionsId.value = null
   editingMessageId.value = messageId
@@ -772,19 +892,33 @@ onBeforeUnmount(() => {
   <section class="chat-screen" aria-label="Chat section">
     <section
       class="section-block section-block--chat"
-      :class="{ 'section-block--chat-details-open': detailsOpen && conversations.activeConversation.value }"
+      :class="{
+        'section-block--chat-details-open': detailsOpen && conversations.activeConversation.value,
+        'section-block--chat-photo-open': photoFeedOpen,
+        'section-block--chat-drop-active': desktopDropActive,
+        'section-block--chat-drop-pending': dragDropPending,
+      }"
       :style="chatLayoutStyle"
+      @dragenter="handleDesktopDragEnter"
+      @dragover="handleDesktopDragOver"
+      @dragleave="handleDesktopDragLeave"
+      @drop="handleDesktopDrop"
     >
       <header class="section-head section-head--chat-header">
         <button
           type="button"
           class="chat-user-trigger chat-user-trigger--profile"
+          :class="{ 'chat-user-trigger--audio-live': headerAudioCall }"
           :disabled="!conversations.activeConversation.value"
           @click="toggleDetails"
         >
           <span class="chat-avatar">{{ activePeerAvatar }}</span>
           <span class="chat-user-meta">
             <span class="chat-user-name">{{ activePeerName }}</span>
+            <span v-if="headerAudioCall" class="chat-call-panel" aria-live="polite">
+              <span class="chat-call-panel__label">Аудиозвонок</span>
+              <span class="chat-call-panel__status">{{ headerAudioCallStatus }}</span>
+            </span>
           </span>
         </button>
 
@@ -792,9 +926,10 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="icon-btn"
+            :class="{ 'icon-btn--call-live': headerAudioCall }"
             aria-label="Аудиозвонок"
-            :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
-            @click="startCall('audio')"
+            :disabled="!canToggleAudioCall"
+            @click="toggleAudioCall"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M7.42 5.25h2.12c.32 0 .61.2.72.5l1.06 2.87a.78.78 0 0 1-.18.82l-1.62 1.63a12.8 12.8 0 0 0 5.4 5.4l1.63-1.62a.78.78 0 0 1 .82-.18l2.87 1.06c.3.11.5.4.5.72v2.12a1.9 1.9 0 0 1-2.05 1.9c-7.92-.5-14.2-6.78-14.7-14.7a1.9 1.9 0 0 1 1.9-2.05Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
@@ -851,6 +986,11 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="chat-reading-shell">
+        <div v-if="desktopDropActive || dragDropPending" class="chat-dropzone" aria-live="polite">
+          <p class="chat-dropzone__title">Перетащите файлы сюда</p>
+          <p class="chat-dropzone__hint">Файлы отправятся прямо в текущий чат</p>
+        </div>
+
         <div ref="messageListEl" class="message-list message-list--chat-scroll">
           <MessengerMessageThread
             v-for="entry in threadedMessages"
@@ -887,6 +1027,20 @@ onBeforeUnmount(() => {
             </div>
           </article>
         </div>
+
+        <MessengerSharedGallery
+          v-if="photoFeedOpen && conversations.activeConversation.value"
+          class="chat-photo-feed"
+          :title="`Фотографии ${conversations.activeConversation.value.peerDisplayName}`"
+          hint="Лента фотографий из переписки. Листайте фото прямо внутри чата."
+          :photos="sharedContent.photos"
+          :documents="[]"
+          :links="[]"
+          initial-section="photos"
+          :initial-photo-id="galleryPhotoId"
+          :photo-only="true"
+          @close="closePhotoFeed"
+        />
 
         <MessengerSharedGallery
           v-if="detailsOpen && conversations.activeConversation.value"

@@ -34,6 +34,36 @@ const depthStyle = computed(() => ({
   '--message-comment-depth': String(Math.min(props.depth, 4)),
 }))
 
+function formatMessageTime(value?: string) {
+  if (!value) {
+    return ''
+  }
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return ''
+  }
+
+  return parsed.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const sentTime = computed(() => formatMessageTime(props.entry.createdAt))
+const readTime = computed(() => props.entry.own ? formatMessageTime(props.entry.readAt) : '')
+const metaStatus = computed(() => {
+  if (props.entry.deletedAt) {
+    return 'Удалено'
+  }
+
+  if (props.entry.editedAt) {
+    return 'Изменено'
+  }
+
+  return ''
+})
+
 function relationPreviewText(message: { body: string; kind: 'text' | 'file'; attachment?: { name: string, mimeType: string } } | null) {
   if (!message) {
     return ''
@@ -178,8 +208,11 @@ function handleEditInput(event: Event) {
     </div>
     <div v-else class="message-bubble__content">
       <p class="message-bubble__text">{{ entry.body }}</p>
-      <p v-if="entry.editedAt && !entry.deletedAt" class="message-bubble__status">Изменено</p>
-      <p v-if="entry.deletedAt" class="message-bubble__status">Удалено</p>
+      <div class="message-bubble__meta-row">
+        <span class="message-bubble__time message-bubble__time--sent">{{ sentTime }}</span>
+        <span v-if="metaStatus" class="message-bubble__status">{{ metaStatus }}</span>
+        <span v-if="readTime" class="message-bubble__time message-bubble__time--read">{{ readTime }}</span>
+      </div>
     </div>
 
     <div v-if="entry.comments.length" class="message-comments">
