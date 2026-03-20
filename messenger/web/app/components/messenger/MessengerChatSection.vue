@@ -278,11 +278,57 @@ const forwardingMessage = computed(() => {
 
 const availableForwardTargets = computed(() => conversations.conversations.value)
 const photoFeedOpen = computed(() => Boolean(galleryPhotoId.value && conversations.activeConversation.value))
-const headerAudioCall = computed(() => Boolean(
+const headerIncomingCall = computed(() => Boolean(
+  calls.incomingCall.value
+  && calls.incomingCall.value.conversationId === conversations.activeConversationId.value,
+))
+const headerActiveCall = computed(() => Boolean(
   calls.activeCall.value
-  && calls.activeCall.value.mode === 'audio'
   && calls.activeCall.value.conversationId === conversations.activeConversationId.value,
 ))
+const headerCallVisible = computed(() => headerIncomingCall.value || headerActiveCall.value)
+const headerCallMode = computed<'audio' | 'video' | null>(() => {
+  if (headerIncomingCall.value) {
+    return calls.incomingCall.value?.mode || null
+  }
+
+  if (headerActiveCall.value) {
+    return calls.activeCall.value?.mode || null
+  }
+
+  return null
+})
+const headerAudioCall = computed(() => Boolean(
+  headerActiveCall.value
+  && headerCallMode.value === 'audio',
+))
+const headerCallBadge = computed(() => {
+  if (!headerCallVisible.value) {
+    return ''
+  }
+
+  if (headerIncomingCall.value) {
+    return 'Входящий'
+  }
+
+  return headerCallMode.value === 'video' ? 'Видео' : 'Звонок'
+})
+const headerCallModeLabel = computed(() => headerCallMode.value === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
+const headerCallStatus = computed(() => {
+  if (!headerCallVisible.value) {
+    return ''
+  }
+
+  if (calls.callStatusText.value) {
+    return calls.callStatusText.value
+  }
+
+  if (headerIncomingCall.value) {
+    return 'Входящий звонок'
+  }
+
+  return headerCallMode.value === 'video' ? 'Видеозвонок активен' : 'Аудиозвонок активен'
+})
 const headerAudioCallStatus = computed(() => {
   if (!headerAudioCall.value) {
     return ''
@@ -290,6 +336,23 @@ const headerAudioCallStatus = computed(() => {
 
   return calls.callStatusText.value || 'Аудиозвонок активен'
 })
+const headerCallPermissionLabel = computed(() => {
+  if (!headerCallVisible.value) {
+    return ''
+  }
+
+  const microphone = calls.mediaPermissionState.value.microphone
+  const camera = calls.mediaPermissionState.value.camera
+
+  if (headerCallMode.value === 'video') {
+    return `Микрофон: ${microphone} · Камера: ${camera}`
+  }
+
+  return `Микрофон: ${microphone}`
+})
+const headerCallSecurityStatus = computed(() => headerCallVisible.value ? calls.security.value.status : '')
+const headerCallSecurityEmojis = computed(() => headerCallVisible.value ? calls.security.value.verificationEmojis.join(' ') : '')
+const headerCallSecurityFallback = computed(() => headerCallVisible.value ? calls.security.value.fallbackReason : '')
 const canToggleAudioCall = computed(() => {
   if (headerAudioCall.value) {
     return true
@@ -1126,7 +1189,7 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="chat-user-trigger chat-user-trigger--profile"
-          :class="{ 'chat-user-trigger--audio-live': headerAudioCall }"
+          :class="{ 'chat-user-trigger--audio-live': headerCallVisible }"
           :disabled="!conversations.activeConversation.value"
           @click="toggleDetails"
         >
@@ -1134,11 +1197,11 @@ onBeforeUnmount(() => {
           <span class="chat-user-meta">
             <span
               class="chat-user-name"
-              :class="{ 'chat-user-name--audio-live': headerAudioCall }"
+              :class="{ 'chat-user-name--audio-live': headerCallVisible }"
             >
               <span class="chat-user-name__text">{{ activePeerName }}</span>
-              <span v-if="headerAudioCall" class="chat-user-name__call" aria-live="polite">
-                {{ headerAudioCallStatus }}
+              <span v-if="headerCallVisible" class="chat-user-name__call" aria-live="polite">
+                {{ headerCallBadge }}
               </span>
             </span>
           </span>
@@ -1168,6 +1231,26 @@ onBeforeUnmount(() => {
               <path d="M4.75 8A2.75 2.75 0 0 1 7.5 5.25h6A2.75 2.75 0 0 1 16.25 8v1.33l3.1-1.76c.58-.33 1.3.09 1.3.76v7.34c0 .67-.72 1.09-1.3.76l-3.1-1.76V16a2.75 2.75 0 0 1-2.75 2.75h-6A2.75 2.75 0 0 1 4.75 16V8Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
             </svg>
           </button>
+        </div>
+
+        <div v-if="headerCallVisible" class="chat-call-panel">
+          <p class="chat-call-panel__eyebrow">{{ headerCallModeLabel }}</p>
+          <p class="chat-call-panel__status">{{ headerCallStatus }}</p>
+          <p v-if="headerCallSecurityStatus" class="chat-call-panel__security">{{ headerCallSecurityStatus }}</p>
+          <p v-if="headerCallSecurityEmojis" class="chat-call-panel__emojis">{{ headerCallSecurityEmojis }}</p>
+          <p v-if="headerCallSecurityFallback" class="chat-call-panel__fallback">{{ headerCallSecurityFallback }}</p>
+          <p v-if="calls.requestingPermissions.value || headerIncomingCall || headerCallMode === 'video'" class="chat-call-panel__permissions">{{ headerCallPermissionLabel }}</p>
+          <div class="chat-call-panel__actions" :class="{ 'chat-call-panel__actions--single': !headerIncomingCall }">
+            <button v-if="headerIncomingCall" type="button" class="action-btn" @click="calls.rejectIncomingCall()">
+              Отклонить
+            </button>
+            <button v-if="headerIncomingCall" type="button" class="action-btn action-btn--accept" @click="calls.acceptIncomingCall()">
+              Принять
+            </button>
+            <button v-else type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
+              Завершить звонок
+            </button>
+          </div>
         </div>
       </header>
 

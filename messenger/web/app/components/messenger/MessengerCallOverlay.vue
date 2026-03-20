@@ -1,9 +1,21 @@
 <script setup lang="ts">
 const calls = useMessengerCalls()
+const conversations = useMessengerConversations()
+const navigation = useMessengerConversationState()
 
 const activeModeLabel = computed(() => calls.activeCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
 const incomingModeLabel = computed(() => calls.incomingCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
 const verificationEmojiLine = computed(() => calls.security.value.verificationEmojis.join(' '))
+const headerIncomingCall = computed(() => Boolean(
+  navigation.activeSection.value === 'chat'
+  && calls.incomingCall.value
+  && calls.incomingCall.value.conversationId === conversations.activeConversationId.value,
+))
+const headerActiveCall = computed(() => Boolean(
+  navigation.activeSection.value === 'chat'
+  && calls.activeCall.value
+  && calls.activeCall.value.conversationId === conversations.activeConversationId.value,
+))
 const permissionStateLabel = computed(() => {
   const microphone = calls.mediaPermissionState.value.microphone
   const camera = calls.mediaPermissionState.value.camera
@@ -34,7 +46,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="call-layer">
-    <section v-if="calls.incomingCall.value" class="call-banner" aria-label="Входящий звонок">
+    <section v-if="calls.incomingCall.value && !headerIncomingCall" class="call-banner" aria-label="Входящий звонок">
       <div class="call-banner__copy">
         <p class="call-banner__eyebrow">{{ incomingModeLabel }}</p>
         <h3>{{ calls.incomingCall.value.fromDisplayName }}</h3>
@@ -62,8 +74,8 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <section v-if="calls.activeCall.value" class="call-stage" :class="{ 'call-stage--video': calls.activeCall.value.mode === 'video' }" aria-label="Активный звонок">
-      <div class="call-stage__meta">
+    <section v-if="calls.activeCall.value && (!headerActiveCall || calls.activeCall.value.mode === 'video')" class="call-stage" :class="{ 'call-stage--video': calls.activeCall.value.mode === 'video' }" aria-label="Активный звонок">
+      <div v-if="!headerActiveCall" class="call-stage__meta">
         <p class="call-banner__eyebrow">{{ activeModeLabel }}</p>
         <h3>{{ calls.activeCall.value.peerDisplayName }}</h3>
         <p>{{ calls.callStatusText.value || 'Соединяем…' }}</p>
@@ -79,11 +91,11 @@ onBeforeUnmount(() => {
         <video ref="remoteVideoEl" class="call-video call-video--remote" autoplay playsinline />
         <video ref="localVideoEl" class="call-video call-video--local" autoplay muted playsinline />
       </div>
-      <div v-else class="call-stage__audio-note">
+      <div v-else-if="!headerActiveCall" class="call-stage__audio-note">
         <p>Аудиопоток идёт через WebRTC. Если E2EE активно, поверх transport encryption дополнительно шифруются encoded audio frames.</p>
       </div>
 
-      <div class="call-stage__actions">
+      <div v-if="!headerActiveCall" class="call-stage__actions">
         <button type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15.8 8.2a9.3 9.3 0 0 0-7.6 0l-1.7-1.7a1 1 0 0 0-1.1-.23 7.2 7.2 0 0 0-2.03 1.37 1 1 0 0 0-.05 1.41l3.02 3.2a1 1 0 0 0 1.2.2l1.96-1.07a6.3 6.3 0 0 1 5.08 0l1.96 1.07a1 1 0 0 0 1.2-.2l3.02-3.2a1 1 0 0 0-.05-1.4 7.2 7.2 0 0 0-2.03-1.38 1 1 0 0 0-1.1.23L15.8 8.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
