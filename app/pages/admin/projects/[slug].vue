@@ -1450,12 +1450,11 @@ function isViewportEditableTarget(target: EventTarget | null) {
 
 // ── Привязка к глобальному nav (NavigationNode schema) ─────────────────────
 const adminNav = useAdminNav()
-adminNav.ensureProject(slug.value, slug.value, { force: true })
 
 // При keepalive-активации — синхронизировать навигацию с текущим проектом
 function syncNavToProject() {
   const title = project.value?.title || slug.value
-  adminNav.ensureProject(slug.value, title, { force: !projectNavHydrated })
+  adminNav.ensureProject(slug.value, title)
   projectNavHydrated = true
 }
 onMounted(() => {

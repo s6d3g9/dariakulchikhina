@@ -279,7 +279,30 @@ export function useAdminNav() {
    */
   function ensureProject(projectSlug: string, projectTitle: string, options: { force?: boolean } = {}) {
     const spec = contentSpec.value
-    if (!options.force && spec.section === 'projects' && spec.projectSlug === projectSlug) return
+    if (!options.force && spec.section === 'projects' && spec.projectSlug === projectSlug) {
+      const updateNodeTitle = (node: NavigationNode) => {
+        if (node.nodeType === 'project_root') {
+          return {
+            ...node,
+            context: {
+              ...node.context,
+              title: projectTitle,
+              breadcrumbs: node.context.breadcrumbs.map((crumb, index, arr) => index === arr.length - 1 ? projectTitle : crumb),
+            },
+          }
+        }
+
+        return node
+      }
+
+      nodeStack.value = nodeStack.value.map(updateNodeTitle)
+      ctxStack.value = ctxStack.value.map((ctx) =>
+        ctx.projectSlug === projectSlug
+          ? { ...ctx, projectTitle }
+          : ctx,
+      )
+      return
+    }
 
     const { nodes, ctxs } = buildProjectBaseState(projectSlug, projectTitle)
     nodeStack.value = nodes

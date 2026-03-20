@@ -347,7 +347,7 @@ const activeProjectSlug = computed(() => {
 })
 
 if (activeProjectSlug.value) {
-  adminNav.ensureProject(activeProjectSlug.value, activeProjectSlug.value, { force: true })
+  adminNav.ensureProject(activeProjectSlug.value, activeProjectSlug.value)
 }
 
 // Current project info for linking/unlinking
