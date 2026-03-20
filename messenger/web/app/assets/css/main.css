@@ -3139,6 +3139,7 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: var(--messenger-control-size);
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -3166,6 +3167,7 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 .chat-user-meta {
   display: grid;
   gap: 4px;
+  align-content: center;
   min-width: 0;
 }
 
@@ -3197,14 +3199,16 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 
 .chat-call-panel {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   width: fit-content;
   max-width: 100%;
-  padding: 6px 10px;
-  border-radius: 14px;
+  min-height: var(--messenger-control-size);
+  padding: 6px 12px;
+  border-radius: var(--messenger-control-radius);
   border: 1px solid rgba(251, 113, 133, 0.22);
   background: linear-gradient(115deg, rgba(15, 23, 42, 0.82), rgba(30, 41, 59, 0.64), rgba(15, 23, 42, 0.82));
   background-size: 220% 220%;
+  align-content: center;
   animation: messenger-call-glow 4.6s linear infinite;
 }
 
@@ -3217,7 +3221,7 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 }
 
 .chat-call-panel__label {
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1.1;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -3225,22 +3229,23 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 }
 
 .chat-call-panel__status {
-  font-size: 12px;
-  line-height: 1.2;
+  font-size: 11px;
+  line-height: 1.15;
   color: rgba(255, 255, 255, 0.92);
 }
 
 .icon-btn--call-live {
-  border-color: rgba(251, 113, 133, 0.34);
-  background: linear-gradient(135deg, rgba(244, 63, 94, 0.92), rgba(225, 29, 72, 0.92));
+  border-color: rgba(248, 113, 113, 0.78);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.98), rgba(185, 28, 28, 0.98));
   color: #fff;
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.12), 0 10px 22px rgba(127, 29, 29, 0.34);
   animation: messenger-call-button-pulse 1.8s ease-in-out infinite;
 }
 
 .icon-btn--call-live:hover,
 .icon-btn--call-live:not([disabled]):hover {
-  border-color: rgba(251, 113, 133, 0.42);
-  background: linear-gradient(135deg, rgba(251, 113, 133, 0.96), rgba(225, 29, 72, 0.96));
+  border-color: rgba(252, 165, 165, 0.9);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.98), rgba(185, 28, 28, 0.98));
 }
 
 .message-list--chat-scroll {
