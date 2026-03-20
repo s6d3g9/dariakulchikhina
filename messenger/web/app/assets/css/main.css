@@ -3674,107 +3674,10 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 .chat-call-panel {
   grid-column: 1 / -1;
   display: grid;
-  gap: 6px;
-  margin-top: -2px;
-  padding: 8px 12px 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.chat-call-panel__summary,
-.chat-call-panel__summary-copy,
-.chat-call-panel__summary-side,
-.chat-call-panel__body {
-  display: grid;
-}
-
-.chat-call-panel__summary {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-}
-
-.chat-call-panel__summary-copy {
-  gap: 4px;
-  min-width: 0;
-}
-
-.chat-call-panel__summary-side {
-  grid-template-columns: auto auto;
-  align-items: center;
-  gap: 8px;
-}
-
-.chat-call-panel__summary-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--messenger-muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.chat-call-panel__summary-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--messenger-muted);
-  transition: transform 160ms ease;
-}
-
-.chat-call-panel__summary-icon--open {
-  transform: rotate(180deg);
-}
-
-.chat-call-panel__body {
   gap: 0;
-}
-
-.chat-call-panel__eyebrow,
-.chat-call-panel__status,
-.chat-call-panel__security,
-.chat-call-panel__emojis,
-.chat-call-panel__fallback,
-.chat-call-panel__permissions {
-  margin: 0;
-}
-
-.chat-call-panel__eyebrow {
-  color: var(--messenger-accent);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.chat-call-panel__status {
-  color: var(--messenger-text);
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.chat-call-panel__security,
-.chat-call-panel__fallback,
-.chat-call-panel__permissions {
-  color: var(--messenger-muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.chat-call-panel__emojis {
-  font-size: 18px;
-  line-height: 1;
-  letter-spacing: 0.12em;
+  margin-top: -2px;
+  padding: 6px 12px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .chat-call-panel__actions {
@@ -4023,35 +3926,13 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
 
   .chat-call-panel {
     width: 100%;
-    gap: 4px;
+    gap: 0;
     padding: 6px 0 0;
     border-top-color: rgba(255, 255, 255, 0.06);
   }
 
-  .chat-call-panel__summary {
-    gap: 8px;
-  }
-
-  .chat-call-panel__summary-side {
-    gap: 6px;
-  }
-
   .chat-user-name {
     font-size: 22px;
-  }
-
-  .chat-call-panel__status {
-    font-size: 13px;
-  }
-
-  .chat-call-panel__security,
-  .chat-call-panel__fallback,
-  .chat-call-panel__permissions {
-    font-size: 11px;
-  }
-
-  .chat-call-panel__emojis {
-    font-size: 16px;
   }
 
   .chat-call-panel__actions {
