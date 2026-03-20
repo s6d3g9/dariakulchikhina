@@ -26,6 +26,11 @@ interface MessengerCallSecurityState {
   fallbackReason: string
 }
 
+interface MessengerCallControlsState {
+  microphoneEnabled: boolean
+  speakerEnabled: boolean
+}
+
 interface MessengerCallSignalEvent {
   type: 'call.signal'
   conversationId?: string
@@ -293,6 +298,7 @@ function assignMediaTargets() {
 
   if (remoteVideoEl) {
     remoteVideoEl.srcObject = remoteStream
+    remoteVideoEl.muted = false
     void remoteVideoEl.play().catch(() => {})
   }
 
@@ -333,6 +339,10 @@ export function useMessengerCalls() {
   const busy = useState<boolean>('messenger-call-busy', () => false)
   const requestingPermissions = useState<boolean>('messenger-call-requesting-permissions', () => false)
   const permissionHelp = useState<string>('messenger-call-permission-help', () => '')
+  const controls = useState<MessengerCallControlsState>('messenger-call-controls', () => ({
+    microphoneEnabled: true,
+    speakerEnabled: true,
+  }))
   const security = useState<MessengerCallSecurityState>('messenger-call-security', () => ({
     available: supportsInsertableCallEncryption(),
     active: false,
@@ -381,11 +391,62 @@ export function useMessengerCalls() {
     return 'Нужно подтвердить доступ к микрофону и камере для видеозвонков.'
   })
 
+  function syncMicrophoneState() {
+    if (!localStream) {
+      return
+    }
+
+    for (const track of localStream.getAudioTracks()) {
+      track.enabled = controls.value.microphoneEnabled
+    }
+  }
+
+  function syncSpeakerState() {
+    if (remoteAudioEl) {
+      remoteAudioEl.muted = !controls.value.speakerEnabled
+      if (controls.value.speakerEnabled) {
+        void remoteAudioEl.play().catch(() => {})
+      }
+    }
+
+    if (remoteVideoEl) {
+      remoteVideoEl.muted = !controls.value.speakerEnabled
+      if (controls.value.speakerEnabled) {
+        void remoteVideoEl.play().catch(() => {})
+      }
+    }
+  }
+
+  function setMicrophoneEnabled(enabled: boolean) {
+    controls.value = {
+      ...controls.value,
+      microphoneEnabled: enabled,
+    }
+    syncMicrophoneState()
+  }
+
+  function toggleMicrophone() {
+    setMicrophoneEnabled(!controls.value.microphoneEnabled)
+  }
+
+  function setSpeakerEnabled(enabled: boolean) {
+    controls.value = {
+      ...controls.value,
+      speakerEnabled: enabled,
+    }
+    syncSpeakerState()
+  }
+
+  function toggleSpeaker() {
+    setSpeakerEnabled(!controls.value.speakerEnabled)
+  }
+
   function attachElements(elements: { localVideo?: HTMLVideoElement | null; remoteVideo?: HTMLVideoElement | null; remoteAudio?: HTMLAudioElement | null }) {
     localVideoEl = elements.localVideo ?? localVideoEl
     remoteVideoEl = elements.remoteVideo ?? remoteVideoEl
     remoteAudioEl = elements.remoteAudio ?? remoteAudioEl
     assignMediaTargets()
+    syncSpeakerState()
   }
 
   function clearElements() {
@@ -473,6 +534,7 @@ export function useMessengerCalls() {
     }
 
     assignMediaTargets()
+    syncMicrophoneState()
     return localStream
   }
 
@@ -643,12 +705,21 @@ export function useMessengerCalls() {
         applyReceiverCallSecurity(event.receiver)
       }
 
-      for (const track of event.streams[0]?.getTracks() || []) {
+      const remoteTracks = event.streams[0]?.getTracks()?.length
+        ? event.streams[0].getTracks()
+        : [event.track]
+
+      for (const track of remoteTracks) {
         const alreadyAdded = remoteStream?.getTracks().some(existingTrack => existingTrack.id === track.id)
         if (!alreadyAdded) {
           remoteStream?.addTrack(track)
         }
       }
+
+      event.track.onunmute = () => {
+        assignMediaTargets()
+      }
+
       assignMediaTargets()
     }
 
@@ -698,6 +769,10 @@ export function useMessengerCalls() {
     resetPeerConnection()
     stopLocalStream()
     clearCallSecurityContext()
+    controls.value = {
+      microphoneEnabled: true,
+      speakerEnabled: true,
+    }
     security.value = {
       available: supportsInsertableCallEncryption(),
       active: false,
@@ -1102,6 +1177,7 @@ export function useMessengerCalls() {
     permissionHelp,
     mediaPermissionState,
     supported,
+    controls,
     security,
     inConversationCall,
     canStartAudioCall,
@@ -1117,6 +1193,10 @@ export function useMessengerCalls() {
     ensureMicrophoneAccess,
     ensureCameraAccess,
     openSitePermissions,
+    setMicrophoneEnabled,
+    toggleMicrophone,
+    setSpeakerEnabled,
+    toggleSpeaker,
     startOutgoingCall,
     acceptIncomingCall,
     rejectIncomingCall,

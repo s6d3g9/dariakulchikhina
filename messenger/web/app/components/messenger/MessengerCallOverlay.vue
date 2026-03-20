@@ -4,28 +4,12 @@ const conversations = useMessengerConversations()
 const navigation = useMessengerConversationState()
 
 const activeModeLabel = computed(() => calls.activeCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
-const incomingModeLabel = computed(() => calls.incomingCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
 const verificationEmojiLine = computed(() => calls.security.value.verificationEmojis.join(' '))
-const headerIncomingCall = computed(() => Boolean(
-  navigation.activeSection.value === 'chat'
-  && calls.incomingCall.value
-  && calls.incomingCall.value.conversationId === conversations.activeConversationId.value,
-))
 const headerActiveCall = computed(() => Boolean(
   navigation.activeSection.value === 'chat'
   && calls.activeCall.value
   && calls.activeCall.value.conversationId === conversations.activeConversationId.value,
 ))
-const permissionStateLabel = computed(() => {
-  const microphone = calls.mediaPermissionState.value.microphone
-  const camera = calls.mediaPermissionState.value.camera
-
-  if (calls.activeCall.value?.mode === 'video' || calls.incomingCall.value?.mode === 'video') {
-    return `Микрофон: ${microphone} · Камера: ${camera}`
-  }
-
-  return `Микрофон: ${microphone}`
-})
 
 const localVideoEl = useTemplateRef<HTMLVideoElement>('localVideoEl')
 const remoteVideoEl = useTemplateRef<HTMLVideoElement>('remoteVideoEl')
@@ -46,34 +30,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="call-layer">
-    <section v-if="calls.incomingCall.value && !headerIncomingCall" class="call-banner" aria-label="Входящий звонок">
-      <div class="call-banner__copy">
-        <p class="call-banner__eyebrow">{{ incomingModeLabel }}</p>
-        <h3>{{ calls.incomingCall.value.fromDisplayName }}</h3>
-        <p>{{ calls.callStatusText.value || 'Входящий звонок' }}</p>
-        <p>{{ permissionStateLabel }}</p>
-        <div class="call-security">
-          <p class="call-security__status">{{ calls.security.value.status }}</p>
-          <p v-if="verificationEmojiLine" class="call-security__emojis">{{ verificationEmojiLine }}</p>
-          <p v-if="calls.security.value.fallbackReason" class="call-security__fallback">{{ calls.security.value.fallbackReason }}</p>
-        </div>
-      </div>
-      <div class="call-banner__actions">
-        <button type="button" class="action-btn" @click="calls.rejectIncomingCall()">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15.8 8.2a9.3 9.3 0 0 0-7.6 0l-1.7-1.7a1 1 0 0 0-1.1-.23 7.2 7.2 0 0 0-2.03 1.37 1 1 0 0 0-.05 1.41l3.02 3.2a1 1 0 0 0 1.2.2l1.96-1.07a6.3 6.3 0 0 1 5.08 0l1.96 1.07a1 1 0 0 0 1.2-.2l3.02-3.2a1 1 0 0 0-.05-1.4 7.2 7.2 0 0 0-2.03-1.38 1 1 0 0 0-1.1.23L15.8 8.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-          </svg>
-          Отклонить
-        </button>
-        <button type="button" class="action-btn action-btn--accept" @click="calls.acceptIncomingCall()">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6.8 5.25h2.05c.31 0 .6.19.71.48l1.04 2.76a.78.78 0 0 1-.18.82l-1.55 1.56a12.1 12.1 0 0 0 5.17 5.16l1.56-1.54a.78.78 0 0 1 .82-.19l2.76 1.04c.29.11.48.4.48.71v2.05a1.85 1.85 0 0 1-1.99 1.85c-7.63-.48-13.68-6.53-14.16-14.16A1.85 1.85 0 0 1 6.8 5.25Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-          </svg>
-          Принять
-        </button>
-      </div>
-    </section>
-
     <section v-if="calls.activeCall.value && (!headerActiveCall || calls.activeCall.value.mode === 'video')" class="call-stage" :class="{ 'call-stage--video': calls.activeCall.value.mode === 'video' }" aria-label="Активный звонок">
       <div v-if="!headerActiveCall" class="call-stage__meta">
         <p class="call-banner__eyebrow">{{ activeModeLabel }}</p>

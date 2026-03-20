@@ -41,6 +41,7 @@ const composerEmojiOptions = ['😀', '😉', '😍', '🔥', '👍', '👏', '�
 const securitySummary = ref<MessengerConversationSecuritySummary | null>(null)
 const securitySummaryPending = ref(false)
 const securitySummaryUpdatedAt = ref<string | null>(null)
+const headerCallBarExpanded = ref(true)
 
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
@@ -353,6 +354,15 @@ const headerCallPermissionLabel = computed(() => {
 const headerCallSecurityStatus = computed(() => headerCallVisible.value ? calls.security.value.status : '')
 const headerCallSecurityEmojis = computed(() => headerCallVisible.value ? calls.security.value.verificationEmojis.join(' ') : '')
 const headerCallSecurityFallback = computed(() => headerCallVisible.value ? calls.security.value.fallbackReason : '')
+const headerCallActionSummary = computed(() => {
+  if (!headerCallVisible.value) {
+    return ''
+  }
+
+  return headerIncomingCall.value ? 'Показать действия звонка' : 'Показать управление звонком'
+})
+const headerCallMicrophoneLabel = computed(() => calls.controls.value.microphoneEnabled ? 'Выключить микрофон' : 'Включить микрофон')
+const headerCallSpeakerLabel = computed(() => calls.controls.value.speakerEnabled ? 'Выключить громкую связь' : 'Включить громкую связь')
 const canToggleAudioCall = computed(() => {
   if (headerAudioCall.value) {
     return true
@@ -446,6 +456,10 @@ watch(() => conversations.activeConversationId.value, () => {
   editingMessageId.value = null
   editingDraft.value = ''
   activeMessageActionsId.value = null
+})
+
+watch(headerCallVisible, (visible) => {
+  headerCallBarExpanded.value = visible
 })
 
 watch(() => conversations.messages.value.length, async (currentLength, previousLength) => {
@@ -1046,6 +1060,14 @@ async function toggleAudioCall() {
   await startCall('audio')
 }
 
+function toggleHeaderCallBar() {
+  if (!headerCallVisible.value) {
+    return
+  }
+
+  headerCallBarExpanded.value = !headerCallBarExpanded.value
+}
+
 function startEditingMessage(messageId: string, body: string) {
   activeMessageActionsId.value = null
   editingMessageId.value = messageId
@@ -1233,23 +1255,50 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div v-if="headerCallVisible" class="chat-call-panel">
-          <p class="chat-call-panel__eyebrow">{{ headerCallModeLabel }}</p>
-          <p class="chat-call-panel__status">{{ headerCallStatus }}</p>
-          <p v-if="headerCallSecurityStatus" class="chat-call-panel__security">{{ headerCallSecurityStatus }}</p>
-          <p v-if="headerCallSecurityEmojis" class="chat-call-panel__emojis">{{ headerCallSecurityEmojis }}</p>
-          <p v-if="headerCallSecurityFallback" class="chat-call-panel__fallback">{{ headerCallSecurityFallback }}</p>
-          <p v-if="calls.requestingPermissions.value || headerIncomingCall || headerCallMode === 'video'" class="chat-call-panel__permissions">{{ headerCallPermissionLabel }}</p>
-          <div class="chat-call-panel__actions" :class="{ 'chat-call-panel__actions--single': !headerIncomingCall }">
-            <button v-if="headerIncomingCall" type="button" class="action-btn" @click="calls.rejectIncomingCall()">
-              Отклонить
-            </button>
-            <button v-if="headerIncomingCall" type="button" class="action-btn action-btn--accept" @click="calls.acceptIncomingCall()">
-              Принять
-            </button>
-            <button v-else type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
-              Завершить звонок
-            </button>
+        <div v-if="headerCallVisible" class="chat-call-panel" :class="{ 'chat-call-panel--expanded': headerCallBarExpanded }">
+          <button type="button" class="chat-call-panel__summary" :aria-label="headerCallActionSummary" @click="toggleHeaderCallBar">
+            <span class="chat-call-panel__summary-copy">
+              <span class="chat-call-panel__eyebrow">{{ headerCallModeLabel }}</span>
+              <span class="chat-call-panel__status">{{ headerCallStatus }}</span>
+            </span>
+            <span class="chat-call-panel__summary-side">
+              <span class="chat-call-panel__summary-badge">{{ headerCallBarExpanded ? 'Скрыть' : 'Управление' }}</span>
+              <svg class="chat-call-panel__summary-icon" :class="{ 'chat-call-panel__summary-icon--open': headerCallBarExpanded }" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+              </svg>
+            </span>
+          </button>
+
+          <div v-if="headerCallBarExpanded" class="chat-call-panel__body">
+            <div v-if="headerIncomingCall" class="chat-call-panel__actions chat-call-panel__actions--incoming">
+              <button type="button" class="action-btn" @click="calls.rejectIncomingCall()">
+                Отклонить
+              </button>
+              <button type="button" class="action-btn action-btn--accept" @click="calls.acceptIncomingCall()">
+                Принять
+              </button>
+            </div>
+            <div v-else class="chat-call-panel__actions chat-call-panel__actions--active">
+              <button
+                type="button"
+                class="action-btn chat-call-panel__control"
+                :class="{ 'chat-call-panel__control--active': calls.controls.value.microphoneEnabled }"
+                @click="calls.toggleMicrophone()"
+              >
+                {{ calls.controls.value.microphoneEnabled ? 'Микрофон вкл' : 'Микрофон выкл' }}
+              </button>
+              <button
+                type="button"
+                class="action-btn chat-call-panel__control"
+                :class="{ 'chat-call-panel__control--active': calls.controls.value.speakerEnabled }"
+                @click="calls.toggleSpeaker()"
+              >
+                {{ calls.controls.value.speakerEnabled ? 'Звук вкл' : 'Звук выкл' }}
+              </button>
+              <button type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
+                Завершить
+              </button>
+            </div>
           </div>
         </div>
       </header>
