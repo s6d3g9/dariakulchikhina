@@ -321,6 +321,34 @@ html[data-messenger-style='material'] .composer-btn {
   text-shadow: none;
 }
 
+html[data-messenger-style='material'] .composer-segment,
+html[data-messenger-style='material'] .composer-field,
+html[data-messenger-style='material'] .composer-input,
+html[data-messenger-style='material'] .inline-input {
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+html[data-messenger-style='material'] .composer-segment,
+html[data-messenger-style='material'] .composer-field {
+  border-color: color-mix(in srgb, var(--messenger-token-control-border) 96%, transparent);
+}
+
+html[data-messenger-style='material'] .composer-segment {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--messenger-token-control-bg) 92%, var(--messenger-panel-soft) 8%);
+}
+
+html[data-messenger-style='material'] .composer-field {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--messenger-token-control-bg) 86%, transparent);
+}
+
+html[data-messenger-style='material'] .composer-input,
+html[data-messenger-style='material'] .inline-input {
+  border-radius: 12px;
+}
+
 html[data-messenger-style='material'] .icon-btn:not([disabled]):hover,
 html[data-messenger-style='material'] .composer-btn:not([disabled]):hover {
   background: var(--messenger-token-control-bg-hover);
@@ -392,6 +420,55 @@ html[data-messenger-style='material'] .chat-avatar {
   border-color: color-mix(in srgb, var(--messenger-accent) 18%, var(--messenger-border));
   background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-token-control-bg) 94%, transparent), color-mix(in srgb, var(--messenger-accent) 10%, var(--messenger-token-control-bg)));
   color: color-mix(in srgb, var(--messenger-accent) 42%, var(--messenger-text));
+}
+
+html[data-messenger-style='material'] .message-bubble__content,
+html[data-messenger-style='material'] .message-bubble__editor {
+  backdrop-filter: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  border-radius: 18px;
+}
+
+html[data-messenger-style='material'] .message-bubble__content::before,
+html[data-messenger-style='material'] .message-bubble__editor::before,
+html[data-messenger-style='material'] .message-bubble__actions::before {
+  display: none;
+}
+
+html[data-messenger-style='material'] .message-bubble__controls {
+  border-radius: 16px;
+  backdrop-filter: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+html[data-messenger-style='material'] .message-bubble:not(.message-bubble--own) .message-bubble__content,
+html[data-messenger-style='material'] .message-bubble:not(.message-bubble--own) .message-bubble__editor {
+  background: var(--messenger-token-bubble-peer-bg);
+  border-color: var(--messenger-token-bubble-peer-border);
+}
+
+html[data-messenger-style='material'] .message-bubble--own .message-bubble__content,
+html[data-messenger-style='material'] .message-bubble--own .message-bubble__editor {
+  background: var(--messenger-token-bubble-own-bg);
+  border-color: var(--messenger-token-bubble-own-border);
+}
+
+html[data-messenger-style='material'] .list-card--chat-row {
+  border-radius: 14px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--messenger-token-card-bg) 100%, transparent),
+    color-mix(in srgb, var(--messenger-panel) 100%, transparent)
+  );
+  backdrop-filter: none;
+}
+
+html[data-messenger-style='material'] .list-card--chat-row .list-card__text--preview {
+  color: color-mix(in srgb, var(--messenger-text) 72%, transparent);
+}
+
+html[data-messenger-style='material'] .list-card--chat-row .list-card__meta--timestamp {
+  color: color-mix(in srgb, var(--messenger-text) 50%, transparent);
 }
 
 html[data-messenger-style='material'] .chat-user-name--audio-live {
@@ -1136,7 +1213,7 @@ textarea {
   width: 100%;
   padding: 4px;
   border: 1px solid color-mix(in srgb, var(--messenger-border) 70%, transparent);
-  border-radius: 20px;
+  border-radius: 18px;
   background: color-mix(in srgb, var(--messenger-field-bg) 78%, transparent);
   backdrop-filter: blur(16px) saturate(132%);
 }
@@ -1156,7 +1233,7 @@ textarea {
   width: 100%;
   padding: 3px;
   border: 1px solid color-mix(in srgb, var(--messenger-border) 72%, transparent);
-  border-radius: 22px;
+  border-radius: 20px;
   background: color-mix(in srgb, var(--messenger-field-bg) 88%, transparent);
   backdrop-filter: blur(18px) saturate(138%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -1412,7 +1489,7 @@ textarea {
   border: 1px solid var(--messenger-border);
   background: var(--messenger-field-bg);
   color: var(--messenger-text);
-  padding: 12px 14px;
+  padding: 11px 14px;
   resize: none;
   border-radius: 18px;
   backdrop-filter: blur(18px) saturate(150%);
@@ -5681,17 +5758,17 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 }
 
 .list-card--chat-row {
-  min-height: 80px;
-  padding: 13px 14px;
+  min-height: 76px;
+  padding: 12px 14px;
   border-right: 0;
   border-left: 0;
-  border-radius: 20px;
+  border-radius: 18px;
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--messenger-panel-strong) 98%, transparent),
     color-mix(in srgb, var(--messenger-panel) 92%, transparent)
   );
-  backdrop-filter: blur(16px) saturate(124%);
+  backdrop-filter: blur(14px) saturate(120%);
 }
 
 .list-card--chat-row .list-card__main {
