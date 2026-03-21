@@ -267,8 +267,8 @@ export async function createMessengerServer() {
 
     const file = item?.file || {}
     const preview = pickKlipyAsset(file, kind === 'sticker'
-      ? ['xs.webp', 'xs.gif', 'xs.png', 'sm.webp', 'sm.gif', 'sm.png']
-      : ['xs.webp', 'xs.gif', 'xs.jpg', 'sm.webp', 'sm.gif', 'sm.jpg'])
+      ? ['sm.webp', 'sm.gif', 'sm.png', 'md.webp', 'md.gif', 'md.png', 'xs.webp', 'xs.gif', 'xs.png']
+      : ['sm.webp', 'sm.gif', 'sm.jpg', 'md.webp', 'md.gif', 'md.jpg', 'xs.webp', 'xs.gif', 'xs.jpg'])
     const original = pickKlipyAsset(file, kind === 'sticker'
       ? ['md.webp', 'md.gif', 'md.png', 'hd.webp', 'hd.gif', 'hd.png']
       : ['md.gif', 'md.webp', 'md.mp4', 'hd.gif', 'hd.webp', 'hd.mp4', 'sm.gif'])

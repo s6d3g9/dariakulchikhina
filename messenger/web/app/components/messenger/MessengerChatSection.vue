@@ -438,14 +438,7 @@ const activeKlipyKind = computed<'gif' | 'sticker' | null>(() => {
   return null
 })
 const currentKlipyCategories = computed(() => activeKlipyKind.value ? klipy.getCategories(activeKlipyKind.value) : [])
-const filteredKlipyCategories = computed(() => {
-  const normalizedQuery = klipyQuery.value.trim().toLowerCase()
-  if (!normalizedQuery) {
-    return currentKlipyCategories.value
-  }
-
-  return currentKlipyCategories.value.filter(category => [category.category, category.query].some(value => value.toLowerCase().includes(normalizedQuery)))
-})
+const showKlipyCategories = computed(() => !klipyQuery.value.trim() && !selectedCatalogCategory.value && currentKlipyCategories.value.length > 0)
 const activeCatalogCategoryLabel = computed(() => {
   if (!selectedCatalogCategory.value) {
     return ''
@@ -725,6 +718,16 @@ async function confirmSelectedKlipyItem() {
   }
 
   await sendKlipyItem(selectedKlipyItem.value)
+}
+
+function klipyTileStyle(item: { width?: number; height?: number }) {
+  if (!item.width || !item.height) {
+    return undefined
+  }
+
+  return {
+    '--klipy-aspect': `${item.width} / ${item.height}`,
+  }
 }
 
 function insertEmojiToDraft(emoji: string) {
@@ -1742,11 +1745,11 @@ onBeforeUnmount(() => {
             autocapitalize="off"
             spellcheck="false"
           >
-          <div v-if="filteredKlipyCategories.length && !selectedCatalogCategory" class="composer-media-menu__results-block">
+          <div v-if="showKlipyCategories" class="composer-media-menu__results-block">
             <p class="composer-media-menu__section-title">Подборки</p>
             <div class="composer-media-menu__results composer-media-menu__results--categories" :aria-label="composerMediaMenuTab === 'stickers' ? 'Категории стикеров KLIPY' : 'Категории GIF KLIPY'">
               <button
-                v-for="category in filteredKlipyCategories"
+                v-for="category in currentKlipyCategories"
                 :key="`${composerMediaMenuTab}-${category.query}`"
                 type="button"
                 class="composer-media-menu__category-tile"
@@ -1770,6 +1773,7 @@ onBeforeUnmount(() => {
                 :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
                 :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
                 :disabled="mediaUploadPending"
+                :style="klipyTileStyle(item)"
                 @click="selectKlipyItem(item)"
               >
                 <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
@@ -1787,6 +1791,7 @@ onBeforeUnmount(() => {
                 :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
                 :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
                 :disabled="mediaUploadPending"
+                :style="klipyTileStyle(item)"
                 @click="selectKlipyItem(item)"
               >
                 <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
