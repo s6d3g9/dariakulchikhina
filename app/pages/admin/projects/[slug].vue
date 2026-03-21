@@ -2209,7 +2209,7 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
 
 async function handleProjectWipe2Boundary(direction: 'next' | 'prev') {
   if (!isProjectViewportPaged.value || !shouldUseProjectWipe2.value) return
-  if (!canFlipProjectViewport()) return
+  if (viewportNavigationBusy.value) return
   await advanceProjectLeaf(direction)
 }
 
