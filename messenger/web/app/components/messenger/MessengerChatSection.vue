@@ -519,6 +519,7 @@ const activeCatalogCategoryLabel = computed(() => {
 
   return currentKlipyCategories.value.find(item => item.query === selectedCatalogCategory.value)?.category || selectedCatalogCategory.value
 })
+const klipySearchPlaceholder = computed(() => composerMediaMenuTab.value === 'stickers' ? 'Поиск стикеров KLIPY' : 'Поиск GIF KLIPY')
 const klipyHintText = computed(() => {
   if (!klipy.configured.value) {
     return 'KLIPY API не настроен на сервере. Добавьте KLIPY_APP_KEY в runtime env messenger core.'
@@ -803,10 +804,18 @@ function toggleComposerMediaMenu() {
 }
 
 function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif') {
+  const previousTab = composerMediaMenuTab.value
   composerMediaMenuTab.value = tab
 
-  if (tab !== 'emoji') {
+  if (tab === 'emoji') {
+    return
+  }
+
+  if (previousTab !== tab) {
+    klipyQuery.value = ''
     selectedCatalogCategory.value = ''
+    selectedKlipyItem.value = null
+    klipy.reset()
   }
 }
 
@@ -940,7 +949,7 @@ async function forwardMessage() {
     for (const peerUserId of selectedForwardPeerIds.value) {
       const existingTarget = availableForwardTargets.value.find(target => target.peerUserId === peerUserId)
       const conversationId = existingTarget?.conversationId || await conversations.ensureDirectConversation(peerUserId)
-      await conversations.forwardMessage(forwardingMessageId.value, conversationId)
+      await conversations.forwardMessage(forwardingMessageId.value, conversationId, peerUserId)
     }
 
     closeForwardPicker()
@@ -1904,7 +1913,7 @@ onBeforeUnmount(() => {
             v-model="klipyQuery"
             type="text"
             class="inline-input composer-media-menu__search"
-            placeholder="Поиск KLIPY"
+            :placeholder="klipySearchPlaceholder"
             autocomplete="off"
             autocapitalize="off"
             spellcheck="false"

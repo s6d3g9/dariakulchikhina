@@ -457,12 +457,23 @@ export function useMessengerConversations() {
     }
   }
 
-  async function forwardMessage(sourceMessageId: string, targetConversationId: string) {
+  async function forwardMessage(sourceMessageId: string, targetConversationId: string, targetPeerUserId?: string) {
     const targetConversation = conversations.value.find(item => item.id === targetConversationId)
     const sourceMessage = messages.value.find(item => item.id === sourceMessageId)
     const sourceConversation = activeConversation.value
     if (!targetConversation || !sourceMessage || !sourceConversation || !auth.user.value) {
-      throw new Error('MESSAGE_NOT_FOUND')
+      if (!sourceMessage || !sourceConversation || !auth.user.value) {
+        throw new Error('MESSAGE_NOT_FOUND')
+      }
+
+      if (!targetPeerUserId) {
+        throw new Error('CONVERSATION_NOT_FOUND')
+      }
+    }
+
+    const resolvedTargetPeerUserId = targetConversation?.peerUserId || targetPeerUserId
+    if (!resolvedTargetPeerUserId) {
+      throw new Error('CONVERSATION_NOT_FOUND')
     }
 
     messagePending.value = true
@@ -472,7 +483,7 @@ export function useMessengerConversations() {
           auth.request,
           auth.user.value.id,
           targetConversationId,
-          targetConversation.peerUserId,
+          resolvedTargetPeerUserId,
           sourceMessage.body,
         )
 
