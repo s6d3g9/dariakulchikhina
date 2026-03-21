@@ -48,6 +48,12 @@ interface MessengerMessageRelationPreview {
   }
 }
 
+export interface MessengerMessageReactionSummary {
+  emoji: string
+  count: number
+  own: boolean
+}
+
 interface MessengerForwardedMessagePreview {
   messageId: string
   conversationId: string
@@ -78,6 +84,7 @@ export interface MessengerConversationMessage {
   deletedAt?: string
   own: boolean
   senderDisplayName: string
+  reactions?: MessengerMessageReactionSummary[]
   attachment?: {
     name: string
     mimeType: string
@@ -147,6 +154,31 @@ function attachMessageRelations(
 interface MessengerMessageSendOptions {
   replyToMessageId?: string
   commentOnMessageId?: string
+}
+
+function buildNextReactionState(
+  reactions: MessengerMessageReactionSummary[] | undefined,
+  emoji: string,
+) {
+  const nextReactions = (reactions || []).map(reaction => ({ ...reaction }))
+  const currentReaction = nextReactions.find(reaction => reaction.emoji === emoji)
+
+  if (!currentReaction) {
+    nextReactions.push({
+      emoji,
+      count: 1,
+      own: true,
+    })
+  } else if (currentReaction.own) {
+    currentReaction.count = Math.max(0, currentReaction.count - 1)
+    currentReaction.own = false
+  } else {
+    currentReaction.count += 1
+    currentReaction.own = true
+  }
+
+  const normalized = nextReactions.filter(reaction => reaction.count > 0)
+  return normalized.length ? normalized.sort((left, right) => right.count - left.count || left.emoji.localeCompare(right.emoji, 'ru')) : undefined
 }
 
 export function useMessengerConversations() {
@@ -587,6 +619,42 @@ export function useMessengerConversations() {
     }
   }
 
+  async function toggleReaction(messageId: string, emoji: string) {
+    const conversationId = state.activeConversationId.value
+    if (!conversationId) {
+      throw new Error('NO_ACTIVE_CONVERSATION')
+    }
+
+    const previousMessages = messages.value.map(message => ({
+      ...message,
+      reactions: message.reactions?.map(reaction => ({ ...reaction })),
+    }))
+
+    messages.value = messages.value.map((message) => {
+      if (message.id !== messageId) {
+        return message
+      }
+
+      return {
+        ...message,
+        reactions: buildNextReactionState(message.reactions, emoji),
+      }
+    })
+
+    try {
+      await auth.request(`/conversations/${conversationId}/messages/${messageId}/reactions`, {
+        method: 'POST',
+        body: {
+          emoji,
+        },
+      })
+      void loadMessages(conversationId)
+    } catch (error) {
+      messages.value = previousMessages
+      throw error
+    }
+  }
+
   return {
     conversations,
     messages,
@@ -607,5 +675,6 @@ export function useMessengerConversations() {
     uploadAttachment,
     editMessage,
     deleteMessage,
+    toggleReaction,
   }
 }

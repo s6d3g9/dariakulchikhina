@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MessengerConversationMessage } from '../../composables/useMessengerConversations'
+import type { MessengerGiphyItem } from '../../composables/useMessengerGiphy'
 import type { MessengerConversationSecuritySummary } from '../../composables/useMessengerCrypto'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
@@ -9,6 +10,7 @@ interface MessengerThreadMessage extends MessengerConversationMessage {
 const conversations = useMessengerConversations()
 const auth = useMessengerAuth()
 const messengerCrypto = useMessengerCrypto()
+const giphy = useMessengerGiphy()
 const viewport = useMessengerViewport()
 const draft = ref('')
 const actionError = ref('')
@@ -27,6 +29,7 @@ const calls = useMessengerCalls()
 const editingMessageId = ref<string | null>(null)
 const editingDraft = ref('')
 const activeMessageActionsId = ref<string | null>(null)
+const activeReactionOverlayId = ref<string | null>(null)
 const composerHeight = ref(76)
 const composerRelationMode = ref<'reply' | 'comment' | null>(null)
 const composerRelationMessageId = ref<string | null>(null)
@@ -37,8 +40,11 @@ const dragDropDepth = ref(0)
 const dragDropPending = ref(false)
 const composerMediaMenuOpen = ref(false)
 const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif'>('emoji')
+const giphyQuery = ref('')
+const giphyUploadPending = ref(false)
 
 const composerEmojiOptions = ['😀', '😉', '😍', '🔥', '👍', '👏', '🙏', '❤️', '🎉', '🤝', '✨', '😎']
+const messageReactionOptions = ['👍', '❤️', '🔥', '😂', '👏', '😮']
 const securitySummary = ref<MessengerConversationSecuritySummary | null>(null)
 const securitySummaryPending = ref(false)
 const securitySummaryUpdatedAt = ref<string | null>(null)
@@ -48,6 +54,7 @@ let mediaStream: MediaStream | null = null
 let recordingTimer: ReturnType<typeof setInterval> | null = null
 let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
 let composerResizeObserver: ResizeObserver | null = null
+let giphySearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
 
 function isMobileChatViewport() {
@@ -417,6 +424,49 @@ const composerMediaMenuVisible = computed(() => Boolean(
   && !detailsOpen.value
   && !photoFeedOpen.value,
 ))
+const activeGiphyKind = computed<'gif' | 'sticker' | null>(() => {
+  if (composerMediaMenuTab.value === 'gif') {
+    return 'gif'
+  }
+
+  if (composerMediaMenuTab.value === 'stickers') {
+    return 'sticker'
+  }
+
+  return null
+})
+const giphyHintText = computed(() => {
+  if (!giphy.configured.value) {
+    return 'GIPHY API не настроен на сервере. Добавьте GIPHY_API_KEY в messenger core.'
+  }
+
+  if (giphy.error.value) {
+    return giphy.error.value
+  }
+
+  if (!giphyQuery.value.trim()) {
+    if (giphy.pending.value) {
+      return 'Загружаем подборку GIPHY...'
+    }
+
+    return composerMediaMenuTab.value === 'stickers'
+      ? 'Показаны недавние и популярные стикеры. Можно ввести запрос для точного поиска.'
+      : 'Показаны недавние и популярные GIF. Можно ввести запрос для точного поиска.'
+  }
+
+  if (giphy.pending.value) {
+    return 'Ищем по GIPHY...'
+  }
+
+  if (!giphy.items.value.length) {
+    return 'Ничего не найдено. Попробуйте другой запрос.'
+  }
+
+  return composerMediaMenuTab.value === 'stickers'
+    ? 'Нажмите на стикер, чтобы отправить его в чат.'
+    : 'Нажмите на GIF, чтобы отправить его в чат.'
+})
+const currentGiphyRecentItems = computed(() => activeGiphyKind.value ? giphy.getRecentItems(activeGiphyKind.value) : [])
 
 onMounted(async () => {
   lockPageScroll()
@@ -432,6 +482,10 @@ onBeforeUnmount(() => {
   unlockPageScroll()
   stopRecordingTimer()
   stopStreamTracks()
+  if (giphySearchTimer) {
+    clearTimeout(giphySearchTimer)
+    giphySearchTimer = null
+  }
   if (composerAlignTimer) {
     clearTimeout(composerAlignTimer)
     composerAlignTimer = null
@@ -493,6 +547,7 @@ watch(() => conversations.activeConversationId.value, () => {
   editingMessageId.value = null
   editingDraft.value = ''
   activeMessageActionsId.value = null
+  activeReactionOverlayId.value = null
 })
 
 watch(() => conversations.messages.value.length, async (currentLength, previousLength) => {
@@ -519,6 +574,27 @@ watch(draft, () => {
 
 watch([detailsOpen, photoFeedOpen, () => conversations.activeConversationId.value], () => {
   composerMediaMenuOpen.value = false
+})
+
+watch([composerMediaMenuVisible, composerMediaMenuTab, giphyQuery], ([visible]) => {
+  if (giphySearchTimer) {
+    clearTimeout(giphySearchTimer)
+    giphySearchTimer = null
+  }
+
+  if (!visible) {
+    return
+  }
+
+  const kind = activeGiphyKind.value
+  if (!kind) {
+    return
+  }
+
+  giphySearchTimer = setTimeout(() => {
+    void giphy.search(giphyQuery.value, kind)
+    giphySearchTimer = null
+  }, 260)
 })
 
 watch(() => viewport.keyboardOpen.value, async (opened) => {
@@ -552,6 +628,7 @@ async function submit() {
     pendingScrollMessageId.value = commentTargetId
     draft.value = ''
     activeMessageActionsId.value = null
+    activeReactionOverlayId.value = null
     composerRelationMode.value = null
     composerRelationMessageId.value = null
     resetComposerInputHeight()
@@ -676,14 +753,40 @@ function openFilePicker(accept = '') {
   fileInput.value.click()
 }
 
-function openStickerPicker() {
-  composerMediaMenuOpen.value = false
-  openFilePicker('image/webp,image/png,image/jpeg')
-}
+async function sendGiphyItem(item: MessengerGiphyItem) {
+  if (!conversations.activeConversation.value || conversations.messagePending.value) {
+    return
+  }
 
-function openGifPicker() {
-  composerMediaMenuOpen.value = false
-  openFilePicker('image/gif')
+  actionError.value = ''
+  giphyUploadPending.value = true
+
+  try {
+    const response = await fetch(item.originalUrl)
+    if (!response.ok) {
+      throw new Error('GIPHY_MEDIA_FETCH_FAILED')
+    }
+
+    const blob = await response.blob()
+    const mimeType = item.mimeType || blob.type || 'application/octet-stream'
+    const extension = mimeType.includes('webp') ? 'webp' : mimeType.includes('gif') ? 'gif' : 'bin'
+    const fileBaseName = (item.title || item.id)
+      .toLowerCase()
+      .replace(/[^a-z0-9а-яё_-]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) || `${item.kind}-${item.id}`
+    const file = new File([blob], `${fileBaseName}.${extension}`, { type: mimeType })
+
+    await conversations.uploadAttachment(file)
+    composerMediaMenuOpen.value = false
+    giphy.remember(item)
+    giphy.reset()
+    giphyQuery.value = ''
+  } catch {
+    actionError.value = 'Не удалось отправить медиа из GIPHY.'
+  } finally {
+    giphyUploadPending.value = false
+  }
 }
 
 async function handleFileSelect(event: Event) {
@@ -890,6 +993,7 @@ function openPhotoGallery(messageId: string) {
   galleryPhotoId.value = messageId
   detailsOpen.value = false
   activeMessageActionsId.value = null
+  activeReactionOverlayId.value = null
 }
 
 function closePhotoFeed() {
@@ -1117,6 +1221,7 @@ async function toggleAudioCall() {
 
 function startEditingMessage(messageId: string, body: string) {
   activeMessageActionsId.value = null
+  activeReactionOverlayId.value = null
   editingMessageId.value = messageId
   editingDraft.value = body
 }
@@ -1147,6 +1252,7 @@ async function removeMessage(messageId: string) {
 
   try {
     activeMessageActionsId.value = null
+    activeReactionOverlayId.value = null
     await conversations.deleteMessage(messageId)
     if (editingMessageId.value === messageId) {
       cancelEditingMessage()
@@ -1154,6 +1260,22 @@ async function removeMessage(messageId: string) {
   } catch {
     actionError.value = 'Не удалось удалить сообщение.'
   }
+}
+
+async function reactToMessage(messageId: string, emoji: string) {
+  actionError.value = ''
+
+  try {
+    await conversations.toggleReaction(messageId, emoji)
+    activeReactionOverlayId.value = null
+  } catch {
+    actionError.value = 'Не удалось обновить реакцию.'
+  }
+}
+
+function toggleReactionOverlay(messageId: string) {
+  activeMessageActionsId.value = null
+  activeReactionOverlayId.value = activeReactionOverlayId.value === messageId ? null : messageId
 }
 
 async function handleEditKeydown(event: KeyboardEvent) {
@@ -1179,6 +1301,7 @@ function toggleMessageActions(messageId: string, event: MouseEvent) {
     return
   }
 
+  activeReactionOverlayId.value = null
   activeMessageActionsId.value = activeMessageActionsId.value === messageId ? null : messageId
 }
 
@@ -1188,6 +1311,7 @@ function handleDocumentPointerDown(event: PointerEvent) {
   }
 
   activeMessageActionsId.value = null
+  activeReactionOverlayId.value = null
 }
 
 function relationTitle(mode: 'reply' | 'comment' | null) {
@@ -1405,17 +1529,21 @@ onBeforeUnmount(() => {
             :key="entry.id"
             :entry="entry"
             :active-message-actions-id="activeMessageActionsId"
+            :active-reaction-overlay-id="activeReactionOverlayId"
             :editing-message-id="editingMessageId"
             :editing-draft="editingDraft"
             :message-pending="conversations.messagePending.value"
             :allow-forward="canForwardFromActiveConversation"
             :allow-mutual-delete="allowMutualDelete"
+            :reaction-options="messageReactionOptions"
             @toggle-actions="toggleMessageActions"
+            @toggle-reaction-overlay="toggleReactionOverlay"
             @comment="activateComposerRelation('comment', $event)"
             @reply="activateComposerRelation('reply', $event)"
             @forward="openForwardPicker"
             @edit="startEditingMessage"
             @remove="removeMessage"
+            @react="reactToMessage($event[0], $event[1])"
             @edit-draft="editingDraft = $event"
             @edit-keydown="handleEditKeydown"
             @save-edit="saveEditedMessage"
@@ -1512,18 +1640,50 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <div v-else-if="composerMediaMenuTab === 'stickers'" class="composer-media-menu__action-group">
-          <p class="composer-media-menu__hint">Выберите изображение, чтобы отправить его как стикер.</p>
-          <button type="button" class="composer-media-menu__action" @click="openStickerPicker">
-            Выбрать стикер
-          </button>
-        </div>
-
-        <div v-else class="composer-media-menu__action-group">
-          <p class="composer-media-menu__hint">Откройте GIF-файл из галереи или файлового менеджера.</p>
-          <button type="button" class="composer-media-menu__action" @click="openGifPicker">
-            Выбрать GIF
-          </button>
+        <div v-else class="composer-media-menu__catalog">
+          <input
+            v-model="giphyQuery"
+            type="text"
+            class="inline-input composer-media-menu__search"
+            :placeholder="composerMediaMenuTab === 'stickers' ? 'Найти стикер в GIPHY' : 'Найти GIF в GIPHY'"
+          >
+          <p class="composer-media-menu__hint">{{ giphyHintText }}</p>
+          <div v-if="!giphyQuery.trim() && currentGiphyRecentItems.length" class="composer-media-menu__recent">
+            <p class="composer-media-menu__section-title">Недавние</p>
+            <div class="composer-media-menu__results composer-media-menu__results--recent">
+              <button
+                v-for="item in currentGiphyRecentItems"
+                :key="`recent-${item.id}`"
+                type="button"
+                class="composer-media-menu__result"
+                :disabled="giphyUploadPending"
+                @click="sendGiphyItem(item)"
+              >
+                <img class="composer-media-menu__result-preview" :src="item.previewUrl" :alt="item.title">
+                <span class="composer-media-menu__result-meta">
+                  <span class="composer-media-menu__result-title">{{ item.title || 'GIPHY media' }}</span>
+                  <span class="composer-media-menu__result-copy">{{ item.kind === 'sticker' ? 'Недавний стикер' : 'Недавний GIF' }}</span>
+                </span>
+              </button>
+            </div>
+          </div>
+          <div v-if="giphy.items.length" class="composer-media-menu__results">
+            <p class="composer-media-menu__section-title">{{ giphyQuery.trim() ? 'Результаты' : 'Популярное' }}</p>
+            <button
+              v-for="item in giphy.items"
+              :key="item.id"
+              type="button"
+              class="composer-media-menu__result"
+              :disabled="giphyUploadPending"
+              @click="sendGiphyItem(item)"
+            >
+              <img class="composer-media-menu__result-preview" :src="item.previewUrl" :alt="item.title">
+              <span class="composer-media-menu__result-meta">
+                <span class="composer-media-menu__result-title">{{ item.title || 'GIPHY media' }}</span>
+                <span class="composer-media-menu__result-copy">{{ item.kind === 'sticker' ? 'Стикер' : 'GIF' }}</span>
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 

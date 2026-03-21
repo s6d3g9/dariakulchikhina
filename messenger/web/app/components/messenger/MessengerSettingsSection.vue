@@ -16,7 +16,6 @@ watch(() => settingsModel.settings.value.devices.keepSignedIn, (enabled) => {
   auth.setPersistence(enabled ? 'local' : 'session')
 })
 
-const activeSectionMeta = computed(() => settingsModel.sections.find(section => section.key === settingsModel.activeSection.value) ?? settingsModel.sections[0])
 const activeThemeMeta = computed(() => settingsModel.themeOptions.find(theme => theme.key === settingsModel.settings.value.themes.active) ?? settingsModel.themeOptions[0])
 const activeStyleMeta = computed(() => settingsModel.styleOptions.find(style => style.key === settingsModel.settings.value.themes.style) ?? settingsModel.styleOptions[0])
 const permissionLabelMap = {
@@ -165,53 +164,22 @@ function showManualInstallHelp() {
         <p class="section-kicker">Settings</p>
         <h2>Настройки аккаунта и устройства</h2>
       </div>
-      <p class="setting-section-intro">
-        Здесь живут локальные preferences этого клиента: профиль устройства, уведомления, приватность и текущая сессия.
-      </p>
+      <div class="setting-pill-row">
+        <span class="setting-pill" :class="{ 'setting-pill--ok': realtime.connected.value }">
+          {{ realtime.connected.value ? 'Live sync online' : realtime.connecting.value ? 'Соединяемся' : 'Offline sync' }}
+        </span>
+        <span class="setting-pill" :class="{ 'setting-pill--ok': calls.supported.value }">
+          {{ calls.supported.value ? 'Calls ready' : 'Calls limited' }}
+        </span>
+      </div>
     </header>
 
-    <div class="settings-overview-grid">
+    <div class="settings-layout settings-layout--compact-head">
       <article class="setting-card setting-card--glass setting-card--summary">
         <p class="setting-card__title">Аккаунт</p>
         <p class="setting-card__text">{{ auth.user.value?.displayName || 'Гость' }} · @{{ auth.user.value?.login || 'anonymous' }}</p>
-        <div class="setting-pill-row">
-          <span class="setting-pill" :class="{ 'setting-pill--ok': realtime.connected.value }">
-            {{ realtime.connected.value ? 'Live sync online' : realtime.connecting.value ? 'Соединяемся' : 'Offline sync' }}
-          </span>
-          <span class="setting-pill" :class="{ 'setting-pill--ok': calls.supported.value }">
-            {{ calls.supported.value ? 'Calls ready' : 'Calls limited' }}
-          </span>
-        </div>
       </article>
 
-      <article class="setting-card setting-card--glass setting-card--summary">
-        <p class="setting-card__title">Текущий раздел</p>
-        <p class="setting-card__text">{{ activeSectionMeta.title }}</p>
-        <p class="setting-card__meta">{{ activeSectionMeta.hint }}</p>
-      </article>
-
-      <article class="setting-card setting-card--glass setting-card--summary">
-        <p class="setting-card__title">Активная тема</p>
-        <p class="setting-card__text">{{ activeThemeMeta.title }}</p>
-        <p class="setting-card__meta">{{ activeThemeMeta.hint }}</p>
-      </article>
-
-      <article class="setting-card setting-card--glass setting-card--summary">
-        <p class="setting-card__title">Стиль интерфейса</p>
-        <p class="setting-card__text">{{ activeStyleMeta.title }}</p>
-        <p class="setting-card__meta">{{ activeStyleMeta.hint }}</p>
-        <span class="setting-style-preview" :class="`setting-style-preview--${settingsModel.settings.value.themes.style}`" aria-hidden="true">
-          <span class="setting-style-preview__topbar" />
-          <span class="setting-style-preview__panel" />
-          <span class="setting-style-preview__row">
-            <span class="setting-style-preview__dot" />
-            <span class="setting-style-preview__button" />
-          </span>
-        </span>
-      </article>
-    </div>
-
-    <div class="settings-layout">
       <aside class="settings-nav" aria-label="Меню настроек">
         <button
           v-for="section in settingsModel.sections"

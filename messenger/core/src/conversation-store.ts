@@ -17,6 +17,12 @@ export interface MessengerEncryptedBinaryPayload {
   iv: string
 }
 
+export interface MessengerMessageReactionRecord {
+  emoji: string
+  userIds: string[]
+  updatedAt: string
+}
+
 export interface MessengerConversationKeyPackageRecord {
   recipientUserId: string
   wrappedKey: string
@@ -64,6 +70,7 @@ export interface MessengerMessageRecord {
     url: string
     encryptedFile?: MessengerEncryptedBinaryPayload
   }
+  reactions?: MessengerMessageReactionRecord[]
   createdAt: string
   readAt?: string
   editedAt?: string
@@ -163,6 +170,11 @@ export interface ConversationMessageOverviewItem {
     url: string
     encryptedFile?: MessengerEncryptedBinaryPayload
   }
+  reactions?: Array<{
+    emoji: string
+    count: number
+    own: boolean
+  }>
   replyTo?: {
     id: string
     body: string
@@ -309,6 +321,36 @@ function getMessageBodyPreview(
 
 function getStoredTextBody(body: string, conversation: Pick<MessengerConversationRecord, 'kind' | 'policy'>) {
   return getConversationPolicy(conversation).secret ? '' : body.trim()
+}
+
+function buildMessageReactions(
+  reactions: MessengerMessageReactionRecord[] | undefined,
+  actorId: string,
+) {
+  if (!reactions?.length) {
+    return undefined
+  }
+
+  const normalized = reactions
+    .map((reaction) => {
+      const uniqueUserIds = Array.from(new Set(reaction.userIds.filter(Boolean)))
+      if (!reaction.emoji || !uniqueUserIds.length) {
+        return null
+      }
+
+      return {
+        emoji: reaction.emoji,
+        count: uniqueUserIds.length,
+        own: uniqueUserIds.includes(actorId),
+      }
+    })
+    .filter((reaction): reaction is NonNullable<typeof reaction> => Boolean(reaction))
+
+  if (!normalized.length) {
+    return undefined
+  }
+
+  return normalized.sort((left, right) => right.count - left.count || left.emoji.localeCompare(right.emoji, 'ru'))
 }
 
 function assertMessageRelation(
@@ -475,6 +517,7 @@ export async function listMessagesForConversation(conversationId: string, actor:
         own: message.senderUserId === actor.id,
         senderDisplayName: sender?.displayName || 'Unknown',
         attachment: message.deletedAt ? undefined : message.attachment,
+        reactions: message.deletedAt ? undefined : buildMessageReactions(message.reactions, actor.id),
         replyTo: replyTo ? buildMessageRelationPreview(replyTo, actor.id, users, conversation) : undefined,
         commentOn: commentOn ? buildMessageRelationPreview(commentOn, actor.id, users, conversation) : undefined,
         forwardedFrom: message.forwardedFrom,
@@ -747,9 +790,67 @@ export async function deleteMessageFromConversation(conversationId: string, mess
   message.body = ''
   message.encryptedBody = undefined
   message.attachment = undefined
+  message.reactions = undefined
   message.deletedAt = now
   message.editedAt = undefined
   conversation.updatedAt = now
+  await writeConversationsFile(payload)
+  return message
+}
+
+export async function toggleReactionInConversation(
+  conversationId: string,
+  messageId: string,
+  actor: MessengerUserRecord,
+  emoji: string,
+) {
+  const payload = await readConversationsFile()
+  const conversation = payload.conversations.find(item => item.id === conversationId)
+  if (!conversation) {
+    throw new Error('CONVERSATION_NOT_FOUND')
+  }
+
+  if (!isParticipant(conversation, actor.id)) {
+    throw new Error('CONVERSATION_FORBIDDEN')
+  }
+
+  const message = payload.messages.find(item => item.id === messageId && item.conversationId === conversationId)
+  if (!message) {
+    throw new Error('MESSAGE_NOT_FOUND')
+  }
+
+  if (message.deletedAt) {
+    throw new Error('MESSAGE_NOT_REACTABLE')
+  }
+
+  const normalizedEmoji = emoji.trim()
+  if (!normalizedEmoji) {
+    throw new Error('REACTION_EMOJI_REQUIRED')
+  }
+
+  const now = new Date().toISOString()
+  const reactions = message.reactions ? [...message.reactions] : []
+  const currentReaction = reactions.find(item => item.emoji === normalizedEmoji)
+
+  if (!currentReaction) {
+    reactions.push({
+      emoji: normalizedEmoji,
+      userIds: [actor.id],
+      updatedAt: now,
+    })
+  } else if (currentReaction.userIds.includes(actor.id)) {
+    currentReaction.userIds = currentReaction.userIds.filter(userId => userId !== actor.id)
+    currentReaction.updatedAt = now
+  } else {
+    currentReaction.userIds = [...currentReaction.userIds, actor.id]
+    currentReaction.updatedAt = now
+  }
+
+  message.reactions = reactions.filter(item => item.userIds.length)
+  if (!message.reactions.length) {
+    message.reactions = undefined
+  }
+
   await writeConversationsFile(payload)
   return message
 }

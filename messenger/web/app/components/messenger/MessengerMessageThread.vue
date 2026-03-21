@@ -9,19 +9,23 @@ const props = withDefaults(defineProps<{
   entry: MessengerThreadMessage
   depth?: number
   activeMessageActionsId: string | null
+  activeReactionOverlayId: string | null
   editingMessageId: string | null
   editingDraft: string
   messagePending: boolean
   allowForward?: boolean
   allowMutualDelete?: boolean
+  reactionOptions?: string[]
 }>(), {
   depth: 0,
   allowForward: true,
   allowMutualDelete: false,
+  reactionOptions: () => ['👍', '❤️', '🔥', '😂', '👏', '😮'],
 })
 
 const emit = defineEmits<{
   'toggle-actions': [messageId: string, event: MouseEvent]
+  'toggle-reaction-overlay': [messageId: string]
   comment: [messageId: string]
   reply: [messageId: string]
   forward: [messageId: string]
@@ -32,11 +36,16 @@ const emit = defineEmits<{
   'save-edit': []
   'copy-link': [href: string, label: string]
   'open-photo': [messageId: string]
+  react: [messageId: string, emoji: string]
 }>()
 
 const depthStyle = computed(() => ({
   '--message-comment-depth': String(Math.min(props.depth, 4)),
 }))
+
+const longPressTriggered = ref(false)
+
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
 
 function formatMessageTime(value?: string) {
   if (!value) {
@@ -88,6 +97,59 @@ function handleEditInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   emit('edit-draft', target.value)
 }
+
+function isMobileLongPressEvent(event: PointerEvent) {
+  if (!import.meta.client) {
+    return false
+  }
+
+  return (event.pointerType === 'touch' || event.pointerType === 'pen')
+    && window.matchMedia('(max-width: 767px)').matches
+}
+
+function isInteractiveTarget(target: EventTarget | null) {
+  return target instanceof HTMLElement
+    && Boolean(target.closest('button, textarea, audio, img, input, [data-message-action-menu="true"], [data-message-reaction-menu="true"]'))
+}
+
+function clearLongPressTimer() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function handlePointerDown(event: PointerEvent) {
+  if (props.entry.deletedAt || isInteractiveTarget(event.target) || !isMobileLongPressEvent(event)) {
+    return
+  }
+
+  clearLongPressTimer()
+  longPressTriggered.value = false
+  longPressTimer = setTimeout(() => {
+    emit('toggle-reaction-overlay', props.entry.id)
+    longPressTriggered.value = true
+    longPressTimer = null
+  }, 360)
+}
+
+function handlePointerEnd() {
+  clearLongPressTimer()
+}
+
+function handleBubbleClick(event: MouseEvent) {
+  if (props.entry.deletedAt) {
+    return
+  }
+
+  if (longPressTriggered.value) {
+    longPressTriggered.value = false
+    event.preventDefault()
+    return
+  }
+
+  emit('toggle-actions', props.entry.id, event)
+}
 </script>
 
 <template>
@@ -102,11 +164,49 @@ function handleEditInput(event: Event) {
     :style="depthStyle"
     data-message-action-root="true"
     :data-message-id="entry.id"
-    @click.stop="!entry.deletedAt ? emit('toggle-actions', entry.id, $event) : undefined"
+    @click.stop="handleBubbleClick"
+    @pointerdown="handlePointerDown"
+    @pointerup="handlePointerEnd"
+    @pointercancel="handlePointerEnd"
+    @pointerleave="handlePointerEnd"
   >
+    <Transition name="message-actions-pop">
+      <div
+        v-if="!entry.deletedAt && activeReactionOverlayId === entry.id"
+        class="message-bubble__topline message-bubble__topline--reactions"
+        data-message-reaction-menu="true"
+        @pointerdown.stop
+      >
+        <div class="message-bubble__reaction-overlay">
+          <button
+            v-for="emoji in reactionOptions"
+            :key="`${entry.id}-quick-${emoji}`"
+            type="button"
+            class="message-reaction-btn message-reaction-btn--quick"
+            :class="{ 'message-reaction-btn--active': entry.reactions?.some(reaction => reaction.emoji === emoji && reaction.own) }"
+            @click.stop="emit('react', entry.id, emoji)"
+          >
+            {{ emoji }}
+          </button>
+        </div>
+      </div>
+    </Transition>
+
     <Transition name="message-actions-pop">
       <div v-if="!entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__topline" data-message-action-menu="true" @pointerdown.stop>
         <div class="message-bubble__actions">
+          <div class="message-bubble__reaction-picker">
+            <button
+              v-for="emoji in reactionOptions"
+              :key="`${entry.id}-${emoji}`"
+              type="button"
+              class="message-reaction-btn"
+              :class="{ 'message-reaction-btn--active': entry.reactions?.some(reaction => reaction.emoji === emoji && reaction.own) }"
+              @click.stop="emit('react', entry.id, emoji)"
+            >
+              {{ emoji }}
+            </button>
+          </div>
           <button
             type="button"
             class="message-action-btn"
@@ -220,6 +320,20 @@ function handleEditInput(event: Event) {
       </div>
     </div>
 
+    <div v-if="entry.reactions?.length" class="message-reactions">
+      <button
+        v-for="reaction in entry.reactions"
+        :key="`${entry.id}-${reaction.emoji}`"
+        type="button"
+        class="message-reactions__item"
+        :class="{ 'message-reactions__item--own': reaction.own }"
+        @click.stop="emit('react', entry.id, reaction.emoji)"
+      >
+        <span class="message-reactions__emoji">{{ reaction.emoji }}</span>
+        <span class="message-reactions__count">{{ reaction.count }}</span>
+      </button>
+    </div>
+
     <div v-if="entry.comments.length" class="message-comments">
       <MessengerMessageThread
         v-for="comment in entry.comments"
@@ -227,12 +341,15 @@ function handleEditInput(event: Event) {
         :entry="comment"
         :depth="depth + 1"
         :active-message-actions-id="activeMessageActionsId"
+        :active-reaction-overlay-id="activeReactionOverlayId"
         :editing-message-id="editingMessageId"
         :editing-draft="editingDraft"
         :message-pending="messagePending"
         :allow-forward="allowForward"
         :allow-mutual-delete="allowMutualDelete"
+        :reaction-options="reactionOptions"
         @toggle-actions="emit('toggle-actions', $event[0], $event[1])"
+        @toggle-reaction-overlay="emit('toggle-reaction-overlay', $event)"
         @comment="emit('comment', $event)"
         @reply="emit('reply', $event)"
         @forward="emit('forward', $event)"
@@ -243,6 +360,7 @@ function handleEditInput(event: Event) {
         @save-edit="emit('save-edit')"
         @copy-link="emit('copy-link', $event[0], $event[1])"
         @open-photo="emit('open-photo', $event)"
+        @react="emit('react', $event[0], $event[1])"
       />
     </div>
   </article>

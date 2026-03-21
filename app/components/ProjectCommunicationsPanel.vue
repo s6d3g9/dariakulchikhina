@@ -37,15 +37,20 @@
         </div>
 
         <div v-if="currentChatPeer" class="comm-call-security" :class="{ 'comm-call-security--active': callSecurity.active }">
-          <p class="comm-call-security__status">{{ callSecurity.status }}</p>
+          <p class="comm-call-security__status">{{ compactCallSecurityStatus }}</p>
           <p v-if="callSecurity.active && callSecurity.verificationEmojis.length" class="comm-call-security__emojis">{{ callSecurity.verificationEmojis.join(' ') }}</p>
           <p v-else-if="callSecurity.fallbackReason" class="comm-call-security__fallback">{{ callSecurity.fallbackReason }}</p>
           <p v-if="callPermissionHelp" class="comm-call-security__fallback">{{ callPermissionHelp }}</p>
         </div>
 
-        <div v-if="incomingCall" class="comm-incoming glass-card">
-          <p class="comm-incoming-title">Входящий {{ incomingCall.mode === 'video' ? 'видеозвонок' : 'аудиозвонок' }}</p>
-          <p class="comm-incoming-meta">От {{ incomingCall.fromDisplayName }}</p>
+        <div v-if="incomingCall" class="comm-incoming glass-card" :class="{ 'comm-incoming--audio': incomingCall.mode === 'audio' }">
+          <div class="comm-incoming-head">
+            <div>
+              <p class="comm-incoming-title">Входящий {{ incomingCall.mode === 'video' ? 'видеозвонок' : 'аудиозвонок' }}</p>
+              <p class="comm-incoming-meta">{{ incomingCall.fromDisplayName }}</p>
+            </div>
+            <span class="comm-chat-tag comm-chat-tag--live">{{ incomingCall.mode === 'video' ? 'VIDEO' : 'AUDIO' }}</span>
+          </div>
           <p v-if="incomingCall.e2ee?.supported" class="comm-status">{{ callSecurity.available ? 'После принятия активируется дополнительное E2EE звонка.' : 'Собеседник поддерживает дополнительное E2EE, но этот браузер умеет только штатное шифрование WebRTC.' }}</p>
           <div class="comm-incoming-actions">
             <button type="button" class="a-btn-sm" @click="acceptIncomingCall">Принять</button>
@@ -81,19 +86,31 @@
                   <span class="comm-chat-tag">{{ currentChatPeer.role }}</span>
                   <span v-if="activeCall && callSecurity.active" class="comm-chat-tag comm-chat-tag--secure">E2EE CALL</span>
                   <span v-else-if="activeCall" class="comm-chat-tag comm-chat-tag--live">LIVE</span>
-                  <span v-else-if="supportedCalls" class="comm-chat-tag comm-chat-tag--ready">CALL READY</span>
+                  <span v-else-if="supportedCalls" class="comm-chat-tag comm-chat-tag--ready">READY</span>
                 </div>
               </div>
             </div>
           </div>
-          <div class="comm-media-grid">
-            <div class="comm-media-box">
+          <div class="comm-media-grid" :class="{ 'comm-media-grid--audio': activeCallMode === 'audio' || incomingCall?.mode === 'audio' }">
+            <div class="comm-media-box" :class="{ 'comm-media-box--audio': activeCallMode === 'audio' || incomingCall?.mode === 'audio' }">
               <div class="comm-media-label">Вы</div>
-              <video ref="localVideoEl" class="comm-video" autoplay playsinline muted />
+              <template v-if="activeCallMode === 'video'">
+                <video ref="localVideoEl" class="comm-video" autoplay playsinline muted />
+              </template>
+              <div v-else class="comm-audio-stage">
+                <div class="comm-audio-stage__orb">YOU</div>
+                <div class="comm-audio-stage__meta">{{ callControls.microphoneEnabled ? 'Микрофон активен' : 'Микрофон выключен' }}</div>
+              </div>
             </div>
-            <div class="comm-media-box">
+            <div class="comm-media-box" :class="{ 'comm-media-box--audio': activeCallMode === 'audio' || incomingCall?.mode === 'audio' }">
               <div class="comm-media-label">Собеседник</div>
-              <video ref="remoteVideoEl" class="comm-video" autoplay playsinline />
+              <template v-if="activeCallMode === 'video'">
+                <video ref="remoteVideoEl" class="comm-video" autoplay playsinline />
+              </template>
+              <div v-else class="comm-audio-stage">
+                <div class="comm-audio-stage__orb">{{ chatPeerInitials }}</div>
+                <div class="comm-audio-stage__meta">{{ remoteMutedByPeer ? 'Микрофон отключён' : 'Аудиоканал активен' }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -101,14 +118,10 @@
         <div class="comm-main comm-main--chat">
           <div ref="messagesEl" class="comm-messages">
             <div v-if="currentChatPeer" class="comm-message-rail-head">
-              <div>
-                <div class="comm-block-title">Диалог</div>
-                <p class="comm-section-copy">Зашифрованная история сообщений с {{ currentChatPeer.displayName }}.</p>
-              </div>
+              <div class="comm-block-title">Диалог</div>
               <div class="comm-message-rail-head__metrics">
-                <span class="comm-section-pill">{{ decryptedMessages.length }} MSG</span>
-                <span class="comm-section-pill comm-section-pill--subtle">{{ eventStreamConnected ? 'LIVE SYNC' : 'SYNC OFF' }}</span>
-                <span class="comm-section-pill comm-section-pill--subtle">{{ roomKeyReady ? 'ROOM KEY READY' : 'WAIT KEY' }}</span>
+                <span class="comm-section-pill">{{ decryptedMessages.length }}</span>
+                <span class="comm-section-pill comm-section-pill--subtle">{{ eventStreamConnected ? 'LIVE' : 'OFFLINE' }}</span>
               </div>
             </div>
             <article
@@ -134,13 +147,10 @@
 
           <form class="comm-form" @submit.prevent="sendEncryptedMessage">
             <div v-if="currentChatPeer" class="comm-compose-head">
-              <div>
-                <div class="comm-block-title">Новое сообщение</div>
-                <p class="comm-section-copy">Отправка идёт только в текущий direct-диалог.</p>
-              </div>
+              <div class="comm-block-title">Новое сообщение</div>
               <div class="comm-message-rail-head__metrics">
                 <span class="comm-section-pill">{{ sendingMessage ? 'SENDING' : 'READY' }}</span>
-                <span class="comm-section-pill comm-section-pill--subtle">{{ draftMessage.trim() ? `${draftMessage.trim().length} CHARS` : 'EMPTY' }}</span>
+                <span class="comm-section-pill comm-section-pill--subtle">{{ draftMessage.trim() ? draftMessage.trim().length : 0 }}</span>
               </div>
             </div>
             <div class="comm-compose-row">
@@ -174,14 +184,8 @@
 
       <section v-else-if="quickSection === 'chats'" class="comm-block comm-block--directory">
         <div class="comm-section-head">
-          <div>
-            <div class="comm-block-title">Открытые чаты</div>
-            <p class="comm-section-copy">Быстрый доступ к уже активным direct-диалогам проекта.</p>
-          </div>
-          <div class="comm-section-metrics">
-            <span class="comm-section-pill">{{ filteredOpenChats.length }} ACTIVE</span>
-            <span class="comm-section-pill comm-section-pill--subtle">{{ hasAvailableContacts ? 'DIRECT' : 'EMPTY' }}</span>
-          </div>
+          <div class="comm-block-title">Открытые чаты</div>
+          <div class="comm-section-metrics"><span class="comm-section-pill">{{ filteredOpenChats.length }}</span></div>
         </div>
         <label class="u-field__label" for="comm-chat-search">Поиск по чатам</label>
         <input id="comm-chat-search" v-model="chatSearch" type="text" class="glass-input glass-input--inline comm-search" placeholder="Имя, роль или @никнейм">
@@ -202,7 +206,6 @@
               <span v-if="chat.participant.nickname" class="comm-person-nick">@{{ chat.participant.nickname }}</span>
               <span class="comm-person-badges">
                 <span class="comm-person-badge">{{ chat.participant.role }}</span>
-                <span class="comm-person-badge comm-person-badge--accent">SECURE</span>
               </span>
             </span>
           </button>
@@ -212,14 +215,8 @@
 
       <section v-else-if="quickSection === 'contacts'" class="comm-block comm-block--directory">
         <div class="comm-section-head">
-          <div>
-            <div class="comm-block-title">Контакты</div>
-            <p class="comm-section-copy">Участники проекта, доступные для защищённого direct-чата и звонка.</p>
-          </div>
-          <div class="comm-section-metrics">
-            <span class="comm-section-pill">{{ filteredContacts.length }} READY</span>
-            <span class="comm-section-pill comm-section-pill--subtle">E2EE</span>
-          </div>
+          <div class="comm-block-title">Контакты</div>
+          <div class="comm-section-metrics"><span class="comm-section-pill">{{ filteredContacts.length }}</span></div>
         </div>
         <label class="u-field__label" for="comm-contact-search">Поиск по контактам</label>
         <input id="comm-contact-search" v-model="contactSearch" type="text" class="glass-input glass-input--inline comm-search" placeholder="Имя, роль или @никнейм">
@@ -235,7 +232,6 @@
           >
             <span class="comm-person-topline">
               <span class="comm-person-name">{{ participant.displayName }}</span>
-              <span class="comm-person-badge comm-person-badge--accent">START CHAT</span>
             </span>
             <span class="comm-person-bottomline">
               <span v-if="participant.nickname" class="comm-person-nick">@{{ participant.nickname }}</span>
@@ -253,13 +249,8 @@
 
       <section v-else class="comm-block comm-block--directory">
         <div class="comm-section-head">
-          <div>
-            <div class="comm-block-title">Настройки</div>
-            <p class="comm-section-copy">Разрешения, приватность и публичные данные для communication layer проекта.</p>
-          </div>
-          <div class="comm-section-metrics">
-            <span class="comm-section-pill">{{ callSecurity.available ? 'CALL E2EE READY' : 'WEBRTC ONLY' }}</span>
-          </div>
+          <div class="comm-block-title">Настройки</div>
+          <div class="comm-section-metrics"><span class="comm-section-pill">{{ callSecurity.available ? 'E2EE' : 'WEBRTC' }}</span></div>
         </div>
         <div class="comm-settings-grid">
           <section class="comm-setting-card">
@@ -277,19 +268,6 @@
             >
             <p class="comm-setting-note">Никнейм используется в поиске контактов и в списке открытых чатов.</p>
             <p v-if="nicknameStatus" class="comm-status">{{ nicknameStatus }}</p>
-          </section>
-
-          <section class="comm-setting-card">
-            <div class="comm-block-title">Уведомления</div>
-            <p class="comm-setting-row">
-              <span class="comm-setting-name">Новые сообщения</span>
-              <span class="comm-setting-value">Скоро</span>
-            </p>
-            <p class="comm-setting-row">
-              <span class="comm-setting-name">Входящие звонки</span>
-              <span class="comm-setting-value">Скоро</span>
-            </p>
-            <p class="comm-setting-note">Следующий этап: переключатели браузерных уведомлений и тонов вызова.</p>
           </section>
 
           <section class="comm-setting-card">
@@ -697,6 +675,16 @@ const hasAvailableContacts = computed(() => availableContacts.value.length > 0)
 const supportedCalls = computed(() => Boolean(import.meta.client && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function' && typeof RTCPeerConnection !== 'undefined'))
 const microphonePermissionLabel = computed(() => mapPermissionLabel(mediaPermissionState.value.microphone))
 const cameraPermissionLabel = computed(() => mapPermissionLabel(mediaPermissionState.value.camera))
+const activeCallMode = computed<CallMode | null>(() => activeCall.value?.mode || incomingCall.value?.mode || null)
+const chatPeerInitials = computed(() => {
+  const name = currentChatPeer.value?.displayName?.trim() || 'PEER'
+  return name.split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase() || '').join('') || 'PEER'
+})
+const compactCallSecurityStatus = computed(() => {
+  if (callSecurity.value.active) return 'Дополнительное E2EE активно'
+  if (callSecurity.value.available) return 'Дополнительное E2EE доступно'
+  return 'Используется штатное шифрование WebRTC'
+})
 const videoReadiness = computed(() => {
   if (!supportedCalls.value) {
     return 'Браузер не поддерживает WebRTC или доступ к медиа.'
@@ -1677,9 +1665,25 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .comm-panel {
+  --comm-ink: rgba(245, 248, 255, .96);
+  --comm-muted: rgba(226, 232, 240, .84);
+  --comm-soft: rgba(226, 232, 240, .68);
+  --comm-control-bg: rgba(255,255,255,.08);
+  --comm-control-border: rgba(255,255,255,.14);
+  --comm-disabled-ink: rgba(226, 232, 240, .46);
   display: grid;
   gap: 16px;
   padding: 18px;
+  color: var(--comm-ink);
+}
+
+:global(html:not(.dark)) .comm-panel {
+  --comm-ink: rgba(23, 31, 43, .94);
+  --comm-muted: rgba(55, 65, 81, .82);
+  --comm-soft: rgba(71, 85, 105, .7);
+  --comm-control-bg: rgba(255,255,255,.8);
+  --comm-control-border: rgba(51, 65, 85, .16);
+  --comm-disabled-ink: rgba(71, 85, 105, .48);
 }
 
 .comm-chat-view,
@@ -1791,14 +1795,14 @@ onBeforeUnmount(() => {
 
 .comm-person {
   display: grid;
-  gap: 10px;
-  min-height: 72px;
+  gap: 8px;
+  min-height: 68px;
   border: 1px solid rgba(255,255,255,.12);
   background:
     linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.015) 58%, rgba(255,255,255,.01) 100%),
     rgba(10, 14, 22, .36);
   color: inherit;
-  padding: 12px 14px;
+  padding: 13px 14px;
   text-align: left;
   transition: border-color .18s ease, background-color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
@@ -1824,6 +1828,10 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.comm-person-bottomline {
+  align-items: center;
 }
 
 .comm-person-name {
@@ -2000,23 +2008,25 @@ onBeforeUnmount(() => {
 .comm-chip-btn {
   min-height: 36px;
   padding: 0 12px;
-  border: 1px solid var(--glass-border, rgba(255,255,255,.12));
-  background: transparent;
-  color: inherit;
+  border: 1px solid var(--comm-control-border);
+  background: var(--comm-control-bg);
+  color: var(--comm-ink);
   text-transform: uppercase;
   letter-spacing: .08em;
   font-size: .72rem;
 }
 
 .comm-chip-btn--inactive {
-  opacity: .64;
+  color: var(--comm-disabled-ink);
 }
 
 .comm-call-security {
   display: grid;
   gap: 6px;
-  padding: 10px 12px;
-  border: 1px solid var(--glass-border, rgba(255,255,255,.12));
+  padding: 11px 14px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 18px;
+  background: rgba(255,255,255,.03);
 }
 
 .comm-call-security--active {
@@ -2035,22 +2045,22 @@ onBeforeUnmount(() => {
 }
 
 .comm-call-security__fallback {
-  opacity: .72;
+  color: var(--comm-soft);
 }
 
 .comm-status {
   margin: 8px 0 0;
   font-size: .78rem;
-  opacity: .78;
+  color: var(--comm-muted);
 }
 
 .comm-icon-btn {
   width: 44px;
   min-width: 44px;
   height: 44px;
-  border: 1px solid var(--glass-border, rgba(255,255,255,.12));
-  background: transparent;
-  color: inherit;
+  border: 1px solid var(--comm-control-border);
+  background: var(--comm-control-bg);
+  color: var(--comm-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2062,7 +2072,7 @@ onBeforeUnmount(() => {
 }
 
 .comm-icon-btn:disabled {
-  opacity: .45;
+  color: var(--comm-disabled-ink);
 }
 
 .comm-icon-svg {
@@ -2073,13 +2083,34 @@ onBeforeUnmount(() => {
 
 .comm-incoming {
   display: grid;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.comm-incoming--audio {
+  background: linear-gradient(145deg, rgba(110, 168, 255, .08), rgba(255,255,255,.03));
+}
+
+.comm-incoming-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
 }
 
 .comm-incoming-title,
 .comm-incoming-meta {
   margin: 0;
+}
+
+.comm-incoming-title {
+  font-size: .94rem;
+  font-weight: 600;
+}
+
+.comm-incoming-meta {
+  color: var(--comm-soft);
 }
 
 .comm-media-box {
@@ -2088,6 +2119,18 @@ onBeforeUnmount(() => {
   padding: 10px;
   border: 1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.02);
+  border-radius: 18px;
+}
+
+.comm-media-box--audio {
+  min-height: 188px;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.comm-media-grid--audio {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .comm-video {
@@ -2096,6 +2139,32 @@ onBeforeUnmount(() => {
   background: rgba(0,0,0,.18);
   border: 1px solid var(--glass-border, rgba(255,255,255,.12));
   object-fit: cover;
+  border-radius: 16px;
+}
+
+.comm-audio-stage {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  align-content: center;
+}
+
+.comm-audio-stage__orb {
+  width: 84px;
+  height: 84px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(110, 168, 255, .22);
+  background: linear-gradient(145deg, rgba(110, 168, 255, .18), rgba(255,255,255,.04));
+  font-size: .82rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.comm-audio-stage__meta {
+  font-size: .78rem;
+  color: var(--comm-soft);
 }
 
 .comm-main {
@@ -2123,7 +2192,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
   padding: 0 2px;
 }
 
@@ -2197,6 +2266,7 @@ onBeforeUnmount(() => {
 
 .comm-message-time {
   white-space: nowrap;
+  color: var(--comm-soft);
 }
 
 .comm-message-text {
@@ -2211,7 +2281,15 @@ onBeforeUnmount(() => {
   flex: 1 1 auto;
   border: 0;
   background: transparent;
+  color: var(--comm-ink);
+  caret-color: var(--comm-ink);
   resize: vertical;
+}
+
+.comm-input::placeholder,
+.comm-search::placeholder {
+  color: var(--comm-soft);
+  opacity: 1;
 }
 
 .comm-compose-shell {
@@ -2235,7 +2313,7 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(110, 168, 255, .26);
   background:
     linear-gradient(145deg, rgba(110, 168, 255, .22), rgba(110, 168, 255, .1));
-  color: inherit;
+  color: #f8fbff;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
@@ -2244,7 +2322,7 @@ onBeforeUnmount(() => {
 }
 
 .comm-send-btn:disabled {
-  opacity: .45;
+  color: rgba(248, 251, 255, .56);
   box-shadow: none;
 }
 
@@ -2256,7 +2334,7 @@ onBeforeUnmount(() => {
 .comm-empty,
 .comm-empty-inline {
   font-size: .82rem;
-  opacity: .72;
+  color: var(--comm-soft);
 }
 
 .comm-empty--panel {
@@ -2270,20 +2348,22 @@ onBeforeUnmount(() => {
   margin: 8px 0 0;
   max-width: 34rem;
   font-size: .78rem;
-  opacity: .72;
+  color: var(--comm-soft);
 }
 
 .comm-settings-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
 }
 
 .comm-setting-card {
   border: 1px solid rgba(255,255,255,.1);
-  padding: 12px;
+  padding: 14px;
   align-content: start;
   background:
     linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.015) 58%, rgba(255,255,255,.01) 100%),
     rgba(10, 14, 22, .28);
+  border-radius: 18px;
 }
 
 .comm-setting-row {
@@ -2295,19 +2375,19 @@ onBeforeUnmount(() => {
 }
 
 .comm-setting-name {
-  opacity: .82;
+  color: var(--comm-muted);
 }
 
 .comm-setting-value {
   text-transform: uppercase;
   letter-spacing: .08em;
-  opacity: .64;
+  color: var(--comm-soft);
 }
 
 .comm-setting-note {
   margin: 0;
   font-size: .76rem;
-  opacity: .72;
+  color: var(--comm-soft);
   line-height: 1.45;
 }
 
@@ -2333,9 +2413,9 @@ onBeforeUnmount(() => {
 .comm-bottom-switch__btn {
   min-height: 48px;
   border: 0;
-  border-right: 1px solid var(--glass-border, rgba(255,255,255,.12));
+  border-right: 1px solid var(--comm-control-border);
   background: transparent;
-  color: inherit;
+  color: var(--comm-muted);
   text-transform: uppercase;
   letter-spacing: .1em;
   font-size: .72rem;
@@ -2348,6 +2428,7 @@ onBeforeUnmount(() => {
 
 .comm-bottom-switch__btn--active {
   background: rgba(110, 168, 255, .16);
+  color: var(--comm-ink);
 }
 
 @media (max-width: 960px) {
@@ -2367,6 +2448,11 @@ onBeforeUnmount(() => {
   .comm-message-rail-head,
   .comm-compose-head,
   .comm-compose-shell {
+    display: grid;
+  }
+
+  .comm-incoming-head,
+  .comm-media-grid--audio {
     display: grid;
   }
 

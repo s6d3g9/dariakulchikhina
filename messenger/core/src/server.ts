@@ -9,7 +9,7 @@ import { z } from 'zod'
 
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from './auth.ts'
-import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, findOrCreateSecretConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages } from './conversation-store.ts'
+import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, findOrCreateSecretConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages, toggleReactionInConversation } from './conversation-store.ts'
 import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from './contact-store.ts'
 import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } from './crypto-store.ts'
 import { readMessengerConfig } from './config.ts'
@@ -175,6 +175,66 @@ export async function createMessengerServer() {
     callId: z.string().min(1).max(120),
     payload: z.record(z.string(), z.unknown()).optional(),
   })
+  const messageReactionSchema = z.object({
+    emoji: z.string().trim().min(1).max(16),
+  })
+  const giphySearchSchema = z.object({
+    query: z.string().trim().max(120).optional(),
+    kind: z.enum(['gif', 'sticker']).default('gif'),
+    limit: z.coerce.number().int().min(1).max(24).default(12),
+  })
+
+  function buildGiphySearchUrl(query: z.infer<typeof giphySearchSchema>) {
+    const endpoint = query.query
+      ? query.kind === 'sticker' ? 'stickers/search' : 'gifs/search'
+      : query.kind === 'sticker' ? 'stickers/trending' : 'gifs/trending'
+    const url = new URL(endpoint, `${config.GIPHY_API_BASE_URL.replace(/\/$/, '')}/`)
+    url.searchParams.set('api_key', config.GIPHY_API_KEY || '')
+    url.searchParams.set('limit', String(query.limit))
+    url.searchParams.set('rating', 'g')
+    url.searchParams.set('lang', 'ru')
+    url.searchParams.set('bundle', 'messaging_non_clips')
+    if (query.query) {
+      url.searchParams.set('q', query.query)
+    }
+    return url
+  }
+
+  function mapGiphyItem(item: any, kind: 'gif' | 'sticker') {
+    const images = item?.images || {}
+    const preview = images.fixed_width_small?.webp
+      || images.fixed_width_small?.url
+      || images.fixed_width?.webp
+      || images.fixed_width?.url
+      || images.preview_gif?.url
+      || images.original?.webp
+      || images.original?.url
+
+    const original = images.original?.webp
+      || images.original?.url
+      || images.fixed_width?.webp
+      || images.fixed_width?.url
+      || preview
+
+    if (typeof preview !== 'string' || typeof original !== 'string') {
+      return null
+    }
+
+    const mimeType = original.endsWith('.webp') ? 'image/webp' : 'image/gif'
+
+    return {
+      id: String(item?.id || randomUUID()),
+      kind,
+      title: String(item?.title || item?.slug || 'GIPHY media'),
+      previewUrl: preview,
+      originalUrl: original,
+      mimeType,
+      width: Number(images.original?.width || images.fixed_width?.width || 0) || undefined,
+      height: Number(images.original?.height || images.fixed_width?.height || 0) || undefined,
+      username: typeof item?.username === 'string' ? item.username : '',
+      rating: typeof item?.rating === 'string' ? item.rating : '',
+    }
+  }
 
   async function resolveSession(request: FastifyRequest) {
     const token = readBearerToken(request.headers.authorization)
@@ -204,6 +264,42 @@ export async function createMessengerServer() {
     transport: 'websocket',
     timestamp: new Date().toISOString(),
   }))
+
+  app.get('/integrations/giphy/search', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedQuery = giphySearchSchema.safeParse(request.query)
+    if (!parsedQuery.success) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    if (!config.GIPHY_API_KEY) {
+      return {
+        configured: false,
+        items: [],
+      }
+    }
+
+    const response = await fetch(buildGiphySearchUrl(parsedQuery.data))
+    if (!response.ok) {
+      return reply.code(502).send({ error: 'GIPHY_UPSTREAM_FAILED' })
+    }
+
+    const payload = await response.json() as { data?: any[] }
+    const items = Array.isArray(payload.data)
+      ? payload.data
+        .map(item => mapGiphyItem(item, parsedQuery.data.kind))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      : []
+
+    return {
+      configured: true,
+      items,
+    }
+  })
 
   app.post('/auth/register', async (request, reply) => {
     const parsed = authSchema.safeParse(request.body)
@@ -820,6 +916,54 @@ export async function createMessengerServer() {
 
         if (error.message === 'MESSAGE_NOT_EDITABLE') {
           return reply.code(409).send({ error: 'MESSAGE_NOT_EDITABLE' })
+        }
+      }
+
+      throw error
+    }
+  })
+
+  app.post('/conversations/:conversationId/messages/:messageId/reactions', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = messageParamsSchema.safeParse(request.params)
+    const parsedBody = messageReactionSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    try {
+      const message = await toggleReactionInConversation(
+        parsedParams.data.conversationId,
+        parsedParams.data.messageId,
+        session.user,
+        parsedBody.data.emoji,
+      )
+      const conversation = await findConversationById(parsedParams.data.conversationId)
+      if (conversation) {
+        emitToUsers([conversation.userAId, conversation.userBId], {
+          type: 'messages.updated',
+          conversationId: conversation.id,
+          timestamp: new Date().toISOString(),
+        })
+      }
+
+      return { message }
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message === 'CONVERSATION_NOT_FOUND' || error.message === 'MESSAGE_NOT_FOUND') {
+          return reply.code(404).send({ error: error.message })
+        }
+
+        if (error.message === 'CONVERSATION_FORBIDDEN') {
+          return reply.code(403).send({ error: 'MESSAGE_FORBIDDEN' })
+        }
+
+        if (error.message === 'MESSAGE_NOT_REACTABLE' || error.message === 'REACTION_EMOJI_REQUIRED') {
+          return reply.code(409).send({ error: error.message })
         }
       }
 
