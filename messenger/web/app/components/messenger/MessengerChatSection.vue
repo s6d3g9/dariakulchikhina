@@ -17,6 +17,8 @@ const draft = ref('')
 const actionError = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const composerMediaMenuEl = ref<HTMLElement | null>(null)
+const composerCategoryRailEl = ref<HTMLElement | null>(null)
+const composerKlipyRailEl = ref<HTMLElement | null>(null)
 const messageListEl = ref<HTMLElement | null>(null)
 const composerInputEl = ref<HTMLTextAreaElement | null>(null)
 const composerBarEl = ref<HTMLElement | null>(null)
@@ -67,6 +69,8 @@ let klipySearchTimer: ReturnType<typeof setTimeout> | null = null
 let forwardSearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
 
+const KLIPY_RAIL_PAGE_SIZE = 12
+
 function scheduleKlipyCatalogLoad() {
   if (klipySearchTimer) {
     clearTimeout(klipySearchTimer)
@@ -95,6 +99,51 @@ function scheduleKlipyCatalogLoad() {
 function resetKlipyAudienceMode() {
   klipyAudienceMode.stickers = 'mine'
   klipyAudienceMode.gif = 'mine'
+}
+
+function buildLoopedFeed<T>(items: T[]) {
+  if (items.length <= 1) {
+    return items
+  }
+
+  return [...items, ...items, ...items]
+}
+
+function primeLoopedRailPosition(element: HTMLElement | null) {
+  if (!element || element.dataset.loopReady === 'true') {
+    return
+  }
+
+  const segmentWidth = element.scrollWidth / 3
+  if (!segmentWidth) {
+    return
+  }
+
+  element.scrollLeft = segmentWidth
+  element.dataset.loopReady = 'true'
+}
+
+async function handleLoopedRailScroll(event: Event, options: { looped: boolean; canLoadMore?: boolean; onLoadMore?: () => Promise<void> | void }) {
+  const element = event.currentTarget as HTMLElement | null
+  if (!element) {
+    return
+  }
+
+  if (options.looped) {
+    const segmentWidth = element.scrollWidth / 3
+    if (segmentWidth > 0) {
+      if (element.scrollLeft < segmentWidth * 0.35) {
+        element.scrollLeft += segmentWidth
+      } else if (element.scrollLeft > segmentWidth * 1.65) {
+        element.scrollLeft -= segmentWidth
+      }
+    }
+  }
+
+  const remaining = element.scrollWidth - element.clientWidth - element.scrollLeft
+  if (options.canLoadMore && remaining < 320 && options.onLoadMore) {
+    await options.onLoadMore()
+  }
 }
 
 function isMobileChatViewport() {
@@ -561,6 +610,7 @@ const sharedKlipyEnabled = computed(() => Boolean(
 ))
 const currentKlipyCategories = computed(() => activeKlipyKind.value ? klipy.getCategories(activeKlipyKind.value) : [])
 const showKlipyCategories = computed(() => !klipyQuery.value.trim() && !selectedCatalogCategory.value && currentKlipyCategories.value.length > 0)
+const loopedKlipyCategories = computed(() => buildLoopedFeed(currentKlipyCategories.value))
 const activeCatalogCategoryLabel = computed(() => {
   if (!selectedCatalogCategory.value) {
     return ''
@@ -569,50 +619,24 @@ const activeCatalogCategoryLabel = computed(() => {
   return currentKlipyCategories.value.find(item => item.query === selectedCatalogCategory.value)?.category || selectedCatalogCategory.value
 })
 const klipySearchPlaceholder = computed(() => composerMediaMenuTab.value === 'stickers' ? 'Поиск стикеров KLIPY' : 'Поиск GIF KLIPY')
-const klipyHintText = computed(() => {
+const klipyStatusText = computed(() => {
   if (!klipy.configured.value) {
-    return 'KLIPY API не настроен на сервере. Добавьте KLIPY_APP_KEY в runtime env messenger core.'
+    return 'KLIPY API не настроен.'
   }
 
   if (klipy.error.value) {
     return klipy.error.value
   }
 
-  if (klipy.categoriesPending.value && !currentKlipyCategories.value.length) {
-    return 'Загружаем категории KLIPY...'
+  if (klipy.pending.value && !klipy.items.value.length && !currentKlipyRecentItems.value.length) {
+    return 'Загружаем...'
   }
 
-  if (!klipyQuery.value.trim() && !selectedCatalogCategory.value) {
-    if (activeKlipyAudience.value === 'shared') {
-      return composerMediaMenuTab.value === 'stickers'
-        ? 'Показан общий набор из этой переписки: ваши и стикеры собеседника.'
-        : 'Показан общий набор из этой переписки: ваши и GIF собеседника.'
-    }
-
-    if (klipy.pending.value) {
-      return 'Загружаем подборку KLIPY...'
-    }
-
-    return composerMediaMenuTab.value === 'stickers'
-      ? 'Показаны недавние, категории и популярные стикеры KLIPY.'
-      : 'Показаны недавние, категории и популярные GIF из KLIPY.'
+  if ((klipyQuery.value.trim() || selectedCatalogCategory.value) && !klipy.pending.value && !klipy.items.value.length) {
+    return 'Ничего не найдено.'
   }
 
-  if (selectedCatalogCategory.value && !klipyQuery.value.trim() && klipy.pending.value) {
-    return `Подбираем ${composerMediaMenuTab.value === 'stickers' ? 'стикеры' : 'GIF'} по категории ${activeCatalogCategoryLabel.value}...`
-  }
-
-  if (klipy.pending.value) {
-    return 'Ищем в KLIPY...'
-  }
-
-  if (!klipy.items.value.length) {
-    return 'Ничего не найдено. Попробуйте другой запрос.'
-  }
-
-  return composerMediaMenuTab.value === 'stickers'
-    ? 'Нажмите на стикер, чтобы подготовить его к отправке.'
-    : 'Нажмите на GIF, чтобы подготовить его к отправке.'
+  return ''
 })
 function inferKlipyKindFromAttachment(attachment: NonNullable<MessengerConversationMessage['attachment']>) {
   if (attachment.klipy?.kind) {
@@ -727,7 +751,29 @@ const currentKlipyRecentItems = computed(() => {
 
   return klipy.getRecentItems(activeKlipyKind.value)
 })
-const currentKlipyRecentTitle = computed(() => activeKlipyAudience.value === 'shared' ? 'Общий набор' : 'Недавние')
+const primaryKlipyItems = computed(() => {
+  if (klipyQuery.value.trim() || selectedCatalogCategory.value) {
+    return klipy.items.value
+  }
+
+  if (currentKlipyRecentItems.value.length) {
+    return currentKlipyRecentItems.value
+  }
+
+  return klipy.items.value
+})
+const loopedPrimaryKlipyItems = computed(() => buildLoopedFeed(primaryKlipyItems.value))
+const canLoadMoreKlipyItems = computed(() => {
+  if (activeKlipyAudience.value !== 'mine' || !klipy.hasMore.value) {
+    return false
+  }
+
+  if (klipyQuery.value.trim() || selectedCatalogCategory.value) {
+    return true
+  }
+
+  return !currentKlipyRecentItems.value.length
+})
 const showKlipySearchState = computed(() => Boolean(klipyQuery.value.trim() || selectedCatalogCategory.value))
 const selectedKlipyItemLabel = computed(() => {
   if (!selectedKlipyItem.value) {
@@ -862,6 +908,20 @@ watch([detailsOpen, photoFeedOpen, () => conversations.activeConversationId.valu
 
 watch([composerMediaMenuVisible, composerMediaMenuTab, klipyQuery, selectedCatalogCategory], () => {
   scheduleKlipyCatalogLoad()
+})
+
+watch(loopedKlipyCategories, async () => {
+  await nextTick()
+  if (showKlipyCategories.value) {
+    composerCategoryRailEl.value?.removeAttribute('data-loop-ready')
+    primeLoopedRailPosition(composerCategoryRailEl.value)
+  }
+})
+
+watch(loopedPrimaryKlipyItems, async () => {
+  await nextTick()
+  composerKlipyRailEl.value?.removeAttribute('data-loop-ready')
+  primeLoopedRailPosition(composerKlipyRailEl.value)
 })
 
 watch(() => klipyQuery.value.trim(), (value) => {
@@ -1147,15 +1207,16 @@ async function sendKlipyItem(item: MessengerKlipyItem) {
   mediaUploadPending.value = true
 
   try {
-    const blob = /^https:\/\/static\.klipy\.com\//.test(item.originalUrl)
+    const mediaUrl = item.originalUrl || item.previewUrl
+    const blob = /^https:\/\/static\.klipy\.com\//.test(mediaUrl)
       ? await auth.request<Blob>('/integrations/klipy/media', {
           method: 'GET',
           query: {
-            url: item.originalUrl,
+            url: mediaUrl,
           },
           responseType: 'blob',
         })
-      : await fetch(item.originalUrl, {
+      : await fetch(mediaUrl, {
           headers: auth.token.value
             ? {
                 Authorization: `Bearer ${auth.token.value}`,
@@ -1192,7 +1253,7 @@ async function sendKlipyItem(item: MessengerKlipyItem) {
       kind: item.kind,
       title: item.title,
       previewUrl: item.previewUrl,
-      originalUrl: item.originalUrl,
+      originalUrl: mediaUrl,
       mimeType,
       width: item.width,
       height: item.height,
@@ -2117,12 +2178,16 @@ onBeforeUnmount(() => {
             autocapitalize="off"
             spellcheck="false"
           >
-          <div v-if="showKlipyCategories" class="composer-media-menu__results-block">
-            <p class="composer-media-menu__section-title">Подборки</p>
-            <div class="composer-media-menu__results composer-media-menu__results--categories" :aria-label="composerMediaMenuTab === 'stickers' ? 'Категории стикеров KLIPY' : 'Категории GIF KLIPY'">
+          <div v-if="showKlipyCategories" class="composer-media-menu__category-rail-wrap">
+            <div
+              ref="composerCategoryRailEl"
+              class="composer-media-menu__category-rail"
+              :aria-label="composerMediaMenuTab === 'stickers' ? 'Категории стикеров KLIPY' : 'Категории GIF KLIPY'"
+              @scroll="handleLoopedRailScroll($event, { looped: currentKlipyCategories.length > 1 })"
+            >
               <button
-                v-for="category in currentKlipyCategories"
-                :key="`${composerMediaMenuTab}-${category.query}`"
+                v-for="(category, index) in loopedKlipyCategories"
+                :key="`${composerMediaMenuTab}-${category.query}-${index}`"
                 type="button"
                 class="composer-media-menu__category-tile"
                 :class="{ 'composer-media-menu__category-tile--active': selectedCatalogCategory === category.query }"
@@ -2132,13 +2197,16 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-          <p class="composer-media-menu__hint">{{ klipyHintText }}</p>
-          <div v-if="!klipyQuery.trim() && !selectedCatalogCategory && currentKlipyRecentItems.length" class="composer-media-menu__recent">
-            <p class="composer-media-menu__section-title">{{ currentKlipyRecentTitle }}</p>
-            <div class="composer-media-menu__results composer-media-menu__results--recent" :class="{ 'composer-media-menu__results--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__results--gifs': activeKlipyKind === 'gif' }">
+          <div v-if="primaryKlipyItems.length" class="composer-media-menu__rail-wrap">
+            <div
+              ref="composerKlipyRailEl"
+              class="composer-media-menu__rail"
+              :class="{ 'composer-media-menu__rail--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__rail--gifs': activeKlipyKind === 'gif' }"
+              @scroll="handleLoopedRailScroll($event, { looped: primaryKlipyItems.length > 1, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
+            >
               <button
-                v-for="item in currentKlipyRecentItems"
-                :key="`recent-${item.id}`"
+                v-for="(item, index) in loopedPrimaryKlipyItems"
+                :key="`${item.id}-${index}`"
                 type="button"
                 class="composer-media-menu__result"
                 :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
@@ -2151,27 +2219,8 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-          <div class="composer-media-menu__results-block">
-            <p class="composer-media-menu__section-title">{{ klipyQuery.trim() || selectedCatalogCategory ? 'Результаты' : 'Популярное' }}</p>
-            <div v-if="klipy.items.value.length" class="composer-media-menu__results" :class="{ 'composer-media-menu__results--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__results--gifs': activeKlipyKind === 'gif' }">
-              <button
-                v-for="item in klipy.items.value"
-                :key="item.id"
-                type="button"
-                class="composer-media-menu__result"
-                :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
-                :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
-                :disabled="mediaUploadPending"
-                :style="klipyTileStyle(item)"
-                @click="selectKlipyItem(item)"
-              >
-                <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-              </button>
-            </div>
-            <p v-else-if="klipy.pending.value" class="composer-media-menu__empty">[ ИЩЕМ В KLIPY... ]</p>
-            <p v-else class="composer-media-menu__empty">[ НИЧЕГО НЕ НАЙДЕНО ]</p>
-          </div>
-          <p class="composer-media-menu__powered">Powered by KLIPY</p>
+          <p v-if="klipyStatusText" class="composer-media-menu__status">{{ klipyStatusText }}</p>
+          <div class="composer-media-menu__watermark">KLIPY</div>
         </div>
       </div>
 

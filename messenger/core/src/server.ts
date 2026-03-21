@@ -196,6 +196,7 @@ export async function createMessengerServer() {
     query: z.string().trim().max(120).optional(),
     category: z.string().trim().max(80).optional(),
     kind: klipyKindSchema.default('gif'),
+    page: z.coerce.number().int().min(1).max(50).default(1),
     limit: z.coerce.number().int().min(1).max(24).default(12),
   })
   const klipyCategoriesSchema = z.object({
@@ -209,7 +210,7 @@ export async function createMessengerServer() {
     kind: z.infer<typeof klipyKindSchema>,
     action: 'search' | 'trending' | 'categories',
     customerId?: string,
-    payload?: Pick<z.infer<typeof klipySearchSchema>, 'query' | 'category' | 'limit'>,
+    payload?: Pick<z.infer<typeof klipySearchSchema>, 'query' | 'category' | 'limit' | 'page'>,
   ) {
     const resource = kind === 'sticker' ? 'stickers' : 'gifs'
     const appKey = encodeURIComponent(config.KLIPY_APP_KEY || '')
@@ -222,7 +223,7 @@ export async function createMessengerServer() {
 
     const queryText = payload?.query?.trim() || payload?.category?.trim() || ''
     const perPage = queryText ? Math.max(payload?.limit || 12, 8) : payload?.limit || 12
-    url.searchParams.set('page', '1')
+    url.searchParams.set('page', String(payload?.page || 1))
     url.searchParams.set('per_page', String(perPage))
     url.searchParams.set('customer_id', customerId || 'anonymous')
     url.searchParams.set('locale', 'ru')

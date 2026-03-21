@@ -94,7 +94,10 @@ export function useMessengerKlipy() {
   const configured = useState<boolean>('messenger-klipy-configured', () => true)
   const error = useState<string>('messenger-klipy-error', () => '')
   const lastQuery = useState<string>('messenger-klipy-last-query', () => '')
+  const lastCategory = useState<string>('messenger-klipy-last-category', () => '')
   const lastKind = useState<'gif' | 'sticker'>('messenger-klipy-last-kind', () => 'gif')
+  const page = useState<number>('messenger-klipy-page', () => 1)
+  const hasMore = useState<boolean>('messenger-klipy-has-more', () => true)
   const hydrated = useState<boolean>('messenger-klipy-hydrated', () => false)
   const searchRequestId = useState<number>('messenger-klipy-search-request-id', () => 0)
 
@@ -120,18 +123,27 @@ export function useMessengerKlipy() {
     window.localStorage.setItem(KLIPY_RECENT_STORAGE_KEY, JSON.stringify(recentItems.value.slice(0, 12)))
   }
 
-  async function search(query: string, kind: 'gif' | 'sticker', options: { category?: string; limit?: number } = {}) {
+  async function search(query: string, kind: 'gif' | 'sticker', options: { category?: string; limit?: number; page?: number; append?: boolean } = {}) {
     hydrateRecent()
     const normalizedQuery = query.trim()
     const normalizedCategory = options.category?.trim() || ''
+    const nextPage = Math.max(1, options.page || 1)
+    const append = Boolean(options.append && nextPage > 1)
     const currentRequestId = searchRequestId.value + 1
     searchRequestId.value = currentRequestId
-    lastQuery.value = normalizedQuery || normalizedCategory
     lastKind.value = kind
     error.value = ''
+    if (!append) {
+      lastQuery.value = normalizedQuery
+      lastCategory.value = normalizedCategory
+      page.value = 1
+      hasMore.value = true
+    }
 
     pending.value = true
-    items.value = []
+    if (!append) {
+      items.value = []
+    }
     try {
       if (!normalizedQuery) {
         const response = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {
@@ -140,6 +152,7 @@ export function useMessengerKlipy() {
             category: normalizedCategory || undefined,
             kind,
             limit: options.limit || 12,
+            page: nextPage,
           },
         })
 
@@ -148,7 +161,13 @@ export function useMessengerKlipy() {
         }
 
         configured.value = response.configured
-        items.value = response.items
+        items.value = append
+          ? [...items.value, ...response.items.filter(item => !items.value.some(existing => existing.id === item.id))]
+          : response.items
+        lastQuery.value = normalizedQuery
+        lastCategory.value = normalizedCategory
+        page.value = nextPage
+        hasMore.value = response.items.length >= (options.limit || 12)
         return
       }
 
@@ -162,6 +181,7 @@ export function useMessengerKlipy() {
       ]))
       let configuredFlag = true
       let resolvedItems: MessengerKlipyItem[] = []
+      let resolvedQuery = normalizedQuery
 
       for (const queryVariant of variants) {
         const response = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {
@@ -170,12 +190,14 @@ export function useMessengerKlipy() {
             query: queryVariant,
             kind,
             limit: options.limit || 12,
+            page: nextPage,
           },
         })
 
         configuredFlag = response.configured
         if (response.items.length) {
           resolvedItems = response.items
+          resolvedQuery = queryVariant
           break
         }
       }
@@ -185,19 +207,40 @@ export function useMessengerKlipy() {
       }
 
       configured.value = configuredFlag
-      items.value = resolvedItems
+      items.value = append
+        ? [...items.value, ...resolvedItems.filter(item => !items.value.some(existing => existing.id === item.id))]
+        : resolvedItems
+      lastQuery.value = resolvedQuery
+      lastCategory.value = normalizedCategory
+      page.value = nextPage
+      hasMore.value = resolvedItems.length >= (options.limit || 12)
     } catch {
       if (currentRequestId !== searchRequestId.value) {
         return
       }
 
-      items.value = []
+      if (!append) {
+        items.value = []
+      }
       error.value = 'Не удалось загрузить каталог KLIPY.'
     } finally {
       if (currentRequestId === searchRequestId.value) {
         pending.value = false
       }
     }
+  }
+
+  async function loadMore(limit = 12) {
+    if (pending.value || !hasMore.value) {
+      return
+    }
+
+    await search(lastQuery.value, lastKind.value, {
+      category: lastCategory.value || undefined,
+      limit,
+      page: page.value + 1,
+      append: true,
+    })
   }
 
   async function loadCategories(kind: 'gif' | 'sticker') {
@@ -236,6 +279,9 @@ export function useMessengerKlipy() {
     items.value = []
     error.value = ''
     lastQuery.value = ''
+    lastCategory.value = ''
+    page.value = 1
+    hasMore.value = true
   }
 
   function remember(item: MessengerKlipyItem) {
@@ -261,8 +307,12 @@ export function useMessengerKlipy() {
     configured,
     error,
     lastQuery,
+    lastCategory,
     lastKind,
+    page,
+    hasMore,
     search,
+    loadMore,
     loadCategories,
     reset,
     remember,
