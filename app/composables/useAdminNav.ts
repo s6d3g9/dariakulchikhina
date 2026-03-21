@@ -273,6 +273,40 @@ export function useAdminNav() {
     activeLeafId.value = options.leafId || undefined
   }
 
+  function resolveProjectBranchId(node: NavigationNode, projectSlug: string) {
+    const projectRootNodeId = `cab_project_${projectSlug}`
+
+    if (node.nodeId === projectRootNodeId || node.nodeType === 'project_root') {
+      return null
+    }
+
+    if (node.nodeId === `reg_phases_${projectRootNodeId}`) {
+      return 'alpha_phases'
+    }
+
+    if (node.nodeId === `reg_clients_${projectRootNodeId}`) {
+      return 'alpha_clients'
+    }
+
+    if (node.nodeId === `reg_contractors_${projectRootNodeId}`) {
+      return 'alpha_contractors'
+    }
+
+    if (node.nodeId === `reg_sellers_${projectRootNodeId}`) {
+      return 'alpha_sellers'
+    }
+
+    if (node.nodeId === `reg_designers_${projectRootNodeId}`) {
+      return 'alpha_designers'
+    }
+
+    if (node.nodeId === `reg_managers_${projectRootNodeId}`) {
+      return 'alpha_managers'
+    }
+
+    return null
+  }
+
   /**
    * Напрямую устанавливает навигацию на конкретный проект (без router.push).
    * Используется при keepalive-активации [slug].vue чтобы не терять текущий маршрут.
@@ -380,7 +414,14 @@ export function useAdminNav() {
     const currentProjectTitle = currentCtx.value.projectTitle ?? spec.projectSlug ?? ''
 
     if (spec.projectSlug && navCatalog.value.projectCabinet.length) {
-      ensureProject(spec.projectSlug, currentProjectTitle || spec.projectSlug, { force: true })
+      await setProjectView(
+        spec.projectSlug,
+        currentProjectTitle || spec.projectSlug,
+        {
+          branchId: resolveProjectBranchId(currentNode.value, spec.projectSlug),
+          leafId: activeLeafId.value || null,
+        },
+      )
       return
     }
 
