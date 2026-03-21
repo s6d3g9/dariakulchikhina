@@ -839,7 +839,7 @@ textarea {
 .attachment-preview--sticker {
   width: auto;
   max-width: min(100%, 148px);
-  max-height: calc(var(--messenger-control-size) * 2 + 28px);
+  max-height: calc(var(--messenger-control-size) * 3 + 28px);
   object-fit: contain;
   border: 0;
   border-radius: 0;
