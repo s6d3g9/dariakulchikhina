@@ -145,8 +145,17 @@
         </div>
       </section>
 
-      <section v-else-if="quickSection === 'chats'" class="comm-block">
-        <div class="comm-block-title">Открытые чаты</div>
+      <section v-else-if="quickSection === 'chats'" class="comm-block comm-block--directory">
+        <div class="comm-section-head">
+          <div>
+            <div class="comm-block-title">Открытые чаты</div>
+            <p class="comm-section-copy">Быстрый доступ к уже активным direct-диалогам проекта.</p>
+          </div>
+          <div class="comm-section-metrics">
+            <span class="comm-section-pill">{{ filteredOpenChats.length }} ACTIVE</span>
+            <span class="comm-section-pill comm-section-pill--subtle">{{ hasAvailableContacts ? 'DIRECT' : 'EMPTY' }}</span>
+          </div>
+        </div>
         <label class="u-field__label" for="comm-chat-search">Поиск по чатам</label>
         <input id="comm-chat-search" v-model="chatSearch" type="text" class="glass-input glass-input--inline comm-search" placeholder="Имя, роль или @никнейм">
         <div v-if="filteredOpenChats.length" class="comm-list-grid">
@@ -158,17 +167,33 @@
             :class="{ 'comm-person--active': currentChatPeerKey === chat.participant.actorKey }"
             @click="openChatSummary(chat)"
           >
-            <span class="comm-person-name">{{ chat.participant.displayName }}</span>
-            <span v-if="chat.participant.nickname" class="comm-person-nick">@{{ chat.participant.nickname }}</span>
-            <span class="comm-person-role">{{ chat.participant.role }}</span>
-            <span class="comm-chat-updated">{{ formatMessageTime(chat.updatedAt) }}</span>
+            <span class="comm-person-topline">
+              <span class="comm-person-name">{{ chat.participant.displayName }}</span>
+              <span class="comm-chat-updated">{{ formatMessageTime(chat.updatedAt) }}</span>
+            </span>
+            <span class="comm-person-bottomline">
+              <span v-if="chat.participant.nickname" class="comm-person-nick">@{{ chat.participant.nickname }}</span>
+              <span class="comm-person-badges">
+                <span class="comm-person-badge">{{ chat.participant.role }}</span>
+                <span class="comm-person-badge comm-person-badge--accent">SECURE</span>
+              </span>
+            </span>
           </button>
         </div>
         <div v-else class="comm-empty-inline">{{ hasAvailableContacts ? '[ НЕТ ОТКРЫТЫХ ЧАТОВ ]' : '[ НЕТ ОТКРЫТЫХ ЧАТОВ: СНАЧАЛА НУЖНЫ КОНТАКТЫ ]' }}</div>
       </section>
 
-      <section v-else-if="quickSection === 'contacts'" class="comm-block">
-        <div class="comm-block-title">Контакты</div>
+      <section v-else-if="quickSection === 'contacts'" class="comm-block comm-block--directory">
+        <div class="comm-section-head">
+          <div>
+            <div class="comm-block-title">Контакты</div>
+            <p class="comm-section-copy">Участники проекта, доступные для защищённого direct-чата и звонка.</p>
+          </div>
+          <div class="comm-section-metrics">
+            <span class="comm-section-pill">{{ filteredContacts.length }} READY</span>
+            <span class="comm-section-pill comm-section-pill--subtle">E2EE</span>
+          </div>
+        </div>
         <label class="u-field__label" for="comm-contact-search">Поиск по контактам</label>
         <input id="comm-contact-search" v-model="contactSearch" type="text" class="glass-input glass-input--inline comm-search" placeholder="Имя, роль или @никнейм">
 
@@ -181,9 +206,16 @@
             :class="{ 'comm-person--active': currentChatPeerKey === participant.actorKey }"
             @click="startChatWithParticipant(participant)"
           >
-            <span class="comm-person-name">{{ participant.displayName }}</span>
-            <span v-if="participant.nickname" class="comm-person-nick">@{{ participant.nickname }}</span>
-            <span class="comm-person-role">{{ participant.role }}</span>
+            <span class="comm-person-topline">
+              <span class="comm-person-name">{{ participant.displayName }}</span>
+              <span class="comm-person-badge comm-person-badge--accent">START CHAT</span>
+            </span>
+            <span class="comm-person-bottomline">
+              <span v-if="participant.nickname" class="comm-person-nick">@{{ participant.nickname }}</span>
+              <span class="comm-person-badges">
+                <span class="comm-person-badge">{{ participant.role }}</span>
+              </span>
+            </span>
           </button>
         </div>
         <div v-else class="comm-empty-inline">
@@ -192,7 +224,16 @@
         </div>
       </section>
 
-      <section v-else class="comm-block">
+      <section v-else class="comm-block comm-block--directory">
+        <div class="comm-section-head">
+          <div>
+            <div class="comm-block-title">Настройки</div>
+            <p class="comm-section-copy">Разрешения, приватность и публичные данные для communication layer проекта.</p>
+          </div>
+          <div class="comm-section-metrics">
+            <span class="comm-section-pill">{{ callSecurity.available ? 'CALL E2EE READY' : 'WEBRTC ONLY' }}</span>
+          </div>
+        </div>
         <div class="comm-settings-grid">
           <section class="comm-setting-card">
             <div class="comm-block-title">Никнейм</div>
@@ -1661,6 +1702,13 @@ onBeforeUnmount(() => {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
 }
 
+.comm-block--directory {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.02) 56%, rgba(255,255,255,.01) 100%),
+    rgba(11, 15, 24, .42);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
 .comm-block-title {
   margin-bottom: 10px;
   font-size: .78rem;
@@ -1669,32 +1717,115 @@ onBeforeUnmount(() => {
   opacity: .7;
 }
 
+.comm-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.comm-section-copy {
+  margin: -4px 0 0;
+  max-width: 38rem;
+  font-size: .79rem;
+  line-height: 1.45;
+  opacity: .7;
+}
+
+.comm-section-metrics {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.comm-section-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(110, 168, 255, .24);
+  border-radius: 999px;
+  background: rgba(110, 168, 255, .1);
+  font-size: .68rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.comm-section-pill--subtle {
+  border-color: rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+}
+
 .comm-search {
   margin-bottom: 10px;
 }
 
 .comm-person {
   display: grid;
-  gap: 4px;
-  min-height: 44px;
-  border: 1px solid var(--glass-border, rgba(255,255,255,.12));
-  background: transparent;
+  gap: 10px;
+  min-height: 72px;
+  border: 1px solid rgba(255,255,255,.12);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.015) 58%, rgba(255,255,255,.01) 100%),
+    rgba(10, 14, 22, .36);
   color: inherit;
-  padding: 10px 12px;
+  padding: 12px 14px;
   text-align: left;
+  transition: border-color .18s ease, background-color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
 .comm-person--active {
   border-color: var(--ds-accent, #6ea8ff);
+  background:
+    linear-gradient(145deg, rgba(110, 168, 255, .14), rgba(255,255,255,.03) 52%, rgba(255,255,255,.01) 100%),
+    rgba(10, 14, 22, .44);
+  box-shadow: 0 0 0 1px rgba(110, 168, 255, .14);
+}
+
+.comm-person:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.2);
+}
+
+.comm-person-topline,
+.comm-person-bottomline,
+.comm-person-badges {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .comm-person-name {
   font-size: .88rem;
+  font-weight: 600;
 }
 
 .comm-person-nick {
   font-size: .78rem;
   opacity: .8;
+}
+
+.comm-person-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  font-size: .65rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .86;
+}
+
+.comm-person-badge--accent {
+  border-color: rgba(110, 168, 255, .24);
+  background: rgba(110, 168, 255, .1);
 }
 
 .comm-person-role,
@@ -1942,6 +2073,9 @@ onBeforeUnmount(() => {
 
 .comm-main {
   grid-template-rows: minmax(320px, 1fr) auto;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.03), rgba(255,255,255,.01) 58%, rgba(255,255,255,.01) 100%),
+    rgba(10, 14, 22, .34);
 }
 
 .comm-messages {
@@ -2022,9 +2156,12 @@ onBeforeUnmount(() => {
 }
 
 .comm-setting-card {
-  border: 1px solid var(--glass-border, rgba(255,255,255,.12));
+  border: 1px solid rgba(255,255,255,.1);
   padding: 12px;
   align-content: start;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.015) 58%, rgba(255,255,255,.01) 100%),
+    rgba(10, 14, 22, .28);
 }
 
 .comm-setting-row {
@@ -2063,7 +2200,12 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   border: 1px solid var(--glass-border, rgba(255,255,255,.12));
-  background: rgba(12, 12, 18, .92);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.02) 50%, rgba(110, 168, 255, .08) 100%),
+    rgba(12, 12, 18, .92);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
 }
 
 .comm-bottom-switch__btn {
@@ -2075,6 +2217,7 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
   letter-spacing: .1em;
   font-size: .72rem;
+  transition: background-color .18s ease, color .18s ease;
 }
 
 .comm-bottom-switch__btn:last-child {
@@ -2082,7 +2225,7 @@ onBeforeUnmount(() => {
 }
 
 .comm-bottom-switch__btn--active {
-  background: rgba(255,255,255,.14);
+  background: rgba(110, 168, 255, .16);
 }
 
 @media (max-width: 960px) {
@@ -2094,6 +2237,12 @@ onBeforeUnmount(() => {
 
   .comm-chat-toolbar {
     justify-content: stretch;
+  }
+
+  .comm-section-head,
+  .comm-person-topline,
+  .comm-person-bottomline {
+    display: grid;
   }
 
   .comm-chat-subject-head,
