@@ -98,8 +98,19 @@
           </div>
         </div>
 
-        <div class="comm-main">
+        <div class="comm-main comm-main--chat">
           <div ref="messagesEl" class="comm-messages">
+            <div v-if="currentChatPeer" class="comm-message-rail-head">
+              <div>
+                <div class="comm-block-title">Диалог</div>
+                <p class="comm-section-copy">Зашифрованная история сообщений с {{ currentChatPeer.displayName }}.</p>
+              </div>
+              <div class="comm-message-rail-head__metrics">
+                <span class="comm-section-pill">{{ decryptedMessages.length }} MSG</span>
+                <span class="comm-section-pill comm-section-pill--subtle">{{ eventStreamConnected ? 'LIVE SYNC' : 'SYNC OFF' }}</span>
+                <span class="comm-section-pill comm-section-pill--subtle">{{ roomKeyReady ? 'ROOM KEY READY' : 'WAIT KEY' }}</span>
+              </div>
+            </div>
             <article
               v-for="message in decryptedMessages"
               :key="message.id"
@@ -107,36 +118,52 @@
               :class="{ 'comm-message--me': message.senderActorKey === actorKey }"
             >
               <header class="comm-message-head">
-                <span>{{ message.senderDisplayName }}</span>
-                <span>{{ formatMessageTime(message.createdAt) }}</span>
+                <span class="comm-message-authorline">
+                  <span class="comm-message-author">{{ message.senderDisplayName }}</span>
+                  <span v-if="message.senderActorKey === actorKey" class="comm-message-badge">YOU</span>
+                  <span v-else class="comm-message-badge comm-message-badge--subtle">PEER</span>
+                </span>
+                <span class="comm-message-time">{{ formatMessageTime(message.createdAt) }}</span>
               </header>
               <p class="comm-message-text">{{ message.text }}</p>
             </article>
-            <div v-if="currentChatPeer && !decryptedMessages.length" class="comm-empty">[ NO DIRECT MESSAGES ]</div>
+            <div v-if="currentChatPeer && !decryptedMessages.length" class="comm-empty comm-empty--panel">[ NO DIRECT MESSAGES ]</div>
             <div v-else-if="!currentChatPeer && hasAvailableContacts" class="comm-empty">[ ВЫБЕРИТЕ КОНТАКТ ИЗ РАЗДЕЛА КОНТАКТЫ ИЛИ ЧАТЫ ]</div>
             <div v-else-if="!currentChatPeer" class="comm-empty">[ У ПРОЕКТА ПОКА НЕТ СОБЕСЕДНИКОВ ДЛЯ DIRECT-ЧАТА ]</div>
           </div>
 
           <form class="comm-form" @submit.prevent="sendEncryptedMessage">
+            <div v-if="currentChatPeer" class="comm-compose-head">
+              <div>
+                <div class="comm-block-title">Новое сообщение</div>
+                <p class="comm-section-copy">Отправка идёт только в текущий direct-диалог.</p>
+              </div>
+              <div class="comm-message-rail-head__metrics">
+                <span class="comm-section-pill">{{ sendingMessage ? 'SENDING' : 'READY' }}</span>
+                <span class="comm-section-pill comm-section-pill--subtle">{{ draftMessage.trim() ? `${draftMessage.trim().length} CHARS` : 'EMPTY' }}</span>
+              </div>
+            </div>
             <div class="comm-compose-row">
-              <textarea
-                v-model="draftMessage"
-                class="glass-input comm-input"
-                rows="3"
-                :disabled="!currentChatPeer"
-                placeholder="Сообщение уйдёт только выбранному собеседнику."
-              />
-              <button
-                type="submit"
-                class="comm-send-btn"
-                :disabled="sendingMessage || !draftMessage.trim() || !currentChatPeer"
-                aria-label="Отправить сообщение"
-                title="Отправить сообщение"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" class="comm-icon-svg comm-icon-svg--send">
-                  <path d="M12 4 5 11h4v9h6v-9h4l-7-7Z" fill="currentColor"/>
-                </svg>
-              </button>
+              <div class="comm-compose-shell">
+                <textarea
+                  v-model="draftMessage"
+                  class="glass-input comm-input"
+                  rows="3"
+                  :disabled="!currentChatPeer"
+                  placeholder="Сообщение уйдёт только выбранному собеседнику."
+                />
+                <button
+                  type="submit"
+                  class="comm-send-btn"
+                  :disabled="sendingMessage || !draftMessage.trim() || !currentChatPeer"
+                  aria-label="Отправить сообщение"
+                  title="Отправить сообщение"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="comm-icon-svg comm-icon-svg--send">
+                    <path d="M12 4 5 11h4v9h6v-9h4l-7-7Z" fill="currentColor"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div v-if="syncStatus" class="comm-form-actions">
               <span v-if="syncStatus" class="comm-status">{{ syncStatus }}</span>
@@ -2078,59 +2105,147 @@ onBeforeUnmount(() => {
     rgba(10, 14, 22, .34);
 }
 
+.comm-main--chat {
+  gap: 14px;
+  padding: 16px;
+}
+
 .comm-messages {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   overflow: auto;
   min-height: 240px;
+  align-content: start;
+}
+
+.comm-message-rail-head,
+.comm-compose-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 0 2px;
+}
+
+.comm-message-rail-head__metrics {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .comm-message {
   justify-self: start;
   max-width: min(80%, 42rem);
   display: grid;
-  gap: 6px;
-  padding: 12px;
-  border: 1px solid var(--glass-border, rgba(255,255,255,.12));
+  gap: 8px;
+  padding: 14px 15px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 18px 18px 18px 8px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.015) 58%, rgba(255,255,255,.01) 100%),
+    rgba(10, 14, 22, .32);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
 }
 
 .comm-message--me {
   justify-self: end;
-  border-color: var(--ds-accent, #6ea8ff);
+  border-color: rgba(110, 168, 255, .32);
+  border-radius: 18px 18px 8px 18px;
+  background:
+    linear-gradient(145deg, rgba(110, 168, 255, .15), rgba(255,255,255,.02) 56%, rgba(255,255,255,.01) 100%),
+    rgba(10, 14, 22, .38);
 }
 
 .comm-message-head {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  align-items: center;
+}
+
+.comm-message-authorline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.comm-message-author {
+  font-size: .82rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+.comm-message-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid rgba(110, 168, 255, .24);
+  border-radius: 999px;
+  background: rgba(110, 168, 255, .1);
+  font-size: .62rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.comm-message-badge--subtle {
+  border-color: rgba(255,255,255,.1);
+  background: rgba(255,255,255,.04);
+}
+
+.comm-message-time {
+  white-space: nowrap;
 }
 
 .comm-message-text {
   margin: 0;
   white-space: pre-wrap;
-  line-height: 1.45;
+  line-height: 1.55;
+  font-size: .92rem;
 }
 
 .comm-input {
-  min-height: 88px;
+  min-height: 112px;
   flex: 1 1 auto;
+  border: 0;
+  background: transparent;
+  resize: vertical;
+}
+
+.comm-compose-shell {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 22px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.05), rgba(255,255,255,.02) 56%, rgba(255,255,255,.01) 100%),
+    rgba(10, 14, 22, .36);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
 }
 
 .comm-send-btn {
   width: 52px;
   min-width: 52px;
   height: 52px;
-  border: 1px solid var(--glass-border, rgba(255,255,255,.12));
-  background: transparent;
+  border: 1px solid rgba(110, 168, 255, .26);
+  background:
+    linear-gradient(145deg, rgba(110, 168, 255, .22), rgba(110, 168, 255, .1));
   color: inherit;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 22px rgba(110, 168, 255, .14);
 }
 
 .comm-send-btn:disabled {
   opacity: .45;
+  box-shadow: none;
 }
 
 .comm-icon-svg--send {
@@ -2142,6 +2257,13 @@ onBeforeUnmount(() => {
 .comm-empty-inline {
   font-size: .82rem;
   opacity: .72;
+}
+
+.comm-empty--panel {
+  padding: 18px;
+  border: 1px dashed rgba(255,255,255,.12);
+  border-radius: 18px;
+  background: rgba(255,255,255,.02);
 }
 
 .comm-empty-note {
@@ -2241,7 +2363,10 @@ onBeforeUnmount(() => {
 
   .comm-section-head,
   .comm-person-topline,
-  .comm-person-bottomline {
+  .comm-person-bottomline,
+  .comm-message-rail-head,
+  .comm-compose-head,
+  .comm-compose-shell {
     display: grid;
   }
 
