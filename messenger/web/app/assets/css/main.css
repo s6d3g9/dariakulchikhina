@@ -988,38 +988,31 @@ textarea {
 }
 
 .composer-media-menu__category-tile {
-  position: relative;
-  display: block;
-  aspect-ratio: 1 / 1;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--messenger-text);
+  text-align: center;
 }
 
 .composer-media-menu__category-tile--active {
-  outline: 1px solid rgba(255, 255, 255, 0.28);
-  outline-offset: 0;
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.composer-media-menu__category-badge {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  left: 8px;
-  padding: 6px 8px;
-  border-radius: 999px;
-  background: rgba(7, 10, 18, 0.72);
+.composer-media-menu__category-label {
   color: var(--messenger-text);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-align: center;
   text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .composer-media-menu__search {
@@ -1036,6 +1029,7 @@ textarea {
 }
 
 .composer-media-menu__results--categories {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   max-height: 208px;
 }
 
@@ -1095,7 +1089,7 @@ textarea {
   line-height: 1.4;
 }
 
-.composer-media-menu__category-badge {
+.composer-media-menu__category-label {
   pointer-events: none;
 }
 
@@ -4618,15 +4612,13 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
   }
 
   .composer-media-menu__results--categories {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     max-height: 192px;
   }
 
-  .composer-media-menu__category-badge {
-    right: 6px;
-    bottom: 6px;
-    left: 6px;
-    padding: 5px 6px;
+  .composer-media-menu__category-tile {
+    min-height: 40px;
+    padding: 8px 10px;
   }
 
   .messenger-shell--chat-idle-controls::after {

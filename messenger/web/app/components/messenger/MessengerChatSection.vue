@@ -594,6 +594,16 @@ const selectedKlipyItemLabel = computed(() => {
   return selectedKlipyItem.value.kind === 'sticker' ? 'Стикер готов к отправке' : 'GIF готов к отправке'
 })
 
+function formatKlipyCategoryTag(query: string) {
+  const normalized = query
+    .trim()
+    .replace(/^#+/g, '')
+    .replace(/\s+/g, '-')
+    .toLowerCase()
+
+  return normalized ? `#${normalized}` : '#klipy'
+}
+
 onMounted(async () => {
   lockPageScroll()
   canRecordAudio.value = Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined')
@@ -1938,8 +1948,7 @@ onBeforeUnmount(() => {
                 :class="{ 'composer-media-menu__category-tile--active': selectedCatalogCategory === category.query }"
                 @click="selectCatalogCategory(category.query)"
               >
-                <img class="composer-media-menu__result-preview composer-media-menu__result-preview--category" :src="category.previewUrl" :alt="category.category" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-                <span class="composer-media-menu__category-badge">{{ category.category }}</span>
+                <span class="composer-media-menu__category-label">{{ formatKlipyCategoryTag(category.query) }}</span>
               </button>
             </div>
           </div>
