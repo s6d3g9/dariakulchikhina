@@ -610,7 +610,9 @@ import {
 
 definePageMeta({ layout: 'admin', middleware: ['admin', 'admin-project-canonical'] })
 
+const router = useRouter()
 const route = useRoute()
+const adminNav = useAdminNav()
 const slug = computed(() => {
   const routeSlug = Array.isArray(route.params.slug) ? route.params.slug[0] : route.params.slug
   if (typeof routeSlug === 'string' && routeSlug.trim()) {
@@ -623,6 +625,11 @@ const slug = computed(() => {
 
   if (typeof queryProjectSlug === 'string' && queryProjectSlug.trim()) {
     return queryProjectSlug.trim()
+  }
+
+  const navProjectSlug = adminNav.contentSpec.value.projectSlug
+  if (typeof navProjectSlug === 'string' && navProjectSlug.trim()) {
+    return navProjectSlug.trim()
   }
 
   return ''
@@ -1463,9 +1470,6 @@ function isViewportEditableTarget(target: EventTarget | null) {
   return target.isContentEditable || target.matches('input, textarea, select, [contenteditable="true"]')
 }
 
-// ── Привязка к глобальному nav (NavigationNode schema) ─────────────────────
-const adminNav = useAdminNav()
-
 // При keepalive-активации — синхронизировать навигацию с текущим проектом
 function syncNavToProject() {
   const title = project.value?.title || slug.value
@@ -1520,6 +1524,30 @@ const { data: project, pending: projectPending, refresh } = await useAsyncData<a
 watch(slug, () => {
   syncNavToProject()
 }, { immediate: true })
+
+watch(
+  () => adminNav.contentSpec.value.projectSlug,
+  async (navProjectSlug) => {
+    if (!navProjectSlug) {
+      return
+    }
+
+    const routeSlug = Array.isArray(route.params.slug) ? route.params.slug[0] : route.params.slug
+    if (routeSlug === navProjectSlug) {
+      return
+    }
+
+    if (!route.path.startsWith('/admin/projects/')) {
+      return
+    }
+
+    await router.replace({
+      path: `/admin/projects/${navProjectSlug}`,
+      query: route.query,
+      hash: route.hash,
+    })
+  },
+)
 
 const activePage = ref('overview')
 const showEdit = ref(false)
