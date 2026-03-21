@@ -1481,7 +1481,10 @@ onMounted(() => {
   syncNavToProject()
   window.addEventListener('keydown', handleWindowProjectViewportKeydown)
 })
-onActivated(syncNavToProject)
+onActivated(() => {
+  syncNavToProject()
+  void loadProject()
+})
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleWindowProjectViewportKeydown)
 })
@@ -1512,17 +1515,58 @@ const MODERN_PROJECT_PAGES = [
 
 const LEGACY_PROJECT_PAGES = new Set(['materials', 'tz', 'profile_customer'])
 
-const { data: project, pending: projectPending, refresh } = await useAsyncData<any | null>(
-  () => `admin-project-${slug.value || 'missing'}`,
-  () => slug.value
-    ? $fetch(`/api/projects/${slug.value}`, {
+const project = ref<any | null>(null)
+const projectPending = ref(false)
+const projectLoadError = ref<unknown>(null)
+let projectLoadToken = 0
+
+async function loadProject() {
+  const currentSlug = slug.value.trim()
+  const token = ++projectLoadToken
+
+  if (!currentSlug) {
+    project.value = null
+    projectPending.value = false
+    projectLoadError.value = null
+    return null
+  }
+
+  projectPending.value = true
+
+  try {
+    const result = await $fetch(`/api/projects/${currentSlug}`, {
       headers: import.meta.server ? useRequestHeaders(['cookie']) : undefined,
     })
-    : Promise.resolve(null),
-  { watch: [slug], default: () => null },
-)
-watch(slug, () => {
+
+    if (token !== projectLoadToken) {
+      return result
+    }
+
+    project.value = result
+    projectLoadError.value = null
+    return result
+  } catch (error) {
+    if (token !== projectLoadToken) {
+      return null
+    }
+
+    project.value = null
+    projectLoadError.value = error
+    return null
+  } finally {
+    if (token === projectLoadToken) {
+      projectPending.value = false
+    }
+  }
+}
+
+async function refresh() {
+  return await loadProject()
+}
+
+watch(slug, async () => {
   syncNavToProject()
+  await loadProject()
 }, { immediate: true })
 
 watch(
