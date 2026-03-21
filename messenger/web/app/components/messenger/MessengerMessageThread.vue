@@ -43,10 +43,8 @@ const depthStyle = computed(() => ({
   '--message-comment-depth': String(Math.min(props.depth, 4)),
 }))
 
-const longPressTriggered = ref(false)
-const suppressTouchClick = ref(false)
-
-let longPressTimer: ReturnType<typeof setTimeout> | null = null
+const controlsOpen = computed(() => !props.entry.deletedAt
+  && (props.activeMessageActionsId === props.entry.id || props.activeReactionOverlayId === props.entry.id))
 
 function formatMessageTime(value?: string) {
   if (!value) {
@@ -99,64 +97,13 @@ function handleEditInput(event: Event) {
   emit('edit-draft', target.value)
 }
 
-function isMobileLongPressEvent(event: PointerEvent) {
-  if (!import.meta.client) {
-    return false
-  }
-
-  return (event.pointerType === 'touch' || event.pointerType === 'pen')
-    && window.matchMedia('(max-width: 767px)').matches
-}
-
 function isInteractiveTarget(target: EventTarget | null) {
   return target instanceof HTMLElement
-    && Boolean(target.closest('button, textarea, audio, img, input, [data-message-action-menu="true"], [data-message-reaction-menu="true"]'))
-}
-
-function clearLongPressTimer() {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer)
-    longPressTimer = null
-  }
-}
-
-function handlePointerDown(event: PointerEvent) {
-  if (props.entry.deletedAt || isInteractiveTarget(event.target) || !isMobileLongPressEvent(event)) {
-    return
-  }
-
-  clearLongPressTimer()
-  longPressTriggered.value = false
-  suppressTouchClick.value = true
-  if (props.activeReactionOverlayId !== props.entry.id) {
-    emit('toggle-reaction-overlay', props.entry.id)
-  }
-  longPressTimer = setTimeout(() => {
-    emit('toggle-actions', props.entry.id)
-    longPressTriggered.value = true
-    longPressTimer = null
-  }, 1000)
-}
-
-function handlePointerEnd() {
-  clearLongPressTimer()
+    && Boolean(target.closest('button, textarea, audio, img, input, [data-message-controls="true"]'))
 }
 
 function handleBubbleClick(event: MouseEvent) {
-  if (props.entry.deletedAt) {
-    return
-  }
-
-  if (suppressTouchClick.value) {
-    suppressTouchClick.value = false
-    longPressTriggered.value = false
-    event.preventDefault()
-    return
-  }
-
-  if (longPressTriggered.value) {
-    longPressTriggered.value = false
-    event.preventDefault()
+  if (props.entry.deletedAt || isInteractiveTarget(event.target)) {
     return
   }
 
@@ -177,99 +124,95 @@ function handleBubbleClick(event: MouseEvent) {
     data-message-action-root="true"
     :data-message-id="entry.id"
     @click.stop="handleBubbleClick"
-    @pointerdown="handlePointerDown"
-    @pointerup="handlePointerEnd"
-    @pointercancel="handlePointerEnd"
-    @pointerleave="handlePointerEnd"
   >
     <Transition name="message-actions-pop">
       <div
-        v-if="!entry.deletedAt && activeReactionOverlayId === entry.id"
-        class="message-bubble__topline message-bubble__topline--reactions"
-        data-message-reaction-menu="true"
+        v-if="controlsOpen"
+        class="message-bubble__controls"
+        data-message-controls="true"
         @pointerdown.stop
       >
-        <div class="message-bubble__reaction-overlay">
-          <button
-            v-for="emoji in reactionOptions"
-            :key="`${entry.id}-quick-${emoji}`"
-            type="button"
-            class="message-reaction-btn message-reaction-btn--quick"
-            :class="{ 'message-reaction-btn--active': entry.reactions?.some(reaction => reaction.emoji === emoji && reaction.own) }"
-            @click.stop="emit('react', entry.id, emoji)"
-          >
-            {{ emoji }}
-          </button>
+        <div class="message-bubble__topline message-bubble__topline--reactions" data-message-reaction-menu="true">
+          <div class="message-bubble__reaction-overlay">
+            <button
+              v-for="emoji in reactionOptions"
+              :key="`${entry.id}-quick-${emoji}`"
+              type="button"
+              class="message-reaction-btn message-reaction-btn--quick"
+              :class="{ 'message-reaction-btn--active': entry.reactions?.some(reaction => reaction.emoji === emoji && reaction.own) }"
+              @click.stop="emit('react', entry.id, emoji)"
+            >
+              {{ emoji }}
+            </button>
+          </div>
         </div>
-      </div>
-    </Transition>
 
-    <Transition name="message-actions-pop">
-      <div v-if="!entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__topline" data-message-action-menu="true" @pointerdown.stop>
-        <div class="message-bubble__actions">
-          <button
-            type="button"
-            class="message-action-btn"
-            aria-label="Комментировать"
-            title="Комментировать"
-            @click.stop="emit('comment', entry.id)"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M7.5 18.25 4.75 19l.75-2.55V8.25A2.5 2.5 0 0 1 8 5.75h8A2.5 2.5 0 0 1 18.5 8.25v5.5a2.5 2.5 0 0 1-2.5 2.5H9.45l-1.95 2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="message-action-btn"
-            aria-label="Ответить"
-            title="Ответить"
-            @click.stop="emit('reply', entry.id)"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 8.25 5.5 12 10 15.75" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-              <path d="M6 12h6.75a5.75 5.75 0 0 1 5.75 5.75" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-            </svg>
-          </button>
-          <button
-            v-if="allowForward"
-            type="button"
-            class="message-action-btn"
-            aria-label="Переслать"
-            title="Переслать"
-            @click.stop="emit('forward', entry.id)"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M13.25 5.75 18.5 11l-5.25 5.25" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-              <path d="M5.5 11H18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-            </svg>
-          </button>
-          <button
-            v-if="entry.own && entry.kind === 'text'"
-            type="button"
-            class="message-action-btn"
-            aria-label="Изменить"
-            title="Изменить"
-            :disabled="editingMessageId === entry.id"
-            @click.stop="emit('edit', entry.id, entry.body)"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m8 16 6.8-6.8 1.95 1.95L10 17.95H8V16Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-              <path d="M13.7 7.25 15 5.95a1.38 1.38 0 1 1 1.95 1.95l-1.3 1.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-            </svg>
-          </button>
-          <button
-            v-if="entry.own || allowMutualDelete"
-            type="button"
-            class="message-action-btn"
-            aria-label="Удалить"
-            title="Удалить"
-            :disabled="editingMessageId === entry.id || messagePending"
-            @click.stop="emit('remove', entry.id)"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8 8.5h8M9.25 8.5V7a1.25 1.25 0 0 1 1.25-1.25h3a1.25 1.25 0 0 1 1.25 1.25v1.5M7.25 8.5l.55 8.1A1.5 1.5 0 0 0 9.3 18h5.4a1.5 1.5 0 0 0 1.5-1.4l.55-8.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-            </svg>
-          </button>
+        <div class="message-bubble__topline message-bubble__topline--actions" data-message-action-menu="true">
+          <div class="message-bubble__actions">
+            <button
+              type="button"
+              class="message-action-btn"
+              aria-label="Комментировать"
+              title="Комментировать"
+              @click.stop="emit('comment', entry.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7.5 18.25 4.75 19l.75-2.55V8.25A2.5 2.5 0 0 1 8 5.75h8A2.5 2.5 0 0 1 18.5 8.25v5.5a2.5 2.5 0 0 1-2.5 2.5H9.45l-1.95 2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="message-action-btn"
+              aria-label="Ответить"
+              title="Ответить"
+              @click.stop="emit('reply', entry.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M10 8.25 5.5 12 10 15.75" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+                <path d="M6 12h6.75a5.75 5.75 0 0 1 5.75 5.75" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+              </svg>
+            </button>
+            <button
+              v-if="allowForward"
+              type="button"
+              class="message-action-btn"
+              aria-label="Переслать"
+              title="Переслать"
+              @click.stop="emit('forward', entry.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M13.25 5.75 18.5 11l-5.25 5.25" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+                <path d="M5.5 11H18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+              </svg>
+            </button>
+            <button
+              v-if="entry.own && entry.kind === 'text'"
+              type="button"
+              class="message-action-btn"
+              aria-label="Изменить"
+              title="Изменить"
+              :disabled="editingMessageId === entry.id"
+              @click.stop="emit('edit', entry.id, entry.body)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m8 16 6.8-6.8 1.95 1.95L10 17.95H8V16Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+                <path d="M13.7 7.25 15 5.95a1.38 1.38 0 1 1 1.95 1.95l-1.3 1.3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+              </svg>
+            </button>
+            <button
+              v-if="entry.own || allowMutualDelete"
+              type="button"
+              class="message-action-btn"
+              aria-label="Удалить"
+              title="Удалить"
+              :disabled="editingMessageId === entry.id || messagePending"
+              @click.stop="emit('remove', entry.id)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 8.5h8M9.25 8.5V7a1.25 1.25 0 0 1 1.25-1.25h3a1.25 1.25 0 0 1 1.25 1.25v1.5M7.25 8.5l.55 8.1A1.5 1.5 0 0 0 9.3 18h5.4a1.5 1.5 0 0 0 1.5-1.4l.55-8.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </Transition>

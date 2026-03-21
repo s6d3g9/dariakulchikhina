@@ -1307,6 +1307,7 @@ async function reactToMessage(messageId: string, emoji: string) {
 
   try {
     await conversations.toggleReaction(messageId, emoji)
+    activeMessageActionsId.value = null
     activeReactionOverlayId.value = null
   } catch {
     actionError.value = 'Не удалось обновить реакцию.'
@@ -1314,8 +1315,11 @@ async function reactToMessage(messageId: string, emoji: string) {
 }
 
 function toggleReactionOverlay(messageId: string) {
-  activeMessageActionsId.value = null
-  activeReactionOverlayId.value = activeReactionOverlayId.value === messageId ? null : messageId
+  const nextMessageId = activeMessageActionsId.value === messageId && activeReactionOverlayId.value === messageId
+    ? null
+    : messageId
+  activeMessageActionsId.value = nextMessageId
+  activeReactionOverlayId.value = nextMessageId
 }
 
 async function handleEditKeydown(event: KeyboardEvent) {
@@ -1343,8 +1347,11 @@ function toggleMessageActions(messageId: string, event?: MouseEvent) {
     }
   }
 
-  activeReactionOverlayId.value = null
-  activeMessageActionsId.value = activeMessageActionsId.value === messageId ? null : messageId
+  const nextMessageId = activeMessageActionsId.value === messageId && activeReactionOverlayId.value === messageId
+    ? null
+    : messageId
+  activeMessageActionsId.value = nextMessageId
+  activeReactionOverlayId.value = nextMessageId
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {

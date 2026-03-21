@@ -3230,16 +3230,27 @@ html[data-messenger-motion='reduced'] *::after {
   animation: message-bubble-rise 220ms ease-out both;
 }
 
-.message-bubble__topline {
+.message-bubble__controls {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
   width: fit-content;
   max-width: min(92vw, 560px);
-  transform: translateY(calc(-100% - 10px));
-  grid-template-columns: auto;
-  align-items: stretch;
+  transform: translateY(calc(-100% - 18px));
+}
+
+.message-bubble__topline {
+  position: relative;
+  top: auto;
+  left: auto;
+  z-index: auto;
+  width: fit-content;
+  max-width: min(92vw, 560px);
   margin-bottom: 0;
 }
 
@@ -3250,14 +3261,18 @@ html[data-messenger-motion='reduced'] *::after {
   transform-origin: top right;
 }
 
-.message-bubble--own .message-bubble__topline {
+.message-bubble--own .message-bubble__controls {
   left: auto;
   right: 0;
-  justify-self: end;
+  align-items: flex-end;
 }
 
 .message-bubble__topline--reactions {
   z-index: 13;
+}
+
+.message-bubble__topline--actions {
+  z-index: 12;
 }
 
 .message-bubble__status {
@@ -3676,6 +3691,7 @@ html[data-messenger-style='minimal'] .voice-player {
 }
 
 @media (max-width: 767px) {
+  .message-bubble__controls,
   .message-bubble__topline {
     max-width: min(92vw, calc(100vw - 20px));
   }
