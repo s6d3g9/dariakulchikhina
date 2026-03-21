@@ -1936,7 +1936,9 @@ onBeforeUnmount(() => {
                 :title="headerCallSecurityTitle"
                 aria-live="polite"
               >
-                <span class="chat-user-name__security-icon" aria-hidden="true">{{ headerCallSecurityEmojis ? '🔐' : '🛡️' }}</span>
+                <span class="chat-user-name__security-icon" aria-hidden="true">
+                  <MessengerIcon :name="headerCallSecurityEmojis ? 'key' : 'shield'" :size="12" />
+                </span>
                 <span class="chat-user-name__security-text">{{ headerCallSecurityLabel }}</span>
               </span>
             </span>
@@ -1952,9 +1954,7 @@ onBeforeUnmount(() => {
             :disabled="!canToggleAudioCall"
             @click="toggleAudioCall"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M7.42 5.25h2.12c.32 0 .61.2.72.5l1.06 2.87a.78.78 0 0 1-.18.82l-1.62 1.63a12.8 12.8 0 0 0 5.4 5.4l1.63-1.62a.78.78 0 0 1 .82-.18l2.87 1.06c.3.11.5.4.5.72v2.12a1.9 1.9 0 0 1-2.05 1.9c-7.92-.5-14.2-6.78-14.7-14.7a1.9 1.9 0 0 1 1.9-2.05Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
-            </svg>
+            <MessengerIcon name="phone" :size="18" />
           </button>
           <button
             type="button"
@@ -1963,43 +1963,43 @@ onBeforeUnmount(() => {
             :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
             @click="startCall('video')"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4.75 8A2.75 2.75 0 0 1 7.5 5.25h6A2.75 2.75 0 0 1 16.25 8v1.33l3.1-1.76c.58-.33 1.3.09 1.3.76v7.34c0 .67-.72 1.09-1.3.76l-3.1-1.76V16a2.75 2.75 0 0 1-2.75 2.75h-6A2.75 2.75 0 0 1 4.75 16V8Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
-            </svg>
+            <MessengerIcon name="video" :size="18" />
           </button>
         </div>
 
-        <div v-if="headerCallVisible" class="chat-call-panel">
-          <div v-if="headerIncomingCall" class="chat-call-panel__actions chat-call-panel__actions--incoming">
-            <button type="button" class="action-btn" @click="calls.rejectIncomingCall()">
-              Отклонить
-            </button>
-            <button type="button" class="action-btn action-btn--accept" @click="calls.acceptIncomingCall()">
-              Принять
-            </button>
+        <Transition name="chrome-reveal">
+          <div v-if="headerCallVisible" class="chat-call-panel">
+            <div v-if="headerIncomingCall" class="chat-call-panel__actions chat-call-panel__actions--incoming">
+              <button type="button" class="action-btn" @click="calls.rejectIncomingCall()">
+                Отклонить
+              </button>
+              <button type="button" class="action-btn action-btn--accept" @click="calls.acceptIncomingCall()">
+                Принять
+              </button>
+            </div>
+            <div v-else class="chat-call-panel__actions chat-call-panel__actions--active">
+              <button
+                type="button"
+                class="action-btn chat-call-panel__control"
+                :class="{ 'chat-call-panel__control--active': calls.controls.value.microphoneEnabled }"
+                @click="calls.toggleMicrophone()"
+              >
+                {{ calls.controls.value.microphoneEnabled ? 'Микрофон вкл' : 'Микрофон выкл' }}
+              </button>
+              <button
+                type="button"
+                class="action-btn chat-call-panel__control"
+                :class="{ 'chat-call-panel__control--active': calls.controls.value.speakerEnabled }"
+                @click="calls.toggleSpeaker()"
+              >
+                {{ calls.controls.value.speakerEnabled ? 'Звук вкл' : 'Звук выкл' }}
+              </button>
+              <button type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
+                Завершить
+              </button>
+            </div>
           </div>
-          <div v-else class="chat-call-panel__actions chat-call-panel__actions--active">
-            <button
-              type="button"
-              class="action-btn chat-call-panel__control"
-              :class="{ 'chat-call-panel__control--active': calls.controls.value.microphoneEnabled }"
-              @click="calls.toggleMicrophone()"
-            >
-              {{ calls.controls.value.microphoneEnabled ? 'Микрофон вкл' : 'Микрофон выкл' }}
-            </button>
-            <button
-              type="button"
-              class="action-btn chat-call-panel__control"
-              :class="{ 'chat-call-panel__control--active': calls.controls.value.speakerEnabled }"
-              @click="calls.toggleSpeaker()"
-            >
-              {{ calls.controls.value.speakerEnabled ? 'Звук вкл' : 'Звук выкл' }}
-            </button>
-            <button type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
-              Завершить
-            </button>
-          </div>
-        </div>
+        </Transition>
       </header>
 
 
@@ -2007,76 +2007,82 @@ onBeforeUnmount(() => {
   <p v-else-if="calls.requestingPermissions.value" class="copy-toast">Запрашиваем доступ к микрофону{{ conversations.activeConversation.value ? '' : '' }}…</p>
       <p v-else-if="copiedLabel" class="copy-toast">{{ copiedLabel }}</p>
 
-      <div v-if="showSecretIntro" class="composer-context composer-context--secret-intro">
-        <div class="composer-context__copy">
-          <p class="composer-context__eyebrow">Secret chat</p>
-          <p class="composer-context__title">Первое сообщение запустит защищённый диалог</p>
-          <p class="composer-context__text">Текст, вложения и голосовые в этом чате шифруются end-to-end. Пересылка отключена, а любой участник может удалить любое сообщение.</p>
-        </div>
-      </div>
-
-      <div v-if="composerRelationMode && composerRelationMessage && !detailsOpen" class="composer-context composer-context--active">
-        <div class="composer-context__copy">
-          <p class="composer-context__eyebrow">{{ relationTitle(composerRelationMode) }}</p>
-          <p class="composer-context__title">{{ composerRelationMessage.own ? 'Вы' : composerRelationMessage.senderDisplayName }}</p>
-          <p class="composer-context__text">{{ relationPreviewText(composerRelationMessage) }}</p>
-        </div>
-        <button type="button" class="message-action-btn" @click="clearComposerRelation">Отмена</button>
-      </div>
-
-      <div v-if="forwardingMessage && !detailsOpen" class="composer-context composer-context--forward composer-forward-panel">
-        <div class="composer-forward-panel__head">
+      <Transition name="chrome-reveal">
+        <div v-if="showSecretIntro" class="composer-context composer-context--secret-intro">
           <div class="composer-context__copy">
-            <p class="composer-context__eyebrow">Переслать сообщение</p>
-            <p class="composer-context__title">{{ forwardingMessage.own ? 'Вы' : forwardingMessage.senderDisplayName }}</p>
-            <p class="composer-context__text">{{ relationPreviewText(forwardingMessage) }}</p>
+            <p class="composer-context__eyebrow">Secret chat</p>
+            <p class="composer-context__title">Первое сообщение запустит защищённый диалог</p>
+            <p class="composer-context__text">Текст, вложения и голосовые в этом чате шифруются end-to-end. Пересылка отключена, а любой участник может удалить любое сообщение.</p>
           </div>
-          <button type="button" class="message-action-btn composer-forward-panel__close" @click="closeForwardPicker">×</button>
         </div>
-        <div class="composer-forward-panel__toolbar">
-          <input
-            v-model="forwardSearchDraft"
-            type="text"
-            class="inline-input composer-forward-panel__search"
-            placeholder="Поиск пользователя"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-          >
-          <button type="button" class="composer-forward-panel__submit" :disabled="!selectedForwardPeerIds.length || conversations.messagePending.value" @click="forwardMessage">
-            {{ forwardSubmitLabel }}
-          </button>
+      </Transition>
+
+      <Transition name="chrome-reveal">
+        <div v-if="composerRelationMode && composerRelationMessage && !detailsOpen" class="composer-context composer-context--active">
+          <div class="composer-context__copy">
+            <p class="composer-context__eyebrow">{{ relationTitle(composerRelationMode) }}</p>
+            <p class="composer-context__title">{{ composerRelationMessage.own ? 'Вы' : composerRelationMessage.senderDisplayName }}</p>
+            <p class="composer-context__text">{{ relationPreviewText(composerRelationMessage) }}</p>
+          </div>
+          <button type="button" class="message-action-btn" @click="clearComposerRelation">Отмена</button>
         </div>
-        <div v-if="selectedForwardTargets.length" class="composer-forward-panel__selected">
-          <button
-            v-for="target in selectedForwardTargets"
-            :key="`selected-${target.peerUserId}`"
-            type="button"
-            class="composer-forward-chip"
-            @click="toggleForwardTarget(target.peerUserId)"
-          >
-            <span>{{ target.displayName }}</span>
-            <span>×</span>
-          </button>
+      </Transition>
+
+      <Transition name="chrome-reveal">
+        <div v-if="forwardingMessage && !detailsOpen" class="composer-context composer-context--forward composer-forward-panel">
+          <div class="composer-forward-panel__head">
+            <div class="composer-context__copy">
+              <p class="composer-context__eyebrow">Переслать сообщение</p>
+              <p class="composer-context__title">{{ forwardingMessage.own ? 'Вы' : forwardingMessage.senderDisplayName }}</p>
+              <p class="composer-context__text">{{ relationPreviewText(forwardingMessage) }}</p>
+            </div>
+            <button type="button" class="message-action-btn composer-forward-panel__close" @click="closeForwardPicker">×</button>
+          </div>
+          <div class="composer-forward-panel__toolbar">
+            <input
+              v-model="forwardSearchDraft"
+              type="text"
+              class="inline-input composer-forward-panel__search"
+              placeholder="Поиск пользователя"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+            >
+            <button type="button" class="composer-forward-panel__submit" :disabled="!selectedForwardPeerIds.length || conversations.messagePending.value" @click="forwardMessage">
+              {{ forwardSubmitLabel }}
+            </button>
+          </div>
+          <div v-if="selectedForwardTargets.length" class="composer-forward-panel__selected">
+            <button
+              v-for="target in selectedForwardTargets"
+              :key="`selected-${target.peerUserId}`"
+              type="button"
+              class="composer-forward-chip"
+              @click="toggleForwardTarget(target.peerUserId)"
+            >
+              <span>{{ target.displayName }}</span>
+              <span>×</span>
+            </button>
+          </div>
+          <div class="forward-targets forward-targets--minimal">
+            <p v-if="contacts.pending.value" class="composer-media-menu__empty">[ ИЩЕМ ПОЛЬЗОВАТЕЛЕЙ... ]</p>
+            <button
+              v-for="target in availableForwardTargets"
+              v-else
+              :key="target.peerUserId"
+              type="button"
+              class="forward-target-btn forward-target-btn--minimal"
+              :class="{ 'forward-target-btn--active': selectedForwardPeerIds.includes(target.peerUserId) }"
+              :disabled="conversations.messagePending.value || !target.selectable"
+              @click="toggleForwardTarget(target.peerUserId)"
+            >
+              <span class="forward-target-btn__title">{{ target.displayName }}</span>
+              <span class="forward-target-btn__meta">{{ target.current ? 'Текущий чат' : target.selectable ? `@${target.login}` : 'Не в контактах' }}</span>
+            </button>
+            <p v-if="!contacts.pending.value && !availableForwardTargets.length" class="composer-context__text">Пользователи не найдены.</p>
+          </div>
         </div>
-        <div class="forward-targets forward-targets--minimal">
-          <p v-if="contacts.pending.value" class="composer-media-menu__empty">[ ИЩЕМ ПОЛЬЗОВАТЕЛЕЙ... ]</p>
-          <button
-            v-for="target in availableForwardTargets"
-            v-else
-            :key="target.peerUserId"
-            type="button"
-            class="forward-target-btn forward-target-btn--minimal"
-            :class="{ 'forward-target-btn--active': selectedForwardPeerIds.includes(target.peerUserId) }"
-            :disabled="conversations.messagePending.value || !target.selectable"
-            @click="toggleForwardTarget(target.peerUserId)"
-          >
-            <span class="forward-target-btn__title">{{ target.displayName }}</span>
-            <span class="forward-target-btn__meta">{{ target.current ? 'Текущий чат' : target.selectable ? `@${target.login}` : 'Не в контактах' }}</span>
-          </button>
-          <p v-if="!contacts.pending.value && !availableForwardTargets.length" class="composer-context__text">Пользователи не найдены.</p>
-        </div>
-      </div>
+      </Transition>
 
       <div class="chat-reading-shell">
         <div v-if="desktopDropActive || dragDropPending" class="chat-dropzone" aria-live="polite">
@@ -2127,45 +2133,50 @@ onBeforeUnmount(() => {
           </article>
         </div>
 
-        <MessengerSharedGallery
-          v-if="photoFeedOpen && conversations.activeConversation.value"
-          class="chat-photo-feed"
-          :title="`Фотографии ${conversations.activeConversation.value.peerDisplayName}`"
-          hint="Лента фотографий из переписки. Листайте фото прямо внутри чата."
-          :photos="sharedContent.photos"
-          :documents="[]"
-          :links="[]"
-          initial-section="photos"
-          :initial-photo-id="galleryPhotoId"
-          :photo-only="true"
-          @close="closePhotoFeed"
-        />
+        <Transition name="screen-fade">
+          <MessengerSharedGallery
+            v-if="photoFeedOpen && conversations.activeConversation.value"
+            class="chat-photo-feed"
+            :title="`Фотографии ${conversations.activeConversation.value.peerDisplayName}`"
+            hint="Лента фотографий из переписки. Листайте фото прямо внутри чата."
+            :photos="sharedContent.photos"
+            :documents="[]"
+            :links="[]"
+            initial-section="photos"
+            :initial-photo-id="galleryPhotoId"
+            :photo-only="true"
+            @close="closePhotoFeed"
+          />
+        </Transition>
 
-        <MessengerSharedGallery
-          v-if="detailsOpen && conversations.activeConversation.value"
-          :title="`Галерея ${conversations.activeConversation.value.peerDisplayName}`"
-          hint="Свайпайте влево и вправо между разделами. Фото идут в порядке отправки в чате."
-          :photos="sharedContent.photos"
-          :documents="sharedContent.documents"
-          :links="sharedContent.links"
-          :security="{ summary: securitySummaryText, items: securityItems, pending: securitySummaryPending, updatedAt: securitySummaryUpdatedAt }"
-          :initial-section="galleryPhotoId ? 'photos' : undefined"
-          :initial-photo-id="galleryPhotoId"
-          @close="closeDetails"
-          @select="copyLink($event.href, $event.title)"
-          @refresh-security="refreshSecuritySummary"
-        />
+        <Transition name="screen-fade">
+          <MessengerSharedGallery
+            v-if="detailsOpen && conversations.activeConversation.value"
+            :title="`Галерея ${conversations.activeConversation.value.peerDisplayName}`"
+            hint="Фото, файлы, ссылки и ключи собраны по разделам. Фото идут в порядке отправки в чате."
+            :photos="sharedContent.photos"
+            :documents="sharedContent.documents"
+            :links="sharedContent.links"
+            :security="{ summary: securitySummaryText, items: securityItems, pending: securitySummaryPending, updatedAt: securitySummaryUpdatedAt }"
+            :initial-section="galleryPhotoId ? 'photos' : undefined"
+            :initial-photo-id="galleryPhotoId"
+            @close="closeDetails"
+            @select="copyLink($event.href, $event.title)"
+            @refresh-security="refreshSecuritySummary"
+          />
+        </Transition>
       </div>
 
-      <div
-        v-if="composerMediaMenuVisible"
-        ref="composerMediaMenuEl"
-        class="composer-media-menu"
-      >
-        <div class="composer-media-menu__tabs">
+      <Transition name="overlay-rise">
+        <div
+          v-if="composerMediaMenuVisible"
+          ref="composerMediaMenuEl"
+          class="composer-media-menu"
+        >
+        <div class="composer-media-menu__tabs messenger-menu-grid">
           <button
             type="button"
-            class="composer-media-menu__tab"
+            class="composer-media-menu__tab messenger-menu-grid__button"
             :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'emoji' }"
             @click="openComposerMediaTab('emoji')"
           >
@@ -2173,7 +2184,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="composer-media-menu__tab"
+            class="composer-media-menu__tab messenger-menu-grid__button"
             :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'stickers' }"
             @click="openComposerMediaTab('stickers')"
           >
@@ -2182,7 +2193,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="composer-media-menu__tab"
+            class="composer-media-menu__tab messenger-menu-grid__button"
             :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'gif' }"
             @click="openComposerMediaTab('gif')"
           >
@@ -2257,22 +2268,25 @@ onBeforeUnmount(() => {
           <p v-if="klipyStatusText" class="composer-media-menu__status">{{ klipyStatusText }}</p>
           <div class="composer-media-menu__watermark">KLIPY</div>
         </div>
-      </div>
-
-      <div v-if="selectedKlipyItem && (!detailsOpen || !conversations.activeConversation.value)" class="composer-context composer-context--klipy">
-        <div class="composer-klipy-pill">
-          <button type="button" class="message-action-btn composer-klipy-pill__dismiss" :disabled="mediaUploadPending" @click="clearSelectedKlipyItem">×</button>
-          <img
-            class="composer-klipy-pill__preview"
-            :class="`composer-klipy-pill__preview--${selectedKlipyItem.kind}`"
-            :src="selectedKlipyItem.previewUrl"
-            :alt="selectedKlipyItem.title"
-            loading="lazy"
-            decoding="async"
-            referrerpolicy="no-referrer"
-          >
         </div>
-      </div>
+      </Transition>
+
+      <Transition name="overlay-rise">
+        <div v-if="selectedKlipyItem && (!detailsOpen || !conversations.activeConversation.value)" class="composer-context composer-context--klipy">
+          <div class="composer-klipy-pill">
+            <button type="button" class="message-action-btn composer-klipy-pill__dismiss" :disabled="mediaUploadPending" @click="clearSelectedKlipyItem">×</button>
+            <img
+              class="composer-klipy-pill__preview"
+              :class="`composer-klipy-pill__preview--${selectedKlipyItem.kind}`"
+              :src="selectedKlipyItem.previewUrl"
+              :alt="selectedKlipyItem.title"
+              loading="lazy"
+              decoding="async"
+              referrerpolicy="no-referrer"
+            >
+          </div>
+        </div>
+      </Transition>
 
       <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock">
         <input ref="fileInput" type="file" class="sr-only" @change="handleFileSelect">
@@ -2284,9 +2298,7 @@ onBeforeUnmount(() => {
             :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
             @click="toggleComposerMediaMenu"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8.25 13.25a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5ZM15.75 13.25a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5ZM6 17.5c1.02-.98 2.35-1.5 3.75-1.5s2.73.52 3.75 1.5M13.5 17.5c.7-.66 1.61-1.06 2.6-1.17" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.65"/>
-            </svg>
+            <MessengerIcon name="smile" :size="18" />
           </button>
         </div>
         <div class="composer-field">
@@ -2310,9 +2322,7 @@ onBeforeUnmount(() => {
             :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
             @click="openFilePicker()"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M9.1 12.9 15.8 6.2a3.35 3.35 0 1 1 4.74 4.73l-8.1 8.1a5.2 5.2 0 1 1-7.35-7.36l7.05-7.05" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"/>
-            </svg>
+            <MessengerIcon name="paperclip" :size="18" />
           </button>
           <button
             type="button"
@@ -2328,14 +2338,8 @@ onBeforeUnmount(() => {
             @click="handleComposerPrimaryAction"
           >
             <span v-if="isRecording">{{ `${recordingSeconds}s` }}</span>
-            <svg v-else-if="composerPrimaryMode === 'record'" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 15.25a3.25 3.25 0 0 0 3.25-3.25V7.5a3.25 3.25 0 1 0-6.5 0V12A3.25 3.25 0 0 0 12 15.25Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
-              <path d="M6.75 11.75a5.25 5.25 0 0 0 10.5 0M12 17v2.5M9 19.5h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/>
-            </svg>
-            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4.95 11.8 18.84 5.65c1.08-.48 2.16.6 1.69 1.69l-6.15 13.89c-.45 1.03-1.93 1.06-2.42.05l-1.9-3.98a1.75 1.75 0 0 0-.86-.86l-3.98-1.9c-1.01-.49-.98-1.97.05-2.42Z" fill="currentColor"/>
-              <path d="M9.78 16.3 20.1 5.98" fill="none" stroke="rgba(255,255,255,0.72)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
-            </svg>
+            <MessengerIcon v-else-if="composerPrimaryMode === 'record'" name="microphone" :size="18" />
+            <MessengerIcon v-else name="send" :size="20" />
           </button>
         </div>
       </div>

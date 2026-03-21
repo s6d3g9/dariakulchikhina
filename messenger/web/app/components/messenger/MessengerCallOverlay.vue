@@ -95,9 +95,7 @@ onBeforeUnmount(() => {
 
       <div v-if="!headerActiveCall" class="call-stage__actions">
         <button type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15.8 8.2a9.3 9.3 0 0 0-7.6 0l-1.7-1.7a1 1 0 0 0-1.1-.23 7.2 7.2 0 0 0-2.03 1.37 1 1 0 0 0-.05 1.41l3.02 3.2a1 1 0 0 0 1.2.2l1.96-1.07a6.3 6.3 0 0 1 5.08 0l1.96 1.07a1 1 0 0 0 1.2-.2l3.02-3.2a1 1 0 0 0-.05-1.4 7.2 7.2 0 0 0-2.03-1.38 1 1 0 0 0-1.1.23L15.8 8.2Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-          </svg>
+          <MessengerIcon name="hangup" :size="18" />
           Завершить
         </button>
       </div>
@@ -107,17 +105,11 @@ onBeforeUnmount(() => {
     <audio ref="remoteAudioEl" autoplay />
     <div v-if="calls.callError.value && !calls.activeCall.value" class="call-stage__actions">
       <button type="button" class="action-btn action-btn--ghost" @click="calls.refreshMediaPermissions()">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M18 8.5A7 7 0 0 0 6.4 6.6M6 15.5A7 7 0 0 0 17.6 17.4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-          <path d="M18 4.75v3.9h-3.9M6 19.25v-3.9h3.9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-        </svg>
+        <MessengerIcon name="refresh" :size="18" />
         Обновить статусы доступа
       </button>
       <button type="button" class="action-btn action-btn--accept" @click="calls.ensureMediaAccess(calls.incomingCall.value?.mode || 'audio')">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 4.75 18.25 7.5v4.12c0 3.7-2.46 7.05-6.25 8.13-3.79-1.08-6.25-4.43-6.25-8.13V7.5L12 4.75Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-          <path d="m9.5 12 1.6 1.6 3.4-3.45" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"/>
-        </svg>
+        <MessengerIcon name="access" :size="18" />
         Запросить доступ
       </button>
     </div>

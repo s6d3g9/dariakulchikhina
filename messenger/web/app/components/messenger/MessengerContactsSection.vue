@@ -1,9 +1,12 @@
 <script setup lang="ts">
 const contacts = useMessengerContacts()
 const conversations = useMessengerConversations()
+const calls = useMessengerCalls()
+const navigation = useMessengerConversationState()
 const holdActions = useMessengerHoldActions()
 const searchDraft = ref('')
 const actionError = ref('')
+const actionToast = ref('')
 const searchOpen = ref(false)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -160,17 +163,6 @@ async function openDirectChat(targetUserId: string) {
   }
 }
 
-async function openSecretChat(targetUserId: string) {
-  actionError.value = ''
-
-  try {
-    holdActions.dismiss()
-    await conversations.openSecretConversation(targetUserId)
-  } catch {
-    actionError.value = 'Не удалось открыть secret-чат.'
-  }
-}
-
 async function removeContact(peerUserId: string) {
   actionError.value = ''
 
@@ -179,6 +171,71 @@ async function removeContact(peerUserId: string) {
     await contacts.removeContact(peerUserId)
   } catch {
     actionError.value = 'Не удалось удалить контакт.'
+  }
+}
+
+function buildContactCard(contact: { displayName: string; login: string }) {
+  return [
+    'Контакт',
+    `Имя: ${contact.displayName}`,
+    `Никнейм: @${contact.login}`,
+    'Телефон: не указан',
+  ].join('\n')
+}
+
+function showActionToast(message: string) {
+  actionToast.value = message
+  setTimeout(() => {
+    if (actionToast.value === message) {
+      actionToast.value = ''
+    }
+  }, 2200)
+}
+
+async function startContactCall(contactId: string, mode: 'audio' | 'video') {
+  actionError.value = ''
+
+  try {
+    holdActions.dismiss()
+    await conversations.openDirectConversation(contactId)
+    navigation.openSection('chat')
+    await calls.startOutgoingCall(mode)
+  } catch {
+    actionError.value = mode === 'video'
+      ? 'Не удалось начать видеозвонок.'
+      : 'Не удалось начать аудиозвонок.'
+  }
+}
+
+async function copyContactCard(contact: { displayName: string; login: string }) {
+  actionError.value = ''
+
+  try {
+    await navigator.clipboard.writeText(buildContactCard(contact))
+    holdActions.dismiss()
+    showActionToast(`Карточка контакта скопирована: ${contact.displayName}`)
+  } catch {
+    actionError.value = 'Не удалось скопировать карточку контакта.'
+  }
+}
+
+async function forwardContactCard(contact: { id: string; displayName: string; login: string }) {
+  actionError.value = ''
+  const targetConversationId = conversations.activeConversation.value?.id
+
+  if (!targetConversationId) {
+    actionError.value = 'Сначала откройте чат, куда переслать контакт.'
+    return
+  }
+
+  try {
+    holdActions.dismiss()
+    await conversations.selectConversation(targetConversationId)
+    await conversations.sendMessage(buildContactCard(contact))
+    navigation.openSection('chat')
+    showActionToast(`Контакт переслан: ${contact.displayName}`)
+  } catch {
+    actionError.value = 'Не удалось переслать контакт.'
   }
 }
 
@@ -275,31 +332,34 @@ function startHold(contactId: string, event?: Event) {
           @blur="closeSearch"
           @keydown.enter.prevent="runSearch"
         >
-        <div v-if="searchOpen" class="search-dropdown" aria-label="Результаты поиска пользователей">
-          <button
-            v-for="item in contactSuggestions"
-            :key="item.id"
-            type="button"
-            class="search-dropdown__item"
-            @pointerdown.prevent="selectSuggestionPointer(item)"
-          >
-            <span class="search-dropdown__title">{{ item.title }}</span>
-            <span class="search-dropdown__meta">{{ item.meta }}</span>
-          </button>
-          <button
-            v-if="!contactSuggestions.length && hasSearchQuery"
-            type="button"
-            class="search-dropdown__item"
-            disabled
-          >
-            <span class="search-dropdown__title">Ничего не найдено</span>
-            <span class="search-dropdown__meta">Попробуйте логин или имя пользователя.</span>
-          </button>
-        </div>
+        <Transition name="chrome-reveal">
+          <div v-if="searchOpen" class="search-dropdown" aria-label="Результаты поиска пользователей">
+            <button
+              v-for="item in contactSuggestions"
+              :key="item.id"
+              type="button"
+              class="search-dropdown__item"
+              @pointerdown.prevent="selectSuggestionPointer(item)"
+            >
+              <span class="search-dropdown__title">{{ item.title }}</span>
+              <span class="search-dropdown__meta">{{ item.meta }}</span>
+            </button>
+            <button
+              v-if="!contactSuggestions.length && hasSearchQuery"
+              type="button"
+              class="search-dropdown__item"
+              disabled
+            >
+              <span class="search-dropdown__title">Ничего не найдено</span>
+              <span class="search-dropdown__meta">Попробуйте логин или имя пользователя.</span>
+            </button>
+          </div>
+        </Transition>
       </div>
     </header>
 
     <p v-if="actionError" class="auth-error">{{ actionError }}</p>
+    <p v-else-if="actionToast" class="copy-toast">{{ actionToast }}</p>
 
     <div class="list-stack list-stack--screen-scroll">
       <article
@@ -349,7 +409,10 @@ function startHold(contactId: string, event?: Event) {
         v-for="contact in contacts.overview.value.contacts"
         :key="contact.id"
         class="list-card list-card--action list-card--clickable list-card--chat-row"
-        :class="{ 'list-card--hold-open': holdActions.activeItemId.value === contact.id }"
+        :class="{
+          'list-card--hold-open': holdActions.activeItemId.value === contact.id,
+          'list-card--holding': holdActions.holdingItemId.value === contact.id,
+        }"
         data-hold-actions-root="true"
         @click="openDirectChat(contact.id)"
         @mousedown.left="startHold(contact.id, $event)"
@@ -368,24 +431,48 @@ function startHold(contactId: string, event?: Event) {
         <div v-if="holdActions.activeItemId.value === contact.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
           <button
             type="button"
-            class="action-btn"
-            @click.stop="openDirectChat(contact.id)"
+            class="hold-actions__icon-btn"
+            aria-label="Аудиозвонок"
+            title="Аудиозвонок"
+            @click.stop="startContactCall(contact.id, 'audio')"
           >
-            Чат
+            <MessengerIcon name="phone" :size="16" />
           </button>
           <button
             type="button"
-            class="action-btn action-btn--accept"
-            @click.stop="openSecretChat(contact.id)"
+            class="hold-actions__icon-btn"
+            aria-label="Видеозвонок"
+            title="Видеозвонок"
+            @click.stop="startContactCall(contact.id, 'video')"
           >
-            Secret chat
+            <MessengerIcon name="video" :size="16" />
           </button>
           <button
             type="button"
-            class="action-btn action-btn--danger"
+            class="hold-actions__icon-btn"
+            aria-label="Скопировать карточку контакта"
+            title="Скопировать карточку контакта"
+            @click.stop="copyContactCard(contact)"
+          >
+            <MessengerIcon name="copy" :size="16" />
+          </button>
+          <button
+            type="button"
+            class="hold-actions__icon-btn"
+            aria-label="Переслать контакт"
+            title="Переслать контакт"
+            @click.stop="forwardContactCard(contact)"
+          >
+            <MessengerIcon name="forward" :size="16" />
+          </button>
+          <button
+            type="button"
+            class="hold-actions__icon-btn hold-actions__icon-btn--danger"
+            aria-label="Удалить контакт"
+            title="Удалить контакт"
             @click.stop="removeContact(contact.id)"
           >
-            Удалить
+            <MessengerIcon name="delete" :size="16" />
           </button>
         </div>
       </article>

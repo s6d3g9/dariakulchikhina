@@ -1,5 +1,7 @@
 <script setup lang="ts">
 const conversations = useMessengerConversations()
+const calls = useMessengerCalls()
+const navigation = useMessengerConversationState()
 const holdActions = useMessengerHoldActions()
 const searchDraft = ref('')
 const actionError = ref('')
@@ -72,6 +74,21 @@ async function removeChat(conversationId: string) {
   }
 }
 
+async function startChatCall(conversationId: string, mode: 'audio' | 'video') {
+  actionError.value = ''
+
+  try {
+    holdActions.dismiss()
+    await conversations.selectConversation(conversationId)
+    navigation.openSection('chat')
+    await calls.startOutgoingCall(mode)
+  } catch {
+    actionError.value = mode === 'video'
+      ? 'Не удалось начать видеозвонок.'
+      : 'Не удалось начать аудиозвонок.'
+  }
+}
+
 async function selectSuggestion(conversationId: string) {
   searchOpen.value = false
   await openChat(conversationId)
@@ -126,21 +143,23 @@ function formatConversationTimestamp(value: string) {
           @blur="closeSearch"
           @keydown.enter.prevent="runSearch"
         >
-        <div v-if="searchOpen && chatSuggestions.length" class="search-dropdown" aria-label="Результаты поиска по чатам">
-          <button
-            v-for="chat in chatSuggestions"
-            :key="chat.id"
-            type="button"
-            class="search-dropdown__item"
-            @click="selectSuggestion(chat.id)"
-          >
-            <span class="search-dropdown__title">
-              {{ chat.peerDisplayName }}
-              <span v-if="chat.secret" class="chat-secret-badge">Secret</span>
-            </span>
-            <span class="search-dropdown__meta">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</span>
-          </button>
-        </div>
+        <Transition name="chrome-reveal">
+          <div v-if="searchOpen && chatSuggestions.length" class="search-dropdown" aria-label="Результаты поиска по чатам">
+            <button
+              v-for="chat in chatSuggestions"
+              :key="chat.id"
+              type="button"
+              class="search-dropdown__item"
+              @click="selectSuggestion(chat.id)"
+            >
+              <span class="search-dropdown__title">
+                {{ chat.peerDisplayName }}
+                <span v-if="chat.secret" class="chat-secret-badge">Secret</span>
+              </span>
+              <span class="search-dropdown__meta">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</span>
+            </button>
+          </div>
+        </Transition>
       </div>
     </header>
 
@@ -151,7 +170,10 @@ function formatConversationTimestamp(value: string) {
         v-for="chat in conversations.conversations.value"
         :key="chat.id"
         class="list-card list-card--action list-card--clickable list-card--chat-row"
-        :class="{ 'list-card--hold-open': holdActions.activeItemId.value === chat.id }"
+        :class="{
+          'list-card--hold-open': holdActions.activeItemId.value === chat.id,
+          'list-card--holding': holdActions.holdingItemId.value === chat.id,
+        }"
         data-hold-actions-root="true"
         @click="openChat(chat.id)"
         @mousedown.left="startHold(chat.id, $event)"
@@ -178,10 +200,30 @@ function formatConversationTimestamp(value: string) {
         <div v-if="holdActions.activeItemId.value === chat.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
           <button
             type="button"
-            class="action-btn action-btn--danger"
+            class="hold-actions__icon-btn"
+            aria-label="Аудиозвонок"
+            title="Аудиозвонок"
+            @click.stop="startChatCall(chat.id, 'audio')"
+          >
+            <MessengerIcon name="phone" :size="16" />
+          </button>
+          <button
+            type="button"
+            class="hold-actions__icon-btn"
+            aria-label="Видеозвонок"
+            title="Видеозвонок"
+            @click.stop="startChatCall(chat.id, 'video')"
+          >
+            <MessengerIcon name="video" :size="16" />
+          </button>
+          <button
+            type="button"
+            class="hold-actions__icon-btn hold-actions__icon-btn--danger"
+            aria-label="Удалить чат"
+            title="Удалить чат"
             @click.stop="removeChat(chat.id)"
           >
-            Удалить
+            <MessengerIcon name="delete" :size="16" />
           </button>
         </div>
       </article>

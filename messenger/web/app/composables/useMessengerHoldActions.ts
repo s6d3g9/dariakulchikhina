@@ -6,6 +6,7 @@ function isHoldActionMenuTarget(target: EventTarget | null) {
 
 export function useMessengerHoldActions() {
   const activeItemId = ref<string | null>(null)
+  const holdingItemId = ref<string | null>(null)
 
   let holdTimer: ReturnType<typeof setTimeout> | null = null
   let suppressRootClickUntil = 0
@@ -15,10 +16,13 @@ export function useMessengerHoldActions() {
       clearTimeout(holdTimer)
       holdTimer = null
     }
+
+    holdingItemId.value = null
   }
 
   function dismiss() {
     activeItemId.value = null
+    holdingItemId.value = null
   }
 
   function startHold(itemId: string, target?: EventTarget | null) {
@@ -27,9 +31,11 @@ export function useMessengerHoldActions() {
     }
 
     clearHoldTimer()
+    holdingItemId.value = itemId
 
     holdTimer = setTimeout(() => {
       activeItemId.value = itemId
+      holdingItemId.value = null
       suppressRootClickUntil = Date.now() + 800
       holdTimer = null
     }, HOLD_DELAY_MS)
@@ -37,6 +43,7 @@ export function useMessengerHoldActions() {
 
   function open(itemId: string) {
     activeItemId.value = itemId
+    holdingItemId.value = null
     suppressRootClickUntil = Date.now() + 800
   }
 
@@ -72,6 +79,7 @@ export function useMessengerHoldActions() {
 
   return {
     activeItemId,
+    holdingItemId,
     startHold,
     cancelHold,
     consumeSuppressedClick,
