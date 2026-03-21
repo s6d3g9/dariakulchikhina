@@ -1306,7 +1306,6 @@ a {
   background: var(--messenger-popup-bg);
   backdrop-filter: blur(24px) saturate(150%);
   box-shadow: var(--messenger-popup-shadow);
-  transform-origin: bottom center;
 }
 
 .composer-media-menu__tabs {
@@ -5052,29 +5051,6 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
   box-shadow: var(--messenger-token-header-shadow);
   background: var(--messenger-token-header-bg);
   backdrop-filter: var(--messenger-token-header-filter);
-  isolation: isolate;
-  will-change: transform, opacity, filter;
-  transition:
-    transform var(--messenger-motion-base) var(--messenger-motion-emphasis),
-    opacity var(--messenger-motion-fast) ease,
-    border-color var(--messenger-motion-fast) ease,
-    background var(--messenger-motion-base) ease,
-    box-shadow var(--messenger-motion-base) ease,
-    filter var(--messenger-motion-base) ease;
-}
-
-.section-head--chat-header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 40%, rgba(125, 211, 252, 0.04));
-  opacity: 0.36;
-  pointer-events: none;
-}
-
-.section-head--chat-header > * {
-  position: relative;
-  z-index: 1;
 }
 
 .chat-reading-shell {
@@ -5164,7 +5140,6 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
   margin-top: -2px;
   padding: 6px 12px 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  transform-origin: top center;
 }
 
 .chat-call-panel__actions {
@@ -6185,33 +6160,10 @@ html[data-messenger-style='minimal'] .hold-actions {
   background: var(--messenger-token-header-bg);
   backdrop-filter: var(--messenger-token-header-filter);
   box-shadow: var(--messenger-token-header-shadow);
-  isolation: isolate;
-  will-change: transform, opacity, filter;
-  transition:
-    transform var(--messenger-motion-base) var(--messenger-motion-emphasis),
-    opacity var(--messenger-motion-fast) ease,
-    border-color var(--messenger-motion-fast) ease,
-    background var(--messenger-motion-base) ease,
-    box-shadow var(--messenger-motion-base) ease,
-    filter var(--messenger-motion-base) ease;
 }
 
 .search-dock--screen-header::before {
   display: none;
-}
-
-.search-dock--screen-header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 44%, rgba(125, 211, 252, 0.04));
-  opacity: 0.34;
-  pointer-events: none;
-}
-
-.search-dock--screen-header > * {
-  position: relative;
-  z-index: 1;
 }
 
 .search-dock--chats-header {
@@ -6238,16 +6190,11 @@ html[data-messenger-style='minimal'] .hold-actions {
 
 .search-dock__input--header {
   min-height: 44px;
-  padding: 10px 14px;
-  border-radius: calc(var(--messenger-token-control-radius) + 4px);
+  padding: 9px 14px;
+  border-radius: 16px;
   border-color: var(--messenger-field-header-border);
-  background: color-mix(in srgb, var(--messenger-field-header-bg) 80%, var(--messenger-token-control-bg) 20%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition:
-    transform var(--messenger-motion-fast) ease,
-    border-color var(--messenger-motion-fast) ease,
-    background var(--messenger-motion-fast) ease,
-    box-shadow var(--messenger-motion-fast) ease;
+  background: color-mix(in srgb, var(--messenger-field-header-bg) 92%, white 2%);
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .search-dock__input--header:focus {
@@ -6276,7 +6223,6 @@ html[data-messenger-style='minimal'] .hold-actions {
   box-shadow: var(--messenger-token-overlay-shadow);
   max-height: min(320px, 46vh);
   overflow-y: auto;
-  transform-origin: top center;
 }
 
 .search-dropdown__item {
@@ -6321,97 +6267,6 @@ html[data-messenger-style='minimal'] .hold-actions {
   color: color-mix(in srgb, var(--messenger-text) 74%, transparent);
   font-size: 13px;
   line-height: 1.35;
-}
-
-.search-dropdown,
-.composer-context,
-.chat-photo-feed,
-.content-drawer--dock,
-.chat-call-panel {
-  will-change: transform, opacity, filter;
-}
-
-.chrome-reveal-enter-active,
-.chrome-reveal-leave-active,
-.overlay-rise-enter-active,
-.overlay-rise-leave-active,
-.screen-fade-enter-active,
-.screen-fade-leave-active,
-.gallery-panel-enter-active,
-.gallery-panel-leave-active {
-  will-change: transform, opacity, filter;
-}
-
-.chrome-reveal-enter-active,
-.chrome-reveal-leave-active {
-  transition:
-    opacity var(--messenger-motion-fast) ease,
-    transform var(--messenger-motion-base) var(--messenger-motion-emphasis),
-    filter var(--messenger-motion-base) ease;
-}
-
-.chrome-reveal-enter-from,
-.chrome-reveal-leave-to {
-  opacity: 0;
-  transform: translateY(-8px) scale(0.985);
-  filter: blur(8px);
-}
-
-.chrome-reveal-enter-to,
-.chrome-reveal-leave-from {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
-}
-
-.overlay-rise-enter-active,
-.overlay-rise-leave-active {
-  transition:
-    opacity var(--messenger-motion-fast) ease,
-    transform var(--messenger-motion-base) var(--messenger-motion-emphasis),
-    filter var(--messenger-motion-base) ease;
-}
-
-.overlay-rise-enter-from,
-.overlay-rise-leave-to {
-  opacity: 0;
-  transform: translateY(12px) scale(0.98);
-  filter: blur(10px);
-}
-
-.overlay-rise-enter-to,
-.overlay-rise-leave-from {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
-}
-
-.screen-fade-enter-active,
-.screen-fade-leave-active,
-.gallery-panel-enter-active,
-.gallery-panel-leave-active {
-  transition:
-    opacity var(--messenger-motion-base) ease,
-    transform var(--messenger-motion-slow) var(--messenger-motion-emphasis),
-    filter var(--messenger-motion-base) ease;
-}
-
-.screen-fade-enter-from,
-.screen-fade-leave-to,
-.gallery-panel-enter-from,
-.gallery-panel-leave-to {
-  opacity: 0;
-  transform: translateY(10px) scale(0.986);
-  filter: blur(12px);
-}
-
-.screen-fade-enter-to,
-.screen-fade-leave-from,
-.gallery-panel-enter-to,
-.gallery-panel-leave-from {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
 }
 
 @media (max-width: 767px) {
