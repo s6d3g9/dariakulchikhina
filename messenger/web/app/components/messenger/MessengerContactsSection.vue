@@ -327,7 +327,7 @@ function startHold(contactId: string, event?: Event) {
               </button>
             </div>
           </div>
-          <p class="list-card__text">@{{ invite.login }} · входящая заявка</p>
+          <p class="list-card__text list-card__text--identity">@{{ invite.login }} · входящая заявка</p>
         </div>
       </article>
 
@@ -341,7 +341,7 @@ function startHold(contactId: string, event?: Event) {
             <p class="list-card__title">{{ invite.displayName }}</p>
             <span class="list-card__meta">Ожидает</span>
           </div>
-          <p class="list-card__text">@{{ invite.login }} · исходящая заявка</p>
+          <p class="list-card__text list-card__text--identity">@{{ invite.login }} · исходящая заявка</p>
         </div>
       </article>
 
@@ -363,7 +363,7 @@ function startHold(contactId: string, event?: Event) {
       >
         <div class="list-card__main">
           <p class="list-card__title">{{ contact.displayName }}</p>
-          <p class="list-card__text">@{{ contact.login }}</p>
+          <p class="list-card__text list-card__text--identity">@{{ contact.login }}</p>
         </div>
         <div v-if="holdActions.activeItemId.value === contact.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
           <button
@@ -415,7 +415,7 @@ function startHold(contactId: string, event?: Event) {
               {{ getActionLabel(candidate.relationship) }}
             </button>
           </div>
-          <p class="list-card__text">@{{ candidate.login }} · {{ getRelationshipLabel(candidate.relationship) }}</p>
+          <p class="list-card__text list-card__text--identity">@{{ candidate.login }} · {{ getRelationshipLabel(candidate.relationship) }}</p>
         </div>
       </article>
 

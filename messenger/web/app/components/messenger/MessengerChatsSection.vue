@@ -90,6 +90,27 @@ function closeSearch() {
 function startHold(conversationId: string, event?: Event) {
   holdActions.startHold(conversationId, event?.target)
 }
+
+function formatConversationTimestamp(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  const now = new Date()
+  if (date.toDateString() === now.toDateString()) {
+    return date.toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  return date.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+  })
+}
 </script>
 
 <template>
@@ -143,14 +164,16 @@ function startHold(conversationId: string, event?: Event) {
         @contextmenu.prevent="holdActions.open(chat.id)"
       >
         <div class="list-card__main">
-          <div class="list-card__row">
+          <div class="list-card__row list-card__row--chat-top">
             <p class="list-card__title">
               {{ chat.peerDisplayName }}
               <span v-if="chat.secret" class="chat-secret-badge">Secret</span>
             </p>
-            <p class="list-card__meta">{{ new Date(chat.updatedAt).toLocaleDateString('ru-RU') }}</p>
           </div>
-          <p class="list-card__text">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</p>
+          <div class="list-card__row list-card__row--chat-footer">
+            <p class="list-card__text list-card__text--preview">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</p>
+            <p class="list-card__meta list-card__meta--timestamp">{{ formatConversationTimestamp(chat.updatedAt) }}</p>
+          </div>
         </div>
         <div v-if="holdActions.activeItemId.value === chat.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
           <button

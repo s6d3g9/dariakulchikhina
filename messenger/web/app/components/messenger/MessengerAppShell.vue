@@ -118,6 +118,7 @@ async function logout() {
             <path d="M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/>
           </svg>
         </span>
+        <span class="bottom-nav__label">{{ section.shortTitle }}</span>
       </button>
     </nav>
   </div>
