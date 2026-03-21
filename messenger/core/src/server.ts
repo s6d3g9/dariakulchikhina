@@ -108,10 +108,22 @@ export async function createMessengerServer() {
     algorithm: z.literal('aes-gcm-256'),
     iv: z.string().min(1).max(512),
   })
+  const klipyAttachmentSchema = z.object({
+    id: z.string().trim().min(1).max(255),
+    slug: z.string().trim().min(1).max(255),
+    kind: z.enum(['gif', 'sticker']),
+    title: z.string().trim().min(1).max(255),
+    previewUrl: z.string().trim().url().max(2048),
+    originalUrl: z.string().trim().url().max(2048),
+    mimeType: z.string().trim().min(1).max(120),
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+  })
   const attachmentMetadataSchema = z.object({
     encryptedFile: encryptedBinaryPayloadSchema.optional(),
     originalName: z.string().trim().min(1).max(255).optional(),
     originalMimeType: z.string().trim().min(1).max(120).optional(),
+    klipy: klipyAttachmentSchema.optional(),
   })
   const forwardedSnapshotSchema = z.object({
     messageId: messageIdSchema,
@@ -1190,6 +1202,7 @@ export async function createMessengerServer() {
     let encryptedFile: z.infer<typeof encryptedBinaryPayloadSchema> | undefined
     let originalName: string | undefined
     let originalMimeType: string | undefined
+    let klipy: z.infer<typeof klipyAttachmentSchema> | undefined
     if (metadataValue) {
       try {
         const parsedMetadata = attachmentMetadataSchema.safeParse(JSON.parse(metadataValue))
@@ -1200,6 +1213,7 @@ export async function createMessengerServer() {
         encryptedFile = parsedMetadata.data.encryptedFile
         originalName = parsedMetadata.data.originalName
         originalMimeType = parsedMetadata.data.originalMimeType
+        klipy = parsedMetadata.data.klipy
       } catch {
         return reply.code(400).send({ error: 'INVALID_ATTACHMENT_METADATA' })
       }
@@ -1215,6 +1229,7 @@ export async function createMessengerServer() {
       const message = await addAttachmentMessageToConversation(parsedParams.data.conversationId, session.user, {
         ...stored,
         encryptedFile,
+        klipy,
       })
       const conversation = await findConversationById(parsedParams.data.conversationId)
       if (conversation) {

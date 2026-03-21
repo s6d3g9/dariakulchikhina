@@ -17,6 +17,18 @@ export interface MessengerEncryptedBinaryPayload {
   iv: string
 }
 
+export interface MessengerKlipyAttachmentRecord {
+  id: string
+  slug: string
+  kind: 'gif' | 'sticker'
+  title: string
+  previewUrl: string
+  originalUrl: string
+  mimeType: string
+  width?: number
+  height?: number
+}
+
 export interface MessengerMessageReactionRecord {
   emoji: string
   userIds: string[]
@@ -69,6 +81,7 @@ export interface MessengerMessageRecord {
     size: number
     url: string
     encryptedFile?: MessengerEncryptedBinaryPayload
+    klipy?: MessengerKlipyAttachmentRecord
   }
   reactions?: MessengerMessageReactionRecord[]
   createdAt: string
@@ -91,6 +104,7 @@ export interface MessengerMessageRecord {
       size: number
       url: string
       encryptedFile?: MessengerEncryptedBinaryPayload
+      klipy?: MessengerKlipyAttachmentRecord
     }
   }
 }
@@ -677,7 +691,7 @@ export async function forwardMessageToConversation(
 export async function addAttachmentMessageToConversation(
   conversationId: string,
   actor: MessengerUserRecord,
-  attachment: { name: string; mimeType: string; size: number; url: string; encryptedFile?: MessengerEncryptedBinaryPayload },
+  attachment: { name: string; mimeType: string; size: number; url: string; encryptedFile?: MessengerEncryptedBinaryPayload; klipy?: MessengerKlipyAttachmentRecord },
 ) {
   const payload = await readConversationsFile()
   const conversation = payload.conversations.find(item => item.id === conversationId)

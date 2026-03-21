@@ -30,6 +30,18 @@ export interface MessengerConversationItem {
 import { buildMessengerUrl } from '../utils/messenger-url'
 import type { MessengerEncryptedBinaryPayload, MessengerEncryptedPayload } from './useMessengerCrypto'
 
+export interface MessengerAttachmentKlipyPayload {
+  id: string
+  slug: string
+  kind: 'gif' | 'sticker'
+  title: string
+  previewUrl: string
+  originalUrl: string
+  mimeType: string
+  width?: number
+  height?: number
+}
+
 interface MessengerMessageRelationPreview {
   id: string
   body: string
@@ -45,6 +57,7 @@ interface MessengerMessageRelationPreview {
     absoluteUrl: string
     resolvedUrl: string
     encryptedFile?: MessengerEncryptedBinaryPayload
+    klipy?: MessengerAttachmentKlipyPayload
   }
 }
 
@@ -70,6 +83,7 @@ interface MessengerForwardedMessagePreview {
     absoluteUrl: string
     resolvedUrl: string
     encryptedFile?: MessengerEncryptedBinaryPayload
+    klipy?: MessengerAttachmentKlipyPayload
   }
 }
 
@@ -93,6 +107,7 @@ export interface MessengerConversationMessage {
     absoluteUrl: string
     resolvedUrl: string
     encryptedFile?: MessengerEncryptedBinaryPayload
+    klipy?: MessengerAttachmentKlipyPayload
   }
   replyTo?: MessengerMessageRelationPreview
   commentOn?: MessengerMessageRelationPreview
@@ -541,7 +556,7 @@ export function useMessengerConversations() {
     }
   }
 
-  async function uploadAttachment(file: File) {
+  async function uploadAttachment(file: File, metadata: { klipy?: MessengerAttachmentKlipyPayload } = {}) {
     const conversationId = state.activeConversationId.value
     const conversation = activeConversation.value
     if (!conversationId) {
@@ -562,11 +577,17 @@ export function useMessengerConversations() {
       formData.set('file', ciphertextFile)
       formData.set('metadata', JSON.stringify({
         encryptedFile: encryptedFile.encryption,
+        klipy: metadata.klipy,
         originalName: file.name,
         originalMimeType: file.type,
       }))
     } else {
       formData.set('file', file)
+      if (metadata.klipy) {
+        formData.set('metadata', JSON.stringify({
+          klipy: metadata.klipy,
+        }))
+      }
     }
 
     messagePending.value = true

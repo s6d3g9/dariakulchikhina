@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MessengerConversationMessage } from '../../composables/useMessengerConversations'
+import type { MessengerAttachmentKlipyPayload, MessengerConversationMessage } from '../../composables/useMessengerConversations'
 import type { MessengerKlipyItem } from '../../composables/useMessengerKlipy'
 import type { MessengerConversationSecuritySummary } from '../../composables/useMessengerCrypto'
 
@@ -47,6 +47,10 @@ const klipyQuery = ref('')
 const mediaUploadPending = ref(false)
 const selectedCatalogCategory = ref('')
 const selectedKlipyItem = ref<MessengerKlipyItem | null>(null)
+const klipyAudienceMode = reactive<{ stickers: 'mine' | 'shared'; gif: 'mine' | 'shared' }>({
+  stickers: 'mine',
+  gif: 'mine',
+})
 
 const composerEmojiOptions = ['😀', '😉', '😍', '🔥', '👍', '👏', '🙏', '❤️', '🎉', '🤝', '✨', '😎']
 const messageReactionOptions = ['👍', '❤️', '🔥', '😂', '👏', '😮']
@@ -86,6 +90,11 @@ function scheduleKlipyCatalogLoad() {
     })
     klipySearchTimer = null
   }, 180)
+}
+
+function resetKlipyAudienceMode() {
+  klipyAudienceMode.stickers = 'mine'
+  klipyAudienceMode.gif = 'mine'
 }
 
 function isMobileChatViewport() {
@@ -535,6 +544,21 @@ const activeKlipyKind = computed<'gif' | 'sticker' | null>(() => {
 
   return null
 })
+const activeKlipyAudience = computed<'mine' | 'shared'>(() => {
+  if (composerMediaMenuTab.value === 'stickers') {
+    return klipyAudienceMode.stickers
+  }
+
+  if (composerMediaMenuTab.value === 'gif') {
+    return klipyAudienceMode.gif
+  }
+
+  return 'mine'
+})
+const sharedKlipyEnabled = computed(() => Boolean(
+  conversations.activeConversation.value
+  && !conversations.activeConversation.value.secret,
+))
 const currentKlipyCategories = computed(() => activeKlipyKind.value ? klipy.getCategories(activeKlipyKind.value) : [])
 const showKlipyCategories = computed(() => !klipyQuery.value.trim() && !selectedCatalogCategory.value && currentKlipyCategories.value.length > 0)
 const activeCatalogCategoryLabel = computed(() => {
@@ -559,6 +583,12 @@ const klipyHintText = computed(() => {
   }
 
   if (!klipyQuery.value.trim() && !selectedCatalogCategory.value) {
+    if (activeKlipyAudience.value === 'shared') {
+      return composerMediaMenuTab.value === 'stickers'
+        ? 'Показан общий набор из этой переписки: ваши и стикеры собеседника.'
+        : 'Показан общий набор из этой переписки: ваши и GIF собеседника.'
+    }
+
     if (klipy.pending.value) {
       return 'Загружаем подборку KLIPY...'
     }
@@ -584,7 +614,120 @@ const klipyHintText = computed(() => {
     ? 'Нажмите на стикер, чтобы подготовить его к отправке.'
     : 'Нажмите на GIF, чтобы подготовить его к отправке.'
 })
-const currentKlipyRecentItems = computed(() => activeKlipyKind.value ? klipy.getRecentItems(activeKlipyKind.value) : [])
+function inferKlipyKindFromAttachment(attachment: NonNullable<MessengerConversationMessage['attachment']>) {
+  if (attachment.klipy?.kind) {
+    return attachment.klipy.kind
+  }
+
+  if (attachment.mimeType === 'image/webp' || attachment.mimeType === 'image/png') {
+    return 'sticker' as const
+  }
+
+  if (attachment.mimeType === 'image/gif' || attachment.mimeType === 'video/mp4' || attachment.mimeType === 'video/webm') {
+    return 'gif' as const
+  }
+
+  return null
+}
+
+function buildConversationKlipyItem(message: MessengerConversationMessage) {
+  if (message.kind !== 'file' || !message.attachment || message.deletedAt) {
+    return null
+  }
+
+  const inferredKind = inferKlipyKindFromAttachment(message.attachment)
+  if (!inferredKind) {
+    return null
+  }
+
+  const item: MessengerKlipyItem = message.attachment.klipy
+    ? {
+        ...message.attachment.klipy,
+      }
+    : {
+        id: `conversation-${message.id}`,
+        slug: message.attachment.name,
+        kind: inferredKind,
+        title: message.attachment.name.replace(/\.[^.]+$/u, '') || message.attachment.name,
+        previewUrl: message.attachment.resolvedUrl,
+        originalUrl: message.attachment.resolvedUrl,
+        mimeType: message.attachment.mimeType,
+      }
+
+  return {
+    item,
+    own: message.own,
+    createdAt: message.createdAt,
+  }
+}
+
+const sharedKlipyItems = computed<Record<'gif' | 'sticker', MessengerKlipyItem[]>>(() => {
+  const buckets = {
+    gif: new Map<string, MessengerKlipyItem & { ownCount: number; peerCount: number; lastUsedAt: string }>(),
+    sticker: new Map<string, MessengerKlipyItem & { ownCount: number; peerCount: number; lastUsedAt: string }>(),
+  }
+
+  for (const message of conversations.messages.value) {
+    const resolved = buildConversationKlipyItem(message)
+    if (!resolved) {
+      continue
+    }
+
+    const bucket = buckets[resolved.item.kind]
+    const existing = bucket.get(resolved.item.id)
+    if (existing) {
+      existing.lastUsedAt = resolved.createdAt > existing.lastUsedAt ? resolved.createdAt : existing.lastUsedAt
+      if (resolved.own) {
+        existing.ownCount += 1
+      } else {
+        existing.peerCount += 1
+      }
+      continue
+    }
+
+    bucket.set(resolved.item.id, {
+      ...resolved.item,
+      ownCount: resolved.own ? 1 : 0,
+      peerCount: resolved.own ? 0 : 1,
+      lastUsedAt: resolved.createdAt,
+    })
+  }
+
+  return {
+    gif: Array.from(buckets.gif.values())
+      .sort((left, right) => {
+        const leftShared = Number(left.ownCount > 0 && left.peerCount > 0)
+        const rightShared = Number(right.ownCount > 0 && right.peerCount > 0)
+        return rightShared - leftShared
+          || right.peerCount - left.peerCount
+          || (right.peerCount + right.ownCount) - (left.peerCount + left.ownCount)
+          || right.lastUsedAt.localeCompare(left.lastUsedAt)
+      })
+      .slice(0, 12),
+    sticker: Array.from(buckets.sticker.values())
+      .sort((left, right) => {
+        const leftShared = Number(left.ownCount > 0 && left.peerCount > 0)
+        const rightShared = Number(right.ownCount > 0 && right.peerCount > 0)
+        return rightShared - leftShared
+          || right.peerCount - left.peerCount
+          || (right.peerCount + right.ownCount) - (left.peerCount + left.ownCount)
+          || right.lastUsedAt.localeCompare(left.lastUsedAt)
+      })
+      .slice(0, 12),
+  }
+})
+const currentKlipyRecentItems = computed(() => {
+  if (!activeKlipyKind.value) {
+    return []
+  }
+
+  if (activeKlipyAudience.value === 'shared') {
+    return sharedKlipyItems.value[activeKlipyKind.value]
+  }
+
+  return klipy.getRecentItems(activeKlipyKind.value)
+})
+const currentKlipyRecentTitle = computed(() => activeKlipyAudience.value === 'shared' ? 'Общий набор' : 'Недавние')
 const showKlipySearchState = computed(() => Boolean(klipyQuery.value.trim() || selectedCatalogCategory.value))
 const selectedKlipyItemLabel = computed(() => {
   if (!selectedKlipyItem.value) {
@@ -637,6 +780,7 @@ onBeforeUnmount(() => {
 
 watch(() => conversations.activeConversationId.value, async () => {
   detailsOpen.value = false
+  resetKlipyAudienceMode()
   await scrollMessagesToBottom('auto')
 })
 
@@ -823,6 +967,13 @@ function toggleComposerMediaMenu() {
 
 function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif') {
   const previousTab = composerMediaMenuTab.value
+
+  if (tab !== 'emoji' && previousTab === tab && sharedKlipyEnabled.value) {
+    const scopeKey = tab === 'stickers' ? 'stickers' : 'gif'
+    klipyAudienceMode[scopeKey] = klipyAudienceMode[scopeKey] === 'mine' ? 'shared' : 'mine'
+    return
+  }
+
   composerMediaMenuTab.value = tab
 
   if (tab === 'emoji') {
@@ -996,13 +1147,27 @@ async function sendKlipyItem(item: MessengerKlipyItem) {
   mediaUploadPending.value = true
 
   try {
-    const blob = await auth.request<Blob>('/integrations/klipy/media', {
-      method: 'GET',
-      query: {
-        url: item.originalUrl,
-      },
-      responseType: 'blob',
-    })
+    const blob = /^https:\/\/static\.klipy\.com\//.test(item.originalUrl)
+      ? await auth.request<Blob>('/integrations/klipy/media', {
+          method: 'GET',
+          query: {
+            url: item.originalUrl,
+          },
+          responseType: 'blob',
+        })
+      : await fetch(item.originalUrl, {
+          headers: auth.token.value
+            ? {
+                Authorization: `Bearer ${auth.token.value}`,
+              }
+            : undefined,
+        }).then(async (response) => {
+          if (!response.ok) {
+            throw new Error('MEDIA_FETCH_FAILED')
+          }
+
+          return await response.blob()
+        })
     const mimeType = item.mimeType || blob.type || 'application/octet-stream'
     const extension = mimeType.includes('webp')
       ? 'webp'
@@ -1021,8 +1186,21 @@ async function sendKlipyItem(item: MessengerKlipyItem) {
       .replace(/^-+|-+$/g, '')
       .slice(0, 48) || `${item.kind}-${item.id}`
     const file = new File([blob], `${fileBaseName}.${extension}`, { type: mimeType })
+    const klipyPayload: MessengerAttachmentKlipyPayload = {
+      id: item.id,
+      slug: item.slug,
+      kind: item.kind,
+      title: item.title,
+      previewUrl: item.previewUrl,
+      originalUrl: item.originalUrl,
+      mimeType,
+      width: item.width,
+      height: item.height,
+    }
 
-    await conversations.uploadAttachment(file)
+    await conversations.uploadAttachment(file, {
+      klipy: klipyPayload,
+    })
     composerMediaMenuOpen.value = false
     klipy.remember(item)
     klipy.reset()
@@ -1903,7 +2081,8 @@ onBeforeUnmount(() => {
             :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'stickers' }"
             @click="openComposerMediaTab('stickers')"
           >
-            Стикеры
+            <span>Стикеры</span>
+            <span v-if="klipyAudienceMode.stickers === 'shared'" class="composer-media-menu__tab-badge">👥</span>
           </button>
           <button
             type="button"
@@ -1911,7 +2090,8 @@ onBeforeUnmount(() => {
             :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'gif' }"
             @click="openComposerMediaTab('gif')"
           >
-            GIF
+            <span>GIF</span>
+            <span v-if="klipyAudienceMode.gif === 'shared'" class="composer-media-menu__tab-badge">👥</span>
           </button>
         </div>
 
@@ -1954,7 +2134,7 @@ onBeforeUnmount(() => {
           </div>
           <p class="composer-media-menu__hint">{{ klipyHintText }}</p>
           <div v-if="!klipyQuery.trim() && !selectedCatalogCategory && currentKlipyRecentItems.length" class="composer-media-menu__recent">
-            <p class="composer-media-menu__section-title">Недавние</p>
+            <p class="composer-media-menu__section-title">{{ currentKlipyRecentTitle }}</p>
             <div class="composer-media-menu__results composer-media-menu__results--recent" :class="{ 'composer-media-menu__results--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__results--gifs': activeKlipyKind === 'gif' }">
               <button
                 v-for="item in currentKlipyRecentItems"
