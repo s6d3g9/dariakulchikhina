@@ -1,3 +1,38 @@
+const fs = require('node:fs')
+
+function readRuntimeEnv(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return {}
+  }
+
+  return fs.readFileSync(filePath, 'utf8')
+    .split(/\r?\n/)
+    .reduce((accumulator, line) => {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) {
+        return accumulator
+      }
+
+      const separatorIndex = trimmed.indexOf('=')
+      if (separatorIndex === -1) {
+        return accumulator
+      }
+
+      const key = trimmed.slice(0, separatorIndex).trim()
+      const rawValue = trimmed.slice(separatorIndex + 1).trim()
+      const value = rawValue.replace(/^['"]|['"]$/g, '')
+      if (key) {
+        accumulator[key] = value
+      }
+      return accumulator
+    }, {})
+}
+
+const runtimeEnv = {
+  ...readRuntimeEnv('/opt/daria-messenger-data/messenger-runtime.env'),
+  ...process.env,
+}
+
 module.exports = {
   apps: [
     {
@@ -15,8 +50,8 @@ module.exports = {
         MESSENGER_CORE_AUTH_SECRET: 'change-me-before-production',
         MESSENGER_CORE_CORS_ORIGIN: 'https://dariakulchikhina.com',
         MESSENGER_CORE_DATA_DIR: '/opt/daria-messenger-data',
-        GIPHY_API_KEY: process.env.GIPHY_API_KEY || '',
-        GIPHY_API_BASE_URL: process.env.GIPHY_API_BASE_URL || 'https://api.giphy.com/v1',
+        KLIPY_APP_KEY: runtimeEnv.KLIPY_APP_KEY || '',
+        KLIPY_API_BASE_URL: runtimeEnv.KLIPY_API_BASE_URL || 'https://api.klipy.com',
       },
     },
     {

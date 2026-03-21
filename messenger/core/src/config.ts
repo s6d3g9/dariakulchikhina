@@ -7,8 +7,8 @@ const envSchema = z.object({
   MESSENGER_CORE_AUTH_SECRET: z.string().default('messenger-dev-secret'),
   MESSENGER_CORE_CORS_ORIGIN: z.string().default('http://localhost:3300'),
   MESSENGER_CORE_DATA_DIR: z.string().default(''),
-  GIPHY_API_KEY: z.string().trim().optional(),
-  GIPHY_API_BASE_URL: z.string().trim().url().default('https://api.giphy.com/v1'),
+  KLIPY_APP_KEY: z.string().trim().optional(),
+  KLIPY_API_BASE_URL: z.string().trim().url().default('https://api.klipy.com'),
 })
 
 export function readMessengerConfig() {

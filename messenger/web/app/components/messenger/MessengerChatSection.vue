@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MessengerConversationMessage } from '../../composables/useMessengerConversations'
-import type { MessengerGiphyItem } from '../../composables/useMessengerGiphy'
+import type { MessengerKlipyItem } from '../../composables/useMessengerKlipy'
 import type { MessengerConversationSecuritySummary } from '../../composables/useMessengerCrypto'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
@@ -10,7 +10,7 @@ interface MessengerThreadMessage extends MessengerConversationMessage {
 const conversations = useMessengerConversations()
 const auth = useMessengerAuth()
 const messengerCrypto = useMessengerCrypto()
-const giphy = useMessengerGiphy()
+const klipy = useMessengerKlipy()
 const viewport = useMessengerViewport()
 const draft = ref('')
 const actionError = ref('')
@@ -40,8 +40,9 @@ const dragDropDepth = ref(0)
 const dragDropPending = ref(false)
 const composerMediaMenuOpen = ref(false)
 const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif'>('emoji')
-const giphyQuery = ref('')
-const giphyUploadPending = ref(false)
+const klipyQuery = ref('')
+const mediaUploadPending = ref(false)
+const selectedCatalogCategory = ref('')
 
 const composerEmojiOptions = ['😀', '😉', '😍', '🔥', '👍', '👏', '🙏', '❤️', '🎉', '🤝', '✨', '😎']
 const messageReactionOptions = ['👍', '❤️', '🔥', '😂', '👏', '😮']
@@ -54,7 +55,7 @@ let mediaStream: MediaStream | null = null
 let recordingTimer: ReturnType<typeof setInterval> | null = null
 let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
 let composerResizeObserver: ResizeObserver | null = null
-let giphySearchTimer: ReturnType<typeof setTimeout> | null = null
+let klipySearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
 
 function isMobileChatViewport() {
@@ -424,7 +425,7 @@ const composerMediaMenuVisible = computed(() => Boolean(
   && !detailsOpen.value
   && !photoFeedOpen.value,
 ))
-const activeGiphyKind = computed<'gif' | 'sticker' | null>(() => {
+const activeKlipyKind = computed<'gif' | 'sticker' | null>(() => {
   if (composerMediaMenuTab.value === 'gif') {
     return 'gif'
   }
@@ -435,30 +436,46 @@ const activeGiphyKind = computed<'gif' | 'sticker' | null>(() => {
 
   return null
 })
-const giphyHintText = computed(() => {
-  if (!giphy.configured.value) {
-    return 'GIPHY API не настроен на сервере. Добавьте GIPHY_API_KEY в messenger core.'
+const currentKlipyCategories = computed(() => activeKlipyKind.value ? klipy.getCategories(activeKlipyKind.value) : [])
+const activeCatalogCategoryLabel = computed(() => {
+  if (!selectedCatalogCategory.value) {
+    return ''
   }
 
-  if (giphy.error.value) {
-    return giphy.error.value
+  return currentKlipyCategories.value.find(item => item.query === selectedCatalogCategory.value)?.category || selectedCatalogCategory.value
+})
+const klipyHintText = computed(() => {
+  if (!klipy.configured.value) {
+    return 'KLIPY API не настроен на сервере. Добавьте KLIPY_APP_KEY в runtime env messenger core.'
   }
 
-  if (!giphyQuery.value.trim()) {
-    if (giphy.pending.value) {
-      return 'Загружаем подборку GIPHY...'
+  if (klipy.error.value) {
+    return klipy.error.value
+  }
+
+  if (klipy.categoriesPending.value && !currentKlipyCategories.value.length) {
+    return 'Загружаем категории KLIPY...'
+  }
+
+  if (!klipyQuery.value.trim() && !selectedCatalogCategory.value) {
+    if (klipy.pending.value) {
+      return 'Загружаем подборку KLIPY...'
     }
 
     return composerMediaMenuTab.value === 'stickers'
-      ? 'Показаны недавние и популярные стикеры. Можно ввести запрос для точного поиска.'
-      : 'Показаны недавние и популярные GIF. Можно ввести запрос для точного поиска.'
+      ? 'Показаны недавние, категории и популярные стикеры KLIPY.'
+      : 'Показаны недавние, категории и популярные GIF из KLIPY.'
   }
 
-  if (giphy.pending.value) {
-    return 'Ищем по GIPHY...'
+  if (selectedCatalogCategory.value && !klipyQuery.value.trim() && klipy.pending.value) {
+    return `Подбираем ${composerMediaMenuTab.value === 'stickers' ? 'стикеры' : 'GIF'} по категории ${activeCatalogCategoryLabel.value}...`
   }
 
-  if (!giphy.items.value.length) {
+  if (klipy.pending.value) {
+    return 'Ищем в KLIPY...'
+  }
+
+  if (!klipy.items.value.length) {
     return 'Ничего не найдено. Попробуйте другой запрос.'
   }
 
@@ -466,7 +483,7 @@ const giphyHintText = computed(() => {
     ? 'Нажмите на стикер, чтобы отправить его в чат.'
     : 'Нажмите на GIF, чтобы отправить его в чат.'
 })
-const currentGiphyRecentItems = computed(() => activeGiphyKind.value ? giphy.getRecentItems(activeGiphyKind.value) : [])
+const currentKlipyRecentItems = computed(() => activeKlipyKind.value ? klipy.getRecentItems(activeKlipyKind.value) : [])
 
 onMounted(async () => {
   lockPageScroll()
@@ -482,9 +499,9 @@ onBeforeUnmount(() => {
   unlockPageScroll()
   stopRecordingTimer()
   stopStreamTracks()
-  if (giphySearchTimer) {
-    clearTimeout(giphySearchTimer)
-    giphySearchTimer = null
+  if (klipySearchTimer) {
+    clearTimeout(klipySearchTimer)
+    klipySearchTimer = null
   }
   if (composerAlignTimer) {
     clearTimeout(composerAlignTimer)
@@ -576,24 +593,28 @@ watch([detailsOpen, photoFeedOpen, () => conversations.activeConversationId.valu
   composerMediaMenuOpen.value = false
 })
 
-watch([composerMediaMenuVisible, composerMediaMenuTab, giphyQuery], ([visible]) => {
-  if (giphySearchTimer) {
-    clearTimeout(giphySearchTimer)
-    giphySearchTimer = null
+watch([composerMediaMenuVisible, composerMediaMenuTab, klipyQuery, selectedCatalogCategory], ([visible]) => {
+  if (klipySearchTimer) {
+    clearTimeout(klipySearchTimer)
+    klipySearchTimer = null
   }
 
   if (!visible) {
     return
   }
 
-  const kind = activeGiphyKind.value
+  const kind = activeKlipyKind.value
   if (!kind) {
     return
   }
 
-  giphySearchTimer = setTimeout(() => {
-    void giphy.search(giphyQuery.value, kind)
-    giphySearchTimer = null
+  void klipy.loadCategories(kind)
+
+  klipySearchTimer = setTimeout(() => {
+    void klipy.search(klipyQuery.value, kind, {
+      category: klipyQuery.value.trim() ? undefined : selectedCatalogCategory.value || undefined,
+    })
+    klipySearchTimer = null
   }, 260)
 })
 
@@ -655,6 +676,14 @@ function toggleComposerMediaMenu() {
 
 function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif') {
   composerMediaMenuTab.value = tab
+
+  if (tab !== 'emoji') {
+    selectedCatalogCategory.value = ''
+  }
+}
+
+function selectCatalogCategory(query: string) {
+  selectedCatalogCategory.value = selectedCatalogCategory.value === query ? '' : query
 }
 
 function insertEmojiToDraft(emoji: string) {
@@ -753,24 +782,34 @@ function openFilePicker(accept = '') {
   fileInput.value.click()
 }
 
-async function sendGiphyItem(item: MessengerGiphyItem) {
+async function sendKlipyItem(item: MessengerKlipyItem) {
   if (!conversations.activeConversation.value || conversations.messagePending.value) {
     return
   }
 
   actionError.value = ''
-  giphyUploadPending.value = true
+  mediaUploadPending.value = true
 
   try {
     const response = await fetch(item.originalUrl)
     if (!response.ok) {
-      throw new Error('GIPHY_MEDIA_FETCH_FAILED')
+      throw new Error('KLIPY_MEDIA_FETCH_FAILED')
     }
 
     const blob = await response.blob()
     const mimeType = item.mimeType || blob.type || 'application/octet-stream'
-    const extension = mimeType.includes('webp') ? 'webp' : mimeType.includes('gif') ? 'gif' : 'bin'
-    const fileBaseName = (item.title || item.id)
+    const extension = mimeType.includes('webp')
+      ? 'webp'
+      : mimeType.includes('png')
+        ? 'png'
+        : mimeType.includes('mp4')
+          ? 'mp4'
+          : mimeType.includes('webm')
+            ? 'webm'
+            : mimeType.includes('gif')
+              ? 'gif'
+              : 'bin'
+    const fileBaseName = (item.title || item.slug || item.id)
       .toLowerCase()
       .replace(/[^a-z0-9а-яё_-]+/gi, '-')
       .replace(/^-+|-+$/g, '')
@@ -779,13 +818,14 @@ async function sendGiphyItem(item: MessengerGiphyItem) {
 
     await conversations.uploadAttachment(file)
     composerMediaMenuOpen.value = false
-    giphy.remember(item)
-    giphy.reset()
-    giphyQuery.value = ''
+    klipy.remember(item)
+    klipy.reset()
+    klipyQuery.value = ''
+    selectedCatalogCategory.value = ''
   } catch {
-    actionError.value = 'Не удалось отправить медиа из GIPHY.'
+    actionError.value = 'Не удалось отправить медиа из KLIPY.'
   } finally {
-    giphyUploadPending.value = false
+    mediaUploadPending.value = false
   }
 }
 
@@ -1644,48 +1684,62 @@ onBeforeUnmount(() => {
 
         <div v-else class="composer-media-menu__catalog">
           <input
-            v-model="giphyQuery"
+            v-model="klipyQuery"
             type="text"
             class="inline-input composer-media-menu__search"
-            :placeholder="composerMediaMenuTab === 'stickers' ? 'Найти стикер в GIPHY' : 'Найти GIF в GIPHY'"
+            placeholder="Search KLIPY"
           >
-          <p class="composer-media-menu__hint">{{ giphyHintText }}</p>
-          <div v-if="!giphyQuery.trim() && currentGiphyRecentItems.length" class="composer-media-menu__recent">
+          <div v-if="currentKlipyCategories.length" class="composer-media-menu__categories" :aria-label="composerMediaMenuTab === 'stickers' ? 'Категории стикеров KLIPY' : 'Категории GIF KLIPY'">
+            <button
+              v-for="category in currentKlipyCategories"
+              :key="`${composerMediaMenuTab}-${category.query}`"
+              type="button"
+              class="composer-media-menu__category"
+              :class="{ 'composer-media-menu__category--active': selectedCatalogCategory === category.query }"
+              @click="selectCatalogCategory(category.query)"
+            >
+              <img class="composer-media-menu__category-preview" :src="category.previewUrl" :alt="category.category">
+              <span class="composer-media-menu__category-label">{{ category.category }}</span>
+            </button>
+          </div>
+          <p class="composer-media-menu__hint">{{ klipyHintText }}</p>
+          <div v-if="!klipyQuery.trim() && !selectedCatalogCategory && currentKlipyRecentItems.length" class="composer-media-menu__recent">
             <p class="composer-media-menu__section-title">Недавние</p>
             <div class="composer-media-menu__results composer-media-menu__results--recent">
               <button
-                v-for="item in currentGiphyRecentItems"
+                v-for="item in currentKlipyRecentItems"
                 :key="`recent-${item.id}`"
                 type="button"
                 class="composer-media-menu__result"
-                :disabled="giphyUploadPending"
-                @click="sendGiphyItem(item)"
+                :disabled="mediaUploadPending"
+                @click="sendKlipyItem(item)"
               >
                 <img class="composer-media-menu__result-preview" :src="item.previewUrl" :alt="item.title">
                 <span class="composer-media-menu__result-meta">
-                  <span class="composer-media-menu__result-title">{{ item.title || 'GIPHY media' }}</span>
+                  <span class="composer-media-menu__result-title">{{ item.title || 'KLIPY media' }}</span>
                   <span class="composer-media-menu__result-copy">{{ item.kind === 'sticker' ? 'Недавний стикер' : 'Недавний GIF' }}</span>
                 </span>
               </button>
             </div>
           </div>
-          <div v-if="giphy.items.length" class="composer-media-menu__results">
-            <p class="composer-media-menu__section-title">{{ giphyQuery.trim() ? 'Результаты' : 'Популярное' }}</p>
+          <div v-if="klipy.items.length" class="composer-media-menu__results">
+            <p class="composer-media-menu__section-title">{{ klipyQuery.trim() || selectedCatalogCategory ? 'Результаты' : 'Популярное' }}</p>
             <button
-              v-for="item in giphy.items"
+              v-for="item in klipy.items"
               :key="item.id"
               type="button"
               class="composer-media-menu__result"
-              :disabled="giphyUploadPending"
-              @click="sendGiphyItem(item)"
+              :disabled="mediaUploadPending"
+              @click="sendKlipyItem(item)"
             >
               <img class="composer-media-menu__result-preview" :src="item.previewUrl" :alt="item.title">
               <span class="composer-media-menu__result-meta">
-                <span class="composer-media-menu__result-title">{{ item.title || 'GIPHY media' }}</span>
-                <span class="composer-media-menu__result-copy">{{ item.kind === 'sticker' ? 'Стикер' : 'GIF' }}</span>
+                <span class="composer-media-menu__result-title">{{ item.title || 'KLIPY media' }}</span>
+                <span class="composer-media-menu__result-copy">{{ item.kind === 'sticker' ? 'Стикер KLIPY' : 'GIF KLIPY' }}</span>
               </span>
             </button>
           </div>
+          <p class="composer-media-menu__powered">Powered by KLIPY</p>
         </div>
       </div>
 
@@ -1695,7 +1749,7 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="composer-btn"
-            :aria-label="composerMediaMenuOpen ? 'Закрыть меню смайлов, стикеров и GIF' : 'Открыть меню смайлов, стикеров и GIF'"
+            :aria-label="composerMediaMenuOpen ? 'Закрыть меню смайлов, стикеров и GIF KLIPY' : 'Открыть меню смайлов, стикеров и GIF KLIPY'"
             :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
             @click="toggleComposerMediaMenu"
           >

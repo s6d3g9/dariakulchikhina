@@ -179,61 +179,127 @@ export async function createMessengerServer() {
   const messageReactionSchema = z.object({
     emoji: z.string().trim().min(1).max(16),
   })
-  const giphySearchSchema = z.object({
+  const klipyKindSchema = z.enum(['gif', 'sticker'])
+  const klipySearchSchema = z.object({
     query: z.string().trim().max(120).optional(),
-    kind: z.enum(['gif', 'sticker']).default('gif'),
+    category: z.string().trim().max(80).optional(),
+    kind: klipyKindSchema.default('gif'),
     limit: z.coerce.number().int().min(1).max(24).default(12),
   })
+  const klipyCategoriesSchema = z.object({
+    kind: klipyKindSchema.default('gif'),
+  })
 
-  function buildGiphySearchUrl(query: z.infer<typeof giphySearchSchema>) {
-    const endpoint = query.query
-      ? query.kind === 'sticker' ? 'stickers/search' : 'gifs/search'
-      : query.kind === 'sticker' ? 'stickers/trending' : 'gifs/trending'
-    const url = new URL(endpoint, `${config.GIPHY_API_BASE_URL.replace(/\/$/, '')}/`)
-    url.searchParams.set('api_key', config.GIPHY_API_KEY || '')
-    url.searchParams.set('limit', String(query.limit))
-    url.searchParams.set('rating', 'g')
-    url.searchParams.set('lang', 'ru')
-    url.searchParams.set('bundle', 'messaging_non_clips')
-    if (query.query) {
-      url.searchParams.set('q', query.query)
+  function buildKlipyContentUrl(
+    kind: z.infer<typeof klipyKindSchema>,
+    action: 'search' | 'trending' | 'categories',
+    customerId?: string,
+    payload?: Pick<z.infer<typeof klipySearchSchema>, 'query' | 'category' | 'limit'>,
+  ) {
+    const resource = kind === 'sticker' ? 'stickers' : 'gifs'
+    const appKey = encodeURIComponent(config.KLIPY_APP_KEY || '')
+    const url = new URL(`/api/v1/${appKey}/${resource}/${action}`, config.KLIPY_API_BASE_URL)
+
+    if (action === 'categories') {
+      url.searchParams.set('locale', 'ru_RU')
+      return url
     }
+
+    const queryText = payload?.query?.trim() || payload?.category?.trim() || ''
+    const perPage = queryText ? Math.max(payload?.limit || 12, 8) : payload?.limit || 12
+    url.searchParams.set('page', '1')
+    url.searchParams.set('per_page', String(perPage))
+    url.searchParams.set('customer_id', customerId || 'anonymous')
+    url.searchParams.set('locale', 'ru')
+    url.searchParams.set('format_filter', kind === 'sticker' ? 'gif,webp,png,webm' : 'gif,webp,jpg,mp4,webm')
+
+    if (queryText) {
+      url.searchParams.set('q', queryText)
+      url.searchParams.set('content_filter', 'high')
+    }
+
     return url
   }
 
-  function mapGiphyItem(item: any, kind: 'gif' | 'sticker') {
-    const images = item?.images || {}
-    const preview = images.fixed_width_small?.webp
-      || images.fixed_width_small?.url
-      || images.fixed_width?.webp
-      || images.fixed_width?.url
-      || images.preview_gif?.url
-      || images.original?.webp
-      || images.original?.url
+  function inferMimeTypeFromUrl(url: string) {
+    if (/\.webp(\?|$)/i.test(url)) {
+      return 'image/webp'
+    }
 
-    const original = images.original?.webp
-      || images.original?.url
-      || images.fixed_width?.webp
-      || images.fixed_width?.url
-      || preview
+    if (/\.png(\?|$)/i.test(url)) {
+      return 'image/png'
+    }
 
-    if (typeof preview !== 'string' || typeof original !== 'string') {
+    if (/\.mp4(\?|$)/i.test(url)) {
+      return 'video/mp4'
+    }
+
+    if (/\.webm(\?|$)/i.test(url)) {
+      return 'video/webm'
+    }
+
+    if (/\.jpe?g(\?|$)/i.test(url)) {
+      return 'image/jpeg'
+    }
+
+    return 'image/gif'
+  }
+
+  function pickKlipyAsset(file: any, candidates: string[]) {
+    for (const candidate of candidates) {
+      const [size, format] = candidate.split('.')
+      const asset = file?.[size]?.[format]
+      if (asset?.url) {
+        return asset
+      }
+    }
+
+    return null
+  }
+
+  function mapKlipyItem(item: any, kind: 'gif' | 'sticker') {
+    if (!item || item.type === 'ad') {
       return null
     }
 
-    const mimeType = original.endsWith('.webp') ? 'image/webp' : 'image/gif'
+    const file = item?.file || {}
+    const preview = pickKlipyAsset(file, kind === 'sticker'
+      ? ['xs.webp', 'xs.gif', 'xs.png', 'sm.webp', 'sm.gif', 'sm.png']
+      : ['xs.webp', 'xs.gif', 'xs.jpg', 'sm.webp', 'sm.gif', 'sm.jpg'])
+    const original = pickKlipyAsset(file, kind === 'sticker'
+      ? ['md.webp', 'md.gif', 'md.png', 'hd.webp', 'hd.gif', 'hd.png']
+      : ['md.gif', 'md.webp', 'md.mp4', 'hd.gif', 'hd.webp', 'hd.mp4', 'sm.gif'])
+
+    if (!preview?.url || !original?.url) {
+      return null
+    }
 
     return {
       id: String(item?.id || randomUUID()),
+      slug: String(item?.slug || item?.id || randomUUID()),
       kind,
-      title: String(item?.title || item?.slug || 'GIPHY media'),
-      previewUrl: preview,
-      originalUrl: original,
-      mimeType,
-      width: Number(images.original?.width || images.fixed_width?.width || 0) || undefined,
-      height: Number(images.original?.height || images.fixed_width?.height || 0) || undefined,
-      username: typeof item?.username === 'string' ? item.username : '',
-      rating: typeof item?.rating === 'string' ? item.rating : '',
+      title: String(item?.title || item?.slug || 'KLIPY media'),
+      previewUrl: String(preview.url),
+      originalUrl: String(original.url),
+      mimeType: inferMimeTypeFromUrl(String(original.url)),
+      width: Number(original.width || preview.width || 0) || undefined,
+      height: Number(original.height || preview.height || 0) || undefined,
+    }
+  }
+
+  function mapKlipyCategory(item: any) {
+    const category = typeof item?.category === 'string' ? item.category.trim() : ''
+    const query = typeof item?.query === 'string' ? item.query.trim() : category
+    const previewUrl = typeof item?.preview_url === 'string' ? item.preview_url : ''
+
+    if (!category || !query || !previewUrl) {
+      return null
+    }
+
+    return {
+      category,
+      query,
+      previewUrl,
     }
   }
 
@@ -266,39 +332,80 @@ export async function createMessengerServer() {
     timestamp: new Date().toISOString(),
   }))
 
-  app.get('/integrations/giphy/search', async (request, reply) => {
+  app.get('/integrations/klipy/search', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
       return reply.code(401).send({ error: 'UNAUTHORIZED' })
     }
 
-    const parsedQuery = giphySearchSchema.safeParse(request.query)
+    const parsedQuery = klipySearchSchema.safeParse(request.query)
     if (!parsedQuery.success) {
       return reply.code(400).send({ error: 'INVALID_QUERY' })
     }
 
-    if (!config.GIPHY_API_KEY) {
+    if (!config.KLIPY_APP_KEY) {
       return {
         configured: false,
         items: [],
       }
     }
 
-    const response = await fetch(buildGiphySearchUrl(parsedQuery.data))
+    const response = await fetch(buildKlipyContentUrl(
+      parsedQuery.data.kind,
+      parsedQuery.data.query || parsedQuery.data.category ? 'search' : 'trending',
+      session.user.id,
+      parsedQuery.data,
+    ))
     if (!response.ok) {
-      return reply.code(502).send({ error: 'GIPHY_UPSTREAM_FAILED' })
+      return reply.code(502).send({ error: 'KLIPY_UPSTREAM_FAILED' })
     }
 
-    const payload = await response.json() as { data?: any[] }
-    const items = Array.isArray(payload.data)
-      ? payload.data
-        .map(item => mapGiphyItem(item, parsedQuery.data.kind))
+    const payload = await response.json() as { data?: { data?: any[] } }
+    const items = Array.isArray(payload.data?.data)
+      ? payload.data.data
+        .map(item => mapKlipyItem(item, parsedQuery.data.kind))
         .filter((item): item is NonNullable<typeof item> => Boolean(item))
       : []
 
     return {
       configured: true,
       items,
+    }
+  })
+
+  app.get('/integrations/klipy/categories', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedQuery = klipyCategoriesSchema.safeParse(request.query)
+    if (!parsedQuery.success) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    if (!config.KLIPY_APP_KEY) {
+      return {
+        configured: false,
+        categories: [],
+      }
+    }
+
+    const response = await fetch(buildKlipyContentUrl(parsedQuery.data.kind, 'categories', session.user.id))
+    if (!response.ok) {
+      return reply.code(502).send({ error: 'KLIPY_UPSTREAM_FAILED' })
+    }
+
+    const payload = await response.json() as { data?: { categories?: any[] } }
+    const categories = Array.isArray(payload.data?.categories)
+      ? payload.data.categories
+        .map(mapKlipyCategory)
+        .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      : []
+
+    return {
+      configured: true,
+      categories,
     }
   })
 

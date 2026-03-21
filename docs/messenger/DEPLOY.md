@@ -18,10 +18,17 @@
 - `MESSENGER_CORE_AUTH_SECRET`
 - `MESSENGER_CORE_CORS_ORIGIN`
 
-Опционально для GIF/стикеров:
+Опционально для GIF/стикеров через KLIPY:
 
-- `GIPHY_API_KEY`
-- `GIPHY_API_BASE_URL`
+- `KLIPY_APP_KEY`
+- `KLIPY_API_BASE_URL`
+
+Для production ключ лучше хранить вне git в файле `/opt/daria-messenger-data/messenger-runtime.env`:
+
+```bash
+KLIPY_APP_KEY=...
+KLIPY_API_BASE_URL=https://api.klipy.com
+```
 
 ### Web
 
