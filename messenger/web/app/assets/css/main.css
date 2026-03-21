@@ -3208,6 +3208,9 @@ html[data-messenger-motion='reduced'] *::after {
 .composer-context--klipy {
   display: flex;
   justify-content: flex-start;
+  position: relative;
+  z-index: 60;
+  margin-bottom: 10px;
   padding: 0;
   border: 0;
   background: transparent;
