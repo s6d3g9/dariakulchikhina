@@ -838,7 +838,8 @@ textarea {
 
 .attachment-preview--sticker {
   width: auto;
-  max-width: min(100%, 148px);
+  height: auto;
+  max-width: 100%;
   max-height: calc(var(--messenger-control-size) * 3 + 28px);
   object-fit: contain;
   border: 0;
@@ -3205,6 +3206,8 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .composer-context--klipy {
+  display: flex;
+  justify-content: flex-start;
   padding: 0;
   border: 0;
   background: transparent;
@@ -3214,6 +3217,8 @@ html[data-messenger-motion='reduced'] *::after {
 .composer-klipy-pill {
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) auto;
+  width: fit-content;
+  max-width: 100%;
   align-items: center;
   gap: 10px;
   min-height: 56px;
