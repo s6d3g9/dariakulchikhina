@@ -1,5 +1,5 @@
 {
-  "id": "/",
+  "id": "./",
   "name": "Daria Messenger",
   "short_name": "Messenger",
   "description": "Standalone messenger with chats, contacts, calls and installable app mode.",

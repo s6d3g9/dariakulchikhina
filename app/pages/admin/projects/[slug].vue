@@ -611,7 +611,22 @@ import {
 definePageMeta({ layout: 'admin', middleware: ['admin', 'admin-project-canonical'] })
 
 const route = useRoute()
-const slug = computed(() => route.params.slug as string)
+const slug = computed(() => {
+  const routeSlug = Array.isArray(route.params.slug) ? route.params.slug[0] : route.params.slug
+  if (typeof routeSlug === 'string' && routeSlug.trim()) {
+    return routeSlug.trim()
+  }
+
+  const queryProjectSlug = Array.isArray(route.query.projectSlug)
+    ? route.query.projectSlug[0]
+    : route.query.projectSlug
+
+  if (typeof queryProjectSlug === 'string' && queryProjectSlug.trim()) {
+    return queryProjectSlug.trim()
+  }
+
+  return ''
+})
 const designSystem = useDesignSystem()
 const blueprintRuntime = useAppBlueprintRuntime()
 createWipe2Slot()
@@ -1493,9 +1508,14 @@ const MODERN_PROJECT_PAGES = [
 
 const LEGACY_PROJECT_PAGES = new Set(['materials', 'tz', 'profile_customer'])
 
-const { data: project, pending: projectPending, refresh } = await useFetch<any>(
-  () => `/api/projects/${slug.value}`,
-  { headers: import.meta.server ? useRequestHeaders(['cookie']) : undefined },
+const { data: project, pending: projectPending, refresh } = await useAsyncData<any | null>(
+  () => `admin-project-${slug.value || 'missing'}`,
+  () => slug.value
+    ? $fetch(`/api/projects/${slug.value}`, {
+      headers: import.meta.server ? useRequestHeaders(['cookie']) : undefined,
+    })
+    : Promise.resolve(null),
+  { watch: [slug], default: () => null },
 )
 watch(slug, () => {
   syncNavToProject()
