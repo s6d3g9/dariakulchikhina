@@ -420,20 +420,11 @@ function buildDirectChatExternalRef(peerActorKey: string) {
   return `${directChatsPrefix.value}${[actorKey.value, peerActorKey].sort().join('__')}`
 }
 
-function getServiceHeaders() {
-  return {
-    Authorization: `Bearer ${bootstrapData.value?.accessToken || ''}`,
-    'Content-Type': 'application/json',
-  }
-}
-
-async function serviceFetch<T>(path: string, options: any = {}) {
-  const serviceUrl = bootstrapData.value?.serviceUrl
-  if (!serviceUrl) throw new Error('Communications service URL is missing')
-  return await $fetch<T>(`${serviceUrl}${path}`, {
+async function apiFetch<T>(path: string, options: any = {}) {
+  return await $fetch<T>(`/api/projects/${props.projectSlug}/communications${path}`, {
     ...options,
     headers: {
-      ...getServiceHeaders(),
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       ...(options.headers || {}),
     },
   })
@@ -498,7 +489,7 @@ async function loadProjectContacts() {
   const externalRef = bootstrapData.value?.roomExternalRef
   if (!externalRef) return
 
-  const response = await serviceFetch<RoomResponse>('/v1/rooms', {
+  const response = await apiFetch<RoomResponse>('/rooms', {
     method: 'POST',
     body: {
       externalRef,
@@ -513,7 +504,7 @@ async function loadProjectContacts() {
 }
 
 async function fetchOpenChats() {
-  const response = await serviceFetch<RoomsResponse>(`/v1/rooms?kind=direct&externalRefPrefix=${encodeURIComponent(directChatsPrefix.value)}`, { method: 'GET' })
+  const response = await apiFetch<RoomsResponse>(`/rooms?kind=direct&externalRefPrefix=${encodeURIComponent(directChatsPrefix.value)}`, { method: 'GET' })
   const nextChats: ChatSummary[] = []
   for (const room of response.rooms) {
     const peer = normalizeParticipants(room.participants).find((participant) => participant.actorKey !== actorKey.value)
@@ -547,7 +538,7 @@ async function saveMyNickname() {
   nicknameSaving.value = true
   nicknameStatus.value = 'Сохраняем никнейм…'
   try {
-    const response = await serviceFetch<RoomResponse>(`/v1/rooms/${projectRoomId.value}/me/nickname`, {
+    const response = await apiFetch<RoomResponse>(`/rooms/${projectRoomId.value}/me/nickname`, {
       method: 'PUT',
       body: { nickname: nextNickname || '' },
     })
@@ -582,7 +573,7 @@ function mergeKeyBundle(bundle: any) {
 async function publishMyKeyBundle() {
   if (!currentChatRoomId.value || !identityPublicKeyJwk || !myKeyId) return
 
-  const response = await serviceFetch<{ keyBundle: any }>(`/v1/rooms/${currentChatRoomId.value}/key-bundles`, {
+  const response = await apiFetch<{ keyBundle: any }>(`/rooms/${currentChatRoomId.value}/key-bundles`, {
     method: 'POST',
     body: {
       keyId: myKeyId,
@@ -632,8 +623,8 @@ async function fetchMessagesAndKeys() {
   if (!currentChatRoomId.value) return
   await publishMyKeyBundle()
   const [messageResponse, bundleResponse] = await Promise.all([
-    serviceFetch<MessageResponse>(`/v1/rooms/${currentChatRoomId.value}/messages?limit=100`, { method: 'GET' }),
-    serviceFetch<KeyBundleResponse>(`/v1/rooms/${currentChatRoomId.value}/key-bundles`, { method: 'GET' }),
+    apiFetch<MessageResponse>(`/rooms/${currentChatRoomId.value}/messages?limit=100`, { method: 'GET' }),
+    apiFetch<KeyBundleResponse>(`/rooms/${currentChatRoomId.value}/key-bundles`, { method: 'GET' }),
   ])
   keyBundles.value = bundleResponse.keyBundles || []
   await rebuildDecryptedMessages(messageResponse.messages || [])
@@ -663,7 +654,7 @@ async function shareRoomKeyWithKnownPeers(targetActorKey?: string) {
       senderPrivateKey: identityPrivateKey,
       recipientPublicKeyJwk: bundle.publicKeyJwk,
     })
-    await serviceFetch(`/v1/rooms/${currentChatRoomId.value}/signals`, {
+    await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
       method: 'POST',
       body: {
         kind: 'room-key',
@@ -682,15 +673,15 @@ async function shareRoomKeyWithKnownPeers(targetActorKey?: string) {
 
 async function refreshMessagesOnly() {
   if (!currentChatRoomId.value) return
-  const response = await serviceFetch<MessageResponse>(`/v1/rooms/${currentChatRoomId.value}/messages?limit=100`, { method: 'GET' })
+  const response = await apiFetch<MessageResponse>(`/rooms/${currentChatRoomId.value}/messages?limit=100`, { method: 'GET' })
   await rebuildDecryptedMessages(response.messages || [])
 }
 
 function setupEventStream() {
-  if (!import.meta.client || !currentChatRoomId.value || !bootstrapData.value?.serviceUrl || !bootstrapData.value.accessToken) return
+  if (!import.meta.client || !currentChatRoomId.value) return
 
   eventSource?.close()
-  eventSource = new EventSource(`${bootstrapData.value.serviceUrl}/v1/rooms/${currentChatRoomId.value}/events?token=${encodeURIComponent(bootstrapData.value.accessToken)}`)
+  eventSource = new EventSource(`/api/projects/${props.projectSlug}/communications/rooms/${currentChatRoomId.value}/events`)
   eventSource.addEventListener('open', () => {
     eventStreamConnected.value = true
   })
@@ -725,7 +716,7 @@ async function openDirectChat(peer: SecureParticipant, existingChat?: ChatSummar
   resetChatState()
   teardownCall('')
 
-  const response = await serviceFetch<RoomResponse>('/v1/rooms', {
+  const response = await apiFetch<RoomResponse>('/rooms', {
     method: 'POST',
     body: {
       externalRef: existingChat?.externalRef || buildDirectChatExternalRef(peer.actorKey),
@@ -787,7 +778,7 @@ async function sendEncryptedMessage() {
       return
     }
     const encrypted = await encryptCommunicationText({ roomKey: activeRoomKey, text: draftMessage.value.trim(), senderKeyId: myKeyId })
-    await serviceFetch(`/v1/rooms/${currentChatRoomId.value}/messages`, { method: 'POST', body: { encrypted } })
+    await apiFetch(`/rooms/${currentChatRoomId.value}/messages`, { method: 'POST', body: { encrypted } })
     draftMessage.value = ''
     await fetchOpenChats()
   } catch (error: any) {
@@ -825,7 +816,7 @@ function buildPeerConnection(callId: string, peerActorKey: string, mode: 'audio'
   }
   connection.onicecandidate = async (event) => {
     if (!event.candidate || !currentChatRoomId.value) return
-    await serviceFetch(`/v1/rooms/${currentChatRoomId.value}/signals`, {
+    await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
       method: 'POST',
       body: {
         kind: 'ice-candidate',
@@ -846,7 +837,7 @@ async function startOutgoingCall(mode: 'audio' | 'video') {
   const callId = crypto.randomUUID()
   activeCall.value = { callId, peerActorKey: currentChatPeer.value.actorKey, mode, initiator: true }
   callStatusText.value = `Ожидание ответа ${currentChatPeer.value.displayName}`
-  await serviceFetch(`/v1/rooms/${currentChatRoomId.value}/signals`, {
+  await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
     method: 'POST',
     body: { kind: 'invite', callId, targetActorKey: currentChatPeer.value.actorKey, payload: { mode } },
   })
@@ -857,7 +848,7 @@ async function acceptIncomingCall() {
   try {
     await initMedia(incomingCall.value.mode)
     activeCall.value = { callId: incomingCall.value.callId, peerActorKey: incomingCall.value.fromActorKey, mode: incomingCall.value.mode, initiator: false }
-    await serviceFetch(`/v1/rooms/${currentChatRoomId.value}/signals`, {
+    await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
       method: 'POST',
       body: {
         kind: 'ringing',
@@ -878,7 +869,7 @@ async function rejectIncomingCall() {
     incomingCall.value = null
     return
   }
-  await serviceFetch(`/v1/rooms/${currentChatRoomId.value}/signals`, {
+  await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
     method: 'POST',
     body: { kind: 'reject', callId: incomingCall.value.callId, targetActorKey: incomingCall.value.fromActorKey, payload: {} },
   })
@@ -888,7 +879,7 @@ async function rejectIncomingCall() {
 
 async function hangupCall() {
   if (!activeCall.value || !currentChatRoomId.value) return
-  await serviceFetch(`/v1/rooms/${currentChatRoomId.value}/signals`, {
+  await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
     method: 'POST',
     body: { kind: 'hangup', callId: activeCall.value.callId, targetActorKey: activeCall.value.peerActorKey, payload: {} },
   }).catch(() => {})
@@ -939,7 +930,7 @@ async function handleSignal(signal: any) {
     const connection = buildPeerConnection(signal.callId, activeCall.value.peerActorKey, mode)
     const offer = await connection.createOffer()
     await connection.setLocalDescription(offer)
-    await serviceFetch(`/v1/rooms/${currentChatRoomId.value}/signals`, {
+    await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
       method: 'POST',
       body: { kind: 'offer', callId: signal.callId, targetActorKey: activeCall.value.peerActorKey, payload: { sdp: offer.sdp, type: offer.type, mode } },
     })
@@ -956,7 +947,7 @@ async function handleSignal(signal: any) {
     await connection.setRemoteDescription({ type: 'offer', sdp: signal.payload?.sdp })
     const answer = await connection.createAnswer()
     await connection.setLocalDescription(answer)
-    await serviceFetch(`/v1/rooms/${currentChatRoomId.value}/signals`, {
+    await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
       method: 'POST',
       body: { kind: 'answer', callId: signal.callId, targetActorKey: senderKey, payload: { sdp: answer.sdp, type: answer.type, mode } },
     })

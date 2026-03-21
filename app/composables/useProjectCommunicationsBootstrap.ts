@@ -1,11 +1,20 @@
 import type { ProjectCommunicationBootstrap } from '~~/shared/types/communications'
 
 export function useProjectCommunicationsBootstrap(projectSlug: MaybeRefOrGetter<string | null | undefined>) {
-  return useFetch<ProjectCommunicationBootstrap>(() => {
-    const slug = toValue(projectSlug)?.trim()
-    return slug ? `/api/projects/${slug}/communications/bootstrap` : null
-  }, {
+  const slug = computed(() => toValue(projectSlug)?.trim() || '')
+  const state = useFetch<ProjectCommunicationBootstrap>(() => `/api/projects/${slug.value}/communications/bootstrap`, {
     server: false,
-    immediate: true,
+    immediate: false,
   })
+
+  watch(slug, async (value) => {
+    if (!value) {
+      state.clear()
+      return
+    }
+
+    await state.execute()
+  }, { immediate: true })
+
+  return state
 }

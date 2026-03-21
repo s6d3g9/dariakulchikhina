@@ -136,7 +136,7 @@ async function buildRoomParticipants(projectSlug: string, currentActor: Bootstra
 }
 
 export async function buildProjectCommunicationBootstrap(event: H3Event, projectSlug: string): Promise<ProjectCommunicationBootstrap> {
-  const config = useRuntimeConfig(event)
+  const config = useRuntimeConfig()
   const secret = config.communicationsServiceSecret?.trim()
   const serviceUrl = config.public.communicationsServiceUrl?.trim()
 

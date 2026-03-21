@@ -1,0 +1,14 @@
+import type { CommunicationRoomResponse } from '~/shared/types/communications'
+import { relayProjectCommunicationJson } from '~/server/utils/project-communications-relay'
+
+export default defineEventHandler(async (event) => {
+  const slug = getRouterParam(event, 'slug')
+  const roomId = getRouterParam(event, 'roomId')
+  if (!slug || !roomId) {
+    throw createError({ statusCode: 400, statusMessage: 'Project slug and roomId are required' })
+  }
+
+  return await relayProjectCommunicationJson<CommunicationRoomResponse>(event, slug, {
+    path: `/v1/rooms/${roomId}`,
+  })
+})

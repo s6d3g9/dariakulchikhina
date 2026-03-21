@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { useDb } from '~/server/db'
 import { contractors, projects } from '~/server/db/schema'
 
 export async function createUniqueProjectSlug(db: ReturnType<typeof useDb>, login: string) {

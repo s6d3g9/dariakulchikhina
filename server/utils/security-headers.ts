@@ -34,7 +34,7 @@ function deriveRealtimeOrigins(serviceUrl: string | null | undefined) {
 }
 
 export function buildContentSecurityPolicy(event: H3Event, nonce?: string) {
-  const config = useRuntimeConfig(event)
+  const config = useRuntimeConfig()
   const connectSources = ["'self'", 'https:', 'wss:']
 
   for (const origin of deriveRealtimeOrigins(config.public.communicationsServiceUrl?.trim())) {
