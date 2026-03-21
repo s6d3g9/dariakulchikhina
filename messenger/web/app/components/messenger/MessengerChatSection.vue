@@ -618,6 +618,12 @@ watch([composerMediaMenuVisible, composerMediaMenuTab, klipyQuery, selectedCatal
   }, 260)
 })
 
+watch(() => klipyQuery.value.trim(), (value) => {
+  if (value && selectedCatalogCategory.value) {
+    selectedCatalogCategory.value = ''
+  }
+})
+
 watch(() => viewport.keyboardOpen.value, async (opened) => {
   if (!import.meta.client || !isMobileChatViewport()) {
     return
@@ -1696,6 +1702,9 @@ onBeforeUnmount(() => {
             type="text"
             class="inline-input composer-media-menu__search"
             placeholder="Search KLIPY"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
           >
           <div v-if="currentKlipyCategories.length" class="composer-media-menu__categories" :aria-label="composerMediaMenuTab === 'stickers' ? 'Категории стикеров KLIPY' : 'Категории GIF KLIPY'">
             <button
@@ -1719,14 +1728,12 @@ onBeforeUnmount(() => {
                 :key="`recent-${item.id}`"
                 type="button"
                 class="composer-media-menu__result"
+                :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
+                :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
                 :disabled="mediaUploadPending"
                 @click="sendKlipyItem(item)"
               >
                 <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-                <span class="composer-media-menu__result-meta">
-                  <span class="composer-media-menu__result-title">{{ item.title || 'KLIPY media' }}</span>
-                  <span class="composer-media-menu__result-copy">{{ item.kind === 'sticker' ? 'Недавний стикер' : 'Недавний GIF' }}</span>
-                </span>
               </button>
             </div>
           </div>
@@ -1738,14 +1745,12 @@ onBeforeUnmount(() => {
               :key="item.id"
               type="button"
               class="composer-media-menu__result"
+              :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
+              :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
               :disabled="mediaUploadPending"
               @click="sendKlipyItem(item)"
             >
               <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-              <span class="composer-media-menu__result-meta">
-                <span class="composer-media-menu__result-title">{{ item.title || 'KLIPY media' }}</span>
-                <span class="composer-media-menu__result-copy">{{ item.kind === 'sticker' ? 'Стикер KLIPY' : 'GIF KLIPY' }}</span>
-              </span>
             </button>
             </div>
           </div>

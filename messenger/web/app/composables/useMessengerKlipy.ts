@@ -18,6 +18,38 @@ export interface MessengerKlipyCategory {
 
 const KLIPY_RECENT_STORAGE_KEY = 'daria-messenger-klipy-recent'
 
+const RU_LAYOUT_TO_EN_MAP: Record<string, string> = {
+  й: 'q', ц: 'w', у: 'e', к: 'r', е: 't', н: 'y', г: 'u', ш: 'i', щ: 'o', з: 'p', х: '[', ъ: ']',
+  ф: 'a', ы: 's', в: 'd', а: 'f', п: 'g', р: 'h', о: 'j', л: 'k', д: 'l', ж: ';', э: "'",
+  я: 'z', ч: 'x', с: 'c', м: 'v', и: 'b', т: 'n', ь: 'm', б: ',', ю: '.', ё: '`',
+}
+
+function mapRuLayoutToEn(value: string) {
+  return Array.from(value).map((char) => {
+    const lower = char.toLowerCase()
+    const mapped = RU_LAYOUT_TO_EN_MAP[lower]
+    if (!mapped) {
+      return char
+    }
+
+    return char === lower ? mapped : mapped.toUpperCase()
+  }).join('')
+}
+
+function buildQueryVariants(query: string) {
+  const variants = new Set<string>()
+  const normalized = query.trim()
+  if (normalized) {
+    variants.add(normalized)
+    const mappedLayout = mapRuLayoutToEn(normalized)
+    if (mappedLayout !== normalized) {
+      variants.add(mappedLayout)
+    }
+  }
+
+  return Array.from(variants)
+}
+
 function sanitizeRecentItems(payload: unknown) {
   if (!Array.isArray(payload)) {
     return [] as MessengerKlipyItem[]
@@ -83,18 +115,44 @@ export function useMessengerKlipy() {
 
     pending.value = true
     try {
-      const response = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {
-        method: 'GET',
-        query: {
-          query: normalizedQuery || undefined,
-          category: normalizedQuery ? undefined : normalizedCategory || undefined,
-          kind,
-          limit: options.limit || 12,
-        },
-      })
+      if (!normalizedQuery) {
+        const response = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {
+          method: 'GET',
+          query: {
+            category: normalizedCategory || undefined,
+            kind,
+            limit: options.limit || 12,
+          },
+        })
 
-      configured.value = response.configured
-      items.value = response.items
+        configured.value = response.configured
+        items.value = response.items
+        return
+      }
+
+      const variants = buildQueryVariants(normalizedQuery)
+      let configuredFlag = true
+      let resolvedItems: MessengerKlipyItem[] = []
+
+      for (const queryVariant of variants) {
+        const response = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {
+          method: 'GET',
+          query: {
+            query: queryVariant,
+            kind,
+            limit: options.limit || 12,
+          },
+        })
+
+        configuredFlag = response.configured
+        if (response.items.length) {
+          resolvedItems = response.items
+          break
+        }
+      }
+
+      configured.value = configuredFlag
+      items.value = resolvedItems
     } catch {
       items.value = []
       error.value = 'Не удалось загрузить каталог KLIPY.'
