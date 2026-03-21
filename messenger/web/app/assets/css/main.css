@@ -841,6 +841,9 @@ textarea {
   max-width: min(100%, 148px);
   max-height: calc(var(--messenger-control-size) * 2 + 28px);
   object-fit: contain;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .composer-bar {
