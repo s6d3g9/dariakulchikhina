@@ -1,4 +1,4 @@
-const appBaseUrl = process.env.NUXT_APP_BASE_URL || '/'
+const appBaseUrl = process.env.NUXT_APP_BASE_URL || (process.env.NODE_ENV === 'production' ? '/messenger/' : '/')
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-03-19',
