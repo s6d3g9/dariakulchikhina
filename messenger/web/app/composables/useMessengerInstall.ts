@@ -3,6 +3,15 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
 
+function isAndroidChrome() {
+  if (!import.meta.client) {
+    return false
+  }
+
+  const userAgent = window.navigator.userAgent.toLowerCase()
+  return userAgent.includes('android') && userAgent.includes('chrome') && !userAgent.includes('edg')
+}
+
 export function useMessengerInstall() {
   const deferredPrompt = useState<BeforeInstallPromptEvent | null>('messenger-install-prompt', () => null)
   const installSupported = useState<boolean>('messenger-install-supported', () => false)
@@ -48,7 +57,9 @@ export function useMessengerInstall() {
   }
 
   function noteManualInstall() {
-    installMessage.value = 'Если кнопка установки недоступна, откройте меню браузера и выберите установку или добавление на главный экран.'
+    installMessage.value = isAndroidChrome()
+      ? 'В Chrome на Android откройте меню браузера ⋮ и выберите Установить приложение. Если этого пункта нет, выберите Добавить на главный экран.'
+      : 'Если кнопка установки недоступна, откройте меню браузера и выберите установку приложения или добавление на главный экран.'
   }
 
   if (import.meta.client) {

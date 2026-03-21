@@ -4,12 +4,15 @@
   "short_name": "Messenger",
   "description": "Standalone messenger with chats, contacts, calls and installable app mode.",
   "lang": "ru",
+  "dir": "ltr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait",
   "background_color": "#09111f",
   "theme_color": "#09111f",
+  "prefer_related_applications": false,
   "categories": ["communication", "productivity"],
   "icons": [
     {
