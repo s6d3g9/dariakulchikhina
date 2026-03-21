@@ -234,13 +234,14 @@ function handleBubbleClick(event: MouseEvent) {
       <p class="message-relation-card__text">{{ relationPreviewText(entry.replyTo) }}</p>
     </div>
     <template v-if="entry.kind === 'file' && entry.attachment">
-      <audio
-        v-if="entry.attachment.mimeType.startsWith('audio/')"
-        class="voice-player"
-        controls
-        preload="metadata"
-        :src="entry.attachment.resolvedUrl"
-      />
+      <div v-if="entry.attachment.mimeType.startsWith('audio/')" class="voice-player-shell">
+        <audio
+          class="voice-player"
+          controls
+          preload="metadata"
+          :src="entry.attachment.resolvedUrl"
+        />
+      </div>
       <button
         v-if="!entry.attachment.mimeType.startsWith('audio/') && !entry.attachment.mimeType.startsWith('image/')"
         type="button"

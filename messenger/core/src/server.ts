@@ -58,7 +58,7 @@ export async function createMessengerServer() {
   }
 
   const authSchema = z.object({
-    login: z.string().trim().min(3).max(32),
+    login: z.string().trim().toLowerCase().min(3).max(32).regex(/^[a-z0-9._-]+$/),
     password: z.string().min(8).max(128),
     displayName: z.string().trim().min(2).max(80).optional(),
   })

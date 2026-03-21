@@ -36,6 +36,8 @@ interface MessengerSettingsSnapshot {
 
 const MESSENGER_SETTINGS_STORAGE_KEY = 'daria-messenger-settings'
 const MESSENGER_SETTINGS_SESSION_STORAGE_KEY = 'daria-messenger-settings-session'
+const MESSENGER_THEME_STORAGE_KEY = 'daria-messenger-theme'
+const MESSENGER_STYLE_STORAGE_KEY = 'daria-messenger-style'
 
 function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
   return {
@@ -85,6 +87,29 @@ function readStoredMessengerSettings() {
   } catch {
     return null
   }
+}
+
+function readStoredThemePreferences() {
+  if (!import.meta.client) {
+    return null
+  }
+
+  const storedTheme = window.localStorage.getItem(MESSENGER_THEME_STORAGE_KEY)
+  const storedStyle = window.localStorage.getItem(MESSENGER_STYLE_STORAGE_KEY)
+
+  return {
+    active: storedTheme as MessengerThemeKey | null,
+    style: storedStyle as MessengerStyleKey | null,
+  }
+}
+
+function persistThemePreferences(theme: MessengerThemeKey, style: MessengerStyleKey) {
+  if (!import.meta.client) {
+    return
+  }
+
+  window.localStorage.setItem(MESSENGER_THEME_STORAGE_KEY, theme)
+  window.localStorage.setItem(MESSENGER_STYLE_STORAGE_KEY, style)
 }
 
 function applyReduceMotionPreference(enabled: boolean) {
@@ -245,9 +270,17 @@ export function useMessengerSettings() {
     }
 
     settings.value = mergeMessengerSettings(readStoredMessengerSettings())
+    const storedThemePreferences = readStoredThemePreferences()
+    if (storedThemePreferences?.active) {
+      settings.value.themes.active = storedThemePreferences.active
+    }
+    if (storedThemePreferences?.style) {
+      settings.value.themes.style = storedThemePreferences.style
+    }
     applyReduceMotionPreference(settings.value.devices.reduceMotion)
     applyMessengerThemePreference(settings.value.themes.active)
     applyMessengerStylePreference(settings.value.themes.style)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.style)
     ready.value = true
     void refreshPermissionStates()
   }
@@ -259,6 +292,7 @@ export function useMessengerSettings() {
   function setTheme(theme: MessengerThemeKey) {
     settings.value.themes.active = theme
     applyMessengerThemePreference(theme)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.style)
 
     if (ready.value) {
       persist()
@@ -268,6 +302,7 @@ export function useMessengerSettings() {
   function setStyle(style: MessengerStyleKey) {
     settings.value.themes.style = style
     applyMessengerStylePreference(style)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.style)
 
     if (ready.value) {
       persist()
@@ -321,6 +356,7 @@ export function useMessengerSettings() {
     applyReduceMotionPreference(settings.value.devices.reduceMotion)
     applyMessengerThemePreference(settings.value.themes.active)
     applyMessengerStylePreference(settings.value.themes.style)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.style)
   }, { deep: true })
 
   const currentDevice = computed(() => {

@@ -7,6 +7,7 @@ const navigation = useMessengerConversationState()
 const realtime = useMessengerRealtime()
 const calls = useMessengerCalls()
 const viewport = useMessengerViewport()
+const settingsModel = useMessengerSettings()
 
 const activeTitle = computed(() => sections.find(section => section.key === navigation.activeSection.value)?.shortTitle ?? 'Чаты')
 const showHero = computed(() => navigation.activeSection.value === 'settings')
@@ -28,6 +29,7 @@ function navIconName(section: MessengerSectionKey) {
 let detachViewport: (() => void) | null = null
 
 onMounted(() => {
+  settingsModel.hydrate()
   detachViewport = viewport.attach()
   void realtime.connect()
 })
