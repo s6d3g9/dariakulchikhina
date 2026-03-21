@@ -374,14 +374,19 @@ export function useMessengerConversations() {
   }
 
   async function openDirectConversation(peerUserId: string) {
+    const conversationId = await ensureDirectConversation(peerUserId)
+    state.openConversation(conversationId)
+    await loadMessages(conversationId)
+  }
+
+  async function ensureDirectConversation(peerUserId: string) {
     const response = await auth.request<{ conversation: { id: string } }>('/conversations/direct', {
       method: 'POST',
       body: { peerUserId },
     })
 
     await refresh(query.value)
-    state.openConversation(response.conversation.id)
-    await loadMessages(response.conversation.id)
+    return response.conversation.id
   }
 
   async function openSecretConversation(peerUserId: string) {
@@ -455,44 +460,16 @@ export function useMessengerConversations() {
   async function forwardMessage(sourceMessageId: string, targetConversationId: string) {
     const targetConversation = conversations.value.find(item => item.id === targetConversationId)
     const sourceMessage = messages.value.find(item => item.id === sourceMessageId)
-    if (!targetConversation || !sourceMessage || !auth.user.value) {
+    if (!targetConversation || !sourceMessage) {
       throw new Error('MESSAGE_NOT_FOUND')
     }
 
     messagePending.value = true
     try {
-      const encryptedBody = sourceMessage.kind === 'text'
-        ? await messengerCrypto.encryptText(
-          auth.request,
-          auth.user.value.id,
-          targetConversationId,
-          targetConversation.peerUserId,
-          sourceMessage.body,
-        )
-        : undefined
-
       await auth.request(`/conversations/${targetConversationId}/messages`, {
         method: 'POST',
         body: {
-          body: sourceMessage.kind === 'text' ? '' : sourceMessage.body,
-          encryptedBody,
-          forwardedFrom: {
-            messageId: sourceMessage.id,
-            conversationId: activeConversation.value?.id || targetConversationId,
-            senderUserId: sourceMessage.own ? auth.user.value.id : activeConversation.value?.peerUserId || targetConversation.peerUserId,
-            senderDisplayName: sourceMessage.senderDisplayName,
-            body: sourceMessage.kind === 'text' ? '' : sourceMessage.body,
-            encryptedBody,
-            kind: sourceMessage.kind,
-            attachment: sourceMessage.attachment
-              ? {
-                name: sourceMessage.attachment.name,
-                mimeType: sourceMessage.attachment.mimeType,
-                size: sourceMessage.attachment.size,
-                url: sourceMessage.attachment.url,
-              }
-              : undefined,
-          },
+          forwardedMessageId: sourceMessage.id,
         },
       })
       await refresh(query.value)
@@ -666,6 +643,7 @@ export function useMessengerConversations() {
     activeConversationId: state.activeConversationId,
     refresh,
     openDirectConversation,
+    ensureDirectConversation,
     openSecretConversation,
     selectConversation,
     loadMessages,

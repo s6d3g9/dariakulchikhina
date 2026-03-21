@@ -9,6 +9,7 @@ interface MessengerThreadMessage extends MessengerConversationMessage {
 
 const conversations = useMessengerConversations()
 const auth = useMessengerAuth()
+const contacts = useMessengerContacts()
 const messengerCrypto = useMessengerCrypto()
 const klipy = useMessengerKlipy()
 const viewport = useMessengerViewport()
@@ -34,6 +35,8 @@ const composerHeight = ref(76)
 const composerRelationMode = ref<'reply' | 'comment' | null>(null)
 const composerRelationMessageId = ref<string | null>(null)
 const forwardingMessageId = ref<string | null>(null)
+const forwardSearchDraft = ref('')
+const selectedForwardPeerIds = ref<string[]>([])
 const galleryPhotoId = ref<string | null>(null)
 const pendingScrollMessageId = ref<string | null>(null)
 const dragDropDepth = ref(0)
@@ -57,6 +60,7 @@ let recordingTimer: ReturnType<typeof setInterval> | null = null
 let composerAlignTimer: ReturnType<typeof setTimeout> | null = null
 let composerResizeObserver: ResizeObserver | null = null
 let klipySearchTimer: ReturnType<typeof setTimeout> | null = null
+let forwardSearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
 
 function isMobileChatViewport() {
@@ -306,8 +310,30 @@ const forwardingMessage = computed(() => {
 
   return conversations.messages.value.find(item => item.id === forwardingMessageId.value) ?? null
 })
+const availableForwardTargets = computed(() => {
+  const conversationMap = new Map(conversations.conversations.value
+    .filter(item => !item.secret)
+    .map(item => [item.peerUserId, item]))
 
-const availableForwardTargets = computed(() => conversations.conversations.value.filter(item => !item.secret))
+  return contacts.overview.value.contacts.map((contact) => {
+    const conversation = conversationMap.get(contact.id)
+    return {
+      peerUserId: contact.id,
+      conversationId: conversation?.id || null,
+      displayName: contact.displayName,
+      login: contact.login,
+      current: conversation?.id === conversations.activeConversationId.value,
+    }
+  })
+})
+const selectedForwardTargets = computed(() => availableForwardTargets.value.filter(target => selectedForwardPeerIds.value.includes(target.peerUserId)))
+const forwardSubmitLabel = computed(() => {
+  if (conversations.messagePending.value) {
+    return 'Отправляем...'
+  }
+
+  return selectedForwardPeerIds.value.length ? `Отправить (${selectedForwardPeerIds.value.length})` : 'Выберите получателей'
+})
 const photoFeedOpen = computed(() => Boolean(galleryPhotoId.value && conversations.activeConversation.value))
 const headerIncomingCall = computed(() => Boolean(
   calls.incomingCall.value
@@ -513,6 +539,10 @@ onBeforeUnmount(() => {
     clearTimeout(klipySearchTimer)
     klipySearchTimer = null
   }
+  if (forwardSearchTimer) {
+    clearTimeout(forwardSearchTimer)
+    forwardSearchTimer = null
+  }
   if (composerAlignTimer) {
     clearTimeout(composerAlignTimer)
     composerAlignTimer = null
@@ -632,6 +662,41 @@ watch(() => klipyQuery.value.trim(), (value) => {
   if (value && selectedCatalogCategory.value) {
     selectedCatalogCategory.value = ''
   }
+})
+
+watch(() => forwardingMessageId.value, async (messageId) => {
+  if (!messageId) {
+    forwardSearchDraft.value = ''
+    selectedForwardPeerIds.value = []
+    return
+  }
+
+  try {
+    await contacts.refresh('')
+  } catch {
+    actionError.value = 'Не удалось загрузить список пользователей для пересылки.'
+  }
+})
+
+watch(forwardSearchDraft, (value) => {
+  if (!forwardingMessageId.value) {
+    return
+  }
+
+  if (forwardSearchTimer) {
+    clearTimeout(forwardSearchTimer)
+    forwardSearchTimer = null
+  }
+
+  forwardSearchTimer = setTimeout(async () => {
+    try {
+      await contacts.refresh(value.trim())
+    } catch {
+      actionError.value = 'Не удалось обновить поиск пользователей.'
+    } finally {
+      forwardSearchTimer = null
+    }
+  }, 180)
 })
 
 watch(() => viewport.keyboardOpen.value, async (opened) => {
@@ -793,23 +858,43 @@ function openForwardPicker(messageId: string) {
   }
 
   forwardingMessageId.value = messageId
+  forwardSearchDraft.value = ''
+  selectedForwardPeerIds.value = []
   clearComposerRelation()
   activeMessageActionsId.value = null
 }
 
 function closeForwardPicker() {
   forwardingMessageId.value = null
+  forwardSearchDraft.value = ''
+  selectedForwardPeerIds.value = []
 }
 
-async function forwardMessage(targetConversationId: string) {
+function toggleForwardTarget(peerUserId: string) {
+  selectedForwardPeerIds.value = selectedForwardPeerIds.value.includes(peerUserId)
+    ? selectedForwardPeerIds.value.filter(id => id !== peerUserId)
+    : [...selectedForwardPeerIds.value, peerUserId]
+}
+
+async function forwardMessage() {
   if (!forwardingMessageId.value) {
+    return
+  }
+
+  if (!selectedForwardPeerIds.value.length) {
+    actionError.value = 'Выберите хотя бы одного получателя.'
     return
   }
 
   actionError.value = ''
 
   try {
-    await conversations.forwardMessage(forwardingMessageId.value, targetConversationId)
+    for (const peerUserId of selectedForwardPeerIds.value) {
+      const existingTarget = availableForwardTargets.value.find(target => target.peerUserId === peerUserId)
+      const conversationId = existingTarget?.conversationId || await conversations.ensureDirectConversation(peerUserId)
+      await conversations.forwardMessage(forwardingMessageId.value, conversationId)
+    }
+
     closeForwardPicker()
   } catch {
     actionError.value = 'Не удалось переслать сообщение.'
@@ -1589,26 +1674,57 @@ onBeforeUnmount(() => {
         <button type="button" class="message-action-btn" @click="clearComposerRelation">Отмена</button>
       </div>
 
-      <div v-if="forwardingMessage && !detailsOpen" class="composer-context composer-context--forward">
-        <div class="composer-context__copy">
-          <p class="composer-context__eyebrow">Переслать сообщение</p>
-          <p class="composer-context__title">{{ forwardingMessage.own ? 'Вы' : forwardingMessage.senderDisplayName }}</p>
-          <p class="composer-context__text">{{ relationPreviewText(forwardingMessage) }}</p>
+      <div v-if="forwardingMessage && !detailsOpen" class="composer-context composer-context--forward composer-forward-panel">
+        <div class="composer-forward-panel__head">
+          <div class="composer-context__copy">
+            <p class="composer-context__eyebrow">Переслать сообщение</p>
+            <p class="composer-context__title">{{ forwardingMessage.own ? 'Вы' : forwardingMessage.senderDisplayName }}</p>
+            <p class="composer-context__text">{{ relationPreviewText(forwardingMessage) }}</p>
+          </div>
+          <button type="button" class="message-action-btn composer-forward-panel__close" @click="closeForwardPicker">×</button>
         </div>
-        <button type="button" class="message-action-btn" @click="closeForwardPicker">Закрыть</button>
-        <div class="forward-targets">
-          <button
-            v-for="conversation in availableForwardTargets"
-            :key="conversation.id"
-            type="button"
-            class="forward-target-btn"
-            :disabled="conversations.messagePending.value"
-            @click="forwardMessage(conversation.id)"
+        <div class="composer-forward-panel__toolbar">
+          <input
+            v-model="forwardSearchDraft"
+            type="text"
+            class="inline-input composer-forward-panel__search"
+            placeholder="Поиск пользователя"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
           >
-            <span class="forward-target-btn__title">{{ conversation.peerDisplayName }}</span>
-            <span class="forward-target-btn__meta">{{ conversation.id === conversations.activeConversationId.value ? 'Текущий чат' : `@${conversation.peerLogin}` }}</span>
+          <button type="button" class="composer-forward-panel__submit" :disabled="!selectedForwardPeerIds.length || conversations.messagePending.value" @click="forwardMessage">
+            {{ forwardSubmitLabel }}
           </button>
-          <p v-if="!availableForwardTargets.length" class="composer-context__text">Доступных чатов для пересылки нет.</p>
+        </div>
+        <div v-if="selectedForwardTargets.length" class="composer-forward-panel__selected">
+          <button
+            v-for="target in selectedForwardTargets"
+            :key="`selected-${target.peerUserId}`"
+            type="button"
+            class="composer-forward-chip"
+            @click="toggleForwardTarget(target.peerUserId)"
+          >
+            <span>{{ target.displayName }}</span>
+            <span>×</span>
+          </button>
+        </div>
+        <div class="forward-targets forward-targets--minimal">
+          <p v-if="contacts.pending.value" class="composer-media-menu__empty">[ ИЩЕМ ПОЛЬЗОВАТЕЛЕЙ... ]</p>
+          <button
+            v-for="target in availableForwardTargets"
+            v-else
+            :key="target.peerUserId"
+            type="button"
+            class="forward-target-btn forward-target-btn--minimal"
+            :class="{ 'forward-target-btn--active': selectedForwardPeerIds.includes(target.peerUserId) }"
+            :disabled="conversations.messagePending.value"
+            @click="toggleForwardTarget(target.peerUserId)"
+          >
+            <span class="forward-target-btn__title">{{ target.displayName }}</span>
+            <span class="forward-target-btn__meta">{{ target.current ? 'Текущий чат' : `@${target.login}` }}</span>
+          </button>
+          <p v-if="!contacts.pending.value && !availableForwardTargets.length" class="composer-context__text">Пользователи не найдены.</p>
         </div>
       </div>
 

@@ -50,6 +50,20 @@ function buildQueryVariants(query: string) {
   return Array.from(variants)
 }
 
+function buildCategoryQueryVariants(query: string, categories: MessengerKlipyCategory[]) {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) {
+    return [] as string[]
+  }
+
+  return Array.from(new Set(
+    categories
+      .filter(category => [category.category, category.query].some(value => value.trim().toLowerCase().includes(normalized)))
+      .map(category => category.query.trim())
+      .filter(Boolean),
+  ))
+}
+
 function sanitizeRecentItems(payload: unknown) {
   if (!Array.isArray(payload)) {
     return [] as MessengerKlipyItem[]
@@ -131,7 +145,14 @@ export function useMessengerKlipy() {
         return
       }
 
-      const variants = buildQueryVariants(normalizedQuery)
+      if (!categories.value[kind].length && !categoriesPending.value) {
+        await loadCategories(kind)
+      }
+
+      const variants = Array.from(new Set([
+        ...buildCategoryQueryVariants(normalizedQuery, categories.value[kind]),
+        ...buildQueryVariants(normalizedQuery),
+      ]))
       let configuredFlag = true
       let resolvedItems: MessengerKlipyItem[] = []
 

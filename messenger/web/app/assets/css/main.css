@@ -3037,6 +3037,11 @@ html[data-messenger-motion='reduced'] *::after {
     grid-auto-flow: column;
     justify-content: space-between;
   }
+
+  .composer-forward-panel__toolbar,
+  .forward-targets--minimal {
+    grid-template-columns: 1fr;
+  }
 }
 
 .copy-toast {
@@ -3259,6 +3264,12 @@ html[data-messenger-motion='reduced'] *::after {
   width: 100%;
 }
 
+.forward-targets--minimal {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .forward-target-btn {
   display: grid;
   gap: 4px;
@@ -3282,6 +3293,77 @@ html[data-messenger-motion='reduced'] *::after {
 .forward-target-btn__meta {
   color: var(--messenger-muted);
   font-size: 13px;
+}
+
+.composer-forward-panel {
+  gap: 12px;
+}
+
+.composer-forward-panel__head,
+.composer-forward-panel__toolbar,
+.composer-forward-panel__selected {
+  display: grid;
+  gap: 10px;
+}
+
+.composer-forward-panel__head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.composer-forward-panel__close {
+  font-size: 24px;
+}
+
+.composer-forward-panel__toolbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.composer-forward-panel__search {
+  min-height: 44px;
+}
+
+.composer-forward-panel__submit,
+.composer-forward-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--messenger-text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.composer-forward-panel__submit[disabled] {
+  opacity: 0.5;
+}
+
+.composer-forward-panel__selected {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.composer-forward-chip {
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.forward-target-btn--minimal {
+  min-height: 48px;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.forward-target-btn--active {
+  border-color: rgba(125, 211, 252, 0.36);
+  background: var(--messenger-accent-soft-fill);
 }
 
 .message-relation-card {
