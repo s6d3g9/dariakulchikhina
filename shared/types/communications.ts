@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const COMMUNICATION_ACTOR_ROLES = ['admin', 'designer', 'client', 'contractor', 'seller', 'manager', 'service'] as const
 export const COMMUNICATION_ROOM_KINDS = ['project', 'group', 'direct'] as const
-export const COMMUNICATION_SIGNAL_KINDS = ['invite', 'ringing', 'offer', 'answer', 'ice-candidate', 'room-key', 'key-rotate', 'call-key', 'reject', 'hangup', 'mute', 'unmute'] as const
+export const COMMUNICATION_SIGNAL_KINDS = ['invite', 'ringing', 'offer', 'answer', 'ice-candidate', 'room-key', 'key-rotate', 'call-key', 'reject', 'hangup', 'busy', 'mute', 'unmute'] as const
 
 export type CommunicationActorRole = typeof COMMUNICATION_ACTOR_ROLES[number]
 export type CommunicationRoomKind = typeof COMMUNICATION_ROOM_KINDS[number]

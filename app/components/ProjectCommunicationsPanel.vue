@@ -26,10 +26,21 @@
           <p v-if="callStatusText" class="comm-status">{{ callStatusText }}</p>
         </div>
 
+        <div v-if="activeCall" class="comm-call-toggle-row">
+          <button type="button" class="comm-chip-btn" :class="{ 'comm-chip-btn--inactive': !callControls.microphoneEnabled }" @click="toggleMicrophone">
+            {{ callControls.microphoneEnabled ? 'MIC ON' : 'MIC OFF' }}
+          </button>
+          <button type="button" class="comm-chip-btn" :class="{ 'comm-chip-btn--inactive': !callControls.speakerEnabled }" @click="toggleSpeaker">
+            {{ callControls.speakerEnabled ? 'SOUND ON' : 'SOUND OFF' }}
+          </button>
+          <span v-if="remoteMutedByPeer" class="comm-status">Собеседник отключил микрофон</span>
+        </div>
+
         <div v-if="currentChatPeer" class="comm-call-security" :class="{ 'comm-call-security--active': callSecurity.active }">
           <p class="comm-call-security__status">{{ callSecurity.status }}</p>
           <p v-if="callSecurity.active && callSecurity.verificationEmojis.length" class="comm-call-security__emojis">{{ callSecurity.verificationEmojis.join(' ') }}</p>
           <p v-else-if="callSecurity.fallbackReason" class="comm-call-security__fallback">{{ callSecurity.fallbackReason }}</p>
+          <p v-if="callPermissionHelp" class="comm-call-security__fallback">{{ callPermissionHelp }}</p>
         </div>
 
         <div v-if="incomingCall" class="comm-incoming glass-card">
@@ -192,13 +203,18 @@
             <div class="comm-block-title">Разрешения</div>
             <p class="comm-setting-row">
               <span class="comm-setting-name">Микрофон</span>
-              <span class="comm-setting-value">По запросу</span>
+              <span class="comm-setting-value">{{ microphonePermissionLabel }}</span>
             </p>
             <p class="comm-setting-row">
               <span class="comm-setting-name">Камера</span>
-              <span class="comm-setting-value">По запросу</span>
+              <span class="comm-setting-value">{{ cameraPermissionLabel }}</span>
             </p>
-            <p class="comm-setting-note">Доступ к микрофону и камере запрашивается только при старте звонка.</p>
+            <div class="comm-setting-actions">
+              <button type="button" class="a-btn-sm" @click="checkAudioAccess">Проверить микрофон</button>
+              <button type="button" class="a-btn-sm" @click="checkVideoAccess">Проверить камеру</button>
+            </div>
+            <p class="comm-setting-note">{{ videoReadiness }}</p>
+            <p v-if="callPermissionHelp" class="comm-setting-note">{{ callPermissionHelp }}</p>
           </section>
 
           <section class="comm-setting-card">
@@ -310,6 +326,7 @@ type ActiveCallState = {
 }
 
 type SignalPayloadRecord = Record<string, unknown>
+type MediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unknown' | 'unsupported'
 
 const localVideoEl = ref<HTMLVideoElement | null>(null)
 const remoteVideoEl = ref<HTMLVideoElement | null>(null)
@@ -348,6 +365,16 @@ const activeCall = ref<ActiveCallState | null>(null)
 const callStatusText = ref('')
 const callBusy = computed(() => Boolean(incomingCall.value || activeCall.value))
 const callSecurity = ref<CommunicationCallSecurityState>(createDefaultCallSecurityState())
+const callPermissionHelp = ref('')
+const remoteMutedByPeer = ref(false)
+const callControls = ref({
+  microphoneEnabled: true,
+  speakerEnabled: true,
+})
+const mediaPermissionState = ref<Record<'microphone' | 'camera', MediaPermissionState>>({
+  microphone: 'unknown',
+  camera: 'unknown',
+})
 
 let eventSource: EventSource | null = null
 let peerConnection: RTCPeerConnection | null = null
@@ -419,8 +446,42 @@ const filteredOpenChats = computed(() => {
 })
 
 const hasAvailableContacts = computed(() => availableContacts.value.length > 0)
+const supportedCalls = computed(() => Boolean(import.meta.client && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function' && typeof RTCPeerConnection !== 'undefined'))
+const microphonePermissionLabel = computed(() => mapPermissionLabel(mediaPermissionState.value.microphone))
+const cameraPermissionLabel = computed(() => mapPermissionLabel(mediaPermissionState.value.camera))
+const videoReadiness = computed(() => {
+  if (!supportedCalls.value) {
+    return 'Браузер не поддерживает WebRTC или доступ к медиа.'
+  }
+
+  if (mediaPermissionState.value.microphone === 'granted' && mediaPermissionState.value.camera === 'granted') {
+    return 'Микрофон и камера разрешены. Аудио- и видеозвонки готовы.'
+  }
+
+  if (mediaPermissionState.value.microphone === 'denied' || mediaPermissionState.value.camera === 'denied') {
+    return 'Часть разрешений заблокирована. Разрешите доступ к микрофону и камере в браузере.'
+  }
+
+  return 'Доступ к микрофону и камере можно проверить заранее, либо браузер запросит его при старте звонка.'
+})
+
 function buildDirectChatExternalRef(peerActorKey: string) {
   return `${directChatsPrefix.value}${[actorKey.value, peerActorKey].sort().join('__')}`
+}
+
+function mapPermissionLabel(value: MediaPermissionState) {
+  switch (value) {
+    case 'granted':
+      return 'Разрешён'
+    case 'denied':
+      return 'Заблокирован'
+    case 'prompt':
+      return 'По запросу'
+    case 'unsupported':
+      return 'Недоступно'
+    default:
+      return 'Неизвестно'
+  }
 }
 
 async function apiFetch<T>(path: string, options: any = {}) {
@@ -598,6 +659,128 @@ function setCallSecurityActive() {
 
 function clearCallSecurityContext() {
   callSecurityContext = null
+}
+
+function syncMicrophoneState() {
+  if (!localStream) return
+  for (const track of localStream.getAudioTracks()) {
+    track.enabled = callControls.value.microphoneEnabled
+  }
+}
+
+function syncSpeakerState() {
+  if (remoteVideoEl.value) {
+    remoteVideoEl.value.muted = !callControls.value.speakerEnabled
+    if (callControls.value.speakerEnabled) {
+      void remoteVideoEl.value.play().catch(() => {})
+    }
+  }
+}
+
+async function setMicrophoneEnabled(enabled: boolean) {
+  callControls.value = {
+    ...callControls.value,
+    microphoneEnabled: enabled,
+  }
+  syncMicrophoneState()
+
+  if (!activeCall.value || !currentChatRoomId.value) return
+  await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
+    method: 'POST',
+    body: {
+      kind: enabled ? 'unmute' : 'mute',
+      callId: activeCall.value.callId,
+      targetActorKey: activeCall.value.peerActorKey,
+      payload: {},
+    },
+  }).catch(() => {})
+}
+
+async function toggleMicrophone() {
+  await setMicrophoneEnabled(!callControls.value.microphoneEnabled)
+}
+
+function setSpeakerEnabled(enabled: boolean) {
+  callControls.value = {
+    ...callControls.value,
+    speakerEnabled: enabled,
+  }
+  syncSpeakerState()
+}
+
+function toggleSpeaker() {
+  setSpeakerEnabled(!callControls.value.speakerEnabled)
+}
+
+async function resolvePermissionState(kind: 'microphone' | 'camera'): Promise<MediaPermissionState> {
+  if (!import.meta.client) return 'unknown'
+  if (!navigator.permissions?.query) return 'unsupported'
+
+  try {
+    const status = await navigator.permissions.query({ name: kind as PermissionName })
+    return status.state as MediaPermissionState
+  } catch {
+    return 'unknown'
+  }
+}
+
+async function refreshMediaPermissions() {
+  mediaPermissionState.value = {
+    microphone: await resolvePermissionState('microphone'),
+    camera: await resolvePermissionState('camera'),
+  }
+}
+
+function describePermissionError(mode: CallMode) {
+  const microphoneDenied = mediaPermissionState.value.microphone === 'denied'
+  const cameraDenied = mediaPermissionState.value.camera === 'denied'
+
+  if (mode === 'video' && (microphoneDenied || cameraDenied)) {
+    return 'Браузер заблокировал микрофон или камеру. Разрешите доступ для этого сайта и повторите видеозвонок.'
+  }
+
+  if (mode === 'audio' && microphoneDenied) {
+    return 'Браузер заблокировал микрофон. Разрешите доступ для этого сайта и повторите аудиозвонок.'
+  }
+
+  return mode === 'video'
+    ? 'Нужен доступ к микрофону и камере, чтобы использовать видеозвонки.'
+    : 'Нужен доступ к микрофону, чтобы использовать аудиозвонки.'
+}
+
+async function ensureMediaAccess(mode: CallMode) {
+  callPermissionHelp.value = ''
+
+  if (!supportedCalls.value) {
+    callPermissionHelp.value = 'Звонки недоступны в этом браузере.'
+    return false
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: mode === 'video',
+    })
+
+    for (const track of stream.getTracks()) {
+      track.stop()
+    }
+
+    await refreshMediaPermissions()
+    return true
+  } catch {
+    await refreshMediaPermissions()
+    callPermissionHelp.value = describePermissionError(mode)
+    return false
+  }
+}
+
+async function checkAudioAccess() {
+  await ensureMediaAccess('audio')
+}
+
+async function checkVideoAccess() {
+  await ensureMediaAccess('video')
 }
 
 function queueIceCandidate(callId: string, candidate: RTCIceCandidateInit) {
@@ -843,8 +1026,22 @@ async function sendEncryptedMessage() {
 
 async function initMedia(mode: CallMode) {
   if (localStream) return localStream
-  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === 'video' })
+  localStream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      channelCount: 1,
+      sampleRate: 48000,
+      sampleSize: 16,
+    },
+    video: mode === 'video',
+  })
+  for (const track of localStream.getAudioTracks()) {
+    track.contentHint = 'speech'
+  }
   if (localVideoEl.value) localVideoEl.value.srcObject = localStream
+  syncMicrophoneState()
   return localStream
 }
 
@@ -856,6 +1053,7 @@ function resetPeerConnection() {
   remoteStream?.getTracks().forEach((track) => track.stop())
   remoteStream = null
   if (remoteVideoEl.value) remoteVideoEl.value.srcObject = null
+  remoteMutedByPeer.value = false
 }
 
 function buildPeerConnection(callId: string, peerActorKey: string, mode: CallMode) {
@@ -871,6 +1069,7 @@ function buildPeerConnection(callId: string, peerActorKey: string, mode: CallMod
   peerConnectionCallId = callId
   remoteStream = new MediaStream()
   if (remoteVideoEl.value) remoteVideoEl.value.srcObject = remoteStream
+  syncSpeakerState()
   if (localStream) {
     for (const track of localStream.getTracks()) {
       const sender = connection.addTrack(track, localStream)
@@ -901,6 +1100,11 @@ function buildPeerConnection(callId: string, peerActorKey: string, mode: CallMod
 
 async function startOutgoingCall(mode: CallMode) {
   if (!currentChatPeer.value || !currentChatRoomId.value) return
+  if (!supportedCalls.value) {
+    callPermissionHelp.value = 'Звонки недоступны в этом браузере.'
+    return
+  }
+  if (!(await ensureMediaAccess(mode))) return
   const callId = crypto.randomUUID()
   let e2ee: CommunicationCallE2EEPayload = { supported: false }
 
@@ -938,6 +1142,10 @@ async function startOutgoingCall(mode: CallMode) {
 async function acceptIncomingCall() {
   if (!incomingCall.value || !currentChatRoomId.value) return
   try {
+    if (!(await ensureMediaAccess(incomingCall.value.mode))) {
+      await rejectIncomingCall()
+      return
+    }
     await initMedia(incomingCall.value.mode)
     activeCall.value = { callId: incomingCall.value.callId, peerActorKey: incomingCall.value.fromActorKey, mode: incomingCall.value.mode, initiator: false }
     let e2ee: CommunicationCallE2EEPayload = { supported: false }
@@ -1014,6 +1222,11 @@ function teardownCall(status = '') {
   localStream = null
   clearCallSecurityContext()
   callSecurity.value = createDefaultCallSecurityState()
+  callControls.value = {
+    microphoneEnabled: true,
+    speakerEnabled: true,
+  }
+  callPermissionHelp.value = ''
   if (localVideoEl.value) localVideoEl.value.srcObject = null
 }
 
@@ -1039,6 +1252,13 @@ async function handleSignal(signal: CommunicationSignal) {
   }
 
   if (signal.kind === 'invite') {
+    if (activeCall.value || incomingCall.value) {
+      await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
+        method: 'POST',
+        body: { kind: 'busy', callId: signal.callId, targetActorKey: `${signal.senderRole}:${signal.senderActorId}`, payload: {} },
+      }).catch(() => {})
+      return
+    }
     const senderKey = `${signal.senderRole}:${signal.senderActorId}`
     const inviteE2ee = payload.e2ee as CommunicationCallE2EEPayload | undefined
     incomingCall.value = {
@@ -1124,6 +1344,23 @@ async function handleSignal(signal: CommunicationSignal) {
     return
   }
 
+  if (signal.kind === 'busy') {
+    teardownCall('Собеседник уже на другом звонке')
+    return
+  }
+
+  if (signal.kind === 'mute') {
+    remoteMutedByPeer.value = true
+    callStatusText.value = 'Собеседник отключил микрофон'
+    return
+  }
+
+  if (signal.kind === 'unmute') {
+    remoteMutedByPeer.value = false
+    callStatusText.value = 'Собеседник снова включил микрофон'
+    return
+  }
+
   if (signal.kind === 'hangup') teardownCall('Собеседник завершил звонок')
 }
 
@@ -1160,6 +1397,10 @@ watch(bootstrapData, async (nextBootstrap) => {
     runtimeError.value = error?.data?.error || error?.data?.message || error?.message || 'Коммуникации временно недоступны'
   }
 }, { immediate: true })
+
+if (import.meta.client) {
+  void refreshMediaPermissions()
+}
 
 onBeforeUnmount(() => {
   eventSource?.close()
@@ -1279,6 +1520,29 @@ onBeforeUnmount(() => {
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.comm-call-toggle-row,
+.comm-setting-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.comm-chip-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--glass-border, rgba(255,255,255,.12));
+  background: transparent;
+  color: inherit;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .72rem;
+}
+
+.comm-chip-btn--inactive {
+  opacity: .64;
 }
 
 .comm-call-security {

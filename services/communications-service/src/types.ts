@@ -20,6 +20,7 @@ export type SignalKind =
   | 'call-key'
   | 'reject'
   | 'hangup'
+  | 'busy'
   | 'mute'
   | 'unmute'
 
