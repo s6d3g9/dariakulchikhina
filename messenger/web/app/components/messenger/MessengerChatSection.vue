@@ -1964,9 +1964,9 @@ onBeforeUnmount(() => {
           </div>
           <div class="composer-media-menu__results-block">
             <p class="composer-media-menu__section-title">{{ klipyQuery.trim() || selectedCatalogCategory ? 'Результаты' : 'Популярное' }}</p>
-            <div v-if="klipy.items.length" class="composer-media-menu__results" :class="{ 'composer-media-menu__results--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__results--gifs': activeKlipyKind === 'gif' }">
+            <div v-if="klipy.items.value.length" class="composer-media-menu__results" :class="{ 'composer-media-menu__results--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__results--gifs': activeKlipyKind === 'gif' }">
               <button
-                v-for="item in klipy.items"
+                v-for="item in klipy.items.value"
                 :key="item.id"
                 type="button"
                 class="composer-media-menu__result"
