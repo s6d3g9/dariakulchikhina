@@ -460,18 +460,55 @@ export function useMessengerConversations() {
   async function forwardMessage(sourceMessageId: string, targetConversationId: string) {
     const targetConversation = conversations.value.find(item => item.id === targetConversationId)
     const sourceMessage = messages.value.find(item => item.id === sourceMessageId)
-    if (!targetConversation || !sourceMessage) {
+    const sourceConversation = activeConversation.value
+    if (!targetConversation || !sourceMessage || !sourceConversation || !auth.user.value) {
       throw new Error('MESSAGE_NOT_FOUND')
     }
 
     messagePending.value = true
     try {
-      await auth.request(`/conversations/${targetConversationId}/messages`, {
-        method: 'POST',
-        body: {
-          forwardedMessageId: sourceMessage.id,
-        },
-      })
+      if (sourceMessage.kind === 'text') {
+        const encryptedBody = await messengerCrypto.encryptText(
+          auth.request,
+          auth.user.value.id,
+          targetConversationId,
+          targetConversation.peerUserId,
+          sourceMessage.body,
+        )
+
+        await auth.request(`/conversations/${targetConversationId}/messages`, {
+          method: 'POST',
+          body: {
+            body: '',
+            encryptedBody,
+            forwardedFrom: {
+              messageId: sourceMessage.id,
+              conversationId: sourceConversation.id,
+              senderUserId: sourceMessage.own ? auth.user.value.id : sourceConversation.peerUserId,
+              senderDisplayName: sourceMessage.senderDisplayName,
+              body: sourceMessage.body,
+              kind: sourceMessage.kind,
+              attachment: sourceMessage.attachment
+                ? {
+                    name: sourceMessage.attachment.name,
+                    mimeType: sourceMessage.attachment.mimeType,
+                    size: sourceMessage.attachment.size,
+                    url: sourceMessage.attachment.url,
+                    encryptedFile: sourceMessage.attachment.encryptedFile,
+                  }
+                : undefined,
+            },
+          },
+        })
+      } else {
+        await auth.request(`/conversations/${targetConversationId}/messages`, {
+          method: 'POST',
+          body: {
+            forwardedMessageId: sourceMessage.id,
+          },
+        })
+      }
+
       await refresh(query.value)
 
       if (targetConversationId === state.activeConversationId.value) {

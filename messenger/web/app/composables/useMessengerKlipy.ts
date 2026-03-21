@@ -96,6 +96,7 @@ export function useMessengerKlipy() {
   const lastQuery = useState<string>('messenger-klipy-last-query', () => '')
   const lastKind = useState<'gif' | 'sticker'>('messenger-klipy-last-kind', () => 'gif')
   const hydrated = useState<boolean>('messenger-klipy-hydrated', () => false)
+  const searchRequestId = useState<number>('messenger-klipy-search-request-id', () => 0)
 
   function hydrateRecent() {
     if (hydrated.value || !import.meta.client) {
@@ -123,6 +124,8 @@ export function useMessengerKlipy() {
     hydrateRecent()
     const normalizedQuery = query.trim()
     const normalizedCategory = options.category?.trim() || ''
+    const currentRequestId = searchRequestId.value + 1
+    searchRequestId.value = currentRequestId
     lastQuery.value = normalizedQuery || normalizedCategory
     lastKind.value = kind
     error.value = ''
@@ -139,6 +142,10 @@ export function useMessengerKlipy() {
             limit: options.limit || 12,
           },
         })
+
+        if (currentRequestId !== searchRequestId.value) {
+          return
+        }
 
         configured.value = response.configured
         items.value = response.items
@@ -173,26 +180,23 @@ export function useMessengerKlipy() {
         }
       }
 
-      if (!resolvedItems.length) {
-        const fallbackResponse = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {
-          method: 'GET',
-          query: {
-            kind,
-            limit: options.limit || 12,
-          },
-        })
-
-        configuredFlag = fallbackResponse.configured
-        resolvedItems = fallbackResponse.items
+      if (currentRequestId !== searchRequestId.value) {
+        return
       }
 
       configured.value = configuredFlag
       items.value = resolvedItems
     } catch {
+      if (currentRequestId !== searchRequestId.value) {
+        return
+      }
+
       items.value = []
       error.value = 'Не удалось загрузить каталог KLIPY.'
     } finally {
-      pending.value = false
+      if (currentRequestId === searchRequestId.value) {
+        pending.value = false
+      }
     }
   }
 

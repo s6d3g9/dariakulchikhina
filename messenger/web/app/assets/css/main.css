@@ -993,14 +993,14 @@ textarea {
   aspect-ratio: 1 / 1;
   padding: 0;
   border: 0;
-  border-radius: 18px;
-  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 62%, rgba(255, 255, 255, 0));
+  border-radius: 0;
+  background: transparent;
   overflow: hidden;
 }
 
 .composer-media-menu__category-tile--active {
-  outline: 2px solid rgba(255, 255, 255, 0.24);
-  outline-offset: -2px;
+  outline: 1px solid rgba(255, 255, 255, 0.28);
+  outline-offset: 0;
 }
 
 .composer-media-menu__category-badge {
@@ -1029,7 +1029,7 @@ textarea {
 .composer-media-menu__results {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   max-height: 320px;
   overflow: auto;
   padding-right: 0;
@@ -1058,11 +1058,11 @@ textarea {
   aspect-ratio: var(--klipy-aspect, 1 / 1);
   padding: 0;
   border: 0;
-  border-radius: 18px;
-  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 62%, rgba(255, 255, 255, 0));
+  border-radius: 0;
+  background: transparent;
   color: var(--messenger-text);
   text-align: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .composer-media-menu__result-preview {
@@ -1070,7 +1070,7 @@ textarea {
   height: 100%;
   object-fit: contain;
   display: block;
-  border-radius: 18px;
+  border-radius: 0;
   background: transparent;
 }
 
@@ -1084,7 +1084,7 @@ textarea {
 
 .composer-media-menu__result-preview--sticker {
   object-fit: contain;
-  padding: 6px;
+  padding: 0;
 }
 
 .composer-media-menu__hint {

@@ -310,7 +310,7 @@ const forwardingMessage = computed(() => {
 
   return conversations.messages.value.find(item => item.id === forwardingMessageId.value) ?? null
 })
-const availableForwardTargets = computed(() => {
+const allForwardTargets = computed(() => {
   const targets = new Map<string, {
     peerUserId: string
     conversationId: string | null
@@ -358,8 +358,13 @@ const availableForwardTargets = computed(() => {
     })
   }
 
-  const normalizedSearch = forwardSearchDraft.value.trim().toLowerCase()
   return Array.from(targets.values())
+    .sort((left, right) => Number(right.selectable) - Number(left.selectable) || left.displayName.localeCompare(right.displayName, 'ru'))
+})
+
+const availableForwardTargets = computed(() => {
+  const normalizedSearch = forwardSearchDraft.value.trim().toLowerCase()
+  return allForwardTargets.value
     .filter((target) => {
       if (!normalizedSearch) {
         return true
@@ -367,9 +372,8 @@ const availableForwardTargets = computed(() => {
 
       return target.displayName.toLowerCase().includes(normalizedSearch) || target.login.toLowerCase().includes(normalizedSearch)
     })
-    .sort((left, right) => Number(right.selectable) - Number(left.selectable) || left.displayName.localeCompare(right.displayName, 'ru'))
 })
-const selectedForwardTargets = computed(() => availableForwardTargets.value.filter(target => selectedForwardPeerIds.value.includes(target.peerUserId)))
+const selectedForwardTargets = computed(() => allForwardTargets.value.filter(target => selectedForwardPeerIds.value.includes(target.peerUserId)))
 const forwardSubmitLabel = computed(() => {
   if (conversations.messagePending.value) {
     return 'Отправляем...'
