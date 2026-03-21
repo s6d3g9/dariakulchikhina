@@ -1072,6 +1072,7 @@ textarea {
   display: block;
   border-radius: 0;
   background: transparent;
+  pointer-events: none;
 }
 
 .composer-media-menu__result-preview--category {
@@ -1092,6 +1093,10 @@ textarea {
   color: var(--messenger-muted);
   font-size: 13px;
   line-height: 1.4;
+}
+
+.composer-media-menu__category-badge {
+  pointer-events: none;
 }
 
 .composer-media-menu__empty {

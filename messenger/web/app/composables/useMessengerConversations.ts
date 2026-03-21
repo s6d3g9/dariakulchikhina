@@ -433,18 +433,19 @@ export function useMessengerConversations() {
 
     messagePending.value = true
     try {
-      const encryptedBody = await messengerCrypto.encryptText(
-        auth.request,
-        auth.user.value.id,
-        conversationId,
-        conversation.peerUserId,
-        body,
-      )
       await auth.request(`/conversations/${conversationId}/messages`, {
         method: 'POST',
         body: {
-          body: '',
-          encryptedBody,
+          body,
+          encryptedBody: conversation.secret
+            ? await messengerCrypto.encryptText(
+                auth.request,
+                auth.user.value.id,
+                conversationId,
+                conversation.peerUserId,
+                body,
+              )
+            : undefined,
           ...options,
         },
       })
@@ -479,19 +480,10 @@ export function useMessengerConversations() {
     messagePending.value = true
     try {
       if (sourceMessage.kind === 'text') {
-        const encryptedBody = await messengerCrypto.encryptText(
-          auth.request,
-          auth.user.value.id,
-          targetConversationId,
-          resolvedTargetPeerUserId,
-          sourceMessage.body,
-        )
-
         await auth.request(`/conversations/${targetConversationId}/messages`, {
           method: 'POST',
           body: {
-            body: '',
-            encryptedBody,
+            body: sourceMessage.body,
             forwardedFrom: {
               messageId: sourceMessage.id,
               conversationId: sourceConversation.id,
@@ -601,18 +593,19 @@ export function useMessengerConversations() {
 
     editingMessageId.value = messageId
     try {
-      const encryptedBody = await messengerCrypto.encryptText(
-        auth.request,
-        auth.user.value.id,
-        conversationId,
-        conversation.peerUserId,
-        body,
-      )
       await auth.request(`/conversations/${conversationId}/messages/${messageId}`, {
         method: 'PATCH',
         body: {
-          body: '',
-          encryptedBody,
+          body,
+          encryptedBody: conversation.secret
+            ? await messengerCrypto.encryptText(
+                auth.request,
+                auth.user.value.id,
+                conversationId,
+                conversation.peerUserId,
+                body,
+              )
+            : undefined,
         },
       })
       await Promise.all([

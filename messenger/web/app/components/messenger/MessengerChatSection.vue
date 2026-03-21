@@ -63,6 +63,31 @@ let klipySearchTimer: ReturnType<typeof setTimeout> | null = null
 let forwardSearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
 
+function scheduleKlipyCatalogLoad() {
+  if (klipySearchTimer) {
+    clearTimeout(klipySearchTimer)
+    klipySearchTimer = null
+  }
+
+  if (!composerMediaMenuVisible.value) {
+    return
+  }
+
+  const kind = activeKlipyKind.value
+  if (!kind) {
+    return
+  }
+
+  void klipy.loadCategories(kind)
+
+  klipySearchTimer = setTimeout(() => {
+    void klipy.search(klipyQuery.value, kind, {
+      category: klipyQuery.value.trim() ? undefined : selectedCatalogCategory.value || undefined,
+    })
+    klipySearchTimer = null
+  }, 180)
+}
+
 function isMobileChatViewport() {
   if (!import.meta.client) {
     return false
@@ -681,29 +706,8 @@ watch([detailsOpen, photoFeedOpen, () => conversations.activeConversationId.valu
   composerMediaMenuOpen.value = false
 })
 
-watch([composerMediaMenuVisible, composerMediaMenuTab, klipyQuery, selectedCatalogCategory], ([visible]) => {
-  if (klipySearchTimer) {
-    clearTimeout(klipySearchTimer)
-    klipySearchTimer = null
-  }
-
-  if (!visible) {
-    return
-  }
-
-  const kind = activeKlipyKind.value
-  if (!kind) {
-    return
-  }
-
-  void klipy.loadCategories(kind)
-
-  klipySearchTimer = setTimeout(() => {
-    void klipy.search(klipyQuery.value, kind, {
-      category: klipyQuery.value.trim() ? undefined : selectedCatalogCategory.value || undefined,
-    })
-    klipySearchTimer = null
-  }, 260)
+watch([composerMediaMenuVisible, composerMediaMenuTab, klipyQuery, selectedCatalogCategory], () => {
+  scheduleKlipyCatalogLoad()
 })
 
 watch(() => klipyQuery.value.trim(), (value) => {
@@ -801,6 +805,10 @@ function toggleComposerMediaMenu() {
   }
 
   composerMediaMenuOpen.value = !composerMediaMenuOpen.value
+
+  if (composerMediaMenuOpen.value) {
+    scheduleKlipyCatalogLoad()
+  }
 }
 
 function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif') {
@@ -816,6 +824,7 @@ function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif') {
     selectedCatalogCategory.value = ''
     selectedKlipyItem.value = null
     klipy.reset()
+    scheduleKlipyCatalogLoad()
   }
 }
 
@@ -1953,7 +1962,7 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-          <div v-if="klipy.items.length || showKlipySearchState" class="composer-media-menu__results-block">
+          <div class="composer-media-menu__results-block">
             <p class="composer-media-menu__section-title">{{ klipyQuery.trim() || selectedCatalogCategory ? 'Результаты' : 'Популярное' }}</p>
             <div v-if="klipy.items.length" class="composer-media-menu__results" :class="{ 'composer-media-menu__results--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__results--gifs': activeKlipyKind === 'gif' }">
               <button
@@ -1972,7 +1981,7 @@ onBeforeUnmount(() => {
             </div>
             <p v-else-if="klipy.pending.value" class="composer-media-menu__empty">[ ИЩЕМ В KLIPY... ]</p>
             <p v-else class="composer-media-menu__empty">[ НИЧЕГО НЕ НАЙДЕНО ]</p>
-            </div>
+          </div>
           <p class="composer-media-menu__powered">Powered by KLIPY</p>
         </div>
       </div>
