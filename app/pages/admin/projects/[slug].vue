@@ -165,13 +165,13 @@
           @touchstart.passive="handleProjectViewportTouchStart"
           @touchend.passive="handleProjectViewportTouchEnd"
         >
-          <div v-if="contentViewMode === 'wipe' || shouldUseProjectWipe2" class="proj-sheet-frame" aria-hidden="true">
+          <div v-if="projectViewportMode === 'wipe' || shouldUseProjectWipeCards" class="proj-sheet-frame" aria-hidden="true">
             <div class="proj-sheet-frame__card"></div>
           </div>
-          <div v-if="contentViewMode === 'wipe'" class="proj-wipe-overlay" aria-hidden="true">
+          <div v-if="projectViewportMode === 'wipe'" class="proj-wipe-overlay" aria-hidden="true">
             <div class="proj-wipe-overlay__sheet"></div>
           </div>
-          <div v-show="!shouldUseProjectWipe2" class="proj-wipe-inner">
+          <div v-show="!shouldUseProjectWipeCards" class="proj-wipe-inner">
           <AdminEntityHero
             v-if="showBrutalistHero"
             :kicker="activeGroupLabel || 'архитектура проекта'"
@@ -494,7 +494,7 @@
                fixed-mode is used in preview modes (contractor/client) where
                proj-main has no position:relative (isProjectViewportPaged=false) -->
           <Wipe2Renderer
-            v-if="shouldUseProjectWipe2"
+            v-if="shouldUseProjectWipeCards"
             :entity="wipe2EntityData"
             :fixed-mode="contractorPreviewMode || clientPreviewMode"
             :allow-boundary-navigation="true"
@@ -502,7 +502,7 @@
             @navigate-boundary="handleProjectWipe2Boundary"
           />
 
-          <div v-if="isProjectViewportPaged && !shouldUseProjectWipe2" class="proj-pager-rail">
+          <div v-if="isProjectViewportPaged && !shouldUseProjectWipeCards" class="proj-pager-rail">
             <div class="proj-pager-rail__meta">
               <span class="proj-pager-rail__mode">{{ projectPagerModeLabel }}</span>
               <span>экран {{ viewportPageIndex }} / {{ viewportPageCount }}</span>
@@ -1423,19 +1423,19 @@ const wipe2EntityData = computed<Wipe2EntityData | null>(() => {
 
 const projectHeroPrompt = computed(() => {
   if (!isProjectViewportPaged.value) return '↓ прокрутка / swipe ↓'
-  if (contentViewMode.value === 'wipe')  return '↓ лист / PgDn ↓'
-  if (contentViewMode.value === 'wipe2') return '← карточки →'
+  if (projectViewportMode.value === 'wipe')  return '↓ лист / PgDn ↓'
+  if (projectViewportMode.value === 'wipe2') return '← карточки →'
   return '↓ экран / PgDn ↓'
 })
 const projectPagerModeLabel = computed(() => {
-  if (contentViewMode.value === 'flow')  return 'поток'
-  if (contentViewMode.value === 'wipe')  return 'листы'
-  if (contentViewMode.value === 'wipe2') return 'cards'
+  if (projectViewportMode.value === 'flow')  return 'поток'
+  if (projectViewportMode.value === 'wipe')  return 'листы'
+  if (projectViewportMode.value === 'wipe2') return 'cards'
   return 'экраны'
 })
 const projectPagerNextLabel = computed(() => {
-  if (contentViewMode.value === 'flow') return 'экран / след.'
-  if (contentViewMode.value === 'wipe') {
+  if (projectViewportMode.value === 'flow') return 'экран / след.'
+  if (projectViewportMode.value === 'wipe') {
     const atLast = viewportPageIndex.value >= viewportPageCount.value
     if (!atLast) return 'лист →'
     // Check if there's a next page in any direction
@@ -1832,7 +1832,18 @@ const resolvedProjectPageFromNav = computed(() => {
   return null
 })
 
-const shouldUseProjectWipe2 = computed(() => contentViewMode.value === 'wipe2' && Boolean(wipe2EntityData.value))
+const shouldUseProjectWipeCards = computed(() =>
+  contentViewMode.value === 'wipe2'
+  && Boolean(wipe2EntityData.value)
+  && (clientPreviewMode.value || contractorPreviewMode.value),
+)
+
+const projectViewportMode = computed(() => {
+  if (contentViewMode.value === 'wipe2' && !shouldUseProjectWipeCards.value) {
+    return 'wipe'
+  }
+  return contentViewMode.value
+})
 
 const currentProjectPage = computed(() => resolvedProjectPageFromNav.value || activePage.value)
 
@@ -1904,7 +1915,7 @@ function syncProjectViewportPager() {
   projectViewportLayoutInProgress = true
   syncProjectViewportAttrs()
 
-  if (contentViewMode.value === 'wipe2') {
+  if (projectViewportMode.value === 'wipe2') {
     projectViewportStops.value = [0]
     viewportPageIndex.value = 1
     viewportPageCount.value = 1
@@ -1931,7 +1942,7 @@ function updateProjectViewportPageIndex(el = projectViewport.value) {
     return
   }
 
-  if (contentViewMode.value === 'wipe') {
+  if (projectViewportMode.value === 'wipe') {
     const currentOffset = getCurrentProjectWipeOffset()
     const currentIndex = projectViewportStops.value.findLastIndex((stop) => stop <= currentOffset + 2)
     viewportPageIndex.value = Math.max(1, (currentIndex >= 0 ? currentIndex : 0) + 1)
@@ -2002,11 +2013,7 @@ function syncProjectViewportAttrs() {
   const el = projectViewport.value
   if (!el) return
 
-  const resolvedContentViewMode = shouldUseProjectWipe2.value
-    ? 'wipe2'
-    : contentViewMode.value === 'wipe2'
-      ? 'scroll'
-      : contentViewMode.value
+  const resolvedContentViewMode = projectViewportMode.value
 
   const panelHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--dp-panel-h')) || 28
   const viewportHeight = Math.max(240, window.innerHeight - panelHeight)
@@ -2050,7 +2057,7 @@ function resetProjectViewport() {
   clearProjectViewportWipeTimers()
   projectViewportWipePhase.value = 'idle'
   syncProjectViewportAttrs()
-  if (contentViewMode.value === 'wipe') {
+  if (projectViewportMode.value === 'wipe') {
     setProjectWipeOffset(0)
   } else {
     el.scrollTo({ top: 0, behavior: 'auto' })
@@ -2131,7 +2138,7 @@ async function advanceProjectLeaf(direction: 'next' | 'prev') {
 
   if (!nextPage) return false
 
-  const useWipe = contentViewMode.value === 'wipe'
+  const useWipe = projectViewportMode.value === 'wipe'
   const total = projectContentTransitionDuration.value
   const half = Math.max(80, Math.round(total * 0.48))
 
@@ -2177,7 +2184,7 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
   if (!el) return false
 
   const stops = projectViewportStops.value.length ? projectViewportStops.value : [0]
-  const currentPos = contentViewMode.value === 'wipe' ? getCurrentProjectWipeOffset() : el.scrollTop
+  const currentPos = projectViewportMode.value === 'wipe' ? getCurrentProjectWipeOffset() : el.scrollTop
   const currentTop = currentPos + 2
   const currentIndex = Math.max(0, stops.findLastIndex((stop) => stop <= currentTop))
   const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1
@@ -2194,7 +2201,7 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
 
   const targetTop = stops[Math.max(0, Math.min(stops.length - 1, targetIndex))] ?? 0
 
-  if (contentViewMode.value === 'wipe') {
+  if (projectViewportMode.value === 'wipe') {
     if (targetTop === getCurrentProjectWipeOffset()) return false
     return moveProjectViewportWithWipe(targetTop, direction)
   }
@@ -2208,14 +2215,14 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
 }
 
 async function handleProjectWipe2Boundary(direction: 'next' | 'prev') {
-  if (!isProjectViewportPaged.value || !shouldUseProjectWipe2.value) return
+  if (!isProjectViewportPaged.value || !shouldUseProjectWipeCards.value) return
   if (viewportNavigationBusy.value) return
   await advanceProjectLeaf(direction)
 }
 
 function handleProjectViewportWheel(event: WheelEvent) {
   if (!isProjectViewportPaged.value || !projectViewport.value) return
-  if (contentViewMode.value === 'wipe2') return  // wipe2 renderer handles navigation
+  if (projectViewportMode.value === 'wipe2') return  // wipe2 renderer handles navigation
   if (Math.abs(event.deltaY) < 12) return
   event.preventDefault()
   if (!canFlipProjectViewport()) return
@@ -2232,7 +2239,7 @@ function handleProjectViewportTouchStart(e: TouchEvent) {
 
 function handleProjectViewportTouchEnd(e: TouchEvent) {
   if (!isProjectViewportPaged.value) return
-  if (contentViewMode.value === 'wipe2') return  // wipe2 renderer handles navigation
+  if (projectViewportMode.value === 'wipe2') return  // wipe2 renderer handles navigation
   const deltaY = projTouchStartY - e.changedTouches[0].clientY
   const deltaX = Math.abs(projTouchStartX - e.changedTouches[0].clientX)
   if (Math.abs(deltaY) < 40 || deltaX > Math.abs(deltaY) * 0.8) return
@@ -2242,7 +2249,7 @@ function handleProjectViewportTouchEnd(e: TouchEvent) {
 
 function handleProjectViewportKeydown(event: KeyboardEvent) {
   if (!isProjectViewportPaged.value) return
-  if (contentViewMode.value === 'wipe2') return
+  if (projectViewportMode.value === 'wipe2') return
   if (isViewportEditableTarget(event.target)) return
 
   const isNext = event.key === 'PageDown' || event.key === 'ArrowDown' || event.key === ' '
