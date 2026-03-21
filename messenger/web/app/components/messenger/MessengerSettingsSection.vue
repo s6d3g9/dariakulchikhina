@@ -158,7 +158,7 @@ function showManualInstallHelp() {
 </script>
 
 <template>
-  <section class="section-block settings-shell" aria-label="Settings section">
+  <section class="section-block settings-shell settings-shell--material" aria-label="Settings section">
     <header class="section-head section-head--stacked">
       <div>
         <p class="section-kicker">Settings</p>
@@ -176,8 +176,12 @@ function showManualInstallHelp() {
 
     <div class="settings-layout settings-layout--compact-head">
       <article class="setting-card setting-card--glass setting-card--summary">
+        <div class="setting-pill-row setting-pill-row--summary">
+          <span class="setting-pill setting-pill--material">Material settings</span>
+        </div>
         <p class="setting-card__title">Аккаунт</p>
         <p class="setting-card__text">{{ auth.user.value?.displayName || 'Гость' }} · @{{ auth.user.value?.login || 'anonymous' }}</p>
+        <p class="setting-card__meta">Экран настроек собран как отдельный Material-слой: плотные панели, rail-навигация и более строгая иерархия без лишнего стекла.</p>
       </article>
 
       <aside class="settings-nav" aria-label="Меню настроек">
@@ -380,7 +384,7 @@ function showManualInstallHelp() {
 
           <article class="setting-card setting-card--glass setting-card--stacked">
             <p class="setting-card__title">Стиль дизайна</p>
-            <p class="setting-card__text">Отдельно от палитры можно переключать характер интерфейса: glass-режимы или строгий минималистичный вариант без стекла.</p>
+            <p class="setting-card__text">Отдельно от палитры можно переключать характер интерфейса. Material 3 выделен как самостоятельный режим с плотными поверхностями и более собранной читаемостью.</p>
             <div class="style-grid">
               <button
                 v-for="style in settingsModel.styleOptions"
@@ -403,7 +407,10 @@ function showManualInstallHelp() {
                   </span>
                 </span>
                 <span class="style-card__copy">
-                  <span class="style-card__title">{{ style.title }}</span>
+                  <span class="style-card__title-row">
+                    <span class="style-card__title">{{ style.title }}</span>
+                    <span v-if="style.key === 'material'" class="style-card__chip">M3</span>
+                  </span>
                   <span class="style-card__meta">{{ style.hint }}</span>
                 </span>
                 <span class="style-card__state">

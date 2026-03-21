@@ -1,7 +1,10 @@
 type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerThemeKey = 'beige' | 'gray' | 'black' | 'void'
-type MessengerStyleKey = 'crystal' | 'mist' | 'contrast' | 'minimal'
+type MessengerStyleKey = 'material' | 'crystal' | 'mist' | 'contrast' | 'minimal'
+
+const MESSENGER_THEME_KEYS = ['beige', 'gray', 'black', 'void'] as const
+const MESSENGER_STYLE_KEYS = ['material', 'crystal', 'mist', 'contrast', 'minimal'] as const
 
 interface MessengerSettingsSnapshot {
   profile: {
@@ -62,7 +65,7 @@ function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
     },
     themes: {
       active: 'black',
-      style: 'crystal',
+      style: 'material',
     },
     devices: {
       trustThisDevice: true,
@@ -98,8 +101,12 @@ function readStoredThemePreferences() {
   const storedStyle = window.localStorage.getItem(MESSENGER_STYLE_STORAGE_KEY)
 
   return {
-    active: storedTheme as MessengerThemeKey | null,
-    style: storedStyle as MessengerStyleKey | null,
+    active: MESSENGER_THEME_KEYS.includes(storedTheme as MessengerThemeKey)
+      ? storedTheme as MessengerThemeKey
+      : null,
+    style: MESSENGER_STYLE_KEYS.includes(storedStyle as MessengerStyleKey)
+      ? storedStyle as MessengerStyleKey
+      : null,
   }
 }
 
@@ -226,6 +233,11 @@ export function useMessengerSettings() {
   ]
 
   const styleOptions = [
+    {
+      key: 'material' as const,
+      title: 'Material 3',
+      hint: 'Плотные поверхности, читаемая иерархия и отдельный спокойный settings-слой без жидкого стекла.',
+    },
     {
       key: 'crystal' as const,
       title: 'Кристалл',

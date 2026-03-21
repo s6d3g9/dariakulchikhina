@@ -131,6 +131,42 @@ html[data-messenger-style='contrast'] {
   --messenger-control-active-shadow: 0 9px 18px rgba(0, 0, 0, 0.18);
 }
 
+html[data-messenger-style='material'] {
+  --messenger-surface-bg: linear-gradient(180deg, rgba(24, 30, 41, 0.98), rgba(18, 24, 34, 0.96));
+  --messenger-surface-bg-strong: linear-gradient(180deg, rgba(31, 38, 50, 0.99), rgba(22, 28, 38, 0.97));
+  --messenger-surface-border: rgba(255, 255, 255, 0.08);
+  --messenger-surface-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  --messenger-surface-filter: none;
+  --messenger-panel: rgba(19, 24, 33, 0.98);
+  --messenger-panel-strong: rgba(26, 32, 43, 0.99);
+  --messenger-panel-soft: rgba(255, 255, 255, 0.03);
+  --messenger-border: rgba(255, 255, 255, 0.08);
+  --messenger-border-strong: rgba(255, 255, 255, 0.14);
+  --messenger-field-bg: rgba(255, 255, 255, 0.06);
+  --messenger-field-bg-focus: rgba(255, 255, 255, 0.09);
+  --messenger-field-placeholder: rgba(226, 232, 240, 0.54);
+  --messenger-glass-button-bg: linear-gradient(180deg, rgba(36, 43, 56, 0.98), rgba(28, 34, 46, 0.98));
+  --messenger-glass-button-bg-hover: linear-gradient(180deg, rgba(43, 52, 66, 0.99), rgba(31, 38, 50, 0.99));
+  --messenger-glass-button-border: rgba(255, 255, 255, 0.08);
+  --messenger-glass-button-border-strong: rgba(125, 211, 252, 0.28);
+  --messenger-glass-button-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  --messenger-slab-bg: linear-gradient(180deg, rgba(20, 25, 34, 0.99), rgba(16, 20, 28, 0.99));
+  --messenger-slab-bg-soft: linear-gradient(180deg, rgba(26, 32, 43, 0.98), rgba(19, 24, 33, 0.98));
+  --messenger-slab-bg-strong: linear-gradient(180deg, rgba(31, 38, 50, 0.99), rgba(24, 29, 39, 0.99));
+  --messenger-slab-border: rgba(255, 255, 255, 0.08);
+  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+  --messenger-slab-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+  --messenger-scene-overlay: radial-gradient(circle at top left, rgba(125, 211, 252, 0.08), transparent 26%), radial-gradient(circle at top right, rgba(216, 180, 254, 0.06), transparent 22%);
+  --messenger-scene-grid-opacity: 0.03;
+  --messenger-aurora-opacity: 0.32;
+  --messenger-control-overlay-opacity: 0.08;
+  --messenger-control-hover-transform: translateY(-1px);
+  --messenger-control-hover-filter: none;
+  --messenger-control-hover-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
+  --messenger-control-active-transform: translateY(0);
+  --messenger-control-active-shadow: 0 5px 12px rgba(0, 0, 0, 0.14);
+}
+
 html[data-messenger-style='minimal'] {
   --messenger-surface-bg: rgba(255, 255, 255, 0.02);
   --messenger-surface-bg-strong: rgba(255, 255, 255, 0.03);
@@ -1814,7 +1850,15 @@ textarea {
   gap: 14px;
 }
 
+.settings-layout {
+  grid-template-areas:
+    'summary'
+    'nav'
+    'panel';
+}
+
 .settings-nav {
+  grid-area: nav;
   align-content: start;
   padding: 6px;
   border: 1px solid color-mix(in srgb, var(--messenger-border) 72%, transparent);
@@ -1873,6 +1917,7 @@ textarea {
 }
 
 .settings-panel {
+  grid-area: panel;
   min-width: 0;
   padding: 10px;
   border: 1px solid color-mix(in srgb, var(--messenger-border) 70%, transparent);
@@ -1890,6 +1935,10 @@ textarea {
 .setting-card--summary {
   display: grid;
   align-content: start;
+}
+
+.setting-card--summary {
+  grid-area: summary;
 }
 
 .setting-card--summary {
@@ -2055,6 +2104,10 @@ textarea {
   gap: 8px;
 }
 
+.setting-pill-row--summary {
+  margin-bottom: 2px;
+}
+
 .setting-inline-note {
   margin: 0;
   color: var(--messenger-muted);
@@ -2076,6 +2129,12 @@ textarea {
   color: var(--messenger-success);
   border-color: rgba(134, 239, 172, 0.24);
   background: rgba(134, 239, 172, 0.08);
+}
+
+.setting-pill--material {
+  color: #d6e8ff;
+  border-color: rgba(125, 211, 252, 0.22);
+  background: rgba(125, 211, 252, 0.12);
 }
 
 .theme-grid {
@@ -2202,6 +2261,28 @@ textarea {
   display: grid;
   gap: 6px;
   min-width: 0;
+}
+
+.style-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.style-card__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(125, 211, 252, 0.16);
+  color: #d6e8ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .theme-card__state,
@@ -2377,6 +2458,30 @@ textarea {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08));
 }
 
+.style-card--material .style-card__preview {
+  background: linear-gradient(180deg, rgba(237, 241, 247, 0.98), rgba(212, 220, 231, 0.92));
+  border-color: rgba(73, 85, 101, 0.14);
+}
+
+.style-card--material .style-card__preview-topbar {
+  background: rgba(73, 85, 101, 0.24);
+}
+
+.style-card--material .style-card__preview-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(232, 237, 244, 0.94));
+  border-color: rgba(73, 85, 101, 0.12);
+}
+
+.style-card--material .style-card__preview-dot {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.24);
+}
+
+.style-card--material .style-card__preview-button {
+  background: rgba(59, 130, 246, 0.24);
+  border-color: rgba(59, 130, 246, 0.22);
+}
+
 .style-card--crystal .style-card__preview-panel {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
@@ -2415,6 +2520,138 @@ textarea {
 .style-card--minimal .style-card__preview-panel {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+.settings-shell--material .setting-card--glass,
+.settings-shell--material .settings-panel,
+.settings-shell--material .settings-nav,
+.settings-shell--material .theme-card,
+.settings-shell--material .style-card,
+.settings-shell--material .setting-fact-row,
+.settings-shell--material .device-status-item,
+.settings-shell--material .setting-select,
+.settings-shell--material .setting-textarea {
+  backdrop-filter: none;
+}
+
+.settings-shell--material .setting-card--glass {
+  border-color: color-mix(in srgb, var(--messenger-border) 88%, transparent);
+  background: linear-gradient(180deg, rgba(28, 34, 46, 0.96), rgba(21, 26, 36, 0.98));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+}
+
+.settings-shell--material .setting-card--summary {
+  min-height: 0;
+  padding: 20px;
+  border-radius: 30px;
+  background: linear-gradient(135deg, rgba(34, 42, 57, 0.98), rgba(24, 29, 40, 0.98));
+}
+
+.settings-shell--material .settings-nav {
+  padding: 10px;
+  border-radius: 28px;
+  border-color: color-mix(in srgb, var(--messenger-border) 86%, transparent);
+  background: linear-gradient(180deg, rgba(24, 29, 39, 0.98), rgba(18, 23, 32, 0.99));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.settings-shell--material .settings-nav__item {
+  min-height: 72px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.settings-shell--material .settings-nav__item::before {
+  inset: auto;
+  top: 10px;
+  bottom: 10px;
+  left: 8px;
+  width: 4px;
+  border-radius: 999px;
+  background: rgba(125, 211, 252, 0.66);
+  opacity: 0;
+}
+
+.settings-shell--material .settings-nav__item:not([disabled]):hover {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
+  filter: none;
+}
+
+.settings-shell--material .settings-nav__item--active {
+  border-color: rgba(125, 211, 252, 0.1);
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.12), rgba(59, 130, 246, 0.06));
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.08);
+}
+
+.settings-shell--material .settings-nav__item--active::before {
+  opacity: 1;
+}
+
+.settings-shell--material .settings-panel {
+  padding: 14px;
+  border-radius: 30px;
+  border-color: color-mix(in srgb, var(--messenger-border) 88%, transparent);
+  background: linear-gradient(180deg, rgba(18, 23, 32, 0.99), rgba(14, 18, 26, 0.99));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+}
+
+.settings-shell--material .theme-card,
+.settings-shell--material .style-card {
+  min-height: 188px;
+  border-color: color-mix(in srgb, var(--messenger-border) 86%, transparent);
+  background: linear-gradient(180deg, rgba(31, 38, 50, 0.98), rgba(24, 29, 39, 0.98));
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+}
+
+.settings-shell--material .theme-card:hover,
+.settings-shell--material .theme-card:focus-visible,
+.settings-shell--material .style-card:hover,
+.settings-shell--material .style-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(125, 211, 252, 0.2);
+  background: linear-gradient(180deg, rgba(36, 43, 57, 0.99), rgba(28, 34, 46, 0.99));
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
+}
+
+.settings-shell--material .theme-card--active,
+.settings-shell--material .style-card--active {
+  border-color: rgba(125, 211, 252, 0.24);
+  background: linear-gradient(180deg, rgba(42, 52, 68, 0.99), rgba(29, 37, 49, 0.99));
+}
+
+.settings-shell--material .setting-fact-row,
+.settings-shell--material .device-status-item {
+  border-color: color-mix(in srgb, var(--messenger-border) 84%, transparent);
+  background: linear-gradient(180deg, rgba(33, 39, 52, 0.9), rgba(26, 31, 42, 0.96));
+}
+
+.settings-shell--material .setting-select,
+.settings-shell--material .setting-textarea {
+  border-color: color-mix(in srgb, var(--messenger-border) 84%, transparent);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-shell--material .setting-toggle {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+.settings-shell--material .setting-card__text {
+  color: color-mix(in srgb, var(--messenger-text) 92%, transparent);
+}
+
+.settings-shell--material .setting-card__meta,
+.settings-shell--material .settings-nav__hint,
+.settings-shell--material .theme-card__meta,
+.settings-shell--material .style-card__meta,
+.settings-shell--material .setting-fact-label {
+  color: color-mix(in srgb, var(--messenger-text) 66%, transparent);
 }
 
 .action-btn,
@@ -2622,6 +2859,9 @@ html[data-messenger-style='minimal'] .attachment-card--button::before {
 
   .settings-layout {
     grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-areas:
+      'summary summary'
+      'nav panel';
     align-items: start;
   }
 
