@@ -26,9 +26,16 @@
           <p v-if="callStatusText" class="comm-status">{{ callStatusText }}</p>
         </div>
 
+        <div v-if="currentChatPeer" class="comm-call-security" :class="{ 'comm-call-security--active': callSecurity.active }">
+          <p class="comm-call-security__status">{{ callSecurity.status }}</p>
+          <p v-if="callSecurity.active && callSecurity.verificationEmojis.length" class="comm-call-security__emojis">{{ callSecurity.verificationEmojis.join(' ') }}</p>
+          <p v-else-if="callSecurity.fallbackReason" class="comm-call-security__fallback">{{ callSecurity.fallbackReason }}</p>
+        </div>
+
         <div v-if="incomingCall" class="comm-incoming glass-card">
           <p class="comm-incoming-title">Входящий {{ incomingCall.mode === 'video' ? 'видеозвонок' : 'аудиозвонок' }}</p>
           <p class="comm-incoming-meta">От {{ incomingCall.fromDisplayName }}</p>
+          <p v-if="incomingCall.e2ee?.supported" class="comm-status">{{ callSecurity.available ? 'После принятия активируется дополнительное E2EE звонка.' : 'Собеседник поддерживает дополнительное E2EE, но этот браузер умеет только штатное шифрование WebRTC.' }}</p>
           <div class="comm-incoming-actions">
             <button type="button" class="a-btn-sm" @click="acceptIncomingCall">Принять</button>
             <button type="button" class="a-btn-sm a-btn-danger" @click="rejectIncomingCall">Отклонить</button>
@@ -202,9 +209,9 @@
             </p>
             <p class="comm-setting-row">
               <span class="comm-setting-name">Звонки</span>
-              <span class="comm-setting-value">WebRTC DTLS-SRTP</span>
+              <span class="comm-setting-value">{{ callSecurity.available ? 'WEBRTC + E2EE' : 'WEBRTC DTLS-SRTP' }}</span>
             </p>
-            <p class="comm-setting-note">Relay хранит только ciphertext и публичные key bundles, без plaintext сообщений.</p>
+            <p class="comm-setting-note">{{ callSecurity.available ? 'Браузер поддерживает encoded streams: для звонка добавляется дополнительный E2EE-слой и символы сверки.' : 'Relay хранит только ciphertext и публичные key bundles, а звонки защищены штатным шифрованием WebRTC.' }}</p>
           </section>
         </div>
       </section>
@@ -222,17 +229,38 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useProjectCommunicationsBootstrap } from '~~/app/composables/useProjectCommunicationsBootstrap'
-import type { ProjectCommunicationBootstrap } from '~~/shared/types/communications'
+import type {
+  CommunicationActorRole,
+  CommunicationCallE2EEPayload,
+  CommunicationCallSecurityContext,
+  CommunicationCallSecurityState,
+  CommunicationKeyBundle,
+  CommunicationKeyBundlesResponse,
+  CommunicationMessage,
+  CommunicationMessagesResponse,
+  CommunicationRoom,
+  CommunicationRoomResponse,
+  CommunicationRoomsResponse,
+  CommunicationSignal,
+  ProjectCommunicationBootstrap,
+} from '~~/shared/types/communications'
 import {
+  activateCommunicationCallSecurityContext,
+  applyCommunicationReceiverCallSecurity,
+  applyCommunicationSenderCallSecurity,
   createCommunicationRoomKey,
+  decodeCommunicationCallBase64,
   decryptCommunicationText,
+  encodeCommunicationCallBase64,
   encryptCommunicationText,
   exportCommunicationPrivateKey,
   exportCommunicationPublicKey,
   exportCommunicationRoomKey,
+  generateCommunicationCallE2EEKeyPair,
   generateCommunicationIdentityKeyPair,
   importCommunicationPrivateKey,
   importCommunicationRoomKey,
+  supportsCommunicationCallEncryption,
   unwrapCommunicationRoomKeyFromPeer,
   wrapCommunicationRoomKeyForPeer,
 } from '~~/shared/utils/communications-e2ee'
@@ -241,60 +269,12 @@ const props = defineProps<{
   projectSlug: string
 }>()
 
-type RoomParticipantResponse = {
-  actorId: string
-  role: string
-  displayName?: string
-  nickname?: string
-}
-
-type RoomResponse = {
-  room: {
-    id: string
-    title: string
-    externalRef: string
-    updatedAt?: string
-    participants: RoomParticipantResponse[]
-  }
-}
-
-type RoomsResponse = {
-  rooms: Array<RoomResponse['room']>
-}
-
-type MessageResponse = {
-  messages: Array<{
-    id: string
-    createdAt: string
-    senderActorId: string
-    senderRole: string
-    senderDisplayName?: string
-    encrypted: {
-      version: 'e2ee-v1'
-      algorithm: 'AES-GCM-256'
-      ciphertext: string
-      iv: string
-      senderKeyId: string
-      mimeType?: string
-    }
-  }>
-}
-
-type KeyBundleResponse = {
-  keyBundles: Array<{
-    actorId: string
-    actorRole: string
-    actorDisplayName?: string
-    keyId: string
-    publicKeyJwk: JsonWebKey
-    deviceId?: string
-  }>
-}
+type CallMode = 'audio' | 'video'
 
 type SecureParticipant = {
   actorKey: string
   actorId: string
-  role: string
+  role: CommunicationActorRole
   displayName: string
   nickname?: string
 }
@@ -318,15 +298,18 @@ type IncomingCallState = {
   callId: string
   fromActorKey: string
   fromDisplayName: string
-  mode: 'audio' | 'video'
+  mode: CallMode
+  e2ee?: CommunicationCallE2EEPayload
 }
 
 type ActiveCallState = {
   callId: string
   peerActorKey: string
-  mode: 'audio' | 'video'
+  mode: CallMode
   initiator: boolean
 }
+
+type SignalPayloadRecord = Record<string, unknown>
 
 const localVideoEl = ref<HTMLVideoElement | null>(null)
 const remoteVideoEl = ref<HTMLVideoElement | null>(null)
@@ -346,7 +329,7 @@ const currentChatPeerKey = ref('')
 const contacts = ref<SecureParticipant[]>([])
 const openChats = ref<ChatSummary[]>([])
 const decryptedMessages = ref<DecryptedUiMessage[]>([])
-const keyBundles = ref<KeyBundleResponse['keyBundles']>([])
+const keyBundles = ref<CommunicationKeyBundle[]>([])
 const sendingMessage = ref(false)
 const draftMessage = ref('')
 const syncStatus = ref('')
@@ -364,24 +347,44 @@ const incomingCall = ref<IncomingCallState | null>(null)
 const activeCall = ref<ActiveCallState | null>(null)
 const callStatusText = ref('')
 const callBusy = computed(() => Boolean(incomingCall.value || activeCall.value))
+const callSecurity = ref<CommunicationCallSecurityState>(createDefaultCallSecurityState())
 
 let eventSource: EventSource | null = null
 let peerConnection: RTCPeerConnection | null = null
+let peerConnectionCallId = ''
 let localStream: MediaStream | null = null
 let remoteStream: MediaStream | null = null
 let identityPrivateKey: CryptoKey | null = null
 let identityPublicKeyJwk: JsonWebKey | null = null
 let roomKey: CryptoKey | null = null
 let myKeyId = ''
+let callSecurityContext: CommunicationCallSecurityContext | null = null
+
+const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
+const transformedCallSenders = new WeakSet<object>()
+const transformedCallReceivers = new WeakSet<object>()
 
 const roomStorageKey = computed(() => `comm-room-key:${currentChatExternalRef.value || props.projectSlug}:${actorKey.value}`)
 const identityStorageKey = computed(() => `comm-identity:${props.projectSlug}:${actorKey.value}`)
 
-function participantActorKey(participant: { actorId: string; role: string }) {
+function createDefaultCallSecurityState(): CommunicationCallSecurityState {
+  const available = supportsCommunicationCallEncryption()
+  return {
+    available,
+    active: false,
+    verificationEmojis: [],
+    status: available
+      ? 'Браузер готов к дополнительному E2EE звонков. Символы сверки появятся после согласования ключей.'
+      : 'Для звонков доступно только штатное шифрование WebRTC.',
+    fallbackReason: available ? '' : 'Нет поддержки encoded insertable streams.',
+  }
+}
+
+function participantActorKey(participant: { actorId: string; role: CommunicationActorRole }) {
   return `${participant.role}:${participant.actorId}`
 }
 
-function normalizeParticipants(items: RoomParticipantResponse[]) {
+function normalizeParticipants(items: CommunicationRoom['participants']) {
   return items.map((item) => ({
     actorKey: participantActorKey(item),
     actorId: item.actorId,
@@ -489,7 +492,7 @@ async function loadProjectContacts() {
   const externalRef = bootstrapData.value?.roomExternalRef
   if (!externalRef) return
 
-  const response = await apiFetch<RoomResponse>('/rooms', {
+  const response = await apiFetch<CommunicationRoomResponse>('/rooms', {
     method: 'POST',
     body: {
       externalRef,
@@ -504,7 +507,7 @@ async function loadProjectContacts() {
 }
 
 async function fetchOpenChats() {
-  const response = await apiFetch<RoomsResponse>(`/rooms?kind=direct&externalRefPrefix=${encodeURIComponent(directChatsPrefix.value)}`, { method: 'GET' })
+  const response = await apiFetch<CommunicationRoomsResponse>(`/rooms?kind=direct&externalRefPrefix=${encodeURIComponent(directChatsPrefix.value)}`, { method: 'GET' })
   const nextChats: ChatSummary[] = []
   for (const room of response.rooms) {
     const peer = normalizeParticipants(room.participants).find((participant) => participant.actorKey !== actorKey.value)
@@ -538,7 +541,7 @@ async function saveMyNickname() {
   nicknameSaving.value = true
   nicknameStatus.value = 'Сохраняем никнейм…'
   try {
-    const response = await apiFetch<RoomResponse>(`/rooms/${projectRoomId.value}/me/nickname`, {
+    const response = await apiFetch<CommunicationRoomResponse>(`/rooms/${projectRoomId.value}/me/nickname`, {
       method: 'PUT',
       body: { nickname: nextNickname || '' },
     })
@@ -563,7 +566,57 @@ function resetChatState() {
   eventStreamConnected.value = false
 }
 
-function mergeKeyBundle(bundle: any) {
+function setCallSecurityPending(status: string) {
+  callSecurity.value = {
+    available: supportsCommunicationCallEncryption(),
+    active: false,
+    verificationEmojis: [],
+    status,
+    fallbackReason: '',
+  }
+}
+
+function setCallSecurityFallback(reason: string) {
+  callSecurity.value = {
+    available: supportsCommunicationCallEncryption(),
+    active: false,
+    verificationEmojis: [],
+    status: 'Звонок защищён только транспортным шифрованием WebRTC.',
+    fallbackReason: reason,
+  }
+}
+
+function setCallSecurityActive() {
+  callSecurity.value = {
+    available: true,
+    active: true,
+    verificationEmojis: callSecurityContext?.verificationEmojis || [],
+    status: 'Дополнительное E2EE для звонка активно. Сверьте символы с собеседником.',
+    fallbackReason: '',
+  }
+}
+
+function clearCallSecurityContext() {
+  callSecurityContext = null
+}
+
+function queueIceCandidate(callId: string, candidate: RTCIceCandidateInit) {
+  const queue = pendingIceCandidates.get(callId) || []
+  queue.push(candidate)
+  pendingIceCandidates.set(callId, queue)
+}
+
+async function flushPendingIceCandidates(callId: string, connection: RTCPeerConnection) {
+  const queue = pendingIceCandidates.get(callId)
+  if (!queue?.length) return
+
+  pendingIceCandidates.delete(callId)
+  for (const candidate of queue) {
+    await connection.addIceCandidate(candidate).catch(() => {})
+  }
+}
+
+function mergeKeyBundle(bundle: CommunicationKeyBundle) {
   const bundleActorKey = `${bundle.actorRole}:${bundle.actorId}`
   const index = keyBundles.value.findIndex((item) => `${item.actorRole}:${item.actorId}` === bundleActorKey && item.keyId === bundle.keyId)
   if (index >= 0) keyBundles.value[index] = bundle
@@ -573,7 +626,7 @@ function mergeKeyBundle(bundle: any) {
 async function publishMyKeyBundle() {
   if (!currentChatRoomId.value || !identityPublicKeyJwk || !myKeyId) return
 
-  const response = await apiFetch<{ keyBundle: any }>(`/rooms/${currentChatRoomId.value}/key-bundles`, {
+  const response = await apiFetch<{ keyBundle: CommunicationKeyBundle }>(`/rooms/${currentChatRoomId.value}/key-bundles`, {
     method: 'POST',
     body: {
       keyId: myKeyId,
@@ -585,7 +638,7 @@ async function publishMyKeyBundle() {
   mergeKeyBundle(response.keyBundle)
 }
 
-async function rebuildDecryptedMessages(messages: MessageResponse['messages']) {
+async function rebuildDecryptedMessages(messages: CommunicationMessage[]) {
   const activeRoomKey = await ensureStoredRoomKey()
   if (!activeRoomKey) {
     decryptedMessages.value = messages.map((message) => ({
@@ -623,8 +676,8 @@ async function fetchMessagesAndKeys() {
   if (!currentChatRoomId.value) return
   await publishMyKeyBundle()
   const [messageResponse, bundleResponse] = await Promise.all([
-    apiFetch<MessageResponse>(`/rooms/${currentChatRoomId.value}/messages?limit=100`, { method: 'GET' }),
-    apiFetch<KeyBundleResponse>(`/rooms/${currentChatRoomId.value}/key-bundles`, { method: 'GET' }),
+    apiFetch<CommunicationMessagesResponse>(`/rooms/${currentChatRoomId.value}/messages?limit=100`, { method: 'GET' }),
+    apiFetch<CommunicationKeyBundlesResponse>(`/rooms/${currentChatRoomId.value}/key-bundles`, { method: 'GET' }),
   ])
   keyBundles.value = bundleResponse.keyBundles || []
   await rebuildDecryptedMessages(messageResponse.messages || [])
@@ -673,7 +726,7 @@ async function shareRoomKeyWithKnownPeers(targetActorKey?: string) {
 
 async function refreshMessagesOnly() {
   if (!currentChatRoomId.value) return
-  const response = await apiFetch<MessageResponse>(`/rooms/${currentChatRoomId.value}/messages?limit=100`, { method: 'GET' })
+  const response = await apiFetch<CommunicationMessagesResponse>(`/rooms/${currentChatRoomId.value}/messages?limit=100`, { method: 'GET' })
   await rebuildDecryptedMessages(response.messages || [])
 }
 
@@ -716,7 +769,7 @@ async function openDirectChat(peer: SecureParticipant, existingChat?: ChatSummar
   resetChatState()
   teardownCall('')
 
-  const response = await apiFetch<RoomResponse>('/rooms', {
+  const response = await apiFetch<CommunicationRoomResponse>('/rooms', {
     method: 'POST',
     body: {
       externalRef: existingChat?.externalRef || buildDirectChatExternalRef(peer.actorKey),
@@ -788,7 +841,7 @@ async function sendEncryptedMessage() {
   }
 }
 
-async function initMedia(mode: 'audio' | 'video') {
+async function initMedia(mode: CallMode) {
   if (localStream) return localStream
   localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === 'video' })
   if (localVideoEl.value) localVideoEl.value.srcObject = localStream
@@ -798,20 +851,34 @@ async function initMedia(mode: 'audio' | 'video') {
 function resetPeerConnection() {
   peerConnection?.close()
   peerConnection = null
+  peerConnectionCallId = ''
+  pendingIceCandidates.clear()
   remoteStream?.getTracks().forEach((track) => track.stop())
   remoteStream = null
   if (remoteVideoEl.value) remoteVideoEl.value.srcObject = null
 }
 
-function buildPeerConnection(callId: string, peerActorKey: string, mode: 'audio' | 'video') {
-  const connection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] })
+function buildPeerConnection(callId: string, peerActorKey: string, mode: CallMode) {
+  if (peerConnection && peerConnectionCallId === callId) return peerConnection
+
+  resetPeerConnection()
+  const connection = new RTCPeerConnection({
+    bundlePolicy: 'max-bundle',
+    iceCandidatePoolSize: 4,
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+  })
   peerConnection = connection
+  peerConnectionCallId = callId
   remoteStream = new MediaStream()
   if (remoteVideoEl.value) remoteVideoEl.value.srcObject = remoteStream
   if (localStream) {
-    for (const track of localStream.getTracks()) connection.addTrack(track, localStream)
+    for (const track of localStream.getTracks()) {
+      const sender = connection.addTrack(track, localStream)
+      applyCommunicationSenderCallSecurity(sender, callSecurityContext, transformedCallSenders)
+    }
   }
   connection.ontrack = (event) => {
+    applyCommunicationReceiverCallSecurity(event.receiver, callSecurityContext, transformedCallReceivers)
     for (const track of event.streams[0]?.getTracks() || []) remoteStream?.addTrack(track)
   }
   connection.onicecandidate = async (event) => {
@@ -832,14 +899,39 @@ function buildPeerConnection(callId: string, peerActorKey: string, mode: 'audio'
   return connection
 }
 
-async function startOutgoingCall(mode: 'audio' | 'video') {
+async function startOutgoingCall(mode: CallMode) {
   if (!currentChatPeer.value || !currentChatRoomId.value) return
   const callId = crypto.randomUUID()
+  let e2ee: CommunicationCallE2EEPayload = { supported: false }
+
+  if (supportsCommunicationCallEncryption()) {
+    const callKeys = await generateCommunicationCallE2EEKeyPair()
+    const salt = crypto.getRandomValues(new Uint8Array(16))
+    callSecurityContext = {
+      callId,
+      role: 'initiator',
+      localPublicKey: callKeys.publicKey,
+      localPrivateKey: callKeys.privateKey,
+      salt,
+      verificationEmojis: [],
+      active: false,
+    }
+    setCallSecurityPending('Ожидаем подтверждение и публичный ключ собеседника для E2EE звонка.')
+    e2ee = {
+      supported: true,
+      publicKey: callKeys.publicKey,
+      salt: encodeCommunicationCallBase64(salt),
+    }
+  } else {
+    clearCallSecurityContext()
+    setCallSecurityFallback('У этого браузера нет поддержки encoded insertable streams.')
+  }
+
   activeCall.value = { callId, peerActorKey: currentChatPeer.value.actorKey, mode, initiator: true }
   callStatusText.value = `Ожидание ответа ${currentChatPeer.value.displayName}`
   await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
     method: 'POST',
-    body: { kind: 'invite', callId, targetActorKey: currentChatPeer.value.actorKey, payload: { mode } },
+    body: { kind: 'invite', callId, targetActorKey: currentChatPeer.value.actorKey, payload: { mode, e2ee } },
   })
 }
 
@@ -848,13 +940,40 @@ async function acceptIncomingCall() {
   try {
     await initMedia(incomingCall.value.mode)
     activeCall.value = { callId: incomingCall.value.callId, peerActorKey: incomingCall.value.fromActorKey, mode: incomingCall.value.mode, initiator: false }
+    let e2ee: CommunicationCallE2EEPayload = { supported: false }
+
+    if (supportsCommunicationCallEncryption() && incomingCall.value.e2ee?.supported && incomingCall.value.e2ee.publicKey && incomingCall.value.e2ee.salt) {
+      const callKeys = await generateCommunicationCallE2EEKeyPair()
+      callSecurityContext = {
+        callId: incomingCall.value.callId,
+        role: 'responder',
+        localPublicKey: callKeys.publicKey,
+        localPrivateKey: callKeys.privateKey,
+        remotePublicKey: incomingCall.value.e2ee.publicKey,
+        salt: decodeCommunicationCallBase64(incomingCall.value.e2ee.salt),
+        verificationEmojis: [],
+        active: false,
+      }
+      await activateCommunicationCallSecurityContext(callSecurityContext, incomingCall.value.e2ee.publicKey)
+      setCallSecurityActive()
+      e2ee = {
+        supported: true,
+        publicKey: callKeys.publicKey,
+      }
+    } else {
+      clearCallSecurityContext()
+      setCallSecurityFallback(incomingCall.value.e2ee?.supported
+        ? 'Не удалось активировать E2EE для этого вызова.'
+        : 'Собеседник не прислал параметры дополнительного E2EE.')
+    }
+
     await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
       method: 'POST',
       body: {
         kind: 'ringing',
         callId: incomingCall.value.callId,
         targetActorKey: incomingCall.value.fromActorKey,
-        payload: { accepted: true, mode: incomingCall.value.mode },
+        payload: { accepted: true, mode: incomingCall.value.mode, e2ee },
       },
     })
     callStatusText.value = 'Подготовка соединения…'
@@ -893,20 +1012,22 @@ function teardownCall(status = '') {
   resetPeerConnection()
   localStream?.getTracks().forEach((track) => track.stop())
   localStream = null
+  clearCallSecurityContext()
+  callSecurity.value = createDefaultCallSecurityState()
   if (localVideoEl.value) localVideoEl.value.srcObject = null
 }
 
-async function handleSignal(signal: any) {
+async function handleSignal(signal: CommunicationSignal) {
   if (!signal || (signal.targetActorKey && signal.targetActorKey !== actorKey.value)) return
+  const payload = signal.payload && typeof signal.payload === 'object' ? signal.payload as SignalPayloadRecord : {}
 
   if (signal.kind === 'room-key' && identityPrivateKey) {
     try {
-      const payload = signal.payload || {}
       const nextRoomKey = await unwrapCommunicationRoomKeyFromPeer({
-        wrappedCiphertextBase64: payload.wrappedCiphertext,
-        ivBase64: payload.iv,
+        wrappedCiphertextBase64: String(payload.wrappedCiphertext || ''),
+        ivBase64: String(payload.iv || ''),
         recipientPrivateKey: identityPrivateKey,
-        senderPublicKeyJwk: payload.senderPublicKeyJwk,
+        senderPublicKeyJwk: payload.senderPublicKeyJwk as JsonWebKey,
       })
       await persistRoomKey(nextRoomKey)
       syncStatus.value = 'Ключ комнаты получен'
@@ -919,13 +1040,35 @@ async function handleSignal(signal: any) {
 
   if (signal.kind === 'invite') {
     const senderKey = `${signal.senderRole}:${signal.senderActorId}`
-    incomingCall.value = { callId: signal.callId, fromActorKey: senderKey, fromDisplayName: signal.senderDisplayName || senderKey, mode: signal.payload?.mode === 'video' ? 'video' : 'audio' }
+    const inviteE2ee = payload.e2ee as CommunicationCallE2EEPayload | undefined
+    incomingCall.value = {
+      callId: signal.callId,
+      fromActorKey: senderKey,
+      fromDisplayName: signal.senderDisplayName || senderKey,
+      mode: payload.mode === 'video' ? 'video' : 'audio',
+      e2ee: inviteE2ee,
+    }
+    if (inviteE2ee?.supported && supportsCommunicationCallEncryption()) {
+      setCallSecurityPending('Входящий звонок поддерживает E2EE. После принятия появятся символы для сверки.')
+    } else if (inviteE2ee?.supported) {
+      setCallSecurityFallback('Собеседник поддерживает E2EE, но этот браузер не умеет encoded transforms.')
+    } else {
+      setCallSecurityFallback('Для этого вызова используется только штатное шифрование WebRTC.')
+    }
     callStatusText.value = 'Входящий вызов'
     return
   }
 
   if (signal.kind === 'ringing' && activeCall.value?.initiator) {
-    const mode = signal.payload?.mode === 'video' ? 'video' : 'audio'
+    const ringingE2ee = payload.e2ee as CommunicationCallE2EEPayload | undefined
+    if (callSecurityContext && ringingE2ee?.supported && ringingE2ee.publicKey) {
+      await activateCommunicationCallSecurityContext(callSecurityContext, ringingE2ee.publicKey)
+      setCallSecurityActive()
+    } else {
+      clearCallSecurityContext()
+      setCallSecurityFallback(ringingE2ee?.supported ? 'Собеседник не передал корректный ключ для E2EE.' : 'Собеседник не использует дополнительное E2EE для звонка.')
+    }
+    const mode = payload.mode === 'video' ? 'video' : 'audio'
     await initMedia(mode)
     const connection = buildPeerConnection(signal.callId, activeCall.value.peerActorKey, mode)
     const offer = await connection.createOffer()
@@ -940,11 +1083,12 @@ async function handleSignal(signal: any) {
 
   if (signal.kind === 'offer') {
     const senderKey = `${signal.senderRole}:${signal.senderActorId}`
-    const mode = signal.payload?.mode === 'video' ? 'video' : 'audio'
+    const mode = payload.mode === 'video' ? 'video' : 'audio'
     if (!activeCall.value) activeCall.value = { callId: signal.callId, peerActorKey: senderKey, mode, initiator: false }
     if (!localStream) await initMedia(mode)
     const connection = buildPeerConnection(signal.callId, senderKey, mode)
-    await connection.setRemoteDescription({ type: 'offer', sdp: signal.payload?.sdp })
+    await connection.setRemoteDescription({ type: 'offer', sdp: String(payload.sdp || '') })
+    await flushPendingIceCandidates(signal.callId, connection)
     const answer = await connection.createAnswer()
     await connection.setLocalDescription(answer)
     await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
@@ -956,13 +1100,22 @@ async function handleSignal(signal: any) {
   }
 
   if (signal.kind === 'answer' && peerConnection) {
-    await peerConnection.setRemoteDescription({ type: 'answer', sdp: signal.payload?.sdp })
+    await peerConnection.setRemoteDescription({ type: 'answer', sdp: String(payload.sdp || '') })
+    await flushPendingIceCandidates(signal.callId, peerConnection)
     callStatusText.value = 'Канал установлен'
     return
   }
 
-  if (signal.kind === 'ice-candidate' && peerConnection && signal.payload?.candidate) {
-    await peerConnection.addIceCandidate(signal.payload.candidate).catch(() => {})
+  if (signal.kind === 'ice-candidate' && payload.candidate) {
+    const candidate = payload.candidate as RTCIceCandidateInit
+    const remoteDescriptionReady = Boolean(peerConnection?.remoteDescription)
+    if (!peerConnection || !remoteDescriptionReady) {
+      queueIceCandidate(signal.callId, candidate)
+      return
+    }
+    await peerConnection.addIceCandidate(candidate).catch(() => {
+      queueIceCandidate(signal.callId, candidate)
+    })
     return
   }
 
@@ -1126,6 +1279,32 @@ onBeforeUnmount(() => {
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.comm-call-security {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border, rgba(255,255,255,.12));
+}
+
+.comm-call-security--active {
+  border-color: var(--ds-accent, #6ea8ff);
+}
+
+.comm-call-security__status,
+.comm-call-security__emojis,
+.comm-call-security__fallback {
+  margin: 0;
+  font-size: .78rem;
+}
+
+.comm-call-security__emojis {
+  letter-spacing: .24em;
+}
+
+.comm-call-security__fallback {
+  opacity: .72;
 }
 
 .comm-status {

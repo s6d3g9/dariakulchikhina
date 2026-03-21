@@ -32,6 +32,44 @@ export const E2eePublishedKeyBundleSchema = z.object({
 
 export type E2eePublishedKeyBundle = z.infer<typeof E2eePublishedKeyBundleSchema>
 
+export interface CommunicationCallE2EEPublicKey {
+  kty: 'EC'
+  crv: 'P-256'
+  x: string
+  y: string
+  ext?: boolean
+  key_ops?: string[]
+}
+
+export interface CommunicationCallE2EEPayload {
+  supported: boolean
+  publicKey?: CommunicationCallE2EEPublicKey
+  salt?: string
+}
+
+export interface CommunicationCallSecurityState {
+  available: boolean
+  active: boolean
+  verificationEmojis: string[]
+  status: string
+  fallbackReason: string
+}
+
+export interface CommunicationCallSecurityContext {
+  callId: string
+  role: 'initiator' | 'responder'
+  localPublicKey: CommunicationCallE2EEPublicKey
+  localPrivateKey: JsonWebKey
+  remotePublicKey?: CommunicationCallE2EEPublicKey
+  salt: Uint8Array
+  encryptKey?: CryptoKey
+  decryptKey?: CryptoKey
+  encryptCounterSalt?: Uint8Array
+  decryptCounterSalt?: Uint8Array
+  verificationEmojis: string[]
+  active: boolean
+}
+
 export const CommunicationRoomParticipantSchema = z.object({
   actorId: z.string().min(1),
   role: CommunicationActorRoleSchema,
