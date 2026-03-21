@@ -4,6 +4,19 @@ import { CreateProjectSchema } from '~/shared/types/project'
 import { findPreset } from '~/shared/constants/presets'
 import { CORE_PAGES } from '~/shared/constants/pages'
 
+const projectReturning = {
+  id: projects.id,
+  slug: projects.slug,
+  title: projects.title,
+  status: projects.status,
+  projectType: projects.projectType,
+  userId: projects.userId,
+  pages: projects.pages,
+  profile: projects.profile,
+  createdAt: projects.createdAt,
+  updatedAt: projects.updatedAt,
+}
+
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
   const body = await readValidatedNodeBody(event, CreateProjectSchema)
@@ -21,7 +34,7 @@ export default defineEventHandler(async (event) => {
       projectType: body.projectType ?? 'apartment',
       pages,
       profile: initialProfile,
-    }).returning()
+    }).returning(projectReturning)
   } catch (e: any) {
     const code = e?.cause?.code ?? e?.code
     if (code === '23505') {
