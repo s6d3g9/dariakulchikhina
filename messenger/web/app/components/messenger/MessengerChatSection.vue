@@ -311,20 +311,63 @@ const forwardingMessage = computed(() => {
   return conversations.messages.value.find(item => item.id === forwardingMessageId.value) ?? null
 })
 const availableForwardTargets = computed(() => {
-  const conversationMap = new Map(conversations.conversations.value
-    .filter(item => !item.secret)
-    .map(item => [item.peerUserId, item]))
+  const targets = new Map<string, {
+    peerUserId: string
+    conversationId: string | null
+    displayName: string
+    login: string
+    current: boolean
+    selectable: boolean
+  }>()
 
-  return contacts.overview.value.contacts.map((contact) => {
-    const conversation = conversationMap.get(contact.id)
-    return {
+  for (const conversation of conversations.conversations.value.filter(item => !item.secret)) {
+    targets.set(conversation.peerUserId, {
+      peerUserId: conversation.peerUserId,
+      conversationId: conversation.id,
+      displayName: conversation.peerDisplayName,
+      login: conversation.peerLogin,
+      current: conversation.id === conversations.activeConversationId.value,
+      selectable: true,
+    })
+  }
+
+  for (const contact of contacts.overview.value.contacts) {
+    const existing = targets.get(contact.id)
+    targets.set(contact.id, {
       peerUserId: contact.id,
-      conversationId: conversation?.id || null,
+      conversationId: existing?.conversationId || null,
       displayName: contact.displayName,
       login: contact.login,
-      current: conversation?.id === conversations.activeConversationId.value,
+      current: existing?.current || false,
+      selectable: true,
+    })
+  }
+
+  for (const candidate of contacts.overview.value.discover) {
+    if (targets.has(candidate.id)) {
+      continue
     }
-  })
+
+    targets.set(candidate.id, {
+      peerUserId: candidate.id,
+      conversationId: null,
+      displayName: candidate.displayName,
+      login: candidate.login,
+      current: false,
+      selectable: candidate.relationship === 'contact',
+    })
+  }
+
+  const normalizedSearch = forwardSearchDraft.value.trim().toLowerCase()
+  return Array.from(targets.values())
+    .filter((target) => {
+      if (!normalizedSearch) {
+        return true
+      }
+
+      return target.displayName.toLowerCase().includes(normalizedSearch) || target.login.toLowerCase().includes(normalizedSearch)
+    })
+    .sort((left, right) => Number(right.selectable) - Number(left.selectable) || left.displayName.localeCompare(right.displayName, 'ru'))
 })
 const selectedForwardTargets = computed(() => availableForwardTargets.value.filter(target => selectedForwardPeerIds.value.includes(target.peerUserId)))
 const forwardSubmitLabel = computed(() => {
@@ -786,12 +829,8 @@ async function confirmSelectedKlipyItem() {
 }
 
 function klipyTileStyle(item: { width?: number; height?: number }) {
-  if (!item.width || !item.height) {
-    return undefined
-  }
-
   return {
-    '--klipy-aspect': `${item.width} / ${item.height}`,
+    '--klipy-aspect': activeKlipyKind.value === 'sticker' ? '1 / 1' : '4 / 5',
   }
 }
 
@@ -871,6 +910,11 @@ function closeForwardPicker() {
 }
 
 function toggleForwardTarget(peerUserId: string) {
+  const target = availableForwardTargets.value.find(entry => entry.peerUserId === peerUserId)
+  if (!target?.selectable) {
+    return
+  }
+
   selectedForwardPeerIds.value = selectedForwardPeerIds.value.includes(peerUserId)
     ? selectedForwardPeerIds.value.filter(id => id !== peerUserId)
     : [...selectedForwardPeerIds.value, peerUserId]
@@ -1718,11 +1762,11 @@ onBeforeUnmount(() => {
             type="button"
             class="forward-target-btn forward-target-btn--minimal"
             :class="{ 'forward-target-btn--active': selectedForwardPeerIds.includes(target.peerUserId) }"
-            :disabled="conversations.messagePending.value"
+            :disabled="conversations.messagePending.value || !target.selectable"
             @click="toggleForwardTarget(target.peerUserId)"
           >
             <span class="forward-target-btn__title">{{ target.displayName }}</span>
-            <span class="forward-target-btn__meta">{{ target.current ? 'Текущий чат' : `@${target.login}` }}</span>
+            <span class="forward-target-btn__meta">{{ target.current ? 'Текущий чат' : target.selectable ? `@${target.login}` : 'Не в контактах' }}</span>
           </button>
           <p v-if="!contacts.pending.value && !availableForwardTargets.length" class="composer-context__text">Пользователи не найдены.</p>
         </div>
@@ -1880,7 +1924,7 @@ onBeforeUnmount(() => {
           <p class="composer-media-menu__hint">{{ klipyHintText }}</p>
           <div v-if="!klipyQuery.trim() && !selectedCatalogCategory && currentKlipyRecentItems.length" class="composer-media-menu__recent">
             <p class="composer-media-menu__section-title">Недавние</p>
-            <div class="composer-media-menu__results composer-media-menu__results--recent">
+            <div class="composer-media-menu__results composer-media-menu__results--recent" :class="{ 'composer-media-menu__results--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__results--gifs': activeKlipyKind === 'gif' }">
               <button
                 v-for="item in currentKlipyRecentItems"
                 :key="`recent-${item.id}`"
@@ -1898,7 +1942,7 @@ onBeforeUnmount(() => {
           </div>
           <div v-if="klipy.items.length || showKlipySearchState" class="composer-media-menu__results-block">
             <p class="composer-media-menu__section-title">{{ klipyQuery.trim() || selectedCatalogCategory ? 'Результаты' : 'Популярное' }}</p>
-            <div v-if="klipy.items.length" class="composer-media-menu__results">
+            <div v-if="klipy.items.length" class="composer-media-menu__results" :class="{ 'composer-media-menu__results--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__results--gifs': activeKlipyKind === 'gif' }">
               <button
                 v-for="item in klipy.items"
                 :key="item.id"

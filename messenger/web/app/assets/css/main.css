@@ -1039,6 +1039,14 @@ textarea {
   max-height: 208px;
 }
 
+.composer-media-menu__results--stickers {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.composer-media-menu__results--gifs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .composer-media-menu__results-block {
   display: grid;
   gap: 8px;
@@ -3364,6 +3372,10 @@ html[data-messenger-motion='reduced'] *::after {
 .forward-target-btn--active {
   border-color: rgba(125, 211, 252, 0.36);
   background: var(--messenger-accent-soft-fill);
+}
+
+.forward-target-btn--minimal[disabled] {
+  opacity: 0.48;
 }
 
 .message-relation-card {

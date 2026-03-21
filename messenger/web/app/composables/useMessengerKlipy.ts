@@ -173,6 +173,19 @@ export function useMessengerKlipy() {
         }
       }
 
+      if (!resolvedItems.length) {
+        const fallbackResponse = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {
+          method: 'GET',
+          query: {
+            kind,
+            limit: options.limit || 12,
+          },
+        })
+
+        configuredFlag = fallbackResponse.configured
+        resolvedItems = fallbackResponse.items
+      }
+
       configured.value = configuredFlag
       items.value = resolvedItems
     } catch {
