@@ -211,7 +211,7 @@
         <button
           type="button"
           class="w2-nav-btn"
-          :disabled="currentIndex <= 0"
+          :disabled="currentIndex <= 0 && !allowBoundaryNavigation"
           @click="prev"
           aria-label="предыдущая карточка"
         >←</button>
@@ -220,7 +220,7 @@
         <button
           type="button"
           class="w2-nav-btn"
-          :disabled="currentIndex >= cards.length - 1"
+          :disabled="currentIndex >= cards.length - 1 && !allowBoundaryNavigation"
           @click="next"
           aria-label="следующая карточка"
         >→</button>
@@ -247,11 +247,13 @@ const props = defineProps<{
   entity?: Wipe2EntityData | null
   fixedMode?: boolean
   layout?: 'overlay' | 'inline'
+  allowBoundaryNavigation?: boolean
 }>()
 
 const emit = defineEmits<{
   edit: []
   'open-item': [payload: { itemType: NonNullable<Wipe2Field['itemType']>; itemKey: string }]
+  'navigate-boundary': [direction: 'next' | 'prev']
 }>()
 
 type Wipe2DisplayMode = 'list' | 'grid' | 'focus'
@@ -281,6 +283,7 @@ const detailIndex = ref(0)
 watch(cards, () => { currentIndex.value = 0 })
 
 const card = computed(() => cards.value[currentIndex.value])
+const allowBoundaryNavigation = computed(() => Boolean(props.allowBoundaryNavigation))
 const cardItems = computed<Wipe2DisplayItem[]>(() => {
   const currentCard = card.value
   if (!currentCard) return []
@@ -344,10 +347,24 @@ watch([currentIndex, cardItems, canSwitchDisplayMode], () => {
 })
 
 function prev() {
-  if (currentIndex.value > 0) currentIndex.value--
+  if (currentIndex.value > 0) {
+    currentIndex.value--
+    return
+  }
+
+  if (allowBoundaryNavigation.value) {
+    emit('navigate-boundary', 'prev')
+  }
 }
 function next() {
-  if (currentIndex.value < cards.value.length - 1) currentIndex.value++
+  if (currentIndex.value < cards.value.length - 1) {
+    currentIndex.value++
+    return
+  }
+
+  if (allowBoundaryNavigation.value) {
+    emit('navigate-boundary', 'next')
+  }
 }
 
 function prevDetail() {

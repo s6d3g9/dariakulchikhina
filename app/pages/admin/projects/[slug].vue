@@ -497,7 +497,9 @@
             v-if="shouldUseProjectWipe2"
             :entity="wipe2EntityData"
             :fixed-mode="contractorPreviewMode || clientPreviewMode"
+            :allow-boundary-navigation="true"
             @edit="designSystem.set('contentViewMode', 'scroll')"
+            @navigate-boundary="handleProjectWipe2Boundary"
           />
 
           <div v-if="isProjectViewportPaged && !shouldUseProjectWipe2" class="proj-pager-rail">
@@ -2203,6 +2205,12 @@ async function moveProjectViewport(direction: 'next' | 'prev') {
   el.scrollTo({ top: targetTop, behavior: 'smooth' })
   window.setTimeout(syncProjectViewportPager, Math.min(900, Math.max(260, projectContentTransitionDuration.value)))
   return true
+}
+
+async function handleProjectWipe2Boundary(direction: 'next' | 'prev') {
+  if (!isProjectViewportPaged.value || !shouldUseProjectWipe2.value) return
+  if (!canFlipProjectViewport()) return
+  await advanceProjectLeaf(direction)
 }
 
 function handleProjectViewportWheel(event: WheelEvent) {
