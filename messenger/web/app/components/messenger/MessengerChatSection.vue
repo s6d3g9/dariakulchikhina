@@ -801,7 +801,6 @@ const primaryKlipyItems = computed(() => {
 
   return klipy.items.value
 })
-const loopedPrimaryKlipyItems = computed(() => buildLoopedFeed(primaryKlipyItems.value))
 const canLoadMoreKlipyItems = computed(() => {
   if (activeKlipyAudience.value !== 'mine' || !klipy.hasMore.value) {
     return false
@@ -957,10 +956,9 @@ watch(loopedKlipyCategories, async () => {
   }
 })
 
-watch(loopedPrimaryKlipyItems, async () => {
+watch(primaryKlipyItems, async () => {
   await nextTick()
   composerKlipyFeedEl.value?.removeAttribute('data-loop-ready')
-  primeLoopedFeedPosition(composerKlipyFeedEl.value)
 })
 
 watch(() => klipyQuery.value.trim(), (value) => {
@@ -2246,10 +2244,10 @@ onBeforeUnmount(() => {
               ref="composerKlipyFeedEl"
               class="composer-media-menu__feed"
               :class="{ 'composer-media-menu__feed--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__feed--gifs': activeKlipyKind === 'gif' }"
-              @scroll="handleLoopedFeedScroll($event, { looped: primaryKlipyItems.length > 1, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
+              @scroll="handleLoopedFeedScroll($event, { looped: false, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
             >
               <button
-                v-for="(item, index) in loopedPrimaryKlipyItems"
+                v-for="(item, index) in primaryKlipyItems"
                 :key="`${item.id}-${index}`"
                 type="button"
                 class="composer-media-menu__result"

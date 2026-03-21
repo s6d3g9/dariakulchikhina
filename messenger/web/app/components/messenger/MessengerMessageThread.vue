@@ -92,6 +92,15 @@ function relationPreviewText(message: { body: string; kind: 'text' | 'file'; att
   return message.body
 }
 
+function isStickerAttachment() {
+  const attachment = props.entry.attachment
+  if (!attachment) {
+    return false
+  }
+
+  return attachment.klipy?.kind === 'sticker' || attachment.mimeType === 'image/webp'
+}
+
 function handleEditInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   emit('edit-draft', target.value)
@@ -244,6 +253,7 @@ function handleBubbleClick(event: MouseEvent) {
       <img
         v-if="entry.attachment.mimeType.startsWith('image/')"
         class="attachment-preview"
+        :class="{ 'attachment-preview--sticker': isStickerAttachment() }"
         :src="entry.attachment.resolvedUrl"
         :alt="entry.attachment.name"
         @click.stop="emit('open-photo', entry.id)"

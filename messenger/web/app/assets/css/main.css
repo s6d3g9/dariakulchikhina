@@ -836,6 +836,13 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.attachment-preview--sticker {
+  width: auto;
+  max-width: min(100%, 148px);
+  max-height: calc(var(--messenger-control-size) * 2 + 28px);
+  object-fit: contain;
+}
+
 .composer-bar {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
