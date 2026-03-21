@@ -3305,18 +3305,17 @@ html[data-messenger-motion='reduced'] *::after {
 .message-action-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  width: auto;
-  min-height: 32px;
-  min-width: 0;
+  justify-content: center;
+  gap: 0;
+  width: 44px;
+  min-height: 44px;
+  min-width: 44px;
   border: 0;
   background: transparent;
   color: var(--messenger-text);
   padding: 0;
   border-radius: 0;
-  text-align: left;
-  white-space: nowrap;
+  text-align: center;
   font-weight: 700;
   letter-spacing: 0.01em;
   line-height: 1;
