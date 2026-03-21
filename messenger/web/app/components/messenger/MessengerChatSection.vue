@@ -1291,14 +1291,16 @@ async function handleEditKeydown(event: KeyboardEvent) {
   }
 }
 
-function toggleMessageActions(messageId: string, event: MouseEvent) {
-  const target = event.target
-  if (!(target instanceof HTMLElement)) {
-    return
-  }
+function toggleMessageActions(messageId: string, event?: MouseEvent) {
+  if (event) {
+    const target = event.target
+    if (!(target instanceof HTMLElement)) {
+      return
+    }
 
-  if (target.closest('button, textarea, audio, img, input, [data-message-action-menu="true"]')) {
-    return
+    if (target.closest('button, textarea, audio, img, input, [data-message-action-menu="true"], [data-message-reaction-menu="true"]')) {
+      return
+    }
   }
 
   activeReactionOverlayId.value = null

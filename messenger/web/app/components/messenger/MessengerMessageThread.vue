@@ -24,7 +24,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  'toggle-actions': [messageId: string, event: MouseEvent]
+  'toggle-actions': [messageId: string, event?: MouseEvent]
   'toggle-reaction-overlay': [messageId: string]
   comment: [messageId: string]
   reply: [messageId: string]
@@ -44,6 +44,7 @@ const depthStyle = computed(() => ({
 }))
 
 const longPressTriggered = ref(false)
+const suppressTouchClick = ref(false)
 
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -126,11 +127,15 @@ function handlePointerDown(event: PointerEvent) {
 
   clearLongPressTimer()
   longPressTriggered.value = false
-  longPressTimer = setTimeout(() => {
+  suppressTouchClick.value = true
+  if (props.activeReactionOverlayId !== props.entry.id) {
     emit('toggle-reaction-overlay', props.entry.id)
+  }
+  longPressTimer = setTimeout(() => {
+    emit('toggle-actions', props.entry.id, new MouseEvent('click'))
     longPressTriggered.value = true
     longPressTimer = null
-  }, 360)
+  }, 1000)
 }
 
 function handlePointerEnd() {
@@ -139,6 +144,13 @@ function handlePointerEnd() {
 
 function handleBubbleClick(event: MouseEvent) {
   if (props.entry.deletedAt) {
+    return
+  }
+
+  if (suppressTouchClick.value) {
+    suppressTouchClick.value = false
+    longPressTriggered.value = false
+    event.preventDefault()
     return
   }
 
@@ -195,18 +207,6 @@ function handleBubbleClick(event: MouseEvent) {
     <Transition name="message-actions-pop">
       <div v-if="!entry.deletedAt && activeMessageActionsId === entry.id" class="message-bubble__topline" data-message-action-menu="true" @pointerdown.stop>
         <div class="message-bubble__actions">
-          <div class="message-bubble__reaction-picker">
-            <button
-              v-for="emoji in reactionOptions"
-              :key="`${entry.id}-${emoji}`"
-              type="button"
-              class="message-reaction-btn"
-              :class="{ 'message-reaction-btn--active': entry.reactions?.some(reaction => reaction.emoji === emoji && reaction.own) }"
-              @click.stop="emit('react', entry.id, emoji)"
-            >
-              {{ emoji }}
-            </button>
-          </div>
           <button
             type="button"
             class="message-action-btn"
