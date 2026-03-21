@@ -53,12 +53,37 @@
           </div>
         </div>
 
-        <div v-if="currentChatPeer" class="comm-block">
+        <div v-if="currentChatPeer" class="comm-block comm-block--presence">
           <div class="comm-chat-subject">
-            <div>
-              <div class="comm-chat-subject-name">{{ currentChatPeer.displayName }}</div>
-              <div v-if="currentChatPeer.nickname" class="comm-chat-subject-nick">@{{ currentChatPeer.nickname }}</div>
-              <div class="comm-chat-subject-role">{{ currentChatPeer.role }}</div>
+            <div class="comm-chat-subject-meta">
+              <div class="comm-chat-subject-head">
+                <div class="comm-chat-subject-name">{{ currentChatPeer.displayName }}</div>
+                <div
+                  class="comm-chat-quality"
+                  :data-tone="callConnectionQuality.tone"
+                  :data-active="callConnectionQuality.active ? 'true' : 'false'"
+                  :style="callConnectionQualityStyle"
+                  :title="callConnectionQuality.title"
+                  :aria-label="callConnectionQuality.title"
+                >
+                  <span
+                    v-for="level in 4"
+                    :key="level"
+                    class="comm-chat-quality__bar"
+                    :class="{ 'comm-chat-quality__bar--active': level <= callConnectionQuality.bars }"
+                    :style="{ height: `${8 + level * 3}px` }"
+                  />
+                </div>
+              </div>
+              <div class="comm-chat-subject-supporting">
+                <div v-if="currentChatPeer.nickname" class="comm-chat-subject-nick">@{{ currentChatPeer.nickname }}</div>
+                <div class="comm-chat-subject-tags">
+                  <span class="comm-chat-tag">{{ currentChatPeer.role }}</span>
+                  <span v-if="activeCall && callSecurity.active" class="comm-chat-tag comm-chat-tag--secure">E2EE CALL</span>
+                  <span v-else-if="activeCall" class="comm-chat-tag comm-chat-tag--live">LIVE</span>
+                  <span v-else-if="supportedCalls" class="comm-chat-tag comm-chat-tag--ready">CALL READY</span>
+                </div>
+              </div>
             </div>
           </div>
           <div class="comm-media-grid">
@@ -325,6 +350,16 @@ type ActiveCallState = {
   initiator: boolean
 }
 
+type CallConnectionTone = 'idle' | 'poor' | 'fair' | 'good'
+
+type CallConnectionQualityState = {
+  active: boolean
+  tone: CallConnectionTone
+  score: number
+  bars: number
+  title: string
+}
+
 type SignalPayloadRecord = Record<string, unknown>
 type MediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unknown' | 'unsupported'
 
@@ -367,6 +402,12 @@ const callBusy = computed(() => Boolean(incomingCall.value || activeCall.value))
 const callSecurity = ref<CommunicationCallSecurityState>(createDefaultCallSecurityState())
 const callPermissionHelp = ref('')
 const remoteMutedByPeer = ref(false)
+const callConnectionQuality = ref<CallConnectionQualityState>(createCallConnectionQualityState({
+  active: false,
+  tone: 'idle',
+  score: 0.18,
+  title: 'Нет активного звонка',
+}))
 const callControls = ref({
   microphoneEnabled: true,
   speakerEnabled: true,
@@ -386,6 +427,7 @@ let identityPublicKeyJwk: JsonWebKey | null = null
 let roomKey: CryptoKey | null = null
 let myKeyId = ''
 let callSecurityContext: CommunicationCallSecurityContext | null = null
+let callQualityMonitor: ReturnType<typeof setInterval> | null = null
 
 const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
 const transformedCallSenders = new WeakSet<object>()
@@ -405,6 +447,144 @@ function createDefaultCallSecurityState(): CommunicationCallSecurityState {
       : 'Для звонков доступно только штатное шифрование WebRTC.',
     fallbackReason: available ? '' : 'Нет поддержки encoded insertable streams.',
   }
+}
+
+function createCallConnectionQualityState(input: {
+  active: boolean
+  tone: CallConnectionTone
+  score: number
+  title: string
+}): CallConnectionQualityState {
+  const normalizedScore = Math.max(0, Math.min(1, input.score))
+  return {
+    active: input.active,
+    tone: input.tone,
+    score: normalizedScore,
+    bars: Math.max(1, Math.min(4, Math.round(normalizedScore * 4))),
+    title: input.title,
+  }
+}
+
+const callConnectionQualityStyle = computed(() => ({
+  '--comm-quality-stop': `${Math.round(callConnectionQuality.value.score * 100)}%`,
+  '--comm-quality-hue': `${Math.round(6 + callConnectionQuality.value.score * 126)}`,
+  '--comm-quality-alpha': callConnectionQuality.value.active ? '0.92' : '0.38',
+}))
+
+function setCallConnectionQuality(nextState: {
+  active: boolean
+  score: number
+  title: string
+}) {
+  const normalizedScore = Math.max(0, Math.min(1, nextState.score))
+  let tone: CallConnectionTone = 'good'
+  if (!nextState.active) tone = 'idle'
+  else if (normalizedScore < 0.34) tone = 'poor'
+  else if (normalizedScore < 0.68) tone = 'fair'
+
+  callConnectionQuality.value = createCallConnectionQualityState({
+    active: nextState.active,
+    tone,
+    score: normalizedScore,
+    title: nextState.title,
+  })
+}
+
+function resetCallConnectionQuality() {
+  setCallConnectionQuality({
+    active: false,
+    score: 0.18,
+    title: activeCall.value ? 'Подключение к звонку' : 'Нет активного звонка',
+  })
+}
+
+function stopCallQualityMonitor() {
+  if (callQualityMonitor) {
+    clearInterval(callQualityMonitor)
+    callQualityMonitor = null
+  }
+}
+
+async function updateCallConnectionQuality(connection = peerConnection) {
+  if (!connection || !activeCall.value) {
+    resetCallConnectionQuality()
+    return
+  }
+
+  if (connection.connectionState === 'failed' || connection.connectionState === 'disconnected' || connection.connectionState === 'closed') {
+    setCallConnectionQuality({
+      active: true,
+      score: connection.connectionState === 'failed' ? 0.06 : 0.14,
+      title: connection.connectionState === 'failed' ? 'Связь сорвалась' : 'Связь нестабильна',
+    })
+    return
+  }
+
+  if (connection.connectionState === 'new' || connection.connectionState === 'connecting') {
+    setCallConnectionQuality({
+      active: true,
+      score: 0.46,
+      title: 'Идёт согласование канала',
+    })
+    return
+  }
+
+  let currentRoundTripTime = 0
+  let availableOutgoingBitrate = 0
+  let packetsLost = 0
+  let packetsReceived = 0
+  let maxJitter = 0
+
+  const stats = await connection.getStats()
+  stats.forEach((entry: any) => {
+    if (entry.type === 'candidate-pair' && (entry.selected || entry.nominated || entry.state === 'succeeded')) {
+      currentRoundTripTime = Math.max(currentRoundTripTime, Number(entry.currentRoundTripTime || 0))
+      availableOutgoingBitrate = Math.max(availableOutgoingBitrate, Number(entry.availableOutgoingBitrate || 0))
+    }
+
+    if (entry.type === 'inbound-rtp' && !entry.isRemote) {
+      packetsLost += Number(entry.packetsLost || 0)
+      packetsReceived += Number(entry.packetsReceived || 0)
+      maxJitter = Math.max(maxJitter, Number(entry.jitter || 0))
+    }
+  })
+
+  const totalPackets = packetsReceived + packetsLost
+  const packetLossRatio = totalPackets > 0 ? packetsLost / totalPackets : 0
+  let score = 0.97
+
+  if (currentRoundTripTime > 0.55) score -= 0.42
+  else if (currentRoundTripTime > 0.3) score -= 0.26
+  else if (currentRoundTripTime > 0.16) score -= 0.12
+
+  if (maxJitter > 0.12) score -= 0.24
+  else if (maxJitter > 0.06) score -= 0.15
+  else if (maxJitter > 0.03) score -= 0.08
+
+  if (packetLossRatio > 0.12) score -= 0.34
+  else if (packetLossRatio > 0.06) score -= 0.22
+  else if (packetLossRatio > 0.02) score -= 0.12
+
+  if (availableOutgoingBitrate > 0 && availableOutgoingBitrate < 64000) score -= 0.24
+  else if (availableOutgoingBitrate > 0 && availableOutgoingBitrate < 160000) score -= 0.12
+
+  const qualityScore = Math.max(0.04, Math.min(1, score))
+  const rttMs = Math.round(currentRoundTripTime * 1000)
+  const lossPercent = Math.round(packetLossRatio * 100)
+  const jitterMs = Math.round(maxJitter * 1000)
+  setCallConnectionQuality({
+    active: true,
+    score: qualityScore,
+    title: `Связь: RTT ${rttMs || 0} мс, jitter ${jitterMs || 0} мс, потери ${lossPercent}%`,
+  })
+}
+
+function startCallQualityMonitor(connection: RTCPeerConnection) {
+  stopCallQualityMonitor()
+  void updateCallConnectionQuality(connection)
+  callQualityMonitor = setInterval(() => {
+    void updateCallConnectionQuality(connection)
+  }, 3200)
 }
 
 function participantActorKey(participant: { actorId: string; role: CommunicationActorRole }) {
@@ -1046,6 +1226,7 @@ async function initMedia(mode: CallMode) {
 }
 
 function resetPeerConnection() {
+  stopCallQualityMonitor()
   peerConnection?.close()
   peerConnection = null
   peerConnectionCallId = ''
@@ -1060,6 +1241,11 @@ function buildPeerConnection(callId: string, peerActorKey: string, mode: CallMod
   if (peerConnection && peerConnectionCallId === callId) return peerConnection
 
   resetPeerConnection()
+  setCallConnectionQuality({
+    active: true,
+    score: 0.46,
+    title: 'Идёт согласование канала',
+  })
   const connection = new RTCPeerConnection({
     bundlePolicy: 'max-bundle',
     iceCandidatePoolSize: 4,
@@ -1067,6 +1253,7 @@ function buildPeerConnection(callId: string, peerActorKey: string, mode: CallMod
   })
   peerConnection = connection
   peerConnectionCallId = callId
+  startCallQualityMonitor(connection)
   remoteStream = new MediaStream()
   if (remoteVideoEl.value) remoteVideoEl.value.srcObject = remoteStream
   syncSpeakerState()
@@ -1094,6 +1281,7 @@ function buildPeerConnection(callId: string, peerActorKey: string, mode: CallMod
   }
   connection.onconnectionstatechange = () => {
     if (connection.connectionState) callStatusText.value = `Соединение: ${connection.connectionState}`
+    void updateCallConnectionQuality(connection)
   }
   return connection
 }
@@ -1132,6 +1320,11 @@ async function startOutgoingCall(mode: CallMode) {
   }
 
   activeCall.value = { callId, peerActorKey: currentChatPeer.value.actorKey, mode, initiator: true }
+  setCallConnectionQuality({
+    active: true,
+    score: 0.42,
+    title: `Исходящий звонок: ожидание ответа ${currentChatPeer.value.displayName}`,
+  })
   callStatusText.value = `Ожидание ответа ${currentChatPeer.value.displayName}`
   await apiFetch(`/rooms/${currentChatRoomId.value}/signals`, {
     method: 'POST',
@@ -1148,6 +1341,11 @@ async function acceptIncomingCall() {
     }
     await initMedia(incomingCall.value.mode)
     activeCall.value = { callId: incomingCall.value.callId, peerActorKey: incomingCall.value.fromActorKey, mode: incomingCall.value.mode, initiator: false }
+    setCallConnectionQuality({
+      active: true,
+      score: 0.42,
+      title: `Входящий звонок: подготовка канала ${incomingCall.value.fromDisplayName}`,
+    })
     let e2ee: CommunicationCallE2EEPayload = { supported: false }
 
     if (supportsCommunicationCallEncryption() && incomingCall.value.e2ee?.supported && incomingCall.value.e2ee.publicKey && incomingCall.value.e2ee.salt) {
@@ -1226,6 +1424,7 @@ function teardownCall(status = '') {
     microphoneEnabled: true,
     speakerEnabled: true,
   }
+  resetCallConnectionQuality()
   callPermissionHelp.value = ''
   if (localVideoEl.value) localVideoEl.value.srcObject = null
 }
@@ -1439,15 +1638,27 @@ onBeforeUnmount(() => {
   top: 0;
   z-index: 4;
   justify-content: space-between;
-  padding: 4px 0 8px;
-  background: var(--glass-bg, rgba(12, 12, 18, .94));
+  padding: 8px 10px 12px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,.01) 48%, rgba(105, 164, 255, .08) 100%),
+    var(--glass-bg, rgba(12, 12, 18, .94));
   border-bottom: 1px solid var(--glass-border, rgba(255,255,255,.12));
+  border-radius: 18px 18px 0 0;
 }
 
 .comm-block,
 .comm-main {
   border: 1px solid var(--glass-border, rgba(255,255,255,.12));
   padding: 14px;
+}
+
+.comm-block--presence {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(122, 174, 255, .12), transparent 34%),
+    linear-gradient(145deg, rgba(255,255,255,.06), rgba(255,255,255,.02) 55%, rgba(255,255,255,.01) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
 }
 
 .comm-block-title {
@@ -1500,17 +1711,115 @@ onBeforeUnmount(() => {
 .comm-chat-subject {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
+  gap: 16px;
+  align-items: center;
+  padding: 2px 0 14px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.comm-chat-subject-meta {
+  display: grid;
+  gap: 8px;
+}
+
+.comm-chat-subject-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .comm-chat-subject-name {
-  font-size: .96rem;
+  font-size: 1.04rem;
+  font-weight: 600;
+  letter-spacing: .01em;
 }
 
 .comm-chat-subject-nick {
   font-size: .8rem;
   opacity: .8;
+}
+
+.comm-chat-subject-supporting,
+.comm-chat-subject-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.comm-chat-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  font-size: .68rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .88;
+}
+
+.comm-chat-tag--secure {
+  border-color: rgba(92, 195, 131, .3);
+  background: rgba(92, 195, 131, .12);
+}
+
+.comm-chat-tag--live {
+  border-color: rgba(255, 177, 71, .28);
+  background: rgba(255, 177, 71, .12);
+}
+
+.comm-chat-tag--ready {
+  border-color: rgba(110, 168, 255, .24);
+  background: rgba(110, 168, 255, .12);
+}
+
+.comm-chat-quality {
+  --comm-quality-stop: 24%;
+  --comm-quality-hue: 18;
+  --comm-quality-alpha: .42;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 56px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg,
+      hsl(var(--comm-quality-hue) 88% 46% / var(--comm-quality-alpha)) 0%,
+      hsl(calc(var(--comm-quality-hue) + 22) 82% 52% / .26) var(--comm-quality-stop),
+      rgba(255,255,255,.05) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.comm-chat-quality[data-tone='good'] {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 0 18px rgba(77, 192, 117, .14);
+}
+
+.comm-chat-quality[data-tone='poor'] {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 0 18px rgba(219, 78, 78, .16);
+}
+
+.comm-chat-quality__bar {
+  width: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  transition: background-color .2s ease, opacity .2s ease, transform .2s ease;
+}
+
+.comm-chat-quality__bar--active {
+  background: rgba(255,255,255,.94);
+  opacity: 1;
+  transform: translateY(-1px);
 }
 
 .comm-call-actions,
@@ -1618,6 +1927,9 @@ onBeforeUnmount(() => {
 .comm-media-box {
   display: grid;
   gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.02);
 }
 
 .comm-video {
@@ -1782,6 +2094,11 @@ onBeforeUnmount(() => {
 
   .comm-chat-toolbar {
     justify-content: stretch;
+  }
+
+  .comm-chat-subject-head,
+  .comm-chat-subject-supporting {
+    align-items: flex-start;
   }
 
   .comm-settings-grid {
