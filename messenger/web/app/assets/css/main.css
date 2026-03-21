@@ -987,50 +987,38 @@ textarea {
   gap: 10px;
 }
 
-.composer-media-menu__categories {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  max-height: 136px;
-  overflow: auto;
-  padding-right: 2px;
-}
-
-.composer-media-menu__category {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 8px;
-  border: 1px solid var(--messenger-border);
-  border-radius: 14px;
-  background: var(--messenger-field-bg);
-  color: var(--messenger-text);
-  text-align: left;
-}
-
-.composer-media-menu__category--active {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: var(--messenger-accent-soft-fill);
-}
-
-.composer-media-menu__category-preview {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  object-fit: cover;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.composer-media-menu__category-label {
+.composer-media-menu__category-tile {
+  position: relative;
   display: block;
-  min-width: 0;
-  font-size: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  overflow: hidden;
+}
+
+.composer-media-menu__category-tile--active {
+  outline: 2px solid rgba(255, 255, 255, 0.24);
+  outline-offset: -2px;
+}
+
+.composer-media-menu__category-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  left: 8px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(7, 10, 18, 0.72);
+  color: var(--messenger-text);
+  font-size: 10px;
   font-weight: 700;
-  line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-align: center;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .composer-media-menu__search {
@@ -1039,11 +1027,15 @@ textarea {
 
 .composer-media-menu__results {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   max-height: 320px;
   overflow: auto;
   padding-right: 0;
+}
+
+.composer-media-menu__results--categories {
+  max-height: 208px;
 }
 
 .composer-media-menu__results-block {
@@ -1071,6 +1063,10 @@ textarea {
   background: transparent;
 }
 
+.composer-media-menu__result-preview--category {
+  object-fit: cover;
+}
+
 .composer-media-menu__result-preview--gif {
   object-fit: cover;
 }
@@ -1085,6 +1081,15 @@ textarea {
   color: var(--messenger-muted);
   font-size: 13px;
   line-height: 1.4;
+}
+
+.composer-media-menu__empty {
+  margin: 0;
+  color: var(--messenger-muted-strong);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .composer-media-menu__powered {
@@ -4434,20 +4439,16 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
     line-height: 1.35;
   }
 
-  .composer-media-menu__categories {
-    grid-template-columns: 1fr;
-    max-height: 160px;
+  .composer-media-menu__results--categories {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-height: 192px;
   }
 
-  .composer-media-menu__category {
-    grid-template-columns: 36px minmax(0, 1fr);
-    min-height: 44px;
-    padding: 7px;
-  }
-
-  .composer-media-menu__category-preview {
-    width: 36px;
-    height: 36px;
+  .composer-media-menu__category-badge {
+    right: 6px;
+    bottom: 6px;
+    left: 6px;
+    padding: 5px 6px;
   }
 
   .messenger-shell--chat-idle-controls::after {

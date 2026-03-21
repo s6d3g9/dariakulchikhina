@@ -114,6 +114,7 @@ export function useMessengerKlipy() {
     error.value = ''
 
     pending.value = true
+    items.value = []
     try {
       if (!normalizedQuery) {
         const response = await auth.request<{ configured: boolean; items: MessengerKlipyItem[] }>('/integrations/klipy/search', {

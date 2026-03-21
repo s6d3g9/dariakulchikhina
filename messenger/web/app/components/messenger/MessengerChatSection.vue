@@ -437,6 +437,14 @@ const activeKlipyKind = computed<'gif' | 'sticker' | null>(() => {
   return null
 })
 const currentKlipyCategories = computed(() => activeKlipyKind.value ? klipy.getCategories(activeKlipyKind.value) : [])
+const filteredKlipyCategories = computed(() => {
+  const normalizedQuery = klipyQuery.value.trim().toLowerCase()
+  if (!normalizedQuery) {
+    return currentKlipyCategories.value
+  }
+
+  return currentKlipyCategories.value.filter(category => [category.category, category.query].some(value => value.toLowerCase().includes(normalizedQuery)))
+})
 const activeCatalogCategoryLabel = computed(() => {
   if (!selectedCatalogCategory.value) {
     return ''
@@ -484,6 +492,7 @@ const klipyHintText = computed(() => {
     : 'Нажмите на GIF, чтобы отправить его в чат.'
 })
 const currentKlipyRecentItems = computed(() => activeKlipyKind.value ? klipy.getRecentItems(activeKlipyKind.value) : [])
+const showKlipySearchState = computed(() => Boolean(klipyQuery.value.trim() || selectedCatalogCategory.value))
 
 onMounted(async () => {
   lockPageScroll()
@@ -1701,23 +1710,26 @@ onBeforeUnmount(() => {
             v-model="klipyQuery"
             type="text"
             class="inline-input composer-media-menu__search"
-            placeholder="Search KLIPY"
+            placeholder="Поиск KLIPY"
             autocomplete="off"
             autocapitalize="off"
             spellcheck="false"
           >
-          <div v-if="currentKlipyCategories.length" class="composer-media-menu__categories" :aria-label="composerMediaMenuTab === 'stickers' ? 'Категории стикеров KLIPY' : 'Категории GIF KLIPY'">
-            <button
-              v-for="category in currentKlipyCategories"
-              :key="`${composerMediaMenuTab}-${category.query}`"
-              type="button"
-              class="composer-media-menu__category"
-              :class="{ 'composer-media-menu__category--active': selectedCatalogCategory === category.query }"
-              @click="selectCatalogCategory(category.query)"
-            >
-              <img class="composer-media-menu__category-preview" :src="category.previewUrl" :alt="category.category" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-              <span class="composer-media-menu__category-label">{{ category.category }}</span>
-            </button>
+          <div v-if="filteredKlipyCategories.length && !selectedCatalogCategory" class="composer-media-menu__results-block">
+            <p class="composer-media-menu__section-title">Подборки</p>
+            <div class="composer-media-menu__results composer-media-menu__results--categories" :aria-label="composerMediaMenuTab === 'stickers' ? 'Категории стикеров KLIPY' : 'Категории GIF KLIPY'">
+              <button
+                v-for="category in filteredKlipyCategories"
+                :key="`${composerMediaMenuTab}-${category.query}`"
+                type="button"
+                class="composer-media-menu__category-tile"
+                :class="{ 'composer-media-menu__category-tile--active': selectedCatalogCategory === category.query }"
+                @click="selectCatalogCategory(category.query)"
+              >
+                <img class="composer-media-menu__result-preview composer-media-menu__result-preview--category" :src="category.previewUrl" :alt="category.category" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                <span class="composer-media-menu__category-badge">{{ category.category }}</span>
+              </button>
+            </div>
           </div>
           <p class="composer-media-menu__hint">{{ klipyHintText }}</p>
           <div v-if="!klipyQuery.trim() && !selectedCatalogCategory && currentKlipyRecentItems.length" class="composer-media-menu__recent">
@@ -1737,23 +1749,25 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-          <div v-if="klipy.items.length" class="composer-media-menu__results-block">
+          <div v-if="klipy.items.length || showKlipySearchState" class="composer-media-menu__results-block">
             <p class="composer-media-menu__section-title">{{ klipyQuery.trim() || selectedCatalogCategory ? 'Результаты' : 'Популярное' }}</p>
-            <div class="composer-media-menu__results">
-            <button
-              v-for="item in klipy.items"
-              :key="item.id"
-              type="button"
-              class="composer-media-menu__result"
-              :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
-              :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
-              :disabled="mediaUploadPending"
-              @click="sendKlipyItem(item)"
-            >
-              <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-            </button>
+            <div v-if="klipy.items.length" class="composer-media-menu__results">
+              <button
+                v-for="item in klipy.items"
+                :key="item.id"
+                type="button"
+                class="composer-media-menu__result"
+                :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
+                :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
+                :disabled="mediaUploadPending"
+                @click="sendKlipyItem(item)"
+              >
+                <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+              </button>
             </div>
-          </div>
+            <p v-else-if="klipy.pending.value" class="composer-media-menu__empty">[ ИЩЕМ В KLIPY... ]</p>
+            <p v-else class="composer-media-menu__empty">[ НИЧЕГО НЕ НАЙДЕНО ]</p>
+            </div>
           <p class="composer-media-menu__powered">Powered by KLIPY</p>
         </div>
       </div>
