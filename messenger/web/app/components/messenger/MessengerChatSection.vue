@@ -43,6 +43,7 @@ const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif'>('emoji')
 const klipyQuery = ref('')
 const mediaUploadPending = ref(false)
 const selectedCatalogCategory = ref('')
+const selectedKlipyItem = ref<MessengerKlipyItem | null>(null)
 
 const composerEmojiOptions = ['😀', '😉', '😍', '🔥', '👍', '👏', '🙏', '❤️', '🎉', '🤝', '✨', '😎']
 const messageReactionOptions = ['👍', '❤️', '🔥', '😂', '👏', '😮']
@@ -488,11 +489,18 @@ const klipyHintText = computed(() => {
   }
 
   return composerMediaMenuTab.value === 'stickers'
-    ? 'Нажмите на стикер, чтобы отправить его в чат.'
-    : 'Нажмите на GIF, чтобы отправить его в чат.'
+    ? 'Нажмите на стикер, чтобы подготовить его к отправке.'
+    : 'Нажмите на GIF, чтобы подготовить его к отправке.'
 })
 const currentKlipyRecentItems = computed(() => activeKlipyKind.value ? klipy.getRecentItems(activeKlipyKind.value) : [])
 const showKlipySearchState = computed(() => Boolean(klipyQuery.value.trim() || selectedCatalogCategory.value))
+const selectedKlipyItemLabel = computed(() => {
+  if (!selectedKlipyItem.value) {
+    return ''
+  }
+
+  return selectedKlipyItem.value.kind === 'sticker' ? 'Стикер готов к отправке' : 'GIF готов к отправке'
+})
 
 onMounted(async () => {
   lockPageScroll()
@@ -701,6 +709,24 @@ function selectCatalogCategory(query: string) {
   selectedCatalogCategory.value = selectedCatalogCategory.value === query ? '' : query
 }
 
+function selectKlipyItem(item: MessengerKlipyItem) {
+  actionError.value = ''
+  selectedKlipyItem.value = item
+  composerMediaMenuOpen.value = false
+}
+
+function clearSelectedKlipyItem() {
+  selectedKlipyItem.value = null
+}
+
+async function confirmSelectedKlipyItem() {
+  if (!selectedKlipyItem.value) {
+    return
+  }
+
+  await sendKlipyItem(selectedKlipyItem.value)
+}
+
 function insertEmojiToDraft(emoji: string) {
   const input = composerInputEl.value
 
@@ -838,6 +864,7 @@ async function sendKlipyItem(item: MessengerKlipyItem) {
     klipy.reset()
     klipyQuery.value = ''
     selectedCatalogCategory.value = ''
+    selectedKlipyItem.value = null
   } catch {
     actionError.value = 'Не удалось отправить медиа из KLIPY.'
   } finally {
@@ -1743,7 +1770,7 @@ onBeforeUnmount(() => {
                 :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
                 :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
                 :disabled="mediaUploadPending"
-                @click="sendKlipyItem(item)"
+                @click="selectKlipyItem(item)"
               >
                 <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
               </button>
@@ -1760,7 +1787,7 @@ onBeforeUnmount(() => {
                 :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
                 :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
                 :disabled="mediaUploadPending"
-                @click="sendKlipyItem(item)"
+                @click="selectKlipyItem(item)"
               >
                 <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
               </button>
@@ -1769,6 +1796,30 @@ onBeforeUnmount(() => {
             <p v-else class="composer-media-menu__empty">[ НИЧЕГО НЕ НАЙДЕНО ]</p>
             </div>
           <p class="composer-media-menu__powered">Powered by KLIPY</p>
+        </div>
+      </div>
+
+      <div v-if="selectedKlipyItem && (!detailsOpen || !conversations.activeConversation.value)" class="composer-context composer-context--klipy">
+        <div class="composer-klipy-pill">
+          <img
+            class="composer-klipy-pill__preview"
+            :class="`composer-klipy-pill__preview--${selectedKlipyItem.kind}`"
+            :src="selectedKlipyItem.previewUrl"
+            :alt="selectedKlipyItem.title"
+            loading="lazy"
+            decoding="async"
+            referrerpolicy="no-referrer"
+          >
+          <div class="composer-klipy-pill__copy">
+            <p class="composer-context__eyebrow">{{ selectedKlipyItemLabel }}</p>
+            <p class="composer-context__text">Нажмите отправить, чтобы добавить {{ selectedKlipyItem.kind === 'sticker' ? 'стикер' : 'GIF' }} в чат.</p>
+          </div>
+          <div class="composer-klipy-pill__actions">
+            <button type="button" class="message-action-btn composer-klipy-pill__dismiss" :disabled="mediaUploadPending" @click="clearSelectedKlipyItem">×</button>
+            <button type="button" class="composer-klipy-pill__send" :disabled="mediaUploadPending || conversations.messagePending.value" @click="confirmSelectedKlipyItem">
+              {{ mediaUploadPending ? 'Отправляем...' : 'Отправить в чат' }}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -3019,6 +3019,21 @@ html[data-messenger-motion='reduced'] *::after {
   .content-security__refresh {
     width: 100%;
   }
+
+  .composer-klipy-pill {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .composer-klipy-pill__preview {
+    width: 56px;
+    height: 56px;
+  }
+
+  .composer-klipy-pill__actions {
+    grid-column: 1 / -1;
+    grid-auto-flow: column;
+    justify-content: space-between;
+  }
 }
 
 .copy-toast {
@@ -3143,6 +3158,67 @@ html[data-messenger-motion='reduced'] *::after {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(20px) saturate(150%);
+}
+
+.composer-context--klipy {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.composer-klipy-pill {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+}
+
+.composer-klipy-pill__preview {
+  width: 72px;
+  height: 72px;
+  display: block;
+  object-fit: contain;
+  background: transparent;
+}
+
+.composer-klipy-pill__preview--gif {
+  object-fit: cover;
+}
+
+.composer-klipy-pill__copy,
+.composer-klipy-pill__actions {
+  display: grid;
+  gap: 8px;
+}
+
+.composer-klipy-pill__actions {
+  grid-auto-flow: column;
+  align-items: center;
+}
+
+.composer-klipy-pill__dismiss {
+  font-size: 24px;
+}
+
+.composer-klipy-pill__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--messenger-accent-soft-fill);
+  color: var(--messenger-text);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.composer-klipy-pill__send[disabled] {
+  opacity: 0.6;
 }
 
 .composer-context__copy,
