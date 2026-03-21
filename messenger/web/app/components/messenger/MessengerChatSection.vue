@@ -791,12 +791,13 @@ async function sendKlipyItem(item: MessengerKlipyItem) {
   mediaUploadPending.value = true
 
   try {
-    const response = await fetch(item.originalUrl)
-    if (!response.ok) {
-      throw new Error('KLIPY_MEDIA_FETCH_FAILED')
-    }
-
-    const blob = await response.blob()
+    const blob = await auth.request<Blob>('/integrations/klipy/media', {
+      method: 'GET',
+      query: {
+        url: item.originalUrl,
+      },
+      responseType: 'blob',
+    })
     const mimeType = item.mimeType || blob.type || 'application/octet-stream'
     const extension = mimeType.includes('webp')
       ? 'webp'
@@ -1705,7 +1706,7 @@ onBeforeUnmount(() => {
               :class="{ 'composer-media-menu__category--active': selectedCatalogCategory === category.query }"
               @click="selectCatalogCategory(category.query)"
             >
-              <img class="composer-media-menu__category-preview" :src="category.previewUrl" :alt="category.category">
+              <img class="composer-media-menu__category-preview" :src="category.previewUrl" :alt="category.category" loading="lazy" decoding="async" referrerpolicy="no-referrer">
               <span class="composer-media-menu__category-label">{{ category.category }}</span>
             </button>
           </div>
@@ -1721,7 +1722,7 @@ onBeforeUnmount(() => {
                 :disabled="mediaUploadPending"
                 @click="sendKlipyItem(item)"
               >
-                <img class="composer-media-menu__result-preview" :src="item.previewUrl" :alt="item.title">
+                <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
                 <span class="composer-media-menu__result-meta">
                   <span class="composer-media-menu__result-title">{{ item.title || 'KLIPY media' }}</span>
                   <span class="composer-media-menu__result-copy">{{ item.kind === 'sticker' ? 'Недавний стикер' : 'Недавний GIF' }}</span>
@@ -1729,8 +1730,9 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-          <div v-if="klipy.items.length" class="composer-media-menu__results">
+          <div v-if="klipy.items.length" class="composer-media-menu__results-block">
             <p class="composer-media-menu__section-title">{{ klipyQuery.trim() || selectedCatalogCategory ? 'Результаты' : 'Популярное' }}</p>
+            <div class="composer-media-menu__results">
             <button
               v-for="item in klipy.items"
               :key="item.id"
@@ -1739,12 +1741,13 @@ onBeforeUnmount(() => {
               :disabled="mediaUploadPending"
               @click="sendKlipyItem(item)"
             >
-              <img class="composer-media-menu__result-preview" :src="item.previewUrl" :alt="item.title">
+              <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
               <span class="composer-media-menu__result-meta">
                 <span class="composer-media-menu__result-title">{{ item.title || 'KLIPY media' }}</span>
                 <span class="composer-media-menu__result-copy">{{ item.kind === 'sticker' ? 'Стикер KLIPY' : 'GIF KLIPY' }}</span>
               </span>
             </button>
+            </div>
           </div>
           <p class="composer-media-menu__powered">Powered by KLIPY</p>
         </div>

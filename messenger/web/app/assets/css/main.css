@@ -1046,6 +1046,11 @@ textarea {
   padding-right: 2px;
 }
 
+.composer-media-menu__results-block {
+  display: grid;
+  gap: 8px;
+}
+
 .composer-media-menu__result {
   display: grid;
   gap: 8px;
@@ -1060,9 +1065,18 @@ textarea {
 .composer-media-menu__result-preview {
   width: 100%;
   aspect-ratio: 1 / 1;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
+}
+
+.composer-media-menu__result-preview--gif {
+  object-fit: cover;
+}
+
+.composer-media-menu__result-preview--sticker {
+  object-fit: contain;
+  padding: 8px;
 }
 
 .composer-media-menu__result-meta {

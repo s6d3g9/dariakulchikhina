@@ -189,6 +189,9 @@ export async function createMessengerServer() {
   const klipyCategoriesSchema = z.object({
     kind: klipyKindSchema.default('gif'),
   })
+  const klipyMediaSchema = z.object({
+    url: z.string().trim().url().max(2048),
+  })
 
   function buildKlipyContentUrl(
     kind: z.infer<typeof klipyKindSchema>,
@@ -303,6 +306,15 @@ export async function createMessengerServer() {
     }
   }
 
+  function isAllowedKlipyMediaUrl(value: string) {
+    try {
+      const url = new URL(value)
+      return url.protocol === 'https:' && url.hostname === 'static.klipy.com'
+    } catch {
+      return false
+    }
+  }
+
   async function resolveSession(request: FastifyRequest) {
     const token = readBearerToken(request.headers.authorization)
     if (!token) {
@@ -407,6 +419,34 @@ export async function createMessengerServer() {
       configured: true,
       categories,
     }
+  })
+
+  app.get('/integrations/klipy/media', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedQuery = klipyMediaSchema.safeParse(request.query)
+    if (!parsedQuery.success || !isAllowedKlipyMediaUrl(parsedQuery.data.url)) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    const upstreamResponse = await fetch(parsedQuery.data.url)
+    if (!upstreamResponse.ok) {
+      return reply.code(502).send({ error: 'KLIPY_UPSTREAM_FAILED' })
+    }
+
+    const arrayBuffer = await upstreamResponse.arrayBuffer()
+    const mimeType = upstreamResponse.headers.get('content-type') || inferMimeTypeFromUrl(parsedQuery.data.url)
+    const fileName = parsedQuery.data.url.split('/').pop()?.split('?')[0] || `klipy-${randomUUID()}`
+
+    reply.header('Content-Type', mimeType)
+    reply.header('Content-Length', String(arrayBuffer.byteLength))
+    reply.header('Cache-Control', 'private, max-age=3600')
+    reply.header('Content-Disposition', `inline; filename="${fileName.replace(/[^a-zA-Z0-9._-]+/g, '-') || `klipy-${randomUUID()}`}"`)
+
+    return reply.send(Buffer.from(arrayBuffer))
   })
 
   app.post('/auth/register', async (request, reply) => {
