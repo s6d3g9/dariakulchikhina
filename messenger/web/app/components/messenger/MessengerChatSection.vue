@@ -813,13 +813,6 @@ const canLoadMoreKlipyItems = computed(() => {
   return !currentKlipyRecentItems.value.length
 })
 const showKlipySearchState = computed(() => Boolean(klipyQuery.value.trim() || selectedCatalogCategory.value))
-const selectedKlipyItemLabel = computed(() => {
-  if (!selectedKlipyItem.value) {
-    return ''
-  }
-
-  return selectedKlipyItem.value.kind === 'sticker' ? 'Стикер готов к отправке' : 'GIF готов к отправке'
-})
 
 function formatKlipyCategoryTag(query: string) {
   const normalized = query
@@ -2268,6 +2261,7 @@ onBeforeUnmount(() => {
 
       <div v-if="selectedKlipyItem && (!detailsOpen || !conversations.activeConversation.value)" class="composer-context composer-context--klipy">
         <div class="composer-klipy-pill">
+          <button type="button" class="message-action-btn composer-klipy-pill__dismiss" :disabled="mediaUploadPending" @click="clearSelectedKlipyItem">×</button>
           <img
             class="composer-klipy-pill__preview"
             :class="`composer-klipy-pill__preview--${selectedKlipyItem.kind}`"
@@ -2277,16 +2271,6 @@ onBeforeUnmount(() => {
             decoding="async"
             referrerpolicy="no-referrer"
           >
-          <div class="composer-klipy-pill__copy">
-            <p class="composer-context__eyebrow">{{ selectedKlipyItem.kind === 'sticker' ? 'Стикер выбран' : 'GIF выбран' }}</p>
-            <p class="composer-context__text">Миниатюра готова к отправке.</p>
-          </div>
-          <div class="composer-klipy-pill__actions">
-            <button type="button" class="message-action-btn composer-klipy-pill__dismiss" :disabled="mediaUploadPending" @click="clearSelectedKlipyItem">×</button>
-            <button type="button" class="composer-klipy-pill__send" :disabled="mediaUploadPending || conversations.messagePending.value" @click="confirmSelectedKlipyItem">
-              {{ mediaUploadPending ? 'Отправляем...' : 'Отправить' }}
-            </button>
-          </div>
         </div>
       </div>
 
