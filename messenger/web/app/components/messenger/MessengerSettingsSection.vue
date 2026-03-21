@@ -200,7 +200,7 @@ function showManualInstallHelp() {
         </div>
         <p class="setting-card__title">Аккаунт</p>
         <p class="setting-card__text">{{ auth.user.value?.displayName || 'Гость' }} · @{{ auth.user.value?.login || 'anonymous' }}</p>
-        <p class="setting-card__meta">Текущий режим: {{ activeStyleMeta.title }}. Liquid и non-liquid режимы теперь разделены явно, без смешения слоев.</p>
+        <p class="setting-card__meta">Текущий режим: {{ activeStyleMeta.title }}. Liquid даёт стекло, blur и световые слои. Material даёт плотные tonal-surfaces, спокойную глубину и более строгую геометрию.</p>
       </article>
 
       <aside class="settings-nav" aria-label="Меню настроек">
@@ -403,7 +403,7 @@ function showManualInstallHelp() {
 
           <article class="setting-card setting-card--glass setting-card--stacked">
             <p class="setting-card__title">Стиль дизайна</p>
-            <p class="setting-card__text">Есть только два режима: Liquid и Material. Все control, surfaces, overlays и cards привязаны к этим двум token-наборам.</p>
+            <p class="setting-card__text">Есть только два режима: Liquid и Material. Они обязаны выглядеть как две разные системы: стеклянная и тектоническая. Все control, surfaces, overlays и cards привязаны к разным token-наборам.</p>
             <div class="style-grid">
               <button
                 v-for="style in settingsModel.styleOptions"
@@ -460,7 +460,7 @@ function showManualInstallHelp() {
                 <strong>Мгновенно ко всему messenger</strong>
               </div>
             </div>
-            <p class="setting-card__meta">Тема управляет палитрой, а стиль управляет характером поверхностей. Можно, например, выбрать Void и включить минималистичный режим без liquid glass.</p>
+            <p class="setting-card__meta">Тема управляет палитрой, а стиль управляет пластикой интерфейса. Например, Void может работать и как холодный Liquid, и как плотный Material без стеклянных эффектов.</p>
           </article>
         </section>
 
