@@ -29,7 +29,6 @@ type ProjectLinkedContractor = {
   phone: string | null
   email: string | null
   messengerNick: string | null
-  login: string | null
 }
 
 type ProjectLinkedDesigner = {
@@ -134,7 +133,6 @@ export async function getProjectRelationsSnapshot(projectSlug: string): Promise<
         phone: contractors.phone,
         email: contractors.email,
         messengerNick: contractors.messengerNick,
-        login: contractors.login,
       })
       .from(projectContractors)
       .innerJoin(contractors, eq(projectContractors.contractorId, contractors.id))
