@@ -3077,13 +3077,22 @@ html[data-messenger-motion='reduced'] *::after {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
-  padding: 8px 10px;
-  border: 1px solid var(--messenger-popup-border);
-  border-radius: 999px;
-  background: var(--messenger-popup-bg);
-  backdrop-filter: blur(22px) saturate(150%);
-  box-shadow: var(--messenger-popup-shadow);
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.message-bubble__reaction-overlay::-webkit-scrollbar {
+  display: none;
 }
 
 .message-reaction-btn,
@@ -3223,25 +3232,36 @@ html[data-messenger-motion='reduced'] *::after {
 
 .message-bubble__controls {
   position: absolute;
-  top: 0;
+  bottom: calc(100% + 12px);
   left: 0;
   z-index: 12;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  width: fit-content;
-  max-width: min(92vw, 560px);
-  transform: translateY(calc(-100% - 18px));
+  align-items: stretch;
+  gap: 10px;
+  width: min(320px, calc(100vw - 24px));
+  max-width: min(320px, calc(100vw - 24px));
+  min-width: 220px;
+  padding: 10px;
+  border: 1px solid var(--messenger-popup-border);
+  border-radius: 22px;
+  background: var(--messenger-popup-bg);
+  backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--messenger-popup-shadow);
+  transform: none;
+  isolation: isolate;
 }
 
 .message-bubble__topline {
   position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
   top: auto;
   left: auto;
   z-index: auto;
-  width: fit-content;
-  max-width: min(92vw, 560px);
+  max-width: 100%;
   margin-bottom: 0;
 }
 
@@ -3255,7 +3275,7 @@ html[data-messenger-motion='reduced'] *::after {
 .message-bubble--own .message-bubble__controls {
   left: auto;
   right: 0;
-  align-items: flex-end;
+  align-items: stretch;
 }
 
 .message-bubble__topline--reactions {
@@ -3337,11 +3357,12 @@ html[data-messenger-motion='reduced'] *::after {
 
 .message-bubble__actions {
   position: relative;
-  width: auto;
-  max-width: min(92vw, 560px);
+  width: 100%;
+  max-width: 100%;
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: flex-start;
+  gap: 8px;
   flex-wrap: nowrap;
   padding: 0;
   border: 0;
@@ -3684,11 +3705,11 @@ html[data-messenger-style='minimal'] .voice-player {
 @media (max-width: 767px) {
   .message-bubble__controls,
   .message-bubble__topline {
-    max-width: min(92vw, calc(100vw - 20px));
+    max-width: min(320px, calc(100vw - 20px));
   }
 
   .message-bubble__actions {
-    max-width: min(92vw, calc(100vw - 20px));
+    max-width: min(320px, calc(100vw - 20px));
   }
 
   .composer-media-menu__results {
