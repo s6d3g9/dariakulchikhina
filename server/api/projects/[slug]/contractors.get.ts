@@ -11,7 +11,55 @@ export default defineEventHandler(async (event) => {
   if (!project) throw createError({ statusCode: 404, message: 'Проект не найден' })
 
   const rows = await db
-    .select({ contractor: contractors })
+    .select({
+      contractor: {
+        id: contractors.id,
+        slug: contractors.slug,
+        name: contractors.name,
+        companyName: contractors.companyName,
+        contactPerson: contractors.contactPerson,
+        phone: contractors.phone,
+        email: contractors.email,
+        inn: contractors.inn,
+        kpp: contractors.kpp,
+        ogrn: contractors.ogrn,
+        bankName: contractors.bankName,
+        bik: contractors.bik,
+        settlementAccount: contractors.settlementAccount,
+        correspondentAccount: contractors.correspondentAccount,
+        legalAddress: contractors.legalAddress,
+        factAddress: contractors.factAddress,
+        workTypes: contractors.workTypes,
+        roleTypes: contractors.roleTypes,
+        contractorType: contractors.contractorType,
+        parentId: contractors.parentId,
+        notes: contractors.notes,
+        messenger: contractors.messenger,
+        messengerNick: contractors.messengerNick,
+        website: contractors.website,
+        passportSeries: contractors.passportSeries,
+        passportNumber: contractors.passportNumber,
+        passportIssuedBy: contractors.passportIssuedBy,
+        passportIssueDate: contractors.passportIssueDate,
+        passportDepartmentCode: contractors.passportDepartmentCode,
+        birthDate: contractors.birthDate,
+        birthPlace: contractors.birthPlace,
+        registrationAddress: contractors.registrationAddress,
+        snils: contractors.snils,
+        telegram: contractors.telegram,
+        whatsapp: contractors.whatsapp,
+        city: contractors.city,
+        workRadius: contractors.workRadius,
+        taxSystem: contractors.taxSystem,
+        paymentMethods: contractors.paymentMethods,
+        hourlyRate: contractors.hourlyRate,
+        hasInsurance: contractors.hasInsurance,
+        insuranceDetails: contractors.insuranceDetails,
+        education: contractors.education,
+        certifications: contractors.certifications,
+        experienceYears: contractors.experienceYears,
+      },
+    })
     .from(projectContractors)
     .innerJoin(contractors, eq(projectContractors.contractorId, contractors.id))
     .where(eq(projectContractors.projectId, project.id))
@@ -21,9 +69,9 @@ export default defineEventHandler(async (event) => {
   return rows.map(r => {
     const {
       slug: _slug,
-      passportSeries, passportNumber, passportIssuedBy, passportIssuedDate,
+      passportSeries, passportNumber, passportIssuedBy, passportIssueDate,
       snils, inn,
-      bankName, bankBik, bankAccount, bankCorrAccount,
+      bankName, bik, settlementAccount, correspondentAccount,
       ...safe
     } = r.contractor as Record<string, any>
     return safe
