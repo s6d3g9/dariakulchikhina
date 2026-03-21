@@ -18,7 +18,7 @@ const actionError = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const composerMediaMenuEl = ref<HTMLElement | null>(null)
 const composerCategoryRailEl = ref<HTMLElement | null>(null)
-const composerKlipyRailEl = ref<HTMLElement | null>(null)
+const composerKlipyFeedEl = ref<HTMLElement | null>(null)
 const messageListEl = ref<HTMLElement | null>(null)
 const composerInputEl = ref<HTMLTextAreaElement | null>(null)
 const composerBarEl = ref<HTMLElement | null>(null)
@@ -123,6 +123,20 @@ function primeLoopedRailPosition(element: HTMLElement | null) {
   element.dataset.loopReady = 'true'
 }
 
+function primeLoopedFeedPosition(element: HTMLElement | null) {
+  if (!element || element.dataset.loopReady === 'true') {
+    return
+  }
+
+  const segmentHeight = element.scrollHeight / 3
+  if (!segmentHeight) {
+    return
+  }
+
+  element.scrollTop = segmentHeight
+  element.dataset.loopReady = 'true'
+}
+
 async function handleLoopedRailScroll(event: Event, options: { looped: boolean; canLoadMore?: boolean; onLoadMore?: () => Promise<void> | void }) {
   const element = event.currentTarget as HTMLElement | null
   if (!element) {
@@ -141,6 +155,29 @@ async function handleLoopedRailScroll(event: Event, options: { looped: boolean; 
   }
 
   const remaining = element.scrollWidth - element.clientWidth - element.scrollLeft
+  if (options.canLoadMore && remaining < 320 && options.onLoadMore) {
+    await options.onLoadMore()
+  }
+}
+
+async function handleLoopedFeedScroll(event: Event, options: { looped: boolean; canLoadMore?: boolean; onLoadMore?: () => Promise<void> | void }) {
+  const element = event.currentTarget as HTMLElement | null
+  if (!element) {
+    return
+  }
+
+  if (options.looped) {
+    const segmentHeight = element.scrollHeight / 3
+    if (segmentHeight > 0) {
+      if (element.scrollTop < segmentHeight * 0.35) {
+        element.scrollTop += segmentHeight
+      } else if (element.scrollTop > segmentHeight * 1.65) {
+        element.scrollTop -= segmentHeight
+      }
+    }
+  }
+
+  const remaining = element.scrollHeight - element.clientHeight - element.scrollTop
   if (options.canLoadMore && remaining < 320 && options.onLoadMore) {
     await options.onLoadMore()
   }
@@ -558,12 +595,14 @@ const desktopDropEnabled = computed(() => Boolean(
 ))
 const desktopDropActive = computed(() => dragDropDepth.value > 0 && desktopDropEnabled.value)
 const hasComposerText = computed(() => Boolean(draft.value.trim()))
+const hasSelectedKlipyItem = computed(() => Boolean(selectedKlipyItem.value))
+const hasComposerPayload = computed(() => hasComposerText.value || hasSelectedKlipyItem.value)
 const composerPrimaryMode = computed<'record' | 'send' | 'stop-recording'>(() => {
   if (isRecording.value) {
     return 'stop-recording'
   }
 
-  return hasComposerText.value ? 'send' : 'record'
+  return hasComposerPayload.value ? 'send' : 'record'
 })
 const composerPrimaryDisabled = computed(() => {
   if (!conversations.activeConversation.value || conversations.messagePending.value) {
@@ -920,8 +959,8 @@ watch(loopedKlipyCategories, async () => {
 
 watch(loopedPrimaryKlipyItems, async () => {
   await nextTick()
-  composerKlipyRailEl.value?.removeAttribute('data-loop-ready')
-  primeLoopedRailPosition(composerKlipyRailEl.value)
+  composerKlipyFeedEl.value?.removeAttribute('data-loop-ready')
+  primeLoopedFeedPosition(composerKlipyFeedEl.value)
 })
 
 watch(() => klipyQuery.value.trim(), (value) => {
@@ -1111,6 +1150,11 @@ async function handleComposerPrimaryAction() {
   composerMediaMenuOpen.value = false
 
   if (composerPrimaryMode.value === 'send') {
+    if (selectedKlipyItem.value) {
+      await confirmSelectedKlipyItem()
+      return
+    }
+
     await submit()
     return
   }
@@ -2197,12 +2241,12 @@ onBeforeUnmount(() => {
               </button>
             </div>
           </div>
-          <div v-if="primaryKlipyItems.length" class="composer-media-menu__rail-wrap">
+          <div v-if="primaryKlipyItems.length" class="composer-media-menu__feed-wrap">
             <div
-              ref="composerKlipyRailEl"
-              class="composer-media-menu__rail"
-              :class="{ 'composer-media-menu__rail--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__rail--gifs': activeKlipyKind === 'gif' }"
-              @scroll="handleLoopedRailScroll($event, { looped: primaryKlipyItems.length > 1, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
+              ref="composerKlipyFeedEl"
+              class="composer-media-menu__feed"
+              :class="{ 'composer-media-menu__feed--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__feed--gifs': activeKlipyKind === 'gif' }"
+              @scroll="handleLoopedFeedScroll($event, { looped: primaryKlipyItems.length > 1, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
             >
               <button
                 v-for="(item, index) in loopedPrimaryKlipyItems"
@@ -2236,13 +2280,13 @@ onBeforeUnmount(() => {
             referrerpolicy="no-referrer"
           >
           <div class="composer-klipy-pill__copy">
-            <p class="composer-context__eyebrow">{{ selectedKlipyItemLabel }}</p>
-            <p class="composer-context__text">Нажмите отправить, чтобы добавить {{ selectedKlipyItem.kind === 'sticker' ? 'стикер' : 'GIF' }} в чат.</p>
+            <p class="composer-context__eyebrow">{{ selectedKlipyItem.kind === 'sticker' ? 'Стикер выбран' : 'GIF выбран' }}</p>
+            <p class="composer-context__text">Миниатюра готова к отправке.</p>
           </div>
           <div class="composer-klipy-pill__actions">
             <button type="button" class="message-action-btn composer-klipy-pill__dismiss" :disabled="mediaUploadPending" @click="clearSelectedKlipyItem">×</button>
             <button type="button" class="composer-klipy-pill__send" :disabled="mediaUploadPending || conversations.messagePending.value" @click="confirmSelectedKlipyItem">
-              {{ mediaUploadPending ? 'Отправляем...' : 'Отправить в чат' }}
+              {{ mediaUploadPending ? 'Отправляем...' : 'Отправить' }}
             </button>
           </div>
         </div>
@@ -2296,7 +2340,7 @@ onBeforeUnmount(() => {
               'composer-btn--accent': composerPrimaryMode === 'send',
               'composer-btn--audio-primary': composerPrimaryMode === 'record',
             }"
-            :aria-label="composerPrimaryMode === 'send' ? 'Отправить сообщение' : composerPrimaryMode === 'stop-recording' ? 'Остановить запись аудиосообщения' : 'Записать аудиосообщение'"
+            :aria-label="composerPrimaryMode === 'send' ? (selectedKlipyItem ? 'Отправить выбранный стикер или GIF' : 'Отправить сообщение') : composerPrimaryMode === 'stop-recording' ? 'Остановить запись аудиосообщения' : 'Записать аудиосообщение'"
             :disabled="composerPrimaryDisabled"
             @pointerdown="handleComposerPrimaryPointerDown"
             @click="handleComposerPrimaryAction"

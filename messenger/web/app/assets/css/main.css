@@ -993,38 +993,42 @@ textarea {
 }
 
 .composer-media-menu__category-rail-wrap,
-.composer-media-menu__rail-wrap {
+.composer-media-menu__feed-wrap {
   min-width: 0;
 }
 
 .composer-media-menu__category-rail,
-.composer-media-menu__rail {
+.composer-media-menu__feed {
   display: grid;
-  grid-auto-flow: column;
-  align-items: stretch;
+  align-items: start;
   gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding-bottom: 2px;
 }
 
 .composer-media-menu__category-rail::-webkit-scrollbar,
-.composer-media-menu__rail::-webkit-scrollbar {
+.composer-media-menu__feed::-webkit-scrollbar {
   display: none;
 }
 
 .composer-media-menu__category-rail {
+  grid-auto-flow: column;
   grid-auto-columns: max-content;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
-.composer-media-menu__rail--stickers {
-  grid-auto-columns: minmax(92px, calc((100% - 16px) / 3));
+.composer-media-menu__feed {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-height: min(46vh, 360px);
+  align-content: start;
 }
 
-.composer-media-menu__rail--gifs {
-  grid-auto-columns: minmax(132px, calc((100% - 8px) / 2));
+.composer-media-menu__feed--gifs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .composer-media-menu__category-tile {
@@ -3048,18 +3052,16 @@ html[data-messenger-motion='reduced'] *::after {
   }
 
   .composer-klipy-pill {
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: 48px minmax(0, 1fr) auto;
   }
 
   .composer-klipy-pill__preview {
-    width: 56px;
-    height: 56px;
+    width: 48px;
+    height: 48px;
   }
 
-  .composer-klipy-pill__actions {
-    grid-column: 1 / -1;
-    grid-auto-flow: column;
-    justify-content: space-between;
+  .composer-media-menu__feed {
+    max-height: min(42vh, 320px);
   }
 
   .composer-forward-panel__toolbar,
@@ -3201,15 +3203,15 @@ html[data-messenger-motion='reduced'] *::after {
 
 .composer-klipy-pill {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) auto;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  min-height: 72px;
+  gap: 10px;
+  min-height: 56px;
 }
 
 .composer-klipy-pill__preview {
-  width: 72px;
-  height: 72px;
+  width: 56px;
+  height: 56px;
   display: block;
   object-fit: contain;
   background: transparent;
@@ -3228,6 +3230,7 @@ html[data-messenger-motion='reduced'] *::after {
 .composer-klipy-pill__actions {
   grid-auto-flow: column;
   align-items: center;
+  justify-content: end;
 }
 
 .composer-klipy-pill__dismiss {
@@ -3239,7 +3242,7 @@ html[data-messenger-motion='reduced'] *::after {
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 14px;
   border: 0;
   border-radius: 999px;
   background: var(--messenger-accent-soft-fill);
@@ -4628,12 +4631,12 @@ html[data-messenger-style='contrast'] .message-actions-pop-leave-to {
     padding: 8px 10px;
   }
 
-  .composer-media-menu__rail--stickers {
-    grid-auto-columns: minmax(82px, calc((100% - 12px) / 3));
+  .composer-media-menu__feed {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .composer-media-menu__rail--gifs {
-    grid-auto-columns: minmax(120px, calc((100% - 8px) / 2));
+  .composer-media-menu__feed--gifs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .messenger-shell--chat-idle-controls::after {
