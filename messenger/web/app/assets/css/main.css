@@ -1424,6 +1424,7 @@ textarea {
   bottom: max(0px, var(--messenger-keyboard-inset));
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
   gap: 0;
   width: 100vw;
   max-width: 100vw;
@@ -1462,9 +1463,11 @@ textarea {
   position: relative;
   z-index: 1;
   display: grid;
+  grid-template-rows: 30px minmax(10px, auto);
   justify-items: center;
   align-content: center;
   gap: 4px;
+  width: 100%;
   min-height: 54px;
   padding: 7px 8px 6px;
   border: 0 !important;
@@ -1479,6 +1482,7 @@ textarea {
   position: relative;
   display: inline-flex;
   overflow: hidden;
+  align-items: center;
   justify-content: center;
   width: 34px;
   height: 34px;
@@ -1495,11 +1499,12 @@ textarea {
 .bottom-nav__label {
   display: block;
   margin: 0;
+  min-height: 11px;
   color: color-mix(in srgb, var(--messenger-text) 78%, transparent);
   font-size: 11px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-align: center;
   white-space: nowrap;
 }
@@ -1515,7 +1520,7 @@ textarea {
 }
 
 .bottom-nav .bottom-nav__item::before {
-  inset: 3px 10px;
+  inset: 3px 6px;
   border-radius: calc(var(--messenger-token-nav-item-radius) - 2px);
   background: transparent;
   opacity: 1;
@@ -1543,7 +1548,7 @@ textarea {
     border-color 180ms ease,
     background 180ms ease,
     box-shadow 180ms ease;
-  color: var(--messenger-accent-ink);
+  color: color-mix(in srgb, var(--messenger-text) 96%, transparent);
 }
 
 .bottom-nav .bottom-nav__item--active::after {
@@ -5526,7 +5531,7 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 }
 
 .section-block--chats-screen .list-stack {
-  padding-top: calc(var(--screen-header-height) + 8px);
+  padding-top: calc(var(--screen-header-height) + 10px);
 }
 
 .section-block--contacts-screen .list-stack {
@@ -5542,8 +5547,8 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 }
 
 .list-card--chat-row {
-  min-height: 78px;
-  padding: 14px;
+  min-height: 80px;
+  padding: 13px 14px;
   border-right: 0;
   border-left: 0;
   border-radius: 20px;
@@ -5558,15 +5563,21 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 .list-card--chat-row .list-card__main {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .list-card--chat-row .list-card__title {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   font-size: 14px;
+  line-height: 1.2;
   letter-spacing: 0.01em;
+}
+
+.list-card--chat-row .list-card__title .chat-secret-badge {
+  flex: 0 0 auto;
 }
 
 .list-card--chat-row .list-card__row {
@@ -5579,7 +5590,7 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 
 .list-card--chat-row .list-card__row--chat-footer {
   align-items: flex-end;
-  gap: 10px;
+  gap: 8px;
 }
 
 .list-card--chat-row .list-card__text--preview {
@@ -5594,11 +5605,19 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 
 .list-card--chat-row .list-card__meta--timestamp {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: flex-end;
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   font-size: 11px;
-  line-height: 1;
+  line-height: 1.1;
   margin: 0;
   margin-left: auto;
   align-self: flex-end;
+  color: color-mix(in srgb, var(--messenger-text) 58%, transparent);
   white-space: nowrap;
 }
 
@@ -5658,7 +5677,6 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
   transform: translate3d(-8px, -10px, 0);
 }
 
-.section-block--chats-screen .list-card__meta,
 .section-block--contacts-screen .list-card__meta {
   display: inline-flex;
   align-items: center;
@@ -5768,10 +5786,13 @@ html[data-messenger-style='minimal'] .hold-actions {
   min-height: var(--screen-header-height);
   gap: 0;
   z-index: 80;
+  background: var(--messenger-token-header-bg);
+  backdrop-filter: var(--messenger-token-header-filter);
+  box-shadow: var(--messenger-token-header-shadow);
 }
 
 .search-dock--chats-header {
-  padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+  padding: max(10px, env(safe-area-inset-top)) 14px 10px;
 }
 
 .search-dock--contacts-header {
@@ -5794,8 +5815,8 @@ html[data-messenger-style='minimal'] .hold-actions {
 
 .search-dock__input--header {
   min-height: 44px;
-  padding: 10px 14px;
-  border-radius: 18px;
+  padding: 9px 14px;
+  border-radius: 16px;
   border-color: var(--messenger-field-header-border);
   background: color-mix(in srgb, var(--messenger-field-header-bg) 92%, white 2%);
   transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
@@ -5817,14 +5838,14 @@ html[data-messenger-style='minimal'] .hold-actions {
   gap: 6px;
   padding: 8px;
   border: 1px solid var(--messenger-slab-border);
-  border-radius: 18px;
+  border-radius: var(--messenger-token-overlay-radius);
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--messenger-slab-bg) 94%, transparent),
     color-mix(in srgb, var(--messenger-panel-strong) 90%, transparent)
   );
-  backdrop-filter: blur(24px) saturate(150%);
-  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.22);
+  backdrop-filter: var(--messenger-token-overlay-filter);
+  box-shadow: var(--messenger-token-overlay-shadow);
   max-height: min(320px, 46vh);
   overflow-y: auto;
 }
@@ -5873,16 +5894,6 @@ html[data-messenger-style='minimal'] .hold-actions {
   line-height: 1.35;
 }
 
-html[data-messenger-style='minimal'] .search-dock::before {
-  display: none;
-}
-
-html[data-messenger-style='minimal'] .search-dropdown,
-html[data-messenger-style='minimal'] .search-dropdown__item {
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
 @media (max-width: 767px) {
   .section-block--search-screen {
     padding-top: 0;
@@ -5912,7 +5923,7 @@ html[data-messenger-style='minimal'] .search-dropdown__item {
 
   .search-dock--screen-header {
     margin-top: 0;
-    min-height: 56px;
+    min-height: 58px;
   }
 
   .search-dock--chats-header {
@@ -5924,7 +5935,8 @@ html[data-messenger-style='minimal'] .search-dropdown__item {
   }
 
   .search-dock__input--header {
-    min-height: 42px;
-    padding: 8px 12px;
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: 16px;
   }
 }
