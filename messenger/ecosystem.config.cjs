@@ -15,6 +15,8 @@ module.exports = {
         MESSENGER_CORE_AUTH_SECRET: 'change-me-before-production',
         MESSENGER_CORE_CORS_ORIGIN: 'https://dariakulchikhina.com',
         MESSENGER_CORE_DATA_DIR: '/opt/daria-messenger-data',
+        GIPHY_API_KEY: process.env.GIPHY_API_KEY || '',
+        GIPHY_API_BASE_URL: process.env.GIPHY_API_BASE_URL || 'https://api.giphy.com/v1',
       },
     },
     {

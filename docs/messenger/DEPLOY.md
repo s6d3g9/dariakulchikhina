@@ -18,6 +18,11 @@
 - `MESSENGER_CORE_AUTH_SECRET`
 - `MESSENGER_CORE_CORS_ORIGIN`
 
+Опционально для GIF/стикеров:
+
+- `GIPHY_API_KEY`
+- `GIPHY_API_BASE_URL`
+
 ### Web
 
 См. [messenger/web/.env.example](messenger/web/.env.example)

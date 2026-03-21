@@ -86,9 +86,10 @@ export async function createMessengerServer() {
   const conversationParamsSchema = z.object({
     conversationId: z.string().uuid(),
   })
+  const messageIdSchema = z.string().trim().min(1).max(64)
   const messageParamsSchema = z.object({
     conversationId: z.string().uuid(),
-    messageId: z.string().uuid(),
+    messageId: messageIdSchema,
   })
   const publicKeySchema = z.object({
     kty: z.literal('EC'),
@@ -113,7 +114,7 @@ export async function createMessengerServer() {
     originalMimeType: z.string().trim().min(1).max(120).optional(),
   })
   const forwardedSnapshotSchema = z.object({
-    messageId: z.string().uuid(),
+    messageId: messageIdSchema,
     conversationId: z.string().uuid(),
     senderUserId: z.string().uuid(),
     senderDisplayName: z.string().trim().min(1).max(80),
@@ -131,9 +132,9 @@ export async function createMessengerServer() {
   const messageSchema = z.object({
     body: z.string().trim().max(4000).optional(),
     encryptedBody: encryptedPayloadSchema.optional(),
-    replyToMessageId: z.string().uuid().optional(),
-    commentOnMessageId: z.string().uuid().optional(),
-    forwardedMessageId: z.string().uuid().optional(),
+    replyToMessageId: messageIdSchema.optional(),
+    commentOnMessageId: messageIdSchema.optional(),
+    forwardedMessageId: messageIdSchema.optional(),
     forwardedFrom: forwardedSnapshotSchema.optional(),
   }).superRefine((value, ctx) => {
     const hasBody = Boolean(value.body?.trim())
