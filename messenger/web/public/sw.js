@@ -12,8 +12,8 @@ function getAppShellUrls() {
     scopePath,
     `${scopePath}manifest.webmanifest`,
     `${scopePath}icons/messenger-app.svg`,
-    `${scopePath}icons/messenger-app-192.svg`,
-    `${scopePath}icons/messenger-app-512.svg`,
+    `${scopePath}icons/messenger-app-192.png`,
+    `${scopePath}icons/messenger-app-512.png`,
   ]
 }
 

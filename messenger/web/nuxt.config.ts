@@ -21,8 +21,10 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'manifest', href: `${appBaseUrl}manifest.webmanifest` },
-        { rel: 'icon', type: 'image/svg+xml', href: `${appBaseUrl}icons/messenger-app.svg` },
-        { rel: 'apple-touch-icon', href: `${appBaseUrl}icons/messenger-app-512.svg` },
+        { rel: 'icon', type: 'image/png', sizes: '192x192', href: `${appBaseUrl}icons/messenger-app-192.png` },
+        { rel: 'icon', type: 'image/png', sizes: '512x512', href: `${appBaseUrl}icons/messenger-app-512.png` },
+        { rel: 'mask-icon', href: `${appBaseUrl}icons/messenger-app.svg`, color: '#09111f' },
+        { rel: 'apple-touch-icon', href: `${appBaseUrl}icons/messenger-app-512.png` },
       ],
     },
   },
