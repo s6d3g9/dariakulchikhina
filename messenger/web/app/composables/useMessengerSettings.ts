@@ -1,10 +1,10 @@
 type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerThemeKey = 'beige' | 'gray' | 'black' | 'void'
-type MessengerStyleKey = 'material' | 'crystal' | 'mist' | 'contrast' | 'minimal'
+type MessengerStyleKey = 'liquid' | 'material'
 
 const MESSENGER_THEME_KEYS = ['beige', 'gray', 'black', 'void'] as const
-const MESSENGER_STYLE_KEYS = ['material', 'crystal', 'mist', 'contrast', 'minimal'] as const
+const MESSENGER_STYLE_KEYS = ['liquid', 'material'] as const
 
 interface MessengerSettingsSnapshot {
   profile: {
@@ -42,6 +42,26 @@ const MESSENGER_SETTINGS_SESSION_STORAGE_KEY = 'daria-messenger-settings-session
 const MESSENGER_THEME_STORAGE_KEY = 'daria-messenger-theme'
 const MESSENGER_STYLE_STORAGE_KEY = 'daria-messenger-style'
 
+function normalizeMessengerStyle(style: string | null | undefined): MessengerStyleKey | null {
+  if (!style) {
+    return null
+  }
+
+  if (style === 'liquid' || style === 'material') {
+    return style
+  }
+
+  if (style === 'crystal' || style === 'mist' || style === 'contrast') {
+    return 'liquid'
+  }
+
+  if (style === 'minimal') {
+    return 'material'
+  }
+
+  return null
+}
+
 function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
   return {
     profile: {
@@ -65,7 +85,7 @@ function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
     },
     themes: {
       active: 'black',
-      style: 'material',
+      style: 'liquid',
     },
     devices: {
       trustThisDevice: true,
@@ -99,13 +119,14 @@ function readStoredThemePreferences() {
 
   const storedTheme = window.localStorage.getItem(MESSENGER_THEME_STORAGE_KEY)
   const storedStyle = window.localStorage.getItem(MESSENGER_STYLE_STORAGE_KEY)
+  const normalizedStyle = normalizeMessengerStyle(storedStyle)
 
   return {
     active: MESSENGER_THEME_KEYS.includes(storedTheme as MessengerThemeKey)
       ? storedTheme as MessengerThemeKey
       : null,
-    style: MESSENGER_STYLE_KEYS.includes(storedStyle as MessengerStyleKey)
-      ? storedStyle as MessengerStyleKey
+    style: normalizedStyle && MESSENGER_STYLE_KEYS.includes(normalizedStyle)
+      ? normalizedStyle
       : null,
   }
 }
@@ -162,6 +183,7 @@ function mergeMessengerSettings(source: Partial<MessengerSettingsSnapshot> | nul
     themes: {
       ...defaults.themes,
       ...(source?.themes || {}),
+      style: normalizeMessengerStyle(source?.themes?.style || defaults.themes.style) || defaults.themes.style,
     },
     devices: {
       ...defaults.devices,
@@ -234,29 +256,14 @@ export function useMessengerSettings() {
 
   const styleOptions = [
     {
+      key: 'liquid' as const,
+      title: 'Liquid',
+      hint: 'Полупрозрачные liquid-поверхности, живой blur и акцентный control layer.',
+    },
+    {
       key: 'material' as const,
       title: 'Material 3',
-      hint: 'Плотные поверхности, читаемая иерархия и отдельный спокойный settings-слой без жидкого стекла.',
-    },
-    {
-      key: 'crystal' as const,
-      title: 'Кристалл',
-      hint: 'Чистый liquid glass с яркими бликами и более воздушными поверхностями.',
-    },
-    {
-      key: 'mist' as const,
-      title: 'Туман',
-      hint: 'Мягкий матовый режим с приглушённым стеклом и спокойной глубиной.',
-    },
-    {
-      key: 'contrast' as const,
-      title: 'Контраст',
-      hint: 'Более собранный режим с жёстче очерченными границами и плотными панелями.',
-    },
-    {
-      key: 'minimal' as const,
-      title: 'Минимал',
-      hint: 'Строгий плоский режим без liquid glass, с чёткими границами и тихой монохромной подачей.',
+      hint: 'Не liquid glass. Плотные поверхности, четкая иерархия и спокойный системный ритм.',
     },
   ]
 

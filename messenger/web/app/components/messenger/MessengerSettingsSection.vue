@@ -18,6 +18,13 @@ watch(() => settingsModel.settings.value.devices.keepSignedIn, (enabled) => {
 
 const activeThemeMeta = computed(() => settingsModel.themeOptions.find(theme => theme.key === settingsModel.settings.value.themes.active) ?? settingsModel.themeOptions[0])
 const activeStyleMeta = computed(() => settingsModel.styleOptions.find(style => style.key === settingsModel.settings.value.themes.style) ?? settingsModel.styleOptions[0])
+const activeStyleBadge = computed(() => {
+  if (settingsModel.settings.value.themes.style === 'material') {
+    return 'Material 3'
+  }
+
+  return 'Liquid Glass'
+})
 const permissionLabelMap = {
   granted: 'Разрешено',
   denied: 'Запрещено',
@@ -158,7 +165,11 @@ function showManualInstallHelp() {
 </script>
 
 <template>
-  <section class="section-block settings-shell settings-shell--material" aria-label="Settings section">
+  <section
+    class="section-block settings-shell"
+    :class="{ 'settings-shell--material': settingsModel.settings.value.themes.style === 'material' }"
+    aria-label="Settings section"
+  >
     <header class="section-head section-head--stacked">
       <div>
         <p class="section-kicker">Settings</p>
@@ -177,11 +188,19 @@ function showManualInstallHelp() {
     <div class="settings-layout settings-layout--compact-head">
       <article class="setting-card setting-card--glass setting-card--summary">
         <div class="setting-pill-row setting-pill-row--summary">
-          <span class="setting-pill setting-pill--material">Material settings</span>
+          <span
+            class="setting-pill"
+            :class="{
+              'setting-pill--material': settingsModel.settings.value.themes.style === 'material',
+              'setting-pill--ok': settingsModel.settings.value.themes.style !== 'material'
+            }"
+          >
+            {{ activeStyleBadge }}
+          </span>
         </div>
         <p class="setting-card__title">Аккаунт</p>
         <p class="setting-card__text">{{ auth.user.value?.displayName || 'Гость' }} · @{{ auth.user.value?.login || 'anonymous' }}</p>
-        <p class="setting-card__meta">Экран настроек собран как отдельный Material-слой: плотные панели, rail-навигация и более строгая иерархия без лишнего стекла.</p>
+        <p class="setting-card__meta">Текущий режим: {{ activeStyleMeta.title }}. Liquid и non-liquid режимы теперь разделены явно, без смешения слоев.</p>
       </article>
 
       <aside class="settings-nav" aria-label="Меню настроек">
@@ -384,7 +403,7 @@ function showManualInstallHelp() {
 
           <article class="setting-card setting-card--glass setting-card--stacked">
             <p class="setting-card__title">Стиль дизайна</p>
-            <p class="setting-card__text">Отдельно от палитры можно переключать характер интерфейса. Material 3 выделен как самостоятельный режим с плотными поверхностями и более собранной читаемостью.</p>
+            <p class="setting-card__text">Есть только два режима: Liquid и Material. Все control, surfaces, overlays и cards привязаны к этим двум token-наборам.</p>
             <div class="style-grid">
               <button
                 v-for="style in settingsModel.styleOptions"
@@ -410,6 +429,7 @@ function showManualInstallHelp() {
                   <span class="style-card__title-row">
                     <span class="style-card__title">{{ style.title }}</span>
                     <span v-if="style.key === 'material'" class="style-card__chip">M3</span>
+                    <span v-else class="style-card__chip style-card__chip--liquid">Liquid</span>
                   </span>
                   <span class="style-card__meta">{{ style.hint }}</span>
                 </span>
