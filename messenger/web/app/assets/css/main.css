@@ -250,14 +250,14 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] {
   --messenger-surface-filter: none;
   --messenger-panel: color-mix(in srgb, var(--messenger-bg) 92%, white 8%);
   --messenger-panel-strong: color-mix(in srgb, var(--messenger-bg-secondary) 42%, white 58%);
-  --messenger-panel-soft: rgba(255, 255, 255, 0.56);
+  --messenger-panel-soft: rgba(255, 255, 255, 0.42);
   --messenger-field-bg: rgba(255, 255, 255, 0.82);
   --messenger-field-bg-focus: rgba(255, 255, 255, 0.94);
   --messenger-field-header-bg: rgba(255, 255, 255, 0.72);
   --messenger-field-header-bg-focus: rgba(255, 255, 255, 0.9);
   --messenger-field-header-border: color-mix(in srgb, var(--messenger-border) 80%, transparent);
-  --messenger-glass-button-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 248, 251, 0.92));
-  --messenger-glass-button-bg-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 244, 249, 0.95));
+  --messenger-glass-button-bg: linear-gradient(180deg, rgba(249, 251, 253, 1), rgba(241, 244, 248, 1));
+  --messenger-glass-button-bg-hover: linear-gradient(180deg, rgba(252, 253, 255, 1), rgba(237, 241, 246, 1));
   --messenger-glass-button-border: color-mix(in srgb, var(--messenger-border) 90%, transparent);
   --messenger-glass-button-border-strong: color-mix(in srgb, var(--messenger-accent) 32%, var(--messenger-border));
   --messenger-glass-button-shadow: 0 8px 18px rgba(92, 104, 120, 0.1);
@@ -265,7 +265,7 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] {
   --messenger-slab-bg-soft: linear-gradient(180deg, color-mix(in srgb, var(--messenger-bg) 86%, white 14%), color-mix(in srgb, var(--messenger-bg-secondary) 26%, white 74%));
   --messenger-slab-bg-strong: linear-gradient(180deg, color-mix(in srgb, var(--messenger-bg) 90%, white 10%), color-mix(in srgb, var(--messenger-bg-secondary) 34%, white 66%));
   --messenger-slab-border: color-mix(in srgb, var(--messenger-border) 88%, transparent);
-  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.02));
+  --messenger-slab-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0));
   --messenger-slab-shadow: 0 10px 24px rgba(92, 104, 120, 0.1);
   --messenger-scene-overlay: radial-gradient(circle at top left, color-mix(in srgb, var(--messenger-accent) 14%, transparent), transparent 28%), radial-gradient(circle at top right, color-mix(in srgb, var(--messenger-accent-strong) 12%, transparent), transparent 24%);
   --messenger-scene-grid-opacity: 0.025;
@@ -273,17 +273,19 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] {
   --messenger-token-control-bg-hover: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(237, 241, 246, 0.98));
   --messenger-token-control-shadow: 0 2px 10px rgba(92, 104, 120, 0.08);
   --messenger-token-nav-bg: linear-gradient(180deg, rgba(251, 252, 254, 1), rgba(240, 244, 248, 1));
-  --messenger-token-nav-shadow: 0 4px 16px rgba(92, 104, 120, 0.08);
+  --messenger-token-nav-shadow: 0 2px 10px rgba(92, 104, 120, 0.06);
   --messenger-token-header-bg: linear-gradient(180deg, rgba(251, 252, 254, 1), rgba(243, 246, 250, 1));
-  --messenger-token-header-shadow: 0 2px 10px rgba(92, 104, 120, 0.06);
+  --messenger-token-header-shadow: 0 1px 6px rgba(92, 104, 120, 0.05);
   --messenger-token-composer-bg: linear-gradient(180deg, rgba(251, 252, 254, 1), rgba(241, 244, 248, 1));
-  --messenger-token-composer-shadow: 0 4px 14px rgba(92, 104, 120, 0.08);
+  --messenger-token-composer-shadow: 0 2px 10px rgba(92, 104, 120, 0.06);
   --messenger-token-overlay-bg: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(240, 244, 248, 0.98));
   --messenger-token-overlay-shadow: 0 8px 22px rgba(92, 104, 120, 0.1);
   --messenger-token-bubble-peer-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 250, 0.96));
   --messenger-token-bubble-peer-border: color-mix(in srgb, var(--messenger-border) 92%, transparent);
   --messenger-token-bubble-own-bg: linear-gradient(180deg, color-mix(in srgb, var(--messenger-accent) 18%, white), color-mix(in srgb, var(--messenger-accent) 12%, white));
   --messenger-token-bubble-own-border: color-mix(in srgb, var(--messenger-accent) 28%, transparent);
+  --messenger-token-nav-item-active-bg: color-mix(in srgb, var(--messenger-accent) 12%, white 88%);
+  --messenger-token-nav-item-active-border: color-mix(in srgb, var(--messenger-accent) 22%, rgba(92, 104, 120, 0.14));
 }
 
 html[data-messenger-style='material'] .list-card::before,
@@ -309,6 +311,20 @@ html[data-messenger-style='material'] .bottom-nav,
 html[data-messenger-style='material'] .composer-bar--dock,
 html[data-messenger-style='material'] .section-actions--cluster {
   box-shadow: none;
+}
+
+html[data-messenger-style='material'] .icon-btn,
+html[data-messenger-style='material'] .composer-btn {
+  background: var(--messenger-token-control-bg);
+  border-color: var(--messenger-token-control-border);
+  backdrop-filter: none;
+  text-shadow: none;
+}
+
+html[data-messenger-style='material'] .icon-btn:not([disabled]):hover,
+html[data-messenger-style='material'] .composer-btn:not([disabled]):hover {
+  background: var(--messenger-token-control-bg-hover);
+  border-color: var(--messenger-token-control-border-strong);
 }
 
 html[data-messenger-style='material'] .bottom-nav {
@@ -370,6 +386,29 @@ html[data-messenger-style='material'] .section-head--chat-header {
 
 html[data-messenger-style='material'] .composer-bar--dock {
   border-color: color-mix(in srgb, var(--messenger-border) 98%, transparent);
+}
+
+html[data-messenger-style='material'] .chat-avatar {
+  border-color: color-mix(in srgb, var(--messenger-accent) 18%, var(--messenger-border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-token-control-bg) 94%, transparent), color-mix(in srgb, var(--messenger-accent) 10%, var(--messenger-token-control-bg)));
+  color: color-mix(in srgb, var(--messenger-accent) 42%, var(--messenger-text));
+}
+
+html[data-messenger-style='material'] .chat-user-name--audio-live {
+  border-color: color-mix(in srgb, rgba(239, 68, 68, 0.28) 72%, var(--messenger-token-control-border));
+  background: linear-gradient(180deg, color-mix(in srgb, rgba(239, 68, 68, 0.14) 70%, var(--messenger-token-control-bg)), color-mix(in srgb, rgba(190, 24, 93, 0.12) 54%, var(--messenger-token-control-bg)));
+  box-shadow: none;
+}
+
+html[data-messenger-style='material'] .chat-user-name__call {
+  background: color-mix(in srgb, rgba(239, 68, 68, 0.16) 72%, var(--messenger-token-control-bg));
+  border: 1px solid color-mix(in srgb, rgba(239, 68, 68, 0.24) 78%, transparent);
+  color: color-mix(in srgb, rgba(127, 29, 29, 0.9) 62%, var(--messenger-text));
+}
+
+html[data-messenger-style='material'] .section-block--chat > .section-head--chat-header .icon-btn {
+  background: var(--messenger-token-control-bg) !important;
+  border-color: var(--messenger-token-control-border) !important;
 }
 
 html[data-messenger-style='liquid'] .bottom-nav,
