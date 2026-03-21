@@ -132,7 +132,7 @@ function handlePointerDown(event: PointerEvent) {
     emit('toggle-reaction-overlay', props.entry.id)
   }
   longPressTimer = setTimeout(() => {
-    emit('toggle-actions', props.entry.id, new MouseEvent('click'))
+    emit('toggle-actions', props.entry.id)
     longPressTriggered.value = true
     longPressTimer = null
   }, 1000)
@@ -348,19 +348,19 @@ function handleBubbleClick(event: MouseEvent) {
         :allow-forward="allowForward"
         :allow-mutual-delete="allowMutualDelete"
         :reaction-options="reactionOptions"
-        @toggle-actions="emit('toggle-actions', $event[0], $event[1])"
+        @toggle-actions="(messageId, event) => emit('toggle-actions', messageId, event)"
         @toggle-reaction-overlay="emit('toggle-reaction-overlay', $event)"
         @comment="emit('comment', $event)"
         @reply="emit('reply', $event)"
         @forward="emit('forward', $event)"
-        @edit="emit('edit', $event[0], $event[1])"
+        @edit="(messageId, body) => emit('edit', messageId, body)"
         @remove="emit('remove', $event)"
         @edit-draft="emit('edit-draft', $event)"
         @edit-keydown="emit('edit-keydown', $event)"
         @save-edit="emit('save-edit')"
-        @copy-link="emit('copy-link', $event[0], $event[1])"
+        @copy-link="(href, label) => emit('copy-link', href, label)"
         @open-photo="emit('open-photo', $event)"
-        @react="emit('react', $event[0], $event[1])"
+        @react="(messageId, emoji) => emit('react', messageId, emoji)"
       />
     </div>
   </article>

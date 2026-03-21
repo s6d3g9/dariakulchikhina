@@ -1585,11 +1585,11 @@ onBeforeUnmount(() => {
             @forward="openForwardPicker"
             @edit="startEditingMessage"
             @remove="removeMessage"
-            @react="reactToMessage($event[0], $event[1])"
+            @react="(messageId, emoji) => reactToMessage(messageId, emoji)"
             @edit-draft="editingDraft = $event"
             @edit-keydown="handleEditKeydown"
             @save-edit="saveEditedMessage"
-            @copy-link="copyLink($event[0], $event[1])"
+            @copy-link="(href, label) => copyLink(href, label)"
             @open-photo="openPhotoGallery"
           />
 
