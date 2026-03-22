@@ -1524,38 +1524,49 @@ a {
 }
 
 .composer-media-menu {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: calc(var(--messenger-composer-height, 84px) + 12px);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 58;
-  display: grid;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--messenger-popup-border);
-  border-radius: 22px;
+  display: flex;
+  flex-direction: column;
+  max-height: 50dvh;
+  border: none;
+  border-radius: 28px 28px 0 0;
   background: var(--messenger-popup-bg);
   backdrop-filter: blur(24px) saturate(150%);
-  box-shadow: var(--messenger-popup-shadow);
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.18);
 }
 
 .composer-media-menu__card {
-  border-radius: inherit;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border-radius: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
+  overflow: hidden;
 }
 
 .composer-media-menu__body {
-  display: grid;
-  gap: 12px;
-  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .composer-media-menu__tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  flex-shrink: 0;
+  height: 56px;
+  border-top: 1px solid var(--messenger-popup-border);
 }
 
 .composer-media-menu__tabs--vuetify {
@@ -1630,6 +1641,75 @@ a {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* ── Media sheet: nav-bar hides when sheet is open ─────────── */
+[data-messenger-media-sheet='open'] .bottom-nav {
+  display: none !important;
+}
+
+/* ── Media sheet: scrollable content area ──────────────────── */
+.composer-media-menu__emoji-grid,
+.composer-media-menu__catalog,
+.composer-media-menu__photo-tab,
+.composer-media-menu__file-tab {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+/* ── Photo tab ──────────────────────────────────────────────── */
+.composer-media-menu__upload-row {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+
+.composer-media-menu__photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.composer-media-menu__photo-item {
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--messenger-token-control-bg);
+  border-radius: 4px;
+}
+
+/* ── File tab ───────────────────────────────────────────────── */
+.composer-media-menu__file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.composer-media-menu__file-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--messenger-token-control-bg);
+  cursor: pointer;
+}
+
+.composer-media-menu__file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--messenger-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composer-media-menu__file-meta {
+  font-size: 12px;
+  color: var(--messenger-text-secondary);
+}
+
+/* ── Emoji grid ─────────────────────────────────────────────── */
 .composer-media-menu__emoji-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -6856,6 +6936,104 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 
 .section-block--contacts-screen .list-stack {
   padding-top: 0;
+}
+
+/* ── Chats: список-обёртка с FAB ─────────────────────────────────── */
+.chats-list-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chats-list-wrap .list-stack {
+  flex: 1 1 auto;
+}
+
+.chats-fab {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: none;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 12px -2px rgba(var(--v-theme-primary), 0.5);
+  z-index: 5;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.chats-fab:hover {
+  transform: scale(1.07);
+  box-shadow: 0 5px 18px -2px rgba(var(--v-theme-primary), 0.6);
+}
+
+.chats-fab:active {
+  transform: scale(0.95);
+}
+
+/* ── Chats: folder chip-bar ──────────────────────────────────────── */
+.chats-folders-bar {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 0 16px;
+  height: 44px;
+  align-items: center;
+  scrollbar-width: none;
+}
+
+.chats-folders-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.chats-folder-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  height: 32px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--v-theme-outline), 0.35);
+  background: transparent;
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.chats-folder-chip:hover {
+  background: rgba(var(--v-theme-secondary-container), 0.45);
+}
+
+.chats-folder-chip--active {
+  background: rgb(var(--v-theme-secondary-container));
+  color: rgb(var(--v-theme-on-secondary-container));
+  border-color: transparent;
+}
+
+.chats-folder-chip--add {
+  border-style: dashed;
+  opacity: 0.6;
+  font-size: 18px;
+  padding: 0 10px;
+}
+
+.chats-folder-chip--add:hover {
+  opacity: 1;
+  background: rgba(var(--v-theme-primary), 0.08);
 }
 
 .list-stack--screen-scroll {

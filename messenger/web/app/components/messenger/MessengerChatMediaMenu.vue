@@ -7,7 +7,7 @@ interface KlipyCategoryItem {
 
 const props = defineProps<{
   visible: boolean
-  tab: 'emoji' | 'stickers' | 'gif'
+  tab: 'emoji' | 'stickers' | 'gif' | 'photo' | 'file'
   emojiOptions: string[]
   sharedStickers: boolean
   sharedGif: boolean
@@ -23,16 +23,19 @@ const props = defineProps<{
   klipyStatusText: string
   formatKlipyCategoryTag: (query: string) => string
   klipyTileStyle: (item: MessengerKlipyItem) => Record<string, string>
+  sharedPhotos: Array<{ id: string; previewUrl?: string; title: string }>
+  sharedDocuments: Array<{ id: string; title: string; meta: string }>
 }>()
 
 const emit = defineEmits<{
-  'update:tab': [value: 'emoji' | 'stickers' | 'gif']
+  'update:tab': [value: 'emoji' | 'stickers' | 'gif' | 'photo' | 'file']
   'insert-emoji': [emoji: string]
   'update:klipy-query': [value: string]
   'category-scroll': [event: Event]
   'select-category': [query: string]
   'feed-scroll': [event: Event]
   'select-item': [item: MessengerKlipyItem]
+  'pick-from-device': []
 }>()
 
 const categoryRailEl = ref<HTMLDivElement | null>(null)
@@ -62,6 +65,55 @@ defineExpose({
             >
               {{ emoji }}
             </VBtn>
+          </div>
+
+          <div v-else-if="tab === 'photo'" class="composer-media-menu__photo-tab">
+            <div class="composer-media-menu__upload-row">
+              <VBtn
+                type="button"
+                variant="tonal"
+                size="small"
+                prepend-icon="mdi-image-plus"
+                @click="emit('pick-from-device')"
+              >
+                Загрузить с устройства
+              </VBtn>
+            </div>
+            <div v-if="sharedPhotos.length" class="composer-media-menu__photo-grid">
+              <div
+                v-for="photo in sharedPhotos"
+                :key="photo.id"
+                class="composer-media-menu__photo-item"
+                :style="photo.previewUrl ? `background-image: url(${photo.previewUrl})` : undefined"
+                :title="photo.title"
+              />
+            </div>
+            <p v-else class="composer-media-menu__status">Фото из переписки появятся здесь</p>
+          </div>
+
+          <div v-else-if="tab === 'file'" class="composer-media-menu__file-tab">
+            <div class="composer-media-menu__upload-row">
+              <VBtn
+                type="button"
+                variant="tonal"
+                size="small"
+                prepend-icon="mdi-paperclip"
+                @click="emit('pick-from-device')"
+              >
+                Загрузить файл
+              </VBtn>
+            </div>
+            <div v-if="sharedDocuments.length" class="composer-media-menu__file-list">
+              <div
+                v-for="doc in sharedDocuments"
+                :key="doc.id"
+                class="composer-media-menu__file-item"
+              >
+                <span class="composer-media-menu__file-name">{{ doc.title }}</span>
+                <span class="composer-media-menu__file-meta">{{ doc.meta }}</span>
+              </div>
+            </div>
+            <p v-else class="composer-media-menu__status">Файлы из переписки появятся здесь</p>
           </div>
 
           <div v-else class="composer-media-menu__catalog">
@@ -143,6 +195,12 @@ defineExpose({
             <VTab value="gif" class="composer-media-menu__tab composer-media-menu__tab--vuetify">
               <span>GIF</span>
               <span v-if="sharedGif" class="composer-media-menu__tab-badge">👥</span>
+            </VTab>
+            <VTab value="photo" class="composer-media-menu__tab composer-media-menu__tab--vuetify">
+              Фото
+            </VTab>
+            <VTab value="file" class="composer-media-menu__tab composer-media-menu__tab--vuetify">
+              Файл
             </VTab>
           </VTabs>
         </VCardText>

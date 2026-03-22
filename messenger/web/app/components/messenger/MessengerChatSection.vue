@@ -50,7 +50,7 @@ const pendingScrollMessageId = ref<string | null>(null)
 const dragDropDepth = ref(0)
 const dragDropPending = ref(false)
 const composerMediaMenuOpen = ref(false)
-const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif'>('emoji')
+const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif' | 'photo' | 'file'>('emoji')
 const klipyQuery = ref('')
 const mediaUploadPending = ref(false)
 const selectedCatalogCategory = ref('')
@@ -954,6 +954,10 @@ watch(draft, () => {
   syncComposerInputHeight()
 })
 
+watch(composerMediaMenuOpen, (open) => {
+  navigation.mediaSheetOpen.value = open
+})
+
 watch([detailsOpen, photoFeedOpen, () => conversations.activeConversationId.value], () => {
   composerMediaMenuOpen.value = false
 })
@@ -1076,10 +1080,19 @@ function toggleComposerMediaMenu() {
   }
 }
 
-function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif') {
+function openMediaSheetOnPhoto() {
+  if (!conversations.activeConversation.value || conversations.messagePending.value) {
+    return
+  }
+
+  composerMediaMenuTab.value = 'photo'
+  composerMediaMenuOpen.value = true
+}
+
+function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif' | 'photo' | 'file') {
   const previousTab = composerMediaMenuTab.value
 
-  if (tab !== 'emoji' && previousTab === tab && sharedKlipyEnabled.value) {
+  if (tab !== 'emoji' && tab !== 'photo' && tab !== 'file' && previousTab === tab && sharedKlipyEnabled.value) {
     const scopeKey = tab === 'stickers' ? 'stickers' : 'gif'
     klipyAudienceMode[scopeKey] = klipyAudienceMode[scopeKey] === 'mine' ? 'shared' : 'mine'
     return
@@ -1087,7 +1100,7 @@ function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif') {
 
   composerMediaMenuTab.value = tab
 
-  if (tab === 'emoji') {
+  if (tab === 'emoji' || tab === 'photo' || tab === 'file') {
     return
   }
 
@@ -2092,6 +2105,8 @@ onBeforeUnmount(() => {
         :klipy-status-text="klipyStatusText"
         :format-klipy-category-tag="formatKlipyCategoryTag"
         :klipy-tile-style="klipyTileStyle"
+        :shared-photos="sharedContent.photos"
+        :shared-documents="sharedContent.documents"
         @update:tab="openComposerMediaTab"
         @insert-emoji="insertEmojiToDraft"
         @update:klipy-query="klipyQuery = $event"
@@ -2099,6 +2114,7 @@ onBeforeUnmount(() => {
         @select-category="selectCatalogCategory"
         @feed-scroll="handleLoopedFeedScroll($event, { looped: false, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
         @select-item="selectKlipyItem"
+        @pick-from-device="openFilePicker()"
       />
 
       <MessengerChatComposerDock
@@ -2119,7 +2135,7 @@ onBeforeUnmount(() => {
         @input="syncComposerInputHeight"
         @file-select="handleFileSelect"
         @toggle-media-menu="toggleComposerMediaMenu"
-        @open-file-picker="openFilePicker()"
+        @open-photo-picker="openMediaSheetOnPhoto"
         @primary-pointerdown="handleComposerPrimaryPointerDown"
         @primary-action="handleComposerPrimaryAction"
       />

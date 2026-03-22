@@ -1,6 +1,7 @@
 export function useMessengerConversationState() {
   const activeConversationId = useState<string | null>('messenger-active-conversation-id', () => null)
   const activeSection = useState<'chat' | 'chats' | 'contacts' | 'settings'>('messenger-active-section', () => 'chats')
+  const mediaSheetOpen = useState<boolean>('messenger-media-sheet-open', () => false)
 
   function openConversation(conversationId: string) {
     activeConversationId.value = conversationId
@@ -14,6 +15,7 @@ export function useMessengerConversationState() {
   return {
     activeConversationId,
     activeSection,
+    mediaSheetOpen,
     openConversation,
     openSection,
   }

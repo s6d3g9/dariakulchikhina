@@ -9,6 +9,7 @@ const calls = useMessengerCalls()
 const viewport = useMessengerViewport()
 const settingsModel = useMessengerSettings()
 
+const showBottomNav = computed(() => !navigation.mediaSheetOpen.value)
 const activeTitle = computed(() => sections.find(section => section.key === navigation.activeSection.value)?.shortTitle ?? 'Чаты')
 const showHero = computed(() => navigation.activeSection.value === 'settings')
 const showUnifiedBottomControls = computed(() => navigation.activeSection.value === 'chat' && !viewport.keyboardOpen.value)
@@ -91,6 +92,7 @@ async function logout() {
         'messenger-shell--chat-idle-controls': showUnifiedBottomControls,
       }"
       :data-messenger-keyboard="viewport.keyboardOpen.value ? 'open' : 'closed'"
+      :data-messenger-media-sheet="navigation.mediaSheetOpen.value ? 'open' : 'closed'"
     >
       <div class="messenger-aurora messenger-aurora--one" />
       <div class="messenger-aurora messenger-aurora--two" />
@@ -128,6 +130,7 @@ async function logout() {
       <MessengerCallOverlay />
 
       <VBottomNavigation
+        v-show="showBottomNav"
         v-model="activeSectionModel"
         class="bottom-nav bottom-nav--vuetify"
         grow

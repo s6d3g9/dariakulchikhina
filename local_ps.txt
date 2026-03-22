@@ -1,8 +1,0 @@
-CONTAINER ID   IMAGE                    COMMAND                  CREATED       STATUS                 PORTS                                                                                                NAMES
-fe190ba7b405   pgvector/pgvector:pg16   "docker-entrypoint.s…"   8 days ago    Up 8 days              0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp                                                          daria_postgres
-f13a00bf80d2   redis:7-alpine           "docker-entrypoint.s…"   2 weeks ago   Up About an hour       0.0.0.0:6380->6379/tcp, [::]:6380->6379/tcp                                                          daria_redis
-cdb0585c40fc   trade_system-backend     "./entrypoint.sh uvi…"   2 weeks ago   Up 2 weeks             0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp                                                          trade_system-backend-1
-c245a781c628   trade_system-frontend    "/docker-entrypoint.…"   2 weeks ago   Up 2 weeks             80/tcp, 0.0.0.0:8090->8080/tcp, [::]:8090->8080/tcp                                                  trade_system-frontend-1
-18245b1ce081   axllent/mailpit:latest   "/mailpit"               2 weeks ago   Up 2 weeks (healthy)   0.0.0.0:1025->1025/tcp, [::]:1025->1025/tcp, 0.0.0.0:8025->8025/tcp, [::]:8025->8025/tcp, 1110/tcp   trade_system-mailpit-1
-8a4dc34a531a   4c0c0efbd40e             "docker-entrypoint.s…"   2 weeks ago   Up 2 weeks             0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp                                                          trade_system-postgres-1
-68a952b1bc6f   nineseconds/mtg:2        "/mtg run /config.to…"   3 weeks ago   Up 3 weeks                                                                                                                  mtg

@@ -5,9 +5,81 @@ const conversations = useMessengerConversations()
 const calls = useMessengerCalls()
 const navigation = useMessengerConversationState()
 const holdActions = useMessengerHoldActions()
+const contacts = useMessengerContacts()
 const searchDraft = ref('')
 const actionError = ref('')
 const searchOpen = ref(false)
+
+// ── Папки чатов ─────────────────────────────────────────────────────────────
+type ChatFolder = { key: string; label: string; chatIds: string[] }
+const FOLDERS_LS_KEY = 'messenger-chat-folders'
+
+function loadFolders(): ChatFolder[] {
+  if (!import.meta.client) return []
+  try {
+    const raw = localStorage.getItem(FOLDERS_LS_KEY)
+    return raw ? (JSON.parse(raw) as ChatFolder[]) : []
+  } catch {
+    return []
+  }
+}
+
+const userFolders = ref<ChatFolder[]>(loadFolders())
+const activeFolderKey = ref<string>('all')
+const folderDraftName = ref('')
+const showCreateFolder = ref(false)
+const folderContextKey = ref<string | null>(null)
+
+function saveFolders() {
+  if (!import.meta.client) return
+  localStorage.setItem(FOLDERS_LS_KEY, JSON.stringify(userFolders.value))
+}
+
+function createFolder() {
+  const name = folderDraftName.value.trim()
+  if (!name) return
+  const key = `folder-${Date.now()}`
+  userFolders.value.push({ key, label: name, chatIds: [] })
+  saveFolders()
+  folderDraftName.value = ''
+  showCreateFolder.value = false
+}
+
+function confirmDeleteFolder() {
+  if (!folderContextKey.value) return
+  userFolders.value = userFolders.value.filter(f => f.key !== folderContextKey.value)
+  if (activeFolderKey.value === folderContextKey.value) activeFolderKey.value = 'all'
+  saveFolders()
+  folderContextKey.value = null
+}
+
+const filteredConversations = computed(() => {
+  if (activeFolderKey.value === 'all') return conversations.conversations.value
+  const folder = userFolders.value.find(f => f.key === activeFolderKey.value)
+  if (!folder) return conversations.conversations.value
+  return conversations.conversations.value.filter(c => folder.chatIds.includes(c.id))
+})
+
+// ── Новый чат (FAB) ──────────────────────────────────────────────────────────
+const showNewChatDialog = ref(false)
+const newChatError = ref('')
+
+watch(showNewChatDialog, async (isOpen) => {
+  if (isOpen) {
+    await contacts.refresh()
+  }
+})
+
+async function openOrCreateChat(userId: string) {
+  newChatError.value = ''
+  try {
+    await conversations.openDirectConversation(userId)
+    navigation.openSection('chat')
+    showNewChatDialog.value = false
+  } catch {
+    newChatError.value = 'Не удалось открыть диалог.'
+  }
+}
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -167,9 +239,10 @@ function formatChatPreview(chat: MessengerConversationItem) {
   <section class="section-block section-block--search-screen section-block--chats-screen" aria-label="Chats section">
     <VAlert v-if="actionError" type="error">{{ actionError }}</VAlert>
 
+    <div class="chats-list-wrap">
     <VList class="list-stack list-stack--screen-scroll chats-list chats-list--vuetify" bg-color="transparent" lines="two">
       <VCard
-        v-for="chat in conversations.conversations.value"
+        v-for="chat in filteredConversations"
         :key="chat.id"
         class="list-card list-card--action list-card--clickable list-card--chat-row list-card--vuetify"
         :class="{
@@ -241,7 +314,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
         </div>
       </VCard>
 
-      <VCard v-if="!conversations.conversations.value.length" class="list-card list-card--panel list-card--vuetify" color="surface" variant="tonal">
+      <VCard v-if="!filteredConversations.length" class="list-card list-card--panel list-card--vuetify" color="surface" variant="tonal">
         <VCardText class="list-card__body list-card__body--vuetify list-card__body--empty">
           <div class="list-card__main">
             <p class="list-card__title">Чаты пока пусты</p>
@@ -250,6 +323,45 @@ function formatChatPreview(chat: MessengerConversationItem) {
         </VCardText>
       </VCard>
     </VList>
+
+    <button
+      type="button"
+      class="chats-fab"
+      aria-label="Создать чат"
+      @click="showNewChatDialog = true"
+    >
+      <MessengerIcon name="edit" :size="20" />
+    </button>
+    </div>
+
+    <!-- Папки чатов -->
+    <div class="chats-folders-bar" role="tablist" aria-label="Папки чатов">
+      <button
+        type="button"
+        class="chats-folder-chip"
+        :class="{ 'chats-folder-chip--active': activeFolderKey === 'all' }"
+        role="tab"
+        :aria-selected="activeFolderKey === 'all'"
+        @click="activeFolderKey = 'all'"
+      >Все</button>
+      <button
+        v-for="folder in userFolders"
+        :key="folder.key"
+        type="button"
+        class="chats-folder-chip"
+        :class="{ 'chats-folder-chip--active': activeFolderKey === folder.key }"
+        role="tab"
+        :aria-selected="activeFolderKey === folder.key"
+        @click="activeFolderKey = folder.key"
+        @contextmenu.prevent="folderContextKey = folder.key"
+      >{{ folder.label }}</button>
+      <button
+        type="button"
+        class="chats-folder-chip chats-folder-chip--add"
+        aria-label="Создать папку"
+        @click="showCreateFolder = true"
+      >+</button>
+    </div>
 
     <VCard class="search-dock search-dock--bottom-dock search-dock--chats-search search-dock--vuetify" color="surface" variant="tonal">
       <VCardText class="search-dock__body">
@@ -291,5 +403,72 @@ function formatChatPreview(chat: MessengerConversationItem) {
         </div>
       </VCardText>
     </VCard>
+
+    <!-- Диалог: удаление папки (контекстное меню) -->
+    <VDialog :model-value="folderContextKey !== null" max-width="280" @update:model-value="folderContextKey = null">
+      <VCard>
+        <VCardTitle>Удалить папку?</VCardTitle>
+        <VCardText>Папка будет удалена. Чаты останутся.</VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn variant="text" @click="folderContextKey = null">Отмена</VBtn>
+          <VBtn color="error" variant="tonal" @click="confirmDeleteFolder()">Удалить</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <!-- Диалог: создание папки -->
+    <VDialog v-model="showCreateFolder" max-width="320">
+      <VCard>
+        <VCardTitle>Новая папка</VCardTitle>
+        <VCardText>
+          <VTextField
+            v-model="folderDraftName"
+            label="Название папки"
+            placeholder="Работа, Семья…"
+            autofocus
+            hide-details
+            @keydown.enter="createFolder()"
+          />
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn variant="text" @click="showCreateFolder = false">Отмена</VBtn>
+          <VBtn color="primary" variant="tonal" :disabled="!folderDraftName.trim()" @click="createFolder()">Создать</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <!-- Диалог: новый чат (FAB) -->
+    <VDialog v-model="showNewChatDialog" max-width="360">
+      <VCard>
+        <VCardTitle>Новый чат</VCardTitle>
+        <VCardText class="pa-0">
+          <VList v-if="contacts.overview.value.contacts.length" bg-color="transparent" density="comfortable">
+            <VListItem
+              v-for="contact in contacts.overview.value.contacts"
+              :key="contact.id"
+              :subtitle="`@${contact.login}`"
+              @click="openOrCreateChat(contact.id)"
+            >
+              <template #title>
+                <span>{{ contact.displayName }}</span>
+              </template>
+              <template #prepend>
+                <VAvatar color="primary" variant="tonal" size="36">
+                  {{ resolveChatAvatar(contact.displayName) }}
+                </VAvatar>
+              </template>
+            </VListItem>
+          </VList>
+          <div v-else class="pa-4 text-medium-emphasis">Нет контактов для начала диалога.</div>
+          <VAlert v-if="newChatError" type="error" class="ma-4">{{ newChatError }}</VAlert>
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn variant="text" @click="showNewChatDialog = false">Закрыть</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
   </section>
 </template>

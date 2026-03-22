@@ -1,5 +1,9 @@
 # Messenger Instructions
 
+> **M3 UI Implementation:** Полные правила построения интерфейса на Material Design 3 + Vuetify 3 описаны в [m3-ui.instructions.md](./m3-ui.instructions.md). Читать перед любой правкой UI.
+>
+> **Структура меню и навигации:** Строение нав-бара, всех секций, bottom sheet и context menu описано в [menu-navigation.instructions.md](./menu-navigation.instructions.md).
+
 ## Scope
 
 Этот файл описывает правила для нового отдельного продукта messenger внутри репозитория.
