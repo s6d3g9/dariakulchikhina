@@ -539,7 +539,7 @@ async function submitAddContact() {
             <template #title><span class="title-small">{{ invite.displayName }}</span></template>
             <template #subtitle><span class="on-surface-variant">@{{ invite.login }} · исходящая заявка</span></template>
             <template #append>
-              <VChip size="small" variant="tonal">Ожидает</VChip>
+              <VBtn size="small" color="error" variant="tonal" @click.stop="rejectInvite(invite.id)">Отменить</VBtn>
             </template>
           </VListItem>
           <div v-if="!outgoingInvites.length" class="empty-state">

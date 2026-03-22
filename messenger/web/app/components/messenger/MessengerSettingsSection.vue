@@ -172,31 +172,6 @@ function showManualInstallHelp() {
   install.noteManualInstall()
 }
 
-const submenus = computed(() => {
-  if (settingsModel.activeSection.value === 'privacy') {
-    return [
-      { key: 'visibility', title: 'Видимость' },
-      { key: 'security', title: 'Безопасность' },
-      { key: 'data', title: 'Данные' }
-    ]
-  }
-  if (settingsModel.activeSection.value === 'notifications') {
-    return [
-      { key: 'system', title: 'Системные' },
-      { key: 'chats', title: 'В чатах' },
-      { key: 'calls', title: 'Звонки' }
-    ]
-  }
-  return null
-})
-
-const activeSubmenu = ref('visibility')
-watch(() => settingsModel.activeSection.value, (newVal) => {
-  if (newVal === 'privacy') activeSubmenu.value = 'visibility'
-  else if (newVal === 'notifications') activeSubmenu.value = 'system'
-  else activeSubmenu.value = ''
-})
-
 const settingsSearch = ref('')
 const settingsSearchOpen = ref(false)
 const settingsSearchMatches = computed(() => {
@@ -226,9 +201,6 @@ function selectSettingsSection(key: string) {
     <!-- Section Head -->
     <div class="section-head">
       <span class="section-head__title title-large">Настройки</span>
-      <VBtn icon variant="text" aria-label="Выйти" @click="auth.logout()">
-        <VIcon>mdi-logout</VIcon>
-      </VBtn>
     </div>
 
     <!-- Horizontal Tab Bar -->
@@ -239,7 +211,7 @@ function selectSettingsSection(key: string) {
       color="primary"
       density="compact"
       show-arrows
-      @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices')"
+      @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account')"
     >
       <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key">
         {{ section.title }}
@@ -268,10 +240,11 @@ function selectSettingsSection(key: string) {
                 <strong>{{ formatUserId(auth.user.value?.id) }}</strong>
               </div>
             </div>
-            <VTextField v-model="settingsModel.settings.value.profile.statusLine" label="Подпись" maxlength="80" class="mt-4" />
-            <VTextarea v-model="settingsModel.settings.value.profile.bio" label="О себе" rows="4" maxlength="240" class="mt-2" />
+            <VTextField v-model="settingsModel.settings.value.profile.statusLine" variant="outlined" label="Подпись" maxlength="80" class="mt-4" />
+            <VTextarea v-model="settingsModel.settings.value.profile.bio" variant="outlined" label="О себе" rows="4" maxlength="240" class="mt-2" />
             <VSelect
               v-model="settingsModel.settings.value.profile.preferredCallMode"
+              variant="outlined"
               label="Предпочитаемый режим звонка"
               :items="preferredCallModeOptions"
               item-title="title"
@@ -294,6 +267,7 @@ function selectSettingsSection(key: string) {
           <section class="settings-grid">
             <VSelect
               v-model="settingsModel.settings.value.privacy.lastSeenVisibility"
+              variant="outlined"
               label="Кто видит время последнего входа"
               :items="lastSeenOptions"
               item-title="title"
@@ -432,6 +406,31 @@ function selectSettingsSection(key: string) {
             <VAlert v-if="permissionActionMessage || calls.permissionHelp.value" type="info" class="mt-4">
               {{ permissionActionMessage || calls.permissionHelp.value }}
             </VAlert>
+          </section>
+        </div>
+      </VWindowItem>
+
+      <!-- Account -->
+      <VWindowItem value="account">
+        <div class="settings-panel pa-4">
+          <section class="settings-grid">
+            <p class="setting-card__title">Аккаунт</p>
+            <div class="setting-facts mb-4">
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Логин</span>
+                <strong>@{{ auth.user.value?.login || 'anonymous' }}</strong>
+              </div>
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">ID</span>
+                <strong>{{ formatUserId(auth.user.value?.id) }}</strong>
+              </div>
+            </div>
+            <div class="settings-actions-row">
+              <VBtn type="button" color="error" variant="tonal" @click="auth.logout()">
+                <VIcon start>mdi-logout</VIcon>
+                Выйти из аккаунта
+              </VBtn>
+            </div>
           </section>
         </div>
       </VWindowItem>

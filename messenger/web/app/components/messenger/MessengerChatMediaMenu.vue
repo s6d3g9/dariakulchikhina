@@ -41,6 +41,31 @@ const emit = defineEmits<{
 const categoryRailEl = ref<HTMLDivElement | null>(null)
 const feedEl = ref<HTMLDivElement | null>(null)
 
+// Emoji category chips (Layer 2 per M3 spec)
+const emojiCategories = [
+  { key: 'recent', label: 'Недавние', icon: '🕐' },
+  { key: 'smileys', label: 'Смайлы', icon: '😄' },
+  { key: 'people', label: 'Люди', icon: '👋' },
+  { key: 'animals', label: 'Животные', icon: '🐾' },
+  { key: 'food', label: 'Еда', icon: '🍕' },
+  { key: 'travel', label: 'Места', icon: '✈️' },
+  { key: 'objects', label: 'Объекты', icon: '💡' },
+  { key: 'symbols', label: 'Символы', icon: '💜' },
+  { key: 'flags', label: 'Флаги', icon: '🏁' },
+]
+const activeEmojiCategory = ref('recent')
+
+// Photo/File category chips (Layer 2 per M3 spec §4.2.1)
+const fileCategoryChips = [
+  { key: 'all', label: 'Все' },
+  { key: 'photo', label: '🖼 Фото' },
+  { key: 'video', label: '🎬 Видео' },
+  { key: 'docs', label: '📄 Документы' },
+  { key: 'audio', label: '🎵 Аудио' },
+  { key: 'archives', label: '📦 Архивы' },
+]
+const activeFileCategory = ref('all')
+
 defineExpose({
   categoryRailEl,
   feedEl,
@@ -69,6 +94,20 @@ defineExpose({
           </VBtn>
         </div>
 
+        <!-- Emoji category chips (Layer 2) -->
+        <div v-if="tab === 'emoji'" class="composer-media-menu__category-rail">
+          <button
+            v-for="cat in emojiCategories"
+            :key="cat.key"
+            type="button"
+            class="composer-media-menu__category-tile"
+            :class="{ 'composer-media-menu__category-tile--active': activeEmojiCategory === cat.key }"
+            @click="activeEmojiCategory = cat.key"
+          >
+            <span class="composer-media-menu__category-label">{{ cat.icon }} {{ cat.label }}</span>
+          </button>
+        </div>
+
         <!-- Photo tab -->
         <div v-else-if="tab === 'photo'" class="composer-media-menu__photo-tab">
           <div class="composer-media-menu__upload-row">
@@ -92,6 +131,20 @@ defineExpose({
             />
           </div>
           <p v-else class="composer-media-menu__status">Фото из переписки появятся здесь</p>
+        </div>
+
+        <!-- Photo/File category chips (Layer 2) -->
+        <div v-if="tab === 'photo' || tab === 'file'" class="composer-media-menu__category-rail">
+          <button
+            v-for="cat in fileCategoryChips"
+            :key="cat.key"
+            type="button"
+            class="composer-media-menu__category-tile"
+            :class="{ 'composer-media-menu__category-tile--active': activeFileCategory === cat.key }"
+            @click="activeFileCategory = cat.key"
+          >
+            <span class="composer-media-menu__category-label">{{ cat.label }}</span>
+          </button>
         </div>
 
         <!-- File tab -->

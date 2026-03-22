@@ -64,19 +64,19 @@ async function logout() {
       :data-messenger-keyboard="viewport.keyboardOpen.value ? 'open' : 'closed'"
       :data-messenger-media-sheet="navigation.mediaSheetOpen.value ? 'open' : 'closed'"
     >
-      <!-- Активная секция -->
+      <!-- Активная секция (v-show сохраняет стейт при переключении) -->
       <div class="messenger-section-wrap">
         <MessengerChatSection
-          v-if="navigation.activeSection.value === 'chat'"
+          v-show="navigation.activeSection.value === 'chat'"
         />
         <MessengerChatsSection
-          v-else-if="navigation.activeSection.value === 'chats'"
+          v-show="navigation.activeSection.value === 'chats'"
         />
         <MessengerContactsSection
-          v-else-if="navigation.activeSection.value === 'contacts'"
+          v-show="navigation.activeSection.value === 'contacts'"
         />
         <MessengerSettingsSection
-          v-else-if="navigation.activeSection.value === 'settings'"
+          v-show="navigation.activeSection.value === 'settings'"
           @logout="logout"
         />
       </div>

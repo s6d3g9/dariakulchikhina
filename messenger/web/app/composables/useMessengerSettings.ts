@@ -1,4 +1,4 @@
-type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices'
+type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerThemeKey = 'beige' | 'gray' | 'black' | 'void'
 type MessengerStyleKey = 'liquid' | 'material'
@@ -245,6 +245,11 @@ export function useMessengerSettings() {
       key: 'devices' as const,
       title: 'Устройства',
       hint: 'Текущая сессия и этот браузер',
+    },
+    {
+      key: 'account' as const,
+      title: 'Аккаунт',
+      hint: 'Email, удаление аккаунта, выход',
     },
   ]
 
