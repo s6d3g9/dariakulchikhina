@@ -252,7 +252,7 @@ export function useMessengerSettings() {
     {
       key: 'beige' as const,
       title: 'Бежевая',
-      hint: 'Почти белая, мягкая и тёплая glass-палитра.',
+      hint: 'Тёплая светлая палитра с мягким контрастом и спокойными tonal-поверхностями.',
     },
     {
       key: 'gray' as const,
@@ -275,12 +275,12 @@ export function useMessengerSettings() {
     {
       key: 'liquid' as const,
       title: 'Liquid',
-      hint: 'Полупрозрачные liquid-поверхности, живой blur и акцентный control layer.',
+      hint: 'Полупрозрачные поверхности, живой blur и более световой слой управления.',
     },
     {
       key: 'material' as const,
       title: 'Material 3',
-      hint: 'Не liquid glass. Плотные поверхности, четкая иерархия и спокойный системный ритм.',
+      hint: 'Плотные tonal-поверхности, чёткая иерархия, мягкие индикаторы и системный ритм без стеклянных эффектов.',
     },
   ]
 

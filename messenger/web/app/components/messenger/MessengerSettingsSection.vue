@@ -23,7 +23,7 @@ const activeStyleBadge = computed(() => {
     return 'Material 3'
   }
 
-  return 'Liquid Glass'
+  return 'Liquid'
 })
 const preferredCallModeOptions = [
   { title: 'Сначала аудио', value: 'audio' },
@@ -177,19 +177,19 @@ function showManualInstallHelp() {
   <section
     class="section-block settings-shell"
     :class="{ 'settings-shell--material': settingsModel.settings.value.themes.style === 'material' }"
-    aria-label="Settings section"
+    aria-label="Раздел настроек"
   >
     <header class="section-head section-head--stacked">
       <div>
-        <p class="section-kicker">Settings</p>
+        <p class="section-kicker">Настройки</p>
         <h2>Настройки аккаунта и устройства</h2>
       </div>
       <div class="setting-pill-row">
         <VChip class="setting-pill" :color="realtime.connected.value ? 'success' : 'secondary'" size="small" variant="tonal">
-          {{ realtime.connected.value ? 'Live sync online' : realtime.connecting.value ? 'Соединяемся' : 'Offline sync' }}
+          {{ realtime.connected.value ? 'Синхронизация онлайн' : realtime.connecting.value ? 'Соединяемся' : 'Локальный режим' }}
         </VChip>
         <VChip class="setting-pill" :color="calls.supported.value ? 'success' : 'warning'" size="small" variant="tonal">
-          {{ calls.supported.value ? 'Calls ready' : 'Calls limited' }}
+          {{ calls.supported.value ? 'Звонки готовы' : 'Звонки ограничены' }}
         </VChip>
       </div>
     </header>
@@ -209,7 +209,7 @@ function showManualInstallHelp() {
           </div>
           <p class="setting-card__title">Аккаунт</p>
           <p class="setting-card__text">{{ auth.user.value?.displayName || 'Гость' }} · @{{ auth.user.value?.login || 'anonymous' }}</p>
-          <p class="setting-card__meta">Текущий режим: {{ activeStyleMeta.title }}. Liquid даёт стекло, blur и световые слои. Material даёт плотные tonal-surfaces, спокойную глубину и более строгую геометрию.</p>
+          <p class="setting-card__meta">Текущий режим: {{ activeStyleMeta.title }}. Material 3 держит плотные tonal-поверхности, спокойную иерархию и ровный системный ритм по всему messenger.</p>
         </VCardText>
       </VCard>
 
@@ -251,7 +251,7 @@ function showManualInstallHelp() {
                   <strong>{{ formatUserId(auth.user.value?.id) }}</strong>
                 </div>
               </div>
-              <p class="setting-card__meta">Базовый профиль сейчас приходит с auth backend. Ниже редактируются локальные preferences именно этого клиента.</p>
+              <p class="setting-card__meta">Базовый профиль приходит из auth backend. Ниже меняются локальные настройки именно этого клиента.</p>
             </VCardText>
           </VCard>
 
@@ -282,14 +282,14 @@ function showManualInstallHelp() {
             <VCardText class="setting-card__body">
               <p class="setting-card__title">Системный статус</p>
               <p class="setting-card__text">{{ notificationPermissionLabel }}</p>
-              <p class="setting-card__meta">Разрешение браузера управляется отдельно, но эти switches определяют поведение самого messenger.</p>
+              <p class="setting-card__meta">Разрешение браузера управляется отдельно, а эти переключатели задают поведение самого messenger.</p>
               <div class="setting-facts">
                 <div class="setting-fact-row">
-                  <span class="setting-fact-label">Notifications API</span>
+                  <span class="setting-fact-label">API уведомлений</span>
                   <strong>{{ settingsModel.browserCapabilities.value.notifications ? 'Доступен' : 'Недоступен' }}</strong>
                 </div>
                 <div class="setting-fact-row">
-                  <span class="setting-fact-label">Permission status</span>
+                  <span class="setting-fact-label">Статус разрешения</span>
                   <strong>{{ notificationPermissionStateLabel }}</strong>
                 </div>
               </div>
@@ -306,7 +306,7 @@ function showManualInstallHelp() {
               <div class="setting-toggle setting-toggle--vuetify">
                 <span class="setting-toggle__copy">
                   <span class="setting-field__label">Входящие звонки</span>
-                  <span class="setting-card__meta">Показывать banner входящего вызова поверх текущего экрана.</span>
+                  <span class="setting-card__meta">Показывать баннер входящего вызова поверх текущего экрана.</span>
                 </span>
                 <VSwitch v-model="settingsModel.settings.value.notifications.incomingCalls" color="primary" hide-details inset />
               </div>
@@ -333,7 +333,7 @@ function showManualInstallHelp() {
               </div>
               <div class="setting-toggle setting-toggle--vuetify">
                 <span class="setting-toggle__copy">
-                  <span class="setting-field__label">Desktop notifications</span>
+                  <span class="setting-field__label">Системные уведомления</span>
                   <span class="setting-card__meta">Использовать нативные системные уведомления браузера.</span>
                 </span>
                 <VSwitch v-model="settingsModel.settings.value.notifications.desktopNotifications" color="primary" hide-details inset />
@@ -347,21 +347,21 @@ function showManualInstallHelp() {
             <VCardText class="setting-card__body">
               <VSelect
                 v-model="settingsModel.settings.value.privacy.lastSeenVisibility"
-                label="Кто видит last seen"
+                label="Кто видит время последнего входа"
                 :items="lastSeenOptions"
                 item-title="title"
                 item-value="value"
               />
               <div class="setting-toggle setting-toggle--vuetify">
                 <span class="setting-toggle__copy">
-                  <span class="setting-field__label">Read receipts</span>
+                  <span class="setting-field__label">Подтверждения прочтения</span>
                   <span class="setting-card__meta">Показывать подтверждение прочтения для direct-чатов.</span>
                 </span>
                 <VSwitch v-model="settingsModel.settings.value.privacy.readReceipts" color="primary" hide-details inset />
               </div>
               <div class="setting-toggle setting-toggle--vuetify">
                 <span class="setting-toggle__copy">
-                  <span class="setting-field__label">Link previews</span>
+                  <span class="setting-field__label">Превью ссылок</span>
                   <span class="setting-card__meta">Показывать развёрнутые карточки ссылок в дальнейшем media pipeline.</span>
                 </span>
                 <VSwitch v-model="settingsModel.settings.value.privacy.linkPreviews" color="primary" hide-details inset />
@@ -379,8 +379,8 @@ function showManualInstallHelp() {
           <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
             <VCardText class="setting-card__body">
               <p class="setting-card__title">Локальная модель приватности</p>
-              <p class="setting-card__text">Этот экран уже хранит твои privacy preferences локально и готов к следующему шагу, когда появится backend sync профиля и устройств.</p>
-              <p class="setting-card__meta">Сейчас настройки влияют на клиентский UX и служат базой для будущего server-side профиля.</p>
+              <p class="setting-card__text">Этот экран уже хранит локальные настройки приватности и готов к следующему шагу, когда появится серверная синхронизация профиля и устройств.</p>
+              <p class="setting-card__meta">Сейчас параметры влияют на клиентский UX и служат основой для будущего серверного профиля.</p>
             </VCardText>
           </VCard>
         </section>
@@ -426,7 +426,7 @@ function showManualInstallHelp() {
           <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
             <VCardText class="setting-card__body">
             <p class="setting-card__title">Стиль дизайна</p>
-            <p class="setting-card__text">Есть только два режима: Liquid и Material. Они обязаны выглядеть как две разные системы: стеклянная и тектоническая. Все control, surfaces, overlays и cards привязаны к разным token-наборам.</p>
+            <p class="setting-card__text">Есть только два режима: Liquid и Material 3. Они должны читаться как две разные системы. В Material 3 все поверхности, состояния и навигация собраны вокруг плотных tonal-слоёв без стеклянных эффектов.</p>
             <div class="style-grid">
               <button
                 v-for="style in settingsModel.styleOptions"
@@ -520,40 +520,40 @@ function showManualInstallHelp() {
               <p class="setting-card__title">Готовность устройства</p>
               <div class="device-status-grid">
                 <div class="device-status-item">
-                  <span class="setting-fact-label">Realtime</span>
+                  <span class="setting-fact-label">Синхронизация</span>
                   <strong>{{ realtime.connected.value ? 'Онлайн' : realtime.connecting.value ? 'Соединяемся' : 'Оффлайн' }}</strong>
                 </div>
                 <div class="device-status-item">
-                  <span class="setting-fact-label">Calls</span>
+                  <span class="setting-fact-label">Звонки</span>
                   <strong>{{ mediaSupportLabel }}</strong>
                 </div>
                 <div class="device-status-item">
-                  <span class="setting-fact-label">Persistence</span>
+                  <span class="setting-fact-label">Хранение сессии</span>
                   <strong>{{ sessionPersistenceLabel }}</strong>
                 </div>
                 <div class="device-status-item">
-                  <span class="setting-fact-label">Permissions API</span>
+                  <span class="setting-fact-label">API разрешений</span>
                   <strong>{{ settingsModel.browserCapabilities.value.permissionsApi ? 'Доступен' : 'Ограничен' }}</strong>
                 </div>
                 <div class="device-status-item">
-                  <span class="setting-fact-label">Vibration API</span>
+                  <span class="setting-fact-label">API вибрации</span>
                   <strong>{{ settingsModel.browserCapabilities.value.vibration ? 'Поддерживается' : 'Недоступна' }}</strong>
                 </div>
               </div>
               <div class="device-status-grid">
                 <div class="device-status-item">
-                  <span class="setting-fact-label">Audio readiness</span>
+                  <span class="setting-fact-label">Готовность аудио</span>
                   <strong>{{ calls.audioReadiness.value }}</strong>
                 </div>
                 <div class="device-status-item">
-                  <span class="setting-fact-label">Video readiness</span>
+                  <span class="setting-fact-label">Готовность видео</span>
                   <strong>{{ calls.videoReadiness.value }}</strong>
                 </div>
               </div>
               <div class="setting-toggle setting-toggle--vuetify">
                 <span class="setting-toggle__copy">
                   <span class="setting-field__label">Доверять этому устройству</span>
-                  <span class="setting-card__meta">Сохранять локальные preferences и историю этой web-сессии.</span>
+                  <span class="setting-card__meta">Сохранять локальные настройки и историю этой web-сессии.</span>
                 </span>
                 <VSwitch v-model="settingsModel.settings.value.devices.trustThisDevice" color="primary" hide-details inset />
               </div>
@@ -566,7 +566,7 @@ function showManualInstallHelp() {
               </div>
               <div class="setting-toggle setting-toggle--vuetify">
                 <span class="setting-toggle__copy">
-                  <span class="setting-field__label">Reduce motion</span>
+                  <span class="setting-field__label">Уменьшить анимации</span>
                   <span class="setting-card__meta">Уменьшить анимации и смягчить переходы интерфейса.</span>
                 </span>
                 <VSwitch v-model="settingsModel.settings.value.devices.reduceMotion" color="primary" hide-details inset />
@@ -586,11 +586,11 @@ function showManualInstallHelp() {
                   <strong>{{ mediaStatus.camera }}</strong>
                 </div>
                 <div class="device-status-item">
-                  <span class="setting-fact-label">Permission mic</span>
+                  <span class="setting-fact-label">Разрешение на микрофон</span>
                   <strong>{{ microphonePermissionStateLabel }}</strong>
                 </div>
                 <div class="device-status-item">
-                  <span class="setting-fact-label">Permission camera</span>
+                  <span class="setting-fact-label">Разрешение на камеру</span>
                   <strong>{{ cameraPermissionStateLabel }}</strong>
                 </div>
               </div>
@@ -599,7 +599,7 @@ function showManualInstallHelp() {
 
           <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
             <VCardText class="setting-card__body">
-              <p class="setting-card__title">Call readiness</p>
+              <p class="setting-card__title">Готовность звонков</p>
               <p class="setting-card__text">Отдельный быстрый сценарий для звонков: сначала микрофон для аудио, затем камера для видео.</p>
               <div class="setting-facts">
                 <div class="setting-fact-row">

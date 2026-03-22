@@ -210,9 +210,9 @@ html[data-messenger-style='material'] {
   --messenger-slab-border: rgba(255, 255, 255, 0.08);
   --messenger-slab-overlay: none;
   --messenger-slab-shadow: none;
-  --messenger-scene-overlay: radial-gradient(circle at top left, rgba(125, 211, 252, 0.08), transparent 26%), radial-gradient(circle at top right, rgba(216, 180, 254, 0.06), transparent 22%);
-  --messenger-scene-grid-opacity: 0.03;
-  --messenger-aurora-opacity: 0.32;
+  --messenger-scene-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 22%);
+  --messenger-scene-grid-opacity: 0.015;
+  --messenger-aurora-opacity: 0.12;
   --messenger-control-overlay-opacity: 0.08;
   --messenger-control-hover-transform: translateY(-1px);
   --messenger-control-hover-filter: none;
@@ -222,7 +222,7 @@ html[data-messenger-style='material'] {
   --messenger-token-card-bg: color-mix(in srgb, var(--messenger-panel-strong) 72%, var(--messenger-panel));
   --messenger-token-card-border: color-mix(in srgb, var(--messenger-border) 96%, transparent);
   --messenger-token-card-shadow: none;
-  --messenger-token-card-radius: 20px;
+  --messenger-token-card-radius: 18px;
   --messenger-token-card-highlight: none;
   --messenger-token-card-highlight-opacity: 0;
   --messenger-token-card-glow: none;
@@ -233,18 +233,18 @@ html[data-messenger-style='material'] {
   --messenger-token-control-border-strong: color-mix(in srgb, var(--messenger-accent) 30%, var(--messenger-border));
   --messenger-token-control-shadow: none;
   --messenger-token-control-filter: none;
-  --messenger-token-control-radius: 20px;
+  --messenger-token-control-radius: 18px;
   --messenger-token-control-overlay: none;
   --messenger-token-control-overlay-opacity: 0;
   --messenger-token-nav-bg: rgba(26, 32, 42, 0.99);
   --messenger-token-nav-border: color-mix(in srgb, var(--messenger-border) 94%, transparent);
   --messenger-token-nav-overlay: none;
   --messenger-token-nav-shadow: none;
-  --messenger-token-nav-radius: 28px;
-  --messenger-token-nav-item-radius: 20px;
+  --messenger-token-nav-radius: 22px;
+  --messenger-token-nav-item-radius: 16px;
   --messenger-token-nav-item-active-bg: color-mix(in srgb, var(--messenger-accent) 18%, var(--messenger-panel-strong));
   --messenger-token-nav-item-active-border: color-mix(in srgb, var(--messenger-accent) 26%, var(--messenger-border-strong));
-  --messenger-token-nav-icon-active-bg: transparent;
+  --messenger-token-nav-icon-active-bg: color-mix(in srgb, var(--messenger-accent) 22%, var(--messenger-panel-strong));
   --messenger-token-nav-icon-active-shadow: none;
   --messenger-token-header-bg: rgba(29, 35, 46, 1);
   --messenger-token-header-border: color-mix(in srgb, var(--messenger-border) 92%, transparent);
@@ -254,18 +254,18 @@ html[data-messenger-style='material'] {
   --messenger-token-composer-border: color-mix(in srgb, var(--messenger-border) 96%, transparent);
   --messenger-token-composer-shadow: none;
   --messenger-token-composer-filter: none;
-  --messenger-token-composer-radius: 24px;
+  --messenger-token-composer-radius: 20px;
   --messenger-token-composer-gap: 6px;
   --messenger-token-composer-shell-padding: 7px;
   --messenger-token-overlay-bg: rgba(31, 37, 48, 0.99);
   --messenger-token-overlay-border: color-mix(in srgb, var(--messenger-border) 96%, transparent);
   --messenger-token-overlay-shadow: none;
   --messenger-token-overlay-filter: none;
-  --messenger-token-overlay-radius: 24px;
+  --messenger-token-overlay-radius: 20px;
   --messenger-token-action-rail-bg: rgba(34, 41, 53, 0.99);
   --messenger-token-action-rail-border: color-mix(in srgb, var(--messenger-border) 98%, transparent);
   --messenger-token-action-rail-shadow: none;
-  --messenger-token-action-rail-radius: 24px;
+  --messenger-token-action-rail-radius: 20px;
   --messenger-token-bubble-peer-bg: rgba(45, 51, 62, 0.96);
   --messenger-token-bubble-peer-border: color-mix(in srgb, var(--messenger-border) 92%, transparent);
   --messenger-token-bubble-own-bg: color-mix(in srgb, var(--messenger-accent) 20%, rgba(40, 47, 59, 0.98));
@@ -298,27 +298,27 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] {
   --messenger-slab-border: color-mix(in srgb, var(--messenger-border) 88%, transparent);
   --messenger-slab-overlay: none;
   --messenger-slab-shadow: none;
-  --messenger-scene-overlay: radial-gradient(circle at top left, color-mix(in srgb, var(--messenger-accent) 14%, transparent), transparent 28%), radial-gradient(circle at top right, color-mix(in srgb, var(--messenger-accent-strong) 12%, transparent), transparent 24%);
-  --messenger-scene-grid-opacity: 0.025;
+  --messenger-scene-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent 24%);
+  --messenger-scene-grid-opacity: 0.012;
   --messenger-token-control-bg: rgba(255, 255, 255, 0.98);
   --messenger-token-control-bg-hover: rgba(252, 253, 255, 1);
   --messenger-token-control-shadow: none;
-  --messenger-token-control-radius: 20px;
+  --messenger-token-control-radius: 18px;
   --messenger-token-nav-bg: rgba(251, 252, 254, 1);
   --messenger-token-nav-shadow: none;
-  --messenger-token-nav-radius: 28px;
-  --messenger-token-nav-item-radius: 20px;
+  --messenger-token-nav-radius: 22px;
+  --messenger-token-nav-item-radius: 16px;
   --messenger-token-header-bg: rgba(251, 252, 254, 1);
   --messenger-token-header-shadow: none;
   --messenger-token-composer-bg: rgba(251, 252, 254, 1);
   --messenger-token-composer-shadow: none;
-  --messenger-token-composer-radius: 24px;
+  --messenger-token-composer-radius: 20px;
   --messenger-token-overlay-bg: rgba(255, 255, 255, 1);
   --messenger-token-overlay-shadow: none;
-  --messenger-token-overlay-radius: 24px;
+  --messenger-token-overlay-radius: 20px;
   --messenger-token-action-rail-bg: rgba(251, 252, 254, 1);
   --messenger-token-action-rail-shadow: none;
-  --messenger-token-action-rail-radius: 24px;
+  --messenger-token-action-rail-radius: 20px;
   --messenger-token-bubble-peer-bg: rgba(255, 255, 255, 0.98);
   --messenger-token-bubble-peer-border: color-mix(in srgb, var(--messenger-border) 92%, transparent);
   --messenger-token-bubble-own-bg: color-mix(in srgb, var(--messenger-accent) 14%, white 86%);
@@ -414,7 +414,7 @@ html[data-messenger-style='material'] .composer-btn:not([disabled]):hover {
 }
 
 html[data-messenger-style='material'] .bottom-nav {
-  gap: 8px;
+  gap: 6px;
   padding-top: 8px;
   padding-right: 12px;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
@@ -423,8 +423,8 @@ html[data-messenger-style='material'] .bottom-nav {
 
 html[data-messenger-style='material'] .bottom-nav__item {
   border: 0 !important;
-  min-height: 52px;
-  gap: 4px;
+  min-height: 48px;
+  gap: 2px;
 }
 
 html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active {
@@ -433,23 +433,30 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active {
 }
 
 html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active .bottom-nav__icon {
-  background: transparent;
-  color: color-mix(in srgb, var(--messenger-accent) 72%, var(--messenger-text));
+  width: 36px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--messenger-token-nav-icon-active-bg);
+  color: color-mix(in srgb, var(--messenger-accent) 78%, var(--messenger-text));
 }
 
 html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active .bottom-nav__label {
-  color: var(--messenger-text);
+  color: color-mix(in srgb, var(--messenger-text) 92%, transparent);
 }
 
 html[data-messenger-style='material'] .bottom-nav .bottom-nav__item::before {
   background: transparent;
   border-color: transparent;
-  opacity: 1;
+  opacity: 0;
 }
 
 html[data-messenger-style='material'] .bottom-nav::before,
 html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::before {
-  display: block;
+  display: none;
+}
+
+html[data-messenger-style='material'] .bottom-nav .bottom-nav__item:not([disabled]):hover .bottom-nav__icon {
+  background: color-mix(in srgb, var(--messenger-accent) 10%, var(--messenger-token-control-bg));
 }
 
 html[data-messenger-style='material'] .search-dock__input--header {
@@ -538,9 +545,16 @@ html[data-messenger-style='material'] .message-bubble--own .message-bubble__edit
 }
 
 html[data-messenger-style='material'] .list-card--chat-row {
-  border-radius: 20px;
+  border-radius: 18px;
   background: var(--messenger-token-card-bg);
   backdrop-filter: none;
+}
+
+html[data-messenger-style='material'] .list-card--chat-row:hover,
+html[data-messenger-style='material'] .list-card--chat-row:focus-within {
+  border-color: color-mix(in srgb, var(--messenger-accent) 20%, var(--messenger-border));
+  background: color-mix(in srgb, var(--messenger-accent) 7%, var(--messenger-token-card-bg));
+  box-shadow: none;
 }
 
 html[data-messenger-style='material'] .list-card--chat-row .list-card__text--preview {
@@ -3526,29 +3540,30 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--v
 
 .settings-shell--material .setting-card--glass {
   border-color: color-mix(in srgb, var(--messenger-border) 88%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 92%, white 8%), color-mix(in srgb, var(--messenger-panel) 96%, transparent));
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--messenger-bg-secondary) 16%, transparent);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--messenger-panel-strong) 94%, var(--messenger-panel));
+  box-shadow: none;
 }
 
 .settings-shell--material .setting-card--summary {
   min-height: 0;
   padding: 20px;
-  border-radius: 30px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--messenger-panel-strong) 94%, white 6%), color-mix(in srgb, var(--messenger-panel) 96%, transparent));
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--messenger-accent) 8%, var(--messenger-panel-strong));
 }
 
 .settings-shell--material .settings-nav {
-  padding: 10px;
-  border-radius: 28px;
+  padding: 8px;
+  border-radius: 24px;
   border-color: color-mix(in srgb, var(--messenger-border) 86%, transparent);
-  background: color-mix(in srgb, var(--messenger-panel-strong) 88%, var(--messenger-panel));
+  background: color-mix(in srgb, var(--messenger-panel) 94%, var(--messenger-panel-strong));
   box-shadow: none;
 }
 
 .settings-shell--material .settings-nav__item {
-  min-height: 72px;
-  padding: 16px 18px;
-  border-radius: 22px;
+  min-height: 64px;
+  padding: 14px 16px;
+  border-radius: 18px;
   border-color: transparent;
   background: transparent;
   box-shadow: none;
@@ -3556,9 +3571,9 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--v
 }
 
 .settings-shell--material .settings-nav__item::before {
-  inset: 6px;
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--messenger-accent) 14%, transparent);
+  inset: 4px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--messenger-accent) 12%, transparent);
   opacity: 0;
 }
 
@@ -3571,8 +3586,8 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--v
 }
 
 .settings-shell--material .settings-nav__item--active {
-  border-color: color-mix(in srgb, var(--messenger-accent) 18%, transparent);
-  background: color-mix(in srgb, var(--messenger-accent) 16%, var(--messenger-panel-strong));
+  border-color: color-mix(in srgb, var(--messenger-accent) 14%, transparent);
+  background: color-mix(in srgb, var(--messenger-accent) 12%, var(--messenger-panel-strong));
   box-shadow: none;
 }
 
@@ -3590,40 +3605,51 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--v
 
 .settings-shell--material .settings-panel {
   padding: 14px;
-  border-radius: 30px;
+  border-radius: 24px;
   border-color: color-mix(in srgb, var(--messenger-border) 88%, transparent);
   background: color-mix(in srgb, var(--messenger-panel) 92%, var(--messenger-panel-strong));
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--messenger-bg-secondary) 18%, transparent);
+  box-shadow: none;
 }
 
 .settings-shell--material .theme-card,
 .settings-shell--material .style-card {
   min-height: 188px;
   border-color: color-mix(in srgb, var(--messenger-border) 86%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 94%, white 6%), color-mix(in srgb, var(--messenger-panel) 94%, transparent));
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--messenger-bg-secondary) 14%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--messenger-panel-strong) 94%, var(--messenger-panel));
+  box-shadow: none;
 }
 
 .settings-shell--material .theme-card:hover,
 .settings-shell--material .theme-card:focus-visible,
 .settings-shell--material .style-card:hover,
 .settings-shell--material .style-card:focus-visible {
-  transform: translateY(-1px);
-  border-color: rgba(125, 211, 252, 0.2);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 90%, white 10%), color-mix(in srgb, var(--messenger-panel) 92%, transparent));
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--messenger-bg-secondary) 16%, transparent);
+  transform: none;
+  border-color: color-mix(in srgb, var(--messenger-accent) 16%, var(--messenger-border));
+  background: color-mix(in srgb, var(--messenger-accent) 4%, var(--messenger-panel-strong));
+  box-shadow: none;
 }
 
 .settings-shell--material .theme-card--active,
 .settings-shell--material .style-card--active {
-  border-color: rgba(125, 211, 252, 0.24);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-accent) 12%, var(--messenger-panel-strong)), color-mix(in srgb, var(--messenger-panel) 94%, transparent));
+  border-color: color-mix(in srgb, var(--messenger-accent) 22%, var(--messenger-border));
+  background: color-mix(in srgb, var(--messenger-accent) 10%, var(--messenger-panel-strong));
+}
+
+.settings-shell--material .theme-card--active::after,
+.settings-shell--material .style-card--active::after {
+  display: none;
+}
+
+.settings-shell--material .theme-card--active .theme-card__preview,
+.settings-shell--material .style-card--active .style-card__preview {
+  animation: none;
 }
 
 .settings-shell--material .setting-fact-row,
 .settings-shell--material .device-status-item {
   border-color: color-mix(in srgb, var(--messenger-border) 84%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 90%, white 10%), color-mix(in srgb, var(--messenger-panel) 96%, transparent));
+  background: color-mix(in srgb, var(--messenger-panel-strong) 92%, var(--messenger-panel));
 }
 
 .settings-shell--material .setting-select,
@@ -3646,6 +3672,35 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--v
 .settings-shell--material .style-card__meta,
 .settings-shell--material .setting-fact-label {
   color: color-mix(in srgb, var(--messenger-text) 66%, transparent);
+}
+
+html[data-messenger-style='material'] .hero-block {
+  border-color: color-mix(in srgb, var(--messenger-border) 88%, transparent);
+  background: color-mix(in srgb, var(--messenger-panel-strong) 94%, var(--messenger-panel));
+  box-shadow: none;
+}
+
+html[data-messenger-style='material'] .hero-block--vuetify {
+  border-radius: 24px;
+}
+
+html[data-messenger-style='material'] .hero-kicker {
+  color: color-mix(in srgb, var(--messenger-accent) 76%, var(--messenger-text));
+}
+
+html[data-messenger-style='material'] .hero-text {
+  color: color-mix(in srgb, var(--messenger-text) 74%, transparent);
+}
+
+html[data-messenger-style='material'] .glass-pill {
+  border-color: color-mix(in srgb, var(--messenger-border) 82%, transparent);
+  background: color-mix(in srgb, var(--messenger-panel-soft) 86%, var(--messenger-panel));
+  color: color-mix(in srgb, var(--messenger-text) 74%, transparent);
+}
+
+html[data-messenger-style='material'] .hero-presence .v-chip {
+  border-color: color-mix(in srgb, var(--messenger-border) 76%, transparent);
+  background: color-mix(in srgb, var(--messenger-panel-soft) 84%, var(--messenger-panel));
 }
 
 .action-btn,

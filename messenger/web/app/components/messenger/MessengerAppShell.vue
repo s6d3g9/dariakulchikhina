@@ -14,14 +14,14 @@ const showHero = computed(() => navigation.activeSection.value === 'settings')
 const showUnifiedBottomControls = computed(() => navigation.activeSection.value === 'chat' && !viewport.keyboardOpen.value)
 const connectionStatusLabel = computed(() => {
   if (realtime.connected.value) {
-    return 'Live Sync'
+    return 'Синхронизация онлайн'
   }
 
   if (realtime.connecting.value) {
-    return 'Connecting'
+    return 'Соединяемся'
   }
 
-  return 'Offline Sync'
+  return 'Локальный режим'
 })
 const connectionStatusColor = computed(() => {
   if (realtime.connected.value) {
@@ -100,7 +100,7 @@ async function logout() {
         <VCardText class="hero-block__body">
           <div class="hero-row hero-row--vuetify">
             <div class="hero-badge-row">
-              <p class="hero-kicker">Standalone Messenger</p>
+                <p class="hero-kicker">Material 3 Messenger</p>
               <VChip class="glass-pill glass-pill--vuetify" :color="connectionStatusColor" size="small" variant="tonal">
                 {{ connectionStatusLabel }}
               </VChip>
@@ -111,7 +111,7 @@ async function logout() {
           </div>
           <h1>{{ activeTitle }}</h1>
           <p class="hero-text">
-            Отдельный material-first messenger с direct-чатами, контактами, приглашениями и живым обновлением событий.
+            Отдельный messenger с direct-чатами, контактами, приглашениями и спокойной Material 3 иерархией на всех основных экранах.
           </p>
           <div v-if="auth.user.value" class="hero-presence">
             <VChip size="small" variant="text">{{ auth.user.value.displayName }}</VChip>

@@ -11,27 +11,27 @@ export function useMessengerSections() {
   const sections: MessengerSectionItem[] = [
     {
       key: 'chat',
-      title: 'Chat',
+      title: 'Чат',
       shortTitle: 'Чат',
       description: 'Диалог с сообщениями, файлами, аудиозаписью и кнопками звонков.',
     },
     {
       key: 'chats',
-      title: 'Chats',
+      title: 'Чаты',
       shortTitle: 'Чаты',
       description: 'Лента открытых чатов с превью последнего сообщения и статусов.',
     },
     {
       key: 'contacts',
-      title: 'Contacts',
+      title: 'Контакты',
       shortTitle: 'Контакты',
       description: 'Поиск, приглашения в контакты и быстрый старт direct-диалога.',
     },
     {
       key: 'settings',
-      title: 'Settings',
+      title: 'Настройки',
       shortTitle: 'Настройки',
-      description: 'Профиль, уведомления, устройства, приватность и media permissions.',
+      description: 'Профиль, уведомления, устройства, приватность и разрешения браузера.',
     },
   ]
 
