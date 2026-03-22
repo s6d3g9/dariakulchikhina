@@ -198,22 +198,7 @@ function selectSettingsSection(key: string) {
 <template>
   <section class="section-block section-block--settings" aria-label="Раздел настроек">
 
-    <!-- Horizontal Tab Bar (no section-head per spec §3.4) -->
-    <VTabs
-      :model-value="settingsModel.activeSection.value"
-      class="section-tabs"
-      bg-color="surface-container"
-      color="primary"
-      density="compact"
-      show-arrows
-      @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account')"
-    >
-      <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key">
-        {{ section.title }}
-      </VTab>
-    </VTabs>
-
-    <!-- Tab Windows -->
+    <!-- Tab Windows (content first, TabBar at bottom) -->
     <VWindow :model-value="settingsModel.activeSection.value" class="section-list">
 
       <!-- Profile -->
@@ -430,6 +415,21 @@ function selectSettingsSection(key: string) {
         </div>
       </VWindowItem>
     </VWindow>
+
+    <!-- Horizontal Tab Bar (bottom, above search dock) -->
+    <VTabs
+      :model-value="settingsModel.activeSection.value"
+      class="section-tabs"
+      bg-color="surface-container"
+      color="primary"
+      density="compact"
+      show-arrows
+      @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account')"
+    >
+      <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key">
+        {{ section.title }}
+      </VTab>
+    </VTabs>
 
     <!-- Search Dock -->
     <div class="search-dock">

@@ -361,22 +361,7 @@ async function submitAddContact() {
     <VAlert v-if="actionError" type="error" class="ma-2">{{ actionError }}</VAlert>
     <VAlert v-else-if="actionToast" type="success" class="ma-2">{{ actionToast }}</VAlert>
 
-    <!-- Tabs (no section-head per user directive) -->
-    <div class="section-tabs-row">
-      <VTabs v-model="contactsTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
-        <VTab value="all">Все</VTab>
-        <VTab value="incoming">
-          Входящие
-          <VBadge v-if="incomingInvites.length" :content="incomingInvites.length" color="error" inline class="ml-1" />
-        </VTab>
-        <VTab value="outgoing">Исходящие</VTab>
-      </VTabs>
-      <VBtn icon variant="text" size="small" aria-label="Добавить контакт" @click="showAddContactDialog = true">
-        <VIcon>mdi-account-plus-outline</VIcon>
-      </VBtn>
-    </div>
-
-    <!-- Tab Windows -->
+    <!-- Tab Windows (content first, tabs at bottom) -->
     <VWindow v-model="contactsTab" class="section-list">
       <!-- All contacts -->
       <VWindowItem value="all">
@@ -546,6 +531,21 @@ async function submitAddContact() {
         </VList>
       </VWindowItem>
     </VWindow>
+
+    <!-- Tabs (bottom, above search dock) -->
+    <div class="section-tabs-row">
+      <VTabs v-model="contactsTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
+        <VTab value="all">Все</VTab>
+        <VTab value="incoming">
+          Входящие
+          <VBadge v-if="incomingInvites.length" :content="incomingInvites.length" color="error" inline class="ml-1" />
+        </VTab>
+        <VTab value="outgoing">Исходящие</VTab>
+      </VTabs>
+      <VBtn icon variant="text" size="small" aria-label="Добавить контакт" @click="showAddContactDialog = true">
+        <VIcon>mdi-account-plus-outline</VIcon>
+      </VBtn>
+    </div>
 
     <!-- Search Dock -->
     <div class="search-dock">
