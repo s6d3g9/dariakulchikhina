@@ -120,11 +120,17 @@
   --messenger-token-composer-shadow: 0 18px 34px rgba(0, 0, 0, 0.18);
   --messenger-token-composer-filter: blur(28px) saturate(156%);
   --messenger-token-composer-radius: 28px;
+  --messenger-token-composer-gap: 8px;
+  --messenger-token-composer-shell-padding: 8px;
   --messenger-token-overlay-bg: var(--messenger-popup-bg);
   --messenger-token-overlay-border: var(--messenger-popup-border);
   --messenger-token-overlay-shadow: var(--messenger-popup-shadow);
   --messenger-token-overlay-filter: blur(24px) saturate(150%);
   --messenger-token-overlay-radius: 24px;
+  --messenger-token-action-rail-bg: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 96%, white 4%), color-mix(in srgb, var(--messenger-panel) 92%, transparent));
+  --messenger-token-action-rail-border: color-mix(in srgb, var(--messenger-token-control-border-strong) 62%, var(--messenger-surface-border));
+  --messenger-token-action-rail-shadow: 0 16px 28px rgba(0, 0, 0, 0.2);
+  --messenger-token-action-rail-radius: 18px;
   --messenger-token-bubble-peer-bg: var(--messenger-message-peer-bg);
   --messenger-token-bubble-peer-border: var(--messenger-message-peer-border);
   --messenger-token-bubble-own-bg: var(--messenger-message-own-bg);
@@ -162,7 +168,13 @@ html[data-messenger-style='liquid'] {
   --messenger-token-nav-icon-active-bg: rgba(255, 255, 255, 0.1);
   --messenger-token-nav-icon-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 0 1px rgba(159, 215, 255, 0.14);
   --messenger-token-composer-radius: 28px;
+  --messenger-token-composer-gap: 10px;
+  --messenger-token-composer-shell-padding: 9px;
   --messenger-token-overlay-radius: 24px;
+  --messenger-token-action-rail-bg: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 94%, white 6%), color-mix(in srgb, var(--messenger-panel) 82%, transparent));
+  --messenger-token-action-rail-border: color-mix(in srgb, rgba(255, 255, 255, 0.24) 78%, var(--messenger-surface-border));
+  --messenger-token-action-rail-shadow: 0 18px 32px rgba(0, 0, 0, 0.22);
+  --messenger-token-action-rail-radius: 20px;
 }
 
 html[data-messenger-style='material'] {
@@ -235,11 +247,17 @@ html[data-messenger-style='material'] {
   --messenger-token-composer-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
   --messenger-token-composer-filter: none;
   --messenger-token-composer-radius: 12px;
+  --messenger-token-composer-gap: 6px;
+  --messenger-token-composer-shell-padding: 7px;
   --messenger-token-overlay-bg: linear-gradient(180deg, rgba(31, 37, 48, 0.99), rgba(24, 29, 39, 0.99));
   --messenger-token-overlay-border: color-mix(in srgb, var(--messenger-border) 96%, transparent);
   --messenger-token-overlay-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
   --messenger-token-overlay-filter: none;
   --messenger-token-overlay-radius: 14px;
+  --messenger-token-action-rail-bg: linear-gradient(180deg, rgba(36, 43, 56, 0.99), rgba(28, 34, 46, 0.99));
+  --messenger-token-action-rail-border: color-mix(in srgb, var(--messenger-border) 98%, transparent);
+  --messenger-token-action-rail-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  --messenger-token-action-rail-radius: 12px;
   --messenger-token-bubble-peer-bg: linear-gradient(180deg, rgba(45, 51, 62, 0.96), rgba(37, 42, 52, 0.96));
   --messenger-token-bubble-peer-border: color-mix(in srgb, var(--messenger-border) 92%, transparent);
   --messenger-token-bubble-own-bg: linear-gradient(180deg, color-mix(in srgb, var(--messenger-accent) 24%, rgba(45, 52, 63, 0.98)), color-mix(in srgb, var(--messenger-accent) 16%, rgba(37, 42, 52, 0.98)));
@@ -401,9 +419,13 @@ html[data-messenger-style='material'] .search-dock__input--header {
 
 html[data-messenger-style='material'] .search-dock--screen-header,
 html[data-messenger-style='material'] .section-head--chat-header,
-html[data-messenger-style='material'] .composer-bar--dock,
 html[data-messenger-style='material'] .section-actions--cluster {
-  background: color-mix(in srgb, var(--messenger-surface) 92%, var(--messenger-panel-strong) 8%);
+  background: var(--messenger-token-header-bg);
+  backdrop-filter: none;
+}
+
+html[data-messenger-style='material'] .composer-bar--dock {
+  background: var(--messenger-token-composer-bg);
   backdrop-filter: none;
 }
 
@@ -503,6 +525,32 @@ html[data-messenger-style='liquid'] .section-actions--cluster {
 
 html[data-messenger-style='liquid'] .section-actions--cluster {
   background: color-mix(in srgb, var(--messenger-token-header-bg) 82%, white 4%);
+}
+
+html[data-messenger-style='material'] .composer-bar--dock::before,
+html[data-messenger-style='material'] .hold-actions {
+  backdrop-filter: none;
+}
+
+html[data-messenger-style='material'] .composer-bar--dock::before {
+  display: none;
+}
+
+html[data-messenger-style='material'] .hold-actions {
+  background: var(--messenger-token-action-rail-bg);
+}
+
+html[data-messenger-style='material'] .hold-actions__icon-btn {
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+html[data-messenger-style='liquid'] .composer-bar--dock::before {
+  opacity: 0.42;
+}
+
+html[data-messenger-style='liquid'] .hold-actions__icon-btn {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
 }
 
 html[data-messenger-style='material'] .list-card--hold-open {
@@ -1064,6 +1112,17 @@ a {
   opacity: 0.94;
 }
 
+.action-btn .messenger-icon,
+.composer-btn .messenger-icon,
+.icon-btn .messenger-icon,
+.bottom-nav__icon .messenger-icon {
+  width: 18px;
+  height: 18px;
+  color: inherit;
+  opacity: 1;
+  visibility: visible;
+}
+
 .action-btn:not([disabled]):hover,
 .composer-btn:not([disabled]):hover,
 .bottom-nav__item:not([disabled]):hover,
@@ -1278,6 +1337,10 @@ a {
 
 .composer-segment--actions {
   flex: 0 0 auto;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  align-items: center;
   width: auto;
   min-width: fit-content;
   max-width: max-content;
@@ -1906,8 +1969,8 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 
 .composer-bar--dock {
   position: relative;
-  gap: 0;
-  padding: 7px 9px max(7px, env(safe-area-inset-bottom));
+  gap: var(--messenger-token-composer-gap);
+  padding: var(--messenger-token-composer-shell-padding) var(--messenger-token-composer-shell-padding) max(var(--messenger-token-composer-shell-padding), env(safe-area-inset-bottom));
   border: 1px solid var(--messenger-token-composer-border);
   border-radius: var(--messenger-token-composer-radius);
   background: var(--messenger-token-composer-bg);
@@ -3867,13 +3930,13 @@ html[data-messenger-motion='reduced'] *::after {
   flex-wrap: nowrap;
   gap: 6px;
   padding: 6px;
-  border: 1px solid color-mix(in srgb, var(--messenger-token-control-border-strong) 62%, var(--messenger-surface-border));
-  border-radius: 18px;
+  border: 1px solid var(--messenger-token-action-rail-border);
+  border-radius: var(--messenger-token-action-rail-radius);
   background:
     radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), transparent 44%),
-    linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 96%, white 4%), color-mix(in srgb, var(--messenger-panel) 92%, transparent));
+    var(--messenger-token-action-rail-bg);
   backdrop-filter: blur(24px) saturate(150%);
-  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--messenger-token-action-rail-shadow);
   animation: hold-actions-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
