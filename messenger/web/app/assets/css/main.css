@@ -7240,6 +7240,39 @@ html[data-messenger-style='minimal'] .hold-actions {
 }
 
 @media (max-width: 767px) {
+  .section-block.section-block--chats-screen,
+  .section-block.section-block--contacts-screen {
+    --screen-header-space: 116px;
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-rows: none !important;
+    gap: 8px !important;
+    min-height: 0 !important;
+    height: calc(var(--messenger-viewport-height) - var(--messenger-bottom-nav-height) - max(0px, env(safe-area-inset-bottom))) !important;
+    padding-top: var(--screen-header-space) !important;
+  }
+
+  .section-block.section-block--chats-screen .list-stack,
+  .section-block.section-block--contacts-screen .list-stack,
+  .section-block.section-block--chats-screen .auth-error,
+  .section-block.section-block--contacts-screen .auth-error {
+    padding-top: 0 !important;
+  }
+
+  .section-block.section-block--chats-screen .list-stack,
+  .section-block.section-block--contacts-screen .list-stack {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+  }
+
+  .search-dock.search-dock--screen-header {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: max(0px, var(--messenger-viewport-offset-top)) !important;
+    width: 100% !important;
+  }
+
   .section-block--search-screen {
     padding-top: 0;
   }
