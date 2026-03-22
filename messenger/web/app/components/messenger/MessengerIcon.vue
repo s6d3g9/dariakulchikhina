@@ -46,7 +46,8 @@ const props = withDefaults(defineProps<{
   size: 18,
 })
 
-const { theme } = useMessengerSettings()
+const settingsModel = useMessengerSettings()
+const theme = computed(() => settingsModel.theme?.value || settingsModel.settings.value.themes)
 
 function strokePath(d: string, strokeWidth = 1.75): IconShape {
   return {
@@ -284,7 +285,7 @@ const materialIcons: Record<MessengerIconName, IconDefinition> = {
   },
 }
 
-const iconStyle = computed(() => theme.value.style === 'material' ? 'material' : 'liquid')
+const iconStyle = computed(() => theme.value?.style === 'material' ? 'material' : 'liquid')
 const icon = computed(() => (iconStyle.value === 'material' ? materialIcons : liquidIcons)[props.name] ?? liquidIcons[props.name])
 const sizeStyle = computed(() => ({
   width: `${props.size}px`,

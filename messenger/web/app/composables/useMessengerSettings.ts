@@ -435,8 +435,13 @@ export function useMessengerSettings() {
     }
   })
 
+  const theme = computed(() => settings.value.themes)
+  const style = computed(() => settings.value.themes.style)
+
   return {
     settings,
+    theme,
+    style,
     sections,
     themeOptions,
     styleOptions,
