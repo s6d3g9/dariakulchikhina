@@ -7717,3 +7717,203 @@ html[data-messenger-style='minimal'] .hold-actions {
   overflow-y: auto;
   align-content: start;
 }
+/* M3 Full Refactoring Patch */
+
+/* 1. M3 Search Dock Fixes (Chats / Contacts) */
+[data-messenger-style="material"] .search-dock {
+  background: var(--messenger-token-surface) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+[data-messenger-style="material"] .search-dock__body {
+  padding: 8px 16px !important; /* Remove excessive padding causing "extra bar" */
+}
+[data-messenger-style="material"] .search-dock__input--header {
+  background: var(--messenger-token-surface-container-high) !important;
+  border-radius: 24px !important;
+}
+
+/* 2. Fixing the Shared Gallery specifically (Scrollbar and Layout) */
+[data-messenger-style="material"] .content-gallery {
+  padding-top: 0 !important;
+  background: var(--messenger-token-surface-container-low) !important;
+}
+[data-messenger-style="material"] .content-drawer__head-body {
+  padding: 16px !important;
+  padding-bottom: 8px !important;
+}
+[data-messenger-style="material"] .content-gallery__nav {
+  margin: 0 16px !important;
+}
+
+/* 3. Composer Bar Full M3 */
+[data-messenger-style="material"] .composer-bar--dock {
+  background: var(--messenger-token-surface-container-low) !important;
+  border-top: none !important;
+  padding: 8px 16px !important;
+}
+[data-messenger-style="material"] .composer-bar__card {
+  background: transparent !important;
+}
+[data-messenger-style="material"] .composer-bar__body {
+  padding: 0 !important;
+  gap: 8px !important;
+}
+
+/* 4. Message Bubbles M3 */
+[data-messenger-style="material"] .message-bubble__surface {
+  border-radius: 16px !important;
+  background: var(--messenger-token-surface-container) !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 8px 12px !important;
+}
+[data-messenger-style="material"] .message-bubble--own .message-bubble__surface {
+  background: var(--messenger-token-primary-container) !important;
+  color: var(--messenger-token-on-primary-container) !important;
+}
+[data-messenger-style="material"] .message-bubble__text {
+  color: inherit !important;
+}
+
+/* 5. Settings Cards / Toggles */
+[data-messenger-style="material"] .setting-card {
+  background: var(--messenger-token-surface-container-low) !important;
+  border-radius: 24px !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 12px;
+}
+[data-messenger-style="material"] .setting-card__body {
+  padding: 16px 20px !important;
+}
+[data-messenger-style="material"] .setting-toggle {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--messenger-token-surface-container-highest);
+}
+[data-messenger-style="material"] .setting-toggle:last-child {
+  border-bottom: none;
+}
+
+/* 6. Context Menu / Hold Actions M3 */
+[data-messenger-style="material"] .hold-actions {
+  background: var(--messenger-token-surface-container-high) !important;
+  border-radius: 20px !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+  padding: 8px !important;
+}
+[data-messenger-style="material"] .hold-actions__icon-btn {
+  background: transparent !important;
+  border-radius: 50% !important;
+  color: var(--messenger-token-on-surface) !important;
+}
+[data-messenger-style="material"] .hold-actions__icon-btn:hover {
+  background: var(--messenger-token-secondary-container) !important;
+}
+
+/* Profile / Chat Details Pane */
+[data-messenger-style="material"] .section-block--chat-details {
+  background: var(--messenger-token-surface) !important;
+  border-left: 1px solid var(--messenger-token-surface-container-high) !important;
+}
+/* M3 Full Refactoring Patch */
+
+/* 1. M3 Search Dock Fixes (Chats / Contacts) */
+[data-messenger-style="material"] .search-dock {
+  background: var(--messenger-token-surface) !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+[data-messenger-style="material"] .search-dock__body {
+  padding: 8px 16px !important; /* Remove excessive padding causing "extra bar" */
+}
+[data-messenger-style="material"] .search-dock__input--header {
+  background: var(--messenger-token-surface-container-high) !important;
+  border-radius: 24px !important;
+}
+
+/* 2. Fixing the Shared Gallery specifically (Scrollbar and Layout) */
+[data-messenger-style="material"] .content-gallery {
+  padding-top: 0 !important;
+  background: var(--messenger-token-surface-container-low) !important;
+}
+[data-messenger-style="material"] .content-drawer__head-body {
+  padding: 16px !important;
+  padding-bottom: 8px !important;
+}
+[data-messenger-style="material"] .content-gallery__nav {
+  margin: 0 16px !important;
+}
+
+/* 3. Composer Bar Full M3 */
+[data-messenger-style="material"] .composer-bar--dock {
+  background: var(--messenger-token-surface-container-low) !important;
+  border-top: none !important;
+  padding: 8px 16px !important;
+}
+[data-messenger-style="material"] .composer-bar__card {
+  background: transparent !important;
+}
+[data-messenger-style="material"] .composer-bar__body {
+  padding: 0 !important;
+  gap: 8px !important;
+}
+
+/* 4. Message Bubbles M3 */
+[data-messenger-style="material"] .message-bubble__surface {
+  border-radius: 16px !important;
+  background: var(--messenger-token-surface-container) !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 8px 12px !important;
+}
+[data-messenger-style="material"] .message-bubble--own .message-bubble__surface {
+  background: var(--messenger-token-primary-container) !important;
+  color: var(--messenger-token-on-primary-container) !important;
+}
+[data-messenger-style="material"] .message-bubble__text {
+  color: inherit !important;
+}
+
+/* 5. Settings Cards / Toggles */
+[data-messenger-style="material"] .setting-card {
+  background: var(--messenger-token-surface-container-low) !important;
+  border-radius: 24px !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 12px;
+}
+[data-messenger-style="material"] .setting-card__body {
+  padding: 16px 20px !important;
+}
+[data-messenger-style="material"] .setting-toggle {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--messenger-token-surface-container-highest);
+}
+[data-messenger-style="material"] .setting-toggle:last-child {
+  border-bottom: none;
+}
+
+/* 6. Context Menu / Hold Actions M3 */
+[data-messenger-style="material"] .hold-actions {
+  background: var(--messenger-token-surface-container-high) !important;
+  border-radius: 20px !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+  padding: 8px !important;
+}
+[data-messenger-style="material"] .hold-actions__icon-btn {
+  background: transparent !important;
+  border-radius: 50% !important;
+  color: var(--messenger-token-on-surface) !important;
+}
+[data-messenger-style="material"] .hold-actions__icon-btn:hover {
+  background: var(--messenger-token-secondary-container) !important;
+}
+
+/* Profile / Chat Details Pane */
+[data-messenger-style="material"] .section-block--chat-details {
+  background: var(--messenger-token-surface) !important;
+  border-left: 1px solid var(--messenger-token-surface-container-high) !important;
+}
