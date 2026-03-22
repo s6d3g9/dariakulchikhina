@@ -285,8 +285,193 @@ const materialIcons: Record<MessengerIconName, IconDefinition> = {
   },
 }
 
+const liquidIconOverrides: Partial<Record<MessengerIconName, IconDefinition>> = {
+  chat: {
+    shapes: [
+      strokePath('M6.25 7.6A1.85 1.85 0 0 1 8.1 5.75h7.8a1.85 1.85 0 0 1 1.85 1.85v5.3a1.85 1.85 0 0 1-1.85 1.85H10.2l-3.95 3v-3H8.1a1.85 1.85 0 0 1-1.85-1.85V7.6', 1.7),
+    ],
+  },
+  chats: {
+    shapes: [
+      strokePath('M4.85 7.85A1.6 1.6 0 0 1 6.45 6.25h7.2a1.6 1.6 0 0 1 1.6 1.6v4.3a1.6 1.6 0 0 1-1.6 1.6H8.9l-2.45 1.95v-1.95', 1.7),
+      strokePath('M9.15 10.1A1.6 1.6 0 0 1 10.75 8.5h6.8a1.6 1.6 0 0 1 1.6 1.6v4.05a1.6 1.6 0 0 1-1.6 1.6H13.2l-2.05 2v-2', 1.7),
+    ],
+  },
+  contacts: {
+    shapes: [
+      strokeCircle(8.4, 9, 2.55, 1.7),
+      strokeCircle(15.9, 9.9, 2.15, 1.7),
+      strokePath('M4.9 17.45c.58-2.2 2.3-3.65 4.05-3.65 1.76 0 3.48 1.45 4.06 3.65', 1.7),
+      strokePath('M13.2 17.45c.5-1.55 1.72-2.58 3.08-2.58 1.35 0 2.57 1.03 3.07 2.58', 1.7),
+    ],
+  },
+  copy: {
+    shapes: [
+      strokeRect(8.2, 7.3, 8.85, 10.6, 2.4, 1.7),
+      strokeRect(5.75, 4.9, 8.85, 10.6, 2.4, 1.7),
+    ],
+  },
+  delete: {
+    shapes: [
+      strokePath('M8.25 7.8h7.5', 1.75),
+      strokePath('M9.7 7.8V6.55c0-.7.57-1.27 1.28-1.27h2.04c.7 0 1.28.57 1.28 1.27V7.8', 1.75),
+      strokePath('M7.55 8.15 8.1 17a1.55 1.55 0 0 0 1.55 1.45h4.7A1.55 1.55 0 0 0 15.9 17l.55-8.85', 1.75),
+    ],
+  },
+  forward: {
+    shapes: [
+      strokePath('M8.25 6.5 15 12l-6.75 5.5', 1.75),
+      strokePath('M6 12h9', 1.75),
+    ],
+  },
+  logout: {
+    shapes: [
+      strokePath('M10.2 7.2V6.25A1.5 1.5 0 0 1 11.7 4.75h5.1a1.5 1.5 0 0 1 1.5 1.5v11.5a1.5 1.5 0 0 1-1.5 1.5h-5.1a1.5 1.5 0 0 1-1.5-1.5v-.95', 1.75),
+      strokePath('M13.75 12H5.8', 1.75),
+      strokePath('M8.6 8.95 5.55 12l3.05 3.05', 1.75),
+    ],
+  },
+  microphone: {
+    shapes: [
+      strokeRect(9.05, 4.85, 5.9, 8.55, 2.95, 1.7),
+      strokePath('M6.8 11.9a5.2 5.2 0 0 0 10.4 0', 1.7),
+      strokePath('M12 17v2.35', 1.7),
+      strokePath('M9.2 19.35h5.6', 1.7),
+    ],
+  },
+  paperclip: {
+    shapes: [
+      strokePath('M8.8 12.85 15.55 6.1a3.1 3.1 0 1 1 4.38 4.39l-7.7 7.69a4.85 4.85 0 1 1-6.86-6.85l6.45-6.45', 1.75),
+    ],
+  },
+  phone: {
+    shapes: [
+      strokePath('M7.35 5.55h2.15c.28 0 .53.17.64.43l.96 2.54a.8.8 0 0 1-.18.83l-1.45 1.47a11.9 11.9 0 0 0 4.7 4.71l1.48-1.45a.8.8 0 0 1 .83-.18l2.54.96c.26.1.43.35.43.64v2.15a1.8 1.8 0 0 1-1.96 1.79c-7.23-.49-12.97-6.24-13.46-13.46a1.8 1.8 0 0 1 1.82-1.96Z', 1.75),
+    ],
+  },
+  settings: {
+    shapes: [
+      strokePath('M12 5.2 13 6.7l1.85.28.48 1.78 1.7.82-.33 1.83 1.2 1.39-1.2 1.4.33 1.83-1.7.82-.48 1.78-1.85.28L12 18.8l-.98.5-1.85-.28-.48-1.78-1.7-.82.33-1.83-1.2-1.4 1.2-1.39-.33-1.83 1.7-.82.48-1.78 1.85-.28.98-.5Z', 1.7),
+      strokeCircle(12, 12, 2.3, 1.7),
+    ],
+  },
+  smile: {
+    shapes: [
+      strokeCircle(12, 12, 8.1, 1.7),
+      strokePath('M9.25 10.2h.02M14.73 10.2h.02', 2.2),
+      strokePath('M8.65 14.3c.82 1.15 1.96 1.75 3.35 1.75 1.4 0 2.53-.6 3.35-1.75', 1.7),
+    ],
+  },
+  video: {
+    shapes: [
+      strokeRect(4.95, 6.55, 11.35, 10.9, 3, 1.75),
+      strokePath('M16.3 10 19.85 7.95c.56-.32 1.25.08 1.25.72v6.66c0 .64-.69 1.04-1.25.72l-3.55-2.05', 1.75),
+    ],
+  },
+}
+
+const materialIconOverrides: Partial<Record<MessengerIconName, IconDefinition>> = {
+  chat: {
+    shapes: [
+      strokePath('M7.1 6.1h9.8a2.35 2.35 0 0 1 2.35 2.35v4.95a2.35 2.35 0 0 1-2.35 2.35h-5.05l-3.95 2.85v-2.85H7.1a2.35 2.35 0 0 1-2.35-2.35V8.45A2.35 2.35 0 0 1 7.1 6.1', 2),
+    ],
+  },
+  chats: {
+    shapes: [
+      strokePath('M5.1 7.45a2.1 2.1 0 0 1 2.1-2.1h6.95a2.1 2.1 0 0 1 2.1 2.1v3.95a2.1 2.1 0 0 1-2.1 2.1H9.55l-2.35 1.75V13.5H7.2a2.1 2.1 0 0 1-2.1-2.1V7.45', 2),
+      strokePath('M9.15 10.2a2.1 2.1 0 0 1 2.1-2.1h5.55a2.1 2.1 0 0 1 2.1 2.1v3.75a2.1 2.1 0 0 1-2.1 2.1h-3.45l-1.95 1.85v-1.85h-.15a2.1 2.1 0 0 1-2.1-2.1V10.2', 2),
+    ],
+  },
+  comment: {
+    shapes: [
+      strokePath('M7.1 6.1h9.8a2.35 2.35 0 0 1 2.35 2.35v4.95a2.35 2.35 0 0 1-2.35 2.35h-5.05l-3.95 2.85v-2.85H7.1a2.35 2.35 0 0 1-2.35-2.35V8.45A2.35 2.35 0 0 1 7.1 6.1', 2),
+    ],
+  },
+  contacts: {
+    shapes: [
+      strokeCircle(8.9, 8.95, 2.4, 2),
+      strokeCircle(15.95, 10.05, 2.05, 2),
+      strokePath('M4.95 17.3c.5-2.18 2.22-3.63 3.95-3.63 1.74 0 3.46 1.45 3.96 3.63', 2),
+      strokePath('M13.45 17.3c.42-1.65 1.72-2.72 3.06-2.72 1.35 0 2.65 1.07 3.07 2.72', 2),
+    ],
+  },
+  copy: {
+    shapes: [
+      strokeRect(8.3, 7.1, 8.7, 10.5, 2.6, 2),
+      strokeRect(5.95, 4.75, 8.7, 10.5, 2.6, 2),
+    ],
+  },
+  delete: {
+    shapes: [
+      strokePath('M8.1 7.95h7.8', 2),
+      strokePath('M9.55 7.95V6.7c0-.8.65-1.45 1.45-1.45H13c.8 0 1.45.65 1.45 1.45v1.25', 2),
+      strokePath('M7.55 8.15 8.1 17a1.65 1.65 0 0 0 1.65 1.55h4.5A1.65 1.65 0 0 0 15.9 17l.55-8.85', 2),
+    ],
+  },
+  forward: {
+    shapes: [
+      strokePath('M9.4 6.4 16.1 12l-6.7 5.6', 2),
+      strokePath('M6.15 12h9.75', 2),
+    ],
+  },
+  logout: {
+    shapes: [
+      strokePath('M9.9 7.25V6.2c0-.84.68-1.52 1.52-1.52h5.12c.84 0 1.51.68 1.51 1.52v11.6c0 .84-.67 1.52-1.51 1.52h-5.12c-.84 0-1.52-.68-1.52-1.52v-1.05', 2),
+      strokePath('M13.6 12H5.8', 2),
+      strokePath('M8.65 8.95 5.55 12l3.1 3.05', 2),
+    ],
+  },
+  microphone: {
+    shapes: [
+      strokeRect(9.1, 4.65, 5.8, 8.95, 2.9, 2),
+      strokePath('M6.8 11.85a5.2 5.2 0 0 0 10.4 0', 2),
+      strokePath('M12 17.15v2.1', 2),
+      strokePath('M9.25 19.25h5.5', 2),
+    ],
+  },
+  paperclip: {
+    shapes: [
+      strokePath('M8.95 13.15 15.35 6.75a3.05 3.05 0 1 1 4.31 4.31l-7.8 7.8a4.9 4.9 0 1 1-6.93-6.93l6.55-6.55', 2),
+    ],
+  },
+  phone: {
+    shapes: [
+      strokePath('M7.55 5.55h1.9c.3 0 .56.18.67.47l.95 2.48a.82.82 0 0 1-.18.86l-1.4 1.43a11.52 11.52 0 0 0 4.72 4.72l1.43-1.4a.82.82 0 0 1 .86-.18l2.48.95c.29.11.47.37.47.67v1.9a1.83 1.83 0 0 1-1.99 1.82c-7.16-.47-12.86-6.17-13.33-13.33a1.83 1.83 0 0 1 1.82-1.99Z', 2),
+    ],
+  },
+  settings: {
+    shapes: [
+      strokePath('M12 5.15 13 6.75l1.95.32.52 1.88 1.8.88-.34 1.96 1.25 1.42-1.25 1.42.34 1.96-1.8.88-.52 1.88-1.95.32L12 18.85l-1 .55-1.95-.32-.52-1.88-1.8-.88.34-1.96-1.25-1.42 1.25-1.42-.34-1.96 1.8-.88.52-1.88 1.95-.32 1-.55Z', 2),
+      strokeCircle(12, 12, 2.25, 2),
+    ],
+  },
+  smile: {
+    shapes: [
+      strokeCircle(12, 12, 7.9, 2),
+      strokePath('M9.15 10.05h.02M14.85 10.05h.02', 2.4),
+      strokePath('M8.65 14.25c.88 1.18 2.05 1.78 3.35 1.78 1.3 0 2.47-.6 3.35-1.78', 2),
+    ],
+  },
+  video: {
+    shapes: [
+      strokeRect(5.15, 6.3, 11.1, 10.8, 3.2, 2),
+      strokePath('M16.25 9.75 20 7.65c.58-.33 1.3.08 1.3.74v7.22c0 .66-.72 1.07-1.3.74l-3.75-2.1', 2),
+    ],
+  },
+}
+
+const resolvedLiquidIcons: Record<MessengerIconName, IconDefinition> = {
+  ...liquidIcons,
+  ...liquidIconOverrides,
+}
+
+const resolvedMaterialIcons: Record<MessengerIconName, IconDefinition> = {
+  ...materialIcons,
+  ...materialIconOverrides,
+}
+
 const iconStyle = computed(() => theme.value?.style === 'material' ? 'material' : 'liquid')
-const icon = computed(() => (iconStyle.value === 'material' ? materialIcons : liquidIcons)[props.name] ?? liquidIcons[props.name])
+const icon = computed(() => (iconStyle.value === 'material' ? resolvedMaterialIcons : resolvedLiquidIcons)[props.name] ?? resolvedLiquidIcons[props.name])
 const sizeStyle = computed(() => ({
   width: `${props.size}px`,
   height: `${props.size}px`,
