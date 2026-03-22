@@ -553,6 +553,18 @@ html[data-messenger-style='material'] .list-card--chat-row .list-card__meta--tim
   background: color-mix(in srgb, var(--messenger-token-control-bg) 90%, var(--messenger-accent) 10%);
 }
 
+html[data-messenger-theme='beige'][data-messenger-style='material'] .list-card__title,
+html[data-messenger-theme='gray'][data-messenger-style='material'] .list-card__title {
+  color: color-mix(in srgb, var(--messenger-text) 94%, transparent);
+}
+
+html[data-messenger-theme='beige'][data-messenger-style='material'] .list-card__text,
+html[data-messenger-theme='beige'][data-messenger-style='material'] .list-card__meta,
+html[data-messenger-theme='gray'][data-messenger-style='material'] .list-card__text,
+html[data-messenger-theme='gray'][data-messenger-style='material'] .list-card__meta {
+  color: color-mix(in srgb, var(--messenger-text) 76%, transparent);
+}
+
 html[data-messenger-style='material'] .chat-user-name--audio-live {
   border-color: color-mix(in srgb, rgba(239, 68, 68, 0.28) 72%, var(--messenger-token-control-border));
   background: color-mix(in srgb, rgba(239, 68, 68, 0.14) 70%, var(--messenger-token-control-bg));
