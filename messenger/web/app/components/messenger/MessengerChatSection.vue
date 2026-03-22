@@ -239,6 +239,15 @@ interface SharedAssetItem {
   previewUrl?: string
 }
 
+function isStickerSharedAsset(message: MessengerConversationMessage) {
+  const attachment = message.attachment
+  if (!attachment || !attachment.mimeType.startsWith('image/')) {
+    return false
+  }
+
+  return attachment.klipy?.kind === 'sticker' || attachment.mimeType === 'image/webp'
+}
+
 function resolveAttachmentTitle(attachment: { name: string, mimeType: string }) {
   if (attachment.mimeType.startsWith('audio/')) {
     return 'Аудиосообщение'
@@ -288,6 +297,7 @@ const showSecretIntro = computed(() => {
 
 const sharedContent = computed(() => {
   const photos: SharedAssetItem[] = []
+  const stickers: SharedAssetItem[] = []
   const documents: SharedAssetItem[] = []
   const links: SharedAssetItem[] = []
 
@@ -302,7 +312,11 @@ const sharedContent = computed(() => {
       }
 
       if (entry.attachment.mimeType.startsWith('image/')) {
-        photos.push(item)
+        if (isStickerSharedAsset(entry)) {
+          stickers.push(item)
+        } else {
+          photos.push(item)
+        }
       } else {
         documents.push(item)
       }
@@ -320,6 +334,7 @@ const sharedContent = computed(() => {
 
   return {
     photos,
+    stickers,
     documents,
     links,
   }
@@ -648,7 +663,7 @@ const sharedKlipyEnabled = computed(() => Boolean(
   && !conversations.activeConversation.value.secret,
 ))
 const currentKlipyCategories = computed(() => activeKlipyKind.value ? klipy.getCategories(activeKlipyKind.value) : [])
-const showKlipyCategories = computed(() => !klipyQuery.value.trim() && !selectedCatalogCategory.value && currentKlipyCategories.value.length > 0)
+const showKlipyCategories = computed(() => !klipyQuery.value.trim() && currentKlipyCategories.value.length > 0)
 const loopedKlipyCategories = computed(() => buildLoopedFeed(currentKlipyCategories.value))
 const activeCatalogCategoryLabel = computed(() => {
   if (!selectedCatalogCategory.value) {
@@ -2140,6 +2155,7 @@ onBeforeUnmount(() => {
             :title="`Фотографии ${conversations.activeConversation.value.peerDisplayName}`"
             hint="Лента фотографий из переписки. Листайте фото прямо внутри чата."
             :photos="sharedContent.photos"
+            :stickers="[]"
             :documents="[]"
             :links="[]"
             initial-section="photos"
@@ -2153,8 +2169,9 @@ onBeforeUnmount(() => {
           <MessengerSharedGallery
             v-if="detailsOpen && conversations.activeConversation.value"
             :title="`Галерея ${conversations.activeConversation.value.peerDisplayName}`"
-            hint="Фото, файлы, ссылки и ключи собраны по разделам. Фото идут в порядке отправки в чате."
+            hint="Фото, стикеры, файлы, ссылки и ключи собраны по разделам. Фото идут отдельно от стикеров."
             :photos="sharedContent.photos"
+            :stickers="sharedContent.stickers"
             :documents="sharedContent.documents"
             :links="sharedContent.links"
             :security="{ summary: securitySummaryText, items: securityItems, pending: securitySummaryPending, updatedAt: securitySummaryUpdatedAt }"

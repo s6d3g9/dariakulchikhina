@@ -1225,6 +1225,7 @@ export async function createMessengerServer() {
         filename: originalName || file.filename,
         mimeType: originalMimeType || file.mimetype,
         buffer: Buffer.concat(chunks),
+        directory: klipy?.kind === 'sticker' ? 'stickers' : undefined,
       })
 
       const message = await addAttachmentMessageToConversation(parsedParams.data.conversationId, session.user, {

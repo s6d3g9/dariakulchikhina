@@ -101,6 +101,14 @@ function isStickerAttachment() {
   return attachment.klipy?.kind === 'sticker' || attachment.mimeType === 'image/webp'
 }
 
+function handleAttachmentPreviewClick() {
+  if (isStickerAttachment()) {
+    return
+  }
+
+  emit('open-photo', props.entry.id)
+}
+
 function handleEditInput(event: Event) {
   const target = event.target as HTMLTextAreaElement
   emit('edit-draft', target.value)
@@ -241,10 +249,13 @@ function handleBubbleClick(event: MouseEvent) {
       <img
         v-if="entry.attachment.mimeType.startsWith('image/')"
         class="attachment-preview"
-        :class="{ 'attachment-preview--sticker': isStickerAttachment() }"
+        :class="{
+          'attachment-preview--sticker': isStickerAttachment(),
+          'attachment-preview--interactive': !isStickerAttachment(),
+        }"
         :src="entry.attachment.resolvedUrl"
         :alt="entry.attachment.name"
-        @click.stop="emit('open-photo', entry.id)"
+        @click.stop="handleAttachmentPreviewClick"
       >
     </template>
     <div v-else-if="editingMessageId === entry.id" class="message-bubble__editor">

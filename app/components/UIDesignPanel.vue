@@ -1577,240 +1577,260 @@
               </div>
 
               <!-- ═══════════════════════ АРХИТЕКТУРА ДИЗАЙНА ═══════════════════════ -->
-              <div v-show="isTabVisible('arch')" class="dp-page dp-page--cols">
-                <div class="dp-col">
-                  <div class="dp-col-label">Пространство</div>
-                  <!-- Density -->
-                  <div class="dp-field">
-                    <label class="dp-label">плотность <span class="dp-val">{{ tokens.archDensity }}</span></label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archDensities" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': tokens.archDensity === opt.id }"
-                        @click="set('archDensity', opt.id)"
-                      >{{ opt.label }}</button>
+              <div v-show="isTabVisible('arch')" class="dp-page dp-page-stack">
+                <div class="dp-arch-layout">
+                  <div class="dp-arch-col">
+                    <div class="dp-col-label">Пространство</div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">плотность <span class="dp-val">{{ tokens.archDensity }}</span></label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archDensities" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': tokens.archDensity === opt.id }"
+                          @click="set('archDensity', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                      <div class="dp-field-hint">отступы секций и расстояние между блоками</div>
                     </div>
-                    <div class="dp-field-hint">управляет отступами секций и расстоянием между элементами</div>
-                  </div>
 
-                  <!-- Heading Tracking -->
-                  <div class="dp-field">
-                    <label class="dp-label">межбуквенный трекинг заголовков <span class="dp-val">{{ ((tokens.archHeadingTracking ?? -1) * 0.01).toFixed(2) }}em</span></label>
-                    <input type="range" min="-5" max="30" step="1" :value="tokens.archHeadingTracking ?? -1" class="dp-range" @input="onRange('archHeadingTracking', $event)">
-                    <div class="dp-field-hint">отрицательный — сжатие, высокий — editorial / архитектурный стиль</div>
-                  </div>
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">регистр заголовков</label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archHeadingCases" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': tokens.archHeadingCase === opt.id }"
+                          @click="set('archHeadingCase', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                    </div>
 
-                  <!-- Heading Case -->
-                  <div class="dp-field">
-                    <label class="dp-label">регистр заголовков</label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archHeadingCases" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': tokens.archHeadingCase === opt.id }"
-                        @click="set('archHeadingCase', opt.id)"
-                      >{{ opt.label }}</button>
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">разделители секций</label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archDividers" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': tokens.archDivider === opt.id }"
+                          @click="set('archDivider', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                    </div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">стиль секций страницы</label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archSectionStyles" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': tokens.archSectionStyle === opt.id }"
+                          @click="set('archSectionStyle', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
                     </div>
                   </div>
 
-                  <!-- Divider -->
-                  <div class="dp-field">
-                    <label class="dp-label">разделители секций</label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archDividers" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': tokens.archDivider === opt.id }"
-                        @click="set('archDivider', opt.id)"
-                      >{{ opt.label }}</button>
+                  <div class="dp-arch-col">
+                    <div class="dp-col-label">Каркас</div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">стиль навигации <span class="dp-val">{{ tokens.archNavStyle || 'full' }}</span></label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archNavStyles" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': (tokens.archNavStyle || 'full') === opt.id }"
+                          @click="set('archNavStyle', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                    </div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">хром карточек <span class="dp-val">{{ tokens.archCardChrome || 'visible' }}</span></label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archCardChromes" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': (tokens.archCardChrome || 'visible') === opt.id }"
+                          @click="set('archCardChrome', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                      <div class="dp-field-hint">видимый, тонкий или призрачный контур карточек</div>
+                    </div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">масштаб героя <span class="dp-val">{{ tokens.archHeroScale || 'normal' }}</span></label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archHeroScales" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': (tokens.archHeroScale || 'normal') === opt.id }"
+                          @click="set('archHeroScale', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
                     </div>
                   </div>
 
-                  <!-- Vertical Rhythm -->
-                  <div class="dp-field">
-                    <label class="dp-label">вертикальный ритм <span class="dp-val">×{{ (tokens.archVerticalRhythm ?? 1).toFixed(1) }}</span></label>
-                    <input type="range" min="0.3" max="3.0" step="0.1" :value="tokens.archVerticalRhythm ?? 1" class="dp-range" @input="onRange('archVerticalRhythm', $event)">
-                    <div class="dp-field-hint">множитель вертикальных отступов между секциями (0.3 — сжато, 3.0 — кинематограф)</div>
+                  <div class="dp-arch-col">
+                    <div class="dp-col-label">Эффекты</div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">появление контента <span class="dp-val">{{ tokens.archContentReveal || 'none' }}</span></label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archContentReveals" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': (tokens.archContentReveal || 'none') === opt.id }"
+                          @click="set('archContentReveal', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                      <div class="dp-field-hint">способ появления блоков и секций</div>
+                    </div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">появление текста <span class="dp-val">{{ tokens.archTextReveal || 'none' }}</span></label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archTextReveals" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': (tokens.archTextReveal || 'none') === opt.id }"
+                          @click="set('archTextReveal', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                      <div class="dp-field-hint">анимация заголовков и текстовых связок</div>
+                    </div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">эффект наведения на карточку</label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in cardHoverAnims" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': tokens.cardHoverAnim === opt.id }"
+                          @click="set('cardHoverAnim', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                    </div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">анимация ссылок</label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archLinkAnims" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': tokens.archLinkAnim === opt.id }"
+                          @click="set('archLinkAnim', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="dp-arch-col">
+                    <div class="dp-col-label">Переходы</div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">пресеты переходов</label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="preset in archTransitionPresets"
+                          :key="`arch-transition-${preset.id}`"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': tokens.archPageEnter === preset.tokens.archPageEnter && (tokens.pageTransitDuration ?? 280) === preset.tokens.pageTransitDuration }"
+                          @click="applyArchitectureTransitionPreset(preset.id)"
+                        >{{ preset.label }}</button>
+                      </div>
+                      <div class="dp-field-hint">готовые пары эффекта входа и длительности</div>
+                    </div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">переход между страницами</label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in archPageEnters" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': tokens.archPageEnter === opt.id }"
+                          @click="set('archPageEnter', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                    </div>
+
+                    <div class="dp-arch-setting">
+                      <label class="dp-label">режим просмотра страницы <span class="dp-label-val">{{ tokens.contentViewMode || 'scroll' }}</span></label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in contentViewModes" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': (tokens.contentViewMode || 'scroll') === opt.id }"
+                          @click="set('contentViewMode', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                      <div class="dp-field-hint">режим движения страницы и способ листания контента</div>
+                    </div>
+
+                    <div v-if="(tokens.contentViewMode || 'scroll') === 'wipe'" class="dp-arch-setting">
+                      <label class="dp-label">переход между карточками <span class="dp-val">{{ tokens.wipeTransition ?? 'slide' }}</span></label>
+                      <div class="dp-arch-chips dp-arch-chips--matrix">
+                        <button
+                          v-for="opt in wipeTransitions" :key="opt.id"
+                          type="button"
+                          class="dp-arch-chip"
+                          :class="{ 'dp-arch-chip--active': (tokens.wipeTransition || 'slide') === opt.id }"
+                          @click="set('wipeTransition', opt.id)"
+                        >{{ opt.label }}</button>
+                      </div>
+                      <div class="dp-field-hint">вариант анимации перелистывания карточек внутри wipe</div>
+                    </div>
                   </div>
                 </div>
 
-                <div class="dp-col">
-                  <div class="dp-col-label">Хром и масштаб</div>
+                <div class="dp-arch-detail-grid">
+                  <div class="dp-arch-detail-card">
+                    <div class="dp-col-label">Точная настройка</div>
 
-                  <!-- Nav Style -->
-                  <div class="dp-field">
-                    <label class="dp-label">стиль навигации <span class="dp-val">{{ tokens.archNavStyle || 'full' }}</span></label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archNavStyles" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': (tokens.archNavStyle || 'full') === opt.id }"
-                        @click="set('archNavStyle', opt.id)"
-                      >{{ opt.label }}</button>
+                    <div class="dp-field dp-field--mt">
+                      <label class="dp-label">межбуквенный трекинг заголовков <span class="dp-val">{{ ((tokens.archHeadingTracking ?? -1) * 0.01).toFixed(2) }}em</span></label>
+                      <input type="range" min="-5" max="30" step="1" :value="tokens.archHeadingTracking ?? -1" class="dp-range" @input="onRange('archHeadingTracking', $event)">
+                      <div class="dp-field-hint">отрицательный — сжатие, высокий — editorial / архитектурный стиль</div>
                     </div>
-                    <div class="dp-field-hint">полный — видимый хром, минимальный — прозрачный, скрытый — только иконки</div>
-                  </div>
 
-                  <!-- Card Chrome -->
-                  <div class="dp-field">
-                    <label class="dp-label">хром карточек <span class="dp-val">{{ tokens.archCardChrome || 'visible' }}</span></label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archCardChromes" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': (tokens.archCardChrome || 'visible') === opt.id }"
-                        @click="set('archCardChrome', opt.id)"
-                      >{{ opt.label }}</button>
-                    </div>
-                    <div class="dp-field-hint">видимый — тени+рамки, тонкий — минимальные, призрак — контент без обёртки</div>
-                  </div>
-
-                  <!-- Hero Scale -->
-                  <div class="dp-field">
-                    <label class="dp-label">масштаб героя <span class="dp-val">{{ tokens.archHeroScale || 'normal' }}</span></label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archHeroScales" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': (tokens.archHeroScale || 'normal') === opt.id }"
-                        @click="set('archHeroScale', opt.id)"
-                      >{{ opt.label }}</button>
-                    </div>
-                    <div class="dp-field-hint">компактный — минимальный заголовок, кинематограф — огромный</div>
-                  </div>
-
-                  <!-- Content Reveal -->
-                  <div class="dp-field">
-                    <label class="dp-label">появление контента <span class="dp-val">{{ tokens.archContentReveal || 'none' }}</span></label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archContentReveals" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': (tokens.archContentReveal || 'none') === opt.id }"
-                        @click="set('archContentReveal', opt.id)"
-                      >{{ opt.label }}</button>
-                    </div>
-                    <div class="dp-field-hint">плавный подъём — секции всплывают снизу, размытие — выходят из блюра (Minale+Mann-стиль)</div>
-                  </div>
-
-                  <!-- Text Reveal -->
-                  <div class="dp-field">
-                    <label class="dp-label">появление текста <span class="dp-val">{{ tokens.archTextReveal || 'none' }}</span></label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archTextReveals" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': (tokens.archTextReveal || 'none') === opt.id }"
-                        @click="set('archTextReveal', opt.id)"
-                      >{{ opt.label }}</button>
-                    </div>
-                    <div class="dp-field-hint">обрезка — текст выезжает слева, из размытия — заголовки конденсируются из блюра (Minale+Mann), побуквенно — буквы собираются</div>
-                  </div>
-
-                  <div class="dp-col-label" style="margin-top:12px">Поведение</div>
-
-                  <!-- Card hover -->
-                  <div class="dp-field">
-                    <label class="dp-label">эффект наведения на карточку</label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in cardHoverAnims" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': tokens.cardHoverAnim === opt.id }"
-                        @click="set('cardHoverAnim', opt.id)"
-                      >{{ opt.label }}</button>
-                    </div>
-                  </div>
-
-                  <!-- Link anim -->
-                  <div class="dp-field">
-                    <label class="dp-label">анимация ссылок</label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archLinkAnims" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': tokens.archLinkAnim === opt.id }"
-                        @click="set('archLinkAnim', opt.id)"
-                      >{{ opt.label }}</button>
-                    </div>
-                  </div>
-
-                  <!-- Page enter -->
-                  <div class="dp-field">
-                    <label class="dp-label">пресеты переходов</label>
-                    <div class="dp-card-presets-grid">
-                      <button
-                        v-for="preset in archTransitionPresets"
-                        :key="`arch-transition-${preset.id}`"
-                        type="button"
-                        class="dp-card-preset"
-                        :class="{ 'dp-card-preset--active': tokens.archPageEnter === preset.tokens.archPageEnter && (tokens.pageTransitDuration ?? 280) === preset.tokens.pageTransitDuration }"
-                        @click="applyArchitectureTransitionPreset(preset.id)"
-                      >
-                        <span class="dp-card-preset-preview" :class="`dp-card-preset-preview--${preset.id}`">
-                          <span class="dp-card-preset-preview-line dp-card-preset-preview-line--lg" />
-                          <span class="dp-card-preset-preview-line" />
-                          <span class="dp-card-preset-preview-line dp-card-preset-preview-line--sm" />
-                        </span>
-                        <span class="dp-card-preset-name">{{ preset.label }}</span>
-                        <span class="dp-card-preset-desc">{{ preset.description }}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="dp-field">
-                    <label class="dp-label">переход между страницами</label>
-                    <div class="dp-arch-chips dp-arch-chips--wrap">
-                      <button
-                        v-for="opt in archPageEnters" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': tokens.archPageEnter === opt.id }"
-                        @click="set('archPageEnter', opt.id)"
-                      >{{ opt.label }}</button>
-                    </div>
-                  </div>
-
-                  <!-- Page transition speed -->
-                  <div class="dp-field">
-                    <label class="dp-label">длительность перехода <span class="dp-label-val">{{ formatTransitionDuration(tokens.pageTransitDuration ?? 280) }}</span></label>
-                    <input
-                      type="range" min="0" max="10000" step="50"
-                      :value="tokens.pageTransitDuration ?? 280"
-                      @input="set('pageTransitDuration', Number(($event.target as HTMLInputElement).value))"
-                      class="dp-range"
-                    />
-                    <div class="dp-range-hints"><span>0 сек</span><span>10 сек</span></div>
-                  </div>
-
-                  <div class="dp-field">
-                    <label class="dp-label">режим просмотра страницы <span class="dp-label-val">{{ tokens.contentViewMode || 'scroll' }}</span></label>
-                    <div class="dp-arch-chips dp-arch-chips--wrap">
-                      <button
-                        v-for="opt in contentViewModes" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': (tokens.contentViewMode || 'scroll') === opt.id }"
-                        @click="set('contentViewMode', opt.id)"
-                      >{{ opt.label }}</button>
-                    </div>
-                    <div class="dp-field-hint">scroll — как сейчас, экраны — листание по размеру окна, поток — после конца материала открывает следующий пункт текущего меню, wipe — фиксированное окно с перелистыванием частей контента через вайп.</div>
-                  </div>
-
-                  <!-- ── Wipe mode settings ── -->
-                  <template v-if="(tokens.contentViewMode || 'scroll') === 'wipe'">
                     <div class="dp-field">
+                      <label class="dp-label">вертикальный ритм <span class="dp-val">×{{ (tokens.archVerticalRhythm ?? 1).toFixed(1) }}</span></label>
+                      <input type="range" min="0.3" max="3.0" step="0.1" :value="tokens.archVerticalRhythm ?? 1" class="dp-range" @input="onRange('archVerticalRhythm', $event)">
+                      <div class="dp-field-hint">0.3 — сжато, 3.0 — кинематографичный ритм секций</div>
+                    </div>
+
+                    <div class="dp-field">
+                      <label class="dp-label">длительность перехода <span class="dp-label-val">{{ formatTransitionDuration(tokens.pageTransitDuration ?? 280) }}</span></label>
+                      <input
+                        type="range" min="0" max="10000" step="50"
+                        :value="tokens.pageTransitDuration ?? 280"
+                        @input="set('pageTransitDuration', Number(($event.target as HTMLInputElement).value))"
+                        class="dp-range"
+                      />
+                      <div class="dp-range-hints"><span>0 сек</span><span>10 сек</span></div>
+                    </div>
+                  </div>
+
+                  <div v-if="(tokens.contentViewMode || 'scroll') === 'wipe'" class="dp-arch-detail-card">
+                    <div class="dp-col-label">Геометрия wipe</div>
+
+                    <div class="dp-field dp-field--mt">
                       <label class="dp-label">отступ сверху <span class="dp-label-val">{{ tokens.wipeTopInset ?? 48 }}px</span></label>
                       <input
                         type="range" min="12" max="120" step="2"
@@ -1853,8 +1873,12 @@
                       />
                       <div class="dp-range-hints"><span>0</span><span>48</span></div>
                     </div>
+                  </div>
 
-                    <div class="dp-field">
+                  <div v-if="(tokens.contentViewMode || 'scroll') === 'wipe'" class="dp-arch-detail-card">
+                    <div class="dp-col-label">Карточка wipe</div>
+
+                    <div class="dp-field dp-field--mt">
                       <label class="dp-label">радиус карточки <span class="dp-label-val">{{ tokens.wipeCardRadius ?? 14 }}px</span></label>
                       <input
                         type="range" min="0" max="32" step="1"
@@ -1898,44 +1922,17 @@
                       <div class="dp-range-hints"><span>30%</span><span>100%</span></div>
                       <div class="dp-field-hint">меньше — меньше контента на карточке, больше карточек</div>
                     </div>
-
-                    <div class="dp-field">
-                      <label class="dp-label">переход между карточками <span class="dp-label-val">{{ tokens.wipeTransition ?? 'slide' }}</span></label>
-                      <div class="dp-arch-chips">
-                        <button
-                          v-for="opt in wipeTransitions" :key="opt.id"
-                          type="button"
-                          class="dp-arch-chip"
-                          :class="{ 'dp-arch-chip--active': (tokens.wipeTransition || 'slide') === opt.id }"
-                          @click="set('wipeTransition', opt.id)"
-                        >{{ opt.label }}</button>
-                      </div>
-                      <div class="dp-field-hint">slide — шторка, fade — затухание, curtain — занавес, blur — размытие</div>
-                    </div>
-                  </template>
-
-                  <!-- Section style -->
-                  <div class="dp-field">
-                    <label class="dp-label">стиль секций страницы</label>
-                    <div class="dp-arch-chips">
-                      <button
-                        v-for="opt in archSectionStyles" :key="opt.id"
-                        type="button"
-                        class="dp-arch-chip"
-                        :class="{ 'dp-arch-chip--active': tokens.archSectionStyle === opt.id }"
-                        @click="set('archSectionStyle', opt.id)"
-                      >{{ opt.label }}</button>
-                    </div>
                   </div>
 
-                  <!-- Preview -->
-                  <div class="dp-field">
-                    <div class="dp-col-label" style="margin-bottom:8px">Превью трекинга</div>
-                    <div class="dp-arch-preview-heading" :style="{ letterSpacing: ((tokens.archHeadingTracking ?? -1) * 0.01).toFixed(3) + 'em', textTransform: tokens.archHeadingCase === 'none' ? undefined : tokens.archHeadingCase }">
-                      Архитектура пространства
-                    </div>
-                    <div class="dp-arch-preview-heading dp-arch-preview-heading--sm" :style="{ letterSpacing: ((tokens.archHeadingTracking ?? -1) * 0.01).toFixed(3) + 'em', textTransform: tokens.archHeadingCase === 'none' ? undefined : tokens.archHeadingCase }">
-                      Design&nbsp;Architecture
+                  <div class="dp-arch-detail-card">
+                    <div class="dp-col-label">Превью трекинга</div>
+                    <div class="dp-field dp-field--mt">
+                      <div class="dp-arch-preview-heading" :style="{ letterSpacing: ((tokens.archHeadingTracking ?? -1) * 0.01).toFixed(3) + 'em', textTransform: tokens.archHeadingCase === 'none' ? undefined : tokens.archHeadingCase }">
+                        Архитектура пространства
+                      </div>
+                      <div class="dp-arch-preview-heading dp-arch-preview-heading--sm" :style="{ letterSpacing: ((tokens.archHeadingTracking ?? -1) * 0.01).toFixed(3) + 'em', textTransform: tokens.archHeadingCase === 'none' ? undefined : tokens.archHeadingCase }">
+                        Design&nbsp;Architecture
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -5287,6 +5284,38 @@ onBeforeUnmount(() => {
   gap: 4px;
   margin-top: 4px;
 }
+.dp-arch-layout {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.dp-arch-col {
+  min-width: 0;
+}
+.dp-arch-setting {
+  padding: 0 0 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(0,0,0,.05);
+}
+.dp-arch-setting:last-child {
+  margin-bottom: 0;
+}
+.dp-arch-chips--matrix {
+  margin-top: 6px;
+}
+.dp-arch-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.dp-arch-detail-card {
+  min-width: 0;
+}
+:global(html.dark) .dp-arch-setting {
+  border-bottom-color: rgba(255,255,255,.05);
+}
 .dp-arch-chips--wrap { flex-wrap: wrap; max-height: none; }
 .dp-arch-chip {
   padding: 3px 9px;
@@ -5321,6 +5350,18 @@ onBeforeUnmount(() => {
   font-weight: 400;
   opacity: .6;
   margin-bottom: 0;
+}
+@media (max-width: 1360px) {
+  .dp-arch-layout,
+  .dp-arch-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .dp-arch-layout,
+  .dp-arch-detail-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .dp-menu-generator-actions {
   display: flex;

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { MessengerConversationItem } from '../../composables/useMessengerConversations'
+
 const conversations = useMessengerConversations()
 const calls = useMessengerCalls()
 const navigation = useMessengerConversationState()
@@ -128,6 +130,37 @@ function formatConversationTimestamp(value: string) {
     month: '2-digit',
   })
 }
+
+function resolveChatAvatar(name: string) {
+  const normalized = name.trim()
+
+  if (!normalized) {
+    return '??'
+  }
+
+  return normalized
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase() || '')
+    .join('')
+}
+
+function formatChatPreview(chat: MessengerConversationItem) {
+  if (!chat.lastMessage) {
+    return 'Сообщений пока нет'
+  }
+
+  if (chat.policy.hideListPreview) {
+    return 'Новые сообщения'
+  }
+
+  const body = chat.lastMessage.body.trim()
+  if (!body) {
+    return chat.lastMessage.own ? 'Вы: сообщение' : 'Сообщение'
+  }
+
+  return chat.lastMessage.own ? `Вы: ${body}` : body
+}
 </script>
 
 <template>
@@ -185,16 +218,19 @@ function formatConversationTimestamp(value: string) {
         @touchmove="holdActions.cancelHold()"
         @contextmenu.prevent="holdActions.open(chat.id)"
       >
+        <span class="chat-row-avatar" aria-hidden="true">
+          <span class="chat-avatar chat-avatar--list">{{ resolveChatAvatar(chat.peerDisplayName) }}</span>
+        </span>
         <div class="list-card__main">
           <div class="list-card__row list-card__row--chat-top">
             <p class="list-card__title">
               {{ chat.peerDisplayName }}
               <span v-if="chat.secret" class="chat-secret-badge">Secret</span>
             </p>
+            <p class="list-card__meta list-card__meta--timestamp">{{ formatConversationTimestamp(chat.updatedAt) }}</p>
           </div>
           <div class="list-card__row list-card__row--chat-footer">
-            <p class="list-card__text list-card__text--preview">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</p>
-            <p class="list-card__meta list-card__meta--timestamp">{{ formatConversationTimestamp(chat.updatedAt) }}</p>
+            <p class="list-card__text list-card__text--preview">{{ formatChatPreview(chat) }}</p>
           </div>
         </div>
         <div v-if="holdActions.activeItemId.value === chat.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>

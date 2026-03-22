@@ -17,21 +17,40 @@ function sanitizeFileName(input: string) {
   return basename(input).replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'file'
 }
 
-export async function storeUploadedMedia(input: { filename: string; mimeType: string; buffer: Buffer }) {
-  await mkdir(MESSENGER_UPLOADS_ROOT, { recursive: true })
+function sanitizeDirectoryName(input?: string) {
+  if (!input) {
+    return ''
+  }
+
+  return input
+    .split('/')
+    .map(part => part.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, ''))
+    .filter(Boolean)
+    .join('/')
+}
+
+export async function storeUploadedMedia(input: { filename: string; mimeType: string; buffer: Buffer; directory?: string }) {
+  const safeDirectory = sanitizeDirectoryName(input.directory)
+  const targetRoot = safeDirectory
+    ? resolve(MESSENGER_UPLOADS_ROOT, safeDirectory)
+    : MESSENGER_UPLOADS_ROOT
+
+  await mkdir(targetRoot, { recursive: true })
 
   const safeBase = sanitizeFileName(input.filename)
   const extension = extname(safeBase)
   const stem = extension ? safeBase.slice(0, -extension.length) : safeBase
   const storedName = `${stem}-${randomUUID()}${extension}`
-  const filePath = resolve(MESSENGER_UPLOADS_ROOT, storedName)
+  const filePath = resolve(targetRoot, storedName)
 
   await writeFile(filePath, input.buffer)
+
+  const relativePath = safeDirectory ? `${safeDirectory}/${storedName}` : storedName
 
   return {
     name: safeBase,
     mimeType: input.mimeType || 'application/octet-stream',
     size: input.buffer.byteLength,
-    url: `/uploads/${storedName}`,
+    url: `/uploads/${relativePath}`,
   } satisfies StoredMediaFile
 }

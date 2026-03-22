@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type GallerySectionKey = 'photos' | 'documents' | 'links' | 'keys'
+type GallerySectionKey = 'photos' | 'stickers' | 'documents' | 'links' | 'keys'
 
 interface GalleryItem {
   id: string
@@ -22,6 +22,7 @@ const props = defineProps<{
   title: string
   hint: string
   photos: GalleryItem[]
+  stickers: GalleryItem[]
   documents: GalleryItem[]
   links: GalleryItem[]
   security?: {
@@ -49,7 +50,35 @@ const formattedSecurityUpdatedAt = computed(() => {
   return new Date(props.security.updatedAt).toLocaleString('ru-RU')
 })
 
-const activeSection = ref<GallerySectionKey>(props.initialSection || 'photos')
+function resolveDefaultSection(): GallerySectionKey {
+  if (props.initialSection) {
+    return props.initialSection
+  }
+
+  if (props.photos.length) {
+    return 'photos'
+  }
+
+  if (props.stickers.length) {
+    return 'stickers'
+  }
+
+  if (props.documents.length) {
+    return 'documents'
+  }
+
+  if (props.links.length) {
+    return 'links'
+  }
+
+  if (props.security?.items.length) {
+    return 'keys'
+  }
+
+  return 'photos'
+}
+
+const activeSection = ref<GallerySectionKey>(resolveDefaultSection())
 const activePhotoId = ref<string | null>(props.initialPhotoId || props.photos[0]?.id || null)
 
 const sections = computed(() => {
@@ -70,6 +99,12 @@ const sections = computed(() => {
       title: 'Фото',
       emptyLabel: 'Пока нет фотографий.',
       items: props.photos,
+    },
+    {
+      key: 'stickers' as const,
+      title: 'Стикеры',
+      emptyLabel: 'Пока нет стикеров.',
+      items: props.stickers,
     },
     {
       key: 'documents' as const,
@@ -93,8 +128,6 @@ const sections = computed(() => {
 })
 
 const activeSectionData = computed(() => sections.value.find(section => section.key === activeSection.value) ?? sections.value[0] ?? null)
-const activePhotoIndex = computed(() => props.photos.findIndex(item => item.id === activePhotoId.value))
-const activePhoto = computed(() => props.photos.find(item => item.id === activePhotoId.value) ?? props.photos[0] ?? null)
 
 watch(() => props.initialSection, (nextSection) => {
   if (nextSection) {
@@ -142,15 +175,6 @@ function openPhoto(photoId: string) {
   activeSection.value = 'photos'
   activePhotoId.value = photoId
 }
-
-function movePhoto(direction: 1 | -1) {
-  if (!props.photos.length) {
-    return
-  }
-
-  const nextIndex = Math.min(props.photos.length - 1, Math.max(0, activePhotoIndex.value + direction))
-  activePhotoId.value = props.photos[nextIndex]?.id || activePhotoId.value
-}
 </script>
 
 <template>
@@ -184,28 +208,38 @@ function movePhoto(direction: 1 | -1) {
     <div class="content-gallery__viewport">
       <Transition name="gallery-panel" mode="out-in">
         <section v-if="activeSectionData" :key="activeSectionData.key" class="content-gallery__panel content-gallery__panel--active">
-          <div v-if="activeSectionData.key === 'photos' && activeSectionData.items.length" class="photo-strip-shell">
-            <div v-if="activePhoto" class="photo-strip-stage">
-              <button type="button" class="photo-strip-nav" :disabled="activePhotoIndex <= 0" @click="movePhoto(-1)">‹</button>
-              <img :src="activePhoto.previewUrl || activePhoto.href" :alt="activePhoto.title" class="photo-strip-stage__image">
-              <button type="button" class="photo-strip-nav" :disabled="activePhotoIndex >= props.photos.length - 1" @click="movePhoto(1)">›</button>
-            </div>
-            <div class="photo-strip-rail" aria-label="Лента фотографий">
+          <div v-if="activeSectionData.key === 'photos' && activeSectionData.items.length" class="content-grid content-grid--photos-gallery" aria-label="Лента фотографий">
               <button
                 v-for="item in activeSectionData.items"
                 :key="item.id"
                 type="button"
-                class="photo-strip-thumb"
-                :class="{ 'photo-strip-thumb--active': item.id === activePhotoId }"
+                class="content-card content-card--photo content-card--photo-gallery"
+                :class="{ 'content-card--photo-active': item.id === activePhotoId }"
                 @click="openPhoto(item.id)"
               >
                 <img
                   :src="item.previewUrl || item.href"
                   :alt="item.title"
-                  class="photo-strip-thumb__image"
+                  class="content-card__image"
                 >
+                <span class="content-card__title">{{ item.title }}</span>
+                <span class="content-card__meta">{{ item.meta }}</span>
               </button>
-            </div>
+          </div>
+          <div v-else-if="activeSectionData.key === 'stickers' && activeSectionData.items.length" class="content-grid content-grid--photos-gallery" aria-label="Лента стикеров">
+            <article
+              v-for="item in activeSectionData.items"
+              :key="item.id"
+              class="content-card content-card--photo content-card--photo-gallery content-card--sticker-gallery"
+            >
+              <img
+                :src="item.previewUrl || item.href"
+                :alt="item.title"
+                class="content-card__image content-card__image--sticker"
+              >
+              <span class="content-card__title">{{ item.title }}</span>
+              <span class="content-card__meta">{{ item.meta }}</span>
+            </article>
           </div>
           <div v-else-if="activeSectionData.key === 'documents' && activeSectionData.items.length" class="file-strip-shell">
             <div class="file-strip-rail" aria-label="Лента файлов">
