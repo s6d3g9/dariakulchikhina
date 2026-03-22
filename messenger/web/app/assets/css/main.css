@@ -1164,6 +1164,10 @@ a {
   margin: 0;
 }
 
+.list-card__title {
+  color: var(--messenger-text);
+}
+
 .section-head h2 {
   margin: 6px 0 0;
   font-size: 24px;
