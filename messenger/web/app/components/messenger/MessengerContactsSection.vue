@@ -384,7 +384,7 @@ async function submitAddContact() {
       <!-- All contacts -->
       <VWindowItem value="all">
     <VList bg-color="transparent" lines="two">
-      <VCard
+      <VListItem
         v-for="contact in contacts.overview.value.contacts"
         :key="contact.id"
         class="chat-row"
