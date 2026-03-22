@@ -184,7 +184,7 @@ function openPhoto(photoId: string) {
 <template>
   <section class="content-drawer content-drawer--dock content-gallery" aria-label="Shared content gallery">
     <VCard class="content-drawer__head content-drawer__head--gallery content-drawer__head--gallery-vuetify" color="surface" variant="tonal">
-      <VCardText class="content-drawer__head-body" style="padding-bottom: 0;">
+      <VCardText class="content-drawer__head-body" style="">
         <div style="flex: 1;"></div>
         <VBtn type="button" icon="mdi-close" variant="text" aria-label="Закрыть галерею" @click="emit('close')" />
       </VCardText>

@@ -7443,10 +7443,16 @@ html[data-messenger-style='minimal'] .hold-actions {
 }
 
 .composer-media-menu__search-field {
+  order: 3;
   flex-shrink: 0;
 }
 
+.composer-media-menu__category-rail-wrap {
+  order: 2;
+}
+
 .composer-media-menu__feed-wrap {
+  order: 1;
   flex: 1;
   min-height: 0; /* allows independent scrolling */
   overflow-y: auto;
@@ -7488,4 +7494,150 @@ html[data-messenger-style='minimal'] .hold-actions {
 .overlay-rise-leave-to {
   opacity: 0;
   transform: translateY(30px) scale(0.95);
+}
+[data-messenger-style="material"] .content-drawer--dock {
+  background: var(--messenger-token-surface-container-low);
+  border-radius: 28px 28px 0 0;
+  border: none;
+  box-shadow: 0px -4px 16px rgba(0,0,0,0.1);
+  padding-top: 16px;
+}
+[data-messenger-style="material"] .content-gallery__nav {
+  margin-top: 0;
+  border-bottom: 1px solid var(--messenger-token-surface-container-high);
+}
+[data-messenger-style="material"] .content-drawer__head-body {
+  padding: 0 16px;
+  min-height: 48px;
+}
+
+/* Material 3 Settings Rework */
+[data-messenger-style="material"] .settings-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: calc(var(--messenger-viewport-height) - 80px);
+  overflow: hidden;
+}
+
+[data-messenger-style="material"] .settings-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1;
+  min-height: 0;
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+[data-messenger-style="material"] .settings-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--messenger-token-surface);
+}
+
+[data-messenger-style="material"] .settings-nav {
+  position: relative;
+  border-radius: 0 !important;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.05) !important;
+  background: var(--messenger-token-surface-container-high) !important;
+  border: none !important;
+  padding: 12px 16px !important;
+  top: auto !important;
+}
+
+[data-messenger-style="material"] .settings-nav__m3-track {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  scrollbar-width: none; /* Firefox */
+  scroll-snap-type: x mandatory;
+}
+[data-messenger-style="material"] .settings-nav__m3-track::-webkit-scrollbar {
+  display: none;
+}
+
+[data-messenger-style="material"] .settings-nav__m3-chip {
+  flex: 0 0 auto;
+  padding: 0 16px;
+  height: 36px;
+  border-radius: 18px;
+  background: var(--messenger-token-surface-container-highest);
+  color: var(--messenger-token-on-surface);
+  font-family: var(--messenger-token-font-family);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  display: grid;
+  place-items: center;
+  scroll-snap-align: start;
+  transition: all 0.2s ease;
+}
+
+[data-messenger-style="material"] .settings-nav__m3-chip--active {
+  background: var(--messenger-token-primary);
+  color: var(--messenger-token-on-primary);
+}
+
+/* Hide header/summary if we want a clean panel layout, or keep it inside scroll area */
+[data-messenger-style="material"] .section-head--stacked {
+  padding: 16px;
+}
+
+[data-messenger-style="material"] .setting-card--summary {
+  display: none; /* Hide summary in M3, free up space */
+}
+
+[data-messenger-style="material"] .settings-nav {
+  order: 10; /* Move horizontal scrollbar to bottom */
+  margin-top: auto;
+}
+
+[data-messenger-style="material"] .settings-panel {
+  order: 1; /* Before nav */
+  padding-bottom: 24px;
+}
+
+[data-messenger-style="material"] .settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[data-messenger-style="material"] .settings-nav__m3-track--sub {
+  position: absolute;
+  top: -48px;
+  left: 0;
+  right: 0;
+  padding: 8px 16px;
+  background: var(--messenger-token-surface-container-low);
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+  border-radius: 20px 20px 0 0;
+  z-index: 10;
+}
+
+[data-messenger-style="material"] .settings-nav__m3-chip--sub {
+  height: 32px;
+  border-radius: 16px;
+  font-size: 13px;
+  background: transparent;
+  border: 1px solid var(--messenger-token-outline);
+}
+
+[data-messenger-style="material"] .settings-nav__m3-chip--sub.settings-nav__m3-chip--active {
+  background: var(--messenger-token-secondary-container);
+  color: var(--messenger-token-on-secondary-container);
+  border-color: transparent;
+}
+
+/* Submenu animation */
+.m3-submenu-rise-enter-active,
+.m3-submenu-rise-leave-active {
+  transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
+}
+.m3-submenu-rise-enter-from,
+.m3-submenu-rise-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }

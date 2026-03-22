@@ -171,6 +171,58 @@ async function installMessengerApp() {
 function showManualInstallHelp() {
   install.noteManualInstall()
 }
+
+const submenus = computed(() => {
+  if (settingsModel.activeSection.value === 'privacy') {
+    return [
+      { key: 'visibility', title: 'Видимость' },
+      { key: 'security', title: 'Безопасность' },
+      { key: 'data', title: 'Данные' }
+    ]
+  }
+  if (settingsModel.activeSection.value === 'notifications') {
+    return [
+      { key: 'system', title: 'Системные' },
+      { key: 'chats', title: 'В чатах' },
+      { key: 'calls', title: 'Звонки' }
+    ]
+  }
+  return null
+})
+
+const activeSubmenu = ref('visibility')
+watch(() => settingsModel.activeSection.value, (newVal) => {
+  if (newVal === 'privacy') activeSubmenu.value = 'visibility'
+  else if (newVal === 'notifications') activeSubmenu.value = 'system'
+  else activeSubmenu.value = ''
+})
+
+
+const submenus = computed(() => {
+  if (settingsModel.activeSection.value === 'privacy') {
+    return [
+      { key: 'visibility', title: 'Видимость' },
+      { key: 'security', title: 'Безопасность' },
+      { key: 'data', title: 'Данные' }
+    ]
+  }
+  if (settingsModel.activeSection.value === 'notifications') {
+    return [
+      { key: 'system', title: 'Системные' },
+      { key: 'chats', title: 'В чатах' },
+      { key: 'calls', title: 'Звонки' }
+    ]
+  }
+  return null
+})
+
+const activeSubmenu = ref('visibility')
+watch(() => settingsModel.activeSection.value, (newVal) => {
+  if (newVal === 'privacy') activeSubmenu.value = 'visibility'
+  else if (newVal === 'notifications') activeSubmenu.value = 'system'
+  else activeSubmenu.value = ''
+})
+
 </script>
 
 <template>
@@ -213,7 +265,52 @@ function showManualInstallHelp() {
         </VCardText>
       </VCard>
 
-      <aside class="settings-nav settings-nav--vuetify" aria-label="Меню настроек">
+      <aside v-if="settingsModel.settings.value.themes.style === 'material'" class="settings-nav" aria-label="Меню настроек">
+        
+        <Transition name="m3-submenu-rise">
+          <div v-if="submenus" class="settings-nav__m3-track settings-nav__m3-track--sub">
+            <button
+              v-for="sub in submenus"
+              :key="sub.key"
+              type="button"
+              class="settings-nav__m3-chip settings-nav__m3-chip--sub"
+              :class="{ 'settings-nav__m3-chip--active': activeSubmenu === sub.key }"
+              @click="activeSubmenu = sub.key"
+            >
+              {{ sub.title }}
+            </button>
+          </div>
+        </Transition>
+        
+        <Transition name="m3-submenu-rise">
+          <div v-if="submenus" class="settings-nav__m3-track settings-nav__m3-track--sub">
+            <button
+              v-for="sub in submenus"
+              :key="sub.key"
+              type="button"
+              class="settings-nav__m3-chip settings-nav__m3-chip--sub"
+              :class="{ 'settings-nav__m3-chip--active': activeSubmenu === sub.key }"
+              @click="activeSubmenu = sub.key"
+            >
+              {{ sub.title }}
+            </button>
+          </div>
+        </Transition>
+        <div class="settings-nav__m3-track">
+          <button
+            v-for="section in settingsModel.sections"
+            :key="section.key"
+            type="button"
+            class="settings-nav__m3-chip"
+            :class="{ 'settings-nav__m3-chip--active': settingsModel.activeSection.value === section.key }"
+            @click="settingsModel.openSection(section.key)"
+          >
+            {{ section.title }}
+          </button>
+        </div>
+      </aside>
+
+      <aside v-else class="settings-nav settings-nav--vuetify" aria-label="Меню настроек">
         <VList class="settings-nav__list" bg-color="transparent" density="comfortable" nav>
           <VListItem
             v-for="section in settingsModel.sections"
