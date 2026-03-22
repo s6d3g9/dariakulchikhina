@@ -518,8 +518,8 @@ const resolvedMaterialIcons: Record<MessengerIconName, IconDefinition> = {
   ...materialIconOverrides,
 }
 
-const iconStyle = computed(() => theme.value?.style === 'material' ? 'material' : 'liquid')
-const icon = computed(() => (iconStyle.value === 'material' ? resolvedMaterialIcons : resolvedLiquidIcons)[props.name] ?? resolvedLiquidIcons[props.name])
+const iconStyle = computed(() => 'material')
+const icon = computed(() => resolvedMaterialIcons[props.name] || resolvedMaterialIcons['chat'])
 const sizeStyle = computed(() => ({
   width: `${props.size}px`,
   height: `${props.size}px`,

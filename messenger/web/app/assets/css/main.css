@@ -376,7 +376,7 @@ html[data-messenger-style='material'] .inline-input {
 
 html[data-messenger-style='material'] .composer-segment,
 html[data-messenger-style='material'] .composer-field {
-  border-color: color-mix(in srgb, var(--messenger-token-control-border) 96%, transparent);
+  border: none;
 }
 
 html[data-messenger-style='material'] .composer-segment {
@@ -392,7 +392,7 @@ html[data-messenger-style='material'] .composer-field {
 html[data-messenger-style='material'] .composer-input,
 html[data-messenger-style='material'] .inline-input {
   border-radius: 16px;
-  border-color: color-mix(in srgb, var(--messenger-border-strong) 82%, transparent);
+  border-color: transparent;
   background: color-mix(in srgb, var(--messenger-field-bg) 92%, var(--messenger-panel-soft) 8%);
 }
 
@@ -401,7 +401,7 @@ html[data-messenger-style='material'] .inline-input:focus,
 html[data-messenger-style='material'] .setting-select:focus,
 html[data-messenger-style='material'] .setting-textarea:focus {
   background: var(--messenger-field-bg-focus);
-  border-color: color-mix(in srgb, var(--messenger-accent) 46%, var(--messenger-border-strong));
+  border-color: transparent;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--messenger-accent) 36%, transparent);
   outline: none;
 }
@@ -461,13 +461,13 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item:not([disable
 
 html[data-messenger-style='material'] .search-dock__input--header {
   border-radius: 18px;
-  border-color: color-mix(in srgb, var(--messenger-border-strong) 74%, transparent);
+  border-color: transparent;
   box-shadow: none;
   background: color-mix(in srgb, var(--messenger-field-header-bg) 96%, var(--messenger-panel-soft) 4%);
 }
 
 html[data-messenger-style='material'] .search-dock__input--header:focus {
-  border-color: color-mix(in srgb, var(--messenger-accent) 48%, var(--messenger-border-strong));
+  border-color: transparent;
   background: var(--messenger-field-header-bg-focus);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--messenger-accent) 34%, transparent);
 }
@@ -504,7 +504,7 @@ html[data-messenger-style='material'] .section-head--chat-header {
 }
 
 html[data-messenger-style='material'] .composer-bar--dock {
-  border-color: color-mix(in srgb, var(--messenger-border) 98%, transparent);
+  border: none;
 }
 
 html[data-messenger-style='material'] .chat-avatar {
@@ -2418,7 +2418,7 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--v
 }
 
 .search-dock--vuetify .v-card-text {
-  padding: 12px;
+  padding: 0 !important;
 }
 
 .search-dock__body,
@@ -2455,7 +2455,7 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--v
 }
 
 .list-card--vuetify .v-card-text {
-  padding: 14px 16px;
+  padding: 0 !important;
 }
 
 .list-card__body--vuetify {
@@ -5891,6 +5891,7 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 
 .section-head--chat-header-vuetify {
   overflow: visible;
+  padding: 0 !important;
 }
 
 .section-head__body--chat-header {
@@ -7316,4 +7317,43 @@ html[data-messenger-style='minimal'] .hold-actions {
     padding: 9px 12px;
     font-size: 16px;
   }
+}
+
+/* Material 3 Gallery & Settings Patches */
+[data-messenger-style="material"] .setting-card,
+[data-messenger-style="material"] .setting-card--vuetify {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+  background-color: var(--messenger-token-surface-container) !important;
+}
+
+[data-messenger-style="material"] .settings-nav__item {
+  border-radius: 100px !important;
+}
+
+[data-messenger-style="material"] .content-gallery__head,
+[data-messenger-style="material"] .content-drawer__head {
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+}
+
+[data-messenger-style="material"] .content-grid--photos-gallery {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 8px !important;
+  padding: 8px !important;
+}
+
+[data-messenger-style="material"] .content-card--photo-gallery {
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: none !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+}
+
+[data-messenger-style="material"] .content-gallery__nav {
+  border-bottom: 1px solid var(--messenger-token-surface-container-high) !important;
 }

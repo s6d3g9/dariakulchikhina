@@ -140,11 +140,12 @@ async function logout() {
           class="bottom-nav__item"
           :class="{ 'bottom-nav__item--active': navigation.activeSection.value === section.key }"
           :value="section.key"
+          :aria-label="section.shortTitle"
+          icon
         >
           <span class="bottom-nav__icon" aria-hidden="true">
-            <MessengerIcon :name="navIconName(section.key as MessengerSectionKey)" :size="18" />
+            <MessengerIcon :name="navIconName(section.key as MessengerSectionKey)" :size="24" />
           </span>
-          <span class="bottom-nav__label">{{ section.shortTitle }}</span>
         </VBtn>
       </VBottomNavigation>
     </div>
