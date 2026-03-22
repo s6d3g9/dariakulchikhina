@@ -165,47 +165,6 @@ function formatChatPreview(chat: MessengerConversationItem) {
 
 <template>
   <section class="section-block section-block--search-screen section-block--chats-screen" aria-label="Chats section">
-    <VCard class="search-dock search-dock--screen-header search-dock--chats-header search-dock--vuetify" color="surface" variant="tonal">
-      <VCardText class="search-dock__body">
-        <div class="search-dock__field search-dock__field--header search-dock__field--vuetify">
-          <VTextField
-            v-model="searchDraft"
-            class="search-dock__input search-dock__input--header search-dock__input--vuetify"
-            label="Поиск по чатам"
-            placeholder="Имя контакта или сообщение"
-            prepend-inner-icon="mdi-magnify"
-            autocomplete="off"
-            hide-details
-            @focus="openSearch"
-            @blur="closeSearch"
-            @keydown.enter.prevent="runSearch"
-          />
-          <Transition name="chrome-reveal">
-            <VCard v-if="searchOpen && chatSuggestions.length" class="search-dropdown search-dropdown--vuetify" color="surface" variant="elevated" aria-label="Результаты поиска по чатам">
-              <VList bg-color="transparent" density="comfortable">
-                <VListItem
-                  v-for="chat in chatSuggestions"
-                  :key="chat.id"
-                  class="search-dropdown__item search-dropdown__item--vuetify"
-                  @click="selectSuggestion(chat.id)"
-                >
-                  <template #title>
-                    <span class="search-dropdown__title search-dropdown__title--vuetify">
-                      {{ chat.peerDisplayName }}
-                      <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal">Secret</VChip>
-                    </span>
-                  </template>
-                  <template #subtitle>
-                    <span class="search-dropdown__meta">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</span>
-                  </template>
-                </VListItem>
-              </VList>
-            </VCard>
-          </Transition>
-        </div>
-      </VCardText>
-    </VCard>
-
     <VAlert v-if="actionError" type="error">{{ actionError }}</VAlert>
 
     <VList class="list-stack list-stack--screen-scroll chats-list chats-list--vuetify" bg-color="transparent" lines="two">
@@ -291,5 +250,46 @@ function formatChatPreview(chat: MessengerConversationItem) {
         </VCardText>
       </VCard>
     </VList>
+
+    <VCard class="search-dock search-dock--bottom-dock search-dock--chats-search search-dock--vuetify" color="surface" variant="tonal">
+      <VCardText class="search-dock__body">
+        <div class="search-dock__field search-dock__field--vuetify">
+          <VTextField
+            v-model="searchDraft"
+            class="search-dock__input search-dock__input--vuetify"
+            label="Поиск по чатам"
+            placeholder="Имя контакта или сообщение"
+            prepend-inner-icon="mdi-magnify"
+            autocomplete="off"
+            hide-details
+            @focus="openSearch"
+            @blur="closeSearch"
+            @keydown.enter.prevent="runSearch"
+          />
+          <Transition name="chrome-reveal">
+            <VCard v-if="searchOpen && chatSuggestions.length" class="search-dropdown search-dropdown--vuetify" color="surface" variant="elevated" aria-label="Результаты поиска по чатам">
+              <VList bg-color="transparent" density="comfortable">
+                <VListItem
+                  v-for="chat in chatSuggestions"
+                  :key="chat.id"
+                  class="search-dropdown__item search-dropdown__item--vuetify"
+                  @click="selectSuggestion(chat.id)"
+                >
+                  <template #title>
+                    <span class="search-dropdown__title search-dropdown__title--vuetify">
+                      {{ chat.peerDisplayName }}
+                      <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal">Secret</VChip>
+                    </span>
+                  </template>
+                  <template #subtitle>
+                    <span class="search-dropdown__meta">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</span>
+                  </template>
+                </VListItem>
+              </VList>
+            </VCard>
+          </Transition>
+        </div>
+      </VCardText>
+    </VCard>
   </section>
 </template>

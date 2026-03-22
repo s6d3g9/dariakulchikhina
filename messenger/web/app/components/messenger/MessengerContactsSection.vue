@@ -335,52 +335,6 @@ function startHold(contactId: string, event?: Event) {
 
 <template>
   <section class="section-block section-block--search-screen section-block--contacts-screen" aria-label="Contacts section">
-    <VCard class="search-dock search-dock--screen-header search-dock--contacts-header search-dock--vuetify" color="surface" variant="tonal">
-      <VCardText class="search-dock__body">
-        <div class="search-dock__field search-dock__field--header search-dock__field--vuetify">
-          <VTextField
-            v-model="searchDraft"
-            class="search-dock__input search-dock__input--header search-dock__input--vuetify"
-            label="Поиск пользователей"
-            placeholder="Имя или логин"
-            prepend-inner-icon="mdi-account-search"
-            autocomplete="off"
-            hide-details
-            @focus="openSearch"
-            @blur="closeSearch"
-            @keydown.enter.prevent="runSearch"
-          />
-          <Transition name="chrome-reveal">
-            <VCard v-if="searchOpen" class="search-dropdown search-dropdown--vuetify" color="surface" variant="elevated" aria-label="Результаты поиска пользователей">
-              <VList bg-color="transparent" density="comfortable">
-                <VListItem
-                  v-for="item in contactSuggestions"
-                  :key="item.id"
-                  class="search-dropdown__item search-dropdown__item--vuetify"
-                  @pointerdown.prevent="selectSuggestionPointer(item)"
-                >
-                  <template #title>
-                    <span class="search-dropdown__title">{{ item.title }}</span>
-                  </template>
-                  <template #subtitle>
-                    <span class="search-dropdown__meta">{{ item.meta }}</span>
-                  </template>
-                </VListItem>
-                <VListItem v-if="!contactSuggestions.length && hasSearchQuery" class="search-dropdown__item search-dropdown__item--vuetify" disabled>
-                  <template #title>
-                    <span class="search-dropdown__title">Ничего не найдено</span>
-                  </template>
-                  <template #subtitle>
-                    <span class="search-dropdown__meta">Попробуйте логин или имя пользователя.</span>
-                  </template>
-                </VListItem>
-              </VList>
-            </VCard>
-          </Transition>
-        </div>
-      </VCardText>
-    </VCard>
-
     <VAlert v-if="actionError" type="error">{{ actionError }}</VAlert>
     <VAlert v-else-if="actionToast" type="success">{{ actionToast }}</VAlert>
 
@@ -564,5 +518,51 @@ function startHold(contactId: string, event?: Event) {
         </VCardText>
       </VCard>
     </VList>
+
+    <VCard class="search-dock search-dock--bottom-dock search-dock--contacts-search search-dock--vuetify" color="surface" variant="tonal">
+      <VCardText class="search-dock__body">
+        <div class="search-dock__field search-dock__field--vuetify">
+          <VTextField
+            v-model="searchDraft"
+            class="search-dock__input search-dock__input--vuetify"
+            label="Поиск пользователей"
+            placeholder="Имя или логин"
+            prepend-inner-icon="mdi-account-search"
+            autocomplete="off"
+            hide-details
+            @focus="openSearch"
+            @blur="closeSearch"
+            @keydown.enter.prevent="runSearch"
+          />
+          <Transition name="chrome-reveal">
+            <VCard v-if="searchOpen" class="search-dropdown search-dropdown--vuetify" color="surface" variant="elevated" aria-label="Результаты поиска пользователей">
+              <VList bg-color="transparent" density="comfortable">
+                <VListItem
+                  v-for="item in contactSuggestions"
+                  :key="item.id"
+                  class="search-dropdown__item search-dropdown__item--vuetify"
+                  @pointerdown.prevent="selectSuggestionPointer(item)"
+                >
+                  <template #title>
+                    <span class="search-dropdown__title">{{ item.title }}</span>
+                  </template>
+                  <template #subtitle>
+                    <span class="search-dropdown__meta">{{ item.meta }}</span>
+                  </template>
+                </VListItem>
+                <VListItem v-if="!contactSuggestions.length && hasSearchQuery" class="search-dropdown__item search-dropdown__item--vuetify" disabled>
+                  <template #title>
+                    <span class="search-dropdown__title">Ничего не найдено</span>
+                  </template>
+                  <template #subtitle>
+                    <span class="search-dropdown__meta">Попробуйте логин или имя пользователя.</span>
+                  </template>
+                </VListItem>
+              </VList>
+            </VCard>
+          </Transition>
+        </div>
+      </VCardText>
+    </VCard>
   </section>
 </template>

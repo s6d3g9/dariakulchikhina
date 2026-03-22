@@ -7656,3 +7656,62 @@ html[data-messenger-style='minimal'] .hold-actions {
   opacity: 0;
   transform: translateY(24px);
 }
+
+/* ================================================================
+   BOTTOM DOCK RULE — search-dock mirrors composer position
+   Поисковый док занимает ту же позицию, что composer в Chat.
+   Все не-chat экраны используют .search-dock--bottom-dock внизу.
+   ================================================================ */
+
+/* 1. Внешний вид — идентичен composer-bar--dock */
+.search-dock--bottom-dock {
+  flex-shrink: 0;
+  position: relative;
+  isolation: isolate;
+  gap: var(--messenger-token-composer-gap);
+  padding: var(--messenger-token-composer-shell-padding) var(--messenger-token-composer-shell-padding) max(var(--messenger-token-composer-shell-padding), env(safe-area-inset-bottom));
+  border: 1px solid var(--messenger-token-composer-border);
+  border-radius: var(--messenger-token-composer-radius);
+  background: var(--messenger-token-composer-bg);
+  backdrop-filter: var(--messenger-token-composer-filter);
+  box-shadow: var(--messenger-token-composer-shadow);
+  z-index: 20;
+  overflow: visible !important;
+  will-change: transform;
+  transition:
+    border-color var(--messenger-motion-fast) ease,
+    background var(--messenger-motion-base) ease,
+    box-shadow var(--messenger-motion-base) ease;
+}
+
+/* Убрать верхний border-radius для плавного соединения со списком */
+.search-dock--bottom-dock.v-card {
+  border-top-left-radius: var(--messenger-token-composer-radius);
+  border-top-right-radius: var(--messenger-token-composer-radius);
+}
+
+/* Dropdown открывается ВВЕРХ */
+.search-dock--bottom-dock .search-dropdown {
+  top: auto !important;
+  bottom: calc(100% + 8px) !important;
+  left: 0;
+  right: 0;
+  max-height: min(320px, 46vh);
+}
+
+/* 2. Скрыть старый screen-header search, поскольку dock теперь снизу */
+.section-block--chats-screen .search-dock--screen-header,
+.section-block--contacts-screen .search-dock--screen-header {
+  display: none;
+}
+
+/* 3. Settings: search dock выше nav-чипов */
+.settings-layout .settings-search-dock {
+  order: 2;
+}
+[data-messenger-style="material"] .settings-nav {
+  order: 3 !important;
+}
+[data-messenger-style="material"] .settings-search-dock {
+  order: 2;
+}

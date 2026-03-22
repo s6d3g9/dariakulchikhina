@@ -197,7 +197,27 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
   else activeSubmenu.value = ''
 })
 
+const settingsSearch = ref('')
+const settingsSearchOpen = ref(false)
+const settingsSearchMatches = computed(() => {
+  const q = settingsSearch.value.trim().toLowerCase()
+  if (!q) return []
+  return settingsModel.sections.filter(s =>
+    s.title.toLowerCase().includes(q) || s.hint.toLowerCase().includes(q)
+  )
+})
 
+function openSettingsSearch() {
+  settingsSearchOpen.value = true
+}
+function closeSettingsSearch() {
+  setTimeout(() => { settingsSearchOpen.value = false }, 150)
+}
+function selectSettingsSection(key: string) {
+  settingsModel.openSection(key as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices')
+  settingsSearch.value = ''
+  settingsSearchOpen.value = false
+}
 </script>
 
 <template>
@@ -676,6 +696,43 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
               <p class="setting-inline-note">Для полноценной установки на проде браузеру обычно нужен HTTPS. На localhost standalone-режим и установка доступны лучше всего.</p>
         </section>
       </div>
+
+      <VCard class="search-dock search-dock--bottom-dock settings-search-dock search-dock--vuetify" color="surface" variant="tonal">
+        <VCardText class="search-dock__body">
+          <div class="search-dock__field search-dock__field--vuetify">
+            <VTextField
+              v-model="settingsSearch"
+              class="search-dock__input search-dock__input--vuetify"
+              label="Поиск в настройках"
+              placeholder="Профиль, уведомления, темы…"
+              prepend-inner-icon="mdi-magnify"
+              autocomplete="off"
+              hide-details
+              @focus="openSettingsSearch"
+              @blur="closeSettingsSearch"
+            />
+            <Transition name="chrome-reveal">
+              <VCard v-if="settingsSearchOpen && settingsSearchMatches.length" class="search-dropdown search-dropdown--vuetify" color="surface" variant="elevated" aria-label="Результаты поиска по настройкам">
+                <VList bg-color="transparent" density="comfortable">
+                  <VListItem
+                    v-for="section in settingsSearchMatches"
+                    :key="section.key"
+                    class="search-dropdown__item search-dropdown__item--vuetify"
+                    @click="selectSettingsSection(section.key)"
+                  >
+                    <template #title>
+                      <span class="search-dropdown__title">{{ section.title }}</span>
+                    </template>
+                    <template #subtitle>
+                      <span class="search-dropdown__meta">{{ section.hint }}</span>
+                    </template>
+                  </VListItem>
+                </VList>
+              </VCard>
+            </Transition>
+          </div>
+        </VCardText>
+      </VCard>
     </div>
   </section>
 </template>
