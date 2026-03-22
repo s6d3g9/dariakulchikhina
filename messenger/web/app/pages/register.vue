@@ -174,12 +174,12 @@ function markTouched(field: keyof typeof touched) {
 
 <template>
   <div class="auth-shell auth-shell--vuetify">
-    <VCard class="auth-card auth-card--vuetify" color="surface" variant="elevated">
+    <VCard class="auth-card auth-card--vuetify" color="surface" variant="tonal">
       <VCardText class="auth-card__body">
         <div class="auth-card__copy">
-          <p class="auth-card__eyebrow">Messenger Auth</p>
+          <p class="auth-card__eyebrow">Material 3 Messenger</p>
           <h1>Регистрация</h1>
-          <p class="hero-text">Создайте отдельный аккаунт для standalone messenger на новой material-базе.</p>
+          <p class="hero-text">Создайте аккаунт для messenger в обновлённом Material 3 интерфейсе без старого glass-shell.</p>
         </div>
 
         <VForm class="auth-form auth-form--vuetify" @submit.prevent="submit">
@@ -229,7 +229,7 @@ function markTouched(field: keyof typeof touched) {
             {{ errorMessage }}
           </VAlert>
 
-          <VBtn type="submit" block :disabled="!canSubmit">
+          <VBtn type="submit" block :disabled="!canSubmit" variant="flat">
             {{ pending ? 'Создаем...' : 'Создать аккаунт' }}
           </VBtn>
         </VForm>

@@ -41,6 +41,7 @@ const MESSENGER_SETTINGS_STORAGE_KEY = 'daria-messenger-settings'
 const MESSENGER_SETTINGS_SESSION_STORAGE_KEY = 'daria-messenger-settings-session'
 const MESSENGER_THEME_STORAGE_KEY = 'daria-messenger-theme'
 const MESSENGER_STYLE_STORAGE_KEY = 'daria-messenger-style'
+const MESSENGER_STYLE_MIGRATION_KEY = 'daria-messenger-style-m3-migrated'
 
 function normalizeMessengerStyle(style: string | null | undefined): MessengerStyleKey | null {
   if (!style) {
@@ -85,7 +86,7 @@ function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
     },
     themes: {
       active: 'black',
-      style: 'liquid',
+      style: 'material',
     },
     devices: {
       trustThisDevice: true,
@@ -129,6 +130,22 @@ function readStoredThemePreferences() {
       ? normalizedStyle
       : null,
   }
+}
+
+function shouldRunMaterialStyleMigration() {
+  if (!import.meta.client) {
+    return false
+  }
+
+  return window.localStorage.getItem(MESSENGER_STYLE_MIGRATION_KEY) !== '1'
+}
+
+function markMaterialStyleMigrationDone() {
+  if (!import.meta.client) {
+    return
+  }
+
+  window.localStorage.setItem(MESSENGER_STYLE_MIGRATION_KEY, '1')
 }
 
 function persistThemePreferences(theme: MessengerThemeKey, style: MessengerStyleKey) {
@@ -295,6 +312,10 @@ export function useMessengerSettings() {
     }
     if (storedThemePreferences?.style) {
       settings.value.themes.style = storedThemePreferences.style
+    }
+    if (shouldRunMaterialStyleMigration()) {
+      settings.value.themes.style = 'material'
+      markMaterialStyleMigrationDone()
     }
     applyReduceMotionPreference(settings.value.devices.reduceMotion)
     applyMessengerThemePreference(settings.value.themes.active)

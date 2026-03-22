@@ -2250,7 +2250,13 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 }
 
 .auth-shell--vuetify {
+  position: relative;
+  overflow: hidden;
   padding: clamp(20px, 6vw, 40px);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--messenger-accent) 18%, transparent), transparent 28%),
+    radial-gradient(circle at bottom right, color-mix(in srgb, var(--messenger-accent-strong) 12%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--messenger-bg) 0%, var(--messenger-bg-secondary) 100%);
 }
 
 .auth-card {
@@ -2272,8 +2278,10 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 
 .auth-card--vuetify {
   width: min(100%, 560px);
-  border: 1px solid color-mix(in srgb, var(--messenger-border-strong) 88%, transparent);
-  background: color-mix(in srgb, #101827 84%, #18253a 16%);
+  border: 1px solid color-mix(in srgb, var(--messenger-token-card-border) 94%, transparent);
+  background: var(--messenger-token-card-bg);
+  backdrop-filter: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
 }
 
 .auth-card--vuetify .v-card-text,
@@ -2295,10 +2303,11 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 
 .auth-card__eyebrow {
   margin: 0;
-  color: color-mix(in srgb, var(--messenger-muted) 88%, #dbe8ff 12%);
+  color: color-mix(in srgb, var(--messenger-muted) 88%, transparent);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 12px;
+  font-weight: 700;
 }
 
 .auth-card__actions {
@@ -2313,19 +2322,19 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 }
 
 .auth-link--vuetify {
-  color: #dbe8ff;
+  color: color-mix(in srgb, var(--messenger-text) 92%, transparent);
   font-weight: 600;
   text-decoration: none;
 }
 
 .auth-link--vuetify:hover,
 .auth-link--vuetify:focus-visible {
-  color: white;
+  color: var(--messenger-text);
 }
 
 .auth-card--vuetify .v-field {
   min-height: 52px;
-  border-radius: 22px;
+  border-radius: 18px;
   border: 1px solid var(--messenger-v-field-border);
 }
 
@@ -2343,6 +2352,51 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
   text-transform: none;
   letter-spacing: 0;
   font-weight: 700;
+}
+
+html[data-messenger-style='material'] .auth-card--vuetify {
+  border-color: color-mix(in srgb, var(--messenger-token-card-border) 100%, transparent);
+  background: color-mix(in srgb, var(--messenger-token-card-bg) 94%, var(--messenger-bg) 6%);
+}
+
+html[data-messenger-style='material'] .auth-card--vuetify .v-btn {
+  border-radius: 18px;
+  box-shadow: none;
+}
+
+html[data-messenger-style='material'] .auth-card--vuetify .hero-text,
+html[data-messenger-style='material'] .auth-link-caption {
+  color: color-mix(in srgb, var(--messenger-text) 74%, transparent);
+}
+
+html[data-messenger-theme='beige'][data-messenger-style='material'] .auth-shell--vuetify,
+html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-shell--vuetify {
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--messenger-accent) 10%, transparent), transparent 26%),
+    radial-gradient(circle at bottom right, color-mix(in srgb, var(--messenger-accent-strong) 8%, transparent), transparent 28%),
+    linear-gradient(180deg, var(--messenger-bg) 0%, var(--messenger-bg-secondary) 100%);
+}
+
+html[data-messenger-theme='beige'][data-messenger-style='material'] .auth-card--vuetify,
+html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-card--vuetify {
+  box-shadow: 0 12px 30px rgba(56, 68, 84, 0.08);
+}
+
+html[data-messenger-theme='beige'][data-messenger-style='material'] .auth-card__eyebrow,
+html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-card__eyebrow {
+  color: color-mix(in srgb, var(--messenger-text) 58%, transparent);
+}
+
+html[data-messenger-theme='beige'][data-messenger-style='material'] .auth-link--vuetify,
+html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--vuetify {
+  color: color-mix(in srgb, var(--messenger-text) 84%, transparent);
+}
+
+html[data-messenger-theme='beige'][data-messenger-style='material'] .auth-link--vuetify:hover,
+html[data-messenger-theme='beige'][data-messenger-style='material'] .auth-link--vuetify:focus-visible,
+html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--vuetify:hover,
+html[data-messenger-theme='gray'][data-messenger-style='material'] .auth-link--vuetify:focus-visible {
+  color: var(--messenger-text);
 }
 
 .search-dock--vuetify .v-card-text {

@@ -31,12 +31,12 @@ async function submit() {
 
 <template>
   <div class="auth-shell auth-shell--vuetify">
-    <VCard class="auth-card auth-card--vuetify" color="surface" variant="elevated">
+    <VCard class="auth-card auth-card--vuetify" color="surface" variant="tonal">
       <VCardText class="auth-card__body">
         <div class="auth-card__copy">
-          <p class="auth-card__eyebrow">Messenger Auth</p>
+          <p class="auth-card__eyebrow">Material 3 Messenger</p>
           <h1>Вход</h1>
-          <p class="hero-text">Отдельный вход для standalone messenger на новой material-базе.</p>
+          <p class="hero-text">Войдите в отдельный messenger с плотными tonal-surfaces, спокойной иерархией и единым Material 3 ритмом.</p>
         </div>
 
         <VForm class="auth-form auth-form--vuetify" @submit.prevent="submit">
@@ -59,7 +59,7 @@ async function submit() {
             {{ errorMessage }}
           </VAlert>
 
-          <VBtn type="submit" block :disabled="pending">
+          <VBtn type="submit" block :disabled="pending" variant="flat">
             {{ pending ? 'Входим...' : 'Войти' }}
           </VBtn>
         </VForm>
