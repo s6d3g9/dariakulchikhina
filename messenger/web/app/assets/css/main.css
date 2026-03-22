@@ -1638,8 +1638,8 @@ a {
 
 .list-card--holding {
   border-color: rgba(125, 211, 252, 0.28);
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.08), rgba(255, 255, 255, 0.04));
   box-shadow: 0 12px 24px rgba(14, 165, 233, 0.1), 0 10px 22px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px) scale(0.997);
 }
 
 .list-card > * {
@@ -3854,41 +3854,47 @@ html[data-messenger-motion='reduced'] *::after {
 }
 
 .hold-actions {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  align-self: flex-start;
+  position: relative;
+  top: auto;
+  right: auto;
+  z-index: 2;
+  align-self: stretch;
   justify-content: flex-start;
   flex-direction: column;
-  width: 46px;
-  min-width: 46px;
-  max-width: 46px;
+  flex: 0 0 56px;
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
   flex-wrap: nowrap;
-  padding: 6px;
-  border: 1px solid color-mix(in srgb, var(--messenger-surface-border) 86%, transparent);
-  border-radius: 18px;
+  margin-left: 10px;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--messenger-token-control-border-strong) 68%, var(--messenger-surface-border));
+  border-radius: 20px;
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.16), transparent 44%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), transparent 44%),
+    linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 98%, white 2%), color-mix(in srgb, var(--messenger-panel) 94%, transparent));
   backdrop-filter: blur(24px) saturate(150%);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.22);
+  transform: none;
+  animation: hold-actions-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .hold-actions__icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
-  min-height: 34px;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--messenger-token-control-border) 88%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--messenger-token-control-bg) 94%, transparent);
+  border: 1px solid color-mix(in srgb, var(--messenger-token-control-border-strong) 56%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--messenger-token-control-bg-hover) 76%, var(--messenger-token-control-bg) 24%);
   color: var(--messenger-text);
   backdrop-filter: var(--messenger-token-control-filter);
-  box-shadow: var(--messenger-token-control-shadow);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -3901,22 +3907,43 @@ html[data-messenger-motion='reduced'] *::after {
 
 .hold-actions__icon-btn--danger {
   color: #ffb4b4;
+  background: linear-gradient(180deg, rgba(120, 32, 43, 0.82), rgba(85, 24, 34, 0.92));
+  border-color: rgba(255, 180, 180, 0.32);
 }
 
 .hold-actions__icon-btn .messenger-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .list-card--chat-row[data-hold-actions-root='true'] {
+  align-items: stretch;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
 
+.list-card--chat-row[data-hold-actions-root='true'] .list-card__main {
+  align-self: center;
+}
+
 .list-card--chat-row.list-card--hold-open,
 .list-card--chat-row.list-card--holding {
-  padding-right: 68px;
+  padding-right: 14px;
+}
+
+@keyframes hold-actions-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-50% + 6px)) scale(0.96);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+    filter: blur(0);
+  }
 }
 
 .message-bubble__topline,
