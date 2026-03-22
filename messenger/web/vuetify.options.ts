@@ -23,6 +23,25 @@ export default defineVuetifyConfiguration({
           'on-surface-variant': '#c8d2e5',
         },
       },
+      messengerLight: {
+        dark: false,
+        colors: {
+          background: '#f3f5f8',
+          surface: '#ffffff',
+          'surface-bright': '#ffffff',
+          'surface-light': '#eef2f7',
+          'surface-variant': '#dde4ee',
+          primary: '#4f6f96',
+          secondary: '#6d7f9b',
+          success: '#3c7f5a',
+          error: '#b44c4c',
+          info: '#527aa3',
+          warning: '#a66a23',
+          'on-background': '#19212b',
+          'on-surface': '#19212b',
+          'on-surface-variant': '#536173',
+        },
+      },
     },
   },
   icons: {
@@ -30,9 +49,6 @@ export default defineVuetifyConfiguration({
     sets: ['mdi'],
   },
   defaults: {
-    VApp: {
-      style: 'background-color: #09111f;',
-    },
     VCard: {
       rounded: 'xl',
       elevation: 12,

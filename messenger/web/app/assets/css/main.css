@@ -45,8 +45,11 @@
   --messenger-glass-button-border: rgba(255, 255, 255, 0.16);
   --messenger-glass-button-border-strong: rgba(255, 255, 255, 0.28);
   --messenger-glass-button-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
-  --messenger-control-size: 40px;
+  --messenger-control-size: 44px;
   --messenger-control-radius: 15px;
+  --messenger-control-height: 48px;
+  --messenger-field-radius: 20px;
+  --messenger-tab-radius: 16px;
   --messenger-bottom-nav-height: 58px;
   --messenger-composer-attach-width: auto;
   --messenger-composer-actions-width: auto;
@@ -135,6 +138,11 @@
   --messenger-token-bubble-peer-border: var(--messenger-message-peer-border);
   --messenger-token-bubble-own-bg: var(--messenger-message-own-bg);
   --messenger-token-bubble-own-border: var(--messenger-message-own-border);
+  --messenger-v-field-overlay: color-mix(in srgb, var(--messenger-field-bg) 92%, transparent);
+  --messenger-v-field-overlay-focus: color-mix(in srgb, var(--messenger-field-bg-focus) 94%, transparent);
+  --messenger-v-field-border: color-mix(in srgb, var(--messenger-border-strong) 74%, transparent);
+  --messenger-v-list-active-bg: color-mix(in srgb, var(--messenger-accent) 14%, var(--messenger-panel-strong));
+  --messenger-v-list-active-border: color-mix(in srgb, var(--messenger-accent) 24%, var(--messenger-border));
 }
 
 html[data-messenger-style='liquid'] {
@@ -317,6 +325,11 @@ html[data-messenger-theme='gray'][data-messenger-style='material'] {
   --messenger-token-bubble-own-border: color-mix(in srgb, var(--messenger-accent) 28%, transparent);
   --messenger-token-nav-item-active-bg: color-mix(in srgb, var(--messenger-accent) 12%, white 88%);
   --messenger-token-nav-item-active-border: color-mix(in srgb, var(--messenger-accent) 22%, rgba(92, 104, 120, 0.14));
+  --messenger-v-field-overlay: color-mix(in srgb, var(--messenger-field-bg) 96%, white 4%);
+  --messenger-v-field-overlay-focus: color-mix(in srgb, var(--messenger-field-bg-focus) 98%, white 2%);
+  --messenger-v-field-border: color-mix(in srgb, var(--messenger-border) 84%, transparent);
+  --messenger-v-list-active-bg: color-mix(in srgb, var(--messenger-accent) 10%, white 90%);
+  --messenger-v-list-active-border: color-mix(in srgb, var(--messenger-accent) 20%, rgba(92, 104, 120, 0.14));
 }
 
 html[data-messenger-style='material'] .list-card::before,
@@ -854,6 +867,13 @@ body,
 body {
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+.messenger-v-app,
+.messenger-v-app .v-application__wrap,
+.messenger-v-app .v-main {
+  background: transparent;
+  color: var(--messenger-text);
 }
 
 button,
@@ -1399,13 +1419,13 @@ a {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  min-height: var(--messenger-control-size);
+  min-height: var(--messenger-control-height);
   width: auto;
   min-width: 0;
   max-width: 100%;
   padding: 4px;
   border: 1px solid color-mix(in srgb, var(--messenger-border) 70%, transparent);
-  border-radius: 18px;
+  border-radius: var(--messenger-field-radius);
   background: color-mix(in srgb, var(--messenger-field-bg) 78%, transparent);
   backdrop-filter: blur(16px) saturate(132%);
 }
@@ -1430,7 +1450,7 @@ a {
   overflow: hidden;
   padding: 3px;
   border: 1px solid color-mix(in srgb, var(--messenger-border) 72%, transparent);
-  border-radius: 20px;
+  border-radius: var(--messenger-field-radius);
   background: color-mix(in srgb, var(--messenger-field-bg) 88%, transparent);
   backdrop-filter: blur(18px) saturate(138%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -1523,8 +1543,8 @@ a {
 
 .composer-media-menu__tab,
 .composer-media-menu__action {
-  min-height: 44px;
-  border-radius: 14px;
+  min-height: var(--messenger-control-height);
+  border-radius: var(--messenger-tab-radius);
   padding: 0 12px;
   display: flex;
   align-items: center;
@@ -1535,7 +1555,9 @@ a {
 }
 
 .composer-media-menu__tab--vuetify {
-  min-height: 44px;
+  min-height: var(--messenger-control-height);
+  border-radius: var(--messenger-tab-radius);
+  border: 1px solid color-mix(in srgb, var(--messenger-border) 84%, transparent);
   padding: 0 12px;
   text-transform: none;
   letter-spacing: 0;
@@ -1544,7 +1566,21 @@ a {
 .composer-media-menu__tab--vuetify .v-btn__content {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+}
+
+.composer-media-menu__tabs--vuetify .v-slide-group__content > .v-tab {
+  background: color-mix(in srgb, var(--messenger-token-control-bg) 88%, transparent);
+}
+
+.composer-media-menu__tabs--vuetify .v-tab--selected {
+  background: var(--messenger-v-list-active-bg);
+  border-color: var(--messenger-v-list-active-border);
+}
+
+.composer-media-menu__tabs--vuetify .v-tab__slider {
+  display: none;
 }
 
 .composer-media-menu__tab-badge {
@@ -1567,8 +1603,8 @@ a {
 }
 
 .composer-media-menu__emoji {
-  min-height: 44px;
-  border-radius: 14px;
+  min-height: var(--messenger-control-height);
+  border-radius: var(--messenger-tab-radius);
   font-size: 22px;
 }
 
@@ -1634,7 +1670,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
+  min-height: var(--messenger-control-height);
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
@@ -1663,7 +1699,8 @@ a {
 }
 
 .composer-media-menu__search-field .v-field {
-  min-height: 44px;
+  min-height: var(--messenger-control-height);
+  border-radius: var(--messenger-field-radius);
 }
 
 .composer-media-menu__result {
@@ -2271,16 +2308,18 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 }
 
 .auth-card--vuetify .v-field {
+  min-height: 52px;
   border-radius: 22px;
+  border: 1px solid var(--messenger-v-field-border);
 }
 
 .auth-card--vuetify .v-field--variant-solo-filled .v-field__overlay {
-  background: color-mix(in srgb, #1c2840 78%, #0f1727 22%);
+  background: var(--messenger-v-field-overlay);
   opacity: 1;
 }
 
 .auth-card--vuetify .v-field--focused .v-field__overlay {
-  background: color-mix(in srgb, #21324b 70%, #0f1727 30%);
+  background: var(--messenger-v-field-overlay-focus);
 }
 
 .auth-card--vuetify .v-btn {
@@ -2301,7 +2340,9 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 }
 
 .search-dock__input--vuetify .v-field {
-  border-radius: 20px;
+  min-height: 52px;
+  border-radius: var(--messenger-field-radius);
+  border: 1px solid var(--messenger-v-field-border);
 }
 
 .search-dropdown--vuetify {
@@ -2694,9 +2735,9 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 }
 
 .settings-nav--vuetify .v-list-item--active {
-  border-color: rgba(125, 211, 252, 0.4);
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.18), rgba(216, 180, 254, 0.1));
-  box-shadow: inset 3px 0 0 rgba(125, 211, 252, 0.9), 0 10px 18px rgba(0, 0, 0, 0.12);
+  border-color: var(--messenger-v-list-active-border);
+  background: var(--messenger-v-list-active-bg);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--messenger-accent) 82%, white 18%);
 }
 
 .settings-nav--vuetify .v-list-item--active .settings-nav__title,
@@ -2757,11 +2798,27 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 }
 
 .setting-card--vuetify .v-field {
-  border-radius: 18px;
+  min-height: 52px;
+  border-radius: var(--messenger-field-radius);
+  border: 1px solid var(--messenger-v-field-border);
 }
 
 .setting-card--vuetify .v-field--variant-solo-filled .v-field__overlay {
-  background: color-mix(in srgb, var(--messenger-field-bg) 88%, #0f1727 12%);
+  background: var(--messenger-v-field-overlay);
+  opacity: 1;
+}
+
+.setting-card--vuetify .v-field--focused .v-field__overlay,
+.search-dock__input--vuetify .v-field--focused .v-field__overlay,
+.composer-media-menu__search-field .v-field--focused .v-field__overlay,
+.composer-forward-panel__search-field .v-field--focused .v-field__overlay {
+  background: var(--messenger-v-field-overlay-focus);
+}
+
+.search-dock__input--vuetify .v-field--variant-solo-filled .v-field__overlay,
+.composer-media-menu__search-field .v-field--variant-outlined .v-field__overlay,
+.composer-forward-panel__search-field .v-field--variant-outlined .v-field__overlay {
+  background: var(--messenger-v-field-overlay);
   opacity: 1;
 }
 
@@ -2921,6 +2978,11 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 
 .setting-toggle--vuetify .v-selection-control {
   align-self: center;
+}
+
+.setting-toggle--vuetify .v-switch,
+.setting-toggle--vuetify .v-selection-control {
+  min-height: var(--messenger-control-height);
 }
 
 .setting-toggle input {
@@ -3394,15 +3456,15 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 
 .settings-shell--material .setting-card--glass {
   border-color: color-mix(in srgb, var(--messenger-border) 88%, transparent);
-  background: linear-gradient(180deg, rgba(28, 34, 46, 0.96), rgba(21, 26, 36, 0.98));
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 92%, white 8%), color-mix(in srgb, var(--messenger-panel) 96%, transparent));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--messenger-bg-secondary) 16%, transparent);
 }
 
 .settings-shell--material .setting-card--summary {
   min-height: 0;
   padding: 20px;
   border-radius: 30px;
-  background: linear-gradient(135deg, rgba(34, 42, 57, 0.98), rgba(24, 29, 40, 0.98));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--messenger-panel-strong) 94%, white 6%), color-mix(in srgb, var(--messenger-panel) 96%, transparent));
 }
 
 .settings-shell--material .settings-nav {
@@ -3461,15 +3523,15 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
   border-radius: 30px;
   border-color: color-mix(in srgb, var(--messenger-border) 88%, transparent);
   background: color-mix(in srgb, var(--messenger-panel) 92%, var(--messenger-panel-strong));
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--messenger-bg-secondary) 18%, transparent);
 }
 
 .settings-shell--material .theme-card,
 .settings-shell--material .style-card {
   min-height: 188px;
   border-color: color-mix(in srgb, var(--messenger-border) 86%, transparent);
-  background: linear-gradient(180deg, rgba(31, 38, 50, 0.98), rgba(24, 29, 39, 0.98));
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 94%, white 6%), color-mix(in srgb, var(--messenger-panel) 94%, transparent));
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--messenger-bg-secondary) 14%, transparent);
 }
 
 .settings-shell--material .theme-card:hover,
@@ -3478,30 +3540,30 @@ html[data-messenger-style='material'] .bottom-nav .bottom-nav__item--active::bef
 .settings-shell--material .style-card:focus-visible {
   transform: translateY(-1px);
   border-color: rgba(125, 211, 252, 0.2);
-  background: linear-gradient(180deg, rgba(36, 43, 57, 0.99), rgba(28, 34, 46, 0.99));
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 90%, white 10%), color-mix(in srgb, var(--messenger-panel) 92%, transparent));
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--messenger-bg-secondary) 16%, transparent);
 }
 
 .settings-shell--material .theme-card--active,
 .settings-shell--material .style-card--active {
   border-color: rgba(125, 211, 252, 0.24);
-  background: linear-gradient(180deg, rgba(42, 52, 68, 0.99), rgba(29, 37, 49, 0.99));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-accent) 12%, var(--messenger-panel-strong)), color-mix(in srgb, var(--messenger-panel) 94%, transparent));
 }
 
 .settings-shell--material .setting-fact-row,
 .settings-shell--material .device-status-item {
   border-color: color-mix(in srgb, var(--messenger-border) 84%, transparent);
-  background: linear-gradient(180deg, rgba(33, 39, 52, 0.9), rgba(26, 31, 42, 0.96));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--messenger-panel-strong) 90%, white 10%), color-mix(in srgb, var(--messenger-panel) 96%, transparent));
 }
 
 .settings-shell--material .setting-select,
 .settings-shell--material .setting-textarea {
   border-color: color-mix(in srgb, var(--messenger-border) 84%, transparent);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--messenger-v-field-overlay);
 }
 
 .settings-shell--material .setting-toggle {
-  border-top-color: rgba(255, 255, 255, 0.06);
+  border-top-color: color-mix(in srgb, var(--messenger-border) 74%, transparent);
 }
 
 .settings-shell--material .setting-card__text {
