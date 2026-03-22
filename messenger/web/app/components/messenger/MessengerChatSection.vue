@@ -2288,8 +2288,8 @@ onBeforeUnmount(() => {
         </div>
       </Transition>
 
+      <input v-if="!detailsOpen || !conversations.activeConversation.value" ref="fileInput" type="file" class="sr-only" @change="handleFileSelect">
       <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock">
-        <input ref="fileInput" type="file" class="sr-only" @change="handleFileSelect">
         <div class="composer-segment composer-segment--attach">
           <button
             type="button"
