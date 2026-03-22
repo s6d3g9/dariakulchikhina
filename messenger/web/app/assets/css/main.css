@@ -7357,3 +7357,135 @@ html[data-messenger-style='minimal'] .hold-actions {
 [data-messenger-style="material"] .content-gallery__nav {
   border-bottom: 1px solid var(--messenger-token-surface-container-high) !important;
 }
+
+/* Fix klipy/media menu jumps by unifying heights */
+.composer-media-menu {
+  height: 380px; /* Fixed height so it doesn't jump */
+  max-height: 40vh; /* Responsive fallback */
+  transition: transform 0.3s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.3s ease;
+  transform-origin: bottom center;
+}
+
+/* Ensure smooth overlay transitions */
+.overlay-rise-enter-active,
+.overlay-rise-leave-active {
+  transition: all 0.35s cubic-bezier(0.2, 1, 0.2, 1);
+}
+.overlay-rise-enter-from,
+.overlay-rise-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+}
+
+.composer-media-menu__body {
+  height: 100%;
+  display: flex !important;
+  flex-direction: column;
+}
+
+.composer-media-menu__emoji-grid,
+.composer-media-menu__catalog {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; /* needed for flex containers */
+}
+
+/* Fix tags jumping */
+.composer-media-menu__category-rail-wrap {
+  flex-shrink: 0;
+  height: 48px;
+  overflow: hidden;
+}
+
+/* Composer expanding from bottom element */
+.composer-bar--dock {
+  transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
+  transform-origin: bottom;
+  margin-bottom: 0 !important;
+}
+
+.composer-bar__card {
+  transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
+}
+
+
+/* Smooth expansion for the composer dock and bottom nav */
+.bottom-nav {
+  transition: transform 0.35s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.3s ease, bottom 0.35s cubic-bezier(0.2, 1, 0.2, 1);
+  will-change: transform, opacity, bottom;
+}
+
+.composer-bar--dock {
+  transition: bottom 0.35s cubic-bezier(0.2, 1, 0.2, 1), transform 0.35s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.3s ease;
+  will-change: bottom, transform;
+}
+
+[data-messenger-keyboard='open'] .bottom-nav {
+  opacity: 0;
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+/* Let the composer appear to grow out of the bottom nav */
+.messenger-shell:not([data-messenger-keyboard='open']) .composer-bar--dock {
+  transform: translateY(10px);
+}
+.messenger-shell[data-messenger-keyboard='open'] .composer-bar--dock {
+  transform: translateY(0);
+}
+
+/* Fix inner catalog flex layout to prevent jumping */
+.composer-media-menu__catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
+
+.composer-media-menu__search-field {
+  flex-shrink: 0;
+}
+
+.composer-media-menu__feed-wrap {
+  flex: 1;
+  min-height: 0; /* allows independent scrolling */
+  overflow-y: auto;
+}
+
+/* Material 3 refinement for category tags */
+.composer-media-menu__category-tile {
+  border-radius: 8px !important;
+  background: var(--sys-color-surface-container-high) !important;
+  border: none !important;
+  padding: 6px 12px !important;
+  white-space: nowrap;
+}
+
+.composer-media-menu__category-tile--active {
+  background: var(--sys-color-primary) !important;
+  color: var(--sys-color-on-primary) !important;
+}
+
+.composer-media-menu__feed--stickers,
+.composer-media-menu__feed--gifs {
+  gap: 8px;
+}
+
+/* M3: The composer should feel like it expands smoothly */
+[data-messenger-keyboard='open'] .composer-bar--dock {
+  border-radius: 24px 24px 0 0 !important;
+}
+
+.composer-bar--dock {
+  transform: translateY(0);
+}
+
+.overlay-rise-enter-active,
+.overlay-rise-leave-active {
+  transition: all 0.35s cubic-bezier(0.2, 0, 0, 1); /* M3 decel */
+}
+.overlay-rise-enter-from,
+.overlay-rise-leave-to {
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+}

@@ -184,11 +184,8 @@ function openPhoto(photoId: string) {
 <template>
   <section class="content-drawer content-drawer--dock content-gallery" aria-label="Shared content gallery">
     <VCard class="content-drawer__head content-drawer__head--gallery content-drawer__head--gallery-vuetify" color="surface" variant="tonal">
-      <VCardText class="content-drawer__head-body">
-        <div class="content-drawer__copy">
-          <p class="content-drawer__title">{{ title }}</p>
-          <p class="content-drawer__hint">{{ hint }}</p>
-        </div>
+      <VCardText class="content-drawer__head-body" style="padding-bottom: 0;">
+        <div style="flex: 1;"></div>
         <VBtn type="button" icon="mdi-close" variant="text" aria-label="Закрыть галерею" @click="emit('close')" />
       </VCardText>
     </VCard>

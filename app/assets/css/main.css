@@ -7025,3 +7025,21 @@ html.dark :root {
 .a-btn-save, .a-btn-sm {
   border-radius: var(--sys-radius-full) !important; /* M3 Full pill */
 }
+
+/* Material 3 Fix Gallery Overlap */
+[data-messenger-style="material"] .content-drawer--dock.content-gallery {
+  background: var(--sys-color-surface-container-lowest) !important;
+}
+
+[data-messenger-style="material"] .content-drawer__head {
+  background: var(--sys-color-surface-container-lowest) !important;
+  z-index: 10 !important;
+  position: sticky !important;
+  top: 0 !important;
+}
+
+/* Fix viewport clipping */
+[data-messenger-style="material"] .content-gallery__viewport {
+  overflow: visible !important;
+  min-height: fit-content !important;
+}
