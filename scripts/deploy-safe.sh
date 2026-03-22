@@ -263,7 +263,7 @@ log_stage_time "sync" "$SYNC_START_TS"
 
 echo "[deploy] remote install + build"
 BUILD_START_TS=$(date +%s)
-if ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pnpm install --frozen-lockfile;$(if [[ "$DEPLOY_MESSENGER" == "1" ]]; then printf ' pnpm -C messenger/core install --frozen-lockfile; pnpm -C messenger/web install --frozen-lockfile;'; fi) pnpm build$(if [[ "$DEPLOY_MESSENGER" == "1" ]]; then printf '; pnpm messenger:core:build; pnpm messenger:web:build'; fi)"; then
+if ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pnpm install --frozen-lockfile;$(if [[ "$DEPLOY_MESSENGER" == "1" ]]; then printf ' pnpm -C messenger/core install --frozen-lockfile; pnpm -C messenger/web install --frozen-lockfile;'; fi) pnpm build$(if [[ "$DEPLOY_MESSENGER" == "1" ]]; then printf '; rm -rf messenger/web/.nuxt messenger/web/.output; pnpm messenger:core:build; pnpm messenger:web:build'; fi)"; then
   echo "[deploy] remote build success"
 else
   echo "[deploy] remote build failed" >&2
