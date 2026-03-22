@@ -15,6 +15,7 @@ const props = defineProps<{
   videoCallDisabled?: boolean
   microphoneEnabled?: boolean
   speakerEnabled?: boolean
+  showCallActions?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -71,7 +72,7 @@ const emit = defineEmits<{
         </span>
       </VBtn>
 
-      <div class="section-actions section-actions--cluster section-actions--cluster-vuetify">
+      <div v-if="showCallActions" class="section-actions section-actions--cluster section-actions--cluster-vuetify">
         <VBtn
           type="button"
           class="icon-btn"

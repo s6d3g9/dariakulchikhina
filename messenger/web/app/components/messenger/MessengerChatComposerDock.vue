@@ -37,7 +37,7 @@ defineExpose({
 
 <template>
   <template v-if="props.visible">
-    <input ref="fileInputEl" type="file" class="sr-only" @change="emit('file-select', $event)">
+    <input ref="fileInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="emit('file-select', $event)">
     <div ref="composerBarEl" class="composer-bar composer-bar--dock">
       <VCard class="composer-bar__card" color="surface" variant="tonal">
         <VCardText class="composer-bar__body">

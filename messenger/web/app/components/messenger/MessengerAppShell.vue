@@ -65,6 +65,15 @@ onBeforeUnmount(() => {
   detachViewport = null
 })
 
+watch(() => navigation.activeSection.value, async (nextSection, previousSection) => {
+  if (!import.meta.client || nextSection === previousSection) {
+    return
+  }
+
+  await nextTick()
+  window.scrollTo({ top: 0, behavior: 'auto' })
+})
+
 async function logout() {
   calls.reset()
   realtime.disconnect()

@@ -266,11 +266,11 @@ function extractLinks(text: string) {
   return Array.from(text.matchAll(/https?:\/\/[^\s]+/g), match => match[0])
 }
 
-const activePeerName = computed(() => conversations.activeConversation.value?.peerDisplayName || 'Откройте чат')
+const activePeerName = computed(() => conversations.activeConversation.value?.peerDisplayName || 'Выберите чат')
 const activePeerAvatar = computed(() => {
   const name = activePeerName.value.trim()
-  if (!name || name === 'Откройте чат') {
-    return '??'
+  if (!name || name === 'Выберите чат') {
+    return 'Ч'
   }
 
   return name
@@ -1918,6 +1918,7 @@ onBeforeUnmount(() => {
     <section
       class="section-block section-block--chat"
       :class="{
+        'section-block--chat-empty': !conversations.activeConversation.value,
         'section-block--chat-details-open': detailsOpen && conversations.activeConversation.value,
         'section-block--chat-photo-open': photoFeedOpen,
         'section-block--chat-drop-active': desktopDropActive,
@@ -1945,6 +1946,7 @@ onBeforeUnmount(() => {
         :video-call-disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
         :microphone-enabled="calls.controls.value.microphoneEnabled"
         :speaker-enabled="calls.controls.value.speakerEnabled"
+        :show-call-actions="Boolean(conversations.activeConversation.value)"
         @toggle-details="toggleDetails"
         @toggle-audio-call="toggleAudioCall"
         @start-video-call="startCall('video')"
@@ -2101,7 +2103,7 @@ onBeforeUnmount(() => {
 
       <MessengerChatComposerDock
         ref="composerDockRef"
-        :visible="!detailsOpen || !conversations.activeConversation.value"
+        :visible="Boolean(conversations.activeConversation.value) && !detailsOpen"
         :draft="draft"
         :media-menu-open="composerMediaMenuOpen"
         :active-conversation="Boolean(conversations.activeConversation.value)"

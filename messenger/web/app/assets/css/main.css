@@ -50,7 +50,7 @@
   --messenger-control-height: 48px;
   --messenger-field-radius: 20px;
   --messenger-tab-radius: 16px;
-  --messenger-bottom-nav-height: 58px;
+  --messenger-bottom-nav-height: 56px;
   --messenger-composer-attach-width: auto;
   --messenger-composer-actions-width: auto;
   --messenger-message-peer-bg: rgba(255, 255, 255, 0.05);
@@ -5735,6 +5735,15 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
   box-shadow: none;
 }
 
+.section-block--chat-empty .message-list--chat-scroll {
+  padding-bottom: calc(var(--messenger-bottom-nav-height) + 18px);
+  scroll-padding-bottom: calc(var(--messenger-bottom-nav-height) + 18px);
+}
+
+.section-block--chat-empty .chat-user-trigger--profile {
+  max-width: 100%;
+}
+
 .section-head--chat-header {
   position: sticky;
   top: 0;
@@ -6161,6 +6170,35 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 }
 
 @media (max-width: 767px) {
+  .messenger-shell {
+    padding: 16px 12px calc(112px + env(safe-area-inset-bottom));
+    gap: 12px;
+  }
+
+  .messenger-shell--immersive {
+    padding-top: 0;
+    padding-right: 0;
+    padding-left: 0;
+    gap: 0;
+  }
+
+  .hero-block {
+    padding: 18px;
+  }
+
+  .hero-block__body {
+    gap: 10px;
+  }
+
+  .hero-block h1 {
+    font-size: clamp(26px, 8vw, 34px);
+    line-height: 1;
+  }
+
+  .hero-text {
+    font-size: 15px;
+  }
+
   .chat-screen {
     position: fixed;
     top: var(--messenger-viewport-offset-top);
@@ -6181,6 +6219,11 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
   .section-block--chat {
     min-height: 0;
     height: 100%;
+  }
+
+  .section-block--chat-empty .message-list--chat-scroll {
+    padding-bottom: calc(var(--messenger-bottom-nav-height) + 14px);
+    scroll-padding-bottom: calc(var(--messenger-bottom-nav-height) + 14px);
   }
 
   .messenger-shell[data-messenger-keyboard='open'] .section-block--chat {
@@ -6418,9 +6461,9 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
     width: 100vw;
     max-width: 100vw;
     padding-top: 3px;
-    padding-right: 10px;
+    padding-right: 8px;
     padding-bottom: max(8px, env(safe-area-inset-bottom));
-    padding-left: 10px;
+    padding-left: 8px;
     min-height: var(--messenger-bottom-nav-height);
   }
 
@@ -6439,12 +6482,12 @@ html[data-messenger-style='minimal'] .voice-player-shell::before {
 
   .bottom-nav__item {
     flex: 1 1 0;
-    min-height: 50px;
+    min-height: 46px;
     gap: 2px;
-    padding-top: 4px;
-    padding-right: 6px;
-    padding-bottom: 5px;
-    padding-left: 6px;
+    padding-top: 3px;
+    padding-right: 4px;
+    padding-bottom: 4px;
+    padding-left: 4px;
   }
 
   .bottom-nav__icon {
