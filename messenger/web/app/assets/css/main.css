@@ -142,6 +142,19 @@ html, body {
 }
 
 /* ── Section Tabs (Contacts) ─────────────────────────────── */
+.section-tabs-row {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  background: rgb(var(--v-theme-surface-container));
+  border-bottom: 1px solid rgb(var(--v-theme-outline-variant));
+}
+.section-tabs-row .section-tabs {
+  flex: 1;
+  min-width: 0;
+  border-bottom: none;
+}
+
 .section-tabs {
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container)) !important;

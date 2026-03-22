@@ -198,12 +198,7 @@ function selectSettingsSection(key: string) {
 <template>
   <section class="section-block section-block--settings" aria-label="Раздел настроек">
 
-    <!-- Section Head -->
-    <div class="section-head">
-      <span class="section-head__title title-large">Настройки</span>
-    </div>
-
-    <!-- Horizontal Tab Bar -->
+    <!-- Horizontal Tab Bar (no section-head per spec §3.4) -->
     <VTabs
       :model-value="settingsModel.activeSection.value"
       class="section-tabs"

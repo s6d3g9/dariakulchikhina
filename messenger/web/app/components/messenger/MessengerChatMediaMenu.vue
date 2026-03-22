@@ -230,16 +230,19 @@ defineExpose({
           </button>
         </div>
 
-        <!-- Layer 3: Search field -->
+        <!-- Layer 3: Search field (all tabs per spec §4.1) -->
         <VTextField
-          v-if="tab === 'stickers' || tab === 'gif'"
           :model-value="klipyQuery"
           class="composer-media-menu__search-field"
           density="compact"
           hide-details
           variant="solo-filled"
           flat
-          :placeholder="klipySearchPlaceholder"
+          :placeholder="tab === 'emoji' ? 'Поиск смайлов...'
+            : tab === 'stickers' ? 'Поиск стикеров...'
+            : tab === 'gif' ? 'Поиск GIF...'
+            : tab === 'photo' ? 'Поиск фото...'
+            : 'Поиск файлов...'"
           autocomplete="off"
           autocapitalize="off"
           spellcheck="false"

@@ -361,23 +361,20 @@ async function submitAddContact() {
     <VAlert v-if="actionError" type="error" class="ma-2">{{ actionError }}</VAlert>
     <VAlert v-else-if="actionToast" type="success" class="ma-2">{{ actionToast }}</VAlert>
 
-    <!-- Section Head -->
-    <div class="section-head">
-      <span class="section-head__title title-large">Контакты</span>
-      <VBtn icon variant="text" aria-label="Добавить контакт" @click="showAddContactDialog = true">
+    <!-- Tabs (no section-head per user directive) -->
+    <div class="section-tabs-row">
+      <VTabs v-model="contactsTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
+        <VTab value="all">Все</VTab>
+        <VTab value="incoming">
+          Входящие
+          <VBadge v-if="incomingInvites.length" :content="incomingInvites.length" color="error" inline class="ml-1" />
+        </VTab>
+        <VTab value="outgoing">Исходящие</VTab>
+      </VTabs>
+      <VBtn icon variant="text" size="small" aria-label="Добавить контакт" @click="showAddContactDialog = true">
         <VIcon>mdi-account-plus-outline</VIcon>
       </VBtn>
     </div>
-
-    <!-- Tabs -->
-    <VTabs v-model="contactsTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
-      <VTab value="all">Все</VTab>
-      <VTab value="incoming">
-        Входящие
-        <VBadge v-if="incomingInvites.length" :content="incomingInvites.length" color="error" inline class="ml-1" />
-      </VTab>
-      <VTab value="outgoing">Исходящие</VTab>
-    </VTabs>
 
     <!-- Tab Windows -->
     <VWindow v-model="contactsTab" class="section-list">
