@@ -222,8 +222,8 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
     </header>
 
     <div class="settings-layout settings-layout--compact-head">
-      <VCard class="setting-card setting-card--glass setting-card--summary setting-card--vuetify" color="surface" variant="tonal">
-        <VCardText class="setting-card__body">
+      <div class="setting-card setting-card--glass setting-card--summary setting-card--vuetify">
+        <div class="setting-card__body">
           <div class="setting-pill-row setting-pill-row--summary">
             <VChip
               class="setting-pill"
@@ -237,8 +237,8 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
           <p class="setting-card__title">Аккаунт</p>
           <p class="setting-card__text">{{ auth.user.value?.displayName || 'Гость' }} · @{{ auth.user.value?.login || 'anonymous' }}</p>
           <p class="setting-card__meta">Текущий режим: {{ activeStyleMeta.title }}. Material 3 держит плотные tonal-поверхности, спокойную иерархию и ровный системный ритм по всему messenger.</p>
-        </VCardText>
-      </VCard>
+        </div>
+      </div>
 
       <aside v-if="settingsModel.settings.value.themes.style === 'material'" class="settings-nav" aria-label="Меню настроек">
         
@@ -291,8 +291,8 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
 
       <div class="settings-panel settings-panel--vuetify">
         <section v-if="settingsModel.activeSection.value === 'profile'" class="settings-grid">
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <p class="setting-card__title">Аккаунт в messenger</p>
               <div class="setting-facts">
                 <div class="setting-fact-row">
@@ -309,11 +309,11 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                 </div>
               </div>
               <p class="setting-card__meta">Базовый профиль приходит из auth backend. Ниже меняются локальные настройки именно этого клиента.</p>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
 
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <VTextField v-model="settingsModel.settings.value.profile.statusLine" label="Подпись" maxlength="80" />
               <VTextarea v-model="settingsModel.settings.value.profile.bio" label="О себе" rows="4" maxlength="240" />
               <VSelect
@@ -330,13 +330,13 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                 </span>
                 <VSwitch v-model="settingsModel.settings.value.profile.autoplayVoice" color="primary" hide-details inset />
               </div>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
         </section>
 
         <section v-else-if="settingsModel.activeSection.value === 'notifications'" class="settings-grid">
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <p class="setting-card__title">Системный статус</p>
               <p class="setting-card__text">{{ notificationPermissionLabel }}</p>
               <p class="setting-card__meta">Разрешение браузера управляется отдельно, а эти переключатели задают поведение самого messenger.</p>
@@ -355,11 +355,11 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                 <VBtn type="button" color="secondary" variant="tonal" @click="settingsModel.refreshPermissionStates()">Обновить статусы</VBtn>
               </div>
               <VAlert v-if="permissionActionMessage" type="info">{{ permissionActionMessage }}</VAlert>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
 
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <div class="setting-toggle setting-toggle--vuetify">
                 <span class="setting-toggle__copy">
                   <span class="setting-field__label">Входящие звонки</span>
@@ -395,13 +395,13 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                 </span>
                 <VSwitch v-model="settingsModel.settings.value.notifications.desktopNotifications" color="primary" hide-details inset />
               </div>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
         </section>
 
         <section v-else-if="settingsModel.activeSection.value === 'privacy'" class="settings-grid">
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <VSelect
                 v-model="settingsModel.settings.value.privacy.lastSeenVisibility"
                 label="Кто видит время последнего входа"
@@ -430,21 +430,21 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                 </span>
                 <VSwitch v-model="settingsModel.settings.value.privacy.allowDiscoveryByLogin" color="primary" hide-details inset />
               </div>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
 
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <p class="setting-card__title">Локальная модель приватности</p>
               <p class="setting-card__text">Этот экран уже хранит локальные настройки приватности и готов к следующему шагу, когда появится серверная синхронизация профиля и устройств.</p>
               <p class="setting-card__meta">Сейчас параметры влияют на клиентский UX и служат основой для будущего серверного профиля.</p>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
         </section>
 
         <section v-else-if="settingsModel.activeSection.value === 'themes'" class="settings-grid">
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
             <p class="setting-card__title">Темы интерфейса</p>
             <p class="setting-card__text">Выберите общую палитру messenger. Переключение применяется сразу ко всему интерфейсу и сохраняется локально на этом устройстве.</p>
             <div class="theme-grid">
@@ -477,11 +477,11 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                 </span>
               </button>
             </div>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
 
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
             <p class="setting-card__title">Стиль дизайна</p>
             <p class="setting-card__text">Есть только два режима: Liquid и Material 3. Они должны читаться как две разные системы. В Material 3 все поверхности, состояния и навигация собраны вокруг плотных tonal-слоёв без стеклянных эффектов.</p>
             <div class="style-grid">
@@ -518,11 +518,11 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                 </span>
               </button>
             </div>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
 
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <p class="setting-card__title">Как это работает</p>
               <div class="setting-facts">
                 <div class="setting-fact-row">
@@ -543,13 +543,13 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                 </div>
               </div>
               <p class="setting-card__meta">Тема управляет палитрой, а стиль управляет пластикой интерфейса. Например, Void может работать и как холодный Liquid, и как плотный Material без стеклянных эффектов.</p>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
         </section>
 
         <section v-else class="settings-grid">
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <p class="setting-card__title">Текущая сессия</p>
               <div class="setting-facts">
                 <div class="setting-fact-row">
@@ -569,11 +569,11 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                   <strong>{{ sessionStartedLabel }}</strong>
                 </div>
               </div>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
 
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <p class="setting-card__title">Готовность устройства</p>
               <div class="device-status-grid">
                 <div class="device-status-item">
@@ -651,11 +651,11 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
                   <strong>{{ cameraPermissionStateLabel }}</strong>
                 </div>
               </div>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
 
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <p class="setting-card__title">Готовность звонков</p>
               <p class="setting-card__text">Отдельный быстрый сценарий для звонков: сначала микрофон для аудио, затем камера для видео.</p>
               <div class="setting-facts">
@@ -695,11 +695,11 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
               <VAlert v-if="calls.permissionHelp.value || calls.callError.value || permissionActionMessage" type="info">
                 {{ permissionActionMessage || calls.permissionHelp.value || calls.callError.value }}
               </VAlert>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
 
-          <VCard class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify" color="surface" variant="tonal">
-            <VCardText class="setting-card__body">
+          <div class="setting-card setting-card--glass setting-card--stacked setting-card--vuetify">
+            <div class="setting-card__body">
               <p class="setting-card__title">App mode</p>
               <p class="setting-card__text">Установите messenger как отдельное приложение, чтобы он открывался без адресной строки браузера.</p>
               <div class="setting-facts">
@@ -726,8 +726,8 @@ watch(() => settingsModel.activeSection.value, (newVal) => {
               </div>
               <VAlert v-if="install.installMessage.value" type="info">{{ install.installMessage.value }}</VAlert>
               <p class="setting-inline-note">Для полноценной установки на проде браузеру обычно нужен HTTPS. На localhost standalone-режим и установка доступны лучше всего.</p>
-            </VCardText>
-          </VCard>
+            </div>
+          </div>
         </section>
       </div>
     </div>
