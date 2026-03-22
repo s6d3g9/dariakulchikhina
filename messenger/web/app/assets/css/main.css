@@ -3726,15 +3726,15 @@ html[data-messenger-style='material'] .hero-presence .v-chip {
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, filter 160ms ease;
 }
 
-.action-btn > *,
-.composer-btn > *,
-.icon-btn > *,
-.message-action-btn > *,
-.forward-target-btn > *,
-.settings-nav__item > *,
-.chat-user-trigger > *,
-.bottom-nav__item > *,
-.attachment-card--button > * {
+.action-btn .v-btn__content,
+.composer-btn .v-btn__content,
+.icon-btn .v-btn__content,
+.message-action-btn .v-btn__content,
+.forward-target-btn .v-btn__content,
+.settings-nav__item .v-btn__content,
+.chat-user-trigger .v-btn__content,
+.bottom-nav__item .v-btn__content,
+.attachment-card--button .v-btn__content {
   position: relative;
   z-index: 1;
 }
@@ -3941,10 +3941,7 @@ html[data-messenger-style='liquid'] .attachment-card--button {
     height: 124px;
   }
 
-  .hero-row,
-  .section-head,
-  .list-card,
-  .list-card__row {
+  .hero-row {
     flex-direction: column;
     align-items: stretch;
   }
