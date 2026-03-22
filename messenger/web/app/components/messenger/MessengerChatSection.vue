@@ -2037,19 +2037,15 @@ onBeforeUnmount(() => {
             @open-photo="openPhotoGallery"
           />
 
-          <article v-if="!conversations.activeConversation.value" class="list-card list-card--panel">
-            <div class="list-card__main">
-              <p class="list-card__title">Чат не выбран</p>
-              <p class="list-card__text">Откройте контакт и создайте direct-чат, затем здесь появится переписка.</p>
-            </div>
-          </article>
+          <div v-if="!conversations.activeConversation.value" class="empty-state">
+            <p class="empty-state__title">Чат не выбран</p>
+            <p class="empty-state__text">Откройте контакт и создайте direct-чат, затем здесь появится переписка.</p>
+          </div>
 
-          <article v-else-if="!threadedMessages.length" class="list-card list-card--panel">
-            <div class="list-card__main">
-              <p class="list-card__title">Пока пусто</p>
-              <p class="list-card__text">{{ activeConversationSecret ? 'Отправьте первое защищённое сообщение в этом secret-чате.' : 'Отправьте первое текстовое сообщение в этом direct-чате.' }}</p>
-            </div>
-          </article>
+          <div v-else-if="!threadedMessages.length" class="empty-state">
+            <p class="empty-state__title">Пока пусто</p>
+            <p class="empty-state__text">{{ activeConversationSecret ? 'Отправьте первое защищённое сообщение в этом secret-чате.' : 'Отправьте первое текстовое сообщение в этом direct-чате.' }}</p>
+          </div>
         </div>
 
         <Transition name="screen-fade">
