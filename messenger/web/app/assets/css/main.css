@@ -3950,7 +3950,7 @@ html[data-messenger-style='liquid'] .attachment-card--button {
   }
 
   .composer-bar {
-    grid-template-columns: 44px 1fr 44px 44px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .composer-input,
