@@ -13,6 +13,7 @@ const contacts = useMessengerContacts()
 const messengerCrypto = useMessengerCrypto()
 const klipy = useMessengerKlipy()
 const viewport = useMessengerViewport()
+const navigation = useMessengerConversationState()
 const draft = ref('')
 const actionError = ref('')
 const composerMediaMenuRef = ref<{
@@ -1968,6 +1969,7 @@ onBeforeUnmount(() => {
         @toggle-microphone="calls.toggleMicrophone()"
         @toggle-speaker="calls.toggleSpeaker()"
         @hangup-call="calls.hangupCall()"
+        @back="navigation.openSection('chats')"
       />
 
 

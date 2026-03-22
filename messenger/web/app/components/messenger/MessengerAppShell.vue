@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { MessengerSectionKey } from '../../composables/useMessengerSections'
 
-const { sections } = useMessengerSections()
 const auth = useMessengerAuth()
 const navigation = useMessengerConversationState()
 const realtime = useMessengerRealtime()
@@ -9,49 +8,27 @@ const calls = useMessengerCalls()
 const viewport = useMessengerViewport()
 const settingsModel = useMessengerSettings()
 
-const showBottomNav = computed(() => !navigation.mediaSheetOpen.value)
-const activeTitle = computed(() => sections.find(section => section.key === navigation.activeSection.value)?.shortTitle ?? 'Чаты')
-const showHero = computed(() => navigation.activeSection.value === 'settings')
-const showUnifiedBottomControls = computed(() => navigation.activeSection.value === 'chat' && !viewport.keyboardOpen.value)
-const connectionStatusLabel = computed(() => {
-  if (realtime.connected.value) {
-    return 'Синхронизация онлайн'
-  }
+// Nav bar скрываем при открытой медиа-плашке или клавиатуре
+const showBottomNav = computed(() =>
+  !navigation.mediaSheetOpen.value && !viewport.keyboardOpen.value,
+)
 
-  if (realtime.connecting.value) {
-    return 'Соединяемся'
-  }
-
-  return 'Локальный режим'
-})
-const connectionStatusColor = computed(() => {
-  if (realtime.connected.value) {
-    return 'success'
-  }
-
-  if (realtime.connecting.value) {
-    return 'warning'
-  }
-
-  return 'secondary'
-})
-const activeSectionModel = computed<MessengerSectionKey>({
-  get: () => navigation.activeSection.value,
-  set: (value) => navigation.openSection(value),
-})
-
-function navIconName(section: MessengerSectionKey) {
-  switch (section) {
-    case 'chat':
-      return 'chat'
-    case 'chats':
+// Активный раздел для VBottomNavigation
+const navValue = computed<MessengerSectionKey>({
+  get: () => {
+    // Если в chat, но нет открытого диалога — показываем chats
+    if (navigation.activeSection.value === 'chat' && !navigation.activeConversationId.value) {
       return 'chats'
-    case 'contacts':
-      return 'contacts'
-    case 'settings':
-      return 'settings'
-  }
-}
+    }
+    return navigation.activeSection.value
+  },
+  set: (val) => {
+    if (val === 'chat' && !navigation.activeConversationId.value) return
+    navigation.openSection(val)
+  },
+})
+
+const chatDisabled = computed(() => !navigation.activeConversationId.value)
 
 let detachViewport: (() => void) | null = null
 
@@ -67,10 +44,7 @@ onBeforeUnmount(() => {
 })
 
 watch(() => navigation.activeSection.value, async (nextSection, previousSection) => {
-  if (!import.meta.client || nextSection === previousSection) {
-    return
-  }
-
+  if (!import.meta.client || nextSection === previousSection) return
   await nextTick()
   window.scrollTo({ top: 0, behavior: 'auto' })
 })
@@ -87,68 +61,61 @@ async function logout() {
   <VMain>
     <div
       class="messenger-shell"
-      :class="{
-        'messenger-shell--immersive': !showHero,
-        'messenger-shell--chat-idle-controls': showUnifiedBottomControls,
-      }"
       :data-messenger-keyboard="viewport.keyboardOpen.value ? 'open' : 'closed'"
       :data-messenger-media-sheet="navigation.mediaSheetOpen.value ? 'open' : 'closed'"
     >
-      <div class="messenger-aurora messenger-aurora--one" />
-      <div class="messenger-aurora messenger-aurora--two" />
-      <div class="messenger-aurora messenger-aurora--three" />
+      <!-- Активная секция -->
+      <div class="messenger-section-wrap">
+        <MessengerChatSection
+          v-if="navigation.activeSection.value === 'chat'"
+        />
+        <MessengerChatsSection
+          v-else-if="navigation.activeSection.value === 'chats'"
+        />
+        <MessengerContactsSection
+          v-else-if="navigation.activeSection.value === 'contacts'"
+        />
+        <MessengerSettingsSection
+          v-else-if="navigation.activeSection.value === 'settings'"
+          @logout="logout"
+        />
+      </div>
 
-      <VCard v-if="showHero" class="hero-block hero-block--vuetify" color="surface" variant="tonal">
-        <VCardText class="hero-block__body">
-          <div class="hero-row hero-row--vuetify">
-            <div class="hero-badge-row">
-                <p class="hero-kicker">Material 3 Messenger</p>
-              <VChip class="glass-pill glass-pill--vuetify" :color="connectionStatusColor" size="small" variant="tonal">
-                {{ connectionStatusLabel }}
-              </VChip>
-            </div>
-            <VBtn type="button" color="secondary" variant="tonal" @click="logout">
-              Выйти
-            </VBtn>
-          </div>
-          <h1>{{ activeTitle }}</h1>
-          <p class="hero-text">
-            Отдельный messenger с direct-чатами, контактами, приглашениями и спокойной Material 3 иерархией на всех основных экранах.
-          </p>
-          <div v-if="auth.user.value" class="hero-presence">
-            <VChip size="small" variant="text">{{ auth.user.value.displayName }}</VChip>
-            <VChip size="small" variant="text">@{{ auth.user.value.login }}</VChip>
-          </div>
-        </VCardText>
-      </VCard>
-
-      <MessengerChatSection v-if="navigation.activeSection.value === 'chat'" />
-      <MessengerChatsSection v-else-if="navigation.activeSection.value === 'chats'" />
-      <MessengerContactsSection v-else-if="navigation.activeSection.value === 'contacts'" />
-      <MessengerSettingsSection v-else />
-
+      <!-- Звонок (overlay) -->
       <MessengerCallOverlay />
 
+      <!-- Bottom Navigation Bar -->
       <VBottomNavigation
+        v-model="navValue"
         v-show="showBottomNav"
-        v-model="activeSectionModel"
-        class="bottom-nav bottom-nav--vuetify"
+        class="messenger-bottom-nav"
+        bg-color="surface-container-low"
         grow
-        active
-        aria-label="Основные экраны мессенджера"
+        elevation="0"
+        aria-label="Основная навигация"
       >
+        <VBtn value="chats" class="messenger-nav-btn">
+          <VIcon class="messenger-nav-icon">mdi-message-text-outline</VIcon>
+          <span class="messenger-nav-label">Чаты</span>
+        </VBtn>
+
         <VBtn
-          v-for="section in sections"
-          :key="section.key"
-          class="bottom-nav__item"
-          :class="{ 'bottom-nav__item--active': navigation.activeSection.value === section.key }"
-          :value="section.key"
-          :aria-label="section.shortTitle"
-          icon
+          value="chat"
+          class="messenger-nav-btn"
+          :disabled="chatDisabled"
         >
-          <span class="bottom-nav__icon" aria-hidden="true">
-            <MessengerIcon :name="navIconName(section.key as MessengerSectionKey)" :size="24" />
-          </span>
+          <VIcon class="messenger-nav-icon">mdi-message-outline</VIcon>
+          <span class="messenger-nav-label">Чат</span>
+        </VBtn>
+
+        <VBtn value="contacts" class="messenger-nav-btn">
+          <VIcon class="messenger-nav-icon">mdi-account-multiple-outline</VIcon>
+          <span class="messenger-nav-label">Контакты</span>
+        </VBtn>
+
+        <VBtn value="settings" class="messenger-nav-btn">
+          <VIcon class="messenger-nav-icon">mdi-cog-outline</VIcon>
+          <span class="messenger-nav-label">Настройки</span>
         </VBtn>
       </VBottomNavigation>
     </div>

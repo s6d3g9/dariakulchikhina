@@ -331,74 +331,66 @@ function closeSearch() {
 function startHold(contactId: string, event?: Event) {
   holdActions.startHold(contactId, event?.target)
 }
+
+const contactsTab = ref<'all' | 'incoming' | 'outgoing'>('all')
+const showAddContactDialog = ref(false)
+const addContactLogin = ref('')
+const addContactError = ref('')
+
+async function submitAddContact() {
+  addContactError.value = ''
+  try {
+    const found = contacts.overview.value.discover.find(
+      c => c.login.toLowerCase() === addContactLogin.value.trim().toLowerCase()
+    )
+    if (!found) {
+      addContactError.value = 'Пользователь не найден. Введите точный логин.'
+      return
+    }
+    await contacts.invite(found.id)
+    showAddContactDialog.value = false
+    addContactLogin.value = ''
+  } catch {
+    addContactError.value = 'Не удалось отправить заявку.'
+  }
+}
 </script>
 
 <template>
-  <section class="section-block section-block--search-screen section-block--contacts-screen" aria-label="Contacts section">
-    <VAlert v-if="actionError" type="error">{{ actionError }}</VAlert>
-    <VAlert v-else-if="actionToast" type="success">{{ actionToast }}</VAlert>
+  <section class="section-block section-block--contacts" aria-label="Contacts section">
+    <VAlert v-if="actionError" type="error" class="ma-2">{{ actionError }}</VAlert>
+    <VAlert v-else-if="actionToast" type="success" class="ma-2">{{ actionToast }}</VAlert>
 
-    <VList class="list-stack list-stack--screen-scroll contacts-list contacts-list--vuetify" bg-color="transparent" lines="two">
-      <VCard
-        v-for="invite in incomingInvites"
-        :key="invite.id"
-        class="list-card list-card--action list-card--chat-row list-card--vuetify"
-        color="surface"
-        variant="tonal"
-      >
-        <VCardText class="list-card__body list-card__body--vuetify">
-          <div class="chat-row-avatar" aria-hidden="true">
-            <VAvatar class="chat-avatar chat-avatar--list chat-avatar--vuetify" color="warning" variant="tonal" size="44">
-              {{ resolveContactAvatar(invite.displayName) }}
-            </VAvatar>
-          </div>
-          <div class="list-card__main">
-            <div class="list-card__row">
-              <p class="list-card__title list-card__title--vuetify">{{ invite.displayName }}</p>
-              <div class="list-card__row list-card__row--actions">
-                <VBtn type="button" color="success" variant="flat" @click="acceptInvite(invite.id, invite.peerUserId)">Принять</VBtn>
-                <VBtn type="button" color="error" variant="tonal" @click="rejectInvite(invite.id)">Отклонить</VBtn>
-              </div>
-            </div>
-            <p class="list-card__text list-card__text--identity">@{{ invite.login }} · входящая заявка</p>
-          </div>
-        </VCardText>
-      </VCard>
+    <!-- Section Head -->
+    <div class="section-head">
+      <span class="section-head__title title-large">Контакты</span>
+      <VBtn icon variant="text" aria-label="Добавить контакт" @click="showAddContactDialog = true">
+        <VIcon>mdi-account-plus-outline</VIcon>
+      </VBtn>
+    </div>
 
-      <VCard
-        v-for="invite in outgoingInvites"
-        :key="invite.id"
-        class="list-card list-card--panel list-card--chat-row list-card--vuetify"
-        color="surface"
-        variant="tonal"
-      >
-        <VCardText class="list-card__body list-card__body--vuetify">
-          <div class="chat-row-avatar" aria-hidden="true">
-            <VAvatar class="chat-avatar chat-avatar--list chat-avatar--vuetify" color="secondary" variant="tonal" size="44">
-              {{ resolveContactAvatar(invite.displayName) }}
-            </VAvatar>
-          </div>
-          <div class="list-card__main">
-            <div class="list-card__row">
-              <p class="list-card__title list-card__title--vuetify">{{ invite.displayName }}</p>
-              <VChip class="list-card__meta" size="x-small" variant="tonal">Ожидает</VChip>
-            </div>
-            <p class="list-card__text list-card__text--identity">@{{ invite.login }} · исходящая заявка</p>
-          </div>
-        </VCardText>
-      </VCard>
+    <!-- Tabs -->
+    <VTabs v-model="contactsTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
+      <VTab value="all">Все</VTab>
+      <VTab value="incoming">
+        Входящие
+        <VBadge v-if="incomingInvites.length" :content="incomingInvites.length" color="error" inline class="ml-1" />
+      </VTab>
+      <VTab value="outgoing">Исходящие</VTab>
+    </VTabs>
 
+    <!-- Tab Windows -->
+    <VWindow v-model="contactsTab" class="section-list">
+      <!-- All contacts -->
+      <VWindowItem value="all">
+    <VList bg-color="transparent" lines="two">
       <VCard
         v-for="contact in contacts.overview.value.contacts"
         :key="contact.id"
-        class="list-card list-card--action list-card--clickable list-card--chat-row list-card--vuetify"
-        :class="{
-          'list-card--hold-open': holdActions.activeItemId.value === contact.id,
-          'list-card--holding': holdActions.holdingItemId.value === contact.id,
-        }"
-        color="surface"
-        variant="tonal"
+        class="chat-row"
+        :class="{ 'list-item--hold-open': holdActions.activeItemId.value === contact.id }"
         data-hold-actions-root="true"
+        lines="two"
         @click="openDirectChat(contact.id)"
         @mousedown.left="startHold(contact.id, $event)"
         @mouseup="holdActions.cancelHold()"
@@ -409,17 +401,13 @@ function startHold(contactId: string, event?: Event) {
         @touchmove="holdActions.cancelHold()"
         @contextmenu.prevent="holdActions.open(contact.id)"
       >
-        <VCardText class="list-card__body list-card__body--vuetify">
-          <div class="chat-row-avatar" aria-hidden="true">
-            <VAvatar class="chat-avatar chat-avatar--list chat-avatar--vuetify" color="primary" variant="tonal" size="44">
-              {{ resolveContactAvatar(contact.displayName) }}
-            </VAvatar>
-          </div>
-          <div class="list-card__main">
-            <p class="list-card__title list-card__title--vuetify">{{ contact.displayName }}</p>
-            <p class="list-card__text list-card__text--identity">@{{ contact.login }}</p>
-          </div>
-        </VCardText>
+        <template #prepend>
+          <VAvatar color="primary" variant="tonal" size="48">
+            {{ resolveContactAvatar(contact.displayName) }}
+          </VAvatar>
+        </template>
+        <template #title><span class="title-small">{{ contact.displayName }}</span></template>
+        <template #subtitle><span class="on-surface-variant">@{{ contact.login }}</span></template>
         <div v-if="holdActions.activeItemId.value === contact.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
           <button
             type="button"
@@ -461,108 +449,168 @@ function startHold(contactId: string, event?: Event) {
             type="button"
             class="hold-actions__icon-btn hold-actions__icon-btn--danger"
             aria-label="Удалить контакт"
-            title="Удалить контакт"
             @click.stop="removeContact(contact.id)"
           >
-            <MessengerIcon name="delete" :size="16" />
+            <MessengerIcon name="delete" :size="18" />
           </button>
         </div>
-      </VCard>
+      </VListItem>
 
-      <VCard v-if="!hasSearchQuery && !incomingInvites.length && !outgoingInvites.length && !contacts.overview.value.contacts.length" class="list-card list-card--panel list-card--vuetify" color="surface" variant="tonal">
-        <VCardText class="list-card__body list-card__body--vuetify list-card__body--empty">
-          <div class="list-card__main">
-            <p class="list-card__title">Контакты пока пусты</p>
-            <p class="list-card__text">Когда появятся подтвержденные контакты, они будут показаны здесь.</p>
-          </div>
-        </VCardText>
-      </VCard>
+      <div
+        v-if="!contacts.overview.value.contacts.length && !discoverResults.length"
+        class="empty-state"
+      >
+        <VIcon size="48" color="on-surface-variant">mdi-account-multiple-outline</VIcon>
+        <p class="empty-state__title">Контакты пока пусты</p>
+        <p class="empty-state__text">Нажмите ➕ чтобы добавить первый контакт.</p>
+      </div>
 
-      <VCard
+      <!-- Discover results (search) -->
+      <VListItem
         v-for="candidate in discoverResults"
         :key="candidate.id"
-        class="list-card list-card--action list-card--chat-row list-card--vuetify"
-        color="surface"
-        variant="tonal"
+        class="chat-row"
+        lines="two"
       >
-        <VCardText class="list-card__body list-card__body--vuetify">
-          <div class="chat-row-avatar" aria-hidden="true">
-            <VAvatar class="chat-avatar chat-avatar--list chat-avatar--vuetify" color="info" variant="tonal" size="44">
-              {{ resolveContactAvatar(candidate.displayName) }}
-            </VAvatar>
-          </div>
-          <div class="list-card__main">
-            <div class="list-card__row">
-              <p class="list-card__title list-card__title--vuetify">{{ candidate.displayName }}</p>
-              <VBtn
-                type="button"
-                :color="candidate.relationship === 'incoming' ? 'success' : 'primary'"
-                :variant="candidate.relationship === 'incoming' ? 'flat' : 'tonal'"
-                :disabled="candidate.relationship === 'outgoing'"
-                @click="handleSearchAction(candidate.id, candidate.relationship)"
-              >
-                {{ getActionLabel(candidate.relationship) }}
-              </VBtn>
-            </div>
-            <p class="list-card__text list-card__text--identity">@{{ candidate.login }} · {{ getRelationshipLabel(candidate.relationship) }}</p>
-          </div>
-        </VCardText>
-      </VCard>
-
-      <VCard v-if="hasSearchQuery && !contacts.overview.value.contacts.length && !discoverResults.length" class="list-card list-card--panel list-card--vuetify" color="surface" variant="tonal">
-        <VCardText class="list-card__body list-card__body--vuetify list-card__body--empty">
-          <div class="list-card__main">
-            <p class="list-card__title">Поиск не дал результатов</p>
-            <p class="list-card__text">Проверьте логин или имя пользователя и попробуйте ещё раз.</p>
-          </div>
-        </VCardText>
-      </VCard>
+        <template #prepend>
+          <VAvatar color="secondary" variant="tonal" size="48">
+            {{ resolveContactAvatar(candidate.displayName) }}
+          </VAvatar>
+        </template>
+        <template #title><span class="title-small">{{ candidate.displayName }}</span></template>
+        <template #subtitle><span class="on-surface-variant">@{{ candidate.login }} · {{ getRelationshipLabel(candidate.relationship) }}</span></template>
+        <template #append>
+          <VBtn
+            size="small"
+            :color="candidate.relationship === 'incoming' ? 'success' : 'primary'"
+            :variant="candidate.relationship === 'incoming' ? 'flat' : 'tonal'"
+            :disabled="candidate.relationship === 'outgoing'"
+            @click.stop="handleSearchAction(candidate.id, candidate.relationship)"
+          >{{ getActionLabel(candidate.relationship) }}</VBtn>
+        </template>
+      </VListItem>
     </VList>
+      </VWindowItem>
 
-    <VCard class="search-dock search-dock--bottom-dock search-dock--contacts-search search-dock--vuetify" color="surface" variant="tonal">
-      <VCardText class="search-dock__body">
-        <div class="search-dock__field search-dock__field--vuetify">
+      <!-- Incoming invites -->
+      <VWindowItem value="incoming">
+        <VList bg-color="transparent" lines="two">
+          <VListItem
+            v-for="invite in incomingInvites"
+            :key="invite.id"
+            class="chat-row"
+            lines="two"
+          >
+            <template #prepend>
+              <VAvatar color="warning" variant="tonal" size="48">
+                {{ resolveContactAvatar(invite.displayName) }}
+              </VAvatar>
+            </template>
+            <template #title><span class="title-small">{{ invite.displayName }}</span></template>
+            <template #subtitle><span class="on-surface-variant">@{{ invite.login }} · входящая заявка</span></template>
+            <template #append>
+              <div class="d-flex gap-1">
+                <VBtn size="small" color="success" variant="flat" @click.stop="acceptInvite(invite.id, invite.peerUserId)">Принять</VBtn>
+                <VBtn size="small" color="error" variant="tonal" @click.stop="rejectInvite(invite.id)">Отклонить</VBtn>
+              </div>
+            </template>
+          </VListItem>
+          <div v-if="!incomingInvites.length" class="empty-state">
+            <VIcon size="48" color="on-surface-variant">mdi-inbox-outline</VIcon>
+            <p class="empty-state__title">Входящих заявок нет</p>
+          </div>
+        </VList>
+      </VWindowItem>
+
+      <!-- Outgoing invites -->
+      <VWindowItem value="outgoing">
+        <VList bg-color="transparent" lines="two">
+          <VListItem
+            v-for="invite in outgoingInvites"
+            :key="invite.id"
+            class="chat-row"
+            lines="two"
+          >
+            <template #prepend>
+              <VAvatar color="secondary" variant="tonal" size="48">
+                {{ resolveContactAvatar(invite.displayName) }}
+              </VAvatar>
+            </template>
+            <template #title><span class="title-small">{{ invite.displayName }}</span></template>
+            <template #subtitle><span class="on-surface-variant">@{{ invite.login }} · исходящая заявка</span></template>
+            <template #append>
+              <VChip size="small" variant="tonal">Ожидает</VChip>
+            </template>
+          </VListItem>
+          <div v-if="!outgoingInvites.length" class="empty-state">
+            <VIcon size="48" color="on-surface-variant">mdi-send-clock-outline</VIcon>
+            <p class="empty-state__title">Исходящих заявок нет</p>
+          </div>
+        </VList>
+      </VWindowItem>
+    </VWindow>
+
+    <!-- Search Dock -->
+    <div class="search-dock">
+      <div class="search-dock__field">
+        <VTextField
+          v-model="searchDraft"
+          variant="solo-filled"
+          flat
+          hide-details
+          prepend-inner-icon="mdi-account-search"
+          placeholder="Найти пользователя"
+          bg-color="surface-container-high"
+          rounded="xl"
+          density="compact"
+          autocomplete="off"
+          @focus="openSearch"
+          @blur="closeSearch"
+          @keydown.enter.prevent="runSearch"
+        />
+        <Transition name="chrome-reveal">
+          <div v-if="searchOpen && contactSuggestions.length" class="search-dropdown">
+            <VList bg-color="transparent" density="comfortable">
+              <VListItem
+                v-for="item in contactSuggestions"
+                :key="item.id"
+                @pointerdown.prevent="selectSuggestionPointer(item)"
+              >
+                <template #title>{{ item.title }}</template>
+                <template #subtitle>{{ item.meta }}</template>
+              </VListItem>
+              <VListItem v-if="!contactSuggestions.length && hasSearchQuery" disabled>
+                <template #title>Ничего не найдено</template>
+                <template #subtitle>Попробуйте логин или имя пользователя.</template>
+              </VListItem>
+            </VList>
+          </div>
+        </Transition>
+      </div>
+    </div>
+
+    <!-- Диалог: добавить контакт -->
+    <VDialog v-model="showAddContactDialog" max-width="320">
+      <VCard>
+        <VCardTitle>Добавить контакт</VCardTitle>
+        <VCardText>
           <VTextField
-            v-model="searchDraft"
-            class="search-dock__input search-dock__input--vuetify"
-            label="Поиск пользователей"
-            placeholder="Имя или логин"
-            prepend-inner-icon="mdi-account-search"
-            autocomplete="off"
+            v-model="addContactLogin"
+            label="Логин пользователя"
+            placeholder="@username"
+            prepend-inner-icon="mdi-at"
+            autofocus
             hide-details
-            @focus="openSearch"
-            @blur="closeSearch"
-            @keydown.enter.prevent="runSearch"
+            @keydown.enter="submitAddContact"
           />
-          <Transition name="chrome-reveal">
-            <VCard v-if="searchOpen" class="search-dropdown search-dropdown--vuetify" color="surface" variant="elevated" aria-label="Результаты поиска пользователей">
-              <VList bg-color="transparent" density="comfortable">
-                <VListItem
-                  v-for="item in contactSuggestions"
-                  :key="item.id"
-                  class="search-dropdown__item search-dropdown__item--vuetify"
-                  @pointerdown.prevent="selectSuggestionPointer(item)"
-                >
-                  <template #title>
-                    <span class="search-dropdown__title">{{ item.title }}</span>
-                  </template>
-                  <template #subtitle>
-                    <span class="search-dropdown__meta">{{ item.meta }}</span>
-                  </template>
-                </VListItem>
-                <VListItem v-if="!contactSuggestions.length && hasSearchQuery" class="search-dropdown__item search-dropdown__item--vuetify" disabled>
-                  <template #title>
-                    <span class="search-dropdown__title">Ничего не найдено</span>
-                  </template>
-                  <template #subtitle>
-                    <span class="search-dropdown__meta">Попробуйте логин или имя пользователя.</span>
-                  </template>
-                </VListItem>
-              </VList>
-            </VCard>
-          </Transition>
-        </div>
-      </VCardText>
-    </VCard>
+          <VAlert v-if="addContactError" type="error" class="mt-2">{{ addContactError }}</VAlert>
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn variant="text" @click="showAddContactDialog = false; addContactLogin = ''; addContactError = ''">Отмена</VBtn>
+          <VBtn color="primary" variant="tonal" :disabled="!addContactLogin.trim()" @click="submitAddContact">Найти</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
   </section>
 </template>

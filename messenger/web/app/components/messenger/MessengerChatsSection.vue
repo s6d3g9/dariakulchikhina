@@ -236,102 +236,96 @@ function formatChatPreview(chat: MessengerConversationItem) {
 </script>
 
 <template>
-  <section class="section-block section-block--search-screen section-block--chats-screen" aria-label="Chats section">
-    <VAlert v-if="actionError" type="error">{{ actionError }}</VAlert>
+  <section class="section-block section-block--chats" aria-label="Chats section">
+    <VAlert v-if="actionError" type="error" class="ma-2">{{ actionError }}</VAlert>
 
+    <!-- Список чатов + FAB -->
     <div class="chats-list-wrap">
-    <VList class="list-stack list-stack--screen-scroll chats-list chats-list--vuetify" bg-color="transparent" lines="two">
-      <VCard
-        v-for="chat in filteredConversations"
-        :key="chat.id"
-        class="list-card list-card--action list-card--clickable list-card--chat-row list-card--vuetify"
-        :class="{
-          'list-card--hold-open': holdActions.activeItemId.value === chat.id,
-          'list-card--holding': holdActions.holdingItemId.value === chat.id,
-        }"
-        color="surface"
-        variant="tonal"
-        data-hold-actions-root="true"
-        @click="openChat(chat.id)"
-        @mousedown.left="startHold(chat.id, $event)"
-        @mouseup="holdActions.cancelHold()"
-        @mouseleave="holdActions.cancelHold()"
-        @touchstart.passive="startHold(chat.id, $event)"
-        @touchend="holdActions.cancelHold()"
-        @touchcancel="holdActions.cancelHold()"
-        @touchmove="holdActions.cancelHold()"
-        @contextmenu.prevent="holdActions.open(chat.id)"
-      >
-        <VCardText class="list-card__body list-card__body--vuetify">
-          <div class="chat-row-avatar" aria-hidden="true">
-            <VAvatar class="chat-avatar chat-avatar--list chat-avatar--vuetify" color="primary" variant="tonal" size="44">
+      <VList class="section-list" bg-color="transparent" lines="two">
+        <VListItem
+          v-for="chat in filteredConversations"
+          :key="chat.id"
+          class="chat-row"
+          data-hold-actions-root="true"
+          :class="{
+            'list-item--hold-open': holdActions.activeItemId.value === chat.id,
+          }"
+          @click="openChat(chat.id)"
+          @mousedown.left="startHold(chat.id, $event)"
+          @mouseup="holdActions.cancelHold()"
+          @mouseleave="holdActions.cancelHold()"
+          @touchstart.passive="startHold(chat.id, $event)"
+          @touchend="holdActions.cancelHold()"
+          @touchcancel="holdActions.cancelHold()"
+          @touchmove="holdActions.cancelHold()"
+          @contextmenu.prevent="holdActions.open(chat.id)"
+        >
+          <template #prepend>
+            <VAvatar color="primary" variant="tonal" size="48">
               {{ resolveChatAvatar(chat.peerDisplayName) }}
             </VAvatar>
-          </div>
-          <div class="list-card__main">
-            <div class="list-card__row list-card__row--chat-top">
-              <p class="list-card__title list-card__title--vuetify">
-                {{ chat.peerDisplayName }}
-                <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal">Secret</VChip>
-              </p>
-              <VChip class="list-card__meta list-card__meta--timestamp" size="x-small" variant="text">
-                {{ formatConversationTimestamp(chat.updatedAt) }}
-              </VChip>
-            </div>
-            <div class="list-card__row list-card__row--chat-footer">
-              <p class="list-card__text list-card__text--preview">{{ formatChatPreview(chat) }}</p>
-            </div>
-          </div>
-        </VCardText>
-        <div v-if="holdActions.activeItemId.value === chat.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
+          </template>
+          <template #title>
+            <span class="title-small">{{ chat.peerDisplayName }}</span>
+            <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal" class="ml-2">Secret</VChip>
+          </template>
+          <template #subtitle>
+            <span class="chat-row__preview on-surface-variant">{{ formatChatPreview(chat) }}</span>
+          </template>
+          <template #append>
+            <span class="chat-row__time on-surface-variant">{{ formatConversationTimestamp(chat.updatedAt) }}</span>
+          </template>
+        </VListItem>
+
+        <!-- Hold actions strip -->
+        <div
+          v-if="holdActions.activeItemId.value"
+          class="hold-actions"
+          data-hold-actions-menu="true"
+          @pointerdown.stop
+        >
           <button
             type="button"
             class="hold-actions__icon-btn"
             aria-label="Аудиозвонок"
-            title="Аудиозвонок"
-            @click.stop="startChatCall(chat.id, 'audio')"
+            @click.stop="startChatCall(holdActions.activeItemId.value, 'audio')"
           >
-            <MessengerIcon name="phone" :size="16" />
+            <MessengerIcon name="phone" :size="18" />
           </button>
           <button
             type="button"
             class="hold-actions__icon-btn"
             aria-label="Видеозвонок"
-            title="Видеозвонок"
-            @click.stop="startChatCall(chat.id, 'video')"
+            @click.stop="startChatCall(holdActions.activeItemId.value, 'video')"
           >
-            <MessengerIcon name="video" :size="16" />
+            <MessengerIcon name="video" :size="18" />
           </button>
           <button
             type="button"
             class="hold-actions__icon-btn hold-actions__icon-btn--danger"
             aria-label="Удалить чат"
-            title="Удалить чат"
-            @click.stop="removeChat(chat.id)"
+            @click.stop="removeChat(holdActions.activeItemId.value)"
           >
-            <MessengerIcon name="delete" :size="16" />
+            <MessengerIcon name="delete" :size="18" />
           </button>
         </div>
-      </VCard>
 
-      <VCard v-if="!filteredConversations.length" class="list-card list-card--panel list-card--vuetify" color="surface" variant="tonal">
-        <VCardText class="list-card__body list-card__body--vuetify list-card__body--empty">
-          <div class="list-card__main">
-            <p class="list-card__title">Чаты пока пусты</p>
-            <p class="list-card__text">Когда появятся direct-чаты, они будут показаны здесь.</p>
-          </div>
-        </VCardText>
-      </VCard>
-    </VList>
+        <div v-if="!filteredConversations.length" class="empty-state">
+          <VIcon size="48" color="on-surface-variant">mdi-message-text-outline</VIcon>
+          <p class="empty-state__title">Чаты пока пусты</p>
+          <p class="empty-state__text">Нажмите ✏️ чтобы начать диалог.</p>
+        </div>
+      </VList>
 
-    <button
-      type="button"
-      class="chats-fab"
-      aria-label="Создать чат"
-      @click="showNewChatDialog = true"
-    >
-      <MessengerIcon name="edit" :size="20" />
-    </button>
+      <!-- FAB -->
+      <button
+        type="button"
+        class="chats-fab"
+        aria-label="Создать чат"
+        @click="showNewChatDialog = true"
+      >
+        <VIcon color="on-primary-container">mdi-pencil-outline</VIcon>
+      </button>
     </div>
 
     <!-- Папки чатов -->
@@ -357,54 +351,53 @@ function formatChatPreview(chat: MessengerConversationItem) {
       >{{ folder.label }}</button>
       <button
         type="button"
-        class="chats-folder-chip chats-folder-chip--add"
+        class="chats-folder-chip"
         aria-label="Создать папку"
         @click="showCreateFolder = true"
-      >+</button>
+      >＋</button>
     </div>
 
-    <VCard class="search-dock search-dock--bottom-dock search-dock--chats-search search-dock--vuetify" color="surface" variant="tonal">
-      <VCardText class="search-dock__body">
-        <div class="search-dock__field search-dock__field--vuetify">
-          <VTextField
-            v-model="searchDraft"
-            class="search-dock__input search-dock__input--vuetify"
-            label="Поиск по чатам"
-            placeholder="Имя контакта или сообщение"
-            prepend-inner-icon="mdi-magnify"
-            autocomplete="off"
-            hide-details
-            @focus="openSearch"
-            @blur="closeSearch"
-            @keydown.enter.prevent="runSearch"
-          />
-          <Transition name="chrome-reveal">
-            <VCard v-if="searchOpen && chatSuggestions.length" class="search-dropdown search-dropdown--vuetify" color="surface" variant="elevated" aria-label="Результаты поиска по чатам">
-              <VList bg-color="transparent" density="comfortable">
-                <VListItem
-                  v-for="chat in chatSuggestions"
-                  :key="chat.id"
-                  class="search-dropdown__item search-dropdown__item--vuetify"
-                  @click="selectSuggestion(chat.id)"
-                >
-                  <template #title>
-                    <span class="search-dropdown__title search-dropdown__title--vuetify">
-                      {{ chat.peerDisplayName }}
-                      <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal">Secret</VChip>
-                    </span>
-                  </template>
-                  <template #subtitle>
-                    <span class="search-dropdown__meta">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</span>
-                  </template>
-                </VListItem>
-              </VList>
-            </VCard>
-          </Transition>
-        </div>
-      </VCardText>
-    </VCard>
+    <!-- Search Dock -->
+    <div class="search-dock">
+      <div class="search-dock__field">
+        <VTextField
+          v-model="searchDraft"
+          variant="solo-filled"
+          flat
+          hide-details
+          prepend-inner-icon="mdi-magnify"
+          placeholder="Поиск по чатам"
+          bg-color="surface-container-high"
+          rounded="xl"
+          density="compact"
+          autocomplete="off"
+          @focus="openSearch"
+          @blur="closeSearch"
+          @keydown.enter.prevent="runSearch"
+        />
+        <Transition name="chrome-reveal">
+          <div v-if="searchOpen && chatSuggestions.length" class="search-dropdown">
+            <VList bg-color="transparent" density="comfortable">
+              <VListItem
+                v-for="chat in chatSuggestions"
+                :key="chat.id"
+                @click="selectSuggestion(chat.id)"
+              >
+                <template #prepend>
+                  <VAvatar color="primary" variant="tonal" size="36">
+                    {{ resolveChatAvatar(chat.peerDisplayName) }}
+                  </VAvatar>
+                </template>
+                <template #title>{{ chat.peerDisplayName }}</template>
+                <template #subtitle>{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</template>
+              </VListItem>
+            </VList>
+          </div>
+        </Transition>
+      </div>
+    </div>
 
-    <!-- Диалог: удаление папки (контекстное меню) -->
+    <!-- Диалог: удаление папки -->
     <VDialog :model-value="folderContextKey !== null" max-width="280" @update:model-value="folderContextKey = null">
       <VCard>
         <VCardTitle>Удалить папку?</VCardTitle>
@@ -451,9 +444,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
               :subtitle="`@${contact.login}`"
               @click="openOrCreateChat(contact.id)"
             >
-              <template #title>
-                <span>{{ contact.displayName }}</span>
-              </template>
+              <template #title>{{ contact.displayName }}</template>
               <template #prepend>
                 <VAvatar color="primary" variant="tonal" size="36">
                   {{ resolveChatAvatar(contact.displayName) }}
@@ -461,7 +452,9 @@ function formatChatPreview(chat: MessengerConversationItem) {
               </template>
             </VListItem>
           </VList>
-          <div v-else class="pa-4 text-medium-emphasis">Нет контактов для начала диалога.</div>
+          <div v-else class="pa-4">
+            <p class="on-surface-variant body-medium">Нет контактов для начала диалога.</p>
+          </div>
           <VAlert v-if="newChatError" type="error" class="ma-4">{{ newChatError }}</VAlert>
         </VCardText>
         <VCardActions>

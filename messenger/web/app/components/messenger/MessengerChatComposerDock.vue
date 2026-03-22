@@ -38,67 +38,64 @@ defineExpose({
 <template>
   <template v-if="props.visible">
     <input ref="fileInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="emit('file-select', $event)">
-    <div ref="composerBarEl" class="composer-bar composer-bar--dock">
-      <VCard class="composer-bar__card" color="surface" variant="tonal">
-        <VCardText class="composer-bar__body">
-          <div class="composer-segment composer-segment--attach">
-            <VBtn
-              type="button"
-              class="composer-btn"
-              variant="tonal"
-              :aria-label="props.mediaMenuOpen ? 'Закрыть меню смайлов, стикеров и GIF KLIPY' : 'Открыть меню смайлов, стикеров и GIF KLIPY'"
-              :disabled="!props.activeConversation || props.messagePending"
-              @click="emit('toggle-media-menu')"
-            >
-              <MessengerIcon name="smile" :size="18" />
-            </VBtn>
-          </div>
-          <div class="composer-field">
-            <textarea
-              ref="composerInputEl"
-              :value="props.draft"
-              rows="1"
-              class="composer-input"
-              placeholder="Сообщение"
-              :disabled="!props.activeConversation"
-              @input="emit('update:draft', ($event.target as HTMLTextAreaElement).value); emit('input')"
-              @focus="emit('focus')"
-              @blur="emit('blur')"
-            />
-          </div>
-          <div class="composer-segment composer-segment--actions">
-            <VBtn
-              type="button"
-              class="composer-btn"
-              variant="tonal"
-              aria-label="Прикрепить файл"
-              :disabled="!props.activeConversation || props.messagePending"
-              @click="emit('open-photo-picker')"
-            >
-              <MessengerIcon name="paperclip" :size="18" />
-            </VBtn>
-            <VBtn
-              type="button"
-              class="composer-btn"
-              :class="{
-                'composer-btn--recording': props.isRecording,
-                'composer-btn--accent': props.composerPrimaryMode === 'send',
-                'composer-btn--audio-primary': props.composerPrimaryMode === 'record',
-              }"
-              :color="props.composerPrimaryMode === 'send' ? 'primary' : undefined"
-              :variant="props.composerPrimaryMode === 'send' ? 'flat' : 'tonal'"
-              :aria-label="props.composerPrimaryMode === 'send' ? (props.hasSelectedKlipyItem ? 'Отправить выбранный стикер или GIF' : 'Отправить сообщение') : props.composerPrimaryMode === 'stop-recording' ? 'Остановить запись аудиосообщения' : 'Записать аудиосообщение'"
-              :disabled="props.composerPrimaryDisabled"
-              @pointerdown="emit('primary-pointerdown', $event)"
-              @click="emit('primary-action')"
-            >
-              <span v-if="props.isRecording">{{ `${props.recordingSeconds}s` }}</span>
-              <MessengerIcon v-else-if="props.composerPrimaryMode === 'record'" name="microphone" :size="18" />
-              <MessengerIcon v-else name="send" :size="20" />
-            </VBtn>
-          </div>
-        </VCardText>
-      </VCard>
+    <div ref="composerBarEl" class="composer-bar">
+      <VBtn
+        type="button"
+        class="composer-btn"
+        icon
+        variant="text"
+        :aria-label="props.mediaMenuOpen ? 'Закрыть меню' : 'Смайлы, стикеры, GIF'"
+        :disabled="!props.activeConversation || props.messagePending"
+        @click="emit('toggle-media-menu')"
+      >
+        <MessengerIcon name="smile" :size="22" />
+      </VBtn>
+
+      <div class="composer-field">
+        <textarea
+          ref="composerInputEl"
+          :value="props.draft"
+          rows="1"
+          class="composer-input"
+          placeholder="Сообщение"
+          :disabled="!props.activeConversation"
+          @input="emit('update:draft', ($event.target as HTMLTextAreaElement).value); emit('input')"
+          @focus="emit('focus')"
+          @blur="emit('blur')"
+        />
+      </div>
+
+      <VBtn
+        type="button"
+        class="composer-btn"
+        icon
+        variant="text"
+        aria-label="Прикрепить файл"
+        :disabled="!props.activeConversation || props.messagePending"
+        @click="emit('open-photo-picker')"
+      >
+        <MessengerIcon name="paperclip" :size="22" />
+      </VBtn>
+
+      <VBtn
+        type="button"
+        class="composer-btn"
+        :class="{ 'composer-btn--recording': props.isRecording }"
+        icon
+        :color="props.composerPrimaryMode === 'send' ? 'primary' : undefined"
+        :variant="props.composerPrimaryMode === 'send' ? 'flat' : 'text'"
+        :aria-label="props.composerPrimaryMode === 'send'
+          ? (props.hasSelectedKlipyItem ? 'Отправить выбранный стикер или GIF' : 'Отправить сообщение')
+          : props.composerPrimaryMode === 'stop-recording' ? 'Остановить запись'
+          : 'Записать аудиосообщение'"
+        :disabled="props.composerPrimaryDisabled"
+        @pointerdown="emit('primary-pointerdown', $event)"
+        @click="emit('primary-action')"
+      >
+        <span v-if="props.isRecording" class="label-medium">{{ `${props.recordingSeconds}s` }}</span>
+        <MessengerIcon v-else-if="props.composerPrimaryMode === 'record'" name="microphone" :size="22" />
+        <MessengerIcon v-else name="send" :size="22" />
+      </VBtn>
     </div>
   </template>
 </template>

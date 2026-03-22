@@ -27,108 +27,103 @@ const emit = defineEmits<{
   'toggle-microphone': []
   'toggle-speaker': []
   'hangup-call': []
+  'back': []
 }>()
 </script>
 
 <template>
-  <VCard class="section-head section-head--chat-header section-head--chat-header-vuetify" color="surface" variant="flat">
-    <VCardText class="section-head__body section-head__body--chat-header">
+  <header class="chat-header">
+    <div class="chat-header__toolbar">
+      <!-- Back button -->
       <VBtn
         type="button"
-        class="chat-user-trigger chat-user-trigger--profile chat-user-trigger--profile-vuetify"
-        :class="{ 'chat-user-trigger--audio-live': callVisible }"
+        icon
+        variant="text"
+        aria-label="Назад"
+        class="chat-header__back"
+        @click="emit('back')"
+      >
+        <VIcon>mdi-arrow-left</VIcon>
+      </VBtn>
+
+      <!-- Peer info -->
+      <VBtn
+        type="button"
+        class="chat-header__peer"
         variant="text"
         :disabled="disabled"
         @click="emit('toggle-details')"
       >
-        <VAvatar class="chat-avatar" size="48">{{ peerAvatar }}</VAvatar>
-        <span class="chat-user-meta">
-          <span
-            class="chat-user-name"
-            :class="{ 'chat-user-name--audio-live': callVisible }"
-          >
-            <span class="chat-user-name__text">{{ peerName }}</span>
-            <VChip v-if="conversationSecret" class="chat-secret-badge chat-secret-badge--header" size="x-small" variant="tonal">
-              Secret
-            </VChip>
-            <VChip v-if="callVisible" class="chat-user-name__call" size="x-small" aria-live="polite">
-              {{ callBadge }}
-            </VChip>
-            <VChip
-              v-if="callVisible"
-              class="chat-user-name__security"
-              :class="{ 'chat-user-name__security--verified': !!callSecurityEmojis }"
-              :title="callSecurityTitle"
-              size="x-small"
-              variant="tonal"
-              aria-live="polite"
-            >
-              <span class="chat-user-name__security-icon" aria-hidden="true">
-                <MessengerIcon :name="callSecurityEmojis ? 'key' : 'shield'" :size="12" />
-              </span>
-              <span class="chat-user-name__security-text">{{ callSecurityLabel }}</span>
-            </VChip>
+        <VAvatar color="primary" variant="tonal" size="36">{{ peerAvatar }}</VAvatar>
+        <div class="chat-header__peer-meta ml-2">
+          <span class="chat-header__peer-name title-medium">
+            {{ peerName }}
+            <VChip v-if="conversationSecret" size="x-small" color="warning" variant="tonal" class="ml-1">Secret</VChip>
           </span>
-        </span>
+          <span v-if="callVisible" class="chat-header__call-badge label-small" aria-live="polite">{{ callBadge }}</span>
+        </div>
       </VBtn>
 
-      <div v-if="showCallActions" class="section-actions section-actions--cluster section-actions--cluster-vuetify">
+      <VSpacer />
+
+      <!-- Call actions -->
+      <template v-if="showCallActions">
         <VBtn
           type="button"
-          class="icon-btn"
-          :class="{ 'icon-btn--call-live': audioCall }"
-          icon="mdi-phone"
-          variant="tonal"
+          icon
+          variant="text"
           aria-label="Аудиозвонок"
           :disabled="!canToggleAudioCall"
           @click="emit('toggle-audio-call')"
-        />
+        >
+          <VIcon :color="audioCall ? 'primary' : undefined">mdi-phone</VIcon>
+        </VBtn>
         <VBtn
           type="button"
-          class="icon-btn"
-          icon="mdi-video"
-          variant="tonal"
+          icon
+          variant="text"
           aria-label="Видеозвонок"
           :disabled="videoCallDisabled"
           @click="emit('start-video-call')"
-        />
-      </div>
-    </VCardText>
+        >
+          <VIcon>mdi-video</VIcon>
+        </VBtn>
+      </template>
 
+      <!-- Overflow menu -->
+      <VMenu location="bottom end">
+        <template #activator="{ props: menuProps }">
+          <VBtn type="button" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
+            <VIcon>mdi-dots-vertical</VIcon>
+          </VBtn>
+        </template>
+        <VList bg-color="surface-container-highest" density="comfortable" nav>
+          <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
+          <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
+          <VDivider class="my-1" />
+          <VListItem prepend-icon="mdi-account-cancel-outline" title="Заблокировать" />
+          <VListItem prepend-icon="mdi-delete-outline" title="Удалить диалог" class="text-error" />
+        </VList>
+      </VMenu>
+    </div>
+
+    <!-- In-call panel -->
     <Transition name="chrome-reveal">
-      <div v-if="callVisible" class="chat-call-panel">
-        <div v-if="incomingCall" class="chat-call-panel__actions chat-call-panel__actions--incoming">
-          <VBtn type="button" class="action-btn" variant="tonal" @click="emit('reject-call')">
-            Отклонить
-          </VBtn>
-          <VBtn type="button" class="action-btn action-btn--accept" color="success" variant="flat" @click="emit('accept-call')">
-            Принять
-          </VBtn>
+      <div v-if="callVisible" class="chat-header__call-strip">
+        <div v-if="incomingCall" class="chat-header__call-actions">
+          <VBtn variant="tonal" color="error" @click="emit('reject-call')">Отклонить</VBtn>
+          <VBtn variant="flat" color="success" @click="emit('accept-call')">Принять</VBtn>
         </div>
-        <div v-else class="chat-call-panel__actions chat-call-panel__actions--active">
-          <VBtn
-            type="button"
-            class="action-btn chat-call-panel__control"
-            :class="{ 'chat-call-panel__control--active': microphoneEnabled }"
-            variant="tonal"
-            @click="emit('toggle-microphone')"
-          >
-            {{ microphoneEnabled ? 'Микрофон вкл' : 'Микрофон выкл' }}
+        <div v-else class="chat-header__call-actions">
+          <VBtn variant="tonal" :color="microphoneEnabled ? 'primary' : undefined" @click="emit('toggle-microphone')">
+            <VIcon>{{ microphoneEnabled ? 'mdi-microphone' : 'mdi-microphone-off' }}</VIcon>
           </VBtn>
-          <VBtn
-            type="button"
-            class="action-btn chat-call-panel__control"
-            :class="{ 'chat-call-panel__control--active': speakerEnabled }"
-            variant="tonal"
-            @click="emit('toggle-speaker')"
-          >
-            {{ speakerEnabled ? 'Звук вкл' : 'Звук выкл' }}
+          <VBtn variant="tonal" :color="speakerEnabled ? 'primary' : undefined" @click="emit('toggle-speaker')">
+            <VIcon>{{ speakerEnabled ? 'mdi-volume-high' : 'mdi-volume-off' }}</VIcon>
           </VBtn>
-          <VBtn type="button" class="action-btn action-btn--danger" color="error" variant="flat" @click="emit('hangup-call')">
-            Завершить
-          </VBtn>
+          <VBtn variant="flat" color="error" @click="emit('hangup-call')">Завершить</VBtn>
         </div>
       </div>
     </Transition>
-  </VCard>
+  </header>
 </template>
