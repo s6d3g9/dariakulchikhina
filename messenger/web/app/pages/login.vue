@@ -30,31 +30,45 @@ async function submit() {
 </script>
 
 <template>
-  <div class="auth-shell">
-    <section class="auth-card">
-      <p class="hero-kicker">Messenger Auth</p>
-      <h1>Вход</h1>
-      <p class="hero-text">Отдельный вход для нового standalone messenger.</p>
+  <div class="auth-shell auth-shell--vuetify">
+    <VCard class="auth-card auth-card--vuetify" color="surface" variant="elevated">
+      <VCardText class="auth-card__body">
+        <div class="auth-card__copy">
+          <p class="auth-card__eyebrow">Messenger Auth</p>
+          <h1>Вход</h1>
+          <p class="hero-text">Отдельный вход для standalone messenger на новой material-базе.</p>
+        </div>
 
-      <form class="auth-form" @submit.prevent="submit">
-        <label class="auth-field">
-          <span>Логин</span>
-          <input v-model="form.login" type="text" class="inline-input" autocomplete="username" required>
-        </label>
+        <VForm class="auth-form auth-form--vuetify" @submit.prevent="submit">
+          <VTextField
+            v-model="form.login"
+            label="Логин"
+            autocomplete="username"
+            required
+          />
 
-        <label class="auth-field">
-          <span>Пароль</span>
-          <input v-model="form.password" type="password" class="inline-input" autocomplete="current-password" required>
-        </label>
+          <VTextField
+            v-model="form.password"
+            label="Пароль"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
 
-        <p v-if="errorMessage" class="auth-error">{{ errorMessage }}</p>
+          <VAlert v-if="errorMessage" type="error">
+            {{ errorMessage }}
+          </VAlert>
 
-        <button type="submit" class="action-btn" :disabled="pending">
-          {{ pending ? 'Входим...' : 'Войти' }}
-        </button>
-      </form>
+          <VBtn type="submit" block :disabled="pending">
+            {{ pending ? 'Входим...' : 'Войти' }}
+          </VBtn>
+        </VForm>
+      </VCardText>
 
-      <NuxtLink to="/register" class="auth-link">Регистрация</NuxtLink>
-    </section>
+      <VCardActions class="auth-card__actions">
+        <p class="auth-link-caption">Нет аккаунта?</p>
+        <NuxtLink to="/register" class="auth-link auth-link--vuetify">Регистрация</NuxtLink>
+      </VCardActions>
+    </VCard>
   </div>
 </template>

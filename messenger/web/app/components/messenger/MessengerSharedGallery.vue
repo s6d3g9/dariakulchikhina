@@ -80,6 +80,10 @@ function resolveDefaultSection(): GallerySectionKey {
 
 const activeSection = ref<GallerySectionKey>(resolveDefaultSection())
 const activePhotoId = ref<string | null>(props.initialPhotoId || props.photos[0]?.id || null)
+const activeSectionModel = computed<GallerySectionKey>({
+  get: () => activeSection.value,
+  set: value => openSection(value),
+})
 
 const sections = computed(() => {
   if (props.photoOnly) {
@@ -179,42 +183,47 @@ function openPhoto(photoId: string) {
 
 <template>
   <section class="content-drawer content-drawer--dock content-gallery" aria-label="Shared content gallery">
-    <div class="content-drawer__head content-drawer__head--gallery">
-      <div class="content-drawer__copy">
-        <p class="content-drawer__title">{{ title }}</p>
-        <p class="content-drawer__hint">{{ hint }}</p>
-      </div>
-      <button type="button" class="icon-btn" aria-label="Закрыть галерею" @click="emit('close')">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.85"/>
-        </svg>
-      </button>
-    </div>
+    <VCard class="content-drawer__head content-drawer__head--gallery content-drawer__head--gallery-vuetify" color="surface" variant="tonal">
+      <VCardText class="content-drawer__head-body">
+        <div class="content-drawer__copy">
+          <p class="content-drawer__title">{{ title }}</p>
+          <p class="content-drawer__hint">{{ hint }}</p>
+        </div>
+        <VBtn type="button" icon="mdi-close" variant="text" aria-label="Закрыть галерею" @click="emit('close')" />
+      </VCardText>
+    </VCard>
 
-    <div v-if="!photoOnly" class="content-gallery__nav messenger-menu-grid" aria-label="Разделы галереи">
-      <button
+    <VTabs
+      v-if="!photoOnly"
+      v-model="activeSectionModel"
+      class="content-gallery__nav content-gallery__nav--vuetify"
+      align-tabs="start"
+      color="primary"
+      show-arrows
+      aria-label="Разделы галереи"
+    >
+      <VTab
         v-for="section in sections"
         :key="section.key"
-        type="button"
-        class="content-gallery__tab messenger-menu-grid__button"
-        :class="{ 'content-gallery__tab--active': activeSection === section.key }"
-        @click="openSection(section.key)"
+        :value="section.key"
+        class="content-gallery__tab content-gallery__tab--vuetify"
       >
         <span>{{ section.title }}</span>
-        <span class="content-gallery__tab-count">{{ section.items.length }}</span>
-      </button>
-    </div>
+        <VChip class="content-gallery__tab-count" size="x-small" variant="tonal">{{ section.items.length }}</VChip>
+      </VTab>
+    </VTabs>
 
     <div class="content-gallery__viewport">
       <Transition name="gallery-panel" mode="out-in">
         <section v-if="activeSectionData" :key="activeSectionData.key" class="content-gallery__panel content-gallery__panel--active">
           <div v-if="activeSectionData.key === 'photos' && activeSectionData.items.length" class="content-grid content-grid--photos-gallery" aria-label="Лента фотографий">
-              <button
+              <VCard
                 v-for="item in activeSectionData.items"
                 :key="item.id"
-                type="button"
                 class="content-card content-card--photo content-card--photo-gallery"
                 :class="{ 'content-card--photo-active': item.id === activePhotoId }"
+                color="surface"
+                variant="tonal"
                 @click="openPhoto(item.id)"
               >
                 <img
@@ -222,85 +231,102 @@ function openPhoto(photoId: string) {
                   :alt="item.title"
                   class="content-card__image"
                 >
-                <span class="content-card__title">{{ item.title }}</span>
-                <span class="content-card__meta">{{ item.meta }}</span>
-              </button>
+                <VCardText class="content-card__body content-card__body--vuetify">
+                  <span class="content-card__title">{{ item.title }}</span>
+                  <span class="content-card__meta">{{ item.meta }}</span>
+                </VCardText>
+              </VCard>
           </div>
           <div v-else-if="activeSectionData.key === 'stickers' && activeSectionData.items.length" class="content-grid content-grid--photos-gallery" aria-label="Лента стикеров">
-            <article
+            <VCard
               v-for="item in activeSectionData.items"
               :key="item.id"
               class="content-card content-card--photo content-card--photo-gallery content-card--sticker-gallery"
+              color="surface"
+              variant="tonal"
             >
               <img
                 :src="item.previewUrl || item.href"
                 :alt="item.title"
                 class="content-card__image content-card__image--sticker"
               >
-              <span class="content-card__title">{{ item.title }}</span>
-              <span class="content-card__meta">{{ item.meta }}</span>
-            </article>
+              <VCardText class="content-card__body content-card__body--vuetify">
+                <span class="content-card__title">{{ item.title }}</span>
+                <span class="content-card__meta">{{ item.meta }}</span>
+              </VCardText>
+            </VCard>
           </div>
           <div v-else-if="activeSectionData.key === 'documents' && activeSectionData.items.length" class="file-strip-shell">
             <div class="file-strip-rail" aria-label="Лента файлов">
-              <button
+              <VCard
                 v-for="item in activeSectionData.items"
                 :key="item.id"
-                type="button"
                 class="file-strip-card"
+                color="surface"
+                variant="tonal"
                 @click="emit('select', item)"
               >
-                <span class="file-strip-card__title">{{ item.title }}</span>
-                <span class="file-strip-card__meta">{{ item.meta }}</span>
-              </button>
+                <VCardText class="file-strip-card__body">
+                  <span class="file-strip-card__title">{{ item.title }}</span>
+                  <span class="file-strip-card__meta">{{ item.meta }}</span>
+                </VCardText>
+              </VCard>
             </div>
           </div>
           <div v-else-if="activeSectionData.key === 'keys'" class="content-security">
-            <div class="content-security__toolbar">
-              <div class="content-security__toolbar-copy">
-                <p v-if="props.security?.summary" class="content-security__summary">{{ props.security.summary }}</p>
-                <p v-if="formattedSecurityUpdatedAt" class="content-security__timestamp">Обновлено: {{ formattedSecurityUpdatedAt }}</p>
-              </div>
-              <button
-                type="button"
-                class="content-security__refresh"
-                :disabled="props.security?.pending"
-                @click="emit('refresh-security')"
-              >
-                <MessengerIcon name="refresh" :size="15" />
-                <span>{{ props.security?.pending ? 'Обновляем…' : 'Обновить' }}</span>
-              </button>
-            </div>
+            <VCard class="content-security__toolbar content-security__toolbar--vuetify" color="surface" variant="tonal">
+              <VCardText class="content-security__toolbar-body">
+                <div class="content-security__toolbar-copy">
+                  <p v-if="props.security?.summary" class="content-security__summary">{{ props.security.summary }}</p>
+                  <p v-if="formattedSecurityUpdatedAt" class="content-security__timestamp">Обновлено: {{ formattedSecurityUpdatedAt }}</p>
+                </div>
+                <VBtn
+                  type="button"
+                  class="content-security__refresh"
+                  color="secondary"
+                  variant="tonal"
+                  :loading="props.security?.pending"
+                  @click="emit('refresh-security')"
+                >
+                  {{ props.security?.pending ? 'Обновляем…' : 'Обновить' }}
+                </VBtn>
+              </VCardText>
+            </VCard>
             <div v-if="activeSectionData.items.length" class="content-security__grid">
-              <article
+              <VCard
                 v-for="item in activeSectionData.items"
                 :key="item.id"
                 class="content-security__card"
                 :class="{ 'content-security__card--ok': item.tone === 'ok' }"
+                color="surface"
+                variant="tonal"
               >
-                <div class="content-security__head">
-                  <div class="content-security__heading">
-                    <span class="content-security__icon" :class="{ 'content-security__icon--ok': item.tone === 'ok' }">
-                      <MessengerIcon :name="item.icon" :size="18" />
-                    </span>
-                    <p class="content-security__title">{{ item.title }}</p>
+                <VCardText class="content-security__card-body">
+                  <div class="content-security__head">
+                    <div class="content-security__heading">
+                      <span class="content-security__icon" :class="{ 'content-security__icon--ok': item.tone === 'ok' }">
+                        <MessengerIcon :name="item.icon" :size="18" />
+                      </span>
+                      <p class="content-security__title">{{ item.title }}</p>
+                    </div>
+                    <VChip class="content-security__state" size="x-small" variant="tonal">{{ item.state }}</VChip>
                   </div>
-                  <span class="content-security__state">{{ item.state }}</span>
-                </div>
-                <p class="content-security__meta">{{ item.meta }}</p>
-              </article>
+                  <p class="content-security__meta">{{ item.meta }}</p>
+                </VCardText>
+              </VCard>
             </div>
           </div>
           <div v-else-if="activeSectionData.items.length" class="content-grid content-grid--gallery">
-            <button
+            <VCard
               v-for="item in activeSectionData.items"
               :key="item.id"
-              type="button"
               class="content-card"
               :class="{
                 'content-card--photo': activeSectionData.key === 'photos',
                 'content-card--tile': activeSectionData.key !== 'photos',
               }"
+              color="surface"
+              variant="tonal"
               @click="activeSectionData.key === 'photos' ? openPhoto(item.id) : emit('select', item)"
             >
               <img
@@ -309,11 +335,13 @@ function openPhoto(photoId: string) {
                 :alt="item.title"
                 class="content-card__image"
               >
-              <span v-if="activeSectionData.key !== 'photos'" class="content-card__title">{{ item.title }}</span>
-              <span v-if="activeSectionData.key !== 'photos'" class="content-card__meta">{{ item.meta }}</span>
-            </button>
+              <VCardText v-if="activeSectionData.key !== 'photos'" class="content-card__body content-card__body--vuetify">
+                <span class="content-card__title">{{ item.title }}</span>
+                <span class="content-card__meta">{{ item.meta }}</span>
+              </VCardText>
+            </VCard>
           </div>
-          <p v-else class="content-empty">{{ activeSectionData.emptyLabel }}</p>
+          <VAlert v-else type="info" variant="tonal">{{ activeSectionData.emptyLabel }}</VAlert>
         </section>
       </Transition>
     </div>

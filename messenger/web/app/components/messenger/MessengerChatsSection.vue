@@ -165,48 +165,60 @@ function formatChatPreview(chat: MessengerConversationItem) {
 
 <template>
   <section class="section-block section-block--search-screen section-block--chats-screen" aria-label="Chats section">
-    <header class="search-dock search-dock--screen-header search-dock--chats-header">
-      <div class="search-dock__field search-dock__field--header">
-        <input
-          v-model="searchDraft"
-          type="text"
-          class="inline-input search-dock__input search-dock__input--header"
-          placeholder="Поиск по чатам"
-          @focus="openSearch"
-          @blur="closeSearch"
-          @keydown.enter.prevent="runSearch"
-        >
-        <Transition name="chrome-reveal">
-          <div v-if="searchOpen && chatSuggestions.length" class="search-dropdown" aria-label="Результаты поиска по чатам">
-            <button
-              v-for="chat in chatSuggestions"
-              :key="chat.id"
-              type="button"
-              class="search-dropdown__item"
-              @click="selectSuggestion(chat.id)"
-            >
-              <span class="search-dropdown__title">
-                {{ chat.peerDisplayName }}
-                <span v-if="chat.secret" class="chat-secret-badge">Secret</span>
-              </span>
-              <span class="search-dropdown__meta">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</span>
-            </button>
-          </div>
-        </Transition>
-      </div>
-    </header>
+    <VCard class="search-dock search-dock--screen-header search-dock--chats-header search-dock--vuetify" color="surface" variant="tonal">
+      <VCardText class="search-dock__body">
+        <div class="search-dock__field search-dock__field--header search-dock__field--vuetify">
+          <VTextField
+            v-model="searchDraft"
+            class="search-dock__input search-dock__input--header search-dock__input--vuetify"
+            label="Поиск по чатам"
+            placeholder="Имя контакта или сообщение"
+            prepend-inner-icon="mdi-magnify"
+            autocomplete="off"
+            hide-details
+            @focus="openSearch"
+            @blur="closeSearch"
+            @keydown.enter.prevent="runSearch"
+          />
+          <Transition name="chrome-reveal">
+            <VCard v-if="searchOpen && chatSuggestions.length" class="search-dropdown search-dropdown--vuetify" color="surface" variant="elevated" aria-label="Результаты поиска по чатам">
+              <VList bg-color="transparent" density="comfortable">
+                <VListItem
+                  v-for="chat in chatSuggestions"
+                  :key="chat.id"
+                  class="search-dropdown__item search-dropdown__item--vuetify"
+                  @click="selectSuggestion(chat.id)"
+                >
+                  <template #title>
+                    <span class="search-dropdown__title search-dropdown__title--vuetify">
+                      {{ chat.peerDisplayName }}
+                      <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal">Secret</VChip>
+                    </span>
+                  </template>
+                  <template #subtitle>
+                    <span class="search-dropdown__meta">{{ chat.lastMessage?.body || 'Сообщений пока нет' }}</span>
+                  </template>
+                </VListItem>
+              </VList>
+            </VCard>
+          </Transition>
+        </div>
+      </VCardText>
+    </VCard>
 
-    <p v-if="actionError" class="auth-error">{{ actionError }}</p>
+    <VAlert v-if="actionError" type="error">{{ actionError }}</VAlert>
 
-    <div class="list-stack list-stack--screen-scroll">
-      <article
+    <VList class="list-stack list-stack--screen-scroll chats-list chats-list--vuetify" bg-color="transparent" lines="two">
+      <VCard
         v-for="chat in conversations.conversations.value"
         :key="chat.id"
-        class="list-card list-card--action list-card--clickable list-card--chat-row"
+        class="list-card list-card--action list-card--clickable list-card--chat-row list-card--vuetify"
         :class="{
           'list-card--hold-open': holdActions.activeItemId.value === chat.id,
           'list-card--holding': holdActions.holdingItemId.value === chat.id,
         }"
+        color="surface"
+        variant="tonal"
         data-hold-actions-root="true"
         @click="openChat(chat.id)"
         @mousedown.left="startHold(chat.id, $event)"
@@ -218,21 +230,27 @@ function formatChatPreview(chat: MessengerConversationItem) {
         @touchmove="holdActions.cancelHold()"
         @contextmenu.prevent="holdActions.open(chat.id)"
       >
-        <span class="chat-row-avatar" aria-hidden="true">
-          <span class="chat-avatar chat-avatar--list">{{ resolveChatAvatar(chat.peerDisplayName) }}</span>
-        </span>
-        <div class="list-card__main">
-          <div class="list-card__row list-card__row--chat-top">
-            <p class="list-card__title">
-              {{ chat.peerDisplayName }}
-              <span v-if="chat.secret" class="chat-secret-badge">Secret</span>
-            </p>
-            <p class="list-card__meta list-card__meta--timestamp">{{ formatConversationTimestamp(chat.updatedAt) }}</p>
+        <VCardText class="list-card__body list-card__body--vuetify">
+          <div class="chat-row-avatar" aria-hidden="true">
+            <VAvatar class="chat-avatar chat-avatar--list chat-avatar--vuetify" color="primary" variant="tonal" size="44">
+              {{ resolveChatAvatar(chat.peerDisplayName) }}
+            </VAvatar>
           </div>
-          <div class="list-card__row list-card__row--chat-footer">
-            <p class="list-card__text list-card__text--preview">{{ formatChatPreview(chat) }}</p>
+          <div class="list-card__main">
+            <div class="list-card__row list-card__row--chat-top">
+              <p class="list-card__title list-card__title--vuetify">
+                {{ chat.peerDisplayName }}
+                <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal">Secret</VChip>
+              </p>
+              <VChip class="list-card__meta list-card__meta--timestamp" size="x-small" variant="text">
+                {{ formatConversationTimestamp(chat.updatedAt) }}
+              </VChip>
+            </div>
+            <div class="list-card__row list-card__row--chat-footer">
+              <p class="list-card__text list-card__text--preview">{{ formatChatPreview(chat) }}</p>
+            </div>
           </div>
-        </div>
+        </VCardText>
         <div v-if="holdActions.activeItemId.value === chat.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
           <button
             type="button"
@@ -262,14 +280,16 @@ function formatChatPreview(chat: MessengerConversationItem) {
             <MessengerIcon name="delete" :size="16" />
           </button>
         </div>
-      </article>
+      </VCard>
 
-      <article v-if="!conversations.conversations.value.length" class="list-card list-card--panel">
-        <div class="list-card__main">
-          <p class="list-card__title">Чаты пока пусты</p>
-          <p class="list-card__text">Когда появятся direct-чаты, они будут показаны здесь.</p>
-        </div>
-      </article>
-    </div>
+      <VCard v-if="!conversations.conversations.value.length" class="list-card list-card--panel list-card--vuetify" color="surface" variant="tonal">
+        <VCardText class="list-card__body list-card__body--vuetify list-card__body--empty">
+          <div class="list-card__main">
+            <p class="list-card__title">Чаты пока пусты</p>
+            <p class="list-card__text">Когда появятся direct-чаты, они будут показаны здесь.</p>
+          </div>
+        </VCardText>
+      </VCard>
+    </VList>
   </section>
 </template>

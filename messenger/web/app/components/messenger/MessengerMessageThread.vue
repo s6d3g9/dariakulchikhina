@@ -149,75 +149,84 @@ function handleBubbleClick(event: MouseEvent) {
         data-message-controls="true"
         @pointerdown.stop
       >
+        <VCard class="message-bubble__controls-card" color="surface" variant="tonal">
+          <VCardText class="message-bubble__controls-body">
         <div class="message-bubble__topline message-bubble__topline--reactions" data-message-reaction-menu="true">
           <div class="message-bubble__reaction-overlay">
-            <button
+            <VBtn
               v-for="emoji in reactionOptions"
               :key="`${entry.id}-quick-${emoji}`"
-              type="button"
               class="message-reaction-btn message-reaction-btn--quick"
               :class="{ 'message-reaction-btn--active': entry.reactions?.some(reaction => reaction.emoji === emoji && reaction.own) }"
+              variant="tonal"
               @click.stop="emit('react', entry.id, emoji)"
             >
               {{ emoji }}
-            </button>
+            </VBtn>
           </div>
         </div>
 
         <div class="message-bubble__topline message-bubble__topline--actions" data-message-action-menu="true">
           <div class="message-bubble__actions">
-            <button
-              type="button"
+            <VBtn
               class="message-action-btn"
+              icon
+              variant="text"
               aria-label="Комментировать"
               title="Комментировать"
               @click.stop="emit('comment', entry.id)"
             >
               <MessengerIcon name="comment" :size="18" />
-            </button>
-            <button
-              type="button"
+            </VBtn>
+            <VBtn
               class="message-action-btn"
+              icon
+              variant="text"
               aria-label="Ответить"
               title="Ответить"
               @click.stop="emit('reply', entry.id)"
             >
               <MessengerIcon name="reply" :size="18" />
-            </button>
-            <button
+            </VBtn>
+            <VBtn
               v-if="allowForward"
-              type="button"
               class="message-action-btn"
+              icon
+              variant="text"
               aria-label="Переслать"
               title="Переслать"
               @click.stop="emit('forward', entry.id)"
             >
               <MessengerIcon name="forward" :size="18" />
-            </button>
-            <button
+            </VBtn>
+            <VBtn
               v-if="entry.own && entry.kind === 'text'"
-              type="button"
               class="message-action-btn"
+              icon
+              variant="text"
               aria-label="Изменить"
               title="Изменить"
               :disabled="editingMessageId === entry.id"
               @click.stop="emit('edit', entry.id, entry.body)"
             >
               <MessengerIcon name="edit" :size="18" />
-            </button>
-            <button
+            </VBtn>
+            <VBtn
               v-if="entry.own || allowMutualDelete"
-              type="button"
               class="message-action-btn"
+              icon
+              variant="text"
               aria-label="Удалить"
               title="Удалить"
               :disabled="editingMessageId === entry.id || messagePending"
               @click.stop="emit('remove', entry.id)"
             >
               <MessengerIcon name="delete" :size="18" />
-            </button>
+            </VBtn>
           </div>
         </div>
+          </VCardText>
+        </VCard>
       </div>
     </Transition>
     <div v-if="entry.forwardedFrom" class="message-relation-card message-relation-card--forwarded">

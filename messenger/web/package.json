@@ -8,9 +8,12 @@
     "preview": "nuxt preview --port 3300"
   },
   "dependencies": {
+    "@mdi/font": "^7.4.47",
     "@pinia/nuxt": "^0.11.3",
     "nuxt": "^4.3.1",
-    "pinia": "^3.0.4"
+    "pinia": "^3.0.4",
+    "vuetify": "^4.0.3",
+    "vuetify-nuxt-module": "^0.19.5"
   },
   "devDependencies": {
     "typescript": "^5.8.2"

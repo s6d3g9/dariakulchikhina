@@ -4,8 +4,14 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-03-19',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
-  modules: ['@pinia/nuxt'],
+  modules: ['@pinia/nuxt', 'vuetify-nuxt-module'],
   ssr: false,
+  vuetify: {
+    moduleOptions: {
+      styles: true,
+    },
+    vuetifyOptions: './vuetify.options.ts',
+  },
   app: {
     baseURL: appBaseUrl,
     head: {

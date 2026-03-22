@@ -15,13 +15,19 @@ const klipy = useMessengerKlipy()
 const viewport = useMessengerViewport()
 const draft = ref('')
 const actionError = ref('')
-const fileInput = ref<HTMLInputElement | null>(null)
-const composerMediaMenuEl = ref<HTMLElement | null>(null)
-const composerCategoryRailEl = ref<HTMLElement | null>(null)
-const composerKlipyFeedEl = ref<HTMLElement | null>(null)
+const composerMediaMenuRef = ref<{
+  categoryRailEl: HTMLDivElement | null
+  feedEl: HTMLDivElement | null
+} | null>(null)
+const composerDockRef = ref<{
+  fileInputEl: HTMLInputElement | null
+  composerBarEl: HTMLDivElement | null
+  composerInputEl: HTMLTextAreaElement | null
+} | null>(null)
 const messageListEl = ref<HTMLElement | null>(null)
-const composerInputEl = ref<HTMLTextAreaElement | null>(null)
-const composerBarEl = ref<HTMLElement | null>(null)
+const fileInput = computed(() => composerDockRef.value?.fileInputEl ?? null)
+const composerInputEl = computed(() => composerDockRef.value?.composerInputEl ?? null)
+const composerBarEl = computed(() => composerDockRef.value?.composerBarEl ?? null)
 const detailsOpen = ref(false)
 const copiedLabel = ref('')
 const secretIntroSeen = useState<Record<string, boolean>>('messenger-secret-intro-seen', () => ({}))
@@ -959,14 +965,14 @@ watch([composerMediaMenuVisible, composerMediaMenuTab, klipyQuery, selectedCatal
 watch(loopedKlipyCategories, async () => {
   await nextTick()
   if (showKlipyCategories.value) {
-    composerCategoryRailEl.value?.removeAttribute('data-loop-ready')
-    primeLoopedRailPosition(composerCategoryRailEl.value)
+    composerMediaMenuRef.value?.categoryRailEl?.removeAttribute('data-loop-ready')
+    primeLoopedRailPosition(composerMediaMenuRef.value?.categoryRailEl ?? null)
   }
 })
 
 watch(primaryKlipyItems, async () => {
   await nextTick()
-  composerKlipyFeedEl.value?.removeAttribute('data-loop-ready')
+  composerMediaMenuRef.value?.feedEl?.removeAttribute('data-loop-ready')
 })
 
 watch(() => klipyQuery.value.trim(), (value) => {
@@ -1923,181 +1929,62 @@ onBeforeUnmount(() => {
       @dragleave="handleDesktopDragLeave"
       @drop="handleDesktopDrop"
     >
-      <header class="section-head section-head--chat-header">
-        <button
-          type="button"
-          class="chat-user-trigger chat-user-trigger--profile"
-          :class="{ 'chat-user-trigger--audio-live': headerCallVisible }"
-          :disabled="!conversations.activeConversation.value"
-          @click="toggleDetails"
-        >
-          <span class="chat-avatar">{{ activePeerAvatar }}</span>
-          <span class="chat-user-meta">
-            <span
-              class="chat-user-name"
-              :class="{ 'chat-user-name--audio-live': headerCallVisible }"
-            >
-              <span class="chat-user-name__text">{{ activePeerName }}</span>
-              <span v-if="activeConversationSecret" class="chat-secret-badge chat-secret-badge--header">
-                Secret
-              </span>
-              <span v-if="headerCallVisible" class="chat-user-name__call" aria-live="polite">
-                {{ headerCallBadge }}
-              </span>
-              <span
-                v-if="headerCallVisible"
-                class="chat-user-name__security"
-                :class="{ 'chat-user-name__security--verified': !!headerCallSecurityEmojis }"
-                :title="headerCallSecurityTitle"
-                aria-live="polite"
-              >
-                <span class="chat-user-name__security-icon" aria-hidden="true">
-                  <MessengerIcon :name="headerCallSecurityEmojis ? 'key' : 'shield'" :size="12" />
-                </span>
-                <span class="chat-user-name__security-text">{{ headerCallSecurityLabel }}</span>
-              </span>
-            </span>
-          </span>
-        </button>
-
-        <div class="section-actions section-actions--cluster">
-          <button
-            type="button"
-            class="icon-btn"
-            :class="{ 'icon-btn--call-live': headerAudioCall }"
-            aria-label="Аудиозвонок"
-            :disabled="!canToggleAudioCall"
-            @click="toggleAudioCall"
-          >
-            <MessengerIcon name="phone" :size="18" />
-          </button>
-          <button
-            type="button"
-            class="icon-btn"
-            aria-label="Видеозвонок"
-            :disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
-            @click="startCall('video')"
-          >
-            <MessengerIcon name="video" :size="18" />
-          </button>
-        </div>
-
-        <Transition name="chrome-reveal">
-          <div v-if="headerCallVisible" class="chat-call-panel">
-            <div v-if="headerIncomingCall" class="chat-call-panel__actions chat-call-panel__actions--incoming">
-              <button type="button" class="action-btn" @click="calls.rejectIncomingCall()">
-                Отклонить
-              </button>
-              <button type="button" class="action-btn action-btn--accept" @click="calls.acceptIncomingCall()">
-                Принять
-              </button>
-            </div>
-            <div v-else class="chat-call-panel__actions chat-call-panel__actions--active">
-              <button
-                type="button"
-                class="action-btn chat-call-panel__control"
-                :class="{ 'chat-call-panel__control--active': calls.controls.value.microphoneEnabled }"
-                @click="calls.toggleMicrophone()"
-              >
-                {{ calls.controls.value.microphoneEnabled ? 'Микрофон вкл' : 'Микрофон выкл' }}
-              </button>
-              <button
-                type="button"
-                class="action-btn chat-call-panel__control"
-                :class="{ 'chat-call-panel__control--active': calls.controls.value.speakerEnabled }"
-                @click="calls.toggleSpeaker()"
-              >
-                {{ calls.controls.value.speakerEnabled ? 'Звук вкл' : 'Звук выкл' }}
-              </button>
-              <button type="button" class="action-btn action-btn--danger" @click="calls.hangupCall()">
-                Завершить
-              </button>
-            </div>
-          </div>
-        </Transition>
-      </header>
+      <MessengerChatHeader
+        :peer-avatar="activePeerAvatar"
+        :peer-name="activePeerName"
+        :disabled="!conversations.activeConversation.value"
+        :conversation-secret="activeConversationSecret"
+        :call-visible="headerCallVisible"
+        :incoming-call="headerIncomingCall"
+        :audio-call="headerAudioCall"
+        :call-badge="headerCallBadge"
+        :call-security-emojis="headerCallSecurityEmojis"
+        :call-security-label="headerCallSecurityLabel"
+        :call-security-title="headerCallSecurityTitle"
+        :can-toggle-audio-call="canToggleAudioCall"
+        :video-call-disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
+        :microphone-enabled="calls.controls.value.microphoneEnabled"
+        :speaker-enabled="calls.controls.value.speakerEnabled"
+        @toggle-details="toggleDetails"
+        @toggle-audio-call="toggleAudioCall"
+        @start-video-call="startCall('video')"
+        @reject-call="calls.rejectIncomingCall()"
+        @accept-call="calls.acceptIncomingCall()"
+        @toggle-microphone="calls.toggleMicrophone()"
+        @toggle-speaker="calls.toggleSpeaker()"
+        @hangup-call="calls.hangupCall()"
+      />
 
 
       <p v-if="actionError" class="auth-error">{{ actionError }}</p>
   <p v-else-if="calls.requestingPermissions.value" class="copy-toast">Запрашиваем доступ к микрофону{{ conversations.activeConversation.value ? '' : '' }}…</p>
       <p v-else-if="copiedLabel" class="copy-toast">{{ copiedLabel }}</p>
 
-      <Transition name="chrome-reveal">
-        <div v-if="showSecretIntro" class="composer-context composer-context--secret-intro">
-          <div class="composer-context__copy">
-            <p class="composer-context__eyebrow">Secret chat</p>
-            <p class="composer-context__title">Первое сообщение запустит защищённый диалог</p>
-            <p class="composer-context__text">Текст, вложения и голосовые в этом чате шифруются end-to-end. Пересылка отключена, а любой участник может удалить любое сообщение.</p>
-          </div>
-        </div>
-      </Transition>
-
-      <Transition name="chrome-reveal">
-        <div v-if="composerRelationMode && composerRelationMessage && !detailsOpen" class="composer-context composer-context--active">
-          <div class="composer-context__copy">
-            <p class="composer-context__eyebrow">{{ relationTitle(composerRelationMode) }}</p>
-            <p class="composer-context__title">{{ composerRelationMessage.own ? 'Вы' : composerRelationMessage.senderDisplayName }}</p>
-            <p class="composer-context__text">{{ relationPreviewText(composerRelationMessage) }}</p>
-          </div>
-          <button type="button" class="message-action-btn" @click="clearComposerRelation">Отмена</button>
-        </div>
-      </Transition>
-
-      <Transition name="chrome-reveal">
-        <div v-if="forwardingMessage && !detailsOpen" class="composer-context composer-context--forward composer-forward-panel">
-          <div class="composer-forward-panel__head">
-            <div class="composer-context__copy">
-              <p class="composer-context__eyebrow">Переслать сообщение</p>
-              <p class="composer-context__title">{{ forwardingMessage.own ? 'Вы' : forwardingMessage.senderDisplayName }}</p>
-              <p class="composer-context__text">{{ relationPreviewText(forwardingMessage) }}</p>
-            </div>
-            <button type="button" class="message-action-btn composer-forward-panel__close" @click="closeForwardPicker">×</button>
-          </div>
-          <div class="composer-forward-panel__toolbar">
-            <input
-              v-model="forwardSearchDraft"
-              type="text"
-              class="inline-input composer-forward-panel__search"
-              placeholder="Поиск пользователя"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-            >
-            <button type="button" class="composer-forward-panel__submit" :disabled="!selectedForwardPeerIds.length || conversations.messagePending.value" @click="forwardMessage">
-              {{ forwardSubmitLabel }}
-            </button>
-          </div>
-          <div v-if="selectedForwardTargets.length" class="composer-forward-panel__selected">
-            <button
-              v-for="target in selectedForwardTargets"
-              :key="`selected-${target.peerUserId}`"
-              type="button"
-              class="composer-forward-chip"
-              @click="toggleForwardTarget(target.peerUserId)"
-            >
-              <span>{{ target.displayName }}</span>
-              <span>×</span>
-            </button>
-          </div>
-          <div class="forward-targets forward-targets--minimal">
-            <p v-if="contacts.pending.value" class="composer-media-menu__empty">[ ИЩЕМ ПОЛЬЗОВАТЕЛЕЙ... ]</p>
-            <button
-              v-for="target in availableForwardTargets"
-              v-else
-              :key="target.peerUserId"
-              type="button"
-              class="forward-target-btn forward-target-btn--minimal"
-              :class="{ 'forward-target-btn--active': selectedForwardPeerIds.includes(target.peerUserId) }"
-              :disabled="conversations.messagePending.value || !target.selectable"
-              @click="toggleForwardTarget(target.peerUserId)"
-            >
-              <span class="forward-target-btn__title">{{ target.displayName }}</span>
-              <span class="forward-target-btn__meta">{{ target.current ? 'Текущий чат' : target.selectable ? `@${target.login}` : 'Не в контактах' }}</span>
-            </button>
-            <p v-if="!contacts.pending.value && !availableForwardTargets.length" class="composer-context__text">Пользователи не найдены.</p>
-          </div>
-        </div>
-      </Transition>
+      <MessengerChatComposerContexts
+        :show-secret-intro="showSecretIntro"
+        :show-relation-panel="Boolean(composerRelationMode && composerRelationMessage && !detailsOpen)"
+        :relation-title="relationTitle(composerRelationMode)"
+        :relation-author="composerRelationMessage ? (composerRelationMessage.own ? 'Вы' : composerRelationMessage.senderDisplayName) : ''"
+        :relation-preview="relationPreviewText(composerRelationMessage)"
+        :show-forward-panel="Boolean(forwardingMessage && !detailsOpen)"
+        :forward-author="forwardingMessage ? (forwardingMessage.own ? 'Вы' : forwardingMessage.senderDisplayName) : ''"
+        :forward-preview="relationPreviewText(forwardingMessage)"
+        :forward-search-draft="forwardSearchDraft"
+        :selected-forward-targets="selectedForwardTargets"
+        :available-forward-targets="availableForwardTargets"
+        :contacts-pending="contacts.pending.value"
+        :message-pending="conversations.messagePending.value"
+        :forward-submit-label="forwardSubmitLabel"
+        :show-klipy-pill="Boolean(selectedKlipyItem && (!detailsOpen || !conversations.activeConversation.value))"
+        :selected-klipy-item="selectedKlipyItem"
+        :media-upload-pending="mediaUploadPending"
+        @clear-relation="clearComposerRelation"
+        @close-forward-picker="closeForwardPicker"
+        @update:forward-search-draft="forwardSearchDraft = $event"
+        @forward-message="forwardMessage"
+        @toggle-forward-target="toggleForwardTarget"
+        @clear-selected-klipy-item="clearSelectedKlipyItem"
+      />
 
       <div class="chat-reading-shell">
         <div v-if="desktopDropActive || dragDropPending" class="chat-dropzone" aria-live="polite">
@@ -2184,182 +2071,56 @@ onBeforeUnmount(() => {
         </Transition>
       </div>
 
-      <Transition name="overlay-rise">
-        <div
-          v-if="composerMediaMenuVisible"
-          ref="composerMediaMenuEl"
-          class="composer-media-menu"
-        >
-        <div class="composer-media-menu__tabs messenger-menu-grid">
-          <button
-            type="button"
-            class="composer-media-menu__tab messenger-menu-grid__button"
-            :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'emoji' }"
-            @click="openComposerMediaTab('emoji')"
-          >
-            Смайлы
-          </button>
-          <button
-            type="button"
-            class="composer-media-menu__tab messenger-menu-grid__button"
-            :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'stickers' }"
-            @click="openComposerMediaTab('stickers')"
-          >
-            <span>Стикеры</span>
-            <span v-if="klipyAudienceMode.stickers === 'shared'" class="composer-media-menu__tab-badge">👥</span>
-          </button>
-          <button
-            type="button"
-            class="composer-media-menu__tab messenger-menu-grid__button"
-            :class="{ 'composer-media-menu__tab--active': composerMediaMenuTab === 'gif' }"
-            @click="openComposerMediaTab('gif')"
-          >
-            <span>GIF</span>
-            <span v-if="klipyAudienceMode.gif === 'shared'" class="composer-media-menu__tab-badge">👥</span>
-          </button>
-        </div>
+      <MessengerChatMediaMenu
+        ref="composerMediaMenuRef"
+        :visible="composerMediaMenuVisible"
+        :tab="composerMediaMenuTab"
+        :emoji-options="composerEmojiOptions"
+        :shared-stickers="klipyAudienceMode.stickers === 'shared'"
+        :shared-gif="klipyAudienceMode.gif === 'shared'"
+        :klipy-query="klipyQuery"
+        :klipy-search-placeholder="klipySearchPlaceholder"
+        :show-klipy-categories="showKlipyCategories"
+        :looped-klipy-categories="loopedKlipyCategories"
+        :selected-catalog-category="selectedCatalogCategory"
+        :primary-klipy-items="primaryKlipyItems"
+        :active-klipy-kind="activeKlipyKind"
+        :can-load-more-klipy-items="canLoadMoreKlipyItems"
+        :media-upload-pending="mediaUploadPending"
+        :klipy-status-text="klipyStatusText"
+        :format-klipy-category-tag="formatKlipyCategoryTag"
+        :klipy-tile-style="klipyTileStyle"
+        @update:tab="openComposerMediaTab"
+        @insert-emoji="insertEmojiToDraft"
+        @update:klipy-query="klipyQuery = $event"
+        @category-scroll="handleLoopedRailScroll($event, { looped: currentKlipyCategories.length > 1 })"
+        @select-category="selectCatalogCategory"
+        @feed-scroll="handleLoopedFeedScroll($event, { looped: false, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
+        @select-item="selectKlipyItem"
+      />
 
-        <div v-if="composerMediaMenuTab === 'emoji'" class="composer-media-menu__emoji-grid">
-          <button
-            v-for="emoji in composerEmojiOptions"
-            :key="emoji"
-            type="button"
-            class="composer-media-menu__emoji"
-            @click="insertEmojiToDraft(emoji)"
-          >
-            {{ emoji }}
-          </button>
-        </div>
-
-        <div v-else class="composer-media-menu__catalog">
-          <input
-            v-model="klipyQuery"
-            type="text"
-            class="inline-input composer-media-menu__search"
-            :placeholder="klipySearchPlaceholder"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-          >
-          <div v-if="showKlipyCategories" class="composer-media-menu__category-rail-wrap">
-            <div
-              ref="composerCategoryRailEl"
-              class="composer-media-menu__category-rail"
-              :aria-label="composerMediaMenuTab === 'stickers' ? 'Категории стикеров KLIPY' : 'Категории GIF KLIPY'"
-              @scroll="handleLoopedRailScroll($event, { looped: currentKlipyCategories.length > 1 })"
-            >
-              <button
-                v-for="(category, index) in loopedKlipyCategories"
-                :key="`${composerMediaMenuTab}-${category.query}-${index}`"
-                type="button"
-                class="composer-media-menu__category-tile"
-                :class="{ 'composer-media-menu__category-tile--active': selectedCatalogCategory === category.query }"
-                @click="selectCatalogCategory(category.query)"
-              >
-                <span class="composer-media-menu__category-label">{{ formatKlipyCategoryTag(category.query) }}</span>
-              </button>
-            </div>
-          </div>
-          <div v-if="primaryKlipyItems.length" class="composer-media-menu__feed-wrap">
-            <div
-              ref="composerKlipyFeedEl"
-              class="composer-media-menu__feed"
-              :class="{ 'composer-media-menu__feed--stickers': activeKlipyKind === 'sticker', 'composer-media-menu__feed--gifs': activeKlipyKind === 'gif' }"
-              @scroll="handleLoopedFeedScroll($event, { looped: false, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
-            >
-              <button
-                v-for="(item, index) in primaryKlipyItems"
-                :key="`${item.id}-${index}`"
-                type="button"
-                class="composer-media-menu__result"
-                :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
-                :title="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"
-                :disabled="mediaUploadPending"
-                :style="klipyTileStyle(item)"
-                @click="selectKlipyItem(item)"
-              >
-                <img class="composer-media-menu__result-preview" :class="`composer-media-menu__result-preview--${item.kind}`" :src="item.previewUrl" :alt="item.title" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-              </button>
-            </div>
-          </div>
-          <p v-if="klipyStatusText" class="composer-media-menu__status">{{ klipyStatusText }}</p>
-          <div class="composer-media-menu__watermark">KLIPY</div>
-        </div>
-        </div>
-      </Transition>
-
-      <Transition name="overlay-rise">
-        <div v-if="selectedKlipyItem && (!detailsOpen || !conversations.activeConversation.value)" class="composer-context composer-context--klipy">
-          <div class="composer-klipy-pill">
-            <button type="button" class="message-action-btn composer-klipy-pill__dismiss" :disabled="mediaUploadPending" @click="clearSelectedKlipyItem">×</button>
-            <img
-              class="composer-klipy-pill__preview"
-              :class="`composer-klipy-pill__preview--${selectedKlipyItem.kind}`"
-              :src="selectedKlipyItem.previewUrl"
-              :alt="selectedKlipyItem.title"
-              loading="lazy"
-              decoding="async"
-              referrerpolicy="no-referrer"
-            >
-          </div>
-        </div>
-      </Transition>
-
-      <input v-if="!detailsOpen || !conversations.activeConversation.value" ref="fileInput" type="file" class="sr-only" @change="handleFileSelect">
-      <div v-if="!detailsOpen || !conversations.activeConversation.value" ref="composerBarEl" class="composer-bar composer-bar--dock">
-        <div class="composer-segment composer-segment--attach">
-          <button
-            type="button"
-            class="composer-btn"
-            :aria-label="composerMediaMenuOpen ? 'Закрыть меню смайлов, стикеров и GIF KLIPY' : 'Открыть меню смайлов, стикеров и GIF KLIPY'"
-            :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
-            @click="toggleComposerMediaMenu"
-          >
-            <MessengerIcon name="smile" :size="18" />
-          </button>
-        </div>
-        <div class="composer-field">
-          <textarea
-            ref="composerInputEl"
-            v-model="draft"
-            rows="1"
-            class="composer-input"
-            placeholder="Сообщение"
-            :disabled="!conversations.activeConversation.value"
-            @focus="expandComposer"
-            @blur="collapseComposer"
-            @input="syncComposerInputHeight"
-          />
-        </div>
-        <div class="composer-segment composer-segment--actions">
-          <button
-            type="button"
-            class="composer-btn"
-            aria-label="Прикрепить файл"
-            :disabled="!conversations.activeConversation.value || conversations.messagePending.value"
-            @click="openFilePicker()"
-          >
-            <MessengerIcon name="paperclip" :size="18" />
-          </button>
-          <button
-            type="button"
-            class="composer-btn"
-            :class="{
-              'composer-btn--recording': isRecording,
-              'composer-btn--accent': composerPrimaryMode === 'send',
-              'composer-btn--audio-primary': composerPrimaryMode === 'record',
-            }"
-            :aria-label="composerPrimaryMode === 'send' ? (selectedKlipyItem ? 'Отправить выбранный стикер или GIF' : 'Отправить сообщение') : composerPrimaryMode === 'stop-recording' ? 'Остановить запись аудиосообщения' : 'Записать аудиосообщение'"
-            :disabled="composerPrimaryDisabled"
-            @pointerdown="handleComposerPrimaryPointerDown"
-            @click="handleComposerPrimaryAction"
-          >
-            <span v-if="isRecording">{{ `${recordingSeconds}s` }}</span>
-            <MessengerIcon v-else-if="composerPrimaryMode === 'record'" name="microphone" :size="18" />
-            <MessengerIcon v-else name="send" :size="20" />
-          </button>
-        </div>
-      </div>
+      <MessengerChatComposerDock
+        ref="composerDockRef"
+        :visible="!detailsOpen || !conversations.activeConversation.value"
+        :draft="draft"
+        :media-menu-open="composerMediaMenuOpen"
+        :active-conversation="Boolean(conversations.activeConversation.value)"
+        :message-pending="conversations.messagePending.value"
+        :is-recording="isRecording"
+        :recording-seconds="recordingSeconds"
+        :composer-primary-mode="composerPrimaryMode"
+        :composer-primary-disabled="composerPrimaryDisabled"
+        :has-selected-klipy-item="Boolean(selectedKlipyItem)"
+        @update:draft="draft = $event"
+        @focus="expandComposer"
+        @blur="collapseComposer"
+        @input="syncComposerInputHeight"
+        @file-select="handleFileSelect"
+        @toggle-media-menu="toggleComposerMediaMenu"
+        @open-file-picker="openFilePicker()"
+        @primary-pointerdown="handleComposerPrimaryPointerDown"
+        @primary-action="handleComposerPrimaryAction"
+      />
     </section>
   </section>
 </template>

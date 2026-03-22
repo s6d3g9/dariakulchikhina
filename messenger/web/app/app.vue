@@ -1,3 +1,5 @@
 <template>
-  <NuxtPage />
+  <VApp class="messenger-v-app">
+    <NuxtPage />
+  </VApp>
 </template>
