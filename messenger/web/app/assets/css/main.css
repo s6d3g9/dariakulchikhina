@@ -585,6 +585,38 @@ html, body {
   top: 0;
   z-index: 30;
   gap: 4px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.chat-header::before,
+.chat-header::after {
+  content: '';
+  position: absolute;
+  inset: -24% -10% -18% 42%;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 220ms ease;
+}
+
+.chat-header--call-visible::before {
+  background:
+    radial-gradient(circle at 82% 50%, color-mix(in srgb, rgb(var(--v-theme-primary)) 24%, transparent) 0 10%, transparent 34%),
+    radial-gradient(circle at 92% 46%, color-mix(in srgb, rgb(var(--v-theme-error)) 18%, transparent) 0 9%, transparent 28%),
+    linear-gradient(110deg, transparent 18%, color-mix(in srgb, rgb(var(--v-theme-primary)) 12%, transparent) 44%, color-mix(in srgb, rgb(var(--v-theme-tertiary)) 16%, transparent) 72%, transparent 92%);
+  filter: blur(18px) saturate(122%);
+  opacity: 0.92;
+  animation: chat-header-call-glow 7s ease-in-out infinite alternate;
+}
+
+.chat-header--call-visible::after {
+  background:
+    radial-gradient(circle at 74% 70%, color-mix(in srgb, rgb(var(--v-theme-primary)) 16%, transparent) 0 12%, transparent 34%),
+    radial-gradient(circle at 90% 30%, color-mix(in srgb, rgb(var(--v-theme-tertiary)) 18%, transparent) 0 10%, transparent 26%);
+  filter: blur(24px);
+  opacity: 0.7;
+  animation: chat-header-call-glow-secondary 5.2s ease-in-out infinite alternate;
 }
 
 .chat-header__identity {
@@ -625,6 +657,8 @@ html, body {
   width: 100%;
   height: 64px;
   gap: 4px;
+  position: relative;
+  z-index: 1;
 }
 
 .chat-header__main-rail {
@@ -657,6 +691,11 @@ html, body {
   overflow: hidden;
   flex: 0 1 auto;
   max-width: min(58vw, 520px);
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, rgb(var(--v-theme-surface-container-highest)) 80%, transparent);
+  border: 1px solid color-mix(in srgb, rgb(var(--v-theme-primary)) 20%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, rgb(var(--v-theme-primary)) 8%, transparent);
 }
 
 .chat-header__back {
@@ -731,7 +770,7 @@ html, body {
 }
 
 .chat-header__call-inline--incoming {
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .chat-header__call-settings,
@@ -764,6 +803,34 @@ html, body {
   min-height: 38px !important;
   min-width: 38px !important;
   flex-shrink: 0;
+}
+
+.chat-header__icon-btn--danger {
+  box-shadow: 0 0 0 1px color-mix(in srgb, rgb(var(--v-theme-error)) 28%, transparent);
+}
+
+@keyframes chat-header-call-glow {
+  0% {
+    transform: translate3d(-2%, 0, 0) scale(0.98);
+    opacity: 0.72;
+  }
+  50% {
+    transform: translate3d(1%, -2%, 0) scale(1.02);
+    opacity: 0.96;
+  }
+  100% {
+    transform: translate3d(3%, 2%, 0) scale(1.05);
+    opacity: 0.82;
+  }
+}
+
+@keyframes chat-header-call-glow-secondary {
+  0% {
+    transform: translate3d(2%, -2%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-3%, 3%, 0) scale(1.08);
+  }
 }
 
 .chat-header__action-btn {
@@ -800,6 +867,7 @@ html, body {
 
   .chat-header__toolbar-actions--call {
     max-width: min(46vw, 248px);
+    padding: 2px 4px;
   }
 
   .chat-header__call-settings {
