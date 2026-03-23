@@ -349,19 +349,13 @@ const gallerySearch = ref('')
 
     <!-- Search dock (bottom) -->
     <div class="search-dock">
-      <div class="search-dock__field">
-        <VTextField
-          v-model="gallerySearch"
-          class="composer-search-field"
-          variant="solo-filled"
-          flat
-          hide-details
-          placeholder="Поиск в галерее"
-          bg-color="surface-container-high"
-          rounded="xl"
-          autocomplete="off"
-        />
-      </div>
+      <input
+        v-model="gallerySearch"
+        type="text"
+        class="composer-input"
+        placeholder="Поиск в галерее"
+        autocomplete="off"
+      />
     </div>
   </section>
 </template>

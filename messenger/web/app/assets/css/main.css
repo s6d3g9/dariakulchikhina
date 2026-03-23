@@ -132,9 +132,11 @@ html, body {
   border-top: 1px solid rgb(var(--v-theme-outline-variant));
 }
 
-/* Composer-like search field: VTextField styled to match composer textarea */
-.composer-search-field {
-  flex-shrink: 0;
+/* Search dock native input: force single-line height */
+.search-dock .composer-input {
+  height: 48px;
+  max-height: 48px;
+  overflow: hidden;
 }
 
 .composer-search-field .v-field {
