@@ -496,6 +496,35 @@ html.dark select:-webkit-autofill:focus {
   user-select: text;
 }
 
+.auth-root .auth-input,
+.auth-root .chat-auth-input,
+.auth-root input.auth-input,
+.auth-root input.chat-auth-input {
+  color: var(--glass-text) !important;
+  -webkit-text-fill-color: var(--glass-text) !important;
+  caret-color: var(--glass-text);
+}
+
+.auth-root .auth-input:focus,
+.auth-root .chat-auth-input:focus,
+.auth-root input.auth-input:focus,
+.auth-root input.chat-auth-input:focus {
+  color: var(--ds-accent, var(--glass-text));
+  -webkit-text-fill-color: var(--ds-accent, var(--glass-text)) !important;
+  caret-color: var(--ds-accent, var(--glass-text));
+  border-bottom-color: var(--ds-accent, var(--glass-text));
+}
+
+.auth-root .auth-input:-webkit-autofill,
+.auth-root .auth-input:-webkit-autofill:hover,
+.auth-root .auth-input:-webkit-autofill:focus,
+.auth-root .chat-auth-input:-webkit-autofill,
+.auth-root .chat-auth-input:-webkit-autofill:hover,
+.auth-root .chat-auth-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ds-accent, var(--glass-text)) !important;
+  caret-color: var(--ds-accent, var(--glass-text));
+}
+
 .auth-card,
 .auth-secondary,
 .chat-auth-box,
