@@ -16,6 +16,7 @@
     "vuetify-nuxt-module": "^0.19.5"
   },
   "devDependencies": {
+    "lightningcss": "^1.32.0",
     "typescript": "^5.8.2"
   }
 }

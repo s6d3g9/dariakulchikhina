@@ -6,6 +6,11 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   modules: ['@pinia/nuxt', 'vuetify-nuxt-module'],
   ssr: false,
+  vite: {
+    build: {
+      cssMinify: 'lightningcss',
+    },
+  },
   vuetify: {
     moduleOptions: {
       styles: true,
