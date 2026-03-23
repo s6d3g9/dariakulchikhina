@@ -800,21 +800,13 @@ html, body {
 }
 
 .chat-header__call-secondary--idle {
-  display: flex;
-  justify-content: flex-end;
-  grid-auto-flow: unset;
-  grid-auto-columns: unset;
-}
-
-.chat-header__call-secondary--idle > .chat-header__icon-btn {
-  width: auto;
-  min-width: 38px !important;
+  min-width: 12px;
 }
 
 .chat-header__call-primary {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(2, 38px);
+  grid-template-columns: repeat(3, 38px);
   padding-left: 4px;
 }
 
@@ -901,7 +893,7 @@ html, body {
   }
 
   .chat-header__call-primary {
-    grid-template-columns: repeat(2, 34px);
+    grid-template-columns: repeat(3, 34px);
   }
 
   .chat-header__icon-btn,

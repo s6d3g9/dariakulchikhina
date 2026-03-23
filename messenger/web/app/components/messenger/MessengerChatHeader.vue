@@ -152,6 +152,17 @@ const nextCallViewModeLabel = computed(() => {
                   >
                     <VIcon>mdi-camera-flip</VIcon>
                   </VBtn>
+                  <VBtn
+                    v-if="hasVideoCallControls"
+                    class="chat-header__icon-btn"
+                    icon
+                    :variant="callViewMode === 'full' ? 'tonal' : 'text'"
+                    :color="callViewMode === 'full' ? 'primary' : undefined"
+                    :aria-label="nextCallViewModeLabel"
+                    @click="emit('set-call-view-mode', nextCallViewMode)"
+                  >
+                    <VIcon>{{ nextCallViewModeIcon }}</VIcon>
+                  </VBtn>
                 </template>
               </div>
 
@@ -177,27 +188,6 @@ const nextCallViewModeLabel = computed(() => {
                 >
                   <VIcon>{{ incomingCall ? 'mdi-phone-check' : (videoEnabled ? 'mdi-video' : 'mdi-video-off') }}</VIcon>
                 </VBtn>
-                <template v-if="hasVideoCallControls">
-                  <VBtn
-                    class="chat-header__icon-btn"
-                    icon
-                    :variant="callViewMode === 'full' ? 'tonal' : 'text'"
-                    :color="callViewMode === 'full' ? 'primary' : undefined"
-                    :aria-label="nextCallViewModeLabel"
-                    @click="emit('set-call-view-mode', nextCallViewMode)"
-                  >
-                    <VIcon>{{ nextCallViewModeIcon }}</VIcon>
-                  </VBtn>
-                </template>
-                <span v-else class="chat-header__icon-slot" aria-hidden="true"></span>
-              </div>
-
-            </div>
-          </template>
-
-          <template v-else>
-            <div class="chat-header__call-inline chat-header__call-inline--idle">
-              <div class="chat-header__call-secondary chat-header__call-secondary--idle">
                 <VMenu location="bottom end">
                   <template #activator="{ props: menuProps }">
                     <VBtn type="button" class="chat-header__icon-btn" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
@@ -213,6 +203,13 @@ const nextCallViewModeLabel = computed(() => {
                   </VList>
                 </VMenu>
               </div>
+
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="chat-header__call-inline chat-header__call-inline--idle">
+              <div class="chat-header__call-secondary chat-header__call-secondary--idle"></div>
 
               <div class="chat-header__call-primary chat-header__call-primary--idle">
                 <VBtn
@@ -241,6 +238,20 @@ const nextCallViewModeLabel = computed(() => {
                   <VIcon>mdi-video</VIcon>
                 </VBtn>
                 <span v-else class="chat-header__icon-slot" aria-hidden="true"></span>
+                <VMenu location="bottom end">
+                  <template #activator="{ props: menuProps }">
+                    <VBtn type="button" class="chat-header__icon-btn" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
+                      <VIcon>mdi-dots-vertical</VIcon>
+                    </VBtn>
+                  </template>
+                  <VList bg-color="surface-container-highest" density="comfortable" nav>
+                    <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
+                    <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
+                    <VDivider class="my-1" />
+                    <VListItem prepend-icon="mdi-account-cancel-outline" title="Заблокировать" />
+                    <VListItem prepend-icon="mdi-delete-outline" title="Удалить диалог" class="text-error" />
+                  </VList>
+                </VMenu>
               </div>
             </div>
           </template>
