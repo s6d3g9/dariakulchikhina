@@ -84,40 +84,53 @@ async function logout() {
       <!-- Звонок (overlay) -->
       <MessengerCallOverlay />
 
-      <!-- Bottom Navigation Bar -->
-      <VBottomNavigation
-        v-model="navValue"
+      <!-- Bottom Navigation Bar (кастомный, не VBottomNavigation — чтобы оставался в flex-потоке) -->
+      <nav
         v-show="showBottomNav"
         class="messenger-bottom-nav"
-        bg-color="surface-container-low"
-        grow
-        elevation="0"
         aria-label="Основная навигация"
       >
-        <VBtn value="chats" class="messenger-nav-btn">
+        <button
+          type="button"
+          class="messenger-nav-btn"
+          :class="{ 'messenger-nav-btn--active': navValue === 'chats' }"
+          @click="navValue = 'chats'"
+        >
           <VIcon class="messenger-nav-icon">mdi-message-text-outline</VIcon>
           <span class="messenger-nav-label">Чаты</span>
-        </VBtn>
+        </button>
 
-        <VBtn
-          value="chat"
+        <button
+          type="button"
           class="messenger-nav-btn"
+          :class="{ 'messenger-nav-btn--active': navValue === 'chat' }"
           :disabled="chatDisabled"
+          @click="navValue = 'chat'"
         >
           <VIcon class="messenger-nav-icon">mdi-message-outline</VIcon>
           <span class="messenger-nav-label">Чат</span>
-        </VBtn>
+        </button>
 
-        <VBtn value="contacts" class="messenger-nav-btn">
+        <button
+          type="button"
+          class="messenger-nav-btn"
+          :class="{ 'messenger-nav-btn--active': navValue === 'contacts' }"
+          @click="navValue = 'contacts'"
+        >
           <VIcon class="messenger-nav-icon">mdi-account-multiple-outline</VIcon>
           <span class="messenger-nav-label">Контакты</span>
-        </VBtn>
+        </button>
 
-        <VBtn value="settings" class="messenger-nav-btn">
+        <button
+          type="button"
+          class="messenger-nav-btn"
+          :class="{ 'messenger-nav-btn--active': navValue === 'settings' }"
+          @click="navValue = 'settings'"
+        >
           <VIcon class="messenger-nav-icon">mdi-cog-outline</VIcon>
           <span class="messenger-nav-label">Настройки</span>
-        </VBtn>
-      </VBottomNavigation>
+        </button>
+      </nav>
     </div>
   </VMain>
 </template>
