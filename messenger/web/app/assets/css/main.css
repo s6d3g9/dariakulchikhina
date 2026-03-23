@@ -162,7 +162,7 @@ html, body {
 /* ── Search Dock ─────────────────────────────────────────── */
 .search-dock {
   flex-shrink: 0;
-  padding: 4px 8px;
+  padding: 4px 8px 12px;
   background: rgb(var(--v-theme-surface-container-low));
 }
 
@@ -845,7 +845,7 @@ html, body {
 .composer-bar {
   display: flex;
   align-items: stretch;
-  padding: 4px 8px;
+  padding: 4px 8px 12px;
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container-low));
 }
@@ -854,7 +854,7 @@ html, body {
   display: flex;
   align-items: flex-end;
   gap: 2px;
-  padding: 4px 8px !important;
+  padding: 4px 8px 12px !important;
 }
 
 .composer-field {
