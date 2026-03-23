@@ -79,9 +79,11 @@ html, body {
   /* НЕ position: fixed — всегда в потоке flex-column */
   display: flex;
   flex-direction: row;
-  align-items: stretch;
+  align-items: center;
   flex-shrink: 0;
-  height: 56px;
+  height: 52px;
+  gap: 6px;
+  padding: 4px 8px;
   background: rgb(var(--v-theme-surface-container-low));
   z-index: 10;
 }
@@ -93,16 +95,19 @@ html, body {
   align-items: center;
   justify-content: center;
   min-width: 0;
-  padding: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 14px;
   border: none;
   background: transparent;
   color: rgb(var(--v-theme-on-surface-variant));
   cursor: pointer;
-  transition: color 150ms ease, opacity 150ms ease;
+  transition: color 150ms ease, opacity 150ms ease, background-color 150ms ease;
 }
 
 .messenger-nav-btn--active {
   color: rgb(var(--v-theme-primary));
+  background: rgb(var(--v-theme-secondary-container));
 }
 
 .messenger-nav-btn:disabled {
@@ -112,11 +117,12 @@ html, body {
 }
 
 .messenger-nav-btn:hover:not(:disabled):not(.messenger-nav-btn--active) {
+  background: rgb(var(--v-theme-surface-container-high));
   color: rgb(var(--v-theme-on-surface));
 }
 
 .messenger-nav-icon {
-  font-size: 24px !important;
+  font-size: 28px !important;
 }
 
 /* ── Section block base ──────────────────────────────────── */
@@ -237,10 +243,10 @@ html, body {
 }
 
 .section-tabs .v-tab {
-  min-width: 56px;
-  width: 56px;
-  min-height: 56px;
-  border-radius: 16px;
+  min-width: 64px;
+  width: 64px;
+  min-height: 44px;
+  border-radius: 14px;
   padding: 0;
 }
 
@@ -1122,7 +1128,7 @@ html, body {
 .composer-media-menu__tabs {
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container-low)) !important;
-  height: 56px !important;
+  height: 52px !important;
 }
 
 .composer-media-menu__tabs .v-slide-group__content,
@@ -1134,10 +1140,16 @@ html, body {
 .composer-media-menu__tabs .v-tab,
 .content-gallery__nav .v-tab,
 .section-tabs .v-tab {
-  min-width: 56px !important;
-  width: 56px;
-  min-height: 56px !important;
+  min-width: 64px !important;
+  width: 64px;
+  min-height: 44px !important;
   padding: 0 !important;
+}
+
+.composer-media-menu__tabs .v-tab .v-icon,
+.content-gallery__nav .v-tab .v-icon,
+.section-tabs .v-tab .v-icon {
+  font-size: 26px !important;
 }
 
 .composer-media-menu__tab-badge {
@@ -1176,7 +1188,7 @@ html, body {
 .content-gallery__nav {
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container)) !important;
-  height: 56px !important;
+  height: 52px !important;
 }
 
 .content-gallery__panel {
