@@ -534,24 +534,89 @@ html, body {
 }
 
 .message-bubble__controls-body {
-  padding: 8px !important;
+  padding: 6px 8px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .message-bubble__topline--reactions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 2px;
   margin-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.message-bubble__topline--reactions::-webkit-scrollbar { display: none; }
+
+.message-bubble__reaction-overlay {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 2px;
 }
 
 .message-bubble__topline--actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row;
+  flex-wrap: nowrap;
   gap: 2px;
 }
 
-.message-reaction-btn { min-width: 40px !important; height: 36px; }
-.message-action-btn   { width: 36px !important; height: 36px; }
+.message-bubble__actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 2px;
+}
+
+.message-reaction-btn { min-width: 36px !important; width: 36px !important; height: 36px !important; padding: 0 !important; }
+.message-action-btn   { width: 36px !important; height: 36px !important; min-width: 36px !important; padding: 0 !important; }
+
+.composer-context--klipy {
+  display: flex;
+  justify-content: flex-start;
+  padding: 8px 12px 0;
+  flex-shrink: 0;
+}
+
+.composer-klipy-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 92px;
+  min-height: 92px;
+  max-width: 136px;
+  padding: 8px;
+  border-radius: 20px !important;
+  background: rgb(var(--v-theme-surface-container-high)) !important;
+  border: 1px solid rgb(var(--v-theme-outline-variant));
+  overflow: hidden;
+}
+
+.composer-klipy-pill__dismiss {
+  position: absolute !important;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.14) !important;
+}
+
+.composer-klipy-pill__preview {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.composer-klipy-pill__preview--gif {
+  width: 120px;
+  height: 72px;
+}
 
 /* ── Bubble content (M3 colors) ──────────────────────────── */
 .message-bubble__content {

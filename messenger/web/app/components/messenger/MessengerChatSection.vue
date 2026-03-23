@@ -2117,7 +2117,7 @@ onBeforeUnmount(() => {
 
       <MessengerChatComposerDock
         ref="composerDockRef"
-        :visible="Boolean(conversations.activeConversation.value) && !detailsOpen"
+        :visible="Boolean(conversations.activeConversation.value) && !detailsOpen && !composerMediaMenuVisible"
         :draft="draft"
         :media-menu-open="composerMediaMenuOpen"
         :active-conversation="Boolean(conversations.activeConversation.value)"
