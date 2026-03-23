@@ -44,7 +44,10 @@ const emit = defineEmits<{
     <VCard v-if="showSecretIntro" class="composer-context composer-context--secret-intro" color="surface" variant="tonal">
       <VCardText class="composer-context__body">
         <div class="composer-context__copy">
-          <p class="composer-context__eyebrow">Secret chat</p>
+          <p class="composer-context__eyebrow composer-context__eyebrow--icon">
+            <MessengerIcon name="shield" :size="14" />
+            <span>Защищённый чат</span>
+          </p>
           <p class="composer-context__title">Первое сообщение запустит защищённый диалог</p>
           <p class="composer-context__text">Текст, вложения и голосовые в этом чате шифруются end-to-end. Пересылка отключена, а любой участник может удалить любое сообщение.</p>
         </div>

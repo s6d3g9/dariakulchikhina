@@ -268,8 +268,10 @@ function formatChatPreview(chat: MessengerConversationItem) {
           <template #title>
             <div class="chat-row__titlebar">
               <div class="chat-row__titlemain">
-                <span class="title-small">{{ chat.peerDisplayName }}</span>
-                <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal" class="ml-2">Secret</VChip>
+                <span class="title-small chat-row__display-name">{{ chat.peerDisplayName }}</span>
+                <span class="chat-secret-marker" :class="{ 'chat-secret-marker--active': chat.secret }" aria-hidden="true">
+                  <MessengerIcon v-if="chat.secret" class="chat-secret-marker__icon" name="shield" :size="14" />
+                </span>
               </div>
 
               <div
