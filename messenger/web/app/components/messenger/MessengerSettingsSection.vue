@@ -423,7 +423,6 @@ function selectSettingsSection(key: string) {
       bg-color="surface-container"
       color="primary"
       density="compact"
-      show-arrows
       @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account')"
     >
       <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key">
