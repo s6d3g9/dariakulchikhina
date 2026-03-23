@@ -196,43 +196,53 @@ const nextCallViewModeLabel = computed(() => {
           </template>
 
           <template v-else>
-            <template v-if="showCallActions">
-              <VBtn
-                type="button"
-                icon
-                variant="text"
-                aria-label="Аудиозвонок"
-                :disabled="!canToggleAudioCall"
-                @click="emit('toggle-audio-call')"
-              >
-                <VIcon :color="audioCall ? 'primary' : undefined">mdi-phone</VIcon>
-              </VBtn>
-              <VBtn
-                type="button"
-                icon
-                variant="text"
-                aria-label="Видеозвонок"
-                :disabled="videoCallDisabled"
-                @click="emit('start-video-call')"
-              >
-                <VIcon>mdi-video</VIcon>
-              </VBtn>
-            </template>
+            <div class="chat-header__call-inline chat-header__call-inline--idle">
+              <div class="chat-header__call-secondary chat-header__call-secondary--idle">
+                <VMenu location="bottom end">
+                  <template #activator="{ props: menuProps }">
+                    <VBtn type="button" class="chat-header__icon-btn" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
+                      <VIcon>mdi-dots-vertical</VIcon>
+                    </VBtn>
+                  </template>
+                  <VList bg-color="surface-container-highest" density="comfortable" nav>
+                    <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
+                    <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
+                    <VDivider class="my-1" />
+                    <VListItem prepend-icon="mdi-account-cancel-outline" title="Заблокировать" />
+                    <VListItem prepend-icon="mdi-delete-outline" title="Удалить диалог" class="text-error" />
+                  </VList>
+                </VMenu>
+              </div>
 
-            <VMenu location="bottom end">
-              <template #activator="{ props: menuProps }">
-                <VBtn type="button" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
-                  <VIcon>mdi-dots-vertical</VIcon>
+              <div class="chat-header__call-primary chat-header__call-primary--idle">
+                <VBtn
+                  v-if="showCallActions"
+                  type="button"
+                  class="chat-header__icon-btn"
+                  icon
+                  variant="text"
+                  aria-label="Аудиозвонок"
+                  :disabled="!canToggleAudioCall"
+                  @click="emit('toggle-audio-call')"
+                >
+                  <VIcon :color="audioCall ? 'primary' : undefined">mdi-phone</VIcon>
                 </VBtn>
-              </template>
-              <VList bg-color="surface-container-highest" density="comfortable" nav>
-                <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
-                <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
-                <VDivider class="my-1" />
-                <VListItem prepend-icon="mdi-account-cancel-outline" title="Заблокировать" />
-                <VListItem prepend-icon="mdi-delete-outline" title="Удалить диалог" class="text-error" />
-              </VList>
-            </VMenu>
+                <span v-else class="chat-header__icon-slot" aria-hidden="true"></span>
+                <VBtn
+                  v-if="showCallActions"
+                  type="button"
+                  class="chat-header__icon-btn"
+                  icon
+                  variant="text"
+                  aria-label="Видеозвонок"
+                  :disabled="videoCallDisabled"
+                  @click="emit('start-video-call')"
+                >
+                  <VIcon>mdi-video</VIcon>
+                </VBtn>
+                <span v-else class="chat-header__icon-slot" aria-hidden="true"></span>
+              </div>
+            </div>
           </template>
         </div>
       </div>
