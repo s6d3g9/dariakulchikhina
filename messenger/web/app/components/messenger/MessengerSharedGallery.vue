@@ -179,37 +179,19 @@ function openPhoto(photoId: string) {
   activeSection.value = 'photos'
   activePhotoId.value = photoId
 }
+
+const gallerySearch = ref('')
 </script>
 
 <template>
   <section class="content-drawer content-drawer--dock content-gallery" aria-label="Shared content gallery">
-    <VCard class="content-drawer__head content-drawer__head--gallery content-drawer__head--gallery-vuetify" color="surface" variant="tonal">
-      <VCardText class="content-drawer__head-body" style="">
-        <div style="flex: 1;"></div>
-        <VBtn type="button" icon="mdi-close" variant="text" aria-label="Закрыть галерею" @click="emit('close')" />
-      </VCardText>
-    </VCard>
+    <!-- Close button (minimal, top-right) -->
+    <div class="content-gallery__close-row">
+      <div style="flex: 1;"></div>
+      <VBtn type="button" icon="mdi-close" variant="text" size="small" aria-label="Закрыть галерею" @click="emit('close')" />
+    </div>
 
-    <VTabs
-      v-if="!photoOnly"
-      v-model="activeSectionModel"
-      class="content-gallery__nav content-gallery__nav--vuetify"
-      align-tabs="start"
-      color="primary"
-      show-arrows
-      aria-label="Разделы галереи"
-    >
-      <VTab
-        v-for="section in sections"
-        :key="section.key"
-        :value="section.key"
-        class="content-gallery__tab content-gallery__tab--vuetify"
-      >
-        <span>{{ section.title }}</span>
-        <VChip class="content-gallery__tab-count" size="x-small" variant="tonal">{{ section.items.length }}</VChip>
-      </VTab>
-    </VTabs>
-
+    <!-- Content viewport (flex: 1, scrollable) -->
     <div class="content-gallery__viewport">
       <Transition name="gallery-panel" mode="out-in">
         <section v-if="activeSectionData" :key="activeSectionData.key" class="content-gallery__panel content-gallery__panel--active">
@@ -341,6 +323,46 @@ function openPhoto(photoId: string) {
           <VAlert v-else type="info" variant="tonal">{{ activeSectionData.emptyLabel }}</VAlert>
         </section>
       </Transition>
+    </div>
+
+    <!-- Section tabs (bottom, above search dock) -->
+    <VTabs
+      v-if="!photoOnly"
+      v-model="activeSectionModel"
+      class="content-gallery__nav content-gallery__nav--vuetify"
+      align-tabs="start"
+      color="primary"
+      show-arrows
+      density="compact"
+      aria-label="Разделы галереи"
+    >
+      <VTab
+        v-for="section in sections"
+        :key="section.key"
+        :value="section.key"
+        class="content-gallery__tab content-gallery__tab--vuetify"
+      >
+        <span>{{ section.title }}</span>
+        <VChip class="content-gallery__tab-count" size="x-small" variant="tonal">{{ section.items.length }}</VChip>
+      </VTab>
+    </VTabs>
+
+    <!-- Search dock (bottom) -->
+    <div class="search-dock">
+      <div class="search-dock__field">
+        <VTextField
+          v-model="gallerySearch"
+          variant="solo-filled"
+          flat
+          hide-details
+          prepend-inner-icon="mdi-magnify"
+          placeholder="Поиск в галерее"
+          bg-color="surface-container-high"
+          rounded="xl"
+          density="compact"
+          autocomplete="off"
+        />
+      </div>
     </div>
   </section>
 </template>

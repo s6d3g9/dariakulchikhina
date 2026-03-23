@@ -80,7 +80,7 @@ defineExpose({
     >
       <!-- Layer 1+2+3: content → category chips → search, flexible -->
       <div class="composer-media-menu__body">
-        <!-- Emoji grid -->
+        <!-- Emoji grid (Layer 1) -->
         <div v-if="tab === 'emoji'" class="composer-media-menu__emoji-grid">
           <VBtn
             v-for="emoji in emojiOptions"
@@ -94,22 +94,8 @@ defineExpose({
           </VBtn>
         </div>
 
-        <!-- Emoji category chips (Layer 2) -->
-        <div v-if="tab === 'emoji'" class="composer-media-menu__category-rail">
-          <button
-            v-for="cat in emojiCategories"
-            :key="cat.key"
-            type="button"
-            class="composer-media-menu__category-tile"
-            :class="{ 'composer-media-menu__category-tile--active': activeEmojiCategory === cat.key }"
-            @click="activeEmojiCategory = cat.key"
-          >
-            <span class="composer-media-menu__category-label">{{ cat.icon }} {{ cat.label }}</span>
-          </button>
-        </div>
-
-        <!-- Photo tab -->
-        <div v-else-if="tab === 'photo'" class="composer-media-menu__photo-tab">
+        <!-- Photo tab (Layer 1) -->
+        <div v-if="tab === 'photo'" class="composer-media-menu__photo-tab">
           <div class="composer-media-menu__upload-row">
             <VBtn
               type="button"
@@ -133,22 +119,8 @@ defineExpose({
           <p v-else class="composer-media-menu__status">Фото из переписки появятся здесь</p>
         </div>
 
-        <!-- Photo/File category chips (Layer 2) -->
-        <div v-if="tab === 'photo' || tab === 'file'" class="composer-media-menu__category-rail">
-          <button
-            v-for="cat in fileCategoryChips"
-            :key="cat.key"
-            type="button"
-            class="composer-media-menu__category-tile"
-            :class="{ 'composer-media-menu__category-tile--active': activeFileCategory === cat.key }"
-            @click="activeFileCategory = cat.key"
-          >
-            <span class="composer-media-menu__category-label">{{ cat.label }}</span>
-          </button>
-        </div>
-
-        <!-- File tab -->
-        <div v-else-if="tab === 'file'" class="composer-media-menu__file-tab">
+        <!-- File tab (Layer 1) -->
+        <div v-if="tab === 'file'" class="composer-media-menu__file-tab">
           <div class="composer-media-menu__upload-row">
             <VBtn
               type="button"
@@ -173,8 +145,8 @@ defineExpose({
           <p v-else class="composer-media-menu__status">Файлы из переписки появятся здесь</p>
         </div>
 
-        <!-- Stickers / GIF (KLIPY) -->
-        <div v-else class="composer-media-menu__catalog">
+        <!-- Stickers / GIF (KLIPY) (Layer 1) -->
+        <div v-if="tab === 'stickers' || tab === 'gif'" class="composer-media-menu__catalog">
           <p v-if="klipyStatusText" class="composer-media-menu__status">{{ klipyStatusText }}</p>
           <div class="composer-media-menu__watermark">KLIPY</div>
 
@@ -210,7 +182,35 @@ defineExpose({
           </div>
         </div>
 
-        <!-- Layer 2: Category chips -->
+        <!-- Layer 2: Emoji category chips -->
+        <div v-if="tab === 'emoji'" class="composer-media-menu__category-rail">
+          <button
+            v-for="cat in emojiCategories"
+            :key="cat.key"
+            type="button"
+            class="composer-media-menu__category-tile"
+            :class="{ 'composer-media-menu__category-tile--active': activeEmojiCategory === cat.key }"
+            @click="activeEmojiCategory = cat.key"
+          >
+            <span class="composer-media-menu__category-label">{{ cat.icon }} {{ cat.label }}</span>
+          </button>
+        </div>
+
+        <!-- Layer 2: Photo/File category chips -->
+        <div v-if="tab === 'photo' || tab === 'file'" class="composer-media-menu__category-rail">
+          <button
+            v-for="cat in fileCategoryChips"
+            :key="cat.key"
+            type="button"
+            class="composer-media-menu__category-tile"
+            :class="{ 'composer-media-menu__category-tile--active': activeFileCategory === cat.key }"
+            @click="activeFileCategory = cat.key"
+          >
+            <span class="composer-media-menu__category-label">{{ cat.label }}</span>
+          </button>
+        </div>
+
+        <!-- Layer 2: Klipy category chips -->
         <div
           v-if="showKlipyCategories"
           ref="categoryRailEl"
