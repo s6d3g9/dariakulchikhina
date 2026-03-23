@@ -451,6 +451,41 @@ html.dark select:-webkit-autofill:focus {
   line-height: 1.4;
 }
 
+.auth-card,
+.auth-secondary,
+.chat-auth-box,
+.auth-title,
+.seed-title,
+.auth-subtitle,
+.seed-copy,
+.auth-secondary__title,
+.auth-links a,
+.auth-link-btn,
+.chat-auth-eyebrow,
+.chat-auth-title,
+.chat-auth-copy,
+.chat-auth-link,
+.chat-auth-submit {
+  color: var(--glass-text);
+}
+
+.auth-field label,
+.chat-auth-label {
+  color: color-mix(in srgb, var(--glass-text) 72%, transparent);
+}
+
+select option,
+select optgroup {
+  background: var(--glass-page-bg);
+  color: var(--glass-text);
+}
+
+html.dark select option,
+html.dark select optgroup {
+  background: var(--ds-dark-surface-bg, #0d0e12);
+  color: var(--glass-text);
+}
+
 /* ── Unified cabinet/menu primitives (0.2 briefing style) ── */
 .std-sidenav {
   border: none;
