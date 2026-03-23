@@ -58,9 +58,7 @@ const emit = defineEmits<{
         <div class="chat-header__peer-meta ml-2">
           <span class="chat-header__peer-name title-medium">
             <span class="chat-header__peer-name-text">{{ peerName }}</span>
-            <span class="chat-secret-marker" :class="{ 'chat-secret-marker--active': conversationSecret }" aria-hidden="true">
-              <MessengerIcon v-if="conversationSecret" class="chat-secret-marker__icon" name="shield" :size="14" />
-            </span>
+            <MessengerIcon v-if="conversationSecret" class="chat-secret-marker" name="shield" :size="14" aria-hidden="true" />
           </span>
           <span v-if="callVisible" class="chat-header__call-badge label-small" aria-live="polite">{{ callBadge }}</span>
         </div>

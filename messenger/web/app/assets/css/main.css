@@ -104,7 +104,7 @@ html, body {
   align-items: center;
   justify-content: center;
   min-width: 0;
-  min-height: var(--messenger-bottom-bar-button-height);
+  height: var(--messenger-bottom-bar-button-height);
   padding: 0 4px;
   border-radius: var(--messenger-bottom-bar-radius);
   border: none;
@@ -269,11 +269,13 @@ html, body {
 .section-tabs {
   flex-shrink: 0;
   height: var(--messenger-bottom-bar-height) !important;
+  padding: 0 !important;
   background: rgb(var(--v-theme-surface-container-low)) !important;
 }
 
 .section-tabs .v-slide-group__content {
   display: flex;
+  align-items: center;
   width: 100%;
   gap: var(--messenger-bottom-bar-gap);
   transition: gap 220ms ease;
@@ -283,6 +285,7 @@ html, body {
   flex: 1 1 0;
   min-width: 0;
   width: auto;
+  height: var(--messenger-bottom-bar-button-height);
   min-height: var(--messenger-bottom-bar-button-height);
   border-radius: var(--messenger-bottom-bar-radius);
   padding: 0;
@@ -377,7 +380,7 @@ html, body {
 .chat-row__titlemain {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   overflow: hidden;
 }
@@ -397,18 +400,10 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 18px;
-  width: 18px;
-  height: 18px;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
   color: rgb(var(--v-theme-warning));
-}
-
-.chat-secret-marker__icon {
-  display: block;
-}
-
-.chat-secret-marker:not(.chat-secret-marker--active) {
-  visibility: hidden;
 }
 
 /* ── Contact Row ─────────────────────────────────────────── */
@@ -653,7 +648,7 @@ html, body {
 .chat-header__peer-name {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1015,7 +1010,7 @@ html, body {
 /* ── Composer Dock ───────────────────────────────────────── */
 .composer-bar {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   padding: 4px 8px 12px;
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container-low));
@@ -1025,7 +1020,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 4px 8px 12px !important;
+  padding: 0 !important;
 }
 
 .composer-field {
@@ -1058,6 +1053,7 @@ html, body {
   padding-bottom: var(--messenger-dock-padding-y);
   padding-left: 42px;
   padding-right: 82px;
+  background: transparent;
 }
 
 .composer-input--dock {
@@ -1313,6 +1309,7 @@ html, body {
 .content-gallery__nav .v-slide-group__content,
 .section-tabs .v-slide-group__content {
   display: flex;
+  align-items: center;
   width: 100%;
   gap: var(--messenger-bottom-bar-gap);
   transition: gap 220ms ease;
@@ -1324,6 +1321,7 @@ html, body {
   flex: 1 1 0;
   min-width: 0 !important;
   width: auto;
+  height: var(--messenger-bottom-bar-button-height) !important;
   min-height: var(--messenger-bottom-bar-button-height) !important;
   padding: 0 !important;
   border-radius: var(--messenger-bottom-bar-radius);

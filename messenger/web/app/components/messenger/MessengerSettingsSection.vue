@@ -433,18 +433,21 @@ function selectSettingsSection(key: string) {
     </VWindow>
 
     <!-- Horizontal Tab Bar (bottom, above search dock) -->
-    <VTabs
-      :model-value="settingsModel.activeSection.value"
-      class="section-tabs"
-      bg-color="surface-container"
-      color="primary"
-      density="compact"
-      @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account')"
-    >
-      <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key" :aria-label="section.title" :title="section.title">
-        <VIcon>{{ settingsTabIcon(section.key) }}</VIcon>
-      </VTab>
-    </VTabs>
+    <div class="section-tabs-row">
+      <VTabs
+        :model-value="settingsModel.activeSection.value"
+        class="section-tabs"
+        bg-color="surface-container"
+        color="primary"
+        density="compact"
+        grow
+        @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account')"
+      >
+        <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key" :aria-label="section.title" :title="section.title">
+          <VIcon>{{ settingsTabIcon(section.key) }}</VIcon>
+        </VTab>
+      </VTabs>
+    </div>
 
     <!-- Search Dock -->
     <div class="search-dock">
