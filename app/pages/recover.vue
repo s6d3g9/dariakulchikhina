@@ -53,7 +53,7 @@
 <script setup lang="ts">
 import { useCsrfHeaders } from '~/composables/useCsrfHeaders'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'default', pageTransition: false, keepalive: false })
 
 type RecoverRole = 'designer' | 'client' | 'contractor'
 

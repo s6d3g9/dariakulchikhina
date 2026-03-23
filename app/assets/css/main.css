@@ -451,6 +451,51 @@ html.dark select:-webkit-autofill:focus {
   line-height: 1.4;
 }
 
+.auth-root,
+.auth-card,
+.auth-secondary,
+.auth-form-grid,
+.auth-field,
+.auth-links,
+.auth-role-grid {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.auth-root {
+  align-items: flex-start;
+  padding-top: max(24px, calc(env(safe-area-inset-top, 0px) + 24px));
+  padding-bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 24px));
+  touch-action: manipulation;
+}
+
+.auth-card::before,
+.auth-card::after,
+.auth-secondary::before,
+.auth-secondary::after {
+  pointer-events: none;
+}
+
+.auth-input,
+.auth-role-btn,
+.auth-submit,
+.auth-links a,
+.auth-link-btn {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.auth-input {
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .auth-card,
 .auth-secondary,
 .chat-auth-box,

@@ -2,16 +2,21 @@
   <UApp>
     <NuxtLayout>
       <NuxtPage
-        :keepalive="{ max: 10 }"
-        :transition="pageTransition"
+        :keepalive="pageKeepalive"
+        :transition="resolvedPageTransition"
       />
     </NuxtLayout>
   </UApp>
 </template>
 
 <script setup lang="ts">
+const route = useRoute()
 const { initTheme } = useThemeToggle()
 const { tokens } = useDesignSystem()
+
+const authRoutePattern = /^\/(login|register|recover)$/
+
+const disablePageChromeCaching = computed(() => authRoutePattern.test(route.path))
 
 const transitionEffect = computed(() => {
   const effect = tokens.value.archPageEnter ?? 'fade'
@@ -30,8 +35,11 @@ const transitionEasing = computed(() => tokens.value.animEasing || 'ease')
 const pageTransition = computed(() => {
   const effect = transitionEffect.value
   if (effect === 'none') return false
-  return { name: `pt-${effect}`, mode: 'out-in', css: true, duration: transitionDuration.value }
+  return { name: `pt-${effect}`, mode: 'out-in' as const, css: true, duration: transitionDuration.value }
 })
+
+const pageKeepalive = computed(() => (disablePageChromeCaching.value ? false : { max: 10 }))
+const resolvedPageTransition = computed(() => (disablePageChromeCaching.value ? false : pageTransition.value))
 
 watchEffect(() => {
   if (!import.meta.client) return
