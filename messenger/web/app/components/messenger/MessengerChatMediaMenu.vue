@@ -232,10 +232,13 @@ defineExpose({
 
         <!-- Layer 3: Search field (all tabs per spec §4.1) -->
         <div class="search-dock">
-          <input
-            :value="klipyQuery"
-            class="composer-input"
-            type="text"
+          <VTextField
+            :model-value="klipyQuery"
+            class="composer-search-field"
+            density="compact"
+            hide-details
+            variant="solo-filled"
+            flat
             :placeholder="tab === 'emoji' ? 'Поиск смайлов...'
               : tab === 'stickers' ? 'Поиск стикеров...'
               : tab === 'gif' ? 'Поиск GIF...'
@@ -244,8 +247,10 @@ defineExpose({
             autocomplete="off"
             autocapitalize="off"
             spellcheck="false"
-            @input="emit('update:klipy-query', ($event.target as HTMLInputElement).value)"
-          >
+            rounded="xl"
+            bg-color="surface-container-high"
+            @update:model-value="emit('update:klipy-query', String($event ?? ''))"
+          />
         </div>
       </div>
 

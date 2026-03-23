@@ -360,16 +360,21 @@ function formatChatPreview(chat: MessengerConversationItem) {
     <!-- Search Dock -->
     <div class="search-dock">
       <div class="search-dock__field">
-        <input
+        <VTextField
           v-model="searchDraft"
-          class="composer-input"
-          type="text"
+          class="composer-search-field"
+          variant="solo-filled"
+          flat
+          hide-details
           placeholder="Поиск по чатам"
+          bg-color="surface-container-high"
+          rounded="xl"
+          density="compact"
           autocomplete="off"
           @focus="openSearch"
           @blur="closeSearch"
           @keydown.enter.prevent="runSearch"
-        >
+        />
         <Transition name="chrome-reveal">
           <div v-if="searchOpen && chatSuggestions.length" class="search-dropdown">
             <VList bg-color="transparent" density="comfortable">
