@@ -841,7 +841,6 @@ html, body {
   padding: 8px 12px;
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container-low));
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .composer-bar__body {
