@@ -29,7 +29,11 @@ interface MessengerCallSecurityState {
 interface MessengerCallControlsState {
   microphoneEnabled: boolean
   speakerEnabled: boolean
+  videoEnabled: boolean
 }
+
+type MessengerCallViewMode = 'full' | 'split' | 'mini'
+type MessengerCallNetworkQuality = 'stable' | 'weak' | 'reconnecting' | 'lost'
 
 interface MessengerCallSignalEvent {
   type: 'call.signal'
@@ -358,7 +362,12 @@ export function useMessengerCalls() {
   const controls = useState<MessengerCallControlsState>('messenger-call-controls', () => ({
     microphoneEnabled: true,
     speakerEnabled: true,
+    videoEnabled: false,
   }))
+  const viewMode = useState<MessengerCallViewMode>('messenger-call-view-mode', () => 'full')
+  const networkQuality = useState<MessengerCallNetworkQuality>('messenger-call-network-quality', () => 'stable')
+  const networkHint = useState<string>('messenger-call-network-hint', () => '')
+  const renegotiating = useState<boolean>('messenger-call-renegotiating', () => false)
   const security = useState<MessengerCallSecurityState>('messenger-call-security', () => ({
     available: supportsInsertableCallEncryption(),
     active: false,
@@ -433,6 +442,16 @@ export function useMessengerCalls() {
     }
   }
 
+  function syncVideoState() {
+    if (!localStream) {
+      return
+    }
+
+    for (const track of localStream.getVideoTracks()) {
+      track.enabled = controls.value.videoEnabled
+    }
+  }
+
   function setMicrophoneEnabled(enabled: boolean) {
     controls.value = {
       ...controls.value,
@@ -457,12 +476,22 @@ export function useMessengerCalls() {
     setSpeakerEnabled(!controls.value.speakerEnabled)
   }
 
+  function setCallViewMode(nextMode: MessengerCallViewMode) {
+    viewMode.value = nextMode
+  }
+
+  function setNetworkState(nextQuality: MessengerCallNetworkQuality, nextHint: string) {
+    networkQuality.value = nextQuality
+    networkHint.value = nextHint
+  }
+
   function attachElements(elements: { localVideo?: HTMLVideoElement | null; remoteVideo?: HTMLVideoElement | null; remoteAudio?: HTMLAudioElement | null }) {
     localVideoEl = elements.localVideo ?? localVideoEl
     remoteVideoEl = elements.remoteVideo ?? remoteVideoEl
     remoteAudioEl = elements.remoteAudio ?? remoteAudioEl
     assignMediaTargets()
     syncSpeakerState()
+    syncVideoState()
   }
 
   function clearElements() {
@@ -756,7 +785,23 @@ export function useMessengerCalls() {
 
     connection.onconnectionstatechange = () => {
       if (connection.connectionState) {
-        callStatusText.value = `Соединение: ${connection.connectionState}`
+        if (connection.connectionState === 'connected') {
+          callStatusText.value = activeCall.value?.mode === 'video' || controls.value.videoEnabled
+            ? 'Видеозвонок подключён'
+            : 'Аудиозвонок подключён'
+          setNetworkState('stable', 'Соединение стабильно.')
+        } else if (connection.connectionState === 'connecting') {
+          callStatusText.value = 'Устанавливаем соединение…'
+          setNetworkState('reconnecting', 'Подключаем звонок…')
+        } else if (connection.connectionState === 'disconnected') {
+          callStatusText.value = 'Соединение прервалось, пытаемся восстановить…'
+          setNetworkState('reconnecting', 'Сеть просела, пробуем восстановить канал.')
+        } else if (connection.connectionState === 'failed') {
+          callStatusText.value = 'Соединение потеряно'
+          setNetworkState('lost', 'Соединение потеряно. Попробуйте перезвонить.')
+        } else {
+          callStatusText.value = `Соединение: ${connection.connectionState}`
+        }
       }
 
       if (connection.connectionState === 'failed') {
@@ -769,8 +814,32 @@ export function useMessengerCalls() {
         return
       }
 
+      if (connection.iceConnectionState === 'connected' || connection.iceConnectionState === 'completed') {
+        setNetworkState('stable', 'Маршрут WebRTC стабилен.')
+        return
+      }
+
+      if (connection.iceConnectionState === 'checking') {
+        setNetworkState('reconnecting', 'Подбираем маршрут для медиаканала…')
+        return
+      }
+
       if (connection.iceConnectionState === 'failed' || connection.iceConnectionState === 'disconnected') {
+        setNetworkState(connection.iceConnectionState === 'failed' ? 'lost' : 'weak', connection.iceConnectionState === 'failed'
+          ? 'Маршрут WebRTC потерян.'
+          : 'Связь нестабильна, возможны задержки и артефакты.')
         callError.value = 'Аудиоканал нестабилен. Проверьте соединение и попробуйте перезвонить.'
+      }
+    }
+
+    connection.onsignalingstatechange = () => {
+      if (connection.signalingState === 'have-local-offer' || connection.signalingState === 'have-remote-offer') {
+        renegotiating.value = true
+        return
+      }
+
+      if (connection.signalingState === 'stable') {
+        renegotiating.value = false
       }
     }
 
@@ -788,7 +857,11 @@ export function useMessengerCalls() {
     controls.value = {
       microphoneEnabled: true,
       speakerEnabled: true,
+      videoEnabled: false,
     }
+    viewMode.value = 'full'
+    setNetworkState('stable', '')
+    renegotiating.value = false
     security.value = {
       available: supportsInsertableCallEncryption(),
       active: false,
@@ -872,6 +945,12 @@ export function useMessengerCalls() {
       mode,
       initiator: true,
     }
+    controls.value = {
+      microphoneEnabled: true,
+      speakerEnabled: true,
+      videoEnabled: mode === 'video',
+    }
+    viewMode.value = mode === 'video' ? 'split' : 'full'
     callStatusText.value = mode === 'video' ? 'Отправляем видеовызов…' : 'Отправляем аудиовызов…'
 
     try {
@@ -909,6 +988,12 @@ export function useMessengerCalls() {
         mode: incomingCall.value.mode,
         initiator: false,
       }
+      controls.value = {
+        microphoneEnabled: true,
+        speakerEnabled: true,
+        videoEnabled: incomingCall.value.mode === 'video',
+      }
+      viewMode.value = incomingCall.value.mode === 'video' ? 'split' : 'full'
 
       let ringingE2EE: MessengerCallE2EEPayload = { supported: false }
 
@@ -992,6 +1077,16 @@ export function useMessengerCalls() {
     } finally {
       teardownCall(status)
     }
+  }
+
+  async function prepareConnectionForRemoteOffer(connection: RTCPeerConnection) {
+    if (connection.signalingState === 'have-local-offer') {
+      await connection.setLocalDescription({ type: 'rollback' })
+      renegotiating.value = false
+      return true
+    }
+
+    return connection.signalingState !== 'have-remote-offer'
   }
 
   async function handleSignal(event: MessengerCallSignalEvent) {
@@ -1087,12 +1182,18 @@ export function useMessengerCalls() {
             mode,
             initiator: false,
           }
+        } else {
+          activeCall.value = {
+            ...activeCall.value,
+            mode,
+          }
         }
         if (!localStream) {
           await initMedia(mode)
         }
         const connection = buildPeerConnection(event.signal.callId, event.conversationId, mode)
-        if (connection.signalingState === 'have-remote-offer') {
+        const canApplyOffer = await prepareConnectionForRemoteOffer(connection)
+        if (!canApplyOffer) {
           return
         }
         await connection.setRemoteDescription({
@@ -1122,6 +1223,12 @@ export function useMessengerCalls() {
 
     if (event.signal.kind === 'answer' && peerConnection) {
       try {
+        if (activeCall.value) {
+          activeCall.value = {
+            ...activeCall.value,
+            mode,
+          }
+        }
         await peerConnection.setRemoteDescription({
           type: 'answer',
           sdp: String(event.signal.payload?.sdp || ''),
@@ -1180,6 +1287,137 @@ export function useMessengerCalls() {
     clearElements()
   }
 
+  async function renegotiateActiveCall(mode: MessengerCallMode) {
+    if (!activeCall.value || !peerConnection || peerConnection.signalingState !== 'stable' || renegotiating.value) {
+      callStatusText.value = mode === 'video'
+        ? 'Видео будет обновлено, как только сигнализация стабилизируется…'
+        : 'Аудиорежим обновится после стабилизации соединения…'
+      return false
+    }
+
+    renegotiating.value = true
+    const offer = await peerConnection.createOffer()
+    await peerConnection.setLocalDescription(offer)
+    await sendSignal(activeCall.value.conversationId, {
+      kind: 'offer',
+      callId: activeCall.value.callId,
+      payload: {
+        sdp: offer.sdp,
+        type: offer.type,
+        mode,
+      },
+    })
+    callStatusText.value = mode === 'video' ? 'Обновляем видеоканал…' : 'Обновляем аудиоканал…'
+    return true
+  }
+
+  async function enableVideo() {
+    if (!activeCall.value) {
+      return false
+    }
+
+    if (!localStream) {
+      await initMedia('video')
+    }
+
+    let nextTrack = localStream?.getVideoTracks()[0] || null
+
+    if (!nextTrack) {
+      const granted = await ensureMediaAccess('video')
+      if (!granted) {
+        return false
+      }
+
+      const cameraStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true })
+      nextTrack = cameraStream.getVideoTracks()[0] || null
+      if (nextTrack && localStream) {
+        localStream.addTrack(nextTrack)
+      }
+    }
+
+    if (!nextTrack || !localStream) {
+      return false
+    }
+
+    nextTrack.contentHint = 'motion'
+    const videoSender = peerConnection?.getSenders().find(sender => sender.track?.kind === 'video') || null
+
+    if (videoSender) {
+      await videoSender.replaceTrack(nextTrack)
+    } else if (peerConnection) {
+      const sender = peerConnection.addTrack(nextTrack, localStream)
+      if (callSecurityContext?.active) {
+        applySenderCallSecurity(sender)
+      }
+    }
+
+    controls.value = {
+      ...controls.value,
+      videoEnabled: true,
+    }
+    activeCall.value = {
+      ...activeCall.value,
+      mode: 'video',
+    }
+    if (viewMode.value === 'full') {
+      viewMode.value = 'split'
+    }
+    assignMediaTargets()
+    syncVideoState()
+    await renegotiateActiveCall('video')
+    return true
+  }
+
+  async function disableVideo() {
+    if (!activeCall.value || !localStream) {
+      return false
+    }
+
+    const videoTracks = localStream.getVideoTracks()
+    for (const sender of peerConnection?.getSenders() || []) {
+      if (sender.track?.kind === 'video') {
+        await sender.replaceTrack(null).catch(() => {})
+        peerConnection?.removeTrack(sender)
+      }
+    }
+
+    for (const track of videoTracks) {
+      localStream.removeTrack(track)
+      track.stop()
+    }
+
+    controls.value = {
+      ...controls.value,
+      videoEnabled: false,
+    }
+    activeCall.value = {
+      ...activeCall.value,
+      mode: 'audio',
+    }
+    assignMediaTargets()
+    await renegotiateActiveCall('audio')
+    return true
+  }
+
+  async function toggleVideo() {
+    if (!activeCall.value) {
+      return
+    }
+
+    callError.value = ''
+
+    try {
+      if (controls.value.videoEnabled || activeCall.value.mode === 'video') {
+        await disableVideo()
+        return
+      }
+
+      await enableVideo()
+    } catch {
+      callError.value = 'Не удалось обновить видеоканал звонка.'
+    }
+  }
+
   if (import.meta.client) {
     void refreshMediaPermissions()
   }
@@ -1194,6 +1432,10 @@ export function useMessengerCalls() {
     mediaPermissionState,
     supported,
     controls,
+    viewMode,
+    networkQuality,
+    networkHint,
+    renegotiating,
     security,
     inConversationCall,
     canStartAudioCall,
@@ -1213,6 +1455,8 @@ export function useMessengerCalls() {
     toggleMicrophone,
     setSpeakerEnabled,
     toggleSpeaker,
+    setCallViewMode,
+    toggleVideo,
     startOutgoingCall,
     acceptIncomingCall,
     rejectIncomingCall,

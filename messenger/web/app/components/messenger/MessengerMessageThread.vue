@@ -239,11 +239,9 @@ function handleBubbleClick(event: MouseEvent) {
     </div>
     <template v-if="entry.kind === 'file' && entry.attachment">
       <div v-if="entry.attachment.mimeType.startsWith('audio/')" class="voice-player-shell">
-        <audio
-          class="voice-player"
-          controls
-          preload="metadata"
+        <MessengerAudioBubblePlayer
           :src="entry.attachment.resolvedUrl"
+          :label="entry.attachment.name"
         />
       </div>
       <button

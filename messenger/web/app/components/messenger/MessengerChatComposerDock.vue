@@ -1,4 +1,12 @@
 <script setup lang="ts">
+interface MessengerAudioDraftViewModel {
+  url: string
+  duration: number
+  trimStart: number
+  trimEnd: number
+  waveformLevels: number[]
+}
+
 const props = defineProps<{
   visible: boolean
   draft: string
@@ -7,6 +15,9 @@ const props = defineProps<{
   messagePending: boolean
   isRecording: boolean
   recordingSeconds: number
+  recordingLevels: number[]
+  recordingIntensity: number
+  audioDraft: MessengerAudioDraftViewModel | null
   composerPrimaryMode: 'record' | 'send' | 'stop-recording'
   composerPrimaryDisabled: boolean
   hasSelectedKlipyItem: boolean
@@ -22,6 +33,9 @@ const emit = defineEmits<{
   'open-photo-picker': []
   'primary-pointerdown': [event: PointerEvent]
   'primary-action': []
+  'cancel-audio-draft': []
+  'update:audio-trim-start': [value: number]
+  'update:audio-trim-end': [value: number]
 }>()
 
 const fileInputEl = ref<HTMLInputElement | null>(null)
@@ -38,8 +52,22 @@ defineExpose({
 <template>
   <template v-if="props.visible">
     <input ref="fileInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="emit('file-select', $event)">
-    <div ref="composerBarEl" class="composer-bar">
-      <MessengerDockField>
+    <div ref="composerBarEl" class="composer-bar" :class="{ 'composer-bar--audio': props.isRecording || Boolean(props.audioDraft) }">
+      <MessengerAudioComposerDraft
+        v-if="props.isRecording || props.audioDraft"
+        :mode="props.isRecording ? 'recording' : 'preview'"
+        :recording-seconds="props.recordingSeconds"
+        :recording-levels="props.recordingLevels"
+        :recording-intensity="props.recordingIntensity"
+        :audio-draft="props.audioDraft"
+        :pending="props.messagePending"
+        @cancel="emit('cancel-audio-draft')"
+        @primary-action="emit('primary-action')"
+        @update:trim-start="emit('update:audio-trim-start', $event)"
+        @update:trim-end="emit('update:audio-trim-end', $event)"
+      />
+
+      <MessengerDockField v-else>
         <template #leading>
           <VBtn
             type="button"
