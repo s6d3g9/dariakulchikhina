@@ -366,7 +366,6 @@ function selectSettingsSection(key: string) {
                 type="button"
                 class="settings-choice-card style-card"
                 :class="[`style-card--${style.key}`, { 'style-card--active': settingsModel.settings.value.themes.style === style.key }]"
-"
                 :aria-pressed="settingsModel.settings.value.themes.style === style.key"
                 @click="settingsModel.setStyle(style.key)"
               >
