@@ -233,20 +233,22 @@ defineExpose({
         <!-- Layer 3: Search field (all tabs per spec §4.1) -->
         <div class="search-dock">
           <div class="search-dock__field">
-            <input
-              :value="klipyQuery"
-              type="text"
-              class="composer-input"
-              :placeholder="tab === 'emoji' ? 'Поиск смайлов...'
-                : tab === 'stickers' ? 'Поиск стикеров...'
-                : tab === 'gif' ? 'Поиск GIF...'
-                : tab === 'photo' ? 'Поиск фото...'
-                : 'Поиск файлов...'"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-              @input="emit('update:klipy-query', ($event.target as HTMLInputElement).value ?? '')"
-            />
+            <MessengerDockField>
+              <input
+                :value="klipyQuery"
+                type="text"
+                class="composer-input composer-input--dock"
+                :placeholder="tab === 'emoji' ? 'Поиск смайлов...'
+                  : tab === 'stickers' ? 'Поиск стикеров...'
+                  : tab === 'gif' ? 'Поиск GIF...'
+                  : tab === 'photo' ? 'Поиск фото...'
+                  : 'Поиск файлов...'"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                @input="emit('update:klipy-query', ($event.target as HTMLInputElement).value ?? '')"
+              />
+            </MessengerDockField>
           </div>
         </div>
       </div>

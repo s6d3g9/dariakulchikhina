@@ -550,16 +550,18 @@ async function submitAddContact() {
     <!-- Search Dock -->
     <div class="search-dock">
       <div class="search-dock__field">
-        <input
-          v-model="searchDraft"
-          type="text"
-          class="composer-input"
-          placeholder="Найти пользователя"
-          autocomplete="off"
-          @focus="openSearch"
-          @blur="closeSearch"
-          @keydown.enter.prevent="runSearch"
-        />
+        <MessengerDockField>
+          <input
+            v-model="searchDraft"
+            type="text"
+            class="composer-input composer-input--dock"
+            placeholder="Найти пользователя"
+            autocomplete="off"
+            @focus="openSearch"
+            @blur="closeSearch"
+            @keydown.enter.prevent="runSearch"
+          />
+        </MessengerDockField>
         <Transition name="chrome-reveal">
           <div v-if="searchOpen && contactSuggestions.length" class="search-dropdown" @mousedown.prevent>
             <VList bg-color="transparent" density="comfortable">

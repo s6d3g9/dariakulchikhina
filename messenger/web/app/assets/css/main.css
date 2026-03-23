@@ -166,25 +166,37 @@ html, body {
 }
 
 .search-dock__field {
-  display: flex;
-  align-items: stretch;
+  position: relative;
+}
+
+.dock-field-shell,
+.composer-shell {
+  flex: 1;
+  min-width: 0;
   min-height: 56px;
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
   padding: 4px;
   border-radius: 28px;
   background: rgb(var(--v-theme-surface-container-high));
 }
 
-/* Search dock native input: force single-line height */
-.search-dock .composer-input {
-  height: 48px;
-  min-height: 48px;
-  max-height: 48px;
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 12px;
-  padding-bottom: 12px;
-  background: transparent;
-  overflow: hidden;
+.dock-field-shell__leading,
+.dock-field-shell__trailing {
+  display: inline-flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.dock-field-shell__control {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.dock-field-shell__control > .composer-input {
+  flex: 1;
 }
 
 .composer-search-field .v-field {
@@ -839,18 +851,6 @@ html, body {
   padding: 8px 12px !important;
 }
 
-.composer-shell {
-  flex: 1;
-  min-width: 0;
-  min-height: 56px;
-  display: flex;
-  align-items: flex-end;
-  gap: 0;
-  padding: 4px;
-  border-radius: 28px;
-  background: rgb(var(--v-theme-surface-container-high));
-}
-
 .composer-field {
   flex: 1;
   min-width: 0;
@@ -881,6 +881,16 @@ html, body {
   padding-bottom: 12px;
   padding-left: 52px;
   padding-right: 104px;
+}
+
+.composer-input--dock {
+  min-height: 48px;
+  max-height: 48px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
+  background: transparent;
 }
 
 .composer-input:focus {
