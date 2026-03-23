@@ -347,7 +347,6 @@ const gallerySearch = ref('')
       class="content-gallery__nav content-gallery__nav--vuetify"
       align-tabs="start"
       color="primary"
-      show-arrows
       density="compact"
       aria-label="Разделы галереи"
     >

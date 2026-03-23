@@ -93,20 +93,20 @@ async function logout() {
         <button
           type="button"
           class="messenger-nav-btn"
-          :class="{ 'messenger-nav-btn--active': navValue === 'chats' }"
-          @click="navValue = 'chats'"
-        >
-          <VIcon class="messenger-nav-icon">mdi-message-text-outline</VIcon>
-        </button>
-
-        <button
-          type="button"
-          class="messenger-nav-btn"
           :class="{ 'messenger-nav-btn--active': navValue === 'chat' }"
           :disabled="chatDisabled"
           @click="navValue = 'chat'"
         >
           <VIcon class="messenger-nav-icon">mdi-message-outline</VIcon>
+        </button>
+
+        <button
+          type="button"
+          class="messenger-nav-btn"
+          :class="{ 'messenger-nav-btn--active': navValue === 'chats' }"
+          @click="navValue = 'chats'"
+        >
+          <VIcon class="messenger-nav-icon">mdi-message-text-outline</VIcon>
         </button>
 
         <button

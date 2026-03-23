@@ -62,6 +62,11 @@ html, body {
   --messenger-dock-line-height: 24px;
   --messenger-dock-padding-y: 8px;
   --messenger-dock-height: calc(var(--messenger-dock-line-height) + (var(--messenger-dock-padding-y) * 2));
+  --messenger-dock-radius: 21px;
+  --messenger-bottom-bar-height: 44px;
+  --messenger-bottom-bar-button-height: 38px;
+  --messenger-bottom-bar-gap: 2px;
+  --messenger-bottom-bar-radius: 10px;
   display: flex;
   flex-direction: column;
   height: 100dvh;
@@ -85,33 +90,35 @@ html, body {
   flex-direction: row;
   align-items: center;
   flex-shrink: 0;
-  height: 44px;
-  gap: 2px;
+  height: var(--messenger-bottom-bar-height);
+  gap: var(--messenger-bottom-bar-gap);
   padding: 2px 3px;
   background: rgb(var(--v-theme-surface-container-low));
   z-index: 10;
 }
 
 .messenger-nav-btn {
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   min-width: 0;
-  min-height: 40px;
+  min-height: var(--messenger-bottom-bar-button-height);
   padding: 0 4px;
-  border-radius: 10px;
+  border-radius: var(--messenger-bottom-bar-radius);
   border: none;
   background: transparent;
   color: rgb(var(--v-theme-on-surface-variant));
   cursor: pointer;
-  transition: color 150ms ease, opacity 150ms ease, background-color 150ms ease;
+  transition: flex-grow 220ms ease, color 180ms ease, opacity 180ms ease, background-color 180ms ease, transform 220ms ease;
 }
 
 .messenger-nav-btn--active {
+  flex-grow: 1.16;
   color: rgb(var(--v-theme-primary));
   background: rgb(var(--v-theme-secondary-container));
+  transform: translateY(-1px) scale(1.02);
 }
 
 .messenger-nav-btn:disabled {
@@ -176,28 +183,40 @@ html, body {
   min-width: 0;
   min-height: calc(var(--messenger-dock-height) + 2px);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 0;
   padding: 1px;
-  border-radius: 21px;
+  border-radius: var(--messenger-dock-radius);
   background: rgb(var(--v-theme-surface-container-high));
+  transition: background-color 180ms ease, transform 180ms ease;
 }
 
 .dock-field-shell__leading,
 .dock-field-shell__trailing {
   display: inline-flex;
-  align-items: flex-end;
+  align-items: center;
   flex-shrink: 0;
+  height: 100%;
 }
 
 .dock-field-shell__control {
   flex: 1;
   min-width: 0;
   display: flex;
+  align-items: center;
 }
 
 .dock-field-shell__control > .composer-input {
   flex: 1;
+}
+
+.dock-field-shell .composer-input {
+  background: transparent;
+  border-radius: calc(var(--messenger-dock-radius) - 1px);
+}
+
+.dock-field-shell:focus-within {
+  background: rgb(var(--v-theme-surface-container-highest));
 }
 
 .composer-search-field .v-field {
@@ -229,7 +248,10 @@ html, body {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  background: rgb(var(--v-theme-surface-container));
+  min-height: var(--messenger-bottom-bar-height);
+  gap: var(--messenger-bottom-bar-gap);
+  padding: 2px 3px;
+  background: rgb(var(--v-theme-surface-container-low));
 }
 .section-tabs-row .section-tabs {
   flex: 1;
@@ -237,24 +259,39 @@ html, body {
   border-bottom: none;
 }
 
+.section-tabs-row > .v-btn {
+  min-width: var(--messenger-bottom-bar-button-height) !important;
+  width: var(--messenger-bottom-bar-button-height) !important;
+  height: var(--messenger-bottom-bar-button-height) !important;
+  border-radius: var(--messenger-bottom-bar-radius) !important;
+}
+
 .section-tabs {
   flex-shrink: 0;
-  background: rgb(var(--v-theme-surface-container)) !important;
+  height: var(--messenger-bottom-bar-height) !important;
+  background: rgb(var(--v-theme-surface-container-low)) !important;
 }
 
 .section-tabs .v-slide-group__content {
   display: flex;
   width: 100%;
-  gap: 4px;
+  gap: var(--messenger-bottom-bar-gap);
+  transition: gap 220ms ease;
 }
 
 .section-tabs .v-tab {
   flex: 1 1 0;
   min-width: 0;
   width: auto;
-  min-height: 38px;
-  border-radius: 10px;
+  min-height: var(--messenger-bottom-bar-button-height);
+  border-radius: var(--messenger-bottom-bar-radius);
   padding: 0;
+  transition: flex-grow 220ms ease, transform 220ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.section-tabs .v-tab.v-tab--selected {
+  flex-grow: 1.16;
+  transform: translateY(-1px) scale(1.02);
 }
 
 .section-tabs .v-tabs-slider,
@@ -946,7 +983,7 @@ html, body {
 
 .composer-bar__body {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 2px;
   padding: 4px 8px 12px !important;
 }
@@ -961,7 +998,7 @@ html, body {
   min-height: var(--messenger-dock-height);
   max-height: 120px;
   padding: var(--messenger-dock-padding-y) 14px;
-  border-radius: 21px;
+  border-radius: var(--messenger-dock-radius);
   background: rgb(var(--v-theme-surface-container-high));
   color: rgb(var(--v-theme-on-surface));
   font-size: var(--messenger-dock-font-size);
@@ -1013,8 +1050,8 @@ html, body {
 
 .composer-btn--inside {
   flex-shrink: 0;
-  align-self: flex-end;
-  margin-bottom: 2px;
+  align-self: center;
+  margin-bottom: 0;
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
@@ -1229,7 +1266,7 @@ html, body {
 .composer-media-menu__tabs {
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container-low)) !important;
-  height: 44px !important;
+  height: var(--messenger-bottom-bar-height) !important;
 }
 
 .composer-media-menu__tabs .v-slide-group__content,
@@ -1237,7 +1274,8 @@ html, body {
 .section-tabs .v-slide-group__content {
   display: flex;
   width: 100%;
-  gap: 2px;
+  gap: var(--messenger-bottom-bar-gap);
+  transition: gap 220ms ease;
 }
 
 .composer-media-menu__tabs .v-tab,
@@ -1246,15 +1284,31 @@ html, body {
   flex: 1 1 0;
   min-width: 0 !important;
   width: auto;
-  min-height: 38px !important;
+  min-height: var(--messenger-bottom-bar-button-height) !important;
   padding: 0 !important;
-  border-radius: 10px;
+  border-radius: var(--messenger-bottom-bar-radius);
+  transition: flex-grow 220ms ease, transform 220ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.composer-media-menu__tabs .v-tab.v-tab--selected,
+.content-gallery__nav .v-tab.v-tab--selected,
+.section-tabs .v-tab.v-tab--selected {
+  flex-grow: 1.16;
+  transform: translateY(-1px) scale(1.02);
 }
 
 .composer-media-menu__tabs .v-tab .v-icon,
 .content-gallery__nav .v-tab .v-icon,
 .section-tabs .v-tab .v-icon {
   font-size: 22px !important;
+  transition: transform 220ms ease;
+}
+
+.composer-media-menu__tabs .v-tab.v-tab--selected .v-icon,
+.content-gallery__nav .v-tab.v-tab--selected .v-icon,
+.section-tabs .v-tab.v-tab--selected .v-icon,
+.messenger-nav-btn--active .messenger-nav-icon {
+  transform: scale(1.06);
 }
 
 .composer-media-menu__tab-badge {
@@ -1292,8 +1346,8 @@ html, body {
 
 .content-gallery__nav {
   flex-shrink: 0;
-  background: rgb(var(--v-theme-surface-container)) !important;
-  height: 52px !important;
+  background: rgb(var(--v-theme-surface-container-low)) !important;
+  height: var(--messenger-bottom-bar-height) !important;
 }
 
 .content-gallery__panel {
