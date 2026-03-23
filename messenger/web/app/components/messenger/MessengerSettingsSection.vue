@@ -323,40 +323,63 @@ function selectSettingsSection(key: string) {
       <VWindowItem value="themes">
         <div class="settings-panel pa-4">
           <section class="settings-grid">
+            <div class="settings-theme-current-grid">
+              <div class="settings-theme-current-card settings-theme-current-card--theme">
+                <span class="settings-theme-current-card__eyebrow">Активная палитра</span>
+                <strong class="settings-theme-current-card__title">{{ activeThemeMeta.title }}</strong>
+                <span class="settings-theme-current-card__meta">{{ activeThemeMeta.hint }}</span>
+              </div>
+              <div class="settings-theme-current-card settings-theme-current-card--style">
+                <span class="settings-theme-current-card__eyebrow">Активный стиль</span>
+                <strong class="settings-theme-current-card__title">{{ activeStyleMeta.title }}</strong>
+                <span class="settings-theme-current-card__meta">{{ activeStyleMeta.hint }}</span>
+              </div>
+            </div>
             <p class="setting-card__title">Темы интерфейса</p>
-            <div class="theme-grid">
+            <div class="settings-choice-grid theme-grid">
               <button
                 v-for="theme in settingsModel.themeOptions"
                 :key="theme.key"
                 type="button"
-                class="theme-card"
+                class="settings-choice-card theme-card"
                 :class="[`theme-card--${theme.key}`, { 'theme-card--active': settingsModel.settings.value.themes.active === theme.key }]"
                 :aria-pressed="settingsModel.settings.value.themes.active === theme.key"
                 @click="settingsModel.setTheme(theme.key)"
               >
-                <span class="theme-card__copy">
-                  <span class="theme-card__title">{{ theme.title }}</span>
-                  <span class="theme-card__meta">{{ theme.hint }}</span>
+                <span class="settings-choice-card__preview theme-card__preview" aria-hidden="true">
+                  <span class="settings-choice-card__swatch"></span>
+                  <span class="settings-choice-card__swatch"></span>
+                  <span class="settings-choice-card__swatch"></span>
                 </span>
-                <span class="theme-card__state">{{ settingsModel.settings.value.themes.active === theme.key ? 'Активна' : 'Выбрать' }}</span>
+                <span class="settings-choice-card__copy theme-card__copy">
+                  <span class="settings-choice-card__title theme-card__title">{{ theme.title }}</span>
+                  <span class="settings-choice-card__meta theme-card__meta">{{ theme.hint }}</span>
+                </span>
+                <span class="settings-choice-card__state theme-card__state">{{ settingsModel.settings.value.themes.active === theme.key ? 'Активна' : 'Выбрать' }}</span>
               </button>
             </div>
             <p class="setting-card__title mt-4">Стиль дизайна</p>
-            <div class="style-grid">
+            <div class="settings-choice-grid style-grid">
               <button
                 v-for="style in settingsModel.styleOptions"
                 :key="style.key"
                 type="button"
-                class="style-card"
+                class="settings-choice-card style-card"
                 :class="[`style-card--${style.key}`, { 'style-card--active': settingsModel.settings.value.themes.style === style.key }]"
+"
                 :aria-pressed="settingsModel.settings.value.themes.style === style.key"
                 @click="settingsModel.setStyle(style.key)"
               >
-                <span class="style-card__copy">
-                  <span class="style-card__title">{{ style.title }}</span>
-                  <span class="style-card__meta">{{ style.hint }}</span>
+                <span class="settings-choice-card__preview style-card__preview" aria-hidden="true">
+                  <span class="settings-choice-card__line"></span>
+                  <span class="settings-choice-card__line"></span>
+                  <span class="settings-choice-card__line settings-choice-card__line--short"></span>
                 </span>
-                <span class="style-card__state">{{ settingsModel.settings.value.themes.style === style.key ? 'Активен' : 'Выбрать' }}</span>
+                <span class="settings-choice-card__copy style-card__copy">
+                  <span class="settings-choice-card__title style-card__title">{{ style.title }}</span>
+                  <span class="settings-choice-card__meta style-card__meta">{{ style.hint }}</span>
+                </span>
+                <span class="settings-choice-card__state style-card__state">{{ settingsModel.settings.value.themes.style === style.key ? 'Активен' : 'Выбрать' }}</span>
               </button>
             </div>
           </section>
