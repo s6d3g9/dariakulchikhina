@@ -97,7 +97,6 @@ async function logout() {
           @click="navValue = 'chats'"
         >
           <VIcon class="messenger-nav-icon">mdi-message-text-outline</VIcon>
-          <span class="messenger-nav-label">Чаты</span>
         </button>
 
         <button
@@ -108,7 +107,6 @@ async function logout() {
           @click="navValue = 'chat'"
         >
           <VIcon class="messenger-nav-icon">mdi-message-outline</VIcon>
-          <span class="messenger-nav-label">Чат</span>
         </button>
 
         <button
@@ -118,7 +116,6 @@ async function logout() {
           @click="navValue = 'contacts'"
         >
           <VIcon class="messenger-nav-icon">mdi-account-multiple-outline</VIcon>
-          <span class="messenger-nav-label">Контакты</span>
         </button>
 
         <button
@@ -128,7 +125,6 @@ async function logout() {
           @click="navValue = 'settings'"
         >
           <VIcon class="messenger-nav-icon">mdi-cog-outline</VIcon>
-          <span class="messenger-nav-label">Настройки</span>
         </button>
       </nav>
     </div>

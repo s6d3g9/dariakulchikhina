@@ -66,6 +66,21 @@ const fileCategoryChips = [
 ]
 const activeFileCategory = ref('all')
 
+function mediaTabIcon(tab: 'emoji' | 'stickers' | 'gif' | 'photo' | 'file') {
+  switch (tab) {
+    case 'emoji':
+      return 'mdi-emoticon-outline'
+    case 'stickers':
+      return 'mdi-sticker-emoji'
+    case 'gif':
+      return 'mdi-image-multiple-outline'
+    case 'photo':
+      return 'mdi-image-outline'
+    default:
+      return 'mdi-paperclip'
+  }
+}
+
 defineExpose({
   categoryRailEl,
   feedEl,
@@ -262,17 +277,19 @@ defineExpose({
         density="compact"
         @update:model-value="emit('update:tab', $event as typeof tab)"
       >
-        <VTab value="emoji">Смайлы</VTab>
+        <VTab value="emoji" aria-label="Смайлы" title="Смайлы">
+          <VIcon>{{ mediaTabIcon('emoji') }}</VIcon>
+        </VTab>
         <VTab value="stickers">
-          Стикеры
+          <VIcon>{{ mediaTabIcon('stickers') }}</VIcon>
           <span v-if="sharedStickers" class="composer-media-menu__tab-badge ml-1">👥</span>
         </VTab>
         <VTab value="gif">
-          GIF
+          <VIcon>{{ mediaTabIcon('gif') }}</VIcon>
           <span v-if="sharedGif" class="composer-media-menu__tab-badge ml-1">👥</span>
         </VTab>
-        <VTab value="photo">Фото</VTab>
-        <VTab value="file">Файл</VTab>
+        <VTab value="photo" aria-label="Фото" title="Фото"><VIcon>{{ mediaTabIcon('photo') }}</VIcon></VTab>
+        <VTab value="file" aria-label="Файл" title="Файл"><VIcon>{{ mediaTabIcon('file') }}</VIcon></VTab>
       </VTabs>
     </div>
   </Transition>

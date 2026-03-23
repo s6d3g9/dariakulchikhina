@@ -58,6 +58,22 @@ const sessionPersistenceLabel = computed(() => auth.persistenceMode.value === 'l
 const notificationPermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.notifications])
 const microphonePermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.microphone])
 const cameraPermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.camera])
+function settingsTabIcon(key: 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account') {
+  switch (key) {
+    case 'profile':
+      return 'mdi-account-outline'
+    case 'notifications':
+      return 'mdi-bell-outline'
+    case 'privacy':
+      return 'mdi-shield-lock-outline'
+    case 'themes':
+      return 'mdi-palette-outline'
+    case 'devices':
+      return 'mdi-cellphone-cog'
+    default:
+      return 'mdi-card-account-details-outline'
+  }
+}
 const callPermissionLabelMap = {
   granted: 'Разрешено',
   denied: 'Заблокировано',
@@ -425,8 +441,8 @@ function selectSettingsSection(key: string) {
       density="compact"
       @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account')"
     >
-      <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key">
-        {{ section.title }}
+      <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key" :aria-label="section.title" :title="section.title">
+        <VIcon>{{ settingsTabIcon(section.key) }}</VIcon>
       </VTab>
     </VTabs>
 

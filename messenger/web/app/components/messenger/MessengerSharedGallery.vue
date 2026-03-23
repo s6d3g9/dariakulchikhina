@@ -133,6 +133,21 @@ const sections = computed(() => {
 
 const activeSectionData = computed(() => sections.value.find(section => section.key === activeSection.value) ?? sections.value[0] ?? null)
 
+function gallerySectionIcon(key: GallerySectionKey) {
+  switch (key) {
+    case 'photos':
+      return 'mdi-image-multiple-outline'
+    case 'stickers':
+      return 'mdi-sticker-emoji'
+    case 'documents':
+      return 'mdi-file-document-outline'
+    case 'links':
+      return 'mdi-link-variant'
+    default:
+      return 'mdi-key-outline'
+  }
+}
+
 watch(() => props.initialSection, (nextSection) => {
   if (nextSection) {
     activeSection.value = nextSection
@@ -341,9 +356,10 @@ const gallerySearch = ref('')
         :key="section.key"
         :value="section.key"
         class="content-gallery__tab content-gallery__tab--vuetify"
+        :aria-label="section.title"
+        :title="section.title"
       >
-        <span>{{ section.title }}</span>
-        <VChip class="content-gallery__tab-count" size="x-small" variant="tonal">{{ section.items.length }}</VChip>
+        <VIcon>{{ gallerySectionIcon(section.key) }}</VIcon>
       </VTab>
     </VTabs>
 

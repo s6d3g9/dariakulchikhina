@@ -48,6 +48,17 @@ function getRelationshipLabel(relationship: 'none' | 'incoming' | 'outgoing' | '
   }
 }
 
+function contactTabIcon(tab: 'all' | 'incoming' | 'outgoing') {
+  switch (tab) {
+    case 'all':
+      return 'mdi-account-multiple-outline'
+    case 'incoming':
+      return 'mdi-account-arrow-down-outline'
+    default:
+      return 'mdi-account-arrow-up-outline'
+  }
+}
+
 const normalizedSearchQuery = computed(() => searchDraft.value.trim().toLowerCase())
 
 const inviteByPeerUserId = computed(() => {
@@ -535,12 +546,12 @@ async function submitAddContact() {
     <!-- Tabs (bottom, above search dock) -->
     <div class="section-tabs-row">
       <VTabs v-model="contactsTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
-        <VTab value="all">Все</VTab>
+        <VTab value="all" aria-label="Все контакты" title="Все контакты"><VIcon>{{ contactTabIcon('all') }}</VIcon></VTab>
         <VTab value="incoming">
-          Входящие
+          <VIcon>{{ contactTabIcon('incoming') }}</VIcon>
           <VBadge v-if="incomingInvites.length" :content="incomingInvites.length" color="error" inline class="ml-1" />
         </VTab>
-        <VTab value="outgoing">Исходящие</VTab>
+        <VTab value="outgoing" aria-label="Исходящие" title="Исходящие"><VIcon>{{ contactTabIcon('outgoing') }}</VIcon></VTab>
       </VTabs>
       <VBtn icon variant="text" size="small" aria-label="Добавить контакт" @click="showAddContactDialog = true">
         <VIcon>mdi-account-plus-outline</VIcon>
