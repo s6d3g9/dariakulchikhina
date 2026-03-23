@@ -127,18 +127,15 @@ html, body {
 /* ── Search Dock ─────────────────────────────────────────── */
 .search-dock {
   flex-shrink: 0;
-  padding: 8px 16px;
-  background: rgb(var(--v-theme-surface-container-low)) !important;
+  padding: 8px 12px;
+  background: rgb(var(--v-theme-surface-container-low));
   border-top: 1px solid rgb(var(--v-theme-outline-variant));
 }
 
-.search-dock .v-field {
-  border-radius: 28px !important;
-}
-
-.search-dock .v-field__input {
-  padding-top: 8px;
-  padding-bottom: 8px;
+.search-dock .composer-input {
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
 }
 
 /* ── Section Tabs (Contacts) ─────────────────────────────── */
@@ -771,7 +768,7 @@ html, body {
 
 .composer-media-menu__emoji-grid {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0;
 }
 
@@ -822,15 +819,7 @@ html, body {
   border-color: transparent;
 }
 
-/* Layer 3: Search field */
-.composer-media-menu__search-field {
-  margin: 8px 16px !important;
-  flex-shrink: 0;
-}
-
-.composer-media-menu__search-field .v-field {
-  border-radius: 28px !important;
-}
+/* Layer 3: Search field (uses composer-input inside search-dock) */
 
 .composer-media-menu__feed-wrap {
   flex: 1;
@@ -852,7 +841,7 @@ html, body {
 }
 
 .composer-media-menu__feed--gifs {
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .composer-media-menu__result {
@@ -903,7 +892,7 @@ html, body {
 
 .composer-media-menu__photo-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 2px;
 }
 
@@ -991,7 +980,7 @@ html, body {
 
 .content-grid--photos-gallery {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 4px;
 }
 

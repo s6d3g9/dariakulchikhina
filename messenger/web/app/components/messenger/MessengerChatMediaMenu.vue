@@ -231,25 +231,22 @@ defineExpose({
         </div>
 
         <!-- Layer 3: Search field (all tabs per spec §4.1) -->
-        <VTextField
-          :model-value="klipyQuery"
-          class="composer-media-menu__search-field"
-          density="compact"
-          hide-details
-          variant="solo-filled"
-          flat
-          :placeholder="tab === 'emoji' ? 'Поиск смайлов...'
-            : tab === 'stickers' ? 'Поиск стикеров...'
-            : tab === 'gif' ? 'Поиск GIF...'
-            : tab === 'photo' ? 'Поиск фото...'
-            : 'Поиск файлов...'"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-          prepend-inner-icon="mdi-magnify"
-          rounded="xl"
-          @update:model-value="emit('update:klipy-query', String($event ?? ''))"
-        />
+        <div class="search-dock">
+          <input
+            :value="klipyQuery"
+            class="composer-input"
+            type="text"
+            :placeholder="tab === 'emoji' ? 'Поиск смайлов...'
+              : tab === 'stickers' ? 'Поиск стикеров...'
+              : tab === 'gif' ? 'Поиск GIF...'
+              : tab === 'photo' ? 'Поиск фото...'
+              : 'Поиск файлов...'"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            @input="emit('update:klipy-query', ($event.target as HTMLInputElement).value)"
+          >
+        </div>
       </div>
 
       <!-- Bottom Tab bar (Layer 4 — always at bottom) -->

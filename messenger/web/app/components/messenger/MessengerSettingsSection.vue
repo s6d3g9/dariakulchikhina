@@ -434,20 +434,15 @@ function selectSettingsSection(key: string) {
     <!-- Search Dock -->
     <div class="search-dock">
       <div class="search-dock__field">
-        <VTextField
+        <input
           v-model="settingsSearch"
-          variant="solo-filled"
-          flat
-          hide-details
-          prepend-inner-icon="mdi-magnify"
+          class="composer-input"
+          type="text"
           placeholder="Поиск в настройках"
-          bg-color="surface-container-high"
-          rounded="xl"
-          density="compact"
           autocomplete="off"
           @focus="openSettingsSearch"
           @blur="closeSettingsSearch"
-        />
+        >
         <Transition name="chrome-reveal">
           <div v-if="settingsSearchOpen && settingsSearchMatches.length" class="search-dropdown">
             <VList bg-color="transparent" density="comfortable">

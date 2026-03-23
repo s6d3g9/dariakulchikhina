@@ -550,21 +550,16 @@ async function submitAddContact() {
     <!-- Search Dock -->
     <div class="search-dock">
       <div class="search-dock__field">
-        <VTextField
+        <input
           v-model="searchDraft"
-          variant="solo-filled"
-          flat
-          hide-details
-          prepend-inner-icon="mdi-account-search"
+          class="composer-input"
+          type="text"
           placeholder="Найти пользователя"
-          bg-color="surface-container-high"
-          rounded="xl"
-          density="compact"
           autocomplete="off"
           @focus="openSearch"
           @blur="closeSearch"
           @keydown.enter.prevent="runSearch"
-        />
+        >
         <Transition name="chrome-reveal">
           <div v-if="searchOpen && contactSuggestions.length" class="search-dropdown">
             <VList bg-color="transparent" density="comfortable">

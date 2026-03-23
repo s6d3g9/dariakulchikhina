@@ -387,13 +387,16 @@ Type TabBar находится **внизу шита**, заменяя нав-б
 |---|---|---|
 | 1 — Gallery | `VVirtualScroll` / css grid | Основной контент. Прокручивается вертикально. Прокрутка якорит к выбранному тегу (Layer 2). |
 | 2 — Tags | `VChipGroup`, горизонтальный скролл | Категории/пакеты. Sticky прямо над Search Dock. Tap → скролл галереи к разделу. Активный chip — `secondary-container`. |
-| 3 — Search | `VTextField` pill, `solo-filled` | Sticky внизу sheet. Поиск фильтрует галерею живым поиском. При наборе Layer 2 (теги) скрывается, Gallery показывает результаты flat-списком. |
+| 3 — Search | `<input class="composer-input">` | Sticky внизу sheet. Визуально идентична строке ввода сообщения composer (pill 28px, border, surface-container-high). Только placeholder меняется. Поиск фильтрует галерею живым поиском. При наборе Layer 2 (теги) скрывается, Gallery показывает результаты flat-списком. |
 
 **Правила галереи:**
 
-- **Emoji:** grid `8` колонок, размер 32px, no-border tappable cells
+- **Все галереи контента (emoji, стикеры, GIF, фото) используют единый grid `4` колонки** — плиточный layout.
+- **Emoji:** grid `4` колонки, tappable cells, no-border
 - **Стикеры:** grid `4` колонки, размер 80px, с заголовком пакета над группой
-- **GIF:** grid `2` колонки, автовысота (aspect-ratio 16/9 или оригинал), lazy-load
+- **GIF:** grid `4` колонки, aspect-ratio по оригиналу, lazy-load
+- **Фото:** grid `4` колонки, aspect-ratio 1:1
+- **Файл:** вертикальный список (не grid)
 - **Фото / Файл:** та же трёхслойная структура (Gallery + Categories + Search), см. §4.2.1
 - Недавно использованные — первая секция в каждой вкладке
 
@@ -409,7 +412,7 @@ Type TabBar находится **внизу шита**, заменяя нав-б
 │  Layer 1 — Gallery (сетка файлов/фото)               │  flex: 1, overflow-y: auto
 │  ┌────────────────────────────────────────────────┐   │
 │  │  [Недавние]                                    │   │  заголовок секции
-│  │  🖼 🖼 🖼 🖼  (превью 3 кол., aspect 1:1)      │   │
+│  │  🖼 🖼 🖼 🖼  (превью 4 кол., aspect 1:1)      │   │
 │  │  [Документы]                                   │   │
 │  │  📄 файл.pdf   23 KB                           │   │  список, не grid
 │  │  📝 заметка.doc  5 KB                          │   │
@@ -445,7 +448,7 @@ Type TabBar находится **внизу шита**, заменяя нав-б
 
 **Правила галереи фото (grid):**
 
-- 3 колонки, `aspect-ratio: 1/1`, без отступов между ячейками
+- 4 колонки, `aspect-ratio: 1/1`, без отступов между ячейками
 - Видео — badge `▶ 0:42` поверх превью (bottom-left)
 - Выбранный файл — overlay `✓` `primary-container` tint + border 2px `primary`
 - Мультиселект: можно выбрать несколько, кнопка `Отправить (N)` появляется вместо Search Dock
@@ -462,8 +465,9 @@ Type TabBar находится **внизу шита**, заменяя нав-б
 
 **Search Dock (Layer 3):**
 
-- `VTextField`, `variant="solo-filled"`, `prepend-inner-icon="mdi-magnify"`, `density="compact"`
-- `border-radius: 28px`, bg `surface-container-high`
+- `<input class="composer-input">` — тот же элемент что и строка ввода сообщения; меняется только placeholder
+- `border-radius: 28px`, bg `surface-container-high`, border `outline-variant`, height 48px
+- НЕ использовать `VTextField` — использовать нативный `<input>` с классом `composer-input`
 - Поиск: emoji — по названию (`:fire:`, `огонь`), стикеры — по тегам пакета, GIF — через API (Tenor/Giphy)
 - При фокусе sheet расширяется до `90dvh`, клавиатура не скрывает поле
 
