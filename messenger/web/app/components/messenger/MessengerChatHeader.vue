@@ -166,42 +166,66 @@ const nextCallViewModeLabel = computed(() => {
                 </template>
               </div>
 
-              <div class="chat-header__call-primary">
-                <VBtn
-                  class="chat-header__icon-btn chat-header__icon-btn--danger"
-                  icon
-                  variant="flat"
-                  color="error"
-                  :aria-label="incomingCall ? 'Отклонить звонок' : 'Завершить звонок'"
-                  @click="incomingCall ? emit('reject-call') : emit('hangup-call')"
-                >
-                  <VIcon>{{ incomingCall ? 'mdi-phone-remove' : 'mdi-phone-hangup' }}</VIcon>
-                </VBtn>
-                <VBtn
-                  class="chat-header__icon-btn"
-                  icon
-                  :variant="incomingCall ? 'flat' : (videoEnabled ? 'tonal' : 'text')"
-                  :color="incomingCall ? 'success' : (videoEnabled ? 'primary' : undefined)"
-                  :aria-label="incomingCall ? 'Принять звонок' : (hasVideoCallControls ? 'Выключить или включить свою камеру' : 'Включить видео')"
-                  :disabled="incomingCall ? false : !canToggleVideo"
-                  @click="incomingCall ? emit('accept-call') : emit('toggle-video')"
-                >
-                  <VIcon>{{ incomingCall ? 'mdi-phone-check' : (videoEnabled ? 'mdi-video' : 'mdi-video-off') }}</VIcon>
-                </VBtn>
-                <VMenu location="bottom end">
-                  <template #activator="{ props: menuProps }">
-                    <VBtn type="button" class="chat-header__icon-btn" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
-                      <VIcon>mdi-dots-vertical</VIcon>
-                    </VBtn>
-                  </template>
-                  <VList bg-color="surface-container-highest" density="comfortable" nav>
-                    <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
-                    <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
-                    <VDivider class="my-1" />
-                    <VListItem prepend-icon="mdi-account-cancel-outline" title="Заблокировать" />
-                    <VListItem prepend-icon="mdi-delete-outline" title="Удалить диалог" class="text-error" />
-                  </VList>
-                </VMenu>
+              <div class="chat-header__call-primary" :class="{ 'chat-header__call-primary--incoming': incomingCall }">
+                <template v-if="incomingCall">
+                  <VBtn
+                    class="chat-header__incoming-btn"
+                    variant="flat"
+                    color="error"
+                    aria-label="Отклонить звонок"
+                    @click="emit('reject-call')"
+                  >
+                    <VIcon>mdi-phone-remove</VIcon>
+                    <span>Отклонить</span>
+                  </VBtn>
+                  <VBtn
+                    class="chat-header__incoming-btn"
+                    variant="flat"
+                    color="success"
+                    aria-label="Принять звонок"
+                    @click="emit('accept-call')"
+                  >
+                    <VIcon>mdi-phone-check</VIcon>
+                    <span>Принять</span>
+                  </VBtn>
+                </template>
+                <template v-else>
+                  <VBtn
+                    class="chat-header__icon-btn chat-header__icon-btn--danger"
+                    icon
+                    variant="flat"
+                    color="error"
+                    aria-label="Завершить звонок"
+                    @click="emit('hangup-call')"
+                  >
+                    <VIcon>mdi-phone-hangup</VIcon>
+                  </VBtn>
+                  <VBtn
+                    class="chat-header__icon-btn"
+                    icon
+                    :variant="videoEnabled ? 'tonal' : 'text'"
+                    :color="videoEnabled ? 'primary' : undefined"
+                    :aria-label="hasVideoCallControls ? 'Выключить или включить свою камеру' : 'Включить видео'"
+                    :disabled="!canToggleVideo"
+                    @click="emit('toggle-video')"
+                  >
+                    <VIcon>{{ videoEnabled ? 'mdi-video' : 'mdi-video-off' }}</VIcon>
+                  </VBtn>
+                  <VMenu location="bottom end">
+                    <template #activator="{ props: menuProps }">
+                      <VBtn type="button" class="chat-header__icon-btn" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
+                        <VIcon>mdi-dots-vertical</VIcon>
+                      </VBtn>
+                    </template>
+                    <VList bg-color="surface-container-highest" density="comfortable" nav>
+                      <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
+                      <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
+                      <VDivider class="my-1" />
+                      <VListItem prepend-icon="mdi-account-cancel-outline" title="Заблокировать" />
+                      <VListItem prepend-icon="mdi-delete-outline" title="Удалить диалог" class="text-error" />
+                    </VList>
+                  </VMenu>
+                </template>
               </div>
 
             </div>

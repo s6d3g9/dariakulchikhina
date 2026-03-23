@@ -692,11 +692,11 @@ html, body {
   flex: 1 1 auto;
   max-width: none;
   min-width: 0;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, rgb(var(--v-theme-surface-container-highest)) 80%, transparent);
-  border: 1px solid color-mix(in srgb, rgb(var(--v-theme-primary)) 20%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, rgb(var(--v-theme-primary)) 8%, transparent);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .chat-header__back {
@@ -799,6 +799,10 @@ html, body {
   overflow: hidden;
 }
 
+.chat-header__call-inline--incoming .chat-header__call-secondary {
+  display: none;
+}
+
 .chat-header__call-secondary > .chat-header__icon-btn {
   width: 100%;
   min-width: 0 !important;
@@ -813,6 +817,14 @@ html, body {
   display: grid;
   grid-template-columns: repeat(3, 38px);
   padding-left: 6px;
+}
+
+.chat-header__call-primary--incoming {
+  flex: 1 1 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  padding-left: 0;
 }
 
 .chat-header__icon-slot {
@@ -862,6 +874,26 @@ html, body {
   padding-inline: 12px !important;
 }
 
+.chat-header__incoming-btn {
+  min-width: 0 !important;
+  min-height: 44px !important;
+  height: 44px;
+  border-radius: 14px !important;
+  padding-inline: 14px !important;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.chat-header__incoming-btn .v-btn__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
 .chat-header__icon-btn--hangup {
   margin-left: 2px;
 }
@@ -890,7 +922,7 @@ html, body {
   }
 
   .chat-header__toolbar-actions--call {
-    padding: 3px 6px;
+    padding: 0;
   }
 
   .chat-header__call-secondary {
@@ -901,10 +933,23 @@ html, body {
     grid-template-columns: repeat(3, 34px);
   }
 
+  .chat-header__call-primary--incoming {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
   .chat-header__icon-btn,
   .chat-header__action-btn {
     min-width: 34px !important;
     min-height: 34px !important;
+  }
+
+  .chat-header__incoming-btn {
+    min-height: 40px !important;
+    height: 40px;
+    border-radius: 12px !important;
+    padding-inline: 10px !important;
+    font-size: 0.84rem;
   }
 
   .chat-header__icon-btn .v-icon,
