@@ -365,7 +365,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
             v-model="searchDraft"
             type="text"
             class="composer-input composer-input--dock"
-            placeholder="Поиск по чатам"
+            placeholder=""
             autocomplete="off"
             @focus="openSearch"
             @blur="closeSearch"

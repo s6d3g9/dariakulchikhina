@@ -371,7 +371,7 @@ const gallerySearch = ref('')
             v-model="gallerySearch"
             type="text"
             class="composer-input composer-input--dock"
-            placeholder="Поиск в галерее"
+            placeholder=""
             autocomplete="off"
           />
         </MessengerDockField>

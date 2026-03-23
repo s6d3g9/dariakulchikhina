@@ -59,7 +59,7 @@ defineExpose({
           :value="props.draft"
           rows="1"
           class="composer-input composer-input--framed"
-          placeholder="Сообщение"
+          placeholder=""
           :disabled="!props.activeConversation"
           @input="emit('update:draft', ($event.target as HTMLTextAreaElement).value); emit('input')"
           @focus="emit('focus')"

@@ -82,8 +82,8 @@ html, body {
   align-items: center;
   flex-shrink: 0;
   height: 52px;
-  gap: 6px;
-  padding: 4px 8px;
+  gap: 4px;
+  padding: 4px 6px;
   background: rgb(var(--v-theme-surface-container-low));
   z-index: 10;
 }
@@ -96,7 +96,7 @@ html, body {
   justify-content: center;
   min-width: 0;
   min-height: 44px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: 14px;
   border: none;
   background: transparent;
@@ -122,7 +122,7 @@ html, body {
 }
 
 .messenger-nav-icon {
-  font-size: 28px !important;
+  font-size: 30px !important;
 }
 
 /* ── Section block base ──────────────────────────────────── */
@@ -239,12 +239,15 @@ html, body {
 }
 
 .section-tabs .v-slide-group__content {
+  display: flex;
+  width: 100%;
   gap: 4px;
 }
 
 .section-tabs .v-tab {
-  min-width: 64px;
-  width: 64px;
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
   min-height: 44px;
   border-radius: 14px;
   padding: 0;
@@ -1134,22 +1137,26 @@ html, body {
 .composer-media-menu__tabs .v-slide-group__content,
 .content-gallery__nav .v-slide-group__content,
 .section-tabs .v-slide-group__content {
-  gap: 0;
+  display: flex;
+  width: 100%;
+  gap: 4px;
 }
 
 .composer-media-menu__tabs .v-tab,
 .content-gallery__nav .v-tab,
 .section-tabs .v-tab {
-  min-width: 64px !important;
-  width: 64px;
+  flex: 1 1 0;
+  min-width: 0 !important;
+  width: auto;
   min-height: 44px !important;
   padding: 0 !important;
+  border-radius: 14px;
 }
 
 .composer-media-menu__tabs .v-tab .v-icon,
 .content-gallery__nav .v-tab .v-icon,
 .section-tabs .v-tab .v-icon {
-  font-size: 26px !important;
+  font-size: 28px !important;
 }
 
 .composer-media-menu__tab-badge {

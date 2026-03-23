@@ -253,11 +253,7 @@ defineExpose({
                 :value="klipyQuery"
                 type="text"
                 class="composer-input composer-input--dock"
-                :placeholder="tab === 'emoji' ? 'Поиск смайлов...'
-                  : tab === 'stickers' ? 'Поиск стикеров...'
-                  : tab === 'gif' ? 'Поиск GIF...'
-                  : tab === 'photo' ? 'Поиск фото...'
-                  : 'Поиск файлов...'"
+                placeholder=""
                 autocomplete="off"
                 autocapitalize="off"
                 spellcheck="false"

@@ -454,7 +454,7 @@ function selectSettingsSection(key: string) {
             v-model="settingsSearch"
             type="text"
             class="composer-input composer-input--dock"
-            placeholder="Поиск в настройках"
+            placeholder=""
             autocomplete="off"
             @focus="openSettingsSearch"
             @blur="closeSettingsSearch"
