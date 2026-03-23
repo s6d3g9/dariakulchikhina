@@ -33,6 +33,8 @@ textarea,
 select {
   background: transparent;
   color: var(--glass-text);
+  -webkit-text-fill-color: var(--glass-text);
+  caret-color: var(--glass-text);
   border: none;
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent);
   outline: none;
@@ -373,6 +375,23 @@ html.dark .glass-card {
   color: color-mix(in srgb, var(--glass-text) 42%, transparent);
 }
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--glass-text) !important;
+  caret-color: var(--glass-text);
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 25%, transparent);
+  -webkit-box-shadow: 0 0 0 1000px var(--glass-page-bg) inset;
+  box-shadow: 0 0 0 1000px var(--glass-page-bg) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
 .glass-input:focus {
   outline: none;
   border-color: var(--glass-text);
@@ -409,6 +428,27 @@ html.dark .glass-input {
 
 html.dark .glass-input::placeholder {
   color: var(--ds-dark-text-muted, rgba(198, 202, 214, 0.74));
+}
+
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus,
+html.dark textarea:-webkit-autofill,
+html.dark textarea:-webkit-autofill:hover,
+html.dark textarea:-webkit-autofill:focus,
+html.dark select:-webkit-autofill,
+html.dark select:-webkit-autofill:hover,
+html.dark select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--glass-text) !important;
+  caret-color: var(--glass-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--ds-dark-surface-bg, rgba(13, 14, 18, 0.94)) inset;
+  box-shadow: 0 0 0 1000px var(--ds-dark-surface-bg, rgba(13, 14, 18, 0.94)) inset;
+}
+
+.auth-input,
+.chat-auth-input {
+  font-size: max(16px, var(--input-font-size, var(--ds-text-sm, .833rem)));
+  line-height: 1.4;
 }
 
 /* ── Unified cabinet/menu primitives (0.2 briefing style) ── */
