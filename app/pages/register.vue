@@ -6,23 +6,30 @@
         <p class="auth-subtitle">Простая регистрация: логин, пароль, роль. Остальные данные заполните уже внутри кабинета.</p>
       </div>
 
+      <div class="auth-role-grid" role="tablist" aria-label="Выбор роли для регистрации">
+        <button
+          v-for="role in roleOptions"
+          :key="role.value"
+          type="button"
+          class="auth-role-btn"
+          :class="{ 'auth-role-btn--active': selectedRole === role.value }"
+          @click="selectRole(role.value)"
+        >
+          <span class="auth-role-btn__title">{{ role.label }}</span>
+          <span class="auth-role-btn__note">{{ role.note }}</span>
+        </button>
+      </div>
+
       <form v-if="!created" @submit.prevent="submit">
         <div class="auth-form-grid">
           <div class="auth-field">
-            <label>Роль</label>
-            <select v-model="selectedRole" class="glass-input auth-input" @change="syncRoleQuery">
-              <option v-for="role in roleOptions" :key="role.value" :value="role.value">{{ role.label }}</option>
-            </select>
-          </div>
-
-          <div class="auth-field">
             <label>Логин</label>
-            <input v-model="form.login" type="text" class="glass-input auth-input" placeholder="login" required autocomplete="username" />
+            <input v-model="form.login" name="login" type="text" class="glass-input auth-input" placeholder="login" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" />
           </div>
 
           <div class="auth-field">
             <label>Пароль</label>
-            <input v-model="form.password" type="password" class="glass-input auth-input" placeholder="минимум 8 символов" required autocomplete="new-password" />
+            <input v-model="form.password" name="password" type="password" class="glass-input auth-input" placeholder="минимум 8 символов" required autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" />
           </div>
         </div>
 
@@ -55,14 +62,13 @@ definePageMeta({ layout: 'default' })
 type RegisterRole = 'designer' | 'client' | 'contractor'
 
 const route = useRoute()
-const router = useRouter()
 const { csrfHeaders, ensureCsrfCookie } = useCsrfHeaders()
 
 const roleOptions = [
-  { value: 'designer', label: 'Дизайнер' },
-  { value: 'client', label: 'Клиент' },
-  { value: 'contractor', label: 'Подрядчик' },
-] as const satisfies ReadonlyArray<{ value: RegisterRole; label: string }>
+  { value: 'designer', label: 'Дизайнер', note: 'Создание аккаунта дизайнера.' },
+  { value: 'client', label: 'Клиент', note: 'Создание кабинета проекта.' },
+  { value: 'contractor', label: 'Подрядчик', note: 'Создание доступа подрядчика.' },
+] as const satisfies ReadonlyArray<{ value: RegisterRole; label: string; note: string }>
 
 function normalizeRole(value: unknown): RegisterRole {
   if (value === 'designer' || value === 'client' || value === 'contractor') {
@@ -95,11 +101,6 @@ const submitLabel = computed(() => {
 
 const successLoginPath = computed(() => roleToLoginPath[selectedRole.value])
 
-watch(() => route.query.role, (nextRole) => {
-  selectedRole.value = normalizeRole(nextRole)
-  resetSuccessState()
-})
-
 function resetSuccessState() {
   error.value = ''
   created.value = false
@@ -107,8 +108,13 @@ function resetSuccessState() {
   successMeta.value = ''
 }
 
-function syncRoleQuery() {
-  router.replace({ query: { ...route.query, role: selectedRole.value } })
+function selectRole(role: RegisterRole) {
+  if (role === selectedRole.value) {
+    return
+  }
+
+  selectedRole.value = role
+  resetSuccessState()
 }
 
 async function submit() {
@@ -194,6 +200,41 @@ async function copyPhrase() {
   opacity: .74;
 }
 
+.auth-role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.auth-role-btn {
+  display: grid;
+  gap: 6px;
+  min-height: 68px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-family: inherit;
+}
+
+.auth-role-btn--active {
+  border-color: color-mix(in srgb, var(--glass-text) 42%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
+
+.auth-role-btn__title {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.auth-role-btn__note {
+  font-size: .72rem;
+  opacity: .68;
+  line-height: 1.35;
+}
+
 .auth-form-grid {
   display: grid;
   gap: 0;
@@ -247,6 +288,10 @@ async function copyPhrase() {
 @media (max-width: 760px) {
   .auth-card {
     max-width: 460px;
+  }
+
+  .auth-role-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

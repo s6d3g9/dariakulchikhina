@@ -23,25 +23,18 @@
       <form @submit.prevent="submit">
         <div class="auth-form-grid">
           <div class="auth-field">
-            <label>Роль</label>
-            <select v-model="selectedRole" class="glass-input auth-input" @change="syncRoleQuery">
-              <option v-for="role in roleOptions" :key="role.value" :value="role.value">{{ role.label }}</option>
-            </select>
-          </div>
-
-          <div class="auth-field">
             <label>Логин</label>
-            <input v-model="form.login" type="text" class="glass-input auth-input" placeholder="login" required autocomplete="username" />
+            <input v-model="form.login" name="login" type="text" class="glass-input auth-input" placeholder="login" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" />
           </div>
 
           <div class="auth-field">
             <label>Recovery phrase</label>
-            <textarea v-model="form.recoveryPhrase" class="glass-input auth-input auth-input--textarea" rows="4" required placeholder="12 слов через пробел" />
+            <textarea v-model="form.recoveryPhrase" name="recoveryPhrase" class="glass-input auth-input auth-input--textarea" rows="4" required placeholder="12 слов через пробел" autocapitalize="none" autocorrect="off" spellcheck="false" />
           </div>
 
           <div class="auth-field">
             <label>Новый пароль</label>
-            <input v-model="form.newPassword" type="password" class="glass-input auth-input" placeholder="минимум 8 символов" required autocomplete="new-password" />
+            <input v-model="form.newPassword" name="newPassword" type="password" class="glass-input auth-input" placeholder="минимум 8 символов" required autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" />
           </div>
         </div>
 
@@ -65,7 +58,6 @@ definePageMeta({ layout: 'default' })
 type RecoverRole = 'designer' | 'client' | 'contractor'
 
 const route = useRoute()
-const router = useRouter()
 const { csrfHeaders, ensureCsrfCookie } = useCsrfHeaders()
 
 const roleOptions = [
@@ -108,12 +100,6 @@ const submitLabel = computed(() => {
 
 const successLoginPath = computed(() => roleToLoginPath[selectedRole.value])
 
-watch(() => route.query.role, (nextRole) => {
-  selectedRole.value = normalizeRole(nextRole)
-  error.value = ''
-  success.value = ''
-})
-
 function selectRole(role: RecoverRole) {
   if (role === selectedRole.value) {
     return
@@ -122,11 +108,6 @@ function selectRole(role: RecoverRole) {
   selectedRole.value = role
   error.value = ''
   success.value = ''
-  syncRoleQuery()
-}
-
-function syncRoleQuery() {
-  router.replace({ query: { ...route.query, role: selectedRole.value } })
 }
 
 async function submit() {

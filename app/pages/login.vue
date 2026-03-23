@@ -6,22 +6,34 @@
         <p class="auth-subtitle">Выберите роль и войдите по логину и паролю. Для клиента и подрядчика старые способы входа сохранены ниже.</p>
       </div>
 
+      <div class="auth-role-grid" role="tablist" aria-label="Выбор роли для входа">
+        <button
+          v-for="role in roleOptions"
+          :key="role.value"
+          type="button"
+          class="auth-role-btn"
+          :class="{ 'auth-role-btn--active': selectedRole === role.value }"
+          @click="selectRole(role.value)"
+        >
+          <span class="auth-role-btn__title">{{ role.label }}</span>
+          <span class="auth-role-btn__note">{{ role.note }}</span>
+        </button>
+      </div>
+
       <form @submit.prevent="submitCredentials">
         <div class="auth-form-grid">
-          <div class="auth-field">
-            <label>Роль</label>
-            <select v-model="selectedRole" class="glass-input auth-input" @change="syncRoleQuery">
-              <option v-for="role in roleOptions" :key="role.value" :value="role.value">{{ role.label }}</option>
-            </select>
-          </div>
-
           <div class="auth-field">
             <label>Логин</label>
             <input
               v-model="credentials.login"
+              name="login"
               type="text"
               placeholder="логин"
               autocomplete="username"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              inputmode="text"
               required
               class="glass-input auth-input"
             />
@@ -31,9 +43,13 @@
             <label>Пароль</label>
             <input
               v-model="credentials.password"
+              name="password"
               type="password"
               placeholder="пароль"
               autocomplete="current-password"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
               required
               class="glass-input auth-input"
             />
@@ -123,10 +139,10 @@ const router = useRouter()
 const { csrfHeaders, ensureCsrfCookie } = useCsrfHeaders()
 
 const roleOptions = [
-  { value: 'designer', label: 'Дизайнер' },
-  { value: 'client', label: 'Клиент' },
-  { value: 'contractor', label: 'Подрядчик' },
-] as const satisfies ReadonlyArray<{ value: LoginRole; label: string }>
+  { value: 'designer', label: 'Дизайнер', note: 'Вход в админ-кабинет.' },
+  { value: 'client', label: 'Клиент', note: 'Вход в кабинет проекта.' },
+  { value: 'contractor', label: 'Подрядчик', note: 'Вход в задачи и документы.' },
+] as const satisfies ReadonlyArray<{ value: LoginRole; label: string; note: string }>
 
 function normalizeRole(value: unknown): LoginRole {
   if (value === 'designer' || value === 'client' || value === 'contractor') {
@@ -157,20 +173,19 @@ const submitLabel = computed(() => {
   return 'Войти как подрядчик'
 })
 
-watch(() => route.query.role, (nextRole) => {
-  selectedRole.value = normalizeRole(nextRole)
-  resetErrors()
-})
-
 function resetErrors() {
   credentialsError.value = ''
   clientLegacyError.value = ''
   contractorLegacyError.value = ''
 }
 
-function syncRoleQuery() {
+function selectRole(role: LoginRole) {
+  if (role === selectedRole.value) {
+    return
+  }
+
+  selectedRole.value = role
   resetErrors()
-  router.replace({ query: { ...route.query, role: selectedRole.value } })
 }
 
 async function submitCredentials() {
@@ -298,6 +313,41 @@ async function submitContractorLegacy() {
   opacity: .74;
 }
 
+.auth-role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.auth-role-btn {
+  display: grid;
+  gap: 6px;
+  min-height: 68px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-family: inherit;
+}
+
+.auth-role-btn--active {
+  border-color: color-mix(in srgb, var(--glass-text) 42%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
+
+.auth-role-btn__title {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.auth-role-btn__note {
+  font-size: .72rem;
+  opacity: .68;
+  line-height: 1.35;
+}
+
 .auth-form-grid {
   display: grid;
   gap: 0;
@@ -365,6 +415,10 @@ async function submitContractorLegacy() {
   .auth-card {
     max-width: 460px;
     padding: 24px;
+  }
+
+  .auth-role-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

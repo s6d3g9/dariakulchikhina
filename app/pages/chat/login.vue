@@ -7,10 +7,10 @@
 
       <form class="chat-auth-form" @submit.prevent="submit">
         <label class="chat-auth-label" for="chat-login">Логин</label>
-        <input id="chat-login" v-model="form.login" type="text" class="glass-input chat-auth-input" autocomplete="username" required>
+        <input id="chat-login" v-model="form.login" name="login" type="text" class="glass-input chat-auth-input" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" required>
 
         <label class="chat-auth-label" for="chat-password">Пароль</label>
-        <input id="chat-password" v-model="form.password" type="password" class="glass-input chat-auth-input" autocomplete="current-password" required>
+        <input id="chat-password" v-model="form.password" name="password" type="password" class="glass-input chat-auth-input" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required>
 
         <p v-if="errorMessage" class="chat-auth-error">{{ errorMessage }}</p>
 
