@@ -387,7 +387,7 @@ Type TabBar находится **внизу шита**, заменяя нав-б
 |---|---|---|
 | 1 — Gallery | `VVirtualScroll` / css grid | Основной контент. Прокручивается вертикально. Прокрутка якорит к выбранному тегу (Layer 2). |
 | 2 — Tags | `VChipGroup`, горизонтальный скролл | Категории/пакеты. Sticky прямо над Search Dock. Tap → скролл галереи к разделу. Активный chip — `secondary-container`. |
-| 3 — Search | `<input class="composer-input">` | Sticky внизу sheet. Визуально идентична строке ввода сообщения composer (pill 28px, border, surface-container-high). Только placeholder меняется. Поиск фильтрует галерею живым поиском. При наборе Layer 2 (теги) скрывается, Gallery показывает результаты flat-списком. |
+| 3 — Search | `VTextField.composer-search-field` | Sticky внизу sheet. Визуально идентична строке ввода сообщения composer (pill 28px, border, surface-container-high, 48px). Только placeholder меняется. Поиск фильтрует галерею живым поиском. При наборе Layer 2 (теги) скрывается, Gallery показывает результаты flat-списком. |
 
 **Правила галереи:**
 
@@ -465,9 +465,9 @@ Type TabBar находится **внизу шита**, заменяя нав-б
 
 **Search Dock (Layer 3):**
 
-- `<input class="composer-input">` — тот же элемент что и строка ввода сообщения; меняется только placeholder
+- `VTextField` с классом `composer-search-field` — визуально идентичен строке ввода сообщения; меняется только placeholder
 - `border-radius: 28px`, bg `surface-container-high`, border `outline-variant`, height 48px
-- НЕ использовать `VTextField` — использовать нативный `<input>` с классом `composer-input`
+- Параметры VTextField: `variant="solo-filled"`, `flat`, `rounded="xl"`, `bg-color="surface-container-high"`. НЕ использовать `density="compact"`
 - Поиск: emoji — по названию (`:fire:`, `огонь`), стикеры — по тегам пакета, GIF — через API (Tenor/Giphy)
 - При фокусе sheet расширяется до `90dvh`, клавиатура не скрывает поле
 

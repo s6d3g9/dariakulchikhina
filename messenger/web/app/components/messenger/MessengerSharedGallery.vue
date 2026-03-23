@@ -359,7 +359,6 @@ const gallerySearch = ref('')
           placeholder="Поиск в галерее"
           bg-color="surface-container-high"
           rounded="xl"
-          density="compact"
           autocomplete="off"
         />
       </div>

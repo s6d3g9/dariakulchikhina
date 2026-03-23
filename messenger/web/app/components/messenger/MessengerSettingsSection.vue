@@ -443,7 +443,6 @@ function selectSettingsSection(key: string) {
           placeholder="Поиск в настройках"
           bg-color="surface-container-high"
           rounded="xl"
-          density="compact"
           autocomplete="off"
           @focus="openSettingsSearch"
           @blur="closeSettingsSearch"

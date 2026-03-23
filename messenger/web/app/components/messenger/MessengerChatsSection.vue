@@ -369,7 +369,6 @@ function formatChatPreview(chat: MessengerConversationItem) {
           placeholder="Поиск по чатам"
           bg-color="surface-container-high"
           rounded="xl"
-          density="compact"
           autocomplete="off"
           @focus="openSearch"
           @blur="closeSearch"

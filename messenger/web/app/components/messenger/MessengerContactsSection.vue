@@ -559,7 +559,6 @@ async function submitAddContact() {
           placeholder="Найти пользователя"
           bg-color="surface-container-high"
           rounded="xl"
-          density="compact"
           autocomplete="off"
           @focus="openSearch"
           @blur="closeSearch"

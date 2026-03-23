@@ -235,7 +235,6 @@ defineExpose({
           <VTextField
             :model-value="klipyQuery"
             class="composer-search-field"
-            density="compact"
             hide-details
             variant="solo-filled"
             flat

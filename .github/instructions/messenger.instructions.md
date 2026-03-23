@@ -118,8 +118,8 @@
 
 **Правила:**
 - Строка поиска в не-chat экранах занимает **ту же самую позицию**, что и строка ввода в Chat — фиксированная высота, одинаковый визуальный вес, над нижним нав-баром.
-- Строка поиска визуально **идентична** строке ввода сообщения Composer: `<input class="composer-input">`, pill shape 28px, border, surface-container-high bg, 48px height. Меняется только placeholder.
-- НЕ использовать `VTextField` для строки поиска — только нативный `<input>` с классом `composer-input`.
+- Строка поиска визуально **идентична** строке ввода сообщения Composer: pill shape 28px, border, surface-container-high bg, 48px height. Меняется только placeholder.
+- Использовать `VTextField` с классом `composer-search-field` (variant="solo-filled", flat, rounded="xl", bg-color="surface-container-high"). НЕ использовать density="compact".
 - Поиск НИКОГДА не появляется вверху экрана. Только в зоне дока снизу.
 - CSS-класс для поисковых доков: `search-dock--bottom-dock`.
 - Dropdown результатов из bottom-dock открывается **вверх** (`bottom: 100%; top: auto`).
