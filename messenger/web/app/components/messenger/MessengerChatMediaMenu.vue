@@ -232,20 +232,22 @@ defineExpose({
 
         <!-- Layer 3: Search field (all tabs per spec §4.1) -->
         <div class="search-dock">
-          <input
-            :value="klipyQuery"
-            type="text"
-            class="composer-input"
-            :placeholder="tab === 'emoji' ? 'Поиск смайлов...'
-              : tab === 'stickers' ? 'Поиск стикеров...'
-              : tab === 'gif' ? 'Поиск GIF...'
-              : tab === 'photo' ? 'Поиск фото...'
-              : 'Поиск файлов...'"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            @input="emit('update:klipy-query', ($event.target as HTMLInputElement).value ?? '')"
-          />
+          <div class="search-dock__field">
+            <input
+              :value="klipyQuery"
+              type="text"
+              class="composer-input"
+              :placeholder="tab === 'emoji' ? 'Поиск смайлов...'
+                : tab === 'stickers' ? 'Поиск стикеров...'
+                : tab === 'gif' ? 'Поиск GIF...'
+                : tab === 'photo' ? 'Поиск фото...'
+                : 'Поиск файлов...'"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              @input="emit('update:klipy-query', ($event.target as HTMLInputElement).value ?? '')"
+            />
+          </div>
         </div>
       </div>
 
