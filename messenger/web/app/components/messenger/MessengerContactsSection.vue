@@ -399,54 +399,66 @@ async function submitAddContact() {
             {{ resolveContactAvatar(contact.displayName) }}
           </VAvatar>
         </template>
-        <template #title><span class="title-small">{{ contact.displayName }}</span></template>
+        <template #title>
+          <div class="chat-row__titlebar">
+            <div class="chat-row__titlemain">
+              <span class="title-small">{{ contact.displayName }}</span>
+            </div>
+
+            <div
+              v-if="holdActions.activeItemId.value === contact.id"
+              class="hold-actions hold-actions--inline"
+              data-hold-actions-menu="true"
+              @pointerdown.stop
+            >
+              <button
+                type="button"
+                class="hold-actions__icon-btn"
+                aria-label="Аудиозвонок"
+                title="Аудиозвонок"
+                @click.stop="startContactCall(contact.id, 'audio')"
+              >
+                <MessengerIcon class="hold-actions__icon" name="phone" :size="16" />
+              </button>
+              <button
+                type="button"
+                class="hold-actions__icon-btn"
+                aria-label="Видеозвонок"
+                title="Видеозвонок"
+                @click.stop="startContactCall(contact.id, 'video')"
+              >
+                <MessengerIcon class="hold-actions__icon" name="video" :size="16" />
+              </button>
+              <button
+                type="button"
+                class="hold-actions__icon-btn"
+                aria-label="Скопировать карточку контакта"
+                title="Скопировать карточку контакта"
+                @click.stop="copyContactCard(contact)"
+              >
+                <MessengerIcon class="hold-actions__icon" name="copy" :size="16" />
+              </button>
+              <button
+                type="button"
+                class="hold-actions__icon-btn"
+                aria-label="Переслать контакт"
+                title="Переслать контакт"
+                @click.stop="forwardContactCard(contact)"
+              >
+                <MessengerIcon class="hold-actions__icon" name="forward" :size="16" />
+              </button>
+              <button
+                type="button"
+                class="hold-actions__icon-btn hold-actions__icon-btn--danger"
+                aria-label="Удалить контакт"
+                @click.stop="removeContact(contact.id)"
+              >
+                <MessengerIcon class="hold-actions__icon hold-actions__icon--danger" name="delete" :size="18" />
+              </button>
+            </div>
+          </div>
+        </template>
         <template #subtitle><span class="on-surface-variant">@{{ contact.login }}</span></template>
-        <div v-if="holdActions.activeItemId.value === contact.id" class="hold-actions" data-hold-actions-menu="true" @pointerdown.stop>
-          <button
-            type="button"
-            class="hold-actions__icon-btn"
-            aria-label="Аудиозвонок"
-            title="Аудиозвонок"
-            @click.stop="startContactCall(contact.id, 'audio')"
-          >
-            <MessengerIcon name="phone" :size="16" />
-          </button>
-          <button
-            type="button"
-            class="hold-actions__icon-btn"
-            aria-label="Видеозвонок"
-            title="Видеозвонок"
-            @click.stop="startContactCall(contact.id, 'video')"
-          >
-            <MessengerIcon name="video" :size="16" />
-          </button>
-          <button
-            type="button"
-            class="hold-actions__icon-btn"
-            aria-label="Скопировать карточку контакта"
-            title="Скопировать карточку контакта"
-            @click.stop="copyContactCard(contact)"
-          >
-            <MessengerIcon name="copy" :size="16" />
-          </button>
-          <button
-            type="button"
-            class="hold-actions__icon-btn"
-            aria-label="Переслать контакт"
-            title="Переслать контакт"
-            @click.stop="forwardContactCard(contact)"
-          >
-            <MessengerIcon name="forward" :size="16" />
-          </button>
-          <button
-            type="button"
-            class="hold-actions__icon-btn hold-actions__icon-btn--danger"
-            aria-label="Удалить контакт"
-            @click.stop="removeContact(contact.id)"
-          >
-            <MessengerIcon name="delete" :size="18" />
-          </button>
-        </div>
       </VListItem>
 
       <div

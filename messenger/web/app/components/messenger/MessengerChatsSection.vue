@@ -266,49 +266,52 @@ function formatChatPreview(chat: MessengerConversationItem) {
             </VAvatar>
           </template>
           <template #title>
-            <span class="title-small">{{ chat.peerDisplayName }}</span>
-            <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal" class="ml-2">Secret</VChip>
+            <div class="chat-row__titlebar">
+              <div class="chat-row__titlemain">
+                <span class="title-small">{{ chat.peerDisplayName }}</span>
+                <VChip v-if="chat.secret" size="x-small" color="warning" variant="tonal" class="ml-2">Secret</VChip>
+              </div>
+
+              <div
+                v-if="holdActions.activeItemId.value === chat.id"
+                class="hold-actions hold-actions--inline"
+                data-hold-actions-menu="true"
+                @pointerdown.stop
+              >
+                <button
+                  type="button"
+                  class="hold-actions__icon-btn"
+                  aria-label="Аудиозвонок"
+                  @click.stop="startChatCall(chat.id, 'audio')"
+                >
+                  <MessengerIcon class="hold-actions__icon" name="phone" :size="18" />
+                </button>
+                <button
+                  type="button"
+                  class="hold-actions__icon-btn"
+                  aria-label="Видеозвонок"
+                  @click.stop="startChatCall(chat.id, 'video')"
+                >
+                  <MessengerIcon class="hold-actions__icon" name="video" :size="18" />
+                </button>
+                <button
+                  type="button"
+                  class="hold-actions__icon-btn hold-actions__icon-btn--danger"
+                  aria-label="Удалить чат"
+                  @click.stop="removeChat(chat.id)"
+                >
+                  <MessengerIcon class="hold-actions__icon hold-actions__icon--danger" name="delete" :size="18" />
+                </button>
+              </div>
+            </div>
           </template>
           <template #subtitle>
             <span class="chat-row__preview on-surface-variant">{{ formatChatPreview(chat) }}</span>
           </template>
           <template #append>
-            <span class="chat-row__time on-surface-variant">{{ formatConversationTimestamp(chat.updatedAt) }}</span>
+            <span v-if="holdActions.activeItemId.value !== chat.id" class="chat-row__time on-surface-variant">{{ formatConversationTimestamp(chat.updatedAt) }}</span>
           </template>
         </VListItem>
-
-        <!-- Hold actions strip -->
-        <div
-          v-if="holdActions.activeItemId.value"
-          class="hold-actions"
-          data-hold-actions-menu="true"
-          @pointerdown.stop
-        >
-          <button
-            type="button"
-            class="hold-actions__icon-btn"
-            aria-label="Аудиозвонок"
-            @click.stop="startChatCall(holdActions.activeItemId.value, 'audio')"
-          >
-            <MessengerIcon name="phone" :size="18" />
-          </button>
-          <button
-            type="button"
-            class="hold-actions__icon-btn"
-            aria-label="Видеозвонок"
-            @click.stop="startChatCall(holdActions.activeItemId.value, 'video')"
-          >
-            <MessengerIcon name="video" :size="18" />
-          </button>
-          <button
-            type="button"
-            class="hold-actions__icon-btn hold-actions__icon-btn--danger"
-            aria-label="Удалить чат"
-            @click.stop="removeChat(holdActions.activeItemId.value)"
-          >
-            <MessengerIcon name="delete" :size="18" />
-          </button>
-        </div>
 
         <div v-if="!filteredConversations.length" class="empty-state">
           <VIcon size="48" color="on-surface-variant">mdi-message-text-outline</VIcon>
