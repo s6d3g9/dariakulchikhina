@@ -1850,9 +1850,9 @@ html, body {
 .call-stage--mini .call-stage__actions,
 .call-stage--mini .call-stage__view-modes,
 .call-stage--mini .call-stage__status-chip,
-.call-stage--chat-bound .call-stage__meta,
-.call-stage--chat-bound .call-stage__actions,
-.call-stage--chat-bound .call-stage__view-modes {
+.call-stage--chat-bound.call-stage--split .call-stage__meta,
+.call-stage--chat-bound.call-stage--split .call-stage__actions,
+.call-stage--chat-bound.call-stage--split .call-stage__view-modes {
   display: none;
 }
 

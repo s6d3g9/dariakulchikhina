@@ -28,6 +28,10 @@ const activeVideoCall = computed(() => Boolean(
   calls.activeCall.value
   && (calls.activeCall.value.mode === 'video' || calls.controls.value.videoEnabled),
 ))
+const showVideoStage = computed(() => Boolean(
+  activeVideoCall.value
+  && !(headerActiveCall.value && calls.viewMode.value === 'split'),
+))
 const showCallLayer = computed(() => Boolean(
   calls.incomingCall.value
   || calls.activeCall.value
@@ -247,7 +251,7 @@ onBeforeUnmount(() => {
     </div>
 
     <section
-      v-if="activeVideoCall"
+      v-if="showVideoStage"
       class="call-stage call-stage--video"
       :class="[`call-stage--${calls.viewMode.value}`, { 'call-stage--chat-bound': headerActiveCall, 'call-stage--weak-network': weakNetworkVisible }]"
       :style="miniStageStyle"

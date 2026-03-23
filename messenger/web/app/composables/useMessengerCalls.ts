@@ -950,7 +950,7 @@ export function useMessengerCalls() {
       speakerEnabled: true,
       videoEnabled: mode === 'video',
     }
-    viewMode.value = mode === 'video' ? 'split' : 'full'
+    viewMode.value = 'full'
     callStatusText.value = mode === 'video' ? 'Отправляем видеовызов…' : 'Отправляем аудиовызов…'
 
     try {
@@ -993,7 +993,7 @@ export function useMessengerCalls() {
         speakerEnabled: true,
         videoEnabled: incomingCall.value.mode === 'video',
       }
-      viewMode.value = incomingCall.value.mode === 'video' ? 'split' : 'full'
+      viewMode.value = 'full'
 
       let ringingE2EE: MessengerCallE2EEPayload = { supported: false }
 
@@ -1359,8 +1359,8 @@ export function useMessengerCalls() {
       ...activeCall.value,
       mode: 'video',
     }
-    if (viewMode.value === 'full') {
-      viewMode.value = 'split'
+    if (viewMode.value !== 'mini') {
+      viewMode.value = 'full'
     }
     assignMediaTargets()
     syncVideoState()
