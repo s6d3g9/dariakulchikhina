@@ -10,7 +10,7 @@ const settingsModel = useMessengerSettings()
 
 // Nav bar скрываем при открытой медиа-плашке или клавиатуре
 const showBottomNav = computed(() =>
-  !navigation.mediaSheetOpen.value && !viewport.keyboardOpen.value && !calls.activeCall.value && !calls.incomingCall.value,
+  !navigation.mediaSheetOpen.value && !viewport.keyboardOpen.value,
 )
 
 // Активный раздел для VBottomNavigation

@@ -34,6 +34,7 @@ interface MessengerCallControlsState {
 
 type MessengerCallViewMode = 'full' | 'split' | 'mini'
 type MessengerCallNetworkQuality = 'stable' | 'weak' | 'reconnecting' | 'lost'
+type MessengerCallCameraFacing = 'user' | 'environment'
 
 interface MessengerCallSignalEvent {
   type: 'call.signal'
@@ -78,6 +79,7 @@ let peerConnectionCallId = ''
 const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
 const transformedSenders = new WeakSet<object>()
 const transformedReceivers = new WeakSet<object>()
+const CALL_VIEW_MODE_ORDER: MessengerCallViewMode[] = ['split', 'full', 'mini']
 const CALL_VERIFICATION_EMOJIS = ['🔒', '🎧', '🎤', '🛡️', '🎼', '🌿', '🔥', '⚡', '🌊', '🪐', '🍀', '🧩', '🛰️', '🎯', '🌙', '🫧', '🎹', '🦋', '☀️', '🧭', '💎', '🪶', '🎛️', '🧠', '🐚', '🕊️', '🧿', '🪙', '🌈', '❄️', '🍃', '🔑']
 
 interface MessengerCallSecurityContext {
@@ -365,6 +367,9 @@ export function useMessengerCalls() {
     videoEnabled: false,
   }))
   const viewMode = useState<MessengerCallViewMode>('messenger-call-view-mode', () => 'full')
+  const cameraFacing = useState<MessengerCallCameraFacing>('messenger-call-camera-facing', () => 'user')
+  const activeCameraId = useState<string>('messenger-call-camera-id', () => '')
+  const availableVideoInputIds = useState<string[]>('messenger-call-video-inputs', () => [])
   const networkQuality = useState<MessengerCallNetworkQuality>('messenger-call-network-quality', () => 'stable')
   const networkHint = useState<string>('messenger-call-network-hint', () => '')
   const renegotiating = useState<boolean>('messenger-call-renegotiating', () => false)
@@ -385,6 +390,11 @@ export function useMessengerCalls() {
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
   const canStartAudioCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied')
   const canStartVideoCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied' && mediaPermissionState.value.camera !== 'denied')
+  const canSwitchCamera = computed(() => Boolean(
+    activeCall.value
+    && controls.value.videoEnabled
+    && (availableVideoInputIds.value.length > 1 || cameraFacing.value === 'user' || cameraFacing.value === 'environment')
+  ))
   const audioReadiness = computed(() => {
     if (!supported.value) {
       return 'Браузер не поддерживает WebRTC или доступ к медиа.'
@@ -480,6 +490,12 @@ export function useMessengerCalls() {
     viewMode.value = nextMode
   }
 
+  function cycleCallViewMode() {
+    const currentIndex = CALL_VIEW_MODE_ORDER.indexOf(viewMode.value)
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % CALL_VIEW_MODE_ORDER.length
+    viewMode.value = CALL_VIEW_MODE_ORDER[nextIndex]
+  }
+
   function setNetworkState(nextQuality: MessengerCallNetworkQuality, nextHint: string) {
     networkQuality.value = nextQuality
     networkHint.value = nextHint
@@ -500,6 +516,41 @@ export function useMessengerCalls() {
     remoteAudioEl = null
   }
 
+  function syncVideoTrackState(track?: MediaStreamTrack | null) {
+    if (!track) {
+      activeCameraId.value = ''
+      return
+    }
+
+    const settings = track.getSettings?.()
+    if (typeof settings?.deviceId === 'string' && settings.deviceId) {
+      activeCameraId.value = settings.deviceId
+    }
+
+    if (settings?.facingMode === 'environment' || settings?.facingMode === 'user') {
+      cameraFacing.value = settings.facingMode
+    }
+  }
+
+  async function refreshVideoInputs() {
+    if (!import.meta.client || !navigator.mediaDevices?.enumerateDevices) {
+      availableVideoInputIds.value = []
+      return []
+    }
+
+    try {
+      const videoInputs = (await navigator.mediaDevices.enumerateDevices())
+        .filter(device => device.kind === 'videoinput')
+      availableVideoInputIds.value = videoInputs
+        .map(device => device.deviceId)
+        .filter((deviceId): deviceId is string => Boolean(deviceId))
+      return videoInputs
+    } catch {
+      availableVideoInputIds.value = []
+      return []
+    }
+  }
+
   function stopLocalStream() {
     if (!localStream) {
       return
@@ -510,6 +561,7 @@ export function useMessengerCalls() {
     }
 
     localStream = null
+    activeCameraId.value = ''
     assignMediaTargets()
   }
 
@@ -558,6 +610,8 @@ export function useMessengerCalls() {
 
   async function initMedia(mode: MessengerCallMode) {
     if (localStream) {
+      await refreshVideoInputs()
+      syncVideoTrackState(localStream.getVideoTracks()[0] || null)
       return localStream
     }
 
@@ -580,6 +634,9 @@ export function useMessengerCalls() {
 
     assignMediaTargets()
     syncMicrophoneState()
+    syncVideoState()
+    await refreshVideoInputs()
+    syncVideoTrackState(localStream.getVideoTracks()[0] || null)
     return localStream
   }
 
@@ -860,6 +917,9 @@ export function useMessengerCalls() {
       videoEnabled: false,
     }
     viewMode.value = 'full'
+    cameraFacing.value = 'user'
+    activeCameraId.value = ''
+    availableVideoInputIds.value = []
     setNetworkState('stable', '')
     renegotiating.value = false
     security.value = {
@@ -950,7 +1010,7 @@ export function useMessengerCalls() {
       speakerEnabled: true,
       videoEnabled: mode === 'video',
     }
-    viewMode.value = 'full'
+    viewMode.value = mode === 'video' ? 'split' : 'full'
     callStatusText.value = mode === 'video' ? 'Отправляем видеовызов…' : 'Отправляем аудиовызов…'
 
     try {
@@ -993,7 +1053,7 @@ export function useMessengerCalls() {
         speakerEnabled: true,
         videoEnabled: incomingCall.value.mode === 'video',
       }
-      viewMode.value = 'full'
+      viewMode.value = incomingCall.value.mode === 'video' ? 'split' : 'full'
 
       let ringingE2EE: MessengerCallE2EEPayload = { supported: false }
 
@@ -1360,8 +1420,10 @@ export function useMessengerCalls() {
       mode: 'video',
     }
     if (viewMode.value !== 'mini') {
-      viewMode.value = 'full'
+      viewMode.value = 'split'
     }
+    await refreshVideoInputs()
+    syncVideoTrackState(nextTrack)
     assignMediaTargets()
     syncVideoState()
     await renegotiateActiveCall('video')
@@ -1394,8 +1456,92 @@ export function useMessengerCalls() {
       ...activeCall.value,
       mode: 'audio',
     }
+    activeCameraId.value = ''
     assignMediaTargets()
     await renegotiateActiveCall('audio')
+    return true
+  }
+
+  async function switchCamera() {
+    if (!activeCall.value || !localStream || !controls.value.videoEnabled) {
+      return false
+    }
+
+    callError.value = ''
+
+    const currentTrack = localStream.getVideoTracks()[0] || null
+    if (!currentTrack) {
+      return await enableVideo()
+    }
+
+    const currentSettings = currentTrack.getSettings?.()
+    const videoInputs = await refreshVideoInputs()
+    const deviceIds = videoInputs
+      .map(device => device.deviceId)
+      .filter((deviceId): deviceId is string => Boolean(deviceId))
+    const currentDeviceId = activeCameraId.value || (typeof currentSettings?.deviceId === 'string' ? currentSettings.deviceId : '')
+    const nextFacing: MessengerCallCameraFacing = cameraFacing.value === 'environment' ? 'user' : 'environment'
+
+    const attemptConstraints: MediaTrackConstraints[] = []
+
+    if (deviceIds.length > 1) {
+      const currentIndex = currentDeviceId ? deviceIds.indexOf(currentDeviceId) : -1
+      const nextDeviceId = deviceIds[(currentIndex + 1 + deviceIds.length) % deviceIds.length]
+      if (nextDeviceId) {
+        attemptConstraints.push({ deviceId: { exact: nextDeviceId } })
+      }
+    }
+
+    attemptConstraints.push({ facingMode: { exact: nextFacing } })
+    attemptConstraints.push({ facingMode: { ideal: nextFacing } })
+
+    let nextTrack: MediaStreamTrack | null = null
+
+    for (const constraint of attemptConstraints) {
+      try {
+        const replacementStream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: constraint,
+        })
+        nextTrack = replacementStream.getVideoTracks()[0] || null
+        break
+      } catch {
+        nextTrack = null
+      }
+    }
+
+    if (!nextTrack) {
+      callError.value = 'Не удалось переключить камеру на этом устройстве.'
+      return false
+    }
+
+    const previousTracks = localStream.getVideoTracks()
+    for (const track of previousTracks) {
+      localStream.removeTrack(track)
+    }
+
+    localStream.addTrack(nextTrack)
+    nextTrack.contentHint = 'motion'
+
+    const videoSender = peerConnection?.getSenders().find(sender => sender.track?.kind === 'video') || null
+    if (videoSender) {
+      await videoSender.replaceTrack(nextTrack)
+    } else if (peerConnection) {
+      const sender = peerConnection.addTrack(nextTrack, localStream)
+      if (callSecurityContext?.active) {
+        applySenderCallSecurity(sender)
+      }
+    }
+
+    for (const track of previousTracks) {
+      track.stop()
+    }
+
+    syncVideoTrackState(nextTrack)
+    await refreshVideoInputs()
+    assignMediaTargets()
+    syncVideoState()
+    await renegotiateActiveCall('video')
     return true
   }
 
@@ -1440,6 +1586,7 @@ export function useMessengerCalls() {
     inConversationCall,
     canStartAudioCall,
     canStartVideoCall,
+    canSwitchCamera,
     audioReadiness,
     videoReadiness,
     attachElements,
@@ -1456,7 +1603,9 @@ export function useMessengerCalls() {
     setSpeakerEnabled,
     toggleSpeaker,
     setCallViewMode,
+    cycleCallViewMode,
     toggleVideo,
+    switchCamera,
     startOutgoingCall,
     acceptIncomingCall,
     rejectIncomingCall,

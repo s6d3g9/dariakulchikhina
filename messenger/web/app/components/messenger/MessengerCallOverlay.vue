@@ -28,15 +28,13 @@ const activeVideoCall = computed(() => Boolean(
   calls.activeCall.value
   && (calls.activeCall.value.mode === 'video' || calls.controls.value.videoEnabled),
 ))
-const showVideoStage = computed(() => Boolean(
-  activeVideoCall.value
-  && !(headerActiveCall.value && calls.viewMode.value === 'split'),
-))
+const showVideoStage = computed(() => activeVideoCall.value)
 const showCallLayer = computed(() => Boolean(
   calls.incomingCall.value
   || calls.activeCall.value
   || calls.callError.value,
 ))
+const showDetachedStageActions = computed(() => Boolean(!headerActiveCall.value))
 const miniWindowPosition = ref({ x: 12, y: 12 })
 const miniWindowSize = ref({ width: 176, height: 220 })
 const miniDragPointerId = ref<number | null>(null)
@@ -286,23 +284,19 @@ onBeforeUnmount(() => {
               <span class="call-stage__mini-subtitle">{{ miniOverlaySubtitle }}</span>
             </div>
             <div class="call-stage__mini-actions">
-              <VBtn class="call-stage__mini-btn" icon="mdi-arrow-expand-all" size="x-small" variant="tonal" @click.stop="calls.setCallViewMode('split')" />
+              <VBtn class="call-stage__mini-btn" icon="mdi-arrow-expand-all" size="x-small" variant="tonal" @click.stop="calls.cycleCallViewMode()" />
               <VBtn class="call-stage__mini-btn" icon="mdi-phone-hangup" size="x-small" color="error" variant="flat" @click.stop="calls.hangupCall()" />
             </div>
           </div>
         </div>
 
-        <div v-if="!headerActiveCall" class="call-stage__actions">
+        <div v-if="showDetachedStageActions" class="call-stage__actions">
           <VBtn class="call-stage__action-btn" variant="tonal" :color="calls.controls.value.microphoneEnabled ? 'primary' : undefined" @click="calls.toggleMicrophone()">Микрофон</VBtn>
           <VBtn class="call-stage__action-btn" variant="tonal" :color="calls.controls.value.speakerEnabled ? 'primary' : undefined" @click="calls.toggleSpeaker()">Звук</VBtn>
           <VBtn class="call-stage__action-btn" variant="tonal" :color="calls.controls.value.videoEnabled ? 'primary' : undefined" @click="calls.toggleVideo()">{{ calls.controls.value.videoEnabled ? 'Видео' : 'Включить видео' }}</VBtn>
+          <VBtn v-if="activeVideoCall" class="call-stage__action-btn" variant="tonal" :disabled="!calls.canSwitchCamera.value" @click="calls.switchCamera()">Камера</VBtn>
+          <VBtn v-if="activeVideoCall" class="call-stage__action-btn" variant="tonal" @click="calls.cycleCallViewMode()">Размер</VBtn>
           <VBtn class="call-stage__action-btn" variant="flat" color="error" @click="calls.hangupCall()">Завершить</VBtn>
-        </div>
-
-        <div v-if="!headerActiveCall" class="call-stage__view-modes">
-          <VBtn class="call-stage__view-btn" :variant="calls.viewMode.value === 'full' ? 'flat' : 'tonal'" :color="calls.viewMode.value === 'full' ? 'primary' : undefined" @click="calls.setCallViewMode('full')">Экран</VBtn>
-          <VBtn class="call-stage__view-btn" :variant="calls.viewMode.value === 'split' ? 'flat' : 'tonal'" :color="calls.viewMode.value === 'split' ? 'primary' : undefined" @click="calls.setCallViewMode('split')">Чат</VBtn>
-          <VBtn class="call-stage__view-btn" :variant="calls.viewMode.value === 'mini' ? 'flat' : 'tonal'" :color="calls.viewMode.value === 'mini' ? 'primary' : undefined" @click="calls.setCallViewMode('mini')">Мини</VBtn>
         </div>
       </div>
     </section>

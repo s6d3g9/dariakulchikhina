@@ -21,6 +21,7 @@ const props = defineProps<{
   callViewMode?: 'full' | 'split' | 'mini'
   showCallViewModes?: boolean
   showCallActions?: boolean
+  canSwitchCamera?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -32,10 +33,53 @@ const emit = defineEmits<{
   'toggle-microphone': []
   'toggle-speaker': []
   'toggle-video': []
+  'switch-camera': []
   'set-call-view-mode': [mode: 'full' | 'split' | 'mini']
   'hangup-call': []
   'back': []
 }>()
+
+const hasVideoCallControls = computed(() => Boolean(
+  props.callVisible
+  && !props.incomingCall
+  && (props.callMode === 'video' || props.videoEnabled)
+))
+
+const nextCallViewMode = computed<'full' | 'split' | 'mini'>(() => {
+  if (props.callViewMode === 'split') {
+    return 'full'
+  }
+
+  if (props.callViewMode === 'full') {
+    return 'mini'
+  }
+
+  return 'split'
+})
+
+const nextCallViewModeIcon = computed(() => {
+  if (props.callViewMode === 'split') {
+    return 'mdi-arrow-expand-all'
+  }
+
+  if (props.callViewMode === 'full') {
+    return 'mdi-picture-in-picture-bottom-right'
+  }
+
+  return 'mdi-view-split-vertical'
+})
+
+const nextCallViewModeLabel = computed(() => {
+  if (props.callViewMode === 'split') {
+    return 'Развернуть видео'
+  }
+
+  if (props.callViewMode === 'full') {
+    return 'Свернуть видео в мини-режим'
+  }
+
+  return 'Вернуть видео рядом с чатом'
+})
 </script>
 
 <template>
@@ -75,7 +119,7 @@ const emit = defineEmits<{
         <div class="chat-header__toolbar-actions" :class="{ 'chat-header__toolbar-actions--call': callVisible }">
           <template v-if="callVisible">
             <div class="chat-header__call-inline" :class="{ 'chat-header__call-inline--incoming': incomingCall }">
-              <div class="chat-header__call-settings">
+              <div class="chat-header__call-secondary">
                 <template v-if="!incomingCall">
                   <VBtn
                     class="chat-header__icon-btn"
@@ -97,42 +141,21 @@ const emit = defineEmits<{
                   >
                     <VIcon>{{ speakerEnabled ? 'mdi-volume-high' : 'mdi-volume-off' }}</VIcon>
                   </VBtn>
-                  <template v-if="showCallViewModes">
-                    <VBtn
-                      class="chat-header__icon-btn chat-header__icon-btn--viewmode"
-                      icon
-                      :variant="callViewMode === 'full' ? 'tonal' : 'text'"
-                      :color="callViewMode === 'full' ? 'primary' : undefined"
-                      aria-label="Полный экран звонка"
-                      @click="emit('set-call-view-mode', 'full')"
-                    >
-                      <VIcon>mdi-view-agenda</VIcon>
-                    </VBtn>
-                    <VBtn
-                      class="chat-header__icon-btn chat-header__icon-btn--viewmode"
-                      icon
-                      :variant="callViewMode === 'split' ? 'tonal' : 'text'"
-                      :color="callViewMode === 'split' ? 'primary' : undefined"
-                      aria-label="Разделить звонок и чат"
-                      @click="emit('set-call-view-mode', 'split')"
-                    >
-                      <VIcon>mdi-view-split-vertical</VIcon>
-                    </VBtn>
-                    <VBtn
-                      class="chat-header__icon-btn chat-header__icon-btn--viewmode"
-                      icon
-                      :variant="callViewMode === 'mini' ? 'tonal' : 'text'"
-                      :color="callViewMode === 'mini' ? 'primary' : undefined"
-                      aria-label="Мини-режим звонка"
-                      @click="emit('set-call-view-mode', 'mini')"
-                    >
-                      <VIcon>mdi-picture-in-picture-bottom-right</VIcon>
-                    </VBtn>
-                  </template>
+                  <VBtn
+                    v-if="hasVideoCallControls"
+                    class="chat-header__icon-btn"
+                    icon
+                    variant="text"
+                    :disabled="!canSwitchCamera"
+                    aria-label="Сменить камеру"
+                    @click="emit('switch-camera')"
+                  >
+                    <VIcon>mdi-camera-flip</VIcon>
+                  </VBtn>
                 </template>
               </div>
 
-              <div class="chat-header__call-main">
+              <div class="chat-header__call-primary">
                 <VBtn
                   class="chat-header__icon-btn chat-header__icon-btn--danger"
                   icon
@@ -148,13 +171,27 @@ const emit = defineEmits<{
                   icon
                   :variant="incomingCall ? 'flat' : (videoEnabled ? 'tonal' : 'text')"
                   :color="incomingCall ? 'success' : (videoEnabled ? 'primary' : undefined)"
-                  :aria-label="incomingCall ? 'Принять звонок' : 'Видео'"
+                  :aria-label="incomingCall ? 'Принять звонок' : (hasVideoCallControls ? 'Выключить или включить свою камеру' : 'Включить видео')"
                   :disabled="incomingCall ? false : !canToggleVideo"
                   @click="incomingCall ? emit('accept-call') : emit('toggle-video')"
                 >
                   <VIcon>{{ incomingCall ? 'mdi-phone-check' : (videoEnabled ? 'mdi-video' : 'mdi-video-off') }}</VIcon>
                 </VBtn>
+                <template v-if="hasVideoCallControls">
+                  <VBtn
+                    class="chat-header__icon-btn"
+                    icon
+                    :variant="callViewMode === 'full' ? 'tonal' : 'text'"
+                    :color="callViewMode === 'full' ? 'primary' : undefined"
+                    :aria-label="nextCallViewModeLabel"
+                    @click="emit('set-call-view-mode', nextCallViewMode)"
+                  >
+                    <VIcon>{{ nextCallViewModeIcon }}</VIcon>
+                  </VBtn>
+                </template>
+                <span v-else class="chat-header__icon-slot" aria-hidden="true"></span>
               </div>
+
             </div>
           </template>
 
