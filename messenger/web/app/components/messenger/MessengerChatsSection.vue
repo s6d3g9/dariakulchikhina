@@ -284,7 +284,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
                   aria-label="Аудиозвонок"
                   @click.stop="startChatCall(chat.id, 'audio')"
                 >
-                  <MessengerIcon class="hold-actions__icon" name="phone" :size="18" />
+                  <MessengerIcon class="hold-actions__icon" name="phone" :size="22" />
                 </button>
                 <button
                   type="button"
@@ -292,7 +292,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
                   aria-label="Видеозвонок"
                   @click.stop="startChatCall(chat.id, 'video')"
                 >
-                  <MessengerIcon class="hold-actions__icon" name="video" :size="18" />
+                  <MessengerIcon class="hold-actions__icon" name="video" :size="22" />
                 </button>
                 <button
                   type="button"
@@ -300,7 +300,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
                   aria-label="Удалить чат"
                   @click.stop="removeChat(chat.id)"
                 >
-                  <MessengerIcon class="hold-actions__icon hold-actions__icon--danger" name="delete" :size="18" />
+                  <MessengerIcon class="hold-actions__icon hold-actions__icon--danger" name="delete" :size="22" />
                 </button>
               </div>
             </div>

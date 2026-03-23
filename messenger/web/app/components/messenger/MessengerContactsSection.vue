@@ -188,6 +188,18 @@ async function openDirectChat(targetUserId: string) {
   }
 }
 
+async function openSecretChat(targetUserId: string) {
+  actionError.value = ''
+
+  try {
+    holdActions.dismiss()
+    await conversations.openSecretConversation(targetUserId)
+    navigation.openSection('chat')
+  } catch {
+    actionError.value = 'Не удалось открыть secret-чат.'
+  }
+}
+
 async function removeContact(peerUserId: string) {
   actionError.value = ''
 
@@ -418,7 +430,7 @@ async function submitAddContact() {
                 title="Аудиозвонок"
                 @click.stop="startContactCall(contact.id, 'audio')"
               >
-                <MessengerIcon class="hold-actions__icon" name="phone" :size="16" />
+                <MessengerIcon class="hold-actions__icon" name="phone" :size="22" />
               </button>
               <button
                 type="button"
@@ -427,7 +439,16 @@ async function submitAddContact() {
                 title="Видеозвонок"
                 @click.stop="startContactCall(contact.id, 'video')"
               >
-                <MessengerIcon class="hold-actions__icon" name="video" :size="16" />
+                <MessengerIcon class="hold-actions__icon" name="video" :size="22" />
+              </button>
+              <button
+                type="button"
+                class="hold-actions__icon-btn"
+                aria-label="Создать secret-чат"
+                title="Создать secret-чат"
+                @click.stop="openSecretChat(contact.id)"
+              >
+                <MessengerIcon class="hold-actions__icon" name="shield" :size="22" />
               </button>
               <button
                 type="button"
@@ -436,7 +457,7 @@ async function submitAddContact() {
                 title="Скопировать карточку контакта"
                 @click.stop="copyContactCard(contact)"
               >
-                <MessengerIcon class="hold-actions__icon" name="copy" :size="16" />
+                <MessengerIcon class="hold-actions__icon" name="copy" :size="22" />
               </button>
               <button
                 type="button"
@@ -445,7 +466,7 @@ async function submitAddContact() {
                 title="Переслать контакт"
                 @click.stop="forwardContactCard(contact)"
               >
-                <MessengerIcon class="hold-actions__icon" name="forward" :size="16" />
+                <MessengerIcon class="hold-actions__icon" name="forward" :size="22" />
               </button>
               <button
                 type="button"
@@ -453,7 +474,7 @@ async function submitAddContact() {
                 aria-label="Удалить контакт"
                 @click.stop="removeContact(contact.id)"
               >
-                <MessengerIcon class="hold-actions__icon hold-actions__icon--danger" name="delete" :size="18" />
+                <MessengerIcon class="hold-actions__icon hold-actions__icon--danger" name="delete" :size="22" />
               </button>
             </div>
           </div>

@@ -291,6 +291,26 @@ html, body {
   padding-top: 4px;
 }
 
+.chat-row.list-item--hold-open .v-list-item__content {
+  display: flex;
+  justify-content: center;
+}
+
+.chat-row.list-item--hold-open .v-list-item-title {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.chat-row.list-item--hold-open .v-list-item-subtitle {
+  display: none;
+}
+
+.chat-row.list-item--hold-open .v-list-item__append {
+  align-self: center;
+  padding-top: 0;
+}
+
 .chat-row::before {
   content: '';
   position: absolute;
@@ -428,8 +448,8 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border-radius: 0;
   border: none;
@@ -441,6 +461,7 @@ html, body {
 
 .hold-actions__icon {
   opacity: 0.72;
+  display: block;
   transition: opacity 100ms ease, color 100ms ease, transform 100ms ease, filter 100ms ease;
 }
 
