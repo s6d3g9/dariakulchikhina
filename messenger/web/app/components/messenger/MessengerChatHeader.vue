@@ -71,47 +71,47 @@ const emit = defineEmits<{
         </div>
       </VBtn>
 
-      <VSpacer />
-
-      <!-- Call actions -->
-      <template v-if="showCallActions">
-        <VBtn
-          type="button"
-          icon
-          variant="text"
-          aria-label="Аудиозвонок"
-          :disabled="!canToggleAudioCall"
-          @click="emit('toggle-audio-call')"
-        >
-          <VIcon :color="audioCall ? 'primary' : undefined">mdi-phone</VIcon>
-        </VBtn>
-        <VBtn
-          type="button"
-          icon
-          variant="text"
-          aria-label="Видеозвонок"
-          :disabled="videoCallDisabled"
-          @click="emit('start-video-call')"
-        >
-          <VIcon>mdi-video</VIcon>
-        </VBtn>
-      </template>
-
-      <!-- Overflow menu -->
-      <VMenu location="bottom end">
-        <template #activator="{ props: menuProps }">
-          <VBtn type="button" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
-            <VIcon>mdi-dots-vertical</VIcon>
+      <div class="chat-header__toolbar-actions">
+        <!-- Call actions -->
+        <template v-if="showCallActions">
+          <VBtn
+            type="button"
+            icon
+            variant="text"
+            aria-label="Аудиозвонок"
+            :disabled="!canToggleAudioCall"
+            @click="emit('toggle-audio-call')"
+          >
+            <VIcon :color="audioCall ? 'primary' : undefined">mdi-phone</VIcon>
+          </VBtn>
+          <VBtn
+            type="button"
+            icon
+            variant="text"
+            aria-label="Видеозвонок"
+            :disabled="videoCallDisabled"
+            @click="emit('start-video-call')"
+          >
+            <VIcon>mdi-video</VIcon>
           </VBtn>
         </template>
-        <VList bg-color="surface-container-highest" density="comfortable" nav>
-          <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
-          <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
-          <VDivider class="my-1" />
-          <VListItem prepend-icon="mdi-account-cancel-outline" title="Заблокировать" />
-          <VListItem prepend-icon="mdi-delete-outline" title="Удалить диалог" class="text-error" />
-        </VList>
-      </VMenu>
+
+        <!-- Overflow menu -->
+        <VMenu location="bottom end">
+          <template #activator="{ props: menuProps }">
+            <VBtn type="button" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
+              <VIcon>mdi-dots-vertical</VIcon>
+            </VBtn>
+          </template>
+          <VList bg-color="surface-container-highest" density="comfortable" nav>
+            <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
+            <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
+            <VDivider class="my-1" />
+            <VListItem prepend-icon="mdi-account-cancel-outline" title="Заблокировать" />
+            <VListItem prepend-icon="mdi-delete-outline" title="Удалить диалог" class="text-error" />
+          </VList>
+        </VMenu>
+      </div>
     </div>
 
     <div v-else class="chat-header__call-shell">

@@ -619,11 +619,16 @@ html, body {
 
 /* chat-header M3 sub-elements */
 .chat-header__toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   width: 100%;
   height: 64px;
   gap: 4px;
+}
+
+.chat-header__back {
+  flex-shrink: 0;
 }
 
 .chat-header__peer {
@@ -631,11 +636,27 @@ html, body {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  flex: 1;
+  width: 100%;
   padding: 4px 8px;
   border-radius: 12px;
   text-transform: none;
   letter-spacing: 0;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.chat-header__toolbar-actions {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(40px, auto);
+  align-items: center;
+  gap: 2px;
+  min-width: max-content;
+  flex-shrink: 0;
+}
+
+.chat-header__toolbar-actions .v-btn {
+  min-width: 40px !important;
 }
 
 .chat-header__peer-meta {
@@ -681,7 +702,8 @@ html, body {
 }
 
 .chat-header__call-summary {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
 }
@@ -719,9 +741,9 @@ html, body {
 }
 
 .chat-header__call-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  justify-content: stretch;
 }
 
 .chat-header__call-actions--incoming {
@@ -731,19 +753,71 @@ html, body {
 
 .chat-header__call-btn,
 .chat-header__view-btn {
-  flex: 1 1 0;
   min-width: 0;
   min-height: 44px !important;
+  padding-inline: 10px !important;
 }
 
-.chat-header__call-btn--hangup {
-  min-width: 118px;
+.chat-header__call-btn .v-btn__content,
+.chat-header__view-btn .v-btn__content {
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+  justify-content: center;
+  gap: 6px;
+}
+
+.chat-header__call-btn .v-icon,
+.chat-header__view-btn .v-icon {
+  flex-shrink: 0;
 }
 
 .chat-header__call-viewmodes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+@media (min-width: 720px) {
+  .chat-header__call-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .chat-header__toolbar {
+    gap: 2px;
+  }
+
+  .chat-header__peer {
+    padding-inline: 4px;
+    gap: 6px;
+  }
+
+  .chat-header__toolbar-actions {
+    gap: 0;
+  }
+
+  .chat-header__call-shell {
+    padding-inline: 6px;
+  }
+
+  .chat-header__call-strip {
+    padding: 6px;
+    border-radius: 16px;
+  }
+
+  .chat-header__call-btn,
+  .chat-header__view-btn {
+    min-height: 42px !important;
+    padding-inline: 8px !important;
+  }
+
+  .chat-header__call-btn .v-btn__content,
+  .chat-header__view-btn .v-btn__content {
+    font-size: 11px;
+  }
 }
 
 /* ── Message List ────────────────────────────────────────── */
