@@ -1,14 +1,18 @@
 <template>
   <div class="asp2-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading asp2-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <div class="asp2-toolbar">
         <span class="asp2-count">{{ form.sp2_photos.length }} фото</span>
         <label class="asp2-upload-btn" :class="{ 'asp2-upload-btn--loading': uploading }">
-          {{ uploading ? 'загрузка...' : '+ загрузить фото' }}
+          + загрузить фото
           <input type="file" multiple accept="image/*,video/*" style="display:none" @change="onInput" :disabled="uploading">
         </label>
+        <div v-if="uploading" class="u-inline-loading asp2-inline-loading" aria-live="polite">
+          <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ФОТО ОБЪЕКТА ]</span>
+          <span class="u-inline-loading__line" />
+        </div>
         <span v-if="savedAt" class="asp2-saved">✓ {{ savedAt }}</span>
       </div>
 
@@ -120,9 +124,11 @@ function removePhotoTag(ph: any, t: string) {
 
 <style scoped>
 .asp2-wrap { padding: 4px 0 40px; }
+.asp2-content-loading::before { content: '[ ЗАГРУЖАЕМ ФОТО ОБЪЕКТА ]'; }
 .asp2-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
 .asp2-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .asp2-count { font-size: .74rem; color: var(--ds-muted, #999); }
+.asp2-inline-loading { min-width: 220px; }
 .asp2-upload-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border, #e0e0e0); padding: 6px 14px; font-size: .78rem; color: inherit; cursor: pointer; user-select: none; margin-left: auto; }
 .asp2-upload-btn:hover { border-color: var(--ds-muted, #aaa); }
 .asp2-upload-btn--loading { opacity: .6; cursor: wait; }
@@ -130,4 +136,8 @@ function removePhotoTag(ph: any, t: string) {
 .asp2-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .asp2-tag { border: 1px solid var(--border, #e0e0e0); background: none; color: inherit; font-size: .7rem; padding: 3px 8px; border-radius: 999px; cursor: pointer; font-family: inherit; }
 .asp2-tag--active { background: var(--border, #e0e0e0); }
+
+@media (max-width: 768px) {
+  .asp2-inline-loading { width: 100%; min-width: 0; }
+}
 </style>

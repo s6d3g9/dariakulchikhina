@@ -1,6 +1,6 @@
 <template>
   <div class="amb-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading amb-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Status -->
@@ -73,9 +73,13 @@
         <!-- Upload bar -->
         <div class="amb-upload-bar">
           <label class="amb-upload-btn" :class="{ 'amb-upload-btn--loading': uploading }">
-            {{ uploading ? 'загрузка...' : '+ загрузить изображения' }}
+            + загрузить изображения
             <input type="file" multiple accept="image/*" style="display:none" @change="onImgInput" :disabled="uploading">
           </label>
+          <div v-if="uploading" class="u-inline-loading amb-inline-loading" aria-live="polite">
+            <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ РЕФЕРЕНСЫ ]</span>
+            <span class="u-inline-loading__line" />
+          </div>
           <select v-model="newCategory" class="u-status-sel">
             <option v-for="c in IMAGE_CATS" :key="c.key" :value="c.key">{{ c.label }}</option>
           </select>
@@ -227,6 +231,7 @@ function removeLink(idx: number) {
 
 <style scoped>
 .amb-wrap { padding: 4px 0 40px; }
+.amb-content-loading::before { content: '[ ЗАГРУЖАЕМ MOODBOARD ]'; }
 .amb-loading { padding: 40px 0; font-size: .82rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 
 .amb-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
@@ -274,7 +279,12 @@ function removeLink(idx: number) {
 .amb-gallery-empty p { font-size: .78rem; margin: 0; }
 
 .amb-upload-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.amb-inline-loading { min-width: 220px; }
 .amb-upload-btn { display: inline-flex; align-items: center; border: 1px solid var(--border, #e0e0e0); padding: 7px 14px; font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); cursor: pointer; user-select: none; }
 .amb-upload-btn:hover { border-color: color-mix(in srgb, var(--glass-text) 50%, transparent); color: inherit; }
 .amb-upload-btn--loading { opacity: .6; cursor: wait; }
+
+@media (max-width: 768px) {
+  .amb-inline-loading { width: 100%; min-width: 0; }
+}
 </style>

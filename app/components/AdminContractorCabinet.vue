@@ -1,6 +1,6 @@
 <template>
   <div class="cab-embed" v-if="contractorId">
-    <div v-if="pending && !contractor" class="ent-page-skeleton">
+    <div v-if="pending && !contractor" class="ent-page-skeleton ct-cab-page-skeleton">
       <div class="ent-sk-sidebar"><div class="ent-nav-skeleton" v-for="i in 6" :key="i"/></div>
       <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     </div>
@@ -590,10 +590,14 @@
                 </div>
               </div>
               <div style="margin-top: 12px;">
-                <label class="cab-upload-btn">
+                <label class="cab-upload-btn" :class="{ 'cab-upload-btn--loading': docUploading }">
                   <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadDoc" />
-                  {{ docUploading ? 'Загрузка…' : '＋ Выбрать файл' }}
+                  ＋ Выбрать файл
                 </label>
+                <div v-if="docUploading" class="u-inline-loading cab-doc-upload-loading" aria-live="polite">
+                  <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ДОКУМЕНТЫ ПОДРЯДЧИКА ]</span>
+                  <span class="u-inline-loading__line" />
+                </div>
               </div>
             </div>
 
@@ -1253,10 +1257,13 @@ registerWipe2Data(wipe2CabinetData)
 
 <style scoped>
 .cab-embed { min-height: 420px; }
+.ct-cab-page-skeleton .ent-sk-main::before { content: '[ ЗАГРУЖАЕМ КАБИНЕТ ПОДРЯДЧИКА ]'; }
 .cab-body--content-only { display: block; }
 .cab-main--content-only { padding-left: 0; }
 .cab-select { appearance: none; cursor: pointer; }
 .cab-inline-task-window { margin-bottom: 14px; border-radius: var(--card-radius, 16px); overflow: hidden; }
+.cab-doc-upload-loading { margin-top: 12px; max-width: 360px; }
+.cab-upload-btn--loading { opacity: .6; cursor: wait; }
 
 .u-tag-subtitle {
   font-size: .66rem; text-transform: uppercase; letter-spacing: .08em;
@@ -1473,6 +1480,11 @@ registerWipe2Data(wipe2CabinetData)
 }
 
 @media (max-width: 640px) {
+  .cab-doc-upload-loading {
+    max-width: none;
+    width: 100%;
+  }
+
   .ct-cab-hero-main {
     flex-direction: column;
     align-items: flex-start;
