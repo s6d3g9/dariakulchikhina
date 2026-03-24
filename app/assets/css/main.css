@@ -1297,6 +1297,17 @@ html.dark select optgroup {
   padding: 24px 16px;
   min-height: 120px;
 }
+
+.ent-content-loading::before,
+.ent-page-skeleton .ent-sk-main::before {
+  content: '[ ЗАГРУЗКА ДАННЫХ... ]';
+  display: block;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .55;
+}
+
 .ent-skeleton-line {
   height: 16px;
   border-radius: 4px 4px 0 0px;

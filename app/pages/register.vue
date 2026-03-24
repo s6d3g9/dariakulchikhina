@@ -34,6 +34,10 @@
         </div>
 
         <p v-if="error" class="auth-error">{{ error }}</p>
+        <div v-if="loading" class="auth-progress" aria-hidden="true">
+          <span class="auth-progress__label">[ СОЗДАЕМ АККАУНТ ]</span>
+          <span class="auth-progress__line"></span>
+        </div>
         <button type="submit" class="a-btn-save auth-submit" :disabled="loading">{{ loading ? 'Создание…' : submitLabel }}</button>
       </form>
 
@@ -263,6 +267,48 @@ async function copyPhrase() {
   color: var(--ds-error, #d96b6b);
   font-size: .8rem;
   margin: 0 0 10px;
+}
+
+.auth-progress {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.auth-progress__label {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .58;
+}
+
+.auth-progress__line {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.auth-progress__line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 28%;
+  background: color-mix(in srgb, var(--glass-text) 58%, transparent);
+  animation: auth-progress-slide 1.2s linear infinite;
+}
+
+@keyframes auth-progress-slide {
+  from {
+    transform: translateX(-140%);
+  }
+  to {
+    transform: translateX(420%);
+  }
 }
 
 .seed-box {

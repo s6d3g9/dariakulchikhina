@@ -58,6 +58,11 @@
 
         <p v-if="credentialsError" class="auth-error">{{ credentialsError }}</p>
 
+        <div v-if="credentialsLoading" class="auth-progress" aria-hidden="true">
+          <span class="auth-progress__label">[ ПРОВЕРЯЕМ ДОСТУП ]</span>
+          <span class="auth-progress__line"></span>
+        </div>
+
         <button type="submit" :disabled="credentialsLoading" class="a-btn-save auth-submit">
           {{ credentialsLoading ? 'Вход…' : submitLabel }}
         </button>
@@ -80,6 +85,10 @@
           </div>
 
           <p v-if="clientLegacyError" class="auth-error">{{ clientLegacyError }}</p>
+          <div v-if="clientLegacyLoading" class="auth-progress" aria-hidden="true">
+            <span class="auth-progress__label">[ ИЩЕМ ПРОЕКТ ]</span>
+            <span class="auth-progress__line"></span>
+          </div>
           <button type="submit" :disabled="clientLegacyLoading" class="a-btn-sm auth-submit auth-submit--secondary">
             {{ clientLegacyLoading ? 'Вход…' : 'Войти по коду проекта' }}
           </button>
@@ -113,6 +122,10 @@
           </div>
 
           <p v-if="contractorLegacyError" class="auth-error">{{ contractorLegacyError }}</p>
+          <div v-if="contractorLegacyLoading" class="auth-progress" aria-hidden="true">
+            <span class="auth-progress__label">[ ПРОВЕРЯЕМ ПОДРЯДЧИКА ]</span>
+            <span class="auth-progress__line"></span>
+          </div>
           <button type="submit" :disabled="contractorLegacyLoading" class="a-btn-sm auth-submit auth-submit--secondary">
             {{ contractorLegacyLoading ? 'Вход…' : 'Войти по ID' }}
           </button>
@@ -397,6 +410,48 @@ async function submitContractorLegacy() {
   color: var(--ds-error, #d96b6b);
   font-size: .8rem;
   margin: 0 0 10px;
+}
+
+.auth-progress {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.auth-progress__label {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .58;
+}
+
+.auth-progress__line {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.auth-progress__line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 28%;
+  background: color-mix(in srgb, var(--glass-text) 58%, transparent);
+  animation: auth-progress-slide 1.2s linear infinite;
+}
+
+@keyframes auth-progress-slide {
+  from {
+    transform: translateX(-140%);
+  }
+  to {
+    transform: translateX(420%);
+  }
 }
 
 .auth-links {
