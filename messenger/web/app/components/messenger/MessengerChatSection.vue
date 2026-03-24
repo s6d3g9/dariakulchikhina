@@ -96,7 +96,7 @@ let lockedPageScrollY = 0
 let klipyFeedLastScrollTop = 0
 let klipyFeedLoadArmed = true
 
-const KLIPY_RAIL_PAGE_SIZE = 12
+const KLIPY_RAIL_PAGE_SIZE = 24
 const AUDIO_WAVEFORM_BAR_COUNT = 64
 const AUDIO_MIN_TRIM_GAP = 0.35
 
@@ -1302,7 +1302,6 @@ watch(loopedKlipyCategories, async () => {
 
 watch(primaryKlipyItems, async () => {
   await nextTick()
-  resetKlipyFeedPaging()
   composerMediaMenuRef.value?.feedEl?.removeAttribute('data-loop-ready')
 })
 

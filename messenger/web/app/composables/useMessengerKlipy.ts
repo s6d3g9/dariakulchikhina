@@ -17,6 +17,7 @@ export interface MessengerKlipyCategory {
 }
 
 const KLIPY_RECENT_STORAGE_KEY = 'daria-messenger-klipy-recent'
+const KLIPY_PAGE_SIZE = 24
 
 const RU_LAYOUT_TO_EN_MAP: Record<string, string> = {
   й: 'q', ц: 'w', у: 'e', к: 'r', е: 't', н: 'y', г: 'u', ш: 'i', щ: 'o', з: 'p', х: '[', ъ: ']',
@@ -151,7 +152,7 @@ export function useMessengerKlipy() {
           query: {
             category: normalizedCategory || undefined,
             kind,
-            limit: options.limit || 12,
+            limit: options.limit || KLIPY_PAGE_SIZE,
             page: nextPage,
           },
         })
@@ -167,7 +168,7 @@ export function useMessengerKlipy() {
         lastQuery.value = normalizedQuery
         lastCategory.value = normalizedCategory
         page.value = nextPage
-        hasMore.value = response.items.length >= (options.limit || 12)
+        hasMore.value = response.items.length >= (options.limit || KLIPY_PAGE_SIZE)
         return
       }
 
@@ -189,7 +190,7 @@ export function useMessengerKlipy() {
           query: {
             query: queryVariant,
             kind,
-            limit: options.limit || 12,
+            limit: options.limit || KLIPY_PAGE_SIZE,
             page: nextPage,
           },
         })
@@ -213,7 +214,7 @@ export function useMessengerKlipy() {
       lastQuery.value = resolvedQuery
       lastCategory.value = normalizedCategory
       page.value = nextPage
-      hasMore.value = resolvedItems.length >= (options.limit || 12)
+      hasMore.value = resolvedItems.length >= (options.limit || KLIPY_PAGE_SIZE)
     } catch {
       if (currentRequestId !== searchRequestId.value) {
         return
@@ -230,7 +231,7 @@ export function useMessengerKlipy() {
     }
   }
 
-  async function loadMore(limit = 12) {
+  async function loadMore(limit = KLIPY_PAGE_SIZE) {
     if (pending.value || !hasMore.value) {
       return
     }
