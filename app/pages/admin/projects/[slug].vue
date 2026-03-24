@@ -1,10 +1,17 @@
 <template>
   <div>
-    <div v-if="projectPending" class="ent-page-skeleton" style="padding:20px">
+    <div v-if="projectPending" class="ent-page-skeleton proj-page-skeleton" style="padding:20px">
       <div class="ent-sk-sidebar"><div class="ent-nav-skeleton" v-for="i in 8" :key="i"/></div>
       <div class="ent-sk-main"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     </div>
-    <div v-else-if="!project" style="font-size:.88rem;color:#999">Проект не найден</div>
+    <div v-else-if="!project" class="proj-project-state">
+      <p class="proj-project-state__title">{{ projectLoadError ? 'Не удалось загрузить проект' : 'Проект не найден' }}</p>
+      <p class="proj-project-state__text">{{ projectLoadError ? 'Проверьте соединение или попробуйте повторить загрузку.' : 'Проверьте адрес проекта или вернитесь к списку.' }}</p>
+      <div class="proj-project-state__actions">
+        <button type="button" class="a-btn-sm" @click="refresh">Повторить</button>
+        <NuxtLink to="/admin" class="a-btn-sm proj-project-state__link">К проектам</NuxtLink>
+      </div>
+    </div>
     <template v-else>
       <div v-if="!showBrutalistHero" style="font-size:.78rem;color:#aaa;margin-bottom:12px">
         <NuxtLink to="/admin" style="color:#888;text-decoration:none">проекты</NuxtLink>
@@ -198,7 +205,7 @@
             <div :key="contentKey" class="proj-main-inner" :class="{ 'proj-main-inner--after-hero': showBrutalistHero }">
               <!-- contractor preview -->
               <template v-if="contractorPreviewMode">
-                <div v-if="contractorPending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+                <div v-if="contractorPending" class="ent-content-loading proj-contractor-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
                 <template v-else-if="contractorData">
                   <AdminContractorCabinet :contractor-id="contractorPreviewId" />
                 </template>
@@ -3277,6 +3284,46 @@ html.dark .proj-sheet-frame__card {
   font-size: .66rem;
   color: var(--glass-text);
   opacity: .5;
+}
+
+.proj-page-skeleton .ent-sk-main::before {
+  content: '[ ЗАГРУЖАЕМ ПРОЕКТ ]';
+}
+
+.proj-contractor-loading::before {
+  content: '[ ЗАГРУЖАЕМ ПРЕВЬЮ ПОДРЯДЧИКА ]';
+}
+
+.proj-project-state {
+  display: grid;
+  gap: 12px;
+  padding: 24px 20px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.proj-project-state__title {
+  margin: 0;
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.proj-project-state__text {
+  margin: 0;
+  font-size: .82rem;
+  opacity: .62;
+}
+
+.proj-project-state__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.proj-project-state__link {
+  text-decoration: none;
 }
 
 /* ══════════════════════════════════════════════════════════════
