@@ -52,14 +52,22 @@ function showManualInstallHelp() {
         <VForm class="auth-form auth-form--vuetify" @submit.prevent="submit">
           <VTextField
             v-model="form.login"
+            class="auth-field"
             label="Логин"
+            color="primary"
+            base-color="primary"
+            variant="outlined"
             autocomplete="username"
             required
           />
 
           <VTextField
             v-model="form.password"
+            class="auth-field"
             label="Пароль"
+            color="primary"
+            base-color="primary"
+            variant="outlined"
             type="password"
             autocomplete="current-password"
             required

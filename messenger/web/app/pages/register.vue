@@ -195,7 +195,11 @@ function showManualInstallHelp() {
         <VForm class="auth-form auth-form--vuetify" @submit.prevent="submit">
           <VTextField
             v-model="form.displayName"
+            class="auth-field"
             label="Имя"
+            color="primary"
+            base-color="primary"
+            variant="outlined"
             autocomplete="name"
             minlength="2"
             maxlength="80"
@@ -207,7 +211,11 @@ function showManualInstallHelp() {
 
           <VTextField
             v-model="form.login"
+            class="auth-field"
             label="Логин"
+            color="primary"
+            base-color="primary"
+            variant="outlined"
             autocomplete="username"
             autocapitalize="off"
             spellcheck="false"
@@ -224,7 +232,11 @@ function showManualInstallHelp() {
 
           <VTextField
             v-model="form.password"
+            class="auth-field"
             label="Пароль"
+            color="primary"
+            base-color="primary"
+            variant="outlined"
             type="password"
             autocomplete="new-password"
             minlength="8"
