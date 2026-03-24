@@ -1,6 +1,10 @@
 <script setup lang="ts">
 const auth = useMessengerAuth()
 const install = useMessengerInstall()
+const displayNameField = ref<{ $el?: HTMLElement } | null>(null)
+const loginField = ref<{ $el?: HTMLElement } | null>(null)
+const passwordField = ref<{ $el?: HTMLElement } | null>(null)
+const inputCleanupHandlers: Array<() => void> = []
 const LOGIN_PATTERN = /^[a-z0-9._-]+$/
 
 const form = reactive({
@@ -91,8 +95,20 @@ watch(() => form.login, (value) => {
 
 onMounted(async () => {
   await auth.hydrate()
+  await nextTick()
+  bindInputKeyboardFlow()
   if (auth.user.value) {
     await navigateTo('/')
+  }
+})
+
+onUpdated(() => {
+  bindInputKeyboardFlow()
+})
+
+onBeforeUnmount(() => {
+  for (const cleanup of inputCleanupHandlers.splice(0)) {
+    cleanup()
   }
 })
 
@@ -180,6 +196,80 @@ async function installMessengerApp() {
 function showManualInstallHelp() {
   install.noteManualInstall()
 }
+
+function focusField(field: { $el?: HTMLElement } | null) {
+  const input = field?.$el?.querySelector('input, textarea')
+  if (input instanceof HTMLElement) {
+    input.focus()
+  }
+}
+
+function focusLoginField() {
+  focusField(loginField.value)
+}
+
+function focusPasswordField() {
+  focusField(passwordField.value)
+}
+
+function getFieldInput(field: { $el?: HTMLElement } | null) {
+  const input = field?.$el?.querySelector('input, textarea')
+  return input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement
+    ? input
+    : null
+}
+
+function bindInputKeyboardFlow() {
+  for (const cleanup of inputCleanupHandlers.splice(0)) {
+    cleanup()
+  }
+
+  const displayNameInput = getFieldInput(displayNameField.value)
+  const loginInput = getFieldInput(loginField.value)
+  const passwordInput = getFieldInput(passwordField.value)
+
+  if (displayNameInput) {
+    const handleDisplayNameEnter = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter') {
+        return
+      }
+
+      event.preventDefault()
+      loginInput?.focus()
+    }
+
+    displayNameInput.addEventListener('keydown', handleDisplayNameEnter)
+    inputCleanupHandlers.push(() => displayNameInput.removeEventListener('keydown', handleDisplayNameEnter))
+  }
+
+  if (loginInput) {
+    const handleLoginEnter = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter') {
+        return
+      }
+
+      event.preventDefault()
+      passwordInput?.focus()
+    }
+
+    loginInput.addEventListener('keydown', handleLoginEnter)
+    inputCleanupHandlers.push(() => loginInput.removeEventListener('keydown', handleLoginEnter))
+  }
+
+  if (passwordInput) {
+    const handlePasswordEnter = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter') {
+        return
+      }
+
+      event.preventDefault()
+      void submit()
+    }
+
+    passwordInput.addEventListener('keydown', handlePasswordEnter)
+    inputCleanupHandlers.push(() => passwordInput.removeEventListener('keydown', handlePasswordEnter))
+  }
+}
 </script>
 
 <template>
@@ -194,6 +284,7 @@ function showManualInstallHelp() {
 
         <VForm class="auth-form auth-form--vuetify" @submit.prevent="submit">
           <VTextField
+            ref="displayNameField"
             v-model="form.displayName"
             class="auth-field"
             label="Имя"
@@ -201,6 +292,7 @@ function showManualInstallHelp() {
             base-color="primary"
             variant="outlined"
             autocomplete="name"
+            enterkeyhint="next"
             minlength="2"
             maxlength="80"
             required
@@ -210,6 +302,7 @@ function showManualInstallHelp() {
           />
 
           <VTextField
+            ref="loginField"
             v-model="form.login"
             class="auth-field"
             label="Логин"
@@ -220,6 +313,7 @@ function showManualInstallHelp() {
             autocapitalize="off"
             spellcheck="false"
             inputmode="text"
+            enterkeyhint="next"
             minlength="3"
             maxlength="32"
             required
@@ -231,6 +325,7 @@ function showManualInstallHelp() {
           />
 
           <VTextField
+            ref="passwordField"
             v-model="form.password"
             class="auth-field"
             label="Пароль"
@@ -239,6 +334,7 @@ function showManualInstallHelp() {
             variant="outlined"
             type="password"
             autocomplete="new-password"
+            enterkeyhint="done"
             minlength="8"
             maxlength="128"
             required
