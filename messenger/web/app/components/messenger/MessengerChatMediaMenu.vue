@@ -175,8 +175,8 @@ defineExpose({
             @scroll="emit('feed-scroll', $event)"
           >
             <button
-              v-for="(item, index) in primaryKlipyItems"
-              :key="`${item.id}-${index}`"
+              v-for="item in primaryKlipyItems"
+              :key="item.id"
               type="button"
               class="composer-media-menu__result"
               :aria-label="item.title || (item.kind === 'sticker' ? 'Отправить стикер' : 'Отправить GIF')"

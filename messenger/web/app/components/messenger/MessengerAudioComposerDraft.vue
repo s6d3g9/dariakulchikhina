@@ -32,6 +32,7 @@ const emit = defineEmits<{
 const audioEl = ref<HTMLAudioElement | null>(null)
 const isPlaying = ref(false)
 const currentTime = ref(0)
+const activeTrimHandle = ref<'start' | 'end' | null>(null)
 
 const duration = computed(() => Math.max(props.audioDraft?.duration || 0, props.recordingSeconds || 0, 0.01))
 const trimStart = computed(() => props.audioDraft?.trimStart || 0)
@@ -52,6 +53,8 @@ const previewTimeLabel = computed(() => `${formatTime(currentTime.value)} / ${fo
 
 const styleVars = computed<Record<string, string>>(() => ({
   '--audio-progress': `${progressPercent.value}%`,
+  '--audio-trim-start': `${(trimStart.value / duration.value) * 100}%`,
+  '--audio-trim-end': `${(trimEnd.value / duration.value) * 100}%`,
   '--audio-recording-intensity': String(Math.max(0.12, props.recordingIntensity || 0.12)),
 }))
 
@@ -151,6 +154,22 @@ function handleSeek(event: Event) {
   audioEl.value.currentTime = nextValue
   currentTime.value = nextValue
 }
+
+function handleTrimStart(event: Event) {
+  const target = event.target as HTMLInputElement
+  const nextValue = clamp(Number(target.value), 0, Math.max(trimEnd.value - 0.35, 0))
+  emit('update:trim-start', nextValue)
+}
+
+function handleTrimEnd(event: Event) {
+  const target = event.target as HTMLInputElement
+  const nextValue = clamp(Number(target.value), Math.min(trimStart.value + 0.35, duration.value), duration.value)
+  emit('update:trim-end', nextValue)
+}
+
+function setActiveTrimHandle(handle: 'start' | 'end' | null) {
+  activeTrimHandle.value = handle
+}
 </script>
 
 <template>
@@ -191,6 +210,10 @@ function handleSeek(event: Event) {
         <div class="audio-draft__progress"></div>
         <div class="audio-draft__flow"></div>
         <div class="audio-draft__sheen"></div>
+        <template v-if="props.mode === 'preview' && props.audioDraft">
+          <div class="audio-draft__trim-window"></div>
+          <div class="audio-draft__trim-outline"></div>
+        </template>
         <input
           v-if="props.mode === 'preview' && props.audioDraft"
           class="audio-draft__seek"
@@ -202,6 +225,52 @@ function handleSeek(event: Event) {
           aria-label="Перемотка аудио"
           @input="handleSeek"
         >
+        <input
+          v-if="props.mode === 'preview' && props.audioDraft"
+          class="audio-draft__trim-range audio-draft__trim-range--start"
+          type="range"
+          :min="0"
+          :max="props.audioDraft.duration"
+          :step="0.01"
+          :value="trimStart"
+          aria-label="Начало обрезки"
+          @pointerdown="setActiveTrimHandle('start')"
+          @input="handleTrimStart"
+          @pointerup="setActiveTrimHandle(null)"
+          @blur="setActiveTrimHandle(null)"
+        >
+        <input
+          v-if="props.mode === 'preview' && props.audioDraft"
+          class="audio-draft__trim-range audio-draft__trim-range--end"
+          type="range"
+          :min="0"
+          :max="props.audioDraft.duration"
+          :step="0.01"
+          :value="trimEnd"
+          aria-label="Конец обрезки"
+          @pointerdown="setActiveTrimHandle('end')"
+          @input="handleTrimEnd"
+          @pointerup="setActiveTrimHandle(null)"
+          @blur="setActiveTrimHandle(null)"
+        >
+        <div
+          v-if="props.mode === 'preview' && props.audioDraft"
+          class="audio-draft__trim-handle audio-draft__trim-handle--start"
+          :class="{ 'audio-draft__trim-handle--active': activeTrimHandle === 'start' }"
+          aria-hidden="true"
+        ></div>
+        <div
+          v-if="props.mode === 'preview' && props.audioDraft"
+          class="audio-draft__trim-handle audio-draft__trim-handle--end"
+          :class="{ 'audio-draft__trim-handle--active': activeTrimHandle === 'end' }"
+          aria-hidden="true"
+        ></div>
+      </div>
+
+      <div v-if="props.mode === 'preview' && props.audioDraft" class="audio-draft__trim-meta">
+        <span class="audio-draft__trim-value">От {{ formatTime(trimStart) }}</span>
+        <span class="audio-draft__trim-value audio-draft__trim-value--center">{{ formatTime(trimmedDuration) }}</span>
+        <span class="audio-draft__trim-value">До {{ formatTime(trimEnd) }}</span>
       </div>
     </div>
 

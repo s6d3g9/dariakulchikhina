@@ -93,6 +93,8 @@ let composerResizeObserver: ResizeObserver | null = null
 let klipySearchTimer: ReturnType<typeof setTimeout> | null = null
 let forwardSearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
+let klipyFeedLastScrollTop = 0
+let klipyFeedLoadArmed = true
 
 const KLIPY_RAIL_PAGE_SIZE = 12
 const AUDIO_WAVEFORM_BAR_COUNT = 64
@@ -387,6 +389,11 @@ function resetKlipyAudienceMode() {
   klipyAudienceMode.gif = 'mine'
 }
 
+function resetKlipyFeedPaging() {
+  klipyFeedLastScrollTop = 0
+  klipyFeedLoadArmed = true
+}
+
 function buildLoopedFeed<T>(items: T[]) {
   if (items.length <= 1) {
     return items
@@ -452,6 +459,10 @@ async function handleLoopedFeedScroll(event: Event, options: { looped: boolean; 
     return
   }
 
+  const currentScrollTop = element.scrollTop
+  const isScrollingDown = currentScrollTop >= klipyFeedLastScrollTop - 4
+  klipyFeedLastScrollTop = currentScrollTop
+
   if (options.looped) {
     const segmentHeight = element.scrollHeight / 3
     if (segmentHeight > 0) {
@@ -464,7 +475,14 @@ async function handleLoopedFeedScroll(event: Event, options: { looped: boolean; 
   }
 
   const remaining = element.scrollHeight - element.clientHeight - element.scrollTop
-  if (options.canLoadMore && remaining < 320 && options.onLoadMore) {
+  const loadThreshold = Math.max(120, Math.min(220, element.clientHeight * 0.38))
+
+  if (remaining > loadThreshold * 1.6) {
+    klipyFeedLoadArmed = true
+  }
+
+  if (options.canLoadMore && options.onLoadMore && klipyFeedLoadArmed && isScrollingDown && remaining <= loadThreshold) {
+    klipyFeedLoadArmed = false
     await options.onLoadMore()
   }
 }
@@ -1104,27 +1122,30 @@ const currentKlipyRecentItems = computed(() => {
 
   return klipy.getRecentItems(activeKlipyKind.value)
 })
-const primaryKlipyItems = computed(() => {
-  if (klipyQuery.value.trim() || selectedCatalogCategory.value) {
-    return klipy.items.value
+const shouldUseRecentKlipyFallback = computed(() => {
+  if (activeKlipyAudience.value !== 'mine') {
+    return false
   }
 
-  if (currentKlipyRecentItems.value.length) {
+  if (klipyQuery.value.trim() || selectedCatalogCategory.value) {
+    return false
+  }
+
+  return !klipy.items.value.length && (klipy.pending.value || !klipy.hasMore.value)
+})
+const primaryKlipyItems = computed(() => {
+  if (activeKlipyAudience.value === 'shared') {
+    return currentKlipyRecentItems.value
+  }
+
+  if (shouldUseRecentKlipyFallback.value && currentKlipyRecentItems.value.length) {
     return currentKlipyRecentItems.value
   }
 
   return klipy.items.value
 })
 const canLoadMoreKlipyItems = computed(() => {
-  if (activeKlipyAudience.value !== 'mine' || !klipy.hasMore.value) {
-    return false
-  }
-
-  if (klipyQuery.value.trim() || selectedCatalogCategory.value) {
-    return true
-  }
-
-  return !currentKlipyRecentItems.value.length
+  return activeKlipyAudience.value === 'mine' && klipy.hasMore.value
 })
 const showKlipySearchState = computed(() => Boolean(klipyQuery.value.trim() || selectedCatalogCategory.value))
 
@@ -1267,6 +1288,7 @@ watch([detailsOpen, photoFeedOpen, () => conversations.activeConversationId.valu
 })
 
 watch([composerMediaMenuVisible, composerMediaMenuTab, klipyQuery, selectedCatalogCategory], () => {
+  resetKlipyFeedPaging()
   scheduleKlipyCatalogLoad()
 })
 
@@ -1280,6 +1302,7 @@ watch(loopedKlipyCategories, async () => {
 
 watch(primaryKlipyItems, async () => {
   await nextTick()
+  resetKlipyFeedPaging()
   composerMediaMenuRef.value?.feedEl?.removeAttribute('data-loop-ready')
 })
 
