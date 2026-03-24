@@ -95,6 +95,7 @@ let forwardSearchTimer: ReturnType<typeof setTimeout> | null = null
 let lockedPageScrollY = 0
 let klipyFeedLastScrollTop = 0
 let klipyFeedLoadArmed = true
+let klipyFeedLoadCooldownUntil = 0
 
 const KLIPY_RAIL_PAGE_SIZE = 24
 const AUDIO_WAVEFORM_BAR_COUNT = 64
@@ -392,6 +393,25 @@ function resetKlipyAudienceMode() {
 function resetKlipyFeedPaging() {
   klipyFeedLastScrollTop = 0
   klipyFeedLoadArmed = true
+  klipyFeedLoadCooldownUntil = 0
+}
+
+async function ensureKlipyFeedScrollable() {
+  if (!composerMediaMenuVisible.value || activeKlipyAudience.value !== 'mine' || !canLoadMoreKlipyItems.value) {
+    return
+  }
+
+  const feed = composerMediaMenuRef.value?.feedEl
+  if (!feed) {
+    return
+  }
+
+  let attempts = 0
+  while (attempts < 4 && canLoadMoreKlipyItems.value && !klipy.pending.value && feed.scrollHeight <= feed.clientHeight + 24) {
+    attempts += 1
+    await klipy.loadMore(KLIPY_RAIL_PAGE_SIZE)
+    await nextTick()
+  }
 }
 
 function buildLoopedFeed<T>(items: T[]) {
@@ -481,8 +501,16 @@ async function handleLoopedFeedScroll(event: Event, options: { looped: boolean; 
     klipyFeedLoadArmed = true
   }
 
-  if (options.canLoadMore && options.onLoadMore && klipyFeedLoadArmed && isScrollingDown && remaining <= loadThreshold) {
+  if (
+    options.canLoadMore
+    && options.onLoadMore
+    && klipyFeedLoadArmed
+    && isScrollingDown
+    && remaining <= loadThreshold
+    && Date.now() >= klipyFeedLoadCooldownUntil
+  ) {
     klipyFeedLoadArmed = false
+    klipyFeedLoadCooldownUntil = Date.now() + 280
     await options.onLoadMore()
   }
 }
@@ -1303,6 +1331,7 @@ watch(loopedKlipyCategories, async () => {
 watch(primaryKlipyItems, async () => {
   await nextTick()
   composerMediaMenuRef.value?.feedEl?.removeAttribute('data-loop-ready')
+  await ensureKlipyFeedScrollable()
 })
 
 watch(() => klipyQuery.value.trim(), (value) => {
