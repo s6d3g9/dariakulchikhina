@@ -1,6 +1,6 @@
 <template>
   <div class="awd-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading awd-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Status row -->
@@ -78,9 +78,13 @@
         <div v-else class="awd-empty">Листы ещё не добавлены</div>
 
         <label class="awd-upload-btn" :class="{ 'awd-upload-btn--loading': uploading }">
-          {{ uploading ? 'загрузка...' : '+ добавить лист' }}
+          + добавить лист
           <input type="file" multiple accept=".pdf,.dwg,.dxf,.jpg,.jpeg,.png,.webp" style="display:none" @change="onFileInput" :disabled="uploading">
         </label>
+        <div v-if="uploading" class="u-inline-loading awd-inline-loading" aria-live="polite">
+          <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ЛИСТЫ ЧЕРТЕЖЕЙ ]</span>
+          <span class="u-inline-loading__line" />
+        </div>
       </div>
 
       <!-- Section: Checklist -->
@@ -167,7 +171,9 @@ function removeSheet(idx: number) {
 
 <style scoped>
 .awd-wrap { padding: 4px 0 40px; }
+.awd-content-loading::before { content: '[ ЗАГРУЖАЕМ РАБОЧИЕ ЧЕРТЕЖИ ]'; }
 .awd-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
+.awd-inline-loading { margin-top: 10px; max-width: 340px; }
 
 .awd-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .awd-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -176,4 +182,8 @@ function removeSheet(idx: number) {
 .awd-dot--yellow { background: var(--ds-warning, #e8b84b); }
 .awd-dot--red    { background: var(--ds-error, #d46b6b); }
 .awd-dot--green  { background: var(--ds-success, #5caa7f); }
+
+@media (max-width: 768px) {
+  .awd-inline-loading { max-width: none; width: 100%; }
+}
 </style>

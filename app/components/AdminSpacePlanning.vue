@@ -1,6 +1,6 @@
 <template>
   <div class="asp-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading asp-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Status row -->
@@ -81,9 +81,13 @@
         <div v-else class="asp-files-empty">Файлы ещё не загружены</div>
 
         <label class="asp-upload-btn" :class="{ 'asp-upload-btn--loading': uploading }">
-          {{ uploading ? 'загрузка...' : '+ добавить файл' }}
+          + добавить файл
           <input type="file" multiple accept=".pdf,.dwg,.dxf,.jpg,.jpeg,.png,.webp" style="display:none" @change="onFileInput" :disabled="uploading">
         </label>
+        <div v-if="uploading" class="u-inline-loading asp-inline-loading" aria-live="polite">
+          <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ФАЙЛЫ ПЛАНИРОВКИ ]</span>
+          <span class="u-inline-loading__line" />
+        </div>
       </div>
 
       <!-- Section: Approval options -->
@@ -491,6 +495,8 @@ function persistLayout() {
 
 <style scoped>
 .asp-wrap { padding: 4px 0 40px; }
+.asp-content-loading::before { content: '[ ЗАГРУЖАЕМ ПЛАНИРОВОЧНЫЕ РЕШЕНИЯ ]'; }
+.asp-inline-loading { margin-top: 10px; max-width: 340px; }
 
 .asp-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
 .asp-status-row__spacer { flex: 1; }
@@ -756,6 +762,10 @@ function persistLayout() {
   background: color-mix(in srgb, var(--ds-accent, #4a80f0) 16%, transparent) !important;
   border-color: color-mix(in srgb, var(--ds-accent, #4a80f0) 50%, var(--glass-border)) !important;
   color: var(--ds-accent, #4a80f0) !important;
+}
+
+@media (max-width: 768px) {
+  .asp-inline-loading { max-width: none; width: 100%; }
 }
 
 /* Transition */

@@ -1,6 +1,6 @@
 <template>
   <div class="aspec-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading aspec-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Status row -->
@@ -104,9 +104,13 @@
           </div>
         </div>
         <label class="aspec-upload-btn" :class="{ 'aspec-upload-btn--loading': uploading }">
-          {{ uploading ? 'загрузка...' : '+ добавить файл' }}
+          + добавить файл
           <input type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.dwg" style="display:none" @change="onFileInput" :disabled="uploading">
         </label>
+        <div v-if="uploading" class="u-inline-loading aspec-inline-loading" aria-live="polite">
+          <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ФАЙЛЫ СПЕЦИФИКАЦИЙ ]</span>
+          <span class="u-inline-loading__line" />
+        </div>
       </div>
 
     </template>
@@ -192,7 +196,9 @@ function removeFile(idx: number) {
 
 <style scoped>
 .aspec-wrap { padding: 4px 0 40px; }
+.aspec-content-loading::before { content: '[ ЗАГРУЖАЕМ СПЕЦИФИКАЦИИ ]'; }
 .aspec-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
+.aspec-inline-loading { margin-top: 10px; max-width: 360px; }
 
 .aspec-status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .aspec-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -201,4 +207,8 @@ function removeFile(idx: number) {
 .aspec-dot--yellow { background: var(--ds-warning, #e8b84b); }
 .aspec-dot--red    { background: var(--ds-error, #d46b6b); }
 .aspec-dot--green  { background: var(--ds-success, #5caa7f); }
+
+@media (max-width: 768px) {
+  .aspec-inline-loading { max-width: none; width: 100%; }
+}
 </style>
