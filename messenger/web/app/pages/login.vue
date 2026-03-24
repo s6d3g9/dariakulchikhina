@@ -1,38 +1,54 @@
 <script setup lang="ts">
 const auth = useMessengerAuth()
 const install = useMessengerInstall()
-const loginField = ref<{ $el?: HTMLElement } | null>(null)
-const passwordField = ref<{ $el?: HTMLElement } | null>(null)
-const inputCleanupHandlers: Array<() => void> = []
+const loginField = ref<{ focus: () => void } | null>(null)
+const passwordField = ref<{ focus: () => void } | null>(null)
 const form = reactive({
   login: '',
   password: '',
 })
 const errorMessage = ref('')
 const pending = ref(false)
+const touched = reactive({
+  login: false,
+  password: false,
+})
 const installActionLabel = computed(() => install.installPending.value ? 'Запрашиваем установку...' : 'Установить как приложение')
+const normalizedLogin = computed(() => form.login.trim().toLowerCase())
+const loginError = computed(() => touched.login && !normalizedLogin.value.length ? 'Укажите логин.' : '')
+const passwordError = computed(() => touched.password && !form.password.length ? 'Укажите пароль.' : '')
+const canSubmit = computed(() => !pending.value && normalizedLogin.value.length > 0 && form.password.length > 0)
+
+watch(() => form.login, (value) => {
+  const normalized = value.toLowerCase().replace(/\s+/g, '')
+  if (normalized !== value) {
+    form.login = normalized
+  }
+})
 
 onMounted(async () => {
   await auth.hydrate()
-  await nextTick()
-  bindInputKeyboardFlow()
   if (auth.user.value) {
     await navigateTo('/')
   }
 })
 
-onBeforeUnmount(() => {
-  for (const cleanup of inputCleanupHandlers.splice(0)) {
-    cleanup()
-  }
-})
-
 async function submit() {
   errorMessage.value = ''
+  touched.login = true
+  touched.password = true
+
+  if (!normalizedLogin.value.length || !form.password.length) {
+    return
+  }
+
   pending.value = true
 
   try {
-    await auth.login(form)
+    await auth.login({
+      login: normalizedLogin.value,
+      password: form.password,
+    })
     await navigateTo('/')
   } catch {
     errorMessage.value = 'Не удалось войти. Проверьте логин и пароль.'
@@ -49,59 +65,20 @@ function showManualInstallHelp() {
   install.noteManualInstall()
 }
 
-function focusField(field: { $el?: HTMLElement } | null) {
-  const input = field?.$el?.querySelector('input, textarea')
-  if (input instanceof HTMLElement) {
-    input.focus()
-  }
+function queueFocus(action: () => void) {
+  requestAnimationFrame(() => {
+    action()
+  })
 }
 
 function focusPasswordField() {
-  focusField(passwordField.value)
+  queueFocus(() => {
+    passwordField.value?.focus()
+  })
 }
 
-function getFieldInput(field: { $el?: HTMLElement } | null) {
-  const input = field?.$el?.querySelector('input, textarea')
-  return input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement
-    ? input
-    : null
-}
-
-function bindInputKeyboardFlow() {
-  for (const cleanup of inputCleanupHandlers.splice(0)) {
-    cleanup()
-  }
-
-  const loginInput = getFieldInput(loginField.value)
-  const passwordInput = getFieldInput(passwordField.value)
-
-  if (loginInput) {
-    const handleLoginEnter = (event: KeyboardEvent) => {
-      if (event.key !== 'Enter') {
-        return
-      }
-
-      event.preventDefault()
-      passwordInput?.focus()
-    }
-
-    loginInput.addEventListener('keydown', handleLoginEnter)
-    inputCleanupHandlers.push(() => loginInput.removeEventListener('keydown', handleLoginEnter))
-  }
-
-  if (passwordInput) {
-    const handlePasswordEnter = (event: KeyboardEvent) => {
-      if (event.key !== 'Enter') {
-        return
-      }
-
-      event.preventDefault()
-      void submit()
-    }
-
-    passwordInput.addEventListener('keydown', handlePasswordEnter)
-    inputCleanupHandlers.push(() => passwordInput.removeEventListener('keydown', handlePasswordEnter))
-  }
+function markTouched(field: keyof typeof touched) {
+  touched[field] = true
 }
 </script>
 
@@ -115,45 +92,45 @@ function bindInputKeyboardFlow() {
           <p class="hero-text">Войдите в отдельный messenger с плотными tonal-surfaces, спокойной иерархией и единым Material 3 ритмом.</p>
         </div>
 
-        <VForm class="auth-form auth-form--vuetify" @submit.prevent="submit">
-          <VTextField
+        <form class="auth-form auth-form--native" @submit.prevent="submit">
+          <MessengerAuthField
             ref="loginField"
             v-model="form.login"
-            class="auth-field"
             label="Логин"
-            color="primary"
-            base-color="primary"
-            variant="outlined"
             autocomplete="username"
             enterkeyhint="next"
+            :disabled="pending"
             required
+            :error="loginError"
+            @blur="markTouched('login')"
+            @enter="focusPasswordField"
           />
 
-          <VTextField
+          <MessengerAuthField
             ref="passwordField"
             v-model="form.password"
-            class="auth-field"
             label="Пароль"
-            color="primary"
-            base-color="primary"
-            variant="outlined"
             type="password"
             autocomplete="current-password"
             enterkeyhint="go"
+            :disabled="pending"
             required
+            :error="passwordError"
+            @blur="markTouched('password')"
+            @enter="submit"
           />
 
-          <VAlert v-if="errorMessage" type="error">
+          <VAlert v-if="errorMessage" type="error" :icon="false" class="auth-alert">
             {{ errorMessage }}
           </VAlert>
 
-          <VBtn type="submit" block :disabled="pending" variant="flat" class="auth-submit">
+          <VBtn type="submit" block :disabled="!canSubmit" variant="flat" class="auth-submit">
             <span class="auth-submit__content">
               <MessengerProgressCircular v-if="pending" class="auth-submit__progress" aria-label="Вход выполняется" indeterminate size="sm" />
               <span>{{ pending ? 'Входим...' : 'Войти' }}</span>
             </span>
           </VBtn>
-        </VForm>
+        </form>
 
         <div class="auth-install-card">
           <p class="auth-install-card__title">Открывать как приложение</p>
@@ -179,7 +156,7 @@ function bindInputKeyboardFlow() {
               {{ install.installed.value ? 'Проверить режим приложения' : 'Как установить вручную' }}
             </VBtn>
           </div>
-          <VAlert v-if="install.installMessage.value" type="info" class="mt-4">
+          <VAlert v-if="install.installMessage.value" type="info" :icon="false" class="mt-4 auth-alert">
             {{ install.installMessage.value }}
           </VAlert>
         </div>

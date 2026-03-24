@@ -1,10 +1,9 @@
 <script setup lang="ts">
 const auth = useMessengerAuth()
 const install = useMessengerInstall()
-const displayNameField = ref<{ $el?: HTMLElement } | null>(null)
-const loginField = ref<{ $el?: HTMLElement } | null>(null)
-const passwordField = ref<{ $el?: HTMLElement } | null>(null)
-const inputCleanupHandlers: Array<() => void> = []
+const displayNameField = ref<{ focus: () => void } | null>(null)
+const loginField = ref<{ focus: () => void } | null>(null)
+const passwordField = ref<{ focus: () => void } | null>(null)
 const LOGIN_PATTERN = /^[a-z0-9._-]+$/
 
 const form = reactive({
@@ -95,16 +94,8 @@ watch(() => form.login, (value) => {
 
 onMounted(async () => {
   await auth.hydrate()
-  await nextTick()
-  bindInputKeyboardFlow()
   if (auth.user.value) {
     await navigateTo('/')
-  }
-})
-
-onBeforeUnmount(() => {
-  for (const cleanup of inputCleanupHandlers.splice(0)) {
-    cleanup()
   }
 })
 
@@ -193,78 +184,22 @@ function showManualInstallHelp() {
   install.noteManualInstall()
 }
 
-function focusField(field: { $el?: HTMLElement } | null) {
-  const input = field?.$el?.querySelector('input, textarea')
-  if (input instanceof HTMLElement) {
-    input.focus()
-  }
+function queueFocus(action: () => void) {
+  requestAnimationFrame(() => {
+    action()
+  })
 }
 
 function focusLoginField() {
-  focusField(loginField.value)
+  queueFocus(() => {
+    loginField.value?.focus()
+  })
 }
 
 function focusPasswordField() {
-  focusField(passwordField.value)
-}
-
-function getFieldInput(field: { $el?: HTMLElement } | null) {
-  const input = field?.$el?.querySelector('input, textarea')
-  return input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement
-    ? input
-    : null
-}
-
-function bindInputKeyboardFlow() {
-  for (const cleanup of inputCleanupHandlers.splice(0)) {
-    cleanup()
-  }
-
-  const displayNameInput = getFieldInput(displayNameField.value)
-  const loginInput = getFieldInput(loginField.value)
-  const passwordInput = getFieldInput(passwordField.value)
-
-  if (displayNameInput) {
-    const handleDisplayNameEnter = (event: KeyboardEvent) => {
-      if (event.key !== 'Enter') {
-        return
-      }
-
-      event.preventDefault()
-      loginInput?.focus()
-    }
-
-    displayNameInput.addEventListener('keydown', handleDisplayNameEnter)
-    inputCleanupHandlers.push(() => displayNameInput.removeEventListener('keydown', handleDisplayNameEnter))
-  }
-
-  if (loginInput) {
-    const handleLoginEnter = (event: KeyboardEvent) => {
-      if (event.key !== 'Enter') {
-        return
-      }
-
-      event.preventDefault()
-      passwordInput?.focus()
-    }
-
-    loginInput.addEventListener('keydown', handleLoginEnter)
-    inputCleanupHandlers.push(() => loginInput.removeEventListener('keydown', handleLoginEnter))
-  }
-
-  if (passwordInput) {
-    const handlePasswordEnter = (event: KeyboardEvent) => {
-      if (event.key !== 'Enter') {
-        return
-      }
-
-      event.preventDefault()
-      void submit()
-    }
-
-    passwordInput.addEventListener('keydown', handlePasswordEnter)
-    inputCleanupHandlers.push(() => passwordInput.removeEventListener('keydown', handlePasswordEnter))
-  }
+  queueFocus(() => {
+    passwordField.value?.focus()
+  })
 }
 </script>
 
@@ -278,68 +213,58 @@ function bindInputKeyboardFlow() {
           <p class="hero-text">Создайте аккаунт для messenger в обновлённом Material 3 интерфейсе без старого glass-shell.</p>
         </div>
 
-        <VForm class="auth-form auth-form--vuetify" @submit.prevent="submit">
-          <VTextField
+        <form class="auth-form auth-form--native" @submit.prevent="submit">
+          <MessengerAuthField
             ref="displayNameField"
             v-model="form.displayName"
-            class="auth-field"
             label="Имя"
-            color="primary"
-            base-color="primary"
-            variant="outlined"
             autocomplete="name"
             enterkeyhint="next"
-            minlength="2"
-            maxlength="80"
+            :min-length="2"
+            :max-length="80"
+            :disabled="pending"
             required
-            :error-messages="visibleDisplayNameError ? [visibleDisplayNameError] : []"
-            @update:model-value="markTouched('displayName')"
+            :error="visibleDisplayNameError"
             @blur="markTouched('displayName')"
+            @enter="focusLoginField"
           />
 
-          <VTextField
+          <MessengerAuthField
             ref="loginField"
             v-model="form.login"
-            class="auth-field"
             label="Логин"
-            color="primary"
-            base-color="primary"
-            variant="outlined"
             autocomplete="username"
             autocapitalize="off"
-            spellcheck="false"
+            :spellcheck="false"
             inputmode="text"
             enterkeyhint="next"
-            minlength="3"
-            maxlength="32"
+            :min-length="3"
+            :max-length="32"
+            :disabled="pending"
             required
             hint="Латиница, цифры и символы . _ -"
-            persistent-hint
-            :error-messages="visibleLoginError ? [visibleLoginError] : []"
-            @update:model-value="markTouched('login')"
+            :error="visibleLoginError"
             @blur="markTouched('login')"
+            @enter="focusPasswordField"
           />
 
-          <VTextField
+          <MessengerAuthField
             ref="passwordField"
             v-model="form.password"
-            class="auth-field"
             label="Пароль"
-            color="primary"
-            base-color="primary"
-            variant="outlined"
             type="password"
             autocomplete="new-password"
             enterkeyhint="done"
-            minlength="8"
-            maxlength="128"
+            :min-length="8"
+            :max-length="128"
+            :disabled="pending"
             required
-            :error-messages="visiblePasswordError ? [visiblePasswordError] : []"
-            @update:model-value="markTouched('password')"
+            :error="visiblePasswordError"
             @blur="markTouched('password')"
+            @enter="submit"
           />
 
-          <VAlert v-if="errorMessage" type="error">
+          <VAlert v-if="errorMessage" type="error" :icon="false" class="auth-alert">
             {{ errorMessage }}
           </VAlert>
 
@@ -349,7 +274,7 @@ function bindInputKeyboardFlow() {
               <span>{{ pending ? 'Создаем...' : 'Создать аккаунт' }}</span>
             </span>
           </VBtn>
-        </VForm>
+        </form>
 
         <div class="auth-install-card">
           <p class="auth-install-card__title">Открывать как приложение</p>
@@ -375,7 +300,7 @@ function bindInputKeyboardFlow() {
               {{ install.installed.value ? 'Проверить режим приложения' : 'Как установить вручную' }}
             </VBtn>
           </div>
-          <VAlert v-if="install.installMessage.value" type="info" class="mt-4">
+          <VAlert v-if="install.installMessage.value" type="info" :icon="false" class="mt-4 auth-alert">
             {{ install.installMessage.value }}
           </VAlert>
         </div>
