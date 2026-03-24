@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const auth = useMessengerAuth()
+const install = useMessengerInstall()
 const LOGIN_PATTERN = /^[a-z0-9._-]+$/
 
 const form = reactive({
@@ -14,6 +15,7 @@ const touched = reactive({
   login: false,
   password: false,
 })
+const installActionLabel = computed(() => install.installPending.value ? 'Запрашиваем установку...' : 'Установить как приложение')
 
 const trimmedDisplayName = computed(() => form.displayName.trim())
 const normalizedLogin = computed(() => form.login.trim().toLowerCase())
@@ -170,6 +172,14 @@ function resolveRegistrationError(error: unknown) {
 function markTouched(field: keyof typeof touched) {
   touched[field] = true
 }
+
+async function installMessengerApp() {
+  await install.installApp()
+}
+
+function showManualInstallHelp() {
+  install.noteManualInstall()
+}
 </script>
 
 <template>
@@ -236,6 +246,35 @@ function markTouched(field: keyof typeof touched) {
             </span>
           </VBtn>
         </VForm>
+
+        <div class="auth-install-card">
+          <p class="auth-install-card__title">Открывать как приложение</p>
+          <p class="auth-install-card__meta">{{ install.installStatusLabel.value }}</p>
+          <div class="auth-install-card__actions">
+            <VBtn
+              v-if="!install.installed.value"
+              type="button"
+              color="primary"
+              variant="flat"
+              :loading="install.installPending.value"
+              :disabled="install.installPending.value"
+              @click="installMessengerApp()"
+            >
+              {{ installActionLabel }}
+            </VBtn>
+            <VBtn
+              type="button"
+              color="secondary"
+              variant="tonal"
+              @click="showManualInstallHelp()"
+            >
+              {{ install.installed.value ? 'Проверить режим приложения' : 'Как установить вручную' }}
+            </VBtn>
+          </div>
+          <VAlert v-if="install.installMessage.value" type="info" class="mt-4">
+            {{ install.installMessage.value }}
+          </VAlert>
+        </div>
       </VCardText>
 
       <VCardActions class="auth-card__actions">

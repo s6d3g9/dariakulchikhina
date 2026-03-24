@@ -17,14 +17,15 @@ watch(() => settingsModel.settings.value.devices.keepSignedIn, (enabled) => {
 })
 
 const activeThemeMeta = computed(() => settingsModel.themeOptions.find(theme => theme.key === settingsModel.settings.value.themes.active) ?? settingsModel.themeOptions[0])
+const activeThemeModeMeta = computed(() => settingsModel.themeModeOptions.find(mode => mode.key === settingsModel.settings.value.themes.mode) ?? settingsModel.themeModeOptions[0])
+const activeThemeContrastMeta = computed(() => settingsModel.themeContrastOptions.find(contrast => contrast.key === settingsModel.settings.value.themes.contrast) ?? settingsModel.themeContrastOptions[0])
 const activeStyleMeta = computed(() => settingsModel.styleOptions.find(style => style.key === settingsModel.settings.value.themes.style) ?? settingsModel.styleOptions[0])
-const activeStyleBadge = computed(() => {
-  if (settingsModel.settings.value.themes.style === 'material') {
-    return 'Material 3'
-  }
-
-  return 'Liquid'
-})
+const resolvedThemeModeLabel = computed(() => settingsModel.resolvedMode.value === 'dark'
+  ? 'Сейчас применяется тёмная tonal-схема.'
+  : 'Сейчас применяется светлая tonal-схема.')
+const resolvedThemeContrastLabel = computed(() => settingsModel.settings.value.themes.contrast === 'high'
+  ? 'Сейчас усилены контуры, текст и различие между surface-слоями.'
+  : 'Сейчас используется стандартный M3 баланс контраста.')
 const preferredCallModeOptions = [
   { title: 'Сначала аудио', value: 'audio' },
   { title: 'Сразу видео', value: 'video' },
@@ -58,6 +59,7 @@ const sessionPersistenceLabel = computed(() => auth.persistenceMode.value === 'l
 const notificationPermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.notifications])
 const microphonePermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.microphone])
 const cameraPermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.camera])
+const installActionLabel = computed(() => install.installPending.value ? 'Запрашиваем установку...' : 'Установить как приложение')
 function settingsTabIcon(key: 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account') {
   switch (key) {
     case 'profile':
@@ -209,6 +211,14 @@ function selectSettingsSection(key: string) {
   settingsSearch.value = ''
   settingsSearchOpen.value = false
 }
+
+function themeCardStyle(theme: { preview: [string, string, string] }) {
+  return {
+    '--theme-swatch-1': theme.preview[0],
+    '--theme-swatch-2': theme.preview[1],
+    '--theme-swatch-3': theme.preview[2],
+  }
+}
 </script>
 
 <template>
@@ -325,9 +335,19 @@ function selectSettingsSection(key: string) {
           <section class="settings-grid">
             <div class="settings-theme-current-grid">
               <div class="settings-theme-current-card settings-theme-current-card--theme">
-                <span class="settings-theme-current-card__eyebrow">Активная палитра</span>
+                <span class="settings-theme-current-card__eyebrow">Активная схема</span>
                 <strong class="settings-theme-current-card__title">{{ activeThemeMeta.title }}</strong>
                 <span class="settings-theme-current-card__meta">{{ activeThemeMeta.hint }}</span>
+              </div>
+              <div class="settings-theme-current-card settings-theme-current-card--mode">
+                <span class="settings-theme-current-card__eyebrow">Режим тональности</span>
+                <strong class="settings-theme-current-card__title">{{ activeThemeModeMeta.title }}</strong>
+                <span class="settings-theme-current-card__meta">{{ resolvedThemeModeLabel }}</span>
+              </div>
+              <div class="settings-theme-current-card settings-theme-current-card--contrast">
+                <span class="settings-theme-current-card__eyebrow">Контраст</span>
+                <strong class="settings-theme-current-card__title">{{ activeThemeContrastMeta.title }}</strong>
+                <span class="settings-theme-current-card__meta">{{ resolvedThemeContrastLabel }}</span>
               </div>
               <div class="settings-theme-current-card settings-theme-current-card--style">
                 <span class="settings-theme-current-card__eyebrow">Активный стиль</span>
@@ -335,14 +355,15 @@ function selectSettingsSection(key: string) {
                 <span class="settings-theme-current-card__meta">{{ activeStyleMeta.hint }}</span>
               </div>
             </div>
-            <p class="setting-card__title">Темы интерфейса</p>
+            <p class="setting-card__title">Наборы цветового оформления</p>
             <div class="settings-choice-grid theme-grid">
               <button
                 v-for="theme in settingsModel.themeOptions"
                 :key="theme.key"
                 type="button"
                 class="settings-choice-card theme-card"
-                :class="[`theme-card--${theme.key}`, { 'theme-card--active': settingsModel.settings.value.themes.active === theme.key }]"
+                :class="{ 'theme-card--active': settingsModel.settings.value.themes.active === theme.key }"
+                :style="themeCardStyle(theme)"
                 :aria-pressed="settingsModel.settings.value.themes.active === theme.key"
                 @click="settingsModel.setTheme(theme.key)"
               >
@@ -356,6 +377,48 @@ function selectSettingsSection(key: string) {
                   <span class="settings-choice-card__meta theme-card__meta">{{ theme.hint }}</span>
                 </span>
                 <span class="settings-choice-card__state theme-card__state">{{ settingsModel.settings.value.themes.active === theme.key ? 'Активна' : 'Выбрать' }}</span>
+              </button>
+            </div>
+            <p class="setting-card__title mt-4">Светлая и тёмная tonal-подача</p>
+            <div class="settings-choice-grid mode-grid">
+              <button
+                v-for="mode in settingsModel.themeModeOptions"
+                :key="mode.key"
+                type="button"
+                class="settings-choice-card mode-card"
+                :class="{ 'mode-card--active': settingsModel.settings.value.themes.mode === mode.key }"
+                :aria-pressed="settingsModel.settings.value.themes.mode === mode.key"
+                @click="settingsModel.setThemeMode(mode.key)"
+              >
+                <span class="settings-choice-card__preview mode-card__preview" aria-hidden="true">
+                  <VIcon>{{ mode.icon }}</VIcon>
+                </span>
+                <span class="settings-choice-card__copy mode-card__copy">
+                  <span class="settings-choice-card__title mode-card__title">{{ mode.title }}</span>
+                  <span class="settings-choice-card__meta mode-card__meta">{{ mode.hint }}</span>
+                </span>
+                <span class="settings-choice-card__state mode-card__state">{{ settingsModel.settings.value.themes.mode === mode.key ? 'Активен' : 'Выбрать' }}</span>
+              </button>
+            </div>
+            <p class="setting-card__title mt-4">Контраст интерфейса</p>
+            <div class="settings-choice-grid contrast-grid">
+              <button
+                v-for="contrast in settingsModel.themeContrastOptions"
+                :key="contrast.key"
+                type="button"
+                class="settings-choice-card contrast-card"
+                :class="{ 'contrast-card--active': settingsModel.settings.value.themes.contrast === contrast.key }"
+                :aria-pressed="settingsModel.settings.value.themes.contrast === contrast.key"
+                @click="settingsModel.setThemeContrast(contrast.key)"
+              >
+                <span class="settings-choice-card__preview contrast-card__preview" aria-hidden="true">
+                  <VIcon>{{ contrast.icon }}</VIcon>
+                </span>
+                <span class="settings-choice-card__copy contrast-card__copy">
+                  <span class="settings-choice-card__title contrast-card__title">{{ contrast.title }}</span>
+                  <span class="settings-choice-card__meta contrast-card__meta">{{ contrast.hint }}</span>
+                </span>
+                <span class="settings-choice-card__state contrast-card__state">{{ settingsModel.settings.value.themes.contrast === contrast.key ? 'Активен' : 'Выбрать' }}</span>
               </button>
             </div>
             <p class="setting-card__title mt-4">Стиль дизайна</p>
@@ -403,6 +466,35 @@ function selectSettingsSection(key: string) {
                 <span class="setting-fact-label">Сессия</span>
                 <strong>{{ sessionStartedLabel }}</strong>
               </div>
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Режим запуска</span>
+                <strong>{{ install.launchModeLabel.value }}</strong>
+              </div>
+            </div>
+            <div class="settings-install-card mb-4">
+              <p class="setting-card__title">Приложение</p>
+              <p class="setting-card__meta">{{ install.installStatusLabel.value }}</p>
+              <div class="settings-actions-row mt-3 settings-actions-row--wrap">
+                <VBtn
+                  v-if="!install.installed.value"
+                  type="button"
+                  color="primary"
+                  variant="flat"
+                  :loading="install.installPending.value"
+                  :disabled="install.installPending.value"
+                  @click="installMessengerApp()"
+                >
+                  {{ installActionLabel }}
+                </VBtn>
+                <VBtn
+                  type="button"
+                  color="secondary"
+                  variant="tonal"
+                  @click="showManualInstallHelp()"
+                >
+                  {{ install.installed.value ? 'Проверить режим приложения' : 'Как установить вручную' }}
+                </VBtn>
+              </div>
             </div>
             <div class="setting-toggle setting-toggle--vuetify">
               <span class="setting-toggle__copy"><span class="setting-field__label">Доверять этому устройству</span></span>
@@ -421,6 +513,9 @@ function selectSettingsSection(key: string) {
               <VBtn type="button" color="secondary" variant="tonal" @click="probeMedia('camera')">Проверить камеру</VBtn>
               <VBtn type="button" color="error" variant="tonal" @click="settingsModel.resetLocalSettings()">Сбросить настройки</VBtn>
             </div>
+            <VAlert v-if="install.installMessage.value" type="info" class="mt-4">
+              {{ install.installMessage.value }}
+            </VAlert>
             <VAlert v-if="permissionActionMessage || calls.permissionHelp.value" type="info" class="mt-4">
               {{ permissionActionMessage || calls.permissionHelp.value }}
             </VAlert>

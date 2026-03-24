@@ -1,12 +1,15 @@
 <script setup lang="ts">
 const settingsModel = useMessengerSettings()
 
-const vuetifyThemeName = computed(() => {
-  const activeTheme = settingsModel.theme.value.active
-  return activeTheme === 'beige' || activeTheme === 'gray'
-    ? 'messengerLight'
-    : 'messengerDark'
-})
+useHead(() => ({
+  meta: [
+    {
+      key: 'theme-color',
+      name: 'theme-color',
+      content: settingsModel.resolvedTheme.value.themeColor,
+    },
+  ],
+}))
 
 onMounted(() => {
   settingsModel.hydrate()
@@ -14,7 +17,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <VApp :theme="vuetifyThemeName" class="messenger-v-app">
+  <VApp :theme="settingsModel.vuetifyThemeName.value" class="messenger-v-app">
     <NuxtPage />
   </VApp>
 </template>

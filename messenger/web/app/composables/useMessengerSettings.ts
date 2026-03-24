@@ -1,10 +1,24 @@
+import {
+  MESSENGER_COLOR_SCHEME_KEYS,
+  MESSENGER_THEME_CONTRAST_KEYS,
+  messengerColorSchemeOptions,
+  normalizeMessengerColorSchemeKey,
+  normalizeMessengerThemeContrast,
+  normalizeMessengerThemeMode,
+  resolveLegacyMessengerTheme,
+  resolveMessengerColorSchemeSelection,
+  type MessengerColorSchemeKey,
+  type MessengerThemeContrast,
+  type MessengerThemeMode,
+  type ResolvedMessengerThemeMode,
+} from '../../theme/messengerColorSchemes'
+
 type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
-type MessengerThemeKey = 'beige' | 'gray' | 'black' | 'void'
 type MessengerStyleKey = 'liquid' | 'material'
 
-const MESSENGER_THEME_KEYS = ['beige', 'gray', 'black', 'void'] as const
 const MESSENGER_STYLE_KEYS = ['liquid', 'material'] as const
+const MESSENGER_THEME_MODE_KEYS = ['system', 'light', 'dark'] as const
 
 interface MessengerSettingsSnapshot {
   profile: {
@@ -27,7 +41,9 @@ interface MessengerSettingsSnapshot {
     allowDiscoveryByLogin: boolean
   }
   themes: {
-    active: MessengerThemeKey
+    active: MessengerColorSchemeKey
+    mode: MessengerThemeMode
+    contrast: MessengerThemeContrast
     style: MessengerStyleKey
   }
   devices: {
@@ -40,8 +56,12 @@ interface MessengerSettingsSnapshot {
 const MESSENGER_SETTINGS_STORAGE_KEY = 'daria-messenger-settings'
 const MESSENGER_SETTINGS_SESSION_STORAGE_KEY = 'daria-messenger-settings-session'
 const MESSENGER_THEME_STORAGE_KEY = 'daria-messenger-theme'
+const MESSENGER_THEME_MODE_STORAGE_KEY = 'daria-messenger-theme-mode'
+const MESSENGER_THEME_CONTRAST_STORAGE_KEY = 'daria-messenger-theme-contrast'
 const MESSENGER_STYLE_STORAGE_KEY = 'daria-messenger-style'
 const MESSENGER_STYLE_MIGRATION_KEY = 'daria-messenger-style-m3-migrated'
+
+let systemThemeBindingInitialized = false
 
 function normalizeMessengerStyle(style: string | null | undefined): MessengerStyleKey | null {
   if (!style) {
@@ -85,7 +105,9 @@ function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
       allowDiscoveryByLogin: true,
     },
     themes: {
-      active: 'black',
+      active: 'baseline',
+      mode: 'system',
+      contrast: 'standard',
       style: 'material',
     },
     devices: {
@@ -119,13 +141,19 @@ function readStoredThemePreferences() {
   }
 
   const storedTheme = window.localStorage.getItem(MESSENGER_THEME_STORAGE_KEY)
+  const storedMode = window.localStorage.getItem(MESSENGER_THEME_MODE_STORAGE_KEY)
+  const storedContrast = window.localStorage.getItem(MESSENGER_THEME_CONTRAST_STORAGE_KEY)
   const storedStyle = window.localStorage.getItem(MESSENGER_STYLE_STORAGE_KEY)
   const normalizedStyle = normalizeMessengerStyle(storedStyle)
+  const normalizedTheme = normalizeMessengerColorSchemeKey(storedTheme)
+  const normalizedMode = normalizeMessengerThemeMode(storedMode)
+  const normalizedContrast = normalizeMessengerThemeContrast(storedContrast)
+  const legacyTheme = resolveLegacyMessengerTheme(storedTheme)
 
   return {
-    active: MESSENGER_THEME_KEYS.includes(storedTheme as MessengerThemeKey)
-      ? storedTheme as MessengerThemeKey
-      : null,
+    active: normalizedTheme || legacyTheme?.scheme || null,
+    mode: normalizedMode || legacyTheme?.mode || null,
+    contrast: normalizedContrast,
     style: normalizedStyle && MESSENGER_STYLE_KEYS.includes(normalizedStyle)
       ? normalizedStyle
       : null,
@@ -148,12 +176,14 @@ function markMaterialStyleMigrationDone() {
   window.localStorage.setItem(MESSENGER_STYLE_MIGRATION_KEY, '1')
 }
 
-function persistThemePreferences(theme: MessengerThemeKey, style: MessengerStyleKey) {
+function persistThemePreferences(theme: MessengerColorSchemeKey, mode: MessengerThemeMode, contrast: MessengerThemeContrast, style: MessengerStyleKey) {
   if (!import.meta.client) {
     return
   }
 
   window.localStorage.setItem(MESSENGER_THEME_STORAGE_KEY, theme)
+  window.localStorage.setItem(MESSENGER_THEME_MODE_STORAGE_KEY, mode)
+  window.localStorage.setItem(MESSENGER_THEME_CONTRAST_STORAGE_KEY, contrast)
   window.localStorage.setItem(MESSENGER_STYLE_STORAGE_KEY, style)
 }
 
@@ -165,12 +195,29 @@ function applyReduceMotionPreference(enabled: boolean) {
   document.documentElement.dataset.messengerMotion = enabled ? 'reduced' : 'default'
 }
 
-function applyMessengerThemePreference(theme: MessengerThemeKey) {
+function applyMessengerThemePreference(theme: MessengerColorSchemeKey) {
   if (!import.meta.client) {
     return
   }
 
   document.documentElement.dataset.messengerTheme = theme
+}
+
+function applyMessengerThemeModePreference(mode: MessengerThemeMode, resolvedMode: ResolvedMessengerThemeMode) {
+  if (!import.meta.client) {
+    return
+  }
+
+  document.documentElement.dataset.messengerThemeMode = mode
+  document.documentElement.dataset.messengerResolvedThemeMode = resolvedMode
+}
+
+function applyMessengerThemeContrastPreference(contrast: MessengerThemeContrast) {
+  if (!import.meta.client) {
+    return
+  }
+
+  document.documentElement.dataset.messengerThemeContrast = contrast
 }
 
 function applyMessengerStylePreference(style: MessengerStyleKey) {
@@ -183,6 +230,13 @@ function applyMessengerStylePreference(style: MessengerStyleKey) {
 
 function mergeMessengerSettings(source: Partial<MessengerSettingsSnapshot> | null): MessengerSettingsSnapshot {
   const defaults = createDefaultMessengerSettings()
+  const rawTheme = source?.themes?.active as string | undefined
+  const legacyTheme = resolveLegacyMessengerTheme(rawTheme)
+  const normalizedTheme = normalizeMessengerColorSchemeKey(rawTheme)
+  const rawThemeMode = source?.themes?.mode as string | undefined
+  const normalizedThemeMode = normalizeMessengerThemeMode(rawThemeMode)
+  const rawThemeContrast = source?.themes?.contrast as string | undefined
+  const normalizedThemeContrast = normalizeMessengerThemeContrast(rawThemeContrast)
 
   return {
     profile: {
@@ -200,6 +254,9 @@ function mergeMessengerSettings(source: Partial<MessengerSettingsSnapshot> | nul
     themes: {
       ...defaults.themes,
       ...(source?.themes || {}),
+      active: normalizedTheme || legacyTheme?.scheme || defaults.themes.active,
+      mode: normalizedThemeMode || legacyTheme?.mode || defaults.themes.mode,
+      contrast: normalizedThemeContrast || defaults.themes.contrast,
       style: normalizeMessengerStyle(source?.themes?.style || defaults.themes.style) || defaults.themes.style,
     },
     devices: {
@@ -212,6 +269,7 @@ function mergeMessengerSettings(source: Partial<MessengerSettingsSnapshot> | nul
 export function useMessengerSettings() {
   const settings = useState<MessengerSettingsSnapshot>('messenger-settings-state', () => createDefaultMessengerSettings())
   const ready = useState<boolean>('messenger-settings-ready', () => false)
+  const systemPrefersDark = useState<boolean>('messenger-settings-system-prefers-dark', () => false)
   const activeSection = useState<MessengerSettingsSectionKey>('messenger-settings-section', () => 'profile')
   const sessionStartedAt = useState<string>('messenger-settings-session-started-at', () => new Date().toISOString())
   const permissionState = useState<Record<'notifications' | 'microphone' | 'camera', MessengerPermissionState>>('messenger-settings-permissions', () => ({
@@ -253,26 +311,41 @@ export function useMessengerSettings() {
     },
   ]
 
-  const themeOptions = [
+  const themeOptions = messengerColorSchemeOptions
+
+  const themeModeOptions = [
     {
-      key: 'beige' as const,
-      title: 'Бежевая',
-      hint: 'Тёплая светлая палитра с мягким контрастом и спокойными tonal-поверхностями.',
+      key: 'system' as const,
+      title: 'Как в системе',
+      hint: 'Messenger сам подхватывает светлую или тёмную tonal-схему по настройкам устройства.',
+      icon: 'mdi-theme-light-dark',
     },
     {
-      key: 'gray' as const,
-      title: 'Серая',
-      hint: 'Нейтральная холодная палитра без сильного контраста.',
+      key: 'light' as const,
+      title: 'Светлая тональность',
+      hint: 'Фиксирует светлые поверхности и дневной уровень контраста независимо от ОС.',
+      icon: 'mdi-white-balance-sunny',
     },
     {
-      key: 'black' as const,
-      title: 'Чёрная',
-      hint: 'Глубокая тёмная тема с максимальной контрастностью.',
+      key: 'dark' as const,
+      title: 'Тёмная tonальность',
+      hint: 'Фиксирует тёмные surface-container слои и вечернюю контрастную подачу.',
+      icon: 'mdi-weather-night',
+    },
+  ]
+
+  const themeContrastOptions = [
+    {
+      key: 'standard' as const,
+      title: 'Стандартный контраст',
+      hint: 'Балансированный Material 3 режим для повседневной переписки и мягких tonal-переходов.',
+      icon: 'mdi-contrast-box',
     },
     {
-      key: 'void' as const,
-      title: 'Void',
-      hint: 'Сверхминималистичная почти монохромная чёрная тема без лишнего свечения.',
+      key: 'high' as const,
+      title: 'Повышенный контраст',
+      hint: 'Усиливает разделение surface-слоёв, контуров и текста для более читаемого интерфейса.',
+      icon: 'mdi-circle-opacity',
     },
   ]
 
@@ -305,15 +378,52 @@ export function useMessengerSettings() {
     window.localStorage.removeItem(MESSENGER_SETTINGS_STORAGE_KEY)
   }
 
+  function bindSystemThemePreference() {
+    if (!import.meta.client || systemThemeBindingInitialized) {
+      return
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const applyPreference = () => {
+      systemPrefersDark.value = mediaQuery.matches
+    }
+
+    applyPreference()
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', applyPreference)
+    } else {
+      mediaQuery.addListener(applyPreference)
+    }
+
+    systemThemeBindingInitialized = true
+  }
+
+  const resolvedTheme = computed(() => resolveMessengerColorSchemeSelection(
+    settings.value.themes.active,
+    settings.value.themes.mode,
+    settings.value.themes.contrast,
+    systemPrefersDark.value,
+  ))
+  const resolvedMode = computed(() => resolvedTheme.value.resolvedMode)
+  const vuetifyThemeName = computed(() => resolvedTheme.value.themeName)
+
   function hydrate() {
     if (ready.value) {
       return
     }
 
+    bindSystemThemePreference()
     settings.value = mergeMessengerSettings(readStoredMessengerSettings())
     const storedThemePreferences = readStoredThemePreferences()
     if (storedThemePreferences?.active) {
       settings.value.themes.active = storedThemePreferences.active
+    }
+    if (storedThemePreferences?.mode) {
+      settings.value.themes.mode = storedThemePreferences.mode
+    }
+    if (storedThemePreferences?.contrast) {
+      settings.value.themes.contrast = storedThemePreferences.contrast
     }
     if (storedThemePreferences?.style) {
       settings.value.themes.style = storedThemePreferences.style
@@ -324,8 +434,10 @@ export function useMessengerSettings() {
     }
     applyReduceMotionPreference(settings.value.devices.reduceMotion)
     applyMessengerThemePreference(settings.value.themes.active)
+    applyMessengerThemeModePreference(settings.value.themes.mode, resolvedMode.value)
+    applyMessengerThemeContrastPreference(settings.value.themes.contrast)
     applyMessengerStylePreference(settings.value.themes.style)
-    persistThemePreferences(settings.value.themes.active, settings.value.themes.style)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.mode, settings.value.themes.contrast, settings.value.themes.style)
     ready.value = true
     void refreshPermissionStates()
   }
@@ -334,10 +446,30 @@ export function useMessengerSettings() {
     activeSection.value = section
   }
 
-  function setTheme(theme: MessengerThemeKey) {
+  function setTheme(theme: MessengerColorSchemeKey) {
     settings.value.themes.active = theme
     applyMessengerThemePreference(theme)
-    persistThemePreferences(settings.value.themes.active, settings.value.themes.style)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.mode, settings.value.themes.contrast, settings.value.themes.style)
+
+    if (ready.value) {
+      persist()
+    }
+  }
+
+  function setThemeMode(mode: MessengerThemeMode) {
+    settings.value.themes.mode = mode
+    applyMessengerThemeModePreference(mode, resolvedMode.value)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.mode, settings.value.themes.contrast, settings.value.themes.style)
+
+    if (ready.value) {
+      persist()
+    }
+  }
+
+  function setThemeContrast(contrast: MessengerThemeContrast) {
+    settings.value.themes.contrast = contrast
+    applyMessengerThemeContrastPreference(contrast)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.mode, settings.value.themes.contrast, settings.value.themes.style)
 
     if (ready.value) {
       persist()
@@ -347,7 +479,7 @@ export function useMessengerSettings() {
   function setStyle(style: MessengerStyleKey) {
     settings.value.themes.style = style
     applyMessengerStylePreference(style)
-    persistThemePreferences(settings.value.themes.active, settings.value.themes.style)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.mode, settings.value.themes.contrast, settings.value.themes.style)
 
     if (ready.value) {
       persist()
@@ -356,6 +488,12 @@ export function useMessengerSettings() {
 
   function resetLocalSettings() {
     settings.value = createDefaultMessengerSettings()
+    bindSystemThemePreference()
+    applyReduceMotionPreference(settings.value.devices.reduceMotion)
+    applyMessengerThemePreference(settings.value.themes.active)
+    applyMessengerThemeModePreference(settings.value.themes.mode, resolvedMode.value)
+    applyMessengerThemeContrastPreference(settings.value.themes.contrast)
+    applyMessengerStylePreference(settings.value.themes.style)
     persist()
   }
 
@@ -400,9 +538,19 @@ export function useMessengerSettings() {
     persist()
     applyReduceMotionPreference(settings.value.devices.reduceMotion)
     applyMessengerThemePreference(settings.value.themes.active)
+    applyMessengerThemeModePreference(settings.value.themes.mode, resolvedMode.value)
+    applyMessengerThemeContrastPreference(settings.value.themes.contrast)
     applyMessengerStylePreference(settings.value.themes.style)
-    persistThemePreferences(settings.value.themes.active, settings.value.themes.style)
+    persistThemePreferences(settings.value.themes.active, settings.value.themes.mode, settings.value.themes.contrast, settings.value.themes.style)
   }, { deep: true })
+
+  watch(resolvedMode, (nextMode) => {
+    if (!ready.value) {
+      return
+    }
+
+    applyMessengerThemeModePreference(settings.value.themes.mode, nextMode)
+  })
 
   const currentDevice = computed(() => {
     if (!import.meta.client) {
@@ -470,16 +618,23 @@ export function useMessengerSettings() {
     style,
     sections,
     themeOptions,
+    themeModeOptions,
+    themeContrastOptions,
     styleOptions,
     activeSection,
     sessionStartedAt,
     currentDevice,
     permissionState,
     browserCapabilities,
+    resolvedTheme,
+    resolvedMode,
+    vuetifyThemeName,
     ready,
     hydrate,
     openSection,
     setTheme,
+    setThemeMode,
+    setThemeContrast,
     setStyle,
     resetLocalSettings,
     refreshPermissionStates,
