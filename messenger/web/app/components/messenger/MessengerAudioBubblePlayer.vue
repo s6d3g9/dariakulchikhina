@@ -8,15 +8,12 @@ const audioEl = ref<HTMLAudioElement | null>(null)
 const isPlaying = ref(false)
 const currentTime = ref(0)
 const duration = ref(0)
-const waveformLevels = ref<number[]>(Array.from({ length: 40 }, () => 0.2))
 
 watch(() => props.src, async () => {
   isPlaying.value = false
   currentTime.value = 0
   duration.value = 0
-  waveformLevels.value = Array.from({ length: 40 }, () => 0.2)
   await nextTick()
-  void buildWaveform()
 }, { immediate: true })
 
 onBeforeUnmount(() => {
@@ -40,48 +37,6 @@ function formatTime(totalSeconds: number) {
   const minutes = Math.floor(seconds / 60)
   const rest = seconds % 60
   return `${minutes}:${String(rest).padStart(2, '0')}`
-}
-
-function extractWaveformLevels(buffer: AudioBuffer, barCount = 40) {
-  const channel = buffer.getChannelData(0)
-  const chunkSize = Math.max(1, Math.floor(channel.length / barCount))
-  const output: number[] = []
-  let maxSample = 0
-
-  for (let index = 0; index < barCount; index += 1) {
-    const start = index * chunkSize
-    const end = Math.min(channel.length, start + chunkSize)
-    let peak = 0
-
-    for (let cursor = start; cursor < end; cursor += 1) {
-      peak = Math.max(peak, Math.abs(channel[cursor] || 0))
-    }
-
-    output.push(peak)
-    maxSample = Math.max(maxSample, peak)
-  }
-
-  return output.map(value => clamp(maxSample ? value / maxSample : 0.2, 0.12, 1))
-}
-
-async function buildWaveform() {
-  if (!import.meta.client || typeof AudioContext === 'undefined') {
-    return
-  }
-
-  const context = new AudioContext()
-
-  try {
-    const response = await fetch(props.src)
-    const buffer = await response.arrayBuffer()
-    const decoded = await context.decodeAudioData(buffer.slice(0))
-    waveformLevels.value = extractWaveformLevels(decoded)
-    duration.value = decoded.duration || duration.value
-  } catch {
-    waveformLevels.value = Array.from({ length: 40 }, (_, index) => 0.16 + ((index % 6) * 0.08))
-  } finally {
-    void context.close().catch(() => {})
-  }
 }
 
 function handleLoadedMetadata() {
@@ -142,18 +97,16 @@ function handleSeek(event: Event) {
       @click.stop="togglePlayback"
     />
 
-    <div class="voice-player-card__body">
-      <div class="voice-player-card__waveform-shell">
+    <div class="voice-player-card__summary">
+      <div class="voice-player-card__meta-row">
+        <span class="voice-player-card__label">{{ props.label || 'Голосовое сообщение' }}</span>
+        <span class="voice-player-card__time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
+      </div>
+
+      <div class="voice-player-card__rail" :class="{ 'voice-player-card__rail--active': isPlaying }">
         <div class="voice-player-card__progress"></div>
-        <div class="voice-player-card__waveform">
-          <span
-            v-for="(level, index) in waveformLevels"
-            :key="`${props.src}-${index}`"
-            class="voice-player-card__bar"
-            :class="{ 'voice-player-card__bar--active': duration ? (index / waveformLevels.length) <= (currentTime / duration) : false }"
-            :style="{ height: `${Math.max(10, Math.round(level * 100))}%` }"
-          ></span>
-        </div>
+        <div class="voice-player-card__flow"></div>
+        <div class="voice-player-card__sheen"></div>
         <input
           class="voice-player-card__seek"
           type="range"
@@ -164,12 +117,6 @@ function handleSeek(event: Event) {
           aria-label="Перемотка голосового сообщения"
           @input="handleSeek"
         >
-      </div>
-
-      <div class="voice-player-card__meta">
-        <span class="voice-player-card__label">{{ props.label || 'Голосовое сообщение' }}</span>
-        <span class="voice-player-card__time">{{ formatTime(currentTime) }}</span>
-        <span class="voice-player-card__time">{{ formatTime(duration) }}</span>
       </div>
     </div>
 

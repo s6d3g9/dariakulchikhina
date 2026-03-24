@@ -32,21 +32,26 @@ const emit = defineEmits<{
 const audioEl = ref<HTMLAudioElement | null>(null)
 const isPlaying = ref(false)
 const currentTime = ref(0)
-const activeTrimHandle = ref<'start' | 'end' | null>(null)
 
 const duration = computed(() => Math.max(props.audioDraft?.duration || 0, props.recordingSeconds || 0, 0.01))
 const trimStart = computed(() => props.audioDraft?.trimStart || 0)
 const trimEnd = computed(() => props.audioDraft?.trimEnd || duration.value)
 const trimmedDuration = computed(() => Math.max(trimEnd.value - trimStart.value, 0))
-const waveformLevels = computed(() => {
-  const levels = props.mode === 'recording' ? props.recordingLevels : props.audioDraft?.waveformLevels
-  return levels?.length ? levels : Array.from({ length: 56 }, () => 0.18)
+const progressPercent = computed(() => {
+  if (props.mode === 'recording') {
+    return Math.min(100, Math.max(18, (props.recordingIntensity || 0.12) * 160))
+  }
+
+  if (!trimmedDuration.value) {
+    return 0
+  }
+
+  return Math.min(100, Math.max(0, ((currentTime.value - trimStart.value) / trimmedDuration.value) * 100))
 })
+const previewTimeLabel = computed(() => `${formatTime(currentTime.value)} / ${formatTime(trimmedDuration.value || duration.value)}`)
 
 const styleVars = computed<Record<string, string>>(() => ({
-  '--audio-trim-start': `${(trimStart.value / duration.value) * 100}%`,
-  '--audio-trim-end': `${(trimEnd.value / duration.value) * 100}%`,
-  '--audio-progress': `${(currentTime.value / duration.value) * 100}%`,
+  '--audio-progress': `${progressPercent.value}%`,
   '--audio-recording-intensity': String(Math.max(0.12, props.recordingIntensity || 0.12)),
 }))
 
@@ -146,163 +151,83 @@ function handleSeek(event: Event) {
   audioEl.value.currentTime = nextValue
   currentTime.value = nextValue
 }
-
-function handleTrimStart(event: Event) {
-  const target = event.target as HTMLInputElement
-  const nextValue = clamp(Number(target.value), 0, Math.max(trimEnd.value - 0.35, 0))
-  emit('update:trim-start', nextValue)
-}
-
-function handleTrimEnd(event: Event) {
-  const target = event.target as HTMLInputElement
-  const nextValue = clamp(Number(target.value), Math.min(trimStart.value + 0.35, duration.value), duration.value)
-  emit('update:trim-end', nextValue)
-}
-
-function setActiveTrimHandle(handle: 'start' | 'end' | null) {
-  activeTrimHandle.value = handle
-}
 </script>
 
 <template>
-  <div class="audio-draft" :class="[`audio-draft--${props.mode}`]" :style="styleVars">
-    <div class="audio-draft__header">
-      <VBtn
-        type="button"
-        class="audio-draft__header-btn"
-        icon
-        variant="text"
-        aria-label="Отменить аудио"
-        :disabled="props.pending"
-        @click="emit('cancel')"
-      >
-        <MessengerIcon name="close" :size="18" />
-      </VBtn>
+  <div class="audio-draft" :class="{ 'audio-draft--recording': props.mode === 'recording', 'audio-draft--preview': props.mode === 'preview' }" :style="styleVars">
+    <VBtn
+      type="button"
+      class="audio-draft__edge-btn"
+      icon
+      variant="text"
+      aria-label="Отменить аудио"
+      :disabled="props.pending"
+      @click="emit('cancel')"
+    >
+      <MessengerIcon name="close" :size="18" />
+    </VBtn>
 
-      <div class="audio-draft__status">
-        <p class="audio-draft__eyebrow">{{ props.mode === 'recording' ? 'Запись аудиосообщения' : 'Голосовое сообщение' }}</p>
-        <p class="audio-draft__title">{{ props.mode === 'recording' ? 'Идёт запись, поле реагирует на голос' : 'Прослушайте, перемотайте и обрежьте перед отправкой' }}</p>
+    <div class="audio-draft__summary">
+      <div class="audio-draft__meta-row">
+        <button
+          v-if="props.mode === 'preview'"
+          type="button"
+          class="audio-draft__state-btn"
+          :aria-label="isPlaying ? 'Пауза' : 'Прослушать аудио'"
+          :disabled="props.pending"
+          @click="togglePlayback"
+        >
+          <VIcon size="16">{{ isPlaying ? 'mdi-pause' : 'mdi-play' }}</VIcon>
+        </button>
+        <span v-else class="audio-draft__state-chip" aria-hidden="true">
+          <span class="audio-draft__record-dot"></span>
+        </span>
+
+        <span class="audio-draft__label">{{ props.mode === 'recording' ? 'Запись аудио' : 'Голосовое сообщение' }}</span>
+        <span class="audio-draft__time">{{ props.mode === 'recording' ? formatTime(props.recordingSeconds) : previewTimeLabel }}</span>
       </div>
 
-      <VBtn
-        type="button"
-        class="audio-draft__header-btn audio-draft__header-btn--primary"
-        icon
-        :variant="props.mode === 'recording' ? 'tonal' : 'flat'"
-        :color="props.mode === 'recording' ? undefined : 'primary'"
-        :aria-label="props.mode === 'recording' ? 'Остановить запись' : 'Отправить аудиосообщение'"
-        :disabled="props.pending"
-        @click="emit('primary-action')"
-      >
-        <VIcon v-if="props.mode === 'recording'">mdi-stop</VIcon>
-        <MessengerIcon v-else name="send" :size="18" />
-      </VBtn>
-    </div>
-
-    <div class="audio-draft__surface">
-      <div class="audio-draft__waveform-rail">
-        <div class="audio-draft__shade audio-draft__shade--before"></div>
-        <div class="audio-draft__shade audio-draft__shade--after"></div>
-        <div class="audio-draft__trim-window"></div>
+      <div class="audio-draft__rail" :class="{ 'audio-draft__rail--active': props.mode === 'recording' || isPlaying }">
         <div class="audio-draft__progress"></div>
-        <div class="audio-draft__trim-outline"></div>
-        <div class="audio-draft__waveform">
-          <span
-            v-for="(level, index) in waveformLevels"
-            :key="`${props.mode}-${index}`"
-            class="audio-draft__bar"
-            :style="{ height: `${Math.max(10, Math.round(level * 100))}%` }"
-          ></span>
-        </div>
-
-        <template v-if="props.mode === 'preview' && props.audioDraft">
-          <input
-            class="audio-draft__range audio-draft__range--seek"
-            type="range"
-            :min="0"
-            :max="props.audioDraft.duration"
-            :step="0.01"
-            :value="currentTime"
-            aria-label="Перемотка аудио"
-            @input="handleSeek"
-          >
-          <input
-            class="audio-draft__range audio-draft__range--trim-start"
-            type="range"
-            :min="0"
-            :max="props.audioDraft.duration"
-            :step="0.01"
-            :value="props.audioDraft.trimStart"
-            aria-label="Начало обрезки"
-            @pointerdown="setActiveTrimHandle('start')"
-            @input="handleTrimStart"
-            @pointerup="setActiveTrimHandle(null)"
-            @blur="setActiveTrimHandle(null)"
-          >
-          <input
-            class="audio-draft__range audio-draft__range--trim-end"
-            type="range"
-            :min="0"
-            :max="props.audioDraft.duration"
-            :step="0.01"
-            :value="props.audioDraft.trimEnd"
-            aria-label="Конец обрезки"
-            @pointerdown="setActiveTrimHandle('end')"
-            @input="handleTrimEnd"
-            @pointerup="setActiveTrimHandle(null)"
-            @blur="setActiveTrimHandle(null)"
-          >
-          <div
-            class="audio-draft__handle audio-draft__handle--start"
-            :class="{ 'audio-draft__handle--active': activeTrimHandle === 'start' }"
-            aria-hidden="true"
-          >
-            <span class="audio-draft__handle-grip"></span>
-          </div>
-          <div
-            class="audio-draft__handle audio-draft__handle--end"
-            :class="{ 'audio-draft__handle--active': activeTrimHandle === 'end' }"
-            aria-hidden="true"
-          >
-            <span class="audio-draft__handle-grip"></span>
-          </div>
-        </template>
-      </div>
-
-      <div class="audio-draft__controls">
-        <template v-if="props.mode === 'preview' && props.audioDraft">
-          <VBtn
-            type="button"
-            class="audio-draft__play-btn"
-            :icon="isPlaying ? 'mdi-pause' : 'mdi-play'"
-            variant="tonal"
-            @click="togglePlayback"
-          />
-          <div class="audio-draft__metrics">
-            <span class="audio-draft__metric">{{ formatTime(currentTime) }}</span>
-            <span class="audio-draft__metric audio-draft__metric--trim">{{ formatTime(trimStart) }} – {{ formatTime(trimEnd) }}</span>
-            <span class="audio-draft__metric">{{ formatTime(trimmedDuration) }}</span>
-          </div>
-          <audio
-            ref="audioEl"
-            class="audio-draft__audio"
-            preload="metadata"
-            :src="props.audioDraft.url"
-            @loadedmetadata="handleLoadedMetadata"
-            @timeupdate="handleTimeUpdate"
-            @pause="isPlaying = false"
-            @play="isPlaying = true"
-          />
-        </template>
-
-        <template v-else>
-          <div class="audio-draft__metrics audio-draft__metrics--recording">
-            <span class="audio-draft__record-dot"></span>
-            <span class="audio-draft__metric">{{ formatTime(props.recordingSeconds) }}</span>
-            <span class="audio-draft__metric audio-draft__metric--trim">Градиент и waveform реагируют на громкость записи</span>
-          </div>
-        </template>
+        <div class="audio-draft__flow"></div>
+        <div class="audio-draft__sheen"></div>
+        <input
+          v-if="props.mode === 'preview' && props.audioDraft"
+          class="audio-draft__seek"
+          type="range"
+          :min="trimStart"
+          :max="trimEnd"
+          :step="0.01"
+          :value="currentTime"
+          aria-label="Перемотка аудио"
+          @input="handleSeek"
+        >
       </div>
     </div>
+
+    <VBtn
+      type="button"
+      class="audio-draft__edge-btn audio-draft__edge-btn--primary"
+      icon
+      variant="flat"
+      color="primary"
+      :aria-label="props.mode === 'recording' ? 'Остановить запись' : 'Отправить аудиосообщение'"
+      :disabled="props.pending"
+      @click="emit('primary-action')"
+    >
+      <VIcon>{{ props.mode === 'recording' ? 'mdi-stop' : 'mdi-send' }}</VIcon>
+    </VBtn>
+
+    <audio
+      v-if="props.mode === 'preview'"
+      ref="audioEl"
+      class="audio-draft__audio"
+      preload="metadata"
+      :src="props.audioDraft?.url"
+      @loadedmetadata="handleLoadedMetadata"
+      @timeupdate="handleTimeUpdate"
+      @pause="isPlaying = false"
+      @play="isPlaying = true"
+    />
   </div>
 </template>
