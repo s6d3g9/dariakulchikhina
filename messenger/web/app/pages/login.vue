@@ -21,10 +21,6 @@ onMounted(async () => {
   }
 })
 
-onUpdated(() => {
-  bindInputKeyboardFlow()
-})
-
 onBeforeUnmount(() => {
   for (const cleanup of inputCleanupHandlers.splice(0)) {
     cleanup()
