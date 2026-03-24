@@ -1,6 +1,6 @@
 <template>
   <div class="atz-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading atz-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
       <div v-for="(sec, si) in sections" :key="si" class="atz-card glass-card">
         <div class="atz-card-label">раздел: {{ sec.title || '(без названия)' }}</div>
@@ -67,7 +67,11 @@
       <button class="atz-btn-add glass-chip" style="margin-bottom:12px" @click="addSec">+ новый раздел</button>
       <div class="atz-actions">
         <p v-if="error" style="color:var(--ds-error, #c00);font-size:.8rem;margin-right:auto">{{ error }}</p>
-        <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</button>
+        <div v-if="saving" class="u-inline-loading atz-inline-loading" aria-live="polite">
+          <span class="u-inline-loading__label">[ СОХРАНЯЕМ ТЗ ]</span>
+          <span class="u-inline-loading__line" />
+        </div>
+        <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? 'сохраняем...' : 'сохранить' }}</button>
       </div>
     </template>
   </div>
@@ -156,6 +160,9 @@ async function save() {
   border-left: 3px solid color-mix(in srgb, var(--glass-text) 60%, #1a1a1a 40%);
   padding: 20px;
   margin-bottom: 16px;
+}
+.atz-content-loading::before {
+  content: '[ ЗАГРУЖАЕМ ТЗ ]';
 }
 .atz-card-label {
   font-size: .9rem;
@@ -264,6 +271,10 @@ async function save() {
   align-items: center;
   margin-top: 20px;
 }
+.atz-inline-loading {
+  min-width: 220px;
+  margin-right: auto;
+}
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
@@ -278,6 +289,11 @@ async function save() {
   .atz-actions {
     flex-direction: column;
     gap: 8px;
+  }
+  .atz-inline-loading {
+    width: 100%;
+    min-width: 0;
+    margin-right: 0;
   }
   .atz-actions .a-btn-save,
   .atz-btn-add { width: 100%; }

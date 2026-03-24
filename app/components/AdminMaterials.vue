@@ -1,6 +1,6 @@
 <template>
   <div class="am-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading am-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
       <div v-for="(tab, ti) in tabs" :key="ti" class="am-card glass-card">
         <div class="am-card-label">вкладка: {{ tab.title || '(без названия)' }}</div>
@@ -66,7 +66,11 @@
       <button class="am-btn-add glass-chip" style="margin-bottom:12px" @click="addTab">+ новая вкладка</button>
       <div class="am-actions">
         <p v-if="error" style="color:var(--ds-error, #c00);font-size:.8rem;margin-right:auto">{{ error }}</p>
-        <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</button>
+        <div v-if="saving" class="u-inline-loading am-inline-loading" aria-live="polite">
+          <span class="u-inline-loading__label">[ СОХРАНЯЕМ МАТЕРИАЛЫ ]</span>
+          <span class="u-inline-loading__line" />
+        </div>
+        <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? 'сохраняем...' : 'сохранить' }}</button>
       </div>
     </template>
   </div>
@@ -164,6 +168,9 @@ async function save() {
   border-left: 3px solid color-mix(in srgb, var(--glass-text) 60%, #1a1a1a 40%);
   padding: 20px;
   margin-bottom: 16px;
+}
+.am-content-loading::before {
+  content: '[ ЗАГРУЖАЕМ МАТЕРИАЛЫ ]';
 }
 .am-card-label {
   font-size: .9rem;
@@ -272,6 +279,10 @@ async function save() {
   align-items: center;
   margin-top: 20px;
 }
+.am-inline-loading {
+  min-width: 260px;
+  margin-right: auto;
+}
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
@@ -285,6 +296,11 @@ async function save() {
   .am-actions {
     flex-direction: column;
     gap: 8px;
+  }
+  .am-inline-loading {
+    width: 100%;
+    min-width: 0;
+    margin-right: 0;
   }
   .am-actions .a-btn-save,
   .am-btn-add { width: 100%; }

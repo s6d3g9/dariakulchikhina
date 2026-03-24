@@ -1,6 +1,6 @@
 <template>
   <div class="acso-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading acso-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Status banner -->
@@ -57,7 +57,10 @@
           {{ form.cso_file ? 'заменить файл' : '📎 загрузить подписанный акт' }}
           <input type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" style="display:none" @change="uploadFile">
         </label>
-        <span v-if="uploading" class="acso-uploading">загрузка...</span>
+        <div v-if="uploading" class="u-inline-loading acso-inline-loading" aria-live="polite">
+          <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ПОДПИСАННЫЙ АКТ ]</span>
+          <span class="u-inline-loading__line" />
+        </div>
       </div>
 
       <div v-if="form.cso_status === 'signed'" class="acso-complete-card">
@@ -124,10 +127,12 @@ async function uploadFile(e: Event) {
 
 <style scoped>
 .acso-wrap { padding: 4px 0 40px; }
+.acso-content-loading::before { content: '[ ЗАГРУЖАЕМ АКТ ПОДПИСАНИЯ ]'; }
 .acso-loading { padding: 40px 0; font-size: .82rem; color: var(--ds-muted, #aaa); }
 .acso-banner { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--border, #ececec); margin-bottom: 28px; }
 .acso-banner--signed { border-color: var(--ds-success, #5caa7f); background: color-mix(in srgb, var(--ds-success, #5caa7f) 8%, transparent); }
 .acso-banner--disputed { border-color: var(--ds-warning, #e8b84b); background: color-mix(in srgb, var(--ds-warning, #e8b84b) 8%, transparent); }
 .acso-banner-icon { font-size: 1.6rem; }
 .acso-banner-body { display: flex; align-items: center; gap: 12px; flex: 1; flex-wrap: wrap; }
+.acso-inline-loading { margin-top: 12px; max-width: 320px; }
 </style>

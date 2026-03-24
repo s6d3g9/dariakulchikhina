@@ -1,6 +1,6 @@
 <template>
   <div class="ass-wrap">
-    <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
+    <div v-if="pending" class="ent-content-loading ass-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
 
       <!-- Section: Visit Info -->
@@ -85,7 +85,10 @@
             <span>📎 прикрепить файл</span>
             <input type="file" style="display:none" @change="uploadFile" :accept="uploadAccept">
           </label>
-          <span v-if="uploading" class="ass-uploading">загрузка...</span>
+          <div v-if="uploading" class="u-inline-loading ass-inline-loading" aria-live="polite">
+            <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ МАТЕРИАЛЫ ОБСЛЕДОВАНИЯ ]</span>
+            <span class="u-inline-loading__line" />
+          </div>
         </div>
       </div>
 
@@ -256,6 +259,7 @@ async function save() {
 
 <style scoped>
 .ass-wrap { padding: 4px 0 48px; }
+.ass-content-loading::before { content: '[ ЗАГРУЖАЕМ ОБСЛЕДОВАНИЕ ]'; }
 .ass-loading { font-size: .88rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); }
 
 /* Sections */
@@ -315,6 +319,7 @@ async function save() {
 }
 .ass-upload-btn:hover { border-color: var(--text, #1a1a1a); }
 .ass-uploading { font-size: .78rem; color: color-mix(in srgb, var(--glass-text) 55%, transparent); margin-left: 8px; }
+.ass-inline-loading { margin-top: 6px; max-width: 360px; }
 
 /* Footer */
 .ass-footer { display: flex; justify-content: flex-end; padding-top: 20px; border-top: 1px solid var(--border, #ececec); }
@@ -330,6 +335,7 @@ async function save() {
 @media (max-width: 768px) {
   .ass-checks-grid { grid-template-columns: 1fr; }
   .ass-upload-row { flex-wrap: wrap; gap: 8px; }
+  .ass-inline-loading { max-width: none; width: 100%; }
   .ass-file-item { flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
   .ass-footer { padding-top: 16px; }
   .ass-btn-save { width: 100%; text-align: center; }
