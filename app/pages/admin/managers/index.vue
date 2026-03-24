@@ -1,5 +1,11 @@
 <template>
   <AdminEntityPageShell :has-selection="Boolean(selectedManagerId)" :show-create="showCreate">
+    <template #before>
+      <div v-if="pending && !allManagers?.length" class="u-inline-loading" aria-hidden="true">
+        <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ МЕНЕДЖЕРОВ ]</span>
+        <span class="u-inline-loading__line"></span>
+      </div>
+    </template>
     <template #selected>
       <div class="ent-wipe-host">
       <AdminEntityCabinetShell

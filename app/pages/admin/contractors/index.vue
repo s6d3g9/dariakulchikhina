@@ -1,5 +1,9 @@
 <template>
   <div class="ct-page" :class="{ 'ct-page--brutalist': isBrutalistContractorsMode }">
+    <div v-if="pending && !contractors?.length && !hasContractorsCache" class="u-inline-loading ct-inline-loading" aria-hidden="true">
+      <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ПОДРЯДЧИКОВ ]</span>
+      <span class="u-inline-loading__line"></span>
+    </div>
     <div v-if="projectSlugFilter" class="ct-filter-info glass-surface glass-card" :class="{ 'ct-filter-info--brutalist': isBrutalistContractorsMode }">
       <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
@@ -67,7 +71,10 @@
               </div>
               <template v-if="isEditMode">
                 <div class="ct-form-section">проекты</div>
-                <div v-if="projectsLoading" class="ct-form-hint">Загрузка проектов...</div>
+                <div v-if="projectsLoading" class="u-inline-loading ct-modal-loading" aria-hidden="true">
+                  <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ПРОЕКТЫ ]</span>
+                  <span class="u-inline-loading__line"></span>
+                </div>
                 <div v-else-if="projectsError" class="ct-form-error">{{ projectsError }}</div>
                 <div v-else-if="!allProjects.length" class="ct-form-hint">Нет проектов</div>
                 <div v-else class="ct-project-pool">
@@ -152,7 +159,10 @@
             <!-- ═══ TAB: Документы ═══ -->
             <div v-if="isEditMode && modalTab === 'documents'" class="ct-tab-content">
               <div class="ct-form-section">загруженные документы</div>
-              <div v-if="docsLoading" class="ct-form-hint">Загрузка...</div>
+              <div v-if="docsLoading" class="u-inline-loading ct-modal-loading" aria-hidden="true">
+                <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ДОКУМЕНТЫ ]</span>
+                <span class="u-inline-loading__line"></span>
+              </div>
               <div v-else-if="!contractorDocs.length" class="ct-form-hint" style="text-align:center;padding:24px 0;opacity:0.5">Подрядчик пока не загрузил документы</div>
               <div v-else class="ct-docs-list">
                 <div v-for="doc in contractorDocs" :key="doc.id" class="ct-doc-row">
@@ -396,6 +406,10 @@ async function del(id: number) {
 .ct-page {
   width: 100%;
 }
+
+.ct-inline-loading {
+  margin-bottom: 14px;
+}
 .ct-wipe-host { position: relative; }
 
 .ct-page--brutalist {
@@ -441,6 +455,7 @@ html.dark .ct-badge--master { background: rgba(99,140,255,.15); color: #82a5ff; 
 .ct-form-hint { font-size: var(--ds-text-xs, .78rem); color: var(--glass-text); opacity: .4; margin-bottom: 8px; }
 .ct-form-error { font-size: var(--ds-text-xs, .78rem); color: var(--ds-error, #dc2626); margin-bottom: 8px; }
 .ct-form-error--bottom { margin-top: 8px; }
+.ct-modal-loading { margin-bottom: 12px; }
 
 .ct-project-pool-title { font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; opacity: .48; margin-bottom: 6px; }
 .ct-projects-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }

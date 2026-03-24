@@ -1308,6 +1308,47 @@ html.dark select optgroup {
   opacity: .55;
 }
 
+.u-inline-loading {
+  display: grid;
+  gap: 8px;
+}
+
+.u-inline-loading__label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .55;
+}
+
+.u-inline-loading__line {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.u-inline-loading__line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 24%;
+  background: color-mix(in srgb, var(--glass-text) 56%, transparent);
+  animation: u-inline-loading-slide 1.15s linear infinite;
+}
+
+@keyframes u-inline-loading-slide {
+  from {
+    transform: translateX(-150%);
+  }
+  to {
+    transform: translateX(430%);
+  }
+}
+
 .ent-skeleton-line {
   height: 16px;
   border-radius: 4px 4px 0 0px;
