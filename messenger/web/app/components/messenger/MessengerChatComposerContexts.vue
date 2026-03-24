@@ -111,7 +111,12 @@ const emit = defineEmits<{
           </VChip>
         </div>
         <div class="forward-targets forward-targets--minimal">
-          <p v-if="contactsPending" class="composer-media-menu__empty">[ ИЩЕМ ПОЛЬЗОВАТЕЛЕЙ... ]</p>
+          <template v-if="contactsPending">
+            <div class="composer-context__progress">
+              <MessengerProgressLinear aria-label="Поиск пользователей для пересылки" indeterminate four-color compact />
+            </div>
+            <p class="composer-media-menu__empty">[ ИЩЕМ ПОЛЬЗОВАТЕЛЕЙ... ]</p>
+          </template>
           <button
             v-for="target in availableForwardTargets"
             v-else

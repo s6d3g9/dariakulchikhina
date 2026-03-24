@@ -20,6 +20,7 @@ const props = defineProps<{
   activeKlipyKind: 'gif' | 'sticker' | null
   canLoadMoreKlipyItems: boolean
   mediaUploadPending: boolean
+  klipyPending: boolean
   klipyStatusText: string
   formatKlipyCategoryTag: (query: string) => string
   klipyTileStyle: (item: MessengerKlipyItem) => Record<string, string>
@@ -162,6 +163,9 @@ defineExpose({
 
         <!-- Stickers / GIF (KLIPY) (Layer 1) -->
         <div v-if="tab === 'stickers' || tab === 'gif'" class="composer-media-menu__catalog">
+          <div v-if="klipyPending" class="composer-media-menu__progress">
+            <MessengerProgressLinear aria-label="Загрузка каталога KLIPY" indeterminate four-color compact />
+          </div>
           <p v-if="klipyStatusText" class="composer-media-menu__status">{{ klipyStatusText }}</p>
           <div class="composer-media-menu__watermark">KLIPY</div>
 

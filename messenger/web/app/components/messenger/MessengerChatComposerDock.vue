@@ -124,6 +124,13 @@ defineExpose({
           >
             <span v-if="props.isRecording" class="label-medium">{{ `${props.recordingSeconds}s` }}</span>
             <MessengerIcon v-else-if="props.composerPrimaryMode === 'record'" name="microphone" :size="22" />
+            <MessengerProgressCircular
+              v-else-if="props.messagePending"
+              class="composer-btn__progress"
+              aria-label="Отправка сообщения"
+              indeterminate
+              size="sm"
+            />
             <MessengerIcon v-else name="send" :size="22" />
           </VBtn>
         </template>

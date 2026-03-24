@@ -229,8 +229,11 @@ function markTouched(field: keyof typeof touched) {
             {{ errorMessage }}
           </VAlert>
 
-          <VBtn type="submit" block :disabled="!canSubmit" variant="flat">
-            {{ pending ? 'Создаем...' : 'Создать аккаунт' }}
+          <VBtn type="submit" block :disabled="!canSubmit" variant="flat" class="auth-submit">
+            <span class="auth-submit__content">
+              <MessengerProgressCircular v-if="pending" class="auth-submit__progress" aria-label="Регистрация выполняется" indeterminate size="sm" />
+              <span>{{ pending ? 'Создаем...' : 'Создать аккаунт' }}</span>
+            </span>
           </VBtn>
         </VForm>
       </VCardText>

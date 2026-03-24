@@ -59,8 +59,11 @@ async function submit() {
             {{ errorMessage }}
           </VAlert>
 
-          <VBtn type="submit" block :disabled="pending" variant="flat">
-            {{ pending ? 'Входим...' : 'Войти' }}
+          <VBtn type="submit" block :disabled="pending" variant="flat" class="auth-submit">
+            <span class="auth-submit__content">
+              <MessengerProgressCircular v-if="pending" class="auth-submit__progress" aria-label="Вход выполняется" indeterminate size="sm" />
+              <span>{{ pending ? 'Входим...' : 'Войти' }}</span>
+            </span>
           </VBtn>
         </VForm>
       </VCardText>

@@ -2219,6 +2219,14 @@ function handleDocumentPointerDown(event: PointerEvent) {
   activeReactionOverlayId.value = null
 }
 
+function handleChatAreaPointerDown() {
+  if (!composerMediaMenuVisible.value) {
+    return
+  }
+
+  composerMediaMenuOpen.value = false
+}
+
 function relationTitle(mode: 'reply' | 'comment' | null) {
   if (mode === 'reply') {
     return 'Ответ'
@@ -2319,6 +2327,7 @@ onBeforeUnmount(() => {
         @set-call-view-mode="calls.setCallViewMode($event)"
         @hangup-call="calls.hangupCall()"
         @back="navigation.openSection('chats')"
+        @pointerdown="handleChatAreaPointerDown"
       />
 
 
@@ -2352,7 +2361,7 @@ onBeforeUnmount(() => {
         @clear-selected-klipy-item="clearSelectedKlipyItem"
       />
 
-      <div class="chat-reading-shell">
+      <div class="chat-reading-shell" @pointerdown="handleChatAreaPointerDown">
         <div v-if="desktopDropActive || dragDropPending" class="chat-dropzone" aria-live="polite">
           <p class="chat-dropzone__title">Перетащите файлы сюда</p>
           <p class="chat-dropzone__hint">Файлы отправятся прямо в текущий чат</p>
@@ -2449,6 +2458,7 @@ onBeforeUnmount(() => {
         :active-klipy-kind="activeKlipyKind"
         :can-load-more-klipy-items="canLoadMoreKlipyItems"
         :media-upload-pending="mediaUploadPending"
+        :klipy-pending="klipy.pending.value"
         :klipy-status-text="klipyStatusText"
         :format-klipy-category-tag="formatKlipyCategoryTag"
         :klipy-tile-style="klipyTileStyle"

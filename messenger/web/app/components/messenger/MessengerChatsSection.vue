@@ -238,6 +238,9 @@ function formatChatPreview(chat: MessengerConversationItem) {
 <template>
   <section class="section-block section-block--chats" aria-label="Chats section">
     <VAlert v-if="actionError" type="error" class="ma-2">{{ actionError }}</VAlert>
+    <div v-if="conversations.pending.value" class="section-progress section-progress--floating">
+      <MessengerProgressLinear aria-label="Загрузка списка чатов" indeterminate four-color />
+    </div>
 
     <!-- Список чатов + FAB -->
     <div class="chats-list-wrap">
@@ -437,6 +440,9 @@ function formatChatPreview(chat: MessengerConversationItem) {
       <VCard>
         <VCardTitle>Новый чат</VCardTitle>
         <VCardText class="pa-0">
+          <div v-if="contacts.pending.value" class="section-progress">
+            <MessengerProgressLinear aria-label="Загрузка контактов для нового чата" indeterminate four-color />
+          </div>
           <VList v-if="contacts.overview.value.contacts.length" bg-color="transparent" density="comfortable">
             <VListItem
               v-for="contact in contacts.overview.value.contacts"

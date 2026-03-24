@@ -30,9 +30,11 @@ const emit = defineEmits<{
 }>()
 
 const audioEl = ref<HTMLAudioElement | null>(null)
+const railEl = ref<HTMLDivElement | null>(null)
 const isPlaying = ref(false)
 const currentTime = ref(0)
 const activeTrimHandle = ref<'start' | 'end' | null>(null)
+const activeTrimPointerId = ref<number | null>(null)
 
 const duration = computed(() => Math.max(props.audioDraft?.duration || 0, props.recordingSeconds || 0, 0.01))
 const trimStart = computed(() => props.audioDraft?.trimStart || 0)
@@ -50,6 +52,7 @@ const progressPercent = computed(() => {
   return Math.min(100, Math.max(0, ((currentTime.value - trimStart.value) / trimmedDuration.value) * 100))
 })
 const previewTimeLabel = computed(() => `${formatTime(currentTime.value)} / ${formatTime(trimmedDuration.value || duration.value)}`)
+const surfaceAnimated = computed(() => props.mode === 'recording' || isPlaying.value)
 
 const styleVars = computed<Record<string, string>>(() => ({
   '--audio-progress': `${progressPercent.value}%`,
@@ -74,6 +77,7 @@ watch([trimStart, trimEnd], () => {
 })
 
 onBeforeUnmount(() => {
+  stopTrimDrag()
   pauseAudio()
 })
 
@@ -170,10 +174,69 @@ function handleTrimEnd(event: Event) {
 function setActiveTrimHandle(handle: 'start' | 'end' | null) {
   activeTrimHandle.value = handle
 }
+
+function resolveTrimValueFromPointer(clientX: number) {
+  const rect = railEl.value?.getBoundingClientRect()
+  if (!rect || !rect.width) {
+    return null
+  }
+
+  const ratio = clamp((clientX - rect.left) / rect.width, 0, 1)
+  return ratio * duration.value
+}
+
+function handleTrimPointerMove(event: PointerEvent) {
+  if (!activeTrimHandle.value || (activeTrimPointerId.value !== null && event.pointerId !== activeTrimPointerId.value)) {
+    return
+  }
+
+  const nextValue = resolveTrimValueFromPointer(event.clientX)
+  if (nextValue === null) {
+    return
+  }
+
+  if (activeTrimHandle.value === 'start') {
+    emit('update:trim-start', clamp(nextValue, 0, Math.max(trimEnd.value - 0.35, 0)))
+    return
+  }
+
+  emit('update:trim-end', clamp(nextValue, Math.min(trimStart.value + 0.35, duration.value), duration.value))
+}
+
+function stopTrimDrag(pointerId?: number) {
+  if (pointerId !== undefined && activeTrimPointerId.value !== null && pointerId !== activeTrimPointerId.value) {
+    return
+  }
+
+  activeTrimPointerId.value = null
+  activeTrimHandle.value = null
+  window.removeEventListener('pointermove', handleTrimPointerMove)
+  window.removeEventListener('pointerup', handleTrimPointerUp)
+  window.removeEventListener('pointercancel', handleTrimPointerUp)
+}
+
+function handleTrimPointerUp(event: PointerEvent) {
+  stopTrimDrag(event.pointerId)
+}
+
+function startTrimDrag(handle: 'start' | 'end', event: PointerEvent) {
+  if (props.mode !== 'preview' || !props.audioDraft) {
+    return
+  }
+
+  event.preventDefault()
+  pauseAudio()
+  setActiveTrimHandle(handle)
+  activeTrimPointerId.value = event.pointerId
+  window.addEventListener('pointermove', handleTrimPointerMove)
+  window.addEventListener('pointerup', handleTrimPointerUp)
+  window.addEventListener('pointercancel', handleTrimPointerUp)
+  handleTrimPointerMove(event)
+}
 </script>
 
 <template>
-  <div class="audio-draft" :class="{ 'audio-draft--recording': props.mode === 'recording', 'audio-draft--preview': props.mode === 'preview' }" :style="styleVars">
+  <div class="audio-draft" :class="{ 'audio-draft--recording': props.mode === 'recording', 'audio-draft--preview': props.mode === 'preview', 'audio-draft--animated': surfaceAnimated }" :style="styleVars">
     <VBtn
       type="button"
       class="audio-draft__edge-btn"
@@ -206,10 +269,13 @@ function setActiveTrimHandle(handle: 'start' | 'end' | null) {
         <span class="audio-draft__time">{{ props.mode === 'recording' ? formatTime(props.recordingSeconds) : previewTimeLabel }}</span>
       </div>
 
-      <div class="audio-draft__rail" :class="{ 'audio-draft__rail--active': props.mode === 'recording' || isPlaying }">
+      <div ref="railEl" class="audio-draft__rail" :class="{ 'audio-draft__rail--active': surfaceAnimated }">
         <div class="audio-draft__progress"></div>
         <div class="audio-draft__flow"></div>
         <div class="audio-draft__sheen"></div>
+        <div class="audio-draft__wave audio-draft__wave--a"></div>
+        <div class="audio-draft__wave audio-draft__wave--b"></div>
+        <div class="audio-draft__wave audio-draft__wave--c"></div>
         <template v-if="props.mode === 'preview' && props.audioDraft">
           <div class="audio-draft__trim-window"></div>
           <div class="audio-draft__trim-outline"></div>
@@ -225,34 +291,30 @@ function setActiveTrimHandle(handle: 'start' | 'end' | null) {
           aria-label="Перемотка аудио"
           @input="handleSeek"
         >
-        <input
+        <div
           v-if="props.mode === 'preview' && props.audioDraft"
-          class="audio-draft__trim-range audio-draft__trim-range--start"
-          type="range"
-          :min="0"
-          :max="props.audioDraft.duration"
-          :step="0.01"
-          :value="trimStart"
+          class="audio-draft__trim-grip audio-draft__trim-grip--start"
+          :class="{ 'audio-draft__trim-grip--active': activeTrimHandle === 'start' }"
+          role="slider"
+          tabindex="0"
           aria-label="Начало обрезки"
-          @pointerdown="setActiveTrimHandle('start')"
-          @input="handleTrimStart"
-          @pointerup="setActiveTrimHandle(null)"
-          @blur="setActiveTrimHandle(null)"
-        >
-        <input
+          :aria-valuemin="0"
+          :aria-valuemax="Math.max(trimEnd - 0.35, 0)"
+          :aria-valuenow="trimStart"
+          @pointerdown="startTrimDrag('start', $event)"
+        ></div>
+        <div
           v-if="props.mode === 'preview' && props.audioDraft"
-          class="audio-draft__trim-range audio-draft__trim-range--end"
-          type="range"
-          :min="0"
-          :max="props.audioDraft.duration"
-          :step="0.01"
-          :value="trimEnd"
+          class="audio-draft__trim-grip audio-draft__trim-grip--end"
+          :class="{ 'audio-draft__trim-grip--active': activeTrimHandle === 'end' }"
+          role="slider"
+          tabindex="0"
           aria-label="Конец обрезки"
-          @pointerdown="setActiveTrimHandle('end')"
-          @input="handleTrimEnd"
-          @pointerup="setActiveTrimHandle(null)"
-          @blur="setActiveTrimHandle(null)"
-        >
+          :aria-valuemin="Math.min(trimStart + 0.35, duration)"
+          :aria-valuemax="duration"
+          :aria-valuenow="trimEnd"
+          @pointerdown="startTrimDrag('end', $event)"
+        ></div>
         <div
           v-if="props.mode === 'preview' && props.audioDraft"
           class="audio-draft__trim-handle audio-draft__trim-handle--start"

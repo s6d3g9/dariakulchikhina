@@ -383,6 +383,9 @@ async function submitAddContact() {
   <section class="section-block section-block--contacts" aria-label="Contacts section">
     <VAlert v-if="actionError" type="error" class="ma-2">{{ actionError }}</VAlert>
     <VAlert v-else-if="actionToast" type="success" class="ma-2">{{ actionToast }}</VAlert>
+    <div v-if="contacts.pending.value" class="section-progress section-progress--floating">
+      <MessengerProgressLinear aria-label="Загрузка контактов" indeterminate four-color />
+    </div>
 
     <!-- Tab Windows (content first, tabs at bottom) -->
     <VWindow v-model="contactsTab" class="section-list">
