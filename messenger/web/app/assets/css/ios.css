@@ -1,0 +1,192 @@
+/* ============================================================
+   iOS / iPhone Adaptations
+   Дополняет main.css — подключается после него в nuxt.config
+   ============================================================ */
+
+/* ── Safe area: верхняя зона (notch / Dynamic Island / статус-бар) ── */
+
+.messenger-shell {
+  /* Отступаем контент от статус-бара iPhone */
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ── Safe area: нижняя зона (home indicator) ── */
+
+/*
+  Нижний nav-bar остаётся в потоке flex-column.
+  Увеличиваем его высоту + добавляем padding-bottom,
+  чтобы кнопки не залезали под home indicator.
+*/
+.messenger-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  height: calc(
+    var(--messenger-bottom-bar-height) +
+    env(safe-area-inset-bottom, 0px)
+  );
+}
+
+/*
+  Composer-bar виден без bottom-nav только когда открыта
+  медиа-плашка; в этом случае iOS поднимает клавиатуру
+  и safe-area-inset-bottom = 0, поэтому отдельный отступ
+  не нужен.
+
+  Если клавиатура закрыта и медиа-плашка открыта —
+  добавляем безопасную зону.
+*/
+.messenger-shell[data-messenger-media-sheet="open"] .composer-bar,
+.messenger-shell[data-messenger-media-sheet="open"] .composer-bar--audio {
+  padding-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 4px));
+}
+
+/* ── Call stage: пересчитываем с учётом home indicator ── */
+
+/*
+  Когда звонок внутри чата (chat-bound), нижняя граница call-stage
+  должна учитывать увеличенную высоту bottom-nav.
+*/
+.call-stage--chat-bound.call-stage--full {
+  bottom: calc(
+    var(--messenger-composer-height, 76px) +
+    var(--messenger-bottom-bar-height) +
+    env(safe-area-inset-bottom, 0px)
+  );
+}
+
+.call-stage--chat-bound.call-stage--split {
+  height: max(
+    220px,
+    min(
+      44dvh,
+      calc(
+        100dvh
+        - 60px
+        - var(--messenger-composer-height, 76px)
+        - var(--messenger-bottom-bar-height)
+        - env(safe-area-inset-bottom, 0px)
+        - 8px
+      )
+    )
+  );
+}
+
+/* ── Call error toast: над home indicator ── */
+
+.call-error {
+  bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 4px));
+}
+
+/* ── Auth-страницы: safe area сверху и снизу ── */
+
+.auth-shell {
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 640px) {
+  .auth-shell {
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── Touch: убираем синюю подсветку при тапе на кастомных элементах ── */
+
+.messenger-nav-btn,
+.chats-fab,
+.hold-actions__icon-btn,
+.composer-btn,
+.audio-draft__edge-btn,
+.message-reaction-btn,
+.message-action-btn,
+.chats-folder-chip,
+.chat-header__icon-btn,
+.chat-header__action-btn,
+.chat-header__incoming-btn,
+.settings-choice-card {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Touch: отключаем double-tap zoom на интерактивных элементах ── */
+
+.messenger-nav-btn,
+.chats-fab,
+.hold-actions__icon-btn,
+.composer-btn,
+.audio-draft__edge-btn,
+.message-reaction-btn,
+.message-action-btn,
+.chats-folder-chip,
+.chat-header__icon-btn,
+.chat-header__action-btn,
+.chat-header__incoming-btn,
+.settings-choice-card,
+.chat-row,
+.contact-row,
+.chats-folder-chip,
+.composer-media-menu__category-tile,
+.composer-media-menu__result,
+.attachment-card {
+  touch-action: manipulation;
+}
+
+/* ── Momentum scrolling на iOS (belt-and-suspenders для старых WebKit) ── */
+
+.message-list,
+.section-list,
+.settings-content,
+.chats-list-wrap,
+.composer-media-menu__gallery,
+.composer-media-menu__emoji-grid,
+.composer-media-menu__feed,
+.content-gallery__viewport {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Запрещаем нежелательное выделение текста при долгом тапе ── */
+/* (не трогаем пузырьки сообщений — там может понадобиться копирование) */
+
+.messenger-nav-btn,
+.messenger-bottom-nav,
+.chats-fab,
+.hold-actions__icon-btn,
+.composer-btn,
+.audio-draft__edge-btn,
+.message-reaction-btn,
+.message-action-btn,
+.chats-folder-chip,
+.section-head__title,
+.chat-header__name {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ── Предотвращаем авто-масштаб при фокусе на нативных input ── */
+/* font-size: 16px — минимум, при котором iOS Safari не зумирует */
+
+.composer-input,
+.auth-native-field__control {
+  font-size: max(16px, 1rem);
+}
+
+/* ── Убираем нативный -webkit-appearance у нативных textarea ── */
+
+.composer-input {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── Корректное поведение scroll при динамической адресной строке Safari ── */
+/* dvh уже используется в main.css; этот блок страхует старые iOS (< 15.4) */
+
+@supports not (height: 100dvh) {
+  .messenger-shell {
+    height: -webkit-fill-available;
+    height: 100vh;
+  }
+
+  .loading-shell {
+    height: -webkit-fill-available;
+    height: 100vh;
+  }
+}

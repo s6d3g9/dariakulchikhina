@@ -3,7 +3,7 @@ const appBaseUrl = process.env.NUXT_APP_BASE_URL || (process.env.NODE_ENV === 'p
 export default defineNuxtConfig({
   compatibilityDate: '2026-03-19',
   devtools: { enabled: true },
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/ios.css'],
   modules: ['@pinia/nuxt', 'vuetify-nuxt-module'],
   ssr: false,
   vite: {
