@@ -31,31 +31,26 @@ const settingsSaving = ref(false)
 const searchDraft = ref('')
 const searchOpen = ref(false)
 
-const sections: Array<{ key: AgentWorkspaceSectionKey; title: string; hint: string }> = [
+const sections: Array<{ key: AgentWorkspaceSectionKey; title: string }> = [
   {
     key: 'overview',
     title: 'Обзор',
-    hint: 'Состояние, фокус и модель агента',
   },
   {
     key: 'settings',
     title: 'Настройки',
-    hint: 'Модель и внешний API key',
   },
   {
     key: 'links',
     title: 'Связи',
-    hint: 'Исходящие и входящие связи агента',
   },
   {
     key: 'runs',
     title: 'Прогоны',
-    hint: 'Живой статус и последние запуски',
   },
   {
     key: 'graph',
     title: 'Граф',
-    hint: 'Отдельный node-модуль и payload лог',
   },
 ]
 
@@ -133,7 +128,6 @@ const recentPayloads = computed(() => {
     .slice(0, 4)
 })
 const workspaceTitle = computed(() => resolvedAgent.value?.displayName || props.agentName)
-const workspaceDescription = computed(() => resolvedAgent.value?.description || 'Параметры и рабочее пространство агента подгружаются для текущего чата.')
 const workspaceGreeting = computed(() => resolvedAgent.value?.greeting || 'Подготовьте контекст и настройте агент перед следующей отправкой.')
 const workspaceModel = computed(() => resolvedAgent.value?.settings.model || settingsDraft.model)
 const apiKeyConfigured = computed(() => Boolean(resolvedAgent.value?.settings.apiKeyConfigured))
@@ -147,20 +141,13 @@ const collapsed = computed({
   get: () => Boolean(props.collapsed),
   set: (value: boolean) => emit('update:collapsed', value),
 })
-const collapsedSubtitle = computed(() => {
-  if (runtimeState.value) {
-    return runtimePhaseLabel(runtimeState.value.phase)
-  }
-
-  return activeSectionMeta.value.hint
-})
 const searchMatches = computed(() => {
   const query = searchDraft.value.trim().toLowerCase()
   if (!query) {
     return []
   }
 
-  return sections.filter(section => section.title.toLowerCase().includes(query) || section.hint.toLowerCase().includes(query))
+  return sections.filter(section => section.title.toLowerCase().includes(query))
 })
 
 function syncSettingsDraft() {
@@ -330,18 +317,14 @@ function expandWorkspace() {
       class="agent-chat-workspace__collapsed-bar"
       @click="expandWorkspace"
     >
-      <span class="agent-chat-workspace__collapsed-eyebrow">Меню агента скрыто</span>
       <strong class="agent-chat-workspace__collapsed-title">{{ workspaceTitle }}</strong>
-      <span class="agent-chat-workspace__collapsed-meta">{{ activeSectionMeta.title }} · {{ collapsedSubtitle }}</span>
       <span class="agent-chat-workspace__collapsed-action">Развернуть</span>
     </button>
 
     <template v-else>
     <header class="agent-chat-workspace__head">
       <div class="agent-chat-workspace__copy">
-        <p class="agent-chat-workspace__eyebrow">Agent workspace</p>
         <h2 class="agent-chat-workspace__title">{{ workspaceTitle }}</h2>
-        <p class="agent-chat-workspace__text">{{ workspaceDescription }}</p>
       </div>
       <div class="agent-chat-workspace__meta">
         <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--live': runtimeState }">
@@ -532,7 +515,6 @@ function expandWorkspace() {
                 @click="selectSection(section.key)"
               >
                 <template #title>{{ section.title }}</template>
-                <template #subtitle>{{ section.hint }}</template>
               </VListItem>
             </VList>
           </div>
