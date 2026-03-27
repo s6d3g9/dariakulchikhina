@@ -7,6 +7,7 @@ const realtime = useMessengerRealtime()
 const calls = useMessengerCalls()
 const viewport = useMessengerViewport()
 const settingsModel = useMessengerSettings()
+const { sections } = useMessengerSections()
 
 // Nav bar скрываем при открытой медиа-плашке или клавиатуре
 const showBottomNav = computed(() =>
@@ -29,6 +30,27 @@ const navValue = computed<MessengerSectionKey>({
 })
 
 const chatDisabled = computed(() => !navigation.activeConversationId.value)
+
+function sectionIcon(section: MessengerSectionKey) {
+  switch (section) {
+    case 'chat':
+      return 'mdi-message-outline'
+    case 'chats':
+      return 'mdi-message-text-outline'
+    case 'contacts':
+      return 'mdi-account-multiple-outline'
+    case 'settings':
+      return 'mdi-cog-outline'
+  }
+}
+
+function openNavSection(section: MessengerSectionKey) {
+  if (section === 'chat' && chatDisabled.value) {
+    return
+  }
+
+  navValue.value = section
+}
 
 let detachViewport: (() => void) | null = null
 
@@ -64,21 +86,48 @@ async function logout() {
       :data-messenger-keyboard="viewport.keyboardOpen.value ? 'open' : 'closed'"
       :data-messenger-media-sheet="navigation.mediaSheetOpen.value ? 'open' : 'closed'"
     >
-      <!-- Активная секция (v-show сохраняет стейт при переключении) -->
-      <div class="messenger-section-wrap">
-        <MessengerChatSection
-          v-show="navigation.activeSection.value === 'chat'"
-        />
-        <MessengerChatsSection
-          v-show="navigation.activeSection.value === 'chats'"
-        />
-        <MessengerContactsSection
-          v-show="navigation.activeSection.value === 'contacts'"
-        />
-        <MessengerSettingsSection
-          v-show="navigation.activeSection.value === 'settings'"
-          @logout="logout"
-        />
+      <div class="messenger-workspace">
+        <aside class="messenger-desktop-nav" aria-label="Боковая навигация Messenger">
+          <div class="messenger-desktop-nav__head">
+            <p class="messenger-desktop-nav__eyebrow">Daria Messenger</p>
+            <h1 class="messenger-desktop-nav__title">Навигация</h1>
+          </div>
+
+          <nav class="messenger-desktop-nav__list" aria-label="Разделы Messenger">
+            <button
+              v-for="section in sections"
+              :key="section.key"
+              type="button"
+              class="messenger-desktop-nav__item"
+              :class="{ 'messenger-desktop-nav__item--active': navValue === section.key }"
+              :disabled="section.key === 'chat' && chatDisabled"
+              @click="openNavSection(section.key)"
+            >
+              <VIcon class="messenger-desktop-nav__icon">{{ sectionIcon(section.key) }}</VIcon>
+              <span class="messenger-desktop-nav__copy">
+                <span class="messenger-desktop-nav__label">{{ section.title }}</span>
+                <span class="messenger-desktop-nav__meta">{{ section.description }}</span>
+              </span>
+            </button>
+          </nav>
+        </aside>
+
+        <!-- Активная секция (v-show сохраняет стейт при переключении) -->
+        <div class="messenger-section-wrap">
+          <MessengerChatSection
+            v-show="navigation.activeSection.value === 'chat'"
+          />
+          <MessengerChatsSection
+            v-show="navigation.activeSection.value === 'chats'"
+          />
+          <MessengerContactsSection
+            v-show="navigation.activeSection.value === 'contacts'"
+          />
+          <MessengerSettingsSection
+            v-show="navigation.activeSection.value === 'settings'"
+            @logout="logout"
+          />
+        </div>
       </div>
 
       <!-- Звонок (overlay) -->
