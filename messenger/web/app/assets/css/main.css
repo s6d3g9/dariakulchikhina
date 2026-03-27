@@ -1590,6 +1590,10 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   gap: 8px;
 }
 
+.agent-chat-workspace__list--split-span {
+  grid-column: 1 / -1;
+}
+
 .agent-chat-workspace__card,
 .agent-chat-workspace__list-item {
   gap: 6px;
@@ -1612,6 +1616,11 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 .agent-chat-workspace__list-item--button {
   width: 100%;
   text-align: left;
+}
+
+.agent-chat-workspace__list-item--active {
+  border-color: rgba(var(--v-theme-primary), 0.72);
+  background: rgba(var(--v-theme-primary), 0.08);
 }
 
 .agent-chat-workspace__window {

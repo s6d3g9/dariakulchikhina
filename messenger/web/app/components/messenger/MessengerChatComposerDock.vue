@@ -13,6 +13,7 @@ const props = defineProps<{
   mediaMenuOpen: boolean
   activeConversation: boolean
   showAgentMenuToggle?: boolean
+  agentMenuExpanded?: boolean
   messagePending: boolean
   isRecording: boolean
   recordingSeconds: number
@@ -103,10 +104,10 @@ defineExpose({
             class="composer-btn composer-btn--inside"
             icon
             variant="text"
-            aria-label="Развернуть меню агента"
+            :aria-label="props.agentMenuExpanded ? 'Свернуть меню агента' : 'Развернуть меню агента'"
             @click="emit('toggle-agent-workspace')"
           >
-            <VIcon icon="mdi-unfold-more-horizontal" size="20" />
+            <VIcon :icon="props.agentMenuExpanded ? 'mdi-unfold-less-horizontal' : 'mdi-unfold-more-horizontal'" size="20" />
           </VBtn>
 
           <VBtn

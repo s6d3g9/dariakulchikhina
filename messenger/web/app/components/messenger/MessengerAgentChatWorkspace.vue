@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MessengerAgentConnectionMode, MessengerAgentItem, MessengerAgentSettings } from '../../composables/useMessengerAgents'
+import type { MessengerAgentRun, MessengerAgentRunArtifact, MessengerAgentRunEvent } from '../../composables/useMessengerAgentRuns'
 
 type AgentWorkspaceSectionKey = 'overview' | 'settings' | 'links' | 'runs' | 'graph'
 
@@ -23,6 +24,7 @@ const edgePayloadsModel = useMessengerAgentEdgePayloads()
 const activeSection = useState<AgentWorkspaceSectionKey>('messenger-agent-chat-workspace-section', () => 'overview')
 const feedbackMessage = ref('')
 const feedbackTone = ref<'info' | 'error'>('info')
+const selectedRunId = ref<string | null>(null)
 const settingsDraft = reactive({
   model: 'GPT-5.4',
   apiKey: '',
@@ -127,6 +129,18 @@ const recentPayloads = computed(() => {
     .filter(payload => !props.conversationId || !payload.conversationId || payload.conversationId === props.conversationId)
     .slice(0, 4)
 })
+const selectedRun = computed(() => {
+  if (!runsModel.selectedRun.value || runsModel.selectedRun.value.agentId !== resolvedAgent.value?.id) {
+    return null
+  }
+
+  if (selectedRunId.value && runsModel.selectedRun.value.runId !== selectedRunId.value) {
+    return null
+  }
+
+  return runsModel.selectedRun.value
+})
+const activeConnections = computed(() => runtimeState.value?.activeConnections || [])
 const workspaceTitle = computed(() => resolvedAgent.value?.displayName || props.agentName)
 const workspaceGreeting = computed(() => resolvedAgent.value?.greeting || 'Подготовьте контекст и настройте агент перед следующей отправкой.')
 const workspaceModel = computed(() => resolvedAgent.value?.settings.model || settingsDraft.model)
@@ -156,6 +170,8 @@ function syncSettingsDraft() {
 
 watch(() => resolvedAgent.value?.id, () => {
   syncSettingsDraft()
+  selectedRunId.value = null
+  runsModel.clearSelection()
 }, { immediate: true })
 
 watch(() => props.agentId, async () => {
@@ -220,6 +236,44 @@ function formatTimestamp(value?: string) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function runStatusLabel(status: MessengerAgentRun['status']) {
+  switch (status) {
+    case 'completed':
+      return 'Завершён'
+    case 'failed':
+      return 'Ошибка'
+    default:
+      return 'Выполняется'
+  }
+}
+
+function artifactKindLabel(kind: MessengerAgentRunArtifact['kind']) {
+  switch (kind) {
+    case 'consultation':
+      return 'Консультация'
+    case 'file':
+      return 'Файл'
+    case 'summary':
+      return 'Сводка'
+  }
+}
+
+function describeRunEvent(event: MessengerAgentRunEvent) {
+  if (event.summary) {
+    return event.summary
+  }
+
+  if (event.focus) {
+    return event.focus
+  }
+
+  if (event.fileNames.length) {
+    return `Файлы: ${event.fileNames.join(', ')}`
+  }
+
+  return 'Без подробностей'
 }
 
 async function saveSettings(payload: Pick<MessengerAgentSettings, 'model' | 'apiKey'>) {
@@ -298,13 +352,9 @@ function selectSection(section: AgentWorkspaceSectionKey) {
   searchOpen.value = false
 }
 
-function collapseWorkspace() {
-  collapsed.value = true
-  searchOpen.value = false
-}
-
-function expandWorkspace() {
-  collapsed.value = false
+async function openRunDetail(runId: string) {
+  selectedRunId.value = runId
+  await runsModel.openRun(runId)
 }
 </script>
 
@@ -321,9 +371,6 @@ function expandWorkspace() {
         <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !apiKeyConfigured }">
           {{ apiKeyConfigured ? 'API key подключён' : 'API key не задан' }}
         </span>
-        <button type="button" class="agent-chat-workspace__ghost" @click="collapseWorkspace">
-          Свернуть
-        </button>
         <button type="button" class="agent-chat-workspace__ghost" @click="openAgentsSection">
           Открыть модуль агентов
         </button>
@@ -423,22 +470,43 @@ function expandWorkspace() {
               :key="run.runId"
               type="button"
               class="agent-chat-workspace__list-item agent-chat-workspace__list-item--button"
-              @click="openAgentsSection"
+              :class="{ 'agent-chat-workspace__list-item--active': selectedRun?.runId === run.runId }"
+              @click="openRunDetail(run.runId)"
             >
-              <strong>{{ runtimePhaseLabel(run.events[run.events.length - 1]?.phase) }}</strong>
+              <strong>{{ runStatusLabel(run.status) }}</strong>
               <span>{{ formatTimestamp(run.updatedAt) }}</span>
             </button>
           </div>
           <p v-else class="agent-chat-workspace__card-text">История запусков для этого agent-чата пока пуста.</p>
+          <article v-if="selectedRun" class="agent-chat-workspace__card agent-chat-workspace__card--form">
+            <p class="agent-chat-workspace__card-eyebrow">Детали прогона</p>
+            <h3 class="agent-chat-workspace__card-title">{{ runStatusLabel(selectedRun.status) }} · {{ formatTimestamp(selectedRun.updatedAt) }}</h3>
+            <div v-if="selectedRun.events.length" class="agent-chat-workspace__stack">
+              <div v-for="event in selectedRun.events" :key="`${selectedRun.runId}:${event.phase}:${event.timestamp}`" class="agent-chat-workspace__list-item">
+                <strong>{{ runtimePhaseLabel(event.phase) }}</strong>
+                <span>{{ describeRunEvent(event) }}</span>
+              </div>
+            </div>
+            <div v-if="selectedRun.events.some(event => event.artifacts.length)" class="agent-chat-workspace__stack">
+              <div
+                v-for="artifact in selectedRun.events.flatMap(event => event.artifacts).slice(0, 6)"
+                :key="`${selectedRun.runId}:${artifact.kind}:${artifact.label}`"
+                class="agent-chat-workspace__list-item"
+              >
+                <strong>{{ artifactKindLabel(artifact.kind) }} · {{ artifact.label }}</strong>
+                <span>{{ artifact.content }}</span>
+              </div>
+            </div>
+          </article>
         </div>
       </VWindowItem>
 
       <VWindowItem value="graph">
-        <div class="agent-chat-workspace__content">
+        <div class="agent-chat-workspace__content agent-chat-workspace__content--split">
           <article class="agent-chat-workspace__card">
-            <p class="agent-chat-workspace__card-eyebrow">Node-модуль</p>
-            <h3 class="agent-chat-workspace__card-title">Граф вынесен в отдельное меню</h3>
-            <p class="agent-chat-workspace__card-text">Отсюда видно краткое состояние, а полное визуальное редактирование и мониторинг остаются в отдельном разделе Агенты.</p>
+            <p class="agent-chat-workspace__card-eyebrow">Сводка графа</p>
+            <h3 class="agent-chat-workspace__card-title">Связи и маршрутизация</h3>
+            <p class="agent-chat-workspace__card-text">Вкладка показывает текущие рёбра этого агента и последние payload-переходы без выхода из чата.</p>
             <div class="agent-chat-workspace__stats">
               <span>Исходящих: {{ graphStats.outgoing }}</span>
               <span>Входящих: {{ graphStats.incoming }}</span>
@@ -448,7 +516,18 @@ function expandWorkspace() {
               Открыть node-модуль
             </button>
           </article>
-          <div v-if="recentPayloads.length" class="agent-chat-workspace__list">
+          <article class="agent-chat-workspace__card">
+            <p class="agent-chat-workspace__card-eyebrow">Активные рёбра</p>
+            <h3 class="agent-chat-workspace__card-title">{{ activeConnections.length || recentPayloads.length ? 'Есть маршрутные события' : 'Пока без маршрутов' }}</h3>
+            <div v-if="activeConnections.length" class="agent-chat-workspace__stack">
+              <div v-for="connection in activeConnections" :key="`${connection.targetAgentId}:${connection.mode}`" class="agent-chat-workspace__list-item">
+                <strong>{{ connectionModeLabel(connection.mode) }} → {{ agentsModel.agents.value.find(item => item.id === connection.targetAgentId)?.displayName || connection.targetAgentId }}</strong>
+                <span>{{ connection.payloadPreview || 'Payload будет показан здесь во время активного прогона.' }}</span>
+              </div>
+            </div>
+            <p v-else class="agent-chat-workspace__card-text">Активных рёбер сейчас нет. Последние передачи ниже.</p>
+          </article>
+          <div v-if="recentPayloads.length" class="agent-chat-workspace__list agent-chat-workspace__list--split-span">
             <div v-for="payload in recentPayloads" :key="`${payload.runId}:${payload.targetAgentId}:${payload.timestamp}`" class="agent-chat-workspace__list-item">
               <strong>{{ connectionModeLabel(payload.mode) }} → {{ agentsModel.agents.value.find(item => item.id === payload.targetAgentId)?.displayName || payload.targetAgentId }}</strong>
               <span>{{ payload.payloadPreview }}</span>
