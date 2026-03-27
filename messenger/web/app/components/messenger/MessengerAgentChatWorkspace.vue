@@ -56,6 +56,8 @@ const sections: Array<{ key: AgentWorkspaceSectionKey; title: string }> = [
   },
 ]
 
+const currentSection = computed(() => sections.find(section => section.key === activeSection.value) ?? sections[0])
+
 const sectionIconMap: Record<AgentWorkspaceSectionKey, string> = {
   overview: 'mdi-view-dashboard-outline',
   settings: 'mdi-tune-variant',
@@ -372,6 +374,7 @@ async function openRunDetail(runId: string) {
     <header class="agent-chat-workspace__head">
       <div class="agent-chat-workspace__copy">
         <h2 class="agent-chat-workspace__title">{{ workspaceTitle }}</h2>
+        <p class="agent-chat-workspace__section-marker">{{ currentSection.title }}</p>
       </div>
       <div class="agent-chat-workspace__meta">
         <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--live': runtimeState }">
@@ -540,55 +543,57 @@ async function openRunDetail(runId: string) {
       </Transition>
     </div>
 
-    <div class="section-tabs-row agent-chat-workspace__tabs-row">
-      <VTabs
-        :model-value="activeSection"
-        class="section-tabs"
-        bg-color="surface-container"
-        color="primary"
-        density="compact"
-        grow
-        @update:model-value="selectSection($event as AgentWorkspaceSectionKey)"
-      >
-        <VTab
-          v-for="section in sections"
-          :key="section.key"
-          :value="section.key"
-          :aria-label="section.title"
-          :title="section.title"
+    <div class="agent-chat-workspace__dock">
+      <div class="section-tabs-row agent-chat-workspace__tabs-row">
+        <VTabs
+          :model-value="activeSection"
+          class="section-tabs"
+          bg-color="surface-container"
+          color="primary"
+          density="compact"
+          grow
+          @update:model-value="selectSection($event as AgentWorkspaceSectionKey)"
         >
-          <VIcon>{{ sectionIcon(section.key) }}</VIcon>
-        </VTab>
-      </VTabs>
-    </div>
+          <VTab
+            v-for="section in sections"
+            :key="section.key"
+            :value="section.key"
+            :aria-label="section.title"
+            :title="section.title"
+          >
+            <VIcon>{{ sectionIcon(section.key) }}</VIcon>
+          </VTab>
+        </VTabs>
+      </div>
 
-    <div class="search-dock search-dock--bottom-dock agent-chat-workspace__search-dock">
-      <div class="search-dock__field">
-        <MessengerDockField>
-          <input
-            v-model="searchDraft"
-            type="text"
-            class="composer-input composer-input--dock"
-            placeholder="Найти раздел"
-            autocomplete="off"
-            @focus="openSearch"
-            @blur="closeSearch"
-          />
-        </MessengerDockField>
+      <div class="search-dock search-dock--bottom-dock agent-chat-workspace__search-dock">
+        <div class="search-dock__field">
+          <MessengerDockField>
+            <input
+              v-model="searchDraft"
+              type="text"
+              class="composer-input composer-input--dock"
+              placeholder="Найти раздел"
+              autocomplete="off"
+              @focus="openSearch"
+              @blur="closeSearch"
+            />
+          </MessengerDockField>
 
-        <Transition name="chrome-reveal">
-          <div v-if="searchOpen && searchMatches.length" class="search-dropdown" @mousedown.prevent>
-            <VList bg-color="transparent" density="comfortable">
-              <VListItem
-                v-for="section in searchMatches"
-                :key="section.key"
-                @click="selectSection(section.key)"
-              >
-                <template #title>{{ section.title }}</template>
-              </VListItem>
-            </VList>
-          </div>
-        </Transition>
+          <Transition name="chrome-reveal">
+            <div v-if="searchOpen && searchMatches.length" class="search-dropdown" @mousedown.prevent>
+              <VList bg-color="transparent" density="comfortable">
+                <VListItem
+                  v-for="section in searchMatches"
+                  :key="section.key"
+                  @click="selectSection(section.key)"
+                >
+                  <template #title>{{ section.title }}</template>
+                </VListItem>
+              </VList>
+            </div>
+          </Transition>
+        </div>
       </div>
     </div>
   </section>

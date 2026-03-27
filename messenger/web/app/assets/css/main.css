@@ -549,15 +549,17 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   flex-direction: column;
   flex-shrink: 0;
   min-height: 0;
-  max-height: min(52vh, 520px);
+  max-height: min(46vh, 440px);
   overflow: hidden;
   background: rgb(var(--v-theme-background));
+  border-top: 1px solid rgba(var(--v-theme-outline-variant), 0.56);
 }
 
 .agent-chat-workspace__window {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  padding: 0 8px;
 }
 
 .agent-chat-workspace__pane {
@@ -572,6 +574,7 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding: 0 4px 8px;
 }
 
 .agent-chat-workspace__tabs-row,
@@ -579,13 +582,31 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   flex-shrink: 0;
 }
 
+.agent-chat-workspace__dock {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 4px 4px;
+  background: rgb(var(--v-theme-surface-container-low));
+  border-top: 1px solid rgba(var(--v-theme-outline-variant), 0.56);
+}
+
 .agent-chat-workspace__search-dock {
   padding-top: 0;
+  padding-bottom: 4px;
+}
+
+.agent-chat-workspace__section-marker {
+  margin: 0;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 
 @media (max-width: 767px) {
   .agent-chat-workspace {
-    max-height: min(54vh, 460px);
+    max-height: min(44vh, 380px);
   }
 }
 
