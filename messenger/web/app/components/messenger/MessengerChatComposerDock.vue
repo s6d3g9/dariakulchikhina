@@ -30,7 +30,7 @@ const emit = defineEmits<{
   'input': []
   'file-select': [event: Event]
   'toggle-media-menu': []
-  'open-photo-picker': []
+  'open-file-picker': []
   'primary-pointerdown': [event: PointerEvent]
   'primary-action': []
   'cancel-audio-draft': []
@@ -102,7 +102,7 @@ defineExpose({
             variant="text"
             aria-label="Прикрепить файл"
             :disabled="!props.activeConversation || props.messagePending"
-            @click="emit('open-photo-picker')"
+            @click="emit('open-file-picker')"
           >
             <MessengerIcon name="paperclip" :size="22" />
           </VBtn>

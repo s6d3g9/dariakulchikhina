@@ -1435,15 +1435,6 @@ function toggleComposerMediaMenu() {
   }
 }
 
-function openMediaSheetOnPhoto() {
-  if (!conversations.activeConversation.value || conversations.messagePending.value) {
-    return
-  }
-
-  composerMediaMenuTab.value = 'photo'
-  composerMediaMenuOpen.value = true
-}
-
 function openComposerMediaTab(tab: 'emoji' | 'stickers' | 'gif' | 'photo' | 'file') {
   const previousTab = composerMediaMenuTab.value
 
@@ -2525,7 +2516,7 @@ onBeforeUnmount(() => {
         @input="syncComposerInputHeight"
         @file-select="handleFileSelect"
         @toggle-media-menu="toggleComposerMediaMenu"
-        @open-photo-picker="openMediaSheetOnPhoto"
+        @open-file-picker="openFilePicker()"
         @primary-pointerdown="handleComposerPrimaryPointerDown"
         @primary-action="handleComposerPrimaryAction"
         @cancel-audio-draft="cancelAudioComposerState"
