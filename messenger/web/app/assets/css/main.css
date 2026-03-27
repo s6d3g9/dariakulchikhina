@@ -530,36 +530,6 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   background: rgb(var(--v-theme-background));
 }
 
-.agent-chat-workspace--collapsed {
-  max-height: none;
-}
-
-.agent-chat-workspace__collapsed-dock {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 10px 4px;
-  background: transparent;
-}
-
-.agent-chat-workspace__collapsed-toggle {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(var(--v-theme-outline-variant), 0.72);
-  border-radius: 999px;
-  background: rgb(var(--v-theme-surface-container-high));
-  color: rgb(var(--v-theme-on-surface));
-  cursor: pointer;
-}
-
-.agent-chat-workspace__collapsed-toggle:hover,
-.agent-chat-workspace__collapsed-toggle:focus-visible {
-  background: rgb(var(--v-theme-surface-container-highest));
-}
-
 .agent-chat-workspace__window {
   flex: 1;
   min-height: 0;

@@ -12,6 +12,7 @@ const props = defineProps<{
   draft: string
   mediaMenuOpen: boolean
   activeConversation: boolean
+  showAgentMenuToggle?: boolean
   messagePending: boolean
   isRecording: boolean
   recordingSeconds: number
@@ -31,6 +32,7 @@ const emit = defineEmits<{
   'file-select': [event: Event]
   'toggle-media-menu': []
   'open-file-picker': []
+  'toggle-agent-workspace': []
   'primary-pointerdown': [event: PointerEvent]
   'primary-action': []
   'cancel-audio-draft': []
@@ -95,6 +97,18 @@ defineExpose({
         />
 
         <template #trailing>
+          <VBtn
+            v-if="props.showAgentMenuToggle"
+            type="button"
+            class="composer-btn composer-btn--inside"
+            icon
+            variant="text"
+            aria-label="Развернуть меню агента"
+            @click="emit('toggle-agent-workspace')"
+          >
+            <VIcon icon="mdi-unfold-more-horizontal" size="20" />
+          </VBtn>
+
           <VBtn
             type="button"
             class="composer-btn composer-btn--inside"

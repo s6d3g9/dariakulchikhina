@@ -309,20 +309,7 @@ function expandWorkspace() {
 </script>
 
 <template>
-  <section class="agent-chat-workspace" :class="{ 'agent-chat-workspace--collapsed': collapsed }" aria-label="Рабочее пространство агента">
-    <div v-if="collapsed" class="agent-chat-workspace__collapsed-dock">
-      <button
-        type="button"
-        class="agent-chat-workspace__collapsed-toggle"
-        :aria-label="`Развернуть меню ${workspaceTitle}`"
-        :title="`Развернуть меню ${workspaceTitle}`"
-        @click="expandWorkspace"
-      >
-        <VIcon icon="mdi-unfold-more-horizontal" />
-      </button>
-    </div>
-
-    <template v-else>
+  <section v-if="!collapsed" class="agent-chat-workspace" aria-label="Рабочее пространство агента">
     <header class="agent-chat-workspace__head">
       <div class="agent-chat-workspace__copy">
         <h2 class="agent-chat-workspace__title">{{ workspaceTitle }}</h2>
@@ -522,6 +509,5 @@ function expandWorkspace() {
         </Transition>
       </div>
     </div>
-    </template>
   </section>
 </template>
