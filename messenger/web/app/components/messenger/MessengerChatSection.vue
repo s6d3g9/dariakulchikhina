@@ -67,6 +67,7 @@ const composerMediaMenuOpen = ref(false)
 const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif' | 'photo' | 'file'>('emoji')
 const klipyQuery = ref('')
 const mediaUploadPending = ref(false)
+const agentWorkspaceCollapsed = ref(false)
 const selectedCatalogCategory = ref('')
 const selectedKlipyItem = ref<MessengerKlipyItem | null>(null)
 const klipyAudienceMode = reactive<{ stickers: 'mine' | 'shared'; gif: 'mine' | 'shared' }>({
@@ -2251,12 +2252,24 @@ function handleDocumentPointerDown(event: PointerEvent) {
 }
 
 function handleChatAreaPointerDown() {
-  if (!composerMediaMenuVisible.value) {
-    return
+  if (composerMediaMenuVisible.value) {
+    composerMediaMenuOpen.value = false
   }
 
-  composerMediaMenuOpen.value = false
+  if (activeConversationAgent.value && conversations.activeConversation.value && !detailsOpen.value) {
+    agentWorkspaceCollapsed.value = true
+  }
 }
+
+watch(() => conversations.activeConversationId.value, () => {
+  agentWorkspaceCollapsed.value = false
+}, { immediate: true })
+
+watch(() => activeConversationAgent.value, (value) => {
+  if (!value) {
+    agentWorkspaceCollapsed.value = false
+  }
+})
 
 function relationTitle(mode: 'reply' | 'comment' | null) {
   if (mode === 'reply') {
@@ -2513,6 +2526,8 @@ onBeforeUnmount(() => {
         :agent-name="conversations.activeConversation.value.peerDisplayName"
         :agent-login="conversations.activeConversation.value.peerLogin"
         :conversation-id="conversations.activeConversation.value.id"
+        :collapsed="agentWorkspaceCollapsed"
+        @update:collapsed="agentWorkspaceCollapsed = $event"
       />
 
       <MessengerChatComposerDock

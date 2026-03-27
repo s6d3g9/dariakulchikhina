@@ -8,6 +8,11 @@ const props = defineProps<{
   agentName: string
   agentLogin: string
   conversationId?: string | null
+  collapsed?: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:collapsed': [value: boolean]
 }>()
 
 const navigation = useMessengerConversationState()
@@ -137,6 +142,18 @@ const graphStats = computed(() => ({
   incoming: incomingConnections.value.length,
   payloads: recentPayloads.value.length,
 }))
+const activeSectionMeta = computed(() => sections.find(section => section.key === activeSection.value) ?? sections[0])
+const collapsed = computed({
+  get: () => Boolean(props.collapsed),
+  set: (value: boolean) => emit('update:collapsed', value),
+})
+const collapsedSubtitle = computed(() => {
+  if (runtimeState.value) {
+    return runtimePhaseLabel(runtimeState.value.phase)
+  }
+
+  return activeSectionMeta.value.hint
+})
 const searchMatches = computed(() => {
   const query = searchDraft.value.trim().toLowerCase()
   if (!query) {
@@ -294,10 +311,32 @@ function selectSection(section: AgentWorkspaceSectionKey) {
   searchDraft.value = ''
   searchOpen.value = false
 }
+
+function collapseWorkspace() {
+  collapsed.value = true
+  searchOpen.value = false
+}
+
+function expandWorkspace() {
+  collapsed.value = false
+}
 </script>
 
 <template>
-  <section class="agent-chat-workspace" aria-label="Рабочее пространство агента">
+  <section class="agent-chat-workspace" :class="{ 'agent-chat-workspace--collapsed': collapsed }" aria-label="Рабочее пространство агента">
+    <button
+      v-if="collapsed"
+      type="button"
+      class="agent-chat-workspace__collapsed-bar"
+      @click="expandWorkspace"
+    >
+      <span class="agent-chat-workspace__collapsed-eyebrow">Меню агента скрыто</span>
+      <strong class="agent-chat-workspace__collapsed-title">{{ workspaceTitle }}</strong>
+      <span class="agent-chat-workspace__collapsed-meta">{{ activeSectionMeta.title }} · {{ collapsedSubtitle }}</span>
+      <span class="agent-chat-workspace__collapsed-action">Развернуть</span>
+    </button>
+
+    <template v-else>
     <header class="agent-chat-workspace__head">
       <div class="agent-chat-workspace__copy">
         <p class="agent-chat-workspace__eyebrow">Agent workspace</p>
@@ -311,6 +350,9 @@ function selectSection(section: AgentWorkspaceSectionKey) {
         <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !apiKeyConfigured }">
           {{ apiKeyConfigured ? 'API key подключён' : 'API key не задан' }}
         </span>
+        <button type="button" class="agent-chat-workspace__ghost" @click="collapseWorkspace">
+          Свернуть
+        </button>
         <button type="button" class="agent-chat-workspace__ghost" @click="openAgentsSection">
           Открыть модуль агентов
         </button>
@@ -497,5 +539,6 @@ function selectSection(section: AgentWorkspaceSectionKey) {
         </Transition>
       </div>
     </div>
+    </template>
   </section>
 </template>
