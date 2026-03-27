@@ -23,6 +23,8 @@ const settingsDraft = reactive({
   apiKey: '',
 })
 const settingsSaving = ref(false)
+const searchDraft = ref('')
+const searchOpen = ref(false)
 
 const sections: Array<{ key: AgentWorkspaceSectionKey; title: string; hint: string }> = [
   {
@@ -51,6 +53,14 @@ const sections: Array<{ key: AgentWorkspaceSectionKey; title: string; hint: stri
     hint: 'Отдельный node-модуль и payload лог',
   },
 ]
+
+const sectionIconMap: Record<AgentWorkspaceSectionKey, string> = {
+  overview: 'mdi-view-dashboard-outline',
+  settings: 'mdi-tune-variant',
+  links: 'mdi-connection',
+  runs: 'mdi-history',
+  graph: 'mdi-graph-outline',
+}
 
 const normalizedLogin = computed(() => props.agentLogin.replace(/^@/, '').trim())
 const resolvedAgent = computed<MessengerAgentItem | null>(() => agentsModel.agents.value.find(item => item.id === props.agentId || item.login === normalizedLogin.value) ?? null)
@@ -127,6 +137,14 @@ const graphStats = computed(() => ({
   incoming: incomingConnections.value.length,
   payloads: recentPayloads.value.length,
 }))
+const searchMatches = computed(() => {
+  const query = searchDraft.value.trim().toLowerCase()
+  if (!query) {
+    return []
+  }
+
+  return sections.filter(section => section.title.toLowerCase().includes(query) || section.hint.toLowerCase().includes(query))
+})
 
 function syncSettingsDraft() {
   settingsDraft.model = resolvedAgent.value?.settings.model || 'GPT-5.4'
@@ -256,6 +274,26 @@ async function handleApiKeyBlur() {
 function openAgentsSection() {
   navigation.openSection('agents')
 }
+
+function sectionIcon(section: AgentWorkspaceSectionKey) {
+  return sectionIconMap[section]
+}
+
+function openSearch() {
+  searchOpen.value = true
+}
+
+function closeSearch() {
+  setTimeout(() => {
+    searchOpen.value = false
+  }, 150)
+}
+
+function selectSection(section: AgentWorkspaceSectionKey) {
+  activeSection.value = section
+  searchDraft.value = ''
+  searchOpen.value = false
+}
 </script>
 
 <template>
@@ -283,23 +321,9 @@ function openAgentsSection() {
       {{ feedbackMessage }}
     </p>
 
-    <div class="agent-chat-workspace__shell">
-      <aside class="agent-chat-workspace__nav" aria-label="Подменю агента">
-        <button
-          v-for="section in sections"
-          :key="section.key"
-          type="button"
-          class="agent-chat-workspace__nav-btn"
-          :class="{ 'agent-chat-workspace__nav-btn--active': activeSection === section.key }"
-          @click="activeSection = section.key"
-        >
-          <span class="agent-chat-workspace__nav-title">{{ section.title }}</span>
-          <span class="agent-chat-workspace__nav-hint">{{ section.hint }}</span>
-        </button>
-      </aside>
-
-      <div class="agent-chat-workspace__content">
-        <div v-if="activeSection === 'overview'" class="agent-chat-workspace__grid">
+    <VWindow :model-value="activeSection" class="agent-chat-workspace__window">
+      <VWindowItem value="overview">
+        <div class="agent-chat-workspace__content agent-chat-workspace__content--grid">
           <article class="agent-chat-workspace__card">
             <p class="agent-chat-workspace__card-eyebrow">Сейчас в чате</p>
             <h3 class="agent-chat-workspace__card-title">Текущий фокус</h3>
@@ -316,8 +340,10 @@ function openAgentsSection() {
             <p class="agent-chat-workspace__card-text">Node-модуль вынесен в отдельный раздел и открывается без выхода из messenger shell.</p>
           </article>
         </div>
+      </VWindowItem>
 
-        <div v-else-if="activeSection === 'settings'" class="agent-chat-workspace__stack">
+      <VWindowItem value="settings">
+        <div class="agent-chat-workspace__content">
           <article class="agent-chat-workspace__card agent-chat-workspace__card--form">
             <p class="agent-chat-workspace__card-eyebrow">Быстрые настройки</p>
             <h3 class="agent-chat-workspace__card-title">Параметры ответа</h3>
@@ -342,8 +368,10 @@ function openAgentsSection() {
             />
           </article>
         </div>
+      </VWindowItem>
 
-        <div v-else-if="activeSection === 'links'" class="agent-chat-workspace__grid agent-chat-workspace__grid--links">
+      <VWindowItem value="links">
+        <div class="agent-chat-workspace__content agent-chat-workspace__content--split">
           <article class="agent-chat-workspace__card">
             <p class="agent-chat-workspace__card-eyebrow">Исходящие связи</p>
             <h3 class="agent-chat-workspace__card-title">{{ outgoingConnections.length }}</h3>
@@ -367,8 +395,10 @@ function openAgentsSection() {
             <p v-else class="agent-chat-workspace__card-text">Ни один агент пока не маршрутизирует запросы в этот чат.</p>
           </article>
         </div>
+      </VWindowItem>
 
-        <div v-else-if="activeSection === 'runs'" class="agent-chat-workspace__stack">
+      <VWindowItem value="runs">
+        <div class="agent-chat-workspace__content">
           <article class="agent-chat-workspace__card">
             <p class="agent-chat-workspace__card-eyebrow">Живой статус</p>
             <h3 class="agent-chat-workspace__card-title">{{ runtimeState ? runtimePhaseLabel(runtimeState.phase) : 'Ожидает новое сообщение' }}</h3>
@@ -388,8 +418,10 @@ function openAgentsSection() {
           </div>
           <p v-else class="agent-chat-workspace__card-text">История запусков для этого agent-чата пока пуста.</p>
         </div>
+      </VWindowItem>
 
-        <div v-else class="agent-chat-workspace__stack">
+      <VWindowItem value="graph">
+        <div class="agent-chat-workspace__content">
           <article class="agent-chat-workspace__card">
             <p class="agent-chat-workspace__card-eyebrow">Node-модуль</p>
             <h3 class="agent-chat-workspace__card-title">Граф вынесен в отдельное меню</h3>
@@ -410,6 +442,59 @@ function openAgentsSection() {
             </div>
           </div>
         </div>
+      </VWindowItem>
+    </VWindow>
+
+    <div class="section-tabs-row agent-chat-workspace__tabs-row">
+      <VTabs
+        :model-value="activeSection"
+        class="section-tabs"
+        bg-color="surface-container"
+        color="primary"
+        density="compact"
+        grow
+        @update:model-value="selectSection($event as AgentWorkspaceSectionKey)"
+      >
+        <VTab
+          v-for="section in sections"
+          :key="section.key"
+          :value="section.key"
+          :aria-label="section.title"
+          :title="section.title"
+        >
+          <VIcon>{{ sectionIcon(section.key) }}</VIcon>
+        </VTab>
+      </VTabs>
+    </div>
+
+    <div class="search-dock agent-chat-workspace__search-dock">
+      <div class="search-dock__field">
+        <MessengerDockField>
+          <input
+            v-model="searchDraft"
+            type="text"
+            class="composer-input composer-input--dock"
+            placeholder=""
+            autocomplete="off"
+            @focus="openSearch"
+            @blur="closeSearch"
+          />
+        </MessengerDockField>
+
+        <Transition name="chrome-reveal">
+          <div v-if="searchOpen && searchMatches.length" class="search-dropdown" @mousedown.prevent>
+            <VList bg-color="transparent" density="comfortable">
+              <VListItem
+                v-for="section in searchMatches"
+                :key="section.key"
+                @click="selectSection(section.key)"
+              >
+                <template #title>{{ section.title }}</template>
+                <template #subtitle>{{ section.hint }}</template>
+              </VListItem>
+            </VList>
+          </div>
+        </Transition>
       </div>
     </div>
   </section>
