@@ -11,11 +11,13 @@ interface MessengerConversationPolicy {
 
 export interface MessengerConversationItem {
   id: string
-  kind: 'direct' | 'direct-secret'
+  kind: 'direct' | 'direct-secret' | 'agent'
   secret: boolean
   peerUserId: string
   peerDisplayName: string
   peerLogin: string
+  peerType: 'user' | 'agent'
+  peerDescription?: string
   updatedAt: string
   policy: MessengerConversationPolicy
   lastMessage: {
@@ -394,10 +396,25 @@ export function useMessengerConversations() {
     await loadMessages(conversationId)
   }
 
+  async function openAgentConversation(agentId: string) {
+    const conversationId = await ensureAgentConversation(agentId)
+    state.openConversation(conversationId)
+    await loadMessages(conversationId)
+  }
+
   async function ensureDirectConversation(peerUserId: string) {
     const response = await auth.request<{ conversation: { id: string } }>('/conversations/direct', {
       method: 'POST',
       body: { peerUserId },
+    })
+
+    await refresh(query.value)
+    return response.conversation.id
+  }
+
+  async function ensureAgentConversation(agentId: string) {
+    const response = await auth.request<{ conversation: { id: string } }>(`/agents/${agentId}/conversation`, {
+      method: 'POST',
     })
 
     await refresh(query.value)
@@ -705,7 +722,9 @@ export function useMessengerConversations() {
     activeConversationId: state.activeConversationId,
     refresh,
     openDirectConversation,
+    openAgentConversation,
     ensureDirectConversation,
+    ensureAgentConversation,
     openSecretConversation,
     selectConversation,
     loadMessages,

@@ -1,3 +1,5 @@
+import type { MessengerAgentTraceEvent } from './useMessengerAgentRuntime'
+
 type MessengerRealtimeEvent = {
   type: 'hello' | 'contacts.updated' | 'conversations.updated' | 'messages.updated' | 'call.signal' | 'error'
   conversationId?: string
@@ -12,7 +14,7 @@ type MessengerRealtimeEvent = {
     displayName: string
     login: string
   }
-}
+} | MessengerAgentTraceEvent
 
 import { buildMessengerWsUrl } from '../utils/messenger-url'
 
@@ -25,6 +27,7 @@ export function useMessengerRealtime() {
   const contacts = useMessengerContacts()
   const conversations = useMessengerConversations()
   const calls = useMessengerCalls()
+  const runtime = useMessengerAgentRuntime()
   const connected = useState<boolean>('messenger-realtime-connected', () => false)
   const connecting = useState<boolean>('messenger-realtime-connecting', () => false)
 
@@ -70,6 +73,11 @@ export function useMessengerRealtime() {
         await conversations.loadMessages(event.conversationId)
       }
       await conversations.refresh(conversations.query.value)
+      return
+    }
+
+    if (event.type === 'agent.trace') {
+      runtime.handleTraceEvent(event)
     }
   }
 
@@ -122,6 +130,7 @@ export function useMessengerRealtime() {
     clearReconnect()
     connected.value = false
     connecting.value = false
+    runtime.reset()
 
     if (messengerSocket) {
       messengerSocket.close()

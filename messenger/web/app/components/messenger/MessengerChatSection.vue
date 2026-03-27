@@ -608,6 +608,7 @@ const activePeerAvatar = computed(() => {
 
 const activeConversationPolicy = computed(() => conversations.activeConversation.value?.policy ?? null)
 const activeConversationSecret = computed(() => Boolean(conversations.activeConversation.value?.secret))
+const activeConversationAgent = computed(() => conversations.activeConversation.value?.peerType === 'agent')
 const canForwardFromActiveConversation = computed(() => activeConversationPolicy.value?.allowForwardOut !== false)
 const allowMutualDelete = computed(() => Boolean(activeConversationPolicy.value?.allowMutualDelete))
 const secretIntroStorageKey = computed(() => {
@@ -921,6 +922,10 @@ const headerAudioCallStatus = computed(() => {
   return calls.callStatusText.value || 'Аудиозвонок активен'
 })
 const canToggleAudioCall = computed(() => {
+  if (activeConversationAgent.value) {
+    return false
+  }
+
   if (headerAudioCall.value) {
     return true
   }
@@ -934,13 +939,14 @@ const canToggleAudioCall = computed(() => {
   )
 })
 const canToggleVideo = computed(() => Boolean(
-  headerActiveCall.value
+  !activeConversationAgent.value && (
+    headerActiveCall.value
   || (
     conversations.activeConversation.value
     && !conversations.messagePending.value
     && calls.supported.value
     && !calls.requestingPermissions.value
-  ),
+  )),
 ))
 const showCallViewModes = computed(() => Boolean(
   headerActiveCall.value
@@ -2114,6 +2120,12 @@ async function copyLink(href: string, label: string) {
 async function startCall(mode: 'audio' | 'video') {
   actionError.value = ''
   calls.clearError()
+
+  if (activeConversationAgent.value) {
+    actionError.value = 'Для AI-агентов звонки недоступны.'
+    return
+  }
+
   await calls.refreshMediaPermissions()
 
   try {
@@ -2326,13 +2338,13 @@ onBeforeUnmount(() => {
         :call-security-title="headerCallSecurityTitle"
         :can-toggle-audio-call="canToggleAudioCall"
         :can-toggle-video="canToggleVideo"
-        :video-call-disabled="!conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
+        :video-call-disabled="activeConversationAgent || !conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
         :microphone-enabled="calls.controls.value.microphoneEnabled"
         :speaker-enabled="calls.controls.value.speakerEnabled"
         :video-enabled="calls.controls.value.videoEnabled"
         :call-view-mode="calls.viewMode.value"
         :show-call-view-modes="showCallViewModes"
-        :show-call-actions="Boolean(conversations.activeConversation.value)"
+        :show-call-actions="Boolean(conversations.activeConversation.value) && !activeConversationAgent"
         :can-switch-camera="calls.canSwitchCamera.value"
         @toggle-details="toggleDetails"
         @toggle-audio-call="toggleAudioCall"

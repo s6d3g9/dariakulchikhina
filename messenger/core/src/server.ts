@@ -7,9 +7,12 @@ import fastifyStatic from '@fastify/static'
 import websocket from '@fastify/websocket'
 import { z } from 'zod'
 
+import { getMessengerAgentSettings, updateMessengerAgentGraph, updateMessengerAgentSettings } from './agent-settings-store.ts'
+import { appendMessengerAgentRunEvent, getMessengerAgentRunById, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from './agent-run-store.ts'
+import { buildMessengerAgentReply, findMessengerAgentById, listMessengerAgents } from './agent-store.ts'
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
 import { createMessengerToken, readBearerToken, verifyMessengerToken } from './auth.ts'
-import { addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateDirectConversation, findOrCreateSecretConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages, toggleReactionInConversation } from './conversation-store.ts'
+import { addAgentMessageToConversation, addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateAgentConversation, findOrCreateDirectConversation, findOrCreateSecretConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages, toggleReactionInConversation } from './conversation-store.ts'
 import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from './contact-store.ts'
 import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } from './crypto-store.ts'
 import { readMessengerConfig } from './config.ts'
@@ -77,6 +80,44 @@ export async function createMessengerServer() {
   const directConversationSchema = z.object({
     peerUserId: z.string().uuid(),
   })
+  const agentParamsSchema = z.object({
+    agentId: z.string().trim().min(1).max(120),
+  })
+  const agentSettingsSchema = z.object({
+    model: z.string().trim().min(1).max(120),
+    apiKey: z.string().trim().max(2048).optional().default(''),
+    connections: z.array(z.object({
+      targetAgentId: z.string().trim().min(1).max(120),
+      mode: z.enum(['review', 'enrich', 'validate', 'summarize', 'route']).default('review'),
+    })).max(12).default([]),
+    graphPosition: z.object({
+      x: z.number().int().min(0).max(5000),
+      y: z.number().int().min(0).max(5000),
+    }).optional(),
+  })
+  const agentGraphSchema = z.object({
+    graph: z.record(z.string().trim().min(1).max(120), z.object({
+      connections: z.array(z.object({
+        targetAgentId: z.string().trim().min(1).max(120),
+        mode: z.enum(['review', 'enrich', 'validate', 'summarize', 'route']).default('review'),
+      })).max(12).default([]),
+      graphPosition: z.object({
+        x: z.number().int().min(0).max(5000),
+        y: z.number().int().min(0).max(5000),
+      }),
+    })),
+  })
+  const agentRunsQuerySchema = z.object({
+    agentId: z.string().trim().min(1).max(120).optional(),
+    limit: z.coerce.number().int().min(1).max(30).default(10),
+  })
+  const agentRunParamsSchema = z.object({
+    runId: z.string().trim().min(1).max(120),
+  })
+  const agentEdgePayloadsQuerySchema = z.object({
+    agentId: z.string().trim().min(1).max(120).optional(),
+    limit: z.coerce.number().int().min(1).max(80).default(24),
+  })
   const userParamsSchema = z.object({
     userId: z.string().uuid(),
   })
@@ -128,7 +169,7 @@ export async function createMessengerServer() {
   const forwardedSnapshotSchema = z.object({
     messageId: messageIdSchema,
     conversationId: z.string().uuid(),
-    senderUserId: z.string().uuid(),
+    senderUserId: z.string().trim().min(1).max(120),
     senderDisplayName: z.string().trim().min(1).max(80),
     body: z.string().trim().max(4000).optional().default(''),
     encryptedBody: encryptedPayloadSchema.optional(),
@@ -582,6 +623,172 @@ export async function createMessengerServer() {
     return await buildContactsOverview(session.user, users, parsedQuery.data.query || '')
   })
 
+  app.get('/agents', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const agents = await listMessengerAgents()
+    const conversations = await listConversationsForUser(session.user, await listMessengerUsers(), '')
+    const settingsList = await Promise.all(agents.map(agent => getMessengerAgentSettings(agent.id)))
+
+    return {
+      agents: agents.map((agent, index) => ({
+        ...agent,
+        settings: {
+          ...settingsList[index],
+          apiKeyConfigured: Boolean(settingsList[index].apiKey),
+        },
+        conversationId: conversations.find(item => item?.peerType === 'agent' && item.peerUserId === agent.id)?.id || null,
+      })),
+    }
+  })
+
+  app.get('/agents/:agentId/settings', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = agentParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const agent = await findMessengerAgentById(parsedParams.data.agentId)
+    if (!agent) {
+      return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
+    }
+
+    const settings = await getMessengerAgentSettings(agent.id)
+    return {
+      settings: {
+        ...settings,
+        apiKeyConfigured: Boolean(settings.apiKey),
+      },
+    }
+  })
+
+  app.put('/agents/:agentId/settings', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = agentParamsSchema.safeParse(request.params)
+    const parsedBody = agentSettingsSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const agent = await findMessengerAgentById(parsedParams.data.agentId)
+    if (!agent) {
+      return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
+    }
+
+    const validAgentIds = new Set((await listMessengerAgents()).map(item => item.id))
+    const settings = await updateMessengerAgentSettings(agent.id, {
+      model: parsedBody.data.model,
+      apiKey: parsedBody.data.apiKey,
+      connections: parsedBody.data.connections.filter(item => item.targetAgentId !== agent.id && validAgentIds.has(item.targetAgentId)),
+      graphPosition: parsedBody.data.graphPosition,
+    })
+
+    return {
+      settings: {
+        ...settings,
+        apiKeyConfigured: Boolean(settings.apiKey),
+      },
+    }
+  })
+
+  app.put('/agents/graph', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedBody = agentGraphSchema.safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const validAgentIds = new Set((await listMessengerAgents()).map(item => item.id))
+    const normalizedGraph = Object.fromEntries(
+      Object.entries(parsedBody.data.graph)
+        .filter(([agentId]) => validAgentIds.has(agentId))
+        .map(([agentId, node]) => [agentId, {
+          connections: node.connections.filter(item => item.targetAgentId !== agentId && validAgentIds.has(item.targetAgentId)),
+          graphPosition: node.graphPosition,
+        }]),
+    )
+
+    await updateMessengerAgentGraph(normalizedGraph)
+
+    const settingsList = await Promise.all(
+      Array.from(validAgentIds).map(agentId => getMessengerAgentSettings(agentId)),
+    )
+
+    return {
+      settings: settingsList.map(settings => ({
+        ...settings,
+        apiKeyConfigured: Boolean(settings.apiKey),
+      })),
+    }
+  })
+
+  app.get('/agents/runs', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedQuery = agentRunsQuerySchema.safeParse(request.query)
+    if (!parsedQuery.success) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    return {
+      runs: await listMessengerAgentRuns(parsedQuery.data),
+    }
+  })
+
+  app.get('/agents/runs/:runId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = agentRunParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const run = await getMessengerAgentRunById(parsedParams.data.runId)
+    if (!run) {
+      return reply.code(404).send({ error: 'RUN_NOT_FOUND' })
+    }
+
+    return { run }
+  })
+
+  app.get('/agents/edge-payloads', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedQuery = agentEdgePayloadsQuerySchema.safeParse(request.query)
+    if (!parsedQuery.success) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    return {
+      edgePayloads: await listMessengerAgentEdgePayloads(parsedQuery.data),
+    }
+  })
+
   app.post('/contacts/invites', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -810,6 +1017,31 @@ export async function createMessengerServer() {
     return { conversation }
   })
 
+  app.post('/agents/:agentId/conversation', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = agentParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const agent = await findMessengerAgentById(parsedParams.data.agentId)
+    if (!agent) {
+      return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
+    }
+
+    const conversation = await findOrCreateAgentConversation(session.user.id, agent.id)
+    emitToUsers([session.user.id], {
+      type: 'conversations.updated',
+      conversationId: conversation.id,
+      timestamp: new Date().toISOString(),
+    })
+    return { conversation }
+  })
+
   app.delete('/conversations/:conversationId', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -988,6 +1220,104 @@ export async function createMessengerServer() {
         })
       const conversation = await findConversationById(parsedParams.data.conversationId)
       if (conversation) {
+        if (conversation.kind === 'agent') {
+          const agent = await findMessengerAgentById(conversation.userBId)
+          if (agent) {
+            const agentRunId = randomUUID()
+            const emitAgentTrace = async (payload: {
+              phase: 'started' | 'context' | 'files' | 'consulting' | 'reasoning' | 'completed' | 'failed'
+              status: 'running' | 'completed' | 'failed'
+              summary: string
+              focus?: string
+              activeTargetAgentIds?: string[]
+              activeConnections?: Array<{
+                targetAgentId: string
+                mode: 'review' | 'enrich' | 'validate' | 'summarize' | 'route'
+                payloadPreview?: string
+              }>
+              fileNames?: string[]
+              artifacts?: Array<{
+                kind: 'consultation' | 'file' | 'summary'
+                label: string
+                content: string
+                agentId?: string
+              }>
+            }) => {
+              const timestamp = new Date().toISOString()
+              await appendMessengerAgentRunEvent({
+                runId: agentRunId,
+                conversationId: conversation.id,
+                agentId: agent.id,
+                phase: payload.phase,
+                status: payload.status,
+                summary: payload.summary,
+                focus: payload.focus,
+                activeTargetAgentIds: payload.activeTargetAgentIds || [],
+                fileNames: payload.fileNames || [],
+                artifacts: payload.artifacts || [],
+                timestamp,
+              })
+
+              emitToUsers([session.user.id], {
+                type: 'agent.trace',
+                conversationId: conversation.id,
+                trace: {
+                  runId: agentRunId,
+                  agentId: agent.id,
+                  phase: payload.phase,
+                  status: payload.status,
+                  summary: payload.summary,
+                  focus: payload.focus,
+                  activeTargetAgentIds: payload.activeTargetAgentIds || [],
+                  activeConnections: payload.activeConnections || [],
+                  fileNames: payload.fileNames || [],
+                  artifacts: payload.artifacts || [],
+                  timestamp,
+                },
+              })
+            }
+            const transcript = await listMessagesForConversation(parsedParams.data.conversationId, session.user, users)
+            try {
+              const replyBody = await buildMessengerAgentReply(
+                agent.id,
+                parsedBody.data.body || parsedBody.data.forwardedFrom?.body || '',
+                transcript
+                  .slice(-8)
+                  .filter(item => !item.deletedAt)
+                  .map(item => ({
+                    role: item.own ? 'user' as const : 'assistant' as const,
+                    content: item.kind === 'file'
+                      ? `${item.body}${item.attachment ? ` (${item.attachment.name})` : ''}`
+                      : item.body,
+                  })),
+                {
+                  onTrace: emitAgentTrace,
+                },
+              )
+              await addAgentMessageToConversation(conversation.id, agent, replyBody)
+              await emitAgentTrace({
+                phase: 'completed',
+                status: 'completed',
+                summary: 'Ответ готов и добавлен в диалог.',
+                focus: `Итоговая длина ответа: ${replyBody.length} символов.`,
+                artifacts: [{
+                  kind: 'summary',
+                  label: 'Ответ',
+                  content: replyBody.slice(0, 320),
+                }],
+              })
+            } catch (error) {
+              await emitAgentTrace({
+                phase: 'failed',
+                status: 'failed',
+                summary: 'Сборка ответа остановилась с ошибкой.',
+                focus: error instanceof Error ? error.message : 'UNKNOWN_ERROR',
+              })
+              throw error
+            }
+          }
+        }
+
         emitToUsers([conversation.userAId, conversation.userBId], {
           type: 'conversations.updated',
           conversationId: conversation.id,

@@ -151,6 +151,12 @@ async function removeChat(conversationId: string) {
 async function startChatCall(conversationId: string, mode: 'audio' | 'video') {
   actionError.value = ''
 
+  const conversation = conversations.conversations.value.find(item => item.id === conversationId)
+  if (conversation?.peerType === 'agent') {
+    actionError.value = 'Для AI-агентов звонки недоступны.'
+    return
+  }
+
   try {
     holdActions.dismiss()
     await conversations.selectConversation(conversationId)
@@ -282,6 +288,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
                 @pointerdown.stop
               >
                 <button
+                  v-if="chat.peerType !== 'agent'"
                   type="button"
                   class="hold-actions__icon-btn"
                   aria-label="Аудиозвонок"
@@ -290,6 +297,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
                   <MessengerIcon class="hold-actions__icon" name="phone" :size="22" />
                 </button>
                 <button
+                  v-if="chat.peerType !== 'agent'"
                   type="button"
                   class="hold-actions__icon-btn"
                   aria-label="Видеозвонок"

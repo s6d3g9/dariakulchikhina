@@ -1,6 +1,6 @@
 export function useMessengerConversationState() {
   const activeConversationId = useState<string | null>('messenger-active-conversation-id', () => null)
-  const activeSection = useState<'chat' | 'chats' | 'contacts' | 'settings'>('messenger-active-section', () => 'chats')
+  const activeSection = useState<'chat' | 'chats' | 'contacts' | 'agents' | 'settings'>('messenger-active-section', () => 'chats')
   const mediaSheetOpen = useState<boolean>('messenger-media-sheet-open', () => false)
 
   function openConversation(conversationId: string) {
@@ -8,7 +8,7 @@ export function useMessengerConversationState() {
     activeSection.value = 'chat'
   }
 
-  function openSection(section: 'chat' | 'chats' | 'contacts' | 'settings') {
+  function openSection(section: 'chat' | 'chats' | 'contacts' | 'agents' | 'settings') {
     activeSection.value = section
   }
 

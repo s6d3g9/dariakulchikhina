@@ -1,4 +1,4 @@
-export type MessengerSectionKey = 'chat' | 'chats' | 'contacts' | 'settings'
+export type MessengerSectionKey = 'chat' | 'chats' | 'contacts' | 'agents' | 'settings'
 
 export interface MessengerSectionItem {
   key: MessengerSectionKey
@@ -26,6 +26,12 @@ export function useMessengerSections() {
       title: 'Контакты',
       shortTitle: 'Контакты',
       description: 'Поиск, приглашения в контакты и быстрый старт direct-диалога.',
+    },
+    {
+      key: 'agents',
+      title: 'Агенты',
+      shortTitle: 'Агенты',
+      description: 'AI-собеседники для задач, материалов и контроля реализации.',
     },
     {
       key: 'settings',

@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
+import { listMessengerAgents } from './agent-store.ts'
 import type { MessengerUserRecord } from './auth-store.ts'
 import { resolveMessengerDataPath } from './storage-paths.ts'
 
@@ -171,6 +172,8 @@ export interface ContactOverviewItem {
   displayName: string
   login: string
   createdAt: string
+  peerType: 'user' | 'agent'
+  description?: string
 }
 
 export interface InviteOverviewItem {
@@ -187,13 +190,16 @@ export interface DiscoverOverviewItem {
   id: string
   displayName: string
   login: string
-  relationship: 'none' | 'incoming' | 'outgoing' | 'contact'
+  relationship: 'none' | 'incoming' | 'outgoing' | 'contact' | 'agent'
+  peerType: 'user' | 'agent'
+  description?: string
 }
 
 export async function buildContactsOverview(user: MessengerUserRecord, users: MessengerUserRecord[], query: string) {
   const normalizedQuery = query.trim().toLowerCase()
   const contacts = await listContactsForUser(user.id)
   const invites = await listInvitesForUser(user.id)
+  const agents = await listMessengerAgents()
 
   const matchesQuery = (candidate: MessengerUserRecord) => {
     if (!normalizedQuery) {
@@ -216,9 +222,29 @@ export async function buildContactsOverview(user: MessengerUserRecord, users: Me
         displayName: peer.displayName,
         login: peer.login,
         createdAt: contact.createdAt,
+        peerType: 'user',
       }
     })
     .filter((value): value is ContactOverviewItem => Boolean(value))
+
+  const agentContacts: ContactOverviewItem[] = agents
+    .filter((agent) => {
+      if (!normalizedQuery) {
+        return true
+      }
+
+      return agent.displayName.toLowerCase().includes(normalizedQuery)
+        || agent.login.toLowerCase().includes(normalizedQuery)
+        || agent.description.toLowerCase().includes(normalizedQuery)
+    })
+    .map(agent => ({
+      id: agent.id,
+      displayName: agent.displayName,
+      login: agent.login,
+      createdAt: user.createdAt,
+      peerType: 'agent',
+      description: agent.description,
+    }))
 
   const invitesOverview: InviteOverviewItem[] = invites
     .map((invite) => {
@@ -251,6 +277,7 @@ export async function buildContactsOverview(user: MessengerUserRecord, users: Me
           displayName: candidate.displayName,
           login: candidate.login,
           relationship: 'contact' as const,
+          peerType: 'user' as const,
         }
       }
 
@@ -261,6 +288,7 @@ export async function buildContactsOverview(user: MessengerUserRecord, users: Me
           displayName: candidate.displayName,
           login: candidate.login,
           relationship: 'incoming' as const,
+          peerType: 'user' as const,
         }
       }
 
@@ -271,6 +299,7 @@ export async function buildContactsOverview(user: MessengerUserRecord, users: Me
           displayName: candidate.displayName,
           login: candidate.login,
           relationship: 'outgoing' as const,
+          peerType: 'user' as const,
         }
       }
 
@@ -279,12 +308,28 @@ export async function buildContactsOverview(user: MessengerUserRecord, users: Me
         displayName: candidate.displayName,
         login: candidate.login,
         relationship: 'none' as const,
+        peerType: 'user' as const,
       }
     })
 
+  const discoverAgents: DiscoverOverviewItem[] = normalizedQuery
+    ? agents
+        .filter(agent => agent.displayName.toLowerCase().includes(normalizedQuery)
+          || agent.login.toLowerCase().includes(normalizedQuery)
+          || agent.description.toLowerCase().includes(normalizedQuery))
+        .map(agent => ({
+          id: agent.id,
+          displayName: agent.displayName,
+          login: agent.login,
+          relationship: 'agent' as const,
+          peerType: 'agent' as const,
+          description: agent.description,
+        }))
+    : []
+
   return {
-    contacts: contactsOverview,
+    contacts: [...contactsOverview, ...agentContacts],
     invites: invitesOverview,
-    discover: discoverOverview,
+    discover: [...discoverOverview, ...discoverAgents],
   }
 }

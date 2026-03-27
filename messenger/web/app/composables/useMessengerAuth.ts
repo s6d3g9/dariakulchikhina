@@ -12,6 +12,8 @@ export interface MessengerContactsOverview {
     displayName: string
     login: string
     createdAt: string
+    peerType: 'user' | 'agent'
+    description?: string
   }>
   invites: Array<{
     id: string
@@ -26,7 +28,9 @@ export interface MessengerContactsOverview {
     id: string
     displayName: string
     login: string
-    relationship: 'none' | 'incoming' | 'outgoing' | 'contact'
+    relationship: 'none' | 'incoming' | 'outgoing' | 'contact' | 'agent'
+    peerType: 'user' | 'agent'
+    description?: string
   }>
 }
 

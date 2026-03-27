@@ -11,13 +11,15 @@ const searchOpen = ref(false)
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
-type ContactRelationship = 'none' | 'incoming' | 'outgoing' | 'contact'
+type ContactRelationship = 'none' | 'incoming' | 'outgoing' | 'contact' | 'agent'
 
 interface ContactSearchItem {
   id: string
   title: string
   login: string
   relationship: ContactRelationship
+  peerType: 'user' | 'agent'
+  description?: string
   meta: string
 }
 
@@ -35,7 +37,7 @@ function resolveContactAvatar(name: string) {
     .join('')
 }
 
-function getRelationshipLabel(relationship: 'none' | 'incoming' | 'outgoing' | 'contact') {
+function getRelationshipLabel(relationship: ContactRelationship) {
   switch (relationship) {
     case 'contact':
       return 'контакт'
@@ -43,6 +45,8 @@ function getRelationshipLabel(relationship: 'none' | 'incoming' | 'outgoing' | '
       return 'входящая заявка'
     case 'outgoing':
       return 'заявка отправлена'
+    case 'agent':
+      return 'AI-агент'
     default:
       return 'пользователь'
   }
@@ -79,6 +83,8 @@ function getActionLabel(relationship: ContactRelationship) {
   switch (relationship) {
     case 'contact':
       return 'Открыть чат'
+    case 'agent':
+      return 'Открыть агента'
     case 'incoming':
       return 'Принять'
     case 'outgoing':
@@ -98,6 +104,8 @@ const contactSuggestions = computed(() => {
       login: contact.login,
       relationship: 'contact',
       meta: `@${contact.login} · контакт`,
+      peerType: contact.peerType,
+      description: contact.description,
     })
   }
 
@@ -112,6 +120,8 @@ const contactSuggestions = computed(() => {
         title: candidate.displayName,
         login: candidate.login,
         relationship: candidate.relationship,
+        peerType: candidate.peerType,
+        description: candidate.description,
         meta: `@${candidate.login} · ${getRelationshipLabel(candidate.relationship)}`,
       })
     }
@@ -173,7 +183,7 @@ async function runSearch() {
   }
 }
 
-async function openDirectChat(targetUserId: string) {
+async function openDirectChat(targetUserId: string, peerType: 'user' | 'agent' = 'user') {
   if (holdActions.consumeSuppressedClick()) {
     return
   }
@@ -182,14 +192,25 @@ async function openDirectChat(targetUserId: string) {
 
   try {
     holdActions.dismiss()
-    await conversations.openDirectConversation(targetUserId)
+    if (peerType === 'agent') {
+      await conversations.openAgentConversation(targetUserId)
+    } else {
+      await conversations.openDirectConversation(targetUserId)
+    }
   } catch {
-    actionError.value = 'Не удалось открыть direct-чат.'
+    actionError.value = peerType === 'agent'
+      ? 'Не удалось открыть чат с агентом.'
+      : 'Не удалось открыть direct-чат.'
   }
 }
 
-async function openSecretChat(targetUserId: string) {
+async function openSecretChat(targetUserId: string, peerType: 'user' | 'agent' = 'user') {
   actionError.value = ''
+
+  if (peerType === 'agent') {
+    actionError.value = 'Для AI-агентов secret-чат недоступен.'
+    return
+  }
 
   try {
     holdActions.dismiss()
@@ -200,8 +221,13 @@ async function openSecretChat(targetUserId: string) {
   }
 }
 
-async function removeContact(peerUserId: string) {
+async function removeContact(peerUserId: string, peerType: 'user' | 'agent' = 'user') {
   actionError.value = ''
+
+  if (peerType === 'agent') {
+    actionError.value = 'Системного агента нельзя удалить из списка.'
+    return
+  }
 
   try {
     holdActions.dismiss()
@@ -211,12 +237,12 @@ async function removeContact(peerUserId: string) {
   }
 }
 
-function buildContactCard(contact: { displayName: string; login: string }) {
+function buildContactCard(contact: { displayName: string; login: string; peerType?: 'user' | 'agent'; description?: string }) {
   return [
-    'Контакт',
+    contact.peerType === 'agent' ? 'AI-агент' : 'Контакт',
     `Имя: ${contact.displayName}`,
     `Никнейм: @${contact.login}`,
-    'Телефон: не указан',
+    contact.description ? `Описание: ${contact.description}` : 'Телефон: не указан',
   ].join('\n')
 }
 
@@ -229,8 +255,13 @@ function showActionToast(message: string) {
   }, 2200)
 }
 
-async function startContactCall(contactId: string, mode: 'audio' | 'video') {
+async function startContactCall(contactId: string, mode: 'audio' | 'video', peerType: 'user' | 'agent' = 'user') {
   actionError.value = ''
+
+  if (peerType === 'agent') {
+    actionError.value = 'Для AI-агентов звонки недоступны.'
+    return
+  }
 
   try {
     holdActions.dismiss()
@@ -256,7 +287,7 @@ async function copyContactCard(contact: { displayName: string; login: string }) 
   }
 }
 
-async function forwardContactCard(contact: { id: string; displayName: string; login: string }) {
+async function forwardContactCard(contact: { id: string; displayName: string; login: string; peerType?: 'user' | 'agent'; description?: string }) {
   actionError.value = ''
   const targetConversationId = conversations.activeConversation.value?.id
 
@@ -297,10 +328,15 @@ async function rejectInvite(inviteId: string) {
   }
 }
 
-async function handleSearchAction(targetUserId: string, relationship: ContactRelationship) {
+async function handleSearchAction(targetUserId: string, relationship: ContactRelationship, peerType: 'user' | 'agent' = 'user') {
   actionError.value = ''
 
   try {
+    if (relationship === 'agent' || peerType === 'agent') {
+      await openDirectChat(targetUserId, 'agent')
+      return
+    }
+
     if (relationship === 'contact') {
       await openDirectChat(targetUserId)
       return
@@ -334,7 +370,7 @@ async function handleSearchAction(targetUserId: string, relationship: ContactRel
 
 async function selectSuggestion(item: ContactSearchItem) {
   searchOpen.value = false
-  await handleSearchAction(item.id, item.relationship)
+  await handleSearchAction(item.id, item.relationship, item.peerType)
 }
 
 async function selectSuggestionPointer(item: ContactSearchItem) {
@@ -370,6 +406,15 @@ async function submitAddContact() {
       addContactError.value = 'Пользователь не найден. Введите точный логин.'
       return
     }
+
+    if (found.peerType === 'agent' || found.relationship === 'agent') {
+      await conversations.openAgentConversation(found.id)
+      navigation.openSection('chat')
+      showAddContactDialog.value = false
+      addContactLogin.value = ''
+      return
+    }
+
     await contacts.invite(found.id)
     showAddContactDialog.value = false
     addContactLogin.value = ''
@@ -399,7 +444,7 @@ async function submitAddContact() {
         :class="{ 'list-item--hold-open': holdActions.activeItemId.value === contact.id }"
         data-hold-actions-root="true"
         lines="two"
-        @click="openDirectChat(contact.id)"
+        @click="openDirectChat(contact.id, contact.peerType)"
         @mousedown.left="startHold(contact.id, $event)"
         @mouseup="holdActions.cancelHold()"
         @mouseleave="holdActions.cancelHold()"
@@ -427,29 +472,32 @@ async function submitAddContact() {
               @pointerdown.stop
             >
               <button
+                v-if="contact.peerType !== 'agent'"
                 type="button"
                 class="hold-actions__icon-btn"
                 aria-label="Аудиозвонок"
                 title="Аудиозвонок"
-                @click.stop="startContactCall(contact.id, 'audio')"
+                @click.stop="startContactCall(contact.id, 'audio', contact.peerType)"
               >
                 <MessengerIcon class="hold-actions__icon" name="phone" :size="22" />
               </button>
               <button
+                v-if="contact.peerType !== 'agent'"
                 type="button"
                 class="hold-actions__icon-btn"
                 aria-label="Видеозвонок"
                 title="Видеозвонок"
-                @click.stop="startContactCall(contact.id, 'video')"
+                @click.stop="startContactCall(contact.id, 'video', contact.peerType)"
               >
                 <MessengerIcon class="hold-actions__icon" name="video" :size="22" />
               </button>
               <button
+                v-if="contact.peerType !== 'agent'"
                 type="button"
                 class="hold-actions__icon-btn"
                 aria-label="Создать secret-чат"
                 title="Создать secret-чат"
-                @click.stop="openSecretChat(contact.id)"
+                @click.stop="openSecretChat(contact.id, contact.peerType)"
               >
                 <MessengerIcon class="hold-actions__icon" name="shield" :size="22" />
               </button>
@@ -472,17 +520,18 @@ async function submitAddContact() {
                 <MessengerIcon class="hold-actions__icon" name="forward" :size="22" />
               </button>
               <button
+                v-if="contact.peerType !== 'agent'"
                 type="button"
                 class="hold-actions__icon-btn hold-actions__icon-btn--danger"
                 aria-label="Удалить контакт"
-                @click.stop="removeContact(contact.id)"
+                @click.stop="removeContact(contact.id, contact.peerType)"
               >
                 <MessengerIcon class="hold-actions__icon hold-actions__icon--danger" name="delete" :size="22" />
               </button>
             </div>
           </div>
         </template>
-        <template #subtitle><span class="on-surface-variant">@{{ contact.login }}</span></template>
+        <template #subtitle><span class="on-surface-variant">@{{ contact.login }}<template v-if="contact.description"> · {{ contact.description }}</template></span></template>
       </VListItem>
 
       <div
@@ -514,7 +563,7 @@ async function submitAddContact() {
             :color="candidate.relationship === 'incoming' ? 'success' : 'primary'"
             :variant="candidate.relationship === 'incoming' ? 'flat' : 'tonal'"
             :disabled="candidate.relationship === 'outgoing'"
-            @click.stop="handleSearchAction(candidate.id, candidate.relationship)"
+            @click.stop="handleSearchAction(candidate.id, candidate.relationship, candidate.peerType)"
           >{{ getActionLabel(candidate.relationship) }}</VBtn>
         </template>
       </VListItem>
