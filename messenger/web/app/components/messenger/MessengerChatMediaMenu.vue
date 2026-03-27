@@ -36,7 +36,7 @@ const emit = defineEmits<{
   'select-category': [query: string]
   'feed-scroll': [event: Event]
   'select-item': [item: MessengerKlipyItem]
-  'pick-from-device': []
+  'pick-from-device': [tab: 'photo' | 'file']
 }>()
 
 const categoryRailEl = ref<HTMLDivElement | null>(null)
@@ -118,7 +118,7 @@ defineExpose({
               variant="tonal"
               size="small"
               prepend-icon="mdi-image-plus"
-              @click="emit('pick-from-device')"
+              @click="emit('pick-from-device', 'photo')"
             >
               Загрузить с устройства
             </VBtn>
@@ -143,7 +143,7 @@ defineExpose({
               variant="tonal"
               size="small"
               prepend-icon="mdi-paperclip"
-              @click="emit('pick-from-device')"
+              @click="emit('pick-from-device', 'file')"
             >
               Загрузить файл
             </VBtn>

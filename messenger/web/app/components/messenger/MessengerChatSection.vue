@@ -36,7 +36,7 @@ const composerDockRef = ref<{
   composerInputEl: HTMLTextAreaElement | null
 } | null>(null)
 const messageListEl = ref<HTMLElement | null>(null)
-const fileInput = computed(() => composerDockRef.value?.fileInputEl ?? null)
+const mediaPickerInputEl = ref<HTMLInputElement | null>(null)
 const composerInputEl = computed(() => composerDockRef.value?.composerInputEl ?? null)
 const composerBarEl = computed(() => composerDockRef.value?.composerBarEl ?? null)
 const detailsOpen = ref(false)
@@ -1618,13 +1618,13 @@ async function forwardMessage() {
 }
 
 function openFilePicker(accept = '') {
-  if (!fileInput.value) {
+  if (!mediaPickerInputEl.value) {
     return
   }
 
-  fileInput.value.accept = accept
-  fileInput.value.value = ''
-  fileInput.value.click()
+  mediaPickerInputEl.value.accept = accept
+  mediaPickerInputEl.value.value = ''
+  mediaPickerInputEl.value.click()
 }
 
 async function sendKlipyItem(item: MessengerKlipyItem) {
@@ -2499,8 +2499,10 @@ onBeforeUnmount(() => {
         @select-category="selectCatalogCategory"
         @feed-scroll="handleLoopedFeedScroll($event, { looped: false, canLoadMore: canLoadMoreKlipyItems, onLoadMore: () => klipy.loadMore(KLIPY_RAIL_PAGE_SIZE) })"
         @select-item="selectKlipyItem"
-        @pick-from-device="openFilePicker()"
+        @pick-from-device="openFilePicker($event === 'photo' ? 'image/*,video/*' : '')"
       />
+
+      <input ref="mediaPickerInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="handleFileSelect">
 
       <MessengerChatComposerDock
         ref="composerDockRef"
