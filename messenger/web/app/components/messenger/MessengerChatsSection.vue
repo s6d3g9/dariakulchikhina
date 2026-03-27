@@ -2,23 +2,39 @@
 import type { MessengerConversationItem } from '../../composables/useMessengerConversations'
 
 const conversations = useMessengerConversations()
+const agentsModel = useMessengerAgents()
 const calls = useMessengerCalls()
 const navigation = useMessengerConversationState()
 const holdActions = useMessengerHoldActions()
-const contacts = useMessengerContacts()
 const searchDraft = ref('')
 const actionError = ref('')
 const searchOpen = ref(false)
 
 // ── Папки чатов ─────────────────────────────────────────────────────────────
-type ChatFolder = { key: string; label: string; chatIds: string[] }
+type ChatFolder = {
+  key: string
+  label: string
+  chatIds: string[]
+  kind?: 'manual' | 'agent-system'
+  agentIds?: string[]
+}
 const FOLDERS_LS_KEY = 'messenger-chat-folders'
+const AGENT_SYSTEMS_FOLDER_KEY = 'agent-systems'
 
 function loadFolders(): ChatFolder[] {
   if (!import.meta.client) return []
   try {
     const raw = localStorage.getItem(FOLDERS_LS_KEY)
-    return raw ? (JSON.parse(raw) as ChatFolder[]) : []
+    const parsed = raw ? (JSON.parse(raw) as ChatFolder[]) : []
+    return Array.isArray(parsed)
+      ? parsed.map(folder => ({
+          key: folder.key,
+          label: folder.label,
+          chatIds: Array.isArray(folder.chatIds) ? folder.chatIds : [],
+          kind: folder.kind || 'manual',
+          agentIds: Array.isArray(folder.agentIds) ? folder.agentIds : [],
+        }))
+      : []
   } catch {
     return []
   }
@@ -55,29 +71,161 @@ function confirmDeleteFolder() {
 
 const filteredConversations = computed(() => {
   if (activeFolderKey.value === 'all') return conversations.conversations.value
+  if (activeFolderKey.value === AGENT_SYSTEMS_FOLDER_KEY) {
+    return conversations.conversations.value.filter(item => item.peerType === 'agent')
+  }
   const folder = userFolders.value.find(f => f.key === activeFolderKey.value)
   if (!folder) return conversations.conversations.value
   return conversations.conversations.value.filter(c => folder.chatIds.includes(c.id))
 })
 
+function upsertFolder(folder: ChatFolder) {
+  const index = userFolders.value.findIndex(item => item.key === folder.key)
+  if (index === -1) {
+    userFolders.value = [...userFolders.value, folder]
+  } else {
+    const nextFolders = [...userFolders.value]
+    nextFolders[index] = folder
+    userFolders.value = nextFolders
+  }
+
+  saveFolders()
+}
+
+function attachChatToFolder(folderKey: string, conversationId: string) {
+  const target = userFolders.value.find(folder => folder.key === folderKey)
+  if (!target) {
+    return
+  }
+
+  if (!target.chatIds.includes(conversationId)) {
+    target.chatIds = [...target.chatIds, conversationId]
+    saveFolders()
+  }
+}
+
+function createAgentFolderIfNeeded(agentId: string, displayName: string) {
+  const folderKey = `agent-system-${agentId}`
+  const existing = userFolders.value.find(folder => folder.key === folderKey)
+  if (existing) {
+    return folderKey
+  }
+
+  upsertFolder({
+    key: folderKey,
+    label: `AI: ${displayName}`,
+    chatIds: [],
+    kind: 'agent-system',
+    agentIds: [agentId],
+  })
+
+  return folderKey
+}
+
 // ── Новый чат (FAB) ──────────────────────────────────────────────────────────
 const showNewChatDialog = ref(false)
 const newChatError = ref('')
+const newChatMode = ref<'menu' | 'agent' | 'system'>('menu')
+const agentSearchDraft = ref('')
+const newSystemName = ref('')
+const newSystemAgentIds = ref<string[]>([])
+
+const normalizedAgentSearchQuery = computed(() => agentSearchDraft.value.trim().toLowerCase())
+const filteredAgentGallery = computed(() => {
+  if (!normalizedAgentSearchQuery.value) {
+    return agentsModel.agents.value
+  }
+
+  return agentsModel.agents.value.filter(agent => [agent.displayName, agent.login, agent.description]
+    .some(value => value.toLowerCase().includes(normalizedAgentSearchQuery.value)))
+})
 
 watch(showNewChatDialog, async (isOpen) => {
   if (isOpen) {
-    await contacts.refresh()
+    await agentsModel.refresh()
+    newChatMode.value = 'menu'
+    newChatError.value = ''
+    agentSearchDraft.value = ''
+    newSystemName.value = ''
+    newSystemAgentIds.value = []
   }
 })
 
-async function openOrCreateChat(userId: string) {
+async function openAgentFromGallery(agentId: string) {
   newChatError.value = ''
+
+  const agent = agentsModel.agents.value.find(item => item.id === agentId)
+  if (!agent) {
+    newChatError.value = 'Агент не найден в галерее.'
+    return
+  }
+
   try {
-    await conversations.openDirectConversation(userId)
+    await conversations.openAgentConversation(agentId)
+    const conversationId = conversations.activeConversationId.value
+    if (conversationId) {
+      const currentFolder = userFolders.value.find(folder => folder.key === activeFolderKey.value)
+      const folderKey = currentFolder?.kind === 'agent-system'
+        ? currentFolder.key
+        : createAgentFolderIfNeeded(agent.id, agent.displayName)
+      attachChatToFolder(folderKey, conversationId)
+      activeFolderKey.value = folderKey
+    }
     navigation.openSection('chat')
     showNewChatDialog.value = false
   } catch {
-    newChatError.value = 'Не удалось открыть диалог.'
+    newChatError.value = 'Не удалось открыть чат с агентом.'
+  }
+}
+
+function toggleAgentSystemMember(agentId: string) {
+  if (newSystemAgentIds.value.includes(agentId)) {
+    newSystemAgentIds.value = newSystemAgentIds.value.filter(item => item !== agentId)
+    return
+  }
+
+  newSystemAgentIds.value = [...newSystemAgentIds.value, agentId]
+}
+
+async function createAgentSystem() {
+  newChatError.value = ''
+  const selectedAgents = agentsModel.agents.value.filter(agent => newSystemAgentIds.value.includes(agent.id))
+  const systemName = newSystemName.value.trim()
+
+  if (!systemName) {
+    newChatError.value = 'Укажите название системы агентов.'
+    return
+  }
+
+  if (selectedAgents.length === 0) {
+    newChatError.value = 'Выберите минимум одного агента для системы.'
+    return
+  }
+
+  const createdConversationIds: string[] = []
+
+  try {
+    for (const agent of selectedAgents) {
+      await conversations.openAgentConversation(agent.id)
+      const conversationId = conversations.activeConversationId.value
+      if (conversationId) {
+        createdConversationIds.push(conversationId)
+      }
+    }
+
+    const folderKey = `agent-system-custom-${Date.now()}`
+    upsertFolder({
+      key: folderKey,
+      label: `Система: ${systemName}`,
+      chatIds: Array.from(new Set(createdConversationIds)),
+      kind: 'agent-system',
+      agentIds: selectedAgents.map(agent => agent.id),
+    })
+    activeFolderKey.value = folderKey
+    navigation.openSection('chat')
+    showNewChatDialog.value = false
+  } catch {
+    newChatError.value = 'Не удалось создать систему агентов.'
   }
 }
 
@@ -353,6 +501,14 @@ function formatChatPreview(chat: MessengerConversationItem) {
         @click="activeFolderKey = 'all'"
       >Все</button>
       <button
+        type="button"
+        class="chats-folder-chip"
+        :class="{ 'chats-folder-chip--active': activeFolderKey === AGENT_SYSTEMS_FOLDER_KEY }"
+        role="tab"
+        :aria-selected="activeFolderKey === AGENT_SYSTEMS_FOLDER_KEY"
+        @click="activeFolderKey = AGENT_SYSTEMS_FOLDER_KEY"
+      >Системы AI</button>
+      <button
         v-for="folder in userFolders"
         :key="folder.key"
         type="button"
@@ -444,34 +600,78 @@ function formatChatPreview(chat: MessengerConversationItem) {
     </VDialog>
 
     <!-- Диалог: новый чат (FAB) -->
-    <VDialog v-model="showNewChatDialog" max-width="360">
+    <VDialog v-model="showNewChatDialog" max-width="520">
       <VCard>
         <VCardTitle>Новый чат</VCardTitle>
-        <VCardText class="pa-0">
-          <div v-if="contacts.pending.value" class="section-progress">
-            <MessengerProgressLinear aria-label="Загрузка контактов для нового чата" indeterminate four-color />
+        <VCardText>
+          <div v-if="newChatMode === 'menu'" class="new-chat-mode-grid">
+            <button type="button" class="new-chat-mode-card" @click="newChatMode = 'agent'">
+              <span class="new-chat-mode-card__title">Чат с агентом</span>
+              <span class="new-chat-mode-card__text">Открыть AI-ассистента из галереи агентов.</span>
+            </button>
+            <button type="button" class="new-chat-mode-card" @click="newChatMode = 'system'">
+              <span class="new-chat-mode-card__title">Система агентов</span>
+              <span class="new-chat-mode-card__text">Создать группу агентов в отдельной папке чатов.</span>
+            </button>
           </div>
-          <VList v-if="contacts.overview.value.contacts.length" bg-color="transparent" density="comfortable">
-            <VListItem
-              v-for="contact in contacts.overview.value.contacts"
-              :key="contact.id"
-              :subtitle="`@${contact.login}`"
-              @click="openOrCreateChat(contact.id)"
+
+          <div v-else-if="newChatMode === 'agent'" class="new-chat-agent-gallery">
+            <VTextField
+              v-model="agentSearchDraft"
+              label="Поиск агента"
+              variant="outlined"
+              hide-details
+            />
+            <div class="new-chat-agent-gallery__list">
+              <button
+                v-for="agent in filteredAgentGallery"
+                :key="agent.id"
+                type="button"
+                class="new-chat-agent-gallery__item"
+                @click="openAgentFromGallery(agent.id)"
+              >
+                <span class="new-chat-agent-gallery__item-title">{{ agent.displayName }}</span>
+                <span class="new-chat-agent-gallery__item-subtitle">@{{ agent.login }} · {{ agent.settings.model }}</span>
+                <span class="new-chat-agent-gallery__item-text">{{ agent.description }}</span>
+              </button>
+              <p v-if="!filteredAgentGallery.length" class="on-surface-variant body-medium">Агенты не найдены.</p>
+            </div>
+          </div>
+
+          <div v-else class="new-chat-system-builder">
+            <VTextField
+              v-model="newSystemName"
+              label="Название системы агентов"
+              placeholder="Например: Система для проекта Ивановы"
+              variant="outlined"
+              hide-details
+            />
+            <p class="new-chat-system-builder__hint">Node-граф сейчас отключён. Система создаётся как папка с выбранными агентами.</p>
+            <div class="new-chat-system-builder__chips">
+              <VChip
+                v-for="agent in agentsModel.agents.value"
+                :key="agent.id"
+                :variant="newSystemAgentIds.includes(agent.id) ? 'flat' : 'outlined'"
+                :color="newSystemAgentIds.includes(agent.id) ? 'primary' : undefined"
+                @click="toggleAgentSystemMember(agent.id)"
+              >
+                {{ agent.displayName }}
+              </VChip>
+            </div>
+            <VBtn
+              color="primary"
+              variant="tonal"
+              :disabled="!newSystemName.trim() || !newSystemAgentIds.length"
+              @click="createAgentSystem()"
             >
-              <template #title>{{ contact.displayName }}</template>
-              <template #prepend>
-                <VAvatar color="primary" variant="tonal" size="36">
-                  {{ resolveChatAvatar(contact.displayName) }}
-                </VAvatar>
-              </template>
-            </VListItem>
-          </VList>
-          <div v-else class="pa-4">
-            <p class="on-surface-variant body-medium">Нет контактов для начала диалога.</p>
+              Создать систему агентов
+            </VBtn>
           </div>
+
           <VAlert v-if="newChatError" type="error" class="ma-4">{{ newChatError }}</VAlert>
         </VCardText>
         <VCardActions>
+          <VBtn v-if="newChatMode !== 'menu'" variant="text" @click="newChatMode = 'menu'">Назад</VBtn>
           <VSpacer />
           <VBtn variant="text" @click="showNewChatDialog = false">Закрыть</VBtn>
         </VCardActions>

@@ -32,6 +32,34 @@ interface MessengerCallControlsState {
   videoEnabled: boolean
 }
 
+type MessengerTranscriptSpeaker = 'you' | 'peer'
+
+interface MessengerCallTranscriptEntry {
+  id: string
+  speaker: MessengerTranscriptSpeaker
+  text: string
+  final: boolean
+  createdAt: number
+}
+
+type MessengerCallAnalysisToolId = 'psychology' | 'business' | 'intent' | 'objections' | 'speech-risks' | 'next-steps'
+
+interface MessengerCallAnalysisTool {
+  id: MessengerCallAnalysisToolId
+  title: string
+  description: string
+}
+
+interface MessengerCallReviewState {
+  callId: string
+  conversationId: string
+  cleanedTranscript: string
+  summary: string
+  sourceLines: number
+  generatedAt: number
+  autoPosted: boolean
+}
+
 type MessengerCallViewMode = 'full' | 'split' | 'mini'
 type MessengerCallNetworkQuality = 'stable' | 'weak' | 'reconnecting' | 'lost'
 type MessengerCallCameraFacing = 'user' | 'environment'
@@ -81,6 +109,15 @@ const transformedSenders = new WeakSet<object>()
 const transformedReceivers = new WeakSet<object>()
 const CALL_VIEW_MODE_ORDER: MessengerCallViewMode[] = ['split', 'full', 'mini']
 const CALL_VERIFICATION_EMOJIS = ['🔒', '🎧', '🎤', '🛡️', '🎼', '🌿', '🔥', '⚡', '🌊', '🪐', '🍀', '🧩', '🛰️', '🎯', '🌙', '🫧', '🎹', '🦋', '☀️', '🧭', '💎', '🪶', '🎛️', '🧠', '🐚', '🕊️', '🧿', '🪙', '🌈', '❄️', '🍃', '🔑']
+const CALL_ANALYSIS_TOOLS: MessengerCallAnalysisTool[] = [
+  { id: 'psychology', title: 'Психология клиента', description: 'Эмоции, доверие, скрытые триггеры и тревожность.' },
+  { id: 'business', title: 'Деловая практика', description: 'Решения, бюджет, сроки, договорённости и риски.' },
+  { id: 'intent', title: 'Карта намерений', description: 'Что клиент хочет получить и какие критерии успеха.' },
+  { id: 'objections', title: 'Возражения и сомнения', description: 'Явные и неявные причины сопротивления.' },
+  { id: 'speech-risks', title: 'Риски коммуникации', description: 'Где формулировки были расплывчаты или конфликтны.' },
+  { id: 'next-steps', title: 'Следующие шаги', description: 'План действий по итогам разговора.' },
+]
+const TRANSCRIPT_FILLER_WORDS = ['ээ', 'эм', 'мм', 'ну', 'типа', 'короче', 'как бы', 'вот', 'ага', 'угу']
 
 interface MessengerCallSecurityContext {
   callId: string
@@ -98,6 +135,224 @@ interface MessengerCallSecurityContext {
 }
 
 let callSecurityContext: MessengerCallSecurityContext | null = null
+
+type SpeechRecognitionEventLike = {
+  resultIndex: number
+  results: ArrayLike<{
+    isFinal: boolean
+    0?: {
+      transcript?: string
+    }
+  }>
+}
+
+type SpeechRecognitionErrorEventLike = {
+  error?: string
+}
+
+type SpeechRecognitionCtorLike = new () => {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+  abort: () => void
+}
+
+let speechRecognition: InstanceType<SpeechRecognitionCtorLike> | null = null
+let speechRecognitionRestartTimer: ReturnType<typeof setTimeout> | null = null
+let transcriptionAnalyserContext: AudioContext | null = null
+let transcriptionLocalAnalyser: AnalyserNode | null = null
+let transcriptionRemoteAnalyser: AnalyserNode | null = null
+let transcriptionLevelSampler: ReturnType<typeof setInterval> | null = null
+let transcriptionLastEnergy = { local: 0, remote: 0 }
+
+function resolveSpeechRecognitionCtor(): SpeechRecognitionCtorLike | null {
+  if (!import.meta.client) {
+    return null
+  }
+
+  const maybeCtor = (window as typeof window & {
+    SpeechRecognition?: SpeechRecognitionCtorLike
+    webkitSpeechRecognition?: SpeechRecognitionCtorLike
+  }).SpeechRecognition
+    || (window as typeof window & {
+      SpeechRecognition?: SpeechRecognitionCtorLike
+      webkitSpeechRecognition?: SpeechRecognitionCtorLike
+    }).webkitSpeechRecognition
+
+  return typeof maybeCtor === 'function' ? maybeCtor : null
+}
+
+function readAnalyserEnergy(analyser: AnalyserNode | null) {
+  if (!analyser) {
+    return 0
+  }
+
+  const buffer = new Uint8Array(analyser.fftSize)
+  analyser.getByteTimeDomainData(buffer)
+  let total = 0
+
+  for (const item of buffer) {
+    const normalized = (item - 128) / 128
+    total += normalized * normalized
+  }
+
+  return Math.sqrt(total / buffer.length)
+}
+
+function stopTranscriptionEnergySampler() {
+  if (transcriptionLevelSampler) {
+    clearInterval(transcriptionLevelSampler)
+    transcriptionLevelSampler = null
+  }
+
+  transcriptionLocalAnalyser = null
+  transcriptionRemoteAnalyser = null
+
+  if (transcriptionAnalyserContext) {
+    void transcriptionAnalyserContext.close().catch(() => {})
+    transcriptionAnalyserContext = null
+  }
+
+  transcriptionLastEnergy = { local: 0, remote: 0 }
+}
+
+function normalizeTranscriptText(raw: string) {
+  const compact = raw
+    .replace(/[\t\n\r]+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/([а-яa-z])\1{3,}/gi, '$1$1')
+    .trim()
+
+  if (!compact) {
+    return ''
+  }
+
+  const lower = compact.toLowerCase()
+  if (TRANSCRIPT_FILLER_WORDS.includes(lower)) {
+    return ''
+  }
+
+  return compact
+}
+
+function cleanTranscriptEntries(entries: MessengerCallTranscriptEntry[]) {
+  const cleaned: MessengerCallTranscriptEntry[] = []
+
+  for (const entry of entries) {
+    const normalizedText = normalizeTranscriptText(entry.text)
+    if (!normalizedText) {
+      continue
+    }
+
+    const previous = cleaned[cleaned.length - 1]
+    if (previous && previous.speaker === entry.speaker && previous.text === normalizedText) {
+      continue
+    }
+
+    cleaned.push({
+      ...entry,
+      text: normalizedText,
+    })
+  }
+
+  return cleaned
+}
+
+function buildSummaryFromTranscript(entries: MessengerCallTranscriptEntry[]) {
+  if (!entries.length) {
+    return 'Недостаточно данных для конспекта.'
+  }
+
+  const sourceText = entries.map(entry => `${entry.speaker === 'you' ? 'Вы' : 'Клиент'}: ${entry.text}`).join('\n')
+  const lines = sourceText.split('\n').filter(Boolean)
+  const keyLines = lines.slice(0, 2).concat(lines.slice(Math.max(2, lines.length - 4)))
+  const actionPatterns = /нужно|надо|сделать|подготов|соглас|отправ|срок|дедлайн|бюджет|стоим|договор/iu
+  const actionItems = lines.filter(line => actionPatterns.test(line)).slice(0, 5)
+
+  const summaryParts = [
+    'Краткий конспект:',
+    ...keyLines.map(line => `- ${line}`),
+  ]
+
+  if (actionItems.length) {
+    summaryParts.push('')
+    summaryParts.push('Договорённости / задачи:')
+    summaryParts.push(...actionItems.map(line => `- ${line}`))
+  }
+
+  return summaryParts.join('\n')
+}
+
+function buildCleanTranscript(entries: MessengerCallTranscriptEntry[]) {
+  return entries
+    .map(entry => `${entry.speaker === 'you' ? 'Вы' : 'Собеседник'}: ${entry.text}`)
+    .join('\n')
+}
+
+function buildAnalysisInterpretation(toolId: MessengerCallAnalysisToolId, review: MessengerCallReviewState) {
+  const transcriptLower = review.cleanedTranscript.toLowerCase()
+  const hasPriceTalk = /бюджет|стоим|цена|скидк|оплат|предоплат/.test(transcriptLower)
+  const hasDeadlineTalk = /срок|дедлайн|когда|до\s|этап|дата/.test(transcriptLower)
+  const hasConcernTalk = /сомнева|боюсь|сложно|не уверен|риск|дорого|неудоб/.test(transcriptLower)
+  const hasDecisionTalk = /реши|подтверд|соглас|окончательно|берем|делаем/.test(transcriptLower)
+
+  if (toolId === 'psychology') {
+    return [
+      'Фокус: эмоциональный фон и доверие.',
+      hasConcernTalk ? '- У клиента есть зоны тревоги, стоит усилить эмпатию и переформулировать выгоды.' : '- Явных тревожных сигналов мало, можно держать уверенный темп общения.',
+      hasDecisionTalk ? '- Клиент ближе к решению, важно закрепить уверенность через короткое резюме.' : '- Решение пока не финализировано, полезны уточняющие вопросы про критерии выбора.',
+      '- Рекомендуемая тактика: 1 вопрос про приоритет, 1 отражение эмоции, 1 конкретный следующий шаг.',
+    ].join('\n')
+  }
+
+  if (toolId === 'business') {
+    return [
+      'Фокус: деловые договорённости и управляемость сделки.',
+      hasPriceTalk ? '- Обсуждались бюджет/стоимость: зафиксируйте диапазон и условия оплаты письменно.' : '- Бюджет прозвучал неявно: стоит отдельно подтвердить финансовые рамки.',
+      hasDeadlineTalk ? '- Затрагивались сроки: переведите их в контрольные точки по этапам.' : '- Сроки недостаточно конкретны: предложите 2-3 даты выбора.',
+      '- Минимум для фиксации: цель, бюджет, дедлайн, ответственный, формат апдейтов.',
+    ].join('\n')
+  }
+
+  if (toolId === 'intent') {
+    return [
+      'Фокус: карта намерений клиента.',
+      '- Что клиент хочет получить: выделите конечный результат одной фразой.',
+      '- Почему это важно именно сейчас: привяжите к контексту клиента.',
+      '- Критерии успеха: попросите 2-3 измеримых индикатора результата.',
+    ].join('\n')
+  }
+
+  if (toolId === 'objections') {
+    return [
+      'Фокус: возражения и скрытые барьеры.',
+      hasConcernTalk ? '- В речи есть сомнения: проработайте риски через сценарий «до/после».': '- Явных возражений мало, но полезно проверить скрытые барьеры вопросом «что может помешать?».',
+      hasPriceTalk ? '- Ценовой блок лучше закрывать через ценность и этапность оплаты.' : '- Ценовой блок не раскрыт, это потенциальный источник будущих возражений.',
+      '- Подготовьте 3 коротких ответа: по цене, срокам и объёму работ.',
+    ].join('\n')
+  }
+
+  if (toolId === 'speech-risks') {
+    return [
+      'Фокус: качество формулировок и риски коммуникации.',
+      '- Уберите двусмысленные формулировки и замените их на проверяемые критерии.',
+      '- Фиксируйте итоговые договорённости после каждого смыслового блока.',
+      '- Избегайте перегрузки терминами: один тезис = один пример = одно подтверждение.',
+    ].join('\n')
+  }
+
+  return [
+    'Фокус: следующие шаги после звонка.',
+    '- Отправить клиенту короткое резюме с подтверждением целей и рамок.',
+    '- Согласовать план работ по этапам и точкам контроля.',
+    '- Назначить следующую коммуникацию с конкретной датой и ожидаемым результатом.',
+  ].join('\n')
+}
 
 function isExperimentalCallE2EEEnabled() {
   if (!import.meta.client) {
@@ -386,6 +641,22 @@ export function useMessengerCalls() {
     microphone: 'unknown',
     camera: 'unknown',
   }))
+  const transcriptionSupported = useState<boolean>('messenger-call-transcription-supported', () => Boolean(resolveSpeechRecognitionCtor()))
+  const transcriptionActive = useState<boolean>('messenger-call-transcription-active', () => false)
+  const transcriptionError = useState<string>('messenger-call-transcription-error', () => '')
+  const transcriptionDraft = useState<string>('messenger-call-transcription-draft', () => '')
+  const transcriptionEntries = useState<MessengerCallTranscriptEntry[]>('messenger-call-transcription-entries', () => [])
+  const transcriptionHint = useState<string>('messenger-call-transcription-hint', () => (
+    resolveSpeechRecognitionCtor()
+      ? 'ИИ-транскрибация использует Web Speech API браузера.'
+      : 'Браузер не поддерживает Web Speech API для транскрибации.'
+  ))
+  const callReview = useState<MessengerCallReviewState | null>('messenger-call-review', () => null)
+  const analysisTools = useState<MessengerCallAnalysisTool[]>('messenger-call-analysis-tools', () => CALL_ANALYSIS_TOOLS)
+  const selectedAnalysisToolId = useState<MessengerCallAnalysisToolId>('messenger-call-analysis-tool-id', () => 'psychology')
+  const analysisInterpretations = useState<Partial<Record<MessengerCallAnalysisToolId, string>>>('messenger-call-analysis-interpretations', () => ({}))
+  const analysisRunning = useState<boolean>('messenger-call-analysis-running', () => false)
+  const analysisError = useState<string>('messenger-call-analysis-error', () => '')
   const supported = computed(() => Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof RTCPeerConnection !== 'undefined'))
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
   const canStartAudioCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied')
@@ -425,6 +696,237 @@ export function useMessengerCalls() {
 
     return 'Нужно подтвердить доступ к микрофону и камере для видеозвонков.'
   })
+
+  function clearTranscription() {
+    transcriptionEntries.value = []
+    transcriptionDraft.value = ''
+    transcriptionError.value = ''
+  }
+
+  function clearCallReview() {
+    callReview.value = null
+    analysisInterpretations.value = {}
+    analysisError.value = ''
+  }
+
+  async function runAnalysisTool(toolId: MessengerCallAnalysisToolId = selectedAnalysisToolId.value) {
+    if (!callReview.value) {
+      analysisError.value = 'Нет данных звонка для анализа.'
+      return ''
+    }
+
+    selectedAnalysisToolId.value = toolId
+    analysisRunning.value = true
+    analysisError.value = ''
+
+    try {
+      const interpretation = buildAnalysisInterpretation(toolId, callReview.value)
+      analysisInterpretations.value = {
+        ...analysisInterpretations.value,
+        [toolId]: interpretation,
+      }
+      return interpretation
+    } catch {
+      analysisError.value = 'Не удалось построить интерпретацию.'
+      return ''
+    } finally {
+      analysisRunning.value = false
+    }
+  }
+
+  async function finalizeCallReview(snapshot: MessengerActiveCall | null) {
+    if (!snapshot) {
+      return null
+    }
+
+    const cleanedEntries = cleanTranscriptEntries(transcriptionEntries.value)
+    const cleanedTranscript = buildCleanTranscript(cleanedEntries)
+    const summary = buildSummaryFromTranscript(cleanedEntries)
+
+    callReview.value = {
+      callId: snapshot.callId,
+      conversationId: snapshot.conversationId,
+      cleanedTranscript,
+      summary,
+      sourceLines: cleanedEntries.length,
+      generatedAt: Date.now(),
+      autoPosted: false,
+    }
+
+    await runAnalysisTool(selectedAnalysisToolId.value)
+    return callReview.value
+  }
+
+  function appendTranscriptionEntry(text: string, options?: { final?: boolean; speaker?: MessengerTranscriptSpeaker }) {
+    const normalized = text.trim()
+    if (!normalized) {
+      return
+    }
+
+    const nextEntry: MessengerCallTranscriptEntry = {
+      id: crypto.randomUUID(),
+      speaker: options?.speaker || 'you',
+      text: normalized,
+      final: options?.final ?? true,
+      createdAt: Date.now(),
+    }
+
+    const limited = [...transcriptionEntries.value, nextEntry]
+    transcriptionEntries.value = limited.slice(Math.max(0, limited.length - 120))
+  }
+
+  function resolveTranscriptSpeaker() {
+    if (!controls.value.microphoneEnabled) {
+      return 'peer'
+    }
+
+    return transcriptionLastEnergy.remote > (transcriptionLastEnergy.local * 1.12) ? 'peer' : 'you'
+  }
+
+  function startTranscriptionEnergySampler() {
+    if (!import.meta.client || (!localStream && !remoteStream)) {
+      return
+    }
+
+    stopTranscriptionEnergySampler()
+
+    const Ctor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!Ctor) {
+      return
+    }
+
+    try {
+      transcriptionAnalyserContext = new Ctor()
+
+      if (localStream?.getAudioTracks().length) {
+        transcriptionLocalAnalyser = transcriptionAnalyserContext.createAnalyser()
+        transcriptionLocalAnalyser.fftSize = 1024
+        const localSource = transcriptionAnalyserContext.createMediaStreamSource(new MediaStream(localStream.getAudioTracks()))
+        localSource.connect(transcriptionLocalAnalyser)
+      }
+
+      if (remoteStream?.getAudioTracks().length) {
+        transcriptionRemoteAnalyser = transcriptionAnalyserContext.createAnalyser()
+        transcriptionRemoteAnalyser.fftSize = 1024
+        const remoteSource = transcriptionAnalyserContext.createMediaStreamSource(new MediaStream(remoteStream.getAudioTracks()))
+        remoteSource.connect(transcriptionRemoteAnalyser)
+      }
+
+      transcriptionLevelSampler = setInterval(() => {
+        transcriptionLastEnergy = {
+          local: readAnalyserEnergy(transcriptionLocalAnalyser),
+          remote: readAnalyserEnergy(transcriptionRemoteAnalyser),
+        }
+      }, 220)
+    } catch {
+      stopTranscriptionEnergySampler()
+    }
+  }
+
+  function stopTranscription() {
+    if (speechRecognitionRestartTimer) {
+      clearTimeout(speechRecognitionRestartTimer)
+      speechRecognitionRestartTimer = null
+    }
+
+    if (speechRecognition) {
+      speechRecognition.onresult = null
+      speechRecognition.onerror = null
+      speechRecognition.onend = null
+      try {
+        speechRecognition.abort()
+      } catch {
+        // noop
+      }
+      speechRecognition = null
+    }
+
+    transcriptionActive.value = false
+    transcriptionDraft.value = ''
+    stopTranscriptionEnergySampler()
+  }
+
+  function startTranscription() {
+    transcriptionSupported.value = Boolean(resolveSpeechRecognitionCtor())
+
+    if (!activeCall.value || activeCall.value.mode !== 'audio') {
+      stopTranscription()
+      return false
+    }
+
+    if (!transcriptionSupported.value) {
+      transcriptionError.value = 'Для транскрибации нужен Chrome/Edge/Safari с поддержкой Web Speech API.'
+      return false
+    }
+
+    const Ctor = resolveSpeechRecognitionCtor()
+    if (!Ctor) {
+      transcriptionError.value = 'Web Speech API недоступен в этом браузере.'
+      return false
+    }
+
+    stopTranscription()
+    startTranscriptionEnergySampler()
+
+    transcriptionError.value = ''
+    transcriptionHint.value = 'ИИ-транскрибация активна. Реплики обновляются в реальном времени.'
+
+    speechRecognition = new Ctor()
+    speechRecognition.continuous = true
+    speechRecognition.interimResults = true
+    speechRecognition.lang = 'ru-RU'
+    speechRecognition.onresult = (event) => {
+      let interim = ''
+
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index]
+        const transcriptText = String(result?.[0]?.transcript || '').trim()
+
+        if (!transcriptText) {
+          continue
+        }
+
+        if (result.isFinal) {
+          appendTranscriptionEntry(transcriptText, { speaker: resolveTranscriptSpeaker(), final: true })
+        } else {
+          interim += `${transcriptText} `
+        }
+      }
+
+      transcriptionDraft.value = interim.trim()
+    }
+    speechRecognition.onerror = (event) => {
+      const errorCode = String(event.error || '')
+      if (errorCode === 'not-allowed') {
+        transcriptionError.value = 'Браузер запретил доступ к распознаванию речи. Разрешите микрофон в настройках сайта.'
+      } else if (errorCode === 'audio-capture') {
+        transcriptionError.value = 'Не удалось получить аудио для транскрибации.'
+      } else {
+        transcriptionError.value = 'Транскрибация временно недоступна. Пытаемся переподключиться.'
+      }
+    }
+    speechRecognition.onend = () => {
+      if (!activeCall.value || activeCall.value.mode !== 'audio') {
+        transcriptionActive.value = false
+        return
+      }
+
+      speechRecognitionRestartTimer = setTimeout(() => {
+        speechRecognitionRestartTimer = null
+        void startTranscription()
+      }, 280)
+    }
+
+    try {
+      speechRecognition.start()
+      transcriptionActive.value = true
+      return true
+    } catch {
+      transcriptionActive.value = false
+      transcriptionError.value = 'Не удалось запустить транскрибацию. Попробуйте ещё раз.'
+      return false
+    }
+  }
 
   function syncMicrophoneState() {
     if (!localStream) {
@@ -579,6 +1081,7 @@ export function useMessengerCalls() {
 
     remoteStream = null
     assignMediaTargets()
+    startTranscriptionEnergySampler()
   }
 
   function setCallSecurityFallback(reason: string) {
@@ -637,6 +1140,7 @@ export function useMessengerCalls() {
     syncVideoState()
     await refreshVideoInputs()
     syncVideoTrackState(localStream.getVideoTracks()[0] || null)
+    startTranscriptionEnergySampler()
     return localStream
   }
 
@@ -904,6 +1408,7 @@ export function useMessengerCalls() {
   }
 
   function teardownCall(status = '') {
+    stopTranscription()
     activeCall.value = null
     incomingCall.value = null
     busy.value = false
@@ -941,6 +1446,7 @@ export function useMessengerCalls() {
 
   async function startOutgoingCall(mode: MessengerCallMode) {
     callError.value = ''
+    clearCallReview()
     const conversation = conversations.activeConversation.value
 
     if (!conversation) {
@@ -1012,6 +1518,9 @@ export function useMessengerCalls() {
     }
     viewMode.value = mode === 'video' ? 'split' : 'full'
     callStatusText.value = mode === 'video' ? 'Отправляем видеовызов…' : 'Отправляем аудиовызов…'
+    if (mode === 'audio') {
+      void startTranscription()
+    }
 
     try {
       await sendSignal(conversation.id, {
@@ -1027,6 +1536,7 @@ export function useMessengerCalls() {
 
   async function acceptIncomingCall() {
     callError.value = ''
+    clearCallReview()
 
     if (!incomingCall.value) {
       return
@@ -1054,6 +1564,9 @@ export function useMessengerCalls() {
         videoEnabled: incomingCall.value.mode === 'video',
       }
       viewMode.value = incomingCall.value.mode === 'video' ? 'split' : 'full'
+      if (incomingCall.value.mode === 'audio') {
+        void startTranscription()
+      }
 
       let ringingE2EE: MessengerCallE2EEPayload = { supported: false }
 
@@ -1126,6 +1639,8 @@ export function useMessengerCalls() {
       return
     }
 
+    const activeSnapshot = { ...activeCall.value }
+
     try {
       await sendSignal(activeCall.value.conversationId, {
         kind: 'hangup',
@@ -1135,6 +1650,7 @@ export function useMessengerCalls() {
     } catch {
       // ignore transport failure during hangup in alpha stage
     } finally {
+      await finalizeCallReview(activeSnapshot)
       teardownCall(status)
     }
   }
@@ -1223,6 +1739,9 @@ export function useMessengerCalls() {
           },
         })
         callStatusText.value = 'Отправлен offer'
+        if (mode === 'audio') {
+          void startTranscription()
+        }
       } catch {
         callError.value = 'Не удалось подготовить исходящий звонок.'
         teardownCall('')
@@ -1274,6 +1793,11 @@ export function useMessengerCalls() {
         })
         callStatusText.value = 'Отправлен answer'
         busy.value = false
+        if (mode === 'audio') {
+          void startTranscription()
+        } else {
+          stopTranscription()
+        }
       } catch {
         callError.value = 'Не удалось обработать входящий звонок.'
         teardownCall('')
@@ -1296,6 +1820,11 @@ export function useMessengerCalls() {
         await flushPendingIceCandidates(event.signal.callId, peerConnection)
         callStatusText.value = 'Канал установлен'
         busy.value = false
+        if (mode === 'audio') {
+          void startTranscription()
+        } else {
+          stopTranscription()
+        }
       } catch {
         callError.value = 'Не удалось завершить установку соединения.'
         teardownCall('')
@@ -1319,16 +1848,19 @@ export function useMessengerCalls() {
     }
 
     if (event.signal.kind === 'reject') {
+      await finalizeCallReview(activeCall.value ? { ...activeCall.value } : null)
       teardownCall('Вызов отклонён')
       return
     }
 
     if (event.signal.kind === 'busy') {
+      await finalizeCallReview(activeCall.value ? { ...activeCall.value } : null)
       teardownCall('Собеседник уже на другом звонке')
       return
     }
 
     if (event.signal.kind === 'hangup') {
+      await finalizeCallReview(activeCall.value ? { ...activeCall.value } : null)
       teardownCall('Собеседник завершил звонок')
     }
   }
@@ -1343,6 +1875,8 @@ export function useMessengerCalls() {
 
   function reset() {
     clearError()
+    clearTranscription()
+    clearCallReview()
     teardownCall('')
     clearElements()
   }
@@ -1422,6 +1956,7 @@ export function useMessengerCalls() {
     if (viewMode.value !== 'mini') {
       viewMode.value = 'split'
     }
+    stopTranscription()
     await refreshVideoInputs()
     syncVideoTrackState(nextTrack)
     assignMediaTargets()
@@ -1459,6 +1994,7 @@ export function useMessengerCalls() {
     activeCameraId.value = ''
     assignMediaTargets()
     await renegotiateActiveCall('audio')
+    void startTranscription()
     return true
   }
 
@@ -1583,6 +2119,18 @@ export function useMessengerCalls() {
     networkHint,
     renegotiating,
     security,
+    transcriptionSupported,
+    transcriptionActive,
+    transcriptionError,
+    transcriptionHint,
+    transcriptionDraft,
+    transcriptionEntries,
+    callReview,
+    analysisTools,
+    selectedAnalysisToolId,
+    analysisInterpretations,
+    analysisRunning,
+    analysisError,
     inConversationCall,
     canStartAudioCall,
     canStartVideoCall,
@@ -1604,6 +2152,11 @@ export function useMessengerCalls() {
     toggleSpeaker,
     setCallViewMode,
     cycleCallViewMode,
+    startTranscription,
+    stopTranscription,
+    clearTranscription,
+    clearCallReview,
+    runAnalysisTool,
     toggleVideo,
     switchCamera,
     startOutgoingCall,
