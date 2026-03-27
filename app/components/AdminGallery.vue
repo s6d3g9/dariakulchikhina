@@ -573,6 +573,8 @@ async function uploadMainImage(e: Event) {
     }
   } catch {
     formError.value = 'ошибка загрузки фото'
+  } finally {
+    ;(e.target as HTMLInputElement).value = ''
   }
 }
 

@@ -237,10 +237,12 @@ async function logout() {
 /* ── Root layout ─────────────────────────────────────────────── */
 .cc-root {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .cc-loading {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -262,6 +264,7 @@ async function logout() {
 
 .cc-error {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -276,6 +279,7 @@ async function logout() {
   grid-template-columns: 220px 1fr;
   grid-template-rows: auto 1fr;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* ── Mobile top bar ──────────────────────────────────────────── */
@@ -314,8 +318,8 @@ async function logout() {
 
 .cc-mobile-btn {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
@@ -342,11 +346,13 @@ async function logout() {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 20px 0;
   border-right: 1px solid var(--glass-border, rgba(180,180,220,0.15));
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
 }
 
@@ -475,6 +481,24 @@ async function logout() {
 
   .cc-content {
     padding: 16px 14px;
+  }
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  .cc-mobile-bar {
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+
+  .cc-sidebar {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+
+  .cc-content {
+    padding-right: max(24px, calc(env(safe-area-inset-right) + 14px));
+    padding-bottom: max(28px, calc(env(safe-area-inset-bottom) + 16px));
+    padding-left: max(24px, calc(env(safe-area-inset-left) + 14px));
   }
 }
 </style>

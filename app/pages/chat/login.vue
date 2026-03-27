@@ -75,6 +75,7 @@ async function submit() {
 <style scoped>
 .chat-auth-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -120,6 +121,7 @@ async function submit() {
 .chat-auth-submit {
   width: 100%;
   min-height: 48px;
+  font-size: 16px;
 }
 
 .chat-auth-submit {
@@ -137,5 +139,14 @@ async function submit() {
 .chat-auth-link {
   color: inherit;
   text-decoration: none;
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  .chat-auth-page {
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-right: max(24px, env(safe-area-inset-right));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    padding-left: max(24px, env(safe-area-inset-left));
+  }
 }
 </style>

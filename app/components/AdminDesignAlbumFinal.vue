@@ -163,14 +163,18 @@ async function onFileInput(e: Event) {
   const files = (e.target as HTMLInputElement).files
   if (!files?.length) return
   uploading.value = true
-  for (const f of Array.from(files)) {
-    const fd = new FormData()
-    fd.append('file', f)
-    const res = await $fetch<any>('/api/upload', { method: 'POST', body: fd })
-    form.daf_files.push({ url: res.url, filename: f.name, version: form.daf_version || '' })
+  try {
+    for (const f of Array.from(files)) {
+      const fd = new FormData()
+      fd.append('file', f)
+      const res = await $fetch<any>('/api/upload', { method: 'POST', body: fd })
+      form.daf_files.push({ url: res.url, filename: f.name, version: form.daf_version || '' })
+    }
+    save()
+  } finally {
+    uploading.value = false
+    ;(e.target as HTMLInputElement).value = ''
   }
-  uploading.value = false
-  save()
 }
 
 function removeFile(idx: number) {

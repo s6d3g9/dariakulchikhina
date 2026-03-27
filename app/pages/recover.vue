@@ -151,6 +151,7 @@ async function submit() {
 <style scoped>
 .auth-root {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,6 +240,8 @@ async function submit() {
 .auth-input,
 .auth-submit {
   width: 100%;
+  min-height: 48px;
+  font-size: 16px;
 }
 
 .auth-input--textarea {
@@ -312,6 +315,15 @@ async function submit() {
 
   .auth-role-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  .auth-root {
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-left: max(20px, env(safe-area-inset-left));
   }
 }
 </style>

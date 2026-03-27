@@ -35,10 +35,20 @@ watchEffect(async () => {
 <style scoped>
 .chat-page-loading {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   font-size: 0.82rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  .chat-page-loading {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
 }
 </style>

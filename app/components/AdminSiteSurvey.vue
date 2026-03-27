@@ -226,6 +226,7 @@ async function uploadFile(e: Event) {
     refresh()
   } finally {
     uploading.value = false
+    ;(e.target as HTMLInputElement).value = ''
   }
 }
 

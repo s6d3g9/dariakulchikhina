@@ -1784,6 +1784,7 @@ async function saveProfile() {
 <style scoped>
 .cab-root {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--glass-page-bg, #f0f4ff);
@@ -1934,6 +1935,20 @@ async function saveProfile() {
   padding: 0 5px;
   border-radius: 8px;
   background: rgba(100,110,200,0.15);
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  .cab-header {
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-right: max(32px, env(safe-area-inset-right));
+    padding-left: max(32px, env(safe-area-inset-left));
+  }
+
+  .cab-body {
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    padding-left: max(20px, env(safe-area-inset-left));
+  }
 }
 
 /* Project groups */

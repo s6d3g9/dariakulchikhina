@@ -225,13 +225,17 @@ async function uploadAct(e: Event) {
   const f = (e.target as HTMLInputElement).files?.[0]
   if (!f) return
   uploadingAct.value = true
-  const fd = new FormData()
-  fd.append('file', f)
-  const res = await $fetch<any>('/api/upload', { method: 'POST', body: fd })
-  form.ca_act_file     = res.url
-  form.ca_act_filename = f.name
-  uploadingAct.value = false
-  await save()
+  try {
+    const fd = new FormData()
+    fd.append('file', f)
+    const res = await $fetch<any>('/api/upload', { method: 'POST', body: fd })
+    form.ca_act_file     = res.url
+    form.ca_act_filename = f.name
+    await save()
+  } finally {
+    uploadingAct.value = false
+    ;(e.target as HTMLInputElement).value = ''
+  }
 }
 
 function isImage(r: any) {

@@ -337,6 +337,7 @@ async function uploadPhoto(e: Event) {
     const res = await $fetch<{ filename: string }>('/api/upload', { method: 'POST', body: fd })
     form.photo = res.filename
   } catch { error.value = 'Ошибка загрузки' }
+  finally { (e.target as HTMLInputElement).value = '' }
 }
 
 async function save() {
