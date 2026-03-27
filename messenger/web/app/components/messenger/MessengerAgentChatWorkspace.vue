@@ -172,7 +172,16 @@ watch(() => resolvedAgent.value?.id, () => {
   syncSettingsDraft()
   selectedRunId.value = null
   runsModel.clearSelection()
+  activeSection.value = 'overview'
+  searchDraft.value = ''
+  searchOpen.value = false
 }, { immediate: true })
+
+watch(() => props.conversationId, () => {
+  activeSection.value = 'overview'
+  searchDraft.value = ''
+  searchOpen.value = false
+})
 
 watch(() => props.agentId, async () => {
   if (!agentsModel.agents.value.length || !resolvedAgent.value) {
@@ -381,161 +390,155 @@ async function openRunDetail(runId: string) {
       {{ feedbackMessage }}
     </p>
 
-    <VWindow :model-value="activeSection" class="section-list agent-chat-workspace__window">
-      <VWindowItem value="overview">
-        <div class="agent-chat-workspace__content agent-chat-workspace__content--grid">
-          <article class="agent-chat-workspace__card">
-            <p class="agent-chat-workspace__card-eyebrow">Сейчас в чате</p>
-            <h3 class="agent-chat-workspace__card-title">Текущий фокус</h3>
-            <p class="agent-chat-workspace__card-text">{{ runtimeState?.focus || workspaceGreeting }}</p>
-          </article>
-          <article class="agent-chat-workspace__card">
-            <p class="agent-chat-workspace__card-eyebrow">Модель</p>
-            <h3 class="agent-chat-workspace__card-title">{{ workspaceModel }}</h3>
-            <p class="agent-chat-workspace__card-text">Последнее обновление: {{ formatTimestamp(resolvedAgent?.settings.updatedAt) }}</p>
-          </article>
-          <article class="agent-chat-workspace__card">
-            <p class="agent-chat-workspace__card-eyebrow">Связи</p>
-            <h3 class="agent-chat-workspace__card-title">{{ graphStats.outgoing }} исходящих / {{ graphStats.incoming }} входящих</h3>
-            <p class="agent-chat-workspace__card-text">Node-модуль вынесен в отдельный раздел и открывается без выхода из messenger shell.</p>
-          </article>
-        </div>
-      </VWindowItem>
-
-      <VWindowItem value="settings">
-        <div class="agent-chat-workspace__content">
-          <article class="agent-chat-workspace__card agent-chat-workspace__card--form">
-            <p class="agent-chat-workspace__card-eyebrow">Быстрые настройки</p>
-            <h3 class="agent-chat-workspace__card-title">Параметры ответа</h3>
-            <p class="agent-chat-workspace__card-text">Модель сохраняется сразу после выбора, API key обновляется по blur.</p>
-            <VSelect
-              :model-value="settingsDraft.model"
-              :items="resolvedAgent?.modelOptions || ['GPT-5.4']"
-              label="Модель агента"
-              variant="outlined"
-              hide-details="auto"
-              :loading="settingsSaving"
-              @update:model-value="handleModelChange(typeof $event === 'string' ? $event : 'GPT-5.4')"
-            />
-            <VTextField
-              v-model="settingsDraft.apiKey"
-              label="API key"
-              type="password"
-              variant="outlined"
-              hide-details="auto"
-              :loading="settingsSaving"
-              @blur="handleApiKeyBlur"
-            />
-          </article>
-        </div>
-      </VWindowItem>
-
-      <VWindowItem value="links">
-        <div class="agent-chat-workspace__content agent-chat-workspace__content--split">
-          <article class="agent-chat-workspace__card">
-            <p class="agent-chat-workspace__card-eyebrow">Исходящие связи</p>
-            <h3 class="agent-chat-workspace__card-title">{{ outgoingConnections.length }}</h3>
-            <div v-if="outgoingConnections.length" class="agent-chat-workspace__list">
-              <div v-for="connection in outgoingConnections" :key="`${connection.targetAgentId}:${connection.mode}`" class="agent-chat-workspace__list-item">
-                <strong>{{ connection.agent?.displayName || connection.targetAgentId }}</strong>
-                <span>{{ connectionModeLabel(connection.mode) }}</span>
-              </div>
-            </div>
-            <p v-else class="agent-chat-workspace__card-text">Для этого агента пока не настроены исходящие связи.</p>
-          </article>
-          <article class="agent-chat-workspace__card">
-            <p class="agent-chat-workspace__card-eyebrow">Входящие связи</p>
-            <h3 class="agent-chat-workspace__card-title">{{ incomingConnections.length }}</h3>
-            <div v-if="incomingConnections.length" class="agent-chat-workspace__list">
-              <div v-for="connection in incomingConnections" :key="`${connection.agent.id}:${connection.mode}`" class="agent-chat-workspace__list-item">
-                <strong>{{ connection.agent.displayName }}</strong>
-                <span>{{ connectionModeLabel(connection.mode) }}</span>
-              </div>
-            </div>
-            <p v-else class="agent-chat-workspace__card-text">Ни один агент пока не маршрутизирует запросы в этот чат.</p>
-          </article>
-        </div>
-      </VWindowItem>
-
-      <VWindowItem value="runs">
-        <div class="agent-chat-workspace__content">
-          <article class="agent-chat-workspace__card">
-            <p class="agent-chat-workspace__card-eyebrow">Живой статус</p>
-            <h3 class="agent-chat-workspace__card-title">{{ runtimeState ? runtimePhaseLabel(runtimeState.phase) : 'Ожидает новое сообщение' }}</h3>
-            <p class="agent-chat-workspace__card-text">{{ runtimeState?.summary || 'После следующего сообщения здесь появится live trace текущего прогона.' }}</p>
-          </article>
-          <div v-if="recentRuns.length" class="agent-chat-workspace__list">
-            <button
-              v-for="run in recentRuns"
-              :key="run.runId"
-              type="button"
-              class="agent-chat-workspace__list-item agent-chat-workspace__list-item--button"
-              :class="{ 'agent-chat-workspace__list-item--active': selectedRun?.runId === run.runId }"
-              @click="openRunDetail(run.runId)"
-            >
-              <strong>{{ runStatusLabel(run.status) }}</strong>
-              <span>{{ formatTimestamp(run.updatedAt) }}</span>
-            </button>
+    <div class="agent-chat-workspace__window">
+      <Transition name="screen-fade" mode="out-in">
+        <div :key="activeSection" class="agent-chat-workspace__pane">
+          <div v-if="activeSection === 'overview'" class="agent-chat-workspace__content agent-chat-workspace__content--grid">
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Сейчас в чате</p>
+              <h3 class="agent-chat-workspace__card-title">Текущий фокус</h3>
+              <p class="agent-chat-workspace__card-text">{{ runtimeState?.focus || workspaceGreeting }}</p>
+            </article>
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Модель</p>
+              <h3 class="agent-chat-workspace__card-title">{{ workspaceModel }}</h3>
+              <p class="agent-chat-workspace__card-text">Последнее обновление: {{ formatTimestamp(resolvedAgent?.settings.updatedAt) }}</p>
+            </article>
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Связи</p>
+              <h3 class="agent-chat-workspace__card-title">{{ graphStats.outgoing }} исходящих / {{ graphStats.incoming }} входящих</h3>
+              <p class="agent-chat-workspace__card-text">Node-модуль вынесен в отдельный раздел и открывается без выхода из messenger shell.</p>
+            </article>
           </div>
-          <p v-else class="agent-chat-workspace__card-text">История запусков для этого agent-чата пока пуста.</p>
-          <article v-if="selectedRun" class="agent-chat-workspace__card agent-chat-workspace__card--form">
-            <p class="agent-chat-workspace__card-eyebrow">Детали прогона</p>
-            <h3 class="agent-chat-workspace__card-title">{{ runStatusLabel(selectedRun.status) }} · {{ formatTimestamp(selectedRun.updatedAt) }}</h3>
-            <div v-if="selectedRun.events.length" class="agent-chat-workspace__stack">
-              <div v-for="event in selectedRun.events" :key="`${selectedRun.runId}:${event.phase}:${event.timestamp}`" class="agent-chat-workspace__list-item">
-                <strong>{{ runtimePhaseLabel(event.phase) }}</strong>
-                <span>{{ describeRunEvent(event) }}</span>
+
+          <div v-else-if="activeSection === 'settings'" class="agent-chat-workspace__content">
+            <article class="agent-chat-workspace__card agent-chat-workspace__card--form">
+              <p class="agent-chat-workspace__card-eyebrow">Быстрые настройки</p>
+              <h3 class="agent-chat-workspace__card-title">Параметры ответа</h3>
+              <p class="agent-chat-workspace__card-text">Модель сохраняется сразу после выбора, API key обновляется по blur.</p>
+              <VSelect
+                :model-value="settingsDraft.model"
+                :items="resolvedAgent?.modelOptions || ['GPT-5.4']"
+                label="Модель агента"
+                variant="outlined"
+                hide-details="auto"
+                :loading="settingsSaving"
+                @update:model-value="handleModelChange(typeof $event === 'string' ? $event : 'GPT-5.4')"
+              />
+              <VTextField
+                v-model="settingsDraft.apiKey"
+                label="API key"
+                type="password"
+                variant="outlined"
+                hide-details="auto"
+                :loading="settingsSaving"
+                @blur="handleApiKeyBlur"
+              />
+            </article>
+          </div>
+
+          <div v-else-if="activeSection === 'links'" class="agent-chat-workspace__content agent-chat-workspace__content--split">
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Исходящие связи</p>
+              <h3 class="agent-chat-workspace__card-title">{{ outgoingConnections.length }}</h3>
+              <div v-if="outgoingConnections.length" class="agent-chat-workspace__list">
+                <div v-for="connection in outgoingConnections" :key="`${connection.targetAgentId}:${connection.mode}`" class="agent-chat-workspace__list-item">
+                  <strong>{{ connection.agent?.displayName || connection.targetAgentId }}</strong>
+                  <span>{{ connectionModeLabel(connection.mode) }}</span>
+                </div>
               </div>
-            </div>
-            <div v-if="selectedRun.events.some(event => event.artifacts.length)" class="agent-chat-workspace__stack">
-              <div
-                v-for="artifact in selectedRun.events.flatMap(event => event.artifacts).slice(0, 6)"
-                :key="`${selectedRun.runId}:${artifact.kind}:${artifact.label}`"
-                class="agent-chat-workspace__list-item"
+              <p v-else class="agent-chat-workspace__card-text">Для этого агента пока не настроены исходящие связи.</p>
+            </article>
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Входящие связи</p>
+              <h3 class="agent-chat-workspace__card-title">{{ incomingConnections.length }}</h3>
+              <div v-if="incomingConnections.length" class="agent-chat-workspace__list">
+                <div v-for="connection in incomingConnections" :key="`${connection.agent.id}:${connection.mode}`" class="agent-chat-workspace__list-item">
+                  <strong>{{ connection.agent.displayName }}</strong>
+                  <span>{{ connectionModeLabel(connection.mode) }}</span>
+                </div>
+              </div>
+              <p v-else class="agent-chat-workspace__card-text">Ни один агент пока не маршрутизирует запросы в этот чат.</p>
+            </article>
+          </div>
+
+          <div v-else-if="activeSection === 'runs'" class="agent-chat-workspace__content">
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Живой статус</p>
+              <h3 class="agent-chat-workspace__card-title">{{ runtimeState ? runtimePhaseLabel(runtimeState.phase) : 'Ожидает новое сообщение' }}</h3>
+              <p class="agent-chat-workspace__card-text">{{ runtimeState?.summary || 'После следующего сообщения здесь появится live trace текущего прогона.' }}</p>
+            </article>
+            <div v-if="recentRuns.length" class="agent-chat-workspace__list">
+              <button
+                v-for="run in recentRuns"
+                :key="run.runId"
+                type="button"
+                class="agent-chat-workspace__list-item agent-chat-workspace__list-item--button"
+                :class="{ 'agent-chat-workspace__list-item--active': selectedRun?.runId === run.runId }"
+                @click="openRunDetail(run.runId)"
               >
-                <strong>{{ artifactKindLabel(artifact.kind) }} · {{ artifact.label }}</strong>
-                <span>{{ artifact.content }}</span>
-              </div>
+                <strong>{{ runStatusLabel(run.status) }}</strong>
+                <span>{{ formatTimestamp(run.updatedAt) }}</span>
+              </button>
             </div>
-          </article>
-        </div>
-      </VWindowItem>
+            <p v-else class="agent-chat-workspace__card-text">История запусков для этого agent-чата пока пуста.</p>
+            <article v-if="selectedRun" class="agent-chat-workspace__card agent-chat-workspace__card--form">
+              <p class="agent-chat-workspace__card-eyebrow">Детали прогона</p>
+              <h3 class="agent-chat-workspace__card-title">{{ runStatusLabel(selectedRun.status) }} · {{ formatTimestamp(selectedRun.updatedAt) }}</h3>
+              <div v-if="selectedRun.events.length" class="agent-chat-workspace__stack">
+                <div v-for="event in selectedRun.events" :key="`${selectedRun.runId}:${event.phase}:${event.timestamp}`" class="agent-chat-workspace__list-item">
+                  <strong>{{ runtimePhaseLabel(event.phase) }}</strong>
+                  <span>{{ describeRunEvent(event) }}</span>
+                </div>
+              </div>
+              <div v-if="selectedRun.events.some(event => event.artifacts.length)" class="agent-chat-workspace__stack">
+                <div
+                  v-for="artifact in selectedRun.events.flatMap(event => event.artifacts).slice(0, 6)"
+                  :key="`${selectedRun.runId}:${artifact.kind}:${artifact.label}`"
+                  class="agent-chat-workspace__list-item"
+                >
+                  <strong>{{ artifactKindLabel(artifact.kind) }} · {{ artifact.label }}</strong>
+                  <span>{{ artifact.content }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
 
-      <VWindowItem value="graph">
-        <div class="agent-chat-workspace__content agent-chat-workspace__content--split">
-          <article class="agent-chat-workspace__card">
-            <p class="agent-chat-workspace__card-eyebrow">Сводка графа</p>
-            <h3 class="agent-chat-workspace__card-title">Связи и маршрутизация</h3>
-            <p class="agent-chat-workspace__card-text">Вкладка показывает текущие рёбра этого агента и последние payload-переходы без выхода из чата.</p>
-            <div class="agent-chat-workspace__stats">
-              <span>Исходящих: {{ graphStats.outgoing }}</span>
-              <span>Входящих: {{ graphStats.incoming }}</span>
-              <span>Payload log: {{ graphStats.payloads }}</span>
-            </div>
-            <button type="button" class="agent-chat-workspace__primary" @click="openAgentsSection">
-              Открыть node-модуль
-            </button>
-          </article>
-          <article class="agent-chat-workspace__card">
-            <p class="agent-chat-workspace__card-eyebrow">Активные рёбра</p>
-            <h3 class="agent-chat-workspace__card-title">{{ activeConnections.length || recentPayloads.length ? 'Есть маршрутные события' : 'Пока без маршрутов' }}</h3>
-            <div v-if="activeConnections.length" class="agent-chat-workspace__stack">
-              <div v-for="connection in activeConnections" :key="`${connection.targetAgentId}:${connection.mode}`" class="agent-chat-workspace__list-item">
-                <strong>{{ connectionModeLabel(connection.mode) }} → {{ agentsModel.agents.value.find(item => item.id === connection.targetAgentId)?.displayName || connection.targetAgentId }}</strong>
-                <span>{{ connection.payloadPreview || 'Payload будет показан здесь во время активного прогона.' }}</span>
+          <div v-else class="agent-chat-workspace__content agent-chat-workspace__content--split">
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Сводка графа</p>
+              <h3 class="agent-chat-workspace__card-title">Связи и маршрутизация</h3>
+              <p class="agent-chat-workspace__card-text">Вкладка показывает текущие рёбра этого агента и последние payload-переходы без выхода из чата.</p>
+              <div class="agent-chat-workspace__stats">
+                <span>Исходящих: {{ graphStats.outgoing }}</span>
+                <span>Входящих: {{ graphStats.incoming }}</span>
+                <span>Payload log: {{ graphStats.payloads }}</span>
               </div>
-            </div>
-            <p v-else class="agent-chat-workspace__card-text">Активных рёбер сейчас нет. Последние передачи ниже.</p>
-          </article>
-          <div v-if="recentPayloads.length" class="agent-chat-workspace__list agent-chat-workspace__list--split-span">
-            <div v-for="payload in recentPayloads" :key="`${payload.runId}:${payload.targetAgentId}:${payload.timestamp}`" class="agent-chat-workspace__list-item">
-              <strong>{{ connectionModeLabel(payload.mode) }} → {{ agentsModel.agents.value.find(item => item.id === payload.targetAgentId)?.displayName || payload.targetAgentId }}</strong>
-              <span>{{ payload.payloadPreview }}</span>
+              <button type="button" class="agent-chat-workspace__primary" @click="openAgentsSection">
+                Открыть node-модуль
+              </button>
+            </article>
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Активные рёбра</p>
+              <h3 class="agent-chat-workspace__card-title">{{ activeConnections.length || recentPayloads.length ? 'Есть маршрутные события' : 'Пока без маршрутов' }}</h3>
+              <div v-if="activeConnections.length" class="agent-chat-workspace__stack">
+                <div v-for="connection in activeConnections" :key="`${connection.targetAgentId}:${connection.mode}`" class="agent-chat-workspace__list-item">
+                  <strong>{{ connectionModeLabel(connection.mode) }} → {{ agentsModel.agents.value.find(item => item.id === connection.targetAgentId)?.displayName || connection.targetAgentId }}</strong>
+                  <span>{{ connection.payloadPreview || 'Payload будет показан здесь во время активного прогона.' }}</span>
+                </div>
+              </div>
+              <p v-else class="agent-chat-workspace__card-text">Активных рёбер сейчас нет. Последние передачи ниже.</p>
+            </article>
+            <div v-if="recentPayloads.length" class="agent-chat-workspace__list agent-chat-workspace__list--split-span">
+              <div v-for="payload in recentPayloads" :key="`${payload.runId}:${payload.targetAgentId}:${payload.timestamp}`" class="agent-chat-workspace__list-item">
+                <strong>{{ connectionModeLabel(payload.mode) }} → {{ agentsModel.agents.value.find(item => item.id === payload.targetAgentId)?.displayName || payload.targetAgentId }}</strong>
+                <span>{{ payload.payloadPreview }}</span>
+              </div>
             </div>
           </div>
         </div>
-      </VWindowItem>
-    </VWindow>
+      </Transition>
+    </div>
 
     <div class="section-tabs-row agent-chat-workspace__tabs-row">
       <VTabs

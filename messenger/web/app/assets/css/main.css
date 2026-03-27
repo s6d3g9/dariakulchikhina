@@ -560,18 +560,15 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   overflow: hidden;
 }
 
-.agent-chat-workspace__window > .v-window__container,
-.agent-chat-workspace__window .v-window-item,
-.agent-chat-workspace__window .v-window-item--active {
+.agent-chat-workspace__pane {
   min-height: 0;
-}
-
-.agent-chat-workspace__window .v-window-item--active {
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
 .agent-chat-workspace__content {
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
