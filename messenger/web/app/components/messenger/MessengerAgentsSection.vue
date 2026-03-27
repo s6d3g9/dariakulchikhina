@@ -3,6 +3,9 @@ const agentsModel = useMessengerAgents()
 const conversations = useMessengerConversations()
 const navigation = useMessengerConversationState()
 const actionError = ref('')
+const agentsTab = ref<'directory' | 'graph'>('directory')
+const searchDraft = ref('')
+const searchOpen = ref(false)
 const settingsDialogOpen = ref(false)
 const editingAgentId = ref<string | null>(null)
 const settingsDraft = reactive({
@@ -13,10 +16,45 @@ const settingsDraft = reactive({
 
 const editingAgent = computed(() => agentsModel.agents.value.find(agent => agent.id === editingAgentId.value) ?? null)
 const availableLinkedAgents = computed(() => agentsModel.agents.value.filter(agent => agent.id !== editingAgentId.value))
+const normalizedSearchQuery = computed(() => searchDraft.value.trim().toLowerCase())
+const filteredAgents = computed(() => {
+  if (!normalizedSearchQuery.value) {
+    return agentsModel.agents.value
+  }
+
+  return agentsModel.agents.value.filter(agent => [
+    agent.displayName,
+    agent.login,
+    agent.description,
+    agent.settings.model,
+  ].some(value => value.toLowerCase().includes(normalizedSearchQuery.value)))
+})
+const searchSuggestions = computed(() => filteredAgents.value.slice(0, normalizedSearchQuery.value ? 8 : 5))
 
 onMounted(async () => {
   await agentsModel.refresh()
 })
+
+function openSearch() {
+  searchOpen.value = true
+}
+
+function closeSearch() {
+  setTimeout(() => {
+    searchOpen.value = false
+  }, 120)
+}
+
+function selectSuggestion(agentId: string) {
+  const found = agentsModel.agents.value.find(agent => agent.id === agentId)
+  if (!found) {
+    return
+  }
+
+  searchDraft.value = found.displayName
+  agentsTab.value = 'directory'
+  searchOpen.value = false
+}
 
 async function saveGraph(graph: Record<string, { connections: Array<{ targetAgentId: string; mode: 'review' | 'enrich' | 'validate' | 'summarize' | 'route' }>; graphPosition: { x: number; y: number } }>) {
   actionError.value = ''
@@ -106,65 +144,120 @@ async function saveSettings() {
 </script>
 
 <template>
-  <section class="section-block section-block--contacts" aria-label="Agents section">
+  <section class="section-block section-block--agents" aria-label="Agents section">
     <VAlert v-if="actionError" type="error" class="ma-2">{{ actionError }}</VAlert>
     <div v-if="agentsModel.pending.value" class="section-progress section-progress--floating">
       <MessengerProgressLinear aria-label="Загрузка агентов" indeterminate four-color />
     </div>
 
-    <MessengerAgentGraphEditor
-      :agents="agentsModel.agents.value"
-      :saving="agentsModel.settingsPending.value"
-      @save-graph="saveGraph"
-      @open-settings="openSettings"
-      @open-agent="openAgent"
-    />
+    <VWindow v-model="agentsTab" class="section-list agents-section__window">
+      <VWindowItem value="directory" class="agents-section__pane">
+        <VList class="section-list" bg-color="transparent" lines="three">
+          <VListItem
+            v-for="agent in filteredAgents"
+            :key="agent.id"
+            class="chat-row"
+            lines="three"
+            @click="openAgent(agent.id)"
+          >
+            <template #prepend>
+              <VAvatar color="secondary" variant="tonal" size="48">
+                {{ resolveAvatar(agent.displayName) }}
+              </VAvatar>
+            </template>
+            <template #title>
+              <div class="chat-row__titlebar">
+                <div class="chat-row__titlemain">
+                  <span class="title-small">{{ agent.displayName }}</span>
+                </div>
+              </div>
+            </template>
+            <template #subtitle>
+              <span class="on-surface-variant">
+                @{{ agent.login }} · {{ agent.description }} · модель: {{ agent.settings.model }}
+                <template v-if="agent.settings.connections.length"> · связей: {{ agent.settings.connections.length }}</template>
+                <template v-if="agent.settings.apiKeyConfigured"> · API key задан</template>
+                <template v-else> · API key не задан</template>
+              </span>
+            </template>
+            <template #append>
+              <div class="d-flex ga-2 align-center">
+                <VBtn size="small" color="secondary" variant="text" @click.stop="openSettings(agent.id)">
+                  Меню
+                </VBtn>
+                <VBtn size="small" color="primary" variant="tonal" @click.stop="openAgent(agent.id)">
+                  {{ agent.conversationId ? 'Открыть' : 'Начать' }}
+                </VBtn>
+              </div>
+            </template>
+          </VListItem>
 
-    <VList class="section-list" bg-color="transparent" lines="three">
-      <VListItem
-        v-for="agent in agentsModel.agents.value"
-        :key="agent.id"
-        class="chat-row"
-        lines="three"
-        @click="openAgent(agent.id)"
-      >
-        <template #prepend>
-          <VAvatar color="secondary" variant="tonal" size="48">
-            {{ resolveAvatar(agent.displayName) }}
-          </VAvatar>
-        </template>
-        <template #title>
-          <div class="chat-row__titlebar">
-            <div class="chat-row__titlemain">
-              <span class="title-small">{{ agent.displayName }}</span>
-            </div>
+          <div v-if="!filteredAgents.length && !agentsModel.pending.value" class="empty-state">
+            <VIcon size="48" color="on-surface-variant">mdi-robot-outline</VIcon>
+            <p class="empty-state__title">Агенты не найдены</p>
+            <p class="empty-state__text">Сбросьте поиск или измените запрос.</p>
           </div>
-        </template>
-        <template #subtitle>
-          <span class="on-surface-variant">
-            @{{ agent.login }} · {{ agent.description }} · модель: {{ agent.settings.model }}
-            <template v-if="agent.settings.connections.length"> · связей: {{ agent.settings.connections.length }}</template>
-            <template v-if="agent.settings.apiKeyConfigured"> · API key задан</template>
-            <template v-else> · API key не задан</template>
-          </span>
-        </template>
-        <template #append>
-          <div class="d-flex ga-2 align-center">
-            <VBtn size="small" color="secondary" variant="text" @click.stop="openSettings(agent.id)">
-              Меню
-            </VBtn>
-            <VBtn size="small" color="primary" variant="tonal" @click.stop="openAgent(agent.id)">
-              {{ agent.conversationId ? 'Открыть' : 'Начать' }}
-            </VBtn>
-          </div>
-        </template>
-      </VListItem>
+        </VList>
+      </VWindowItem>
 
-      <div v-if="!agentsModel.agents.value.length && !agentsModel.pending.value" class="empty-state">
-        <VIcon size="48" color="on-surface-variant">mdi-robot-outline</VIcon>
-        <p class="empty-state__title">Агенты пока недоступны</p>
+      <VWindowItem value="graph" class="agents-section__pane">
+        <div v-if="filteredAgents.length" class="agents-section__graph-shell">
+          <MessengerAgentGraphEditor
+            :agents="filteredAgents"
+            :saving="agentsModel.settingsPending.value"
+            @save-graph="saveGraph"
+            @open-settings="openSettings"
+            @open-agent="openAgent"
+          />
+        </div>
+        <div v-else class="empty-state">
+          <VIcon size="48" color="on-surface-variant">mdi-graph-outline</VIcon>
+          <p class="empty-state__title">Граф пуст для этого фильтра</p>
+          <p class="empty-state__text">Измените поисковый запрос, чтобы увидеть ноды и связи.</p>
+        </div>
+      </VWindowItem>
+    </VWindow>
+
+    <div class="search-dock search-dock--bottom-dock agents-section__search-dock">
+      <div class="search-dock__field">
+        <MessengerDockField>
+          <input
+            v-model="searchDraft"
+            type="text"
+            class="composer-input composer-input--dock"
+            placeholder="Найти агента"
+            autocomplete="off"
+            @focus="openSearch"
+            @blur="closeSearch"
+          />
+        </MessengerDockField>
+        <Transition name="chrome-reveal">
+          <div v-if="searchOpen && searchSuggestions.length" class="search-dropdown" @mousedown.prevent>
+            <VList bg-color="transparent" density="comfortable">
+              <VListItem
+                v-for="agent in searchSuggestions"
+                :key="agent.id"
+                @click="selectSuggestion(agent.id)"
+              >
+                <template #title>{{ agent.displayName }}</template>
+                <template #subtitle>@{{ agent.login }} · {{ agent.settings.model }}</template>
+              </VListItem>
+            </VList>
+          </div>
+        </Transition>
       </div>
-    </VList>
+    </div>
+
+    <div class="section-tabs-row agents-section__tabs-row">
+      <VTabs v-model="agentsTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
+        <VTab value="directory" aria-label="Список агентов" title="Список агентов">
+          <VIcon>mdi-format-list-bulleted</VIcon>
+        </VTab>
+        <VTab value="graph" aria-label="Граф агентов" title="Граф агентов">
+          <VIcon>mdi-graph-outline</VIcon>
+        </VTab>
+      </VTabs>
+    </div>
 
     <VDialog v-model="settingsDialogOpen" max-width="620">
       <VCard v-if="editingAgent">

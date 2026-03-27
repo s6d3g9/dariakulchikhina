@@ -515,6 +515,30 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   background: transparent;
 }
 
+.agents-section__window,
+.agents-section__pane,
+.agents-section__pane > .v-window-item,
+.agents-section__pane > .v-window-item--active {
+  min-height: 0;
+}
+
+.agents-section__pane,
+.agents-section__pane > .v-window-item--active {
+  display: flex;
+  flex-direction: column;
+}
+
+.agents-section__graph-shell {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.agents-section__search-dock,
+.agents-section__tabs-row {
+  flex-shrink: 0;
+}
+
 .search-dock--bottom-dock {
   position: relative;
   z-index: 1;
