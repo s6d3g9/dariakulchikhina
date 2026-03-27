@@ -136,7 +136,6 @@ const graphStats = computed(() => ({
   incoming: incomingConnections.value.length,
   payloads: recentPayloads.value.length,
 }))
-const activeSectionMeta = computed(() => sections.find(section => section.key === activeSection.value) ?? sections[0])
 const collapsed = computed({
   get: () => Boolean(props.collapsed),
   set: (value: boolean) => emit('update:collapsed', value),
@@ -311,15 +310,17 @@ function expandWorkspace() {
 
 <template>
   <section class="agent-chat-workspace" :class="{ 'agent-chat-workspace--collapsed': collapsed }" aria-label="Рабочее пространство агента">
-    <button
-      v-if="collapsed"
-      type="button"
-      class="agent-chat-workspace__collapsed-bar"
-      @click="expandWorkspace"
-    >
-      <strong class="agent-chat-workspace__collapsed-title">{{ workspaceTitle }}</strong>
-      <span class="agent-chat-workspace__collapsed-action">Развернуть</span>
-    </button>
+    <div v-if="collapsed" class="agent-chat-workspace__collapsed-dock">
+      <button
+        type="button"
+        class="agent-chat-workspace__collapsed-toggle"
+        :aria-label="`Развернуть меню ${workspaceTitle}`"
+        :title="`Развернуть меню ${workspaceTitle}`"
+        @click="expandWorkspace"
+      >
+        <VIcon icon="mdi-unfold-more-horizontal" />
+      </button>
+    </div>
 
     <template v-else>
     <header class="agent-chat-workspace__head">
