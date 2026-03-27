@@ -1605,6 +1605,12 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
     align-items: start;
   }
 
+  .agent-chat-workspace__nav {
+    position: sticky;
+    top: 0;
+    align-self: start;
+  }
+
   .agent-chat-workspace__content {
     max-height: 240px;
     overflow: auto;
@@ -1623,11 +1629,29 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   .agent-chat-workspace__nav {
     flex-direction: row;
     overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: 2px;
+    scrollbar-width: thin;
+    scroll-snap-type: x proximity;
   }
 
   .agent-chat-workspace__nav-btn {
+    flex: 0 0 auto;
     min-width: 168px;
+    scroll-snap-align: start;
+  }
+
+  .agent-chat-workspace__nav::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .agent-chat-workspace__nav::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(var(--v-theme-outline), 0.48);
+  }
+
+  .agent-chat-workspace__nav::-webkit-scrollbar-track {
+    background: transparent;
   }
 
   .agent-chat-workspace__grid,
