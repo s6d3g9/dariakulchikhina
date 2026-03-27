@@ -2507,6 +2507,14 @@ onBeforeUnmount(() => {
 
       <input ref="mediaPickerInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="handleFileSelect">
 
+      <MessengerAgentChatWorkspace
+        v-if="activeConversationAgent && conversations.activeConversation.value && !detailsOpen && !composerMediaMenuVisible"
+        :agent-id="conversations.activeConversation.value.peerUserId"
+        :agent-name="conversations.activeConversation.value.peerDisplayName"
+        :agent-login="conversations.activeConversation.value.peerLogin"
+        :conversation-id="conversations.activeConversation.value.id"
+      />
+
       <MessengerChatComposerDock
         ref="composerDockRef"
         :visible="Boolean(conversations.activeConversation.value) && !detailsOpen && !composerMediaMenuVisible"
