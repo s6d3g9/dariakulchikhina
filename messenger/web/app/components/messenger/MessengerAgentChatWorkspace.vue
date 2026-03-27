@@ -321,7 +321,7 @@ function selectSection(section: AgentWorkspaceSectionKey) {
       {{ feedbackMessage }}
     </p>
 
-    <VWindow :model-value="activeSection" class="agent-chat-workspace__window">
+    <VWindow :model-value="activeSection" class="section-list agent-chat-workspace__window">
       <VWindowItem value="overview">
         <div class="agent-chat-workspace__content agent-chat-workspace__content--grid">
           <article class="agent-chat-workspace__card">
@@ -467,14 +467,14 @@ function selectSection(section: AgentWorkspaceSectionKey) {
       </VTabs>
     </div>
 
-    <div class="search-dock agent-chat-workspace__search-dock">
+    <div class="search-dock search-dock--bottom-dock agent-chat-workspace__search-dock">
       <div class="search-dock__field">
         <MessengerDockField>
           <input
             v-model="searchDraft"
             type="text"
             class="composer-input composer-input--dock"
-            placeholder=""
+            placeholder="Найти раздел"
             autocomplete="off"
             @focus="openSearch"
             @blur="closeSearch"
