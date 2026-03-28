@@ -198,7 +198,7 @@ async function listRemoteWorkspace(settings: MessengerAgentSettingsRecord, relat
     'printf "__ROOT__%s\n" "$ROOT_REAL"',
     'printf "__TARGET__%s\n" "$TARGET_REAL"',
     'find "$TARGET_REAL" -mindepth 1 -maxdepth 1 -printf "%f\t%y\t%s\n" | sort',
-  ].join('; ')
+  ].join('\n')
 
   const { stdout, sshTarget } = await execRemoteShell(settings, script)
   const lines = stdout.replace(/\r\n/g, '\n').split('\n').filter(Boolean)
@@ -282,7 +282,7 @@ async function readRemoteWorkspaceFile(settings: MessengerAgentSettingsRecord, r
     'printf "__ROOT__%s\n" "$ROOT_REAL"',
     'printf "__TARGET__%s\n" "$TARGET_REAL"',
     `head -c ${MAX_FILE_PREVIEW_BYTES} -- "$TARGET_REAL"`,
-  ].join('; ')
+  ].join('\n')
 
   const { stdout, sshTarget } = await execRemoteShell(settings, script)
   if (stdout.includes('__ERROR__BINARY_FILE')) {
