@@ -278,7 +278,7 @@ async function readRemoteWorkspaceFile(settings: MessengerAgentSettingsRecord, r
     '  *) echo "__ERROR__OUTSIDE_ROOT"; exit 8 ;;',
     'esac',
     '[ -f "$TARGET_REAL" ] || { echo "__ERROR__FILE_NOT_FOUND"; exit 9; }',
-    'if grep -qU "\x00" "$TARGET_REAL"; then echo "__ERROR__BINARY_FILE"; exit 10; fi',
+    'if grep -qU "\\x00" "$TARGET_REAL"; then echo "__ERROR__BINARY_FILE"; exit 10; fi',
     'printf "__ROOT__%s\n" "$ROOT_REAL"',
     'printf "__TARGET__%s\n" "$TARGET_REAL"',
     `head -c ${MAX_FILE_PREVIEW_BYTES} -- "$TARGET_REAL"`,
