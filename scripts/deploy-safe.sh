@@ -7,6 +7,7 @@ APP_NAME="${APP_NAME:-daria-nuxt}"
 MESSENGER_ECOSYSTEM_PATH="${MESSENGER_ECOSYSTEM_PATH:-messenger/ecosystem.config.cjs}"
 MESSENGER_PM2_CORE_NAME="${MESSENGER_PM2_CORE_NAME:-daria-messenger-core}"
 MESSENGER_PM2_WEB_NAME="${MESSENGER_PM2_WEB_NAME:-daria-messenger-web}"
+MESSENGER_PM2_USER="${MESSENGER_PM2_USER:-admin2}"
 MESSENGER_PUBLIC_HEALTHCHECK_URL="${MESSENGER_PUBLIC_HEALTHCHECK_URL:-https://dariakulchikhina.com/messenger/login}"
 MESSENGER_REMOTE_HEALTHCHECK_URL="${MESSENGER_REMOTE_HEALTHCHECK_URL:-http://127.0.0.1:3300/messenger/login}"
 DEPLOY_MESSENGER="${DEPLOY_MESSENGER:-1}"
@@ -180,6 +181,32 @@ is_healthy_status() {
   esac
 }
 
+shell_escape() {
+  printf '%q' "$1"
+}
+
+restart_messenger_pm2() {
+  local remote_worktree
+  local remote_ecosystem
+  local remote_core_name
+  local remote_web_name
+  local remote_target_user
+  local pm2_restart_cmd
+
+  remote_worktree="$(shell_escape "$DEPLOY_PATH")"
+  remote_ecosystem="$(shell_escape "$MESSENGER_ECOSYSTEM_PATH")"
+  remote_core_name="$(shell_escape "$MESSENGER_PM2_CORE_NAME")"
+  remote_web_name="$(shell_escape "$MESSENGER_PM2_WEB_NAME")"
+  remote_target_user="$(shell_escape "$MESSENGER_PM2_USER")"
+  pm2_restart_cmd="cd ${remote_worktree} && pm2 startOrRestart ${remote_ecosystem} --only ${remote_core_name} --update-env && pm2 startOrRestart ${remote_ecosystem} --only ${remote_web_name} --update-env && pm2 save --force >/dev/null"
+
+  if [[ -n "$MESSENGER_PM2_USER" ]]; then
+    ssh "$DEPLOY_HOST" "set -e; current_user=\$(id -un); if [[ \"\$current_user\" = ${remote_target_user} ]]; then ${pm2_restart_cmd}; else pm2 delete ${remote_core_name} ${remote_web_name} >/dev/null 2>&1 || true; sudo -u ${remote_target_user} -H bash -lc $(shell_escape "$pm2_restart_cmd"); fi"
+  else
+    ssh "$DEPLOY_HOST" "set -e; ${pm2_restart_cmd}"
+  fi
+}
+
 run_remote_healthcheck() {
   ssh "$DEPLOY_HOST" "curl -o /dev/null -s -w '%{http_code}' --max-time 20 '$REMOTE_HEALTHCHECK_URL'" 2>/dev/null || true
 }
@@ -225,6 +252,11 @@ run_preflight() {
 
   echo "[preflight] remote tools + path"
   ssh "$DEPLOY_HOST" "set -e; command -v node >/dev/null; command -v pnpm >/dev/null; command -v pm2 >/dev/null; command -v git >/dev/null; mkdir -p '$DEPLOY_PATH'; test -w '$DEPLOY_PATH'"
+
+  if [[ "$DEPLOY_MESSENGER" == "1" && -n "$MESSENGER_PM2_USER" ]]; then
+    echo "[preflight] messenger pm2 user"
+    ssh "$DEPLOY_HOST" "set -e; if [[ \$(id -un) != '$(shell_escape "$MESSENGER_PM2_USER")' ]]; then command -v sudo >/dev/null; id -u '$(shell_escape "$MESSENGER_PM2_USER")' >/dev/null; sudo -n -u '$(shell_escape "$MESSENGER_PM2_USER")' true; fi"
+  fi
 
   echo "[preflight] git remote reachable"
   ssh "$DEPLOY_HOST" "cd '$DEPLOY_PATH' && git fetch origin --dry-run 2>&1 | head -2"
@@ -283,7 +315,7 @@ fi
 RESTART_START_TS=$(date +%s)
 ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pm2 restart '$APP_NAME' --update-env --silent"
 if [[ "$DEPLOY_MESSENGER" == "1" ]]; then
-  ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pm2 startOrRestart '$MESSENGER_ECOSYSTEM_PATH' --only '$MESSENGER_PM2_CORE_NAME' --update-env; pm2 startOrRestart '$MESSENGER_ECOSYSTEM_PATH' --only '$MESSENGER_PM2_WEB_NAME' --update-env; pm2 save --force >/dev/null"
+  restart_messenger_pm2
 fi
 log_stage_time "restart" "$RESTART_START_TS"
 
