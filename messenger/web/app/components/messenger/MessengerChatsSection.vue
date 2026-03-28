@@ -18,6 +18,17 @@ type ChatFolder = {
   kind?: 'manual' | 'agent-system'
   agentIds?: string[]
 }
+
+type AgentSystemCard = {
+  key: string
+  label: string
+  agentNames: string[]
+  agentCount: number
+  chatCount: number
+  preview: string
+  lastUpdatedAt: string
+}
+
 const FOLDERS_LS_KEY = 'messenger-chat-folders'
 const AGENT_SYSTEMS_FOLDER_KEY = 'agent-systems'
 
@@ -45,6 +56,11 @@ const activeFolderKey = ref<string>('all')
 const folderDraftName = ref('')
 const showCreateFolder = ref(false)
 const folderContextKey = ref<string | null>(null)
+const agentMap = computed(() => new Map(agentsModel.agents.value.map(agent => [agent.id, agent] as const)))
+const systemFolders = computed(() => userFolders.value.filter(folder => folder.kind === 'agent-system'))
+const activeFolder = computed(() => userFolders.value.find(folder => folder.key === activeFolderKey.value) ?? null)
+const activeAgentSystem = computed(() => activeFolder.value?.kind === 'agent-system' ? activeFolder.value : null)
+const showAgentSystemsDirectory = computed(() => activeFolderKey.value === AGENT_SYSTEMS_FOLDER_KEY)
 
 function saveFolders() {
   if (!import.meta.client) return
@@ -72,12 +88,40 @@ function confirmDeleteFolder() {
 const filteredConversations = computed(() => {
   if (activeFolderKey.value === 'all') return conversations.conversations.value
   if (activeFolderKey.value === AGENT_SYSTEMS_FOLDER_KEY) {
-    return conversations.conversations.value.filter(item => item.peerType === 'agent')
+    return []
   }
   const folder = userFolders.value.find(f => f.key === activeFolderKey.value)
   if (!folder) return conversations.conversations.value
   return conversations.conversations.value.filter(c => folder.chatIds.includes(c.id))
 })
+
+const systemDirectoryCards = computed<AgentSystemCard[]>(() => systemFolders.value
+  .map((folder) => {
+    const folderChats = conversations.conversations.value.filter(chat => folder.chatIds.includes(chat.id))
+    const agentNames = (folder.agentIds || [])
+      .map(agentId => agentMap.value.get(agentId)?.displayName)
+      .filter((value): value is string => Boolean(value))
+    const latestConversation = folderChats
+      .slice()
+      .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0]
+
+    return {
+      key: folder.key,
+      label: folder.label,
+      agentNames,
+      agentCount: agentNames.length,
+      chatCount: folderChats.length,
+      preview: agentNames.length
+        ? agentNames.slice(0, 3).join(' · ')
+        : 'Состав системы пока не определён.',
+      lastUpdatedAt: latestConversation?.updatedAt || '',
+    }
+  })
+  .sort((left, right) => new Date(right.lastUpdatedAt || 0).getTime() - new Date(left.lastUpdatedAt || 0).getTime()))
+
+const activeAgentSystemCard = computed(() => activeAgentSystem.value
+  ? systemDirectoryCards.value.find(card => card.key === activeAgentSystem.value?.key) ?? null
+  : null)
 
 function upsertFolder(folder: ChatFolder) {
   const index = userFolders.value.findIndex(item => item.key === folder.key)
@@ -222,11 +266,24 @@ async function createAgentSystem() {
       agentIds: selectedAgents.map(agent => agent.id),
     })
     activeFolderKey.value = folderKey
-    navigation.openSection('chat')
+    navigation.openSection('chats')
     showNewChatDialog.value = false
   } catch {
     newChatError.value = 'Не удалось создать систему агентов.'
   }
+}
+
+function openAgentSystem(folderKey: string) {
+  activeFolderKey.value = folderKey
+}
+
+function formatAgentSystemStats(card: AgentSystemCard) {
+  const parts = [`${card.agentCount} агентов`, `${card.chatCount} чатов`]
+  if (card.lastUpdatedAt) {
+    parts.push(`обновлено ${formatConversationTimestamp(card.lastUpdatedAt)}`)
+  }
+
+  return parts.join(' · ')
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -398,7 +455,35 @@ function formatChatPreview(chat: MessengerConversationItem) {
 
     <!-- Список чатов + FAB -->
     <div class="chats-list-wrap">
-      <VList class="section-list" bg-color="transparent" lines="two">
+      <div v-if="showAgentSystemsDirectory" class="agent-systems-directory">
+        <button
+          v-for="card in systemDirectoryCards"
+          :key="card.key"
+          type="button"
+          class="agent-system-card"
+          @click="openAgentSystem(card.key)"
+        >
+          <span class="agent-system-card__eyebrow">Система агентов</span>
+          <span class="agent-system-card__title">{{ card.label }}</span>
+          <span class="agent-system-card__meta">{{ formatAgentSystemStats(card) }}</span>
+          <span class="agent-system-card__preview">{{ card.preview }}</span>
+        </button>
+
+        <div v-if="!systemDirectoryCards.length" class="empty-state">
+          <VIcon size="48" color="on-surface-variant">mdi-message-text-outline</VIcon>
+          <p class="empty-state__title">Системы агентов пока не созданы</p>
+          <p class="empty-state__text">Создайте систему через кнопку нового чата и соберите агентов в отдельную папку.</p>
+        </div>
+      </div>
+
+      <VList v-else class="section-list" bg-color="transparent" lines="two">
+        <div v-if="activeAgentSystemCard" class="agent-system-banner">
+          <p class="agent-system-banner__eyebrow">Активная система</p>
+          <p class="agent-system-banner__title">{{ activeAgentSystemCard.label }}</p>
+          <p class="agent-system-banner__meta">{{ formatAgentSystemStats(activeAgentSystemCard) }}</p>
+          <p class="agent-system-banner__preview">{{ activeAgentSystemCard.preview }}</p>
+        </div>
+
         <VListItem
           v-for="chat in filteredConversations"
           :key="chat.id"
@@ -474,8 +559,8 @@ function formatChatPreview(chat: MessengerConversationItem) {
 
         <div v-if="!filteredConversations.length" class="empty-state">
           <VIcon size="48" color="on-surface-variant">mdi-message-text-outline</VIcon>
-          <p class="empty-state__title">Чаты пока пусты</p>
-          <p class="empty-state__text">Нажмите ✏️ чтобы начать диалог.</p>
+          <p class="empty-state__title">{{ activeAgentSystem ? 'Внутри системы пока нет чатов' : 'Чаты пока пусты' }}</p>
+          <p class="empty-state__text">{{ activeAgentSystem ? 'Добавьте агента в систему через новое окно создания чата.' : 'Нажмите ✏️ чтобы начать диалог.' }}</p>
         </div>
       </VList>
 
@@ -513,12 +598,13 @@ function formatChatPreview(chat: MessengerConversationItem) {
         :key="folder.key"
         type="button"
         class="chats-folder-chip"
+        :title="folder.kind === 'agent-system' ? 'Система агентов' : folder.label"
         :class="{ 'chats-folder-chip--active': activeFolderKey === folder.key }"
         role="tab"
         :aria-selected="activeFolderKey === folder.key"
         @click="activeFolderKey = folder.key"
         @contextmenu.prevent="folderContextKey = folder.key"
-      >{{ folder.label }}</button>
+      >{{ folder.kind === 'agent-system' ? `${folder.label} · ${(folder.agentIds || []).length}` : folder.label }}</button>
       <button
         type="button"
         class="chats-folder-chip"
