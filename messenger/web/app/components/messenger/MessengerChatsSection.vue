@@ -17,6 +17,11 @@ type ChatFolder = {
   chatIds: string[]
   kind?: 'manual' | 'agent-system'
   agentIds?: string[]
+  lastRun?: {
+    prompt: string
+    sentAt: string
+    targetCount: number
+  }
 }
 
 type AgentSystemCard = {
@@ -44,6 +49,13 @@ function loadFolders(): ChatFolder[] {
           chatIds: Array.isArray(folder.chatIds) ? folder.chatIds : [],
           kind: folder.kind || 'manual',
           agentIds: Array.isArray(folder.agentIds) ? folder.agentIds : [],
+          lastRun: folder.lastRun && typeof folder.lastRun === 'object'
+            ? {
+                prompt: typeof folder.lastRun.prompt === 'string' ? folder.lastRun.prompt : '',
+                sentAt: typeof folder.lastRun.sentAt === 'string' ? folder.lastRun.sentAt : '',
+                targetCount: typeof folder.lastRun.targetCount === 'number' ? folder.lastRun.targetCount : 0,
+              }
+            : undefined,
         }))
       : []
   } catch {
@@ -111,10 +123,12 @@ const systemDirectoryCards = computed<AgentSystemCard[]>(() => systemFolders.val
       agentNames,
       agentCount: agentNames.length,
       chatCount: folderChats.length,
-      preview: agentNames.length
-        ? agentNames.slice(0, 3).join(' · ')
-        : 'Состав системы пока не определён.',
-      lastUpdatedAt: latestConversation?.updatedAt || '',
+      preview: folder.lastRun?.prompt
+        ? `Запуск: ${folder.lastRun.prompt}`
+        : agentNames.length
+          ? agentNames.slice(0, 3).join(' · ')
+          : 'Состав системы пока не определён.',
+      lastUpdatedAt: folder.lastRun?.sentAt || latestConversation?.updatedAt || '',
     }
   })
   .sort((left, right) => new Date(right.lastUpdatedAt || 0).getTime() - new Date(left.lastUpdatedAt || 0).getTime()))
@@ -122,6 +136,8 @@ const systemDirectoryCards = computed<AgentSystemCard[]>(() => systemFolders.val
 const activeAgentSystemCard = computed(() => activeAgentSystem.value
   ? systemDirectoryCards.value.find(card => card.key === activeAgentSystem.value?.key) ?? null
   : null)
+
+const activeAgentSystemLastRun = computed(() => activeAgentSystem.value?.lastRun || null)
 
 const activeAgentSystemChats = computed(() => {
   if (!activeAgentSystem.value) {
@@ -420,6 +436,15 @@ async function broadcastToAgentSystem() {
       await conversations.selectConversation(previousConversationId)
     }
 
+    upsertFolder({
+      ...activeAgentSystem.value,
+      lastRun: {
+        prompt: message,
+        sentAt: new Date().toISOString(),
+        targetCount: activeAgentSystemChats.value.length,
+      },
+    })
+
     await conversations.refresh(searchDraft.value)
     navigation.openSection('chats')
     showBroadcastDialog.value = false
@@ -437,6 +462,15 @@ function formatAgentSystemStats(card: AgentSystemCard) {
   }
 
   return parts.join(' · ')
+}
+
+function formatSystemRunPrompt(value: string) {
+  const compact = value.trim().replace(/\s+/g, ' ')
+  if (compact.length <= 120) {
+    return compact
+  }
+
+  return `${compact.slice(0, 117)}...`
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -643,6 +677,10 @@ function formatChatPreview(chat: MessengerConversationItem) {
           </div>
           <p class="agent-system-banner__meta">{{ formatAgentSystemStats(activeAgentSystemCard) }}</p>
           <p class="agent-system-banner__preview">{{ activeAgentSystemCard.preview }}</p>
+          <div v-if="activeAgentSystemLastRun" class="agent-system-banner__run">
+            <p class="agent-system-banner__run-meta">Последний запуск · {{ activeAgentSystemLastRun.targetCount }} агентов · {{ formatConversationTimestamp(activeAgentSystemLastRun.sentAt) }}</p>
+            <p class="agent-system-banner__run-prompt">{{ formatSystemRunPrompt(activeAgentSystemLastRun.prompt) }}</p>
+          </div>
         </div>
 
         <VListItem

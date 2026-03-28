@@ -855,6 +855,26 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   margin: 12px 16px 4px;
 }
 
+.agent-system-banner__run {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(var(--v-theme-outline-variant), 0.4);
+}
+
+.agent-system-banner__run-meta,
+.agent-system-banner__run-prompt {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.agent-system-banner__run-prompt {
+  color: rgb(var(--v-theme-on-surface));
+}
+
 .new-chat-mode-grid {
   display: grid;
   grid-template-columns: 1fr;
