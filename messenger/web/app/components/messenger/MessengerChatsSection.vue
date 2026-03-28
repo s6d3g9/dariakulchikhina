@@ -123,6 +123,16 @@ const activeAgentSystemCard = computed(() => activeAgentSystem.value
   ? systemDirectoryCards.value.find(card => card.key === activeAgentSystem.value?.key) ?? null
   : null)
 
+const activeAgentSystemChats = computed(() => {
+  if (!activeAgentSystem.value) {
+    return []
+  }
+
+  return activeAgentSystem.value.chatIds
+    .map(chatId => conversations.conversations.value.find(item => item.id === chatId) ?? null)
+    .filter((chat): chat is MessengerConversationItem => Boolean(chat && chat.peerType === 'agent'))
+})
+
 function upsertFolder(folder: ChatFolder) {
   const index = userFolders.value.findIndex(item => item.key === folder.key)
   if (index === -1) {
@@ -178,6 +188,10 @@ const editSystemName = ref('')
 const editSystemAgentIds = ref<string[]>([])
 const editSystemError = ref('')
 const editSystemPending = ref(false)
+const showBroadcastDialog = ref(false)
+const broadcastMessage = ref('')
+const broadcastError = ref('')
+const broadcastPending = ref(false)
 
 const normalizedAgentSearchQuery = computed(() => agentSearchDraft.value.trim().toLowerCase())
 const filteredAgentGallery = computed(() => {
@@ -363,6 +377,56 @@ async function saveAgentSystemEdits() {
     editSystemError.value = 'Не удалось обновить систему агентов.'
   } finally {
     editSystemPending.value = false
+  }
+}
+
+function openBroadcastDialog() {
+  if (!activeAgentSystem.value) {
+    return
+  }
+
+  broadcastError.value = ''
+  broadcastMessage.value = ''
+  showBroadcastDialog.value = true
+}
+
+async function broadcastToAgentSystem() {
+  if (!activeAgentSystem.value) {
+    return
+  }
+
+  const message = broadcastMessage.value.trim()
+  if (!message) {
+    broadcastError.value = 'Введите сообщение для системы агентов.'
+    return
+  }
+
+  if (!activeAgentSystemChats.value.length) {
+    broadcastError.value = 'В системе нет агентных чатов для запуска.'
+    return
+  }
+
+  broadcastPending.value = true
+  broadcastError.value = ''
+  const previousConversationId = conversations.activeConversationId.value
+
+  try {
+    for (const chat of activeAgentSystemChats.value) {
+      await conversations.selectConversation(chat.id)
+      await conversations.sendMessage(message)
+    }
+
+    if (previousConversationId) {
+      await conversations.selectConversation(previousConversationId)
+    }
+
+    await conversations.refresh(searchDraft.value)
+    navigation.openSection('chats')
+    showBroadcastDialog.value = false
+  } catch {
+    broadcastError.value = 'Не удалось отправить сообщение всем агентам системы.'
+  } finally {
+    broadcastPending.value = false
   }
 }
 
@@ -572,7 +636,10 @@ function formatChatPreview(chat: MessengerConversationItem) {
               <p class="agent-system-banner__eyebrow">Активная система</p>
               <p class="agent-system-banner__title">{{ activeAgentSystemCard.label }}</p>
             </div>
-            <VBtn size="small" variant="tonal" @click="openEditAgentSystem()">Настроить</VBtn>
+            <div class="agent-system-banner__actions">
+              <VBtn size="small" variant="tonal" @click="openBroadcastDialog()">Запустить</VBtn>
+              <VBtn size="small" variant="tonal" @click="openEditAgentSystem()">Настроить</VBtn>
+            </div>
           </div>
           <p class="agent-system-banner__meta">{{ formatAgentSystemStats(activeAgentSystemCard) }}</p>
           <p class="agent-system-banner__preview">{{ activeAgentSystemCard.preview }}</p>
@@ -896,6 +963,41 @@ function formatChatPreview(chat: MessengerConversationItem) {
             @click="saveAgentSystemEdits()"
           >
             Обновить систему
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <VDialog v-model="showBroadcastDialog" max-width="560">
+      <VCard>
+        <VCardTitle>Запустить систему</VCardTitle>
+        <VCardText>
+          <div class="new-chat-system-builder">
+            <p class="new-chat-system-builder__hint">Сообщение будет отправлено во все agent-чаты текущей системы. Каждый агент получит одинаковый входной запрос.</p>
+            <VTextarea
+              v-model="broadcastMessage"
+              label="Общий запрос для системы"
+              placeholder="Например: Соберите 3 разных взгляда на проект и предложите единый план действий"
+              variant="outlined"
+              rows="5"
+              auto-grow
+              hide-details
+            />
+            <p class="new-chat-system-builder__hint">Агентов в запуске: {{ activeAgentSystemChats.length }}</p>
+            <VAlert v-if="broadcastError" type="error">{{ broadcastError }}</VAlert>
+          </div>
+        </VCardText>
+        <VCardActions>
+          <VBtn variant="text" @click="showBroadcastDialog = false">Отмена</VBtn>
+          <VSpacer />
+          <VBtn
+            color="primary"
+            variant="tonal"
+            :loading="broadcastPending"
+            :disabled="broadcastPending || !broadcastMessage.trim() || !activeAgentSystemChats.length"
+            @click="broadcastToAgentSystem()"
+          >
+            Отправить всем агентам
           </VBtn>
         </VCardActions>
       </VCard>

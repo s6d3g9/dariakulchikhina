@@ -818,6 +818,14 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   min-width: 0;
 }
 
+.agent-system-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .agent-system-card__eyebrow,
 .agent-system-banner__eyebrow {
   font-size: 11px;
