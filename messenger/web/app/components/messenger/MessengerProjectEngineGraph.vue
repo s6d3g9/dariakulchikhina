@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import type {
+  MessengerProjectAgreementRecord,
   MessengerProjectAgreementStatus,
   MessengerProjectAgreementType,
+  MessengerProjectCabinetLinkRecord,
   MessengerProjectCabinetLinkKind,
   MessengerProjectCapability,
   MessengerProjectCoverageStatus,
+  MessengerProjectRecord,
+  MessengerProjectSubjectRecord,
   MessengerProjectSubjectKind,
 } from '../../composables/useMessengerProjectEngine'
 
@@ -17,6 +21,9 @@ const projectEngine = useMessengerProjectEngine()
 const selectedContextId = ref<string>('')
 const feedbackMessage = ref('')
 const feedbackTone = ref<'info' | 'error'>('info')
+const editingSubjectId = ref('')
+const editingAgreementId = ref('')
+const editingLinkId = ref('')
 const bootstrapDraft = reactive({
   templateId: 'platform-role-cabinets',
   slug: 'platform-role-cabinets',
@@ -35,6 +42,25 @@ const agreementDraft = reactive({
   status: 'draft' as MessengerProjectAgreementStatus,
   managerAgentIds: ['agreements-manager'],
 })
+const contextDraft = reactive({
+  status: 'planned' as MessengerProjectCoverageStatus,
+  summary: '',
+})
+const subjectEditDraft = reactive({
+  label: '',
+  kind: 'client' as MessengerProjectSubjectKind,
+})
+const agreementEditDraft = reactive({
+  label: '',
+  type: 'scope' as MessengerProjectAgreementType,
+  status: 'draft' as MessengerProjectAgreementStatus,
+})
+const linkEditDraft = reactive({
+  targetContextId: '',
+  kind: 'shared-data' as MessengerProjectCabinetLinkKind,
+  sharedCapabilities: ['logic'] as MessengerProjectCapability[],
+  status: 'planned' as MessengerProjectCoverageStatus,
+})
 const linkDraft = reactive({
   targetContextId: '',
   kind: 'shared-data' as MessengerProjectCabinetLinkKind,
@@ -51,6 +77,45 @@ const capabilityOptions: Array<{ title: string; value: MessengerProjectCapabilit
   { title: 'QA', value: 'qa' },
   { title: 'Docs', value: 'docs' },
   { title: 'Integration', value: 'integration' },
+]
+const contextStatusOptions: Array<{ title: string; value: MessengerProjectCoverageStatus }> = [
+  { title: 'Planned', value: 'planned' },
+  { title: 'В работе', value: 'in-progress' },
+  { title: 'Review', value: 'review' },
+  { title: 'Blocked', value: 'blocked' },
+  { title: 'Done', value: 'done' },
+]
+const subjectKindOptions: Array<{ title: string; value: MessengerProjectSubjectKind }> = [
+  { title: 'Client', value: 'client' },
+  { title: 'Manager', value: 'manager' },
+  { title: 'Designer', value: 'designer' },
+  { title: 'Contractor', value: 'contractor' },
+  { title: 'Admin', value: 'admin' },
+  { title: 'Vendor', value: 'vendor' },
+  { title: 'Partner', value: 'partner' },
+  { title: 'External', value: 'external' },
+]
+const agreementTypeOptions: Array<{ title: string; value: MessengerProjectAgreementType }> = [
+  { title: 'Scope', value: 'scope' },
+  { title: 'Delivery', value: 'delivery' },
+  { title: 'Approval', value: 'approval' },
+  { title: 'Payment', value: 'payment' },
+  { title: 'Change request', value: 'change-request' },
+  { title: 'Support', value: 'support' },
+]
+const agreementStatusOptions: Array<{ title: string; value: MessengerProjectAgreementStatus }> = [
+  { title: 'Draft', value: 'draft' },
+  { title: 'Active', value: 'active' },
+  { title: 'Review', value: 'review' },
+  { title: 'Blocked', value: 'blocked' },
+  { title: 'Closed', value: 'closed' },
+]
+const linkKindOptions: Array<{ title: string; value: MessengerProjectCabinetLinkKind }> = [
+  { title: 'Shared data', value: 'shared-data' },
+  { title: 'Depends on', value: 'depends-on' },
+  { title: 'Handoff', value: 'handoff' },
+  { title: 'Approval', value: 'approval' },
+  { title: 'Mirrors', value: 'mirrors' },
 ]
 
 const contextPositions = computed<Record<string, ProjectNodePosition>>(() => {
@@ -111,6 +176,20 @@ watch(() => projectEngine.syncBrief.value?.project.id, (projectId) => {
   }
 }, { immediate: true })
 
+watch(selectedContext, (context) => {
+  if (!context) {
+    contextDraft.status = 'planned'
+    contextDraft.summary = ''
+    return
+  }
+
+  contextDraft.status = context.status
+  contextDraft.summary = context.summary
+  editingSubjectId.value = ''
+  editingAgreementId.value = ''
+  editingLinkId.value = ''
+}, { immediate: true })
+
 watch(() => projectEngine.activeProjectId.value, async (projectId) => {
   if (!projectId) {
     return
@@ -147,6 +226,56 @@ function contextStatusClass(value: string) {
   return `project-engine-status--${value}`
 }
 
+function projectLabel(project: MessengerProjectRecord | null) {
+  return project?.label || 'проектный граф'
+}
+
+function getActiveProjectRecord() {
+  return projectEngine.activeProject.value ?? projectEngine.syncBrief.value?.project ?? null
+}
+
+function resetSubjectEditor() {
+  editingSubjectId.value = ''
+  subjectEditDraft.label = ''
+  subjectEditDraft.kind = 'client'
+}
+
+function resetAgreementEditor() {
+  editingAgreementId.value = ''
+  agreementEditDraft.label = ''
+  agreementEditDraft.type = 'scope'
+  agreementEditDraft.status = 'draft'
+}
+
+function resetLinkEditor() {
+  editingLinkId.value = ''
+  linkEditDraft.targetContextId = ''
+  linkEditDraft.kind = 'shared-data'
+  linkEditDraft.sharedCapabilities = ['logic']
+  linkEditDraft.status = 'planned'
+}
+
+function startSubjectEdit(subject: MessengerProjectSubjectRecord) {
+  editingSubjectId.value = subject.id
+  subjectEditDraft.label = subject.label
+  subjectEditDraft.kind = subject.kind
+}
+
+function startAgreementEdit(agreement: MessengerProjectAgreementRecord) {
+  editingAgreementId.value = agreement.id
+  agreementEditDraft.label = agreement.label
+  agreementEditDraft.type = agreement.type
+  agreementEditDraft.status = agreement.status
+}
+
+function startLinkEdit(link: MessengerProjectCabinetLinkRecord) {
+  editingLinkId.value = link.id
+  linkEditDraft.targetContextId = link.targetContextId
+  linkEditDraft.kind = link.kind
+  linkEditDraft.sharedCapabilities = [...link.sharedCapabilities]
+  linkEditDraft.status = link.status
+}
+
 async function bootstrapProject() {
   feedbackMessage.value = ''
 
@@ -164,6 +293,51 @@ async function bootstrapProject() {
   } catch {
     feedbackTone.value = 'error'
     feedbackMessage.value = 'Не удалось создать проектный граф из шаблона.'
+  }
+}
+
+async function saveSelectedContext() {
+  const project = getActiveProjectRecord()
+  if (!project || !selectedContext.value) {
+    return
+  }
+
+  feedbackMessage.value = ''
+
+  try {
+    await projectEngine.updateProject(project.id, {
+      ...project,
+      contexts: project.contexts.map(context => context.id === selectedContext.value?.id
+        ? {
+            ...context,
+            status: contextDraft.status,
+            summary: contextDraft.summary.trim(),
+          }
+        : context),
+    })
+    feedbackTone.value = 'info'
+    feedbackMessage.value = 'Кабинет обновлён.'
+  } catch {
+    feedbackTone.value = 'error'
+    feedbackMessage.value = 'Не удалось обновить кабинет.'
+  }
+}
+
+async function removeProject() {
+  const project = getActiveProjectRecord()
+  if (!project) {
+    return
+  }
+
+  feedbackMessage.value = ''
+
+  try {
+    await projectEngine.deleteProject(project.id)
+    feedbackTone.value = 'info'
+    feedbackMessage.value = `Проект ${projectLabel(project)} удалён.`
+  } catch {
+    feedbackTone.value = 'error'
+    feedbackMessage.value = 'Не удалось удалить проектный граф.'
   }
 }
 
@@ -190,6 +364,52 @@ async function createSubject() {
   } catch {
     feedbackTone.value = 'error'
     feedbackMessage.value = 'Не удалось создать субъекта.'
+  }
+}
+
+async function saveSubject(subject: MessengerProjectSubjectRecord) {
+  if (!projectEngine.activeProjectId.value || !selectedContextId.value || !subjectEditDraft.label.trim()) {
+    return
+  }
+
+  feedbackMessage.value = ''
+
+  try {
+    await projectEngine.updateSubject(projectEngine.activeProjectId.value, subject.id, {
+      label: subjectEditDraft.label.trim(),
+      kind: subjectEditDraft.kind,
+      status: subject.status,
+      contextIds: [...subject.contextIds],
+      managerAgentIds: [...subject.managerAgentIds],
+      tags: [...subject.tags],
+      notes: subject.notes,
+    })
+    resetSubjectEditor()
+    feedbackTone.value = 'info'
+    feedbackMessage.value = 'Субъект обновлён.'
+  } catch {
+    feedbackTone.value = 'error'
+    feedbackMessage.value = 'Не удалось обновить субъекта.'
+  }
+}
+
+async function removeSubject(subjectId: string) {
+  if (!projectEngine.activeProjectId.value) {
+    return
+  }
+
+  feedbackMessage.value = ''
+
+  try {
+    await projectEngine.deleteSubject(projectEngine.activeProjectId.value, subjectId)
+    if (editingSubjectId.value === subjectId) {
+      resetSubjectEditor()
+    }
+    feedbackTone.value = 'info'
+    feedbackMessage.value = 'Субъект удалён.'
+  } catch {
+    feedbackTone.value = 'error'
+    feedbackMessage.value = 'Не удалось удалить субъекта.'
   }
 }
 
@@ -221,6 +441,54 @@ async function createAgreement() {
   }
 }
 
+async function saveAgreement(agreement: MessengerProjectAgreementRecord) {
+  if (!projectEngine.activeProjectId.value || !agreementEditDraft.label.trim()) {
+    return
+  }
+
+  feedbackMessage.value = ''
+
+  try {
+    await projectEngine.updateAgreement(projectEngine.activeProjectId.value, agreement.id, {
+      label: agreementEditDraft.label.trim(),
+      type: agreementEditDraft.type,
+      status: agreementEditDraft.status,
+      subjectIds: [...agreement.subjectIds],
+      contextIds: [...agreement.contextIds],
+      managerAgentIds: [...agreement.managerAgentIds],
+      summary: agreement.summary,
+      terms: [...agreement.terms],
+      dueAt: agreement.dueAt,
+    })
+    resetAgreementEditor()
+    feedbackTone.value = 'info'
+    feedbackMessage.value = 'Договорённость обновлена.'
+  } catch {
+    feedbackTone.value = 'error'
+    feedbackMessage.value = 'Не удалось обновить договорённость.'
+  }
+}
+
+async function removeAgreement(agreementId: string) {
+  if (!projectEngine.activeProjectId.value) {
+    return
+  }
+
+  feedbackMessage.value = ''
+
+  try {
+    await projectEngine.deleteAgreement(projectEngine.activeProjectId.value, agreementId)
+    if (editingAgreementId.value === agreementId) {
+      resetAgreementEditor()
+    }
+    feedbackTone.value = 'info'
+    feedbackMessage.value = 'Договорённость удалена.'
+  } catch {
+    feedbackTone.value = 'error'
+    feedbackMessage.value = 'Не удалось удалить договорённость.'
+  }
+}
+
 async function createLink() {
   if (!projectEngine.activeProjectId.value || !selectedContextId.value || !linkDraft.targetContextId) {
     return
@@ -246,6 +514,52 @@ async function createLink() {
     feedbackMessage.value = 'Не удалось создать связь между кабинетами.'
   }
 }
+
+async function saveLink(link: MessengerProjectCabinetLinkRecord) {
+  if (!projectEngine.activeProjectId.value || !selectedContextId.value || !linkEditDraft.targetContextId) {
+    return
+  }
+
+  feedbackMessage.value = ''
+
+  try {
+    await projectEngine.updateCabinetLink(projectEngine.activeProjectId.value, link.id, {
+      sourceContextId: link.sourceContextId,
+      targetContextId: linkEditDraft.targetContextId,
+      kind: linkEditDraft.kind,
+      status: linkEditDraft.status,
+      sharedCapabilities: [...linkEditDraft.sharedCapabilities],
+      agreementIds: [...link.agreementIds],
+      notes: link.notes,
+    })
+    resetLinkEditor()
+    feedbackTone.value = 'info'
+    feedbackMessage.value = 'Связь обновлена.'
+  } catch {
+    feedbackTone.value = 'error'
+    feedbackMessage.value = 'Не удалось обновить связь.'
+  }
+}
+
+async function removeLink(linkId: string) {
+  if (!projectEngine.activeProjectId.value) {
+    return
+  }
+
+  feedbackMessage.value = ''
+
+  try {
+    await projectEngine.deleteCabinetLink(projectEngine.activeProjectId.value, linkId)
+    if (editingLinkId.value === linkId) {
+      resetLinkEditor()
+    }
+    feedbackTone.value = 'info'
+    feedbackMessage.value = 'Связь удалена.'
+  } catch {
+    feedbackTone.value = 'error'
+    feedbackMessage.value = 'Не удалось удалить связь.'
+  }
+}
 </script>
 
 <template>
@@ -267,6 +581,9 @@ async function createLink() {
         />
         <VBtn color="secondary" variant="text" :loading="projectEngine.briefsPending.value" @click="projectEngine.loadBriefs()">
           Обновить
+        </VBtn>
+        <VBtn v-if="projectEngine.activeProject.value" color="error" variant="text" :loading="projectEngine.mutating.value" @click="removeProject">
+          Удалить проект
         </VBtn>
       </div>
     </header>
@@ -373,11 +690,29 @@ async function createLink() {
           <div class="project-engine-inspector__section">
             <span class="project-engine-inspector__eyebrow">Выбранный кабинет</span>
             <h3 class="project-engine-inspector__title">{{ selectedContext.label }}</h3>
-            <p class="project-engine-inspector__text">{{ selectedContext.summary || 'Краткое описание пока не заполнено.' }}</p>
+            <VSelect
+              v-model="contextDraft.status"
+              :items="contextStatusOptions"
+              label="Статус кабинета"
+              variant="outlined"
+              hide-details="auto"
+              density="comfortable"
+            />
+            <VTextarea
+              v-model="contextDraft.summary"
+              label="Описание кабинета"
+              variant="outlined"
+              hide-details="auto"
+              rows="3"
+              auto-grow
+            />
             <div class="project-engine-inspector__chips">
               <span v-for="capability in selectedContext.capabilities" :key="capability.capability" class="project-engine-chip" :class="contextStatusClass(capability.status)">
                 {{ capability.capability }}
               </span>
+            </div>
+            <div class="project-engine-inspector__actions">
+              <VBtn color="primary" variant="tonal" :loading="projectEngine.mutating.value" @click="saveSelectedContext">Сохранить кабинет</VBtn>
             </div>
           </div>
 
@@ -385,22 +720,34 @@ async function createLink() {
             <div class="project-engine-inspector__section-head">
               <span class="project-engine-inspector__label">Subjects</span>
             </div>
-            <div class="project-engine-inspector__chips">
-              <span v-for="subject in selectedContextSubjects" :key="subject.id" class="project-engine-chip project-engine-chip--passive">
-                {{ subject.label }} · {{ subject.kind }}
-              </span>
+            <div class="project-engine-entity-list" v-if="selectedContextSubjects.length">
+              <div v-for="subject in selectedContextSubjects" :key="subject.id" class="project-engine-entity-card">
+                <template v-if="editingSubjectId === subject.id">
+                  <VTextField v-model="subjectEditDraft.label" label="Название субъекта" variant="outlined" hide-details="auto" density="comfortable" />
+                  <VSelect v-model="subjectEditDraft.kind" :items="subjectKindOptions" label="Тип" variant="outlined" hide-details="auto" density="comfortable" />
+                  <div class="project-engine-entity-card__actions">
+                    <VBtn color="primary" variant="tonal" :loading="projectEngine.mutating.value" @click="saveSubject(subject)">Сохранить</VBtn>
+                    <VBtn color="secondary" variant="text" @click="resetSubjectEditor">Отмена</VBtn>
+                  </div>
+                </template>
+                <template v-else>
+                  <div>
+                    <strong class="project-engine-entity-card__title">{{ subject.label }}</strong>
+                    <p class="project-engine-entity-card__meta">{{ subject.kind }} · {{ subject.status }}</p>
+                  </div>
+                  <div class="project-engine-entity-card__actions">
+                    <VBtn color="secondary" variant="text" @click="startSubjectEdit(subject)">Редактировать</VBtn>
+                    <VBtn color="error" variant="text" :loading="projectEngine.mutating.value" @click="removeSubject(subject.id)">Удалить</VBtn>
+                  </div>
+                </template>
+              </div>
             </div>
+            <div v-else class="project-engine-empty">Для этого кабинета ещё нет субъектов.</div>
             <div class="project-engine-form-row">
               <VTextField v-model="subjectDraft.label" label="Новый субъект" variant="outlined" hide-details="auto" density="comfortable" />
               <VSelect
                 v-model="subjectDraft.kind"
-                :items="[
-                  { title: 'Client', value: 'client' },
-                  { title: 'Manager', value: 'manager' },
-                  { title: 'Designer', value: 'designer' },
-                  { title: 'Contractor', value: 'contractor' },
-                  { title: 'External', value: 'external' },
-                ]"
+                :items="subjectKindOptions"
                 label="Тип"
                 variant="outlined"
                 hide-details="auto"
@@ -412,22 +759,35 @@ async function createLink() {
 
           <div class="project-engine-inspector__section">
             <span class="project-engine-inspector__label">Agreements</span>
-            <div class="project-engine-inspector__chips">
-              <span v-for="agreement in selectedContextAgreements" :key="agreement.id" class="project-engine-chip project-engine-chip--passive">
-                {{ agreement.label }} · {{ agreement.type }}
-              </span>
+            <div class="project-engine-entity-list" v-if="selectedContextAgreements.length">
+              <div v-for="agreement in selectedContextAgreements" :key="agreement.id" class="project-engine-entity-card">
+                <template v-if="editingAgreementId === agreement.id">
+                  <VTextField v-model="agreementEditDraft.label" label="Название договорённости" variant="outlined" hide-details="auto" density="comfortable" />
+                  <VSelect v-model="agreementEditDraft.type" :items="agreementTypeOptions" label="Тип" variant="outlined" hide-details="auto" density="comfortable" />
+                  <VSelect v-model="agreementEditDraft.status" :items="agreementStatusOptions" label="Статус" variant="outlined" hide-details="auto" density="comfortable" />
+                  <div class="project-engine-entity-card__actions">
+                    <VBtn color="primary" variant="tonal" :loading="projectEngine.mutating.value" @click="saveAgreement(agreement)">Сохранить</VBtn>
+                    <VBtn color="secondary" variant="text" @click="resetAgreementEditor">Отмена</VBtn>
+                  </div>
+                </template>
+                <template v-else>
+                  <div>
+                    <strong class="project-engine-entity-card__title">{{ agreement.label }}</strong>
+                    <p class="project-engine-entity-card__meta">{{ agreement.type }} · {{ agreement.status }}</p>
+                  </div>
+                  <div class="project-engine-entity-card__actions">
+                    <VBtn color="secondary" variant="text" @click="startAgreementEdit(agreement)">Редактировать</VBtn>
+                    <VBtn color="error" variant="text" :loading="projectEngine.mutating.value" @click="removeAgreement(agreement.id)">Удалить</VBtn>
+                  </div>
+                </template>
+              </div>
             </div>
+            <div v-else class="project-engine-empty">Для этого кабинета ещё нет договорённостей.</div>
             <div class="project-engine-form-row">
               <VTextField v-model="agreementDraft.label" label="Новая договорённость" variant="outlined" hide-details="auto" density="comfortable" />
               <VSelect
                 v-model="agreementDraft.type"
-                :items="[
-                  { title: 'Scope', value: 'scope' },
-                  { title: 'Delivery', value: 'delivery' },
-                  { title: 'Approval', value: 'approval' },
-                  { title: 'Change request', value: 'change-request' },
-                  { title: 'Support', value: 'support' },
-                ]"
+                :items="agreementTypeOptions"
                 label="Тип"
                 variant="outlined"
                 hide-details="auto"
@@ -439,27 +799,41 @@ async function createLink() {
 
           <div class="project-engine-inspector__section">
             <span class="project-engine-inspector__label">Cabinet links</span>
-            <div class="project-engine-inspector__chips">
-              <span v-for="link in selectedContextLinks" :key="link.id" class="project-engine-chip project-engine-chip--passive">
-                {{ link.sourceLabel }} → {{ link.targetLabel }} · {{ link.kind }}
-              </span>
+            <div class="project-engine-entity-list" v-if="selectedContextLinks.length">
+              <div v-for="link in selectedContextLinks" :key="link.id" class="project-engine-entity-card">
+                <template v-if="editingLinkId === link.id">
+                  <VSelect
+                    v-model="linkEditDraft.targetContextId"
+                    :items="contextOptions.filter(item => item.value !== selectedContext.id)"
+                    label="Связать с кабинетом"
+                    variant="outlined"
+                    hide-details="auto"
+                    density="comfortable"
+                  />
+                  <VSelect v-model="linkEditDraft.kind" :items="linkKindOptions" label="Тип связи" variant="outlined" hide-details="auto" density="comfortable" />
+                  <VSelect v-model="linkEditDraft.status" :items="contextStatusOptions" label="Статус" variant="outlined" hide-details="auto" density="comfortable" />
+                  <VSelect v-model="linkEditDraft.sharedCapabilities" :items="capabilityOptions" label="Shared capability" variant="outlined" hide-details="auto" density="comfortable" multiple chips />
+                  <div class="project-engine-entity-card__actions">
+                    <VBtn color="primary" variant="tonal" :loading="projectEngine.mutating.value" @click="saveLink(link)">Сохранить</VBtn>
+                    <VBtn color="secondary" variant="text" @click="resetLinkEditor">Отмена</VBtn>
+                  </div>
+                </template>
+                <template v-else>
+                  <div>
+                    <strong class="project-engine-entity-card__title">{{ link.sourceLabel }} → {{ link.targetLabel }}</strong>
+                    <p class="project-engine-entity-card__meta">{{ link.kind }} · {{ contextStatusLabel(link.status) }}</p>
+                  </div>
+                  <div class="project-engine-entity-card__actions">
+                    <VBtn color="secondary" variant="text" @click="startLinkEdit(link)">Редактировать</VBtn>
+                    <VBtn color="error" variant="text" :loading="projectEngine.mutating.value" @click="removeLink(link.id)">Удалить</VBtn>
+                  </div>
+                </template>
+              </div>
             </div>
+            <div v-else class="project-engine-empty">Для этого кабинета ещё нет связей.</div>
             <div class="project-engine-form-row project-engine-form-row--stacked">
               <VSelect v-model="linkDraft.targetContextId" :items="contextOptions.filter(item => item.value !== selectedContext.id)" label="Связать с кабинетом" variant="outlined" hide-details="auto" density="comfortable" />
-              <VSelect
-                v-model="linkDraft.kind"
-                :items="[
-                  { title: 'Shared data', value: 'shared-data' },
-                  { title: 'Depends on', value: 'depends-on' },
-                  { title: 'Handoff', value: 'handoff' },
-                  { title: 'Approval', value: 'approval' },
-                  { title: 'Mirrors', value: 'mirrors' },
-                ]"
-                label="Тип связи"
-                variant="outlined"
-                hide-details="auto"
-                density="comfortable"
-              />
+              <VSelect v-model="linkDraft.kind" :items="linkKindOptions" label="Тип связи" variant="outlined" hide-details="auto" density="comfortable" />
               <VSelect v-model="linkDraft.sharedCapabilities" :items="capabilityOptions" label="Shared capability" variant="outlined" hide-details="auto" density="comfortable" multiple chips />
               <VBtn color="primary" variant="tonal" :loading="projectEngine.mutating.value" @click="createLink">Создать связь</VBtn>
             </div>
@@ -503,6 +877,13 @@ async function createLink() {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.project-engine-inspector__actions,
+.project-engine-entity-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .project-engine-module__toolbar,
@@ -659,6 +1040,33 @@ async function createLink() {
 
 .project-engine-inspector__section {
   padding: 16px;
+}
+
+.project-engine-entity-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.project-engine-entity-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgb(var(--v-theme-surface-container-high));
+  border: 1px solid rgb(var(--v-theme-outline-variant));
+}
+
+.project-engine-entity-card__title {
+  display: block;
+  font-size: 14px;
+}
+
+.project-engine-entity-card__meta,
+.project-engine-empty {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .project-engine-chip {

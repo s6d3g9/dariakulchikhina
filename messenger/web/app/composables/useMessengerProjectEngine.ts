@@ -187,6 +187,16 @@ export function useMessengerProjectEngine() {
 
   const activeProject = computed(() => projects.value.find(project => project.id === activeProjectId.value || project.slug === activeProjectId.value) ?? null)
 
+  function syncProjectRecord(nextProject: MessengerProjectRecord) {
+    const currentIndex = projects.value.findIndex(project => project.id === nextProject.id)
+    if (currentIndex === -1) {
+      projects.value = [...projects.value, nextProject]
+      return
+    }
+
+    projects.value = projects.value.map(project => project.id === nextProject.id ? nextProject : project)
+  }
+
   async function refresh() {
     pending.value = true
 
@@ -251,13 +261,48 @@ export function useMessengerProjectEngine() {
       })
 
       const nextProject = response.project
-      projects.value = [
-        ...projects.value.filter(project => project.id !== nextProject.id),
-        nextProject,
-      ]
+      syncProjectRecord(nextProject)
       activeProjectId.value = nextProject.id
       await loadBriefs(nextProject.id)
       return nextProject
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function updateProject(projectId: string, payload: MessengerProjectRecord) {
+    mutating.value = true
+    try {
+      const response = await auth.request<{ project: MessengerProjectRecord }>(`/project-engine/projects/${projectId}`, {
+        method: 'PUT',
+        body: payload,
+      })
+      syncProjectRecord(response.project)
+      activeProjectId.value = response.project.id
+      await loadBriefs(response.project.id)
+      return response.project
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function deleteProject(projectId: string) {
+    mutating.value = true
+    try {
+      await auth.request<{ ok: true }>(`/project-engine/projects/${projectId}`, {
+        method: 'DELETE',
+      })
+      projects.value = projects.value.filter(project => project.id !== projectId && project.slug !== projectId)
+      if (activeProjectId.value === projectId || !projects.value.some(project => project.id === activeProjectId.value || project.slug === activeProjectId.value)) {
+        activeProjectId.value = projects.value[0]?.id || ''
+      }
+
+      if (activeProjectId.value) {
+        await loadBriefs(activeProjectId.value)
+      } else {
+        syncBrief.value = null
+        managerBrief.value = null
+      }
     } finally {
       mutating.value = false
     }
@@ -270,7 +315,36 @@ export function useMessengerProjectEngine() {
         method: 'POST',
         body: payload,
       })
-      projects.value = projects.value.map(project => project.id === response.project.id ? response.project : project)
+      syncProjectRecord(response.project)
+      await loadBriefs(projectId)
+      return response.project
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function updateSubject(projectId: string, subjectId: string, payload: Omit<MessengerProjectSubjectRecord, 'id'>) {
+    mutating.value = true
+    try {
+      const response = await auth.request<{ project: MessengerProjectRecord }>(`/project-engine/projects/${projectId}/subjects/${subjectId}`, {
+        method: 'PUT',
+        body: payload,
+      })
+      syncProjectRecord(response.project)
+      await loadBriefs(projectId)
+      return response.project
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function deleteSubject(projectId: string, subjectId: string) {
+    mutating.value = true
+    try {
+      const response = await auth.request<{ project: MessengerProjectRecord }>(`/project-engine/projects/${projectId}/subjects/${subjectId}`, {
+        method: 'DELETE',
+      })
+      syncProjectRecord(response.project)
       await loadBriefs(projectId)
       return response.project
     } finally {
@@ -285,7 +359,36 @@ export function useMessengerProjectEngine() {
         method: 'POST',
         body: payload,
       })
-      projects.value = projects.value.map(project => project.id === response.project.id ? response.project : project)
+      syncProjectRecord(response.project)
+      await loadBriefs(projectId)
+      return response.project
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function updateAgreement(projectId: string, agreementId: string, payload: Omit<MessengerProjectAgreementRecord, 'id'>) {
+    mutating.value = true
+    try {
+      const response = await auth.request<{ project: MessengerProjectRecord }>(`/project-engine/projects/${projectId}/agreements/${agreementId}`, {
+        method: 'PUT',
+        body: payload,
+      })
+      syncProjectRecord(response.project)
+      await loadBriefs(projectId)
+      return response.project
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function deleteAgreement(projectId: string, agreementId: string) {
+    mutating.value = true
+    try {
+      const response = await auth.request<{ project: MessengerProjectRecord }>(`/project-engine/projects/${projectId}/agreements/${agreementId}`, {
+        method: 'DELETE',
+      })
+      syncProjectRecord(response.project)
       await loadBriefs(projectId)
       return response.project
     } finally {
@@ -300,7 +403,36 @@ export function useMessengerProjectEngine() {
         method: 'POST',
         body: payload,
       })
-      projects.value = projects.value.map(project => project.id === response.project.id ? response.project : project)
+      syncProjectRecord(response.project)
+      await loadBriefs(projectId)
+      return response.project
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function updateCabinetLink(projectId: string, linkId: string, payload: Omit<MessengerProjectCabinetLinkRecord, 'id'>) {
+    mutating.value = true
+    try {
+      const response = await auth.request<{ project: MessengerProjectRecord }>(`/project-engine/projects/${projectId}/cabinet-links/${linkId}`, {
+        method: 'PUT',
+        body: payload,
+      })
+      syncProjectRecord(response.project)
+      await loadBriefs(projectId)
+      return response.project
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function deleteCabinetLink(projectId: string, linkId: string) {
+    mutating.value = true
+    try {
+      const response = await auth.request<{ project: MessengerProjectRecord }>(`/project-engine/projects/${projectId}/cabinet-links/${linkId}`, {
+        method: 'DELETE',
+      })
+      syncProjectRecord(response.project)
       await loadBriefs(projectId)
       return response.project
     } finally {
@@ -321,8 +453,16 @@ export function useMessengerProjectEngine() {
     refresh,
     loadBriefs,
     bootstrapProject,
+    updateProject,
+    deleteProject,
     createSubject,
+    updateSubject,
+    deleteSubject,
     createAgreement,
+    updateAgreement,
+    deleteAgreement,
     createCabinetLink,
+    updateCabinetLink,
+    deleteCabinetLink,
   }
 }
