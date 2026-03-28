@@ -1,4 +1,5 @@
-import { getMessengerAgentSettings, type MessengerAgentConnectionMode } from './agent-settings-store.ts'
+import { getMessengerAgentSettings, resolveMessengerAgentActiveRepository, resolveMessengerAgentWorkspacePath, type MessengerAgentConnectionMode } from './agent-settings-store.ts'
+import { retrieveMessengerAgentKnowledge, type MessengerAgentKnowledgeRetrieval } from './agent-knowledge-store.ts'
 import { callMessengerAgentModel, type MessengerAgentLlmMessage } from './agent-llm.ts'
 
 export interface MessengerAgentRecord {
@@ -320,7 +321,11 @@ function buildAgentPromptMessages(
   history: MessengerAgentReplyHistoryItem[],
   connectedAgents: MessengerConnectedAgent[],
   consultationNotes: MessengerAgentConsultationNote[] = [],
+  knowledge: MessengerAgentKnowledgeRetrieval = { context: '', hits: [] },
 ): MessengerAgentLlmMessage[] {
+  const activeRepository = resolveMessengerAgentActiveRepository(settings)
+  const workspacePath = resolveMessengerAgentWorkspacePath(settings)
+
   const promptMessages: MessengerAgentLlmMessage[] = [
     {
       role: 'system',
@@ -328,9 +333,16 @@ function buildAgentPromptMessages(
         agent.systemPrompt,
         `Имя агента: ${agent.displayName}.`,
         `Роль: ${agent.description}`,
-        settings.ssh.host && settings.ssh.login && settings.ssh.workspacePath
-          ? `SSH-доступ агента: ${settings.ssh.login}@${settings.ssh.host}:${settings.ssh.port}, рабочая папка ${settings.ssh.workspacePath}. Используй это как серверный контекст, но не выдумывай содержимое файлов, если оно явно не было передано.`
+        settings.ssh.host && settings.ssh.login && workspacePath
+          ? `SSH-доступ агента: ${settings.ssh.login}@${settings.ssh.host}:${settings.ssh.port}, рабочая папка ${workspacePath}. Используй это как серверный контекст, но не выдумывай содержимое файлов, если оно явно не было передано.`
           : 'SSH-доступ для этого агента не настроен.',
+        settings.ssh.repositories.length
+          ? `Подключённые repo: ${settings.ssh.repositories.map(item => `${item.label} (${item.path})`).join('; ')}. Активный repo: ${activeRepository ? `${activeRepository.label} (${activeRepository.path})` : 'не выбран'}.`
+          : 'Дополнительные repo-path для агента не заданы.',
+        settings.knowledge.sources.length
+          ? `Источники знаний: ${settings.knowledge.sources.filter(item => item.enabled).map(item => `${item.label} [${item.type}]`).join('; ') || 'все источники выключены'}.`
+          : 'Источники знаний не подключены.',
+        knowledge.context || 'Релевантный knowledge context по запросу не найден.',
         connectedAgents.length
           ? `Связанные агенты: ${connectedAgents.map(item => `${item.agent.displayName} (${item.agent.description}, режим ${item.mode})`).join('; ')}. Учитывай их экспертизу и при необходимости явно указывай, какой из них помог бы уточнить ответ.`
           : 'Связанные агенты не подключены.',
@@ -380,9 +392,12 @@ async function buildMessengerAgentConsultation(
         'Ты не отвечаешь пользователю напрямую.',
         `Режим связи: ${mode}. Твоя роль относительно основного агента: ${describeConnectionMode(mode)}.`,
         'Сформируй только короткую экспертную заметку для другого агента: 2-3 предложения, без вступлений, без markdown.',
-        settings.ssh.host && settings.ssh.login && settings.ssh.workspacePath
-          ? `SSH-контекст агента: ${settings.ssh.login}@${settings.ssh.host}:${settings.ssh.port}, рабочая папка ${settings.ssh.workspacePath}.`
+        settings.ssh.host && settings.ssh.login && resolveMessengerAgentWorkspacePath(settings)
+          ? `SSH-контекст агента: ${settings.ssh.login}@${settings.ssh.host}:${settings.ssh.port}, рабочая папка ${resolveMessengerAgentWorkspacePath(settings)}.`
           : 'SSH-контекст для этого агента не настроен.',
+        settings.ssh.repositories.length
+          ? `Repo-path агента: ${settings.ssh.repositories.map(item => `${item.label} (${item.path})`).join('; ')}.`
+          : 'Repo-path агента не заданы.',
         referencedFiles.length ? `Упомянутые файлы: ${referencedFiles.join(', ')}.` : 'Файлы в запросе не выделены.',
       ].join(' '),
     },
@@ -456,6 +471,26 @@ export async function buildMessengerAgentReply(
     fileNames: referencedFiles,
   })
 
+  const knowledge = normalizedMessage
+    ? await retrieveMessengerAgentKnowledge(agent.id, settings, normalizedMessage)
+    : { context: '', hits: [] }
+
+  if (knowledge.hits.length) {
+    await sleep(120)
+    await runtimeHooks.onTrace?.({
+      phase: 'files',
+      status: 'running',
+      summary: 'Подтягивает релевантные чанки из подключённых knowledge sources.',
+      focus: knowledge.hits.map(hit => `${hit.sourceLabel} (${hit.score.toFixed(2)})`).join(', '),
+      fileNames: knowledge.hits.map(hit => hit.sourcePath).slice(0, 6),
+      artifacts: knowledge.hits.slice(0, 5).map(hit => ({
+        kind: 'summary' as const,
+        label: `${hit.sourceLabel} · ${hit.title}`,
+        content: hit.text,
+      })),
+    })
+  }
+
   if (referencedFiles.length) {
     await sleep(120)
     await runtimeHooks.onTrace?.({
@@ -526,7 +561,7 @@ export async function buildMessengerAgentReply(
 
   try {
     return await callMessengerAgentModel(
-      buildAgentPromptMessages(agent, settings, normalizedMessage, history.slice(-8), connectedAgents, consultationNotes),
+      buildAgentPromptMessages(agent, settings, normalizedMessage, history.slice(-8), connectedAgents, consultationNotes, knowledge),
       {
         model: settings.model,
         apiKey: settings.apiKey,

@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import type { MessengerAgentConnectionMode, MessengerAgentItem, MessengerAgentSettings } from '../../composables/useMessengerAgents'
+import type {
+  MessengerAgentConnectionMode,
+  MessengerAgentItem,
+  MessengerAgentKnowledgeSource,
+  MessengerAgentRepository,
+  MessengerAgentSettings,
+} from '../../composables/useMessengerAgents'
+import type { MessengerAgentKnowledgeStatus } from '../../composables/useMessengerAgentKnowledge'
 import type { MessengerAgentRun, MessengerAgentRunArtifact, MessengerAgentRunEvent } from '../../composables/useMessengerAgentRuns'
 import type { MessengerAgentWorkspaceFilePreview, MessengerAgentWorkspaceListing } from '../../composables/useMessengerAgentWorkspace'
 
-type AgentWorkspaceSectionKey = 'overview' | 'settings' | 'links' | 'runs' | 'graph' | 'explorer'
+type AgentWorkspaceSectionKey = 'overview' | 'settings' | 'knowledge' | 'links' | 'runs' | 'graph' | 'explorer'
 
 const props = defineProps<{
   agentId: string
@@ -23,6 +30,7 @@ const runtime = useMessengerAgentRuntime()
 const runsModel = useMessengerAgentRuns()
 const edgePayloadsModel = useMessengerAgentEdgePayloads()
 const workspaceExplorer = useMessengerAgentWorkspace()
+const knowledgeModel = useMessengerAgentKnowledge()
 const activeSection = useState<AgentWorkspaceSectionKey>('messenger-agent-chat-workspace-section', () => 'overview')
 const feedbackMessage = ref('')
 const feedbackTone = ref<'info' | 'error'>('info')
@@ -36,6 +44,11 @@ const settingsDraft = reactive({
     port: 22,
     privateKey: '',
     workspacePath: '',
+    repositories: [] as MessengerAgentRepository[],
+    activeRepositoryId: '',
+  },
+  knowledge: {
+    sources: [] as MessengerAgentKnowledgeSource[],
   },
 })
 const settingsSaving = ref(false)
@@ -46,6 +59,10 @@ const explorerFilePending = ref(false)
 const explorerError = ref('')
 const explorerListing = ref<MessengerAgentWorkspaceListing | null>(null)
 const explorerFile = ref<MessengerAgentWorkspaceFilePreview | null>(null)
+const knowledgePending = ref(false)
+const knowledgeIndexing = ref(false)
+const knowledgeStatus = ref<MessengerAgentKnowledgeStatus | null>(null)
+const knowledgeError = ref('')
 
 const sections: Array<{ key: AgentWorkspaceSectionKey; title: string }> = [
   {
@@ -55,6 +72,10 @@ const sections: Array<{ key: AgentWorkspaceSectionKey; title: string }> = [
   {
     key: 'settings',
     title: 'Настройки',
+  },
+  {
+    key: 'knowledge',
+    title: 'Знания',
   },
   {
     key: 'links',
@@ -79,6 +100,7 @@ const currentSection = computed(() => sections.find(section => section.key === a
 const sectionIconMap: Record<AgentWorkspaceSectionKey, string> = {
   overview: 'mdi-view-dashboard-outline',
   settings: 'mdi-tune-variant',
+  knowledge: 'mdi-database-search-outline',
   links: 'mdi-connection',
   runs: 'mdi-history',
   graph: 'mdi-graph-outline',
@@ -168,6 +190,11 @@ const workspaceModelLabel = computed(() => resolvedAgent.value?.settings.model |
 const apiKeyConfigured = computed(() => Boolean(resolvedAgent.value?.settings.apiKeyConfigured))
 const sshConfigured = computed(() => Boolean(resolvedAgent.value?.settings.sshConfigured))
 const workspaceConfigured = computed(() => Boolean(resolvedAgent.value?.settings.ssh.workspacePath))
+const repositoryOptions = computed(() => settingsDraft.ssh.repositories.map(repository => ({
+  title: repository.label,
+  value: repository.id,
+})))
+const knowledgeEnabledCount = computed(() => settingsDraft.knowledge.sources.filter(source => source.enabled).length)
 const graphStats = computed(() => ({
   outgoing: outgoingConnections.value.length,
   incoming: incomingConnections.value.length,
@@ -208,6 +235,53 @@ const explorerStatusLabel = computed(() => {
     : 'Локальная папка'
 })
 
+function createDraftId(prefix: string) {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}-${crypto.randomUUID()}`
+  }
+
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function syncWorkspacePathFromDraftRepositories() {
+  const activeRepository = settingsDraft.ssh.repositories.find(repository => repository.id === settingsDraft.ssh.activeRepositoryId) ?? null
+  if (activeRepository) {
+    settingsDraft.ssh.workspacePath = activeRepository.path
+    return
+  }
+
+  if (settingsDraft.ssh.repositories.length && !settingsDraft.ssh.activeRepositoryId) {
+    settingsDraft.ssh.activeRepositoryId = settingsDraft.ssh.repositories[0]?.id || ''
+    settingsDraft.ssh.workspacePath = settingsDraft.ssh.repositories[0]?.path || settingsDraft.ssh.workspacePath
+  }
+}
+
+function syncActiveRepositoryPathFromWorkspace() {
+  const activeRepository = settingsDraft.ssh.repositories.find(repository => repository.id === settingsDraft.ssh.activeRepositoryId) ?? null
+  if (activeRepository) {
+    activeRepository.path = settingsDraft.ssh.workspacePath
+  }
+}
+
+function serializeRepositories(repositories: MessengerAgentRepository[]) {
+  return JSON.stringify(repositories.map(repository => ({
+    id: repository.id,
+    label: repository.label.trim(),
+    path: repository.path.trim(),
+  })))
+}
+
+function serializeKnowledgeSources(sources: MessengerAgentKnowledgeSource[]) {
+  return JSON.stringify(sources.map(source => ({
+    id: source.id,
+    label: source.label.trim(),
+    repositoryId: source.repositoryId,
+    path: source.path.trim(),
+    type: source.type,
+    enabled: source.enabled,
+  })))
+}
+
 function syncSettingsDraft() {
   settingsDraft.model = resolvedAgent.value?.settings.model || 'GPT-5.4'
   settingsDraft.apiKey = resolvedAgent.value?.settings.apiKey || ''
@@ -216,6 +290,10 @@ function syncSettingsDraft() {
   settingsDraft.ssh.port = resolvedAgent.value?.settings.ssh.port || 22
   settingsDraft.ssh.privateKey = resolvedAgent.value?.settings.ssh.privateKey || ''
   settingsDraft.ssh.workspacePath = resolvedAgent.value?.settings.ssh.workspacePath || ''
+  settingsDraft.ssh.repositories = (resolvedAgent.value?.settings.ssh.repositories || []).map(repository => ({ ...repository }))
+  settingsDraft.ssh.activeRepositoryId = resolvedAgent.value?.settings.ssh.activeRepositoryId || ''
+  settingsDraft.knowledge.sources = (resolvedAgent.value?.settings.knowledge.sources || []).map(source => ({ ...source }))
+  syncWorkspacePathFromDraftRepositories()
 }
 
 watch(() => resolvedAgent.value?.id, () => {
@@ -228,6 +306,8 @@ watch(() => resolvedAgent.value?.id, () => {
   explorerListing.value = null
   explorerFile.value = null
   explorerError.value = ''
+  knowledgeStatus.value = null
+  knowledgeError.value = ''
 }, { immediate: true })
 
 watch(() => props.conversationId, () => {
@@ -252,12 +332,14 @@ watch(() => props.agentId, async () => {
 }, { immediate: true })
 
 watch([() => activeSection.value, () => resolvedAgent.value?.id], async ([section, agentId]) => {
-  if (section !== 'explorer' || !agentId) {
-    return
+  if (section === 'explorer' && agentId) {
+    if (!explorerListing.value || explorerError.value) {
+      await loadWorkspace()
+    }
   }
 
-  if (!explorerListing.value || explorerError.value) {
-    await loadWorkspace()
+  if (section === 'knowledge' && agentId) {
+    await loadKnowledgeStatus()
   }
 })
 
@@ -361,6 +443,7 @@ async function saveSettings(payload: Pick<MessengerAgentSettings, 'model' | 'api
       model: payload.model,
       apiKey: payload.apiKey,
       ssh: settingsDraft.ssh,
+      knowledge: settingsDraft.knowledge,
       connections: resolvedAgent.value.settings.connections,
       graphPosition: resolvedAgent.value.settings.graphPosition,
     })
@@ -372,6 +455,9 @@ async function saveSettings(payload: Pick<MessengerAgentSettings, 'model' | 'api
     settingsDraft.ssh.port = nextSettings.ssh.port
     settingsDraft.ssh.privateKey = nextSettings.ssh.privateKey
     settingsDraft.ssh.workspacePath = nextSettings.ssh.workspacePath
+    settingsDraft.ssh.repositories = nextSettings.ssh.repositories.map(repository => ({ ...repository }))
+    settingsDraft.ssh.activeRepositoryId = nextSettings.ssh.activeRepositoryId
+    settingsDraft.knowledge.sources = nextSettings.knowledge.sources.map(source => ({ ...source }))
     feedbackTone.value = 'info'
     feedbackMessage.value = 'Параметры агента обновлены для этого чата.'
   } catch {
@@ -416,12 +502,17 @@ function sshDraftChanged() {
     || resolvedAgent.value.settings.ssh.port !== settingsDraft.ssh.port
     || resolvedAgent.value.settings.ssh.privateKey !== settingsDraft.ssh.privateKey
     || resolvedAgent.value.settings.ssh.workspacePath !== settingsDraft.ssh.workspacePath
+    || resolvedAgent.value.settings.ssh.activeRepositoryId !== settingsDraft.ssh.activeRepositoryId
+    || serializeRepositories(resolvedAgent.value.settings.ssh.repositories) !== serializeRepositories(settingsDraft.ssh.repositories)
+    || serializeKnowledgeSources(resolvedAgent.value.settings.knowledge.sources) !== serializeKnowledgeSources(settingsDraft.knowledge.sources)
 }
 
 async function handleSshBlur() {
   if (!resolvedAgent.value || !sshDraftChanged()) {
     return
   }
+
+  syncActiveRepositoryPathFromWorkspace()
 
   await saveSettings({
     model: settingsDraft.model,
@@ -430,6 +521,105 @@ async function handleSshBlur() {
 
   if (activeSection.value === 'explorer') {
     await loadWorkspace()
+  }
+
+  if (activeSection.value === 'knowledge') {
+    await loadKnowledgeStatus()
+  }
+}
+
+function addRepositoryDraft() {
+  settingsDraft.ssh.repositories.push({
+    id: createDraftId('repo'),
+    label: `Repo ${settingsDraft.ssh.repositories.length + 1}`,
+    path: '',
+  })
+
+  if (!settingsDraft.ssh.activeRepositoryId) {
+    settingsDraft.ssh.activeRepositoryId = settingsDraft.ssh.repositories[settingsDraft.ssh.repositories.length - 1]?.id || ''
+  }
+}
+
+async function removeRepositoryDraft(repositoryId: string) {
+  settingsDraft.ssh.repositories = settingsDraft.ssh.repositories.filter(repository => repository.id !== repositoryId)
+  if (settingsDraft.ssh.activeRepositoryId === repositoryId) {
+    settingsDraft.ssh.activeRepositoryId = settingsDraft.ssh.repositories[0]?.id || ''
+  }
+
+  settingsDraft.knowledge.sources = settingsDraft.knowledge.sources.map(source => source.repositoryId === repositoryId
+    ? { ...source, repositoryId: '' }
+    : source)
+  syncWorkspacePathFromDraftRepositories()
+  await handleSshBlur()
+}
+
+async function handleActiveRepositoryChange(value: string) {
+  settingsDraft.ssh.activeRepositoryId = value
+  syncWorkspacePathFromDraftRepositories()
+  await handleSshBlur()
+}
+
+async function handleRepositoryBlur() {
+  syncWorkspacePathFromDraftRepositories()
+  await handleSshBlur()
+}
+
+function addKnowledgeSourceDraft() {
+  settingsDraft.knowledge.sources.push({
+    id: createDraftId('source'),
+    label: `Source ${settingsDraft.knowledge.sources.length + 1}`,
+    repositoryId: settingsDraft.ssh.activeRepositoryId,
+    path: '',
+    type: 'rag',
+    enabled: true,
+  })
+}
+
+async function removeKnowledgeSourceDraft(sourceId: string) {
+  settingsDraft.knowledge.sources = settingsDraft.knowledge.sources.filter(source => source.id !== sourceId)
+  await handleSshBlur()
+}
+
+async function handleKnowledgeSourceChange() {
+  await handleSshBlur()
+}
+
+async function loadKnowledgeStatus() {
+  if (!resolvedAgent.value) {
+    return
+  }
+
+  knowledgePending.value = true
+  knowledgeError.value = ''
+
+  try {
+    knowledgeStatus.value = await knowledgeModel.getKnowledge(resolvedAgent.value.id)
+  } catch (error) {
+    knowledgeStatus.value = null
+    knowledgeError.value = error instanceof Error ? error.message : 'Не удалось загрузить статус знаний.'
+  } finally {
+    knowledgePending.value = false
+  }
+}
+
+async function reindexKnowledge() {
+  if (!resolvedAgent.value) {
+    return
+  }
+
+  knowledgeIndexing.value = true
+  knowledgeError.value = ''
+
+  try {
+    knowledgeStatus.value = await knowledgeModel.reindexKnowledge(resolvedAgent.value.id)
+    feedbackTone.value = 'info'
+    feedbackMessage.value = 'Индекс знаний обновлён.'
+  } catch (error) {
+    knowledgeError.value = error instanceof Error ? error.message : 'Не удалось переиндексировать знания.'
+    feedbackTone.value = 'error'
+    feedbackMessage.value = 'Переиндексация знаний завершилась ошибкой.'
+  } finally {
+    knowledgeIndexing.value = false
   }
 }
 
@@ -578,6 +768,11 @@ async function openWorkspaceFile(path: string) {
               <h3 class="agent-chat-workspace__card-title">{{ sshConfigured ? explorerStatusLabel : 'Подключение не настроено' }}</h3>
               <p class="agent-chat-workspace__card-text">{{ workspaceConfigured ? `Рабочая папка: ${resolvedAgent?.settings.ssh.workspacePath}` : 'Добавьте login, IP, SSH key и рабочую папку, чтобы агент получил свой server context.' }}</p>
             </article>
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Знания</p>
+              <h3 class="agent-chat-workspace__card-title">{{ knowledgeStatus?.indexedSources || 0 }} источников</h3>
+              <p class="agent-chat-workspace__card-text">{{ knowledgeEnabledCount ? `Подключено источников: ${knowledgeEnabledCount}.` : 'Источники RAG и vector пока не подключены.' }}</p>
+            </article>
           </div>
 
           <div v-else-if="activeSection === 'settings'" class="agent-chat-workspace__content">
@@ -631,12 +826,53 @@ async function openWorkspaceFile(path: string) {
               />
               <VTextField
                 v-model="settingsDraft.ssh.workspacePath"
-                label="Рабочая папка"
+                label="Активный repo path"
                 variant="outlined"
                 hide-details="auto"
                 :loading="settingsSaving"
                 @blur="handleSshBlur"
               />
+              <VSelect
+                :model-value="settingsDraft.ssh.activeRepositoryId"
+                :items="repositoryOptions"
+                label="Активный repo"
+                variant="outlined"
+                hide-details="auto"
+                :loading="settingsSaving"
+                @update:model-value="handleActiveRepositoryChange(typeof $event === 'string' ? $event : '')"
+              />
+              <div class="agent-chat-workspace__stack">
+                <div
+                  v-for="repository in settingsDraft.ssh.repositories"
+                  :key="repository.id"
+                  class="agent-chat-workspace__list-item"
+                >
+                  <div class="agent-chat-workspace__stack">
+                    <VTextField
+                      v-model="repository.label"
+                      label="Название repo"
+                      variant="outlined"
+                      hide-details="auto"
+                      :loading="settingsSaving"
+                      @blur="handleRepositoryBlur"
+                    />
+                    <VTextField
+                      v-model="repository.path"
+                      label="Путь repo"
+                      variant="outlined"
+                      hide-details="auto"
+                      :loading="settingsSaving"
+                      @blur="handleRepositoryBlur"
+                    />
+                  </div>
+                  <button type="button" class="agent-chat-workspace__ghost" @click="removeRepositoryDraft(repository.id)">
+                    Удалить repo
+                  </button>
+                </div>
+                <button type="button" class="agent-chat-workspace__ghost" @click="addRepositoryDraft">
+                  Добавить repo
+                </button>
+              </div>
               <VTextarea
                 v-model="settingsDraft.ssh.privateKey"
                 label="SSH private key"
@@ -647,6 +883,92 @@ async function openWorkspaceFile(path: string) {
                 :loading="settingsSaving"
                 @blur="handleSshBlur"
               />
+            </article>
+          </div>
+
+          <div v-else-if="activeSection === 'knowledge'" class="agent-chat-workspace__content">
+            <article class="agent-chat-workspace__card">
+              <p class="agent-chat-workspace__card-eyebrow">Индекс</p>
+              <h3 class="agent-chat-workspace__card-title">{{ knowledgeStatus?.indexedChunks || 0 }} чанков</h3>
+              <p class="agent-chat-workspace__card-text">{{ knowledgeStatus?.lastIndexedAt ? `Последняя индексация: ${formatTimestamp(knowledgeStatus.lastIndexedAt)}` : 'Индекс ещё не собирался.' }}</p>
+              <div class="agent-chat-workspace__stats">
+                <span>Источников: {{ knowledgeStatus?.indexedSources || 0 }}</span>
+                <span>Включено: {{ knowledgeEnabledCount }}</span>
+              </div>
+              <button type="button" class="agent-chat-workspace__primary" :disabled="knowledgeIndexing || !settingsDraft.knowledge.sources.length" @click="reindexKnowledge">
+                {{ knowledgeIndexing ? 'Индексация...' : 'Переиндексировать' }}
+              </button>
+              <p v-if="knowledgeError" class="agent-chat-workspace__card-text">{{ knowledgeError }}</p>
+              <p v-else-if="knowledgePending" class="agent-chat-workspace__card-text">[ LOADING... ]</p>
+            </article>
+            <article class="agent-chat-workspace__card agent-chat-workspace__card--form">
+              <p class="agent-chat-workspace__card-eyebrow">Источники</p>
+              <h3 class="agent-chat-workspace__card-title">RAG и vector files</h3>
+              <div class="agent-chat-workspace__stack">
+                <div
+                  v-for="source in settingsDraft.knowledge.sources"
+                  :key="source.id"
+                  class="agent-chat-workspace__list-item"
+                >
+                  <div class="agent-chat-workspace__stack">
+                    <VTextField
+                      v-model="source.label"
+                      label="Название источника"
+                      variant="outlined"
+                      hide-details="auto"
+                      :loading="settingsSaving"
+                      @blur="handleKnowledgeSourceChange"
+                    />
+                    <VSelect
+                      :model-value="source.repositoryId"
+                      :items="[{ title: 'Без repo', value: '' }, ...repositoryOptions]"
+                      label="Repo"
+                      variant="outlined"
+                      hide-details="auto"
+                      :loading="settingsSaving"
+                      @update:model-value="source.repositoryId = typeof $event === 'string' ? $event : ''; handleKnowledgeSourceChange()"
+                    />
+                    <VTextField
+                      v-model="source.path"
+                      label="Путь файла"
+                      variant="outlined"
+                      hide-details="auto"
+                      :loading="settingsSaving"
+                      @blur="handleKnowledgeSourceChange"
+                    />
+                    <VSelect
+                      :model-value="source.type"
+                      :items="[{ title: 'RAG text', value: 'rag' }, { title: 'Vector JSON', value: 'vector' }]"
+                      label="Тип источника"
+                      variant="outlined"
+                      hide-details="auto"
+                      :loading="settingsSaving"
+                      @update:model-value="source.type = $event === 'vector' ? 'vector' : 'rag'; handleKnowledgeSourceChange()"
+                    />
+                    <VSwitch
+                      v-model="source.enabled"
+                      label="Источник включён"
+                      hide-details="auto"
+                      color="primary"
+                      @update:model-value="handleKnowledgeSourceChange"
+                    />
+                    <p class="agent-chat-workspace__card-text">
+                      {{ knowledgeStatus?.sources.find(item => item.id === source.id)?.indexedAt
+                        ? `Индекс: ${knowledgeStatus?.sources.find(item => item.id === source.id)?.chunkCount || 0} чанков.`
+                        : 'Источник ещё не индексировался.' }}
+                    </p>
+                    <p v-if="knowledgeStatus?.sources.find(item => item.id === source.id)?.error" class="agent-chat-workspace__card-text">
+                      {{ knowledgeStatus?.sources.find(item => item.id === source.id)?.error }}
+                    </p>
+                  </div>
+                  <button type="button" class="agent-chat-workspace__ghost" @click="removeKnowledgeSourceDraft(source.id)">
+                    Удалить источник
+                  </button>
+                </div>
+                <button type="button" class="agent-chat-workspace__ghost" @click="addKnowledgeSourceDraft">
+                  Добавить источник
+                </button>
+              </div>
             </article>
           </div>
 

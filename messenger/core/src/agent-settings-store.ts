@@ -4,10 +4,26 @@ import { dirname } from 'node:path'
 import { resolveMessengerDataPath } from './storage-paths.ts'
 
 export type MessengerAgentConnectionMode = 'review' | 'enrich' | 'validate' | 'summarize' | 'route'
+export type MessengerAgentKnowledgeSourceType = 'rag' | 'vector'
 
 export interface MessengerAgentConnectionRecord {
   targetAgentId: string
   mode: MessengerAgentConnectionMode
+}
+
+export interface MessengerAgentRepositoryRecord {
+  id: string
+  label: string
+  path: string
+}
+
+export interface MessengerAgentKnowledgeSourceRecord {
+  id: string
+  label: string
+  repositoryId: string
+  path: string
+  type: MessengerAgentKnowledgeSourceType
+  enabled: boolean
 }
 
 export interface MessengerAgentSettingsRecord {
@@ -20,6 +36,11 @@ export interface MessengerAgentSettingsRecord {
     port: number
     privateKey: string
     workspacePath: string
+    repositories: MessengerAgentRepositoryRecord[]
+    activeRepositoryId: string
+  }
+  knowledge: {
+    sources: MessengerAgentKnowledgeSourceRecord[]
   }
   connections: MessengerAgentConnectionRecord[]
   graphPosition: {
@@ -50,6 +71,11 @@ function createDefaultSettings(agentId: string): MessengerAgentSettingsRecord {
       port: 22,
       privateKey: '',
       workspacePath: '',
+      repositories: [],
+      activeRepositoryId: '',
+    },
+    knowledge: {
+      sources: [],
     },
     connections: [],
     graphPosition: {
@@ -58,6 +84,98 @@ function createDefaultSettings(agentId: string): MessengerAgentSettingsRecord {
     },
     updatedAt: new Date().toISOString(),
   }
+}
+
+function normalizeRepositoryId(value: string, fallbackIndex: number) {
+  const normalized = value.trim()
+  return normalized || `repo-${fallbackIndex + 1}`
+}
+
+function normalizeRepositoryLabel(value: string, path: string, fallbackIndex: number) {
+  const normalized = value.trim()
+  if (normalized) {
+    return normalized
+  }
+
+  const tail = path.split('/').filter(Boolean).pop()
+  return tail || `Repo ${fallbackIndex + 1}`
+}
+
+function normalizeRepositories(repositories: unknown, fallbackWorkspacePath = '') {
+  const normalized = new Map<string, MessengerAgentRepositoryRecord>()
+  const list = Array.isArray(repositories) ? repositories : []
+
+  list.forEach((item, index) => {
+    if (!item || typeof item !== 'object') {
+      return
+    }
+
+    const candidate = item as Partial<MessengerAgentRepositoryRecord>
+    const path = typeof candidate.path === 'string' ? candidate.path.trim() : ''
+    if (!path) {
+      return
+    }
+
+    normalized.set(path, {
+      id: normalizeRepositoryId(typeof candidate.id === 'string' ? candidate.id : '', index),
+      label: normalizeRepositoryLabel(typeof candidate.label === 'string' ? candidate.label : '', path, index),
+      path,
+    })
+  })
+
+  if (!normalized.size && fallbackWorkspacePath.trim()) {
+    normalized.set(fallbackWorkspacePath.trim(), {
+      id: 'repo-1',
+      label: normalizeRepositoryLabel('', fallbackWorkspacePath.trim(), 0),
+      path: fallbackWorkspacePath.trim(),
+    })
+  }
+
+  return Array.from(normalized.values())
+}
+
+function normalizeKnowledgeSources(sources: unknown, repositories: MessengerAgentRepositoryRecord[]) {
+  const allowedRepositoryIds = new Set(repositories.map(item => item.id))
+  const normalized: MessengerAgentKnowledgeSourceRecord[] = []
+
+  for (const [index, item] of (Array.isArray(sources) ? sources : []).entries()) {
+    if (!item || typeof item !== 'object') {
+      continue
+    }
+
+    const candidate = item as Partial<MessengerAgentKnowledgeSourceRecord>
+    const path = typeof candidate.path === 'string' ? candidate.path.trim() : ''
+    if (!path) {
+      continue
+    }
+
+    const repositoryId = typeof candidate.repositoryId === 'string' && allowedRepositoryIds.has(candidate.repositoryId)
+      ? candidate.repositoryId
+      : ''
+    const type = candidate.type === 'vector' ? 'vector' : 'rag'
+    const label = typeof candidate.label === 'string' && candidate.label.trim()
+      ? candidate.label.trim()
+      : path.split('/').filter(Boolean).pop() || `Source ${index + 1}`
+
+    normalized.push({
+      id: typeof candidate.id === 'string' && candidate.id.trim() ? candidate.id.trim() : `source-${index + 1}`,
+      label,
+      repositoryId,
+      path,
+      type,
+      enabled: candidate.enabled !== false,
+    })
+  }
+
+  return normalized
+}
+
+export function resolveMessengerAgentActiveRepository(settings: MessengerAgentSettingsRecord) {
+  return settings.ssh.repositories.find(item => item.id === settings.ssh.activeRepositoryId) ?? null
+}
+
+export function resolveMessengerAgentWorkspacePath(settings: MessengerAgentSettingsRecord) {
+  return resolveMessengerAgentActiveRepository(settings)?.path || settings.ssh.workspacePath.trim()
 }
 
 function normalizeGraphPosition(position?: { x?: number; y?: number }, fallback?: { x: number; y: number }) {
@@ -101,13 +219,38 @@ async function readSettingsFile(): Promise<AgentSettingsFile> {
               agentId: String(item?.agentId || normalized.agentId),
               model: typeof item?.model === 'string' ? item.model : normalized.model,
               apiKey: typeof item?.apiKey === 'string' ? item.apiKey : normalized.apiKey,
-              ssh: {
+              ssh: (() => {
+                const repositories = normalizeRepositories(item?.ssh?.repositories, typeof item?.ssh?.workspacePath === 'string' ? item.ssh.workspacePath : normalized.ssh.workspacePath)
+                const activeRepositoryIdCandidate = typeof item?.ssh?.activeRepositoryId === 'string' ? item.ssh.activeRepositoryId.trim() : ''
+                const activeRepositoryId = repositories.some(repository => repository.id === activeRepositoryIdCandidate)
+                  ? activeRepositoryIdCandidate
+                  : (repositories[0]?.id || '')
+
+                const ssh = {
                 host: typeof item?.ssh?.host === 'string' ? item.ssh.host : normalized.ssh.host,
                 login: typeof item?.ssh?.login === 'string' ? item.ssh.login : normalized.ssh.login,
                 port: Number.isFinite(item?.ssh?.port) ? Math.min(65535, Math.max(1, Math.round(item.ssh?.port ?? normalized.ssh.port))) : normalized.ssh.port,
                 privateKey: typeof item?.ssh?.privateKey === 'string' ? item.ssh.privateKey : normalized.ssh.privateKey,
-                workspacePath: typeof item?.ssh?.workspacePath === 'string' ? item.ssh.workspacePath : normalized.ssh.workspacePath,
-              },
+                  workspacePath: typeof item?.ssh?.workspacePath === 'string' ? item.ssh.workspacePath.trim() : normalized.ssh.workspacePath,
+                  repositories,
+                  activeRepositoryId,
+                }
+
+                return {
+                  ...ssh,
+                  workspacePath: resolveMessengerAgentWorkspacePath({
+                    ...normalized,
+                    ssh,
+                    knowledge: normalized.knowledge,
+                  }),
+                }
+              })(),
+              knowledge: (() => {
+                const repositories = normalizeRepositories(item?.ssh?.repositories, typeof item?.ssh?.workspacePath === 'string' ? item.ssh.workspacePath : normalized.ssh.workspacePath)
+                return {
+                  sources: normalizeKnowledgeSources(item?.knowledge?.sources, repositories),
+                }
+              })(),
               connections: Array.isArray(item?.connections)
                 ? item.connections
                   .map((connection) => {
@@ -175,12 +318,17 @@ export async function getMessengerAgentSettings(agentId: string) {
 
 export async function updateMessengerAgentSettings(
   agentId: string,
-  input: Pick<MessengerAgentSettingsRecord, 'model' | 'apiKey' | 'ssh' | 'connections'> & {
+  input: Pick<MessengerAgentSettingsRecord, 'model' | 'apiKey' | 'ssh' | 'knowledge' | 'connections'> & {
     graphPosition?: MessengerAgentSettingsRecord['graphPosition']
   },
 ) {
   const payload = await readSettingsFile()
   const currentSettings = payload.settings.find(item => item.agentId === agentId) ?? createDefaultSettings(agentId)
+  const repositories = normalizeRepositories(input.ssh.repositories, input.ssh.workspacePath)
+  const activeRepositoryId = repositories.some(repository => repository.id === input.ssh.activeRepositoryId)
+    ? input.ssh.activeRepositoryId.trim()
+    : (repositories[0]?.id || '')
+  const nextWorkspacePath = repositories.find(repository => repository.id === activeRepositoryId)?.path || input.ssh.workspacePath.trim()
   const nextSettings: MessengerAgentSettingsRecord = {
     agentId,
     model: input.model.trim() || 'GPT-5.4',
@@ -190,7 +338,12 @@ export async function updateMessengerAgentSettings(
       login: input.ssh.login.trim(),
       port: Math.min(65535, Math.max(1, Math.round(Number.isFinite(input.ssh.port) ? input.ssh.port : 22))),
       privateKey: input.ssh.privateKey.trim(),
-      workspacePath: input.ssh.workspacePath.trim(),
+      workspacePath: nextWorkspacePath,
+      repositories,
+      activeRepositoryId,
+    },
+    knowledge: {
+      sources: normalizeKnowledgeSources(input.knowledge.sources, repositories),
     },
     connections: normalizeConnections(agentId, input.connections),
     graphPosition: normalizeGraphPosition(input.graphPosition, currentSettings.graphPosition),

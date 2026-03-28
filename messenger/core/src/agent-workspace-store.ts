@@ -5,7 +5,7 @@ import { posix as pathPosix } from 'node:path'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
-import type { MessengerAgentSettingsRecord } from './agent-settings-store.ts'
+import { resolveMessengerAgentWorkspacePath, type MessengerAgentSettingsRecord } from './agent-settings-store.ts'
 
 const execFileAsync = promisify(execFile)
 const MAX_FILE_PREVIEW_BYTES = 64 * 1024
@@ -84,7 +84,7 @@ function resolveSshTarget(settings: MessengerAgentSettingsRecord) {
 }
 
 function ensureWorkspacePath(settings: MessengerAgentSettingsRecord) {
-  const workspacePath = settings.ssh.workspacePath.trim()
+  const workspacePath = resolveMessengerAgentWorkspacePath(settings)
   if (!workspacePath) {
     throw new Error('AGENT_WORKSPACE_NOT_CONFIGURED')
   }

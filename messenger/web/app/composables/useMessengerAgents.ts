@@ -1,8 +1,24 @@
 export type MessengerAgentConnectionMode = 'review' | 'enrich' | 'validate' | 'summarize' | 'route'
+export type MessengerAgentKnowledgeSourceType = 'rag' | 'vector'
 
 export interface MessengerAgentConnection {
   targetAgentId: string
   mode: MessengerAgentConnectionMode
+}
+
+export interface MessengerAgentRepository {
+  id: string
+  label: string
+  path: string
+}
+
+export interface MessengerAgentKnowledgeSource {
+  id: string
+  label: string
+  repositoryId: string
+  path: string
+  type: MessengerAgentKnowledgeSourceType
+  enabled: boolean
 }
 
 export interface MessengerAgentSettings {
@@ -15,6 +31,11 @@ export interface MessengerAgentSettings {
     port: number
     privateKey: string
     workspacePath: string
+    repositories: MessengerAgentRepository[]
+    activeRepositoryId: string
+  }
+  knowledge: {
+    sources: MessengerAgentKnowledgeSource[]
   }
   connections: MessengerAgentConnection[]
   graphPosition: {
@@ -65,7 +86,7 @@ export function useMessengerAgents() {
     }
   }
 
-  async function saveSettings(agentId: string, payload: Pick<MessengerAgentSettings, 'model' | 'apiKey' | 'ssh' | 'connections' | 'graphPosition'>) {
+  async function saveSettings(agentId: string, payload: Pick<MessengerAgentSettings, 'model' | 'apiKey' | 'ssh' | 'knowledge' | 'connections' | 'graphPosition'>) {
     settingsPending.value = true
 
     try {
