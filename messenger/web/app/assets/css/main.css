@@ -917,6 +917,49 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   border-left: 1px solid rgba(var(--v-theme-outline-variant), 0.45);
 }
 
+.agent-system-banner__history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.agent-system-banner__history-title,
+.agent-system-banner__history-meta,
+.agent-system-banner__history-prompt,
+.agent-system-banner__history-summary {
+  margin: 0;
+}
+
+.agent-system-banner__history-title,
+.agent-system-banner__history-meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.agent-system-banner__history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-system-banner__history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 0 0 8px;
+  border-top: 1px solid rgba(var(--v-theme-outline-variant), 0.3);
+  border-left: 1px solid rgba(var(--v-theme-outline-variant), 0.45);
+}
+
+.agent-system-banner__history-prompt,
+.agent-system-banner__history-summary {
+  font-size: 12px;
+  line-height: 16px;
+  color: rgb(var(--v-theme-on-surface));
+}
+
 .new-chat-mode-grid {
   display: grid;
   grid-template-columns: 1fr;

@@ -11,6 +11,18 @@ const searchDraft = ref('')
 const actionError = ref('')
 const searchOpen = ref(false)
 
+type AgentSystemRun = {
+  prompt: string
+  sentAt: string
+  targetCount: number
+  summary?: string
+  agentSnapshots?: Array<{
+    agentId: string
+    agentName: string
+    response: string
+  }>
+}
+
 // ── Папки чатов ─────────────────────────────────────────────────────────────
 type ChatFolder = {
   key: string
@@ -19,17 +31,8 @@ type ChatFolder = {
   kind?: 'manual' | 'agent-system'
   agentIds?: string[]
   templateKey?: string
-  lastRun?: {
-    prompt: string
-    sentAt: string
-    targetCount: number
-    summary?: string
-    agentSnapshots?: Array<{
-      agentId: string
-      agentName: string
-      response: string
-    }>
-  }
+  runs?: AgentSystemRun[]
+  lastRun?: AgentSystemRun
 }
 
 type AgentSystemCard = {
@@ -167,6 +170,64 @@ const AGENT_SYSTEM_TEMPLATES: AgentSystemTemplate[] = [
 const FOLDERS_LS_KEY = 'messenger-chat-folders'
 const AGENT_SYSTEMS_FOLDER_KEY = 'agent-systems'
 
+function normalizeAgentSystemRun(input: unknown): AgentSystemRun | null {
+  if (!input || typeof input !== 'object') {
+    return null
+  }
+
+  const run = input as {
+    prompt?: string
+    sentAt?: string
+    targetCount?: number
+    summary?: string
+    agentSnapshots?: Array<{
+      agentId?: string
+      agentName?: string
+      response?: string
+    }>
+  }
+
+  const prompt = typeof run.prompt === 'string' ? run.prompt : ''
+  const sentAt = typeof run.sentAt === 'string' ? run.sentAt : ''
+  const targetCount = typeof run.targetCount === 'number' ? run.targetCount : 0
+
+  if (!prompt && !sentAt) {
+    return null
+  }
+
+  return {
+    prompt,
+    sentAt,
+    targetCount,
+    summary: typeof run.summary === 'string' ? run.summary : '',
+    agentSnapshots: Array.isArray(run.agentSnapshots)
+      ? run.agentSnapshots
+        .map((item) => {
+          if (!item || typeof item !== 'object') {
+            return null
+          }
+
+          const snapshot = item as {
+            agentId?: string
+            agentName?: string
+            response?: string
+          }
+
+          const agentId = typeof snapshot.agentId === 'string' ? snapshot.agentId : ''
+          const agentName = typeof snapshot.agentName === 'string' ? snapshot.agentName : ''
+          const response = typeof snapshot.response === 'string' ? snapshot.response : ''
+
+          if (!agentId || !agentName) {
+            return null
+          }
+
+          return { agentId, agentName, response }
+        })
+        .filter((item): item is { agentId: string; agentName: string; response: string } => Boolean(item))
+      : [],
+  }
+}
+
 function loadFolders(): ChatFolder[] {
   if (!import.meta.client) return []
   try {
@@ -180,35 +241,18 @@ function loadFolders(): ChatFolder[] {
           kind: folder.kind || 'manual',
           agentIds: Array.isArray(folder.agentIds) ? folder.agentIds : [],
           templateKey: typeof folder.templateKey === 'string' ? folder.templateKey : undefined,
-          lastRun: folder.lastRun && typeof folder.lastRun === 'object'
-            ? {
-                prompt: typeof folder.lastRun.prompt === 'string' ? folder.lastRun.prompt : '',
-                sentAt: typeof folder.lastRun.sentAt === 'string' ? folder.lastRun.sentAt : '',
-                targetCount: typeof folder.lastRun.targetCount === 'number' ? folder.lastRun.targetCount : 0,
-                summary: typeof folder.lastRun.summary === 'string' ? folder.lastRun.summary : '',
-                agentSnapshots: Array.isArray(folder.lastRun.agentSnapshots)
-                  ? folder.lastRun.agentSnapshots
-                    .map((item) => {
-                      if (!item || typeof item !== 'object') {
-                        return null
-                      }
-
-                      const snapshot = item as {
-                        agentId?: string
-                        agentName?: string
-                        response?: string
-                      }
-
-                      return {
-                        agentId: typeof snapshot.agentId === 'string' ? snapshot.agentId : '',
-                        agentName: typeof snapshot.agentName === 'string' ? snapshot.agentName : '',
-                        response: typeof snapshot.response === 'string' ? snapshot.response : '',
-                      }
-                    })
-                    .filter((item): item is { agentId: string; agentName: string; response: string } => Boolean(item && item.agentId && item.agentName))
-                  : [],
-              }
-            : undefined,
+          runs: [
+            ...(Array.isArray(folder.runs)
+              ? folder.runs
+                .map(run => normalizeAgentSystemRun(run))
+                .filter((run): run is AgentSystemRun => Boolean(run))
+              : []),
+            ...(folder.lastRun ? [normalizeAgentSystemRun(folder.lastRun)].filter((run): run is AgentSystemRun => Boolean(run)) : []),
+          ]
+            .sort((left, right) => new Date(right.sentAt || 0).getTime() - new Date(left.sentAt || 0).getTime())
+            .filter((run, index, runs) => runs.findIndex(item => item.sentAt === run.sentAt && item.prompt === run.prompt) === index)
+            .slice(0, 12),
+          lastRun: normalizeAgentSystemRun(folder.lastRun),
         }))
       : []
   } catch {
@@ -274,6 +318,7 @@ const filteredConversations = computed(() => {
 const systemDirectoryCards = computed<AgentSystemCard[]>(() => systemFolders.value
   .map((folder) => {
     const folderChats = conversations.conversations.value.filter(chat => folder.chatIds.includes(chat.id))
+    const latestRun = folder.runs?.[0] || folder.lastRun
     const agentNames = (folder.agentIds || [])
       .map(agentId => agentMap.value.get(agentId)?.displayName)
       .filter((value): value is string => Boolean(value))
@@ -287,14 +332,14 @@ const systemDirectoryCards = computed<AgentSystemCard[]>(() => systemFolders.val
       agentNames,
       agentCount: agentNames.length,
       chatCount: folderChats.length,
-      preview: folder.lastRun?.prompt
-        ? (folder.lastRun.summary
-            ? `Итог: ${folder.lastRun.summary}`
-            : `Запуск: ${folder.lastRun.prompt}`)
+      preview: latestRun?.prompt
+        ? (latestRun.summary
+            ? `Итог: ${latestRun.summary}`
+            : `Запуск: ${latestRun.prompt}`)
         : agentNames.length
           ? agentNames.slice(0, 3).join(' · ')
           : 'Состав системы пока не определён.',
-      lastUpdatedAt: folder.lastRun?.sentAt || latestConversation?.updatedAt || '',
+      lastUpdatedAt: latestRun?.sentAt || latestConversation?.updatedAt || '',
     }
   })
   .sort((left, right) => new Date(right.lastUpdatedAt || 0).getTime() - new Date(left.lastUpdatedAt || 0).getTime()))
@@ -303,7 +348,9 @@ const activeAgentSystemCard = computed(() => activeAgentSystem.value
   ? systemDirectoryCards.value.find(card => card.key === activeAgentSystem.value?.key) ?? null
   : null)
 
-const activeAgentSystemLastRun = computed(() => activeAgentSystem.value?.lastRun || null)
+const activeAgentSystemRuns = computed(() => activeAgentSystem.value?.runs || [])
+const activeAgentSystemLastRun = computed(() => activeAgentSystemRuns.value[0] || activeAgentSystem.value?.lastRun || null)
+const activeAgentSystemHistoryRuns = computed(() => activeAgentSystemRuns.value.slice(1, 6))
 
 const activeAgentSystemChats = computed(() => {
   if (!activeAgentSystem.value) {
@@ -706,16 +753,21 @@ async function broadcastToAgentSystem() {
       .map(chatId => conversations.conversations.value.find(item => item.id === chatId) ?? null)
       .filter((chat): chat is MessengerConversationItem => Boolean(chat && chat.peerType === 'agent'))
     const runSummary = buildAgentSystemRunSummary(refreshedChats)
+    const nextRun: AgentSystemRun = {
+      prompt: message,
+      sentAt: new Date().toISOString(),
+      targetCount: activeAgentSystemChats.value.length,
+      summary: runSummary.summary,
+      agentSnapshots: runSummary.agentSnapshots,
+    }
 
     upsertFolder({
       ...activeAgentSystem.value,
-      lastRun: {
-        prompt: message,
-        sentAt: new Date().toISOString(),
-        targetCount: activeAgentSystemChats.value.length,
-        summary: runSummary.summary,
-        agentSnapshots: runSummary.agentSnapshots,
-      },
+      runs: [nextRun, ...(activeAgentSystem.value.runs || []), ...(activeAgentSystem.value.lastRun ? [activeAgentSystem.value.lastRun] : [])]
+        .sort((left, right) => new Date(right.sentAt || 0).getTime() - new Date(left.sentAt || 0).getTime())
+        .filter((run, index, runs) => runs.findIndex(item => item.sentAt === run.sentAt && item.prompt === run.prompt) === index)
+        .slice(0, 12),
+      lastRun: nextRun,
     })
 
     await conversations.refresh(searchDraft.value)
@@ -960,6 +1012,20 @@ function formatChatPreview(chat: MessengerConversationItem) {
                   <span class="agent-system-banner__summary-agent">{{ snapshot.agentName }}</span>
                   <span class="agent-system-banner__summary-response">{{ snapshot.response }}</span>
                 </div>
+              </div>
+            </div>
+          </div>
+          <div v-if="activeAgentSystemHistoryRuns.length" class="agent-system-banner__history">
+            <p class="agent-system-banner__history-title">Лента запусков</p>
+            <div class="agent-system-banner__history-list">
+              <div
+                v-for="run in activeAgentSystemHistoryRuns"
+                :key="`${run.sentAt}-${run.prompt}`"
+                class="agent-system-banner__history-item"
+              >
+                <p class="agent-system-banner__history-meta">{{ formatConversationTimestamp(run.sentAt) }} · {{ run.targetCount }} агентов</p>
+                <p class="agent-system-banner__history-prompt">{{ formatSystemRunPrompt(run.prompt) }}</p>
+                <p v-if="run.summary" class="agent-system-banner__history-summary">{{ run.summary }}</p>
               </div>
             </div>
           </div>
