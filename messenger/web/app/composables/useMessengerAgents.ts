@@ -9,6 +9,13 @@ export interface MessengerAgentSettings {
   agentId: string
   model: string
   apiKey: string
+  ssh: {
+    host: string
+    login: string
+    port: number
+    privateKey: string
+    workspacePath: string
+  }
   connections: MessengerAgentConnection[]
   graphPosition: {
     x: number
@@ -16,6 +23,7 @@ export interface MessengerAgentSettings {
   }
   updatedAt: string
   apiKeyConfigured: boolean
+  sshConfigured: boolean
 }
 
 export interface MessengerAgentItem {
@@ -57,7 +65,7 @@ export function useMessengerAgents() {
     }
   }
 
-  async function saveSettings(agentId: string, payload: Pick<MessengerAgentSettings, 'model' | 'apiKey' | 'connections' | 'graphPosition'>) {
+  async function saveSettings(agentId: string, payload: Pick<MessengerAgentSettings, 'model' | 'apiKey' | 'ssh' | 'connections' | 'graphPosition'>) {
     settingsPending.value = true
 
     try {

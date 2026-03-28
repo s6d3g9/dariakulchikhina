@@ -14,6 +14,13 @@ export interface MessengerAgentSettingsRecord {
   agentId: string
   model: string
   apiKey: string
+  ssh: {
+    host: string
+    login: string
+    port: number
+    privateKey: string
+    workspacePath: string
+  }
   connections: MessengerAgentConnectionRecord[]
   graphPosition: {
     x: number
@@ -37,6 +44,13 @@ function createDefaultSettings(agentId: string): MessengerAgentSettingsRecord {
     agentId,
     model: 'GPT-5.4',
     apiKey: '',
+    ssh: {
+      host: '',
+      login: '',
+      port: 22,
+      privateKey: '',
+      workspacePath: '',
+    },
     connections: [],
     graphPosition: {
       x: 32,
@@ -87,6 +101,13 @@ async function readSettingsFile(): Promise<AgentSettingsFile> {
               agentId: String(item?.agentId || normalized.agentId),
               model: typeof item?.model === 'string' ? item.model : normalized.model,
               apiKey: typeof item?.apiKey === 'string' ? item.apiKey : normalized.apiKey,
+              ssh: {
+                host: typeof item?.ssh?.host === 'string' ? item.ssh.host : normalized.ssh.host,
+                login: typeof item?.ssh?.login === 'string' ? item.ssh.login : normalized.ssh.login,
+                port: Number.isFinite(item?.ssh?.port) ? Math.min(65535, Math.max(1, Math.round(item.ssh?.port ?? normalized.ssh.port))) : normalized.ssh.port,
+                privateKey: typeof item?.ssh?.privateKey === 'string' ? item.ssh.privateKey : normalized.ssh.privateKey,
+                workspacePath: typeof item?.ssh?.workspacePath === 'string' ? item.ssh.workspacePath : normalized.ssh.workspacePath,
+              },
               connections: Array.isArray(item?.connections)
                 ? item.connections
                   .map((connection) => {
@@ -154,7 +175,7 @@ export async function getMessengerAgentSettings(agentId: string) {
 
 export async function updateMessengerAgentSettings(
   agentId: string,
-  input: Pick<MessengerAgentSettingsRecord, 'model' | 'apiKey' | 'connections'> & {
+  input: Pick<MessengerAgentSettingsRecord, 'model' | 'apiKey' | 'ssh' | 'connections'> & {
     graphPosition?: MessengerAgentSettingsRecord['graphPosition']
   },
 ) {
@@ -164,6 +185,13 @@ export async function updateMessengerAgentSettings(
     agentId,
     model: input.model.trim() || 'GPT-5.4',
     apiKey: input.apiKey.trim(),
+    ssh: {
+      host: input.ssh.host.trim(),
+      login: input.ssh.login.trim(),
+      port: Math.min(65535, Math.max(1, Math.round(Number.isFinite(input.ssh.port) ? input.ssh.port : 22))),
+      privateKey: input.ssh.privateKey.trim(),
+      workspacePath: input.ssh.workspacePath.trim(),
+    },
     connections: normalizeConnections(agentId, input.connections),
     graphPosition: normalizeGraphPosition(input.graphPosition, currentSettings.graphPosition),
     updatedAt: new Date().toISOString(),

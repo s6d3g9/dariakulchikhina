@@ -8,6 +8,7 @@ import websocket from '@fastify/websocket'
 import { z } from 'zod'
 
 import { getMessengerAgentSettings, updateMessengerAgentGraph, updateMessengerAgentSettings } from './agent-settings-store.ts'
+import { listMessengerAgentWorkspace, readMessengerAgentWorkspaceFile } from './agent-workspace-store.ts'
 import { appendMessengerAgentRunEvent, getMessengerAgentRunById, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from './agent-run-store.ts'
 import { buildMessengerAgentReply, findMessengerAgentById, listMessengerAgents } from './agent-store.ts'
 import { authenticateMessengerUser, findMessengerUserById, listMessengerUsers, registerMessengerUser } from './auth-store.ts'
@@ -86,6 +87,19 @@ export async function createMessengerServer() {
   const agentSettingsSchema = z.object({
     model: z.string().trim().min(1).max(120),
     apiKey: z.string().trim().max(2048).optional().default(''),
+    ssh: z.object({
+      host: z.string().trim().max(255).optional().default(''),
+      login: z.string().trim().max(120).optional().default(''),
+      port: z.coerce.number().int().min(1).max(65535).optional().default(22),
+      privateKey: z.string().trim().max(32768).optional().default(''),
+      workspacePath: z.string().trim().max(2048).optional().default(''),
+    }).optional().default({
+      host: '',
+      login: '',
+      port: 22,
+      privateKey: '',
+      workspacePath: '',
+    }),
     connections: z.array(z.object({
       targetAgentId: z.string().trim().min(1).max(120),
       mode: z.enum(['review', 'enrich', 'validate', 'summarize', 'route']).default('review'),
@@ -117,6 +131,9 @@ export async function createMessengerServer() {
   const agentEdgePayloadsQuerySchema = z.object({
     agentId: z.string().trim().min(1).max(120).optional(),
     limit: z.coerce.number().int().min(1).max(80).default(24),
+  })
+  const agentWorkspaceQuerySchema = z.object({
+    path: z.string().trim().max(2048).optional().default(''),
   })
   const userParamsSchema = z.object({
     userId: z.string().uuid(),
@@ -639,6 +656,7 @@ export async function createMessengerServer() {
         settings: {
           ...settingsList[index],
           apiKeyConfigured: Boolean(settingsList[index].apiKey),
+          sshConfigured: Boolean(settingsList[index].ssh.host && settingsList[index].ssh.login && settingsList[index].ssh.privateKey && settingsList[index].ssh.workspacePath),
         },
         conversationId: conversations.find(item => item?.peerType === 'agent' && item.peerUserId === agent.id)?.id || null,
       })),
@@ -666,6 +684,7 @@ export async function createMessengerServer() {
       settings: {
         ...settings,
         apiKeyConfigured: Boolean(settings.apiKey),
+        sshConfigured: Boolean(settings.ssh.host && settings.ssh.login && settings.ssh.privateKey && settings.ssh.workspacePath),
       },
     }
   })
@@ -691,6 +710,7 @@ export async function createMessengerServer() {
     const settings = await updateMessengerAgentSettings(agent.id, {
       model: parsedBody.data.model,
       apiKey: parsedBody.data.apiKey,
+      ssh: parsedBody.data.ssh,
       connections: parsedBody.data.connections.filter(item => item.targetAgentId !== agent.id && validAgentIds.has(item.targetAgentId)),
       graphPosition: parsedBody.data.graphPosition,
     })
@@ -699,6 +719,7 @@ export async function createMessengerServer() {
       settings: {
         ...settings,
         apiKeyConfigured: Boolean(settings.apiKey),
+        sshConfigured: Boolean(settings.ssh.host && settings.ssh.login && settings.ssh.privateKey && settings.ssh.workspacePath),
       },
     }
   })
@@ -734,7 +755,64 @@ export async function createMessengerServer() {
       settings: settingsList.map(settings => ({
         ...settings,
         apiKeyConfigured: Boolean(settings.apiKey),
+        sshConfigured: Boolean(settings.ssh.host && settings.ssh.login && settings.ssh.privateKey && settings.ssh.workspacePath),
       })),
+    }
+  })
+
+  app.get('/agents/:agentId/workspace', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = agentParamsSchema.safeParse(request.params)
+    const parsedQuery = agentWorkspaceQuerySchema.safeParse(request.query)
+    if (!parsedParams.success || !parsedQuery.success) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    const agent = await findMessengerAgentById(parsedParams.data.agentId)
+    if (!agent) {
+      return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
+    }
+
+    const settings = await getMessengerAgentSettings(agent.id)
+
+    try {
+      return {
+        workspace: await listMessengerAgentWorkspace(settings, parsedQuery.data.path),
+      }
+    } catch (error) {
+      return reply.code(409).send({ error: error instanceof Error ? error.message : 'AGENT_WORKSPACE_UNAVAILABLE' })
+    }
+  })
+
+  app.get('/agents/:agentId/workspace/file', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = agentParamsSchema.safeParse(request.params)
+    const parsedQuery = agentWorkspaceQuerySchema.safeParse(request.query)
+    if (!parsedParams.success || !parsedQuery.success) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    const agent = await findMessengerAgentById(parsedParams.data.agentId)
+    if (!agent) {
+      return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
+    }
+
+    const settings = await getMessengerAgentSettings(agent.id)
+
+    try {
+      return {
+        file: await readMessengerAgentWorkspaceFile(settings, parsedQuery.data.path),
+      }
+    } catch (error) {
+      return reply.code(409).send({ error: error instanceof Error ? error.message : 'AGENT_WORKSPACE_UNAVAILABLE' })
     }
   })
 

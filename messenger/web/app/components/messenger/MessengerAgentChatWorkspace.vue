@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { MessengerAgentConnectionMode, MessengerAgentItem, MessengerAgentSettings } from '../../composables/useMessengerAgents'
 import type { MessengerAgentRun, MessengerAgentRunArtifact, MessengerAgentRunEvent } from '../../composables/useMessengerAgentRuns'
+import type { MessengerAgentWorkspaceFilePreview, MessengerAgentWorkspaceListing } from '../../composables/useMessengerAgentWorkspace'
 
-type AgentWorkspaceSectionKey = 'overview' | 'settings' | 'links' | 'runs' | 'graph'
+type AgentWorkspaceSectionKey = 'overview' | 'settings' | 'links' | 'runs' | 'graph' | 'explorer'
 
 const props = defineProps<{
   agentId: string
@@ -21,6 +22,7 @@ const agentsModel = useMessengerAgents()
 const runtime = useMessengerAgentRuntime()
 const runsModel = useMessengerAgentRuns()
 const edgePayloadsModel = useMessengerAgentEdgePayloads()
+const workspaceExplorer = useMessengerAgentWorkspace()
 const activeSection = useState<AgentWorkspaceSectionKey>('messenger-agent-chat-workspace-section', () => 'overview')
 const feedbackMessage = ref('')
 const feedbackTone = ref<'info' | 'error'>('info')
@@ -28,10 +30,22 @@ const selectedRunId = ref<string | null>(null)
 const settingsDraft = reactive({
   model: 'GPT-5.4',
   apiKey: '',
+  ssh: {
+    host: '',
+    login: '',
+    port: 22,
+    privateKey: '',
+    workspacePath: '',
+  },
 })
 const settingsSaving = ref(false)
 const searchDraft = ref('')
 const searchOpen = ref(false)
+const explorerPending = ref(false)
+const explorerFilePending = ref(false)
+const explorerError = ref('')
+const explorerListing = ref<MessengerAgentWorkspaceListing | null>(null)
+const explorerFile = ref<MessengerAgentWorkspaceFilePreview | null>(null)
 
 const sections: Array<{ key: AgentWorkspaceSectionKey; title: string }> = [
   {
@@ -54,6 +68,10 @@ const sections: Array<{ key: AgentWorkspaceSectionKey; title: string }> = [
     key: 'graph',
     title: 'Граф',
   },
+  {
+    key: 'explorer',
+    title: 'Проводник',
+  },
 ]
 
 const currentSection = computed(() => sections.find(section => section.key === activeSection.value) ?? sections[0])
@@ -64,6 +82,7 @@ const sectionIconMap: Record<AgentWorkspaceSectionKey, string> = {
   links: 'mdi-connection',
   runs: 'mdi-history',
   graph: 'mdi-graph-outline',
+  explorer: 'mdi-file-tree-outline',
 }
 
 const normalizedLogin = computed(() => props.agentLogin.replace(/^@/, '').trim())
@@ -145,8 +164,10 @@ const selectedRun = computed(() => {
 const activeConnections = computed(() => runtimeState.value?.activeConnections || [])
 const workspaceTitle = computed(() => resolvedAgent.value?.displayName || props.agentName)
 const workspaceGreeting = computed(() => resolvedAgent.value?.greeting || 'Подготовьте контекст и настройте агент перед следующей отправкой.')
-const workspaceModel = computed(() => resolvedAgent.value?.settings.model || settingsDraft.model)
+const workspaceModelLabel = computed(() => resolvedAgent.value?.settings.model || settingsDraft.model)
 const apiKeyConfigured = computed(() => Boolean(resolvedAgent.value?.settings.apiKeyConfigured))
+const sshConfigured = computed(() => Boolean(resolvedAgent.value?.settings.sshConfigured))
+const workspaceConfigured = computed(() => Boolean(resolvedAgent.value?.settings.ssh.workspacePath))
 const graphStats = computed(() => ({
   outgoing: outgoingConnections.value.length,
   incoming: incomingConnections.value.length,
@@ -164,10 +185,37 @@ const searchMatches = computed(() => {
 
   return sections.filter(section => section.title.toLowerCase().includes(query))
 })
+const explorerBreadcrumbs = computed(() => {
+  const listing = explorerListing.value
+  if (!listing) {
+    return []
+  }
+
+  const segments = listing.currentPath ? listing.currentPath.split('/').filter(Boolean) : []
+  return segments.map((segment, index) => ({
+    label: segment,
+    path: segments.slice(0, index + 1).join('/'),
+  }))
+})
+const explorerStatusLabel = computed(() => {
+  const listing = explorerListing.value
+  if (!listing) {
+    return sshConfigured.value ? 'SSH' : 'Локально'
+  }
+
+  return listing.source === 'ssh'
+    ? (listing.sshTarget || 'SSH')
+    : 'Локальная папка'
+})
 
 function syncSettingsDraft() {
   settingsDraft.model = resolvedAgent.value?.settings.model || 'GPT-5.4'
   settingsDraft.apiKey = resolvedAgent.value?.settings.apiKey || ''
+  settingsDraft.ssh.host = resolvedAgent.value?.settings.ssh.host || ''
+  settingsDraft.ssh.login = resolvedAgent.value?.settings.ssh.login || ''
+  settingsDraft.ssh.port = resolvedAgent.value?.settings.ssh.port || 22
+  settingsDraft.ssh.privateKey = resolvedAgent.value?.settings.ssh.privateKey || ''
+  settingsDraft.ssh.workspacePath = resolvedAgent.value?.settings.ssh.workspacePath || ''
 }
 
 watch(() => resolvedAgent.value?.id, () => {
@@ -177,6 +225,9 @@ watch(() => resolvedAgent.value?.id, () => {
   activeSection.value = 'overview'
   searchDraft.value = ''
   searchOpen.value = false
+  explorerListing.value = null
+  explorerFile.value = null
+  explorerError.value = ''
 }, { immediate: true })
 
 watch(() => props.conversationId, () => {
@@ -199,6 +250,16 @@ watch(() => props.agentId, async () => {
     edgePayloadsModel.refresh(resolvedAgent.value.id, 8),
   ])
 }, { immediate: true })
+
+watch([() => activeSection.value, () => resolvedAgent.value?.id], async ([section, agentId]) => {
+  if (section !== 'explorer' || !agentId) {
+    return
+  }
+
+  if (!explorerListing.value || explorerError.value) {
+    await loadWorkspace()
+  }
+})
 
 function connectionModeLabel(mode: MessengerAgentConnectionMode) {
   switch (mode) {
@@ -299,12 +360,18 @@ async function saveSettings(payload: Pick<MessengerAgentSettings, 'model' | 'api
     const nextSettings = await agentsModel.saveSettings(resolvedAgent.value.id, {
       model: payload.model,
       apiKey: payload.apiKey,
+      ssh: settingsDraft.ssh,
       connections: resolvedAgent.value.settings.connections,
       graphPosition: resolvedAgent.value.settings.graphPosition,
     })
 
     settingsDraft.model = nextSettings.model
     settingsDraft.apiKey = nextSettings.apiKey
+    settingsDraft.ssh.host = nextSettings.ssh.host
+    settingsDraft.ssh.login = nextSettings.ssh.login
+    settingsDraft.ssh.port = nextSettings.ssh.port
+    settingsDraft.ssh.privateKey = nextSettings.ssh.privateKey
+    settingsDraft.ssh.workspacePath = nextSettings.ssh.workspacePath
     feedbackTone.value = 'info'
     feedbackMessage.value = 'Параметры агента обновлены для этого чата.'
   } catch {
@@ -339,6 +406,33 @@ async function handleApiKeyBlur() {
   })
 }
 
+function sshDraftChanged() {
+  if (!resolvedAgent.value) {
+    return false
+  }
+
+  return resolvedAgent.value.settings.ssh.host !== settingsDraft.ssh.host
+    || resolvedAgent.value.settings.ssh.login !== settingsDraft.ssh.login
+    || resolvedAgent.value.settings.ssh.port !== settingsDraft.ssh.port
+    || resolvedAgent.value.settings.ssh.privateKey !== settingsDraft.ssh.privateKey
+    || resolvedAgent.value.settings.ssh.workspacePath !== settingsDraft.ssh.workspacePath
+}
+
+async function handleSshBlur() {
+  if (!resolvedAgent.value || !sshDraftChanged()) {
+    return
+  }
+
+  await saveSettings({
+    model: settingsDraft.model,
+    apiKey: settingsDraft.apiKey,
+  })
+
+  if (activeSection.value === 'explorer') {
+    await loadWorkspace()
+  }
+}
+
 function openAgentsSection() {
   navigation.openSection('agents')
 }
@@ -367,6 +461,61 @@ async function openRunDetail(runId: string) {
   selectedRunId.value = runId
   await runsModel.openRun(runId)
 }
+
+async function loadWorkspace(nextPath = explorerListing.value?.currentPath || '') {
+  if (!resolvedAgent.value) {
+    return
+  }
+
+  explorerPending.value = true
+  explorerError.value = ''
+
+  try {
+    const listing = await workspaceExplorer.listWorkspace(resolvedAgent.value.id, nextPath)
+    explorerListing.value = listing
+
+    if (explorerFile.value && !listing.entries.some(entry => entry.path === explorerFile.value?.path)) {
+      explorerFile.value = null
+    }
+  } catch (error) {
+    explorerListing.value = null
+    explorerFile.value = null
+    explorerError.value = error instanceof Error ? error.message : 'Проводник недоступен.'
+  } finally {
+    explorerPending.value = false
+  }
+}
+
+async function openWorkspaceDirectory(path: string) {
+  await loadWorkspace(path)
+}
+
+async function openWorkspaceParent() {
+  if (!explorerListing.value?.currentPath) {
+    return
+  }
+
+  const segments = explorerListing.value.currentPath.split('/').filter(Boolean)
+  await loadWorkspace(segments.slice(0, -1).join('/'))
+}
+
+async function openWorkspaceFile(path: string) {
+  if (!resolvedAgent.value) {
+    return
+  }
+
+  explorerFilePending.value = true
+  explorerError.value = ''
+
+  try {
+    explorerFile.value = await workspaceExplorer.readWorkspaceFile(resolvedAgent.value.id, path)
+  } catch (error) {
+    explorerFile.value = null
+    explorerError.value = error instanceof Error ? error.message : 'Не удалось открыть файл.'
+  } finally {
+    explorerFilePending.value = false
+  }
+}
 </script>
 
 <template>
@@ -382,6 +531,9 @@ async function openRunDetail(runId: string) {
         </span>
         <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !apiKeyConfigured }">
           {{ apiKeyConfigured ? 'API key подключён' : 'API key не задан' }}
+        </span>
+        <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !sshConfigured }">
+          {{ sshConfigured ? 'SSH подключён' : 'SSH не задан' }}
         </span>
         <button type="button" class="agent-chat-workspace__ghost" @click="openAgentsSection">
           Открыть модуль агентов
@@ -404,13 +556,13 @@ async function openRunDetail(runId: string) {
             </article>
             <article class="agent-chat-workspace__card">
               <p class="agent-chat-workspace__card-eyebrow">Модель</p>
-              <h3 class="agent-chat-workspace__card-title">{{ workspaceModel }}</h3>
+              <h3 class="agent-chat-workspace__card-title">{{ workspaceModelLabel }}</h3>
               <p class="agent-chat-workspace__card-text">Последнее обновление: {{ formatTimestamp(resolvedAgent?.settings.updatedAt) }}</p>
             </article>
             <article class="agent-chat-workspace__card">
-              <p class="agent-chat-workspace__card-eyebrow">Связи</p>
-              <h3 class="agent-chat-workspace__card-title">{{ graphStats.outgoing }} исходящих / {{ graphStats.incoming }} входящих</h3>
-              <p class="agent-chat-workspace__card-text">Node-модуль вынесен в отдельный раздел и открывается без выхода из messenger shell.</p>
+              <p class="agent-chat-workspace__card-eyebrow">SSH и проводник</p>
+              <h3 class="agent-chat-workspace__card-title">{{ sshConfigured ? explorerStatusLabel : 'Подключение не настроено' }}</h3>
+              <p class="agent-chat-workspace__card-text">{{ workspaceConfigured ? `Рабочая папка: ${resolvedAgent?.settings.ssh.workspacePath}` : 'Добавьте login, IP, SSH key и рабочую папку, чтобы агент получил свой server context.' }}</p>
             </article>
           </div>
 
@@ -418,7 +570,7 @@ async function openRunDetail(runId: string) {
             <article class="agent-chat-workspace__card agent-chat-workspace__card--form">
               <p class="agent-chat-workspace__card-eyebrow">Быстрые настройки</p>
               <h3 class="agent-chat-workspace__card-title">Параметры ответа</h3>
-              <p class="agent-chat-workspace__card-text">Модель сохраняется сразу после выбора, API key обновляется по blur.</p>
+              <p class="agent-chat-workspace__card-text">Модель сохраняется сразу после выбора. API key и SSH-поля обновляются по blur.</p>
               <VSelect
                 :model-value="settingsDraft.model"
                 :items="resolvedAgent?.modelOptions || ['GPT-5.4']"
@@ -436,6 +588,50 @@ async function openRunDetail(runId: string) {
                 hide-details="auto"
                 :loading="settingsSaving"
                 @blur="handleApiKeyBlur"
+              />
+              <VTextField
+                v-model="settingsDraft.ssh.host"
+                label="IP или host сервера"
+                variant="outlined"
+                hide-details="auto"
+                :loading="settingsSaving"
+                @blur="handleSshBlur"
+              />
+              <VTextField
+                v-model="settingsDraft.ssh.login"
+                label="Логин SSH"
+                variant="outlined"
+                hide-details="auto"
+                :loading="settingsSaving"
+                @blur="handleSshBlur"
+              />
+              <VTextField
+                :model-value="String(settingsDraft.ssh.port)"
+                label="Порт SSH"
+                type="number"
+                variant="outlined"
+                hide-details="auto"
+                :loading="settingsSaving"
+                @update:model-value="settingsDraft.ssh.port = Number($event) || 22"
+                @blur="handleSshBlur"
+              />
+              <VTextField
+                v-model="settingsDraft.ssh.workspacePath"
+                label="Рабочая папка"
+                variant="outlined"
+                hide-details="auto"
+                :loading="settingsSaving"
+                @blur="handleSshBlur"
+              />
+              <VTextarea
+                v-model="settingsDraft.ssh.privateKey"
+                label="SSH private key"
+                variant="outlined"
+                rows="6"
+                auto-grow
+                hide-details="auto"
+                :loading="settingsSaving"
+                @blur="handleSshBlur"
               />
             </article>
           </div>
@@ -508,6 +704,62 @@ async function openRunDetail(runId: string) {
           </div>
 
           <div v-else class="agent-chat-workspace__content agent-chat-workspace__content--split">
+            <template v-if="activeSection === 'explorer'">
+              <article class="agent-chat-workspace__card agent-chat-workspace__card--split-span">
+                <p class="agent-chat-workspace__card-eyebrow">Проводник</p>
+                <h3 class="agent-chat-workspace__card-title">{{ explorerStatusLabel }}</h3>
+                <p class="agent-chat-workspace__card-text">{{ workspaceConfigured ? `Root: ${resolvedAgent?.settings.ssh.workspacePath}` : 'Настройте SSH или локальную рабочую папку агента.' }}</p>
+              </article>
+              <div v-if="explorerError" class="agent-chat-workspace__card agent-chat-workspace__card--split-span">
+                <p class="agent-chat-workspace__card-text">{{ explorerError }}</p>
+              </div>
+              <article class="agent-chat-workspace__card agent-chat-workspace__explorer-tree">
+                <div class="agent-chat-workspace__explorer-head">
+                  <button type="button" class="agent-chat-workspace__ghost" :disabled="!explorerListing?.currentPath" @click="openWorkspaceParent">
+                    Назад
+                  </button>
+                  <button type="button" class="agent-chat-workspace__ghost" :disabled="explorerPending || !workspaceConfigured" @click="loadWorkspace()">
+                    Обновить
+                  </button>
+                </div>
+                <div class="agent-chat-workspace__breadcrumbs">
+                  <button type="button" class="agent-chat-workspace__crumb" @click="openWorkspaceDirectory('')">root</button>
+                  <button
+                    v-for="crumb in explorerBreadcrumbs"
+                    :key="crumb.path"
+                    type="button"
+                    class="agent-chat-workspace__crumb"
+                    @click="openWorkspaceDirectory(crumb.path)"
+                  >
+                    {{ crumb.label }}
+                  </button>
+                </div>
+                <div v-if="explorerPending" class="agent-chat-workspace__card-text">[ LOADING... ]</div>
+                <div v-else-if="explorerListing?.entries.length" class="agent-chat-workspace__explorer-list">
+                  <button
+                    v-for="entry in explorerListing.entries"
+                    :key="entry.path"
+                    type="button"
+                    class="agent-chat-workspace__explorer-entry"
+                    :class="{ 'agent-chat-workspace__explorer-entry--active': explorerFile?.path === entry.path }"
+                    @click="entry.kind === 'directory' ? openWorkspaceDirectory(entry.path) : openWorkspaceFile(entry.path)"
+                  >
+                    <span class="agent-chat-workspace__explorer-entry-name">{{ entry.kind === 'directory' ? '▸' : '•' }} {{ entry.name }}</span>
+                    <span class="agent-chat-workspace__explorer-entry-meta">{{ entry.kind === 'directory' ? 'папка' : `${entry.size} B` }}</span>
+                  </button>
+                </div>
+                <div v-else class="agent-chat-workspace__card-text">[ NO DATA ATTACHED ]</div>
+              </article>
+              <article class="agent-chat-workspace__card agent-chat-workspace__explorer-preview">
+                <p class="agent-chat-workspace__card-eyebrow">Предпросмотр</p>
+                <h3 class="agent-chat-workspace__card-title">{{ explorerFile?.name || 'Файл не выбран' }}</h3>
+                <p v-if="explorerFile?.truncated" class="agent-chat-workspace__card-text">Показан только верх файла.</p>
+                <div v-if="explorerFilePending" class="agent-chat-workspace__card-text">[ LOADING... ]</div>
+                <pre v-else-if="explorerFile" class="agent-chat-workspace__file-preview">{{ explorerFile.content }}</pre>
+                <p v-else class="agent-chat-workspace__card-text">Выберите файл слева, чтобы открыть содержимое.</p>
+              </article>
+            </template>
+            <template v-else>
             <article class="agent-chat-workspace__card">
               <p class="agent-chat-workspace__card-eyebrow">Сводка графа</p>
               <h3 class="agent-chat-workspace__card-title">Связи и маршрутизация</h3>
@@ -538,6 +790,7 @@ async function openRunDetail(runId: string) {
                 <span>{{ payload.payloadPreview }}</span>
               </div>
             </div>
+            </template>
           </div>
         </div>
       </Transition>

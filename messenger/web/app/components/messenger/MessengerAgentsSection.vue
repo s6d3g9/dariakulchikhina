@@ -11,6 +11,13 @@ const editingAgentId = ref<string | null>(null)
 const settingsDraft = reactive({
   model: 'GPT-5.4',
   apiKey: '',
+  ssh: {
+    host: '',
+    login: '',
+    port: 22,
+    privateKey: '',
+    workspacePath: '',
+  },
   connections: [] as Array<{ targetAgentId: string; mode: 'review' | 'enrich' | 'validate' | 'summarize' | 'route' }>,
 })
 
@@ -95,6 +102,11 @@ function openSettings(agentId: string) {
   editingAgentId.value = agentId
   settingsDraft.model = agent.settings.model
   settingsDraft.apiKey = agent.settings.apiKey
+  settingsDraft.ssh.host = agent.settings.ssh.host
+  settingsDraft.ssh.login = agent.settings.ssh.login
+  settingsDraft.ssh.port = agent.settings.ssh.port
+  settingsDraft.ssh.privateKey = agent.settings.ssh.privateKey
+  settingsDraft.ssh.workspacePath = agent.settings.ssh.workspacePath
   settingsDraft.connections = agent.settings.connections.map(connection => ({ ...connection }))
   settingsDialogOpen.value = true
 }
@@ -133,6 +145,7 @@ async function saveSettings() {
     await agentsModel.saveSettings(editingAgent.value.id, {
       model: settingsDraft.model,
       apiKey: settingsDraft.apiKey,
+      ssh: settingsDraft.ssh,
       connections: settingsDraft.connections,
       graphPosition: editingAgent.value.settings.graphPosition,
     })
@@ -178,6 +191,8 @@ async function saveSettings() {
                 <template v-if="agent.settings.connections.length"> · связей: {{ agent.settings.connections.length }}</template>
                 <template v-if="agent.settings.apiKeyConfigured"> · API key задан</template>
                 <template v-else> · API key не задан</template>
+                <template v-if="agent.settings.sshConfigured"> · SSH задан</template>
+                <template v-else> · SSH не задан</template>
               </span>
             </template>
             <template #append>
@@ -322,6 +337,47 @@ async function saveSettings() {
                 variant="outlined"
                 hide-details="auto"
               />
+            </div>
+
+            <div>
+              <div class="title-small mb-2">SSH и сервер</div>
+              <p class="on-surface-variant mb-3">У каждого агента может быть свой SSH-доступ и своя рабочая папка для проводника и серверного контекста.</p>
+              <div class="d-flex flex-column ga-3">
+                <VTextField
+                  v-model="settingsDraft.ssh.host"
+                  label="IP или host сервера"
+                  variant="outlined"
+                  hide-details="auto"
+                />
+                <VTextField
+                  v-model="settingsDraft.ssh.login"
+                  label="Логин SSH"
+                  variant="outlined"
+                  hide-details="auto"
+                />
+                <VTextField
+                  :model-value="String(settingsDraft.ssh.port)"
+                  label="Порт SSH"
+                  type="number"
+                  variant="outlined"
+                  hide-details="auto"
+                  @update:model-value="settingsDraft.ssh.port = Number($event) || 22"
+                />
+                <VTextField
+                  v-model="settingsDraft.ssh.workspacePath"
+                  label="Рабочая папка"
+                  variant="outlined"
+                  hide-details="auto"
+                />
+                <VTextarea
+                  v-model="settingsDraft.ssh.privateKey"
+                  label="SSH private key"
+                  variant="outlined"
+                  rows="5"
+                  auto-grow
+                  hide-details="auto"
+                />
+              </div>
             </div>
           </div>
         </VCardText>

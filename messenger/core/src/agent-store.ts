@@ -315,6 +315,7 @@ export async function findMessengerAgentById(agentId: string) {
 
 function buildAgentPromptMessages(
   agent: MessengerAgentRecord,
+  settings: Awaited<ReturnType<typeof getMessengerAgentSettings>>,
   message: string,
   history: MessengerAgentReplyHistoryItem[],
   connectedAgents: MessengerConnectedAgent[],
@@ -327,6 +328,9 @@ function buildAgentPromptMessages(
         agent.systemPrompt,
         `Имя агента: ${agent.displayName}.`,
         `Роль: ${agent.description}`,
+        settings.ssh.host && settings.ssh.login && settings.ssh.workspacePath
+          ? `SSH-доступ агента: ${settings.ssh.login}@${settings.ssh.host}:${settings.ssh.port}, рабочая папка ${settings.ssh.workspacePath}. Используй это как серверный контекст, но не выдумывай содержимое файлов, если оно явно не было передано.`
+          : 'SSH-доступ для этого агента не настроен.',
         connectedAgents.length
           ? `Связанные агенты: ${connectedAgents.map(item => `${item.agent.displayName} (${item.agent.description}, режим ${item.mode})`).join('; ')}. Учитывай их экспертизу и при необходимости явно указывай, какой из них помог бы уточнить ответ.`
           : 'Связанные агенты не подключены.',
@@ -376,6 +380,9 @@ async function buildMessengerAgentConsultation(
         'Ты не отвечаешь пользователю напрямую.',
         `Режим связи: ${mode}. Твоя роль относительно основного агента: ${describeConnectionMode(mode)}.`,
         'Сформируй только короткую экспертную заметку для другого агента: 2-3 предложения, без вступлений, без markdown.',
+        settings.ssh.host && settings.ssh.login && settings.ssh.workspacePath
+          ? `SSH-контекст агента: ${settings.ssh.login}@${settings.ssh.host}:${settings.ssh.port}, рабочая папка ${settings.ssh.workspacePath}.`
+          : 'SSH-контекст для этого агента не настроен.',
         referencedFiles.length ? `Упомянутые файлы: ${referencedFiles.join(', ')}.` : 'Файлы в запросе не выделены.',
       ].join(' '),
     },
@@ -519,7 +526,7 @@ export async function buildMessengerAgentReply(
 
   try {
     return await callMessengerAgentModel(
-      buildAgentPromptMessages(agent, normalizedMessage, history.slice(-8), connectedAgents, consultationNotes),
+      buildAgentPromptMessages(agent, settings, normalizedMessage, history.slice(-8), connectedAgents, consultationNotes),
       {
         model: settings.model,
         apiKey: settings.apiKey,
