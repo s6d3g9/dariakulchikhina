@@ -970,16 +970,13 @@ function formatChatPreview(chat: MessengerConversationItem) {
           class="agent-system-card"
           @click="openAgentSystem(card.key)"
         >
-          <span class="agent-system-card__eyebrow">Система агентов</span>
           <span class="agent-system-card__title">{{ card.label }}</span>
           <span class="agent-system-card__meta">{{ formatAgentSystemStats(card) }}</span>
           <span class="agent-system-card__preview">{{ card.preview }}</span>
         </button>
 
         <div v-if="!systemDirectoryCards.length" class="empty-state">
-          <VIcon size="48" color="on-surface-variant">mdi-message-text-outline</VIcon>
-          <p class="empty-state__title">Системы агентов пока не созданы</p>
-          <p class="empty-state__text">Создайте систему через кнопку нового чата и соберите агентов в отдельную папку.</p>
+          <p class="empty-state__title">Системы агентов пока не созданы.</p>
         </div>
       </div>
 
@@ -987,7 +984,6 @@ function formatChatPreview(chat: MessengerConversationItem) {
         <div v-if="activeAgentSystemCard" class="agent-system-banner">
           <div class="agent-system-banner__head">
             <div class="agent-system-banner__copy">
-              <p class="agent-system-banner__eyebrow">Активная система</p>
               <p class="agent-system-banner__title">{{ activeAgentSystemCard.label }}</p>
             </div>
             <div class="agent-system-banner__actions">
@@ -1105,9 +1101,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
         </VListItem>
 
         <div v-if="!filteredConversations.length" class="empty-state">
-          <VIcon size="48" color="on-surface-variant">mdi-message-text-outline</VIcon>
-          <p class="empty-state__title">{{ activeAgentSystem ? 'Внутри системы пока нет чатов' : 'Чаты пока пусты' }}</p>
-          <p class="empty-state__text">{{ activeAgentSystem ? 'Добавьте агента в систему через новое окно создания чата.' : 'Нажмите ✏️ чтобы начать диалог.' }}</p>
+          <p class="empty-state__title">{{ activeAgentSystem ? 'Внутри системы пока нет чатов.' : 'Чаты пока пусты.' }}</p>
         </div>
       </VList>
 

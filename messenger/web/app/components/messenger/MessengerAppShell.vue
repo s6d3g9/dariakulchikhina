@@ -91,8 +91,7 @@ async function logout() {
       <div class="messenger-workspace">
         <aside class="messenger-desktop-nav" aria-label="Боковая навигация Messenger">
           <div class="messenger-desktop-nav__head">
-            <p class="messenger-desktop-nav__eyebrow">Daria Messenger</p>
-            <h1 class="messenger-desktop-nav__title">Навигация</h1>
+            <p class="messenger-desktop-nav__title">Разделы</p>
           </div>
 
           <nav class="messenger-desktop-nav__list" aria-label="Разделы Messenger">
@@ -105,11 +104,7 @@ async function logout() {
               :disabled="section.key === 'chat' && chatDisabled"
               @click="openNavSection(section.key)"
             >
-              <VIcon class="messenger-desktop-nav__icon">{{ sectionIcon(section.key) }}</VIcon>
-              <span class="messenger-desktop-nav__copy">
-                <span class="messenger-desktop-nav__label">{{ section.title }}</span>
-                <span class="messenger-desktop-nav__meta">{{ section.description }}</span>
-              </span>
+              <span class="messenger-desktop-nav__label">{{ section.title }}</span>
             </button>
           </nav>
         </aside>
