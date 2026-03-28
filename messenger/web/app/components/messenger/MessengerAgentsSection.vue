@@ -4,6 +4,7 @@ const conversations = useMessengerConversations()
 const navigation = useMessengerConversationState()
 const actionError = ref('')
 const agentsTab = ref<'directory' | 'graph'>('directory')
+const graphTab = ref<'agents' | 'project'>('project')
 const searchDraft = ref('')
 const searchOpen = ref(false)
 const settingsDialogOpen = ref(false)
@@ -216,7 +217,18 @@ async function saveSettings() {
       </VWindowItem>
 
       <VWindowItem value="graph" class="agents-section__pane">
-        <div v-if="filteredAgents.length" class="agents-section__graph-shell">
+        <div class="agents-section__graph-mode-tabs">
+          <VTabs v-model="graphTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
+            <VTab value="project">Project nodes</VTab>
+            <VTab value="agents">Agent nodes</VTab>
+          </VTabs>
+        </div>
+
+        <div v-if="graphTab === 'project'" class="agents-section__graph-shell">
+          <MessengerProjectEngineGraph />
+        </div>
+
+        <div v-else-if="filteredAgents.length" class="agents-section__graph-shell">
           <MessengerAgentGraphEditor
             :agents="filteredAgents"
             :saving="agentsModel.settingsPending.value"
@@ -225,10 +237,11 @@ async function saveSettings() {
             @open-agent="openAgent"
           />
         </div>
+
         <div v-else class="empty-state">
           <VIcon size="48" color="on-surface-variant">mdi-graph-outline</VIcon>
-          <p class="empty-state__title">Граф пуст для этого фильтра</p>
-          <p class="empty-state__text">Измените поисковый запрос, чтобы увидеть ноды и связи.</p>
+          <p class="empty-state__title">Agent graph пуст для этого фильтра</p>
+          <p class="empty-state__text">Сбросьте поиск или переключитесь в Project nodes для работы с кабинетами и договорённостями.</p>
         </div>
       </VWindowItem>
     </VWindow>

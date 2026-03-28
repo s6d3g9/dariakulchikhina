@@ -18,6 +18,7 @@ import { createMessengerToken, readBearerToken, verifyMessengerToken } from './a
 import { addAgentMessageToConversation, addAttachmentMessageToConversation, addMessageToConversation, deleteConversationForUser, deleteMessageFromConversation, editMessageInConversation, findConversationById, findOrCreateAgentConversation, findOrCreateDirectConversation, findOrCreateSecretConversation, forwardMessageToConversation, getConversationKeyPackageForUser, listConversationsForUser, listMessagesForConversation, markConversationReadByUser, saveConversationKeyPackages, toggleReactionInConversation } from './conversation-store.ts'
 import { buildContactsOverview, createInvite, deleteContactForUser, respondToInvite } from './contact-store.ts'
 import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } from './crypto-store.ts'
+import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, buildMessengerProjectSyncBrief, deleteMessengerProject, deleteMessengerProjectAgreement, deleteMessengerProjectCabinetLink, deleteMessengerProjectSubject, getMessengerProject, listMessengerProjectTemplates, listMessengerProjects, upsertMessengerProject, upsertMessengerProjectAgreement, upsertMessengerProjectCabinetLink, upsertMessengerProjectSubject } from './project-engine-store.ts'
 import { readMessengerConfig } from './config.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
 
@@ -156,6 +157,124 @@ export async function createMessengerServer() {
   })
   const agentWorkspaceQuerySchema = z.object({
     path: z.string().trim().max(2048).optional().default(''),
+  })
+  const projectParamsSchema = z.object({
+    projectId: z.string().trim().min(1).max(160),
+  })
+  const projectSyncBriefQuerySchema = z.object({
+    contextId: z.string().trim().max(160).optional(),
+  })
+  const projectCapabilitySchema = z.enum(['frontend', 'backend', 'logic', 'styles', 'data', 'qa', 'docs', 'integration'])
+  const projectCoverageStatusSchema = z.enum(['planned', 'in-progress', 'review', 'blocked', 'done'])
+  const projectTargetKindSchema = z.enum(['platform', 'messenger', 'external'])
+  const projectContextKindSchema = z.enum(['cabinet', 'module', 'page', 'feature', 'api', 'shared'])
+  const projectRoleSchema = z.enum(['admin', 'client', 'manager', 'designer', 'contractor', 'shared', 'external'])
+  const projectAgentRoleSchema = z.enum(['lead', 'support', 'review', 'observer'])
+  const projectSubjectKindSchema = z.enum(['client', 'manager', 'designer', 'contractor', 'admin', 'vendor', 'partner', 'external'])
+  const projectSubjectStatusSchema = z.enum(['active', 'review', 'blocked', 'done'])
+  const projectCabinetLinkKindSchema = z.enum(['mirrors', 'depends-on', 'handoff', 'approval', 'shared-data'])
+  const projectAgreementTypeSchema = z.enum(['scope', 'delivery', 'approval', 'payment', 'change-request', 'support'])
+  const projectAgreementStatusSchema = z.enum(['draft', 'active', 'review', 'blocked', 'closed'])
+  const projectSyncContractSchema = z.object({
+    frontendPaths: z.array(z.string().trim().min(1).max(2048)).max(32).default([]),
+    backendPaths: z.array(z.string().trim().min(1).max(2048)).max(32).default([]),
+    sharedPaths: z.array(z.string().trim().min(1).max(2048)).max(32).default([]),
+    styleRefs: z.array(z.string().trim().min(1).max(2048)).max(32).default([]),
+    logicRefs: z.array(z.string().trim().min(1).max(2048)).max(32).default([]),
+    docsPaths: z.array(z.string().trim().min(1).max(2048)).max(32).default([]),
+  }).default({
+    frontendPaths: [],
+    backendPaths: [],
+    sharedPaths: [],
+    styleRefs: [],
+    logicRefs: [],
+    docsPaths: [],
+  })
+  const projectContextSchema = z.object({
+    id: z.string().trim().min(1).max(160),
+    kind: projectContextKindSchema.default('feature'),
+    label: z.string().trim().min(1).max(160),
+    ownerRole: projectRoleSchema.default('shared'),
+    status: projectCoverageStatusSchema.default('planned'),
+    route: z.string().trim().max(2048).optional().default(''),
+    summary: z.string().trim().max(4000).optional().default(''),
+    tags: z.array(z.string().trim().min(1).max(80)).max(24).default([]),
+    capabilities: z.array(z.object({
+      capability: projectCapabilitySchema,
+      status: projectCoverageStatusSchema.default('planned'),
+      notes: z.string().trim().max(1000).optional().default(''),
+    })).max(16).default([]),
+    syncContract: projectSyncContractSchema,
+    assignedAgentIds: z.array(z.string().trim().min(1).max(120)).max(16).default([]),
+  })
+  const projectAgentBindingSchema = z.object({
+    id: z.string().trim().min(1).max(160),
+    agentId: z.string().trim().min(1).max(120),
+    contextId: z.string().trim().min(1).max(160),
+    role: projectAgentRoleSchema.default('support'),
+    responsibilities: z.array(projectCapabilitySchema).max(16).default([]),
+    notes: z.string().trim().max(1000).optional().default(''),
+    active: z.boolean().optional().default(true),
+  })
+  const projectSubjectSchema = z.object({
+    id: z.string().trim().min(1).max(160).optional(),
+    label: z.string().trim().min(1).max(160),
+    kind: projectSubjectKindSchema.default('external'),
+    status: projectSubjectStatusSchema.default('active'),
+    contextIds: z.array(z.string().trim().min(1).max(160)).max(24).default([]),
+    managerAgentIds: z.array(z.string().trim().min(1).max(120)).max(16).default([]),
+    tags: z.array(z.string().trim().min(1).max(80)).max(24).default([]),
+    notes: z.string().trim().max(1000).optional().default(''),
+  })
+  const projectAgreementSchema = z.object({
+    id: z.string().trim().min(1).max(160).optional(),
+    label: z.string().trim().min(1).max(160),
+    type: projectAgreementTypeSchema.default('scope'),
+    status: projectAgreementStatusSchema.default('draft'),
+    subjectIds: z.array(z.string().trim().min(1).max(160)).max(24).default([]),
+    contextIds: z.array(z.string().trim().min(1).max(160)).max(24).default([]),
+    managerAgentIds: z.array(z.string().trim().min(1).max(120)).max(16).default([]),
+    summary: z.string().trim().max(4000).optional().default(''),
+    terms: z.array(z.string().trim().min(1).max(1000)).max(32).default([]),
+    dueAt: z.string().trim().max(80).optional().default(''),
+  })
+  const projectCabinetLinkSchema = z.object({
+    id: z.string().trim().min(1).max(160).optional(),
+    sourceContextId: z.string().trim().min(1).max(160),
+    targetContextId: z.string().trim().min(1).max(160),
+    kind: projectCabinetLinkKindSchema.default('shared-data'),
+    status: projectCoverageStatusSchema.default('planned'),
+    sharedCapabilities: z.array(projectCapabilitySchema).max(16).default([]),
+    agreementIds: z.array(z.string().trim().min(1).max(160)).max(24).default([]),
+    notes: z.string().trim().max(1000).optional().default(''),
+  })
+  const projectEntityParamsSchema = z.object({
+    projectId: z.string().trim().min(1).max(160),
+    entityId: z.string().trim().min(1).max(160),
+  })
+  const projectUpsertSchema = z.object({
+    id: z.string().trim().min(1).max(160).optional(),
+    slug: z.string().trim().min(1).max(160),
+    label: z.string().trim().min(1).max(160),
+    description: z.string().trim().max(4000).optional().default(''),
+    targetKind: projectTargetKindSchema.default('platform'),
+    repositoryId: z.string().trim().max(120).optional().default(''),
+    rootPath: z.string().trim().max(2048).optional().default(''),
+    defaultBranch: z.string().trim().max(120).optional().default('main'),
+    contexts: z.array(projectContextSchema).max(64).default([]),
+    agentBindings: z.array(projectAgentBindingSchema).max(128).default([]),
+    subjects: z.array(projectSubjectSchema).max(128).default([]),
+    cabinetLinks: z.array(projectCabinetLinkSchema).max(128).default([]),
+    agreements: z.array(projectAgreementSchema).max(128).default([]),
+  })
+  const projectBootstrapSchema = z.object({
+    templateId: z.string().trim().min(1).max(160),
+    slug: z.string().trim().min(1).max(160).optional(),
+    label: z.string().trim().min(1).max(160).optional(),
+    description: z.string().trim().max(4000).optional(),
+    repositoryId: z.string().trim().max(120).optional(),
+    rootPath: z.string().trim().max(2048).optional(),
+    defaultBranch: z.string().trim().max(120).optional(),
   })
 
   function buildAgentSettingsResponse(settings: Awaited<ReturnType<typeof getMessengerAgentSettings>>) {
@@ -450,6 +569,414 @@ export async function createMessengerServer() {
     transport: 'websocket',
     timestamp: new Date().toISOString(),
   }))
+
+  app.get('/project-engine/projects', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const projects = await listMessengerProjects()
+    return { projects }
+  })
+
+  app.get('/project-engine/templates', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    return {
+      templates: listMessengerProjectTemplates(),
+    }
+  })
+
+  app.post('/project-engine/projects', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedBody = projectUpsertSchema.safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const project = await upsertMessengerProject(parsedBody.data)
+    return reply.code(201).send({ project })
+  })
+
+  app.post('/project-engine/projects/bootstrap', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedBody = projectBootstrapSchema.safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const projectDraft = buildMessengerProjectFromTemplate(parsedBody.data.templateId, {
+      slug: parsedBody.data.slug,
+      label: parsedBody.data.label,
+      description: parsedBody.data.description,
+      repositoryId: parsedBody.data.repositoryId,
+      rootPath: parsedBody.data.rootPath,
+      defaultBranch: parsedBody.data.defaultBranch,
+    })
+    if (!projectDraft) {
+      return reply.code(404).send({ error: 'TEMPLATE_NOT_FOUND' })
+    }
+
+    const project = await upsertMessengerProject(projectDraft)
+    return reply.code(201).send({ project })
+  })
+
+  app.get('/project-engine/projects/:projectId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const project = await getMessengerProject(parsedParams.data.projectId)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { project }
+  })
+
+  app.put('/project-engine/projects/:projectId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    const parsedBody = projectUpsertSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const current = await getMessengerProject(parsedParams.data.projectId)
+    if (!current) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    const project = await upsertMessengerProject({
+      ...parsedBody.data,
+      id: current.id,
+    })
+
+    return { project }
+  })
+
+  app.delete('/project-engine/projects/:projectId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const deleted = await deleteMessengerProject(parsedParams.data.projectId)
+    if (!deleted) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { ok: true }
+  })
+
+  app.get('/project-engine/projects/:projectId/sync-brief', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    const parsedQuery = projectSyncBriefQuerySchema.safeParse(request.query)
+    if (!parsedParams.success || !parsedQuery.success) {
+      return reply.code(400).send({ error: 'INVALID_QUERY' })
+    }
+
+    const brief = await buildMessengerProjectSyncBrief(parsedParams.data.projectId, parsedQuery.data.contextId)
+    if (!brief) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { brief }
+  })
+
+  app.get('/project-engine/projects/:projectId/manager-brief', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const brief = await buildMessengerProjectManagerBrief(parsedParams.data.projectId)
+    if (!brief) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { brief }
+  })
+
+  app.get('/project-engine/projects/:projectId/subjects', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const project = await getMessengerProject(parsedParams.data.projectId)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { subjects: project.subjects }
+  })
+
+  app.post('/project-engine/projects/:projectId/subjects', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    const parsedBody = projectSubjectSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const project = await upsertMessengerProjectSubject(parsedParams.data.projectId, parsedBody.data)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return reply.code(201).send({ project, subjects: project.subjects })
+  })
+
+  app.put('/project-engine/projects/:projectId/subjects/:entityId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectEntityParamsSchema.safeParse(request.params)
+    const parsedBody = projectSubjectSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const project = await upsertMessengerProjectSubject(parsedParams.data.projectId, {
+      ...parsedBody.data,
+      id: parsedParams.data.entityId,
+    })
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { project, subjects: project.subjects }
+  })
+
+  app.delete('/project-engine/projects/:projectId/subjects/:entityId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectEntityParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const project = await deleteMessengerProjectSubject(parsedParams.data.projectId, parsedParams.data.entityId)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { project, subjects: project.subjects }
+  })
+
+  app.get('/project-engine/projects/:projectId/agreements', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const project = await getMessengerProject(parsedParams.data.projectId)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { agreements: project.agreements }
+  })
+
+  app.post('/project-engine/projects/:projectId/agreements', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    const parsedBody = projectAgreementSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const project = await upsertMessengerProjectAgreement(parsedParams.data.projectId, parsedBody.data)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return reply.code(201).send({ project, agreements: project.agreements })
+  })
+
+  app.put('/project-engine/projects/:projectId/agreements/:entityId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectEntityParamsSchema.safeParse(request.params)
+    const parsedBody = projectAgreementSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const project = await upsertMessengerProjectAgreement(parsedParams.data.projectId, {
+      ...parsedBody.data,
+      id: parsedParams.data.entityId,
+    })
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { project, agreements: project.agreements }
+  })
+
+  app.delete('/project-engine/projects/:projectId/agreements/:entityId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectEntityParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const project = await deleteMessengerProjectAgreement(parsedParams.data.projectId, parsedParams.data.entityId)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { project, agreements: project.agreements }
+  })
+
+  app.get('/project-engine/projects/:projectId/cabinet-links', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const project = await getMessengerProject(parsedParams.data.projectId)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { cabinetLinks: project.cabinetLinks }
+  })
+
+  app.post('/project-engine/projects/:projectId/cabinet-links', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectParamsSchema.safeParse(request.params)
+    const parsedBody = projectCabinetLinkSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const project = await upsertMessengerProjectCabinetLink(parsedParams.data.projectId, parsedBody.data)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return reply.code(201).send({ project, cabinetLinks: project.cabinetLinks })
+  })
+
+  app.put('/project-engine/projects/:projectId/cabinet-links/:entityId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectEntityParamsSchema.safeParse(request.params)
+    const parsedBody = projectCabinetLinkSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const project = await upsertMessengerProjectCabinetLink(parsedParams.data.projectId, {
+      ...parsedBody.data,
+      id: parsedParams.data.entityId,
+    })
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { project, cabinetLinks: project.cabinetLinks }
+  })
+
+  app.delete('/project-engine/projects/:projectId/cabinet-links/:entityId', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = projectEntityParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const project = await deleteMessengerProjectCabinetLink(parsedParams.data.projectId, parsedParams.data.entityId)
+    if (!project) {
+      return reply.code(404).send({ error: 'PROJECT_NOT_FOUND' })
+    }
+
+    return { project, cabinetLinks: project.cabinetLinks }
+  })
 
   app.get('/integrations/klipy/search', async (request, reply) => {
     const session = await resolveSession(request)
