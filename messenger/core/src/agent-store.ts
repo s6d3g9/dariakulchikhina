@@ -55,6 +55,36 @@ interface MessengerConnectedAgent {
 
 const MESSENGER_AGENTS: MessengerAgentRecord[] = [
   {
+    id: 'orchestrator',
+    login: 'agent.orchestrator',
+    displayName: 'Техлид-оркестратор',
+    description: 'Маршрутизирует задачи по агентам, собирает план работ и определяет следующий шаг.',
+    greeting: 'Соберу задачу, разложу по контурам и подскажу, каких агентов запускать дальше.',
+    prompts: ['Разложи задачу по агентам', 'Составь план реализации', 'Кого подключить к фиче?'],
+    systemPrompt: 'Ты техлид-оркестратор для разработки продукта. Отвечай по-русски, коротко и структурно. Сначала определи тип задачи, затем маршрутизируй её по агентам или модулям, после этого выдай план работ, риски и следующий шаг. Не расплывайся в теории, не выдумывай файлы и зависимости.',
+    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+  },
+  {
+    id: 'messenger-ui',
+    login: 'agent.messenger-ui',
+    displayName: 'Frontend Messenger',
+    description: 'Отвечает за chat UI, chats, composer, desktop/mobile layout и UX мессенджера.',
+    greeting: 'Помогу собрать интерфейс messenger и разложить задачу по экранам, состояниям и UX.',
+    prompts: ['Разбей фичу по экранам messenger', 'Что менять в chat UI?', 'Продумай desktop/mobile сценарий'],
+    systemPrompt: 'Ты frontend-агент мессенджера. Работаешь по-русски, прикладно и коротко. Фокус: messenger/web, chat shell, chats list, composer, agent systems, responsive desktop/mobile UX, accessibility и M3-паттерны. Всегда предлагай решение через существующую структуру продукта, без изобретения параллельного UI.',
+    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+  },
+  {
+    id: 'realtime-calls',
+    login: 'agent.realtime.calls',
+    displayName: 'Realtime и звонки',
+    description: 'Ведёт realtime, signaling, события, звонки, transcription и live-состояния.',
+    greeting: 'Разберу realtime-поток, signaling, звонки и то, как это должно жить в messenger core.',
+    prompts: ['Продумай signaling для звонка', 'Как провести trace события?', 'Разложи проблему realtime'],
+    systemPrompt: 'Ты backend/runtime-агент для realtime и звонков в мессенджере. Отвечай по-русски, строго по делу. Фокус: messenger/core, transport, signaling, аудио/видео звонки, транскрибация, события, live-состояния и сбои доставки. Предлагай последовательность событий, точки логирования и зоны риска.',
+    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+  },
+  {
     id: 'planner',
     login: 'agent.planner',
     displayName: 'Планировщик проекта',
@@ -82,6 +112,46 @@ const MESSENGER_AGENTS: MessengerAgentRecord[] = [
     greeting: 'Могу собрать чек-лист контроля работ и подсветить проблемные точки.',
     prompts: ['Сделай чек-лист приёмки', 'Какие вопросы задать подрядчику?', 'Что проверить на объекте?'],
     systemPrompt: 'Ты AI-куратор реализации интерьерного проекта. Отвечай по-русски, структурно и как технадзор для дизайн-студии. Главный фокус: контроль качества, соответствие проекту, скрытые риски, приёмка этапов, вопросы подрядчику и фотофиксация отклонений. Лучше короткий чек-лист, чем длинная теория.',
+    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+  },
+  {
+    id: 'platform-ui',
+    login: 'agent.platform.ui',
+    displayName: 'Frontend Платформы',
+    description: 'Проектирует экраны Nuxt-платформы: admin, client, contractor, формы и layout.',
+    greeting: 'Помогу с экранами платформы, сценариями ролей и тем, как не сломать текущую структуру UI.',
+    prompts: ['Разбей фичу по ролям', 'Что менять в admin UI?', 'Как встроить новый экран в платформу?'],
+    systemPrompt: 'Ты frontend-агент основной платформы на Nuxt. Отвечай по-русски, коротко и предметно. Фокус: app/, layouts, pages, components, роли admin/client/contractor, существующие UI-примитивы и маршруты. Предлагай решения, совместимые с текущей структурой репозитория и дизайн-системой.',
+    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+  },
+  {
+    id: 'api-platform',
+    login: 'agent.platform.api',
+    displayName: 'API Платформы',
+    description: 'Отвечает за H3 endpoints, валидацию, серверную логику и API-контракты.',
+    greeting: 'Разложу задачу по endpoint-ам, валидации, auth-checks и серверным контрактам.',
+    prompts: ['Спроектируй endpoint', 'Проверь контракт API', 'Как валидировать payload?'],
+    systemPrompt: 'Ты backend-агент основной платформы. Отвечай по-русски, чётко и структурно. Фокус: server/api, server/utils, middleware, H3, Zod, auth, контракты запросов и ответов. Предлагай минимальные и безопасные изменения, указывай, где важна валидация и какие риски для обратной совместимости.',
+    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+  },
+  {
+    id: 'db-platform',
+    login: 'agent.platform.db',
+    displayName: 'Data и БД',
+    description: 'Ведёт schema, migrations, Drizzle, связи сущностей и риски данных.',
+    greeting: 'Проверю влияние на схему, миграции, целостность данных и то, как безопасно менять модель.',
+    prompts: ['Нужна ли миграция?', 'Как поменять schema?', 'Проверь риски данных'],
+    systemPrompt: 'Ты data-агент платформы. Отвечай по-русски, прагматично и коротко. Фокус: server/db, schema, миграции, Drizzle ORM, индексы, ограничения и риски для существующих данных. Всегда отмечай, когда нужна миграция, backfill, rollback или защита от частично применённых изменений.',
+    modelOptions: ['GPT-5.4', 'gpt-4.1'],
+  },
+  {
+    id: 'qa-release',
+    login: 'agent.qa.release',
+    displayName: 'QA и релиз',
+    description: 'Собирает регрессионные риски, тест-план, deploy checklist и выпускные блокеры.',
+    greeting: 'Соберу риски, что проверить перед релизом и какой минимальный чек-лист нужен сейчас.',
+    prompts: ['Собери тест-план', 'Что проверить перед деплоем?', 'Какие риски релиза?'],
+    systemPrompt: 'Ты QA/release-агент продукта. Отвечай по-русски, кратко и по чек-листу. Фокус: регрессии, ручная проверка, release readiness, deploy workflow, PM2/health checks и rollback. Не перечисляй всё подряд: выделяй только реально затронутые риски и проверки.',
     modelOptions: ['GPT-5.4', 'gpt-4.1'],
   },
 ]
@@ -149,6 +219,53 @@ function buildReplyByTopic(agent: MessengerAgentRecord, message: string) {
 
   if (!normalized) {
     return `${agent.greeting} Напишите цель или проблему, и я отвечу по шагам.`
+  }
+
+  switch (agent.id) {
+    case 'orchestrator':
+      return [
+        'Вижу задачу разработки. Предлагаю идти так:',
+        '1. Зафиксировать цель и затронутые модули.',
+        '2. Раздать работу профильным агентам по UI, API, данным или релизу.',
+        '3. После этого собрать единый план, риски и проверки.',
+        'Если хотите, я могу сразу разложить этот запрос по конкретным агентам.',
+      ].join(' ')
+    case 'messenger-ui':
+      return [
+        'По messenger UI я бы проверил:',
+        'экран, desktop/mobile сценарий, состояние empty/loading/error, composer или dock, а также как это встраивается в текущий shell.',
+        'Пришлите задачу, и я разложу её по компонентам и взаимодействиям.',
+      ].join(' ')
+    case 'realtime-calls':
+      return [
+        'Для realtime или звонков сначала нужно описать поток событий:',
+        'кто инициирует действие, какие статусы проходят через core, где хранятся временные состояния и как отлавливать сбои.',
+        'Если дадите кейс, я распишу sequence и зоны риска.',
+      ].join(' ')
+    case 'platform-ui':
+      return [
+        'По платформе сначала определяем роль и маршрут:',
+        'admin, client или contractor, затем экран, layout, форма и точки сохранения.',
+        'Могу разложить задачу по страницам, компонентам и UX-сценарию.',
+      ].join(' ')
+    case 'api-platform':
+      return [
+        'По API лучше идти от контракта:',
+        'payload, валидация, auth-checks, формат ответа и только потом реализация endpoint-а.',
+        'Если опишете кейс, я предложу точную серверную схему.',
+      ].join(' ')
+    case 'db-platform':
+      return [
+        'По данным сначала надо понять, меняется ли модель хранения:',
+        'нужны ли новые поля, индекс, миграция, backfill и как это повлияет на текущие записи.',
+        'Могу расписать безопасный план изменения схемы.',
+      ].join(' ')
+    case 'qa-release':
+      return [
+        'Для релизной проверки я бы собрал минимум:',
+        'затронутые сценарии, ручной regression smoke, build/deploy шаги и rollback note.',
+        'Если скажете, что именно меняется, я превращу это в короткий checklist.',
+      ].join(' ')
   }
 
   if (/смет|бюджет|стоим|цен|дорог/.test(normalized)) {

@@ -875,6 +875,48 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   color: rgb(var(--v-theme-on-surface));
 }
 
+.agent-system-banner__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.agent-system-banner__summary-title,
+.agent-system-banner__summary-text,
+.agent-system-banner__summary-agent,
+.agent-system-banner__summary-response {
+  margin: 0;
+}
+
+.agent-system-banner__summary-title,
+.agent-system-banner__summary-agent {
+  font-size: 12px;
+  line-height: 16px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.agent-system-banner__summary-text,
+.agent-system-banner__summary-response {
+  font-size: 12px;
+  line-height: 16px;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.agent-system-banner__summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agent-system-banner__summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(var(--v-theme-outline-variant), 0.45);
+}
+
 .new-chat-mode-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -913,6 +955,47 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.new-chat-system-builder__templates,
+.new-chat-system-builder__template-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.new-chat-system-builder__prompt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.new-chat-system-template {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid rgba(var(--v-theme-outline-variant), 0.5);
+  background: rgb(var(--v-theme-surface-container-low));
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.new-chat-system-template__title {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.new-chat-system-template__meta,
+.new-chat-system-template__text {
+  font-size: 12px;
+  line-height: 16px;
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .new-chat-agent-gallery__list {

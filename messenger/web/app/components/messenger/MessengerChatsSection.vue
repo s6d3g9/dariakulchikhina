@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MessengerAgentConnectionMode, MessengerAgentGraphNodeInput } from '../../composables/useMessengerAgents'
 import type { MessengerConversationItem } from '../../composables/useMessengerConversations'
 
 const conversations = useMessengerConversations()
@@ -17,10 +18,17 @@ type ChatFolder = {
   chatIds: string[]
   kind?: 'manual' | 'agent-system'
   agentIds?: string[]
+  templateKey?: string
   lastRun?: {
     prompt: string
     sentAt: string
     targetCount: number
+    summary?: string
+    agentSnapshots?: Array<{
+      agentId: string
+      agentName: string
+      response: string
+    }>
   }
 }
 
@@ -33,6 +41,128 @@ type AgentSystemCard = {
   preview: string
   lastUpdatedAt: string
 }
+
+type AgentSystemTemplate = {
+  key: string
+  title: string
+  description: string
+  systemName: string
+  agentIds: string[]
+  connections: Array<{
+    sourceAgentId: string
+    targetAgentId: string
+    mode: MessengerAgentConnectionMode
+  }>
+  promptTemplates: Array<{
+    key: string
+    label: string
+    prompt: string
+  }>
+}
+
+const AGENT_SYSTEM_TEMPLATES: AgentSystemTemplate[] = [
+  {
+    key: 'messenger-dev',
+    title: 'Разработка Messenger',
+    description: 'Техлид, frontend messenger, realtime и QA для chat UI, звонков и runtime-изменений.',
+    systemName: 'Разработка Messenger',
+    agentIds: ['orchestrator', 'messenger-ui', 'realtime-calls', 'qa-release'],
+    connections: [
+      { sourceAgentId: 'orchestrator', targetAgentId: 'messenger-ui', mode: 'route' },
+      { sourceAgentId: 'orchestrator', targetAgentId: 'realtime-calls', mode: 'route' },
+      { sourceAgentId: 'messenger-ui', targetAgentId: 'realtime-calls', mode: 'validate' },
+      { sourceAgentId: 'messenger-ui', targetAgentId: 'qa-release', mode: 'review' },
+      { sourceAgentId: 'realtime-calls', targetAgentId: 'qa-release', mode: 'summarize' },
+    ],
+    promptTemplates: [
+      {
+        key: 'messenger-bug',
+        label: 'Баг',
+        prompt: 'Разберите баг в messenger: дайте гипотезу причины, затронутые модули, минимальный фикс, риски регрессии и короткий план проверки.',
+      },
+      {
+        key: 'messenger-feature',
+        label: 'Новая фича',
+        prompt: 'Спроектируйте новую функцию для messenger: разложите её по web/core, UX-сценариям, состояниям, рискам и шагам реализации.',
+      },
+      {
+        key: 'messenger-architecture',
+        label: 'Архитектура',
+        prompt: 'Сделайте архитектурный review задачи по messenger: предложите лучший путь реализации, trade-offs, связи между модулями и точки расширения.',
+      },
+      {
+        key: 'messenger-release',
+        label: 'Релиз',
+        prompt: 'Подготовьте релизный прогон по изменению в messenger: перечислите риски, smoke-checklist, deploy notes и rollback plan.',
+      },
+    ],
+  },
+  {
+    key: 'platform-dev',
+    title: 'Разработка Платформы',
+    description: 'Техлид, frontend платформы, API, данные и QA для фич в основном приложении.',
+    systemName: 'Разработка Платформы',
+    agentIds: ['orchestrator', 'platform-ui', 'api-platform', 'db-platform', 'qa-release'],
+    connections: [
+      { sourceAgentId: 'orchestrator', targetAgentId: 'platform-ui', mode: 'route' },
+      { sourceAgentId: 'orchestrator', targetAgentId: 'api-platform', mode: 'route' },
+      { sourceAgentId: 'platform-ui', targetAgentId: 'api-platform', mode: 'enrich' },
+      { sourceAgentId: 'api-platform', targetAgentId: 'db-platform', mode: 'validate' },
+      { sourceAgentId: 'platform-ui', targetAgentId: 'qa-release', mode: 'review' },
+      { sourceAgentId: 'api-platform', targetAgentId: 'qa-release', mode: 'review' },
+      { sourceAgentId: 'db-platform', targetAgentId: 'qa-release', mode: 'summarize' },
+    ],
+    promptTemplates: [
+      {
+        key: 'platform-bug',
+        label: 'Баг',
+        prompt: 'Разберите баг в основной платформе: причина, затронутые роли, модули UI/API/DB, безопасный фикс и план ручной проверки.',
+      },
+      {
+        key: 'platform-feature',
+        label: 'Новая фича',
+        prompt: 'Спроектируйте новую функцию для платформы: роли, страницы, API, данные, миграции, риски и порядок реализации.',
+      },
+      {
+        key: 'platform-architecture',
+        label: 'Архитектура',
+        prompt: 'Сделайте архитектурный review задачи по платформе: оцените текущую структуру, лучший вариант внедрения, риски связности и точки масштабирования.',
+      },
+      {
+        key: 'platform-release',
+        label: 'Релиз',
+        prompt: 'Подготовьте релизный прогон по изменению в платформе: тест-план по ролям, миграционные риски, deploy notes и rollback plan.',
+      },
+    ],
+  },
+  {
+    key: 'release-control',
+    title: 'Контроль Выпуска',
+    description: 'Техлид и QA-контур для рисков релиза, ручной проверки и deploy readiness.',
+    systemName: 'Контроль Выпуска',
+    agentIds: ['orchestrator', 'qa-release'],
+    connections: [
+      { sourceAgentId: 'orchestrator', targetAgentId: 'qa-release', mode: 'summarize' },
+    ],
+    promptTemplates: [
+      {
+        key: 'release-check',
+        label: 'Проверка релиза',
+        prompt: 'Соберите release readiness checklist: build, config, PM2, health-checks, smoke-проверки и rollback.',
+      },
+      {
+        key: 'release-risk',
+        label: 'Риски',
+        prompt: 'Оцените риски выпуска по текущему изменению: что может сломаться, как это заранее проверить и какой нужен contingency plan.',
+      },
+      {
+        key: 'release-postdeploy',
+        label: 'Post-deploy',
+        prompt: 'Соберите post-deploy checklist: что проверить в первые минуты после релиза, какие health signals критичны и что откатывать первым.',
+      },
+    ],
+  },
+]
 
 const FOLDERS_LS_KEY = 'messenger-chat-folders'
 const AGENT_SYSTEMS_FOLDER_KEY = 'agent-systems'
@@ -49,11 +179,34 @@ function loadFolders(): ChatFolder[] {
           chatIds: Array.isArray(folder.chatIds) ? folder.chatIds : [],
           kind: folder.kind || 'manual',
           agentIds: Array.isArray(folder.agentIds) ? folder.agentIds : [],
+          templateKey: typeof folder.templateKey === 'string' ? folder.templateKey : undefined,
           lastRun: folder.lastRun && typeof folder.lastRun === 'object'
             ? {
                 prompt: typeof folder.lastRun.prompt === 'string' ? folder.lastRun.prompt : '',
                 sentAt: typeof folder.lastRun.sentAt === 'string' ? folder.lastRun.sentAt : '',
                 targetCount: typeof folder.lastRun.targetCount === 'number' ? folder.lastRun.targetCount : 0,
+                summary: typeof folder.lastRun.summary === 'string' ? folder.lastRun.summary : '',
+                agentSnapshots: Array.isArray(folder.lastRun.agentSnapshots)
+                  ? folder.lastRun.agentSnapshots
+                    .map((item) => {
+                      if (!item || typeof item !== 'object') {
+                        return null
+                      }
+
+                      const snapshot = item as {
+                        agentId?: string
+                        agentName?: string
+                        response?: string
+                      }
+
+                      return {
+                        agentId: typeof snapshot.agentId === 'string' ? snapshot.agentId : '',
+                        agentName: typeof snapshot.agentName === 'string' ? snapshot.agentName : '',
+                        response: typeof snapshot.response === 'string' ? snapshot.response : '',
+                      }
+                    })
+                    .filter((item): item is { agentId: string; agentName: string; response: string } => Boolean(item && item.agentId && item.agentName))
+                  : [],
               }
             : undefined,
         }))
@@ -73,6 +226,17 @@ const systemFolders = computed(() => userFolders.value.filter(folder => folder.k
 const activeFolder = computed(() => userFolders.value.find(folder => folder.key === activeFolderKey.value) ?? null)
 const activeAgentSystem = computed(() => activeFolder.value?.kind === 'agent-system' ? activeFolder.value : null)
 const showAgentSystemsDirectory = computed(() => activeFolderKey.value === AGENT_SYSTEMS_FOLDER_KEY)
+const availableSystemTemplates = computed(() => AGENT_SYSTEM_TEMPLATES
+  .map(template => ({
+    ...template,
+    agentIds: template.agentIds.filter(agentId => agentMap.value.has(agentId)),
+    connections: template.connections.filter(connection => agentMap.value.has(connection.sourceAgentId) && agentMap.value.has(connection.targetAgentId)),
+  }))
+  .filter(template => template.agentIds.length >= 2))
+const activeAgentSystemTemplate = computed(() => activeAgentSystem.value?.templateKey
+  ? availableSystemTemplates.value.find(template => template.key === activeAgentSystem.value?.templateKey) ?? null
+  : null)
+const activeBroadcastPromptTemplates = computed(() => activeAgentSystemTemplate.value?.promptTemplates || [])
 
 function saveFolders() {
   if (!import.meta.client) return
@@ -124,7 +288,9 @@ const systemDirectoryCards = computed<AgentSystemCard[]>(() => systemFolders.val
       agentCount: agentNames.length,
       chatCount: folderChats.length,
       preview: folder.lastRun?.prompt
-        ? `Запуск: ${folder.lastRun.prompt}`
+        ? (folder.lastRun.summary
+            ? `Итог: ${folder.lastRun.summary}`
+            : `Запуск: ${folder.lastRun.prompt}`)
         : agentNames.length
           ? agentNames.slice(0, 3).join(' · ')
           : 'Состав системы пока не определён.',
@@ -208,6 +374,7 @@ const showBroadcastDialog = ref(false)
 const broadcastMessage = ref('')
 const broadcastError = ref('')
 const broadcastPending = ref(false)
+const newSystemTemplateKey = ref<string | null>(null)
 
 const normalizedAgentSearchQuery = computed(() => agentSearchDraft.value.trim().toLowerCase())
 const filteredAgentGallery = computed(() => {
@@ -227,8 +394,87 @@ watch(showNewChatDialog, async (isOpen) => {
     agentSearchDraft.value = ''
     newSystemName.value = ''
     newSystemAgentIds.value = []
+    newSystemTemplateKey.value = null
   }
 })
+
+function buildTemplateGraph(templateKey: string, selectedAgentIds: string[]): Record<string, MessengerAgentGraphNodeInput> {
+  const template = availableSystemTemplates.value.find(item => item.key === templateKey)
+  if (!template) {
+    return {}
+  }
+
+  const selected = new Set(selectedAgentIds)
+  const orderedAgentIds = template.agentIds.filter(agentId => selected.has(agentId))
+
+  return Object.fromEntries(orderedAgentIds.map((agentId, index) => {
+    const graphPosition = {
+      x: 32 + (index % 3) * 220,
+      y: 32 + Math.floor(index / 3) * 180,
+    }
+
+    const connections = template.connections
+      .filter(connection => connection.sourceAgentId === agentId && selected.has(connection.targetAgentId))
+      .map(connection => ({
+        targetAgentId: connection.targetAgentId,
+        mode: connection.mode,
+      }))
+
+    return [agentId, {
+      graphPosition,
+      connections,
+    }]
+  }))
+}
+
+async function applySystemTemplateGraph(templateKey: string | null, selectedAgentIds: string[]) {
+  if (!templateKey) {
+    return
+  }
+
+  const graph = buildTemplateGraph(templateKey, selectedAgentIds)
+  if (!Object.keys(graph).length) {
+    return
+  }
+
+  await agentsModel.saveGraph(graph)
+}
+
+function formatSystemTextPreview(value: string, maxLength = 160) {
+  const compact = value.trim().replace(/\s+/g, ' ')
+  if (compact.length <= maxLength) {
+    return compact
+  }
+
+  return `${compact.slice(0, Math.max(0, maxLength - 3)).trim()}...`
+}
+
+function buildAgentSystemRunSummary(chats: MessengerConversationItem[]) {
+  const snapshots = chats.map((chat) => {
+    const response = chat.lastMessage && !chat.lastMessage.own
+      ? formatSystemTextPreview(chat.lastMessage.body || 'Сообщение без текста', 140)
+      : 'Ответ ещё не получен.'
+
+    return {
+      agentId: chat.peerUserId,
+      agentName: chat.peerDisplayName,
+      response,
+    }
+  })
+
+  const readySnapshots = snapshots.filter(item => item.response !== 'Ответ ещё не получен.')
+  const summary = readySnapshots.length
+    ? readySnapshots
+      .slice(0, 2)
+      .map(item => `${item.agentName}: ${item.response}`)
+      .join(' | ')
+    : 'Система отправила запрос, но ответы агентов ещё не зафиксированы.'
+
+  return {
+    summary: formatSystemTextPreview(summary, 220),
+    agentSnapshots: snapshots,
+  }
+}
 
 async function openAgentFromGallery(agentId: string) {
   newChatError.value = ''
@@ -275,6 +521,21 @@ function toggleEditSystemMember(agentId: string) {
   editSystemAgentIds.value = [...editSystemAgentIds.value, agentId]
 }
 
+function applyAgentSystemTemplate(templateKey: string) {
+  const template = availableSystemTemplates.value.find(item => item.key === templateKey)
+  if (!template) {
+    return
+  }
+
+  newSystemTemplateKey.value = template.key
+  newSystemName.value = template.systemName
+  newSystemAgentIds.value = [...template.agentIds]
+}
+
+function applyBroadcastPromptTemplate(prompt: string) {
+  broadcastMessage.value = prompt
+}
+
 function getAgentSystemDraftName(label: string) {
   return label.replace(/^Система:\s*/u, '').trim()
 }
@@ -305,12 +566,15 @@ async function createAgentSystem() {
       }
     }
 
+    await applySystemTemplateGraph(newSystemTemplateKey.value, selectedAgents.map(agent => agent.id))
+
     const folderKey = `agent-system-custom-${Date.now()}`
     upsertFolder({
       key: folderKey,
       label: `Система: ${systemName}`,
       chatIds: Array.from(new Set(createdConversationIds)),
       kind: 'agent-system',
+      templateKey: newSystemTemplateKey.value || undefined,
       agentIds: selectedAgents.map(agent => agent.id),
     })
     activeFolderKey.value = folderKey
@@ -380,6 +644,8 @@ async function saveAgentSystemEdits() {
       }
     }
 
+    await applySystemTemplateGraph(activeAgentSystem.value.templateKey || null, selectedAgents.map(agent => agent.id))
+
     upsertFolder({
       ...activeAgentSystem.value,
       label: `Система: ${nextName}`,
@@ -436,12 +702,19 @@ async function broadcastToAgentSystem() {
       await conversations.selectConversation(previousConversationId)
     }
 
+    const refreshedChats = activeAgentSystem.value.chatIds
+      .map(chatId => conversations.conversations.value.find(item => item.id === chatId) ?? null)
+      .filter((chat): chat is MessengerConversationItem => Boolean(chat && chat.peerType === 'agent'))
+    const runSummary = buildAgentSystemRunSummary(refreshedChats)
+
     upsertFolder({
       ...activeAgentSystem.value,
       lastRun: {
         prompt: message,
         sentAt: new Date().toISOString(),
         targetCount: activeAgentSystemChats.value.length,
+        summary: runSummary.summary,
+        agentSnapshots: runSummary.agentSnapshots,
       },
     })
 
@@ -465,12 +738,7 @@ function formatAgentSystemStats(card: AgentSystemCard) {
 }
 
 function formatSystemRunPrompt(value: string) {
-  const compact = value.trim().replace(/\s+/g, ' ')
-  if (compact.length <= 120) {
-    return compact
-  }
-
-  return `${compact.slice(0, 117)}...`
+  return formatSystemTextPreview(value, 120)
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -680,6 +948,20 @@ function formatChatPreview(chat: MessengerConversationItem) {
           <div v-if="activeAgentSystemLastRun" class="agent-system-banner__run">
             <p class="agent-system-banner__run-meta">Последний запуск · {{ activeAgentSystemLastRun.targetCount }} агентов · {{ formatConversationTimestamp(activeAgentSystemLastRun.sentAt) }}</p>
             <p class="agent-system-banner__run-prompt">{{ formatSystemRunPrompt(activeAgentSystemLastRun.prompt) }}</p>
+            <div v-if="activeAgentSystemLastRun.summary" class="agent-system-banner__summary">
+              <p class="agent-system-banner__summary-title">Итог системы</p>
+              <p class="agent-system-banner__summary-text">{{ activeAgentSystemLastRun.summary }}</p>
+              <div v-if="activeAgentSystemLastRun.agentSnapshots?.length" class="agent-system-banner__summary-list">
+                <div
+                  v-for="snapshot in activeAgentSystemLastRun.agentSnapshots"
+                  :key="`${snapshot.agentId}-${snapshot.agentName}`"
+                  class="agent-system-banner__summary-item"
+                >
+                  <span class="agent-system-banner__summary-agent">{{ snapshot.agentName }}</span>
+                  <span class="agent-system-banner__summary-response">{{ snapshot.response }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -924,6 +1206,22 @@ function formatChatPreview(chat: MessengerConversationItem) {
           </div>
 
           <div v-else class="new-chat-system-builder">
+            <div v-if="availableSystemTemplates.length" class="new-chat-system-builder__templates">
+              <p class="new-chat-system-builder__hint">Готовые системы можно взять как основу, а затем изменить состав вручную.</p>
+              <div class="new-chat-system-builder__template-list">
+                <button
+                  v-for="template in availableSystemTemplates"
+                  :key="template.key"
+                  type="button"
+                  class="new-chat-system-template"
+                  @click="applyAgentSystemTemplate(template.key)"
+                >
+                  <span class="new-chat-system-template__title">{{ template.title }}</span>
+                  <span class="new-chat-system-template__meta">{{ template.agentIds.length }} агентов</span>
+                  <span class="new-chat-system-template__text">{{ template.description }}</span>
+                </button>
+              </div>
+            </div>
             <VTextField
               v-model="newSystemName"
               label="Название системы агентов"
@@ -1012,6 +1310,19 @@ function formatChatPreview(chat: MessengerConversationItem) {
         <VCardText>
           <div class="new-chat-system-builder">
             <p class="new-chat-system-builder__hint">Сообщение будет отправлено во все agent-чаты текущей системы. Каждый агент получит одинаковый входной запрос.</p>
+            <div v-if="activeBroadcastPromptTemplates.length" class="new-chat-system-builder__templates">
+              <p class="new-chat-system-builder__hint">Быстрые шаблоны запуска для этой системы.</p>
+              <div class="new-chat-system-builder__prompt-chips">
+                <VChip
+                  v-for="promptTemplate in activeBroadcastPromptTemplates"
+                  :key="promptTemplate.key"
+                  variant="outlined"
+                  @click="applyBroadcastPromptTemplate(promptTemplate.prompt)"
+                >
+                  {{ promptTemplate.label }}
+                </VChip>
+              </div>
+            </div>
             <VTextarea
               v-model="broadcastMessage"
               label="Общий запрос для системы"
