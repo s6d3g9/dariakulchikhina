@@ -6,7 +6,7 @@ import type {
   MessengerAgentRepository,
   MessengerAgentSettings,
 } from '../../composables/useMessengerAgents'
-import type { MessengerAgentKnowledgeStatus } from '../../composables/useMessengerAgentKnowledge'
+import type { MessengerAgentKnowledgePreset, MessengerAgentKnowledgeStatus } from '../../composables/useMessengerAgentKnowledge'
 import type { MessengerAgentRun, MessengerAgentRunArtifact, MessengerAgentRunEvent } from '../../composables/useMessengerAgentRuns'
 import type { MessengerAgentWorkspaceFilePreview, MessengerAgentWorkspaceListing } from '../../composables/useMessengerAgentWorkspace'
 
@@ -62,6 +62,8 @@ const explorerFile = ref<MessengerAgentWorkspaceFilePreview | null>(null)
 const knowledgePending = ref(false)
 const knowledgeIndexing = ref(false)
 const knowledgeStatus = ref<MessengerAgentKnowledgeStatus | null>(null)
+const knowledgePreset = ref<MessengerAgentKnowledgePreset | null>(null)
+const knowledgePresetPending = ref(false)
 const knowledgeError = ref('')
 
 const sections: Array<{ key: AgentWorkspaceSectionKey; title: string }> = [
@@ -307,6 +309,7 @@ watch(() => resolvedAgent.value?.id, () => {
   explorerFile.value = null
   explorerError.value = ''
   knowledgeStatus.value = null
+  knowledgePreset.value = null
   knowledgeError.value = ''
 }, { immediate: true })
 
@@ -339,7 +342,10 @@ watch([() => activeSection.value, () => resolvedAgent.value?.id], async ([sectio
   }
 
   if (section === 'knowledge' && agentId) {
-    await loadKnowledgeStatus()
+    await Promise.all([
+      loadKnowledgeStatus(),
+      loadKnowledgePreset(),
+    ])
   }
 })
 
@@ -600,6 +606,38 @@ async function loadKnowledgeStatus() {
   } finally {
     knowledgePending.value = false
   }
+}
+
+async function loadKnowledgePreset() {
+  if (!resolvedAgent.value) {
+    return
+  }
+
+  knowledgePresetPending.value = true
+
+  try {
+    knowledgePreset.value = await knowledgeModel.getPreset(resolvedAgent.value.id)
+  } catch {
+    knowledgePreset.value = null
+  } finally {
+    knowledgePresetPending.value = false
+  }
+}
+
+async function applyKnowledgePreset() {
+  if (!knowledgePreset.value) {
+    return
+  }
+
+  settingsDraft.ssh.repositories = knowledgePreset.value.repositories.map(repository => ({ ...repository }))
+  settingsDraft.ssh.activeRepositoryId = knowledgePreset.value.activeRepositoryId
+  settingsDraft.knowledge.sources = knowledgePreset.value.sources.map(source => ({ ...source }))
+  syncWorkspacePathFromDraftRepositories()
+  await handleSshBlur()
+  await loadKnowledgeStatus()
+
+  feedbackTone.value = 'info'
+  feedbackMessage.value = 'Knowledge template подставлен в настройки агента.'
 }
 
 async function reindexKnowledge() {
@@ -891,10 +929,14 @@ async function openWorkspaceFile(path: string) {
               <p class="agent-chat-workspace__card-eyebrow">Индекс</p>
               <h3 class="agent-chat-workspace__card-title">{{ knowledgeStatus?.indexedChunks || 0 }} чанков</h3>
               <p class="agent-chat-workspace__card-text">{{ knowledgeStatus?.lastIndexedAt ? `Последняя индексация: ${formatTimestamp(knowledgeStatus.lastIndexedAt)}` : 'Индекс ещё не собирался.' }}</p>
+              <p class="agent-chat-workspace__card-text">{{ knowledgePreset?.summary || 'Шаблон знаний можно подставить автоматически для выбранного агента.' }}</p>
               <div class="agent-chat-workspace__stats">
                 <span>Источников: {{ knowledgeStatus?.indexedSources || 0 }}</span>
                 <span>Включено: {{ knowledgeEnabledCount }}</span>
               </div>
+              <button type="button" class="agent-chat-workspace__ghost" :disabled="knowledgePresetPending || !knowledgePreset?.sources.length" @click="applyKnowledgePreset">
+                {{ knowledgePresetPending ? '[ LOADING... ]' : 'Подставить шаблон' }}
+              </button>
               <button type="button" class="agent-chat-workspace__primary" :disabled="knowledgeIndexing || !settingsDraft.knowledge.sources.length" @click="reindexKnowledge">
                 {{ knowledgeIndexing ? 'Индексация...' : 'Переиндексировать' }}
               </button>

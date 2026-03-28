@@ -9,6 +9,7 @@ import { z } from 'zod'
 
 import { getMessengerAgentSettings, resolveMessengerAgentWorkspacePath, updateMessengerAgentGraph, updateMessengerAgentSettings } from './agent-settings-store.ts'
 import { getMessengerAgentKnowledgeStatus, reindexMessengerAgentKnowledge } from './agent-knowledge-store.ts'
+import { getMessengerAgentKnowledgePreset } from './agent-knowledge-presets.ts'
 import { listMessengerAgentWorkspace, readMessengerAgentWorkspaceFile } from './agent-workspace-store.ts'
 import { appendMessengerAgentRunEvent, getMessengerAgentRunById, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from './agent-run-store.ts'
 import { buildMessengerAgentReply, findMessengerAgentById, listMessengerAgents } from './agent-store.ts'
@@ -799,6 +800,28 @@ export async function createMessengerServer() {
     const settings = await getMessengerAgentSettings(agent.id)
     return {
       knowledge: await getMessengerAgentKnowledgeStatus(agent.id, settings),
+    }
+  })
+
+  app.get('/agents/:agentId/knowledge/preset', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = agentParamsSchema.safeParse(request.params)
+    if (!parsedParams.success) {
+      return reply.code(400).send({ error: 'INVALID_PARAMS' })
+    }
+
+    const agent = await findMessengerAgentById(parsedParams.data.agentId)
+    if (!agent) {
+      return reply.code(404).send({ error: 'AGENT_NOT_FOUND' })
+    }
+
+    const settings = await getMessengerAgentSettings(agent.id)
+    return {
+      preset: getMessengerAgentKnowledgePreset(settings),
     }
   })
 

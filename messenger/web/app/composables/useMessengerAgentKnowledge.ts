@@ -19,6 +19,28 @@ export interface MessengerAgentKnowledgeStatus {
   sources: MessengerAgentKnowledgeStatusItem[]
 }
 
+export interface MessengerAgentKnowledgePresetRepository {
+  id: string
+  label: string
+  path: string
+}
+
+export interface MessengerAgentKnowledgePresetSource {
+  id: string
+  label: string
+  repositoryId: string
+  path: string
+  type: 'rag' | 'vector'
+  enabled: boolean
+}
+
+export interface MessengerAgentKnowledgePreset {
+  summary: string
+  repositories: MessengerAgentKnowledgePresetRepository[]
+  activeRepositoryId: string
+  sources: MessengerAgentKnowledgePresetSource[]
+}
+
 export function useMessengerAgentKnowledge() {
   const auth = useMessengerAuth()
 
@@ -38,8 +60,17 @@ export function useMessengerAgentKnowledge() {
     return response.knowledge
   }
 
+  async function getPreset(agentId: string) {
+    const response = await auth.request<{ preset: MessengerAgentKnowledgePreset }>(`/agents/${agentId}/knowledge/preset`, {
+      method: 'GET',
+    })
+
+    return response.preset
+  }
+
   return {
     getKnowledge,
     reindexKnowledge,
+    getPreset,
   }
 }
