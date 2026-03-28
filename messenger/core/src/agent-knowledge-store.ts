@@ -34,6 +34,12 @@ interface AgentKnowledgeIndexedChunk {
   embedding: number[]
 }
 
+interface ParsedVectorEntry {
+  title: string
+  text: string
+  embedding: number[] | null
+}
+
 interface AgentKnowledgeIndexedSource {
   sourceId: string
   indexedAt: string | null
@@ -151,6 +157,35 @@ function cosineSimilarity(left: number[], right: number[]) {
   }
 
   return dot / (Math.sqrt(leftNorm) * Math.sqrt(rightNorm))
+}
+
+function tokenizeForSearch(value: string) {
+  return normalizeText(value)
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .map(token => token.trim())
+    .filter(token => token.length >= 2)
+}
+
+function lexicalSimilarity(query: string, text: string) {
+  const queryTokens = new Set(tokenizeForSearch(query))
+  if (!queryTokens.size) {
+    return 0
+  }
+
+  const textTokens = new Set(tokenizeForSearch(text))
+  if (!textTokens.size) {
+    return 0
+  }
+
+  let matches = 0
+  for (const token of queryTokens) {
+    if (textTokens.has(token)) {
+      matches += 1
+    }
+  }
+
+  return matches / Math.max(queryTokens.size, Math.min(textTokens.size, 12))
 }
 
 async function ensureStorage() {
@@ -321,7 +356,7 @@ function ensureTextSourceAllowed(source: MessengerAgentKnowledgeSourceRecord) {
   }
 }
 
-function parseVectorPayload(raw: string) {
+function parseVectorPayload(raw: string): ParsedVectorEntry[] {
   const parsed = JSON.parse(raw) as unknown
   const list = Array.isArray(parsed)
     ? parsed
@@ -391,6 +426,14 @@ async function getEmbedding(text: string) {
   return embedding
 }
 
+async function getEmbeddingOrEmpty(text: string) {
+  try {
+    return await getEmbedding(text)
+  } catch {
+    return []
+  }
+}
+
 async function buildKnowledgeChunks(settings: MessengerAgentSettingsRecord, source: MessengerAgentKnowledgeSourceRecord) {
   ensureTextSourceAllowed(source)
 
@@ -405,7 +448,7 @@ async function buildKnowledgeChunks(settings: MessengerAgentSettingsRecord, sour
       type: 'vector' as const,
       title: entry.title,
       text: condenseText(entry.text, 1800),
-      embedding: entry.embedding || await getEmbedding(entry.text),
+      embedding: entry.embedding || await getEmbeddingOrEmpty(entry.text),
     })))
   }
 
@@ -418,7 +461,7 @@ async function buildKnowledgeChunks(settings: MessengerAgentSettingsRecord, sour
     type: 'rag' as const,
     title: `${source.label} · ${index + 1}`,
     text: chunk,
-    embedding: await getEmbedding(chunk),
+    embedding: await getEmbeddingOrEmpty(chunk),
   })))
 }
 
@@ -519,16 +562,24 @@ export async function retrieveMessengerAgentKnowledge(agentId: string, settings:
   }
 
   try {
-    const queryEmbedding = await getEmbedding(normalizedQuery)
+    const queryEmbedding = await getEmbeddingOrEmpty(normalizedQuery)
     const hits = chunks
-      .map((chunk) => ({
-        sourceId: chunk.sourceId,
-        sourceLabel: chunk.sourceLabel,
-        sourcePath: chunk.sourcePath,
-        title: chunk.title,
-        text: chunk.text,
-        score: cosineSimilarity(queryEmbedding, chunk.embedding),
-      }))
+      .map((chunk) => {
+        const semanticScore = queryEmbedding.length && chunk.embedding.length
+          ? cosineSimilarity(queryEmbedding, chunk.embedding)
+          : 0
+        const lexicalScore = lexicalSimilarity(normalizedQuery, chunk.text)
+        const score = semanticScore > 0 ? semanticScore : lexicalScore
+
+        return {
+          sourceId: chunk.sourceId,
+          sourceLabel: chunk.sourceLabel,
+          sourcePath: chunk.sourcePath,
+          title: chunk.title,
+          text: chunk.text,
+          score,
+        }
+      })
       .filter(hit => hit.score > 0.18)
       .sort((left, right) => right.score - left.score)
       .slice(0, topK)
