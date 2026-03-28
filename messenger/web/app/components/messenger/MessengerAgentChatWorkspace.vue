@@ -467,6 +467,14 @@ async function loadWorkspace(nextPath = explorerListing.value?.currentPath || ''
     return
   }
 
+  if (!workspaceConfigured.value) {
+    explorerListing.value = null
+    explorerFile.value = null
+    explorerError.value = ''
+    explorerPending.value = false
+    return
+  }
+
   explorerPending.value = true
   explorerError.value = ''
 
@@ -501,6 +509,12 @@ async function openWorkspaceParent() {
 
 async function openWorkspaceFile(path: string) {
   if (!resolvedAgent.value) {
+    return
+  }
+
+  if (!workspaceConfigured.value) {
+    explorerFile.value = null
+    explorerError.value = ''
     return
   }
 
@@ -710,10 +724,14 @@ async function openWorkspaceFile(path: string) {
                 <h3 class="agent-chat-workspace__card-title">{{ explorerStatusLabel }}</h3>
                 <p class="agent-chat-workspace__card-text">{{ workspaceConfigured ? `Root: ${resolvedAgent?.settings.ssh.workspacePath}` : 'Настройте SSH или локальную рабочую папку агента.' }}</p>
               </article>
+              <article v-if="!workspaceConfigured" class="agent-chat-workspace__card agent-chat-workspace__card--split-span">
+                <p class="agent-chat-workspace__card-text">[ NO DATA ATTACHED ]</p>
+                <p class="agent-chat-workspace__card-text">Добавьте host, login, private key и рабочую папку в настройках агента, после этого проводник загрузится без отдельного сохранения.</p>
+              </article>
               <div v-if="explorerError" class="agent-chat-workspace__card agent-chat-workspace__card--split-span">
                 <p class="agent-chat-workspace__card-text">{{ explorerError }}</p>
               </div>
-              <article class="agent-chat-workspace__card agent-chat-workspace__explorer-tree">
+              <article v-if="workspaceConfigured" class="agent-chat-workspace__card agent-chat-workspace__explorer-tree">
                 <div class="agent-chat-workspace__explorer-head">
                   <button type="button" class="agent-chat-workspace__ghost" :disabled="!explorerListing?.currentPath" @click="openWorkspaceParent">
                     Назад
@@ -750,7 +768,7 @@ async function openWorkspaceFile(path: string) {
                 </div>
                 <div v-else class="agent-chat-workspace__card-text">[ NO DATA ATTACHED ]</div>
               </article>
-              <article class="agent-chat-workspace__card agent-chat-workspace__explorer-preview">
+              <article v-if="workspaceConfigured" class="agent-chat-workspace__card agent-chat-workspace__explorer-preview">
                 <p class="agent-chat-workspace__card-eyebrow">Предпросмотр</p>
                 <h3 class="agent-chat-workspace__card-title">{{ explorerFile?.name || 'Файл не выбран' }}</h3>
                 <p v-if="explorerFile?.truncated" class="agent-chat-workspace__card-text">Показан только верх файла.</p>
