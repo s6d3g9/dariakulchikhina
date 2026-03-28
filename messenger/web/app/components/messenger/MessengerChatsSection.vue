@@ -173,6 +173,11 @@ const newChatMode = ref<'menu' | 'agent' | 'system'>('menu')
 const agentSearchDraft = ref('')
 const newSystemName = ref('')
 const newSystemAgentIds = ref<string[]>([])
+const showEditSystemDialog = ref(false)
+const editSystemName = ref('')
+const editSystemAgentIds = ref<string[]>([])
+const editSystemError = ref('')
+const editSystemPending = ref(false)
 
 const normalizedAgentSearchQuery = computed(() => agentSearchDraft.value.trim().toLowerCase())
 const filteredAgentGallery = computed(() => {
@@ -231,6 +236,19 @@ function toggleAgentSystemMember(agentId: string) {
   newSystemAgentIds.value = [...newSystemAgentIds.value, agentId]
 }
 
+function toggleEditSystemMember(agentId: string) {
+  if (editSystemAgentIds.value.includes(agentId)) {
+    editSystemAgentIds.value = editSystemAgentIds.value.filter(item => item !== agentId)
+    return
+  }
+
+  editSystemAgentIds.value = [...editSystemAgentIds.value, agentId]
+}
+
+function getAgentSystemDraftName(label: string) {
+  return label.replace(/^Система:\s*/u, '').trim()
+}
+
 async function createAgentSystem() {
   newChatError.value = ''
   const selectedAgents = agentsModel.agents.value.filter(agent => newSystemAgentIds.value.includes(agent.id))
@@ -275,6 +293,77 @@ async function createAgentSystem() {
 
 function openAgentSystem(folderKey: string) {
   activeFolderKey.value = folderKey
+}
+
+async function openEditAgentSystem() {
+  if (!activeAgentSystem.value) {
+    return
+  }
+
+  await agentsModel.refresh()
+  editSystemError.value = ''
+  editSystemName.value = getAgentSystemDraftName(activeAgentSystem.value.label)
+  editSystemAgentIds.value = [...(activeAgentSystem.value.agentIds || [])]
+  showEditSystemDialog.value = true
+}
+
+async function saveAgentSystemEdits() {
+  if (!activeAgentSystem.value) {
+    return
+  }
+
+  editSystemError.value = ''
+  const nextName = editSystemName.value.trim()
+  const selectedAgents = agentsModel.agents.value.filter(agent => editSystemAgentIds.value.includes(agent.id))
+
+  if (!nextName) {
+    editSystemError.value = 'Укажите название системы агентов.'
+    return
+  }
+
+  if (!selectedAgents.length) {
+    editSystemError.value = 'Выберите минимум одного агента для системы.'
+    return
+  }
+
+  editSystemPending.value = true
+
+  try {
+    const previousAgentIds = activeAgentSystem.value.agentIds || []
+    const removedAgentIds = previousAgentIds.filter(agentId => !editSystemAgentIds.value.includes(agentId))
+    const addedAgentIds = editSystemAgentIds.value.filter(agentId => !previousAgentIds.includes(agentId))
+
+    let nextChatIds = activeAgentSystem.value.chatIds.filter((chatId) => {
+      const chat = conversations.conversations.value.find(item => item.id === chatId)
+      if (!chat || chat.peerType !== 'agent') {
+        return true
+      }
+
+      return !removedAgentIds.includes(chat.peerUserId)
+    })
+
+    for (const agentId of addedAgentIds) {
+      await conversations.openAgentConversation(agentId)
+      const conversationId = conversations.activeConversationId.value
+      if (conversationId) {
+        nextChatIds.push(conversationId)
+      }
+    }
+
+    upsertFolder({
+      ...activeAgentSystem.value,
+      label: `Система: ${nextName}`,
+      agentIds: selectedAgents.map(agent => agent.id),
+      chatIds: Array.from(new Set(nextChatIds)),
+    })
+
+    showEditSystemDialog.value = false
+    navigation.openSection('chats')
+  } catch {
+    editSystemError.value = 'Не удалось обновить систему агентов.'
+  } finally {
+    editSystemPending.value = false
+  }
 }
 
 function formatAgentSystemStats(card: AgentSystemCard) {
@@ -478,8 +567,13 @@ function formatChatPreview(chat: MessengerConversationItem) {
 
       <VList v-else class="section-list" bg-color="transparent" lines="two">
         <div v-if="activeAgentSystemCard" class="agent-system-banner">
-          <p class="agent-system-banner__eyebrow">Активная система</p>
-          <p class="agent-system-banner__title">{{ activeAgentSystemCard.label }}</p>
+          <div class="agent-system-banner__head">
+            <div class="agent-system-banner__copy">
+              <p class="agent-system-banner__eyebrow">Активная система</p>
+              <p class="agent-system-banner__title">{{ activeAgentSystemCard.label }}</p>
+            </div>
+            <VBtn size="small" variant="tonal" @click="openEditAgentSystem()">Настроить</VBtn>
+          </div>
           <p class="agent-system-banner__meta">{{ formatAgentSystemStats(activeAgentSystemCard) }}</p>
           <p class="agent-system-banner__preview">{{ activeAgentSystemCard.preview }}</p>
         </div>
@@ -760,6 +854,49 @@ function formatChatPreview(chat: MessengerConversationItem) {
           <VBtn v-if="newChatMode !== 'menu'" variant="text" @click="newChatMode = 'menu'">Назад</VBtn>
           <VSpacer />
           <VBtn variant="text" @click="showNewChatDialog = false">Закрыть</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <VDialog v-model="showEditSystemDialog" max-width="520">
+      <VCard>
+        <VCardTitle>Настроить систему</VCardTitle>
+        <VCardText>
+          <div class="new-chat-system-builder">
+            <VTextField
+              v-model="editSystemName"
+              label="Название системы агентов"
+              placeholder="Например: Система для проекта Ивановы"
+              variant="outlined"
+              hide-details
+            />
+            <p class="new-chat-system-builder__hint">Вы можете менять состав системы без пересоздания папки. Чаты удалённых агентов будут убраны только из этой системы.</p>
+            <div class="new-chat-system-builder__chips">
+              <VChip
+                v-for="agent in agentsModel.agents.value"
+                :key="agent.id"
+                :variant="editSystemAgentIds.includes(agent.id) ? 'flat' : 'outlined'"
+                :color="editSystemAgentIds.includes(agent.id) ? 'primary' : undefined"
+                @click="toggleEditSystemMember(agent.id)"
+              >
+                {{ agent.displayName }}
+              </VChip>
+            </div>
+            <VAlert v-if="editSystemError" type="error">{{ editSystemError }}</VAlert>
+          </div>
+        </VCardText>
+        <VCardActions>
+          <VBtn variant="text" @click="showEditSystemDialog = false">Отмена</VBtn>
+          <VSpacer />
+          <VBtn
+            color="primary"
+            variant="tonal"
+            :loading="editSystemPending"
+            :disabled="editSystemPending || !editSystemName.trim() || !editSystemAgentIds.length"
+            @click="saveAgentSystemEdits()"
+          >
+            Обновить систему
+          </VBtn>
         </VCardActions>
       </VCard>
     </VDialog>
