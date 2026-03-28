@@ -114,6 +114,8 @@ async function execRemoteShell(settings: MessengerAgentSettingsRecord, script: s
     throw new Error('AGENT_SSH_NOT_CONFIGURED')
   }
 
+  const remoteCommand = `sh -lc ${shellQuote(script)}`
+
   return await withTemporaryPrivateKey(ssh.privateKey, async (keyPath) => {
     const result = await execFileAsync('ssh', [
       '-i', keyPath,
@@ -123,7 +125,7 @@ async function execRemoteShell(settings: MessengerAgentSettingsRecord, script: s
       '-o', 'StrictHostKeyChecking=no',
       '-o', 'UserKnownHostsFile=/dev/null',
       `${ssh.login}@${ssh.host}`,
-      'sh', '-lc', script,
+      remoteCommand,
     ], {
       timeout: 12000,
       maxBuffer: 1024 * 1024,
