@@ -158,6 +158,10 @@ const roleOptions = [
 ] as const satisfies ReadonlyArray<{ value: LoginRole; label: string; note: string }>
 
 function normalizeRole(value: unknown): LoginRole {
+  if (value === 'admin') {
+    return 'designer'
+  }
+
   if (value === 'designer' || value === 'client' || value === 'contractor') {
     return value
   }
@@ -177,8 +181,8 @@ const credentialsLoading = ref(false)
 const clientLegacyLoading = ref(false)
 const contractorLegacyLoading = ref(false)
 
-const registerPath = computed(() => `/register?role=${selectedRole.value}`)
-const recoverPath = computed(() => `/recover?role=${selectedRole.value}`)
+const registerPath = computed(() => `/register?role=${selectedRole.value === 'designer' ? 'admin' : selectedRole.value}`)
+const recoverPath = computed(() => `/recover?role=${selectedRole.value === 'designer' ? 'admin' : selectedRole.value}`)
 
 const submitLabel = computed(() => {
   if (selectedRole.value === 'designer') return 'Войти как администратор'

@@ -65,12 +65,16 @@ const route = useRoute()
 const { csrfHeaders, ensureCsrfCookie } = useCsrfHeaders()
 
 const roleOptions = [
-  { value: 'designer', label: 'Дизайнер', note: 'Восстановление входа в админ-кабинет.' },
+  { value: 'designer', label: 'Администратор', note: 'Восстановление входа в админ-кабинет.' },
   { value: 'client', label: 'Клиент', note: 'Восстановление доступа к кабинету проекта.' },
   { value: 'contractor', label: 'Подрядчик', note: 'Восстановление доступа к задачам и документам.' },
 ] as const satisfies ReadonlyArray<{ value: RecoverRole; label: string; note: string }>
 
 function normalizeRole(value: unknown): RecoverRole {
+  if (value === 'admin') {
+    return 'designer'
+  }
+
   if (value === 'designer' || value === 'client' || value === 'contractor') {
     return value
   }
@@ -85,7 +89,7 @@ const success = ref('')
 const loading = ref(false)
 
 const roleToLoginPath: Record<RecoverRole, string> = {
-  designer: '/login?role=designer',
+  designer: '/login?role=admin',
   client: '/login?role=client',
   contractor: '/login?role=contractor',
 }
@@ -97,7 +101,7 @@ const roleToRecoverPath: Record<RecoverRole, string> = {
 }
 
 const submitLabel = computed(() => {
-  if (selectedRole.value === 'designer') return 'Сбросить пароль дизайнера'
+  if (selectedRole.value === 'designer') return 'Сбросить пароль администратора'
   if (selectedRole.value === 'client') return 'Сбросить пароль клиента'
   return 'Сбросить пароль подрядчика'
 })
@@ -136,7 +140,7 @@ async function submit() {
     }
   } catch (e: any) {
     if (selectedRole.value === 'designer') {
-      error.value = e.data?.statusMessage || 'Не удалось восстановить доступ дизайнера'
+      error.value = e.data?.statusMessage || 'Не удалось восстановить доступ администратора'
     } else if (selectedRole.value === 'client') {
       error.value = e.data?.statusMessage || 'Не удалось восстановить доступ клиента'
     } else {

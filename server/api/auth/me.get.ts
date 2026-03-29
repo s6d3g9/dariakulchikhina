@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
       }
       if (user) setAdminSession(event, user.id)
     }
-    if (user) return { role: 'designer', ...user }
+    if (user) return { role: 'admin', ...user }
   }
   const clientSlug = getClientSession(event)
   if (clientSlug) return { role: 'client', projectSlug: clientSlug }

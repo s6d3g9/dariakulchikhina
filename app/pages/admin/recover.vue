@@ -3,5 +3,5 @@ definePageMeta({
   layout: 'default',
 })
 
-await navigateTo('/recover?role=designer', { replace: true })
+await navigateTo('/recover?role=admin', { replace: true })
 </script>

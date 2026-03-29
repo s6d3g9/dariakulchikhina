@@ -69,12 +69,16 @@ const route = useRoute()
 const { csrfHeaders, ensureCsrfCookie } = useCsrfHeaders()
 
 const roleOptions = [
-  { value: 'designer', label: 'Дизайнер', note: 'Создание аккаунта дизайнера.' },
+  { value: 'designer', label: 'Администратор', note: 'Создание аккаунта администратора.' },
   { value: 'client', label: 'Клиент', note: 'Создание кабинета проекта.' },
   { value: 'contractor', label: 'Подрядчик', note: 'Создание доступа подрядчика.' },
 ] as const satisfies ReadonlyArray<{ value: RegisterRole; label: string; note: string }>
 
 function normalizeRole(value: unknown): RegisterRole {
+  if (value === 'admin') {
+    return 'designer'
+  }
+
   if (value === 'designer' || value === 'client' || value === 'contractor') {
     return value
   }
@@ -92,13 +96,13 @@ const recoveryPhrase = ref('')
 const successMeta = ref('')
 
 const roleToLoginPath: Record<RegisterRole, string> = {
-  designer: '/login?role=designer',
+  designer: '/login?role=admin',
   client: '/login?role=client',
   contractor: '/login?role=contractor',
 }
 
 const submitLabel = computed(() => {
-  if (selectedRole.value === 'designer') return 'Создать аккаунт дизайнера'
+  if (selectedRole.value === 'designer') return 'Создать аккаунт администратора'
   if (selectedRole.value === 'client') return 'Создать аккаунт клиента'
   return 'Создать аккаунт подрядчика'
 })
@@ -134,7 +138,7 @@ async function submit() {
         headers: csrfHeaders(),
       })
       recoveryPhrase.value = result.recoveryPhrase
-      successMeta.value = 'Аккаунт дизайнера создан. Эта фраза показывается один раз.'
+      successMeta.value = 'Аккаунт администратора создан. Эта фраза показывается один раз.'
     } else if (selectedRole.value === 'client') {
       const result = await $fetch<{ recoveryPhrase: string; project: { slug: string } }>('/api/auth/client-register', {
         method: 'POST',

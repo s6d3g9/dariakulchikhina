@@ -7,5 +7,5 @@ definePageMeta({
   layout: 'default',
 })
 
-await navigateTo('/login?role=designer', { replace: true })
+await navigateTo('/login?role=admin', { replace: true })
 </script>
