@@ -127,10 +127,12 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-dock-padding-y: 8px;
   --messenger-dock-height: calc(var(--messenger-dock-line-height) + (var(--messenger-dock-padding-y) * 2));
   --messenger-dock-radius: 21px;
+  --messenger-chat-header-height: 64px;
   --messenger-bottom-bar-height: 44px;
   --messenger-bottom-bar-button-height: 38px;
   --messenger-bottom-bar-gap: 2px;
   --messenger-bottom-bar-radius: 10px;
+  --messenger-agent-workspace-dock-height: 102px;
   --messenger-keyboard-offset: max(0px, var(--messenger-keyboard-inset, 0px));
   display: flex;
   flex-direction: column;
@@ -534,7 +536,8 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   bottom: calc(100% - 1px);
   z-index: 1;
   min-height: 0;
-  max-height: min(46vh, 440px);
+  height: max(260px, calc(var(--messenger-viewport-height, 100dvh) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-height) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px)));
+  max-height: calc(var(--messenger-viewport-height, 100dvh) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-height) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px));
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
@@ -671,7 +674,8 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 
 @media (max-width: 767px) {
   .agent-chat-workspace__sheet {
-    max-height: min(40vh, 320px);
+    height: max(220px, calc(var(--messenger-viewport-height, 100dvh) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-height) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px)));
+    max-height: calc(var(--messenger-viewport-height, 100dvh) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-height) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px));
   }
 }
 
