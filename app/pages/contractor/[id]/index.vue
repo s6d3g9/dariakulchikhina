@@ -9,16 +9,16 @@
     <div v-else-if="contractor" class="cab-body">
 
       <!-- Sidebar -->
-      <aside class="cab-sidebar glass-surface std-sidenav">
+      <aside class="cab-sidebar cab-sidebar--persistent-nav glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav" :key="item.key"
-            class="cab-nav-item std-nav-item"
+            class="cab-nav-item cab-nav-item--persistent-nav std-nav-item"
             :class="{ active: section === item.key, 'std-nav-item--active': section === item.key }"
             @click="section = item.key"
           >
             <span class="cab-nav-icon">{{ item.icon }}</span>
-            <span>{{ item.label }}</span>
+            <span class="cab-nav-label">{{ item.label }}</span>
             <span v-if="item.key === 'tasks' && activeCount" class="cab-badge">{{ activeCount }}</span>
             <span v-if="item.key === 'staff' && staff?.length" class="cab-badge">{{ staff.length }}</span>
             <span v-if="item.key === 'documents' && contractorDocs?.length" class="cab-badge">{{ contractorDocs.length }}</span>

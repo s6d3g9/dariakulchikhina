@@ -6,17 +6,17 @@
     </div>
 
     <div v-else-if="contractor" class="cab-body" :class="{ 'cab-body--content-only': !showSidebar }">
-      <aside v-if="showSidebar" v-show="!isWipe2Mode" class="cab-sidebar glass-surface std-sidenav">
+      <aside v-if="showSidebar" v-show="!isWipe2Mode" class="cab-sidebar cab-sidebar--persistent-nav glass-surface std-sidenav">
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav"
             :key="item.key"
-            class="cab-nav-item std-nav-item"
+            class="cab-nav-item cab-nav-item--persistent-nav std-nav-item"
             :class="{ active: section === item.key, 'std-nav-item--active': section === item.key }"
             @click="onNavClick(item.key)"
           >
             <span class="cab-nav-icon">{{ item.icon }}</span>
-            <span>{{ item.label }}</span>
+            <span class="cab-nav-label">{{ item.label }}</span>
             <span v-if="item.key === 'tasks' && activeCount" class="u-counter">{{ activeCount }}</span>
             <span v-if="item.key === 'staff' && staff?.length" class="u-counter">{{ staff.length }}</span>
             <span v-if="item.key === 'documents' && contractorDocs?.length" class="u-counter">{{ contractorDocs.length }}</span>

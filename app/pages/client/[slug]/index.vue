@@ -121,6 +121,7 @@ import ClientTimeline      from '~/components/ClientTimeline.vue'
 import ClientDesignAlbum   from '~/components/ClientDesignAlbum.vue'
 import ClientPageContent   from '~/components/ClientPageContent.vue'
 import ClientOverview      from '~/components/ClientOverview.vue'
+import ClientProjectControl from '~/components/ClientProjectControl.vue'
 import ProjectCommunicationsPanel from '~~/app/components/ProjectCommunicationsPanel.vue'
 
 definePageMeta({ middleware: 'client', layout: 'default' })
@@ -159,6 +160,7 @@ const PAGE_COMPONENT_MAP: Record<string, Component> = {
   contracts:       ClientContracts,
   extra_services:  ClientExtraServices,
   work_progress:   ClientWorkProgress,
+  project_control: ClientProjectControl,
   design_timeline: ClientTimeline,
   design_album:    ClientDesignAlbum,
   communications:  ProjectCommunicationsPanel,

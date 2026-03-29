@@ -36,6 +36,10 @@
     <div class="co-section">
       <div class="co-section-title">Быстрый доступ</div>
       <div class="co-quick-links">
+        <button class="co-link-btn glass-surface" @click="emit('navigate', 'project_control')">
+          <span class="co-link-icon">◬</span>
+          <span>Контроль проекта</span>
+        </button>
         <button class="co-link-btn glass-surface" @click="emit('navigate', 'work_progress')">
           <span class="co-link-icon">◈</span>
           <span>Ход работ</span>
@@ -52,6 +56,24 @@
           <span class="co-link-icon">◌</span>
           <span>Контакты</span>
         </button>
+      </div>
+    </div>
+
+    <div class="co-section">
+      <div class="co-section-title">Контроль проекта</div>
+      <div class="co-team-card glass-surface co-team-card--summary">
+        <div>
+          <div class="co-team-name">{{ controlSummary.health.label }}</div>
+          <div class="co-team-meta">{{ controlSummary.activePhase?.title || 'Фаза не определена' }}</div>
+        </div>
+        <div>
+          <div class="co-team-name">{{ controlSummary.doneTasks }} / {{ controlSummary.totalTasks }}</div>
+          <div class="co-team-meta">delivery-задач закрыто</div>
+        </div>
+        <div>
+          <div class="co-team-name">{{ controlSummary.blockerCount }}</div>
+          <div class="co-team-meta">активных блокеров</div>
+        </div>
       </div>
     </div>
 
@@ -74,6 +96,7 @@
 
 <script setup lang="ts">
 import { PHASE_LABELS, getAdminNavGroups } from '~~/shared/constants/pages'
+import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/project-control'
 
 const props = withDefaults(defineProps<{
   slug: string
@@ -106,6 +129,10 @@ const progressPct = computed(() => {
   const done = phases.value.reduce((s, p) => s + p.done, 0)
   return total > 0 ? Math.round((done / total) * 100) : 0
 })
+
+const controlSummary = computed(() => buildHybridControlSummary(
+  ensureHybridControl(props.project?.profile?.hybridControl, props.project || {}),
+))
 </script>
 
 <style scoped>
@@ -171,6 +198,7 @@ const progressPct = computed(() => {
   display: flex; align-items: center; gap: 10px; padding: 10px 14px;
   border-radius: 10px;
 }
+.co-team-card--summary { justify-content: space-between; flex-wrap: wrap; }
 .co-team-avatar {
   width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
   background: color-mix(in srgb, var(--glass-text) 8%, transparent);

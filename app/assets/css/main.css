@@ -3734,6 +3734,32 @@ html.dark .a-modal label {
 [data-nav-style="hidden"] .proj-sidenav-group-label,
 [data-nav-style="hidden"] .std-nav-group-label,
 [data-nav-style="hidden"] .ent-sidebar-title { display: none !important; }
+
+/* Contractor cabinets keep full sidebar labels even in hidden nav mode. */
+[data-nav-style="hidden"] .cab-sidebar--persistent-nav {
+  width: var(--ds-sidebar-width, 200px) !important;
+  min-width: var(--ds-sidebar-width, 200px) !important;
+  overflow: visible !important;
+}
+
+[data-nav-style="hidden"] .cab-sidebar--persistent-nav .cab-nav-icon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-nav-style="hidden"] .cab-sidebar--persistent-nav .cab-nav-label,
+[data-nav-style="hidden"] .cab-sidebar--persistent-nav .cab-badge,
+[data-nav-style="hidden"] .cab-sidebar--persistent-nav .u-counter {
+  display: inline-flex !important;
+}
+
+@media (max-width: 768px) {
+  [data-nav-style="hidden"] .cab-sidebar--persistent-nav {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
 /* Hidden: admin header shrinks */
 [data-nav-style="hidden"] .admin-header {
   background: transparent !important;

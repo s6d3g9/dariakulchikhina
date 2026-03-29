@@ -136,6 +136,7 @@
 <script setup lang="ts">
 import { PHASE_LABELS, getAdminNavGroups, findPage } from '~~/shared/constants/pages'
 import { findPreset } from '~~/shared/constants/presets'
+import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/project-control'
 
 const props = defineProps<{
   slug: string
@@ -158,11 +159,16 @@ const enabledPages = computed(() => new Set<string>(props.project?.pages || []))
 
 const projectActions = computed(() => [
   { slug: 'settings', title: 'Настройки проекта', meta: props.project?.projectType || 'без типа' },
+  { slug: 'project_control', title: 'Контроль проекта', meta: controlSummary.value.health.label },
   { slug: 'project_communications', title: 'Коммуникации', meta: 'чат и звонки' },
   { slug: 'project_clients', title: 'Клиенты', meta: `${props.clients.length}` },
   { slug: 'project_contractors', title: 'Подрядчики', meta: `${props.contractors.length}` },
   { slug: 'project_designers', title: 'Дизайнеры', meta: `${props.designers.length}` },
 ])
+
+const controlSummary = computed(() => buildHybridControlSummary(
+  ensureHybridControl(props.project?.profile?.hybridControl, props.project || {}),
+))
 
 // Быстрые действия — первые активные фазовые страницы проекта
 const quickButtons = computed(() => {

@@ -229,6 +229,11 @@
                   />
                 </section>
               </template>
+              <template v-else-if="currentProjectPage === 'project_control'">
+                <section class="proj-section-shell" :class="{ 'proj-section-shell--brutalist': isBrutalistProjectMode }">
+                  <AdminProjectControl :slug="slug" />
+                </section>
+              </template>
               <!-- Клиенты проекта — inline без модала -->
               <template v-else-if="currentProjectPage === 'project_clients'">
                 <div class="proj-entity-panel" :class="{ 'proj-entity-panel--brutalist': isBrutalistProjectMode }">
@@ -614,6 +619,7 @@ import {
   ClientWorkProgress,
   ClientPassport,
   AdminProjectOverview,
+  AdminProjectControl,
   AdminProjectSettings,
 } from '#components'
 
@@ -1503,6 +1509,7 @@ const MODERN_PROJECT_PAGES = [
   'self_profile',
   'site_survey',
   'tor_contract',
+  'project_control',
   'space_planning',
   'moodboard',
   'concept_approval',
@@ -1614,6 +1621,7 @@ const editForm = reactive({
 })
 
 const pageComponentMap: Record<string, Component> = {
+  project_control: AdminProjectControl,
   settings: AdminProjectSettings,
   work_status: AdminWorkStatus,
   profile_customer: AdminClientProfile,
@@ -1805,6 +1813,7 @@ const allPageSlugs = getAdminPages()
 const availablePages = computed(() => {
   const pages = project.value?.pages || []
   return allPageSlugs.filter((p) => {
+    if (p.slug === 'project_control') return true
     if (p.slug === 'self_profile' && pages.includes('brief')) return true
     return pages.includes(p.slug)
   })
@@ -2325,12 +2334,28 @@ watch(
 
 const navGroups = computed(() => {
   const available = new Set(availablePages.value.map(p => p.slug))
-  return getAdminNavGroups()
+  const phaseGroups = getAdminNavGroups()
     .map(group => ({
       ...group,
       pages: group.pages.filter(p => available.has(p.slug)),
     }))
     .filter(group => group.pages.length > 0)
+
+  const registryPages = availablePages.value.filter(page =>
+    !page.phase && Boolean(PROJECT_REGISTRY_PAGE_META[page.slug]),
+  )
+
+  if (!registryPages.length) {
+    return phaseGroups
+  }
+
+  const registryGroups = Array.from(new Set(registryPages.map(page => PROJECT_REGISTRY_PAGE_META[page.slug]?.group).filter(Boolean)))
+    .map((label) => ({
+      label,
+      pages: registryPages.filter(page => PROJECT_REGISTRY_PAGE_META[page.slug]?.group === label),
+    }))
+
+  return [...registryGroups, ...phaseGroups]
 })
 
 const activePageTitle = computed(() => {

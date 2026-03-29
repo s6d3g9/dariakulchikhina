@@ -105,6 +105,7 @@ export const MANAGER_CABINET_BLOCKS: MenuBlockDef[] = [
 export const PROJECT_CABINET_BLOCKS: MenuBlockDef[] = [
   block('prj_settings', 'Настройки проекта', 'leaf', 'project', 'project-settings', 'Базовые настройки проекта.', ['project', 'admin']),
   block('prj_communications', 'Коммуникации', 'leaf', 'project', 'project-communications', 'Защищённый чат и звонки проекта.', ['project', 'admin']),
+  block('prj_control', 'Контроль проекта', 'leaf', 'project', 'project-control', 'Гибридный контур контроля проекта: фазы, спринты и health-check.', ['project', 'admin']),
   block('alpha_phases', 'Фазы (прогресс проекта)', 'node', 'project', 'project-phases', 'Поток фаз проекта.', ['project', 'admin']),
   block('alpha_clients', 'Клиенты', 'node', 'project', 'project-subjects', 'Клиенты, привязанные к проекту.', ['project', 'admin']),
   block('alpha_contractors', 'Подрядчики', 'node', 'project', 'project-subjects', 'Подрядчики проекта.', ['project', 'admin']),

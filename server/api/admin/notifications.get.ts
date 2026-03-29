@@ -5,6 +5,7 @@
 import { useDb } from '~/server/db/index'
 import { projects, projectExtraServices, workStatusItems } from '~/server/db/schema'
 import { sql, eq, and, not, inArray, lt, isNotNull } from 'drizzle-orm'
+import { buildHybridControlSummary, ensureHybridControl } from '~/shared/utils/project-control'
 
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
@@ -31,11 +32,28 @@ export default defineEventHandler(async (event) => {
 
   const extraCount   = extraRow?.count   || 0
   const overdueCount = overdueRow?.count || 0
-  const total        = extraCount + overdueCount
+
+  const projectRows = await db
+    .select({
+      slug: projects.slug,
+      status: projects.status,
+      pages: projects.pages,
+      profile: projects.profile,
+    })
+    .from(projects)
+
+  const controlCount = projectRows.reduce((count, project) => {
+    const control = ensureHybridControl(project.profile?.hybridControl, project)
+    const summary = buildHybridControlSummary(control)
+    return summary.health.status === 'critical' ? count + 1 : count
+  }, 0)
+
+  const total = extraCount + overdueCount + controlCount
 
   return {
     total,
     extra:   { count: extraCount,   label: 'новые заявки на доп. услуги' },
     overdue: { count: overdueCount, label: 'просроченные задачи' },
+    control: { count: controlCount, label: 'проекты с критичным контуром контроля' },
   }
 })

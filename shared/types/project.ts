@@ -1,5 +1,73 @@
 import { z } from 'zod'
 
+const HybridControlPhaseStatusSchema = z.enum(['planned', 'active', 'blocked', 'done'])
+const HybridControlSprintStatusSchema = z.enum(['planned', 'active', 'review', 'done'])
+const HybridControlTaskStatusSchema = z.enum(['todo', 'doing', 'review', 'done'])
+const HybridControlHealthStatusSchema = z.enum(['stable', 'warning', 'critical'])
+
+export const HybridControlGateSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  done: z.boolean().default(false),
+})
+
+export const HybridControlPhaseSchema = z.object({
+  id: z.string().min(1),
+  phaseKey: z.string().min(1),
+  title: z.string().min(1),
+  owner: z.string().optional(),
+  status: HybridControlPhaseStatusSchema.default('planned'),
+  percent: z.number().min(0).max(100).default(0),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  factEndDate: z.string().optional(),
+  deliverable: z.string().optional(),
+  notes: z.string().optional(),
+  gates: z.array(HybridControlGateSchema).default([]),
+})
+
+export const HybridControlTaskSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  status: HybridControlTaskStatusSchema.default('todo'),
+  assignee: z.string().optional(),
+  dueDate: z.string().optional(),
+  points: z.number().min(0).max(100).default(1),
+  notes: z.string().optional(),
+})
+
+export const HybridControlSprintSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  linkedPhaseKey: z.string().optional(),
+  goal: z.string().optional(),
+  focus: z.string().optional(),
+  status: HybridControlSprintStatusSchema.default('planned'),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  retrospective: z.string().optional(),
+  tasks: z.array(HybridControlTaskSchema).default([]),
+})
+
+export const HybridControlCheckpointSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  category: z.string().min(1),
+  status: HybridControlHealthStatusSchema.default('stable'),
+  note: z.string().optional(),
+})
+
+export const HybridControlSchema = z.object({
+  manager: z.string().optional(),
+  cadenceDays: z.number().min(1).max(90).default(7),
+  nextReviewDate: z.string().optional(),
+  lastSyncAt: z.string().optional(),
+  phases: z.array(HybridControlPhaseSchema).default([]),
+  sprints: z.array(HybridControlSprintSchema).default([]),
+  checkpoints: z.array(HybridControlCheckpointSchema).default([]),
+  blockers: z.array(z.string()).default([]),
+})
+
 export const ClientProfileSchema = z.object({
   // personal
   fio: z.string().optional(),
@@ -202,8 +270,20 @@ export const ClientProfileSchema = z.object({
   tor_exclusions:       z.string().optional(),
   tor_timeline:         z.string().optional(),
   tor_deliverables:     z.string().optional(),
+  hybridControl:        HybridControlSchema.optional(),
 }).passthrough()
 export type ClientProfile = z.infer<typeof ClientProfileSchema>
+
+export type HybridControlPhaseStatus = z.infer<typeof HybridControlPhaseStatusSchema>
+export type HybridControlSprintStatus = z.infer<typeof HybridControlSprintStatusSchema>
+export type HybridControlTaskStatus = z.infer<typeof HybridControlTaskStatusSchema>
+export type HybridControlHealthStatus = z.infer<typeof HybridControlHealthStatusSchema>
+export type HybridControlGate = z.infer<typeof HybridControlGateSchema>
+export type HybridControlPhase = z.infer<typeof HybridControlPhaseSchema>
+export type HybridControlTask = z.infer<typeof HybridControlTaskSchema>
+export type HybridControlSprint = z.infer<typeof HybridControlSprintSchema>
+export type HybridControlCheckpoint = z.infer<typeof HybridControlCheckpointSchema>
+export type HybridControl = z.infer<typeof HybridControlSchema>
 
 export const ProjectSchema = z.object({
   id: z.number(),
