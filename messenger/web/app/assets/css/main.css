@@ -525,6 +525,20 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   background: rgb(var(--v-theme-background));
   border-top: 1px solid rgba(var(--v-theme-outline-variant), 0.56);
 }
+
+.agent-chat-workspace--collapsed {
+  grid-template-rows: auto;
+  max-height: none;
+}
+
+.agent-chat-workspace--collapsed .agent-chat-workspace__dock {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.agent-chat-workspace--collapsed .agent-chat-workspace__tabs-row {
+  padding-top: 0;
+}
 .agent-chat-workspace__explorer-head,
 .agent-chat-workspace__breadcrumbs {
   display: flex;

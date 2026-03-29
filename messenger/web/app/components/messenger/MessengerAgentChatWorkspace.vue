@@ -680,6 +680,10 @@ function closeSearch() {
 }
 
 function selectSection(section: AgentWorkspaceSectionKey) {
+  if (collapsed.value) {
+    collapsed.value = false
+  }
+
   activeSection.value = section
   searchDraft.value = ''
   searchOpen.value = false
@@ -761,8 +765,8 @@ async function openWorkspaceFile(path: string) {
 </script>
 
 <template>
-  <section v-if="!collapsed" class="agent-chat-workspace" aria-label="Рабочее пространство агента">
-    <header class="agent-chat-workspace__head">
+  <section class="agent-chat-workspace" :class="{ 'agent-chat-workspace--collapsed': collapsed }" aria-label="Рабочее пространство агента">
+    <header v-if="!collapsed" class="agent-chat-workspace__head">
       <div class="agent-chat-workspace__copy">
         <h2 class="agent-chat-workspace__title">{{ workspaceTitle }}</h2>
         <p class="agent-chat-workspace__section-marker">{{ currentSection.title }}</p>
@@ -783,11 +787,11 @@ async function openWorkspaceFile(path: string) {
       </div>
     </header>
 
-    <p v-if="feedbackMessage" class="agent-chat-workspace__feedback" :class="{ 'agent-chat-workspace__feedback--error': feedbackTone === 'error' }">
+    <p v-if="!collapsed && feedbackMessage" class="agent-chat-workspace__feedback" :class="{ 'agent-chat-workspace__feedback--error': feedbackTone === 'error' }">
       {{ feedbackMessage }}
     </p>
 
-    <div class="agent-chat-workspace__window">
+    <div v-if="!collapsed" class="agent-chat-workspace__window">
       <Transition name="screen-fade" mode="out-in">
         <div :key="activeSection" class="agent-chat-workspace__pane">
           <div v-if="activeSection === 'overview'" class="agent-chat-workspace__content agent-chat-workspace__content--grid">
