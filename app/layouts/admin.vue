@@ -286,7 +286,7 @@ function toggleSidebarCollapsed() {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
 }
 function syncDesktopSidebarState() {
-  isDesktopSidebar.value = window.innerWidth >= 1024
+  isDesktopSidebar.value = window.innerWidth > 768
   if (!isDesktopSidebar.value) isSidebarCollapsed.value = false
 }
 
