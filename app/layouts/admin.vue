@@ -836,7 +836,7 @@ function goToAllSellers() {
 // ── Auth ─────────────────────────────────────────────────────────
 async function logout() {
   await $fetch('/api/auth/logout', { method: 'POST' })
-  router.push('/login?role=designer')
+  router.push('/login?role=admin')
 }
 </script>
 
