@@ -516,19 +516,27 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 }
 
 .agent-chat-workspace {
+  position: relative;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   flex-shrink: 0;
   min-height: 0;
   max-height: min(46vh, 440px);
   overflow: hidden;
   background: rgb(var(--v-theme-background));
   border-top: 1px solid rgba(var(--v-theme-outline-variant), 0.56);
+  isolation: isolate;
 }
 
 .agent-chat-workspace--collapsed {
   grid-template-rows: auto;
   max-height: none;
+}
+
+.agent-chat-workspace__sheet {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .agent-chat-workspace--collapsed .agent-chat-workspace__dock {
@@ -634,6 +642,8 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 }
 
 .agent-chat-workspace__dock {
+  position: relative;
+  z-index: 2;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -2277,6 +2287,7 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  isolation: isolate;
   --messenger-composer-height: 76px;
   --messenger-chat-keyboard-offset: var(--messenger-keyboard-offset, 0px);
 }
@@ -3139,6 +3150,8 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 
 /* ── Composer Dock ───────────────────────────────────────── */
 .composer-bar {
+  position: relative;
+  z-index: 3;
   display: flex;
   align-items: center;
   padding: 4px 8px calc(12px + var(--messenger-chat-keyboard-offset, 0px));
@@ -5543,6 +5556,17 @@ html[data-messenger-keyboard='open'] .section-block--chat {
 .screen-fade-enter-from   { opacity: 0; }
 .screen-fade-leave-active { transition: opacity 150ms ease; }
 .screen-fade-leave-to     { opacity: 0; }
+
+.agent-chat-workspace-sheet-enter-active,
+.agent-chat-workspace-sheet-leave-active {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.agent-chat-workspace-sheet-enter-from,
+.agent-chat-workspace-sheet-leave-to {
+  opacity: 0;
+  transform: translateY(14px);
+}
 
 .chrome-reveal-enter-active { transition: opacity 150ms ease, transform 150ms ease; }
 .chrome-reveal-enter-from   { opacity: 0; transform: translateY(8px); }

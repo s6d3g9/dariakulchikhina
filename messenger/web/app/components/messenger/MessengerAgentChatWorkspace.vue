@@ -766,34 +766,36 @@ async function openWorkspaceFile(path: string) {
 
 <template>
   <section class="agent-chat-workspace" :class="{ 'agent-chat-workspace--collapsed': collapsed }" aria-label="Рабочее пространство агента">
-    <header v-if="!collapsed" class="agent-chat-workspace__head">
-      <div class="agent-chat-workspace__copy">
-        <h2 class="agent-chat-workspace__title">{{ workspaceTitle }}</h2>
-        <p class="agent-chat-workspace__section-marker">{{ currentSection.title }}</p>
-      </div>
-      <div class="agent-chat-workspace__meta">
-        <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--live': runtimeState }">
-          {{ runtimeState ? runtimePhaseLabel(runtimeState.phase) : 'Idle' }}
-        </span>
-        <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !apiKeyConfigured }">
-          {{ apiKeyConfigured ? 'API key подключён' : 'API key не задан' }}
-        </span>
-        <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !sshConfigured }">
-          {{ sshConfigured ? 'SSH подключён' : 'SSH не задан' }}
-        </span>
-        <button type="button" class="agent-chat-workspace__ghost" @click="openAgentsSection">
-          Открыть модуль агентов
-        </button>
-      </div>
-    </header>
+    <Transition name="agent-chat-workspace-sheet">
+      <div v-if="!collapsed" class="agent-chat-workspace__sheet">
+        <header class="agent-chat-workspace__head">
+          <div class="agent-chat-workspace__copy">
+            <h2 class="agent-chat-workspace__title">{{ workspaceTitle }}</h2>
+            <p class="agent-chat-workspace__section-marker">{{ currentSection.title }}</p>
+          </div>
+          <div class="agent-chat-workspace__meta">
+            <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--live': runtimeState }">
+              {{ runtimeState ? runtimePhaseLabel(runtimeState.phase) : 'Idle' }}
+            </span>
+            <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !apiKeyConfigured }">
+              {{ apiKeyConfigured ? 'API key подключён' : 'API key не задан' }}
+            </span>
+            <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--warning': !sshConfigured }">
+              {{ sshConfigured ? 'SSH подключён' : 'SSH не задан' }}
+            </span>
+            <button type="button" class="agent-chat-workspace__ghost" @click="openAgentsSection">
+              Открыть модуль агентов
+            </button>
+          </div>
+        </header>
 
-    <p v-if="!collapsed && feedbackMessage" class="agent-chat-workspace__feedback" :class="{ 'agent-chat-workspace__feedback--error': feedbackTone === 'error' }">
-      {{ feedbackMessage }}
-    </p>
+        <p v-if="feedbackMessage" class="agent-chat-workspace__feedback" :class="{ 'agent-chat-workspace__feedback--error': feedbackTone === 'error' }">
+          {{ feedbackMessage }}
+        </p>
 
-    <div v-if="!collapsed" class="agent-chat-workspace__window">
-      <Transition name="screen-fade" mode="out-in">
-        <div :key="activeSection" class="agent-chat-workspace__pane">
+        <div class="agent-chat-workspace__window">
+          <Transition name="screen-fade" mode="out-in">
+            <div :key="activeSection" class="agent-chat-workspace__pane">
           <div v-if="activeSection === 'overview'" class="agent-chat-workspace__content agent-chat-workspace__content--grid">
             <article class="agent-chat-workspace__card">
               <p class="agent-chat-workspace__card-eyebrow">Сейчас в чате</p>
@@ -1178,9 +1180,11 @@ async function openWorkspaceFile(path: string) {
             </div>
             </template>
           </div>
+            </div>
+          </Transition>
         </div>
-      </Transition>
-    </div>
+      </div>
+    </Transition>
 
     <div class="agent-chat-workspace__dock">
       <div class="section-tabs-row agent-chat-workspace__tabs-row">
