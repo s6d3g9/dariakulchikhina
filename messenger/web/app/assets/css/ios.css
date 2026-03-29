@@ -3,28 +3,6 @@
    Дополняет main.css — подключается после него в nuxt.config
    ============================================================ */
 
-/* ── Safe area: верхняя зона (notch / Dynamic Island / статус-бар) ── */
-
-.messenger-shell {
-  /* Отступаем контент от статус-бара iPhone */
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-/* ── Safe area: нижняя зона (home indicator) ── */
-
-/*
-  Нижний nav-bar остаётся в потоке flex-column.
-  Увеличиваем его высоту + добавляем padding-bottom,
-  чтобы кнопки не залезали под home indicator.
-*/
-.messenger-bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  height: calc(
-    var(--messenger-bottom-bar-height) +
-    env(safe-area-inset-bottom, 0px)
-  );
-}
-
 /*
   Composer-bar виден без bottom-nav только когда открыта
   медиа-плашка; в этом случае iOS поднимает клавиатуру
@@ -74,20 +52,6 @@
 
 .call-error {
   bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 4px));
-}
-
-/* ── Auth-страницы: safe area сверху и снизу ── */
-
-.auth-shell {
-  padding-top: max(24px, env(safe-area-inset-top, 0px));
-  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
-}
-
-@media (max-width: 640px) {
-  .auth-shell {
-    padding-top: max(16px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
-  }
 }
 
 /* ── Touch: убираем синюю подсветку при тапе на кастомных элементах ── */

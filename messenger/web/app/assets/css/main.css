@@ -16,6 +16,25 @@ html, body {
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  background: rgb(9 17 31);
+}
+
+body,
+#__nuxt,
+.messenger-v-app {
+  min-height: 100%;
+  background: rgb(9 17 31);
+}
+
+@media (pointer: coarse) {
+  html,
+  body,
+  #__nuxt,
+  .messenger-v-app,
+  .messenger-shell,
+  .auth-shell {
+    touch-action: pan-x pan-y;
+  }
 }
 
 /* ── M3 Typography Utility Classes ──────────────────────── */
@@ -148,6 +167,10 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   padding-right: var(--messenger-safe-right);
   padding-left: var(--messenger-safe-left);
   background: rgb(var(--v-theme-background));
+}
+
+.messenger-shell[data-messenger-keyboard='open'] {
+  --messenger-safe-bottom: 0px;
 }
 
 .messenger-workspace {
@@ -3171,7 +3194,7 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   z-index: 3;
   display: flex;
   align-items: center;
-  padding: 4px 8px calc(12px + var(--messenger-chat-keyboard-offset, 0px));
+  padding: 4px 8px max(12px, calc(var(--messenger-safe-bottom) + 4px));
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container-low));
 }
@@ -3275,7 +3298,7 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 }
 
 .composer-bar--audio {
-  padding: 4px 8px calc(12px + var(--messenger-chat-keyboard-offset, 0px));
+  padding: 4px 8px max(12px, calc(var(--messenger-safe-bottom) + 4px));
 }
 
 html[data-messenger-keyboard='open'] .section-block--chat {
