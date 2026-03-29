@@ -33,8 +33,8 @@ textarea,
 select {
   background: transparent;
   color: var(--glass-text);
-  -webkit-text-fill-color: var(--glass-text);
-  caret-color: var(--glass-text);
+  -webkit-text-fill-color: currentColor;
+  caret-color: currentColor;
   border: none;
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent);
   outline: none;
@@ -364,6 +364,8 @@ html.dark .glass-card {
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent);
   background: transparent;
   color: var(--glass-text);
+  -webkit-text-fill-color: currentColor;
+  caret-color: currentColor;
   border-radius: 4px 4px 0 0;
   padding: 8px 16px;
   font-size: var(--input-font-size, var(--ds-text-sm, .833rem));
@@ -384,8 +386,8 @@ textarea:-webkit-autofill:focus,
 select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--glass-text) !important;
-  caret-color: var(--glass-text);
+  -webkit-text-fill-color: currentColor !important;
+  caret-color: currentColor;
   border-bottom-color: color-mix(in srgb, var(--glass-text) 25%, transparent);
   -webkit-box-shadow: 0 0 0 1000px var(--glass-page-bg) inset;
   box-shadow: 0 0 0 1000px var(--glass-page-bg) inset;
@@ -513,8 +515,8 @@ html.dark select:-webkit-autofill:focus {
 .auth-root input.auth-input,
 .auth-root input.chat-auth-input {
   color: var(--glass-text) !important;
-  -webkit-text-fill-color: var(--glass-text) !important;
-  caret-color: var(--glass-text);
+  -webkit-text-fill-color: currentColor !important;
+  caret-color: currentColor;
 }
 
 .auth-root .auth-input:focus,
@@ -522,8 +524,8 @@ html.dark select:-webkit-autofill:focus {
 .auth-root input.auth-input:focus,
 .auth-root input.chat-auth-input:focus {
   color: var(--glass-text);
-  -webkit-text-fill-color: var(--glass-text) !important;
-  caret-color: var(--glass-text);
+  -webkit-text-fill-color: currentColor !important;
+  caret-color: currentColor;
   border-bottom-color: var(--ds-accent, var(--glass-text));
 }
 
@@ -533,8 +535,8 @@ html.dark select:-webkit-autofill:focus {
 .auth-root .chat-auth-input:-webkit-autofill,
 .auth-root .chat-auth-input:-webkit-autofill:hover,
 .auth-root .chat-auth-input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--glass-text) !important;
-  caret-color: var(--glass-text);
+  -webkit-text-fill-color: currentColor !important;
+  caret-color: currentColor;
 }
 
 .auth-card,
