@@ -176,6 +176,134 @@
   appearance: none;
 }
 
+/* ── Compact iPhone layout polish ───────────────────────── */
+
+@media (max-width: 430px) {
+  .chat-header {
+    padding-inline: 2px;
+  }
+
+  .chat-header__toolbar {
+    height: 56px;
+    gap: 2px;
+  }
+
+  .chat-header__peer {
+    gap: 6px;
+    padding: 2px 4px;
+  }
+
+  .chat-header__toolbar-actions {
+    gap: 0;
+  }
+
+  .chat-header__toolbar-actions .v-btn,
+  .chat-header__icon-btn,
+  .chat-header__action-btn {
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+
+  .message-list {
+    padding: 6px 10px;
+    padding-bottom: calc(var(--messenger-composer-height, 76px) + 10px);
+  }
+
+  .message-bubble {
+    max-width: 86%;
+  }
+
+  .composer-bar,
+  .composer-bar--audio {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .composer-bar__body {
+    gap: 0;
+  }
+
+  .composer-btn {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+  }
+
+  .composer-btn--leading {
+    margin-right: -34px;
+  }
+
+  .composer-input--framed {
+    padding-left: 40px;
+    padding-right: 76px;
+  }
+
+  .agent-chat-workspace {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .agent-chat-workspace__head {
+    gap: 8px;
+  }
+
+  .agent-chat-workspace__meta {
+    gap: 6px;
+  }
+
+  .agent-chat-workspace__title {
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .agent-chat-workspace__status-pill,
+  .agent-chat-workspace__ghost,
+  .agent-chat-workspace__primary {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .agent-chat-workspace__content {
+    min-height: clamp(220px, 30dvh, 300px);
+    padding: 0 8px 6px;
+  }
+
+  .agent-chat-workspace__window {
+    min-height: clamp(240px, 32dvh, 320px);
+  }
+
+  .agent-chat-workspace__card,
+  .agent-chat-workspace__list-item {
+    padding: 10px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 932px) and (orientation: landscape) and (pointer: coarse) {
+  .chat-header__toolbar {
+    height: 52px;
+  }
+
+  .message-list {
+    padding-bottom: calc(var(--messenger-composer-height, 76px) + 6px);
+  }
+
+  .agent-chat-workspace {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .agent-chat-workspace__content {
+    min-height: 150px;
+    max-height: min(32dvh, 220px);
+  }
+
+  .agent-chat-workspace__window {
+    min-height: 170px;
+  }
+}
+
 /* ── Корректное поведение scroll при динамической адресной строке Safari ── */
 /* dvh уже используется в main.css; этот блок страхует старые iOS (< 15.4) */
 
