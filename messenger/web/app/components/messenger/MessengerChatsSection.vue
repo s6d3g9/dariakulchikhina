@@ -28,12 +28,14 @@ type ChatFolder = {
   key: string
   label: string
   chatIds: string[]
-  kind?: 'manual' | 'agent-system'
+  kind?: 'manual' | 'agent' | 'agent-system'
   agentIds?: string[]
   templateKey?: string
   runs?: AgentSystemRun[]
   lastRun?: AgentSystemRun
 }
+
+type ChatMode = 'people' | 'agents' | 'systems'
 
 type AgentSystemCard = {
   key: string
@@ -234,26 +236,35 @@ function loadFolders(): ChatFolder[] {
     const raw = localStorage.getItem(FOLDERS_LS_KEY)
     const parsed = raw ? (JSON.parse(raw) as ChatFolder[]) : []
     return Array.isArray(parsed)
-      ? parsed.map(folder => ({
-          key: folder.key,
-          label: folder.label,
-          chatIds: Array.isArray(folder.chatIds) ? folder.chatIds : [],
-          kind: folder.kind || 'manual',
-          agentIds: Array.isArray(folder.agentIds) ? folder.agentIds : [],
-          templateKey: typeof folder.templateKey === 'string' ? folder.templateKey : undefined,
-          runs: [
-            ...(Array.isArray(folder.runs)
-              ? folder.runs
-                .map(run => normalizeAgentSystemRun(run))
-                .filter((run): run is AgentSystemRun => Boolean(run))
-              : []),
-            ...(folder.lastRun ? [normalizeAgentSystemRun(folder.lastRun)].filter((run): run is AgentSystemRun => Boolean(run)) : []),
-          ]
-            .sort((left, right) => new Date(right.sentAt || 0).getTime() - new Date(left.sentAt || 0).getTime())
-            .filter((run, index, runs) => runs.findIndex(item => item.sentAt === run.sentAt && item.prompt === run.prompt) === index)
-            .slice(0, 12),
-          lastRun: normalizeAgentSystemRun(folder.lastRun),
-        }))
+      ? parsed.map((folder) => {
+          const isLegacyAgentFolder = folder.kind === 'agent-system'
+            && folder.key.startsWith('agent-system-')
+            && folder.label.startsWith('AI: ')
+            && !folder.templateKey
+
+          return {
+            key: folder.key,
+            label: isLegacyAgentFolder ? folder.label.replace(/^AI:\s*/u, '').trim() || folder.label : folder.label,
+            chatIds: Array.isArray(folder.chatIds) ? folder.chatIds : [],
+            kind: isLegacyAgentFolder
+              ? 'agent'
+              : (folder.kind === 'agent' || folder.kind === 'agent-system' ? folder.kind : 'manual'),
+            agentIds: Array.isArray(folder.agentIds) ? folder.agentIds : [],
+            templateKey: typeof folder.templateKey === 'string' ? folder.templateKey : undefined,
+            runs: [
+              ...(Array.isArray(folder.runs)
+                ? folder.runs
+                  .map(run => normalizeAgentSystemRun(run))
+                  .filter((run): run is AgentSystemRun => Boolean(run))
+                : []),
+              ...(folder.lastRun ? [normalizeAgentSystemRun(folder.lastRun)].filter((run): run is AgentSystemRun => Boolean(run)) : []),
+            ]
+              .sort((left, right) => new Date(right.sentAt || 0).getTime() - new Date(left.sentAt || 0).getTime())
+              .filter((run, index, runs) => runs.findIndex(item => item.sentAt === run.sentAt && item.prompt === run.prompt) === index)
+              .slice(0, 12),
+            lastRun: normalizeAgentSystemRun(folder.lastRun),
+          }
+        })
       : []
   } catch {
     return []
@@ -261,15 +272,29 @@ function loadFolders(): ChatFolder[] {
 }
 
 const userFolders = ref<ChatFolder[]>(loadFolders())
+const activeChatMode = ref<ChatMode>('people')
 const activeFolderKey = ref<string>('all')
 const folderDraftName = ref('')
 const showCreateFolder = ref(false)
 const folderContextKey = ref<string | null>(null)
 const agentMap = computed(() => new Map(agentsModel.agents.value.map(agent => [agent.id, agent] as const)))
+const manualFolders = computed(() => userFolders.value.filter(folder => (folder.kind || 'manual') === 'manual'))
+const agentFolders = computed(() => userFolders.value.filter(folder => folder.kind === 'agent'))
 const systemFolders = computed(() => userFolders.value.filter(folder => folder.kind === 'agent-system'))
 const activeFolder = computed(() => userFolders.value.find(folder => folder.key === activeFolderKey.value) ?? null)
-const activeAgentSystem = computed(() => activeFolder.value?.kind === 'agent-system' ? activeFolder.value : null)
-const showAgentSystemsDirectory = computed(() => activeFolderKey.value === AGENT_SYSTEMS_FOLDER_KEY)
+const visibleFolders = computed(() => {
+  if (activeChatMode.value === 'people') {
+    return manualFolders.value
+  }
+
+  if (activeChatMode.value === 'agents') {
+    return agentFolders.value
+  }
+
+  return systemFolders.value
+})
+const activeAgentSystem = computed(() => activeChatMode.value === 'systems' && activeFolder.value?.kind === 'agent-system' ? activeFolder.value : null)
+const showAgentSystemsDirectory = computed(() => activeChatMode.value === 'systems' && activeFolderKey.value === AGENT_SYSTEMS_FOLDER_KEY)
 const availableSystemTemplates = computed(() => AGENT_SYSTEM_TEMPLATES
   .map(template => ({
     ...template,
@@ -300,19 +325,59 @@ function createFolder() {
 function confirmDeleteFolder() {
   if (!folderContextKey.value) return
   userFolders.value = userFolders.value.filter(f => f.key !== folderContextKey.value)
-  if (activeFolderKey.value === folderContextKey.value) activeFolderKey.value = 'all'
+  if (activeFolderKey.value === folderContextKey.value) {
+    activeFolderKey.value = activeChatMode.value === 'systems' ? AGENT_SYSTEMS_FOLDER_KEY : 'all'
+  }
   saveFolders()
   folderContextKey.value = null
 }
 
+const peopleConversations = computed(() => conversations.conversations.value.filter(chat => chat.peerType !== 'agent'))
+const agentConversations = computed(() => conversations.conversations.value.filter(chat => chat.peerType === 'agent'))
+
+function ensureActiveFolderForMode(mode = activeChatMode.value) {
+  if (mode === 'systems') {
+    const systemFolderSelected = systemFolders.value.some(folder => folder.key === activeFolderKey.value)
+    if (!systemFolderSelected && activeFolderKey.value !== AGENT_SYSTEMS_FOLDER_KEY) {
+      activeFolderKey.value = AGENT_SYSTEMS_FOLDER_KEY
+    }
+    return
+  }
+
+  if (activeFolderKey.value === 'all') {
+    return
+  }
+
+  const folders = mode === 'people' ? manualFolders.value : agentFolders.value
+  if (!folders.some(folder => folder.key === activeFolderKey.value)) {
+    activeFolderKey.value = 'all'
+  }
+}
+
+function setChatMode(mode: ChatMode) {
+  activeChatMode.value = mode
+  ensureActiveFolderForMode(mode)
+}
+
 const filteredConversations = computed(() => {
-  if (activeFolderKey.value === 'all') return conversations.conversations.value
-  if (activeFolderKey.value === AGENT_SYSTEMS_FOLDER_KEY) {
+  if (showAgentSystemsDirectory.value) {
     return []
   }
-  const folder = userFolders.value.find(f => f.key === activeFolderKey.value)
-  if (!folder) return conversations.conversations.value
-  return conversations.conversations.value.filter(c => folder.chatIds.includes(c.id))
+
+  const source = activeChatMode.value === 'people'
+    ? peopleConversations.value
+    : agentConversations.value
+
+  if (activeFolderKey.value === 'all') {
+    return source
+  }
+
+  const folder = visibleFolders.value.find(item => item.key === activeFolderKey.value)
+  if (!folder) {
+    return source
+  }
+
+  return source.filter(chat => folder.chatIds.includes(chat.id))
 })
 
 const systemDirectoryCards = computed<AgentSystemCard[]>(() => systemFolders.value
@@ -388,17 +453,17 @@ function attachChatToFolder(folderKey: string, conversationId: string) {
 }
 
 function createAgentFolderIfNeeded(agentId: string, displayName: string) {
-  const folderKey = `agent-system-${agentId}`
-  const existing = userFolders.value.find(folder => folder.key === folderKey)
+  const folderKey = `agent-chat-${agentId}`
+  const existing = userFolders.value.find(folder => folder.key === folderKey || (folder.kind === 'agent' && folder.agentIds?.includes(agentId)))
   if (existing) {
-    return folderKey
+    return existing.key
   }
 
   upsertFolder({
     key: folderKey,
-    label: `AI: ${displayName}`,
+    label: displayName,
     chatIds: [],
-    kind: 'agent-system',
+    kind: 'agent',
     agentIds: [agentId],
   })
 
@@ -537,10 +602,11 @@ async function openAgentFromGallery(agentId: string) {
     const conversationId = conversations.activeConversationId.value
     if (conversationId) {
       const currentFolder = userFolders.value.find(folder => folder.key === activeFolderKey.value)
-      const folderKey = currentFolder?.kind === 'agent-system'
+      const folderKey = currentFolder?.kind === 'agent'
         ? currentFolder.key
         : createAgentFolderIfNeeded(agent.id, agent.displayName)
       attachChatToFolder(folderKey, conversationId)
+      activeChatMode.value = 'agents'
       activeFolderKey.value = folderKey
     }
     navigation.openSection('chat')
@@ -624,6 +690,7 @@ async function createAgentSystem() {
       templateKey: newSystemTemplateKey.value || undefined,
       agentIds: selectedAgents.map(agent => agent.id),
     })
+    activeChatMode.value = 'systems'
     activeFolderKey.value = folderKey
     navigation.openSection('chats')
     showNewChatDialog.value = false
@@ -633,6 +700,7 @@ async function createAgentSystem() {
 }
 
 function openAgentSystem(folderKey: string) {
+  activeChatMode.value = 'systems'
   activeFolderKey.value = folderKey
 }
 
@@ -700,6 +768,7 @@ async function saveAgentSystemEdits() {
       chatIds: Array.from(new Set(nextChatIds)),
     })
 
+    activeChatMode.value = 'systems'
     showEditSystemDialog.value = false
     navigation.openSection('chats')
   } catch {
@@ -795,11 +864,27 @@ function formatSystemRunPrompt(value: string) {
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
-const chatSuggestions = computed(() => conversations.conversations.value.slice(0, 8))
+const chatSuggestions = computed(() => filteredConversations.value.slice(0, 8))
+const emptyStateTitle = computed(() => {
+  if (activeAgentSystem.value) {
+    return 'Внутри системы пока нет чатов.'
+  }
+
+  if (activeChatMode.value === 'agents') {
+    return 'Чаты с AI-агентами пока пусты.'
+  }
+
+  if (activeChatMode.value === 'systems') {
+    return 'Система пока не выбрана.'
+  }
+
+  return 'Чаты с людьми пока пусты.'
+})
 
 onMounted(async () => {
   await conversations.refresh()
   searchDraft.value = conversations.query.value
+  ensureActiveFolderForMode()
 })
 
 onBeforeUnmount(() => {
@@ -823,6 +908,10 @@ watch(searchDraft, (value) => {
     }
   }, 180)
 })
+
+watch([activeChatMode, userFolders], () => {
+  ensureActiveFolderForMode()
+}, { deep: true })
 
 async function runSearch() {
   actionError.value = ''
@@ -958,6 +1047,33 @@ function formatChatPreview(chat: MessengerConversationItem) {
     <VAlert v-if="actionError" type="error" class="ma-2">{{ actionError }}</VAlert>
     <div v-if="conversations.pending.value" class="section-progress section-progress--floating">
       <MessengerProgressLinear aria-label="Загрузка списка чатов" indeterminate four-color />
+    </div>
+
+    <div class="chats-submenu-bar" role="tablist" aria-label="Подменю чатов">
+      <button
+        type="button"
+        class="chats-submenu-chip"
+        :class="{ 'chats-submenu-chip--active': activeChatMode === 'people' }"
+        role="tab"
+        :aria-selected="activeChatMode === 'people'"
+        @click="setChatMode('people')"
+      >Люди</button>
+      <button
+        type="button"
+        class="chats-submenu-chip"
+        :class="{ 'chats-submenu-chip--active': activeChatMode === 'agents' }"
+        role="tab"
+        :aria-selected="activeChatMode === 'agents'"
+        @click="setChatMode('agents')"
+      >Агенты</button>
+      <button
+        type="button"
+        class="chats-submenu-chip"
+        :class="{ 'chats-submenu-chip--active': activeChatMode === 'systems' }"
+        role="tab"
+        :aria-selected="activeChatMode === 'systems'"
+        @click="setChatMode('systems')"
+      >Системы AI</button>
     </div>
 
     <!-- Список чатов + FAB -->
@@ -1101,7 +1217,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
         </VListItem>
 
         <div v-if="!filteredConversations.length" class="empty-state">
-          <p class="empty-state__title">{{ activeAgentSystem ? 'Внутри системы пока нет чатов.' : 'Чаты пока пусты.' }}</p>
+          <p class="empty-state__title">{{ emptyStateTitle }}</p>
         </div>
       </VList>
 
@@ -1119,23 +1235,25 @@ function formatChatPreview(chat: MessengerConversationItem) {
     <!-- Папки чатов -->
     <div class="chats-folders-bar" role="tablist" aria-label="Папки чатов">
       <button
+        v-if="activeChatMode !== 'systems'"
         type="button"
         class="chats-folder-chip"
         :class="{ 'chats-folder-chip--active': activeFolderKey === 'all' }"
         role="tab"
         :aria-selected="activeFolderKey === 'all'"
         @click="activeFolderKey = 'all'"
-      >Все</button>
+      >{{ activeChatMode === 'agents' ? 'Все агенты' : 'Все' }}</button>
       <button
+        v-else
         type="button"
         class="chats-folder-chip"
         :class="{ 'chats-folder-chip--active': activeFolderKey === AGENT_SYSTEMS_FOLDER_KEY }"
         role="tab"
         :aria-selected="activeFolderKey === AGENT_SYSTEMS_FOLDER_KEY"
         @click="activeFolderKey = AGENT_SYSTEMS_FOLDER_KEY"
-      >Системы AI</button>
+      >Каталог систем</button>
       <button
-        v-for="folder in userFolders"
+        v-for="folder in visibleFolders"
         :key="folder.key"
         type="button"
         class="chats-folder-chip"
@@ -1147,6 +1265,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
         @contextmenu.prevent="folderContextKey = folder.key"
       >{{ folder.kind === 'agent-system' ? `${folder.label} · ${(folder.agentIds || []).length}` : folder.label }}</button>
       <button
+        v-if="activeChatMode === 'people'"
         type="button"
         class="chats-folder-chip"
         aria-label="Создать папку"
