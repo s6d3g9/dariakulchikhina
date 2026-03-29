@@ -152,7 +152,7 @@ const router = useRouter()
 const { csrfHeaders, ensureCsrfCookie } = useCsrfHeaders()
 
 const roleOptions = [
-  { value: 'designer', label: 'Дизайнер', note: 'Вход в админ-кабинет.' },
+  { value: 'designer', label: 'Администратор', note: 'Вход в админ-кабинет.' },
   { value: 'client', label: 'Клиент', note: 'Вход в кабинет проекта.' },
   { value: 'contractor', label: 'Подрядчик', note: 'Вход в задачи и документы.' },
 ] as const satisfies ReadonlyArray<{ value: LoginRole; label: string; note: string }>
@@ -181,7 +181,7 @@ const registerPath = computed(() => `/register?role=${selectedRole.value}`)
 const recoverPath = computed(() => `/recover?role=${selectedRole.value}`)
 
 const submitLabel = computed(() => {
-  if (selectedRole.value === 'designer') return 'Войти как дизайнер'
+  if (selectedRole.value === 'designer') return 'Войти как администратор'
   if (selectedRole.value === 'client') return 'Войти как клиент'
   return 'Войти как подрядчик'
 })

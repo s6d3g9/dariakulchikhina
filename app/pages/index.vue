@@ -19,9 +19,10 @@
           <span>Кабинет подрядчика</span>
           <span class="lp-btn-hint">мастера</span>
         </NuxtLink>
-        <NuxtLink to="/login?role=designer" class="lp-btn lp-btn--muted">
+        <NuxtLink to="/admin/login" class="lp-btn">
           <span class="lp-btn-icon">◎</span>
-          <span>Вход для дизайнера</span>
+          <span>Вход для администратора</span>
+          <span class="lp-btn-hint">админка</span>
         </NuxtLink>
       </div>
     </div>
@@ -91,12 +92,6 @@
 .lp-btn--primary:hover {
   background: rgba(255,255,255,0.48);
 }
-
-.lp-btn--muted {
-  opacity: 0.45;
-  font-size: 0.78rem;
-}
-.lp-btn--muted:hover { opacity: 0.75; }
 
 .lp-btn-icon {
   font-size: 1rem;
