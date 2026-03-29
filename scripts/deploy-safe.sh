@@ -4,6 +4,7 @@ set -euo pipefail
 DEPLOY_HOST="${DEPLOY_HOST:-daria-deploy}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/daria-nuxt}"
 APP_NAME="${APP_NAME:-daria-nuxt}"
+APP_PM2_USER="${APP_PM2_USER:-admin2}"
 MESSENGER_ECOSYSTEM_PATH="${MESSENGER_ECOSYSTEM_PATH:-messenger/ecosystem.config.cjs}"
 MESSENGER_PM2_CORE_NAME="${MESSENGER_PM2_CORE_NAME:-daria-messenger-core}"
 MESSENGER_PM2_WEB_NAME="${MESSENGER_PM2_WEB_NAME:-daria-messenger-web}"
@@ -185,6 +186,40 @@ shell_escape() {
   printf '%q' "$1"
 }
 
+restart_app_pm2() {
+  local remote_worktree
+  local remote_app_name
+  local remote_target_user
+  local pm2_restart_cmd
+
+  remote_worktree="$(shell_escape "$DEPLOY_PATH")"
+  remote_app_name="$(shell_escape "$APP_NAME")"
+  pm2_restart_cmd="cd ${remote_worktree} && pm2 restart ${remote_app_name} --update-env --silent && pm2 save --force >/dev/null"
+
+  if [[ -n "$APP_PM2_USER" ]]; then
+    remote_target_user="$(shell_escape "$APP_PM2_USER")"
+    ssh "$DEPLOY_HOST" "set -e; current_user=\$(id -un); if [[ \"\$current_user\" = ${remote_target_user} ]]; then ${pm2_restart_cmd}; else sudo -u ${remote_target_user} -H bash -lc $(shell_escape "$pm2_restart_cmd"); fi"
+  else
+    ssh "$DEPLOY_HOST" "set -e; ${pm2_restart_cmd}"
+  fi
+}
+
+show_app_pm2_status() {
+  local remote_app_name
+  local remote_target_user
+  local pm2_status_cmd
+
+  remote_app_name="$(shell_escape "$APP_NAME")"
+  pm2_status_cmd="pm2 status ${remote_app_name} --no-color"
+
+  if [[ -n "$APP_PM2_USER" ]]; then
+    remote_target_user="$(shell_escape "$APP_PM2_USER")"
+    ssh "$DEPLOY_HOST" "set -e; current_user=\$(id -un); if [[ \"\$current_user\" = ${remote_target_user} ]]; then ${pm2_status_cmd}; else sudo -u ${remote_target_user} -H bash -lc $(shell_escape "$pm2_status_cmd"); fi"
+  else
+    ssh "$DEPLOY_HOST" "$pm2_status_cmd"
+  fi
+}
+
 restart_messenger_pm2() {
   local remote_worktree
   local remote_ecosystem
@@ -253,6 +288,11 @@ run_preflight() {
   echo "[preflight] remote tools + path"
   ssh "$DEPLOY_HOST" "set -e; command -v node >/dev/null; command -v pnpm >/dev/null; command -v pm2 >/dev/null; command -v git >/dev/null; mkdir -p '$DEPLOY_PATH'; test -w '$DEPLOY_PATH'"
 
+  if [[ -n "$APP_PM2_USER" ]]; then
+    echo "[preflight] main app pm2 user"
+    ssh "$DEPLOY_HOST" "set -e; if [[ \$(id -un) != '$(shell_escape "$APP_PM2_USER")' ]]; then command -v sudo >/dev/null; id -u '$(shell_escape "$APP_PM2_USER")' >/dev/null; sudo -n -u '$(shell_escape "$APP_PM2_USER")' true; fi"
+  fi
+
   if [[ "$DEPLOY_MESSENGER" == "1" && -n "$MESSENGER_PM2_USER" ]]; then
     echo "[preflight] messenger pm2 user"
     ssh "$DEPLOY_HOST" "set -e; if [[ \$(id -un) != '$(shell_escape "$MESSENGER_PM2_USER")' ]]; then command -v sudo >/dev/null; id -u '$(shell_escape "$MESSENGER_PM2_USER")' >/dev/null; sudo -n -u '$(shell_escape "$MESSENGER_PM2_USER")' true; fi"
@@ -313,14 +353,14 @@ if [[ "$DRY_RUN" == "1" ]]; then
 fi
 
 RESTART_START_TS=$(date +%s)
-ssh "$DEPLOY_HOST" "set -e; cd '$DEPLOY_PATH'; pm2 restart '$APP_NAME' --update-env --silent"
+restart_app_pm2
 if [[ "$DEPLOY_MESSENGER" == "1" ]]; then
   restart_messenger_pm2
 fi
 log_stage_time "restart" "$RESTART_START_TS"
 
 echo "[deploy] pm2 status"
-ssh "$DEPLOY_HOST" "pm2 status '$APP_NAME' --no-color"
+show_app_pm2_status
 
 echo "[deploy] healthcheck ${HEALTHCHECK_URL}"
 HEALTH_START_TS=$(date +%s)
