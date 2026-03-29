@@ -2173,7 +2173,8 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   }
 
   .agent-chat-workspace__content {
-    max-height: 240px;
+    min-height: 320px;
+    max-height: min(52dvh, 420px);
     padding-left: 16px;
     padding-right: 16px;
   }
