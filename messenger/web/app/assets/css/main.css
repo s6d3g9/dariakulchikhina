@@ -57,8 +57,6 @@ html, body {
 }
 
 html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
-  --messenger-input-ink: rgb(var(--v-theme-primary));
-  --messenger-input-caret: rgb(var(--v-theme-primary));
   --messenger-input-placeholder: rgba(var(--v-theme-on-surface-variant), 0.96);
   --messenger-input-selection-bg: rgba(var(--v-theme-primary), 0.36);
   --messenger-input-selection-ink: rgb(var(--v-theme-on-primary));
@@ -122,6 +120,10 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 }
 
 .messenger-shell {
+  --messenger-safe-top: env(safe-area-inset-top, 0px);
+  --messenger-safe-right: env(safe-area-inset-right, 0px);
+  --messenger-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --messenger-safe-left: env(safe-area-inset-left, 0px);
   --messenger-dock-font-size: 16px;
   --messenger-dock-line-height: 24px;
   --messenger-dock-padding-y: 8px;
@@ -129,16 +131,22 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-dock-radius: 21px;
   --messenger-chat-header-height: 64px;
   --messenger-bottom-bar-height: 44px;
+  --messenger-bottom-bar-effective-height: calc(var(--messenger-bottom-bar-height) + var(--messenger-safe-bottom));
   --messenger-bottom-bar-button-height: 38px;
   --messenger-bottom-bar-gap: 2px;
   --messenger-bottom-bar-radius: 10px;
   --messenger-agent-workspace-dock-height: 102px;
   --messenger-keyboard-offset: max(0px, var(--messenger-keyboard-inset, 0px));
+  --messenger-viewport-effective-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
   display: flex;
   flex-direction: column;
-  height: var(--messenger-viewport-height, 100dvh);
-  max-height: var(--messenger-viewport-height, 100dvh);
+  min-height: var(--messenger-viewport-effective-height);
+  height: var(--messenger-viewport-effective-height);
+  max-height: var(--messenger-viewport-effective-height);
   overflow: hidden;
+  padding-top: var(--messenger-safe-top);
+  padding-right: var(--messenger-safe-right);
+  padding-left: var(--messenger-safe-left);
   background: rgb(var(--v-theme-background));
 }
 
@@ -168,9 +176,10 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   flex-direction: row;
   align-items: center;
   flex-shrink: 0;
-  height: var(--messenger-bottom-bar-height);
+  min-height: var(--messenger-bottom-bar-effective-height);
+  height: auto;
   gap: var(--messenger-bottom-bar-gap);
-  padding: 2px 3px;
+  padding: 2px 3px calc(2px + var(--messenger-safe-bottom));
   background: rgb(var(--v-theme-surface-container-low));
   z-index: 10;
 }
@@ -3243,6 +3252,19 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
+.messenger-shell[data-messenger-keyboard='open'] .composer-bar,
+.messenger-shell[data-messenger-keyboard='open'] .search-dock--bottom-dock,
+.messenger-shell[data-messenger-media-sheet='open'] .composer-media-menu__tabs,
+.messenger-shell .content-gallery__nav {
+  padding-bottom: calc(var(--messenger-safe-bottom) + 4px);
+}
+
+.messenger-shell[data-messenger-media-sheet='open'] .composer-media-menu__tabs,
+.messenger-shell .content-gallery__nav {
+  min-height: var(--messenger-bottom-bar-effective-height) !important;
+  height: auto !important;
+}
+
 .composer-btn--leading {
   margin-right: -36px;
   z-index: 1;
@@ -4992,8 +5014,8 @@ html[data-messenger-keyboard='open'] .section-block--chat {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100dvh;
-  padding: 24px 16px;
+  min-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
+  padding: calc(24px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
   background: rgb(var(--v-theme-background));
   overflow-y: auto;
 }
@@ -5274,7 +5296,7 @@ html[data-messenger-keyboard='open'] .section-block--chat {
 @media (max-width: 640px) {
   .auth-shell {
     align-items: flex-start;
-    padding: 16px;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
   }
 
   .auth-card {

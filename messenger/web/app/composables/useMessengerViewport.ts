@@ -27,22 +27,37 @@ function isMobileViewport() {
   return window.matchMedia('(max-width: 767px)').matches || navigator.maxTouchPoints > 0
 }
 
+function isAppleTouchViewport() {
+  if (!import.meta.client) {
+    return false
+  }
+
+  const userAgent = navigator.userAgent || ''
+  const platform = navigator.platform || ''
+
+  return /iPad|iPhone|iPod/u.test(userAgent)
+    || (platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
 export function useMessengerViewport() {
   const viewportHeight = useState<number>('messenger-viewport-height', () => 0)
+  const viewportVisibleHeight = useState<number>('messenger-viewport-visible-height', () => 0)
   const viewportOffsetTop = useState<number>('messenger-viewport-offset-top', () => 0)
   const keyboardInset = useState<number>('messenger-keyboard-inset', () => 0)
   const keyboardOpen = useState<boolean>('messenger-keyboard-open', () => false)
 
-  function applyViewportStyles(nextViewportHeight: number, nextViewportOffsetTop: number, nextKeyboardInset: number, nextKeyboardOpen: boolean) {
+  function applyViewportStyles(nextViewportHeight: number, nextViewportVisibleHeight: number, nextViewportOffsetTop: number, nextKeyboardInset: number, nextKeyboardOpen: boolean) {
     if (!import.meta.client) {
       return
     }
 
     const root = document.documentElement
     root.style.setProperty('--messenger-viewport-height', `${nextViewportHeight}px`)
+    root.style.setProperty('--messenger-viewport-visible-height', `${nextViewportVisibleHeight}px`)
     root.style.setProperty('--messenger-viewport-offset-top', `${nextViewportOffsetTop}px`)
     root.style.setProperty('--messenger-keyboard-inset', `${nextKeyboardInset}px`)
     root.dataset.messengerKeyboard = nextKeyboardOpen ? 'open' : 'closed'
+    root.dataset.messengerViewportPlatform = isAppleTouchViewport() ? 'ios' : 'default'
   }
 
   function syncViewport() {
@@ -53,7 +68,8 @@ export function useMessengerViewport() {
     const visualViewport = window.visualViewport
     const nextViewportHeight = Math.max(0, Math.round(visualViewport?.height ?? window.innerHeight))
     const offsetTop = Math.max(0, Math.round(visualViewport?.offsetTop ?? 0))
-    const rawKeyboardInset = Math.max(0, Math.round(window.innerHeight - nextViewportHeight - offsetTop))
+    const nextViewportVisibleHeight = Math.max(0, nextViewportHeight + offsetTop)
+    const rawKeyboardInset = Math.max(0, Math.round(window.innerHeight - nextViewportVisibleHeight))
     const focusedEditable = isEditableElement(document.activeElement)
     const mobileViewport = isMobileViewport()
     const viewportCompressed = nextViewportHeight < window.innerHeight - 24
@@ -61,10 +77,11 @@ export function useMessengerViewport() {
     const nextKeyboardInset = nextKeyboardOpen ? rawKeyboardInset : 0
 
     viewportHeight.value = nextViewportHeight
+    viewportVisibleHeight.value = nextViewportVisibleHeight
     viewportOffsetTop.value = offsetTop
     keyboardInset.value = nextKeyboardInset
     keyboardOpen.value = nextKeyboardOpen
-    applyViewportStyles(nextViewportHeight, offsetTop, nextKeyboardInset, nextKeyboardOpen)
+    applyViewportStyles(nextViewportHeight, nextViewportVisibleHeight, offsetTop, nextKeyboardInset, nextKeyboardOpen)
   }
 
   function scheduleViewportSync() {
@@ -137,6 +154,7 @@ export function useMessengerViewport() {
 
   return {
     viewportHeight,
+    viewportVisibleHeight,
     viewportOffsetTop,
     keyboardInset,
     keyboardOpen,

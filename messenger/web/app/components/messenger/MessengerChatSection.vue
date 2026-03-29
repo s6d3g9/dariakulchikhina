@@ -529,6 +529,7 @@ function lockPageScroll() {
     return
   }
 
+  const root = document.documentElement
   const body = document.body
   if (body.dataset.messengerScrollLocked === 'true') {
     return
@@ -536,10 +537,9 @@ function lockPageScroll() {
 
   lockedPageScrollY = window.scrollY
   body.dataset.messengerScrollLocked = 'true'
-  body.style.position = 'fixed'
-  body.style.top = `-${lockedPageScrollY}px`
-  body.style.left = '0'
-  body.style.right = '0'
+  root.style.height = '100%'
+  root.style.overflow = 'hidden'
+  body.style.height = '100%'
   body.style.width = '100%'
   body.style.overflow = 'hidden'
 }
@@ -549,16 +549,16 @@ function unlockPageScroll() {
     return
   }
 
+  const root = document.documentElement
   const body = document.body
   if (body.dataset.messengerScrollLocked !== 'true') {
     return
   }
 
   body.dataset.messengerScrollLocked = 'false'
-  body.style.position = ''
-  body.style.top = ''
-  body.style.left = ''
-  body.style.right = ''
+  root.style.height = ''
+  root.style.overflow = ''
+  body.style.height = ''
   body.style.width = ''
   body.style.overflow = ''
   window.scrollTo({ top: lockedPageScrollY, behavior: 'auto' })
@@ -1388,7 +1388,6 @@ watch(() => viewport.keyboardOpen.value, async (opened) => {
   }
 
   lockPageScroll()
-  window.scrollTo({ top: 0, behavior: 'auto' })
 
   if (opened) {
     await scrollMessagesToBottom('auto')
