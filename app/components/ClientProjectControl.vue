@@ -33,6 +33,83 @@
 
     <section class="cpc-section">
       <div class="cpc-section__head">
+        <div>
+          <div class="cpc-section__title">План-график проекта</div>
+          <div class="cpc-section__meta">Фазы и спринты на одной временной шкале</div>
+        </div>
+        <div class="cpc-section__tools">
+          <div class="cpc-scale-switch" role="tablist" aria-label="Масштаб таймлайна">
+            <button
+              v-for="option in timelineScaleOptions"
+              :key="option"
+              type="button"
+              class="a-btn-sm cpc-scale-switch__btn"
+              :class="{ 'cpc-scale-switch__btn--active': timelineScale === option }"
+              @click="timelineScale = option"
+            >
+              {{ getTimelineScaleLabel(option) }}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="cpc-board-wrap">
+        <div class="cpc-board" :style="timelineBoardStyle">
+          <div class="cpc-board__head">
+            <div class="cpc-board__cell cpc-board__cell--entity">Слой</div>
+            <div class="cpc-board__cell cpc-board__cell--period">Период</div>
+            <div class="cpc-board__timeline-head" :style="timelineGridStyle">
+              <div
+                v-for="column in timelineColumns"
+                :key="column.key"
+                class="cpc-board__week-label"
+              >
+                <span>{{ column.label }}</span>
+                <strong>{{ column.rangeLabel }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-for="row in timelineRows"
+            :key="row.id"
+            class="cpc-board__row"
+            :class="{ 'cpc-board__row--phase': row.type === 'phase' }"
+          >
+            <div class="cpc-board__cell cpc-board__cell--entity cpc-board__entity">
+              <div class="cpc-board__entity-body">
+                <div class="cpc-board__entity-top">
+                  <span class="cpc-board__type">{{ row.typeLabel }}</span>
+                  <span class="cpc-chip" :class="`cpc-chip--${row.tone}`">{{ row.statusLabel }}</span>
+                </div>
+                <strong class="cpc-board__title">{{ row.title }}</strong>
+                <div class="cpc-board__meta-line">{{ row.meta }}</div>
+              </div>
+            </div>
+
+            <div class="cpc-board__cell cpc-board__cell--period cpc-board__period">
+              <span>{{ formatDateRange(row.startDate, row.endDate) }}</span>
+              <strong>{{ row.progressLabel }}</strong>
+            </div>
+
+            <div class="cpc-board__timeline">
+              <div class="cpc-board__weeks" :style="timelineGridStyle">
+                <div
+                  v-for="column in timelineColumns"
+                  :key="`${row.id}-${column.key}`"
+                  class="cpc-board__week"
+                />
+              </div>
+              <div class="cpc-board__bar" :class="`cpc-board__bar--${row.tone}`" :style="getTimelineBarStyle(row)">
+                <span class="cpc-board__bar-label">{{ row.title }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cpc-section">
+      <div class="cpc-section__head">
         <div class="cpc-section__title">Фазы проекта</div>
         <div class="cpc-section__meta">Фазовый каркас</div>
       </div>
@@ -101,6 +178,17 @@
 
 <script setup lang="ts">
 import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/project-control'
+import {
+  buildHybridTimelineBounds,
+  buildHybridTimelineColumns,
+  buildHybridTimelineRows,
+  formatHybridTimelineDateRange,
+  getHybridTimelineBarStyle,
+  getHybridTimelineColumnWidth,
+  getHybridTimelineScaleLabel,
+  type HybridTimelineRow,
+  type HybridTimelineScale,
+} from '~~/shared/utils/project-control-timeline'
 import type { HybridControlCheckpoint, HybridControlPhase, HybridControlSprint } from '~~/shared/types/project'
 
 const props = defineProps<{ slug: string }>()
@@ -128,6 +216,35 @@ const checkpointStatusLabels: Record<HybridControlCheckpoint['status'], string> 
   stable: 'стабильно',
   warning: 'внимание',
   critical: 'критично',
+}
+
+const timelineScaleOptions: HybridTimelineScale[] = ['months', 'weeks', 'days', 'hours']
+const timelineScale = ref<HybridTimelineScale>('weeks')
+
+const timelineRows = computed(() => buildHybridTimelineRows(control.value))
+
+const timelineBounds = computed(() => buildHybridTimelineBounds(timelineRows.value, timelineScale.value))
+
+const timelineColumns = computed(() => buildHybridTimelineColumns(timelineBounds.value, timelineScale.value))
+
+const timelineGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${Math.max(timelineColumns.value.length, 1)}, minmax(0, 1fr))`,
+}))
+
+const timelineBoardStyle = computed(() => ({
+  minWidth: `${410 + (timelineColumns.value.length * getHybridTimelineColumnWidth(timelineScale.value))}px`,
+}))
+
+function formatDateRange(startDate?: string, endDate?: string) {
+  return formatHybridTimelineDateRange(startDate, endDate)
+}
+
+function getTimelineBarStyle(row: HybridTimelineRow) {
+  return getHybridTimelineBarStyle(row, timelineBounds.value)
+}
+
+function getTimelineScaleLabel(scale: HybridTimelineScale) {
+  return getHybridTimelineScaleLabel(scale)
 }
 </script>
 
@@ -210,6 +327,178 @@ const checkpointStatusLabels: Record<HybridControlCheckpoint['status'], string> 
   gap: 14px;
 }
 
+.cpc-section__tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cpc-scale-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cpc-scale-switch__btn {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text) 54%, transparent);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.cpc-scale-switch__btn--active {
+  color: var(--glass-text);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
+
+.cpc-board-wrap {
+  overflow-x: auto;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.cpc-board {
+  min-width: 1040px;
+}
+
+.cpc-board__head,
+.cpc-board__row {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.15fr) 170px minmax(520px, 2fr);
+  gap: 0;
+  align-items: stretch;
+}
+
+.cpc-board__head {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+}
+
+.cpc-board__row {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
+.cpc-board__row--phase {
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.cpc-board__cell,
+.cpc-board__timeline-head,
+.cpc-board__timeline {
+  min-height: 72px;
+}
+
+.cpc-board__cell {
+  padding: 12px 0;
+}
+
+.cpc-board__cell--period {
+  border-left: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  padding: 12px 14px;
+}
+
+.cpc-board__entity,
+.cpc-board__period {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+}
+
+.cpc-board__entity-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cpc-board__type {
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 42%, transparent);
+}
+
+.cpc-board__title {
+  font-size: .92rem;
+  letter-spacing: .03em;
+}
+
+.cpc-board__meta-line,
+.cpc-board__period span,
+.cpc-board__week-label {
+  font-size: .72rem;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
+
+.cpc-board__period strong,
+.cpc-board__week-label strong {
+  font-size: .76rem;
+  color: var(--glass-text);
+}
+
+.cpc-board__timeline-head,
+.cpc-board__weeks {
+  display: grid;
+}
+
+.cpc-board__week-label {
+  display: grid;
+  gap: 4px;
+  padding: 12px 10px;
+  border-left: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.cpc-board__timeline {
+  position: relative;
+}
+
+.cpc-board__weeks {
+  height: 100%;
+}
+
+.cpc-board__week {
+  border-left: 1px solid color-mix(in srgb, var(--glass-text) 7%, transparent);
+}
+
+.cpc-board__bar {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  min-width: 56px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  overflow: hidden;
+}
+
+.cpc-board__bar--stable {
+  color: color-mix(in srgb, var(--glass-text) 78%, transparent);
+}
+
+.cpc-board__bar--warning {
+  color: var(--ds-warning);
+}
+
+.cpc-board__bar--critical {
+  color: var(--ds-error);
+}
+
+.cpc-board__bar-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .74rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
 .cpc-section__head {
   display: flex;
   justify-content: space-between;
@@ -273,6 +562,10 @@ const checkpointStatusLabels: Record<HybridControlCheckpoint['status'], string> 
   .cpc-checkpoint,
   .cpc-section__head {
     flex-direction: column;
+  }
+
+  .cpc-section__tools {
+    width: 100%;
   }
 }
 </style>

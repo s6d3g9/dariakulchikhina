@@ -67,6 +67,136 @@
       <section class="hpc-section">
         <div class="hpc-section__head">
           <div>
+            <p class="hpc-section__label">Матрица исполнения</p>
+            <h3 class="hpc-section__title">Табличный вид с таймлайном и перетаскиванием</h3>
+          </div>
+          <div class="hpc-section__tools">
+            <div class="hpc-scale-switch" role="group" aria-label="Масштаб таймлайна">
+              <button
+                v-for="option in timelineScaleOptions"
+                :key="option.value"
+                type="button"
+                class="hpc-scale-switch__btn"
+                :class="{ 'hpc-scale-switch__btn--active': timelineScale === option.value }"
+                @click="timelineScale = option.value"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+          <div class="hpc-summary__meta">
+            <span class="hpc-saved">перетащите строку для порядка</span>
+            <span class="hpc-saved">перетащите полосу по неделям для сдвига сроков</span>
+            <span class="hpc-saved">тяните край полосы для длительности</span>
+            <span v-if="timelineScale === 'hours'" class="hpc-saved">часы сейчас только для zoom-просмотра</span>
+          </div>
+        </div>
+
+        <div class="hpc-board-wrap">
+          <div class="hpc-board" :style="timelineBoardStyle">
+            <div class="hpc-board__head">
+              <div class="hpc-board__cell hpc-board__cell--entity">Слой</div>
+              <div class="hpc-board__cell hpc-board__cell--period">Период</div>
+              <div class="hpc-board__timeline-head" :style="timelineGridStyle">
+                <div
+                  v-for="column in timelineColumns"
+                  :key="column.key"
+                  class="hpc-board__week-label"
+                >
+                  <span>{{ column.label }}</span>
+                  <strong>{{ column.rangeLabel }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-for="row in timelineRows"
+              :key="row.id"
+              class="hpc-board__row"
+              :class="{
+                'hpc-board__row--phase': row.type === 'phase',
+                'hpc-board__row--drag-over': timelineDrag.overRowId === row.id && timelineDrag.kind === 'reorder',
+              }"
+            >
+              <div
+                class="hpc-board__cell hpc-board__cell--entity hpc-board__entity"
+                @dragover.prevent="onRowDragOver(row.id)"
+                @drop="onRowDrop(row)"
+              >
+                <button
+                  class="hpc-board__drag"
+                  type="button"
+                  :draggable="timelineEditingEnabled"
+                  :disabled="!timelineEditingEnabled"
+                  :aria-label="`Переместить ${row.title}`"
+                  @dragstart="onReorderDragStart($event, row)"
+                  @dragend="onDragEnd"
+                >
+                  ::
+                </button>
+                <div class="hpc-board__entity-body">
+                  <div class="hpc-board__entity-top">
+                    <span class="hpc-board__type">{{ row.typeLabel }}</span>
+                    <span class="hpc-pill" :class="`hpc-pill--${row.tone}`">{{ row.statusLabel }}</span>
+                  </div>
+                  <strong class="hpc-board__title">{{ row.title }}</strong>
+                  <div class="hpc-board__meta-line">{{ row.meta }}</div>
+                </div>
+              </div>
+
+              <div class="hpc-board__cell hpc-board__cell--period hpc-board__period">
+                <span>{{ formatDateRange(row.startDate, row.endDate) }}</span>
+                <strong>{{ row.progressLabel }}</strong>
+              </div>
+
+              <div class="hpc-board__timeline">
+                <div class="hpc-board__weeks" :style="timelineGridStyle">
+                  <div
+                    v-for="(column, columnIndex) in timelineColumns"
+                    :key="`${row.id}-${column.key}`"
+                    class="hpc-board__week"
+                    :class="{ 'hpc-board__week--drop': timelineDrag.overColumnKey === `${row.id}-${column.key}` }"
+                    @dragover.prevent="onTimelineWeekDragOver(row.id, column.key)"
+                    @drop="onTimelineWeekDrop(row, columnIndex)"
+                  />
+                </div>
+                <div
+                  class="hpc-board__bar"
+                  :class="`hpc-board__bar--${row.tone}`"
+                  :style="getTimelineBarStyle(row)"
+                  :draggable="timelineEditingEnabled"
+                  @dragstart="onScheduleDragStart($event, row)"
+                  @dragend="onDragEnd"
+                >
+                  <button
+                    class="hpc-board__bar-handle hpc-board__bar-handle--start"
+                    type="button"
+                    :disabled="!timelineEditingEnabled"
+                    :aria-label="`Сдвинуть начало ${row.title}`"
+                    :draggable="timelineEditingEnabled"
+                    @dragstart.stop="onResizeDragStart($event, row, 'start')"
+                    @dragend="onDragEnd"
+                  />
+                  <span class="hpc-board__bar-label">{{ row.title }}</span>
+                  <button
+                    class="hpc-board__bar-handle hpc-board__bar-handle--end"
+                    type="button"
+                    :disabled="!timelineEditingEnabled"
+                    :aria-label="`Сдвинуть окончание ${row.title}`"
+                    :draggable="timelineEditingEnabled"
+                    @dragstart.stop="onResizeDragStart($event, row, 'end')"
+                    @dragend="onDragEnd"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="hpc-section">
+        <div class="hpc-section__head">
+          <div>
             <p class="hpc-section__label">Фазовый слой</p>
             <h3 class="hpc-section__title">Базовые этапы и контрольные ворота</h3>
           </div>
@@ -242,7 +372,22 @@
 
 <script setup lang="ts">
 import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/project-control'
-import type { HybridControl, HybridControlSprint, HybridControlTask } from '~~/shared/types/project'
+import {
+  addTimelineDays,
+  buildHybridTimelineBounds,
+  buildHybridTimelineColumns,
+  buildHybridTimelineRows,
+  endOfHybridTimelineScale,
+  formatHybridTimelineDateRange,
+  getHybridTimelineBarStyle,
+  getHybridTimelineColumnWidth,
+  getHybridTimelineScaleLabel,
+  resolveHybridTimelineRowRange,
+  type HybridTimelineScale,
+  toIsoLocalDate,
+  type HybridTimelineRow,
+} from '~~/shared/utils/project-control-timeline'
+import type { HybridControl, HybridControlTask } from '~~/shared/types/project'
 
 const props = defineProps<{ slug: string }>()
 
@@ -278,12 +423,53 @@ const taskStatusLabels: Record<HybridControlTask['status'], string> = {
   done: 'готово',
 }
 
+const timelineScale = ref<HybridTimelineScale>('weeks')
+
+const timelineScaleOptions = [
+  'months',
+  'weeks',
+  'days',
+  'hours',
+].map(value => ({ value, label: getHybridTimelineScaleLabel(value) }))
+
+type TimelineDragKind = 'idle' | 'reorder' | 'schedule' | 'resize-start' | 'resize-end'
+
+const timelineDrag = reactive<{
+  kind: TimelineDragKind
+  rowId: string
+  rowType: TimelineRow['type'] | null
+  overRowId: string
+  overColumnKey: string
+}>({
+  kind: 'idle',
+  rowId: '',
+  rowType: null,
+  overRowId: '',
+  overColumnKey: '',
+})
+
 watch(project, (value) => {
   if (!value) return
   Object.assign(control, ensureHybridControl(value.profile?.hybridControl, value))
 }, { immediate: true })
 
 const summary = computed(() => buildHybridControlSummary(control))
+
+const timelineRows = computed(() => buildHybridTimelineRows(control))
+
+const timelineBounds = computed(() => buildHybridTimelineBounds(timelineRows.value, timelineScale.value))
+
+const timelineColumns = computed(() => buildHybridTimelineColumns(timelineBounds.value, timelineScale.value))
+
+const timelineGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${Math.max(timelineColumns.value.length, 1)}, minmax(0, 1fr))`,
+}))
+
+const timelineEditingEnabled = computed(() => timelineScale.value !== 'hours')
+
+const timelineBoardStyle = computed(() => ({
+  minWidth: `${430 + Math.max(timelineColumns.value.length, 1) * getHybridTimelineColumnWidth(timelineScale.value)}px`,
+}))
 
 async function save() {
   await $fetch(`/api/projects/${props.slug}`, {
@@ -374,6 +560,174 @@ function removeBlocker(index: number) {
   control.blockers.splice(index, 1)
   save()
 }
+
+function formatDateRange(startDate?: string, endDate?: string) {
+  return formatHybridTimelineDateRange(startDate, endDate)
+}
+
+function getTimelineBarStyle(row: HybridTimelineRow) {
+  return getHybridTimelineBarStyle(row, timelineBounds.value)
+}
+
+function getPhaseById(id: string) {
+  return control.phases.find(phase => phase.id === id) || null
+}
+
+function getSprintById(id: string) {
+  return control.sprints.find(sprint => sprint.id === id) || null
+}
+
+function reorderItems<T extends { id: string }>(items: T[], sourceId: string, targetId: string) {
+  const sourceIndex = items.findIndex(item => item.id === sourceId)
+  const targetIndex = items.findIndex(item => item.id === targetId)
+  if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return false
+  const [moved] = items.splice(sourceIndex, 1)
+  if (!moved) return false
+  items.splice(targetIndex, 0, moved)
+  return true
+}
+
+function onReorderDragStart(event: DragEvent, row: TimelineRow) {
+  if (!timelineEditingEnabled.value) return
+  timelineDrag.kind = 'reorder'
+  timelineDrag.rowId = row.id
+  timelineDrag.rowType = row.type
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'reorder', rowId: row.id, rowType: row.type }))
+  }
+}
+
+function onScheduleDragStart(event: DragEvent, row: TimelineRow) {
+  if (!timelineEditingEnabled.value) return
+  timelineDrag.kind = 'schedule'
+  timelineDrag.rowId = row.id
+  timelineDrag.rowType = row.type
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'schedule', rowId: row.id, rowType: row.type }))
+  }
+}
+
+function onResizeDragStart(event: DragEvent, row: TimelineRow, edge: 'start' | 'end') {
+  if (!timelineEditingEnabled.value) return
+  timelineDrag.kind = edge === 'start' ? 'resize-start' : 'resize-end'
+  timelineDrag.rowId = row.id
+  timelineDrag.rowType = row.type
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', JSON.stringify({ kind: timelineDrag.kind, rowId: row.id, rowType: row.type }))
+  }
+}
+
+function onRowDragOver(rowId: string) {
+  if (!timelineEditingEnabled.value) return
+  if (timelineDrag.kind !== 'reorder') return
+  timelineDrag.overRowId = rowId
+}
+
+function onTimelineWeekDragOver(rowId: string, columnKey: string) {
+  if (!timelineEditingEnabled.value) return
+  if (!['schedule', 'resize-start', 'resize-end'].includes(timelineDrag.kind)) return
+  timelineDrag.overColumnKey = `${rowId}-${columnKey}`
+}
+
+async function onRowDrop(target: TimelineRow) {
+  if (timelineDrag.kind !== 'reorder' || !timelineDrag.rowId || timelineDrag.rowId === target.id) {
+    onDragEnd()
+    return
+  }
+
+  let changed = false
+
+  if (timelineDrag.rowType === 'phase' && target.type === 'phase') {
+    changed = reorderItems(control.phases, timelineDrag.rowId, target.id)
+  }
+
+  if (timelineDrag.rowType === 'sprint') {
+    const sourceSprint = getSprintById(timelineDrag.rowId)
+    if (sourceSprint) {
+      if (target.type === 'phase' && target.phaseKey) {
+        sourceSprint.linkedPhaseKey = target.phaseKey
+        changed = true
+      }
+      if (target.type === 'sprint') {
+        sourceSprint.linkedPhaseKey = target.linkedPhaseKey || sourceSprint.linkedPhaseKey
+      }
+      changed = reorderItems(control.sprints, timelineDrag.rowId, target.id) || changed
+    }
+  }
+
+  onDragEnd()
+  if (changed) await save()
+}
+
+async function onTimelineWeekDrop(row: TimelineRow, columnIndex: number) {
+  if (!timelineEditingEnabled.value) {
+    onDragEnd()
+    return
+  }
+  if (!['schedule', 'resize-start', 'resize-end'].includes(timelineDrag.kind) || timelineDrag.rowId !== row.id || timelineDrag.rowType !== row.type) {
+    onDragEnd()
+    return
+  }
+
+  const column = timelineColumns.value[columnIndex]
+  if (!column) {
+    onDragEnd()
+    return
+  }
+
+  const range = resolveHybridTimelineRowRange(row)
+  const durationDays = Math.max(Math.round((range.end.getTime() - range.start.getTime()) / 86400000), 0)
+  const nextStart = new Date(column.start)
+  const nextEnd = addTimelineDays(nextStart, durationDays)
+
+  if (timelineDrag.kind === 'resize-start') {
+    const resizedEnd = new Date(range.end)
+    const resizedStart = nextStart.getTime() > resizedEnd.getTime() ? resizedEnd : nextStart
+    await persistTimelineRange(row, resizedStart, resizedEnd)
+    onDragEnd()
+    return
+  }
+
+  if (timelineDrag.kind === 'resize-end') {
+    const resizedStart = new Date(range.start)
+    const droppedWeekEnd = endOfHybridTimelineScale(nextStart, timelineScale.value)
+    const resizedEnd = droppedWeekEnd.getTime() < resizedStart.getTime() ? resizedStart : droppedWeekEnd
+    await persistTimelineRange(row, resizedStart, resizedEnd)
+    onDragEnd()
+    return
+  }
+
+  await persistTimelineRange(row, nextStart, nextEnd)
+  onDragEnd()
+}
+
+async function persistTimelineRange(row: TimelineRow, start: Date, end: Date) {
+  if (row.type === 'phase') {
+    const phase = getPhaseById(row.id)
+    if (!phase) return
+    phase.startDate = toIsoLocalDate(start)
+    phase.endDate = toIsoLocalDate(end)
+    await save()
+    return
+  }
+
+  const sprint = getSprintById(row.id)
+  if (!sprint) return
+  sprint.startDate = toIsoLocalDate(start)
+  sprint.endDate = toIsoLocalDate(end)
+  await save()
+}
+
+function onDragEnd() {
+  timelineDrag.kind = 'idle'
+  timelineDrag.rowId = ''
+  timelineDrag.rowType = null
+  timelineDrag.overRowId = ''
+  timelineDrag.overColumnKey = ''
+}
 </script>
 
 <style scoped>
@@ -415,6 +769,33 @@ function removeBlocker(index: number) {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.hpc-section__tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hpc-scale-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hpc-scale-switch__btn {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text) 54%, transparent);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.hpc-scale-switch__btn--active {
+  color: var(--glass-text);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
 }
 
 .hpc-eyebrow,
@@ -505,6 +886,214 @@ function removeBlocker(index: number) {
 .hpc-blocker-list {
   display: grid;
   gap: 14px;
+}
+
+.hpc-board-wrap {
+  overflow-x: auto;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.hpc-board {
+  min-width: 1040px;
+}
+
+.hpc-board__head,
+.hpc-board__row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.15fr) 170px minmax(520px, 2fr);
+  gap: 0;
+  align-items: stretch;
+}
+
+.hpc-board__head {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+}
+
+.hpc-board__row {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
+.hpc-board__row--phase {
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent);
+}
+
+.hpc-board__row--drag-over {
+  background: color-mix(in srgb, var(--ds-accent) 4%, transparent);
+}
+
+.hpc-board__cell,
+.hpc-board__timeline-head,
+.hpc-board__timeline {
+  min-height: 72px;
+}
+
+.hpc-board__cell {
+  padding: 12px 0;
+}
+
+.hpc-board__cell--entity,
+.hpc-board__cell--period {
+  padding-right: 14px;
+}
+
+.hpc-board__cell--period {
+  border-left: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  padding-left: 14px;
+}
+
+.hpc-board__entity {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.hpc-board__drag {
+  min-height: 44px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text) 44%, transparent);
+  cursor: grab;
+}
+
+.hpc-board__drag:disabled,
+.hpc-board__bar-handle:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.hpc-board__entity-body,
+.hpc-board__period {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+}
+
+.hpc-board__entity-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hpc-board__type {
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 42%, transparent);
+}
+
+.hpc-board__title {
+  font-size: .92rem;
+  letter-spacing: .03em;
+}
+
+.hpc-board__meta-line,
+.hpc-board__period span,
+.hpc-board__week-label {
+  font-size: .72rem;
+  color: color-mix(in srgb, var(--glass-text) 46%, transparent);
+}
+
+.hpc-board__period strong,
+.hpc-board__week-label strong {
+  font-size: .76rem;
+  color: var(--glass-text);
+}
+
+.hpc-board__timeline-head,
+.hpc-board__weeks {
+  display: grid;
+}
+
+.hpc-board__timeline-head {
+  align-items: stretch;
+}
+
+.hpc-board__week-label {
+  display: grid;
+  gap: 4px;
+  padding: 12px 10px;
+  border-left: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.hpc-board__timeline {
+  position: relative;
+}
+
+.hpc-board__weeks {
+  height: 100%;
+}
+
+.hpc-board__week {
+  border-left: 1px solid color-mix(in srgb, var(--glass-text) 7%, transparent);
+}
+
+.hpc-board__week--drop {
+  background: color-mix(in srgb, var(--ds-accent) 5%, transparent);
+}
+
+.hpc-board__bar {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  min-width: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  cursor: grab;
+  overflow: hidden;
+}
+
+.hpc-board__bar-handle {
+  width: 14px;
+  min-width: 14px;
+  min-height: 44px;
+  align-self: stretch;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: ew-resize;
+  appearance: none;
+}
+
+.hpc-board__bar-handle--start {
+  border-right: 1px solid currentColor;
+}
+
+.hpc-board__bar-handle--end {
+  border-left: 1px solid currentColor;
+}
+
+.hpc-board__bar--stable {
+  color: color-mix(in srgb, var(--glass-text) 78%, transparent);
+}
+
+.hpc-board__bar--warning {
+  color: var(--ds-warning);
+}
+
+.hpc-board__bar--critical {
+  color: var(--ds-error);
+}
+
+.hpc-board__bar-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .74rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
 .hpc-phase-card,
@@ -604,6 +1193,10 @@ function removeBlocker(index: number) {
   .hpc-task-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .hpc-section__tools {
+    width: 100%;
   }
 }
 </style>
