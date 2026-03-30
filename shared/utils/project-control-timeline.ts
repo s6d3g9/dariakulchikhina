@@ -30,6 +30,12 @@ export type HybridTimelineColumn = {
   start: Date
 }
 
+export type HybridTimelineGroup = {
+  key: string
+  label: string
+  span: number
+}
+
 const TIMELINE_MIN_SPAN_MS: Record<HybridTimelineScale, number> = {
   months: 180 * 86400000,
   weeks: 69 * 86400000,
@@ -287,6 +293,25 @@ export function buildHybridTimelineColumns(bounds: HybridTimelineBounds, scale: 
   return columns
 }
 
+export function buildHybridTimelineGroups(columns: HybridTimelineColumn[], scale: HybridTimelineScale): HybridTimelineGroup[] {
+  const groups: HybridTimelineGroup[] = []
+
+  columns.forEach((column) => {
+    const key = buildHybridTimelineGroupKey(column.start, scale)
+    const label = buildHybridTimelineGroupLabel(column.start, scale)
+    const prev = groups[groups.length - 1]
+
+    if (prev && prev.key === key) {
+      prev.span += 1
+      return
+    }
+
+    groups.push({ key, label, span: 1 })
+  })
+
+  return groups
+}
+
 export function getHybridTimelineBarStyle(row: HybridTimelineRow, bounds: HybridTimelineBounds) {
   const range = resolveHybridTimelineRowRange(row)
   const totalMs = Math.max(bounds.end.getTime() - bounds.start.getTime(), 1)
@@ -319,4 +344,18 @@ function buildHybridTimelineColumnRangeLabel(value: Date, scale: HybridTimelineS
   if (scale === 'hours') return value.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
   const weekEnd = addTimelineDays(value, 6)
   return `${value.getDate()}-${weekEnd.getDate()}`
+}
+
+function buildHybridTimelineGroupKey(value: Date, scale: HybridTimelineScale) {
+  if (scale === 'months') return `${value.getFullYear()}`
+  if (scale === 'hours') return toIsoLocalDate(value)
+  return `${value.getFullYear()}-${`${value.getMonth() + 1}`.padStart(2, '0')}`
+}
+
+function buildHybridTimelineGroupLabel(value: Date, scale: HybridTimelineScale) {
+  if (scale === 'months') return `${value.getFullYear()}`
+  if (scale === 'hours') {
+    return value.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', weekday: 'short' })
+  }
+  return value.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
 }

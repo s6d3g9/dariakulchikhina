@@ -57,14 +57,26 @@
           <div class="cpc-board__head">
             <div class="cpc-board__cell cpc-board__cell--entity">Слой</div>
             <div class="cpc-board__cell cpc-board__cell--period">Период</div>
-            <div class="cpc-board__timeline-head" :style="timelineGridStyle">
-              <div
-                v-for="column in timelineColumns"
-                :key="column.key"
-                class="cpc-board__week-label"
-              >
-                <span>{{ column.label }}</span>
-                <strong>{{ column.rangeLabel }}</strong>
+            <div class="cpc-board__timeline-head-stack">
+              <div class="cpc-board__timeline-groups" :style="timelineGridStyle">
+                <div
+                  v-for="group in timelineGroups"
+                  :key="group.key"
+                  class="cpc-board__timeline-group-label"
+                  :style="{ gridColumn: `span ${group.span}` }"
+                >
+                  <span>{{ group.label }}</span>
+                </div>
+              </div>
+              <div class="cpc-board__timeline-head" :style="timelineGridStyle">
+                <div
+                  v-for="column in timelineColumns"
+                  :key="column.key"
+                  class="cpc-board__week-label"
+                >
+                  <span>{{ column.label }}</span>
+                  <strong>{{ column.rangeLabel }}</strong>
+                </div>
               </div>
             </div>
           </div>
@@ -181,6 +193,7 @@ import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/
 import {
   buildHybridTimelineBounds,
   buildHybridTimelineColumns,
+  buildHybridTimelineGroups,
   buildHybridTimelineRows,
   formatHybridTimelineDateRange,
   getHybridTimelineBarStyle,
@@ -226,6 +239,8 @@ const timelineRows = computed(() => buildHybridTimelineRows(control.value))
 const timelineBounds = computed(() => buildHybridTimelineBounds(timelineRows.value, timelineScale.value))
 
 const timelineColumns = computed(() => buildHybridTimelineColumns(timelineBounds.value, timelineScale.value))
+
+const timelineGroups = computed(() => buildHybridTimelineGroups(timelineColumns.value, timelineScale.value))
 
 const timelineGridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${Math.max(timelineColumns.value.length, 1)}, minmax(0, 1fr))`,
@@ -384,7 +399,7 @@ function getTimelineScaleLabel(scale: HybridTimelineScale) {
 }
 
 .cpc-board__cell,
-.cpc-board__timeline-head,
+.cpc-board__timeline-head-stack,
 .cpc-board__timeline {
   min-height: 72px;
 }
@@ -438,16 +453,40 @@ function getTimelineScaleLabel(scale: HybridTimelineScale) {
   color: var(--glass-text);
 }
 
+.cpc-board__timeline-head-stack,
+.cpc-board__timeline-groups,
 .cpc-board__timeline-head,
 .cpc-board__weeks {
   display: grid;
 }
 
+.cpc-board__timeline-head-stack {
+  grid-template-rows: auto auto;
+}
+
+.cpc-board__timeline-groups {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
+.cpc-board__timeline-group-label,
 .cpc-board__week-label {
   display: grid;
   gap: 4px;
-  padding: 12px 10px;
   border-left: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
+.cpc-board__timeline-group-label {
+  min-height: 34px;
+  padding: 8px 10px;
+  align-content: center;
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: color-mix(in srgb, var(--glass-text) 54%, transparent);
+}
+
+.cpc-board__week-label {
+  padding: 12px 10px;
   text-transform: uppercase;
   letter-spacing: .08em;
 }

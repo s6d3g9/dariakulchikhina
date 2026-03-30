@@ -97,14 +97,26 @@
             <div class="hpc-board__head">
               <div class="hpc-board__cell hpc-board__cell--entity">Слой</div>
               <div class="hpc-board__cell hpc-board__cell--period">Период</div>
-              <div class="hpc-board__timeline-head" :style="timelineGridStyle">
-                <div
-                  v-for="column in timelineColumns"
-                  :key="column.key"
-                  class="hpc-board__week-label"
-                >
-                  <span>{{ column.label }}</span>
-                  <strong>{{ column.rangeLabel }}</strong>
+              <div class="hpc-board__timeline-head-stack">
+                <div class="hpc-board__timeline-groups" :style="timelineGridStyle">
+                  <div
+                    v-for="group in timelineGroups"
+                    :key="group.key"
+                    class="hpc-board__timeline-group-label"
+                    :style="{ gridColumn: `span ${group.span}` }"
+                  >
+                    <span>{{ group.label }}</span>
+                  </div>
+                </div>
+                <div class="hpc-board__timeline-head" :style="timelineGridStyle">
+                  <div
+                    v-for="column in timelineColumns"
+                    :key="column.key"
+                    class="hpc-board__week-label"
+                  >
+                    <span>{{ column.label }}</span>
+                    <strong>{{ column.rangeLabel }}</strong>
+                  </div>
                 </div>
               </div>
             </div>
@@ -461,12 +473,13 @@ const timelineBounds = computed(() => buildHybridTimelineBounds(timelineRows.val
 
 const timelineColumns = computed(() => buildHybridTimelineColumns(timelineBounds.value, timelineScale.value))
 
+const timelineGroups = computed(() => buildHybridTimelineGroups(timelineColumns.value, timelineScale.value))
+
 const timelineGridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${Math.max(timelineColumns.value.length, 1)}, minmax(0, 1fr))`,
 }))
 
 const timelineEditingEnabled = computed(() => timelineScale.value !== 'hours')
-
 const timelineBoardStyle = computed(() => ({
   minWidth: `${430 + Math.max(timelineColumns.value.length, 1) * getHybridTimelineColumnWidth(timelineScale.value)}px`,
 }))
@@ -922,7 +935,7 @@ function onDragEnd() {
 }
 
 .hpc-board__cell,
-.hpc-board__timeline-head,
+.hpc-board__timeline-head-stack,
 .hpc-board__timeline {
   min-height: 72px;
 }
@@ -1002,20 +1015,44 @@ function onDragEnd() {
   color: var(--glass-text);
 }
 
+.hpc-board__timeline-head-stack,
+.hpc-board__timeline-groups,
 .hpc-board__timeline-head,
 .hpc-board__weeks {
   display: grid;
+}
+
+.hpc-board__timeline-head-stack {
+  grid-template-rows: auto auto;
+}
+
+.hpc-board__timeline-groups {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
 }
 
 .hpc-board__timeline-head {
   align-items: stretch;
 }
 
+.hpc-board__timeline-group-label,
 .hpc-board__week-label {
   display: grid;
   gap: 4px;
-  padding: 12px 10px;
   border-left: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
+.hpc-board__timeline-group-label {
+  min-height: 34px;
+  padding: 8px 10px;
+  align-content: center;
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: color-mix(in srgb, var(--glass-text) 54%, transparent);
+}
+
+.hpc-board__week-label {
+  padding: 12px 10px;
   text-transform: uppercase;
   letter-spacing: .08em;
 }
