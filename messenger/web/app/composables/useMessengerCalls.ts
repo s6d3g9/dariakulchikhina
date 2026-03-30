@@ -713,6 +713,9 @@ export function useMessengerCalls() {
 
   function openAnalysisPanel() {
     analysisPanelOpen.value = true
+    if (activeCall.value?.mode === 'audio' && !transcriptionActive.value) {
+      void startTranscription()
+    }
   }
 
   function closeAnalysisPanel() {
@@ -720,7 +723,12 @@ export function useMessengerCalls() {
   }
 
   function toggleAnalysisPanel(force?: boolean) {
-    analysisPanelOpen.value = typeof force === 'boolean' ? force : !analysisPanelOpen.value
+    const nextState = typeof force === 'boolean' ? force : !analysisPanelOpen.value
+    analysisPanelOpen.value = nextState
+
+    if (nextState && activeCall.value?.mode === 'audio' && !transcriptionActive.value) {
+      void startTranscription()
+    }
   }
 
   async function runAnalysisTool(toolId: MessengerCallAnalysisToolId = selectedAnalysisToolId.value) {

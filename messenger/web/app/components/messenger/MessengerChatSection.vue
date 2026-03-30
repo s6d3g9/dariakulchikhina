@@ -524,6 +524,14 @@ function isMobileChatViewport() {
   return window.matchMedia('(max-width: 767px)').matches || navigator.maxTouchPoints > 0
 }
 
+function isDesktopCallAnalysisViewport() {
+  if (!import.meta.client) {
+    return true
+  }
+
+  return window.matchMedia('(min-width: 980px)').matches
+}
+
 function lockPageScroll() {
   if (!import.meta.client || !isMobileChatViewport()) {
     return
@@ -739,11 +747,11 @@ const securitySummaryText = computed(() => {
 
 const chatLayoutStyle = computed(() => ({
   '--messenger-composer-height': `${composerHeight.value}px`,
-  '--messenger-call-analysis-width': calls.analysisPanelOpen.value ? 'min(32vw, 420px)' : '0px',
+  '--messenger-call-analysis-width': showDesktopCallAnalysisPanel.value ? 'min(32vw, 420px)' : '0px',
 }))
 
 const showDesktopCallAnalysisPanel = computed(() => Boolean(
-  !isMobileChatViewport()
+  isDesktopCallAnalysisViewport()
   && calls.analysisPanelOpen.value
   && (
     (calls.activeCall.value && calls.activeCall.value.mode === 'audio' && calls.viewMode.value !== 'mini')

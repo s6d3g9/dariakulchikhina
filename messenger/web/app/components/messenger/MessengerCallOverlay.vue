@@ -3,6 +3,14 @@ const calls = useMessengerCalls()
 const conversations = useMessengerConversations()
 const navigation = useMessengerConversationState()
 
+function isDesktopCallAnalysisViewport() {
+  if (!import.meta.client) {
+    return true
+  }
+
+  return window.matchMedia('(min-width: 980px)').matches
+}
+
 const activeModeLabel = computed(() => calls.activeCall.value?.mode === 'video' ? 'Видеозвонок' : 'Аудиозвонок')
 const verificationEmojiLine = computed(() => calls.security.value.verificationEmojis.join(' '))
 const headerIncomingCall = computed(() => Boolean(
@@ -52,7 +60,11 @@ const showCallAnalysisPanel = computed(() => Boolean(
     || (!calls.activeCall.value && calls.callReview.value)
   ),
 ))
-const showMobileCallAnalysisPanel = computed(() => Boolean(showCallAnalysisPanel.value && navigation.activeSection.value === 'chat'))
+const showMobileCallAnalysisPanel = computed(() => Boolean(
+  showCallAnalysisPanel.value
+  && navigation.activeSection.value === 'chat'
+  && !isDesktopCallAnalysisViewport()
+))
 const miniOverlaySubtitle = computed(() => {
   if (weakNetworkVisible.value && calls.networkHint.value) {
     return calls.networkHint.value
