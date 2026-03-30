@@ -387,7 +387,12 @@ function getTimelineScaleLabel(scale: HybridTimelineScale) {
 }
 
 .cpc-board__head {
+  position: sticky;
+  top: 0;
+  z-index: 8;
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-bg) 94%, white 6%);
+  backdrop-filter: blur(12px);
 }
 
 .cpc-board__row {
@@ -406,6 +411,15 @@ function getTimelineScaleLabel(scale: HybridTimelineScale) {
 
 .cpc-board__cell {
   padding: 12px 0;
+}
+
+.cpc-board__head .cpc-board__cell,
+.cpc-board__head .cpc-board__timeline-head-stack,
+.cpc-board__head .cpc-board__timeline-groups,
+.cpc-board__head .cpc-board__timeline-head,
+.cpc-board__head .cpc-board__timeline-group-label,
+.cpc-board__head .cpc-board__week-label {
+  background: color-mix(in srgb, var(--glass-bg) 94%, white 6%);
 }
 
 .cpc-board__cell--period {

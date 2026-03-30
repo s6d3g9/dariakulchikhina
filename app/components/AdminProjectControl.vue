@@ -919,7 +919,12 @@ function onDragEnd() {
 }
 
 .hpc-board__head {
+  position: sticky;
+  top: 0;
+  z-index: 8;
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-bg) 94%, white 6%);
+  backdrop-filter: blur(12px);
 }
 
 .hpc-board__row {
@@ -942,6 +947,15 @@ function onDragEnd() {
 
 .hpc-board__cell {
   padding: 12px 0;
+}
+
+.hpc-board__head .hpc-board__cell,
+.hpc-board__head .hpc-board__timeline-head-stack,
+.hpc-board__head .hpc-board__timeline-groups,
+.hpc-board__head .hpc-board__timeline-head,
+.hpc-board__head .hpc-board__timeline-group-label,
+.hpc-board__head .hpc-board__week-label {
+  background: color-mix(in srgb, var(--glass-bg) 94%, white 6%);
 }
 
 .hpc-board__cell--entity,
