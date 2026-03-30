@@ -49,6 +49,7 @@ const envSchema = z.object({
   .default(true),
   MESSENGER_PROJECT_ROOT: z.string().default(defaultProjectRoot),
   MESSENGER_AGENT_API_BASE_URL: z.string().trim().url().default('https://api.openai.com'),
+  MESSENGER_AGENT_API_KEY: z.string().trim().optional(),
   MESSENGER_AGENT_MODEL: z.string().trim().default('GPT-5.4'),
   MESSENGER_AGENT_TIMEOUT_MS: z.coerce.number().int().positive().default(45000),
   MESSENGER_AGENT_TEMPERATURE: z.coerce.number().min(0).max(1.5).default(0.35),

@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { getMessengerAgentSettings, resolveMessengerAgentWorkspacePath, updateMessengerAgentGraph, updateMessengerAgentSettings } from './agent-settings-store.ts'
 import { getMessengerAgentKnowledgeStatus, reindexMessengerAgentKnowledge } from './agent-knowledge-store.ts'
 import { getMessengerAgentKnowledgePreset } from './agent-knowledge-presets.ts'
+import { buildMessengerCallAnalysis, type MessengerCallAnalysisToolId } from './call-analysis-service.ts'
 import { listMessengerAgentWorkspace, readMessengerAgentWorkspaceFile } from './agent-workspace-store.ts'
 import { appendMessengerAgentRunEvent, getMessengerAgentRunById, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from './agent-run-store.ts'
 import { buildMessengerAgentReply, findMessengerAgentById, listMessengerAgents } from './agent-store.ts'
@@ -22,6 +23,7 @@ import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, b
 import { readMessengerConfig } from './config.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
 import { isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from './transcription-service.ts'
+import { getMessengerUserAiSettings, updateMessengerUserAiSettings } from './user-ai-settings-store.ts'
 
 export async function createMessengerServer() {
   const config = readMessengerConfig()
@@ -297,6 +299,43 @@ export async function createMessengerServer() {
       sshConfigured: Boolean(settings.ssh.host && settings.ssh.login && settings.ssh.privateKey && workspacePath),
     }
   }
+
+  function buildUserAiSettingsResponse(settings: Awaited<ReturnType<typeof getMessengerUserAiSettings>>) {
+    const interpretation = Array.from(new Set([
+      settings.interpretationModel,
+      config.MESSENGER_AGENT_MODEL,
+      'gpt-5.4',
+      'gpt-4.1-mini',
+      'gpt-4o-mini',
+    ].filter(Boolean)))
+    const summary = Array.from(new Set([
+      settings.summaryModel,
+      config.MESSENGER_AGENT_MODEL,
+      'gpt-5.4',
+      'gpt-4.1-mini',
+      'gpt-4o-mini',
+    ].filter(Boolean)))
+    const transcription = Array.from(new Set([
+      settings.transcriptionModel,
+      config.MESSENGER_TRANSCRIPTION_MODEL,
+      'whisper-large-v3-turbo',
+      'gpt-4o-mini-transcribe',
+      'gpt-4o-transcribe',
+    ].filter(Boolean)))
+
+    return {
+      settings,
+      modelOptions: {
+        interpretation,
+        summary,
+        transcription,
+      },
+      configured: {
+        analysis: Boolean(config.MESSENGER_AGENT_API_KEY?.trim()),
+        transcription: isMessengerTranscriptionConfigured(config),
+      },
+    }
+  }
   const userParamsSchema = z.object({
     userId: z.string().uuid(),
   })
@@ -419,6 +458,17 @@ export async function createMessengerServer() {
     audioBase64: z.string().trim().min(1).max(8_000_000),
     mimeType: z.string().trim().min(1).max(120).default('audio/webm'),
     sequence: z.coerce.number().int().min(0).default(0),
+  })
+  const userAiSettingsSchema = z.object({
+    interpretationModel: z.string().trim().max(160).optional().default(''),
+    summaryModel: z.string().trim().max(160).optional().default(''),
+    transcriptionModel: z.string().trim().max(160).optional().default(''),
+  })
+  const callAnalysisToolSchema = z.enum(['psychology', 'business', 'intent', 'objections', 'speech-risks', 'next-steps'])
+  const callAnalysisRequestSchema = z.object({
+    toolId: callAnalysisToolSchema,
+    cleanedTranscript: z.string().trim().min(1).max(40_000),
+    summary: z.string().trim().max(12_000).optional().default(''),
   })
   const klipyKindSchema = z.enum(['gif', 'sticker'])
   const klipySearchSchema = z.object({
@@ -1166,6 +1216,31 @@ export async function createMessengerServer() {
         displayName: session.user.displayName,
       },
     }
+  })
+
+  app.get('/settings/ai', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const settings = await getMessengerUserAiSettings(session.user.id)
+    return buildUserAiSettingsResponse(settings)
+  })
+
+  app.put('/settings/ai', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedBody = userAiSettingsSchema.safeParse(request.body)
+    if (!parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const settings = await updateMessengerUserAiSettings(session.user.id, parsedBody.data)
+    return buildUserAiSettingsResponse(settings)
   })
 
   app.put('/crypto/device-key', async (request, reply) => {
@@ -2374,10 +2449,12 @@ export async function createMessengerServer() {
     }
 
     try {
+      const aiSettings = await getMessengerUserAiSettings(session.user.id)
       const text = await transcribeMessengerAudioChunk(config, {
         audioBase64: parsedBody.data.audioBase64,
         mimeType: parsedBody.data.mimeType,
         language: config.MESSENGER_TRANSCRIPTION_LANGUAGE,
+        model: aiSettings.transcriptionModel || config.MESSENGER_TRANSCRIPTION_MODEL,
       })
 
       return {
@@ -2388,6 +2465,54 @@ export async function createMessengerServer() {
       }
     } catch {
       return reply.code(502).send({ error: 'TRANSCRIPTION_FAILED' })
+    }
+  })
+
+  app.post('/conversations/:conversationId/calls/:callId/analysis', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = callTranscriptionParamsSchema.safeParse(request.params)
+    const parsedBody = callAnalysisRequestSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const conversation = await findConversationById(parsedParams.data.conversationId)
+    if (!conversation) {
+      return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+    }
+
+    if (conversation.userAId !== session.user.id && conversation.userBId !== session.user.id) {
+      return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+    }
+
+    if (!config.MESSENGER_AGENT_API_KEY?.trim()) {
+      return reply.code(503).send({ error: 'ANALYSIS_DISABLED' })
+    }
+
+    try {
+      const aiSettings = await getMessengerUserAiSettings(session.user.id)
+      const toolId = parsedBody.data.toolId as MessengerCallAnalysisToolId
+      const interpretation = await buildMessengerCallAnalysis({
+        apiKey: config.MESSENGER_AGENT_API_KEY,
+        model: aiSettings.interpretationModel || config.MESSENGER_AGENT_MODEL,
+        toolId,
+        cleanedTranscript: parsedBody.data.cleanedTranscript,
+        summary: parsedBody.data.summary,
+      })
+
+      return {
+        ok: true,
+        callId: parsedParams.data.callId,
+        toolId,
+        interpretation,
+        modelUsed: aiSettings.interpretationModel || config.MESSENGER_AGENT_MODEL,
+      }
+    } catch {
+      return reply.code(502).send({ error: 'ANALYSIS_FAILED' })
     }
   })
 

@@ -10,10 +10,19 @@ const mediaStatus = ref({ microphone: 'Не проверялось', camera: 'Н
 onMounted(() => {
   settingsModel.hydrate()
   settingsModel.settings.value.devices.keepSignedIn = auth.persistenceMode.value === 'local'
+  if (auth.token.value) {
+    void settingsModel.hydrateAiSettings(auth.request)
+  }
 })
 
 watch(() => settingsModel.settings.value.devices.keepSignedIn, (enabled) => {
   auth.setPersistence(enabled ? 'local' : 'session')
+})
+
+watch(() => auth.token.value, (nextToken) => {
+  if (nextToken) {
+    void settingsModel.hydrateAiSettings(auth.request)
+  }
 })
 
 const activeThemeMeta = computed(() => settingsModel.themeOptions.find(theme => theme.key === settingsModel.settings.value.themes.active) ?? settingsModel.themeOptions[0])
@@ -60,7 +69,7 @@ const notificationPermissionStateLabel = computed(() => permissionLabelMap[setti
 const microphonePermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.microphone])
 const cameraPermissionStateLabel = computed(() => permissionLabelMap[settingsModel.permissionState.value.camera])
 const installActionLabel = computed(() => install.installPending.value ? 'Запрашиваем установку...' : 'Установить как приложение')
-function settingsTabIcon(key: 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account') {
+function settingsTabIcon(key: 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account') {
   switch (key) {
     case 'profile':
       return 'mdi-account-outline'
@@ -70,6 +79,8 @@ function settingsTabIcon(key: 'profile' | 'notifications' | 'privacy' | 'themes'
       return 'mdi-shield-lock-outline'
     case 'themes':
       return 'mdi-palette-outline'
+    case 'ai':
+      return 'mdi-brain'
     case 'devices':
       return 'mdi-cellphone-cog'
     default:
@@ -207,10 +218,42 @@ function closeSettingsSearch() {
   setTimeout(() => { settingsSearchOpen.value = false }, 150)
 }
 function selectSettingsSection(key: string) {
-  settingsModel.openSection(key as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices')
+  settingsModel.openSection(key as 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account')
   settingsSearch.value = ''
   settingsSearchOpen.value = false
 }
+
+let aiSettingsPersistTimer: ReturnType<typeof setTimeout> | null = null
+
+function queueAiSettingsPersist() {
+  if (!settingsModel.aiSettingsReady.value || settingsModel.aiSettingsPending.value || !auth.token.value) {
+    return
+  }
+
+  if (aiSettingsPersistTimer) {
+    clearTimeout(aiSettingsPersistTimer)
+  }
+
+  aiSettingsPersistTimer = setTimeout(() => {
+    aiSettingsPersistTimer = null
+    void settingsModel.persistAiSettings(auth.request)
+  }, 450)
+}
+
+watch(() => [
+  settingsModel.aiSettings.value.interpretationModel,
+  settingsModel.aiSettings.value.summaryModel,
+  settingsModel.aiSettings.value.transcriptionModel,
+], () => {
+  queueAiSettingsPersist()
+})
+
+onBeforeUnmount(() => {
+  if (aiSettingsPersistTimer) {
+    clearTimeout(aiSettingsPersistTimer)
+    aiSettingsPersistTimer = null
+  }
+})
 
 function themeCardStyle(theme: { preview: [string, string, string] }) {
   return {
@@ -448,6 +491,53 @@ function themeCardStyle(theme: { preview: [string, string, string] }) {
         </div>
       </VWindowItem>
 
+      <!-- AI -->
+      <VWindowItem value="ai">
+        <div class="settings-panel pa-4">
+          <section class="settings-grid">
+            <div class="setting-facts mb-4">
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Интерпретация</span>
+                <strong>{{ settingsModel.aiConfigured.value.analysis ? 'Сервер готов' : 'Нужен API key' }}</strong>
+              </div>
+              <div class="setting-fact-row">
+                <span class="setting-fact-label">Транскрибация</span>
+                <strong>{{ settingsModel.aiConfigured.value.transcription ? 'Сервер готов' : 'Нужен STT key' }}</strong>
+              </div>
+            </div>
+            <VCombobox
+              v-model="settingsModel.aiSettings.value.interpretationModel"
+              :items="settingsModel.aiModelOptions.value.interpretation"
+              variant="outlined"
+              label="Модель интерпретации"
+              clearable
+              :loading="settingsModel.aiSettingsPending.value"
+            />
+            <VCombobox
+              v-model="settingsModel.aiSettings.value.summaryModel"
+              :items="settingsModel.aiModelOptions.value.summary"
+              variant="outlined"
+              label="Модель конспекта"
+              clearable
+              class="mt-2"
+              :loading="settingsModel.aiSettingsPending.value"
+            />
+            <VCombobox
+              v-model="settingsModel.aiSettings.value.transcriptionModel"
+              :items="settingsModel.aiModelOptions.value.transcription"
+              variant="outlined"
+              label="Модель транскрибации"
+              clearable
+              class="mt-2"
+              :loading="settingsModel.aiSettingsPending.value"
+            />
+            <VAlert v-if="settingsModel.aiSettingsError.value" type="info" class="mt-4">
+              {{ settingsModel.aiSettingsError.value }}
+            </VAlert>
+          </section>
+        </div>
+      </VWindowItem>
+
       <!-- Devices -->
       <VWindowItem value="devices">
         <div class="settings-panel pa-4">
@@ -558,7 +648,7 @@ function themeCardStyle(theme: { preview: [string, string, string] }) {
         color="primary"
         density="compact"
         grow
-        @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account')"
+        @update:model-value="settingsModel.openSection($event as 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account')"
       >
         <VTab v-for="section in settingsModel.sections" :key="section.key" :value="section.key" :aria-label="section.title" :title="section.title">
           <VIcon>{{ settingsTabIcon(section.key) }}</VIcon>

@@ -2,6 +2,7 @@ type MessengerChunkTranscriptionInput = {
   audioBase64: string
   mimeType: string
   language: string
+  model?: string
 }
 
 type MessengerTranscriptionConfig = {
@@ -66,7 +67,7 @@ export async function transcribeMessengerAudioChunk(
     })
 
     formData.append('file', file)
-    formData.append('model', config.MESSENGER_TRANSCRIPTION_MODEL)
+    formData.append('model', input.model?.trim() || config.MESSENGER_TRANSCRIPTION_MODEL)
     formData.append('language', input.language || config.MESSENGER_TRANSCRIPTION_LANGUAGE)
     formData.append('temperature', '0')
 

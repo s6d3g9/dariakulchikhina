@@ -134,6 +134,20 @@ pm2 save
 - `MESSENGER_TRANSCRIPTION_LANGUAGE=ru`
 - `NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED=true`
 
+Для server-side интерпретации звонков и AI-функций из Settings:
+
+- `MESSENGER_AGENT_API_KEY=...`
+- `MESSENGER_AGENT_API_BASE_URL=https://api.openai.com`
+- `MESSENGER_AGENT_MODEL=gpt-5.4`
+
+Внутри messenger Settings теперь есть отдельная секция `ИИ`, где пользователь может задать модели для:
+
+- интерпретации звонков;
+- конспекта;
+- транскрибации.
+
+Эти настройки хранятся на стороне `messenger-core` и применяются сервером для AI endpoints. Если поле модели пустое, используется server default из runtime env.
+
 Важно: этот MVP распознаёт локальный микрофон пользователя во время звонка и отправляет чанки через `messenger-core`; он не делает полную двухстороннюю diarization всей беседы.
 
 ## Reverse Proxy

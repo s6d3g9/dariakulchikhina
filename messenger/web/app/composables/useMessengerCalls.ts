@@ -841,7 +841,28 @@ export function useMessengerCalls() {
     analysisError.value = ''
 
     try {
-      const interpretation = buildAnalysisInterpretation(toolId, callReview.value)
+      let interpretation = ''
+
+      try {
+        const response = await auth.request<{ interpretation?: string }>(`/conversations/${callReview.value.conversationId}/calls/${callReview.value.callId}/analysis`, {
+          method: 'POST',
+          body: {
+            toolId,
+            cleanedTranscript: callReview.value.cleanedTranscript,
+            summary: callReview.value.summary,
+          },
+        })
+
+        interpretation = String(response.interpretation || '').trim()
+      } catch {
+        interpretation = buildAnalysisInterpretation(toolId, callReview.value)
+        analysisError.value = 'Серверная интерпретация недоступна. Показан локальный разбор.'
+      }
+
+      if (!interpretation) {
+        interpretation = buildAnalysisInterpretation(toolId, callReview.value)
+      }
+
       analysisInterpretations.value = {
         ...analysisInterpretations.value,
         [toolId]: interpretation,

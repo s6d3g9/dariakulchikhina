@@ -13,9 +13,27 @@ import {
   type ResolvedMessengerThemeMode,
 } from '../../theme/messengerColorSchemes'
 
-type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'devices' | 'account'
+type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'themes' | 'ai' | 'devices' | 'account'
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerStyleKey = 'liquid' | 'material'
+type MessengerAuthRequest = <T>(path: string, options?: Parameters<typeof $fetch<T>>[1]) => Promise<T>
+
+interface MessengerAiSettingsSnapshot {
+  interpretationModel: string
+  summaryModel: string
+  transcriptionModel: string
+}
+
+interface MessengerAiModelOptions {
+  interpretation: string[]
+  summary: string[]
+  transcription: string[]
+}
+
+interface MessengerAiConfiguredState {
+  analysis: boolean
+  transcription: boolean
+}
 
 const MESSENGER_STYLE_KEYS = ['liquid', 'material'] as const
 const MESSENGER_THEME_MODE_KEYS = ['system', 'light', 'dark'] as const
@@ -115,6 +133,52 @@ function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
       keepSignedIn: true,
       reduceMotion: false,
     },
+  }
+}
+
+function createDefaultMessengerAiSettings(): MessengerAiSettingsSnapshot {
+  return {
+    interpretationModel: '',
+    summaryModel: '',
+    transcriptionModel: '',
+  }
+}
+
+function createDefaultMessengerAiModelOptions(): MessengerAiModelOptions {
+  return {
+    interpretation: ['gpt-5.4', 'gpt-4.1-mini', 'gpt-4o-mini'],
+    summary: ['gpt-5.4', 'gpt-4.1-mini', 'gpt-4o-mini'],
+    transcription: ['whisper-large-v3-turbo', 'gpt-4o-mini-transcribe', 'gpt-4o-transcribe'],
+  }
+}
+
+function normalizeAiModelValue(value: string | undefined) {
+  return typeof value === 'string' ? value.trim().slice(0, 160) : ''
+}
+
+function mergeMessengerAiSettings(source?: Partial<MessengerAiSettingsSnapshot> | null): MessengerAiSettingsSnapshot {
+  const defaults = createDefaultMessengerAiSettings()
+
+  return {
+    interpretationModel: normalizeAiModelValue(source?.interpretationModel) || defaults.interpretationModel,
+    summaryModel: normalizeAiModelValue(source?.summaryModel) || defaults.summaryModel,
+    transcriptionModel: normalizeAiModelValue(source?.transcriptionModel) || defaults.transcriptionModel,
+  }
+}
+
+function mergeMessengerAiModelOptions(source?: Partial<MessengerAiModelOptions> | null): MessengerAiModelOptions {
+  const defaults = createDefaultMessengerAiModelOptions()
+
+  return {
+    interpretation: Array.from(new Set((Array.isArray(source?.interpretation) ? source?.interpretation : defaults.interpretation)
+      .map(item => normalizeAiModelValue(item))
+      .filter(Boolean))),
+    summary: Array.from(new Set((Array.isArray(source?.summary) ? source?.summary : defaults.summary)
+      .map(item => normalizeAiModelValue(item))
+      .filter(Boolean))),
+    transcription: Array.from(new Set((Array.isArray(source?.transcription) ? source?.transcription : defaults.transcription)
+      .map(item => normalizeAiModelValue(item))
+      .filter(Boolean))),
   }
 }
 
@@ -268,6 +332,15 @@ function mergeMessengerSettings(source: Partial<MessengerSettingsSnapshot> | nul
 
 export function useMessengerSettings() {
   const settings = useState<MessengerSettingsSnapshot>('messenger-settings-state', () => createDefaultMessengerSettings())
+  const aiSettings = useState<MessengerAiSettingsSnapshot>('messenger-ai-settings-state', () => createDefaultMessengerAiSettings())
+  const aiModelOptions = useState<MessengerAiModelOptions>('messenger-ai-model-options', () => createDefaultMessengerAiModelOptions())
+  const aiConfigured = useState<MessengerAiConfiguredState>('messenger-ai-configured-state', () => ({
+    analysis: false,
+    transcription: false,
+  }))
+  const aiSettingsReady = useState<boolean>('messenger-ai-settings-ready', () => false)
+  const aiSettingsPending = useState<boolean>('messenger-ai-settings-pending', () => false)
+  const aiSettingsError = useState<string>('messenger-ai-settings-error', () => '')
   const ready = useState<boolean>('messenger-settings-ready', () => false)
   const systemPrefersDark = useState<boolean>('messenger-settings-system-prefers-dark', () => false)
   const activeSection = useState<MessengerSettingsSectionKey>('messenger-settings-section', () => 'profile')
@@ -298,6 +371,11 @@ export function useMessengerSettings() {
       key: 'themes' as const,
       title: 'Темы',
       hint: 'Палитры интерфейса и общий тон messenger',
+    },
+    {
+      key: 'ai' as const,
+      title: 'ИИ',
+      hint: 'Модели интерпретации, конспекта и транскрибации',
     },
     {
       key: 'devices' as const,
@@ -444,6 +522,67 @@ export function useMessengerSettings() {
 
   function openSection(section: MessengerSettingsSectionKey) {
     activeSection.value = section
+  }
+
+  async function hydrateAiSettings(request: MessengerAuthRequest) {
+    if (aiSettingsPending.value) {
+      return
+    }
+
+    aiSettingsPending.value = true
+    aiSettingsError.value = ''
+
+    try {
+      const response = await request<{
+        settings: MessengerAiSettingsSnapshot
+        modelOptions: MessengerAiModelOptions
+        configured: MessengerAiConfiguredState
+      }>('/settings/ai')
+
+      aiSettings.value = mergeMessengerAiSettings(response.settings)
+      aiModelOptions.value = mergeMessengerAiModelOptions(response.modelOptions)
+      aiConfigured.value = {
+        analysis: Boolean(response.configured?.analysis),
+        transcription: Boolean(response.configured?.transcription),
+      }
+      aiSettingsReady.value = true
+    } catch {
+      aiSettingsError.value = 'Не удалось загрузить AI-настройки.'
+    } finally {
+      aiSettingsPending.value = false
+    }
+  }
+
+  async function persistAiSettings(request: MessengerAuthRequest) {
+    if (aiSettingsPending.value) {
+      return
+    }
+
+    aiSettingsPending.value = true
+    aiSettingsError.value = ''
+
+    try {
+      const response = await request<{
+        settings: MessengerAiSettingsSnapshot
+        modelOptions: MessengerAiModelOptions
+        configured: MessengerAiConfiguredState
+      }>('/settings/ai', {
+        method: 'PUT',
+        body: mergeMessengerAiSettings(aiSettings.value),
+      })
+
+      aiSettings.value = mergeMessengerAiSettings(response.settings)
+      aiModelOptions.value = mergeMessengerAiModelOptions(response.modelOptions)
+      aiConfigured.value = {
+        analysis: Boolean(response.configured?.analysis),
+        transcription: Boolean(response.configured?.transcription),
+      }
+      aiSettingsReady.value = true
+    } catch {
+      aiSettingsError.value = 'Не удалось сохранить AI-настройки.'
+    } finally {
+      aiSettingsPending.value = false
+    }
   }
 
   function setTheme(theme: MessengerColorSchemeKey) {
@@ -614,6 +753,12 @@ export function useMessengerSettings() {
 
   return {
     settings,
+    aiSettings,
+    aiModelOptions,
+    aiConfigured,
+    aiSettingsReady,
+    aiSettingsPending,
+    aiSettingsError,
     theme,
     style,
     sections,
@@ -631,7 +776,9 @@ export function useMessengerSettings() {
     vuetifyThemeName,
     ready,
     hydrate,
+    hydrateAiSettings,
     openSection,
+    persistAiSettings,
     setTheme,
     setThemeMode,
     setThemeContrast,
