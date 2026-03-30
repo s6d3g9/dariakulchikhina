@@ -39,12 +39,71 @@ const emit = defineEmits<{
   react: [messageId: string, emoji: string]
 }>()
 
+const bubbleEl = ref<HTMLElement | null>(null)
+const controlsEl = ref<HTMLElement | null>(null)
+const controlsPlacement = ref<'above' | 'below'>('above')
+let controlsPlacementFrame: number | null = null
+
 const depthStyle = computed(() => ({
   '--message-comment-depth': String(Math.min(props.depth, 4)),
 }))
 
 const controlsOpen = computed(() => !props.entry.deletedAt
   && (props.activeMessageActionsId === props.entry.id || props.activeReactionOverlayId === props.entry.id))
+
+function syncControlsPlacement() {
+  if (!import.meta.client || !controlsOpen.value) {
+    controlsPlacement.value = 'above'
+    return
+  }
+
+  const bubble = bubbleEl.value
+  const controls = controlsEl.value
+
+  if (!bubble || !controls) {
+    controlsPlacement.value = 'above'
+    return
+  }
+
+  const header = document.querySelector('.chat-header')
+  const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 0
+  const bubbleRect = bubble.getBoundingClientRect()
+  const controlsHeight = controls.getBoundingClientRect().height
+
+  controlsPlacement.value = bubbleRect.top - controlsHeight - 4 < headerBottom + 8 ? 'below' : 'above'
+}
+
+function scheduleControlsPlacementSync() {
+  if (!import.meta.client) {
+    return
+  }
+
+  if (controlsPlacementFrame !== null) {
+    cancelAnimationFrame(controlsPlacementFrame)
+  }
+
+  controlsPlacementFrame = requestAnimationFrame(() => {
+    controlsPlacementFrame = null
+    syncControlsPlacement()
+  })
+}
+
+watch(controlsOpen, (value) => {
+  if (!value) {
+    controlsPlacement.value = 'above'
+
+    if (controlsPlacementFrame !== null) {
+      cancelAnimationFrame(controlsPlacementFrame)
+      controlsPlacementFrame = null
+    }
+
+    return
+  }
+
+  nextTick(() => {
+    scheduleControlsPlacementSync()
+  })
+})
 
 function formatMessageTime(value?: string) {
   if (!value) {
@@ -126,10 +185,18 @@ function handleBubbleClick(event: MouseEvent) {
 
   emit('toggle-actions', props.entry.id, event)
 }
+
+onBeforeUnmount(() => {
+  if (controlsPlacementFrame !== null) {
+    cancelAnimationFrame(controlsPlacementFrame)
+    controlsPlacementFrame = null
+  }
+})
 </script>
 
 <template>
   <article
+    ref="bubbleEl"
     class="message-bubble"
     :class="{
       'message-bubble--own': entry.own,
@@ -145,7 +212,9 @@ function handleBubbleClick(event: MouseEvent) {
     <Transition name="message-actions-pop">
       <div
         v-if="controlsOpen"
+        ref="controlsEl"
         class="message-bubble__controls"
+        :class="{ 'message-bubble__controls--below': controlsPlacement === 'below' }"
         data-message-controls="true"
         @pointerdown.stop
       >

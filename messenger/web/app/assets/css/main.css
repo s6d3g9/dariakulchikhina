@@ -2817,6 +2817,11 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   min-width: 160px;
 }
 
+.message-bubble__controls--below {
+  top: calc(100% + 4px);
+  bottom: auto;
+}
+
 .message-bubble--own .message-bubble__controls {
   right: 0;
 }
