@@ -2337,6 +2337,21 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   .section-block--chat.section-block--chat-call-analysis-open {
     padding-right: calc(var(--messenger-call-analysis-width, 0px) + 18px);
   }
+
+  .section-block--chat > .chat-call-analysis-panel.call-transcript-popup {
+    position: absolute;
+    top: 64px;
+    right: 0;
+    bottom: 0;
+    width: var(--messenger-call-analysis-width, min(32vw, 420px));
+    height: auto;
+    border-radius: 0;
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 1px solid rgba(var(--v-theme-outline), 0.3);
+    z-index: 25;
+  }
 }
 
 .chat-reading-shell {

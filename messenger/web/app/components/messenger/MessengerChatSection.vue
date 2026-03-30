@@ -742,6 +742,15 @@ const chatLayoutStyle = computed(() => ({
   '--messenger-call-analysis-width': calls.analysisPanelOpen.value ? 'min(32vw, 420px)' : '0px',
 }))
 
+const showDesktopCallAnalysisPanel = computed(() => Boolean(
+  !isMobileChatViewport()
+  && calls.analysisPanelOpen.value
+  && (
+    (calls.activeCall.value && calls.activeCall.value.mode === 'audio' && calls.viewMode.value !== 'mini')
+    || (!calls.activeCall.value && calls.callReview.value)
+  )
+))
+
 const threadedMessages = computed<MessengerThreadMessage[]>(() => {
   const nodes = conversations.messages.value.map(message => ({
     ...message,
@@ -2412,6 +2421,8 @@ onBeforeUnmount(() => {
         @toggle-forward-target="toggleForwardTarget"
         @clear-selected-klipy-item="clearSelectedKlipyItem"
       />
+
+      <MessengerCallAnalysisPanel v-if="showDesktopCallAnalysisPanel" class="chat-call-analysis-panel" />
 
       <div class="chat-reading-shell" @pointerdown="handleChatAreaPointerDown">
         <div v-if="desktopDropActive || dragDropPending" class="chat-dropzone" aria-live="polite">

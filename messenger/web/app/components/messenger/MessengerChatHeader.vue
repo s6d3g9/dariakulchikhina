@@ -238,6 +238,17 @@ const nextCallViewModeLabel = computed(() => {
             <div class="chat-header__call-inline chat-header__call-inline--idle">
               <div class="chat-header__call-primary chat-header__call-primary--idle">
                 <VBtn
+                  v-if="showCallActions && showCallAnalysis"
+                  type="button"
+                  class="chat-header__icon-btn"
+                  icon
+                  variant="text"
+                  aria-label="ИИ-анализ звонка"
+                  @click="emit('toggle-call-analysis')"
+                >
+                  <VIcon :color="callAnalysisActive ? 'primary' : undefined">mdi-text-box-search-outline</VIcon>
+                </VBtn>
+                <VBtn
                   v-if="showCallActions"
                   type="button"
                   class="chat-header__icon-btn"
@@ -248,17 +259,6 @@ const nextCallViewModeLabel = computed(() => {
                   @click="emit('toggle-audio-call')"
                 >
                   <VIcon :color="audioCall ? 'primary' : undefined">mdi-phone</VIcon>
-                </VBtn>
-                <VBtn
-                  v-if="showCallActions && showCallAnalysis"
-                  type="button"
-                  class="chat-header__icon-btn"
-                  icon
-                  variant="text"
-                  aria-label="ИИ-анализ звонка"
-                  @click="emit('toggle-call-analysis')"
-                >
-                  <VIcon :color="callAnalysisActive ? 'primary' : undefined">mdi-text-box-search-outline</VIcon>
                 </VBtn>
                 <VBtn
                   v-if="showCallActions"
