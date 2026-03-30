@@ -236,8 +236,6 @@ const nextCallViewModeLabel = computed(() => {
 
           <template v-else>
             <div class="chat-header__call-inline chat-header__call-inline--idle">
-              <div class="chat-header__call-secondary chat-header__call-secondary--idle"></div>
-
               <div class="chat-header__call-primary chat-header__call-primary--idle">
                 <VBtn
                   v-if="showCallActions"
@@ -251,7 +249,6 @@ const nextCallViewModeLabel = computed(() => {
                 >
                   <VIcon :color="audioCall ? 'primary' : undefined">mdi-phone</VIcon>
                 </VBtn>
-                <span v-else class="chat-header__icon-slot" aria-hidden="true"></span>
                 <VBtn
                   v-if="showCallActions && showCallAnalysis"
                   type="button"
@@ -263,7 +260,6 @@ const nextCallViewModeLabel = computed(() => {
                 >
                   <VIcon :color="callAnalysisActive ? 'primary' : undefined">mdi-text-box-search-outline</VIcon>
                 </VBtn>
-                <span v-else-if="showCallActions" class="chat-header__icon-slot" aria-hidden="true"></span>
                 <VBtn
                   v-if="showCallActions"
                   type="button"
@@ -276,7 +272,6 @@ const nextCallViewModeLabel = computed(() => {
                 >
                   <VIcon>mdi-video</VIcon>
                 </VBtn>
-                <span v-else class="chat-header__icon-slot" aria-hidden="true"></span>
                 <VMenu location="bottom end">
                   <template #activator="{ props: menuProps }">
                     <VBtn type="button" class="chat-header__icon-btn" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
