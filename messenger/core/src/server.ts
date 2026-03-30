@@ -21,6 +21,7 @@ import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } fr
 import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, buildMessengerProjectSyncBrief, deleteMessengerProject, deleteMessengerProjectAgreement, deleteMessengerProjectCabinetLink, deleteMessengerProjectSubject, getMessengerProject, listMessengerProjectTemplates, listMessengerProjects, upsertMessengerProject, upsertMessengerProjectAgreement, upsertMessengerProjectCabinetLink, upsertMessengerProjectSubject } from './project-engine-store.ts'
 import { readMessengerConfig } from './config.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
+import { isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from './transcription-service.ts'
 
 export async function createMessengerServer() {
   const config = readMessengerConfig()
@@ -409,6 +410,15 @@ export async function createMessengerServer() {
   })
   const messageReactionSchema = z.object({
     emoji: z.string().trim().min(1).max(16),
+  })
+  const callTranscriptionParamsSchema = z.object({
+    conversationId: z.string().uuid(),
+    callId: z.string().uuid(),
+  })
+  const callTranscriptionChunkSchema = z.object({
+    audioBase64: z.string().trim().min(1).max(8_000_000),
+    mimeType: z.string().trim().min(1).max(120).default('audio/webm'),
+    sequence: z.coerce.number().int().min(0).default(0),
   })
   const klipyKindSchema = z.enum(['gif', 'sticker'])
   const klipySearchSchema = z.object({
@@ -2336,6 +2346,49 @@ export async function createMessengerServer() {
     })
 
     return { ok: true }
+  })
+
+  app.post('/conversations/:conversationId/calls/:callId/transcription', async (request, reply) => {
+    const session = await resolveSession(request)
+    if (!session) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' })
+    }
+
+    const parsedParams = callTranscriptionParamsSchema.safeParse(request.params)
+    const parsedBody = callTranscriptionChunkSchema.safeParse(request.body)
+    if (!parsedParams.success || !parsedBody.success) {
+      return reply.code(400).send({ error: 'INVALID_PAYLOAD' })
+    }
+
+    const conversation = await findConversationById(parsedParams.data.conversationId)
+    if (!conversation) {
+      return reply.code(404).send({ error: 'CONVERSATION_NOT_FOUND' })
+    }
+
+    if (conversation.userAId !== session.user.id && conversation.userBId !== session.user.id) {
+      return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
+    }
+
+    if (!isMessengerTranscriptionConfigured(config)) {
+      return reply.code(503).send({ error: 'TRANSCRIPTION_DISABLED' })
+    }
+
+    try {
+      const text = await transcribeMessengerAudioChunk(config, {
+        audioBase64: parsedBody.data.audioBase64,
+        mimeType: parsedBody.data.mimeType,
+        language: config.MESSENGER_TRANSCRIPTION_LANGUAGE,
+      })
+
+      return {
+        ok: true,
+        callId: parsedParams.data.callId,
+        sequence: parsedBody.data.sequence,
+        text,
+      }
+    } catch {
+      return reply.code(502).send({ error: 'TRANSCRIPTION_FAILED' })
+    }
   })
 
   app.get('/ws', { websocket: true }, async (socket, request) => {

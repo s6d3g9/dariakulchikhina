@@ -52,6 +52,17 @@ const envSchema = z.object({
   MESSENGER_AGENT_MODEL: z.string().trim().default('GPT-5.4'),
   MESSENGER_AGENT_TIMEOUT_MS: z.coerce.number().int().positive().default(45000),
   MESSENGER_AGENT_TEMPERATURE: z.coerce.number().min(0).max(1.5).default(0.35),
+  MESSENGER_TRANSCRIPTION_ENABLED: z.union([
+    z.boolean(),
+    z.enum(['true', 'false']),
+  ])
+  .transform(value => value === true || value === 'true')
+  .default(false),
+  MESSENGER_TRANSCRIPTION_API_KEY: z.string().trim().optional(),
+  MESSENGER_TRANSCRIPTION_API_BASE_URL: z.string().trim().url().default('https://api.groq.com/openai/v1'),
+  MESSENGER_TRANSCRIPTION_MODEL: z.string().trim().default('whisper-large-v3-turbo'),
+  MESSENGER_TRANSCRIPTION_LANGUAGE: z.string().trim().default('ru'),
+  MESSENGER_TRANSCRIPTION_TIMEOUT_MS: z.coerce.number().int().positive().default(20000),
   KLIPY_APP_KEY: z.string().trim().optional(),
   KLIPY_API_BASE_URL: z.string().trim().url().default('https://api.klipy.com'),
 })

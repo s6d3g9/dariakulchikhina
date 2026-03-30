@@ -169,6 +169,11 @@ let transcriptionLocalAnalyser: AnalyserNode | null = null
 let transcriptionRemoteAnalyser: AnalyserNode | null = null
 let transcriptionLevelSampler: ReturnType<typeof setInterval> | null = null
 let transcriptionLastEnergy = { local: 0, remote: 0 }
+let transcriptionChunkRecorder: MediaRecorder | null = null
+let transcriptionChunkUploadQueue: Promise<void> = Promise.resolve()
+let transcriptionChunkSequence = 0
+let transcriptionChunkMimeType = ''
+let transcriptionServerSessionKey = ''
 
 function resolveSpeechRecognitionCtor(): SpeechRecognitionCtorLike | null {
   if (!import.meta.client) {
@@ -618,6 +623,7 @@ async function flushPendingIceCandidates(callId: string, connection: RTCPeerConn
 }
 
 export function useMessengerCalls() {
+  const runtimeConfig = useRuntimeConfig()
   const auth = useMessengerAuth()
   const conversations = useMessengerConversations()
   const navigation = useMessengerConversationState()
@@ -710,6 +716,42 @@ export function useMessengerCalls() {
     return 'Нужно подтвердить доступ к микрофону и камере для видеозвонков.'
   })
 
+  function supportsServerTranscriptionBackend() {
+    return Boolean(
+      runtimeConfig.public.messengerServerTranscriptionEnabled
+      && import.meta.client
+      && typeof MediaRecorder !== 'undefined'
+      && auth.token.value,
+    )
+  }
+
+  function canRunServerCallTranscription() {
+    return Boolean(
+      supportsServerTranscriptionBackend()
+      && activeCall.value?.mode === 'audio'
+      && localStream?.getAudioTracks().length,
+    )
+  }
+
+  function shouldPreferServerCallTranscription() {
+    return Boolean(canRunServerCallTranscription() && (isMobileChromeLikeBrowser() || !resolveSpeechRecognitionCtor()))
+  }
+
+  function pickServerTranscriptionMimeType() {
+    if (!import.meta.client || typeof MediaRecorder === 'undefined' || typeof MediaRecorder.isTypeSupported !== 'function') {
+      return ''
+    }
+
+    const preferredTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus',
+    ]
+
+    return preferredTypes.find(type => MediaRecorder.isTypeSupported(type)) || ''
+  }
+
   function canRunBrowserSpeechRecognition() {
     if (!resolveSpeechRecognitionCtor()) {
       return false
@@ -723,17 +765,29 @@ export function useMessengerCalls() {
   }
 
   function syncTranscriptionSupportState() {
+    if (shouldPreferServerCallTranscription()) {
+      transcriptionSupported.value = true
+      transcriptionHint.value = transcriptionActive.value
+        ? 'Онлайн-транскрибация идет через messenger-core. Сейчас распознается ваш микрофон.'
+        : 'Для звонка доступна серверная онлайн-транскрибация через messenger-core.'
+      return
+    }
+
     const browserSpeechAvailable = Boolean(resolveSpeechRecognitionCtor())
 
     if (!browserSpeechAvailable) {
       transcriptionSupported.value = false
-      transcriptionHint.value = 'Браузер не поддерживает Web Speech API для транскрибации.'
+      transcriptionHint.value = supportsServerTranscriptionBackend()
+        ? 'Серверная транскрибация станет доступна при активном аудиозвонке.'
+        : 'Браузер не поддерживает Web Speech API для транскрибации.'
       return
     }
 
     if (activeCall.value?.mode === 'audio' && isMobileChromeLikeBrowser()) {
-      transcriptionSupported.value = false
-      transcriptionHint.value = 'Во время звонка мобильный Chrome не даёт одновременно использовать микрофон для WebRTC и Web Speech API.'
+      transcriptionSupported.value = supportsServerTranscriptionBackend()
+      transcriptionHint.value = supportsServerTranscriptionBackend()
+        ? 'Во время звонка мобильный Chrome будет использовать серверную транскрибацию через messenger-core.'
+        : 'Во время звонка мобильный Chrome не даёт одновременно использовать микрофон для WebRTC и Web Speech API.'
       return
     }
 
@@ -892,6 +946,26 @@ export function useMessengerCalls() {
   }
 
   function stopTranscription() {
+    transcriptionServerSessionKey = ''
+
+    if (transcriptionChunkRecorder) {
+      const recorder = transcriptionChunkRecorder
+      transcriptionChunkRecorder = null
+      recorder.ondataavailable = null
+      recorder.onerror = null
+      if (recorder.state !== 'inactive') {
+        try {
+          recorder.stop()
+        } catch {
+          // noop
+        }
+      }
+    }
+
+    transcriptionChunkUploadQueue = Promise.resolve()
+    transcriptionChunkSequence = 0
+    transcriptionChunkMimeType = ''
+
     if (speechRecognitionRestartTimer) {
       clearTimeout(speechRecognitionRestartTimer)
       speechRecognitionRestartTimer = null
@@ -915,12 +989,109 @@ export function useMessengerCalls() {
     syncTranscriptionSupportState()
   }
 
+  async function uploadServerTranscriptionChunk(blob: Blob, sequence: number, sessionKey: string, conversationId: string, callId: string) {
+    const buffer = new Uint8Array(await blob.arrayBuffer())
+    const response = await auth.request<{ text?: string }>(`/conversations/${conversationId}/calls/${callId}/transcription`, {
+      method: 'POST',
+      body: {
+        audioBase64: encodeCallBase64(buffer),
+        mimeType: transcriptionChunkMimeType || blob.type || 'audio/webm',
+        sequence,
+      },
+    })
+
+    if (sessionKey !== transcriptionServerSessionKey) {
+      return
+    }
+
+    const normalizedText = String(response.text || '').trim()
+    transcriptionDraft.value = ''
+    if (normalizedText) {
+      appendTranscriptionEntry(normalizedText, { speaker: 'you', final: true })
+    }
+  }
+
+  function startServerCallTranscription() {
+    if (!canRunServerCallTranscription() || !activeCall.value || !localStream) {
+      transcriptionError.value = 'Серверная транскрибация пока недоступна для этого звонка.'
+      return false
+    }
+
+    stopTranscription()
+    startTranscriptionEnergySampler()
+
+    const mimeType = pickServerTranscriptionMimeType()
+    const stream = new MediaStream(localStream.getAudioTracks())
+    const recorder = mimeType
+      ? new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 24000 })
+      : new MediaRecorder(stream)
+
+    transcriptionChunkRecorder = recorder
+    transcriptionChunkMimeType = recorder.mimeType || mimeType || 'audio/webm'
+    transcriptionChunkSequence = 0
+    transcriptionError.value = ''
+    transcriptionDraft.value = ''
+
+    const sessionKey = `${activeCall.value.callId}:${Date.now()}`
+    const conversationId = activeCall.value.conversationId
+    const callId = activeCall.value.callId
+    transcriptionServerSessionKey = sessionKey
+
+    recorder.ondataavailable = (event) => {
+      if (!event.data || event.data.size <= 0) {
+        return
+      }
+
+      const sequence = transcriptionChunkSequence
+      transcriptionChunkSequence += 1
+      transcriptionDraft.value = 'Сервер распознаёт вашу речь…'
+
+      transcriptionChunkUploadQueue = transcriptionChunkUploadQueue
+        .then(async () => {
+          await uploadServerTranscriptionChunk(event.data, sequence, sessionKey, conversationId, callId)
+        })
+        .catch(() => {
+          if (sessionKey !== transcriptionServerSessionKey) {
+            return
+          }
+
+          transcriptionDraft.value = ''
+          transcriptionError.value = 'Серверная транскрибация недоступна. Проверьте STT API и runtime env messenger-core.'
+        })
+    }
+
+    recorder.onerror = () => {
+      if (sessionKey !== transcriptionServerSessionKey) {
+        return
+      }
+
+      transcriptionError.value = 'Не удалось подготовить аудиопоток для серверной транскрибации.'
+    }
+
+    try {
+      recorder.start(1800)
+      transcriptionActive.value = true
+      transcriptionHint.value = 'Онлайн-транскрибация идет через messenger-core. Сейчас распознается ваш микрофон.'
+      return true
+    } catch {
+      transcriptionServerSessionKey = ''
+      transcriptionChunkRecorder = null
+      transcriptionDraft.value = ''
+      transcriptionError.value = 'Не удалось запустить серверную транскрибацию.'
+      return false
+    }
+  }
+
   function startTranscription() {
     syncTranscriptionSupportState()
 
     if (!activeCall.value || activeCall.value.mode !== 'audio') {
       stopTranscription()
       return false
+    }
+
+    if (shouldPreferServerCallTranscription()) {
+      return startServerCallTranscription()
     }
 
     if (!canRunBrowserSpeechRecognition()) {

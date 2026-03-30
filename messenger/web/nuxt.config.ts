@@ -43,6 +43,7 @@ export default defineNuxtConfig({
     public: {
       messengerCoreBaseUrl: process.env.NUXT_PUBLIC_MESSENGER_CORE_BASE_URL || 'http://localhost:4300',
       messengerAgentsEnabled: process.env.NUXT_PUBLIC_MESSENGER_ENABLE_AGENTS !== 'false',
+      messengerServerTranscriptionEnabled: process.env.NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED === 'true',
       messengerProjectRoot: process.env.NUXT_PUBLIC_MESSENGER_PROJECT_ROOT || '',
     },
   },

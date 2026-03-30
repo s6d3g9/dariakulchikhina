@@ -125,6 +125,17 @@ pm2 save
 - `NUXT_PUBLIC_MESSENGER_CORE_BASE_URL` — публичный URL API, по умолчанию `${MESSENGER_PUBLIC_ORIGIN}/api`
 - `NUXT_APP_BASE_URL` — base path web-клиента, для отдельного домена обычно `/`
 
+Для server-side live transcription по чанкам аудио:
+
+- `MESSENGER_TRANSCRIPTION_ENABLED=true`
+- `MESSENGER_TRANSCRIPTION_API_KEY=...`
+- `MESSENGER_TRANSCRIPTION_API_BASE_URL=https://api.groq.com/openai/v1`
+- `MESSENGER_TRANSCRIPTION_MODEL=whisper-large-v3-turbo`
+- `MESSENGER_TRANSCRIPTION_LANGUAGE=ru`
+- `NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED=true`
+
+Важно: этот MVP распознаёт локальный микрофон пользователя во время звонка и отправляет чанки через `messenger-core`; он не делает полную двухстороннюю diarization всей беседы.
+
 ## Reverse Proxy
 
 Минимальный вариант:
