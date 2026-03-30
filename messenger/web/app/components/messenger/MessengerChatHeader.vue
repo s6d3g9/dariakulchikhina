@@ -243,7 +243,7 @@ const nextCallViewModeLabel = computed(() => {
                   class="chat-header__icon-btn"
                   icon
                   variant="text"
-                  aria-label="ИИ-анализ звонка"
+                  aria-label="Анализ звонка"
                   @click="emit('toggle-call-analysis')"
                 >
                   <VIcon :color="callAnalysisActive ? 'primary' : undefined">mdi-text-box-search-outline</VIcon>

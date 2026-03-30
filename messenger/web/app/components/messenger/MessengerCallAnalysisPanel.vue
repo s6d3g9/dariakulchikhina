@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const auth = useMessengerAuth()
 const props = withDefaults(defineProps<{
   mobile?: boolean
 }>(), {
@@ -6,8 +7,23 @@ const props = withDefaults(defineProps<{
 })
 
 const calls = useMessengerCalls()
+const settingsModel = useMessengerSettings()
 
 const currentInterpretation = computed(() => calls.analysisInterpretations.value[calls.selectedAnalysisToolId.value] || '')
+const currentAiInterpretation = computed(() => calls.aiAnalysisInterpretations.value[calls.selectedAnalysisToolId.value] || '')
+
+onMounted(() => {
+  if (auth.token.value && !settingsModel.aiSettingsReady.value) {
+    void settingsModel.hydrateAiSettings(auth.request)
+  }
+})
+
+async function updateAiAnalyticsEnabled(value: boolean) {
+  settingsModel.aiSettings.value.analysisEnabled = value
+  if (auth.token.value) {
+    await settingsModel.persistAiSettings(auth.request)
+  }
+}
 
 function formatTranscriptTime(value: number) {
   return new Intl.DateTimeFormat('ru-RU', {
@@ -25,7 +41,7 @@ function formatTranscriptTime(value: number) {
   >
     <div class="call-transcript-popup__head">
       <div>
-        <p class="call-transcript-popup__eyebrow">ИИ-анализ звонка</p>
+        <p class="call-transcript-popup__eyebrow">Анализ звонка</p>
         <h4>{{ calls.activeCall.value ? 'Диалог в реальном времени' : 'Итоги завершённого звонка' }}</h4>
         <p class="call-transcript-popup__status">{{ calls.transcriptionError.value || calls.transcriptionHint.value }}</p>
       </div>
@@ -105,7 +121,48 @@ function formatTranscriptTime(value: number) {
 
       <section class="call-transcript-panel">
         <header class="call-transcript-panel__header">
-          <h5>2. Конспект и интерпретации</h5>
+          <h5>2. Конспект и простой анализ</h5>
+          <VMenu location="bottom end" :close-on-content-click="false">
+            <template #activator="{ props: menuProps }">
+              <VBtn
+                class="call-transcript-popup__btn"
+                size="small"
+                variant="tonal"
+                v-bind="menuProps"
+              >
+                ИИ
+              </VBtn>
+            </template>
+            <VCard min-width="280" color="surface-container-high">
+              <VCardText>
+                <div class="setting-toggle setting-toggle--vuetify">
+                  <span class="setting-toggle__copy"><span class="setting-field__label">Включить ИИ-аналитику</span></span>
+                  <VSwitch
+                    :model-value="settingsModel.aiSettings.value.analysisEnabled"
+                    color="primary"
+                    hide-details
+                    inset
+                    :loading="settingsModel.aiSettingsPending.value"
+                    @update:model-value="updateAiAnalyticsEnabled(Boolean($event))"
+                  />
+                </div>
+                <p class="call-transcript-popup__empty">
+                  {{ settingsModel.aiConfigured.value.analysis ? 'Серверный ИИ-разбор доступен.' : 'Серверный ИИ-разбор пока не готов.' }}
+                </p>
+                <VBtn
+                  block
+                  class="mt-3"
+                  size="small"
+                  variant="flat"
+                  color="primary"
+                  :disabled="!settingsModel.aiSettings.value.analysisEnabled || !calls.callReview.value || calls.aiAnalysisRunning.value"
+                  @click="calls.runAiAnalysisTool(calls.selectedAnalysisToolId.value)"
+                >
+                  Запустить ИИ-разбор
+                </VBtn>
+              </VCardText>
+            </VCard>
+          </VMenu>
         </header>
 
         <div class="call-transcript-panel__content call-transcript-panel__content--scroll">
@@ -129,6 +186,17 @@ function formatTranscriptTime(value: number) {
           <p v-if="calls.analysisError.value" class="call-transcript-popup__empty">{{ calls.analysisError.value }}</p>
           <p v-else-if="calls.analysisRunning.value" class="call-transcript-popup__empty">Строим интерпретацию...</p>
           <p v-else-if="currentInterpretation" class="call-transcript-panel__analysis">{{ currentInterpretation }}</p>
+
+          <div class="mt-4">
+            <header class="call-transcript-panel__header">
+              <h5>3. ИИ-аналитика</h5>
+            </header>
+            <p v-if="!settingsModel.aiSettings.value.analysisEnabled" class="call-transcript-popup__empty">ИИ-аналитика выключена. Включите ее через кнопку ИИ.</p>
+            <p v-else-if="calls.aiAnalysisError.value" class="call-transcript-popup__empty">{{ calls.aiAnalysisError.value }}</p>
+            <p v-else-if="calls.aiAnalysisRunning.value" class="call-transcript-popup__empty">Строим ИИ-разбор...</p>
+            <p v-else-if="currentAiInterpretation" class="call-transcript-panel__analysis">{{ currentAiInterpretation }}</p>
+            <p v-else class="call-transcript-popup__empty">ИИ-разбор запускается отдельно и не заменяет простой анализ.</p>
+          </div>
         </div>
       </section>
     </div>

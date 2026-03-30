@@ -19,6 +19,7 @@ type MessengerStyleKey = 'liquid' | 'material'
 type MessengerAuthRequest = <T>(path: string, options?: Parameters<typeof $fetch<T>>[1]) => Promise<T>
 
 interface MessengerAiSettingsSnapshot {
+  analysisEnabled: boolean
   interpretationModel: string
   summaryModel: string
   transcriptionModel: string
@@ -138,6 +139,7 @@ function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
 
 function createDefaultMessengerAiSettings(): MessengerAiSettingsSnapshot {
   return {
+    analysisEnabled: false,
     interpretationModel: '',
     summaryModel: '',
     transcriptionModel: '',
@@ -160,6 +162,7 @@ function mergeMessengerAiSettings(source?: Partial<MessengerAiSettingsSnapshot> 
   const defaults = createDefaultMessengerAiSettings()
 
   return {
+    analysisEnabled: source?.analysisEnabled === true,
     interpretationModel: normalizeAiModelValue(source?.interpretationModel) || defaults.interpretationModel,
     summaryModel: normalizeAiModelValue(source?.summaryModel) || defaults.summaryModel,
     transcriptionModel: normalizeAiModelValue(source?.transcriptionModel) || defaults.transcriptionModel,

@@ -625,6 +625,7 @@ async function flushPendingIceCandidates(callId: string, connection: RTCPeerConn
 export function useMessengerCalls() {
   const runtimeConfig = useRuntimeConfig()
   const auth = useMessengerAuth()
+  const settingsModel = useMessengerSettings()
   const conversations = useMessengerConversations()
   const navigation = useMessengerConversationState()
   const incomingCall = useState<MessengerIncomingCall | null>('messenger-incoming-call', () => null)
@@ -676,6 +677,9 @@ export function useMessengerCalls() {
   const analysisInterpretations = useState<Partial<Record<MessengerCallAnalysisToolId, string>>>('messenger-call-analysis-interpretations', () => ({}))
   const analysisRunning = useState<boolean>('messenger-call-analysis-running', () => false)
   const analysisError = useState<string>('messenger-call-analysis-error', () => '')
+  const aiAnalysisInterpretations = useState<Partial<Record<MessengerCallAnalysisToolId, string>>>('messenger-call-ai-analysis-interpretations', () => ({}))
+  const aiAnalysisRunning = useState<boolean>('messenger-call-ai-analysis-running', () => false)
+  const aiAnalysisError = useState<string>('messenger-call-ai-analysis-error', () => '')
   const supported = computed(() => Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof RTCPeerConnection !== 'undefined'))
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
   const canStartAudioCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied')
@@ -807,6 +811,8 @@ export function useMessengerCalls() {
     callReview.value = null
     analysisInterpretations.value = {}
     analysisError.value = ''
+    aiAnalysisInterpretations.value = {}
+    aiAnalysisError.value = ''
     analysisPanelOpen.value = false
   }
 
@@ -841,27 +847,7 @@ export function useMessengerCalls() {
     analysisError.value = ''
 
     try {
-      let interpretation = ''
-
-      try {
-        const response = await auth.request<{ interpretation?: string }>(`/conversations/${callReview.value.conversationId}/calls/${callReview.value.callId}/analysis`, {
-          method: 'POST',
-          body: {
-            toolId,
-            cleanedTranscript: callReview.value.cleanedTranscript,
-            summary: callReview.value.summary,
-          },
-        })
-
-        interpretation = String(response.interpretation || '').trim()
-      } catch {
-        interpretation = buildAnalysisInterpretation(toolId, callReview.value)
-        analysisError.value = 'Серверная интерпретация недоступна. Показан локальный разбор.'
-      }
-
-      if (!interpretation) {
-        interpretation = buildAnalysisInterpretation(toolId, callReview.value)
-      }
+      const interpretation = buildAnalysisInterpretation(toolId, callReview.value)
 
       analysisInterpretations.value = {
         ...analysisInterpretations.value,
@@ -873,6 +859,45 @@ export function useMessengerCalls() {
       return ''
     } finally {
       analysisRunning.value = false
+    }
+  }
+
+  async function runAiAnalysisTool(toolId: MessengerCallAnalysisToolId = selectedAnalysisToolId.value) {
+    if (!callReview.value) {
+      aiAnalysisError.value = 'Нет данных звонка для ИИ-аналитики.'
+      return ''
+    }
+
+    if (!settingsModel.aiSettings.value.analysisEnabled) {
+      aiAnalysisError.value = 'ИИ-аналитика выключена в меню анализа.'
+      return ''
+    }
+
+    selectedAnalysisToolId.value = toolId
+    aiAnalysisRunning.value = true
+    aiAnalysisError.value = ''
+
+    try {
+      const response = await auth.request<{ interpretation?: string }>(`/conversations/${callReview.value.conversationId}/calls/${callReview.value.callId}/analysis`, {
+        method: 'POST',
+        body: {
+          toolId,
+          cleanedTranscript: callReview.value.cleanedTranscript,
+          summary: callReview.value.summary,
+        },
+      })
+
+      const interpretation = String(response.interpretation || '').trim()
+      aiAnalysisInterpretations.value = {
+        ...aiAnalysisInterpretations.value,
+        [toolId]: interpretation,
+      }
+      return interpretation
+    } catch {
+      aiAnalysisError.value = 'Не удалось построить ИИ-разбор.'
+      return ''
+    } finally {
+      aiAnalysisRunning.value = false
     }
   }
 
@@ -2411,6 +2436,9 @@ export function useMessengerCalls() {
     analysisInterpretations,
     analysisRunning,
     analysisError,
+    aiAnalysisInterpretations,
+    aiAnalysisRunning,
+    aiAnalysisError,
     inConversationCall,
     canStartAudioCall,
     canStartVideoCall,
@@ -2440,6 +2468,7 @@ export function useMessengerCalls() {
     closeAnalysisPanel,
     toggleAnalysisPanel,
     runAnalysisTool,
+    runAiAnalysisTool,
     toggleVideo,
     switchCamera,
     startOutgoingCall,

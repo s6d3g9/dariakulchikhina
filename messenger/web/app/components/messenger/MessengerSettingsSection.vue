@@ -241,6 +241,7 @@ function queueAiSettingsPersist() {
 }
 
 watch(() => [
+  settingsModel.aiSettings.value.analysisEnabled,
   settingsModel.aiSettings.value.interpretationModel,
   settingsModel.aiSettings.value.summaryModel,
   settingsModel.aiSettings.value.transcriptionModel,
@@ -497,6 +498,10 @@ function themeCardStyle(theme: { preview: [string, string, string] }) {
           <section class="settings-grid">
             <div class="setting-facts mb-4">
               <div class="setting-fact-row">
+                <span class="setting-fact-label">ИИ-аналитика</span>
+                <strong>{{ settingsModel.aiSettings.value.analysisEnabled ? 'Включена' : 'Выключена' }}</strong>
+              </div>
+              <div class="setting-fact-row">
                 <span class="setting-fact-label">Интерпретация</span>
                 <strong>{{ settingsModel.aiConfigured.value.analysis ? 'Сервер готов' : 'Нужен API key' }}</strong>
               </div>
@@ -505,32 +510,10 @@ function themeCardStyle(theme: { preview: [string, string, string] }) {
                 <strong>{{ settingsModel.aiConfigured.value.transcription ? 'Сервер готов' : 'Нужен STT key' }}</strong>
               </div>
             </div>
-            <VCombobox
-              v-model="settingsModel.aiSettings.value.interpretationModel"
-              :items="settingsModel.aiModelOptions.value.interpretation"
-              variant="outlined"
-              label="Модель интерпретации"
-              clearable
-              :loading="settingsModel.aiSettingsPending.value"
-            />
-            <VCombobox
-              v-model="settingsModel.aiSettings.value.summaryModel"
-              :items="settingsModel.aiModelOptions.value.summary"
-              variant="outlined"
-              label="Модель конспекта"
-              clearable
-              class="mt-2"
-              :loading="settingsModel.aiSettingsPending.value"
-            />
-            <VCombobox
-              v-model="settingsModel.aiSettings.value.transcriptionModel"
-              :items="settingsModel.aiModelOptions.value.transcription"
-              variant="outlined"
-              label="Модель транскрибации"
-              clearable
-              class="mt-2"
-              :loading="settingsModel.aiSettingsPending.value"
-            />
+            <div class="setting-toggle setting-toggle--vuetify">
+              <span class="setting-toggle__copy"><span class="setting-field__label">Включить ИИ-аналитику</span></span>
+              <VSwitch v-model="settingsModel.aiSettings.value.analysisEnabled" color="primary" hide-details inset :loading="settingsModel.aiSettingsPending.value" />
+            </div>
             <VAlert v-if="settingsModel.aiSettingsError.value" type="info" class="mt-4">
               {{ settingsModel.aiSettingsError.value }}
             </VAlert>

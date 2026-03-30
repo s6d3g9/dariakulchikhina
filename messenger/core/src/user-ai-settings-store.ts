@@ -5,6 +5,7 @@ import { resolveMessengerDataPath } from './storage-paths.ts'
 
 export interface MessengerUserAiSettingsRecord {
   userId: string
+  analysisEnabled: boolean
   interpretationModel: string
   summaryModel: string
   transcriptionModel: string
@@ -20,6 +21,7 @@ const STORAGE_PATH = resolveMessengerDataPath('user-ai-settings.json')
 function createDefaultMessengerUserAiSettings(userId: string): MessengerUserAiSettingsRecord {
   return {
     userId,
+    analysisEnabled: false,
     interpretationModel: '',
     summaryModel: '',
     transcriptionModel: '',
@@ -37,6 +39,7 @@ function normalizeRecord(userId: string, value?: Partial<MessengerUserAiSettings
   return {
     ...defaults,
     userId,
+    analysisEnabled: value?.analysisEnabled === true,
     interpretationModel: normalizeModelName(value?.interpretationModel),
     summaryModel: normalizeModelName(value?.summaryModel),
     transcriptionModel: normalizeModelName(value?.transcriptionModel),
@@ -90,7 +93,7 @@ export async function getMessengerUserAiSettings(userId: string) {
 
 export async function updateMessengerUserAiSettings(
   userId: string,
-  patch: Partial<Pick<MessengerUserAiSettingsRecord, 'interpretationModel' | 'summaryModel' | 'transcriptionModel'>>,
+  patch: Partial<Pick<MessengerUserAiSettingsRecord, 'analysisEnabled' | 'interpretationModel' | 'summaryModel' | 'transcriptionModel'>>,
 ) {
   const payload = await readSettingsFile()
   const existingIndex = payload.settings.findIndex(item => item.userId === userId)

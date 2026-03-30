@@ -460,6 +460,7 @@ export async function createMessengerServer() {
     sequence: z.coerce.number().int().min(0).default(0),
   })
   const userAiSettingsSchema = z.object({
+    analysisEnabled: z.boolean().optional().default(false),
     interpretationModel: z.string().trim().max(160).optional().default(''),
     summaryModel: z.string().trim().max(160).optional().default(''),
     transcriptionModel: z.string().trim().max(160).optional().default(''),
