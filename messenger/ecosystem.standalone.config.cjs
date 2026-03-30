@@ -1,4 +1,5 @@
 const fs = require('node:fs')
+const path = require('node:path')
 
 function readRuntimeEnv(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -32,18 +33,23 @@ const baseEnv = {
   ...process.env,
 }
 
-const messengerDeployRoot = baseEnv.MESSENGER_DEPLOY_ROOT || '/opt/daria-messenger'
-const messengerProjectRoot = baseEnv.MESSENGER_PROJECT_ROOT || messengerDeployRoot
-const messengerDataRoot = baseEnv.MESSENGER_CORE_DATA_DIR || '/opt/daria-messenger-data'
-const messengerRuntimeEnvPath = baseEnv.MESSENGER_RUNTIME_ENV_PATH || `${messengerDataRoot}/messenger-runtime.env`
-const messengerPublicOrigin = (baseEnv.MESSENGER_PUBLIC_ORIGIN || 'https://messenger.example.com').replace(/\/$/, '')
-const messengerCoreBaseUrl = baseEnv.NUXT_PUBLIC_MESSENGER_CORE_BASE_URL || `${messengerPublicOrigin}/api`
-const messengerAppBaseUrl = baseEnv.NUXT_APP_BASE_URL || '/'
+const inferredDeployRoot = baseEnv.MESSENGER_DEPLOY_ROOT || process.cwd()
+const inferredDataRoot = baseEnv.MESSENGER_CORE_DATA_DIR
+  || path.resolve(inferredDeployRoot, '../daria-messenger-data')
+const inferredRuntimeEnvPath = baseEnv.MESSENGER_RUNTIME_ENV_PATH || `${inferredDataRoot}/messenger-runtime.env`
 
 const runtimeEnv = {
-  ...readRuntimeEnv(messengerRuntimeEnvPath),
+  ...readRuntimeEnv(inferredRuntimeEnvPath),
   ...baseEnv,
 }
+
+const messengerDeployRoot = runtimeEnv.MESSENGER_DEPLOY_ROOT || inferredDeployRoot
+const messengerProjectRoot = runtimeEnv.MESSENGER_PROJECT_ROOT || messengerDeployRoot
+const messengerDataRoot = runtimeEnv.MESSENGER_CORE_DATA_DIR || inferredDataRoot
+const messengerRuntimeEnvPath = runtimeEnv.MESSENGER_RUNTIME_ENV_PATH || inferredRuntimeEnvPath
+const messengerPublicOrigin = (runtimeEnv.MESSENGER_PUBLIC_ORIGIN || 'https://messenger.example.com').replace(/\/$/, '')
+const messengerCoreBaseUrl = runtimeEnv.NUXT_PUBLIC_MESSENGER_CORE_BASE_URL || `${messengerPublicOrigin}/api`
+const messengerAppBaseUrl = runtimeEnv.NUXT_APP_BASE_URL || '/'
 
 module.exports = {
   apps: [
