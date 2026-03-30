@@ -199,9 +199,13 @@ function isMobileChromeLikeBrowser() {
 
   const userAgent = navigator.userAgent || ''
   const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(userAgent)
-  const isChromeLike = /Chrome|CriOS|EdgA|Android/iu.test(userAgent)
+  const isChromeLike = /Chrome\/|CriOS\/|EdgA\/|SamsungBrowser\//iu.test(userAgent)
 
   return isMobile && isChromeLike
+}
+
+function mobileChromeTranscriptionFallbackMessage() {
+  return 'Во время звонка мобильный Chrome не даёт одновременно использовать микрофон для WebRTC и Web Speech API. На этом сервере серверная транскрибация пока не настроена.'
 }
 
 function readAnalyserEnergy(analyser: AnalyserNode | null) {
@@ -791,7 +795,7 @@ export function useMessengerCalls() {
       transcriptionSupported.value = supportsServerTranscriptionBackend()
       transcriptionHint.value = supportsServerTranscriptionBackend()
         ? 'Во время звонка мобильный Chrome будет использовать серверную транскрибацию через messenger-core.'
-        : 'Во время звонка мобильный Chrome не даёт одновременно использовать микрофон для WebRTC и Web Speech API.'
+        : mobileChromeTranscriptionFallbackMessage()
       return
     }
 
@@ -1142,7 +1146,7 @@ export function useMessengerCalls() {
 
     if (!canRunBrowserSpeechRecognition()) {
       transcriptionError.value = isMobileChromeLikeBrowser()
-        ? 'На мобильном Chrome распознавание речи во время звонка недоступно: браузер уже использует микрофон для аудиосессии.'
+        ? mobileChromeTranscriptionFallbackMessage()
         : 'Для транскрибации нужен Chrome/Edge/Safari с поддержкой Web Speech API.'
       return false
     }
@@ -1189,7 +1193,7 @@ export function useMessengerCalls() {
         transcriptionError.value = 'Браузер запретил доступ к распознаванию речи. Разрешите микрофон в настройках сайта.'
       } else if (errorCode === 'audio-capture') {
         transcriptionError.value = isMobileChromeLikeBrowser()
-          ? 'Мобильный Chrome не может запустить распознавание речи, пока микрофон уже занят звонком.'
+          ? mobileChromeTranscriptionFallbackMessage()
           : 'Не удалось получить аудио для транскрибации.'
       } else {
         transcriptionError.value = 'Транскрибация временно недоступна. Пытаемся переподключиться.'
@@ -1215,7 +1219,7 @@ export function useMessengerCalls() {
     } catch {
       transcriptionActive.value = false
       transcriptionError.value = isMobileChromeLikeBrowser()
-        ? 'Мобильный Chrome не позволяет запустить распознавание речи параллельно звонку.'
+        ? mobileChromeTranscriptionFallbackMessage()
         : 'Не удалось запустить транскрибацию. Попробуйте ещё раз.'
       syncTranscriptionSupportState()
       return false
