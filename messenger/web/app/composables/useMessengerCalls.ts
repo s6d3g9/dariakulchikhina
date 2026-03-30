@@ -1,3 +1,5 @@
+import { buildMessengerUrl } from '../utils/messenger-url'
+
 type MessengerCallMode = 'audio' | 'video'
 type MessengerCallSignalKind = 'invite' | 'ringing' | 'offer' | 'answer' | 'ice-candidate' | 'reject' | 'hangup' | 'busy'
 type MessengerMediaPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
@@ -53,11 +55,15 @@ interface MessengerCallAnalysisTool {
 interface MessengerCallReviewState {
   callId: string
   conversationId: string
+  peerDisplayName: string
   cleanedTranscript: string
   summary: string
   sourceLines: number
   generatedAt: number
   autoPosted: boolean
+  syncedProjectSlug?: string
+  syncedInsightId?: string
+  syncedAt?: number
 }
 
 type MessengerCallViewMode = 'full' | 'split' | 'mini'
@@ -118,6 +124,12 @@ const CALL_ANALYSIS_TOOLS: MessengerCallAnalysisTool[] = [
   { id: 'next-steps', title: 'Следующие шаги', description: 'План действий по итогам разговора.' },
 ]
 const TRANSCRIPT_FILLER_WORDS = ['ээ', 'эм', 'мм', 'ну', 'типа', 'короче', 'как бы', 'вот', 'ага', 'угу']
+const CALL_ANALYSIS_WORD_LIBRARY = {
+  price: ['бюджет', 'стоим', 'цена', 'скидк', 'оплат', 'предоплат'],
+  deadline: ['срок', 'дедлайн', 'когда', 'до ', 'этап', 'дата'],
+  concern: ['сомнева', 'боюсь', 'сложно', 'не уверен', 'риск', 'дорого', 'неудоб'],
+  decision: ['реши', 'подтверд', 'соглас', 'окончательно', 'берем', 'делаем'],
+} as const
 
 interface MessengerCallSecurityContext {
   callId: string
@@ -205,7 +217,11 @@ function isMobileChromeLikeBrowser() {
 }
 
 function mobileChromeTranscriptionFallbackMessage() {
-  return 'Во время звонка мобильный Chrome не даёт одновременно использовать микрофон для WebRTC и Web Speech API. На этом сервере серверная транскрибация пока не настроена.'
+  return 'Во время звонка мобильный Chrome не даёт одновременно использовать микрофон для WebRTC и Web Speech API. Нужен серверный транскриб или другой браузер.'
+}
+
+function matchesAnalysisWordLibrary(text: string, keywords: readonly string[]) {
+  return keywords.some(keyword => text.includes(keyword))
 }
 
 function readAnalyserEnergy(analyser: AnalyserNode | null) {
@@ -259,6 +275,10 @@ function normalizeTranscriptText(raw: string) {
   }
 
   return compact
+}
+
+function normalizeProjectSyncSlug(value?: string | null) {
+  return String(value || '').trim().replace(/^\/+|\/+$/g, '')
 }
 
 function cleanTranscriptEntries(entries: MessengerCallTranscriptEntry[]) {
@@ -317,10 +337,10 @@ function buildCleanTranscript(entries: MessengerCallTranscriptEntry[]) {
 
 function buildAnalysisInterpretation(toolId: MessengerCallAnalysisToolId, review: MessengerCallReviewState) {
   const transcriptLower = review.cleanedTranscript.toLowerCase()
-  const hasPriceTalk = /бюджет|стоим|цена|скидк|оплат|предоплат/.test(transcriptLower)
-  const hasDeadlineTalk = /срок|дедлайн|когда|до\s|этап|дата/.test(transcriptLower)
-  const hasConcernTalk = /сомнева|боюсь|сложно|не уверен|риск|дорого|неудоб/.test(transcriptLower)
-  const hasDecisionTalk = /реши|подтверд|соглас|окончательно|берем|делаем/.test(transcriptLower)
+  const hasPriceTalk = matchesAnalysisWordLibrary(transcriptLower, CALL_ANALYSIS_WORD_LIBRARY.price)
+  const hasDeadlineTalk = matchesAnalysisWordLibrary(transcriptLower, CALL_ANALYSIS_WORD_LIBRARY.deadline)
+  const hasConcernTalk = matchesAnalysisWordLibrary(transcriptLower, CALL_ANALYSIS_WORD_LIBRARY.concern)
+  const hasDecisionTalk = matchesAnalysisWordLibrary(transcriptLower, CALL_ANALYSIS_WORD_LIBRARY.decision)
 
   if (toolId === 'psychology') {
     return [
@@ -664,15 +684,17 @@ export function useMessengerCalls() {
     microphone: 'unknown',
     camera: 'unknown',
   }))
-  const transcriptionSupported = useState<boolean>('messenger-call-transcription-supported', () => Boolean(resolveSpeechRecognitionCtor()))
+  const transcriptionSupported = useState<boolean>('messenger-call-transcription-supported', () => Boolean(supportsServerTranscriptionBackend() || resolveSpeechRecognitionCtor()))
   const transcriptionActive = useState<boolean>('messenger-call-transcription-active', () => false)
   const transcriptionError = useState<string>('messenger-call-transcription-error', () => '')
   const transcriptionDraft = useState<string>('messenger-call-transcription-draft', () => '')
   const transcriptionEntries = useState<MessengerCallTranscriptEntry[]>('messenger-call-transcription-entries', () => [])
   const transcriptionHint = useState<string>('messenger-call-transcription-hint', () => (
-    resolveSpeechRecognitionCtor()
-      ? 'ИИ-транскрибация использует Web Speech API браузера.'
-      : 'Браузер не поддерживает Web Speech API для транскрибации.'
+    supportsServerTranscriptionBackend()
+      ? 'По умолчанию используется серверная транскрибация звонка.'
+      : resolveSpeechRecognitionCtor()
+        ? 'Доступен браузерный fallback для транскрибации звонка.'
+        : 'Браузер не поддерживает транскрибацию звонка.'
   ))
   const callReview = useState<MessengerCallReviewState | null>('messenger-call-review', () => null)
   const analysisPanelOpen = useState<boolean>('messenger-call-analysis-panel-open', () => false)
@@ -684,6 +706,13 @@ export function useMessengerCalls() {
   const aiAnalysisInterpretations = useState<Partial<Record<MessengerCallAnalysisToolId, string>>>('messenger-call-ai-analysis-interpretations', () => ({}))
   const aiAnalysisRunning = useState<boolean>('messenger-call-ai-analysis-running', () => false)
   const aiAnalysisError = useState<string>('messenger-call-ai-analysis-error', () => '')
+  const projectSyncProjectSlug = useState<string>('messenger-call-project-sync-project-slug', () => '')
+  const projectSyncPending = useState<boolean>('messenger-call-project-sync-pending', () => false)
+  const projectSyncError = useState<string>('messenger-call-project-sync-error', () => '')
+  const projectSyncStatus = useState<string>('messenger-call-project-sync-status', () => '')
+  const projectTaskSyncPending = useState<boolean>('messenger-call-project-task-sync-pending', () => false)
+  const projectTaskSyncError = useState<string>('messenger-call-project-task-sync-error', () => '')
+  const projectTaskSyncStatus = useState<string>('messenger-call-project-task-sync-status', () => '')
   const supported = computed(() => Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof RTCPeerConnection !== 'undefined'))
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
   const canStartAudioCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied')
@@ -693,6 +722,12 @@ export function useMessengerCalls() {
     && controls.value.videoEnabled
     && (availableVideoInputIds.value.length > 1 || cameraFacing.value === 'user' || cameraFacing.value === 'environment')
   ))
+
+  watch(() => auth.token.value, (nextToken) => {
+    if (nextToken && !settingsModel.aiSettingsReady.value && !settingsModel.aiSettingsPending.value) {
+      void settingsModel.hydrateAiSettings(auth.request)
+    }
+  }, { immediate: true })
   const audioReadiness = computed(() => {
     if (!supported.value) {
       return 'Браузер не поддерживает WebRTC или доступ к медиа.'
@@ -742,7 +777,7 @@ export function useMessengerCalls() {
   }
 
   function shouldPreferServerCallTranscription() {
-    return Boolean(canRunServerCallTranscription() && (isMobileChromeLikeBrowser() || !resolveSpeechRecognitionCtor()))
+    return Boolean(canRunServerCallTranscription())
   }
 
   function pickServerTranscriptionMimeType() {
@@ -776,8 +811,8 @@ export function useMessengerCalls() {
     if (shouldPreferServerCallTranscription()) {
       transcriptionSupported.value = true
       transcriptionHint.value = transcriptionActive.value
-        ? 'Онлайн-транскрибация идет через messenger-core. Сейчас распознается ваш микрофон.'
-        : 'Для звонка доступна серверная онлайн-транскрибация через messenger-core.'
+        ? 'Серверная транскрибация активна. Распознается ваш микрофон.'
+        : 'По умолчанию для звонка будет использоваться серверная транскрибация.'
       return
     }
 
@@ -786,23 +821,25 @@ export function useMessengerCalls() {
     if (!browserSpeechAvailable) {
       transcriptionSupported.value = false
       transcriptionHint.value = supportsServerTranscriptionBackend()
-        ? 'Серверная транскрибация станет доступна при активном аудиозвонке.'
-        : 'Браузер не поддерживает Web Speech API для транскрибации.'
+        ? 'Серверная транскрибация станет доступна после старта аудиозвонка.'
+        : 'Транскрибация недоступна в этом браузере.'
       return
     }
 
     if (activeCall.value?.mode === 'audio' && isMobileChromeLikeBrowser()) {
       transcriptionSupported.value = supportsServerTranscriptionBackend()
       transcriptionHint.value = supportsServerTranscriptionBackend()
-        ? 'Во время звонка мобильный Chrome будет использовать серверную транскрибацию через messenger-core.'
+        ? 'Во время звонка мобильный Chrome будет использовать серверную транскрибацию.'
         : mobileChromeTranscriptionFallbackMessage()
       return
     }
 
     transcriptionSupported.value = true
     transcriptionHint.value = transcriptionActive.value
-      ? 'ИИ-транскрибация активна. Реплики обновляются в реальном времени.'
-      : 'ИИ-транскрибация использует Web Speech API браузера.'
+      ? 'Браузерная транскрибация активна. Реплики обновляются в реальном времени.'
+      : supportsServerTranscriptionBackend()
+        ? 'Серверный транскриб используется по умолчанию. Браузерный fallback тоже доступен.'
+        : 'Доступен браузерный fallback для транскрибации звонка.'
   }
 
   function clearTranscription() {
@@ -817,7 +854,160 @@ export function useMessengerCalls() {
     analysisError.value = ''
     aiAnalysisInterpretations.value = {}
     aiAnalysisError.value = ''
+    projectSyncError.value = ''
+    projectSyncStatus.value = ''
+    projectSyncPending.value = false
+    projectTaskSyncError.value = ''
+    projectTaskSyncStatus.value = ''
+    projectTaskSyncPending.value = false
     analysisPanelOpen.value = false
+  }
+
+  async function syncCallReviewToProject(options: { projectSlug?: string } = {}) {
+    if (!callReview.value) {
+      projectSyncError.value = 'Нет итогов звонка для синхронизации.'
+      projectSyncStatus.value = ''
+      return null
+    }
+
+    const projectSlug = normalizeProjectSyncSlug(options.projectSlug || projectSyncProjectSlug.value)
+    if (!projectSlug) {
+      projectSyncError.value = 'Укажите slug проекта перед отправкой.'
+      projectSyncStatus.value = ''
+      return null
+    }
+
+    if (projectSyncPending.value) {
+      return null
+    }
+
+    const review = { ...callReview.value }
+    const syncTitle = review.peerDisplayName ? `Звонок: ${review.peerDisplayName}`.slice(0, 200) : undefined
+
+    projectSyncProjectSlug.value = projectSlug
+    projectSyncPending.value = true
+    projectSyncError.value = ''
+    projectSyncStatus.value = ''
+
+    try {
+      const response = await $fetch<{
+        insight?: {
+          id?: string
+        }
+        meta?: {
+          blockerCountAdded?: number
+          checkpointCreated?: boolean
+        }
+      }>(buildMessengerUrl(runtimeConfig.public.messengerProjectRoot || '/', `/api/projects/${encodeURIComponent(projectSlug)}/communications/call-insights`), {
+        method: 'POST',
+        credentials: 'include',
+        body: {
+          title: syncTitle,
+          summary: review.summary.slice(0, 8000),
+          transcript: review.cleanedTranscript.slice(0, 32000),
+          callId: review.callId,
+          conversationId: review.conversationId,
+          happenedAt: new Date(review.generatedAt || Date.now()).toISOString(),
+          actorName: review.peerDisplayName.slice(0, 120) || undefined,
+        },
+      })
+
+      const blockerCountAdded = Number(response.meta?.blockerCountAdded || 0)
+      const checkpointCreated = Boolean(response.meta?.checkpointCreated)
+      const syncDetails = [
+        blockerCountAdded ? `блокеров: ${blockerCountAdded}` : '',
+        checkpointCreated ? 'создана контрольная точка' : '',
+      ].filter(Boolean)
+
+      if (callReview.value && callReview.value.callId === review.callId && callReview.value.generatedAt === review.generatedAt) {
+        callReview.value = {
+          ...callReview.value,
+          autoPosted: true,
+          syncedProjectSlug: projectSlug,
+          syncedInsightId: typeof response.insight?.id === 'string' ? response.insight.id : '',
+          syncedAt: Date.now(),
+        }
+      }
+
+      projectSyncStatus.value = syncDetails.length
+        ? `Звонок добавлен в проект ${projectSlug}: ${syncDetails.join(', ')}.`
+        : `Звонок добавлен в проект ${projectSlug}.`
+      return response
+    } catch (error: any) {
+      const rawMessage = error?.data?.statusMessage || error?.message || 'Не удалось добавить звонок в проект.'
+      projectSyncError.value = rawMessage === 'Нет доступа к коммуникациям проекта'
+        ? 'Нет доступа к проекту. Откройте основной сайт и войдите в проектный или admin-контур.'
+        : rawMessage
+      return null
+    } finally {
+      projectSyncPending.value = false
+    }
+  }
+
+  async function applyCallReviewToProjectSprint(options: { projectSlug?: string } = {}) {
+    if (!callReview.value) {
+      projectTaskSyncError.value = 'Нет итогов звонка для синхронизации задач.'
+      projectTaskSyncStatus.value = ''
+      return null
+    }
+
+    const projectSlug = normalizeProjectSyncSlug(options.projectSlug || projectSyncProjectSlug.value)
+    if (!projectSlug) {
+      projectTaskSyncError.value = 'Укажите slug проекта перед синхронизацией задач.'
+      projectTaskSyncStatus.value = ''
+      return null
+    }
+
+    if (projectTaskSyncPending.value) {
+      return null
+    }
+
+    projectTaskSyncPending.value = true
+    projectTaskSyncError.value = ''
+    projectTaskSyncStatus.value = ''
+
+    try {
+      let insightId = callReview.value.syncedProjectSlug === projectSlug ? callReview.value.syncedInsightId || '' : ''
+
+      if (!insightId) {
+        const syncResponse = await syncCallReviewToProject({ projectSlug })
+        insightId = typeof syncResponse?.insight?.id === 'string'
+          ? syncResponse.insight.id
+          : (callReview.value?.syncedProjectSlug === projectSlug ? callReview.value?.syncedInsightId || '' : '')
+      }
+
+      if (!insightId) {
+        projectTaskSyncError.value = projectSyncError.value || 'Не удалось подготовить инсайт звонка для задач.'
+        return null
+      }
+
+      const response = await $fetch<{
+        meta?: {
+          createdTaskCount?: number
+          createdSprint?: boolean
+        }
+      }>(buildMessengerUrl(runtimeConfig.public.messengerProjectRoot || '/', `/api/projects/${encodeURIComponent(projectSlug)}/communications/call-insights/${encodeURIComponent(insightId)}/apply`), {
+        method: 'POST',
+        credentials: 'include',
+        body: {},
+      })
+
+      const createdTaskCount = Number(response.meta?.createdTaskCount || 0)
+      const createdSprint = Boolean(response.meta?.createdSprint)
+
+      projectTaskSyncStatus.value = createdTaskCount
+        ? `Следующие шаги синхронизированы: задач ${createdTaskCount}${createdSprint ? ', создан follow-up спринт' : ''}.`
+        : 'Новых задач не появилось: шаги уже были синхронизированы раньше.'
+      return response
+    } catch (error: any) {
+      const rawMessage = error?.data?.statusMessage || error?.message || 'Не удалось превратить звонок в задачи спринта.'
+      projectTaskSyncError.value = rawMessage === 'Нет доступа'
+        ? 'Для синхронизации задач нужен admin-доступ на основном сайте.'
+        : rawMessage
+      return null
+    } finally {
+      projectTaskSyncPending.value = false
+    }
   }
 
   function openAnalysisPanel() {
@@ -868,12 +1058,12 @@ export function useMessengerCalls() {
 
   async function runAiAnalysisTool(toolId: MessengerCallAnalysisToolId = selectedAnalysisToolId.value) {
     if (!callReview.value) {
-      aiAnalysisError.value = 'Нет данных звонка для ИИ-аналитики.'
+      aiAnalysisError.value = 'Нет данных звонка для API-разбора.'
       return ''
     }
 
-    if (!settingsModel.aiSettings.value.analysisEnabled) {
-      aiAnalysisError.value = 'ИИ-аналитика выключена в меню анализа.'
+    if (settingsModel.runtimeInterpretationProvider.value !== 'api') {
+      aiAnalysisError.value = 'Для этого звонка выбран алгоритмический разбор без API.'
       return ''
     }
 
@@ -898,7 +1088,7 @@ export function useMessengerCalls() {
       }
       return interpretation
     } catch {
-      aiAnalysisError.value = 'Не удалось построить ИИ-разбор.'
+      aiAnalysisError.value = 'Не удалось построить API-разбор.'
       return ''
     } finally {
       aiAnalysisRunning.value = false
@@ -914,9 +1104,17 @@ export function useMessengerCalls() {
     const cleanedTranscript = buildCleanTranscript(cleanedEntries)
     const summary = buildSummaryFromTranscript(cleanedEntries)
 
+    projectSyncError.value = ''
+    projectSyncStatus.value = ''
+    projectSyncPending.value = false
+    projectTaskSyncError.value = ''
+    projectTaskSyncStatus.value = ''
+    projectTaskSyncPending.value = false
+
     callReview.value = {
       callId: snapshot.callId,
       conversationId: snapshot.conversationId,
+      peerDisplayName: snapshot.peerDisplayName,
       cleanedTranscript,
       summary,
       sourceLines: cleanedEntries.length,
@@ -1047,6 +1245,7 @@ export function useMessengerCalls() {
         audioBase64: encodeCallBase64(buffer),
         mimeType: transcriptionChunkMimeType || blob.type || 'audio/webm',
         sequence,
+        provider: settingsModel.runtimeTranscriptionProvider.value,
       },
     })
 
@@ -1106,7 +1305,7 @@ export function useMessengerCalls() {
           }
 
           transcriptionDraft.value = ''
-          transcriptionError.value = 'Серверная транскрибация недоступна. Проверьте STT API и runtime env messenger-core.'
+          transcriptionError.value = 'Серверная транскрибация недоступна. Проверьте локальный STT backend или внешний API в runtime env messenger-core.'
         })
     }
 
@@ -1121,7 +1320,7 @@ export function useMessengerCalls() {
     try {
       recorder.start(1800)
       transcriptionActive.value = true
-      transcriptionHint.value = 'Онлайн-транскрибация идет через messenger-core. Сейчас распознается ваш микрофон.'
+      transcriptionHint.value = 'Серверная транскрибация активна. Распознается ваш микрофон.'
       return true
     } catch {
       transcriptionServerSessionKey = ''
@@ -1141,7 +1340,17 @@ export function useMessengerCalls() {
     }
 
     if (shouldPreferServerCallTranscription()) {
-      return startServerCallTranscription()
+      const serverStarted = startServerCallTranscription()
+      if (serverStarted) {
+        return true
+      }
+
+      if (!canRunBrowserSpeechRecognition()) {
+        syncTranscriptionSupportState()
+        return false
+      }
+
+      transcriptionError.value = ''
     }
 
     if (!canRunBrowserSpeechRecognition()) {
@@ -2440,6 +2649,13 @@ export function useMessengerCalls() {
     analysisInterpretations,
     analysisRunning,
     analysisError,
+    projectSyncProjectSlug,
+    projectSyncPending,
+    projectSyncError,
+    projectSyncStatus,
+    projectTaskSyncPending,
+    projectTaskSyncError,
+    projectTaskSyncStatus,
     aiAnalysisInterpretations,
     aiAnalysisRunning,
     aiAnalysisError,
@@ -2468,6 +2684,8 @@ export function useMessengerCalls() {
     stopTranscription,
     clearTranscription,
     clearCallReview,
+    syncCallReviewToProject,
+    applyCallReviewToProjectSprint,
     openAnalysisPanel,
     closeAnalysisPanel,
     toggleAnalysisPanel,

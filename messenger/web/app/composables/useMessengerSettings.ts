@@ -17,9 +17,13 @@ type MessengerSettingsSectionKey = 'profile' | 'notifications' | 'privacy' | 'th
 type MessengerPermissionState = 'granted' | 'denied' | 'prompt' | 'unsupported' | 'unknown'
 type MessengerStyleKey = 'liquid' | 'material'
 type MessengerAuthRequest = <T>(path: string, options?: Parameters<typeof $fetch<T>>[1]) => Promise<T>
+type MessengerInterpretationProvider = 'algorithm' | 'api'
+type MessengerTranscriptionProvider = 'server-default' | 'api'
 
 interface MessengerAiSettingsSnapshot {
   analysisEnabled: boolean
+  interpretationProvider: MessengerInterpretationProvider
+  transcriptionProvider: MessengerTranscriptionProvider
   interpretationModel: string
   summaryModel: string
   transcriptionModel: string
@@ -34,6 +38,8 @@ interface MessengerAiModelOptions {
 interface MessengerAiConfiguredState {
   analysis: boolean
   transcription: boolean
+  interpretationApi: boolean
+  transcriptionApi: boolean
 }
 
 const MESSENGER_STYLE_KEYS = ['liquid', 'material'] as const
@@ -140,16 +146,30 @@ function createDefaultMessengerSettings(): MessengerSettingsSnapshot {
 function createDefaultMessengerAiSettings(): MessengerAiSettingsSnapshot {
   return {
     analysisEnabled: false,
+    interpretationProvider: 'algorithm',
+    transcriptionProvider: 'server-default',
     interpretationModel: '',
     summaryModel: '',
     transcriptionModel: '',
   }
 }
 
+function normalizeInterpretationProvider(value: string | undefined, legacyAnalysisEnabled = false): MessengerInterpretationProvider {
+  if (value === 'api') {
+    return 'api'
+  }
+
+  return legacyAnalysisEnabled ? 'api' : 'algorithm'
+}
+
+function normalizeTranscriptionProvider(value: string | undefined): MessengerTranscriptionProvider {
+  return value === 'api' ? 'api' : 'server-default'
+}
+
 function createDefaultMessengerAiModelOptions(): MessengerAiModelOptions {
   return {
-    interpretation: ['gpt-5.4', 'gpt-4.1-mini', 'gpt-4o-mini'],
-    summary: ['gpt-5.4', 'gpt-4.1-mini', 'gpt-4o-mini'],
+    interpretation: ['gemma3:27b', 'gpt-5.4', 'gpt-4.1-mini', 'gpt-4o-mini'],
+    summary: ['gemma3:27b', 'gpt-5.4', 'gpt-4.1-mini', 'gpt-4o-mini'],
     transcription: ['whisper-large-v3-turbo', 'gpt-4o-mini-transcribe', 'gpt-4o-transcribe'],
   }
 }
@@ -160,9 +180,12 @@ function normalizeAiModelValue(value: string | undefined) {
 
 function mergeMessengerAiSettings(source?: Partial<MessengerAiSettingsSnapshot> | null): MessengerAiSettingsSnapshot {
   const defaults = createDefaultMessengerAiSettings()
+  const interpretationProvider = normalizeInterpretationProvider(source?.interpretationProvider, source?.analysisEnabled === true)
 
   return {
-    analysisEnabled: source?.analysisEnabled === true,
+    analysisEnabled: interpretationProvider === 'api',
+    interpretationProvider,
+    transcriptionProvider: normalizeTranscriptionProvider(source?.transcriptionProvider),
     interpretationModel: normalizeAiModelValue(source?.interpretationModel) || defaults.interpretationModel,
     summaryModel: normalizeAiModelValue(source?.summaryModel) || defaults.summaryModel,
     transcriptionModel: normalizeAiModelValue(source?.transcriptionModel) || defaults.transcriptionModel,
@@ -340,6 +363,8 @@ export function useMessengerSettings() {
   const aiConfigured = useState<MessengerAiConfiguredState>('messenger-ai-configured-state', () => ({
     analysis: false,
     transcription: false,
+    interpretationApi: false,
+    transcriptionApi: false,
   }))
   const aiSettingsReady = useState<boolean>('messenger-ai-settings-ready', () => false)
   const aiSettingsPending = useState<boolean>('messenger-ai-settings-pending', () => false)
@@ -377,8 +402,8 @@ export function useMessengerSettings() {
     },
     {
       key: 'ai' as const,
-      title: 'ИИ',
-      hint: 'Модели интерпретации, конспекта и транскрибации',
+      title: 'Транскриб',
+      hint: 'Серверный транскриб и опциональный API-разбор',
     },
     {
       key: 'devices' as const,
@@ -443,6 +468,18 @@ export function useMessengerSettings() {
     },
   ]
 
+  function normalizeAiProviderSelections() {
+    if (!aiConfigured.value.interpretationApi && aiSettings.value.interpretationProvider === 'api') {
+      aiSettings.value.interpretationProvider = 'algorithm'
+    }
+
+    if (!aiConfigured.value.transcriptionApi && aiSettings.value.transcriptionProvider === 'api') {
+      aiSettings.value.transcriptionProvider = 'server-default'
+    }
+
+    aiSettings.value.analysisEnabled = aiSettings.value.interpretationProvider === 'api'
+  }
+
   function persist() {
     if (!import.meta.client) {
       return
@@ -488,6 +525,52 @@ export function useMessengerSettings() {
   ))
   const resolvedMode = computed(() => resolvedTheme.value.resolvedMode)
   const vuetifyThemeName = computed(() => resolvedTheme.value.themeName)
+  const interpretationProviderOptions = computed(() => {
+    const options = [
+      {
+        title: 'Алгоритм словаря',
+        value: 'algorithm' as const,
+      },
+    ]
+
+    if (aiConfigured.value.interpretationApi) {
+      options.push({
+        title: 'API backend',
+        value: 'api' as const,
+      })
+    }
+
+    return options
+  })
+  const transcriptionProviderOptions = computed(() => {
+    const options: Array<{ title: string, value: MessengerTranscriptionProvider }> = []
+
+    if (aiConfigured.value.transcription) {
+      options.push({
+        title: 'Сервер по умолчанию',
+        value: 'server-default',
+      })
+    }
+
+    if (aiConfigured.value.transcriptionApi) {
+      options.push({
+        title: 'HTTP API backend',
+        value: 'api',
+      })
+    }
+
+    return options
+  })
+  const runtimeInterpretationProvider = computed<MessengerInterpretationProvider>(() => (
+    aiSettings.value.interpretationProvider === 'api' && aiConfigured.value.interpretationApi
+      ? 'api'
+      : 'algorithm'
+  ))
+  const runtimeTranscriptionProvider = computed<MessengerTranscriptionProvider>(() => (
+    aiSettings.value.transcriptionProvider === 'api' && aiConfigured.value.transcriptionApi
+      ? 'api'
+      : 'server-default'
+  ))
 
   function hydrate() {
     if (ready.value) {
@@ -547,10 +630,13 @@ export function useMessengerSettings() {
       aiConfigured.value = {
         analysis: Boolean(response.configured?.analysis),
         transcription: Boolean(response.configured?.transcription),
+        interpretationApi: Boolean(response.configured?.interpretationApi ?? response.configured?.analysis),
+        transcriptionApi: Boolean(response.configured?.transcriptionApi),
       }
+      normalizeAiProviderSelections()
       aiSettingsReady.value = true
     } catch {
-      aiSettingsError.value = 'Не удалось загрузить AI-настройки.'
+      aiSettingsError.value = 'Не удалось загрузить настройки транскрибации и API-разбора.'
     } finally {
       aiSettingsPending.value = false
     }
@@ -579,10 +665,13 @@ export function useMessengerSettings() {
       aiConfigured.value = {
         analysis: Boolean(response.configured?.analysis),
         transcription: Boolean(response.configured?.transcription),
+        interpretationApi: Boolean(response.configured?.interpretationApi ?? response.configured?.analysis),
+        transcriptionApi: Boolean(response.configured?.transcriptionApi),
       }
+      normalizeAiProviderSelections()
       aiSettingsReady.value = true
     } catch {
-      aiSettingsError.value = 'Не удалось сохранить AI-настройки.'
+      aiSettingsError.value = 'Не удалось сохранить настройки транскрибации и API-разбора.'
     } finally {
       aiSettingsPending.value = false
     }
@@ -762,6 +851,10 @@ export function useMessengerSettings() {
     aiSettingsReady,
     aiSettingsPending,
     aiSettingsError,
+    interpretationProviderOptions,
+    transcriptionProviderOptions,
+    runtimeInterpretationProvider,
+    runtimeTranscriptionProvider,
     theme,
     style,
     sections,

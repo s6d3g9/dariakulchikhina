@@ -3,7 +3,7 @@ import { callMessengerAgentModel } from './agent-llm.ts'
 export type MessengerCallAnalysisToolId = 'psychology' | 'business' | 'intent' | 'objections' | 'speech-risks' | 'next-steps'
 
 interface BuildMessengerCallAnalysisOptions {
-  apiKey: string
+  apiKey?: string
   model: string
   toolId: MessengerCallAnalysisToolId
   cleanedTranscript: string

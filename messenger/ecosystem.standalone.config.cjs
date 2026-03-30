@@ -29,6 +29,19 @@ function readRuntimeEnv(filePath) {
     }, {})
 }
 
+function resolveServerTranscriptionPublicFlag(env) {
+  const explicitFlag = String(env.NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED || '').trim().toLowerCase()
+  if (explicitFlag) {
+    return explicitFlag
+  }
+
+  const transcriptionEnabled = String(env.MESSENGER_TRANSCRIPTION_ENABLED || '').trim().toLowerCase() === 'true'
+  const allowNoKey = String(env.MESSENGER_TRANSCRIPTION_ALLOW_NO_KEY || '').trim().toLowerCase() === 'true'
+  const hasApiKey = Boolean(String(env.MESSENGER_TRANSCRIPTION_API_KEY || '').trim())
+  const hasCommand = Boolean(String(env.MESSENGER_TRANSCRIPTION_COMMAND || '').trim())
+  return transcriptionEnabled && (hasApiKey || allowNoKey || hasCommand) ? 'true' : 'false'
+}
+
 const baseEnv = {
   ...process.env,
 }
@@ -50,6 +63,7 @@ const messengerRuntimeEnvPath = runtimeEnv.MESSENGER_RUNTIME_ENV_PATH || inferre
 const messengerPublicOrigin = (runtimeEnv.MESSENGER_PUBLIC_ORIGIN || 'https://messenger.example.com').replace(/\/$/, '')
 const messengerCoreBaseUrl = runtimeEnv.NUXT_PUBLIC_MESSENGER_CORE_BASE_URL || `${messengerPublicOrigin}/api`
 const messengerAppBaseUrl = runtimeEnv.NUXT_APP_BASE_URL || '/'
+const messengerServerTranscriptionEnabled = resolveServerTranscriptionPublicFlag(runtimeEnv)
 
 module.exports = {
   apps: [
@@ -68,7 +82,24 @@ module.exports = {
         MESSENGER_CORE_AUTH_SECRET: runtimeEnv.MESSENGER_CORE_AUTH_SECRET || 'change-me-before-production',
         MESSENGER_CORE_CORS_ORIGIN: runtimeEnv.MESSENGER_CORE_CORS_ORIGIN || messengerPublicOrigin,
         MESSENGER_CORE_DATA_DIR: messengerDataRoot,
+        MESSENGER_ENABLE_AGENTS: runtimeEnv.MESSENGER_ENABLE_AGENTS || 'true',
         MESSENGER_PROJECT_ROOT: messengerProjectRoot,
+        MESSENGER_AGENT_API_BASE_URL: runtimeEnv.MESSENGER_AGENT_API_BASE_URL || 'https://api.openai.com',
+        MESSENGER_AGENT_API_KEY: runtimeEnv.MESSENGER_AGENT_API_KEY || '',
+        MESSENGER_AGENT_ALLOW_NO_KEY: runtimeEnv.MESSENGER_AGENT_ALLOW_NO_KEY || 'false',
+        MESSENGER_AGENT_MODEL: runtimeEnv.MESSENGER_AGENT_MODEL || 'GPT-5.4',
+        MESSENGER_AGENT_TIMEOUT_MS: runtimeEnv.MESSENGER_AGENT_TIMEOUT_MS || '45000',
+        MESSENGER_AGENT_TEMPERATURE: runtimeEnv.MESSENGER_AGENT_TEMPERATURE || '0.35',
+        MESSENGER_TRANSCRIPTION_ENABLED: runtimeEnv.MESSENGER_TRANSCRIPTION_ENABLED || 'false',
+        MESSENGER_TRANSCRIPTION_API_KEY: runtimeEnv.MESSENGER_TRANSCRIPTION_API_KEY || '',
+        MESSENGER_TRANSCRIPTION_ALLOW_NO_KEY: runtimeEnv.MESSENGER_TRANSCRIPTION_ALLOW_NO_KEY || 'false',
+        MESSENGER_TRANSCRIPTION_API_BASE_URL: runtimeEnv.MESSENGER_TRANSCRIPTION_API_BASE_URL || 'https://api.groq.com/openai/v1',
+        MESSENGER_TRANSCRIPTION_COMMAND: runtimeEnv.MESSENGER_TRANSCRIPTION_COMMAND || '',
+        MESSENGER_TRANSCRIPTION_MODEL: runtimeEnv.MESSENGER_TRANSCRIPTION_MODEL || 'whisper-large-v3-turbo',
+        MESSENGER_TRANSCRIPTION_LANGUAGE: runtimeEnv.MESSENGER_TRANSCRIPTION_LANGUAGE || 'ru',
+        MESSENGER_TRANSCRIPTION_TIMEOUT_MS: runtimeEnv.MESSENGER_TRANSCRIPTION_TIMEOUT_MS || '20000',
+        GEMMA_URL: runtimeEnv.GEMMA_URL || '',
+        OLLAMA_BASE_URL: runtimeEnv.OLLAMA_BASE_URL || '',
         KLIPY_APP_KEY: runtimeEnv.KLIPY_APP_KEY || '',
         KLIPY_API_BASE_URL: runtimeEnv.KLIPY_API_BASE_URL || 'https://api.klipy.com',
       },
@@ -83,6 +114,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         NUXT_PUBLIC_MESSENGER_CORE_BASE_URL: messengerCoreBaseUrl,
+        NUXT_PUBLIC_MESSENGER_ENABLE_AGENTS: runtimeEnv.NUXT_PUBLIC_MESSENGER_ENABLE_AGENTS || runtimeEnv.MESSENGER_ENABLE_AGENTS || 'true',
+        NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED: messengerServerTranscriptionEnabled,
         NUXT_PUBLIC_MESSENGER_PROJECT_ROOT: messengerProjectRoot,
         NUXT_APP_BASE_URL: messengerAppBaseUrl,
         PORT: runtimeEnv.PORT || '3300',

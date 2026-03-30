@@ -7,6 +7,7 @@ import { contractors, projectContractors, projects, users } from '~/server/db/sc
 import { getAdminSession, getClientSession, getContractorSession } from '~/server/utils/auth'
 import { getProjectRelationsSnapshot } from '~/server/utils/project-relations'
 import type { ProjectCommunicationBootstrap } from '~/shared/types/communications'
+import { buildHybridCoordinationBrief, ensureHybridControl } from '~/shared/utils/project-control'
 
 type BootstrapRoomParticipant = ProjectCommunicationBootstrap['roomParticipants'][number]
 
@@ -150,7 +151,15 @@ export async function buildProjectCommunicationBootstrap(event: H3Event, project
 
   const db = useDb()
   const [project] = await db
-    .select({ id: projects.id, slug: projects.slug, title: projects.title, clientLogin: projects.clientLogin })
+    .select({
+      id: projects.id,
+      slug: projects.slug,
+      title: projects.title,
+      clientLogin: projects.clientLogin,
+      pages: projects.pages,
+      status: projects.status,
+      profile: projects.profile,
+    })
     .from(projects)
     .where(eq(projects.slug, projectSlug))
     .limit(1)
@@ -158,6 +167,10 @@ export async function buildProjectCommunicationBootstrap(event: H3Event, project
   if (!project) {
     throw createError({ statusCode: 404, statusMessage: 'Проект не найден' })
   }
+
+  const hybridControl = ensureHybridControl(project.profile?.hybridControl, project)
+  const coordination = buildHybridCoordinationBrief(hybridControl, { projectSlug: project.slug })
+  const callInsights = hybridControl.callInsights.slice(0, 6)
 
   const adminSession = getAdminSession(event)
   if (adminSession) {
@@ -193,6 +206,8 @@ export async function buildProjectCommunicationBootstrap(event: H3Event, project
       roomTitle: project.title,
       actor,
       roomParticipants: await buildRoomParticipants(project.slug, actor),
+      coordination,
+      callInsights,
       e2ee: {
         protocol: 'e2ee-v1',
         keyAgreement: 'ECDH-P256',
@@ -232,6 +247,8 @@ export async function buildProjectCommunicationBootstrap(event: H3Event, project
       roomTitle: project.title,
       actor,
       roomParticipants: await buildRoomParticipants(project.slug, actor),
+      coordination,
+      callInsights,
       e2ee: {
         protocol: 'e2ee-v1',
         keyAgreement: 'ECDH-P256',
@@ -278,6 +295,8 @@ export async function buildProjectCommunicationBootstrap(event: H3Event, project
         roomTitle: project.title,
         actor,
         roomParticipants: await buildRoomParticipants(project.slug, actor),
+        coordination,
+        callInsights,
         e2ee: {
           protocol: 'e2ee-v1',
           keyAgreement: 'ECDH-P256',

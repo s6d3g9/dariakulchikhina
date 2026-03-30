@@ -4290,6 +4290,34 @@ html[data-messenger-keyboard='open'] .section-block--chat {
   opacity: 0.86;
 }
 
+.call-transcript-project-sync {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.call-transcript-project-sync__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.call-transcript-project-sync__feedback {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.call-transcript-project-sync__feedback--error {
+  color: rgb(var(--v-theme-error));
+}
+
+.call-transcript-project-sync__feedback--success {
+  color: rgb(var(--v-theme-primary));
+}
+
 @media (min-width: 980px) {
   .call-transcript-popup {
     position: fixed;

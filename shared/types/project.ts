@@ -4,6 +4,10 @@ const HybridControlPhaseStatusSchema = z.enum(['planned', 'active', 'blocked', '
 const HybridControlSprintStatusSchema = z.enum(['planned', 'active', 'review', 'done'])
 const HybridControlTaskStatusSchema = z.enum(['todo', 'doing', 'review', 'done'])
 const HybridControlHealthStatusSchema = z.enum(['stable', 'warning', 'critical'])
+const HybridControlManagerAgentRoleSchema = z.enum(['orchestrator', 'risk', 'delivery', 'communication'])
+const HybridControlStakeholderRoleSchema = z.enum(['admin', 'manager', 'designer', 'client', 'contractor', 'seller', 'service'])
+const HybridControlCommunicationChannelSchema = z.enum(['project-room', 'direct-thread', 'handoff', 'approval', 'daily-digest'])
+const HybridControlCallInsightSourceSchema = z.enum(['call'])
 
 export const HybridControlGateSchema = z.object({
   id: z.string().min(1),
@@ -57,6 +61,54 @@ export const HybridControlCheckpointSchema = z.object({
   note: z.string().optional(),
 })
 
+export const HybridControlManagerAgentSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  role: HybridControlManagerAgentRoleSchema.default('orchestrator'),
+  enabled: z.boolean().default(true),
+  mission: z.string().optional(),
+  cadenceDays: z.number().min(1).max(90).default(3),
+  linkedChannel: HybridControlCommunicationChannelSchema.default('project-room'),
+  targetRoles: z.array(HybridControlStakeholderRoleSchema).default([]),
+  notes: z.string().optional(),
+})
+
+export const HybridControlCommunicationRuleSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  trigger: z.string().min(1),
+  linkedChannel: HybridControlCommunicationChannelSchema.default('project-room'),
+  audience: z.array(HybridControlStakeholderRoleSchema).default([]),
+  ownerAgentId: z.string().optional(),
+  cadenceDays: z.number().min(1).max(90).optional(),
+  template: z.string().optional(),
+})
+
+export const HybridControlCallInsightSchema = z.object({
+  id: z.string().min(1),
+  sourceKind: HybridControlCallInsightSourceSchema.default('call'),
+  title: z.string().min(1),
+  summary: z.string().min(1),
+  transcript: z.string().optional(),
+  callId: z.string().optional(),
+  conversationId: z.string().optional(),
+  roomExternalRef: z.string().optional(),
+  actorRole: HybridControlStakeholderRoleSchema.optional(),
+  actorName: z.string().optional(),
+  happenedAt: z.string().optional(),
+  createdAt: z.string().min(1),
+  relatedPhaseKey: z.string().optional(),
+  tone: HybridControlHealthStatusSchema.default('stable'),
+  decisions: z.array(z.string()).default([]),
+  nextSteps: z.array(z.string()).default([]),
+  blockers: z.array(z.string()).default([]),
+  approvals: z.array(z.string()).default([]),
+  appliedCheckpointId: z.string().optional(),
+  appliedSprintId: z.string().optional(),
+  appliedTaskIds: z.array(z.string()).default([]),
+  appliedAt: z.string().optional(),
+})
+
 export const HybridControlSchema = z.object({
   manager: z.string().optional(),
   cadenceDays: z.number().min(1).max(90).default(7),
@@ -65,6 +117,9 @@ export const HybridControlSchema = z.object({
   phases: z.array(HybridControlPhaseSchema).default([]),
   sprints: z.array(HybridControlSprintSchema).default([]),
   checkpoints: z.array(HybridControlCheckpointSchema).default([]),
+  managerAgents: z.array(HybridControlManagerAgentSchema).default([]),
+  communicationPlaybook: z.array(HybridControlCommunicationRuleSchema).default([]),
+  callInsights: z.array(HybridControlCallInsightSchema).default([]),
   blockers: z.array(z.string()).default([]),
 })
 
@@ -278,12 +333,100 @@ export type HybridControlPhaseStatus = z.infer<typeof HybridControlPhaseStatusSc
 export type HybridControlSprintStatus = z.infer<typeof HybridControlSprintStatusSchema>
 export type HybridControlTaskStatus = z.infer<typeof HybridControlTaskStatusSchema>
 export type HybridControlHealthStatus = z.infer<typeof HybridControlHealthStatusSchema>
+export type HybridControlManagerAgentRole = z.infer<typeof HybridControlManagerAgentRoleSchema>
+export type HybridControlStakeholderRole = z.infer<typeof HybridControlStakeholderRoleSchema>
+export type HybridControlCommunicationChannel = z.infer<typeof HybridControlCommunicationChannelSchema>
+export type HybridControlCallInsightSource = z.infer<typeof HybridControlCallInsightSourceSchema>
 export type HybridControlGate = z.infer<typeof HybridControlGateSchema>
 export type HybridControlPhase = z.infer<typeof HybridControlPhaseSchema>
 export type HybridControlTask = z.infer<typeof HybridControlTaskSchema>
 export type HybridControlSprint = z.infer<typeof HybridControlSprintSchema>
 export type HybridControlCheckpoint = z.infer<typeof HybridControlCheckpointSchema>
+export type HybridControlManagerAgent = z.infer<typeof HybridControlManagerAgentSchema>
+export type HybridControlCommunicationRule = z.infer<typeof HybridControlCommunicationRuleSchema>
+export type HybridControlCallInsight = z.infer<typeof HybridControlCallInsightSchema>
 export type HybridControl = z.infer<typeof HybridControlSchema>
+
+export const ProjectCallInsightIngestSchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  summary: z.string().trim().min(1).max(8000),
+  transcript: z.string().trim().max(32000).optional(),
+  callId: z.string().trim().max(120).optional(),
+  conversationId: z.string().trim().max(120).optional(),
+  roomExternalRef: z.string().trim().max(255).optional(),
+  relatedPhaseKey: z.string().trim().max(120).optional(),
+  happenedAt: z.string().trim().max(64).optional(),
+  actorRole: HybridControlStakeholderRoleSchema.optional(),
+  actorName: z.string().trim().max(120).optional(),
+  tone: HybridControlHealthStatusSchema.optional(),
+  decisions: z.array(z.string().trim().min(1).max(240)).max(12).optional(),
+  nextSteps: z.array(z.string().trim().min(1).max(240)).max(12).optional(),
+  blockers: z.array(z.string().trim().min(1).max(240)).max(12).optional(),
+  approvals: z.array(z.string().trim().min(1).max(240)).max(12).optional(),
+})
+export type ProjectCallInsightIngest = z.infer<typeof ProjectCallInsightIngestSchema>
+
+export interface HybridControlCoordinationSummary {
+  healthStatus: HybridControlHealthStatus
+  healthLabel: string
+  activePhaseTitle: string
+  activeSprintTitle: string
+  blockerCount: number
+  overdueSprints: number
+  nextReviewDate: string
+}
+
+export interface HybridControlCoordinationAgentState {
+  id: string
+  title: string
+  role: HybridControlManagerAgentRole
+  roleLabel: string
+  enabled: boolean
+  mission: string
+  cadenceDays: number
+  linkedChannel: HybridControlCommunicationChannel
+  linkedChannelLabel: string
+  targetRoles: HybridControlStakeholderRole[]
+  targetRoleLabels: string[]
+  recommendedActionCount: number
+  notes: string
+}
+
+export interface HybridControlCoordinationRuleState {
+  id: string
+  title: string
+  trigger: string
+  linkedChannel: HybridControlCommunicationChannel
+  linkedChannelLabel: string
+  audience: HybridControlStakeholderRole[]
+  audienceLabels: string[]
+  ownerAgentId: string
+  ownerAgentTitle: string
+  cadenceDays: number | null
+  template: string
+}
+
+export interface HybridControlCoordinationRecommendation {
+  id: string
+  title: string
+  reason: string
+  tone: HybridControlHealthStatus
+  channel: HybridControlCommunicationChannel
+  channelLabel: string
+  audience: HybridControlStakeholderRole[]
+  audienceLabels: string[]
+  ownerAgentId: string
+  ownerAgentTitle: string
+  messengerExternalRef: string
+  suggestedMessage: string
+}
+
+export interface HybridControlCoordinationBrief {
+  summary: HybridControlCoordinationSummary
+  agents: HybridControlCoordinationAgentState[]
+  playbook: HybridControlCoordinationRuleState[]
+  recommendations: HybridControlCoordinationRecommendation[]
+}
 
 export const ProjectSchema = z.object({
   id: z.number(),

@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { getMessengerAgentSettings, resolveMessengerAgentWorkspacePath, updateMessengerAgentGraph, updateMessengerAgentSettings } from './agent-settings-store.ts'
 import { getMessengerAgentKnowledgeStatus, reindexMessengerAgentKnowledge } from './agent-knowledge-store.ts'
 import { getMessengerAgentKnowledgePreset } from './agent-knowledge-presets.ts'
+import { isMessengerAgentLlmConfigured } from './agent-llm.ts'
 import { buildMessengerCallAnalysis, type MessengerCallAnalysisToolId } from './call-analysis-service.ts'
 import { listMessengerAgentWorkspace, readMessengerAgentWorkspaceFile } from './agent-workspace-store.ts'
 import { appendMessengerAgentRunEvent, getMessengerAgentRunById, listMessengerAgentEdgePayloads, listMessengerAgentRuns } from './agent-run-store.ts'
@@ -22,7 +23,7 @@ import { findMessengerDevicePublicKeyByUserId, saveMessengerDevicePublicKey } fr
 import { buildMessengerProjectFromTemplate, buildMessengerProjectManagerBrief, buildMessengerProjectSyncBrief, deleteMessengerProject, deleteMessengerProjectAgreement, deleteMessengerProjectCabinetLink, deleteMessengerProjectSubject, getMessengerProject, listMessengerProjectTemplates, listMessengerProjects, upsertMessengerProject, upsertMessengerProjectAgreement, upsertMessengerProjectCabinetLink, upsertMessengerProjectSubject } from './project-engine-store.ts'
 import { readMessengerConfig } from './config.ts'
 import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
-import { isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from './transcription-service.ts'
+import { hasMessengerTranscriptionHttpBackend, isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from './transcription-service.ts'
 import { getMessengerUserAiSettings, updateMessengerUserAiSettings } from './user-ai-settings-store.ts'
 
 export async function createMessengerServer() {
@@ -301,9 +302,16 @@ export async function createMessengerServer() {
   }
 
   function buildUserAiSettingsResponse(settings: Awaited<ReturnType<typeof getMessengerUserAiSettings>>) {
+    const analysisConfigured = isMessengerAgentLlmConfigured({
+      model: config.MESSENGER_AGENT_MODEL,
+      apiKey: config.MESSENGER_AGENT_API_KEY,
+    })
+    const transcriptionConfigured = isMessengerTranscriptionConfigured(config)
+    const transcriptionApiConfigured = hasMessengerTranscriptionHttpBackend(config)
     const interpretation = Array.from(new Set([
       settings.interpretationModel,
       config.MESSENGER_AGENT_MODEL,
+      'gemma3:27b',
       'gpt-5.4',
       'gpt-4.1-mini',
       'gpt-4o-mini',
@@ -311,6 +319,7 @@ export async function createMessengerServer() {
     const summary = Array.from(new Set([
       settings.summaryModel,
       config.MESSENGER_AGENT_MODEL,
+      'gemma3:27b',
       'gpt-5.4',
       'gpt-4.1-mini',
       'gpt-4o-mini',
@@ -331,8 +340,10 @@ export async function createMessengerServer() {
         transcription,
       },
       configured: {
-        analysis: Boolean(config.MESSENGER_AGENT_API_KEY?.trim()),
-        transcription: isMessengerTranscriptionConfigured(config),
+        analysis: analysisConfigured,
+        transcription: transcriptionConfigured,
+        interpretationApi: analysisConfigured,
+        transcriptionApi: transcriptionApiConfigured,
       },
     }
   }
@@ -458,9 +469,12 @@ export async function createMessengerServer() {
     audioBase64: z.string().trim().min(1).max(8_000_000),
     mimeType: z.string().trim().min(1).max(120).default('audio/webm'),
     sequence: z.coerce.number().int().min(0).default(0),
+    provider: z.enum(['server-default', 'api']).optional().default('server-default'),
   })
   const userAiSettingsSchema = z.object({
     analysisEnabled: z.boolean().optional().default(false),
+    interpretationProvider: z.enum(['algorithm', 'api']).optional().default('algorithm'),
+    transcriptionProvider: z.enum(['server-default', 'api']).optional().default('server-default'),
     interpretationModel: z.string().trim().max(160).optional().default(''),
     summaryModel: z.string().trim().max(160).optional().default(''),
     transcriptionModel: z.string().trim().max(160).optional().default(''),
@@ -2451,11 +2465,19 @@ export async function createMessengerServer() {
 
     try {
       const aiSettings = await getMessengerUserAiSettings(session.user.id)
+      const provider = parsedBody.data.provider || aiSettings.transcriptionProvider || 'server-default'
+
+      if (provider === 'api' && !hasMessengerTranscriptionHttpBackend(config)) {
+        return reply.code(503).send({ error: 'TRANSCRIPTION_PROVIDER_DISABLED' })
+      }
+
       const text = await transcribeMessengerAudioChunk(config, {
         audioBase64: parsedBody.data.audioBase64,
         mimeType: parsedBody.data.mimeType,
         language: config.MESSENGER_TRANSCRIPTION_LANGUAGE,
         model: aiSettings.transcriptionModel || config.MESSENGER_TRANSCRIPTION_MODEL,
+      }, {
+        provider,
       })
 
       return {
@@ -2490,12 +2512,19 @@ export async function createMessengerServer() {
       return reply.code(403).send({ error: 'CONVERSATION_FORBIDDEN' })
     }
 
-    if (!config.MESSENGER_AGENT_API_KEY?.trim()) {
+    if (!isMessengerAgentLlmConfigured({
+      model: config.MESSENGER_AGENT_MODEL,
+      apiKey: config.MESSENGER_AGENT_API_KEY,
+    })) {
       return reply.code(503).send({ error: 'ANALYSIS_DISABLED' })
     }
 
     try {
       const aiSettings = await getMessengerUserAiSettings(session.user.id)
+      if (aiSettings.interpretationProvider !== 'api') {
+        return reply.code(409).send({ error: 'ANALYSIS_PROVIDER_DISABLED' })
+      }
+
       const toolId = parsedBody.data.toolId as MessengerCallAnalysisToolId
       const interpretation = await buildMessengerCallAnalysis({
         apiKey: config.MESSENGER_AGENT_API_KEY,

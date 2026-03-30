@@ -3,9 +3,14 @@ import { dirname } from 'node:path'
 
 import { resolveMessengerDataPath } from './storage-paths.ts'
 
+export type MessengerInterpretationProvider = 'algorithm' | 'api'
+export type MessengerTranscriptionProvider = 'server-default' | 'api'
+
 export interface MessengerUserAiSettingsRecord {
   userId: string
   analysisEnabled: boolean
+  interpretationProvider: MessengerInterpretationProvider
+  transcriptionProvider: MessengerTranscriptionProvider
   interpretationModel: string
   summaryModel: string
   transcriptionModel: string
@@ -22,6 +27,8 @@ function createDefaultMessengerUserAiSettings(userId: string): MessengerUserAiSe
   return {
     userId,
     analysisEnabled: false,
+    interpretationProvider: 'algorithm',
+    transcriptionProvider: 'server-default',
     interpretationModel: '',
     summaryModel: '',
     transcriptionModel: '',
@@ -33,13 +40,28 @@ function normalizeModelName(value: string | undefined) {
   return typeof value === 'string' ? value.trim().slice(0, 160) : ''
 }
 
+function normalizeInterpretationProvider(value: string | undefined, legacyAnalysisEnabled = false): MessengerInterpretationProvider {
+  if (value === 'api') {
+    return 'api'
+  }
+
+  return legacyAnalysisEnabled ? 'api' : 'algorithm'
+}
+
+function normalizeTranscriptionProvider(value: string | undefined): MessengerTranscriptionProvider {
+  return value === 'api' ? 'api' : 'server-default'
+}
+
 function normalizeRecord(userId: string, value?: Partial<MessengerUserAiSettingsRecord>) {
   const defaults = createDefaultMessengerUserAiSettings(userId)
+  const interpretationProvider = normalizeInterpretationProvider(value?.interpretationProvider, value?.analysisEnabled === true)
 
   return {
     ...defaults,
     userId,
-    analysisEnabled: value?.analysisEnabled === true,
+    analysisEnabled: interpretationProvider === 'api',
+    interpretationProvider,
+    transcriptionProvider: normalizeTranscriptionProvider(value?.transcriptionProvider),
     interpretationModel: normalizeModelName(value?.interpretationModel),
     summaryModel: normalizeModelName(value?.summaryModel),
     transcriptionModel: normalizeModelName(value?.transcriptionModel),
@@ -93,7 +115,7 @@ export async function getMessengerUserAiSettings(userId: string) {
 
 export async function updateMessengerUserAiSettings(
   userId: string,
-  patch: Partial<Pick<MessengerUserAiSettingsRecord, 'analysisEnabled' | 'interpretationModel' | 'summaryModel' | 'transcriptionModel'>>,
+  patch: Partial<Pick<MessengerUserAiSettingsRecord, 'analysisEnabled' | 'interpretationProvider' | 'transcriptionProvider' | 'interpretationModel' | 'summaryModel' | 'transcriptionModel'>>,
 ) {
   const payload = await readSettingsFile()
   const existingIndex = payload.settings.findIndex(item => item.userId === userId)

@@ -33,6 +33,87 @@
 
     <section class="cpc-section">
       <div class="cpc-section__head">
+        <div class="cpc-section__title">Агенты менеджмента</div>
+        <div class="cpc-section__meta">Кто следит за ритмом и правильной коммуникацией</div>
+      </div>
+      <div class="cpc-agent-list">
+        <div v-for="agent in coordinationBrief.agents.filter(item => item.enabled)" :key="agent.id" class="cpc-agent-card">
+          <div>
+            <div class="cpc-phase-row__title">{{ agent.title }}</div>
+            <div class="cpc-phase-row__meta">{{ agent.mission || agent.linkedChannelLabel }}</div>
+          </div>
+          <div class="cpc-phase-row__right">
+            <span class="cpc-chip">{{ agent.roleLabel }}</span>
+            <span class="cpc-chip">{{ agent.recommendedActionCount }} действий</span>
+          </div>
+        </div>
+      </div>
+      <div class="cpc-subsection">
+        <div class="cpc-section__meta">Протоколы handoff, approval и эскалации</div>
+        <div class="cpc-playbook-list">
+          <div v-for="rule in coordinationBrief.playbook" :key="rule.id" class="cpc-playbook-card">
+            <div>
+              <div class="cpc-phase-row__title">{{ rule.title }}</div>
+              <div class="cpc-phase-row__meta">{{ rule.trigger }}</div>
+              <div v-if="rule.template" class="cpc-playbook-template">{{ rule.template }}</div>
+              <div class="cpc-playbook-audience">
+                <span v-for="label in rule.audienceLabels" :key="`${rule.id}-${label}`" class="cpc-chip">{{ label }}</span>
+              </div>
+            </div>
+            <div class="cpc-phase-row__right">
+              <span class="cpc-chip">{{ rule.linkedChannelLabel }}</span>
+              <span class="cpc-chip">{{ rule.ownerAgentTitle }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="cpc-recommendation-list">
+        <div v-for="recommendation in coordinationBrief.recommendations" :key="recommendation.id" class="cpc-recommendation-card">
+          <div>
+            <div class="cpc-phase-row__title">{{ recommendation.title }}</div>
+            <div class="cpc-phase-row__meta">{{ recommendation.reason }}</div>
+            <div class="cpc-recommendation-text">{{ recommendation.suggestedMessage }}</div>
+          </div>
+          <div class="cpc-phase-row__right">
+            <span class="cpc-chip">{{ recommendation.ownerAgentTitle }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cpc-section">
+      <div class="cpc-section__head">
+        <div class="cpc-section__title">Инсайты после звонков</div>
+        <div class="cpc-section__meta">Что из созвонов уже превратилось в решения, шаги и блокеры проекта</div>
+      </div>
+      <div v-if="control.callInsights.length" class="cpc-call-insight-list">
+        <div v-for="insight in control.callInsights" :key="insight.id" class="cpc-call-insight-card">
+          <div>
+            <div class="cpc-phase-row__title">{{ insight.title }}</div>
+            <div class="cpc-phase-row__meta">{{ formatCallInsightDate(insight.happenedAt || insight.createdAt) }}<span v-if="getCallInsightActorLabel(insight)"> · {{ getCallInsightActorLabel(insight) }}</span></div>
+            <div class="cpc-recommendation-text">{{ insight.summary }}</div>
+            <div v-if="insight.decisions.length" class="cpc-playbook-audience">
+              <span v-for="item in insight.decisions" :key="`${insight.id}-decision-${item}`" class="cpc-chip">{{ item }}</span>
+            </div>
+            <div v-if="insight.nextSteps.length" class="cpc-call-insight-listing">
+              <div v-for="item in insight.nextSteps" :key="`${insight.id}-next-${item}`" class="cpc-phase-row__meta">{{ item }}</div>
+            </div>
+            <div v-if="insight.blockers.length" class="cpc-call-insight-listing">
+              <div v-for="item in insight.blockers" :key="`${insight.id}-blocker-${item}`" class="cpc-phase-row__meta">Блокер: {{ item }}</div>
+            </div>
+          </div>
+          <div class="cpc-phase-row__right">
+            <span class="cpc-chip" :class="`cpc-chip--${insight.tone}`">{{ getHealthTone(insight.tone) }}</span>
+            <span v-if="insight.relatedPhaseKey" class="cpc-chip">{{ getPhaseTitleByKey(insight.relatedPhaseKey) }}</span>
+            <span v-if="insight.appliedTaskIds?.length" class="cpc-chip">задач: {{ insight.appliedTaskIds.length }}</span>
+          </div>
+        </div>
+      </div>
+      <div v-else class="cpc-phase-row__meta">Звонки ещё не были импортированы в проектный контур.</div>
+    </section>
+
+    <section class="cpc-section">
+      <div class="cpc-section__head">
         <div>
           <div class="cpc-section__title">План-график проекта</div>
           <div class="cpc-section__meta">Фазы и спринты на одной временной шкале</div>
@@ -50,6 +131,14 @@
               {{ getTimelineScaleLabel(option) }}
             </button>
           </div>
+          <button
+            v-if="hasCollapsibleTimelinePhases"
+            type="button"
+            class="a-btn-sm cpc-scale-switch__btn"
+            @click="toggleAllTimelinePhases"
+          >
+            {{ allTimelinePhasesCollapsed ? 'раскрыть все фазы' : 'свернуть все фазы' }}
+          </button>
         </div>
       </div>
       <div class="cpc-board-wrap">
@@ -82,7 +171,7 @@
           </div>
 
           <div
-            v-for="row in timelineRows"
+            v-for="row in visibleTimelineRows"
             :key="row.id"
             class="cpc-board__row"
             :class="{ 'cpc-board__row--phase': row.type === 'phase' }"
@@ -92,6 +181,14 @@
                 <div class="cpc-board__entity-top">
                   <span class="cpc-board__type">{{ row.typeLabel }}</span>
                   <span class="cpc-chip" :class="`cpc-chip--${row.tone}`">{{ row.statusLabel }}</span>
+                  <button
+                    v-if="row.type === 'phase' && getTimelinePhaseSprintCount(row.phaseKey)"
+                    type="button"
+                    class="cpc-board__toggle"
+                    @click="toggleTimelinePhase(row.phaseKey)"
+                  >
+                    {{ isTimelinePhaseCollapsed(row.phaseKey) ? `показать ${getTimelinePhaseSprintCount(row.phaseKey)}` : `свернуть ${getTimelinePhaseSprintCount(row.phaseKey)}` }}
+                  </button>
                 </div>
                 <strong class="cpc-board__title">{{ row.title }}</strong>
                 <div class="cpc-board__meta-line">{{ row.meta }}</div>
@@ -189,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/project-control'
+import { buildHybridControlSummary, buildHybridCoordinationBrief, ensureHybridControl, getHealthTone, getHybridStakeholderRoleLabel } from '~~/shared/utils/project-control'
 import {
   buildHybridTimelineBounds,
   buildHybridTimelineColumns,
@@ -202,7 +299,7 @@ import {
   type HybridTimelineRow,
   type HybridTimelineScale,
 } from '~~/shared/utils/project-control-timeline'
-import type { HybridControlCheckpoint, HybridControlPhase, HybridControlSprint } from '~~/shared/types/project'
+import type { HybridControlCallInsight, HybridControlCheckpoint, HybridControlPhase, HybridControlSprint } from '~~/shared/types/project'
 
 const props = defineProps<{ slug: string }>()
 
@@ -210,6 +307,7 @@ const { data: project } = await useFetch<any>(() => `/api/projects/${props.slug}
 
 const control = computed(() => ensureHybridControl(project.value?.profile?.hybridControl, project.value || {}))
 const summary = computed(() => buildHybridControlSummary(control.value))
+const coordinationBrief = computed(() => buildHybridCoordinationBrief(control.value, { projectSlug: props.slug }))
 
 const phaseStatusLabels: Record<HybridControlPhase['status'], string> = {
   planned: 'запланирована',
@@ -236,6 +334,45 @@ const timelineScale = ref<HybridTimelineScale>('weeks')
 
 const timelineRows = computed(() => buildHybridTimelineRows(control.value))
 
+const timelineCollapsedPhases = reactive<Record<string, boolean>>({})
+
+watch(() => control.value.phases.map(phase => phase.phaseKey), (phaseKeys) => {
+  const activeKeys = new Set(phaseKeys)
+
+  phaseKeys.forEach((phaseKey) => {
+    if (!(phaseKey in timelineCollapsedPhases)) {
+      timelineCollapsedPhases[phaseKey] = false
+    }
+  })
+
+  Object.keys(timelineCollapsedPhases).forEach((phaseKey) => {
+    if (!activeKeys.has(phaseKey)) {
+      delete timelineCollapsedPhases[phaseKey]
+    }
+  })
+}, { immediate: true })
+
+const timelineSprintCountByPhase = computed(() => control.value.sprints.reduce<Record<string, number>>((acc, sprint) => {
+  if (!sprint.linkedPhaseKey) return acc
+  acc[sprint.linkedPhaseKey] = (acc[sprint.linkedPhaseKey] || 0) + 1
+  return acc
+}, {}))
+
+const collapsibleTimelinePhaseKeys = computed(() => Object.entries(timelineSprintCountByPhase.value)
+  .filter(([, count]) => count > 0)
+  .map(([phaseKey]) => phaseKey))
+
+const hasCollapsibleTimelinePhases = computed(() => collapsibleTimelinePhaseKeys.value.length > 0)
+
+const allTimelinePhasesCollapsed = computed(() => hasCollapsibleTimelinePhases.value
+  && collapsibleTimelinePhaseKeys.value.every(phaseKey => timelineCollapsedPhases[phaseKey]))
+
+const visibleTimelineRows = computed(() => timelineRows.value.filter((row) => {
+  if (row.type === 'phase') return true
+  if (!row.linkedPhaseKey) return true
+  return !timelineCollapsedPhases[row.linkedPhaseKey]
+}))
+
 const timelineBounds = computed(() => buildHybridTimelineBounds(timelineRows.value, timelineScale.value))
 
 const timelineColumns = computed(() => buildHybridTimelineColumns(timelineBounds.value, timelineScale.value))
@@ -247,6 +384,8 @@ const timelineGridStyle = computed(() => ({
 }))
 
 const timelineBoardStyle = computed(() => ({
+  '--cpc-entity-column-width': '240px',
+  '--cpc-period-column-width': '170px',
   minWidth: `${410 + (timelineColumns.value.length * getHybridTimelineColumnWidth(timelineScale.value))}px`,
 }))
 
@@ -260,6 +399,69 @@ function getTimelineBarStyle(row: HybridTimelineRow) {
 
 function getTimelineScaleLabel(scale: HybridTimelineScale) {
   return getHybridTimelineScaleLabel(scale)
+}
+
+function getTimelinePhaseSprintCount(phaseKey?: string) {
+  if (!phaseKey) return 0
+  return timelineSprintCountByPhase.value[phaseKey] || 0
+}
+
+function isTimelinePhaseCollapsed(phaseKey?: string) {
+  if (!phaseKey) return false
+  return !!timelineCollapsedPhases[phaseKey]
+}
+
+function toggleTimelinePhase(phaseKey?: string) {
+  if (!phaseKey || !getTimelinePhaseSprintCount(phaseKey)) return
+  timelineCollapsedPhases[phaseKey] = !timelineCollapsedPhases[phaseKey]
+}
+
+function collapseAllTimelinePhases() {
+  collapsibleTimelinePhaseKeys.value.forEach((phaseKey) => {
+    timelineCollapsedPhases[phaseKey] = true
+  })
+}
+
+function expandAllTimelinePhases() {
+  collapsibleTimelinePhaseKeys.value.forEach((phaseKey) => {
+    timelineCollapsedPhases[phaseKey] = false
+  })
+}
+
+function toggleAllTimelinePhases() {
+  if (allTimelinePhasesCollapsed.value) {
+    expandAllTimelinePhases()
+    return
+  }
+  collapseAllTimelinePhases()
+}
+
+function formatCallInsightDate(value?: string) {
+  if (!value) return 'без даты'
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(parsed)
+}
+
+function getCallInsightActorLabel(insight: HybridControlCallInsight) {
+  const roleLabel = insight.actorRole ? getHybridStakeholderRoleLabel(insight.actorRole) : ''
+  const actorName = insight.actorName || ''
+
+  if (roleLabel && actorName) return `${roleLabel}: ${actorName}`
+  return actorName || roleLabel
+}
+
+function getPhaseTitleByKey(phaseKey?: string) {
+  if (!phaseKey) return 'Без привязки'
+  return control.value.phases.find(phase => phase.phaseKey === phaseKey)?.title || phaseKey
 }
 </script>
 
@@ -342,6 +544,70 @@ function getTimelineScaleLabel(scale: HybridTimelineScale) {
   gap: 14px;
 }
 
+.cpc-subsection {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.cpc-agent-list,
+.cpc-recommendation-list,
+.cpc-playbook-list,
+.cpc-call-insight-list {
+  display: grid;
+  gap: 12px;
+}
+
+.cpc-agent-card,
+.cpc-recommendation-card,
+.cpc-playbook-card,
+.cpc-call-insight-card {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 0 0;
+}
+
+.cpc-agent-card::before,
+.cpc-recommendation-card::before,
+.cpc-playbook-card::before,
+.cpc-call-insight-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ds-accent) 36%, transparent), color-mix(in srgb, var(--glass-text) 8%, transparent) 62%, transparent);
+}
+
+.cpc-playbook-audience {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cpc-playbook-template {
+  margin-top: 8px;
+  font-size: .8rem;
+  line-height: 1.5;
+  color: var(--glass-text);
+}
+
+.cpc-call-insight-listing {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.cpc-recommendation-text {
+  margin-top: 8px;
+  font-size: .8rem;
+  line-height: 1.5;
+  color: var(--glass-text);
+}
+
 .cpc-section__tools {
   display: flex;
   align-items: center;
@@ -381,7 +647,7 @@ function getTimelineScaleLabel(scale: HybridTimelineScale) {
 .cpc-board__head,
 .cpc-board__row {
   display: grid;
-  grid-template-columns: minmax(240px, 1.15fr) 170px minmax(520px, 2fr);
+  grid-template-columns: var(--cpc-entity-column-width, 240px) var(--cpc-period-column-width, 170px) minmax(520px, 2fr);
   gap: 0;
   align-items: stretch;
 }
@@ -413,6 +679,21 @@ function getTimelineScaleLabel(scale: HybridTimelineScale) {
   padding: 12px 0;
 }
 
+.cpc-board__cell--entity,
+.cpc-board__cell--period {
+  position: sticky;
+  z-index: 3;
+  background: var(--glass-page-bg);
+}
+
+.cpc-board__cell--entity {
+  left: 0;
+}
+
+.cpc-board__cell--period {
+  left: var(--cpc-entity-column-width, 240px);
+}
+
 .cpc-board__head .cpc-board__cell,
 .cpc-board__head .cpc-board__timeline-head-stack,
 .cpc-board__head .cpc-board__timeline-groups,
@@ -428,6 +709,16 @@ function getTimelineScaleLabel(scale: HybridTimelineScale) {
   padding: 12px 14px;
 }
 
+.cpc-board__row--phase .cpc-board__cell--entity,
+.cpc-board__row--phase .cpc-board__cell--period {
+  background: color-mix(in srgb, var(--glass-text) 2%, var(--glass-page-bg));
+}
+
+.cpc-board__head .cpc-board__cell--entity,
+.cpc-board__head .cpc-board__cell--period {
+  z-index: 9;
+}
+
 .cpc-board__entity,
 .cpc-board__period {
   display: grid;
@@ -440,6 +731,21 @@ function getTimelineScaleLabel(scale: HybridTimelineScale) {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.cpc-board__toggle {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text) 54%, transparent);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.cpc-board__toggle:hover {
+  color: var(--glass-text);
+  border-color: color-mix(in srgb, var(--glass-text) 18%, transparent);
 }
 
 .cpc-board__type {

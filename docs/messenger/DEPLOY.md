@@ -26,9 +26,51 @@
 Для production ключ лучше хранить вне git в файле `/opt/daria-messenger-data/messenger-runtime.env`:
 
 ```bash
+MESSENGER_AGENT_API_BASE_URL=https://api.openai.com
+MESSENGER_AGENT_API_KEY=...
+MESSENGER_AGENT_MODEL=GPT-5.4
+MESSENGER_TRANSCRIPTION_ENABLED=true
+MESSENGER_TRANSCRIPTION_API_KEY=...
+MESSENGER_TRANSCRIPTION_API_BASE_URL=https://api.groq.com/openai/v1
+MESSENGER_TRANSCRIPTION_MODEL=whisper-large-v3-turbo
+MESSENGER_TRANSCRIPTION_LANGUAGE=ru
+NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED=true
 KLIPY_APP_KEY=...
 KLIPY_API_BASE_URL=https://api.klipy.com
 ```
+
+Для server-only режима без внешних LLM/API можно держать backend целиком на этом же сервере.
+
+Локальная интерпретация/анализ через Ollama:
+
+```bash
+MESSENGER_AGENT_API_BASE_URL=http://127.0.0.1:11434
+MESSENGER_AGENT_API_KEY=
+MESSENGER_AGENT_ALLOW_NO_KEY=true
+MESSENGER_AGENT_MODEL=gemma3:27b
+```
+
+Messenger сначала пробует OpenAI-compatible `/v1/chat/completions`, а для локального no-key Ollama автоматически умеет откатиться на нативный `/api/chat`.
+
+Локальная транскрибация через OpenAI-compatible STT endpoint на том же сервере:
+
+```bash
+MESSENGER_TRANSCRIPTION_ENABLED=true
+MESSENGER_TRANSCRIPTION_API_BASE_URL=http://127.0.0.1:9000/v1
+MESSENGER_TRANSCRIPTION_API_KEY=
+MESSENGER_TRANSCRIPTION_ALLOW_NO_KEY=true
+MESSENGER_TRANSCRIPTION_MODEL=whisper-large-v3-turbo
+```
+
+Локальная транскрибация через команду на сервере:
+
+```bash
+MESSENGER_TRANSCRIPTION_ENABLED=true
+MESSENGER_TRANSCRIPTION_COMMAND=/opt/daria-messenger/bin/transcribe-local.sh
+MESSENGER_TRANSCRIPTION_MODEL=whisper-large-v3-turbo
+```
+
+Команда получает 4 аргумента: `audioFilePath mimeType language model`. Дополнительно messenger-core прокидывает env `MESSENGER_TRANSCRIPTION_INPUT_PATH`, `MESSENGER_TRANSCRIPTION_MIME_TYPE`, `MESSENGER_TRANSCRIPTION_LANGUAGE`, `MESSENGER_TRANSCRIPTION_MODEL`. В `stdout` команда должна вернуть либо чистый текст транскрипта, либо JSON вида `{ "text": "..." }`.
 
 ### Web
 
@@ -37,6 +79,10 @@ KLIPY_API_BASE_URL=https://api.klipy.com
 Обязательно задать:
 
 - `NUXT_PUBLIC_MESSENGER_CORE_BASE_URL`
+
+Для mobile server-side transcription дополнительно нужен:
+
+- `NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED`
 
 ## Local Smoke
 
@@ -129,14 +175,19 @@ pm2 save
 
 - `MESSENGER_TRANSCRIPTION_ENABLED=true`
 - `MESSENGER_TRANSCRIPTION_API_KEY=...`
+- `MESSENGER_TRANSCRIPTION_ALLOW_NO_KEY=true` для локального backend без auth
 - `MESSENGER_TRANSCRIPTION_API_BASE_URL=https://api.groq.com/openai/v1`
+- `MESSENGER_TRANSCRIPTION_COMMAND=/path/to/local-transcriber` для локальной команды на сервере
 - `MESSENGER_TRANSCRIPTION_MODEL=whisper-large-v3-turbo`
 - `MESSENGER_TRANSCRIPTION_LANGUAGE=ru`
 - `NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED=true`
 
+Если messenger запускается через `messenger/ecosystem.config.cjs` или `messenger/ecosystem.standalone.config.cjs`, web теперь автоматически включает public flag, когда `MESSENGER_TRANSCRIPTION_ENABLED=true` и доступен любой server backend: внешний API key, локальный no-key HTTP backend или `MESSENGER_TRANSCRIPTION_COMMAND`. Явный `NUXT_PUBLIC_MESSENGER_SERVER_TRANSCRIPTION_ENABLED=true` все равно можно оставить для прозрачности.
+
 Для server-side интерпретации звонков и AI-функций из Settings:
 
 - `MESSENGER_AGENT_API_KEY=...`
+- `MESSENGER_AGENT_ALLOW_NO_KEY=true` для локального Ollama/OpenAI-compatible backend без auth
 - `MESSENGER_AGENT_API_BASE_URL=https://api.openai.com`
 - `MESSENGER_AGENT_MODEL=gpt-5.4`
 

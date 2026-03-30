@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const auth = useMessengerAuth()
+const projectEngine = useMessengerProjectEngine()
 const props = withDefaults(defineProps<{
   mobile?: boolean
 }>(), {
@@ -11,15 +12,28 @@ const settingsModel = useMessengerSettings()
 
 const currentInterpretation = computed(() => calls.analysisInterpretations.value[calls.selectedAnalysisToolId.value] || '')
 const currentAiInterpretation = computed(() => calls.aiAnalysisInterpretations.value[calls.selectedAnalysisToolId.value] || '')
+const apiInterpretationEnabled = computed(() => settingsModel.runtimeInterpretationProvider.value === 'api')
+const projectSyncOptions = computed(() => projectEngine.projects.value.map(project => ({
+  title: `${project.label} (${project.slug})`,
+  value: project.slug,
+})))
+const activeProjectSyncLabel = computed(() => {
+  const project = projectEngine.activeProject.value
+  return project ? `${project.label} (${project.slug})` : ''
+})
 
 onMounted(() => {
   if (auth.token.value && !settingsModel.aiSettingsReady.value) {
     void settingsModel.hydrateAiSettings(auth.request)
   }
+
+  if (auth.token.value && !projectEngine.projects.value.length && !projectEngine.pending.value) {
+    void projectEngine.refresh()
+  }
 })
 
 async function updateAiAnalyticsEnabled(value: boolean) {
-  settingsModel.aiSettings.value.analysisEnabled = value
+  settingsModel.aiSettings.value.interpretationProvider = value ? 'api' : 'algorithm'
   if (auth.token.value) {
     await settingsModel.persistAiSettings(auth.request)
   }
@@ -30,6 +44,43 @@ function formatTranscriptTime(value: number) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(value)
+}
+
+function formatProjectSyncDate(value?: number) {
+  if (!value) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(value)
+}
+
+function setProjectSyncSlug(value: string | null) {
+  calls.projectSyncProjectSlug.value = typeof value === 'string' ? value.trim() : ''
+}
+
+function useActiveProjectSlug() {
+  if (!projectEngine.activeProject.value?.slug) {
+    return
+  }
+
+  calls.projectSyncProjectSlug.value = projectEngine.activeProject.value.slug
+}
+
+async function syncCallReviewToProject() {
+  await calls.syncCallReviewToProject({
+    projectSlug: calls.projectSyncProjectSlug.value,
+  })
+}
+
+async function applyCallReviewToProjectSprint() {
+  await calls.applyCallReviewToProjectSprint({
+    projectSlug: calls.projectSyncProjectSlug.value,
+  })
 }
 </script>
 
@@ -121,7 +172,7 @@ function formatTranscriptTime(value: number) {
 
       <section class="call-transcript-panel">
         <header class="call-transcript-panel__header">
-          <h5>2. Конспект и простой анализ</h5>
+          <h5>2. Конспект и алгоритмический разбор</h5>
           <VMenu location="bottom end" :close-on-content-click="false">
             <template #activator="{ props: menuProps }">
               <VBtn
@@ -130,15 +181,15 @@ function formatTranscriptTime(value: number) {
                 variant="tonal"
                 v-bind="menuProps"
               >
-                ИИ
+                API
               </VBtn>
             </template>
             <VCard min-width="280" color="surface-container-high">
               <VCardText>
                 <div class="setting-toggle setting-toggle--vuetify">
-                  <span class="setting-toggle__copy"><span class="setting-field__label">Включить ИИ-аналитику</span></span>
+                  <span class="setting-toggle__copy"><span class="setting-field__label">Дополнительный API-разбор</span></span>
                   <VSwitch
-                    :model-value="settingsModel.aiSettings.value.analysisEnabled"
+                    :model-value="apiInterpretationEnabled"
                     color="primary"
                     hide-details
                     inset
@@ -147,7 +198,7 @@ function formatTranscriptTime(value: number) {
                   />
                 </div>
                 <p class="call-transcript-popup__empty">
-                  {{ settingsModel.aiConfigured.value.analysis ? 'Серверный ИИ-разбор доступен.' : 'Серверный ИИ-разбор пока не готов.' }}
+                  {{ settingsModel.aiConfigured.value.analysis ? 'API-разбор доступен.' : 'API-разбор недоступен.' }}
                 </p>
                 <VBtn
                   block
@@ -155,10 +206,10 @@ function formatTranscriptTime(value: number) {
                   size="small"
                   variant="flat"
                   color="primary"
-                  :disabled="!settingsModel.aiSettings.value.analysisEnabled || !calls.callReview.value || calls.aiAnalysisRunning.value"
+                    :disabled="!apiInterpretationEnabled || !calls.callReview.value || calls.aiAnalysisRunning.value"
                   @click="calls.runAiAnalysisTool(calls.selectedAnalysisToolId.value)"
                 >
-                  Запустить ИИ-разбор
+                  Запустить API-разбор
                 </VBtn>
               </VCardText>
             </VCard>
@@ -189,13 +240,100 @@ function formatTranscriptTime(value: number) {
 
           <div class="mt-4">
             <header class="call-transcript-panel__header">
-              <h5>3. ИИ-аналитика</h5>
+              <h5>3. API-разбор</h5>
             </header>
-            <p v-if="!settingsModel.aiSettings.value.analysisEnabled" class="call-transcript-popup__empty">ИИ-аналитика выключена. Включите ее через кнопку ИИ.</p>
+            <p v-if="!apiInterpretationEnabled" class="call-transcript-popup__empty">API-разбор выключен. Базовый алгоритмический разбор работает без него.</p>
             <p v-else-if="calls.aiAnalysisError.value" class="call-transcript-popup__empty">{{ calls.aiAnalysisError.value }}</p>
-            <p v-else-if="calls.aiAnalysisRunning.value" class="call-transcript-popup__empty">Строим ИИ-разбор...</p>
+            <p v-else-if="calls.aiAnalysisRunning.value" class="call-transcript-popup__empty">Строим API-разбор...</p>
             <p v-else-if="currentAiInterpretation" class="call-transcript-panel__analysis">{{ currentAiInterpretation }}</p>
-            <p v-else class="call-transcript-popup__empty">ИИ-разбор запускается отдельно и не заменяет простой анализ.</p>
+            <p v-else class="call-transcript-popup__empty">API-разбор запускается отдельно и не заменяет базовый алгоритм.</p>
+          </div>
+
+          <div class="mt-4 call-transcript-project-sync">
+            <header class="call-transcript-panel__header">
+              <h5>4. В проект</h5>
+              <VBtn
+                v-if="projectEngine.activeProject.value?.slug"
+                class="call-transcript-popup__btn"
+                size="small"
+                variant="text"
+                @click="useActiveProjectSlug"
+              >
+                active project
+              </VBtn>
+            </header>
+
+            <p class="call-transcript-popup__empty">
+              Конспект и транскрипт уйдут в основной проектный API. Если основная сессия проекта не открыта, сервер вернёт ошибку доступа.
+            </p>
+
+            <VCombobox
+              :model-value="calls.projectSyncProjectSlug.value"
+              :items="projectSyncOptions"
+              item-title="title"
+              item-value="value"
+              label="Slug проекта"
+              variant="outlined"
+              clearable
+              hide-details="auto"
+              @update:model-value="setProjectSyncSlug"
+            />
+
+            <p v-if="activeProjectSyncLabel" class="call-transcript-popup__empty">
+              Активный project-engine: {{ activeProjectSyncLabel }}
+            </p>
+
+            <div class="call-transcript-project-sync__actions">
+              <VBtn
+                class="call-transcript-popup__btn"
+                size="small"
+                variant="tonal"
+                :loading="projectEngine.pending.value"
+                @click="projectEngine.refresh()"
+              >
+                обновить список
+              </VBtn>
+              <VBtn
+                class="call-transcript-popup__btn"
+                size="small"
+                variant="flat"
+                color="primary"
+                :disabled="!calls.callReview.value || !calls.projectSyncProjectSlug.value.trim() || calls.projectSyncPending.value"
+                :loading="calls.projectSyncPending.value"
+                @click="syncCallReviewToProject"
+              >
+                {{ calls.callReview.value?.syncedProjectSlug === calls.projectSyncProjectSlug.value.trim() ? 'обновить в проекте' : 'добавить в проект' }}
+              </VBtn>
+              <VBtn
+                class="call-transcript-popup__btn"
+                size="small"
+                variant="tonal"
+                color="primary"
+                :disabled="!calls.callReview.value || !calls.projectSyncProjectSlug.value.trim() || calls.projectTaskSyncPending.value"
+                :loading="calls.projectTaskSyncPending.value"
+                @click="applyCallReviewToProjectSprint"
+              >
+                {{ calls.callReview.value?.syncedProjectSlug === calls.projectSyncProjectSlug.value.trim() && calls.callReview.value?.syncedInsightId ? 'в задачи спринта' : 'в проект и задачи' }}
+              </VBtn>
+            </div>
+
+            <p v-if="calls.projectSyncError.value" class="call-transcript-project-sync__feedback call-transcript-project-sync__feedback--error">
+              {{ calls.projectSyncError.value }}
+            </p>
+            <p v-else-if="calls.projectSyncStatus.value" class="call-transcript-project-sync__feedback call-transcript-project-sync__feedback--success">
+              {{ calls.projectSyncStatus.value }}
+            </p>
+
+            <p v-if="calls.projectTaskSyncError.value" class="call-transcript-project-sync__feedback call-transcript-project-sync__feedback--error">
+              {{ calls.projectTaskSyncError.value }}
+            </p>
+            <p v-else-if="calls.projectTaskSyncStatus.value" class="call-transcript-project-sync__feedback call-transcript-project-sync__feedback--success">
+              {{ calls.projectTaskSyncStatus.value }}
+            </p>
+
+            <p v-if="calls.callReview.value?.syncedProjectSlug" class="call-transcript-popup__empty">
+              Уже отправлено: {{ calls.callReview.value.syncedProjectSlug }}<span v-if="calls.callReview.value.syncedAt"> · {{ formatProjectSyncDate(calls.callReview.value.syncedAt) }}</span>
+            </p>
           </div>
         </div>
       </section>

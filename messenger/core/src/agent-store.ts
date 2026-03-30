@@ -1,6 +1,6 @@
 import { getMessengerAgentSettings, resolveMessengerAgentActiveRepository, resolveMessengerAgentWorkspacePath, type MessengerAgentConnectionMode } from './agent-settings-store.ts'
 import { retrieveMessengerAgentKnowledge, type MessengerAgentKnowledgeRetrieval } from './agent-knowledge-store.ts'
-import { callMessengerAgentModel, type MessengerAgentLlmMessage } from './agent-llm.ts'
+import { callMessengerAgentModel, isMessengerAgentLlmConfigured, type MessengerAgentLlmMessage } from './agent-llm.ts'
 
 export interface MessengerAgentRecord {
   id: string
@@ -431,7 +431,10 @@ async function buildMessengerAgentConsultation(
     },
   ]
 
-  if (settings.apiKey.trim()) {
+  if (isMessengerAgentLlmConfigured({
+    model: settings.model,
+    apiKey: settings.apiKey,
+  })) {
     try {
       return condenseText(await callMessengerAgentModel(prompt, {
         model: settings.model,
@@ -575,7 +578,10 @@ export async function buildMessengerAgentReply(
     })),
   })
 
-  if (!normalizedMessage || !settings.apiKey.trim()) {
+  if (!normalizedMessage || !isMessengerAgentLlmConfigured({
+    model: settings.model,
+    apiKey: settings.apiKey,
+  })) {
     return buildReplyByTopic(agent, message)
   }
 

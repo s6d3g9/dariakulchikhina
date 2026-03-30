@@ -253,6 +253,62 @@
           <div class="comm-section-metrics"><span class="comm-section-pill">{{ callSecurity.available ? 'E2EE' : 'WEBRTC' }}</span></div>
         </div>
         <div class="comm-settings-grid">
+          <section v-if="coordinationBrief" class="comm-setting-card">
+            <div class="comm-block-title">Менеджеры проекта</div>
+            <p class="comm-setting-note">Активная фаза: {{ coordinationBrief.summary.activePhaseTitle }}. Активный спринт: {{ coordinationBrief.summary.activeSprintTitle }}.</p>
+            <div class="comm-agent-pills">
+              <span v-for="agent in coordinationBrief.agents.filter(item => item.enabled)" :key="agent.id" class="comm-person-badge">{{ agent.title }}</span>
+            </div>
+            <div class="comm-coordination-list">
+              <div v-for="recommendation in coordinationBrief.recommendations" :key="recommendation.id" class="comm-coordination-row">
+                <p class="comm-setting-row">
+                  <span class="comm-setting-name">{{ recommendation.title }}</span>
+                  <span class="comm-setting-value">{{ recommendation.channelLabel }}</span>
+                </p>
+                <p class="comm-setting-note">{{ recommendation.reason }}</p>
+                <p class="comm-setting-note comm-setting-note--strong">{{ recommendation.suggestedMessage }}</p>
+              </div>
+            </div>
+            <div class="comm-playbook-list">
+              <div v-for="rule in coordinationBrief.playbook" :key="rule.id" class="comm-playbook-row">
+                <p class="comm-setting-row">
+                  <span class="comm-setting-name">{{ rule.title }}</span>
+                  <span class="comm-setting-value">{{ rule.ownerAgentTitle }}</span>
+                </p>
+                <p class="comm-setting-note">{{ rule.trigger }}</p>
+                <p v-if="rule.template" class="comm-setting-note comm-setting-note--strong">{{ rule.template }}</p>
+                <div class="comm-agent-pills">
+                  <span class="comm-person-badge">{{ rule.linkedChannelLabel }}</span>
+                  <span v-for="label in rule.audienceLabels" :key="`${rule.id}-${label}`" class="comm-person-badge">{{ label }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-if="callInsights.length" class="comm-call-insight-list">
+              <div v-for="insight in callInsights" :key="insight.id" class="comm-call-insight-row">
+                <p class="comm-setting-row">
+                  <span class="comm-setting-name">{{ insight.title }}</span>
+                  <span class="comm-setting-value">{{ getHealthTone(insight.tone) }}</span>
+                </p>
+                <p class="comm-setting-note">{{ formatCallInsightDate(insight.happenedAt || insight.createdAt) }}<span v-if="getCallInsightActorLabel(insight)"> · {{ getCallInsightActorLabel(insight) }}</span></p>
+                <p class="comm-setting-note comm-setting-note--strong">{{ insight.summary }}</p>
+                <div v-if="insight.appliedTaskIds?.length" class="comm-agent-pills">
+                  <span class="comm-person-badge">задач: {{ insight.appliedTaskIds.length }}</span>
+                </div>
+                <div v-if="canManageCallInsights && insight.nextSteps.length" class="comm-setting-actions">
+                  <button
+                    type="button"
+                    class="a-btn-sm"
+                    :disabled="callInsightApplyPendingId === insight.id"
+                    @click="applyCallInsightToSprint(insight.id)"
+                  >
+                    {{ callInsightApplyPendingId === insight.id ? 'применяем...' : (insight.appliedTaskIds?.length ? 'досинхронизировать задачи' : 'в активный спринт') }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p v-if="callInsightActionStatus" class="comm-setting-note">{{ callInsightActionStatus }}</p>
+          </section>
+
           <section class="comm-setting-card">
             <div class="comm-block-title">Никнейм</div>
             <label class="u-field__label" for="comm-my-nickname">Публичный никнейм</label>
@@ -316,6 +372,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useProjectCommunicationsBootstrap } from '~~/app/composables/useProjectCommunicationsBootstrap'
+import { getHealthTone, getHybridStakeholderRoleLabel } from '~~/shared/utils/project-control'
 import type {
   CommunicationActorRole,
   CommunicationCallE2EEPayload,
@@ -413,10 +470,13 @@ const localVideoEl = ref<HTMLVideoElement | null>(null)
 const remoteVideoEl = ref<HTMLVideoElement | null>(null)
 const messagesEl = ref<HTMLElement | null>(null)
 
-const { data: bootstrap, pending: bootstrapPending, error: bootstrapError } = useProjectCommunicationsBootstrap(computed(() => props.projectSlug))
+const { data: bootstrap, pending: bootstrapPending, error: bootstrapError, refresh: refreshBootstrap } = useProjectCommunicationsBootstrap(computed(() => props.projectSlug))
 
 const bootstrapData = computed(() => bootstrap.value as ProjectCommunicationBootstrap | null)
+const coordinationBrief = computed(() => bootstrapData.value?.coordination || null)
+const callInsights = computed(() => bootstrapData.value?.callInsights || [])
 const bootstrapErrorMessage = computed(() => (bootstrapError.value as any)?.data?.statusMessage || (bootstrapError.value as any)?.message || 'Не удалось инициализировать защищённую связь')
+const canManageCallInsights = computed(() => bootstrapData.value?.actor.role === 'admin')
 const actorKey = computed(() => bootstrapData.value?.actor.actorKey || '')
 const directChatsPrefix = computed(() => `project:${props.projectSlug}:direct:`)
 
@@ -435,6 +495,59 @@ const eventStreamConnected = ref(false)
 const roomKeyReady = ref(false)
 const runtimeError = ref('')
 const contactSearch = ref('')
+const callInsightApplyPendingId = ref('')
+const callInsightActionStatus = ref('')
+
+function formatCallInsightDate(value?: string) {
+  if (!value) return 'без даты'
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(parsed)
+}
+
+function getCallInsightActorLabel(insight: ProjectCommunicationBootstrap['callInsights'][number]) {
+  const roleLabel = insight.actorRole ? getHybridStakeholderRoleLabel(insight.actorRole) : ''
+  const actorName = insight.actorName || ''
+
+  if (roleLabel && actorName) return `${roleLabel}: ${actorName}`
+  return actorName || roleLabel
+}
+
+async function applyCallInsightToSprint(insightId: string) {
+  if (!insightId || callInsightApplyPendingId.value) return
+
+  callInsightApplyPendingId.value = insightId
+  callInsightActionStatus.value = ''
+
+  try {
+    const response = await $fetch<{
+      meta: {
+        createdTaskCount: number
+        createdSprint: boolean
+      }
+    }>(`/api/projects/${props.projectSlug}/communications/call-insights/${insightId}/apply`, {
+      method: 'POST',
+      body: {},
+    })
+
+    callInsightActionStatus.value = response.meta.createdTaskCount
+      ? `Задач создано: ${response.meta.createdTaskCount}${response.meta.createdSprint ? '. Создан отдельный follow-up спринт.' : '.'}`
+      : 'Новых задач не создано: следующие шаги уже синхронизированы.'
+    await refreshBootstrap()
+  } catch (error: any) {
+    callInsightActionStatus.value = error?.data?.statusMessage || error?.message || 'Не удалось синхронизировать задачи по звонку.'
+  } finally {
+    callInsightApplyPendingId.value = ''
+  }
+}
 const chatSearch = ref('')
 const nicknameDraft = ref('')
 const nicknameStatus = ref('')
@@ -2366,6 +2479,52 @@ onBeforeUnmount(() => {
   border-radius: 18px;
 }
 
+  .comm-agent-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .comm-coordination-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .comm-playbook-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .comm-call-insight-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .comm-coordination-row {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    background: rgba(255,255,255,.03);
+  }
+
+  .comm-playbook-row {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+
+  .comm-call-insight-row {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    background: rgba(255,255,255,.025);
+  }
+
 .comm-setting-row {
   margin: 0;
   display: flex;
@@ -2390,6 +2549,11 @@ onBeforeUnmount(() => {
   color: var(--comm-soft);
   line-height: 1.45;
 }
+
+  .comm-setting-note--strong {
+    color: var(--comm-ink);
+    font-weight: 600;
+  }
 
 .comm-empty--error {
   color: var(--ds-error, #d96b6b);

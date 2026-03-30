@@ -29,6 +29,12 @@ const activeThemeMeta = computed(() => settingsModel.themeOptions.find(theme => 
 const activeThemeModeMeta = computed(() => settingsModel.themeModeOptions.find(mode => mode.key === settingsModel.settings.value.themes.mode) ?? settingsModel.themeModeOptions[0])
 const activeThemeContrastMeta = computed(() => settingsModel.themeContrastOptions.find(contrast => contrast.key === settingsModel.settings.value.themes.contrast) ?? settingsModel.themeContrastOptions[0])
 const activeStyleMeta = computed(() => settingsModel.styleOptions.find(style => style.key === settingsModel.settings.value.themes.style) ?? settingsModel.styleOptions[0])
+const transcriptionSourceLabel = computed(() => settingsModel.runtimeTranscriptionProvider.value === 'api'
+  ? 'HTTP API backend'
+  : settingsModel.aiConfigured.value.transcription ? 'Сервер по умолчанию' : 'Недоступен')
+const interpretationSourceLabel = computed(() => settingsModel.runtimeInterpretationProvider.value === 'api' ? 'API backend' : 'Алгоритм по словарю')
+const apiInterpretationStatusLabel = computed(() => settingsModel.aiConfigured.value.interpretationApi ? 'Доступен' : 'Недоступен')
+const optionalModelHint = 'Пустое значение = использовать режим сервера по умолчанию.'
 const resolvedThemeModeLabel = computed(() => settingsModel.resolvedMode.value === 'dark'
   ? 'Сейчас применяется тёмная tonal-схема.'
   : 'Сейчас применяется светлая tonal-схема.')
@@ -242,6 +248,8 @@ function queueAiSettingsPersist() {
 
 watch(() => [
   settingsModel.aiSettings.value.analysisEnabled,
+  settingsModel.aiSettings.value.interpretationProvider,
+  settingsModel.aiSettings.value.transcriptionProvider,
   settingsModel.aiSettings.value.interpretationModel,
   settingsModel.aiSettings.value.summaryModel,
   settingsModel.aiSettings.value.transcriptionModel,
@@ -498,22 +506,62 @@ function themeCardStyle(theme: { preview: [string, string, string] }) {
           <section class="settings-grid">
             <div class="setting-facts mb-4">
               <div class="setting-fact-row">
-                <span class="setting-fact-label">ИИ-аналитика</span>
-                <strong>{{ settingsModel.aiSettings.value.analysisEnabled ? 'Включена' : 'Выключена' }}</strong>
+                <span class="setting-fact-label">Транскрибация звонка</span>
+                <strong>{{ transcriptionSourceLabel }}</strong>
               </div>
               <div class="setting-fact-row">
                 <span class="setting-fact-label">Интерпретация</span>
-                <strong>{{ settingsModel.aiConfigured.value.analysis ? 'Сервер готов' : 'Нужен API key' }}</strong>
+                <strong>{{ interpretationSourceLabel }}</strong>
               </div>
               <div class="setting-fact-row">
-                <span class="setting-fact-label">Транскрибация</span>
-                <strong>{{ settingsModel.aiConfigured.value.transcription ? 'Сервер готов' : 'Нужен STT key' }}</strong>
+                <span class="setting-fact-label">API-разбор</span>
+                <strong>{{ apiInterpretationStatusLabel }}</strong>
               </div>
             </div>
             <div class="setting-toggle setting-toggle--vuetify">
-              <span class="setting-toggle__copy"><span class="setting-field__label">Включить ИИ-аналитику</span></span>
-              <VSwitch v-model="settingsModel.aiSettings.value.analysisEnabled" color="primary" hide-details inset :loading="settingsModel.aiSettingsPending.value" />
+              <span class="setting-toggle__copy"><span class="setting-field__label">Провайдер интерпретации</span></span>
+              <VSelect
+                v-model="settingsModel.aiSettings.value.interpretationProvider"
+                :items="settingsModel.interpretationProviderOptions.value"
+                item-title="title"
+                item-value="value"
+                variant="outlined"
+                hide-details="auto"
+                class="mt-2"
+              />
             </div>
+            <VSelect
+              v-model="settingsModel.aiSettings.value.transcriptionProvider"
+              :items="settingsModel.transcriptionProviderOptions.value"
+              item-title="title"
+              item-value="value"
+              label="Провайдер транскрибации"
+              variant="outlined"
+              hide-details="auto"
+              class="mt-4"
+              :disabled="!settingsModel.transcriptionProviderOptions.value.length"
+            />
+            <VSelect
+              v-model="settingsModel.aiSettings.value.interpretationModel"
+              :items="settingsModel.aiModelOptions.value.interpretation"
+              label="API-модель интерпретации"
+              variant="outlined"
+              hide-details="auto"
+              clearable
+              class="mt-4"
+              :disabled="settingsModel.runtimeInterpretationProvider.value !== 'api' || !settingsModel.aiConfigured.value.interpretationApi"
+            />
+            <VSelect
+              v-model="settingsModel.aiSettings.value.transcriptionModel"
+              :items="settingsModel.aiModelOptions.value.transcription"
+              label="API-модель транскрибации"
+              variant="outlined"
+              hide-details="auto"
+              clearable
+              class="mt-2"
+              :disabled="settingsModel.runtimeTranscriptionProvider.value !== 'api' || !settingsModel.aiConfigured.value.transcriptionApi"
+            />
+            <p class="setting-card__meta mt-2">{{ optionalModelHint }}</p>
             <VAlert v-if="settingsModel.aiSettingsError.value" type="info" class="mt-4">
               {{ settingsModel.aiSettingsError.value }}
             </VAlert>

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { HybridControlCallInsight, HybridControlCoordinationBrief } from './project'
 
 export const COMMUNICATION_ACTOR_ROLES = ['admin', 'designer', 'client', 'contractor', 'seller', 'manager', 'service'] as const
 export const COMMUNICATION_ROOM_KINDS = ['project', 'group', 'direct'] as const
@@ -103,6 +104,8 @@ export interface ProjectCommunicationBootstrap {
   roomTitle: string
   actor: ProjectCommunicationActor
   roomParticipants: ProjectCommunicationRoomParticipant[]
+  coordination: HybridControlCoordinationBrief
+  callInsights: HybridControlCallInsight[]
   e2ee: {
     protocol: 'e2ee-v1'
     keyAgreement: 'ECDH-P256'

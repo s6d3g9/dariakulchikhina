@@ -67,6 +67,229 @@
       <section class="hpc-section">
         <div class="hpc-section__head">
           <div>
+            <p class="hpc-section__label">Manager Agents</p>
+            <h3 class="hpc-section__title">Агенты менеджмента и сценарии коммуникации</h3>
+          </div>
+        </div>
+
+        <div class="hpc-agent-list">
+          <article v-for="agent in control.managerAgents" :key="agent.id" class="hpc-agent-card">
+            <div class="hpc-phase-card__head">
+              <div>
+                <p class="hpc-phase-card__kicker">{{ getManagerAgentRoleLabel(agent.role) }}</p>
+                <h4 class="hpc-phase-card__title">{{ agent.title }}</h4>
+              </div>
+              <div class="hpc-phase-card__head-right">
+                <span class="hpc-chip">действий: {{ getAgentRecommendationCount(agent.id) }}</span>
+                <label class="hpc-agent-toggle">
+                  <input v-model="agent.enabled" type="checkbox" @change="save">
+                  <span>{{ agent.enabled ? 'активен' : 'выключен' }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="hpc-grid">
+              <div class="u-field">
+                <label class="u-field__label">Основной канал</label>
+                <select v-model="agent.linkedChannel" class="u-status-sel" @change="save">
+                  <option v-for="option in communicationChannelOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+              </div>
+              <div class="u-field">
+                <label class="u-field__label">Ритм, дней</label>
+                <input v-model.number="agent.cadenceDays" type="number" min="1" max="90" class="glass-input" @blur="save" />
+              </div>
+              <div class="u-field u-field--full">
+                <label class="u-field__label">Миссия</label>
+                <textarea v-model="agent.mission" class="glass-input u-ta" rows="2" @blur="save" />
+              </div>
+              <div class="u-field u-field--full">
+                <label class="u-field__label">Заметка менеджера</label>
+                <textarea v-model="agent.notes" class="glass-input u-ta" rows="2" @blur="save" />
+              </div>
+            </div>
+
+            <div class="hpc-agent-targets">
+              <span v-for="role in agent.targetRoles" :key="`${agent.id}-${role}`" class="hpc-chip">{{ getStakeholderRoleLabel(role) }}</span>
+            </div>
+          </article>
+        </div>
+
+        <div class="hpc-subsection">
+          <div class="hpc-subsection__head">
+            <div>
+              <p class="hpc-section__label">Communication Playbook</p>
+              <h4 class="hpc-phase-card__title">Протоколы handoff, approval и эскалации</h4>
+            </div>
+            <button type="button" class="a-btn-sm" @click="addCommunicationRule">добавить правило</button>
+          </div>
+
+          <div class="hpc-playbook-list">
+            <article v-for="(rule, index) in control.communicationPlaybook" :key="rule.id" class="hpc-playbook-card">
+              <div class="hpc-phase-card__head">
+                <div>
+                  <p class="hpc-phase-card__kicker">{{ getCommunicationChannelLabel(rule.linkedChannel) }}</p>
+                  <h4 class="hpc-phase-card__title">{{ rule.title }}</h4>
+                </div>
+                <div class="hpc-phase-card__head-right">
+                  <button type="button" class="a-btn-sm a-btn-danger" @click="removeCommunicationRule(index)">удалить</button>
+                </div>
+              </div>
+
+              <div class="hpc-grid">
+                <div class="u-field">
+                  <label class="u-field__label">Название протокола</label>
+                  <input v-model="rule.title" class="glass-input" @blur="save" />
+                </div>
+                <div class="u-field">
+                  <label class="u-field__label">Владелец сценария</label>
+                  <select v-model="rule.ownerAgentId" class="u-status-sel" @change="save">
+                    <option v-for="option in managerAgentOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                  </select>
+                </div>
+                <div class="u-field">
+                  <label class="u-field__label">Основной канал</label>
+                  <select v-model="rule.linkedChannel" class="u-status-sel" @change="save">
+                    <option v-for="option in communicationChannelOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                  </select>
+                </div>
+                <div class="u-field">
+                  <label class="u-field__label">Ритм, дней</label>
+                  <input v-model.number="rule.cadenceDays" type="number" min="1" max="90" class="glass-input" @blur="save" />
+                </div>
+                <div class="u-field u-field--full">
+                  <label class="u-field__label">Когда запускать сценарий</label>
+                  <textarea v-model="rule.trigger" class="glass-input u-ta" rows="2" @blur="save" />
+                </div>
+                <div class="u-field u-field--full">
+                  <label class="u-field__label">Шаблон сообщения</label>
+                  <textarea v-model="rule.template" class="glass-input u-ta" rows="2" @blur="save" />
+                </div>
+              </div>
+
+              <div class="hpc-playbook-audience">
+                <button
+                  v-for="option in stakeholderRoleOptions"
+                  :key="`${rule.id}-${option.value}`"
+                  type="button"
+                  class="hpc-chip hpc-chip--toggle"
+                  :class="{ 'hpc-chip--active': hasRuleAudience(rule, option.value) }"
+                  @click="toggleRuleAudience(rule, option.value)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="hpc-recommendation-list">
+          <article v-for="recommendation in coordinationBrief.recommendations" :key="recommendation.id" class="hpc-recommendation-card">
+            <div class="hpc-phase-card__head">
+              <div>
+                <p class="hpc-phase-card__kicker">{{ recommendation.channelLabel }}</p>
+                <h4 class="hpc-phase-card__title">{{ recommendation.title }}</h4>
+              </div>
+              <div class="hpc-phase-card__head-right">
+                <span class="hpc-pill" :class="`hpc-pill--${recommendation.tone}`">{{ recommendation.ownerAgentTitle }}</span>
+              </div>
+            </div>
+            <p class="hpc-recommendation-text">{{ recommendation.reason }}</p>
+            <p class="hpc-recommendation-text hpc-recommendation-text--message">{{ recommendation.suggestedMessage }}</p>
+            <div class="hpc-agent-targets">
+              <span v-for="label in recommendation.audienceLabels" :key="`${recommendation.id}-${label}`" class="hpc-chip">{{ label }}</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="hpc-section">
+        <div class="hpc-section__head">
+          <div>
+            <p class="hpc-section__label">Call Intelligence</p>
+            <h3 class="hpc-section__title">Звонки, которые меняют проект</h3>
+          </div>
+        </div>
+
+        <div class="hpc-grid">
+          <div class="u-field">
+            <label class="u-field__label">Название звонка</label>
+            <input v-model="callInsightDraft.title" class="glass-input" placeholder="Например, созвон по согласованию кухни" />
+          </div>
+          <div class="u-field">
+            <label class="u-field__label">Связанная фаза</label>
+            <select v-model="callInsightDraft.relatedPhaseKey" class="u-status-sel">
+              <option value="">авто / без привязки</option>
+              <option v-for="phase in control.phases" :key="phase.id" :value="phase.phaseKey">{{ phase.title }}</option>
+            </select>
+          </div>
+          <div class="u-field u-field--full">
+            <label class="u-field__label">Краткий конспект</label>
+            <textarea v-model="callInsightDraft.summary" class="glass-input u-ta" rows="3" placeholder="Что решили, что зависло, что нужно сделать дальше" />
+          </div>
+          <div class="u-field u-field--full">
+            <label class="u-field__label">Транскрипт или выдержка звонка</label>
+            <textarea v-model="callInsightDraft.transcript" class="glass-input u-ta" rows="5" placeholder="Сюда можно вставить расшифровку звонка из мессенджера, а система сама выделит решения, блокеры и следующие шаги" />
+          </div>
+        </div>
+
+        <div class="hpc-section__tools">
+          <button type="button" class="a-btn-save" :disabled="callInsightSaving || !callInsightDraft.summary.trim()" @click="submitCallInsight">
+            {{ callInsightSaving ? 'сохраняем...' : 'добавить звонок в проект' }}
+          </button>
+          <p v-if="callInsightStatus" class="hpc-recommendation-text">{{ callInsightStatus }}</p>
+        </div>
+
+        <div v-if="control.callInsights.length" class="hpc-call-insight-list">
+          <article v-for="insight in control.callInsights" :key="insight.id" class="hpc-call-insight-card">
+            <div class="hpc-phase-card__head">
+              <div>
+                <p class="hpc-phase-card__kicker">{{ formatCallInsightDate(insight.happenedAt || insight.createdAt) }}</p>
+                <h4 class="hpc-phase-card__title">{{ insight.title }}</h4>
+              </div>
+              <div class="hpc-phase-card__head-right">
+                <span class="hpc-pill" :class="`hpc-pill--${insight.tone}`">{{ getHealthTone(insight.tone) }}</span>
+                <span v-if="getCallInsightActorLabel(insight)" class="hpc-chip">{{ getCallInsightActorLabel(insight) }}</span>
+                <span v-if="insight.relatedPhaseKey" class="hpc-chip">{{ getPhaseTitleByKey(insight.relatedPhaseKey) }}</span>
+                <span v-if="insight.appliedTaskIds?.length" class="hpc-chip">в задачах: {{ insight.appliedTaskIds.length }}</span>
+                <button
+                  v-if="insight.nextSteps.length"
+                  type="button"
+                  class="a-btn-sm"
+                  :disabled="callInsightApplyPendingId === insight.id"
+                  @click="applyCallInsightToSprint(insight.id)"
+                >
+                  {{ callInsightApplyPendingId === insight.id ? 'применяем...' : (insight.appliedTaskIds?.length ? 'досинхронизировать задачи' : 'в активный спринт') }}
+                </button>
+              </div>
+            </div>
+            <p class="hpc-recommendation-text hpc-recommendation-text--message">{{ insight.summary }}</p>
+            <div v-if="insight.decisions.length" class="hpc-call-insight-block">
+              <p class="hpc-phase-card__kicker">Решения</p>
+              <div class="hpc-agent-targets">
+                <span v-for="item in insight.decisions" :key="`${insight.id}-decision-${item}`" class="hpc-chip">{{ item }}</span>
+              </div>
+            </div>
+            <div v-if="insight.nextSteps.length" class="hpc-call-insight-block">
+              <p class="hpc-phase-card__kicker">Следующие шаги</p>
+              <div class="hpc-call-insight-listing">
+                <p v-for="item in insight.nextSteps" :key="`${insight.id}-next-${item}`" class="hpc-recommendation-text">{{ item }}</p>
+              </div>
+            </div>
+            <div v-if="insight.blockers.length" class="hpc-call-insight-block">
+              <p class="hpc-phase-card__kicker">Поднятые блокеры</p>
+              <div class="hpc-call-insight-listing">
+                <p v-for="item in insight.blockers" :key="`${insight.id}-blocker-${item}`" class="hpc-recommendation-text">{{ item }}</p>
+              </div>
+            </div>
+          </article>
+        </div>
+        <p v-else class="hpc-recommendation-text">Пока нет импортированных звонков. Сюда можно вставлять конспекты и транскрипты после созвонов.</p>
+      </section>
+
+      <section class="hpc-section">
+        <div class="hpc-section__head">
+          <div>
             <p class="hpc-section__label">Матрица исполнения</p>
             <h3 class="hpc-section__title">Табличный вид с таймлайном и перетаскиванием</h3>
           </div>
@@ -83,6 +306,14 @@
                 {{ option.label }}
               </button>
             </div>
+            <button
+              v-if="hasCollapsibleTimelinePhases"
+              type="button"
+              class="hpc-scale-switch__btn"
+              @click="toggleAllTimelinePhases"
+            >
+              {{ allTimelinePhasesCollapsed ? 'раскрыть все фазы' : 'свернуть все фазы' }}
+            </button>
           </div>
           <div class="hpc-summary__meta">
             <span class="hpc-saved">перетащите строку для порядка</span>
@@ -122,7 +353,7 @@
             </div>
 
             <div
-              v-for="row in timelineRows"
+              v-for="row in visibleTimelineRows"
               :key="row.id"
               class="hpc-board__row"
               :class="{
@@ -150,6 +381,14 @@
                   <div class="hpc-board__entity-top">
                     <span class="hpc-board__type">{{ row.typeLabel }}</span>
                     <span class="hpc-pill" :class="`hpc-pill--${row.tone}`">{{ row.statusLabel }}</span>
+                    <button
+                      v-if="row.type === 'phase' && getTimelinePhaseSprintCount(row.phaseKey)"
+                      type="button"
+                      class="hpc-board__toggle"
+                      @click="toggleTimelinePhase(row.phaseKey)"
+                    >
+                      {{ isTimelinePhaseCollapsed(row.phaseKey) ? `показать ${getTimelinePhaseSprintCount(row.phaseKey)}` : `свернуть ${getTimelinePhaseSprintCount(row.phaseKey)}` }}
+                    </button>
                   </div>
                   <strong class="hpc-board__title">{{ row.title }}</strong>
                   <div class="hpc-board__meta-line">{{ row.meta }}</div>
@@ -383,7 +622,15 @@
 </template>
 
 <script setup lang="ts">
-import { buildHybridControlSummary, ensureHybridControl } from '~~/shared/utils/project-control'
+import {
+  buildHybridControlSummary,
+  buildHybridCoordinationBrief,
+  ensureHybridControl,
+  getHealthTone,
+  getHybridCommunicationChannelLabel,
+  getHybridControlManagerAgentRoleLabel,
+  getHybridStakeholderRoleLabel,
+} from '~~/shared/utils/project-control'
 import {
   addTimelineDays,
   buildHybridTimelineBounds,
@@ -399,7 +646,15 @@ import {
   toIsoLocalDate,
   type HybridTimelineRow,
 } from '~~/shared/utils/project-control-timeline'
-import type { HybridControl, HybridControlTask } from '~~/shared/types/project'
+import type {
+  HybridControl,
+  HybridControlCallInsight,
+  HybridControlCommunicationChannel,
+  HybridControlCommunicationRule,
+  HybridControlManagerAgentRole,
+  HybridControlStakeholderRole,
+  HybridControlTask,
+} from '~~/shared/types/project'
 
 const props = defineProps<{ slug: string }>()
 
@@ -466,8 +721,88 @@ watch(project, (value) => {
 }, { immediate: true })
 
 const summary = computed(() => buildHybridControlSummary(control))
+const coordinationBrief = computed(() => buildHybridCoordinationBrief(control, { projectSlug: props.slug }))
+
+const communicationChannelOptions = [
+  'project-room',
+  'direct-thread',
+  'handoff',
+  'approval',
+  'daily-digest',
+].map(value => ({
+  value,
+  label: getHybridCommunicationChannelLabel(value),
+})) as Array<{ value: HybridControlCommunicationChannel, label: string }>
+
+const stakeholderRoleOptions = [
+  'admin',
+  'manager',
+  'designer',
+  'client',
+  'contractor',
+  'seller',
+  'service',
+].map(value => ({
+  value,
+  label: getHybridStakeholderRoleLabel(value),
+})) as Array<{ value: HybridControlStakeholderRole, label: string }>
+
+const managerAgentOptions = computed(() => control.managerAgents.map(agent => ({
+  value: agent.id,
+  label: agent.title,
+})))
+
+const callInsightDraft = reactive({
+  title: '',
+  relatedPhaseKey: '',
+  summary: '',
+  transcript: '',
+})
+
+const callInsightSaving = ref(false)
+const callInsightStatus = ref('')
+const callInsightApplyPendingId = ref('')
 
 const timelineRows = computed(() => buildHybridTimelineRows(control))
+
+const timelineCollapsedPhases = reactive<Record<string, boolean>>({})
+
+watch(() => control.phases.map(phase => phase.phaseKey), (phaseKeys) => {
+  const activeKeys = new Set(phaseKeys)
+
+  phaseKeys.forEach((phaseKey) => {
+    if (!(phaseKey in timelineCollapsedPhases)) {
+      timelineCollapsedPhases[phaseKey] = false
+    }
+  })
+
+  Object.keys(timelineCollapsedPhases).forEach((phaseKey) => {
+    if (!activeKeys.has(phaseKey)) {
+      delete timelineCollapsedPhases[phaseKey]
+    }
+  })
+}, { immediate: true })
+
+const timelineSprintCountByPhase = computed(() => control.sprints.reduce<Record<string, number>>((acc, sprint) => {
+  if (!sprint.linkedPhaseKey) return acc
+  acc[sprint.linkedPhaseKey] = (acc[sprint.linkedPhaseKey] || 0) + 1
+  return acc
+}, {}))
+
+const collapsibleTimelinePhaseKeys = computed(() => Object.entries(timelineSprintCountByPhase.value)
+  .filter(([, count]) => count > 0)
+  .map(([phaseKey]) => phaseKey))
+
+const hasCollapsibleTimelinePhases = computed(() => collapsibleTimelinePhaseKeys.value.length > 0)
+
+const allTimelinePhasesCollapsed = computed(() => hasCollapsibleTimelinePhases.value
+  && collapsibleTimelinePhaseKeys.value.every(phaseKey => timelineCollapsedPhases[phaseKey]))
+
+const visibleTimelineRows = computed(() => timelineRows.value.filter((row) => {
+  if (row.type === 'phase') return true
+  if (!row.linkedPhaseKey) return true
+  return !timelineCollapsedPhases[row.linkedPhaseKey]
+}))
 
 const timelineBounds = computed(() => buildHybridTimelineBounds(timelineRows.value, timelineScale.value))
 
@@ -481,6 +816,8 @@ const timelineGridStyle = computed(() => ({
 
 const timelineEditingEnabled = computed(() => timelineScale.value !== 'hours')
 const timelineBoardStyle = computed(() => ({
+  '--hpc-entity-column-width': '260px',
+  '--hpc-period-column-width': '170px',
   minWidth: `${430 + Math.max(timelineColumns.value.length, 1) * getHybridTimelineColumnWidth(timelineScale.value)}px`,
 }))
 
@@ -574,6 +911,96 @@ function removeBlocker(index: number) {
   save()
 }
 
+function addCommunicationRule() {
+  control.communicationPlaybook.push({
+    id: `hybrid-rule-${Date.now()}`,
+    title: `Правило ${control.communicationPlaybook.length + 1}`,
+    trigger: 'Опишите условие, при котором запускается сценарий.',
+    linkedChannel: 'project-room',
+    audience: ['manager', 'designer'],
+    ownerAgentId: managerAgentOptions.value[0]?.value || '',
+    cadenceDays: 7,
+    template: 'Коротко обозначьте статус, ожидание и следующий шаг.',
+  })
+  save()
+}
+
+function removeCommunicationRule(index: number) {
+  control.communicationPlaybook.splice(index, 1)
+  save()
+}
+
+async function submitCallInsight() {
+  if (!callInsightDraft.summary.trim() || callInsightSaving.value) return
+
+  callInsightSaving.value = true
+  callInsightStatus.value = ''
+
+  try {
+    const response = await $fetch<{
+      hybridControl: HybridControl
+      meta: {
+        blockerCountAdded: number
+        checkpointCreated: boolean
+      }
+    }>(`/api/projects/${props.slug}/communications/call-insights`, {
+      method: 'POST',
+      body: {
+        title: callInsightDraft.title,
+        relatedPhaseKey: callInsightDraft.relatedPhaseKey,
+        summary: callInsightDraft.summary,
+        transcript: callInsightDraft.transcript,
+      },
+    })
+
+    Object.assign(control, ensureHybridControl(response.hybridControl, project.value || {}))
+    callInsightDraft.title = ''
+    callInsightDraft.relatedPhaseKey = ''
+    callInsightDraft.summary = ''
+    callInsightDraft.transcript = ''
+    callInsightStatus.value = response.meta.checkpointCreated
+      ? `Звонок добавлен: блокеров поднято ${response.meta.blockerCountAdded}, контрольная точка создана.`
+      : `Звонок добавлен: блокеров поднято ${response.meta.blockerCountAdded}.`
+    markSaved()
+    await refresh()
+  } catch {
+    callInsightStatus.value = 'Не удалось сохранить инсайты звонка.'
+  } finally {
+    callInsightSaving.value = false
+  }
+}
+
+async function applyCallInsightToSprint(insightId: string) {
+  if (!insightId || callInsightApplyPendingId.value) return
+
+  callInsightApplyPendingId.value = insightId
+  callInsightStatus.value = ''
+
+  try {
+    const response = await $fetch<{
+      hybridControl: HybridControl
+      meta: {
+        createdTaskCount: number
+        createdSprint: boolean
+      }
+    }>(`/api/projects/${props.slug}/communications/call-insights/${insightId}/apply`, {
+      method: 'POST',
+      body: {},
+    })
+
+    Object.assign(control, ensureHybridControl(response.hybridControl, project.value || {}))
+    callInsightStatus.value = response.meta.createdTaskCount
+      ? `Задач создано: ${response.meta.createdTaskCount}${response.meta.createdSprint ? '. Для них автоматически создан follow-up спринт.' : '.'}`
+      : 'Новых задач не создано: все следующие шаги уже есть в спринте.'
+    markSaved()
+    await refresh()
+  } catch {
+    callInsightStatus.value = 'Не удалось превратить инсайт звонка в задачи спринта.'
+  } finally {
+    callInsightApplyPendingId.value = ''
+  }
+}
+
 function formatDateRange(startDate?: string, endDate?: string) {
   return formatHybridTimelineDateRange(startDate, endDate)
 }
@@ -588,6 +1015,102 @@ function getPhaseById(id: string) {
 
 function getSprintById(id: string) {
   return control.sprints.find(sprint => sprint.id === id) || null
+}
+
+function getManagerAgentRoleLabel(role: HybridControlManagerAgentRole) {
+  return getHybridControlManagerAgentRoleLabel(role)
+}
+
+function getCommunicationChannelLabel(channel: HybridControlCommunicationChannel) {
+  return getHybridCommunicationChannelLabel(channel)
+}
+
+function getStakeholderRoleLabel(role: HybridControlStakeholderRole) {
+  return getHybridStakeholderRoleLabel(role)
+}
+
+function getPhaseTitleByKey(phaseKey?: string) {
+  if (!phaseKey) return 'Без привязки'
+  return control.phases.find(phase => phase.phaseKey === phaseKey)?.title || phaseKey
+}
+
+function formatCallInsightDate(value?: string) {
+  if (!value) return 'без даты'
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return value
+
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(parsed)
+}
+
+function getCallInsightActorLabel(insight: HybridControlCallInsight) {
+  const roleLabel = insight.actorRole ? getStakeholderRoleLabel(insight.actorRole) : ''
+  const actorName = insight.actorName || ''
+
+  if (roleLabel && actorName) return `${roleLabel}: ${actorName}`
+  return actorName || roleLabel
+}
+
+function hasRuleAudience(rule: HybridControlCommunicationRule, role: HybridControlStakeholderRole) {
+  return rule.audience.includes(role)
+}
+
+function toggleRuleAudience(rule: HybridControlCommunicationRule, role: HybridControlStakeholderRole) {
+  const index = rule.audience.indexOf(role)
+
+  if (index >= 0) {
+    if (rule.audience.length === 1) return
+    rule.audience.splice(index, 1)
+  } else {
+    rule.audience.push(role)
+  }
+
+  save()
+}
+
+function getAgentRecommendationCount(agentId: string) {
+  return coordinationBrief.value.agents.find(agent => agent.id === agentId)?.recommendedActionCount || 0
+}
+
+function getTimelinePhaseSprintCount(phaseKey?: string) {
+  if (!phaseKey) return 0
+  return timelineSprintCountByPhase.value[phaseKey] || 0
+}
+
+function isTimelinePhaseCollapsed(phaseKey?: string) {
+  if (!phaseKey) return false
+  return !!timelineCollapsedPhases[phaseKey]
+}
+
+function toggleTimelinePhase(phaseKey?: string) {
+  if (!phaseKey || !getTimelinePhaseSprintCount(phaseKey)) return
+  timelineCollapsedPhases[phaseKey] = !timelineCollapsedPhases[phaseKey]
+}
+
+function collapseAllTimelinePhases() {
+  collapsibleTimelinePhaseKeys.value.forEach((phaseKey) => {
+    timelineCollapsedPhases[phaseKey] = true
+  })
+}
+
+function expandAllTimelinePhases() {
+  collapsibleTimelinePhaseKeys.value.forEach((phaseKey) => {
+    timelineCollapsedPhases[phaseKey] = false
+  })
+}
+
+function toggleAllTimelinePhases() {
+  if (allTimelinePhasesCollapsed.value) {
+    expandAllTimelinePhases()
+    return
+  }
+  collapseAllTimelinePhases()
 }
 
 function reorderItems<T extends { id: string }>(items: T[], sourceId: string, targetId: string) {
@@ -858,6 +1381,17 @@ function onDragEnd() {
   background: color-mix(in srgb, var(--glass-text) 3%, transparent);
 }
 
+.hpc-chip--toggle {
+  cursor: pointer;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.hpc-chip--active {
+  color: var(--glass-text);
+  border-color: color-mix(in srgb, var(--ds-accent) 22%, transparent);
+  background: color-mix(in srgb, var(--ds-accent) 10%, transparent);
+}
+
 .hpc-pill--stable { color: var(--ds-success); }
 .hpc-pill--warning { color: var(--ds-warning); }
 .hpc-pill--critical { color: var(--ds-error); }
@@ -901,6 +1435,100 @@ function onDragEnd() {
   gap: 14px;
 }
 
+.hpc-agent-list,
+.hpc-recommendation-list {
+  display: grid;
+  gap: 14px;
+}
+
+.hpc-subsection {
+  display: grid;
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.hpc-subsection__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hpc-playbook-list {
+  display: grid;
+  gap: 14px;
+}
+
+.hpc-call-insight-list {
+  display: grid;
+  gap: 14px;
+}
+
+.hpc-agent-card,
+.hpc-recommendation-card {
+  display: grid;
+  gap: 14px;
+  padding: 0 0 0 18px;
+  border-left: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+}
+
+.hpc-call-insight-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.hpc-playbook-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.hpc-agent-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hpc-playbook-audience {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hpc-call-insight-block,
+.hpc-call-insight-listing {
+  display: grid;
+  gap: 8px;
+}
+
+.hpc-agent-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: color-mix(in srgb, var(--glass-text) 56%, transparent);
+}
+
+.hpc-recommendation-text {
+  margin: 0;
+  font-size: .8rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--glass-text) 68%, transparent);
+}
+
+.hpc-recommendation-text--message {
+  color: var(--glass-text);
+}
+
 .hpc-board-wrap {
   overflow-x: auto;
   border-top: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
@@ -913,7 +1541,7 @@ function onDragEnd() {
 .hpc-board__head,
 .hpc-board__row {
   display: grid;
-  grid-template-columns: minmax(260px, 1.15fr) 170px minmax(520px, 2fr);
+  grid-template-columns: var(--hpc-entity-column-width, 260px) var(--hpc-period-column-width, 170px) minmax(520px, 2fr);
   gap: 0;
   align-items: stretch;
 }
@@ -949,6 +1577,20 @@ function onDragEnd() {
   padding: 12px 0;
 }
 
+.hpc-board__cell--entity,
+.hpc-board__cell--period {
+  position: sticky;
+  z-index: 3;
+}
+
+.hpc-board__cell--entity {
+  left: 0;
+}
+
+.hpc-board__cell--period {
+  left: var(--hpc-entity-column-width, 260px);
+}
+
 .hpc-board__head .hpc-board__cell,
 .hpc-board__head .hpc-board__timeline-head-stack,
 .hpc-board__head .hpc-board__timeline-groups,
@@ -961,12 +1603,23 @@ function onDragEnd() {
 .hpc-board__cell--entity,
 .hpc-board__cell--period {
   padding-right: 14px;
+  background: var(--glass-page-bg);
 }
 
 .hpc-board__cell--period {
   border-left: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
   border-right: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
   padding-left: 14px;
+}
+
+.hpc-board__row--phase .hpc-board__cell--entity,
+.hpc-board__row--phase .hpc-board__cell--period {
+  background: color-mix(in srgb, var(--glass-text) 2%, var(--glass-page-bg));
+}
+
+.hpc-board__head .hpc-board__cell--entity,
+.hpc-board__head .hpc-board__cell--period {
+  z-index: 9;
 }
 
 .hpc-board__entity {
@@ -1002,6 +1655,21 @@ function onDragEnd() {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.hpc-board__toggle {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--glass-text) 54%, transparent);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.hpc-board__toggle:hover {
+  color: var(--glass-text);
+  border-color: color-mix(in srgb, var(--glass-text) 18%, transparent);
 }
 
 .hpc-board__type {
