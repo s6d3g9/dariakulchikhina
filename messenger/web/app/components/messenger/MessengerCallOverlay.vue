@@ -35,7 +35,7 @@ const showCallLayer = computed(() => Boolean(
   || calls.callError.value
   || calls.callReview.value,
 ))
-const showDetachedStageActions = computed(() => Boolean(!headerActiveCall.value))
+const showDetachedStageActions = computed(() => Boolean(!headerActiveCall.value && !showCallAnalysisPanel.value))
 const miniWindowPosition = ref({ x: 12, y: 12 })
 const miniWindowSize = ref({ width: 176, height: 220 })
 const miniDragPointerId = ref<number | null>(null)
@@ -45,10 +45,14 @@ const miniLastPointerSample = ref<{ x: number, y: number, time: number } | null>
 const miniHasDragged = ref(false)
 const weakNetworkVisible = computed(() => calls.networkQuality.value === 'weak' || calls.networkQuality.value === 'reconnecting' || calls.networkQuality.value === 'lost')
 const miniOverlayTitle = computed(() => calls.activeCall.value?.peerDisplayName || 'Звонок')
-const showDesktopTranscriptPopup = computed(() => Boolean(
-  (calls.activeCall.value && calls.activeCall.value.mode === 'audio' && calls.viewMode.value !== 'mini')
-  || (!calls.activeCall.value && calls.callReview.value),
+const showCallAnalysisPanel = computed(() => Boolean(
+  calls.analysisPanelOpen.value
+  && (
+    (calls.activeCall.value && calls.activeCall.value.mode === 'audio' && calls.viewMode.value !== 'mini')
+    || (!calls.activeCall.value && calls.callReview.value)
+  ),
 ))
+const showMobileCallAnalysisPanel = computed(() => Boolean(showCallAnalysisPanel.value && navigation.activeSection.value === 'chat'))
 const currentInterpretation = computed(() => calls.analysisInterpretations.value[calls.selectedAnalysisToolId.value] || '')
 const miniOverlaySubtitle = computed(() => {
   if (weakNetworkVisible.value && calls.networkHint.value) {
@@ -316,7 +320,12 @@ onBeforeUnmount(() => {
 
     <p v-if="calls.callError.value" class="call-error">{{ calls.callError.value }}</p>
 
-    <aside v-if="showDesktopTranscriptPopup" class="call-transcript-popup" aria-label="Транскрибация звонка">
+    <aside
+      v-if="showCallAnalysisPanel"
+      class="call-transcript-popup"
+      :class="{ 'call-transcript-popup--mobile': showMobileCallAnalysisPanel }"
+      aria-label="Транскрибация звонка"
+    >
       <div class="call-transcript-popup__head">
         <div>
           <p class="call-transcript-popup__eyebrow">ИИ-анализ звонка</p>
@@ -350,6 +359,14 @@ onBeforeUnmount(() => {
             @click="calls.clearCallReview()"
           >
             Скрыть
+          </VBtn>
+          <VBtn
+            class="call-transcript-popup__btn"
+            size="small"
+            variant="text"
+            @click="calls.closeAnalysisPanel()"
+          >
+            Закрыть
           </VBtn>
         </div>
       </div>

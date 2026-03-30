@@ -7,6 +7,7 @@ const agentsModel = useMessengerAgents()
 const calls = useMessengerCalls()
 const navigation = useMessengerConversationState()
 const holdActions = useMessengerHoldActions()
+const { agentsEnabled } = useMessengerFeatures()
 const searchDraft = ref('')
 const actionError = ref('')
 const searchOpen = ref(false)
@@ -336,6 +337,18 @@ const peopleConversations = computed(() => conversations.conversations.value.fil
 const agentConversations = computed(() => conversations.conversations.value.filter(chat => chat.peerType === 'agent'))
 
 function ensureActiveFolderForMode(mode = activeChatMode.value) {
+  if (!agentsEnabled.value) {
+    if (activeChatMode.value !== 'people') {
+      activeChatMode.value = 'people'
+    }
+
+    if (activeFolderKey.value !== 'all' && !manualFolders.value.some(folder => folder.key === activeFolderKey.value)) {
+      activeFolderKey.value = 'all'
+    }
+
+    return
+  }
+
   if (mode === 'systems') {
     const systemFolderSelected = systemFolders.value.some(folder => folder.key === activeFolderKey.value)
     if (!systemFolderSelected && activeFolderKey.value !== AGENT_SYSTEMS_FOLDER_KEY) {
@@ -355,6 +368,12 @@ function ensureActiveFolderForMode(mode = activeChatMode.value) {
 }
 
 function setChatMode(mode: ChatMode) {
+  if (!agentsEnabled.value && mode !== 'people') {
+    activeChatMode.value = 'people'
+    activeFolderKey.value = 'all'
+    return
+  }
+
   activeChatMode.value = mode
   ensureActiveFolderForMode(mode)
 }
@@ -1059,6 +1078,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
         @click="setChatMode('people')"
       >Люди</button>
       <button
+        v-if="agentsEnabled"
         type="button"
         class="chats-submenu-chip"
         :class="{ 'chats-submenu-chip--active': activeChatMode === 'agents' }"
@@ -1067,6 +1087,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
         @click="setChatMode('agents')"
       >Агенты</button>
       <button
+        v-if="agentsEnabled"
         type="button"
         class="chats-submenu-chip"
         :class="{ 'chats-submenu-chip--active': activeChatMode === 'systems' }"
@@ -1078,7 +1099,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
 
     <!-- Список чатов + FAB -->
     <div class="chats-list-wrap">
-      <div v-if="showAgentSystemsDirectory" class="agent-systems-directory">
+      <div v-if="agentsEnabled && showAgentSystemsDirectory" class="agent-systems-directory">
         <button
           v-for="card in systemDirectoryCards"
           :key="card.key"
@@ -1097,7 +1118,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
       </div>
 
       <VList v-else class="section-list" bg-color="transparent" lines="two">
-        <div v-if="activeAgentSystemCard" class="agent-system-banner">
+        <div v-if="agentsEnabled && activeAgentSystemCard" class="agent-system-banner">
           <div class="agent-system-banner__head">
             <div class="agent-system-banner__copy">
               <p class="agent-system-banner__title">{{ activeAgentSystemCard.label }}</p>
@@ -1223,6 +1244,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
 
       <!-- FAB -->
       <button
+        v-if="agentsEnabled"
         type="button"
         class="chats-fab"
         aria-label="Создать чат"
@@ -1346,7 +1368,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
     </VDialog>
 
     <!-- Диалог: новый чат (FAB) -->
-    <VDialog v-model="showNewChatDialog" max-width="520">
+    <VDialog v-if="agentsEnabled" v-model="showNewChatDialog" max-width="520">
       <VCard>
         <VCardTitle>Новый чат</VCardTitle>
         <VCardText>
@@ -1440,7 +1462,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
       </VCard>
     </VDialog>
 
-    <VDialog v-model="showEditSystemDialog" max-width="520">
+    <VDialog v-if="agentsEnabled" v-model="showEditSystemDialog" max-width="520">
       <VCard>
         <VCardTitle>Настроить систему</VCardTitle>
         <VCardText>
@@ -1483,7 +1505,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
       </VCard>
     </VDialog>
 
-    <VDialog v-model="showBroadcastDialog" max-width="560">
+    <VDialog v-if="agentsEnabled" v-model="showBroadcastDialog" max-width="560">
       <VCard>
         <VCardTitle>Запустить систему</VCardTitle>
         <VCardText>

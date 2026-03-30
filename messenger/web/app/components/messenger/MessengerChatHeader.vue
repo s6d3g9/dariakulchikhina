@@ -13,6 +13,8 @@ const props = defineProps<{
   callSecurityLabel?: string
   callSecurityTitle?: string
   canToggleAudioCall?: boolean
+  showCallAnalysis?: boolean
+  callAnalysisActive?: boolean
   canToggleVideo?: boolean
   videoCallDisabled?: boolean
   microphoneEnabled?: boolean
@@ -27,6 +29,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'toggle-details': []
   'toggle-audio-call': []
+  'toggle-call-analysis': []
   'start-video-call': []
   'reject-call': []
   'accept-call': []
@@ -249,6 +252,18 @@ const nextCallViewModeLabel = computed(() => {
                   <VIcon :color="audioCall ? 'primary' : undefined">mdi-phone</VIcon>
                 </VBtn>
                 <span v-else class="chat-header__icon-slot" aria-hidden="true"></span>
+                <VBtn
+                  v-if="showCallActions && showCallAnalysis"
+                  type="button"
+                  class="chat-header__icon-btn"
+                  icon
+                  variant="text"
+                  aria-label="ИИ-анализ звонка"
+                  @click="emit('toggle-call-analysis')"
+                >
+                  <VIcon :color="callAnalysisActive ? 'primary' : undefined">mdi-text-box-search-outline</VIcon>
+                </VBtn>
+                <span v-else-if="showCallActions" class="chat-header__icon-slot" aria-hidden="true"></span>
                 <VBtn
                   v-if="showCallActions"
                   type="button"

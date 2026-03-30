@@ -739,6 +739,7 @@ const securitySummaryText = computed(() => {
 
 const chatLayoutStyle = computed(() => ({
   '--messenger-composer-height': `${composerHeight.value}px`,
+  '--messenger-call-analysis-width': calls.analysisPanelOpen.value ? 'min(32vw, 420px)' : '0px',
 }))
 
 const threadedMessages = computed<MessengerThreadMessage[]>(() => {
@@ -2146,6 +2147,10 @@ async function toggleAudioCall() {
   await startCall('audio')
 }
 
+function toggleCallAnalysis() {
+  calls.toggleAnalysisPanel()
+}
+
 function startEditingMessage(messageId: string, body: string) {
   activeMessageActionsId.value = null
   activeReactionOverlayId.value = null
@@ -2325,6 +2330,7 @@ onBeforeUnmount(() => {
       :class="{
         'section-block--chat-empty': !conversations.activeConversation.value,
         'section-block--chat-details-open': detailsOpen && conversations.activeConversation.value,
+        'section-block--chat-call-analysis-open': calls.analysisPanelOpen.value,
         'section-block--chat-photo-open': photoFeedOpen,
         'section-block--chat-drop-active': desktopDropActive,
         'section-block--chat-drop-pending': dragDropPending,
@@ -2349,6 +2355,8 @@ onBeforeUnmount(() => {
         :call-security-label="headerCallSecurityLabel"
         :call-security-title="headerCallSecurityTitle"
         :can-toggle-audio-call="canToggleAudioCall"
+        :show-call-analysis="Boolean(calls.activeCall.value?.mode === 'audio' || calls.callReview.value)"
+        :call-analysis-active="calls.analysisPanelOpen.value"
         :can-toggle-video="canToggleVideo"
         :video-call-disabled="activeConversationAgent || !conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
         :microphone-enabled="calls.controls.value.microphoneEnabled"
@@ -2360,6 +2368,7 @@ onBeforeUnmount(() => {
         :can-switch-camera="calls.canSwitchCamera.value"
         @toggle-details="toggleDetails"
         @toggle-audio-call="toggleAudioCall"
+        @toggle-call-analysis="toggleCallAnalysis"
         @start-video-call="startCall('video')"
         @reject-call="calls.rejectIncomingCall()"
         @accept-call="calls.acceptIncomingCall()"

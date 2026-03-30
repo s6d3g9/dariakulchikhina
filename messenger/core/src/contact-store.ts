@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 
 import { listMessengerAgents } from './agent-store.ts'
 import type { MessengerUserRecord } from './auth-store.ts'
+import { readMessengerConfig } from './config.ts'
 import { resolveMessengerDataPath } from './storage-paths.ts'
 
 export interface MessengerContactRecord {
@@ -199,7 +200,7 @@ export async function buildContactsOverview(user: MessengerUserRecord, users: Me
   const normalizedQuery = query.trim().toLowerCase()
   const contacts = await listContactsForUser(user.id)
   const invites = await listInvitesForUser(user.id)
-  const agents = await listMessengerAgents()
+  const agents = readMessengerConfig().MESSENGER_ENABLE_AGENTS ? await listMessengerAgents() : []
 
   const matchesQuery = (candidate: MessengerUserRecord) => {
     if (!normalizedQuery) {

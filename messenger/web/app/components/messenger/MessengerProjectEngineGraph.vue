@@ -17,6 +17,7 @@ interface ProjectNodePosition {
   y: number
 }
 
+const runtimeConfig = useRuntimeConfig()
 const projectEngine = useMessengerProjectEngine()
 const selectedContextId = ref<string>('')
 const feedbackMessage = ref('')
@@ -29,7 +30,7 @@ const bootstrapDraft = reactive({
   slug: 'platform-role-cabinets',
   label: 'Кабинеты платформы',
   repositoryId: 'repo-main',
-  rootPath: '/opt/daria-nuxt',
+  rootPath: runtimeConfig.public.messengerProjectRoot || '',
 })
 const subjectDraft = reactive({
   label: '',

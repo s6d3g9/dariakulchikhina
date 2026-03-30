@@ -4,6 +4,7 @@ import { dirname } from 'node:path'
 
 import { getMessengerAgentSettings, resolveMessengerAgentActiveRepository } from './agent-settings-store.ts'
 import { findMessengerAgentById, listMessengerAgents } from './agent-store.ts'
+import { readMessengerConfig } from './config.ts'
 import { resolveMessengerDataPath } from './storage-paths.ts'
 
 export type MessengerProjectTargetKind = 'platform' | 'messenger' | 'external'
@@ -205,6 +206,7 @@ interface MessengerProjectFile {
 }
 
 const STORAGE_PATH = resolveMessengerDataPath('project-engine.json')
+const messengerConfig = readMessengerConfig()
 
 const PROJECT_CAPABILITIES: MessengerProjectCapability[] = ['frontend', 'backend', 'logic', 'styles', 'data', 'qa', 'docs', 'integration']
 const COVERAGE_STATUSES: MessengerProjectCoverageStatus[] = ['planned', 'in-progress', 'review', 'blocked', 'done']
@@ -220,7 +222,7 @@ const PROJECT_TEMPLATES: MessengerProjectTemplateRecord[] = [
       description: 'Синхронизация разработки клиентского, менеджерского, дизайнерского и подрядного кабинетов.',
       targetKind: 'platform',
       repositoryId: 'repo-main',
-      rootPath: '/opt/daria-nuxt',
+      rootPath: messengerConfig.MESSENGER_PROJECT_ROOT,
       defaultBranch: 'main',
       contexts: [
         {

@@ -2329,7 +2329,14 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   overflow: hidden;
   isolation: isolate;
   --messenger-composer-height: 76px;
+  --messenger-call-analysis-width: 0px;
   --messenger-chat-keyboard-offset: var(--messenger-keyboard-offset, 0px);
+}
+
+@media (min-width: 980px) {
+  .section-block--chat.section-block--chat-call-analysis-open {
+    padding-right: calc(var(--messenger-call-analysis-width, 0px) + 18px);
+  }
 }
 
 .chat-reading-shell {
@@ -4072,16 +4079,197 @@ html[data-messenger-keyboard='open'] .section-block--chat {
   display: none;
 }
 
+.call-transcript-popup--mobile {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  bottom: var(--messenger-bottom-bar-height);
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(var(--v-theme-outline), 0.3);
+  background: rgba(var(--v-theme-surface-container-high), 0.98);
+  backdrop-filter: blur(18px);
+  z-index: 44;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.call-transcript-popup--mobile .call-transcript-popup__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(var(--v-theme-outline-variant), 0.35);
+}
+
+.call-transcript-popup--mobile .call-transcript-popup__head h4,
+.call-transcript-popup--mobile .call-transcript-popup__head p {
+  margin: 0;
+}
+
+.call-transcript-popup--mobile .call-transcript-popup__eyebrow {
+  font-size: 11px;
+  line-height: 14px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.call-transcript-popup--mobile .call-transcript-popup__status {
+  margin-top: 4px !important;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.call-transcript-popup--mobile .call-transcript-popup__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.call-transcript-popup--mobile .call-transcript-popup__btn {
+  min-height: 34px !important;
+}
+
+.call-transcript-popup--mobile .call-transcript-popup__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+}
+
+.call-transcript-popup--mobile .call-transcript-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid rgba(var(--v-theme-outline-variant), 0.3);
+  border-radius: 14px;
+  background: rgba(var(--v-theme-surface-container-low), 0.72);
+  overflow: hidden;
+}
+
+.call-transcript-popup--mobile .call-transcript-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(var(--v-theme-outline-variant), 0.25);
+}
+
+.call-transcript-popup--mobile .call-transcript-panel__header h5 {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.call-transcript-popup--mobile .call-transcript-panel__meta {
+  font-size: 11px;
+  line-height: 14px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.call-transcript-popup--mobile .call-transcript-panel__content {
+  min-height: 0;
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.call-transcript-popup--mobile .call-transcript-panel__content--scroll {
+  overflow-y: auto;
+  max-height: none;
+}
+
+.call-transcript-popup--mobile .call-transcript-panel__text,
+.call-transcript-popup--mobile .call-transcript-panel__summary,
+.call-transcript-popup--mobile .call-transcript-panel__analysis,
+.call-transcript-popup--mobile .call-transcript-popup__empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: rgb(var(--v-theme-on-surface));
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.call-transcript-popup--mobile .call-transcript-popup__tool-rail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+}
+
+.call-transcript-popup--mobile .call-transcript-popup__tool-btn {
+  flex: 0 0 auto;
+  min-height: 30px !important;
+  white-space: nowrap;
+}
+
+.call-transcript-popup--mobile .call-transcript-line {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(var(--v-theme-surface-container-low), 0.82);
+  border: 1px solid rgba(var(--v-theme-outline-variant), 0.26);
+}
+
+.call-transcript-popup--mobile .call-transcript-line p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: rgb(var(--v-theme-on-surface));
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.call-transcript-popup--mobile .call-transcript-line__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 14px;
+  color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.call-transcript-popup--mobile .call-transcript-line--peer {
+  background: rgba(var(--v-theme-secondary-container), 0.9);
+}
+
+.call-transcript-popup--mobile .call-transcript-line--you {
+  background: rgba(var(--v-theme-primary-container), 0.88);
+}
+
+.call-transcript-popup--mobile .call-transcript-line--draft {
+  border-style: dashed;
+  opacity: 0.86;
+}
+
 @media (min-width: 980px) {
   .call-transcript-popup {
     position: fixed;
-    top: 18px;
-    right: 18px;
-    width: min(28vw, 380px);
-    max-height: min(68dvh, 620px);
+    top: 0;
+    right: 0;
+    width: min(32vw, 420px);
+    height: 100dvh;
     display: flex;
     flex-direction: column;
-    border-radius: 18px;
+    border-radius: 0;
     border: 1px solid rgba(var(--v-theme-outline), 0.3);
     background: rgba(var(--v-theme-surface-container-high), 0.94);
     backdrop-filter: blur(18px);

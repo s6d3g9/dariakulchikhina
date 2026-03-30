@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto'
 
 import { findMessengerAgentById, type MessengerAgentRecord } from './agent-store.ts'
 import type { MessengerUserRecord } from './auth-store.ts'
+import { readMessengerConfig } from './config.ts'
 import type { MessengerDevicePublicKeyRecord } from './crypto-store.ts'
 import { resolveMessengerDataPath } from './storage-paths.ts'
 
@@ -482,6 +483,10 @@ export async function findOrCreateSecretConversation(userId: string, peerUserId:
 }
 
 export async function findOrCreateAgentConversation(userId: string, agentId: string) {
+  if (!readMessengerConfig().MESSENGER_ENABLE_AGENTS) {
+    throw new Error('AGENTS_DISABLED')
+  }
+
   const payload = await readConversationsFile()
   const existing = payload.conversations.find(item => item.kind === 'agent' && item.userAId === userId && item.userBId === agentId)
   if (existing) {
@@ -556,9 +561,11 @@ async function resolveSenderDisplayName(senderId: string, users: MessengerUserRe
 export async function listConversationsForUser(user: MessengerUserRecord, users: MessengerUserRecord[], query: string) {
   const payload = await readConversationsFile()
   const normalizedQuery = query.trim().toLowerCase()
+  const agentsEnabled = readMessengerConfig().MESSENGER_ENABLE_AGENTS
 
   const items = await Promise.all(payload.conversations
     .filter(conversation => isParticipant(conversation, user.id))
+    .filter(conversation => agentsEnabled || conversation.kind !== 'agent')
     .map(async (conversation) => {
       const policy = getConversationPolicy(conversation)
       const peer = await resolvePeer(conversation, user.id, users)

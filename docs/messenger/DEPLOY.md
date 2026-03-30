@@ -61,9 +61,35 @@ pnpm messenger:core:build
 pnpm messenger:web:build
 ```
 
+## Standalone Export
+
+Если нужно вынести messenger из монорепозитория в отдельную папку для нового сервера:
+
+```bash
+pnpm messenger:export:standalone
+```
+
+По умолчанию будет собрана директория `builds/messenger-standalone` со структурой:
+
+- `core/`
+- `web/`
+- `ecosystem.config.cjs`
+- `docs/messenger/`
+- `.github/instructions/`
+
+Можно указать свой путь:
+
+```bash
+bash scripts/export-messenger-standalone.sh /tmp/daria-messenger
+```
+
+Дальше эту папку можно перенести на отдельный сервер, не копируя остальной проект.
+
 ## PM2
 
 Для production baseline используется [messenger/ecosystem.config.cjs](messenger/ecosystem.config.cjs).
+
+Для полностью отдельного сервера используется [messenger/ecosystem.standalone.config.cjs](messenger/ecosystem.standalone.config.cjs).
 
 Пример:
 
@@ -75,6 +101,29 @@ pnpm messenger:web:build
 pm2 start messenger/ecosystem.config.cjs
 pm2 save
 ```
+
+Пример для отдельного сервера:
+
+```bash
+cd /opt/daria-messenger
+cd core && pnpm install --frozen-lockfile && pnpm build
+cd ../web && pnpm install --frozen-lockfile && pnpm build
+cd ..
+MESSENGER_PUBLIC_ORIGIN=https://messenger.example.com \
+MESSENGER_PROJECT_ROOT=/opt/daria-messenger \
+pm2 start ecosystem.config.cjs
+pm2 save
+```
+
+Ключевые переменные для standalone запуска:
+
+- `MESSENGER_DEPLOY_ROOT` — корень standalone-папки, по умолчанию `/opt/daria-messenger`
+- `MESSENGER_PROJECT_ROOT` — корень проекта для agent/project-engine сценариев
+- `MESSENGER_CORE_DATA_DIR` — внешняя папка данных, по умолчанию `/opt/daria-messenger-data`
+- `MESSENGER_RUNTIME_ENV_PATH` — файл env для секретов runtime
+- `MESSENGER_PUBLIC_ORIGIN` — публичный домен нового сервера
+- `NUXT_PUBLIC_MESSENGER_CORE_BASE_URL` — публичный URL API, по умолчанию `${MESSENGER_PUBLIC_ORIGIN}/api`
+- `NUXT_APP_BASE_URL` — base path web-клиента, для отдельного домена обычно `/`
 
 ## Reverse Proxy
 

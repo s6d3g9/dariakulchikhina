@@ -200,6 +200,7 @@ function buildNextReactionState(
 
 export function useMessengerConversations() {
   const auth = useMessengerAuth()
+  const { agentsEnabled } = useMessengerFeatures()
   const messengerCrypto = useMessengerCrypto()
   const config = useRuntimeConfig()
   const state = useMessengerConversationState()
@@ -369,7 +370,11 @@ export function useMessengerConversations() {
         query: nextQuery ? { query: nextQuery } : undefined,
       })
 
-      conversations.value = await decryptConversationList(response.conversations)
+      const visibleConversations = agentsEnabled.value
+        ? response.conversations
+        : response.conversations.filter(item => item.peerType !== 'agent')
+
+      conversations.value = await decryptConversationList(visibleConversations)
       const nextActiveConversationId = conversations.value.some(item => item.id === state.activeConversationId.value)
         ? state.activeConversationId.value
         : conversations.value[0]?.id || null
@@ -397,6 +402,10 @@ export function useMessengerConversations() {
   }
 
   async function openAgentConversation(agentId: string) {
+    if (!agentsEnabled.value) {
+      throw new Error('AGENTS_DISABLED')
+    }
+
     const conversationId = await ensureAgentConversation(agentId)
     state.openConversation(conversationId)
     await loadMessages(conversationId)
@@ -413,6 +422,10 @@ export function useMessengerConversations() {
   }
 
   async function ensureAgentConversation(agentId: string) {
+    if (!agentsEnabled.value) {
+      throw new Error('AGENTS_DISABLED')
+    }
+
     const response = await auth.request<{ conversation: { id: string } }>(`/agents/${agentId}/conversation`, {
       method: 'POST',
     })

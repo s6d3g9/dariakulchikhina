@@ -652,6 +652,7 @@ export function useMessengerCalls() {
       : 'Браузер не поддерживает Web Speech API для транскрибации.'
   ))
   const callReview = useState<MessengerCallReviewState | null>('messenger-call-review', () => null)
+  const analysisPanelOpen = useState<boolean>('messenger-call-analysis-panel-open', () => false)
   const analysisTools = useState<MessengerCallAnalysisTool[]>('messenger-call-analysis-tools', () => CALL_ANALYSIS_TOOLS)
   const selectedAnalysisToolId = useState<MessengerCallAnalysisToolId>('messenger-call-analysis-tool-id', () => 'psychology')
   const analysisInterpretations = useState<Partial<Record<MessengerCallAnalysisToolId, string>>>('messenger-call-analysis-interpretations', () => ({}))
@@ -707,6 +708,19 @@ export function useMessengerCalls() {
     callReview.value = null
     analysisInterpretations.value = {}
     analysisError.value = ''
+    analysisPanelOpen.value = false
+  }
+
+  function openAnalysisPanel() {
+    analysisPanelOpen.value = true
+  }
+
+  function closeAnalysisPanel() {
+    analysisPanelOpen.value = false
+  }
+
+  function toggleAnalysisPanel(force?: boolean) {
+    analysisPanelOpen.value = typeof force === 'boolean' ? force : !analysisPanelOpen.value
   }
 
   async function runAnalysisTool(toolId: MessengerCallAnalysisToolId = selectedAnalysisToolId.value) {
@@ -752,6 +766,7 @@ export function useMessengerCalls() {
       generatedAt: Date.now(),
       autoPosted: false,
     }
+    analysisPanelOpen.value = true
 
     await runAnalysisTool(selectedAnalysisToolId.value)
     return callReview.value
@@ -1447,6 +1462,7 @@ export function useMessengerCalls() {
   async function startOutgoingCall(mode: MessengerCallMode) {
     callError.value = ''
     clearCallReview()
+    analysisPanelOpen.value = mode === 'audio'
     const conversation = conversations.activeConversation.value
 
     if (!conversation) {
@@ -1537,6 +1553,7 @@ export function useMessengerCalls() {
   async function acceptIncomingCall() {
     callError.value = ''
     clearCallReview()
+    analysisPanelOpen.value = incomingCall.value?.mode === 'audio'
 
     if (!incomingCall.value) {
       return
@@ -1877,6 +1894,7 @@ export function useMessengerCalls() {
     clearError()
     clearTranscription()
     clearCallReview()
+    analysisPanelOpen.value = false
     teardownCall('')
     clearElements()
   }
@@ -2126,6 +2144,7 @@ export function useMessengerCalls() {
     transcriptionDraft,
     transcriptionEntries,
     callReview,
+    analysisPanelOpen,
     analysisTools,
     selectedAnalysisToolId,
     analysisInterpretations,
@@ -2156,6 +2175,9 @@ export function useMessengerCalls() {
     stopTranscription,
     clearTranscription,
     clearCallReview,
+    openAnalysisPanel,
+    closeAnalysisPanel,
+    toggleAnalysisPanel,
     runAnalysisTool,
     toggleVideo,
     switchCamera,

@@ -28,28 +28,27 @@ function readRuntimeEnv(filePath) {
     }, {})
 }
 
-const runtimeEnv = {
-  ...readRuntimeEnv('/opt/daria-messenger-data/messenger-runtime.env'),
+const baseEnv = {
   ...process.env,
 }
 
-const messengerDeployRoot = runtimeEnv.MESSENGER_DEPLOY_ROOT || '/opt/daria-nuxt/messenger'
-const messengerProjectRoot = runtimeEnv.MESSENGER_PROJECT_ROOT || '/opt/daria-nuxt'
-const messengerDataRoot = runtimeEnv.MESSENGER_CORE_DATA_DIR || '/opt/daria-messenger-data'
-const messengerRuntimeEnvPath = runtimeEnv.MESSENGER_RUNTIME_ENV_PATH || `${messengerDataRoot}/messenger-runtime.env`
-const messengerPublicOrigin = (runtimeEnv.MESSENGER_PUBLIC_ORIGIN || 'https://dariakulchikhina.com').replace(/\/$/, '')
-const messengerCoreBaseUrl = runtimeEnv.NUXT_PUBLIC_MESSENGER_CORE_BASE_URL || `${messengerPublicOrigin}/messenger-api`
-const messengerAppBaseUrl = runtimeEnv.NUXT_APP_BASE_URL || '/messenger/'
+const messengerDeployRoot = baseEnv.MESSENGER_DEPLOY_ROOT || '/opt/daria-messenger'
+const messengerProjectRoot = baseEnv.MESSENGER_PROJECT_ROOT || messengerDeployRoot
+const messengerDataRoot = baseEnv.MESSENGER_CORE_DATA_DIR || '/opt/daria-messenger-data'
+const messengerRuntimeEnvPath = baseEnv.MESSENGER_RUNTIME_ENV_PATH || `${messengerDataRoot}/messenger-runtime.env`
+const messengerPublicOrigin = (baseEnv.MESSENGER_PUBLIC_ORIGIN || 'https://messenger.example.com').replace(/\/$/, '')
+const messengerCoreBaseUrl = baseEnv.NUXT_PUBLIC_MESSENGER_CORE_BASE_URL || `${messengerPublicOrigin}/api`
+const messengerAppBaseUrl = baseEnv.NUXT_APP_BASE_URL || '/'
 
-const mergedRuntimeEnv = {
+const runtimeEnv = {
   ...readRuntimeEnv(messengerRuntimeEnvPath),
-  ...runtimeEnv,
+  ...baseEnv,
 }
 
 module.exports = {
   apps: [
     {
-      name: 'daria-messenger-core',
+      name: runtimeEnv.MESSENGER_PM2_CORE_NAME || 'daria-messenger-core',
       cwd: `${messengerDeployRoot}/core`,
       script: 'node',
       args: '--experimental-strip-types src/index.ts',
@@ -58,19 +57,18 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         MESSENGER_CORE_HOST: '0.0.0.0',
-        MESSENGER_CORE_PORT: '4300',
-        MESSENGER_CORE_LOG_LEVEL: 'info',
-        MESSENGER_CORE_AUTH_SECRET: 'change-me-before-production',
-        MESSENGER_CORE_CORS_ORIGIN: messengerPublicOrigin,
+        MESSENGER_CORE_PORT: runtimeEnv.MESSENGER_CORE_PORT || '4300',
+        MESSENGER_CORE_LOG_LEVEL: runtimeEnv.MESSENGER_CORE_LOG_LEVEL || 'info',
+        MESSENGER_CORE_AUTH_SECRET: runtimeEnv.MESSENGER_CORE_AUTH_SECRET || 'change-me-before-production',
+        MESSENGER_CORE_CORS_ORIGIN: runtimeEnv.MESSENGER_CORE_CORS_ORIGIN || messengerPublicOrigin,
         MESSENGER_CORE_DATA_DIR: messengerDataRoot,
-        MESSENGER_ENABLE_AGENTS: mergedRuntimeEnv.MESSENGER_ENABLE_AGENTS || 'true',
         MESSENGER_PROJECT_ROOT: messengerProjectRoot,
-        KLIPY_APP_KEY: mergedRuntimeEnv.KLIPY_APP_KEY || '',
-        KLIPY_API_BASE_URL: mergedRuntimeEnv.KLIPY_API_BASE_URL || 'https://api.klipy.com',
+        KLIPY_APP_KEY: runtimeEnv.KLIPY_APP_KEY || '',
+        KLIPY_API_BASE_URL: runtimeEnv.KLIPY_API_BASE_URL || 'https://api.klipy.com',
       },
     },
     {
-      name: 'daria-messenger-web',
+      name: runtimeEnv.MESSENGER_PM2_WEB_NAME || 'daria-messenger-web',
       cwd: `${messengerDeployRoot}/web`,
       script: 'node',
       args: '.output/server/index.mjs',
@@ -79,11 +77,10 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         NUXT_PUBLIC_MESSENGER_CORE_BASE_URL: messengerCoreBaseUrl,
-        NUXT_PUBLIC_MESSENGER_ENABLE_AGENTS: mergedRuntimeEnv.NUXT_PUBLIC_MESSENGER_ENABLE_AGENTS || mergedRuntimeEnv.MESSENGER_ENABLE_AGENTS || 'true',
         NUXT_PUBLIC_MESSENGER_PROJECT_ROOT: messengerProjectRoot,
         NUXT_APP_BASE_URL: messengerAppBaseUrl,
-        PORT: '3300',
-        HOST: '0.0.0.0',
+        PORT: runtimeEnv.PORT || '3300',
+        HOST: runtimeEnv.HOST || '0.0.0.0',
       },
     },
   ],

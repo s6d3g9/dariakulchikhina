@@ -1,4 +1,5 @@
 import type { MessengerAgentKnowledgeSourceRecord, MessengerAgentRepositoryRecord, MessengerAgentSettingsRecord } from './agent-settings-store.ts'
+import { readMessengerConfig } from './config.ts'
 
 export interface MessengerAgentKnowledgePreset {
   summary: string
@@ -19,7 +20,7 @@ function resolvePresetRepositories(settings: MessengerAgentSettingsRecord) {
     }
   }
 
-  const fallbackPath = settings.ssh.workspacePath.trim() || '/opt/daria-nuxt'
+  const fallbackPath = settings.ssh.workspacePath.trim() || readMessengerConfig().MESSENGER_PROJECT_ROOT
   return {
     repositories: [{
       id: 'repo-1',

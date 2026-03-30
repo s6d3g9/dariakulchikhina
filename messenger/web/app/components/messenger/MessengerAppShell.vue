@@ -7,6 +7,7 @@ const realtime = useMessengerRealtime()
 const calls = useMessengerCalls()
 const viewport = useMessengerViewport()
 const settingsModel = useMessengerSettings()
+const { agentsEnabled } = useMessengerFeatures()
 const { sections } = useMessengerSections()
 
 // Nav bar скрываем при открытой медиа-плашке или клавиатуре
@@ -121,6 +122,7 @@ async function logout() {
             v-show="navigation.activeSection.value === 'contacts'"
           />
           <MessengerAgentsSection
+            v-if="agentsEnabled"
             v-show="navigation.activeSection.value === 'agents'"
           />
           <MessengerSettingsSection
@@ -168,6 +170,7 @@ async function logout() {
         </button>
 
         <button
+          v-if="agentsEnabled"
           type="button"
           class="messenger-nav-btn"
           :class="{ 'messenger-nav-btn--active': navValue === 'agents' }"

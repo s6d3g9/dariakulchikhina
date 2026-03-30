@@ -28,6 +28,8 @@
 
 Следующий production step — поднять отдельный deploy contour для web и core.
 
+Для выноса в отдельную директорию есть экспорт: `pnpm messenger:export:standalone`.
+
 ## First Target
 
 Собрать отдельный messenger shell, который не зависит от основного приложения и может развиваться как самостоятельный продукт.

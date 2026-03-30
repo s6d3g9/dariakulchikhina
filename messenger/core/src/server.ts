@@ -45,6 +45,12 @@ export async function createMessengerServer() {
   })
   await app.register(websocket)
 
+  app.addHook('onRequest', async (request, reply) => {
+    if (!config.MESSENGER_ENABLE_AGENTS && request.raw.url?.startsWith('/agents')) {
+      return reply.code(404).send({ error: 'NOT_FOUND' })
+    }
+  })
+
   const clients = new Map<string, { userId: string; socket: { send: (payload: string) => void; close: () => void; readyState: number; on: (event: string, cb: () => void) => void } }>()
 
   function emitToUsers(userIds: string[], event: Record<string, unknown>) {

@@ -42,6 +42,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       messengerCoreBaseUrl: process.env.NUXT_PUBLIC_MESSENGER_CORE_BASE_URL || 'http://localhost:4300',
+      messengerAgentsEnabled: process.env.NUXT_PUBLIC_MESSENGER_ENABLE_AGENTS !== 'false',
+      messengerProjectRoot: process.env.NUXT_PUBLIC_MESSENGER_PROJECT_ROOT || '',
     },
   },
 })
