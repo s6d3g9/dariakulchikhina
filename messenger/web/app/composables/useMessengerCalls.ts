@@ -733,18 +733,32 @@ export function useMessengerCalls() {
   }
 
   function handleIncomingDataChannelMessage(data: string) {
-    if (transcriptionActive.value) return
     try {
       const payload = JSON.parse(data)
       if (payload.type === 'transcription-sync') {
-        if (typeof payload.draft === 'string') {
+        if (typeof payload.draft === 'string' && !transcriptionActive.value) {
           transcriptionDraft.value = payload.draft
         }
         if (Array.isArray(payload.entries)) {
-          transcriptionEntries.value = payload.entries.map((e: any) => ({
+          const transformed = payload.entries.map((e: any) => ({
             ...e,
             speaker: e.speaker === 'you' ? 'peer' : 'you'
           }))
+
+          if (!transcriptionActive.value) {
+            transcriptionEntries.value = transformed
+          } else {
+            const existingIds = new Set(transcriptionEntries.value.map(x => x.id))
+            const missing = transformed.filter((x: any) => {
+              if (existingIds.has(x.id)) return false
+              if (x.speaker === 'you') return false
+              return true
+            })
+            if (missing.length > 0) {
+              const combined = [...transcriptionEntries.value, ...missing].sort((a, b) => a.createdAt - b.createdAt)
+              transcriptionEntries.value = combined.slice(Math.max(0, combined.length - 120))
+            }
+          }
         }
       }
     } catch {}
@@ -1357,26 +1371,26 @@ export function useMessengerCalls() {
     transcriptionServerSessionKey = sessionKey
 
     const mimeType = pickServerTranscriptionMimeType()
-    
+    const isMobileSafari = /iPhone|iPad|iPod/iu.test(navigator.userAgent || '')
     const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(navigator.userAgent || '')
-    if (isMobile) {
-      transcriptionError.value = 'Транскрибация временно отключена на мобильных устройствах.'
-      return false
-    }
 
-    transcriptionIsolatedTracks = localStream.getAudioTracks().map(t => t.clone())
-    let stream = new MediaStream(transcriptionIsolatedTracks)
-    
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-    if (AudioContextClass) {
-      try {
-        transcriptionIsolatedContext = new AudioContextClass()
-        const source = transcriptionIsolatedContext.createMediaStreamSource(stream)
-        const dest = transcriptionIsolatedContext.createMediaStreamDestination()
-        source.connect(dest)
-        stream = dest.stream
-      } catch {
-        transcriptionIsolatedContext = null
+    let stream: MediaStream = localStream
+
+    if (!isMobile) {
+      transcriptionIsolatedTracks = localStream.getAudioTracks().map(t => t.clone())
+      stream = new MediaStream(transcriptionIsolatedTracks)
+      
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      if (AudioContextClass) {
+        try {
+          transcriptionIsolatedContext = new AudioContextClass()
+          const source = transcriptionIsolatedContext.createMediaStreamSource(stream)
+          const dest = transcriptionIsolatedContext.createMediaStreamDestination()
+          source.connect(dest)
+          stream = dest.stream
+        } catch {
+          transcriptionIsolatedContext = null
+        }
       }
     }
 
@@ -1481,10 +1495,6 @@ export function useMessengerCalls() {
     syncTranscriptionSupportState()
 
     const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(navigator.userAgent || '')
-    if (isMobile) {
-      transcriptionError.value = 'На мобильных устройствах транскрибация отключена для стабильности звонка.'
-      return false
-    }
 
     if (!activeCall.value || activeCall.value.mode !== 'audio') {
       stopTranscription()
@@ -1497,12 +1507,22 @@ export function useMessengerCalls() {
         return true
       }
 
+      if (isMobile) {
+        transcriptionError.value = 'Сервер STT недоступен, а браузерная транскрибация отключена на мобильных для защиты звонка.'
+        return false
+      }
+
       if (!canRunBrowserSpeechRecognition()) {
         syncTranscriptionSupportState()
         return false
       }
 
       transcriptionError.value = ''
+    }
+
+    if (isMobile) {
+      transcriptionError.value = 'На мобильных устройствах без серверного STT транскрибация отключена.'
+      return false
     }
 
     if (!canRunBrowserSpeechRecognition()) {
