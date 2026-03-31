@@ -505,10 +505,14 @@
       </section>
 
       <section class="hpc-section">
+        <AdminProjectKanban :control="control" @save="save" />
+      </section>
+
+      <section class="hpc-section">
         <div class="hpc-section__head">
           <div>
-            <p class="hpc-section__label">Спринтовый слой</p>
-            <h3 class="hpc-section__title">Спринты внутри активных фаз</h3>
+            <p class="hpc-section__label">Формы метаданных</p>
+            <h3 class="hpc-section__title">Редактирование спринтов</h3>
           </div>
           <button class="a-btn-sm" type="button" @click="addSprint">+ спринт</button>
         </div>
@@ -559,22 +563,7 @@
               </div>
             </div>
 
-            <div class="hpc-task-head">
-              <span class="hpc-task-head__title">Бэклог поставки</span>
-              <button class="a-btn-sm" type="button" @click="addTask(sprint)">+ задача</button>
-            </div>
 
-            <div v-if="sprint.tasks.length" class="hpc-task-list">
-              <div v-for="(task, taskIndex) in sprint.tasks" :key="task.id" class="hpc-task-row">
-                <button class="hpc-task-state" type="button" @click="cycleTask(task)">{{ taskStatusLabels[task.status] }}</button>
-                <input v-model="task.title" class="glass-input hpc-task-row__title" placeholder="Что должно быть доставлено" @blur="save" />
-                <input v-model.number="task.points" type="number" min="0" max="100" class="glass-input hpc-task-row__points" @blur="save" />
-                <input v-model="task.assignee" class="glass-input hpc-task-row__assignee" placeholder="Исполнитель" @blur="save" />
-                <AppDatePicker v-model="task.dueDate" model-type="iso" input-class="glass-input hpc-task-row__date" @update:model-value="save" />
-                <button class="a-btn-sm a-btn-danger" type="button" @click="removeTask(sprint, taskIndex)">×</button>
-              </div>
-            </div>
-            <div v-else class="hpc-empty">бэклог пока пуст</div>
 
             <div class="u-field">
               <label class="u-field__label">Ретроспектива</label>
