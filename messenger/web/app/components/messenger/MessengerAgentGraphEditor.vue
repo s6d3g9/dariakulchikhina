@@ -429,9 +429,9 @@ function autoArrange() {
 }
 
 function saveGraph() {
-  const graph = Object.fromEntries(props.agents.map(agent => [agent.id, {
+  const graph: Record<string, MessengerAgentGraphNodeInput> = Object.fromEntries(props.agents.map(agent => [agent.id, {
     connections: [...(draftConnections[agent.id] || [])],
-    graphPosition: { ...nodePositions[agent.id] },
+    graphPosition: { x: nodePositions[agent.id]?.x ?? 0, y: nodePositions[agent.id]?.y ?? 0 },
   }]))
   emit('save-graph', graph)
 }
@@ -644,7 +644,7 @@ onBeforeUnmount(() => {
             <span class="agent-graph-node__title">{{ agent.displayName }}</span>
             <span class="agent-graph-node__meta">{{ agent.settings.model }}</span>
             <span class="agent-graph-node__submeta">{{ (draftConnections[agent.id] || []).length }} исходящих связей</span>
-            <span v-if="runtime.activeRuns.value[agent.id]" class="agent-graph-node__runtime">{{ runtimeLabel(agent.id) }} · {{ runtime.activeRuns.value[agent.id].summary }}</span>
+            <span v-if="runtime.activeRuns.value[agent.id]" class="agent-graph-node__runtime">{{ runtimeLabel(agent.id) }} · {{ runtime.activeRuns.value[agent.id]!.summary }}</span>
           </div>
           <div class="agent-graph-node__actions">
             <button v-if="isEditMode" type="button" class="agent-graph-node__action" @click.stop="startLinking(agent.id)">

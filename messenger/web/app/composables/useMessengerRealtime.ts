@@ -51,7 +51,7 @@ export function useMessengerRealtime() {
 
   async function handleEvent(event: MessengerRealtimeEvent) {
     if (event.type === 'call.signal') {
-      await calls.handleSignal(event)
+      await calls.handleSignal(event as unknown as Parameters<typeof calls.handleSignal>[0])
       return
     }
 

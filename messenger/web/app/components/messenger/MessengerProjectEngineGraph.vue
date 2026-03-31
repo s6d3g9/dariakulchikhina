@@ -805,7 +805,7 @@ async function removeLink(linkId: string) {
                 <template v-if="editingLinkId === link.id">
                   <VSelect
                     v-model="linkEditDraft.targetContextId"
-                    :items="contextOptions.filter(item => item.value !== selectedContext.id)"
+                    :items="contextOptions.filter(item => item.value !== selectedContext?.id)"
                     label="Связать с кабинетом"
                     variant="outlined"
                     hide-details="auto"
@@ -833,7 +833,7 @@ async function removeLink(linkId: string) {
             </div>
             <div v-else class="project-engine-empty">Для этого кабинета ещё нет связей.</div>
             <div class="project-engine-form-row project-engine-form-row--stacked">
-              <VSelect v-model="linkDraft.targetContextId" :items="contextOptions.filter(item => item.value !== selectedContext.id)" label="Связать с кабинетом" variant="outlined" hide-details="auto" density="comfortable" />
+              <VSelect v-model="linkDraft.targetContextId" :items="contextOptions.filter(item => item.value !== selectedContext?.id)" label="Связать с кабинетом" variant="outlined" hide-details="auto" density="comfortable" />
               <VSelect v-model="linkDraft.kind" :items="linkKindOptions" label="Тип связи" variant="outlined" hide-details="auto" density="comfortable" />
               <VSelect v-model="linkDraft.sharedCapabilities" :items="capabilityOptions" label="Shared capability" variant="outlined" hide-details="auto" density="comfortable" multiple chips />
               <VBtn color="primary" variant="tonal" :loading="projectEngine.mutating.value" @click="createLink">Создать связь</VBtn>

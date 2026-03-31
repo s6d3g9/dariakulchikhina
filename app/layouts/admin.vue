@@ -74,7 +74,7 @@
                   </div>
                 </template>
                 <div class="admin-notif-foot">
-                  <button class="admin-notif-refresh" @click="refreshNotif">обновить</button>
+                  <button class="admin-notif-refresh" @click="refreshNotif()">обновить</button>
                 </div>
               </div>
             </div>
@@ -110,7 +110,7 @@
             v-if="canAutoCollapseSidebar"
             type="button"
             class="adm-sidebar-toggle"
-            :aria-expanded="(!isSidebarCollapsed).toString()"
+            :aria-expanded="!isSidebarCollapsed"
             :aria-label="isSidebarCollapsed ? 'Раскрыть меню' : 'Свернуть меню'"
             @click="toggleSidebarCollapsed"
           >
@@ -192,7 +192,7 @@
                   </div>
                 </template>
                 <div class="admin-notif-foot">
-                  <button class="admin-notif-refresh" @click="refreshNotif">обновить</button>
+                  <button class="admin-notif-refresh" @click="refreshNotif()">обновить</button>
                 </div>
               </div>
             </div>

@@ -31,7 +31,7 @@
             загрузить
             <input type="file" accept="image/*" style="display:none" @change="uploadPhoto">
           </label>
-          <img v-if="form.photo" :src="form.photo.startsWith('/') ? form.photo : `/uploads/${form.photo}`" class="acp-img-prev">
+          <img v-if="form.photo" :src="String(form.photo).startsWith('/') ? String(form.photo) : `/uploads/${form.photo}`" class="acp-img-prev">
         </div>
 
         <!-- section: personal -->

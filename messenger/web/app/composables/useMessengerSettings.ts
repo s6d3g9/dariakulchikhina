@@ -526,10 +526,10 @@ export function useMessengerSettings() {
   const resolvedMode = computed(() => resolvedTheme.value.resolvedMode)
   const vuetifyThemeName = computed(() => resolvedTheme.value.themeName)
   const interpretationProviderOptions = computed(() => {
-    const options = [
+    const options: { title: string; value: 'algorithm' | 'api' }[] = [
       {
         title: 'Алгоритм словаря',
-        value: 'algorithm' as const,
+        value: 'algorithm',
       },
     ]
 
@@ -738,7 +738,8 @@ export function useMessengerSettings() {
         return 'unsupported' as const
       }
 
-      return Notification.permission
+      const perm = Notification.permission
+      return (perm === 'default' ? 'prompt' : perm) as MessengerPermissionState
     }
 
     if (!navigator.permissions?.query) {
@@ -747,7 +748,7 @@ export function useMessengerSettings() {
 
     try {
       const status = await navigator.permissions.query({ name: name as PermissionName })
-      return status.state
+      return status.state as MessengerPermissionState
     } catch {
       return 'unknown' as const
     }

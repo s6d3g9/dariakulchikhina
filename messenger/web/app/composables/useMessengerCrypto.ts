@@ -91,7 +91,7 @@ async function importDevicePublicKey(publicKey: MessengerDevicePublicKey) {
 }
 
 async function importConversationKey(rawKey: Uint8Array) {
-  return await crypto.subtle.importKey('raw', rawKey, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt'])
+  return await crypto.subtle.importKey('raw', rawKey as unknown as ArrayBuffer, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt'])
 }
 
 async function deriveWrappingKey(privateKey: JsonWebKey, publicKey: MessengerDevicePublicKey) {
@@ -211,7 +211,7 @@ export function useMessengerCrypto() {
     const wrapped = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv },
       wrappingKey,
-      rawConversationKey,
+      rawConversationKey as unknown as ArrayBuffer,
     )
 
     return {

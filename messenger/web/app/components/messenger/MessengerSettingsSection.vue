@@ -25,10 +25,10 @@ watch(() => auth.token.value, (nextToken) => {
   }
 })
 
-const activeThemeMeta = computed(() => settingsModel.themeOptions.find(theme => theme.key === settingsModel.settings.value.themes.active) ?? settingsModel.themeOptions[0])
-const activeThemeModeMeta = computed(() => settingsModel.themeModeOptions.find(mode => mode.key === settingsModel.settings.value.themes.mode) ?? settingsModel.themeModeOptions[0])
-const activeThemeContrastMeta = computed(() => settingsModel.themeContrastOptions.find(contrast => contrast.key === settingsModel.settings.value.themes.contrast) ?? settingsModel.themeContrastOptions[0])
-const activeStyleMeta = computed(() => settingsModel.styleOptions.find(style => style.key === settingsModel.settings.value.themes.style) ?? settingsModel.styleOptions[0])
+const activeThemeMeta = computed(() => settingsModel.themeOptions.find(theme => theme.key === settingsModel.settings.value.themes.active) ?? settingsModel.themeOptions[0]!)
+const activeThemeModeMeta = computed(() => settingsModel.themeModeOptions.find(mode => mode.key === settingsModel.settings.value.themes.mode) ?? settingsModel.themeModeOptions[0]!)
+const activeThemeContrastMeta = computed(() => settingsModel.themeContrastOptions.find(contrast => contrast.key === settingsModel.settings.value.themes.contrast) ?? settingsModel.themeContrastOptions[0]!)
+const activeStyleMeta = computed(() => settingsModel.styleOptions.find(style => style.key === settingsModel.settings.value.themes.style) ?? settingsModel.styleOptions[0]!)
 const transcriptionSourceLabel = computed(() => settingsModel.runtimeTranscriptionProvider.value === 'api'
   ? 'HTTP API backend'
   : settingsModel.aiConfigured.value.transcription ? 'Сервер по умолчанию' : 'Недоступен')

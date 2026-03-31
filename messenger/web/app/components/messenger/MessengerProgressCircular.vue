@@ -1,11 +1,12 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
-  ariaLabel: string
+  ariaLabel?: string
   value?: number | null
   indeterminate?: boolean
   fourColor?: boolean
   size?: 'sm' | 'md' | 'lg'
 }>(), {
+  ariaLabel: '',
   value: null,
   indeterminate: false,
   fourColor: false,

@@ -23,7 +23,7 @@
         <template #headerActions>
           <button class="ent-entity-hd-action" @click="openEdit(selectedManager)">ред.</button>
         </template>
-        <AdminManagerCabinet v-show="!isWipe2Mode" :key="selectedManagerId" :manager-id="selectedManagerId" :show-sidebar="false" v-model="activeManagerSection" />
+        <AdminManagerCabinet v-show="!isWipe2Mode" :key="selectedManagerId!" :manager-id="selectedManagerId!" :show-sidebar="false" v-model="activeManagerSection" />
         <Wipe2Renderer
           v-if="isWipe2Mode && wipe2State"
           :entity="wipe2State"

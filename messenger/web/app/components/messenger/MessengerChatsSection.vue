@@ -263,7 +263,7 @@ function loadFolders(): ChatFolder[] {
               .sort((left, right) => new Date(right.sentAt || 0).getTime() - new Date(left.sentAt || 0).getTime())
               .filter((run, index, runs) => runs.findIndex(item => item.sentAt === run.sentAt && item.prompt === run.prompt) === index)
               .slice(0, 12),
-            lastRun: normalizeAgentSystemRun(folder.lastRun),
+            lastRun: normalizeAgentSystemRun(folder.lastRun) ?? undefined,
           }
         })
       : []

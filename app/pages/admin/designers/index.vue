@@ -15,8 +15,8 @@
         </template>
         <AdminDesignerCabinet
           v-show="!isWipe2Mode"
-          :key="selectedDesignerId"
-          :designer-id="selectedDesignerId"
+          :key="selectedDesignerId!"
+          :designer-id="selectedDesignerId!"
           :focus-target="pendingEditorTarget"
           v-model="activeSection"
         />

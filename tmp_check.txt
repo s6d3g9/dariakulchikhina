@@ -1,0 +1,141 @@
+            <p class="hpc-section__label">Спринтовый слой</p>
+            <h3 class="hpc-section__title">Спринты внутри активных фаз</h3>
+          </div>
+          <button class="a-btn-sm" type="button" @click="addSprint">+ спринт</button>
+        </div>
+
+        <div v-if="control.sprints.length" class="hpc-sprint-list">
+          <article v-for="(sprint, sprintIndex) in control.sprints" :key="sprint.id" class="hpc-sprint-card">
+            <div class="hpc-sprint-card__head">
+              <div class="hpc-grid hpc-grid--top">
+                <div class="u-field">
+                  <label class="u-field__label">Название спринта</label>
+                  <input v-model="sprint.name" class="glass-input" @blur="save" />
+                </div>
+                <div class="u-field">
+                  <label class="u-field__label">Привязка к фазе</label>
+                  <select v-model="sprint.linkedPhaseKey" class="u-status-sel" @change="save">
+                    <option v-for="phase in control.phases" :key="phase.phaseKey" :value="phase.phaseKey">{{ phase.title }}</option>
+                  </select>
+                </div>
+                <div class="u-field">
+                  <label class="u-field__label">Статус</label>
+                  <select v-model="sprint.status" class="u-status-sel" @change="save">
+                    <option v-for="option in sprintStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                  </select>
+                </div>
+                <div class="u-field">
+                  <label class="u-field__label">Удалить спринт</label>
+                  <button class="a-btn-sm a-btn-danger" type="button" @click="removeSprint(sprintIndex)">удалить</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="hpc-grid">
+              <div class="u-field u-field--full">
+                <label class="u-field__label">Цель спринта</label>
+                <textarea v-model="sprint.goal" class="glass-input u-ta" rows="2" @blur="save" />
+              </div>
+              <div class="u-field">
+                <label class="u-field__label">Старт</label>
+                <AppDatePicker v-model="sprint.startDate" model-type="iso" input-class="glass-input" @update:model-value="save" />
+              </div>
+              <div class="u-field">
+                <label class="u-field__label">Финиш</label>
+                <AppDatePicker v-model="sprint.endDate" model-type="iso" input-class="glass-input" @update:model-value="save" />
+              </div>
+              <div class="u-field u-field--full">
+                <label class="u-field__label">Фокус команды</label>
+                <textarea v-model="sprint.focus" class="glass-input u-ta" rows="2" @blur="save" />
+              </div>
+            </div>
+
+            <div class="hpc-task-head">
+              <span class="hpc-task-head__title">Бэклог поставки</span>
+              <button class="a-btn-sm" type="button" @click="addTask(sprint)">+ задача</button>
+            </div>
+
+            <div v-if="sprint.tasks.length" class="hpc-task-list">
+              <div v-for="(task, taskIndex) in sprint.tasks" :key="task.id" class="hpc-task-row">
+                <button class="hpc-task-state" type="button" @click="cycleTask(task)">{{ taskStatusLabels[task.status] }}</button>
+                <input v-model="task.title" class="glass-input hpc-task-row__title" placeholder="Что должно быть доставлено" @blur="save" />
+                <input v-model.number="task.points" type="number" min="0" max="100" class="glass-input hpc-task-row__points" @blur="save" />
+                <input v-model="task.assignee" class="glass-input hpc-task-row__assignee" placeholder="Исполнитель" @blur="save" />
+                <AppDatePicker v-model="task.dueDate" model-type="iso" input-class="glass-input hpc-task-row__date" @update:model-value="save" />
+                <button class="a-btn-sm a-btn-danger" type="button" @click="removeTask(sprint, taskIndex)">×</button>
+              </div>
+            </div>
+            <div v-else class="hpc-empty">бэклог пока пуст</div>
+
+            <div class="u-field">
+              <label class="u-field__label">Ретроспектива</label>
+              <textarea v-model="sprint.retrospective" class="glass-input u-ta" rows="2" @blur="save" />
+            </div>
+          </article>
+        </div>
+        <div v-else class="hpc-empty">спринты ещё не добавлены</div>
+      </section>
+
+      <section class="hpc-section">
+        <div class="hpc-section__head">
+          <div>
+            <p class="hpc-section__label">Здоровье проекта</p>
+            <h3 class="hpc-section__title">Контрольные точки и блокеры</h3>
+          </div>
+          <button class="a-btn-sm" type="button" @click="addCheckpoint">+ точка</button>
+        </div>
+
+        <div class="hpc-checkpoint-list">
+          <div v-for="(checkpoint, checkpointIndex) in control.checkpoints" :key="checkpoint.id" class="hpc-checkpoint-row">
+            <input v-model="checkpoint.title" class="glass-input" placeholder="Контрольная точка" @blur="save" />
+            <input v-model="checkpoint.category" class="glass-input" placeholder="Категория" @blur="save" />
+            <select v-model="checkpoint.status" class="u-status-sel" @change="save">
+              <option v-for="option in checkpointStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
+            <input v-model="checkpoint.note" class="glass-input hpc-checkpoint-row__note" placeholder="Что происходит" @blur="save" />
+            <button class="a-btn-sm a-btn-danger" type="button" @click="removeCheckpoint(checkpointIndex)">×</button>
+          </div>
+        </div>
+
+        <div class="hpc-task-head hpc-task-head--blockers">
+          <span class="hpc-task-head__title">Текущие блокеры</span>
+          <button class="a-btn-sm" type="button" @click="addBlocker">+ блокер</button>
+        </div>
+        <div class="hpc-blocker-list">
+          <div v-for="(blocker, blockerIndex) in control.blockers" :key="`blocker-${blockerIndex}`" class="hpc-blocker-row">
+            <input v-model="control.blockers[blockerIndex]" class="glass-input hpc-blocker-row__input" placeholder="Что тормозит проект" @blur="save" />
+            <button class="a-btn-sm a-btn-danger" type="button" @click="removeBlocker(blockerIndex)">×</button>
+          </div>
+        </div>
+      </section>
+    </template>
+  </div>
+</template>
+
+<script setup lang="ts">
+import {
+  buildHybridControlSummary,
+  buildHybridCoordinationBrief,
+  ensureHybridControl,
+  getHealthTone,
+  getHybridCommunicationChannelLabel,
+  getHybridControlManagerAgentRoleLabel,
+  getHybridStakeholderRoleLabel,
+} from '~~/shared/utils/project-control'
+import {
+  addTimelineDays,
+  buildHybridTimelineBounds,
+  buildHybridTimelineColumns,
+  buildHybridTimelineGroups,
+  buildHybridTimelineRows,
+  endOfHybridTimelineScale,
+  formatHybridTimelineDateRange,
+  getHybridTimelineBarStyle,
+  getHybridTimelineColumnWidth,
+  getHybridTimelineScaleLabel,
+  resolveHybridTimelineRowRange,
+  type HybridTimelineScale,
+  toIsoLocalDate,
+  type HybridTimelineRow,
+} from '~~/shared/utils/project-control-timeline'
+import type {

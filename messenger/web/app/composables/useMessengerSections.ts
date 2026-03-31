@@ -43,16 +43,16 @@ export function useMessengerSections() {
     }
 
     return [
-      baseSections[0],
-      baseSections[1],
-      baseSections[2],
+      baseSections[0]!,
+      baseSections[1]!,
+      baseSections[2]!,
       {
         key: 'agents',
         title: 'Агенты',
         shortTitle: 'Агенты',
         description: 'AI-собеседники для задач, материалов и контроля реализации.',
       },
-      baseSections[3],
+      baseSections[3]!,
     ]
   })
 

@@ -17,7 +17,7 @@
         <template #headerActions>
           <button class="ent-entity-hd-action" @click="openEdit(selectedSeller)">ред.</button>
         </template>
-        <AdminSellerCabinet v-show="!isWipe2Mode" :key="selectedSellerId" :seller-id="selectedSellerId" :show-sidebar="false" v-model="activeSellerSection" />
+        <AdminSellerCabinet v-show="!isWipe2Mode" :key="selectedSellerId!" :seller-id="selectedSellerId!" :show-sidebar="false" v-model="activeSellerSection" />
         <Wipe2Renderer
           v-if="isWipe2Mode && wipe2State"
           :entity="wipe2State"

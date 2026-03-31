@@ -3,7 +3,7 @@ export function useMessengerFeatures() {
 
   const agentsEnabled = computed(() => (
     config.public.messengerAgentsEnabled !== false
-    && config.public.messengerAgentsEnabled !== 'false'
+    && String(config.public.messengerAgentsEnabled) !== 'false'
   ))
 
   return {

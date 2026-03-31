@@ -168,7 +168,7 @@
           :tabindex="isProjectViewportPaged ? 0 : undefined"
           @wheel="handleProjectViewportWheel"
           @keydown="handleProjectViewportKeydown"
-          @scroll="updateProjectViewportPageIndex"
+          @scroll="() => updateProjectViewportPageIndex()"
           @touchstart.passive="handleProjectViewportTouchStart"
           @touchend.passive="handleProjectViewportTouchEnd"
         >

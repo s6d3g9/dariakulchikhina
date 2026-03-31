@@ -495,11 +495,11 @@ async function deriveCallSharedSecret(privateKey: JsonWebKey, publicKey: Messeng
 }
 
 async function deriveCallHkdfBits(secret: Uint8Array, salt: Uint8Array, label: string, length: number) {
-  const hkdfKey = await crypto.subtle.importKey('raw', secret, 'HKDF', false, ['deriveBits'])
+  const hkdfKey = await crypto.subtle.importKey('raw', secret as unknown as ArrayBuffer, 'HKDF', false, ['deriveBits'])
   const bits = await crypto.subtle.deriveBits({
     name: 'HKDF',
     hash: 'SHA-256',
-    salt,
+    salt: salt as unknown as ArrayBuffer,
     info: new TextEncoder().encode(label),
   }, hkdfKey, length)
 
@@ -507,8 +507,8 @@ async function deriveCallHkdfBits(secret: Uint8Array, salt: Uint8Array, label: s
 }
 
 async function buildCallVerificationEmojis(secret: Uint8Array) {
-  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', secret))
-  return Array.from({ length: 4 }, (_, index) => CALL_VERIFICATION_EMOJIS[digest[index] % CALL_VERIFICATION_EMOJIS.length])
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', secret as unknown as ArrayBuffer))
+  return Array.from({ length: 4 }, (_, index) => CALL_VERIFICATION_EMOJIS[digest[index]! % CALL_VERIFICATION_EMOJIS.length]!)
 }
 
 async function activateCallSecurityContext(remotePublicKey: MessengerCallE2EEPublicKey) {
@@ -782,7 +782,7 @@ export function useMessengerCalls() {
     }
   }
 
-  const supported = computed(() => Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof RTCPeerConnection !== 'undefined'))
+  const supported = computed(() => Boolean(import.meta.client && typeof navigator.mediaDevices?.getUserMedia === 'function' && typeof RTCPeerConnection !== 'undefined'))
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
   const canStartAudioCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied')
   const canStartVideoCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied' && mediaPermissionState.value.camera !== 'denied')
@@ -1560,7 +1560,8 @@ export function useMessengerCalls() {
 
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
         const result = event.results[index]
-        const transcriptText = String(result?.[0]?.transcript || '').trim()
+        if (!result) continue
+        const transcriptText = String(result[0]?.transcript || '').trim()
 
         if (!transcriptText) {
           continue
@@ -1681,7 +1682,7 @@ export function useMessengerCalls() {
   function cycleCallViewMode() {
     const currentIndex = CALL_VIEW_MODE_ORDER.indexOf(viewMode.value)
     const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % CALL_VIEW_MODE_ORDER.length
-    viewMode.value = CALL_VIEW_MODE_ORDER[nextIndex]
+    viewMode.value = CALL_VIEW_MODE_ORDER[nextIndex] ?? 'split'
   }
 
   function setNetworkState(nextQuality: MessengerCallNetworkQuality, nextHint: string) {
@@ -1814,8 +1815,7 @@ export function useMessengerCalls() {
         channelCount: 1,
         sampleRate: 48000,
         sampleSize: 16,
-        latency: 0.02,
-      },
+      } satisfies MediaTrackConstraints as MediaTrackConstraints & { latency?: number },
       video: mode === 'video',
     })
 
@@ -2622,7 +2622,7 @@ export function useMessengerCalls() {
       }
 
       await peerConnection.addIceCandidate(candidate).catch(() => {
-        queueIceCandidate(event.signal.callId, candidate)
+        queueIceCandidate(event.signal!.callId, candidate)
       })
       return
     }

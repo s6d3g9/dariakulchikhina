@@ -70,11 +70,12 @@
 
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
-  modelValue: string
+  modelValue: string | undefined
   placeholder?: string
   inputClass?: string
   modelType?: 'dmy' | 'iso'
 }>(), {
+  modelValue: '',
   placeholder: 'дд.мм.гггг',
   inputClass: '',
   modelType: 'dmy'

@@ -98,7 +98,7 @@ async function buildRoomParticipants(projectSlug: string, currentActor: Bootstra
       actorKey: buildActorKey('contractor', actorId),
       role: 'contractor',
       displayName: contractor.name?.trim() || contractor.companyName?.trim() || 'Подрядчик',
-      nickname: normalizeNickname(contractor.messengerNick || contractor.login),
+      nickname: normalizeNickname(contractor.messengerNick || contractor.name),
     })
   }
 

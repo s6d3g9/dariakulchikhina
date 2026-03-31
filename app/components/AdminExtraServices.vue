@@ -260,6 +260,7 @@ import {
   EXTRA_SERVICE_STATUS_MAP,
   EXTRA_SERVICE_CATALOG,
   EXTRA_SERVICE_CATEGORY_LABELS,
+  type ExtraServiceCategory,
   type ExtraServiceStatus,
   type ExtraServiceCatalogItem,
 } from '~~/shared/types/catalogs'
@@ -278,7 +279,7 @@ const { data: services, pending, refresh } = await useFetch<any[]>(
 
 // ── Каталог (сгруппированный) ────────────────────────────────────
 const catalogCategories = computed(() => {
-  const cat: Record<string, { key: any; items: ExtraServiceCatalogItem[] }> = {}
+  const cat: Record<string, { key: ExtraServiceCategory; items: ExtraServiceCatalogItem[] }> = {}
   for (const item of EXTRA_SERVICE_CATALOG) {
     if (!cat[item.category]) cat[item.category] = { key: item.category, items: [] }
     cat[item.category].items.push(item)

@@ -771,7 +771,7 @@ async function openWorkspaceFile(path: string) {
         <header class="agent-chat-workspace__head">
           <div class="agent-chat-workspace__copy">
             <h2 class="agent-chat-workspace__title">{{ workspaceTitle }}</h2>
-            <p class="agent-chat-workspace__section-marker">{{ currentSection.title }}</p>
+            <p class="agent-chat-workspace__section-marker">{{ currentSection?.title }}</p>
           </div>
           <div class="agent-chat-workspace__meta">
             <span class="agent-chat-workspace__status-pill" :class="{ 'agent-chat-workspace__status-pill--live': runtimeState }">

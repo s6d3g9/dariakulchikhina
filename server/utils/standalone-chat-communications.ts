@@ -89,6 +89,21 @@ export async function buildStandaloneChatBootstrap(event: H3Event): Promise<Proj
     roomTitle: 'Standalone Chat',
     actor,
     roomParticipants: participants,
+    coordination: {
+      summary: {
+        healthStatus: 'stable' as const,
+        healthLabel: 'Ок',
+        activePhaseTitle: '',
+        activeSprintTitle: '',
+        blockerCount: 0,
+        overdueSprints: 0,
+        nextReviewDate: '',
+      },
+      agents: [],
+      playbook: [],
+      recommendations: [],
+    },
+    callInsights: [],
     e2ee: {
       protocol: 'e2ee-v1',
       keyAgreement: 'ECDH-P256',

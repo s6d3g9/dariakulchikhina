@@ -54,7 +54,7 @@
                   v-for="tab in visibleTabList" :key="tab.id"
                   type="button" role="tab"
                   class="dp-tab" :class="{ 'dp-tab--active': activeTab === tab.id }"
-                  @click="activeTab = tab.id"
+                  @click="activeTab = tab.id as PanelTabId"
                 >{{ tab.label }}</button>
               </nav>
               <div class="dp-panel-actions">
@@ -3352,7 +3352,7 @@ const previewInputStyle = computed(() => {
     fontFamily: t.fontFamily,
     background: 'color-mix(in srgb, var(--glass-text) 6%, transparent)',
     border: `1px solid color-mix(in srgb, var(--glass-text) 15%, transparent)`,
-    color: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box',
+    color: 'inherit', outline: 'none', width: '100%', boxSizing: 'border-box' as const,
   }
 })
 
@@ -3363,7 +3363,7 @@ const typeSampleStyle = computed(() => {
     fontWeight: String(t.fontWeight), letterSpacing: `${t.letterSpacing}em`,
     lineHeight: String(t.lineHeight),
     wordSpacing: t.wordSpacing > 0 ? `${t.wordSpacing}em` : 'normal',
-    textAlign: t.textAlign as string,
+    textAlign: t.textAlign,
     maxWidth: t.paragraphMaxWidth > 0 ? `${t.paragraphMaxWidth}ch` : 'none',
   }
 })

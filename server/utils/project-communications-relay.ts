@@ -94,30 +94,34 @@ export async function relayProjectCommunicationEventStream(event: H3Event, proje
     })
   }
 
-  const nodeResponse = event.node.res
-  nodeResponse.statusCode = 200
-  nodeResponse.setHeader('Content-Type', response.headers.get('content-type') || 'text/event-stream; charset=utf-8')
-  nodeResponse.setHeader('Cache-Control', response.headers.get('cache-control') || 'no-cache, no-transform')
-  nodeResponse.setHeader('Connection', 'keep-alive')
-  nodeResponse.flushHeaders?.()
+  const nodeResponse = event.node!.res
+  nodeResponse!.statusCode = 200
+  nodeResponse!.setHeader('Content-Type', response.headers.get('content-type') || 'text/event-stream; charset=utf-8')
+  nodeResponse!.setHeader('Cache-Control', response.headers.get('cache-control') || 'no-cache, no-transform')
+  nodeResponse!.setHeader('Connection', 'keep-alive')
+  if ('flushHeaders' in nodeResponse!) (nodeResponse as any).flushHeaders()
 
+  if (!response.body) {
+    nodeResponse!.end()
+    return
+  }
   const reader = response.body.getReader()
-  nodeResponse.on('close', () => {
+  nodeResponse!.on('close', () => {
     reader.cancel().catch(() => {})
   })
 
   try {
-    while (!nodeResponse.writableEnded) {
+    while (!nodeResponse!.writableEnded) {
       const chunk = await reader.read()
       if (chunk.done) {
         break
       }
-      nodeResponse.write(Buffer.from(chunk.value))
+      ;(nodeResponse!.write as Function)(Buffer.from(chunk.value))
     }
   } finally {
     reader.releaseLock()
-    if (!nodeResponse.writableEnded) {
-      nodeResponse.end()
+    if (!nodeResponse!.writableEnded) {
+      nodeResponse!.end()
     }
   }
 }

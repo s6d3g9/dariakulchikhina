@@ -18,6 +18,8 @@ const settingsDraft = reactive({
     port: 22,
     privateKey: '',
     workspacePath: '',
+    repositories: [] as Array<{ id: string; label: string; path: string }>,
+    activeRepositoryId: '',
   },
   connections: [] as Array<{ targetAgentId: string; mode: 'review' | 'enrich' | 'validate' | 'summarize' | 'route' }>,
 })
@@ -108,6 +110,8 @@ function openSettings(agentId: string) {
   settingsDraft.ssh.port = agent.settings.ssh.port
   settingsDraft.ssh.privateKey = agent.settings.ssh.privateKey
   settingsDraft.ssh.workspacePath = agent.settings.ssh.workspacePath
+  settingsDraft.ssh.repositories = agent.settings.ssh.repositories.map(repo => ({ ...repo }))
+  settingsDraft.ssh.activeRepositoryId = agent.settings.ssh.activeRepositoryId
   settingsDraft.connections = agent.settings.connections.map(connection => ({ ...connection }))
   settingsDialogOpen.value = true
 }
@@ -147,6 +151,7 @@ async function saveSettings() {
       model: settingsDraft.model,
       apiKey: settingsDraft.apiKey,
       ssh: settingsDraft.ssh,
+      knowledge: editingAgent.value.settings.knowledge,
       connections: settingsDraft.connections,
       graphPosition: editingAgent.value.settings.graphPosition,
     })

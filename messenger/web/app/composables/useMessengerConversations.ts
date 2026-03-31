@@ -316,9 +316,13 @@ export function useMessengerConversations() {
 
     return {
       ...attachRelationPreview(config, preview),
+      id: preview.id,
+      kind: preview.kind ?? 'text',
+      own: preview.own,
+      senderDisplayName: preview.senderDisplayName,
       body: await decryptMessageBody(conversation, preview.body, preview.encryptedBody),
       attachment: await decryptAttachment(conversation, attachRelationPreview(config, preview)?.attachment),
-    }
+    } satisfies MessengerMessageRelationPreview
   }
 
   async function decryptForwardedPreview(
@@ -331,9 +335,14 @@ export function useMessengerConversations() {
 
     return {
       ...attachForwardedPreview(config, preview),
+      messageId: preview.messageId,
+      conversationId: preview.conversationId,
+      senderUserId: preview.senderUserId,
+      senderDisplayName: preview.senderDisplayName,
+      kind: preview.kind,
       body: await decryptMessageBody(conversation, preview.body, preview.encryptedBody),
       attachment: await decryptAttachment(conversation, attachForwardedPreview(config, preview)?.attachment),
-    }
+    } satisfies MessengerForwardedMessagePreview
   }
 
   async function decryptMessage(conversation: MessengerConversationItem, message: MessengerConversationMessage) {

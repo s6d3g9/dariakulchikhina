@@ -45,7 +45,7 @@
           <div class="u-field">
             <label class="u-field__label">Статус</label>
             <select v-model="form.status" class="glass-input" @change="save">
-              <option v-for="s in PROJECT_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
+              <option v-for="s in PROJECT_PHASES" :key="s.key" :value="s.key">{{ s.label }}</option>
             </select>
           </div>
         </div>
@@ -89,7 +89,7 @@
 <script setup lang="ts">
 import { PROJECT_PRESETS, getPresetsByCategory, findPreset } from '~~/shared/constants/presets'
 import { getAdminNavGroups } from '~~/shared/constants/pages'
-import { PROJECT_STATUSES } from '~~/shared/types/catalogs'
+import { PROJECT_PHASES } from '~~/shared/types/catalogs'
 
 const props = defineProps<{ slug: string }>()
 

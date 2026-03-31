@@ -35,15 +35,14 @@
     <!-- ── Выпадающий список разделов ── -->
     <Transition name="esw-drop">
       <nav v-if="open" class="esw-dropdown" @click.stop>
-        <component
-          :is="item.external ? 'a' : 'button'"
+        <button
           v-for="item in SECTIONS"
           :key="item.key"
           type="button"
           class="esw-item"
           :class="{ 'esw-item--active': isActive(item) }"
           @click="navigate(item)"
-        >{{ item.label }}</component>
+        >{{ item.label }}</button>
       </nav>
     </Transition>
   </div>

@@ -17,8 +17,8 @@
             :class="`ces-my-card--${svc.status}`"
           >
             <div class="ces-my-card-head">
-              <span class="ces-status-badge" :style="`background:${statusMap[svc.status]?.color || 'var(--glass-text)'}`">
-                {{ statusMap[svc.status]?.label || svc.status }}
+              <span class="ces-status-badge" :style="`background:${statusMap[svc.status as ExtraServiceStatus]?.color || 'var(--glass-text)'}`">
+                {{ statusMap[svc.status as ExtraServiceStatus]?.label || svc.status }}
               </span>
               <span class="ces-my-date">{{ formatDate(svc.createdAt) }}</span>
             </div>
@@ -196,7 +196,9 @@ import {
   EXTRA_SERVICE_STATUS_MAP,
   EXTRA_SERVICE_CATALOG,
   EXTRA_SERVICE_CATEGORY_LABELS,
+  type ExtraServiceCategory,
   type ExtraServiceCatalogItem,
+  type ExtraServiceStatus,
 } from '~~/shared/types/catalogs'
 
 const props = defineProps<{ slug: string }>()
@@ -211,7 +213,7 @@ const { data: services, pending, refresh } = await useFetch<any[]>(
 
 // ── Catalog ─────────────────────────────────────────────────────
 const catalogCategories = computed(() => {
-  const cat: Record<string, { key: any; items: ExtraServiceCatalogItem[] }> = {}
+  const cat: Record<string, { key: ExtraServiceCategory; items: ExtraServiceCatalogItem[] }> = {}
   for (const item of EXTRA_SERVICE_CATALOG) {
     if (!cat[item.category]) cat[item.category] = { key: item.category, items: [] }
     cat[item.category].items.push(item)

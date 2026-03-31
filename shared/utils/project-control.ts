@@ -486,7 +486,7 @@ function normalizeCommunicationPlaybook(playbook: HybridControlCommunicationRule
       linkedChannel: rule.linkedChannel || 'project-room',
       audience: Array.isArray(rule.audience) ? rule.audience : [],
       ownerAgentId: rule.ownerAgentId || '',
-      cadenceDays: typeof rule.cadenceDays === 'number' ? rule.cadenceDays : null,
+      cadenceDays: typeof rule.cadenceDays === 'number' ? rule.cadenceDays : undefined,
       template: rule.template || '',
     }))
 

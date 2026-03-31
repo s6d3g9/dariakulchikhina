@@ -82,7 +82,7 @@ defineExpose({
         :autocomplete="props.autocomplete"
         :autocapitalize="props.autocapitalize"
         :spellcheck="props.spellcheck"
-        :inputmode="props.inputmode"
+        :inputmode="props.inputmode as 'text' | 'numeric' | 'search' | 'none' | 'tel' | 'url' | 'email' | 'decimal' | undefined"
         :enterkeyhint="props.enterkeyhint"
         :minlength="props.minLength"
         :maxlength="props.maxLength"

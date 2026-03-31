@@ -1214,7 +1214,7 @@ function formatKlipyCategoryTag(query: string) {
 
 onMounted(async () => {
   lockPageScroll()
-  canRecordAudio.value = Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined')
+  canRecordAudio.value = Boolean(import.meta.client && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function' && typeof MediaRecorder !== 'undefined')
   await conversations.refresh()
   if (conversations.activeConversationId.value) {
     await conversations.loadMessages()
