@@ -322,9 +322,12 @@ html.dark .glass-page::before {
 
 .glass-surface,
 .glass-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  box-shadow: none;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.4));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.4));
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(31, 38, 135, 0.15)), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 -1px 1px rgba(0, 0, 0, 0.05);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturation, 180%));
+  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturation, 180%));
+  transform: translateZ(0); /* For Safari performance & refraction */
 }
 
 .glass-card {
@@ -333,9 +336,11 @@ html.dark .glass-page::before {
 
 html.dark .glass-surface,
 html.dark .glass-card {
-  background: var(--glass-bg);
-  border-color: var(--glass-border);
-  box-shadow: none;
+  background: var(--glass-bg, rgba(20, 20, 20, 0.4));
+  border-color: var(--glass-border, rgba(255, 255, 255, 0.15));
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.4)), inset 0 1px 1px rgba(255, 255, 255, 0.1), inset 0 -1px 1px rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturation, 180%));
+  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturation, 180%));
 }
 
 .glass-chip {
@@ -7255,12 +7260,9 @@ html.dark :root {
   --sys-color-surface-container-highest: #2b2b31;
 }
 
-/* Base resets mapping glass to M3 surface where appropriate */
+/* Base resets mapping removed for true liquid glass */
 .glass-surface, .glass-card {
-  background-color: var(--sys-color-surface-container) !important;
-  border-radius: var(--sys-radius-lg) !important; /* M3 fallback */
-  border: none !important; /* remove legacy borders */
-  color: var(--sys-color-on-surface) !important;
+  color: var(--sys-color-on-surface, inherit);
 }
 
 .a-btn-save, .a-btn-sm {
