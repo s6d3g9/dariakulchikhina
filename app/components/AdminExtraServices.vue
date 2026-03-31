@@ -490,7 +490,7 @@ function formatDate(d: string | Date) {
 .aes-btn-sm--primary:hover { background:color-mix(in srgb, var(--ds-accent) 20%, var(--glass-bg)); }
 .aes-btn-sm--success { border-color:color-mix(in srgb, var(--ds-success) 25%, transparent); background:color-mix(in srgb, var(--ds-success) 10%, var(--glass-bg)); color:var(--ds-success); }
 .aes-btn-sm--success:hover { background:color-mix(in srgb, var(--ds-success) 15%, var(--glass-bg)); }
-.aes-btn-sm--danger  { border-color:#4a1b1b; background:#2a0f0f; color:var(--ds-error); }
+.aes-btn-sm--danger  { border-color:color-mix(in srgb, var(--ds-error) 25%, transparent); background:color-mix(in srgb, var(--ds-error) 12%, transparent); color:var(--ds-error); }
 .aes-btn-sm--danger:hover  { background:color-mix(in srgb, var(--ds-error) 12%, var(--glass-bg)); }
 
 /* List */
@@ -513,7 +513,7 @@ function formatDate(d: string | Date) {
 .aes-card-badge  { display:inline-block; color:white; font-size:.68rem; font-weight:600; padding:2px 7px; border-radius:4px; text-transform:uppercase; letter-spacing:.04em; }
 .aes-card-source { font-size:.71rem; padding:2px 7px; border-radius:4px; }
 .aes-card-source--client { background:color-mix(in srgb, var(--ds-accent) 8%, var(--glass-bg)); color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); }
-.aes-card-source--admin  { background:#1a2a1a; color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); }
+.aes-card-source--admin  { background:color-mix(in srgb, var(--ds-success) 10%, transparent); color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); }
 .aes-card-date   { font-size:.72rem; color:color-mix(in srgb, var(--glass-text) 35%, transparent); }
 
 .aes-card-title  { font-size:.9rem; font-weight:600; color:color-mix(in srgb, var(--glass-text) 87%, transparent); margin-bottom:4px; }
@@ -526,7 +526,7 @@ function formatDate(d: string | Date) {
 
 .aes-card-notes     { font-size:.76rem; padding:6px 10px; border-radius:6px; margin-bottom:4px; }
 .aes-card-notes--client { background:color-mix(in srgb, var(--ds-accent) 8%, var(--glass-bg)); color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); }
-.aes-card-notes--admin  { background:#1a2a1a; color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); }
+.aes-card-notes--admin  { background:color-mix(in srgb, var(--ds-success) 10%, transparent); color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); }
 .aes-notes-label    { font-weight:700; opacity:.7; }
 
 .aes-card-docs   { display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
@@ -566,7 +566,7 @@ function formatDate(d: string | Date) {
 .aes-catalog-items{ display:flex; flex-wrap:wrap; gap:6px; }
 .aes-catalog-item { background:var(--glass-bg); border:1px solid color-mix(in srgb, var(--glass-text) 14%, transparent); border-radius:8px; padding:6px 10px; cursor:pointer; display:flex; flex-direction:column; gap:2px; text-align:left; transition:border-color .15s,background .15s; max-width:200px; }
 .aes-catalog-item:hover { border-color:color-mix(in srgb, var(--ds-accent) 40%, var(--glass-text)); background:color-mix(in srgb, var(--ds-accent) 8%, var(--glass-bg)); }
-.aes-catalog-item--selected { border-color:color-mix(in srgb, var(--ds-accent) 35%, transparent); background:#1a2040; }
+.aes-catalog-item--selected { border-color:color-mix(in srgb, var(--ds-accent) 35%, transparent); background:color-mix(in srgb, var(--ds-accent) 10%, transparent); }
 .aes-catalog-item-title { font-size:.76rem; color:color-mix(in srgb, var(--glass-text) 80%, transparent); }
 .aes-catalog-item-price { font-size:.68rem; color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); }
 
@@ -582,7 +582,7 @@ function formatDate(d: string | Date) {
 .aes-doc-content {
   font-family:'Courier New',monospace; font-size:.72rem; color:color-mix(in srgb, var(--glass-text) 73%, transparent);
   white-space:pre-wrap; line-height:1.6; max-height:70vh; overflow-y:auto;
-  background:#050505; padding:16px; border-radius:8px; border:1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  background:var(--color-surface, var(--glass-bg)); padding:16px; border-radius:8px; border:1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
   margin-bottom:12px;
 }
 </style>

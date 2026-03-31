@@ -152,7 +152,7 @@ async function applyCallReviewToProjectSprint() {
               v-for="entry in calls.transcriptionEntries.value"
               :key="entry.id"
               class="call-transcript-line"
-              :class="`call-transcript-line--${entry.speaker}`"
+              :class="[`call-transcript-line--${entry.speaker}`, { 'call-transcript-line--draft': !entry.final }]"
             >
               <header class="call-transcript-line__meta">
                 <span>{{ entry.speaker === 'peer' ? 'Собеседник' : 'Вы' }}</span>

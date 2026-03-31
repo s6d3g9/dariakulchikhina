@@ -330,7 +330,7 @@ function statusLabel(s: string) {
 
 .apl-status-badge { font-size:.68rem; padding:2px 7px; border-radius:4px; flex-shrink:0; }
 .apl-status--open     { background:color-mix(in srgb, var(--ds-error) 8%, var(--glass-bg)); color:var(--ds-error); }
-.apl-status--assigned { background:#1a1200; color:var(--ds-warning); }
+.apl-status--assigned { background:color-mix(in srgb, var(--ds-warning) 15%, transparent); color:var(--ds-warning); }
 .apl-status--fixed    { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); }
 .apl-status--verified { background:color-mix(in srgb, var(--ds-success) 12%, var(--glass-bg)); color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); }
 .apl-chevron { font-size:.65rem; color:color-mix(in srgb, var(--glass-text) 35%, transparent); }

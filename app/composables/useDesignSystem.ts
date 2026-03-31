@@ -901,7 +901,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       tableHeaderOpacity: 0.08, tableRowHoverOpacity: 0.05, tableBorderOpacity: 0.1,
       badgeBgOpacity: 0.2, badgeRadius: 999,
       btnHoverAnim: 'sheen', cardHoverAnim: 'reveal',
-      archDensity: 'relaxed', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDensity: 'airy', archHeadingTracking: 0, archHeadingCase: 'none',
       archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'card',
     },
   },

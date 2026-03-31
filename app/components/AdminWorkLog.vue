@@ -299,7 +299,7 @@ function fmtDate(d: string) {
 .awl-thumb img    { width:100%; height:100%; object-fit:cover; }
 .awl-thumb button { position:absolute; top:1px; right:1px; background:color-mix(in srgb, black 70%, transparent); border:none; color:white; border-radius:50%; width:14px; height:14px; font-size:.6rem; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
 .awl-form-actions { display:flex; gap:8px; margin-top:10px; }
-.awl-submit-btn   { background:#1a3a20; border:1px solid #2a6030; color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); border-radius:6px; padding:6px 16px; font-size:.8rem; cursor:pointer; }
+.awl-submit-btn   { background:color-mix(in srgb, var(--ds-success) 15%, transparent); border:1px solid color-mix(in srgb, var(--ds-success) 30%, transparent); color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); border-radius:6px; padding:6px 16px; font-size:.8rem; cursor:pointer; }
 .awl-submit-btn:hover { background:color-mix(in srgb, var(--ds-success) 18%, var(--glass-bg)); }
 .awl-cancel-btn   { background:none; border:1px solid color-mix(in srgb, var(--glass-text) 14%, transparent); color:color-mix(in srgb, var(--glass-text) 42%, transparent); border-radius:6px; padding:6px 14px; font-size:.8rem; cursor:pointer; }
 
@@ -329,7 +329,7 @@ function fmtDate(d: string) {
 .awl-badge--note       { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); color:color-mix(in srgb, var(--glass-text) 60%, transparent); }
 .awl-badge--issue      { background:color-mix(in srgb, var(--ds-error) 12%, var(--glass-bg)); color:var(--ds-error); }
 .awl-badge--milestone  { background:color-mix(in srgb, var(--ds-success) 12%, var(--glass-bg)); color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); }
-.awl-badge--visit      { background:#1a2040; color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); }
+.awl-badge--visit      { background:color-mix(in srgb, var(--ds-accent) 15%, transparent); color:var(--ds-accent-light, color-mix(in srgb, var(--ds-accent) 70%, white)); }
 .awl-badge--delivery   { background:color-mix(in srgb, var(--ds-warning) 10%, var(--glass-bg)); color:var(--ds-warning); }
 .awl-badge--inspection { background:color-mix(in srgb, var(--ds-accent) 10%, var(--glass-bg)); color:color-mix(in srgb, var(--ds-accent) 55%, white); }
 .awl-entry-date       { font-size:.72rem; color:color-mix(in srgb, var(--glass-text) 42%, transparent); }
@@ -341,7 +341,7 @@ function fmtDate(d: string) {
 .awl-photo-thumb   { width:60px; height:60px; object-fit:cover; border-radius:4px; cursor:pointer; }
 
 .awl-edit-form { display:flex; flex-direction:column; gap:6px; margin:6px 0; }
-.awl-save-edit-btn { align-self:flex-start; background:#1a3a20; border:1px solid #2a6030; color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); border-radius:5px; padding:4px 12px; font-size:.75rem; cursor:pointer; }
+.awl-save-edit-btn { align-self:flex-start; background:color-mix(in srgb, var(--ds-success) 15%, transparent); border:1px solid color-mix(in srgb, var(--ds-success) 30%, transparent); color:var(--ds-success-light, color-mix(in srgb, var(--ds-success) 70%, white)); border-radius:5px; padding:4px 12px; font-size:.75rem; cursor:pointer; }
 
 .awl-entry-footer  { display:flex; gap:8px; }
 .awl-entry-edit-btn { background:none; border:1px solid color-mix(in srgb, var(--glass-text) 14%, transparent); color:color-mix(in srgb, var(--glass-text) 42%, transparent); border-radius:4px; padding:2px 8px; font-size:.68rem; cursor:pointer; }

@@ -405,23 +405,8 @@ async function logout() {
 }
 
 .cc-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  text-align: left;
   width: 100%;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: inherit;
-  opacity: 0.6;
-  transition: background 0.15s, opacity 0.15s;
 }
-.cc-nav-item:hover { background: rgba(255,255,255,0.18); opacity: 0.9; }
-.cc-nav-item.active { background: rgba(255,255,255,0.28); opacity: 1; font-weight: 600; }
 
 .cc-nav-icon { font-size: 0.95rem; width: 18px; flex-shrink: 0; text-align: center; }
 .cc-nav-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

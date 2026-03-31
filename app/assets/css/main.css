@@ -821,42 +821,7 @@ html.dark select optgroup {
 }
 
 .ent-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   width: 100%;
-  border: none;
-  text-decoration: none;
-  text-align: left;
-  padding: 12px 0;
-  border-radius: 4px 4px 0 0;
-  border-bottom: 1px solid var(--glass-border);
-  background: transparent;
-  color: var(--glass-text);
-  font-family: inherit;
-  font-size: .85rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: .5;
-  cursor: pointer;
-  transition: opacity .2s ease, border-color .2s ease;
-  line-height: 1.3;
-}
-.ent-nav-item:last-child {
-  border-bottom: none;
-}
-
-.ent-nav-item:hover {
-  opacity: 1;
-  background: transparent;
-}
-
-.ent-nav-item--active {
-  opacity: 1;
-  font-weight: 500;
-  background: transparent;
-  border-bottom-color: var(--glass-text);
 }
 
 .ent-nav-avatar {
@@ -1012,19 +977,7 @@ html.dark select optgroup {
 }
 
 .proj-sidenav-item {
-  display: block; width: 100%; text-align: left;
-  padding: 9px 10px; border: none; background: transparent;
-  font-size: .8rem; color: var(--glass-text); cursor: pointer;
-  border-radius: 9px; font-family: inherit; line-height: 1.3;
-  opacity: .64;
-  transition: background .12s, color .12s, opacity .12s;
-}
-.proj-sidenav-item:hover { background: color-mix(in srgb, var(--glass-bg) 82%, transparent); opacity: .92; }
-.proj-sidenav-item--active {
-  background: color-mix(in srgb, var(--glass-bg) 92%, transparent);
-  color: var(--glass-text);
-  opacity: 1;
-  font-weight: 600;
+  width: 100%;
 }
 
 .proj-sidenav-group { margin-bottom: 18px; }
@@ -1457,38 +1410,7 @@ html.dark select optgroup {
 }
 
 .cab-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   width: 100%;
-  padding: 12px 0;
-  border: none;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: .85rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--glass-text);
-  opacity: .5;
-  border-radius: 4px 4px 0 0;
-  border-bottom: 1px solid var(--glass-border);
-  transition: opacity .2s ease, border-color .2s ease;
-}
-.cab-nav-item:last-child {
-  border-bottom: none;
-}
-.cab-nav-item:hover {
-  opacity: 1;
-  background: transparent;
-}
-.cab-nav-item.active {
-  opacity: 1;
-  font-weight: 500;
-  background: transparent;
-  border-bottom-color: var(--glass-text);
 }
 
 .cab-nav-icon {
@@ -4268,7 +4190,7 @@ html.dark .a-modal label {
 /* --- Wire component-specific CSS vars to design system tokens on dark surface --- */
 [data-dark-surface] .content-wrap {
   --c-muted: var(--ds-muted, #a8a8a8);
-  --c-border: rgba(255,255,255,0.08);
+  --c-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --c-border-strong: rgba(255,255,255,0.14);
   --c-text: var(--ds-text-color, #f2f2f2);
   --c-text-soft: var(--ds-muted, #b1b1b1);
@@ -4280,7 +4202,7 @@ html.dark .a-modal label {
 [data-dark-surface] .rm-wrap {
   --r-title: var(--ds-muted, #b1b1b1);
   --r-muted: var(--ds-muted, #a8a8a8);
-  --r-line: rgba(255,255,255,0.08);
+  --r-line: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --r-dot-border: rgba(255,255,255,0.15);
   --r-dot-bg: rgba(255,255,255,0.03);
   --r-text: var(--ds-text-color, #f2f2f2);
@@ -4291,38 +4213,38 @@ html.dark .a-modal label {
   --w-title: var(--ds-muted, #b1b1b1);
   --w-muted: var(--ds-muted, #a8a8a8);
   --w-card-bg: var(--ds-card-bg, #181818);
-  --w-card-border: rgba(255,255,255,0.08);
+  --w-card-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --w-text: var(--ds-text-color, #f2f2f2);
   --w-text-soft: var(--ds-muted, #b9b9b9);
-  --w-badge-border: rgba(255,255,255,0.10);
+  --w-badge-border: color-mix(in srgb, var(--glass-text) 10%, transparent);
 }
 [data-dark-surface] .atz-card {
-  --atz-border: rgba(255,255,255,0.08);
+  --atz-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --atz-text: var(--ds-text-color, #f1f1f1);
   --atz-muted: var(--ds-muted, #a8a8a8);
 }
 [data-dark-surface] .am-card {
-  --am-border: rgba(255,255,255,0.08);
+  --am-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --am-text: var(--ds-text-color, #f1f1f1);
   --am-muted: var(--ds-muted, #a8a8a8);
 }
 [data-dark-surface] .a-card {
   --card-bg: var(--ds-card-bg, #151517);
-  --card-border: rgba(255,255,255,0.08);
+  --card-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --card-text: var(--ds-text-color, #f2f2f2);
   --card-muted: var(--ds-muted, #777);
   --link-color: var(--ds-link-color, #f2f2f2);
-  --btn-border: rgba(255,255,255,0.10);
+  --btn-border: color-mix(in srgb, var(--glass-text) 10%, transparent);
   --btn-color: var(--ds-text-color, #bbb);
   --label-color: var(--ds-muted, #a8a8a8);
   --modal-bg: var(--ds-card-bg, #151517);
-  --modal-border: rgba(255,255,255,0.08);
-  --input-border: rgba(255,255,255,0.10);
+  --modal-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  --input-border: color-mix(in srgb, var(--glass-text) 10%, transparent);
   --input-color: var(--ds-text-color, #f2f2f2);
 }
 [data-dark-surface] .acp-card {
   --acp-bg: var(--ds-card-bg, #151517);
-  --acp-border: rgba(255,255,255,0.08);
+  --acp-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --acp-lbl: var(--ds-muted, #a8a8a8);
   --acp-btn-border: var(--ds-text-color, #f2f2f2);
   --acp-btn-color: var(--ds-text-color, #f2f2f2);
@@ -4336,7 +4258,7 @@ html.dark .a-modal label {
 [data-dark-surface] .u-modal,
 [data-dark-surface] .cab-modal {
   background: var(--ds-card-bg, #0a0a0a) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
   box-shadow: 0 24px 80px rgba(0,0,0,0.6) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -4344,11 +4266,11 @@ html.dark .a-modal label {
 }
 [data-dark-surface] .u-modal__head,
 [data-dark-surface] .cab-modal-head {
-  border-bottom-color: rgba(255,255,255,0.06) !important;
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 [data-dark-surface] .u-modal__foot,
 [data-dark-surface] .cab-modal-foot {
-  border-top-color: rgba(255,255,255,0.06) !important;
+  border-top-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 [data-dark-surface] .u-modal-overlay,
 [data-dark-surface] .cab-modal-overlay {
@@ -4357,8 +4279,8 @@ html.dark .a-modal label {
 
 /* --- Dropdown / popup surfaces --- */
 [data-dark-surface] .glass-dropdown {
-  background: #0a0a0a !important;
-  border-color: rgba(255,255,255,0.08) !important;
+  background: color-mix(in srgb, var(--color-surface, var(--glass-bg)) calc(var(--glass-opacity, 0.9) * 100%), transparent) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
   box-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
   backdrop-filter: none !important;
 }
@@ -4367,7 +4289,7 @@ html.dark .a-modal label {
 [data-dark-surface] .glass-card,
 [data-dark-surface] .glass-surface {
   background: var(--ds-card-bg, #0a0a0a) !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -4376,7 +4298,7 @@ html.dark .a-modal label {
 /* --- Glass chips --- */
 [data-dark-surface] .glass-chip {
   background: transparent !important;
-  border-color: rgba(255,255,255,0.10) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
   color: var(--glass-text, #e0e0e0);
 }
 
@@ -4384,45 +4306,45 @@ html.dark .a-modal label {
 [data-dark-surface] .glass-input {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.12) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
   border-radius: 4px 4px 0 0 !important;
   backdrop-filter: none !important;
   color: var(--glass-text, #e0e0e0);
 }
 [data-dark-surface] .glass-input:focus {
-  border-bottom-color: rgba(255,255,255,0.35) !important;
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
   box-shadow: none !important;
   outline: none !important;
 }
 [data-dark-surface] .glass-input::placeholder {
-  color: rgba(255,255,255,0.25) !important;
+  color: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
 }
 
 /* --- Textareas --- */
 [data-dark-surface] textarea.glass-input {
-  border: 1px solid rgba(255,255,255,0.08) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
   border-radius: 4px 4px 0 0 !important;
 }
 
 /* --- Buttons: ghost = transparent with hairline border --- */
 [data-dark-surface] .a-btn-save {
   background: transparent !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255,255,255,0.18) !important;
+  color: var(--glass-text) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent) !important;
 }
 [data-dark-surface] .a-btn-save:hover {
-  background: rgba(255,255,255,0.06) !important;
-  border-color: rgba(255,255,255,0.35) !important;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
 }
 [data-dark-surface] .a-btn-sm {
   background: transparent !important;
-  color: rgba(255,255,255,0.7) !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
+  color: color-mix(in srgb, var(--glass-text) 70%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
 }
 [data-dark-surface] .a-btn-sm:hover {
-  background: rgba(255,255,255,0.05) !important;
-  color: #ffffff !important;
-  border-color: rgba(255,255,255,0.25) !important;
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
+  color: var(--glass-text) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
 }
 
 /* --- Navigation sidebar --- */
@@ -4430,7 +4352,7 @@ html.dark .a-modal label {
 [data-dark-surface] .std-sidebar,
 [data-dark-surface] .cab-nav {
   background: #000000 !important;
-  border-right: 1px solid rgba(255,255,255,0.04) !important;
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Nav items --- */
@@ -4441,25 +4363,25 @@ html.dark .a-modal label {
 }
 [data-dark-surface] .ent-nav-item:hover,
 [data-dark-surface] .cab-nav-item:hover {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   background: rgba(255,255,255,0.03) !important;
 }
 [data-dark-surface] .ent-nav-item.active,
 [data-dark-surface] .ent-nav-item.router-link-active,
 [data-dark-surface] .cab-nav-item.active {
-  color: #ffffff !important;
-  background: rgba(255,255,255,0.06) !important;
+  color: var(--glass-text) !important;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 
 /* --- Dashboard cards and quick buttons --- */
 [data-dark-surface] .dash-quick-btn {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.06) !important;
-  color: rgba(255,255,255,0.7) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
+  color: color-mix(in srgb, var(--glass-text) 70%, transparent) !important;
 }
 [data-dark-surface] .dash-quick-btn:hover {
   border-color: rgba(255,255,255,0.15) !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 [data-dark-surface] .dash-welcome {
   background: transparent !important;
@@ -4472,12 +4394,12 @@ html.dark .a-modal label {
   border-color: transparent !important;
 }
 [data-dark-surface] .admin-tab:hover {
-  color: rgba(255,255,255,0.7) !important;
+  color: color-mix(in srgb, var(--glass-text) 70%, transparent) !important;
 }
 [data-dark-surface] .admin-tab.active,
 [data-dark-surface] .admin-tab--active {
-  color: #ffffff !important;
-  border-bottom: 1px solid rgba(255,255,255,0.25) !important;
+  color: var(--glass-text) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
   background: transparent !important;
 }
 
@@ -4488,7 +4410,7 @@ html.dark .a-modal label {
 [data-dark-surface] thead th {
   background: rgba(255,255,255,0.02) !important;
   color: rgba(255,255,255,0.5) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 [data-dark-surface] tbody tr {
   border-bottom-color: rgba(255,255,255,0.03) !important;
@@ -4502,7 +4424,7 @@ html.dark .a-modal label {
 [data-dark-surface] .asb-section,
 [data-dark-surface] .acp-form-section {
   background: transparent !important;
-  border-color: rgba(255,255,255,0.04) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Labels, field labels --- */
@@ -4514,7 +4436,7 @@ html.dark .a-modal label {
 /* --- Detail cards --- */
 [data-dark-surface] .ent-detail-card {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.04) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
   box-shadow: none !important;
 }
 
@@ -4522,23 +4444,23 @@ html.dark .a-modal label {
 [data-dark-surface] .cab-task,
 [data-dark-surface] .cab-doc-card {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.04) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Status bar, topbar --- */
 [data-dark-surface] .u-topbar {
   background: transparent !important;
-  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Section titles emphasize white --- */
 [data-dark-surface] .u-section-title {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 
 /* --- Progress bars --- */
 [data-dark-surface] .cab-stages-inline-bar-wrap {
-  background: rgba(255,255,255,0.06) !important;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 
 /* --- Toggle rows --- */
@@ -4555,8 +4477,8 @@ html.dark .a-modal label {
 /* --- Status pills and badges --- */
 [data-dark-surface] [class*="status-pill"],
 [data-dark-surface] [class*="badge"] {
-  background: rgba(255,255,255,0.04) !important;
-  border: 1px solid rgba(255,255,255,0.08) !important;
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
 }
 
 /* --- Danger button on dark surface --- */
@@ -4574,9 +4496,9 @@ html.dark .a-modal label {
 /* --- Force CSS variable overrides on dark surface --- */
 [data-dark-surface] {
   --glass-text: var(--glass-text, #e0e0e0) !important;
-  --btn-color: #ffffff !important;
+  --btn-color: var(--glass-text) !important;
   --dropdown-bg: #0a0a0a !important;
-  --dropdown-border: rgba(255,255,255,0.08) !important;
+  --dropdown-border: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
   --dropdown-shadow: 0 8px 40px rgba(0,0,0,0.5) !important;
 
   /* phase palette → lighter versions for dark bg */
@@ -4603,14 +4525,14 @@ html.dark .a-modal label {
 /* --- WorkStatus component (ws-*) --- */
 [data-dark-surface] .ws-card {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 [data-dark-surface] .ws-header {
-  border-bottom-color: rgba(255,255,255,0.04) !important;
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 [data-dark-surface] .ws-btn {
   background: transparent !important;
-  border-color: rgba(255,255,255,0.08) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
   color: rgba(255,255,255,0.6) !important;
 }
 [data-dark-surface] .ws-filter-btn {
@@ -4618,24 +4540,24 @@ html.dark .a-modal label {
   color: rgba(255,255,255,0.4) !important;
 }
 [data-dark-surface] .ws-filter-btn.active {
-  background: rgba(255,255,255,0.08) !important;
-  color: #ffffff !important;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
+  color: var(--glass-text) !important;
 }
 [data-dark-surface] .ws-detail-panel {
   background: #050505 !important;
-  border-left: 1px solid rgba(255,255,255,0.06) !important;
+  border-left: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 [data-dark-surface] .ws-detail-overlay {
   background: rgba(0,0,0,0.75) !important;
 }
 [data-dark-surface] .ws-detail-section {
-  border-bottom-color: rgba(255,255,255,0.04) !important;
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 [data-dark-surface] .ws-comment-form {
-  border-top-color: rgba(255,255,255,0.04) !important;
+  border-top-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 [data-dark-surface] .ws-lbl {
-  color: rgba(255,255,255,0.35) !important;
+  color: color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
 }
 
 /* --- Project pages (proj-*) --- */
@@ -4645,17 +4567,17 @@ html.dark .a-modal label {
 [data-dark-surface] .proj-card,
 [data-dark-surface] .pj-card {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 
 /* --- Documents (docs-*) --- */
 [data-dark-surface] .docs-card {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 [data-dark-surface] .docs-upload {
   background: transparent !important;
-  border: 1px dashed rgba(255,255,255,0.10) !important;
+  border: 1px dashed color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
   color: rgba(255,255,255,0.4) !important;
 }
 
@@ -4663,13 +4585,13 @@ html.dark .a-modal label {
 [data-dark-surface] .de-card,
 [data-dark-surface] .de-section {
   background: transparent !important;
-  border-color: rgba(255,255,255,0.04) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Status pills/bars: keep functional colors but adapt --- */
 [data-dark-surface] .sb-cell {
   background: rgba(255,255,255,0.02) !important;
-  border-color: rgba(255,255,255,0.04) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 [data-dark-surface] .sb-label {
   color: rgba(255,255,255,0.4) !important;
@@ -4678,27 +4600,27 @@ html.dark .a-modal label {
 /* --- Dashboard stat cards and project cards --- */
 [data-dark-surface] .dash-stat {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 [data-dark-surface] .dash-project-card {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 
 /* --- Upload/file areas across all components --- */
 [data-dark-surface] [class*="-upload"] {
   background: transparent !important;
-  border-color: rgba(255,255,255,0.08) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
   color: rgba(255,255,255,0.4) !important;
 }
 [data-dark-surface] [class*="-file-row"] {
-  border-bottom-color: rgba(255,255,255,0.04) !important;
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Admin Search (as-*) --- */
 [data-dark-surface] .as-results {
-  background: #0a0a0a !important;
-  border-color: rgba(255,255,255,0.06) !important;
+  background: color-mix(in srgb, var(--color-surface, var(--glass-bg)) calc(var(--glass-opacity, 0.9) * 100%), transparent) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 
 /* --- Roadmap components --- */
@@ -4710,7 +4632,7 @@ html.dark .a-modal label {
 [data-dark-surface] .svc-card,
 [data-dark-surface] .co-card {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 
 /* --- Misc: afc- (first contact), aca- (concept approval), acnp- (contractors) --- */
@@ -4718,14 +4640,14 @@ html.dark .a-modal label {
 [data-dark-surface] .aca-render-card,
 [data-dark-surface] .acnp-card {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 [data-dark-surface] .afc-complete-card--done {
   background: rgba(46,168,106,0.08) !important;
   border-color: rgba(46,168,106,0.20) !important;
 }
 [data-dark-surface] .afc-complete-btn {
-  border-color: rgba(255,255,255,0.10) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
   color: rgba(255,255,255,0.5) !important;
 }
 
@@ -4733,7 +4655,7 @@ html.dark .a-modal label {
 [data-dark-surface] .mpe-panel,
 [data-dark-surface] .mpp-panel {
   background: #050505 !important;
-  border-color: rgba(255,255,255,0.06) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 
 /* --- Gallery components --- */
@@ -4742,7 +4664,7 @@ html.dark .a-modal label {
 }
 [data-dark-surface] .agal-card {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.04) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Smart brief (asb-*) --- */
@@ -4762,7 +4684,7 @@ html.dark .a-modal label {
 
 /* --- Any remaining section-like class --- */
 [data-dark-surface] [class*="-section"]:not([class*="title"]):not([class*="grow"]) {
-  border-color: rgba(255,255,255,0.04) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Any remaining wrap-like class --- */
@@ -4778,64 +4700,64 @@ html.dark .a-modal label {
 
 /* --- Highlight search matches on dark --- */
 [data-dark-surface] mark {
-  background: rgba(255,255,255,0.12) !important;
-  color: #ffffff !important;
+  background: color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
+  color: var(--glass-text) !important;
 }
 
 /* --- Muted text universal --- */
 [data-dark-surface] [class*="--muted"],
 [data-dark-surface] .text-muted {
-  color: rgba(255,255,255,0.35) !important;
+  color: color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
 }
 
 /* --- Link colors on dark surface --- */
 [data-dark-surface] [class*="-link"] {
-  color: rgba(255,255,255,0.7) !important;
+  color: color-mix(in srgb, var(--glass-text) 70%, transparent) !important;
 }
 [data-dark-surface] [class*="-link"]:hover {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 
 /* --- Empty states --- */
 [data-dark-surface] .u-empty,
 [data-dark-surface] [class*="-empty"] {
-  color: rgba(255,255,255,0.25) !important;
+  color: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
 }
 
 /* --- Timeline specific (ct-*) --- */
 [data-dark-surface] [class*="ct-line"],
 [data-dark-surface] [class*="ct-connector"] {
-  background: rgba(255,255,255,0.08) !important;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
 }
 
 /* --- Divider / separator lines --- */
 [data-dark-surface] hr {
-  border-color: rgba(255,255,255,0.06) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 
 /* --- Design panel itself should stay usable --- */
 [data-dark-surface] .dp-panel {
   background: #080808 !important;
-  border-color: rgba(255,255,255,0.06) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 [data-dark-surface] .dp-tab {
   color: rgba(255,255,255,0.4) !important;
 }
 [data-dark-surface] .dp-tab--active {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 [data-dark-surface] .dp-label {
   color: rgba(255,255,255,0.5) !important;
 }
 [data-dark-surface] .dp-arch-chip {
   background: transparent !important;
-  border-color: rgba(255,255,255,0.10) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
   color: rgba(255,255,255,0.5) !important;
 }
 [data-dark-surface] .dp-arch-chip--active {
-  background: rgba(255,255,255,0.10) !important;
-  color: #ffffff !important;
-  border-color: rgba(255,255,255,0.25) !important;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
+  color: var(--glass-text) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
 }
 
 /* --- NEUTRALISE HARDCODED GRAY TEXT COLORS ON DARK SURFACES --- */
@@ -4977,20 +4899,20 @@ html.dark .a-modal label {
 [data-dark-surface] select {
   color: var(--ds-text-color, rgba(255,255,255,0.85)) !important;
   background: rgba(255,255,255,0.03) !important;
-  border-color: rgba(255,255,255,0.10) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
 }
 [data-dark-surface] input::placeholder,
 [data-dark-surface] textarea::placeholder {
-  color: rgba(255,255,255,0.25) !important;
+  color: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
 }
 [data-dark-surface] select option {
-  background: #0a0a0a !important;
+  background: color-mix(in srgb, var(--color-surface, var(--glass-bg)) calc(var(--glass-opacity, 0.9) * 100%), transparent) !important;
   color: rgba(255,255,255,0.8) !important;
 }
 
 /* Links */
 [data-dark-surface] a:not([class]) {
-  color: var(--ds-link-color, rgba(255,255,255,0.7)) !important;
+  color: var(--ds-link-color, color-mix(in srgb, var(--glass-text) 70%, transparent)) !important;
 }
 [data-dark-surface] a:not([class]):hover {
   color: var(--ds-link-color, #ffffff) !important;
@@ -5055,29 +4977,29 @@ html[data-concept="brutal"] [class*="-emoji"] {
 [data-dark-surface] .ct-card,
 [data-dark-surface] .ct-event {
   background: rgba(255,255,255,0.03) !important;
-  border-color: rgba(255,255,255,0.06) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 
 /* --- ADMIN DETAIL PAGE POSITIONING --- */
 [data-dark-surface] .ent-detail-head {
-  border-bottom-color: rgba(255,255,255,0.06) !important;
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 [data-dark-surface] .ent-detail-section {
-  color: rgba(255,255,255,0.35) !important;
+  color: color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.68rem !important;
 }
 [data-dark-surface] .ent-detail-name {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 [data-dark-surface] .ent-detail-foot {
-  border-top-color: rgba(255,255,255,0.06) !important;
+  border-top-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 
 /* --- SIDEBAR POSITIONING --- */
 [data-dark-surface] .ent-sidebar-head {
-  border-bottom-color: rgba(255,255,255,0.06) !important;
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 [data-dark-surface] .ent-sidebar-title {
   color: rgba(255,255,255,0.55) !important;
@@ -5086,35 +5008,35 @@ html[data-concept="brutal"] [class*="-emoji"] {
   color: rgba(255,255,255,0.3) !important;
 }
 [data-dark-surface] .ent-sidebar-foot {
-  border-top-color: rgba(255,255,255,0.06) !important;
+  border-top-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 
 /* --- NAV ITEM TEXT COLORS --- */
 [data-dark-surface] .ent-nav-name {
-  color: rgba(255,255,255,0.7) !important;
+  color: color-mix(in srgb, var(--glass-text) 70%, transparent) !important;
 }
 [data-dark-surface] .ent-nav-sub {
   color: rgba(255,255,255,0.3) !important;
 }
 [data-dark-surface] .ent-nav-item--active .ent-nav-name {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 
 /* --- FIX AVATAR CIRCLES ON DARK SURFACE --- */
 [data-dark-surface] .pj-av,
 [data-dark-surface] .ent-nav-avatar {
-  background: rgba(255,255,255,0.06) !important;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
   color: rgba(255,255,255,0.5) !important;
 }
 
 /* --- SEARCH INPUT --- */
 [data-dark-surface] .ent-search {
   background: rgba(255,255,255,0.03) !important;
-  border-color: rgba(255,255,255,0.08) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
   color: rgba(255,255,255,0.8) !important;
 }
 [data-dark-surface] .ent-search::placeholder {
-  color: rgba(255,255,255,0.25) !important;
+  color: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
 }
 
 /* --- MODAL IMPROVEMENTS --- */
@@ -5124,14 +5046,14 @@ html[data-concept="brutal"] [class*="-emoji"] {
 }
 [data-dark-surface] .pj-modal {
   background: var(--ds-card-bg, #0a0a0a) !important;
-  border-color: rgba(255,255,255,0.08) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
 }
 [data-dark-surface] .pj-modal-head {
-  color: #ffffff !important;
-  border-bottom-color: rgba(255,255,255,0.06) !important;
+  color: var(--glass-text) !important;
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 [data-dark-surface] .pj-modal-step {
-  color: rgba(255,255,255,0.35) !important;
+  color: color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
 }
 
 /* --- CHECKBOX AND TOGGLE COLORS --- */
@@ -5382,7 +5304,7 @@ html[data-concept="brutal"] .glass-surface {
 }
 html[data-concept="brutal"] .glass-chip {
   background: #000000 !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   border: none !important;
   border-radius: 4px 4px 0 0 !important;
 }
@@ -5411,7 +5333,7 @@ html[data-concept="brutal"] .cab-modal {
 
 html[data-concept="brutal"] .a-btn-save {
   background: #000000 !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   border: none !important;
   border-radius: 4px 4px 0 0 !important;
   text-transform: uppercase !important;
@@ -5436,7 +5358,7 @@ html[data-concept="brutal"] .cab-nav {
 html[data-concept="brutal"] .ent-nav-item,
 html[data-concept="brutal"] .cab-nav-item,
 html[data-concept="brutal"] .std-nav-item {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   text-transform: uppercase !important;
   letter-spacing: 0.10em !important;
 }
@@ -5478,7 +5400,7 @@ html[data-concept="brutal"] .cab-doc-card {
 
 html[data-concept="brutal"] thead th {
   background: #000000 !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   text-transform: uppercase !important;
   letter-spacing: 0.10em !important;
 }
@@ -5686,7 +5608,7 @@ html[data-concept="minale"] {
   --glass-shadow:   none;
   --btn-bg:         transparent;
   --btn-color:      #ffffff;
-  --btn-border:     rgba(255,255,255,0.25);
+  --btn-border:     color-mix(in srgb, var(--glass-text) 25%, transparent);
   --btn-sm-bg:      transparent;
   --btn-sm-border:  rgba(255,255,255,0.20);
 }
@@ -5704,7 +5626,7 @@ html[data-concept="minale"] .ent-layout,
 html[data-concept="minale"] .admin-layout,
 html[data-concept="minale"] .std-layout {
   background: #000000 !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 
 /* ── Base text: all standard text-bearing elements white ──── */
@@ -5718,7 +5640,7 @@ html[data-concept="minale"] td,
 html[data-concept="minale"] th,
 html[data-concept="minale"] li,
 html[data-concept="minale"] button {
-  color: #ffffff;
+  color: var(--glass-text);
 }
 
 /* Muted / secondary text */
@@ -5738,9 +5660,9 @@ html[data-concept="minale"] .cab-doc-card,
 html[data-concept="minale"] .ws-card,
 html[data-concept="minale"] .dash-stat,
 html[data-concept="minale"] .dash-project-card {
-  background: #0a0a0a !important;
+  background: color-mix(in srgb, var(--color-surface, var(--glass-bg)) calc(var(--glass-opacity, 0.9) * 100%), transparent) !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
 }
 
 /* Navigation: pure text, no background decoration */
@@ -5755,7 +5677,7 @@ html[data-concept="minale"] .cab-nav {
 html[data-concept="minale"] .ent-nav-item,
 html[data-concept="minale"] .cab-nav-item,
 html[data-concept="minale"] .std-nav-item {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   font-weight: 400 !important;
   letter-spacing: 0.15em !important;
   text-transform: uppercase !important;
@@ -5779,7 +5701,7 @@ html[data-concept="minale"] .cab-nav-item.active {
 /* Buttons: ghost white hairline */
 html[data-concept="minale"] .a-btn-save {
   background: transparent !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   border: 1px solid rgba(255,255,255,0.30) !important;
   font-weight: 400 !important;
   letter-spacing: 0.20em !important;
@@ -5789,20 +5711,20 @@ html[data-concept="minale"] .a-btn-save {
   transition: all 200ms ease !important;
 }
 html[data-concept="minale"] .a-btn-save:hover {
-  background: rgba(255,255,255,0.08) !important;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
   border-color: rgba(255,255,255,0.60) !important;
 }
 html[data-concept="minale"] .a-btn-sm {
   background: transparent !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255,255,255,0.25) !important;
+  color: var(--glass-text) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
   font-weight: 400 !important;
   letter-spacing: 0.12em !important;
   text-transform: uppercase !important;
   font-size: 0.75rem !important;
 }
 html[data-concept="minale"] .a-btn-sm:hover {
-  background: rgba(255,255,255,0.06) !important;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
   border-color: rgba(255,255,255,0.50) !important;
 }
 
@@ -5812,7 +5734,7 @@ html[data-concept="minale"] input:not([type="checkbox"]):not([type="radio"]):not
 html[data-concept="minale"] textarea,
 html[data-concept="minale"] select {
   background: transparent !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   border: none !important;
   border-bottom: 1px solid rgba(255,255,255,0.30) !important;
   border-radius: 4px 4px 0 0 !important;
@@ -5820,7 +5742,7 @@ html[data-concept="minale"] select {
   font-weight: 400 !important;
   letter-spacing: 0.05em !important;
   transition: border-color 200ms ease !important;
-  caret-color: #ffffff !important;
+  caret-color: var(--glass-text) !important;
 }
 html[data-concept="minale"] .glass-input::placeholder,
 html[data-concept="minale"] input::placeholder,
@@ -5847,7 +5769,7 @@ html[data-concept="minale"] .u-label {
 
 /* Tabs: white, uppercase */
 html[data-concept="minale"] .admin-tab {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   font-weight: 400 !important;
   letter-spacing: 0.12em !important;
   text-transform: uppercase !important;
@@ -5868,10 +5790,10 @@ html[data-concept="minale"] .admin-tab--active {
 /* Modals: dark overlay, black modal */
 html[data-concept="minale"] .u-modal,
 html[data-concept="minale"] .cab-modal {
-  background: #0a0a0a !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
+  background: color-mix(in srgb, var(--color-surface, var(--glass-bg)) calc(var(--glass-opacity, 0.9) * 100%), transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
   box-shadow: 0 8px 40px rgba(0,0,0,0.90) !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 html[data-concept="minale"] .u-modal-overlay,
 html[data-concept="minale"] .cab-modal-overlay {
@@ -5883,7 +5805,7 @@ html[data-concept="minale"] .cab-modal-overlay {
 html[data-concept="minale"] thead th {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.12) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
   font-weight: 400 !important;
   letter-spacing: 0.15em !important;
   text-transform: uppercase !important;
@@ -5891,10 +5813,10 @@ html[data-concept="minale"] thead th {
   color: rgba(255,255,255,0.45) !important;
 }
 html[data-concept="minale"] tbody td {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 html[data-concept="minale"] tbody tr {
-  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 html[data-concept="minale"] tbody tr:hover {
   background: rgba(255,255,255,0.03) !important;
@@ -5904,7 +5826,7 @@ html[data-concept="minale"] tbody tr:hover {
 html[data-concept="minale"] .u-topbar {
   background: #000000 !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 
 /* All section titles — extreme tracking */
@@ -5912,7 +5834,7 @@ html[data-concept="minale"] h1,
 html[data-concept="minale"] h2,
 html[data-concept="minale"] h3,
 html[data-concept="minale"] .u-section-title {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   font-weight: 400 !important;
   letter-spacing: 0.22em !important;
   text-transform: uppercase !important;
@@ -5921,7 +5843,7 @@ html[data-concept="minale"] .u-section-title {
 /* Chips: white ghost, square */
 html[data-concept="minale"] .glass-chip {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.18) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent) !important;
   border-radius: 4px 4px 0 0 !important;
   color: rgba(255,255,255,0.75) !important;
   font-weight: 400 !important;
@@ -5938,7 +5860,7 @@ html[data-concept="minale"] h1 {
   letter-spacing: 0.18em !important;
   line-height: 1.05 !important;
   text-transform: uppercase !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   margin-bottom: 0.5em !important;
 }
 /* h2: section headline */
@@ -5948,7 +5870,7 @@ html[data-concept="minale"] h2 {
   letter-spacing: 0.20em !important;
   line-height: 1.2 !important;
   text-transform: uppercase !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   margin-bottom: 0.4em !important;
 }
 /* h3: subsection */
@@ -6037,23 +5959,23 @@ html[data-concept="minale"] [class*="-badge"] {
 
 /* ── ator (ToR contract) component — dark bg ────────────── */
 html[data-concept="minale"] .ent-entity-hd {
-  border-color: rgba(255,255,255,0.12) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
   background: rgba(255,255,255,0.02) !important;
 }
 html[data-concept="minale"] .ent-entity-hd-name {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   opacity: 0.7 !important;
   letter-spacing: 0.22em !important;
 }
 html[data-concept="minale"] .ent-entity-hd-action {
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   opacity: 0.5 !important;
   letter-spacing: 0.14em !important;
-  border-color: rgba(255,255,255,0.12) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
 }
 html[data-concept="minale"] .ent-entity-hd-action:hover {
   opacity: 0.85 !important;
-  background: rgba(255,255,255,0.08) !important;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
 }
 html[data-concept="minale"] .ator-transition-banner {
   background: transparent !important;
@@ -6064,38 +5986,38 @@ html[data-concept="minale"] .ator-banner-text {
 }
 html[data-concept="minale"] .ator-btn-save {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.35) !important;
-  color: #ffffff !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
+  color: var(--glass-text) !important;
 }
 html[data-concept="minale"] .ator-btn-save:hover:not(:disabled) {
-  background: rgba(255,255,255,0.06) !important;
+  background: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
   border-color: rgba(255,255,255,0.70) !important;
 }
 html[data-concept="minale"] .ator-btn-transition {
   background: transparent !important;
   border: 1px solid rgba(255,255,255,0.30) !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
 }
 html[data-concept="minale"] .ator-section-title {
-  border-bottom-color: rgba(255,255,255,0.08) !important;
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
 }
 html[data-concept="minale"] .ator-footer {
-  border-top-color: rgba(255,255,255,0.08) !important;
+  border-top-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
 }
 
 /* Design panel: stays dark */
 html[data-concept="minale"] .dp-panel {
-  background: #0a0a0a !important;
-  border-color: rgba(255,255,255,0.10) !important;
-  color: #ffffff !important;
+  background: color-mix(in srgb, var(--color-surface, var(--glass-bg)) calc(var(--glass-opacity, 0.9) * 100%), transparent) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
+  color: var(--glass-text) !important;
 }
 
 /* ── Phase badges: monochrome tonal scale ──────────────── */
 html[data-concept="minale"] [class*="pj-phase--"],
 html[data-concept="minale"] [class*="-phase--"] {
   color: rgba(255,255,255,0.70) !important;
-  background: rgba(255,255,255,0.05) !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
 }
 /* Phase CSS variables — all neutralised */
 html[data-concept="minale"] {
@@ -6112,7 +6034,7 @@ html[data-concept="minale"] {
 
 /* ── Danger button: white hairline not red ─────────────── */
 html[data-concept="minale"] .a-btn-danger {
-  color: rgba(255,255,255,0.35) !important;
+  color: color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
   border-color: rgba(255,255,255,0.14) !important;
   opacity: 1 !important;
 }
@@ -6134,7 +6056,7 @@ html[data-concept="minale"] [class*="-dot--orange"] {
   background: rgba(255,255,255,0.50) !important;
 }
 html[data-concept="minale"] [class*="-dot--red"] {
-  background: rgba(255,255,255,0.25) !important;
+  background: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
 }
 
 /* ── Status progress bar ───────────────────────────────── */
@@ -6157,12 +6079,12 @@ html[data-concept="minale"] .cab-portfolio-item-check {
 
 /* ── ator-status-btn: grey monochrome ─────────────────── */
 html[data-concept="minale"] .ator-status-btn {
-  --accent: rgba(255,255,255,0.35) !important;
+  --accent: color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
   border-color: rgba(255,255,255,0.20) !important;
   color: rgba(255,255,255,0.45) !important;
 }
 html[data-concept="minale"] .ator-status-btn--active {
-  background: rgba(255,255,255,0.08) !important;
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
   color: rgba(255,255,255,0.90) !important;
   border-color: rgba(255,255,255,0.50) !important;
 }
@@ -6171,7 +6093,7 @@ html[data-concept="minale"] .ator-status-btn--active {
 html[data-concept="minale"] .cab-doc-del {
   background: transparent !important;
   border-color: rgba(255,255,255,0.14) !important;
-  color: rgba(255,255,255,0.35) !important;
+  color: color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
   border-radius: 4px 4px 0 0 !important;
 }
 html[data-concept="minale"] .cab-doc-del:hover {
@@ -6201,7 +6123,7 @@ html[data-concept="minale"] .ent-empty-detail span:not(.ent-empty-icon):not([cla
 html[data-concept="minale"] .u-status-sel {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.18) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent) !important;
   color: rgba(255,255,255,0.70) !important;
   border-radius: 4px 4px 0 0 !important;
   padding: 4px 0 !important;
@@ -6214,7 +6136,7 @@ html[data-concept="minale"] .admin-status-bar,
 html[data-concept="minale"] [class*="status-bar"] {
   background: transparent !important;
   border: none !important;
-  border-top: 1px solid rgba(255,255,255,0.06) !important;
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
 html[data-concept="minale"] .sb-section-title,
 html[data-concept="minale"] [class*="-sb-"] {
@@ -6226,14 +6148,14 @@ html[data-concept="minale"] .cl-close,
 html[data-concept="minale"] .ct-modal-close,
 html[data-concept="minale"] [class*="modal-close"] {
   background: transparent !important;
-  border: 1px solid rgba(255,255,255,0.12) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
   border-radius: 4px 4px 0 0 !important;
   color: rgba(255,255,255,0.50) !important;
 }
 html[data-concept="minale"] .cl-close:hover,
 html[data-concept="minale"] .ct-modal-close:hover {
   border-color: rgba(255,255,255,0.40) !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   background: transparent !important;
 }
 
@@ -6250,7 +6172,7 @@ html[data-concept="minale"] .cl-modal,
 html[data-concept="minale"] .ct-modal,
 html[data-concept="minale"] [class*="modal"]:not([class*="modal-head"]):not([class*="modal-foot"]):not([class*="modal-body"]):not([class*="modal-close"]):not([class*="modal-tab"]) {
   background: #050505 !important;
-  border: 1px solid rgba(255,255,255,0.10) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
 }
 
 /* ── Modal section headings ────────────────────────────── */
@@ -6259,7 +6181,7 @@ html[data-concept="minale"] .ct-form-section {
   letter-spacing: 0.22em !important;
   text-transform: uppercase !important;
   color: rgba(255,255,255,0.28) !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
   padding-bottom: 6px !important;
   margin-bottom: 16px !important;
 }
@@ -6269,7 +6191,7 @@ html[data-concept="minale"] .ent-detail-card,
 html[data-concept="minale"] .ent-detail-section {
   background: transparent !important;
   border: none !important;
-  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
   border-radius: 4px 4px 0 0 !important;
 }
 html[data-concept="minale"] .ent-detail-section {
@@ -6282,7 +6204,7 @@ html[data-concept="minale"] .ent-detail-row {
   font-size: 0.875rem !important;
   color: rgba(255,255,255,0.70) !important;
   padding: 6px 0 !important;
-  border-bottom: 1px solid rgba(255,255,255,0.04) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* ── Nav group labels ──────────────────────────────────── */
@@ -6970,7 +6892,7 @@ html[data-concept="future"] { --phase-violet: #b060ff !important; --phase-blue: 
 /* ── Restore glass CSS variables — canonical values ──────── */
 html[data-concept="glass"] {
   --glass-page-bg:   linear-gradient(135deg, #e8eaf6 0%, #f3e5f5 50%, #e1f5fe 100%);
-  --glass-bg:        rgba(255,255,255,0.18);
+  --glass-bg:        color-mix(in srgb, var(--glass-text) 18%, transparent);
   --glass-text:      #1a1a2e;
   --glass-border:    rgba(255,255,255,0.45);
   --glass-shadow:    0 8px 32px rgba(31,38,135,0.12);
@@ -7019,7 +6941,7 @@ html[data-concept="glass"] .glass-input,
 html[data-concept="glass"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]),
 html[data-concept="glass"] textarea,
 html[data-concept="glass"] select {
-  background: rgba(255,255,255,0.25) !important;
+  background: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   border: 1px solid rgba(255,255,255,0.55) !important;
@@ -7039,7 +6961,7 @@ html[data-concept="glass"] textarea:focus {
 /* ── Buttons: glass pill ────────────────────────────────── */
 html[data-concept="glass"] .a-btn-save {
   background: rgba(100,120,255,0.85) !important;
-  color: #ffffff !important;
+  color: var(--glass-text) !important;
   border: none !important;
   border-radius: 999px !important;
   padding: 10px 28px !important;
@@ -7080,7 +7002,7 @@ html[data-concept="glass"] .cab-nav {
   background: rgba(255,255,255,0.15) !important;
   backdrop-filter: blur(24px) !important;
   -webkit-backdrop-filter: blur(24px) !important;
-  border-right: 1px solid rgba(255,255,255,0.35) !important;
+  border-right: 1px solid color-mix(in srgb, var(--glass-text) 35%, transparent) !important;
 }
 
 /* ── Nav items: coloured accents ────────────────────────── */
@@ -7120,7 +7042,7 @@ html[data-concept="glass"] .admin-tab--active {
 /* ── Header: glass surface ──────────────────────────────── */
 html[data-concept="glass"] .admin-header,
 html[data-concept="glass"] .u-topbar {
-  background: rgba(255,255,255,0.25) !important;
+  background: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
   backdrop-filter: blur(24px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
   border-bottom: 1px solid rgba(255,255,255,0.40) !important;

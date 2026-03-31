@@ -177,6 +177,7 @@ type SpeechRecognitionCtorLike = new () => {
 
 let speechRecognition: InstanceType<SpeechRecognitionCtorLike> | null = null
 let speechRecognitionRestartTimer: ReturnType<typeof setTimeout> | null = null
+let speechRecognitionCurrentDraftId = ''
 let transcriptionAnalyserContext: AudioContext | null = null
 let transcriptionLocalAnalyser: AnalyserNode | null = null
 let transcriptionRemoteAnalyser: AnalyserNode | null = null
@@ -760,14 +761,25 @@ export function useMessengerCalls() {
           if (!transcriptionActive.value) {
             transcriptionEntries.value = transformed
           } else {
-            const existingIds = new Set(transcriptionEntries.value.map(x => x.id))
-            const missing = transformed.filter((x: any) => {
-              if (existingIds.has(x.id)) return false
-              if (x.speaker === 'you' && speechRecognition) return false
-              return true
-            })
-            if (missing.length > 0) {
-              const combined = [...transcriptionEntries.value, ...missing].sort((a, b) => a.createdAt - b.createdAt)
+            const existingMap = new Map(transcriptionEntries.value.map(x => [x.id, x]))
+            let changed = false
+            
+            for (const item of transformed) {
+              if (item.speaker === 'you' && speechRecognition) continue
+              
+              const existing = existingMap.get(item.id)
+              if (!existing) {
+                existingMap.set(item.id, item)
+                changed = true
+              } else if (existing.text !== item.text || existing.final !== item.final) {
+                existing.text = item.text
+                existing.final = item.final
+                changed = true
+              }
+            }
+            
+            if (changed) {
+              const combined = Array.from(existingMap.values()).sort((a, b) => a.createdAt - b.createdAt)
               transcriptionEntries.value = combined.slice(Math.max(0, combined.length - 120))
             }
           }
@@ -1208,15 +1220,15 @@ export function useMessengerCalls() {
     return callReview.value
   }
 
-  function appendTranscriptionEntry(text: string, options?: { final?: boolean; speaker?: MessengerTranscriptSpeaker }) {
+  function appendTranscriptionEntry(text: string, options?: { id?: string; final?: boolean; speaker?: MessengerTranscriptSpeaker }) {
     const normalized = text.trim()
     if (!normalized) {
       return
     }
 
-    const genId = typeof crypto !== 'undefined' && crypto.randomUUID 
+    const genId = options?.id || (typeof crypto !== 'undefined' && crypto.randomUUID 
       ? crypto.randomUUID() 
-      : Math.random().toString(36).substring(2, 15)
+      : Math.random().toString(36).substring(2, 15))
 
     const nextEntry: MessengerCallTranscriptEntry = {
       id: genId,
@@ -1226,8 +1238,15 @@ export function useMessengerCalls() {
       createdAt: Date.now(),
     }
 
-    const limited = [...transcriptionEntries.value, nextEntry]
-    transcriptionEntries.value = limited.slice(Math.max(0, limited.length - 120))
+    const existingIdx = transcriptionEntries.value.findIndex(x => x.id === genId)
+    let nextEntries = [...transcriptionEntries.value]
+    if (existingIdx !== -1) {
+      nextEntries[existingIdx] = nextEntry
+    } else {
+      nextEntries.push(nextEntry)
+    }
+    
+    transcriptionEntries.value = nextEntries.slice(Math.max(0, nextEntries.length - 120))
   }
 
   function resolveTranscriptSpeaker() {
@@ -1569,6 +1588,7 @@ export function useMessengerCalls() {
     speechRecognition.lang = 'ru-RU'
     speechRecognition.onresult = (event) => {
       let interim = ''
+      let finalAdded = false
 
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
         const result = event.results[index]
@@ -1580,13 +1600,42 @@ export function useMessengerCalls() {
         }
 
         if (result.isFinal) {
-          appendTranscriptionEntry(transcriptText, { speaker: resolveTranscriptSpeaker(), final: true })
+          const resolveId = speechRecognitionCurrentDraftId
+          appendTranscriptionEntry(transcriptText, { id: resolveId, speaker: resolveTranscriptSpeaker(), final: true })
+          finalAdded = true
         } else {
           interim += `${transcriptText} `
         }
       }
 
-      transcriptionDraft.value = interim.trim()
+      const normalizedInterim = interim.trim()
+
+      if (normalizedInterim) {
+        if (!speechRecognitionCurrentDraftId) {
+          speechRecognitionCurrentDraftId = `draft-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+        }
+        
+        const existingIdx = transcriptionEntries.value.findIndex(x => x.id === speechRecognitionCurrentDraftId)
+        if (existingIdx !== -1) {
+          transcriptionEntries.value[existingIdx].text = normalizedInterim
+          transcriptionEntries.value[existingIdx].createdAt = Date.now()
+        } else {
+          transcriptionEntries.value.push({
+            id: speechRecognitionCurrentDraftId,
+            speaker: resolveTranscriptSpeaker(),
+            text: normalizedInterim,
+            final: false,
+            createdAt: Date.now()
+          })
+        }
+      } else if (!finalAdded && speechRecognitionCurrentDraftId) {
+        transcriptionEntries.value = transcriptionEntries.value.filter(x => x.id !== speechRecognitionCurrentDraftId)
+        speechRecognitionCurrentDraftId = ''
+      }
+      
+      if (finalAdded) {
+        speechRecognitionCurrentDraftId = ''
+      }
     }
     speechRecognition.onerror = (event) => {
       const errorCode = String(event.error || '')
