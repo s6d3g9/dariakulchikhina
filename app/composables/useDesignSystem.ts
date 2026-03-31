@@ -180,7 +180,7 @@ export interface DesignTokens {
   colorCardBg:  string   // --ds-card-bg     — card / modal background override
 
   /* ── Button & Card hover animation ── */
-  btnHoverAnim: 'none' | 'lift' | 'scale' | 'glow' | 'fill' | 'sheen' | 'pulse' | 'shutter' | 'magnet' | 'scan'  // kinetic hover style
+  btnHoverAnim: 'none' | 'lift' | 'scale' | 'glow' | 'fill' | 'sheen' | 'pulse' | 'shutter' | 'magnet' | 'scan' | 'ripple'  // kinetic hover style
   cardHoverAnim: 'none' | 'lift' | 'scale' | 'dim' | 'border' | 'reveal' // card hover micromotion
 
   /* ── Design Architecture tokens ── */
@@ -800,7 +800,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       scrollbarWidth: 4, scrollbarOpacity: 0.1,
       tableHeaderOpacity: 0.04, tableRowHoverOpacity: 0.04, tableBorderOpacity: 0,
       badgeBgOpacity: 0.16, badgeRadius: 999,
-      btnHoverAnim: 'fill', cardHoverAnim: 'lift',
+      btnHoverAnim: 'ripple', cardHoverAnim: 'lift',
       archDensity: 'airy', archHeadingTracking: 0, archHeadingCase: 'none',
       archDivider: 'line', archPageEnter: 'slide-b', archLinkAnim: 'none', archSectionStyle: 'flat',
       colorSurface: '#F4EFF4', 
@@ -876,6 +876,35 @@ export const DESIGN_PRESETS: DesignPreset[] = [
     },
   },
   /* ── Effect-focused presets ─────────────────────────── */
+  {
+    id: 'liquid-glass',
+    name: 'Жидкое стекло',
+    description: 'Жидкое стекло — объёмные блики, высокая насыщенность, экстремальный блюр',
+    icon: '💧',
+    tokens: {
+      btnRadius: 24, btnStyle: 'soft', btnTransform: 'none', btnWeight: 500,
+      btnPaddingH: 0, btnPaddingV: 0,
+      fontWeight: 400, headingWeight: 600, letterSpacing: 0.02, lineHeight: 1.5, typeScale: 1.25,
+      glassBlur: 48, glassOpacity: 0.15, glassBorderOpacity: 0.3, glassSaturation: 200,
+      shadowOffsetY: 12, shadowBlurRadius: 32, shadowSpread: 0, shadowOpacity: 0.1,
+      cardRadius: 24, inputRadius: 16, chipRadius: 999, modalRadius: 32,
+      animDuration: 300, animEasing: 'cubic-bezier(0.16,1,0.3,1)',
+      borderWidth: 1, borderStyle: 'solid', gridGap: 24,
+      accentHue: 210, accentSaturation: 80, accentLightness: 60,
+      darkElevation: 12, darkSaturation: 60,
+      inputBgOpacity: 0.10, inputBorderOpacity: 0.15, inputPaddingH: 14, inputPaddingV: 10, inputFontSize: 0,
+      chipBgOpacity: 0.12, chipBorderOpacity: 0.15, chipPaddingH: 12, chipPaddingV: 6,
+      navItemRadius: 16, navItemPaddingH: 14, navItemPaddingV: 10,
+      statusBgOpacity: 0.15, statusPillRadius: 999,
+      modalOverlayOpacity: 0.35, dropdownBlur: 32,
+      scrollbarWidth: 6, scrollbarOpacity: 0.15,
+      tableHeaderOpacity: 0.08, tableRowHoverOpacity: 0.05, tableBorderOpacity: 0.1,
+      badgeBgOpacity: 0.2, badgeRadius: 999,
+      btnHoverAnim: 'sheen', cardHoverAnim: 'reveal',
+      archDensity: 'relaxed', archHeadingTracking: 0, archHeadingCase: 'none',
+      archDivider: 'none', archPageEnter: 'fade', archLinkAnim: 'none', archSectionStyle: 'card',
+    },
+  },
   {
     id: 'glow',
     name: 'Свечение',

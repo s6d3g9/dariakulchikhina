@@ -791,7 +791,7 @@
                   <div class="dp-col-label">Стекло</div>
                   <div class="dp-field">
                     <label class="dp-label">размытие <span class="dp-val">{{ tokens.glassBlur }}px</span></label>
-                    <input type="range" min="0" max="40" step="1" :value="tokens.glassBlur" class="dp-range" @input="onRange('glassBlur', $event)">
+                    <input type="range" min="0" max="64" step="1" :value="tokens.glassBlur" class="dp-range" @input="onRange('glassBlur', $event)">
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">насыщенность <span class="dp-val">{{ tokens.glassSaturation }}%</span></label>
@@ -804,10 +804,6 @@
                   <div class="dp-field">
                     <label class="dp-label">обводка <span class="dp-val">{{ pct(tokens.glassBorderOpacity) }}</span></label>
                     <input type="range" min="0" max="0.5" step="0.01" :value="tokens.glassBorderOpacity" class="dp-range" @input="onFloat('glassBorderOpacity', $event)">
-                  </div>
-                  <div class="dp-field">
-                    <label class="dp-label">насыщенность <span class="dp-val">{{ tokens.glassSaturation }}%</span></label>
-                    <input type="range" min="100" max="200" step="5" :value="tokens.glassSaturation" class="dp-range" @input="onRange('glassSaturation', $event)">
                   </div>
                 </div>
                 <div class="dp-col">
@@ -2385,6 +2381,7 @@ const textTransforms = [
 ]
 const btnHoverAnims = [
   { id: 'none'  as const, label: 'нет' },
+  { id: 'ripple'  as const, label: 'm3 ripple' },
   { id: 'lift'  as const, label: 'парение' },
   { id: 'scale' as const, label: 'масштаб' },
   { id: 'glow'  as const, label: 'свечение' },
@@ -3506,7 +3503,7 @@ const TOKEN_CONTROLS: Record<string, QEControl[]> = {
     { key: 'typeScale', label: 'шкала', min: 1.067, max: 1.618, step: 0.001, isFloat: true, fmt: v => v.toFixed(3) },
   ],
   surface: [
-    { key: 'glassBlur', label: 'размытие', min: 0, max: 40, step: 1, fmt: v => v + 'px' },
+    { key: 'glassBlur', label: 'размытие', min: 0, max: 64, step: 1, fmt: v => v + 'px' },
     { key: 'glassSaturation', label: 'насыщенность', min: 0, max: 300, step: 5, fmt: v => v + '%' },
     { key: 'glassOpacity', label: 'прозрачность', min: 0, max: 1, step: 0.02, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
     { key: 'shadowOpacity', label: 'тень', min: 0, max: 0.4, step: 0.01, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
