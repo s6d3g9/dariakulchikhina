@@ -182,6 +182,7 @@ let transcriptionRemoteAnalyser: AnalyserNode | null = null
 let transcriptionLevelSampler: ReturnType<typeof setInterval> | null = null
 let transcriptionLastEnergy = { local: 0, remote: 0 }
 let transcriptionChunkRecorder: MediaRecorder | null = null
+let transcriptionChunkRecorderRestartTimer: ReturnType<typeof setTimeout> | null = null
 let transcriptionChunkUploadQueue: Promise<void> = Promise.resolve()
 let transcriptionChunkSequence = 0
 let transcriptionChunkMimeType = ''
@@ -1196,6 +1197,11 @@ export function useMessengerCalls() {
   function stopTranscription() {
     transcriptionServerSessionKey = ''
 
+    if (transcriptionChunkRecorderRestartTimer) {
+      clearTimeout(transcriptionChunkRecorderRestartTimer)
+      transcriptionChunkRecorderRestartTimer = null
+    }
+
     if (transcriptionChunkRecorder) {
       const recorder = transcriptionChunkRecorder
       transcriptionChunkRecorder = null
@@ -1269,66 +1275,96 @@ export function useMessengerCalls() {
     stopTranscription()
     startTranscriptionEnergySampler()
 
-    const mimeType = pickServerTranscriptionMimeType()
-    const stream = new MediaStream(localStream.getAudioTracks())
-    const recorder = mimeType
-      ? new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 24000 })
-      : new MediaRecorder(stream)
-
-    transcriptionChunkRecorder = recorder
-    transcriptionChunkMimeType = recorder.mimeType || mimeType || 'audio/webm'
-    transcriptionChunkSequence = 0
-    transcriptionError.value = ''
-    transcriptionDraft.value = ''
-
     const sessionKey = `${activeCall.value.callId}:${Date.now()}`
     const conversationId = activeCall.value.conversationId
     const callId = activeCall.value.callId
     transcriptionServerSessionKey = sessionKey
 
-    recorder.ondataavailable = (event) => {
-      if (!event.data || event.data.size <= 0) {
-        return
-      }
+    const mimeType = pickServerTranscriptionMimeType()
+    const stream = new MediaStream(localStream.getAudioTracks())
 
-      const sequence = transcriptionChunkSequence
-      transcriptionChunkSequence += 1
-      transcriptionDraft.value = 'Сервер распознаёт вашу речь…'
+    transcriptionChunkSequence = 0
+    transcriptionError.value = ''
+    transcriptionDraft.value = ''
 
-      transcriptionChunkUploadQueue = transcriptionChunkUploadQueue
-        .then(async () => {
-          await uploadServerTranscriptionChunk(event.data, sequence, sessionKey, conversationId, callId)
-        })
-        .catch(() => {
-          if (sessionKey !== transcriptionServerSessionKey) {
-            return
-          }
-
-          transcriptionDraft.value = ''
-          transcriptionError.value = 'Серверная транскрибация недоступна. Проверьте локальный STT backend или внешний API в runtime env messenger-core.'
-        })
-    }
-
-    recorder.onerror = () => {
+    function startNewChunkRecording() {
       if (sessionKey !== transcriptionServerSessionKey) {
         return
       }
 
-      transcriptionError.value = 'Не удалось подготовить аудиопоток для серверной транскрибации.'
+      if (transcriptionChunkRecorder) {
+        const oldRecorder = transcriptionChunkRecorder
+        transcriptionChunkRecorder = null
+        oldRecorder.ondataavailable = null
+        oldRecorder.onerror = null
+        if (oldRecorder.state !== 'inactive') {
+          try {
+            oldRecorder.stop()
+          } catch {
+            // noop
+          }
+        }
+      }
+
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 24000 })
+        : new MediaRecorder(stream)
+
+      transcriptionChunkRecorder = recorder
+      transcriptionChunkMimeType = recorder.mimeType || mimeType || 'audio/webm'
+
+      recorder.ondataavailable = (event) => {
+        if (!event.data || event.data.size <= 0) {
+          return
+        }
+
+        const sequence = transcriptionChunkSequence
+        transcriptionChunkSequence += 1
+        transcriptionDraft.value = 'Сервер распознаёт вашу речь…'
+
+        transcriptionChunkUploadQueue = transcriptionChunkUploadQueue
+          .then(async () => {
+            await uploadServerTranscriptionChunk(event.data, sequence, sessionKey, conversationId, callId)
+          })
+          .catch(() => {
+            if (sessionKey !== transcriptionServerSessionKey) {
+              return
+            }
+
+            transcriptionDraft.value = ''
+            transcriptionError.value = 'Серверная транскрибация недоступна. Проверьте локальный STT backend.'
+          })
+      }
+
+      recorder.onerror = () => {
+        if (sessionKey !== transcriptionServerSessionKey) {
+          return
+        }
+
+        transcriptionError.value = 'Не удалось подготовить аудиопоток для серверной транскрибации.'
+      }
+
+      try {
+        recorder.start()
+        transcriptionActive.value = true
+        transcriptionHint.value = 'Серверная транскрибация активна. Распознается ваш микрофон.'
+
+        transcriptionChunkRecorderRestartTimer = setTimeout(() => {
+          if (sessionKey === transcriptionServerSessionKey && transcriptionChunkRecorder === recorder) {
+            recorder.requestData()
+            startNewChunkRecording()
+          }
+        }, 4000)
+      } catch {
+        transcriptionServerSessionKey = ''
+        transcriptionChunkRecorder = null
+        transcriptionDraft.value = ''
+        transcriptionError.value = 'Не удалось запустить серверную транскрибацию.'
+      }
     }
 
-    try {
-      recorder.start(1800)
-      transcriptionActive.value = true
-      transcriptionHint.value = 'Серверная транскрибация активна. Распознается ваш микрофон.'
-      return true
-    } catch {
-      transcriptionServerSessionKey = ''
-      transcriptionChunkRecorder = null
-      transcriptionDraft.value = ''
-      transcriptionError.value = 'Не удалось запустить серверную транскрибацию.'
-      return false
-    }
+    startNewChunkRecording()
+    return true
   }
 
   function startTranscription() {
