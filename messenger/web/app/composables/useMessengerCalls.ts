@@ -1287,23 +1287,9 @@ export function useMessengerCalls() {
     transcriptionError.value = ''
     transcriptionDraft.value = ''
 
-    function startNewChunkRecording() {
+    function cycleRecording() {
       if (sessionKey !== transcriptionServerSessionKey) {
         return
-      }
-
-      if (transcriptionChunkRecorder) {
-        const oldRecorder = transcriptionChunkRecorder
-        transcriptionChunkRecorder = null
-        oldRecorder.ondataavailable = null
-        oldRecorder.onerror = null
-        if (oldRecorder.state !== 'inactive') {
-          try {
-            oldRecorder.stop()
-          } catch {
-            // noop
-          }
-        }
       }
 
       const recorder = mimeType
@@ -1348,22 +1334,29 @@ export function useMessengerCalls() {
         recorder.start()
         transcriptionActive.value = true
         transcriptionHint.value = 'Серверная транскрибация активна. Распознается ваш микрофон.'
-
-        transcriptionChunkRecorderRestartTimer = setTimeout(() => {
-          if (sessionKey === transcriptionServerSessionKey && transcriptionChunkRecorder === recorder) {
-            recorder.requestData()
-            startNewChunkRecording()
-          }
-        }, 4000)
       } catch {
         transcriptionServerSessionKey = ''
         transcriptionChunkRecorder = null
         transcriptionDraft.value = ''
         transcriptionError.value = 'Не удалось запустить серверную транскрибацию.'
+        return
       }
+
+      transcriptionChunkRecorderRestartTimer = setTimeout(() => {
+        if (sessionKey === transcriptionServerSessionKey && transcriptionChunkRecorder === recorder) {
+          try {
+            if (recorder.state !== 'inactive') {
+              recorder.stop()
+            }
+          } catch {
+            // noop
+          }
+          cycleRecording()
+        }
+      }, 3500)
     }
 
-    startNewChunkRecording()
+    cycleRecording()
     return true
   }
 
