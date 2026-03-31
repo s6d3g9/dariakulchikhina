@@ -6935,13 +6935,14 @@ html[data-concept="glass"] .cab-doc-card,
 html[data-concept="glass"] .ws-card,
 html[data-concept="glass"] .dash-stat,
 html[data-concept="glass"] .dash-project-card {
-  background: rgba(255,255,255,0.20) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  border: 1px solid rgba(255,255,255,0.50) !important;
-  border-radius: 24px !important;
-  box-shadow: 0 8px 32px rgba(31,38,135,0.10), inset 0 1px 0 rgba(255,255,255,0.60) !important;
+  background: var(--glass-bg, rgba(255,255,255,0.20)) !important;
+  backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturation, 180%)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--glass-saturation, 180%)) !important;
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.50)) !important;
+  border-radius: var(--card-radius, 24px) !important;
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(31,38,135,0.10)), inset 0 1px 1px rgba(255,255,255,0.6) !important;
 }
+
 html[data-concept="glass"] .glass-card:hover {
   background: rgba(255,255,255,0.28) !important;
   box-shadow: 0 12px 40px rgba(31,38,135,0.15) !important;

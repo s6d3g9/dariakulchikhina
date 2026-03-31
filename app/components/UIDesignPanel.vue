@@ -112,6 +112,7 @@
                 <span class="dp-mode-name">Material 3</span>
                 <span class="dp-mode-hint">google · tonal · pill</span>
               </button>
+              <button
                 type="button"
                 class="dp-mode-btn dp-mode-btn--reset"
                 :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-minale' }"
@@ -2688,15 +2689,16 @@ const contentCardRecipes: Record<(typeof contentCardPresets)[number]['id'], Part
     cardHoverAnim: 'lift',
   },
   glass: {
-    cardRadius: 16,
+    cardRadius: 24,
     borderWidth: 1,
-    glassBlur: 20,
-    glassOpacity: 0.38,
-    glassBorderOpacity: 0.14,
-    shadowOffsetY: 8,
-    shadowBlurRadius: 28,
-    shadowOpacity: 0.08,
-    archCardChrome: 'subtle',
+    glassBlur: 32,
+    glassSaturation: 200,
+    glassOpacity: 0.25,
+    glassBorderOpacity: 0.35,
+    shadowOffsetY: 12,
+    shadowBlurRadius: 32,
+    shadowOpacity: 0.15,
+    archCardChrome: 'visible',
     cardHoverAnim: 'reveal',
   },
   brutal: {
