@@ -1136,8 +1136,12 @@ export function useMessengerCalls() {
       return
     }
 
+    const genId = typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : Math.random().toString(36).substring(2, 15)
+
     const nextEntry: MessengerCallTranscriptEntry = {
-      id: crypto.randomUUID(),
+      id: genId,
       speaker: options?.speaker || 'you',
       text: normalized,
       final: options?.final ?? true,
@@ -1824,15 +1828,7 @@ export function useMessengerCalls() {
     requestingPermissions.value = true
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: mode === 'video',
-      })
-
-      for (const track of stream.getTracks()) {
-        track.stop()
-      }
-
+      await initMedia(mode)
       await refreshMediaPermissions()
       return true
     } catch {
@@ -2037,6 +2033,13 @@ export function useMessengerCalls() {
     await conversations.loadMessages(conversationId)
   }
 
+  function safeGenCallId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID()
+    }
+    return Math.random().toString(36).substring(2, 15)
+  }
+
   async function startOutgoingCall(mode: MessengerCallMode) {
     callError.value = ''
     clearCallReview()
@@ -2058,73 +2061,71 @@ export function useMessengerCalls() {
       return
     }
 
-    const granted = await ensureMediaAccess(mode)
-    if (!granted) {
-      return
-    }
-
-    await initMedia(mode)
-
-    const callId = crypto.randomUUID()
-    let e2eePayload: MessengerCallE2EEPayload = { supported: false }
-
-    if (supportsInsertableCallEncryption()) {
-      const callKeys = await generateCallE2EEKeyPair()
-      const salt = crypto.getRandomValues(new Uint8Array(16))
-      callSecurityContext = {
-        callId,
-        role: 'initiator',
-        localPublicKey: callKeys.publicKey,
-        localPrivateKey: callKeys.privateKey,
-        salt,
-        verificationEmojis: [],
-        active: false,
-      }
-      security.value = {
-        available: true,
-        active: false,
-        verificationEmojis: [],
-        status: 'Ожидаем подтверждение и публичный ключ собеседника для E2EE звонка.',
-        fallbackReason: '',
-      }
-      e2eePayload = {
-        supported: true,
-        publicKey: callKeys.publicKey,
-        salt: encodeCallBase64(salt),
-      }
-    } else {
-      clearCallSecurityContext()
-      setCallSecurityFallback('У этого браузера нет поддержки encoded insertable streams.')
-    }
-
-    activeCall.value = {
-      callId,
-      conversationId: conversation.id,
-      peerUserId: conversation.peerUserId,
-      peerDisplayName: conversation.peerDisplayName,
-      mode,
-      initiator: true,
-    }
-    controls.value = {
-      microphoneEnabled: true,
-      speakerEnabled: true,
-      videoEnabled: mode === 'video',
-    }
-    viewMode.value = mode === 'video' ? 'split' : 'full'
-    callStatusText.value = mode === 'video' ? 'Отправляем видеовызов…' : 'Отправляем аудиовызов…'
-    if (mode === 'audio') {
-      void startTranscription()
-    }
-
     try {
+      const granted = await ensureMediaAccess(mode)
+      if (!granted) {
+        return
+      }
+
+      const callId = safeGenCallId()
+      let e2eePayload: MessengerCallE2EEPayload = { supported: false }
+
+      if (supportsInsertableCallEncryption()) {
+        const callKeys = await generateCallE2EEKeyPair()
+        const salt = crypto.getRandomValues(new Uint8Array(16))
+        callSecurityContext = {
+          callId,
+          role: 'initiator',
+          localPublicKey: callKeys.publicKey,
+          localPrivateKey: callKeys.privateKey,
+          salt,
+          verificationEmojis: [],
+          active: false,
+        }
+        security.value = {
+          available: true,
+          active: false,
+          verificationEmojis: [],
+          status: 'Ожидаем подтверждение и публичный ключ собеседника для E2EE звонка.',
+          fallbackReason: '',
+        }
+        e2eePayload = {
+          supported: true,
+          publicKey: callKeys.publicKey,
+          salt: encodeCallBase64(salt),
+        }
+      } else {
+        clearCallSecurityContext()
+        setCallSecurityFallback('У этого браузера нет поддержки encoded insertable streams.')
+      }
+
+      activeCall.value = {
+        callId,
+        conversationId: conversation.id,
+        peerUserId: conversation.peerUserId,
+        peerDisplayName: conversation.peerDisplayName,
+        mode,
+        initiator: true,
+      }
+      controls.value = {
+        microphoneEnabled: true,
+        speakerEnabled: true,
+        videoEnabled: mode === 'video',
+      }
+      viewMode.value = mode === 'video' ? 'split' : 'full'
+      callStatusText.value = mode === 'video' ? 'Отправляем видеовызов…' : 'Отправляем аудиовызов…'
+      if (mode === 'audio') {
+        void startTranscription()
+      }
+
       await sendSignal(conversation.id, {
         kind: 'invite',
         callId,
         payload: { mode, e2ee: e2eePayload },
       })
-    } catch {
+    } catch (err) {
       teardownCall('')
-      callError.value = 'Не удалось отправить приглашение на звонок.'
+      callError.value = 'Не удалось отправить приглашение или начать звонок. Проверьте права на функции или микрофон.'
     }
   }
 
@@ -2144,7 +2145,6 @@ export function useMessengerCalls() {
         await rejectIncomingCall(describePermissionError(incomingCall.value.mode))
         return
       }
-      await initMedia(incomingCall.value.mode)
       activeCall.value = {
         callId: incomingCall.value.callId,
         conversationId: incomingCall.value.conversationId,
