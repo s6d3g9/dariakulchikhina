@@ -7276,3 +7276,4 @@ html[data-concept="m3"] .content-drawer__head {
   overflow: visible !important;
   min-height: fit-content !important;
 }
+.call-transcript-line { transition: opacity 0.2s ease, border-color 0.2s ease; }
