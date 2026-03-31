@@ -1161,6 +1161,11 @@ export function useMessengerCalls() {
       return
     }
 
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(navigator.userAgent || '')
+    if (isMobile) {
+      return
+    }
+
     stopTranscriptionEnergySampler()
 
     const Ctor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
@@ -1298,10 +1303,12 @@ export function useMessengerCalls() {
 
     const mimeType = pickServerTranscriptionMimeType()
     
-    transcriptionIsolatedTracks = localStream.getAudioTracks().map(t => t.clone())
-    let stream = new MediaStream(transcriptionIsolatedTracks)
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(navigator.userAgent || '')
+    transcriptionIsolatedTracks = isMobile ? [] : localStream.getAudioTracks().map(t => t.clone())
+    let stream = isMobile ? localStream : new MediaStream(transcriptionIsolatedTracks)
+    
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-    if (AudioContextClass) {
+    if (AudioContextClass && !isMobile) {
       try {
         transcriptionIsolatedContext = new AudioContextClass()
         const source = transcriptionIsolatedContext.createMediaStreamSource(stream)
