@@ -449,10 +449,13 @@
         <div class="hpc-section__head">
           <div>
             <p class="hpc-section__label">Фазовый слой</p>
-            <h3 class="hpc-section__title">Базовые этапы и контрольные ворота</h3>
+            <h3 class="hpc-section__title">Базовые этапы и привязка спринтов</h3>
           </div>
         </div>
-        <div class="hpc-phase-list">
+
+        <AdminProjectPhaseBoard :control="control" @save="save" />
+
+        <div class="hpc-phase-list" style="margin-top: 24px;">
           <article v-for="phase in control.phases" :key="phase.id" class="hpc-phase-card">
             <div class="hpc-phase-card__head">
               <div>
