@@ -1308,11 +1308,16 @@ export function useMessengerCalls() {
     const mimeType = pickServerTranscriptionMimeType()
     
     const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(navigator.userAgent || '')
-    transcriptionIsolatedTracks = isMobile ? [] : localStream.getAudioTracks().map(t => t.clone())
-    let stream = isMobile ? localStream : new MediaStream(transcriptionIsolatedTracks)
+    if (isMobile) {
+      transcriptionError.value = 'Транскрибация временно отключена на мобильных устройствах.'
+      return false
+    }
+
+    transcriptionIsolatedTracks = localStream.getAudioTracks().map(t => t.clone())
+    let stream = new MediaStream(transcriptionIsolatedTracks)
     
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-    if (AudioContextClass && !isMobile) {
+    if (AudioContextClass) {
       try {
         transcriptionIsolatedContext = new AudioContextClass()
         const source = transcriptionIsolatedContext.createMediaStreamSource(stream)
