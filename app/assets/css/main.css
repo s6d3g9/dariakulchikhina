@@ -19,8 +19,11 @@ button, a, input, select, textarea, summary {
 }
 
 /* ── Border-radius bridge — maps component patterns to tokens */
-.glass-surface, .glass-card, .glass-chip,
-.a-modal, .admin-dropdown, .std-sidenav {
+.glass-surface,
+.glass-card,
+.glass-chip,
+.a-modal,
+.std-sidenav {
   border-radius: var(--card-radius, 16px);
 }
 /* ── Global form-control base ────────────────────────────────
@@ -220,10 +223,10 @@ textarea, select {
 .ws-status--skipped   { color: var(--ws-color-skipped);   background: var(--ws-bg-skipped);   border-radius: var(--status-pill-radius, 999px); opacity: .5; }
 
 /* ── Universal status-indicator dots ———————————————————
-   Matches any BEM modifier: .xxx-dot--gray, .yyy-dot--blue, etc.
+   etc.
    All admin components share these colors — no per-component overrides needed.
 ──────────────────────────────────────────────────────────────────── */
-[class*="-dot--gray"]   { background: color-mix(in srgb, var(--glass-text) 45%, transparent); }
+[class*="-dot--gray"] { background: color-mix(in srgb, var(--glass-text) 45%, transparent); }
 [class*="-dot--blue"]   { background: var(--ds-accent, #6b9fd4); }
 [class*="-dot--yellow"] { background: var(--ds-warning, #e8b84b); }
 [class*="-dot--red"]    { background: var(--ds-error, #d46b6b); }
@@ -427,7 +430,6 @@ select:-webkit-autofill:focus {
 /* Width constraints (used only inside tables / compact rows) */
 .glass-input--xs  { width: auto; max-width: 56px; }
 .glass-input--sm  { width: auto; max-width: 100px; }
-.glass-input--md  { width: auto; max-width: 200px; }
 
 html.dark .glass-chip {
   /* token-based: var(--chip-bg) and var(--chip-border-color) handle dark mode automatically */
@@ -770,115 +772,7 @@ html.dark select optgroup {
 }
 
 /* 3-column variant: sidebar + main + status bar */
-.ent-layout--with-stats {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-}
 
-.ent-sidebar {
-  width: var(--ds-sidebar-width, 220px);
-  flex-shrink: 0;
-  position: sticky;
-  top: 80px;
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
-  padding: 10px;
-  scrollbar-width: thin;
-}
-
-.ent-sidebar-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px 6px 8px;
-}
-
-.ent-sidebar-title {
-  font-size: var(--ds-text-xs, .62rem);
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--glass-text);
-  opacity: .4;
-  font-weight: var(--ds-heading-weight, 600);
-}
-
-.ent-sidebar-count {
-  font-size: .58rem;
-  padding: 1px 7px;
-  border-radius: var(--chip-radius, 999px);
-  background: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  color: var(--glass-text);
-  opacity: .5;
-}
-
-.ent-search {
-  width: 100%;
-  padding: 7px 10px;
-  font-size: var(--ds-text-xs, .76rem);
-  margin-bottom: 6px;
-  box-sizing: border-box;
-}
-
-.ent-nav-item {
-  width: 100%;
-}
-
-.ent-nav-avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 4px 4px 0 0;
-  border: 1px solid var(--glass-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .54rem;
-  font-weight: 500;
-  background: transparent;
-  color: var(--ds-accent, #6366f1);
-  flex-shrink: 0;
-}
-
-.ent-nav-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ent-nav-sub {
-  display: block;
-  font-size: .56rem;
-  opacity: .5;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 1px;
-}
-
-.ent-nav-badge {
-  font-size: .5rem;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  font-weight: 600;
-  padding: 1px 5px;
-  border-radius: var(--chip-radius, 999px);
-  flex-shrink: 0;
-}
-
-.ent-sidebar-foot {
-  padding: 8px 0 0;
-}
-
-.ent-sidebar-add {
-  width: 100%;
-}
-
-.ent-main {
-  flex: 1;
-  min-width: 0;
-}
 
 /* ── proj-* layout: sidebar + main area ──────────────────────────── */
 /* Used by admin/index, clients, contractors, designers, sellers, [slug] */
@@ -991,43 +885,6 @@ html.dark select optgroup {
 /* ──────────────────────────────────────────────────────────────────── */
 
 /* ── ann-type-grid: layer-0 section switcher grid ────────────────── */
-.ann-type-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 2px 0;
-}
-.ann-type-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 10px 6px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--glass-bg) 40%, transparent);
-  border: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
-  color: var(--glass-text);
-  font-size: .68rem;
-  text-decoration: none;
-  opacity: .6;
-  transition: opacity .12s, background .12s, border-color .12s;
-  cursor: pointer;
-  font-family: inherit;
-  text-align: center;
-  line-height: 1.2;
-}
-.ann-type-btn:hover { opacity: .9; background: color-mix(in srgb, var(--glass-bg) 70%, transparent); }
-.ann-type-btn--active {
-  opacity: 1;
-  background: color-mix(in srgb, var(--ds-accent, #7c6ef7) 12%, var(--glass-bg));
-  border-color: color-mix(in srgb, var(--ds-accent, #7c6ef7) 28%, transparent);
-  font-weight: 600;
-}
-.ann-type-icon {
-  font-size: .9rem;
-  line-height: 1;
-}
 /* ──────────────────────────────────────────────────────────────────── */
 
 
@@ -1068,11 +925,6 @@ html.dark select optgroup {
   line-height: 1.3;
 }
 
-.ent-detail-actions {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
 
 .ent-detail-section {
   font-size: var(--ds-text-xs, .62rem);
@@ -1104,12 +956,6 @@ html.dark select optgroup {
   opacity: .6;
 }
 
-.ent-detail-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 6px;
-}
 
 .ent-detail-chip {
   font-size: var(--ds-text-xs, .7rem);
@@ -1138,53 +984,9 @@ html.dark select optgroup {
   border-top: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent);
 }
 
-.ent-group-label {
-  font-size: var(--ds-text-xs, .58rem);
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--glass-text);
-  opacity: .32;
-  font-weight: var(--ds-heading-weight, 600);
-  padding: 10px 10px 4px;
-}
 
 /* ── Cabinet view (full-width after selecting entity) ── */
-.ent-cabinet-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
-}
 
-.ent-cabinet-topbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent);
-}
-
-.ent-back-btn {
-  flex-shrink: 0;
-}
-
-.ent-cabinet-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--glass-text);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ent-cabinet-actions {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
 
 /* ── Minimal entity context strip (replaces topbar) ── */
 .ent-entity-hd {
@@ -1245,13 +1047,6 @@ html.dark select optgroup {
 }
 
 /* ── Empty state for sidebar nav ── */
-.ent-nav-empty {
-  padding: 16px 10px;
-  text-align: center;
-  font-size: .74rem;
-  color: var(--glass-text);
-  opacity: .3;
-}
 
 /* ── Skeleton placeholders for sidebar items ── */
 .ent-nav-skeleton {
@@ -1367,15 +1162,8 @@ html.dark select optgroup {
 }
 
 @media (max-width: 768px) {
-  .ent-layout,
-  .ent-layout--with-stats {
+  .ent-layout {
     flex-direction: column;
-  }
-  .ent-sidebar {
-    width: 100%;
-    position: static;
-    max-height: 240px;
-    overflow-y: auto;
   }
 }
 
@@ -1467,15 +1255,6 @@ html.dark select optgroup {
 }
 
 /* ── Cabinet section title ── */
-.cab-section-title {
-  font-size: var(--ds-text-xs, .64rem);
-  font-weight: var(--ds-heading-weight, 600);
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--glass-text);
-  opacity: .48;
-  margin: 16px 0 8px;
-}
 
 /* ── Cabinet inline errors/success ── */
 .cab-inline-error  { margin: -10px 0 12px; color: var(--ds-error, #dc2626); font-size: .82rem; }
@@ -2393,9 +2172,9 @@ html.dark select optgroup {
 .u-section-title:first-child { margin-top: 0; }
 
 /* ── u-topbar ────────────────────────────────────────────────
-   Replaces: pj-topbar, docs-topbar, ct-topbar, ds-topbar
-──────────────────────────────────────────────────────────── */
-.u-topbar {
+   Replaces: pj-topbar,
+   docs-topbar,
+   ct-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2404,41 +2183,23 @@ html.dark select optgroup {
   flex-wrap: wrap;
   gap: 10px;
 }
-.u-topbar__left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.u-topbar__title {
-  font-size: var(--ds-text-sm, .78rem);
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--glass-text);
-  opacity: .45;
-  font-weight: var(--ds-heading-weight, 600);
-}
-.u-topbar__right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
 
 /* ── u-search ────────────────────────────────────────────────
-   Replaces: pj-search, docs-search, ct-search, ds-search, gfb-search
-   Use together with glass-input: <input class="glass-input u-search">
-──────────────────────────────────────────────────────────── */
-.u-search {
+   Replaces: pj-search,
+   docs-search,
+   ct-search,
+   ds-search {
   width: 200px;
   padding: 7px 12px;
   font-size: var(--ds-text-sm, .8rem);
 }
 
 /* ── u-modal ─────────────────────────────────────────────────
-   Replaces: pj-modal, docs-modal, ct-modal, cl-modal, cab-modal, a-modal
-   Full modal system: overlay + container + head/body/foot/close
-──────────────────────────────────────────────────────────── */
-.u-modal-overlay {
+   Replaces: pj-modal,
+   docs-modal,
+   ct-modal,
+   cl-modal,
+   cab-modal {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, var(--modal-overlay-opacity, 0.35));
@@ -2462,8 +2223,6 @@ html.dark select optgroup {
   backdrop-filter: blur(var(--glass-blur, 18px)) saturate(var(--glass-saturation, 145%));
   color: var(--glass-text);
 }
-.u-modal--narrow { width: 420px; }
-.u-modal--wide   { width: 640px; }
 .u-modal__head {
   display: flex;
   align-items: center;
@@ -2535,15 +2294,6 @@ html.dark select optgroup {
   font-weight: 700;
   line-height: 1;
 }
-.u-counter--sm {
-  min-width: 16px;
-  height: 16px;
-  padding: 0 3px;
-  font-size: .5rem;
-}
-.u-counter--success { background: color-mix(in srgb, var(--ds-success) 14%, transparent); }
-.u-counter--warning { background: color-mix(in srgb, var(--ds-warning) 14%, transparent); }
-.u-counter--danger  { background: color-mix(in srgb, var(--ds-error) 14%, transparent); }
 
 /* ── u-status ────────────────────────────────────────────────
    Replaces: proj-card-status, st-draft, st-active, st-completed
@@ -2602,11 +2352,6 @@ html.dark select optgroup {
 .u-status-sel:hover { border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
 
 /* ── u-inline-inp (DEPRECATED → use glass-input glass-input--inline) ── */
-.u-inline-inp { display: inline-block; }
-.u-inline-inp--xs { max-width: 56px; }
-.u-inline-inp--sm { max-width: 100px; }
-.u-inline-inp--ta { resize: vertical; min-height: 32px; }
-.u-inline-inp--ta:focus { border-color: var(--glass-text, currentColor); }
 
 /* ── u-field ─────────────────────────────────────────────────
    Standard form field wrapper (label + input)
@@ -2744,8 +2489,6 @@ html.dark select optgroup {
   flex-shrink: 0;
 }
 /* Legacy u-prop-ta / u-prop-select kept for compat */
-.u-prop-ta { resize: vertical; min-height: 36px; }
-.u-prop-select { appearance: none; cursor: pointer; }
 
 /* ── u-ta ────────────────────────────────────────────────────
    Textarea auto-expand utility (pair with glass-input).
@@ -2758,9 +2501,6 @@ html.dark select optgroup {
   min-height: 2.4em;
   field-sizing: content;          /* Chrome 123+, progressive */
 }
-.u-ta--sm      { min-height: 36px; }
-.u-ta--md      { min-height: 72px; }
-.u-ta--lg      { min-height: 120px; }
 
 /* ── Dark mode for unified components ────────────────────── */
 html.dark .u-modal-overlay {
@@ -2780,19 +2520,6 @@ html.dark .u-modal {
 
 /* ── Responsive: unified components ──────────────────────── */
 @media (max-width: 768px) {
-  .u-topbar {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 10px 12px;
-    gap: 8px;
-  }
-  .u-topbar__right {
-    flex-direction: column;
-    gap: 6px;
-  }
-  .u-search {
-    width: 100%;
-  }
   .u-section-title {
     font-size: .66rem;
     margin: 16px 0 8px;
@@ -3267,43 +2994,10 @@ html.dark .a-modal label {
 ::-webkit-scrollbar-thumb:hover { filter: brightness(1.2); }
 
 /* ── Tables ──────────────────────────────────────────────────── */
-.ds-table, table.std-table {
-  border-collapse: collapse; width: 100%;
-}
-.ds-table th, table.std-table th {
-  background: var(--table-header-bg, color-mix(in srgb, var(--glass-text) 4%, transparent));
-  font-size: var(--ds-text-xs, .75rem); font-weight: 600;
-  padding: 8px 12px; text-align: left; color: var(--glass-text);
-  border-bottom: 1px solid var(--table-border-color, color-mix(in srgb, var(--glass-text) 8%, transparent));
-}
-.ds-table td, table.std-table td {
-  padding: 8px 12px; font-size: var(--ds-text-sm, .8rem); color: var(--glass-text);
-  border-bottom: 1px solid var(--table-border-color, color-mix(in srgb, var(--glass-text) 8%, transparent));
-}
-.ds-table tr:hover td, table.std-table tr:hover td {
-  background: var(--table-row-hover-bg, color-mix(in srgb, var(--glass-text) 3%, transparent));
-}
 
 /* ── Badges / counters ───────────────────────────────────────── */
-.ds-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: var(--badge-radius, 999px);
-  background: var(--badge-bg, color-mix(in srgb, var(--ds-accent) 12%, transparent));
-  color: var(--glass-text); font-size: .6rem; font-weight: 700;
-  line-height: 1;
-}
 
 /* ── Page / layout fade transitions —————————————————— */
-.fade-page-enter-active,
-.fade-page-leave-active {
-  transition: opacity .22s ease, transform .22s ease;
-}
-.fade-page-enter-from,
-.fade-page-leave-to {
-  opacity: 0;
-  transform: translateY(5px);
-}
 
 /* ══════════════════════════════════════════════════════════════
    GLOBAL MOBILE RESPONSIVE
@@ -3320,20 +3014,6 @@ html.dark .a-modal label {
   }
 
   /* ── Tables — ensure horizontal scroll ── */
-  .ds-table, table.std-table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .ds-table th, table.std-table th {
-    padding: 6px 8px;
-    font-size: .66rem;
-    white-space: nowrap;
-  }
-  .ds-table td, table.std-table td {
-    padding: 6px 8px;
-    font-size: .76rem;
-  }
 
   /* ── Standard sidebar nav — hide on mobile (pages with mobile nav override this) ── */
   .std-sidenav {
@@ -3385,17 +3065,13 @@ html.dark .a-modal label {
 [data-density] .cab-page,
 [data-density] .glass,
 [data-density] .glass-card,
-[data-density] .asb-section,
-[data-density] .acp-form-section {
+[data-density] .asb-section {
   --section-gap: calc(var(--ds-grid-gap, 16px) * var(--arch-space) * var(--arch-vertical-rhythm, 1));
 }
 
-[data-density="dense"]  .asb-section,
-[data-density="dense"]  .acp-form-section { margin-bottom: calc(12px * var(--arch-space)); }
-[data-density="airy"]   .asb-section,
-[data-density="airy"]   .acp-form-section { margin-bottom: calc(28px * var(--arch-space)); }
-[data-density="grand"]  .asb-section,
-[data-density="grand"]  .acp-form-section { margin-bottom: calc(48px * var(--arch-space)); }
+[data-density="dense"]  .asb-section { margin-bottom: calc(12px * var(--arch-space)); }
+[data-density="airy"]   .asb-section { margin-bottom: calc(28px * var(--arch-space)); }
+[data-density="grand"]  .asb-section { margin-bottom: calc(48px * var(--arch-space)); }
 
 /* Vertical rhythm multiplier — all gaps, margins, paddings scale */
 [data-density] .cab-body { gap: calc(var(--ds-grid-gap, 16px) * var(--arch-vertical-rhythm, 1)); }
@@ -3431,14 +3107,6 @@ html.dark .a-modal label {
 }
 
 /* ── Page-enter transitions ── */
-[data-page-enter="fade"]  .page-enter-active,
-[data-page-enter="fade"]  .page-leave-active  { transition: opacity var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease); }
-[data-page-enter="fade"]  .page-enter-from,
-[data-page-enter="fade"]  .page-leave-to      { opacity: 0; }
-[data-page-enter="slide"] .page-enter-active,
-[data-page-enter="slide"] .page-leave-active  { transition: opacity var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease), transform var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease); }
-[data-page-enter="slide"] .page-enter-from    { opacity: 0; transform: translateY(16px); }
-[data-page-enter="slide"] .page-leave-to      { opacity: 0; transform: translateY(-8px); }
 
 /* ── Link animation ── */
 [data-link-anim="underline"] a:not(.a-btn):not(.nav-link) {
@@ -3466,20 +3134,17 @@ html.dark .a-modal label {
 }
 
 /* ── Section style ── */
-[data-section-style="card"] .asb-section,
-[data-section-style="card"] .acp-form-section {
+[data-section-style="card"] .asb-section {
   background: var(--ds-card-bg, var(--glass-bg));
   border: 1px solid var(--glass-border);
   border-radius: var(--card-radius, 10px);
   padding: 16px;
   backdrop-filter: blur(var(--glass-blur, 12px));
 }
-[data-section-style="striped"] .asb-section:nth-child(even),
-[data-section-style="striped"] .acp-form-section:nth-child(even) {
+[data-section-style="striped"] .asb-section:nth-child(even) {
   background: color-mix(in srgb, var(--glass-text) 2%, transparent);
 }
-[data-section-style="striped"] .asb-section:nth-child(odd),
-[data-section-style="striped"] .acp-form-section:nth-child(odd) {
+[data-section-style="striped"] .asb-section:nth-child(odd) {
   background: transparent;
 }
 
@@ -3487,32 +3152,30 @@ html.dark .a-modal label {
    NAV CHROME SYSTEM  (data-nav-style on <html>)
    Dramatically changes the sidebar/navigation appearance.
    ═══════════════════════════════════════════════════════════ */
-/* minimal: transparent nav, borderless, floating */
+/* minimal: transparent nav,
+   borderless,
+   floating */
 [data-nav-style="minimal"] .std-sidenav,
-[data-nav-style="minimal"] .admin-sidebar,
-[data-nav-style="minimal"] .a-side {
+   [data-nav-style="minimal"] .admin-sidebar {
   background: transparent !important;
   border-right: none !important;
   border-color: transparent !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
 }
-[data-nav-style="minimal"] .nav-link,
 [data-nav-style="minimal"] .std-sidenav a {
   background: transparent !important;
   border: none !important;
   opacity: .55;
   transition: opacity var(--ds-anim-duration, 180ms) ease;
 }
-[data-nav-style="minimal"] .nav-link:hover,
 [data-nav-style="minimal"] .std-sidenav a:hover { opacity: 1; }
 [data-nav-style="minimal"] .nav-link.router-link-active,
 [data-nav-style="minimal"] .std-sidenav a.router-link-active { opacity: 1; font-weight: var(--ds-heading-weight, 600); }
 
 /* hidden: nav collapses to icon-only */
 [data-nav-style="hidden"] .std-sidenav,
-[data-nav-style="hidden"] .admin-sidebar,
-[data-nav-style="hidden"] .a-side {
+[data-nav-style="hidden"] .admin-sidebar {
   width: 52px !important;
   min-width: 52px !important;
   background: transparent !important;
@@ -3522,9 +3185,7 @@ html.dark .a-modal label {
 }
 [data-nav-style="hidden"] .std-sidenav span:not(.icon),
 [data-nav-style="hidden"] .admin-sidebar span:not(.icon),
-[data-nav-style="hidden"] .a-side span:not(.icon),
-[data-nav-style="hidden"] .nav-link span,
-[data-nav-style="hidden"] .a-side-label { display: none; }
+[data-nav-style="hidden"] .a-side span:not(.icon) { display: none; }
 
 /* ═══════════════════════════════════════════════════════════
    CARD CHROME SYSTEM  (data-card-chrome on <html>)
@@ -3558,8 +3219,7 @@ html.dark .a-modal label {
   display: none !important;
 }
 /* Ghost cards: remove inner padding to let content breathe */
-[data-card-chrome="ghost"] .asb-section,
-[data-card-chrome="ghost"] .acp-form-section {
+[data-card-chrome="ghost"] .asb-section {
   background: transparent;
   border: none;
   padding: 0;
@@ -3567,32 +3227,7 @@ html.dark .a-modal label {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   HERO SCALE SYSTEM  (data-hero-scale on <html>)
-   Controls the page title / header sizing.
-   ═══════════════════════════════════════════════════════════ */
-[data-hero-scale="compact"] .u-topbar { padding: 8px 16px; margin-bottom: 8px; }
-[data-hero-scale="compact"] .u-topbar__title { font-size: var(--ds-text-xs, .694rem); }
 
-[data-hero-scale="large"] .u-topbar { padding: 24px 22px 20px; margin-bottom: 24px; }
-[data-hero-scale="large"] .u-topbar__title {
-  font-size: var(--ds-text-xl, 1.44rem);
-  letter-spacing: var(--ds-heading-letter-spacing, .01em);
-  text-transform: inherit;
-  font-weight: var(--ds-heading-weight, 600);
-}
-
-[data-hero-scale="cinematic"] .u-topbar {
-  padding: calc(40px * var(--arch-vertical-rhythm, 1)) 28px calc(36px * var(--arch-vertical-rhythm, 1));
-  margin-bottom: calc(32px * var(--arch-vertical-rhythm, 1));
-}
-[data-hero-scale="cinematic"] .u-topbar__title {
-  font-size: var(--ds-text-2xl, 1.728rem);
-  letter-spacing: var(--ds-heading-letter-spacing, .06em);
-  text-transform: inherit;
-  font-weight: var(--ds-heading-weight, 300);
-  line-height: var(--ds-heading-line-height, 1.1);
-  opacity: .7;
-}
 
 /* ═══════════════════════════════════════════════════════════
    DEEP ARCHITECTURE CASCADE
@@ -3601,11 +3236,8 @@ html.dark .a-modal label {
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Density: every container, every sidebar, every panel ── */
-[data-density] .ent-layout,
-[data-density] .ent-layout--with-stats { gap: calc(20px * var(--arch-space, 1)); }
+[data-density] .ent-layout { gap: calc(20px * var(--arch-space, 1)); }
 
-[data-density] .ent-sidebar { padding: calc(10px * var(--arch-space, 1)); }
-[data-density] .ent-main { gap: calc(16px * var(--arch-space, 1)); }
 
 [data-density] .ent-detail-card { padding: calc(16px * var(--arch-space, 1)); }
 [data-density] .ent-detail-section { margin-bottom: calc(16px * var(--arch-vertical-rhythm, 1)); }
@@ -3625,9 +3257,7 @@ html.dark .a-modal label {
 [data-density] .dash-quick-btn { padding: calc(16px * var(--arch-space, 1)); }
 
 /* Grand: heroic spacing everywhere */
-[data-density="grand"] .ent-layout,
-[data-density="grand"] .ent-layout--with-stats { gap: calc(36px * var(--arch-vertical-rhythm, 1)); }
-[data-density="grand"] .ent-sidebar { padding: calc(18px * var(--arch-vertical-rhythm, 1)); }
+[data-density="grand"] .ent-layout { gap: calc(36px * var(--arch-vertical-rhythm, 1)); }
 [data-density="grand"] .ent-detail-card { padding: calc(28px * var(--arch-vertical-rhythm, 1)); }
 [data-density="grand"] .cab-inner { padding: calc(32px * var(--arch-vertical-rhythm, 1)); }
 [data-density="grand"] .proj-main-inner { padding: calc(28px * var(--arch-vertical-rhythm, 1)); }
@@ -3637,9 +3267,7 @@ html.dark .a-modal label {
 [data-density="grand"] h3, [data-density="grand"] h4 { font-size: calc(var(--ds-text-lg, 1.2rem) * 1.15); }
 
 /* Dense: tight, aggressive */
-[data-density="dense"] .ent-layout,
-[data-density="dense"] .ent-layout--with-stats { gap: 8px; }
-[data-density="dense"] .ent-sidebar { padding: 4px; }
+[data-density="dense"] .ent-layout { gap: 8px; }
 [data-density="dense"] .ent-detail-card { padding: 10px; }
 [data-density="dense"] .cab-inner { padding: 8px; }
 [data-density="dense"] .proj-main-inner { padding: 8px; }
@@ -3655,40 +3283,30 @@ html.dark .a-modal label {
 [data-density] .u-grid-2,
 [data-density] .u-grid-3       { gap: calc(var(--ds-grid-gap, 16px) * var(--arch-vertical-rhythm, 1)); }
 [data-density] .std-nav         { gap: calc(2px * var(--arch-vertical-rhythm, 1)); }
-[data-density] .ent-nav-item   { padding: calc(7px * var(--arch-space, 1)) calc(10px * var(--arch-space, 1)); }
 [data-density] .cab-nav-item   { padding: calc(8px * var(--arch-space, 1)) calc(12px * var(--arch-space, 1)); }
 [data-density] .std-nav-item   { padding: calc(8px * var(--arch-space, 1)) calc(12px * var(--arch-space, 1)); }
 
 /* ── Nav Chrome: expand to ALL sidebar types ── */
-[data-nav-style="minimal"] .ent-sidebar,
 [data-nav-style="minimal"] .cab-sidebar,
-[data-nav-style="minimal"] .proj-sidenav,
-[data-nav-style="minimal"] .docs-nav {
+[data-nav-style="minimal"] .proj-sidenav {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
 }
-[data-nav-style="minimal"] .ent-nav-item,
 [data-nav-style="minimal"] .cab-nav-item,
 [data-nav-style="minimal"] .std-nav-item,
-[data-nav-style="minimal"] .proj-sidenav-item,
-[data-nav-style="minimal"] .docs-nav-item {
+[data-nav-style="minimal"] .proj-sidenav-item {
   background: transparent !important;
   border: none !important;
   opacity: .5;
   transition: opacity var(--ds-anim-duration, 180ms) ease;
 }
-[data-nav-style="minimal"] .ent-nav-item:hover,
 [data-nav-style="minimal"] .cab-nav-item:hover,
 [data-nav-style="minimal"] .std-nav-item:hover,
-[data-nav-style="minimal"] .proj-sidenav-item:hover,
-[data-nav-style="minimal"] .docs-nav-item:hover { opacity: .85; }
-[data-nav-style="minimal"] .ent-nav-item--active,
-[data-nav-style="minimal"] .cab-nav-item--active,
+[data-nav-style="minimal"] .proj-sidenav-item:hover { opacity: .85; }
 [data-nav-style="minimal"] .std-nav-item--active,
-[data-nav-style="minimal"] .proj-sidenav-item.router-link-active,
-[data-nav-style="minimal"] .docs-nav-item--active {
+[data-nav-style="minimal"] .proj-sidenav-item.router-link-active {
   opacity: 1 !important;
   font-weight: var(--ds-heading-weight, 600);
   background: transparent !important;
@@ -3703,10 +3321,8 @@ html.dark .a-modal label {
 [data-nav-style="minimal"] .admin-header::before { display: none !important; }
 
 /* Hidden: ALL sidebars collapse to icon-only */
-[data-nav-style="hidden"] .ent-sidebar,
 [data-nav-style="hidden"] .cab-sidebar,
-[data-nav-style="hidden"] .proj-sidenav,
-[data-nav-style="hidden"] .docs-nav {
+[data-nav-style="hidden"] .proj-sidenav {
   width: 52px !important;
   min-width: 52px !important;
   background: transparent !important;
@@ -3716,16 +3332,9 @@ html.dark .a-modal label {
 }
 [data-nav-style="hidden"] .ent-sidebar span:not(.icon),
 [data-nav-style="hidden"] .cab-sidebar span:not(.icon),
-[data-nav-style="hidden"] .ent-nav-name,
-[data-nav-style="hidden"] .ent-nav-sub,
-[data-nav-style="hidden"] .ent-nav-badge,
 [data-nav-style="hidden"] .cab-nav-item span,
-[data-nav-style="hidden"] .ent-sidebar-head,
-[data-nav-style="hidden"] .ent-search,
-[data-nav-style="hidden"] .ent-sidebar-foot,
 [data-nav-style="hidden"] .proj-sidenav-group-label,
-[data-nav-style="hidden"] .std-nav-group-label,
-[data-nav-style="hidden"] .ent-sidebar-title { display: none !important; }
+[data-nav-style="hidden"] .std-nav-group-label { display: none !important; }
 
 /* Contractor cabinets keep full sidebar labels even in hidden nav mode. */
 [data-nav-style="hidden"] .cab-sidebar--persistent-nav {
@@ -3759,7 +3368,6 @@ html.dark .a-modal label {
   box-shadow: none !important;
   padding: 4px 12px;
 }
-[data-nav-style="hidden"] .admin-tabs { gap: 2px; }
 
 /* ── Card Chrome: expand to ALL card/panel/surface types ── */
 [data-card-chrome="subtle"] .ent-detail-card,
@@ -3857,13 +3465,11 @@ html.dark .a-modal label {
 }
 
 /* ── Dividers: widen to all heading-like elements ── */
-[data-divider="line"] .ent-sidebar-title,
 [data-divider="line"] .std-nav-group-label,
 [data-divider="line"] .proj-sidenav-group-label {
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
   padding-bottom: 4px;
 }
-[data-divider="gradient"] .ent-sidebar-title,
 [data-divider="gradient"] .std-nav-group-label,
 [data-divider="gradient"] .proj-sidenav-group-label {
   border-bottom: 1px solid transparent;
@@ -3872,14 +3478,12 @@ html.dark .a-modal label {
 }
 
 /* ── Heading tracking: apply to ALL heading-like elements ── */
-[data-heading-case] .ent-sidebar-title,
 [data-heading-case] .std-nav-group-label,
 [data-heading-case] .proj-sidenav-group-label,
 [data-heading-case] .ent-detail-name,
 [data-heading-case] .dash-welcome-name {
   letter-spacing: var(--ds-heading-letter-spacing, inherit);
 }
-[data-heading-case="uppercase"] .ent-sidebar-title,
 [data-heading-case="uppercase"] .ent-detail-name,
 [data-heading-case="uppercase"] .dash-welcome-name,
 [data-heading-case="uppercase"] .cab-nav-item,
@@ -3887,9 +3491,7 @@ html.dark .a-modal label {
 
 /* ── Admin header / tabs: respond to density + vertical rhythm ── */
 [data-density="grand"] .admin-header { padding: calc(12px * var(--arch-vertical-rhythm, 1)) calc(20px * var(--arch-vertical-rhythm, 1)); }
-[data-density="grand"] .admin-tabs { gap: calc(6px * var(--arch-vertical-rhythm, 1)); }
 [data-density="dense"] .admin-header { padding: 4px 10px; }
-[data-density="dense"] .admin-tabs { gap: 2px; }
 
 /* ── Glass inputs/chips: respond to card chrome ── */
 [data-card-chrome="ghost"] .glass-input,
@@ -3953,14 +3555,12 @@ html.dark .a-modal label {
 [data-nav-style="hidden"]  ::-webkit-scrollbar-thumb { background: transparent; }
 
 /* ── Link animation: wider target for arrow/underline ── */
-[data-link-anim="underline"] .ent-nav-name,
 [data-link-anim="underline"] .dash-quick-label {
   text-decoration: underline;
   text-decoration-color: transparent;
   text-underline-offset: 3px;
   transition: text-decoration-color var(--ds-anim-duration, 180ms) ease;
 }
-[data-link-anim="underline"] .ent-nav-item:hover .ent-nav-name,
 [data-link-anim="underline"] .dash-quick-btn:hover .dash-quick-label {
   text-decoration-color: currentColor;
 }
@@ -3989,7 +3589,6 @@ html.dark .a-modal label {
 
 /* fade-up: gentle rise */
 [data-content-reveal="fade-up"] .asb-section,
-[data-content-reveal="fade-up"] .acp-form-section,
 [data-content-reveal="fade-up"] .u-form-section,
 [data-content-reveal="fade-up"] .ent-detail-card,
 [data-content-reveal="fade-up"] .cab-task,
@@ -3999,7 +3598,6 @@ html.dark .a-modal label {
 [data-content-reveal="fade-up"] .dash-stat,
 [data-content-reveal="fade-up"] .dash-project-card,
 [data-content-reveal="fade-up"] .glass-card,
-[data-content-reveal="fade-up"] .u-topbar,
 [data-content-reveal="fade-up"] [class*="-section"]:not(.u-section-title):not(.ent-detail-section),
 [data-content-reveal="fade-up"] [class*="-wrap"] {
   animation: arch-fade-up calc(var(--ds-anim-duration, 250ms) * 1.8) var(--ds-anim-easing, ease) both;
@@ -4011,9 +3609,6 @@ html.dark .a-modal label {
 [data-content-reveal="fade-up"] .cab-body > *:nth-child(4) { animation-delay: 240ms; }
 [data-content-reveal="fade-up"] .cab-body > *:nth-child(5) { animation-delay: 320ms; }
 [data-content-reveal="fade-up"] .cab-body > *:nth-child(n+6) { animation-delay: 400ms; }
-[data-content-reveal="fade-up"] .ent-main > *:nth-child(1) { animation-delay: 0ms; }
-[data-content-reveal="fade-up"] .ent-main > *:nth-child(2) { animation-delay: 100ms; }
-[data-content-reveal="fade-up"] .ent-main > *:nth-child(3) { animation-delay: 200ms; }
 [data-content-reveal="fade-up"] .proj-main-inner > *:nth-child(1) { animation-delay: 0ms; }
 [data-content-reveal="fade-up"] .proj-main-inner > *:nth-child(2) { animation-delay: 100ms; }
 [data-content-reveal="fade-up"] .proj-main-inner > *:nth-child(3) { animation-delay: 200ms; }
@@ -4022,11 +3617,9 @@ html.dark .a-modal label {
 
 /* fade: simple opacity emerge */
 [data-content-reveal="fade"] .asb-section,
-[data-content-reveal="fade"] .acp-form-section,
 [data-content-reveal="fade"] .u-form-section,
 [data-content-reveal="fade"] .ent-detail-card,
 [data-content-reveal="fade"] .glass-card,
-[data-content-reveal="fade"] .u-topbar,
 [data-content-reveal="fade"] .dash-welcome,
 [data-content-reveal="fade"] [class*="-section"]:not(.u-section-title):not(.ent-detail-section) {
   animation: arch-fade calc(var(--ds-anim-duration, 250ms) * 2) var(--ds-anim-easing, ease) both;
@@ -4034,11 +3627,9 @@ html.dark .a-modal label {
 
 /* slide-up: dramatic vertical entrance */
 [data-content-reveal="slide-up"] .asb-section,
-[data-content-reveal="slide-up"] .acp-form-section,
 [data-content-reveal="slide-up"] .u-form-section,
 [data-content-reveal="slide-up"] .ent-detail-card,
 [data-content-reveal="slide-up"] .glass-card,
-[data-content-reveal="slide-up"] .u-topbar,
 [data-content-reveal="slide-up"] .dash-welcome,
 [data-content-reveal="slide-up"] [class*="-section"]:not(.u-section-title):not(.ent-detail-section) {
   animation: arch-slide-up calc(var(--ds-anim-duration, 250ms) * 2) var(--ds-anim-easing, ease) both;
@@ -4046,11 +3637,9 @@ html.dark .a-modal label {
 
 /* blur: elements emerge from blur cloud (most Minale+Mann-like) */
 [data-content-reveal="blur"] .asb-section,
-[data-content-reveal="blur"] .acp-form-section,
 [data-content-reveal="blur"] .u-form-section,
 [data-content-reveal="blur"] .ent-detail-card,
 [data-content-reveal="blur"] .glass-card,
-[data-content-reveal="blur"] .u-topbar,
 [data-content-reveal="blur"] .dash-welcome,
 [data-content-reveal="blur"] [class*="-section"]:not(.u-section-title):not(.ent-detail-section) {
   animation: arch-blur-reveal calc(var(--ds-anim-duration, 250ms) * 2.5) var(--ds-anim-easing, ease) both;
@@ -4078,7 +3667,6 @@ html.dark .a-modal label {
 [data-text-reveal="clip"] h2,
 [data-text-reveal="clip"] h3,
 [data-text-reveal="clip"] .u-section-title,
-[data-text-reveal="clip"] .u-topbar__title,
 [data-text-reveal="clip"] .ent-detail-name,
 [data-text-reveal="clip"] .dash-welcome-name {
   animation: text-clip-reveal calc(var(--ds-anim-duration, 250ms) * 2) var(--ds-anim-easing, ease) both;
@@ -4094,14 +3682,12 @@ html.dark .a-modal label {
 [data-text-reveal="blur-in"] h2,
 [data-text-reveal="blur-in"] h3,
 [data-text-reveal="blur-in"] .u-section-title,
-[data-text-reveal="blur-in"] .u-topbar__title,
 [data-text-reveal="blur-in"] .ent-detail-name,
 [data-text-reveal="blur-in"] .dash-welcome-name {
   animation: text-blur-in calc(var(--ds-anim-duration, 250ms) * 2.5) var(--ds-anim-easing, ease) both;
 }
 [data-text-reveal="blur-in"] p,
 [data-text-reveal="blur-in"] .u-field__label,
-[data-text-reveal="blur-in"] .ent-nav-name,
 [data-text-reveal="blur-in"] label {
   animation: arch-fade calc(var(--ds-anim-duration, 250ms) * 3) var(--ds-anim-easing, ease) both;
   animation-delay: calc(var(--ds-anim-duration, 250ms) * 0.6);
@@ -4112,7 +3698,6 @@ html.dark .a-modal label {
 [data-text-reveal="letter-fade"] h2,
 [data-text-reveal="letter-fade"] h3,
 [data-text-reveal="letter-fade"] .u-section-title,
-[data-text-reveal="letter-fade"] .u-topbar__title,
 [data-text-reveal="letter-fade"] .ent-detail-name,
 [data-text-reveal="letter-fade"] .dash-welcome-name {
   animation: text-letter-fade calc(var(--ds-anim-duration, 250ms) * 2) var(--ds-anim-easing, ease) both;
@@ -4127,28 +3712,20 @@ html.dark .a-modal label {
 /* All interactive elements get slow, elegant transitions */
 [data-content-reveal] a,
 [data-content-reveal] button,
-[data-content-reveal] .ent-nav-item,
 [data-content-reveal] .cab-nav-item,
 [data-content-reveal] .std-nav-item,
 [data-content-reveal] .dash-quick-btn,
 [data-content-reveal] .a-btn-save,
 [data-content-reveal] .a-btn-sm,
 [data-content-reveal] .glass-chip,
-[data-content-reveal] .admin-tab,
 [data-content-reveal] .admin-link {
   transition-duration: var(--ds-anim-duration, 250ms) !important;
   transition-timing-function: var(--ds-anim-easing, ease) !important;
 }
 
 /* Slow opacity transitions on all text when data-text-reveal is active */
-[data-text-reveal]:not([data-text-reveal="none"]) .ent-nav-item {
-  transition: opacity var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease),
-              background var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease),
-              transform var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease);
-}
 
 /* Nav items slide slightly on hover when content-reveal is active */
-[data-content-reveal]:not([data-content-reveal="none"]) .ent-nav-item:hover,
 [data-content-reveal]:not([data-content-reveal="none"]) .cab-nav-item:hover,
 [data-content-reveal]:not([data-content-reveal="none"]) .std-nav-item:hover {
   transform: translateX(4px);
@@ -4161,9 +3738,6 @@ html.dark .a-modal label {
 }
 
 /* Admin tabs: slow morph between states */
-[data-content-reveal]:not([data-content-reveal="none"]) .admin-tab {
-  transition: all var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease) !important;
-}
 
 /* Cards inherit the cinematic transition speed */
 [data-content-reveal]:not([data-content-reveal="none"]) .glass-card,
@@ -4198,25 +3772,6 @@ html.dark .a-modal label {
   --c-bg-soft: rgba(255,255,255,0.03);
   --c-input-bg: rgba(255,255,255,0.03);
   --c-bg2: rgba(255,255,255,0.03);
-}
-[data-dark-surface] .rm-wrap {
-  --r-title: var(--ds-muted, #b1b1b1);
-  --r-muted: var(--ds-muted, #a8a8a8);
-  --r-line: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  --r-dot-border: rgba(255,255,255,0.15);
-  --r-dot-bg: rgba(255,255,255,0.03);
-  --r-text: var(--ds-text-color, #f2f2f2);
-  --r-soft: var(--ds-muted, #b8b8b8);
-  --r-status-pending: var(--ds-muted, #777);
-}
-[data-dark-surface] .ws-wrap {
-  --w-title: var(--ds-muted, #b1b1b1);
-  --w-muted: var(--ds-muted, #a8a8a8);
-  --w-card-bg: var(--ds-card-bg, #181818);
-  --w-card-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
-  --w-text: var(--ds-text-color, #f2f2f2);
-  --w-text-soft: var(--ds-muted, #b9b9b9);
-  --w-badge-border: color-mix(in srgb, var(--glass-text) 10%, transparent);
 }
 [data-dark-surface] .atz-card {
   --atz-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
@@ -4272,7 +3827,6 @@ html.dark .a-modal label {
 [data-dark-surface] .cab-modal-foot {
   border-top-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
-[data-dark-surface] .u-modal-overlay,
 [data-dark-surface] .cab-modal-overlay {
   background: rgba(0,0,0,var(--modal-overlay-opacity, 0.85)) !important;
 }
@@ -4348,20 +3902,16 @@ html.dark .a-modal label {
 }
 
 /* --- Navigation sidebar --- */
-[data-dark-surface] .ent-sidebar,
-[data-dark-surface] .std-sidebar,
 [data-dark-surface] .cab-nav {
   background: #000000 !important;
   border-right: 1px solid color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Nav items --- */
-[data-dark-surface] .ent-nav-item,
 [data-dark-surface] .cab-nav-item,
 [data-dark-surface] .std-nav-item {
   color: rgba(255,255,255,0.5) !important;
 }
-[data-dark-surface] .ent-nav-item:hover,
 [data-dark-surface] .cab-nav-item:hover {
   color: var(--glass-text) !important;
   background: rgba(255,255,255,0.03) !important;
@@ -4388,16 +3938,7 @@ html.dark .a-modal label {
 }
 
 /* --- Admin tabs --- */
-[data-dark-surface] .admin-tab {
-  background: transparent !important;
-  color: rgba(255,255,255,0.4) !important;
-  border-color: transparent !important;
-}
-[data-dark-surface] .admin-tab:hover {
-  color: color-mix(in srgb, var(--glass-text) 70%, transparent) !important;
-}
-[data-dark-surface] .admin-tab.active,
-[data-dark-surface] .admin-tab--active {
+[data-dark-surface] .admin-tab.active {
   color: var(--glass-text) !important;
   border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
   background: transparent !important;
@@ -4421,8 +3962,7 @@ html.dark .a-modal label {
 
 /* --- u-form-section, asb-section, acp-form-section --- */
 [data-dark-surface] .u-form-section,
-[data-dark-surface] .asb-section,
-[data-dark-surface] .acp-form-section {
+[data-dark-surface] .asb-section {
   background: transparent !important;
   border-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
@@ -4448,10 +3988,6 @@ html.dark .a-modal label {
 }
 
 /* --- Status bar, topbar --- */
-[data-dark-surface] .u-topbar {
-  background: transparent !important;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
-}
 
 /* --- Section titles emphasize white --- */
 [data-dark-surface] .u-section-title {
@@ -4564,38 +4100,20 @@ html.dark .a-modal label {
 [data-dark-surface] .proj-main-inner {
   background: transparent !important;
 }
-[data-dark-surface] .proj-card,
-[data-dark-surface] .pj-card {
+[data-dark-surface] .proj-card {
   background: transparent !important;
   border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 
 /* --- Documents (docs-*) --- */
-[data-dark-surface] .docs-card {
-  background: transparent !important;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
-}
-[data-dark-surface] .docs-upload {
-  background: transparent !important;
-  border: 1px dashed color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
-  color: rgba(255,255,255,0.4) !important;
-}
 
 /* --- Design (de-*) album --- */
-[data-dark-surface] .de-card,
 [data-dark-surface] .de-section {
   background: transparent !important;
   border-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
 }
 
 /* --- Status pills/bars: keep functional colors but adapt --- */
-[data-dark-surface] .sb-cell {
-  background: rgba(255,255,255,0.02) !important;
-  border-color: color-mix(in srgb, var(--glass-text) 4%, transparent) !important;
-}
-[data-dark-surface] .sb-label {
-  color: rgba(255,255,255,0.4) !important;
-}
 
 /* --- Dashboard stat cards and project cards --- */
 [data-dark-surface] .dash-stat {
@@ -4618,10 +4136,6 @@ html.dark .a-modal label {
 }
 
 /* --- Admin Search (as-*) --- */
-[data-dark-surface] .as-results {
-  background: color-mix(in srgb, var(--color-surface, var(--glass-bg)) calc(var(--glass-opacity, 0.9) * 100%), transparent) !important;
-  border-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
-}
 
 /* --- Roadmap components --- */
 [data-dark-surface] [class*="roadmap"] {
@@ -4629,16 +4143,14 @@ html.dark .a-modal label {
 }
 
 /* --- Service/Contractor cards (svc-*, co-*) --- */
-[data-dark-surface] .svc-card,
-[data-dark-surface] .co-card {
+[data-dark-surface] .svc-card {
   background: transparent !important;
   border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
 
 /* --- Misc: afc- (first contact), aca- (concept approval), acnp- (contractors) --- */
 [data-dark-surface] .afc-complete-card,
-[data-dark-surface] .aca-render-card,
-[data-dark-surface] .acnp-card {
+[data-dark-surface] .aca-render-card {
   background: transparent !important;
   border: 1px solid color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
 }
@@ -4652,11 +4164,6 @@ html.dark .a-modal label {
 }
 
 /* --- Material panels (mpe-*, mpp-*) --- */
-[data-dark-surface] .mpe-panel,
-[data-dark-surface] .mpp-panel {
-  background: #050505 !important;
-  border-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
-}
 
 /* --- Gallery components --- */
 [data-dark-surface] .agal-wrap {
@@ -4802,8 +4309,7 @@ html.dark .a-modal label {
 [data-dark-surface] .cab-inline-error,
 [data-dark-surface] .svc-del,
 [data-dark-surface] [class*="-error"],
-[data-dark-surface] [class*="-danger"],
-[data-dark-surface] .de-warn-text {
+[data-dark-surface] [class*="-danger"] {
   color: rgba(252,165,165,0.85) !important;
 }
 
@@ -4920,7 +4426,6 @@ html.dark .a-modal label {
 
 /* --- EMOJI ICONS — desaturate on dark surfaces for monochrome feel --- */
 [data-dark-surface] .ent-empty-icon,
-[data-dark-surface] .ent-nav-avatar,
 [data-dark-surface] [class*="-icon"]:not(svg):not(button),
 [data-dark-surface] [class*="-emoji"] {
   filter: grayscale(1) brightness(1.5) !important;
@@ -4953,29 +4458,15 @@ html[data-concept="brutal"] [class*="-emoji"] {
 }
 
 /* Ensure nav badges/pills don't overflow on narrow screens */
-.ent-nav-badge {
-  font-size: 0.62rem !important;
-  padding: 1px 6px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  max-width: 80px !important;
-}
 
 /* Fix status bar spacing */
-[data-dark-surface] .sb-cell {
-  padding: 6px 10px !important;
-}
 
 /* --- CLIENT TIMELINE GRAY FIXES --- */
-[data-dark-surface] .ct-date,
-[data-dark-surface] .ct-time,
 [data-dark-surface] .ct-status,
 [data-dark-surface] .ct-label {
   color: rgba(255,255,255,0.5) !important;
 }
-[data-dark-surface] .ct-card,
-[data-dark-surface] .ct-event {
+[data-dark-surface] .ct-card {
   background: rgba(255,255,255,0.03) !important;
   border-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
 }
@@ -4998,46 +4489,16 @@ html[data-concept="brutal"] [class*="-emoji"] {
 }
 
 /* --- SIDEBAR POSITIONING --- */
-[data-dark-surface] .ent-sidebar-head {
-  border-bottom-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
-}
-[data-dark-surface] .ent-sidebar-title {
-  color: rgba(255,255,255,0.55) !important;
-}
-[data-dark-surface] .ent-sidebar-count {
-  color: rgba(255,255,255,0.3) !important;
-}
-[data-dark-surface] .ent-sidebar-foot {
-  border-top-color: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
-}
 
 /* --- NAV ITEM TEXT COLORS --- */
-[data-dark-surface] .ent-nav-name {
-  color: color-mix(in srgb, var(--glass-text) 70%, transparent) !important;
-}
-[data-dark-surface] .ent-nav-sub {
-  color: rgba(255,255,255,0.3) !important;
-}
-[data-dark-surface] .ent-nav-item--active .ent-nav-name {
-  color: var(--glass-text) !important;
-}
 
 /* --- FIX AVATAR CIRCLES ON DARK SURFACE --- */
-[data-dark-surface] .pj-av,
-[data-dark-surface] .ent-nav-avatar {
+[data-dark-surface] .pj-av {
   background: color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
   color: rgba(255,255,255,0.5) !important;
 }
 
 /* --- SEARCH INPUT --- */
-[data-dark-surface] .ent-search {
-  background: rgba(255,255,255,0.03) !important;
-  border-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
-  color: rgba(255,255,255,0.8) !important;
-}
-[data-dark-surface] .ent-search::placeholder {
-  color: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
-}
 
 /* --- MODAL IMPROVEMENTS --- */
 [data-dark-surface] .pj-modal,
@@ -5120,13 +4581,10 @@ html[data-concept="brutal"] [class*="-emoji"] {
   border: 1px solid rgba(80,60,30,0.20) !important;
 }
 
-[data-warm-surface] .ent-sidebar,
-[data-warm-surface] .std-sidebar,
 [data-warm-surface] .cab-nav {
   background: var(--ds-nav-bg, #ede8e0) !important;
   border-color: rgba(80,60,30,0.10) !important;
 }
-[data-warm-surface] .ent-nav-item,
 [data-warm-surface] .cab-nav-item,
 [data-warm-surface] .std-nav-item {
   color: var(--ds-text-color, #3a352c) !important;
@@ -5150,8 +4608,7 @@ html[data-concept="brutal"] [class*="-emoji"] {
 }
 
 [data-warm-surface] .u-form-section,
-[data-warm-surface] .asb-section,
-[data-warm-surface] .acp-form-section {
+[data-warm-surface] .asb-section {
   background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 50%, transparent) !important;
   border-color: rgba(80,60,30,0.08) !important;
 }
@@ -5159,10 +4616,6 @@ html[data-concept="brutal"] [class*="-emoji"] {
 [data-warm-surface] .ent-detail-card {
   background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 80%, transparent) !important;
   border-color: rgba(80,60,30,0.10) !important;
-}
-[data-warm-surface] .u-topbar {
-  background: var(--ds-nav-bg, #ede8e0) !important;
-  border-color: rgba(80,60,30,0.08) !important;
 }
 
 [data-warm-surface] .cab-task,
@@ -5174,23 +4627,14 @@ html[data-concept="brutal"] [class*="-emoji"] {
   background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 40%, transparent) !important;
 }
 
-[data-warm-surface] .admin-tab {
-  color: var(--ds-text-color, #3a352c) !important;
-  border-color: transparent !important;
-}
-[data-warm-surface] .admin-tab.active,
-[data-warm-surface] .admin-tab--active {
+[data-warm-surface] .admin-tab.active {
   color: var(--ds-heading-color, #2a2520) !important;
   border-color: var(--ds-link-color, #7a6848) !important;
 }
 
 [data-warm-surface] .ws-card,
 [data-warm-surface] .proj-card,
-[data-warm-surface] .pj-card,
-[data-warm-surface] .docs-card,
-[data-warm-surface] .de-card,
-[data-warm-surface] .svc-card,
-[data-warm-surface] .co-card {
+[data-warm-surface] .svc-card {
   background: color-mix(in srgb, var(--ds-surface-bg, #ede8e0) 80%, transparent) !important;
   border-color: rgba(80,60,30,0.10) !important;
 }
@@ -5261,18 +4705,6 @@ html[data-concept="brutal"] [class*="-emoji"] {
 }
 
 /* --- WARM SURFACE: Nav item text --- */
-[data-warm-surface] .ent-nav-name {
-  color: var(--ds-text-color, #3a352c) !important;
-}
-[data-warm-surface] .ent-nav-sub {
-  color: rgba(58,53,44,0.4) !important;
-}
-[data-warm-surface] .ent-sidebar-title {
-  color: rgba(58,53,44,0.6) !important;
-}
-[data-warm-surface] .ent-sidebar-count {
-  color: rgba(58,53,44,0.35) !important;
-}
 
 /* --- WARM SURFACE: Link colors --- */
 [data-warm-surface] a:not([class]) {
@@ -5349,13 +4781,10 @@ html[data-concept="brutal"] .a-btn-sm {
   letter-spacing: 0.10em !important;
 }
 
-html[data-concept="brutal"] .ent-sidebar,
-html[data-concept="brutal"] .std-sidebar,
 html[data-concept="brutal"] .cab-nav {
   background: #000000 !important;
   border: none !important;
 }
-html[data-concept="brutal"] .ent-nav-item,
 html[data-concept="brutal"] .cab-nav-item,
 html[data-concept="brutal"] .std-nav-item {
   color: var(--glass-text) !important;
@@ -5368,15 +4797,7 @@ html[data-concept="brutal"] .cab-nav-item.active {
   color: #000000 !important;
 }
 
-html[data-concept="brutal"] .admin-tab {
-  color: #000000 !important;
-  border: none !important;
-  border-radius: 4px 4px 0 0 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.12em !important;
-}
-html[data-concept="brutal"] .admin-tab.active,
-html[data-concept="brutal"] .admin-tab--active {
+html[data-concept="brutal"] .admin-tab.active {
   border-bottom: 3px solid #000000 !important;
 }
 
@@ -5385,10 +4806,7 @@ html[data-concept="brutal"] .dash-project-card,
 html[data-concept="brutal"] .dash-welcome,
 html[data-concept="brutal"] .ws-card,
 html[data-concept="brutal"] .proj-card,
-html[data-concept="brutal"] .docs-card,
-html[data-concept="brutal"] .de-card,
 html[data-concept="brutal"] .svc-card,
-html[data-concept="brutal"] .co-card,
 html[data-concept="brutal"] .ent-detail-card,
 html[data-concept="brutal"] .cab-task,
 html[data-concept="brutal"] .cab-doc-card {
@@ -5413,10 +4831,6 @@ html[data-concept="brutal"] hr {
   border-width: 2px !important;
 }
 
-html[data-concept="brutal"] .u-topbar {
-  background: #ffffff !important;
-  border-bottom: 3px solid #000000 !important;
-}
 
 html[data-concept="brutal"] .dp-panel {
   background: #ffffff !important;
@@ -5441,7 +4855,6 @@ html[data-concept="grand"] .dash-project-card,
 html[data-concept="grand"] .ws-card,
 html[data-concept="grand"] .svc-card,
 html[data-concept="grand"] .cab-task,
-html[data-concept="grand"] .docs-card,
 html[data-concept="grand"] .ent-detail-card {
   background: rgba(18,14,10,0.80) !important;
   border: 1px solid rgba(200,169,110,0.08) !important;
@@ -5513,13 +4926,10 @@ html[data-concept="grand"] .a-btn-sm {
 }
 
 /* sidebar/nav */
-html[data-concept="grand"] .ent-sidebar,
-html[data-concept="grand"] .std-sidebar,
 html[data-concept="grand"] .cab-nav {
   background: rgba(8,7,5,0.95) !important;
   border-right: 1px solid rgba(200,169,110,0.08) !important;
 }
-html[data-concept="grand"] .ent-nav-item,
 html[data-concept="grand"] .cab-nav-item,
 html[data-concept="grand"] .std-nav-item {
   color: rgba(200,169,110,0.40) !important;
@@ -5527,7 +4937,6 @@ html[data-concept="grand"] .std-nav-item {
   text-transform: uppercase !important;
   font-size: 0.72em !important;
 }
-html[data-concept="grand"] .ent-nav-item:hover,
 html[data-concept="grand"] .cab-nav-item:hover {
   color: rgba(200,169,110,0.75) !important;
   background: rgba(200,169,110,0.05) !important;
@@ -5540,13 +4949,7 @@ html[data-concept="grand"] .cab-nav-item.active {
 }
 
 /* tabs */
-html[data-concept="grand"] .admin-tab {
-  color: rgba(200,169,110,0.30) !important;
-  border: none !important;
-  letter-spacing: 0.08em !important;
-}
-html[data-concept="grand"] .admin-tab.active,
-html[data-concept="grand"] .admin-tab--active {
+html[data-concept="grand"] .admin-tab.active {
   color: #c8a96e !important;
   border-bottom: 2px solid #c8a96e !important;
 }
@@ -5561,10 +4964,6 @@ html[data-concept="grand"] h3 {
 }
 
 /* topbar */
-html[data-concept="grand"] .u-topbar {
-  background: rgba(8,7,5,0.97) !important;
-  border-bottom: 1px solid rgba(200,169,110,0.12) !important;
-}
 
 /* tables */
 html[data-concept="grand"] thead th {
@@ -5619,12 +5018,9 @@ html[data-concept="minale"]::-webkit-scrollbar {
 /* Page, body, layout background — full black */
 html[data-concept="minale"],
 html[data-concept="minale"] body,
-html[data-concept="minale"] .page-wrapper,
 html[data-concept="minale"] .page-bg,
-html[data-concept="minale"] .ws-layout,
 html[data-concept="minale"] .ent-layout,
-html[data-concept="minale"] .admin-layout,
-html[data-concept="minale"] .std-layout {
+html[data-concept="minale"] .admin-layout {
   background: #000000 !important;
   color: var(--glass-text) !important;
 }
@@ -5646,7 +5042,6 @@ html[data-concept="minale"] button {
 /* Muted / secondary text */
 html[data-concept="minale"] .text-muted,
 html[data-concept="minale"] .u-label,
-html[data-concept="minale"] .a-field-label,
 html[data-concept="minale"] small {
   color: rgba(255,255,255,0.55) !important;
 }
@@ -5666,15 +5061,12 @@ html[data-concept="minale"] .dash-project-card {
 }
 
 /* Navigation: pure text, no background decoration */
-html[data-concept="minale"] .ent-sidebar,
-html[data-concept="minale"] .std-sidebar,
 html[data-concept="minale"] .cab-nav {
   background: #000000 !important;
   border: none !important;
 }
 
 /* Nav items: uppercase, tracked, white */
-html[data-concept="minale"] .ent-nav-item,
 html[data-concept="minale"] .cab-nav-item,
 html[data-concept="minale"] .std-nav-item {
   color: var(--glass-text) !important;
@@ -5685,7 +5077,6 @@ html[data-concept="minale"] .std-nav-item {
   opacity: 0.6;
   transition: opacity 200ms ease !important;
 }
-html[data-concept="minale"] .ent-nav-item:hover,
 html[data-concept="minale"] .cab-nav-item:hover,
 html[data-concept="minale"] .std-nav-item:hover {
   opacity: 1 !important;
@@ -5759,7 +5150,6 @@ html[data-concept="minale"] select:focus {
 }
 /* Field label above input */
 html[data-concept="minale"] label,
-html[data-concept="minale"] .a-field-label,
 html[data-concept="minale"] .u-label {
   color: rgba(255,255,255,0.50) !important;
   font-size: 0.68rem !important;
@@ -5768,21 +5158,7 @@ html[data-concept="minale"] .u-label {
 }
 
 /* Tabs: white, uppercase */
-html[data-concept="minale"] .admin-tab {
-  color: var(--glass-text) !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
-  font-size: 0.78rem !important;
-  opacity: 0.5;
-  border: none !important;
-  transition: opacity 200ms ease !important;
-}
-html[data-concept="minale"] .admin-tab:hover {
-  opacity: 0.85 !important;
-}
-html[data-concept="minale"] .admin-tab.active,
-html[data-concept="minale"] .admin-tab--active {
+html[data-concept="minale"] .admin-tab.active {
   opacity: 1 !important;
   border-bottom: 2px solid rgba(255,255,255,0.70) !important;
 }
@@ -5795,7 +5171,6 @@ html[data-concept="minale"] .cab-modal {
   box-shadow: 0 8px 40px rgba(0,0,0,0.90) !important;
   color: var(--glass-text) !important;
 }
-html[data-concept="minale"] .u-modal-overlay,
 html[data-concept="minale"] .cab-modal-overlay {
   background: rgba(0,0,0,0.80) !important;
   backdrop-filter: blur(4px) !important;
@@ -5823,11 +5198,6 @@ html[data-concept="minale"] tbody tr:hover {
 }
 
 /* Topbar: seamless */
-html[data-concept="minale"] .u-topbar {
-  background: #000000 !important;
-  border: none !important;
-  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
-}
 
 /* All section titles — extreme tracking */
 html[data-concept="minale"] h1,
@@ -5924,7 +5294,6 @@ html[data-concept="minale"] select {
 /* Field labels — stay small, pure caption style */
 html[data-concept="minale"] label,
 html[data-concept="minale"] .u-field__label,
-html[data-concept="minale"] .a-field-label,
 html[data-concept="minale"] .u-label {
   font-size: 0.65rem !important;
   letter-spacing: 0.18em !important;
@@ -5932,9 +5301,6 @@ html[data-concept="minale"] .u-label {
 }
 
 /* ── Navigation tabs: legible not microscopic ─────────────── */
-html[data-concept="minale"] .admin-tab {
-  font-size: 0.75rem !important;
-}
 /* Admin links in header */
 html[data-concept="minale"] .admin-link,
 html[data-concept="minale"] .admin-search-label,
@@ -6132,7 +5498,6 @@ html[data-concept="minale"] .u-status-sel {
 }
 
 /* ── Project status bar ────────────────────────────────── */
-html[data-concept="minale"] .admin-status-bar,
 html[data-concept="minale"] [class*="status-bar"] {
   background: transparent !important;
   border: none !important;
@@ -6208,13 +5573,6 @@ html[data-concept="minale"] .ent-detail-row {
 }
 
 /* ── Nav group labels ──────────────────────────────────── */
-html[data-concept="minale"] .ent-group-label {
-  font-size: 0.58rem !important;
-  letter-spacing: 0.24em !important;
-  text-transform: uppercase !important;
-  color: rgba(255,255,255,0.22) !important;
-  padding: 16px 10px 4px !important;
-}
 
 /* ── Filter info bars ──────────────────────────────────── */
 html[data-concept="minale"] .cl-filter-info,
@@ -6224,7 +5582,6 @@ html[data-concept="minale"] .ct-filter-info {
   border-bottom: 1px solid rgba(255,255,255,0.07) !important;
   border-radius: 4px 4px 0 0 !important;
 }
-
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -6315,20 +5672,16 @@ html[data-concept="silence"] .a-btn-sm {
 }
 
 /* sidebar/nav: invisible background, whisper text */
-html[data-concept="silence"] .ent-sidebar,
-html[data-concept="silence"] .std-sidebar,
 html[data-concept="silence"] .cab-nav {
   background: transparent !important;
   border: none !important;
   border-right: 1px solid rgba(0,0,0,0.03) !important;
 }
-html[data-concept="silence"] .ent-nav-item,
 html[data-concept="silence"] .cab-nav-item,
 html[data-concept="silence"] .std-nav-item {
   color: rgba(0,0,0,0.22) !important;
   transition: color 500ms !important;
 }
-html[data-concept="silence"] .ent-nav-item:hover,
 html[data-concept="silence"] .cab-nav-item:hover {
   color: rgba(0,0,0,0.55) !important;
   background: transparent !important;
@@ -6341,14 +5694,7 @@ html[data-concept="silence"] .cab-nav-item.active {
 }
 
 /* tabs */
-html[data-concept="silence"] .admin-tab {
-  color: rgba(0,0,0,0.20) !important;
-  border: none !important;
-  transition: color 500ms, opacity 500ms !important;
-}
-html[data-concept="silence"] .admin-tab:hover { color: rgba(0,0,0,0.45) !important; }
-html[data-concept="silence"] .admin-tab.active,
-html[data-concept="silence"] .admin-tab--active {
+html[data-concept="silence"] .admin-tab.active {
   color: rgba(0,0,0,0.70) !important;
   border-bottom: 1px solid rgba(0,0,0,0.25) !important;
 }
@@ -6364,10 +5710,6 @@ html[data-concept="silence"] h4 {
 }
 
 /* topbar */
-html[data-concept="silence"] .u-topbar {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(0,0,0,0.03) !important;
-}
 
 /* tables */
 html[data-concept="silence"] thead th {
@@ -6401,8 +5743,7 @@ html[data-concept="craft"] .dash-stat,
 html[data-concept="craft"] .dash-project-card,
 html[data-concept="craft"] .ws-card,
 html[data-concept="craft"] .svc-card,
-html[data-concept="craft"] .cab-task,
-html[data-concept="craft"] .docs-card {
+html[data-concept="craft"] .cab-task {
   background: rgba(248,244,238,0.85) !important;
   border: 1px solid rgba(80,60,30,0.10) !important;
   box-shadow: 0 2px 12px rgba(80,60,30,0.06), 0 0 0 0 transparent !important;
@@ -6465,18 +5806,14 @@ html[data-concept="craft"] .a-btn-sm {
 }
 
 /* sidebar/nav */
-html[data-concept="craft"] .ent-sidebar,
-html[data-concept="craft"] .std-sidebar,
 html[data-concept="craft"] .cab-nav {
   background: rgba(240,234,224,0.95) !important;
   border-right: 1px solid rgba(120,90,50,0.12) !important;
 }
-html[data-concept="craft"] .ent-nav-item,
 html[data-concept="craft"] .cab-nav-item,
 html[data-concept="craft"] .std-nav-item {
   color: rgba(70,50,28,0.65) !important;
 }
-html[data-concept="craft"] .ent-nav-item:hover,
 html[data-concept="craft"] .cab-nav-item:hover {
   background: rgba(120,90,50,0.07) !important;
   color: rgba(60,40,18,0.90) !important;
@@ -6489,9 +5826,7 @@ html[data-concept="craft"] .cab-nav-item.active {
 }
 
 /* tabs */
-html[data-concept="craft"] .admin-tab { color: rgba(70,50,28,0.45) !important; }
-html[data-concept="craft"] .admin-tab.active,
-html[data-concept="craft"] .admin-tab--active {
+html[data-concept="craft"] .admin-tab.active {
   color: rgba(55,35,15,0.90) !important;
   border-bottom: 2px solid rgba(120,90,50,0.55) !important;
 }
@@ -6506,10 +5841,6 @@ html[data-concept="craft"] h3 {
 }
 
 /* topbar */
-html[data-concept="craft"] .u-topbar {
-  background: rgba(240,234,224,0.95) !important;
-  border-bottom: 1px solid rgba(120,90,50,0.10) !important;
-}
 
 /* tables */
 html[data-concept="craft"] thead th {
@@ -6548,7 +5879,6 @@ html[data-concept="editorial"] .dash-project-card,
 html[data-concept="editorial"] .ws-card,
 html[data-concept="editorial"] .svc-card,
 html[data-concept="editorial"] .cab-task,
-html[data-concept="editorial"] .docs-card,
 html[data-concept="editorial"] .ent-detail-card {
   background: rgba(245,240,232,0.9) !important;
   border: none !important;
@@ -6614,20 +5944,16 @@ html[data-concept="editorial"] .a-btn-sm {
 }
 
 /* sidebar */
-html[data-concept="editorial"] .ent-sidebar,
-html[data-concept="editorial"] .std-sidebar,
 html[data-concept="editorial"] .cab-nav {
   background: rgba(240,236,228,0.95) !important;
   border-right: 1px solid rgba(80,60,30,0.10) !important;
 }
-html[data-concept="editorial"] .ent-nav-item,
 html[data-concept="editorial"] .cab-nav-item {
   font-family: Georgia, "Times New Roman", serif !important;
   font-style: italic !important;
   color: rgba(40,28,18,0.55) !important;
   letter-spacing: 0.01em !important;
 }
-html[data-concept="editorial"] .ent-nav-item:hover,
 html[data-concept="editorial"] .cab-nav-item:hover {
   background: rgba(80,60,30,0.05) !important;
   color: rgba(20,14,8,0.80) !important;
@@ -6642,14 +5968,7 @@ html[data-concept="editorial"] .cab-nav-item.active {
 }
 
 /* tabs */
-html[data-concept="editorial"] .admin-tab {
-  font-family: Georgia, "Times New Roman", serif !important;
-  font-style: italic !important;
-  color: rgba(40,28,18,0.40) !important;
-  border: none !important;
-}
-html[data-concept="editorial"] .admin-tab.active,
-html[data-concept="editorial"] .admin-tab--active {
+html[data-concept="editorial"] .admin-tab.active {
   color: rgba(20,14,8,0.85) !important;
   border-bottom: 2px solid rgba(80,60,30,0.40) !important;
   font-style: normal !important;
@@ -6676,10 +5995,6 @@ html[data-concept="editorial"] .u-section-title {
 }
 
 /* topbar */
-html[data-concept="editorial"] .u-topbar {
-  background: rgba(240,236,228,0.95) !important;
-  border-bottom: 2px solid rgba(80,60,30,0.12) !important;
-}
 
 /* tables */
 html[data-concept="editorial"] thead th {
@@ -6727,7 +6042,6 @@ html[data-concept="future"] .dash-project-card,
 html[data-concept="future"] .ws-card,
 html[data-concept="future"] .svc-card,
 html[data-concept="future"] .cab-task,
-html[data-concept="future"] .docs-card,
 html[data-concept="future"] .ent-detail-card {
   background: rgba(8,14,30,0.75) !important;
   border: 1px solid rgba(80,120,255,0.12) !important;
@@ -6805,13 +6119,10 @@ html[data-concept="future"] .a-btn-sm {
 }
 
 /* sidebar/nav */
-html[data-concept="future"] .ent-sidebar,
-html[data-concept="future"] .std-sidebar,
 html[data-concept="future"] .cab-nav {
   background: rgba(4,7,18,0.95) !important;
   border-right: 1px solid rgba(80,120,255,0.08) !important;
 }
-html[data-concept="future"] .ent-nav-item,
 html[data-concept="future"] .cab-nav-item,
 html[data-concept="future"] .std-nav-item {
   color: rgba(120,160,255,0.45) !important;
@@ -6819,7 +6130,6 @@ html[data-concept="future"] .std-nav-item {
   text-transform: uppercase !important;
   font-size: 0.72em !important;
 }
-html[data-concept="future"] .ent-nav-item:hover,
 html[data-concept="future"] .cab-nav-item:hover {
   color: rgba(120,160,255,0.80) !important;
   background: rgba(80,120,255,0.06) !important;
@@ -6832,15 +6142,7 @@ html[data-concept="future"] .cab-nav-item.active {
 }
 
 /* tabs */
-html[data-concept="future"] .admin-tab {
-  color: rgba(80,120,255,0.35) !important;
-  border: none !important;
-  letter-spacing: 0.10em !important;
-  text-transform: uppercase !important;
-}
-html[data-concept="future"] .admin-tab:hover { color: rgba(80,120,255,0.65) !important; }
-html[data-concept="future"] .admin-tab.active,
-html[data-concept="future"] .admin-tab--active {
+html[data-concept="future"] .admin-tab.active {
   color: #6090ff !important;
   border-bottom: 2px solid #6090ff !important;
 }
@@ -6856,10 +6158,6 @@ html[data-concept="future"] h3 {
 }
 
 /* topbar */
-html[data-concept="future"] .u-topbar {
-  background: rgba(4,7,18,0.97) !important;
-  border-bottom: 1px solid rgba(80,120,255,0.10) !important;
-}
 
 /* tables */
 html[data-concept="future"] thead th {
@@ -6879,7 +6177,6 @@ html[data-concept="future"] hr { border-color: rgba(80,120,255,0.08) !important;
 
 /* phase palette: electric variants */
 html[data-concept="future"] { --phase-violet: #b060ff !important; --phase-blue: #4a90ff !important; --phase-amber: #ffb040 !important; --phase-orange: #ff7040 !important; --phase-green: #40e090 !important; --phase-teal: #30d0d0 !important; }
-
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -6996,8 +6293,6 @@ html[data-concept="glass"] .glass-chip {
 }
 
 /* ── Sidebar/nav: translucent ──────────────────────────────── */
-html[data-concept="glass"] .ent-sidebar,
-html[data-concept="glass"] .std-sidebar,
 html[data-concept="glass"] .cab-nav {
   background: rgba(255,255,255,0.15) !important;
   backdrop-filter: blur(24px) !important;
@@ -7006,13 +6301,11 @@ html[data-concept="glass"] .cab-nav {
 }
 
 /* ── Nav items: coloured accents ────────────────────────── */
-html[data-concept="glass"] .ent-nav-item,
 html[data-concept="glass"] .cab-nav-item,
 html[data-concept="glass"] .std-nav-item {
   color: rgba(30,30,80,0.65) !important;
   border-radius: 999px !important;
 }
-html[data-concept="glass"] .ent-nav-item:hover,
 html[data-concept="glass"] .cab-nav-item:hover {
   background: rgba(100,120,255,0.10) !important;
   color: rgba(30,30,80,0.95) !important;
@@ -7026,22 +6319,14 @@ html[data-concept="glass"] .cab-nav-item.active {
 }
 
 /* ── Admin tabs: glass ──────────────────────────────────── */
-html[data-concept="glass"] .admin-tab {
-  color: rgba(30,30,80,0.50) !important;
-  border: none !important;
-  border-radius: 999px !important;
-}
-html[data-concept="glass"] .admin-tab:hover { color: rgba(30,30,80,0.80) !important; }
-html[data-concept="glass"] .admin-tab.active,
-html[data-concept="glass"] .admin-tab--active {
+html[data-concept="glass"] .admin-tab.active {
   color: #4060e0 !important;
   background: rgba(100,120,255,0.12) !important;
   border-bottom: none !important;
 }
 
 /* ── Header: glass surface ──────────────────────────────── */
-html[data-concept="glass"] .admin-header,
-html[data-concept="glass"] .u-topbar {
+html[data-concept="glass"] .admin-header {
   background: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
   backdrop-filter: blur(24px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(200%) !important;
@@ -7050,8 +6335,7 @@ html[data-concept="glass"] .u-topbar {
 }
 
 /* ── Dropdown: glass pill ───────────────────────────────── */
-html[data-concept="glass"] .glass-dropdown,
-html[data-concept="glass"] .admin-dropdown {
+html[data-concept="glass"] .glass-dropdown {
   background: rgba(255,255,255,0.70) !important;
   backdrop-filter: blur(32px) saturate(200%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
@@ -7084,7 +6368,6 @@ html[data-concept="glass"] .cab-modal {
   box-shadow: 0 20px 60px rgba(31,38,135,0.18) !important;
   color: #1a1a2e !important;
 }
-html[data-concept="glass"] .u-modal-overlay,
 html[data-concept="glass"] .cab-modal-overlay {
   background: rgba(148,163,230,0.25) !important;
   backdrop-filter: blur(12px) !important;
@@ -7314,20 +6597,6 @@ html[data-concept="m3"] .a-btn-ai:hover {
 }
 
 /* Material 3 Fix Gallery Overlap */
-html[data-concept="m3"] .content-drawer--dock.content-gallery,
-html[data-concept="m3"] .content-drawer__head {
-  background: var(--sys-color-surface-container-lowest) !important;
-}
 
-html[data-concept="m3"] .content-drawer__head {
-  z-index: 10 !important;
-  position: sticky !important;
-  top: 0 !important;
-}
 
 /* Fix viewport clipping */
-[data-messenger-style="material"] .content-gallery__viewport {
-  overflow: visible !important;
-  min-height: fit-content !important;
-}
-.call-transcript-line { transition: opacity 0.2s ease, border-color 0.2s ease; }
