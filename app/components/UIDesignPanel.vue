@@ -103,6 +103,16 @@
               </button>
               <button
                 type="button"
+                class="dp-mode-btn"
+                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-m3' }"
+                @click="switchMode('concept-m3')"
+                title="Material 3 — тональные поверхности, скруглённые формы, тени"
+              >
+                <span class="dp-mode-icon">⨁</span>
+                <span class="dp-mode-name">Material 3</span>
+                <span class="dp-mode-hint">google · tonal · pill</span>
+              </button>
+                type="button"
                 class="dp-mode-btn dp-mode-btn--reset"
                 :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-minale' }"
                 @click="clearMode()"
@@ -781,6 +791,10 @@
                   <div class="dp-field">
                     <label class="dp-label">размытие <span class="dp-val">{{ tokens.glassBlur }}px</span></label>
                     <input type="range" min="0" max="40" step="1" :value="tokens.glassBlur" class="dp-range" @input="onRange('glassBlur', $event)">
+                  </div>
+                  <div class="dp-field">
+                    <label class="dp-label">насыщенность <span class="dp-val">{{ tokens.glassSaturation }}%</span></label>
+                    <input type="range" min="0" max="300" step="5" :value="tokens.glassSaturation" class="dp-range" @input="onRange('glassSaturation', $event)">
                   </div>
                   <div class="dp-field">
                     <label class="dp-label">прозрачность <span class="dp-val">{{ pct(tokens.glassOpacity) }}</span></label>
@@ -2908,7 +2922,7 @@ const activeModeSlug = computed(() => {
     : (activePresetId.value.startsWith('concept-') ? activePresetId.value : '')
 })
 
-function switchMode(conceptId: 'concept-glass' | 'concept-minale') {
+function switchMode(conceptId: 'concept-glass' | 'concept-minale' | 'concept-m3') {
   const concept = DESIGN_CONCEPTS.find(c => c.id === conceptId)
   if (concept) {
     activePresetId.value = concept.id
@@ -3491,6 +3505,7 @@ const TOKEN_CONTROLS: Record<string, QEControl[]> = {
   ],
   surface: [
     { key: 'glassBlur', label: 'размытие', min: 0, max: 40, step: 1, fmt: v => v + 'px' },
+    { key: 'glassSaturation', label: 'насыщенность', min: 0, max: 300, step: 5, fmt: v => v + '%' },
     { key: 'glassOpacity', label: 'прозрачность', min: 0, max: 1, step: 0.02, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
     { key: 'shadowOpacity', label: 'тень', min: 0, max: 0.4, step: 0.01, isFloat: true, fmt: v => Math.round(v * 100) + '%' },
   ],

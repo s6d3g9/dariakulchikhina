@@ -66,51 +66,49 @@ export async function joinLiveKitRoomAsBot(
        let sequence = 0
        
        void (async () => {
-         // Accumulate PCM data
          let audioBuffer: number[] = []
          let sampleRate = 48000
          let channels = 1
          
-         const flushInterval = setInterval(async () => {
-           if (audioBuffer.length === 0) return
-           
-           const currentSamples = new Int16Array(audioBuffer)
-           audioBuffer = [] // Clear for next chunk
-           
-           const wavBuffer = createWavBuffer(currentSamples, sampleRate, channels)
-           const base64Wav = wavBuffer.toString('base64')
-           
-           try {
-             sequence++
-             if (onTranscribe && currentSamples.length > sampleRate * 0.5) {
-               // Only process if we have > 0.5 seconds of audio to avoid empty chunks
-               const text = await onTranscribe(participant.identity, base64Wav, 'audio/wav', roomName, sequence)
-               
-               if (text && text.trim()) {
-                 console.log(`STT Bot Transcribed [${participant.identity}]: ${text.trim()}`)
-                 
-                 // Publish transcription via LiveKit data channel!
-                 // This sends to the same handler the clients use
-                 const msg = JSON.stringify({
-                   type: 'transcription-sync',
-                   draft: '',
-                   entries: [{
-                     id: randomUUID(),
-                     text: text.trim(),
-                     speaker: participant.identity,
-                     createdAt: Date.now()
-                   }]
-                 })
-                 
-                 const dataBuffer = new TextEncoder().encode(msg)
-                 await room.localParticipant?.publishData(dataBuffer, { reliable: true })
-               }
-             }
-           } catch (err) {
-             console.error('STT Bot transcription error', err)
-           }
-           
-         }, 3000) // 3 seconds chunking
+         const MAX_CHUNK_SECS = 15
+         const MIN_CHUNK_SECS = 1.0
+         const SILENCE_RMS_THRESHOLD = 500
+         const SILENCE_SECS_TRIGGER = 0.8
+         
+         let consecutiveSilenceSamples = 0
+         
+         const flushBuffer = async (pcmDataSnap: number[], rate: number, ch: number, seq: number) => {
+            if (pcmDataSnap.length < rate * 0.5) return
+            
+            const currentSamples = new Int16Array(pcmDataSnap)
+            const wavBuffer = createWavBuffer(currentSamples, rate, ch)
+            const base64Wav = wavBuffer.toString('base64')
+            
+            try {
+              if (onTranscribe) {
+                const text = await onTranscribe(participant.identity, base64Wav, 'audio/wav', roomName, seq)
+                
+                if (text && text.trim()) {
+                  console.log(`STT Bot Transcribed [${participant.identity}]: ${text.trim()}`)
+                  const msg = JSON.stringify({
+                    type: 'transcription-sync',
+                    draft: '',
+                    entries: [{
+                      id: randomUUID(),
+                      text: text.trim(),
+                      speaker: participant.identity,
+                      createdAt: Date.now()
+                    }]
+                  })
+                  
+                  const dataBuffer = new TextEncoder().encode(msg)
+                  await room.localParticipant?.publishData(dataBuffer, { reliable: true })
+                }
+              }
+            } catch (err) {
+              console.error('STT Bot transcription error', err)
+            }
+         }
          
          try {
            while (true) {
@@ -121,14 +119,38 @@ export async function joinLiveKitRoomAsBot(
              channels = value.channels
              
              const pcmData = new Int16Array(value.data.buffer, value.data.byteOffset, value.data.byteLength / 2)
+             
+             let sumSquares = 0
              for (let i = 0; i < pcmData.length; i++) {
-               audioBuffer.push(pcmData[i])
+               const sample = pcmData[i]
+               sumSquares += sample * sample
+               audioBuffer.push(sample)
+             }
+             
+             const rms = Math.sqrt(sumSquares / pcmData.length)
+             
+             if (rms < SILENCE_RMS_THRESHOLD) {
+               consecutiveSilenceSamples += pcmData.length
+             } else {
+               consecutiveSilenceSamples = 0
+             }
+             
+             const currentLenSecs = audioBuffer.length / sampleRate
+             const silenceSecs = consecutiveSilenceSamples / sampleRate
+             
+             const forcedToFlush = currentLenSecs >= MAX_CHUNK_SECS
+             const silenceTrigger = currentLenSecs >= MIN_CHUNK_SECS && silenceSecs >= SILENCE_SECS_TRIGGER
+             
+             if (forcedToFlush || silenceTrigger) {
+               sequence++
+               void flushBuffer([...audioBuffer], sampleRate, channels, sequence)
+               
+               audioBuffer = []
+               consecutiveSilenceSamples = 0
              }
            }
          } catch (err) {
            console.error('Bot audio track read error', err)
-         } finally {
-           clearInterval(flushInterval)
          }
        })()
     }

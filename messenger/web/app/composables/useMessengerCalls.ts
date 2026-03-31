@@ -1489,9 +1489,9 @@ export function useMessengerCalls() {
             } catch {
               // noop
             }
-          }, 150)
+          }, 350)
         }
-      }, 3500)
+      }, 7500)
     }
 
     cycleRecording()
