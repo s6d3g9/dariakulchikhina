@@ -1639,8 +1639,8 @@ export function useMessengerCalls() {
         
         const existingIdx = transcriptionEntries.value.findIndex(x => x.id === speechRecognitionCurrentDraftId)
         if (existingIdx !== -1) {
-          transcriptionEntries.value[existingIdx].text = normalizedInterim
-          transcriptionEntries.value[existingIdx].createdAt = Date.now()
+          transcriptionEntries.value[existingIdx]!.text = normalizedInterim
+          transcriptionEntries.value[existingIdx]!.createdAt = Date.now()
         } else {
           transcriptionEntries.value.push({
             id: speechRecognitionCurrentDraftId,
