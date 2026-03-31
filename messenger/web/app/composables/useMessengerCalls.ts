@@ -1429,6 +1429,12 @@ export function useMessengerCalls() {
   function startTranscription() {
     syncTranscriptionSupportState()
 
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/iu.test(navigator.userAgent || '')
+    if (isMobile) {
+      transcriptionError.value = 'На мобильных устройствах транскрибация отключена для стабильности звонка.'
+      return false
+    }
+
     if (!activeCall.value || activeCall.value.mode !== 'audio') {
       stopTranscription()
       return false
