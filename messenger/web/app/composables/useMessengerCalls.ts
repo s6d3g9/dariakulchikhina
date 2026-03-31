@@ -104,6 +104,7 @@ interface MessengerActiveCall {
 }
 
 let peerConnection: RTCPeerConnection | null = null
+let liveKitRoom: any = null
 let localStream: MediaStream | null = null
 let remoteStream: MediaStream | null = null
 let localVideoEl: HTMLVideoElement | null = null
@@ -1357,6 +1358,12 @@ export function useMessengerCalls() {
   }
 
   function startServerCallTranscription() {
+    if (liveKitRoom) {
+      // LiveKit uses backend STT bot attached to the SFU, no client-side chunk pushing needed
+      transcriptionActive.value = true
+      return true
+    }
+
     if (!canRunServerCallTranscription() || !activeCall.value || !localStream) {
       transcriptionError.value = 'Серверная транскрибация пока недоступна для этого звонка.'
       return false
@@ -2089,6 +2096,10 @@ export function useMessengerCalls() {
 
   function teardownCall(status = '') {
     stopTranscription()
+    if (liveKitRoom) {
+      try { void liveKitRoom.disconnect() } catch {}
+      liveKitRoom = null
+    }
     activeCall.value = null
     incomingCall.value = null
     busy.value = false
@@ -2281,6 +2292,9 @@ export function useMessengerCalls() {
           : 'Собеседник не прислал параметры дополнительного E2EE.')
       }
 
+      const activeConvId = incomingCall.value.conversationId
+      const activeCallMode = incomingCall.value.mode
+
       await sendSignal(incomingCall.value.conversationId, {
         kind: 'ringing',
         callId: incomingCall.value.callId,
@@ -2290,8 +2304,14 @@ export function useMessengerCalls() {
           e2ee: ringingE2EE,
         },
       })
-      callStatusText.value = 'Подготовка соединения…'
       incomingCall.value = null
+
+      if (!conversations.activeConversation.value?.secret) {
+        callStatusText.value = 'Подключение к медиа-серверу (LiveKit)…'
+        await connectLiveKitRoom(activeConvId, activeCallMode)
+      } else {
+        callStatusText.value = 'Подготовка соединения…'
+      }
     } catch {
       await rejectIncomingCall('Не удалось принять звонок.')
     }
@@ -2349,6 +2369,61 @@ export function useMessengerCalls() {
     }
 
     return connection.signalingState !== 'have-remote-offer'
+  }
+
+  async function connectLiveKitRoom(conversationId: string, mode: MessengerCallMode) {
+    try {
+      const response = await $fetch<{ token: string, serverUrl: string }>(buildMessengerUrl(runtimeConfig.public.messengerCoreBaseUrl || '/', `/conversations/${encodeURIComponent(conversationId)}/calls/livekit-token`), {
+        method: 'POST',
+        headers: auth.token.value ? { Authorization: `Bearer ${auth.token.value}` } : undefined
+      })
+
+      const { Room, RoomEvent } = await import('livekit-client')
+      liveKitRoom = new Room({
+        adaptiveStream: true,
+        dynacast: true,
+      })
+
+      liveKitRoom.on(RoomEvent.TrackSubscribed, (track: any) => {
+        if (!remoteStream) {
+          remoteStream = new MediaStream()
+        }
+        if (track.mediaStreamTrack) {
+          remoteStream.addTrack(track.mediaStreamTrack)
+          assignMediaTargets()
+        }
+      })
+
+      liveKitRoom.on(RoomEvent.TrackUnsubscribed, (track: any) => {
+        if (remoteStream && track.mediaStreamTrack) {
+          remoteStream.removeTrack(track.mediaStreamTrack)
+          assignMediaTargets()
+        }
+      })
+
+      liveKitRoom.on(RoomEvent.Disconnected, () => {
+        if (activeCall.value) {
+          teardownCall('Соединение прервано')
+        }
+      })
+
+      await liveKitRoom.connect(response.serverUrl, response.token)
+
+      if (localStream) {
+        for (const track of localStream.getTracks()) {
+          if (track.kind === 'video' && mode !== 'video') {
+            continue
+          }
+          await liveKitRoom.localParticipant.publishTrack(track)
+        }
+      }
+
+      callStatusText.value = mode === 'video' ? 'Видеосвязь установлена (LiveKit)' : 'Аудиосвязь установлена (LiveKit)'
+    } catch (err) {
+      console.error(err)
+      callError.value = 'Ошибка серверного соединения (LiveKit).'
+      teardownCall('')
+    }
   }
 
   async function handleSignal(event: MessengerCallSignalEvent) {
@@ -2409,6 +2484,16 @@ export function useMessengerCalls() {
         if (!localStream) {
           await initMedia(mode)
         }
+
+        if (!conversations.activeConversation.value?.secret) {
+          callStatusText.value = 'Подключение к медиа-серверу (LiveKit)…'
+          await connectLiveKitRoom(event.conversationId, mode)
+          if (mode === 'audio') {
+            void startTranscription()
+          }
+          return
+        }
+
         const connection = buildPeerConnection(event.signal.callId, event.conversationId, mode)
         if (connection.signalingState !== 'stable') {
           return
@@ -2630,6 +2715,12 @@ export function useMessengerCalls() {
       if (callSecurityContext?.active) {
         applySenderCallSecurity(sender)
       }
+    } else if (liveKitRoom) {
+      try {
+        await liveKitRoom.localParticipant.publishTrack(nextTrack)
+      } catch (err) {
+        console.warn('Failed to publish video track to LiveKit', err)
+      }
     }
 
     controls.value = {
@@ -2662,6 +2753,18 @@ export function useMessengerCalls() {
       if (sender.track?.kind === 'video') {
         await sender.replaceTrack(null).catch(() => {})
         peerConnection?.removeTrack(sender)
+      }
+    }
+
+    if (liveKitRoom) {
+      try {
+        for (const p of Array.from(liveKitRoom.localParticipant.videoTrackPublications.values())) {
+          if (p && (p as any).track) {
+            await liveKitRoom.localParticipant.unpublishTrack((p as any).track)
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to unpublish LiveKit video', err)
       }
     }
 

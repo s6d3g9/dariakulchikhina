@@ -2396,6 +2396,58 @@ export async function createMessengerServer() {
     }
   })
 
+  app.post('/conversations/:conversationId/calls/livekit-token', async (request, reply) => {
+    try {
+      const authHeader = request.headers.authorization
+      if (!authHeader) {
+        return reply.status(401).send({ error: 'Missing authorization header' })
+      }
+
+      const token = readBearerToken(authHeader)
+      if (!token) {
+        return reply.status(401).send({ error: 'Invalid authorization format' })
+      }
+
+      const payload = await verifyMessengerToken(token)
+      if (!payload) {
+        return reply.status(401).send({ error: 'Invalid token' })
+      }
+
+      const params = request.params as any
+      const conversationId = params.conversationId
+      
+      const user = await findMessengerUserById(payload.userId)
+      if (!user) {
+        return reply.status(404).send({ error: 'User not found' })
+      }
+
+      const LIVEKIT_URL = process.env.LIVEKIT_API_URL || 'wss://dariakulchikhina.com/livekit'
+      const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || 'devkey'
+      const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || '957f06d4c3f45a4b23805252fa8259c7efca2595ef1b40653048b653e3eb3547'
+
+      const { AccessToken } = await import('livekit-server-sdk')
+      const roomName = `call-${conversationId}`
+      const participantName = user.phone || 'User'
+      
+      const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
+        identity: user.id,
+        name: participantName,
+      })
+
+      at.addGrant({ roomJoin: true, room: roomName })
+      const lkToken = await at.toJwt()
+
+      return reply.status(200).send({
+        serverUrl: LIVEKIT_URL,
+        token: lkToken,
+        roomName
+      })
+    } catch (err: any) {
+      request.log.error(err)
+      return reply.status(500).send({ error: err.message })
+    }
+  })
+
   app.post('/conversations/:conversationId/call-signal', async (request, reply) => {
     const session = await resolveSession(request)
     if (!session) {
@@ -2574,7 +2626,35 @@ export async function createMessengerServer() {
       timestamp: new Date().toISOString(),
     }))
 
-    socket.on('message', (value: Buffer) => {
+    socket.on('message', async (value: Buffer) => {
+      try {
+        const payloadStr = value.toString()
+        if (payloadStr.startsWith('{')) {
+          const data = JSON.parse(payloadStr)
+          
+          if (data.type === 'call.audio-chunk') {
+            const conversation = await findConversationById(data.conversationId)
+            if (conversation && !conversation.secret && (conversation.userAId === user.id || conversation.userBId === user.id)) {
+              const targetUserId = conversation.userAId === user.id ? conversation.userBId : conversation.userAId
+              
+              const outPayload = {
+                type: 'call.audio-chunk',
+                conversationId: data.conversationId,
+                callId: data.callId,
+                senderId: user.id,
+                audioBase64: data.audioBase64,
+                sampleRate: data.sampleRate,
+                timestamp: new Date().toISOString()
+              }
+
+              // Send to peer via WebSockets
+              emitToUsers([targetUserId], outPayload)
+            }
+            return
+          }
+        }
+      } catch (e) {}
+
       socket.send(JSON.stringify({
         type: 'echo',
         payload: value.toString(),
