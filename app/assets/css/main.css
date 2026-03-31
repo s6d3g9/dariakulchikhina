@@ -7248,15 +7248,69 @@ html[data-concept="m3"].dark {
   --sys-color-surface-container-highest: #2b2b31;
 }
 
-html[data-concept="m3"] .glass-surface, 
-html[data-concept="m3"] .glass-card {
+html[data-concept="m3"] .glass-surface {
   color: var(--sys-color-on-surface, inherit);
-  box-shadow: var(--sys-elevation-level1);
 }
 
 html[data-concept="m3"] .a-btn-save, 
 html[data-concept="m3"] .a-btn-sm {
   border-radius: var(--sys-radius-full) !important; /* M3 Full pill */
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 1. M3 Cards (Elevated) */
+html[data-concept="m3"] .glass-card {
+  color: var(--sys-color-on-surface, inherit);
+  border-radius: var(--sys-radius-md) !important;
+  background: var(--sys-color-surface-container-low) !important;
+  border: none !important;
+  box-shadow: var(--sys-elevation-level1) !important;
+}
+
+/* 2. M3 Dialogs (Modals) Extra Large Radius */
+html[data-concept="m3"] .a-modal .glass-surface,
+html[data-concept="m3"] .a-modal .glass-card {
+  border-radius: var(--sys-radius-xl) !important;
+  background: var(--sys-color-surface-container-high) !important;
+  box-shadow: var(--sys-elevation-level3) !important;
+  border: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 3. M3 Navigation Rail/Item Active Indicator */
+html[data-concept="m3"] .std-nav-item {
+  margin: 2px 8px; /* Отступы по бокам для плашки */
+  border: none !important;
+}
+html[data-concept="m3"] .std-nav-item--active,
+html[data-concept="m3"] .std-nav-item.active {
+  background: var(--sys-color-surface-container-highest) !important;
+  border-radius: var(--sys-radius-full) !important;
+  color: var(--sys-color-on-surface) !important;
+  font-weight: 500;
+  border: none !important;
+}
+
+/* 4. M3 Inputs (Filled Variant) */
+html[data-concept="m3"] .glass-input {
+  border-radius: var(--sys-radius-xs) var(--sys-radius-xs) 0 0 !important;
+  background: var(--sys-color-surface-container-highest) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--sys-color-on-surface-variant) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+html[data-concept="m3"] .glass-input:focus {
+  border-bottom: 2px solid var(--sys-color-on-surface) !important;
+  background: var(--sys-color-surface-container-high) !important;
+}
+
+/* 5. M3 Buttons State Layers (Hover behavior) - ~8% opacity over base */
+html[data-concept="m3"] .a-btn-save:hover, 
+html[data-concept="m3"] .a-btn-sm:hover,
+html[data-concept="m3"] .a-btn-ai:hover {
+  opacity: 1 !important;
+  filter: brightness(1.1); /* Простой способ симулировать light overlay state layer */
 }
 
 /* Material 3 Fix Gallery Overlap */
