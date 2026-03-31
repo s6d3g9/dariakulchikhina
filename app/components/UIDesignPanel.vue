@@ -104,8 +104,8 @@
               <button
                 type="button"
                 class="dp-mode-btn"
-                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-m3' }"
-                @click="switchMode('concept-m3')"
+                :class="{ 'dp-mode-btn--active': activePresetId === 'material3' }"
+                @click="switchMode('material3')"
                 title="Material 3 — тональные поверхности, скруглённые формы, тени"
               >
                 <span class="dp-mode-icon">⨁</span>
@@ -2921,8 +2921,8 @@ const activeModeSlug = computed(() => {
     : (activePresetId.value.startsWith('concept-') ? activePresetId.value : '')
 })
 
-function switchMode(conceptId: 'concept-glass' | 'concept-minale' | 'concept-m3') {
-  const concept = DESIGN_CONCEPTS.find(c => c.id === conceptId)
+function switchMode(conceptId: string) {
+  const concept = DESIGN_CONCEPTS.find(c => c.id === conceptId) || DESIGN_PRESETS.find(p => p.id === conceptId)
   if (concept) {
     activePresetId.value = concept.id
     previewPreset(concept)
