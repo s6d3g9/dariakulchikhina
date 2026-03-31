@@ -635,6 +635,7 @@ import {
   addTimelineDays,
   buildHybridTimelineBounds,
   buildHybridTimelineColumns,
+  buildHybridTimelineGroups,
   buildHybridTimelineRows,
   endOfHybridTimelineScale,
   formatHybridTimelineDateRange,
@@ -652,6 +653,7 @@ import type {
   HybridControlCommunicationChannel,
   HybridControlCommunicationRule,
   HybridControlManagerAgentRole,
+  HybridControlSprint,
   HybridControlStakeholderRole,
   HybridControlTask,
 } from '~~/shared/types/project'
@@ -692,19 +694,16 @@ const taskStatusLabels: Record<HybridControlTask['status'], string> = {
 
 const timelineScale = ref<HybridTimelineScale>('weeks')
 
-const timelineScaleOptions = [
-  'months',
-  'weeks',
-  'days',
-  'hours',
-].map(value => ({ value, label: getHybridTimelineScaleLabel(value) }))
+const timelineScaleOptions = (
+  ['months', 'weeks', 'days', 'hours'] as const satisfies readonly HybridTimelineScale[]
+).map(value => ({ value, label: getHybridTimelineScaleLabel(value) }))
 
 type TimelineDragKind = 'idle' | 'reorder' | 'schedule' | 'resize-start' | 'resize-end'
 
 const timelineDrag = reactive<{
   kind: TimelineDragKind
   rowId: string
-  rowType: TimelineRow['type'] | null
+  rowType: HybridTimelineRow['type'] | null
   overRowId: string
   overColumnKey: string
 }>({
@@ -723,29 +722,19 @@ watch(project, (value) => {
 const summary = computed(() => buildHybridControlSummary(control))
 const coordinationBrief = computed(() => buildHybridCoordinationBrief(control, { projectSlug: props.slug }))
 
-const communicationChannelOptions = [
-  'project-room',
-  'direct-thread',
-  'handoff',
-  'approval',
-  'daily-digest',
-].map(value => ({
+const communicationChannelOptions = (
+  ['project-room', 'direct-thread', 'handoff', 'approval', 'daily-digest'] as const satisfies readonly HybridControlCommunicationChannel[]
+).map(value => ({
   value,
   label: getHybridCommunicationChannelLabel(value),
-})) as Array<{ value: HybridControlCommunicationChannel, label: string }>
+}))
 
-const stakeholderRoleOptions = [
-  'admin',
-  'manager',
-  'designer',
-  'client',
-  'contractor',
-  'seller',
-  'service',
-].map(value => ({
+const stakeholderRoleOptions = (
+  ['admin', 'manager', 'designer', 'client', 'contractor', 'seller', 'service'] as const satisfies readonly HybridControlStakeholderRole[]
+).map(value => ({
   value,
   label: getHybridStakeholderRoleLabel(value),
-})) as Array<{ value: HybridControlStakeholderRole, label: string }>
+}))
 
 const managerAgentOptions = computed(() => control.managerAgents.map(agent => ({
   value: agent.id,
@@ -1123,7 +1112,7 @@ function reorderItems<T extends { id: string }>(items: T[], sourceId: string, ta
   return true
 }
 
-function onReorderDragStart(event: DragEvent, row: TimelineRow) {
+function onReorderDragStart(event: DragEvent, row: HybridTimelineRow) {
   if (!timelineEditingEnabled.value) return
   timelineDrag.kind = 'reorder'
   timelineDrag.rowId = row.id
@@ -1134,7 +1123,7 @@ function onReorderDragStart(event: DragEvent, row: TimelineRow) {
   }
 }
 
-function onScheduleDragStart(event: DragEvent, row: TimelineRow) {
+function onScheduleDragStart(event: DragEvent, row: HybridTimelineRow) {
   if (!timelineEditingEnabled.value) return
   timelineDrag.kind = 'schedule'
   timelineDrag.rowId = row.id
@@ -1145,7 +1134,7 @@ function onScheduleDragStart(event: DragEvent, row: TimelineRow) {
   }
 }
 
-function onResizeDragStart(event: DragEvent, row: TimelineRow, edge: 'start' | 'end') {
+function onResizeDragStart(event: DragEvent, row: HybridTimelineRow, edge: 'start' | 'end') {
   if (!timelineEditingEnabled.value) return
   timelineDrag.kind = edge === 'start' ? 'resize-start' : 'resize-end'
   timelineDrag.rowId = row.id
@@ -1168,7 +1157,7 @@ function onTimelineWeekDragOver(rowId: string, columnKey: string) {
   timelineDrag.overColumnKey = `${rowId}-${columnKey}`
 }
 
-async function onRowDrop(target: TimelineRow) {
+async function onRowDrop(target: HybridTimelineRow) {
   if (timelineDrag.kind !== 'reorder' || !timelineDrag.rowId || timelineDrag.rowId === target.id) {
     onDragEnd()
     return
@@ -1198,7 +1187,7 @@ async function onRowDrop(target: TimelineRow) {
   if (changed) await save()
 }
 
-async function onTimelineWeekDrop(row: TimelineRow, columnIndex: number) {
+async function onTimelineWeekDrop(row: HybridTimelineRow, columnIndex: number) {
   if (!timelineEditingEnabled.value) {
     onDragEnd()
     return
@@ -1240,7 +1229,7 @@ async function onTimelineWeekDrop(row: TimelineRow, columnIndex: number) {
   onDragEnd()
 }
 
-async function persistTimelineRange(row: TimelineRow, start: Date, end: Date) {
+async function persistTimelineRange(row: HybridTimelineRow, start: Date, end: Date) {
   if (row.type === 'phase') {
     const phase = getPhaseById(row.id)
     if (!phase) return
