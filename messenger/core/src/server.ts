@@ -1,3 +1,6 @@
+const activeLiveKitRooms = new Set<string>()
+
+import { joinLiveKitRoomAsBot } from './livekit-stt-bot.ts'
 import { randomUUID } from 'node:crypto'
 
 import Fastify, { type FastifyRequest } from 'fastify'
@@ -2408,7 +2411,7 @@ export async function createMessengerServer() {
         return reply.status(401).send({ error: 'Invalid authorization format' })
       }
 
-      const payload = await verifyMessengerToken(token)
+      const payload = verifyMessengerToken(token, config.MESSENGER_CORE_AUTH_SECRET)
       if (!payload) {
         return reply.status(401).send({ error: 'Invalid token' })
       }
@@ -2416,7 +2419,7 @@ export async function createMessengerServer() {
       const params = request.params as any
       const conversationId = params.conversationId
       
-      const user = await findMessengerUserById(payload.userId)
+      const user = await findMessengerUserById(payload.sub)
       if (!user) {
         return reply.status(404).send({ error: 'User not found' })
       }
@@ -2427,7 +2430,7 @@ export async function createMessengerServer() {
 
       const { AccessToken } = await import('livekit-server-sdk')
       const roomName = `call-${conversationId}`
-      const participantName = user.phone || 'User'
+      const participantName = user.displayName || 'User'
       
       const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
         identity: user.id,
@@ -2436,6 +2439,40 @@ export async function createMessengerServer() {
 
       at.addGrant({ roomJoin: true, room: roomName })
       const lkToken = await at.toJwt()
+
+      // Start bot if not already in the room
+      if (!activeLiveKitRooms.has(roomName)) {
+        activeLiveKitRooms.add(roomName);
+        
+        joinLiveKitRoomAsBot(LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET, roomName, async (participantIdentity, audioBase64, mimeType, room, sequence) => {
+          try {
+            // Check if transcription is enabled in config
+            if (!isMessengerTranscriptionConfigured(config)) return undefined
+            
+            const aiSettings = await getMessengerUserAiSettings(user.id)
+            const provider = aiSettings.transcriptionProvider || 'server-default'
+            
+            const text = await transcribeMessengerAudioChunk(config, {
+              audioBase64,
+              mimeType,
+              language: config.MESSENGER_TRANSCRIPTION_LANGUAGE,
+              model: aiSettings.transcriptionModel || config.MESSENGER_TRANSCRIPTION_MODEL,
+            }, {
+              provider,
+            })
+            
+            return text
+          } catch (e) {
+            console.error('Bot STT chunk error:', e)
+            return undefined
+          }
+        }).catch((err) => {
+
+           console.error('Failed to start LiveKit STT Bot', err);
+           activeLiveKitRooms.delete(roomName);
+        });
+      }
+
 
       return reply.status(200).send({
         serverUrl: LIVEKIT_URL,
@@ -2634,7 +2671,7 @@ export async function createMessengerServer() {
           
           if (data.type === 'call.audio-chunk') {
             const conversation = await findConversationById(data.conversationId)
-            if (conversation && !conversation.secret && (conversation.userAId === user.id || conversation.userBId === user.id)) {
+            if (conversation && conversation.kind !== 'direct-secret' && (conversation.userAId === user.id || conversation.userBId === user.id)) {
               const targetUserId = conversation.userAId === user.id ? conversation.userBId : conversation.userAId
               
               const outPayload = {
