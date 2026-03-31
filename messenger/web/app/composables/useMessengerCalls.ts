@@ -1309,7 +1309,7 @@ export function useMessengerCalls() {
         source.connect(dest)
         stream = dest.stream
       } catch {
-        // Fallback
+        transcriptionIsolatedContext = null
       }
     }
 
@@ -1322,9 +1322,26 @@ export function useMessengerCalls() {
         return
       }
 
-      const recorder = mimeType
-        ? new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 24000 })
-        : new MediaRecorder(stream)
+      if (!stream.getAudioTracks().length) {
+        transcriptionError.value = 'Нет доступных аудиоканалов для транскрибации.'
+        return
+      }
+
+      let recorder: MediaRecorder
+      try {
+        recorder = mimeType
+          ? new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 24000 })
+          : new MediaRecorder(stream)
+      } catch {
+        try {
+          recorder = new MediaRecorder(stream)
+        } catch {
+          transcriptionServerSessionKey = ''
+          transcriptionChunkRecorder = null
+          transcriptionError.value = 'Серверная транскрибация не поддерживается вашим устройством.'
+          return
+        }
+      }
 
       transcriptionChunkRecorder = recorder
       transcriptionChunkMimeType = recorder.mimeType || mimeType || 'audio/webm'
