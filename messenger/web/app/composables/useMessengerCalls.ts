@@ -183,6 +183,8 @@ let transcriptionLevelSampler: ReturnType<typeof setInterval> | null = null
 let transcriptionLastEnergy = { local: 0, remote: 0 }
 let transcriptionChunkRecorder: MediaRecorder | null = null
 let transcriptionChunkRecorderRestartTimer: ReturnType<typeof setTimeout> | null = null
+let transcriptionIsolatedContext: AudioContext | null = null
+let transcriptionIsolatedTracks: MediaStreamTrack[] = []
 let transcriptionChunkUploadQueue: Promise<void> = Promise.resolve()
 let transcriptionChunkSequence = 0
 let transcriptionChunkMimeType = ''
@@ -1216,6 +1218,20 @@ export function useMessengerCalls() {
       }
     }
 
+    if (transcriptionIsolatedContext) {
+      try {
+        transcriptionIsolatedContext.close()
+      } catch {
+        // noop
+      }
+      transcriptionIsolatedContext = null
+    }
+
+    try {
+      transcriptionIsolatedTracks.forEach(t => t.stop())
+    } catch {}
+    transcriptionIsolatedTracks = []
+
     transcriptionChunkUploadQueue = Promise.resolve()
     transcriptionChunkSequence = 0
     transcriptionChunkMimeType = ''
@@ -1281,7 +1297,21 @@ export function useMessengerCalls() {
     transcriptionServerSessionKey = sessionKey
 
     const mimeType = pickServerTranscriptionMimeType()
-    const stream = new MediaStream(localStream.getAudioTracks())
+    
+    transcriptionIsolatedTracks = localStream.getAudioTracks().map(t => t.clone())
+    let stream = new MediaStream(transcriptionIsolatedTracks)
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    if (AudioContextClass) {
+      try {
+        transcriptionIsolatedContext = new AudioContextClass()
+        const source = transcriptionIsolatedContext.createMediaStreamSource(stream)
+        const dest = transcriptionIsolatedContext.createMediaStreamDestination()
+        source.connect(dest)
+        stream = dest.stream
+      } catch {
+        // Fallback
+      }
+    }
 
     transcriptionChunkSequence = 0
     transcriptionError.value = ''
@@ -1344,14 +1374,17 @@ export function useMessengerCalls() {
 
       transcriptionChunkRecorderRestartTimer = setTimeout(() => {
         if (sessionKey === transcriptionServerSessionKey && transcriptionChunkRecorder === recorder) {
-          try {
-            if (recorder.state !== 'inactive') {
-              recorder.stop()
-            }
-          } catch {
-            // noop
-          }
           cycleRecording()
+          
+          setTimeout(() => {
+            try {
+              if (recorder.state !== 'inactive') {
+                recorder.stop()
+              }
+            } catch {
+              // noop
+            }
+          }, 150)
         }
       }, 3500)
     }
