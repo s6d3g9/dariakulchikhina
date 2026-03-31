@@ -189,6 +189,7 @@ let transcriptionChunkUploadQueue: Promise<void> = Promise.resolve()
 let transcriptionChunkSequence = 0
 let transcriptionChunkMimeType = ''
 let transcriptionServerSessionKey = ''
+let peerDataChannel: RTCDataChannel | null = null
 
 function resolveSpeechRecognitionCtor(): SpeechRecognitionCtorLike | null {
   if (!import.meta.client) {
@@ -716,6 +717,56 @@ export function useMessengerCalls() {
   const projectTaskSyncPending = useState<boolean>('messenger-call-project-task-sync-pending', () => false)
   const projectTaskSyncError = useState<string>('messenger-call-project-task-sync-error', () => '')
   const projectTaskSyncStatus = useState<string>('messenger-call-project-task-sync-status', () => '')
+
+  if (import.meta.client) {
+    watch([transcriptionDraft, transcriptionEntries], () => {
+      if (transcriptionActive.value && peerDataChannel?.readyState === 'open') {
+        try {
+          peerDataChannel.send(JSON.stringify({
+            type: 'transcription-sync',
+            draft: transcriptionDraft.value,
+            entries: transcriptionEntries.value
+          }))
+        } catch {}
+      }
+    }, { deep: true })
+  }
+
+  function handleIncomingDataChannelMessage(data: string) {
+    if (transcriptionActive.value) return
+    try {
+      const payload = JSON.parse(data)
+      if (payload.type === 'transcription-sync') {
+        if (typeof payload.draft === 'string') {
+          transcriptionDraft.value = payload.draft
+        }
+        if (Array.isArray(payload.entries)) {
+          transcriptionEntries.value = payload.entries.map((e: any) => ({
+            ...e,
+            speaker: e.speaker === 'you' ? 'peer' : 'you'
+          }))
+        }
+      }
+    } catch {}
+  }
+
+  function setupPeerDataChannel(channel: RTCDataChannel) {
+    channel.onmessage = (event) => {
+      handleIncomingDataChannelMessage(event.data)
+    }
+    channel.onopen = () => {
+      if (transcriptionActive.value) {
+        try {
+          channel.send(JSON.stringify({
+            type: 'transcription-sync',
+            draft: transcriptionDraft.value,
+            entries: transcriptionEntries.value
+          }))
+        } catch {}
+      }
+    }
+  }
+
   const supported = computed(() => Boolean(import.meta.client && navigator.mediaDevices?.getUserMedia && typeof RTCPeerConnection !== 'undefined'))
   const inConversationCall = computed(() => Boolean(activeCall.value && activeCall.value.conversationId === conversations.activeConversationId.value))
   const canStartAudioCall = computed(() => supported.value && mediaPermissionState.value.microphone !== 'denied')
@@ -1676,6 +1727,8 @@ export function useMessengerCalls() {
   }
 
   function resetPeerConnection() {
+    peerDataChannel?.close()
+    peerDataChannel = null
     peerConnection?.close()
     peerConnection = null
     peerConnectionCallId = ''
@@ -1888,6 +1941,13 @@ export function useMessengerCalls() {
     peerConnectionCallId = callId
     remoteStream = new MediaStream()
     assignMediaTargets()
+
+    try {
+      peerDataChannel = connection.createDataChannel('transcription-sync', { negotiated: true, id: 0 })
+      setupPeerDataChannel(peerDataChannel)
+    } catch (e) {
+      console.warn('[DataChannel] Failed to create negotiated channel:', e)
+    }
 
     if (localStream) {
       for (const track of localStream.getTracks()) {
