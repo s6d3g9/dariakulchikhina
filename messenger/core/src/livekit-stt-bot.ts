@@ -56,6 +56,18 @@ export async function joinLiveKitRoomAsBot(
 
   const room = new Room()
 
+  const nativelyTranscribingParticipants = new Set<string>()
+
+  room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant: any) => {
+    try {
+      const msg = new TextDecoder().decode(payload)
+      const data = JSON.parse(msg)
+      if (data.type === 'transcription-sync' && participant?.identity) {
+        nativelyTranscribingParticipants.add(participant.identity)
+      }
+    } catch {}
+  })
+
   room.on(RoomEvent.TrackSubscribed, (track: any, publication: any, participant: any) => {
     if (track.kind === 0 || track.kind === 'audio') {
        console.log('Subscribed to audio track from', participant.identity)
@@ -79,6 +91,7 @@ export async function joinLiveKitRoomAsBot(
          
          const flushBuffer = async (pcmDataSnap: number[], rate: number, ch: number, seq: number) => {
             if (pcmDataSnap.length < rate * 0.5) return
+            if (nativelyTranscribingParticipants.has(participant.identity)) return
             
             const currentSamples = new Int16Array(pcmDataSnap)
             const wavBuffer = createWavBuffer(currentSamples, rate, ch)

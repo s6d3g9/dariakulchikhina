@@ -721,14 +721,25 @@ export function useMessengerCalls() {
 
   if (import.meta.client) {
     watch([transcriptionDraft, transcriptionEntries], () => {
-      if (transcriptionActive.value && peerDataChannel?.readyState === 'open') {
-        try {
-          peerDataChannel.send(JSON.stringify({
-            type: 'transcription-sync',
-            draft: transcriptionDraft.value,
-            entries: transcriptionEntries.value
-          }))
-        } catch {}
+      if (transcriptionActive.value) {
+        const payload = JSON.stringify({
+          type: 'transcription-sync',
+          draft: transcriptionDraft.value,
+          entries: transcriptionEntries.value
+        })
+
+        if (peerDataChannel?.readyState === 'open') {
+          try {
+            peerDataChannel.send(payload)
+          } catch {}
+        }
+        
+        if (liveKitRoom) {
+          try {
+            const dataBuffer = new TextEncoder().encode(payload)
+            liveKitRoom.localParticipant.publishData(dataBuffer, { reliable: true })
+          } catch {}
+        }
       }
     }, { deep: true })
   }
@@ -743,7 +754,7 @@ export function useMessengerCalls() {
         if (Array.isArray(payload.entries)) {
           const transformed = payload.entries.map((e: any) => ({
             ...e,
-            speaker: e.speaker === 'you' ? 'peer' : 'you'
+            speaker: e.speaker === 'you' ? 'peer' : (e.speaker === 'peer' ? 'you' : (e.speaker === auth.user.value?.id ? 'you' : 'peer'))
           }))
 
           if (!transcriptionActive.value) {
@@ -752,7 +763,7 @@ export function useMessengerCalls() {
             const existingIds = new Set(transcriptionEntries.value.map(x => x.id))
             const missing = transformed.filter((x: any) => {
               if (existingIds.has(x.id)) return false
-              if (x.speaker === 'you') return false
+              if (x.speaker === 'you' && speechRecognition) return false
               return true
             })
             if (missing.length > 0) {
@@ -846,6 +857,7 @@ export function useMessengerCalls() {
   }
 
   function shouldPreferServerCallTranscription() {
+    if (canRunBrowserSpeechRecognition()) return false
     return Boolean(canRunServerCallTranscription())
   }
 

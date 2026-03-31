@@ -2375,14 +2375,16 @@ export function useDesignSystem() {
     el.style.setProperty('--dropdown-blur', `${t.dropdownBlur}px`)
     // Derive dropdown bg from current page bg: opaque surface clearly visible above page
     const isDark = el.classList.contains('dark')
+    const ddAlpha = t.dropdownBlur > 16 ? Math.max(0.15, 1 - (t.dropdownBlur / 40)) : (isDark ? 0.98 : 0.97)
+
     if (isDark) {
-      el.style.setProperty('--dropdown-bg', 'rgba(18, 21, 30, 0.98)')
-      el.style.setProperty('--dropdown-border', 'rgba(255,255,255,0.12)')
-      el.style.setProperty('--dropdown-shadow', '0 4px 28px rgba(0,0,0,0.55), 0 1px 6px rgba(0,0,0,0.30)')
+      el.style.setProperty('--dropdown-bg', `rgba(18, 21, 30, ${ddAlpha})`)
+      el.style.setProperty('--dropdown-border', `rgba(255,255,255,${t.dropdownBlur > 16 ? 0.2 : 0.12})`)
+      el.style.setProperty('--dropdown-shadow', '0 4px 28px rgba(0,0,0,0.55), 0 1px 6px rgba(0,0,0,0.30), inset 0 1px 1px rgba(255, 255, 255, 0.1), inset 0 0 24px rgba(255, 255, 255, 0.02)')
     } else {
-      el.style.setProperty('--dropdown-bg', 'rgba(255, 255, 255, 0.97)')
-      el.style.setProperty('--dropdown-border', 'rgba(0,0,0,0.10)')
-      el.style.setProperty('--dropdown-shadow', '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07)')
+      el.style.setProperty('--dropdown-bg', `rgba(255, 255, 255, ${ddAlpha})`)
+      el.style.setProperty('--dropdown-border', `rgba(0,0,0,${t.dropdownBlur > 16 ? 0.2 : 0.10})`)
+      el.style.setProperty('--dropdown-shadow', '0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.07), inset 0 1px 1px rgba(255, 255, 255, 0.6), inset 0 0 24px rgba(255, 255, 255, 0.4)')
     }
 
     // Scrollbar
