@@ -104,8 +104,8 @@
               <button
                 type="button"
                 class="dp-mode-btn"
-                :class="{ 'dp-mode-btn--active': activePresetId === 'material3' }"
-                @click="switchMode('material3')"
+                :class="{ 'dp-mode-btn--active': activeModeSlug === 'concept-m3' }"
+                @click="switchMode('concept-m3')"
                 title="Material 3 — тональные поверхности, скруглённые формы, тени"
               >
                 <span class="dp-mode-icon">⨁</span>
