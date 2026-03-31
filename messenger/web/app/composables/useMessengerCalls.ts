@@ -721,26 +721,48 @@ export function useMessengerCalls() {
   const projectTaskSyncStatus = useState<string>('messenger-call-project-task-sync-status', () => '')
 
   if (import.meta.client) {
-    watch([transcriptionDraft, transcriptionEntries], () => {
-      if (transcriptionActive.value) {
-        const payload = JSON.stringify({
-          type: 'transcription-sync',
-          draft: transcriptionDraft.value,
-          entries: transcriptionEntries.value
-        })
+    let transcriptionSyncTimer: ReturnType<typeof setTimeout> | null = null
+    let transcriptionSyncPending = false
 
-        if (peerDataChannel?.readyState === 'open') {
-          try {
-            peerDataChannel.send(payload)
-          } catch {}
-        }
-        
-        if (liveKitRoom) {
-          try {
-            const dataBuffer = new TextEncoder().encode(payload)
-            liveKitRoom.localParticipant.publishData(dataBuffer, { reliable: true })
-          } catch {}
-        }
+    const sendTranscriptionSync = () => {
+      transcriptionSyncPending = false
+      if (!transcriptionActive.value) return
+      
+      const payload = JSON.stringify({
+        type: 'transcription-sync',
+        draft: transcriptionDraft.value,
+        entries: transcriptionEntries.value
+      })
+
+      if (peerDataChannel?.readyState === 'open') {
+        try {
+          peerDataChannel.send(payload)
+        } catch {}
+      }
+      
+      if (liveKitRoom) {
+        try {
+          const dataBuffer = new TextEncoder().encode(payload)
+          liveKitRoom.localParticipant.publishData(dataBuffer, { reliable: true })
+        } catch {}
+      }
+    }
+
+    watch([transcriptionDraft, transcriptionEntries], () => {
+      if (!transcriptionSyncTimer) {
+        // Send immediately on first change
+        sendTranscriptionSync()
+        // Lock sending for the next 250ms (throttle)
+        transcriptionSyncTimer = setTimeout(() => {
+          transcriptionSyncTimer = null
+          // If changes accumulated during the cooldown, flush them immediately
+          if (transcriptionSyncPending) {
+            sendTranscriptionSync()
+          }
+        }, 250)
+      } else {
+        // Just mark that we have a pending sync if within cooldown
+        transcriptionSyncPending = true
       }
     }, { deep: true })
   }

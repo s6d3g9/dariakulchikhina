@@ -22,6 +22,29 @@ const activeProjectSyncLabel = computed(() => {
   return project ? `${project.label} (${project.slug})` : ''
 })
 
+const transcriptScrollRef = ref<HTMLElement | null>(null)
+let autoScrollTimeout: ReturnType<typeof setTimeout> | null = null
+
+watch([calls.transcriptionEntries, calls.transcriptionDraft], () => {
+  if (!transcriptScrollRef.value) return
+  const el = transcriptScrollRef.value
+  
+  // Если пользователь не отмотал наверх сам, то автоматически скроллим при новом тексте
+  const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150
+  
+  if (isNearBottom) {
+    if (autoScrollTimeout) clearTimeout(autoScrollTimeout)
+    autoScrollTimeout = setTimeout(() => {
+      if (transcriptScrollRef.value) {
+        transcriptScrollRef.value.scrollTo({
+          top: transcriptScrollRef.value.scrollHeight,
+          behavior: 'auto'
+        })
+      }
+    }, 100)
+  }
+}, { deep: true })
+
 onMounted(() => {
   if (auth.token.value && !settingsModel.aiSettingsReady.value) {
     void settingsModel.hydrateAiSettings(auth.request)
@@ -142,7 +165,7 @@ async function applyCallReviewToProjectSprint() {
           <span v-if="calls.callReview.value" class="call-transcript-panel__meta">{{ calls.callReview.value.sourceLines }} реплик</span>
         </header>
 
-        <div class="call-transcript-panel__content call-transcript-panel__content--scroll">
+        <div class="call-transcript-panel__content call-transcript-panel__content--scroll" ref="transcriptScrollRef">
           <p v-if="calls.callReview.value?.cleanedTranscript" class="call-transcript-panel__text">{{ calls.callReview.value.cleanedTranscript }}</p>
           <template v-else>
             <p v-if="!calls.transcriptionEntries.value.length && !calls.transcriptionDraft.value" class="call-transcript-popup__empty">
