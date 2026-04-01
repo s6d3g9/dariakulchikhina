@@ -6767,107 +6767,145 @@ html[data-concept="m3"] .a-btn-ai:hover {
 
 /* Fix viewport clipping */
 /* --- M3 TRUE BUTTONS --- */
-html[data-concept="m3"] .a-btn-save, 
+
+/* Reset to M3 baseline API */
+html[data-concept="m3"] .a-btn-save,
 html[data-concept="m3"] .a-btn-sm,
+html[data-concept="m3"] .a-btn-danger,
 html[data-concept="m3"] .a-btn-ai,
+html[data-concept="m3"] .cab-cta-btn,
 html[data-concept="m3"] .content-btn,
+html[data-concept="m3"] .dash-quick-btn,
 html[data-concept="m3"] .glass-btn {
-  position: relative;
-  overflow: hidden; /* For state layers / ripples */
-  border-radius: var(--sys-radius-full) !important;
-  font-family: var(--ds-font, 'Roboto', system-ui, sans-serif) !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.1px !important;
+  border-radius: var(--sys-radius-full, 100px) !important;
   border: none !important;
+  text-transform: none !important;
+  letter-spacing: 0.1px !important;
+  font-weight: 500 !important;
+  font-family: 'Roboto', 'Inter', sans-serif !important;
+  height: 40px !important;
+  padding: 0 24px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: background-color 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1), color 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
   box-shadow: none !important;
-  transition: box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1), background-color 0.2s cubic-bezier(0.2, 0, 0, 1), color 0.2s;
-  z-index: 1;
+  line-height: 20px !important;
+  font-size: 14px !important;
 }
 
-html[data-concept="m3"] .a-btn-save {
-  padding: 10px 24px !important; /* Fixed M3 Primary Button height 40px */
+/* Modifiers for smaller buttons */
+html[data-concept="m3"] .a-btn-sm,
+html[data-concept="m3"] .cab-cta-btn {
+  height: 32px !important;
+  padding: 0 16px !important;
+  font-size: 13px !important;
 }
 
-html[data-concept="m3"] .a-btn-sm {
-  padding: 8px 16px !important; /* Tonal/Outlined Small */
-  font-size: 0.875rem !important; /* 14px */
-}
-
-/* State Layer (Hover/Focus/Pressed) */
+/* State Layer (Ripple/Overlay) */
 html[data-concept="m3"] .a-btn-save::before,
 html[data-concept="m3"] .a-btn-sm::before,
+html[data-concept="m3"] .a-btn-danger::before,
 html[data-concept="m3"] .a-btn-ai::before,
+html[data-concept="m3"] .cab-cta-btn::before,
 html[data-concept="m3"] .content-btn::before,
+html[data-concept="m3"] .dash-quick-btn::before,
 html[data-concept="m3"] .glass-btn::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: currentColor; /* Matches the text color (on-primary) */
-  opacity: 0;
-  transition: opacity 0.2s linear;
-  z-index: -1;
-  pointer-events: none;
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background-color: currentColor !important;
+  opacity: 0 !important;
+  transition: opacity 0.2s linear !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
 }
 
 html[data-concept="m3"] .a-btn-save:hover::before,
 html[data-concept="m3"] .a-btn-sm:hover::before,
+html[data-concept="m3"] .a-btn-danger:hover::before,
 html[data-concept="m3"] .a-btn-ai:hover::before,
+html[data-concept="m3"] .cab-cta-btn:hover::before,
 html[data-concept="m3"] .content-btn:hover::before,
+html[data-concept="m3"] .dash-quick-btn:hover::before,
 html[data-concept="m3"] .glass-btn:hover::before {
-  opacity: 0.08; /* M3 Hover State */
+  opacity: 0.08 !important;
 }
-
 html[data-concept="m3"] .a-btn-save:focus-visible::before,
 html[data-concept="m3"] .a-btn-sm:focus-visible::before,
+html[data-concept="m3"] .a-btn-danger:focus-visible::before,
 html[data-concept="m3"] .a-btn-ai:focus-visible::before,
+html[data-concept="m3"] .cab-cta-btn:focus-visible::before,
 html[data-concept="m3"] .content-btn:focus-visible::before,
+html[data-concept="m3"] .dash-quick-btn:focus-visible::before,
 html[data-concept="m3"] .glass-btn:focus-visible::before {
-  opacity: 0.12; /* M3 Focus State */
+  opacity: 0.12 !important;
 }
-
 html[data-concept="m3"] .a-btn-save:active::before,
 html[data-concept="m3"] .a-btn-sm:active::before,
+html[data-concept="m3"] .a-btn-danger:active::before,
 html[data-concept="m3"] .a-btn-ai:active::before,
+html[data-concept="m3"] .cab-cta-btn:active::before,
 html[data-concept="m3"] .content-btn:active::before,
+html[data-concept="m3"] .dash-quick-btn:active::before,
 html[data-concept="m3"] .glass-btn:active::before {
-  opacity: 0.12; /* M3 Pressed State */
+  opacity: 0.12 !important;
 }
 
 html[data-concept="m3"] .a-btn-save:active,
 html[data-concept="m3"] .a-btn-sm:active,
+html[data-concept="m3"] .a-btn-danger:active,
 html[data-concept="m3"] .a-btn-ai:active,
+html[data-concept="m3"] .cab-cta-btn:active,
 html[data-concept="m3"] .content-btn:active,
+html[data-concept="m3"] .dash-quick-btn:active,
 html[data-concept="m3"] .glass-btn:active {
-  transform: none !important; /* M3 buttons don't scale down on click */
+  transform: none !important;
 }
 
-/* M3 Elevated Button (Primary) */
+/* Base Types: Filled (Primary) */
 html[data-concept="m3"] .a-btn-save,
+html[data-concept="m3"] .cab-cta-btn,
 html[data-concept="m3"] .glass-btn--primary {
   background-color: var(--sys-color-primary) !important;
   color: var(--sys-color-on-primary) !important;
   box-shadow: var(--sys-elevation-level1) !important;
 }
 html[data-concept="m3"] .a-btn-save:hover,
+html[data-concept="m3"] .cab-cta-btn:hover,
 html[data-concept="m3"] .glass-btn--primary:hover {
-  box-shadow: var(--sys-elevation-level2) !important; /* Elevates on hover */
-  opacity: 1 !important; /* Disable Legacy hacks */
-  filter: none !important;
+  box-shadow: var(--sys-elevation-level2) !important;
+  opacity: 1 !important;
 }
 
-/* M3 Tonal/Secondary button (using btn-sm) */
+/* Base Types: Tonal (Secondary) */
 html[data-concept="m3"] .a-btn-sm:not(.a-btn-danger),
+html[data-concept="m3"] .a-btn-ai,
+html[data-concept="m3"] .dash-quick-btn,
 html[data-concept="m3"] .glass-btn--secondary {
-  background-color: var(--sys-color-surface-container-highest) !important;
-  color: var(--sys-color-on-surface) !important;
-  font-weight: 500 !important;
+  background-color: var(--sys-color-secondary-container) !important;
+  color: var(--sys-color-on-secondary-container) !important;
 }
 
-/* Floating Action Button (FAB) (If any exists) */
+/* Base Types: Error (Danger/Filled) */
+html[data-concept="m3"] .a-btn-sm.a-btn-danger,
+html[data-concept="m3"] .a-btn-danger,
+html[data-concept="m3"] .btn-danger {
+  background-color: var(--sys-color-error) !important;
+  color: var(--sys-color-on-error) !important;
+}
+
+/* Base Types: Floating Action Button (FAB) */
 html[data-concept="m3"] .fab-btn,
 html[data-concept="m3"] .btn-fab {
-  border-radius: var(--sys-radius-lg) !important; /* 16px */
-  padding: 16px !important;
+  border-radius: var(--sys-radius-lg, 16px) !important;
+  width: 56px !important;
+  height: 56px !important;
+  padding: 0 !important;
   background-color: var(--sys-color-primary-container, #EADDFF) !important;
   color: var(--sys-color-on-primary-container, #21005D) !important;
   box-shadow: var(--sys-elevation-level3) !important;
@@ -6876,7 +6914,9 @@ html[data-concept="m3"] .fab-btn:hover,
 html[data-concept="m3"] .btn-fab:hover {
   box-shadow: var(--sys-elevation-level4, 0px 6px 10px 4px rgba(0,0,0,0.15)) !important;
 }
+
 /* --- M3 APP SHELL & SURFACES --- */
+
 
 /* Root app background */
 html[data-concept="m3"] body,
