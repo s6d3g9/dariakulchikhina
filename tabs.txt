@@ -1,0 +1,10 @@
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:2904:html.dark .proj-tabs {
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:3492:/* ── Admin header / tabs: respond to density + vertical rhythm ── */
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:3740:/* Admin tabs: slow morph between states */
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:3940:/* --- Admin tabs --- */
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:4951:/* tabs */
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:5303:/* ── Navigation tabs: legible not microscopic ─────────────── */
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:5696:/* tabs */
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:5828:/* tabs */
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:5970:/* tabs */
+/Users/oxo/work/dariakulchikhina/app/assets/css/main.css:6144:/* tabs */

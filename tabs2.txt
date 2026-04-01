@@ -1,0 +1,9 @@
+3941:[data-dark-surface] .admin-tab.active {
+4630:[data-warm-surface] .admin-tab.active {
+4800:html[data-concept="brutal"] .admin-tab.active {
+4952:html[data-concept="grand"] .admin-tab.active {
+5161:html[data-concept="minale"] .admin-tab.active {
+5697:html[data-concept="silence"] .admin-tab.active {
+5829:html[data-concept="craft"] .admin-tab.active {
+5971:html[data-concept="editorial"] .admin-tab.active {
+6145:html[data-concept="future"] .admin-tab.active {

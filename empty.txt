@@ -1,0 +1,23 @@
+.u-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: color-mix(in srgb, var(--glass-text) 38%, transparent);
+  font-size: var(--ds-text-sm, .84rem);
+}
+
+/* ── u-form-section ──────────────────────────────────────────
+   Glass card wrapper for a form block
+──────────────────────────────────────────────────────────── */
+.u-form-section {
+--
+[data-dark-surface] .u-empty,
+[data-dark-surface] [class*="-empty"] {
+  color: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
+}
+
+/* --- Timeline specific (ct-*) --- */
+[data-dark-surface] [class*="ct-line"],
+[data-dark-surface] [class*="ct-connector"] {
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
+}
+

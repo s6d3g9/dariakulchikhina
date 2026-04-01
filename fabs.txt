@@ -1,0 +1,15 @@
+/Users/oxo/work/dariakulchikhina/app/components/AdminMaterials.vue:38:              categories="materials,fabrics,furniture_types,kitchen,lighting,sanitary,flooring"
+/Users/oxo/work/dariakulchikhina/app/components/AppAutocomplete.vue:39:  /** Comma-separated categories: materials,fabrics,kitchen etc. Empty = all */
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:191:      <div class="asb-fab-wrap">
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:194:          class="asb-fab-edit"
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:195:          :class="{ 'asb-fab-edit--on': editMode }"
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:199:          <span v-if="editMode" class="asb-fab-icon">✓</span>
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:201:          <span class="asb-fab-label">{{ editMode ? 'готово' : 'изменить' }}</span>
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:628:.asb-fab-wrap {
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:637:.asb-fab-edit {
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:650:.asb-fab-edit:hover {
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:655:.asb-fab-edit--on {
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:661:.asb-fab-icon { font-size: .9rem; line-height: 1; }
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:662:.asb-fab-label { font-weight: 500; }
+/Users/oxo/work/dariakulchikhina/app/components/AdminSmartBrief.vue:664:html.dark .asb-fab-edit {
+/Users/oxo/work/dariakulchikhina/app/components/AdminTZ.vue:38:              categories="materials,fabrics,furniture_types,kitchen,lighting,sanitary,flooring,rooms,styles,colors"
