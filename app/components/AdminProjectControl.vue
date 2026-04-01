@@ -303,6 +303,33 @@
         <p v-else class="hpc-recommendation-text">Пока нет импортированных звонков. Сюда можно вставлять конспекты и транскрипты после созвонов.</p>
       </section>
 
+      <section class="hpc-section" v-show="activeModule === 'communications'">
+        <div class="hpc-section__head">
+          <div>
+            <p class="hpc-section__label">Communication Log</p>
+            <h3 class="hpc-section__title">Журнал отправленных поручений и уведомлений</h3>
+          </div>
+        </div>
+        <div v-if="control.communicationLog && control.communicationLog.length > 0" class="hpc-grid">
+          <article v-for="log in control.communicationLog" :key="log.id" class="hpc-agent-card">
+            <div class="hpc-agent-card__head">
+              <div class="hpc-agent-info">
+                <span class="hpc-agent-role">{{ getMemberName(log.memberId) }}</span>
+                <span class="hpc-agent-name">{{ log.channel }}</span>
+              </div>
+              <div class="hpc-status-label" :class="{'hpc-status-label--ok': log.status === 'delivered', 'hpc-status-label--error': log.status === 'failed'}">
+                {{ log.status }}
+              </div>
+            </div>
+            <p class="hpc-recommendation-text hpc-recommendation-text--message" style="margin-top: 12px; white-space: pre-wrap;">{{ log.message }}</p>
+            <div class="hpc-phase-card__kicker" style="margin-top: 12px; opacity: 0.6;">{{ new Date(log.dispatchedAt).toLocaleString('ru-RU') }}</div>
+          </article>
+        </div>
+        <p v-else class="hpc-recommendation-text">
+          Журнал коммуникаций пуст. Здесь будут отображаться все поручения и сообщения, отправленные участникам гибридного контура через интерфейс.
+        </p>
+      </section>
+
       <section class="hpc-section" v-show="activeModule === 'timeline'">
         <div class="hpc-section__head">
           <div>
@@ -848,6 +875,11 @@ const timelineBoardStyle = computed(() => ({
   minWidth: `${430 + Math.max(timelineColumns.value.length, 1) * getHybridTimelineColumnWidth(timelineScale.value)}px`,
 }))
 
+function getMemberName(id: string) {
+  const m = control.team?.find((t: any) => t.id === id)
+  return m ? m.name : id
+}
+
 async function save() {
   await $fetch(`/api/projects/${props.slug}`, {
     method: 'PUT',
@@ -1296,7 +1328,41 @@ const msgModalOpen = ref(false)
 const msgModalTarget = ref<any>(null)
 const msgModalText = ref('')
 const msgModalSending = ref(false)
-async function executeMessageDispatch() {}
+async function executeMessageDispatch() {
+  if (!msgModalTarget.value || !msgModalText.value) return
+  msgModalSending.value = true
+  try {
+    const res = await $fetch(`/api/projects/${props.slug}/communications/dispatch`, {
+      method: 'POST',
+      body: {
+        memberId: msgModalTarget.value.id,
+        message: msgModalText.value
+      }
+    })
+    
+    if (res.success) {
+      const resp = res as any
+      if (!control.communicationLog) {
+        control.communicationLog = []
+      }
+      control.communicationLog.push({
+        id: crypto.randomUUID(),
+        memberId: msgModalTarget.value.id,
+        channel: msgModalTarget.value.notifyBy || 'manual',
+        message: msgModalText.value,
+        status: 'delivered',
+        dispatchedAt: new Date().toISOString()
+      })
+      alert(`Сообщение успешно отправлено через ${resp.channel}`)
+      msgModalText.value = ''
+      msgModalOpen.value = false
+    }
+  } catch (e: any) {
+    alert(`Ошибка: ${e.message || 'Не удалось отправить'}`)
+  } finally {
+    msgModalSending.value = false
+  }
+}
 </script>
 
 <style scoped>

@@ -42,7 +42,24 @@ export default defineEventHandler(async (event) => {
   // TODO: Actual integration gateway calls go here (LiveKit / Telegram / SMTP)
   console.log(`[DISPATCH] Sending message to ${member.name} (${member.contact}) via ${notifyBy}: ${message}`)
   
-  // Here we simulate successful dispatch
+  // Save log entry to project profile
+  const logEntry = {
+    id: crypto.randomUUID(),
+    memberId: member.id,
+    channel: notifyBy,
+    message: message,
+    status: 'delivered',
+    dispatchedAt: new Date().toISOString()
+  }
+
+  if (!profile.hybridControl) profile.hybridControl = {}
+  if (!profile.hybridControl.communicationLog) profile.hybridControl.communicationLog = []
+  
+  profile.hybridControl.communicationLog.push(logEntry)
+
+  await db.update(projects)
+    .set({ profile })
+    .where(eq(projects.slug, slug))
   
   return {
     success: true,
