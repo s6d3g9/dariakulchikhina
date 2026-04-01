@@ -151,9 +151,9 @@
             <!-- Сертификаты -->
             <template v-if="activeGroup === 'certifications'">
               <div v-for="(cert, i) in certifications" :key="i" class="mpe-cert-row">
-                <input v-model="cert.name" class="glass-input mpe-input" placeholder="ГОСТ 6787-2001">
-                <input v-model="cert.number" class="glass-input mpe-input mpe-input--sm" placeholder="№">
-                <input v-model="cert.validUntil" class="glass-input mpe-input mpe-input--sm" placeholder="до (дата)">
+                <GlassInput v-model="cert.name" class=" mpe-input" placeholder="ГОСТ 6787-2001" />
+                <GlassInput v-model="cert.number" class=" mpe-input mpe-input--sm" placeholder="№" />
+                <GlassInput v-model="cert.validUntil" class=" mpe-input mpe-input--sm" placeholder="до (дата)" />
                 <button class="mpe-del-btn" @click="certifications.splice(i, 1)">×</button>
               </div>
               <button class="mpe-add-btn" @click="certifications.push({ name: '', number: '', validUntil: '', document: '' })">
@@ -165,12 +165,12 @@
             <template v-if="activeGroup === 'custom'">
               <div v-for="(cg, gi) in customGroups" :key="gi" class="mpe-custom-block">
                 <div class="mpe-custom-header">
-                  <input v-model="cg.groupName" class="glass-input mpe-input" placeholder="Название группы">
+                  <GlassInput v-model="cg.groupName" class=" mpe-input" placeholder="Название группы" />
                   <button class="mpe-del-btn" @click="customGroups.splice(gi, 1)">×</button>
                 </div>
                 <div v-for="(item, ii) in cg.items" :key="ii" class="mpe-custom-row">
-                  <input v-model="item.label" class="glass-input mpe-input" placeholder="Свойство">
-                  <input v-model="item.value" class="glass-input mpe-input" placeholder="Значение">
+                  <GlassInput v-model="item.label" class=" mpe-input" placeholder="Свойство" />
+                  <GlassInput v-model="item.value" class=" mpe-input" placeholder="Значение" />
                   <button class="mpe-del-btn" @click="cg.items.splice(ii, 1)">×</button>
                 </div>
                 <button class="mpe-add-btn mpe-add-btn--sub" @click="cg.items.push({ label: '', value: '' })">+ свойство</button>

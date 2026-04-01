@@ -60,10 +60,10 @@
                     <option value="other">прочее</option>
                   </select>
                 </td>
-                <td><input v-model="item.name" class="glass-input glass-input--inline" @blur="save"></td>
-                <td><input v-model="item.qty" type="number" min="0" class="glass-input glass-input--inline glass-input--xs" @blur="save"></td>
-                <td><input v-model="item.supplier" class="glass-input glass-input--inline" @blur="save"></td>
-                <td><input v-model="item.price" class="glass-input glass-input--inline glass-input--sm" @blur="save"></td>
+                <td><GlassInput v-model="item.name" class="glass-input --inline" @blur="save" /></td>
+                <td><GlassInput v-model="item.qty" type="number" min="0" class="glass-input glass-input--inline --xs" @blur="save" /></td>
+                <td><GlassInput v-model="item.supplier" class="glass-input --inline" @blur="save" /></td>
+                <td><GlassInput v-model="item.price" class="glass-input glass-input--inline --sm" @blur="save" /></td>
                 <td>
                   <select v-model="item.status" class="u-status-sel" @change="save">
                     <option value="">—</option>

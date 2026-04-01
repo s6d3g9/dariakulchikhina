@@ -120,39 +120,39 @@
                 <div class="u-modal__row2">
                   <div class="u-field">
                     <label class="u-field__label">Название *</label>
-                    <input v-model="form.name" class="glass-input" required />
+                    <GlassInput v-model="form.name"  required />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Компания</label>
-                    <input v-model="form.companyName" class="glass-input" placeholder="ООО / ИП…" />
+                    <GlassInput v-model="form.companyName"  placeholder="ООО / ИП…" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Контактное лицо</label>
-                    <input v-model="form.contactPerson" class="glass-input" placeholder="ФИО менеджера" />
+                    <GlassInput v-model="form.contactPerson"  placeholder="ФИО менеджера" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Телефон</label>
-                    <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" />
+                    <GlassInput v-model="form.phone"  type="tel" placeholder="+7 (___) ___-__-__" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Email</label>
-                    <input v-model="form.email" class="glass-input" type="email" placeholder="mail@example.com" />
+                    <GlassInput v-model="form.email"  type="email" placeholder="mail@example.com" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Telegram</label>
-                    <input v-model="form.telegram" class="glass-input" placeholder="@username" />
+                    <GlassInput v-model="form.telegram"  placeholder="@username" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">WhatsApp</label>
-                    <input v-model="form.whatsapp" class="glass-input" placeholder="+7…" />
+                    <GlassInput v-model="form.whatsapp"  placeholder="+7…" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Сайт</label>
-                    <input v-model="form.website" class="glass-input" placeholder="https://…" />
+                    <GlassInput v-model="form.website"  placeholder="https://…" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Город</label>
-                    <input v-model="form.city" class="glass-input" placeholder="Москва" />
+                    <GlassInput v-model="form.city"  placeholder="Москва" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Мессенджер</label>
@@ -165,7 +165,7 @@
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Ник мессенджера</label>
-                    <input v-model="form.messengerNick" class="glass-input" />
+                    <GlassInput v-model="form.messengerNick"  />
                   </div>
                 </div>
               </div>
@@ -211,18 +211,18 @@
               <div class="u-form-section">
                 <h3>Юридические реквизиты</h3>
                 <div class="u-modal__row2">
-                  <div class="u-field"><label class="u-field__label">ИНН</label><input v-model="form.inn" class="glass-input" /></div>
-                  <div class="u-field"><label class="u-field__label">КПП</label><input v-model="form.kpp" class="glass-input" /></div>
-                  <div class="u-field"><label class="u-field__label">ОГРН / ОГРНИП</label><input v-model="form.ogrn" class="glass-input" /></div>
+                  <div class="u-field"><label class="u-field__label">ИНН</label><GlassInput v-model="form.inn"  /></div>
+                  <div class="u-field"><label class="u-field__label">КПП</label><GlassInput v-model="form.kpp"  /></div>
+                  <div class="u-field"><label class="u-field__label">ОГРН / ОГРНИП</label><GlassInput v-model="form.ogrn"  /></div>
                 </div>
               </div>
               <div class="u-form-section">
                 <h3>Банковские реквизиты</h3>
                 <div class="u-modal__row2">
-                  <div class="u-field"><label class="u-field__label">Банк</label><input v-model="form.bankName" class="glass-input" /></div>
-                  <div class="u-field"><label class="u-field__label">БИК</label><input v-model="form.bik" class="glass-input" /></div>
-                  <div class="u-field"><label class="u-field__label">Расчётный счёт</label><input v-model="form.settlementAccount" class="glass-input" /></div>
-                  <div class="u-field"><label class="u-field__label">Корр. счёт</label><input v-model="form.correspondentAccount" class="glass-input" /></div>
+                  <div class="u-field"><label class="u-field__label">Банк</label><GlassInput v-model="form.bankName"  /></div>
+                  <div class="u-field"><label class="u-field__label">БИК</label><GlassInput v-model="form.bik"  /></div>
+                  <div class="u-field"><label class="u-field__label">Расчётный счёт</label><GlassInput v-model="form.settlementAccount"  /></div>
+                  <div class="u-field"><label class="u-field__label">Корр. счёт</label><GlassInput v-model="form.correspondentAccount"  /></div>
                 </div>
               </div>
               <div class="u-form-section">
@@ -262,20 +262,20 @@
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Минимальный заказ</label>
-                    <input v-model="form.minOrder" class="glass-input" placeholder="10 000 ₽" />
+                    <GlassInput v-model="form.minOrder"  placeholder="10 000 ₽" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Скидки</label>
-                    <input v-model="form.discount" class="glass-input" placeholder="5% на объекте от 100 м²" />
+                    <GlassInput v-model="form.discount"  placeholder="5% на объекте от 100 м²" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Рейтинг (1–5)</label>
-                    <input v-model.number="form.rating" class="glass-input" type="number" min="1" max="5" />
+                    <GlassInput v-model.number="form.rating"  type="number" min="1" max="5" />
                   </div>
                 </div>
               </div>
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -305,8 +305,8 @@
             <span>экран {{ pageIndex }} / {{ pageCount }}</span>
           </div>
           <div class="cv-pager-rail__actions">
-            <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
-            <button type="button" class="a-btn-sm" @click="move('next')">{{ pagerNextLabel }}</button>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="move('prev')">← экран</GlassButton>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="move('next')">{{ pagerNextLabel }}</GlassButton>
           </div>
         </div>
       </main>

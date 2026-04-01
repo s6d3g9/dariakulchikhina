@@ -26,7 +26,7 @@
         <!-- photo upload -->
         <div class="acp-upload-row" style="margin-bottom:20px">
           <label class="acp-lbl" style="width:140px">фото клиента:</label>
-          <input v-model="form.photo" class="glass-input" type="text" placeholder="имя файла">
+          <GlassInput v-model="form.photo"  type="text" placeholder="имя файла" />
           <label class="acp-btn-upload">
             загрузить
             <input type="file" accept="image/*" style="display:none" @change="uploadPhoto">
@@ -49,7 +49,7 @@
             <option value="">—</option>
             <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
           </select>
-          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
+          <GlassInput v-else v-model="(form as any)[field.key]"  type="text" />
         </div>
 
         <!-- section: contacts -->
@@ -59,7 +59,7 @@
           <label class="acp-lbl">{{ field.label }}:</label>
           <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="glass-input u-ta" rows="2" />
           <AppAddressInput v-else-if="field.address" v-model="(form as any)[field.key]" input-class="glass-input" @blur="save" />
-          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
+          <GlassInput v-else v-model="(form as any)[field.key]"  type="text" />
         </div>
 
         <!-- section: object -->
@@ -73,7 +73,7 @@
             <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
           </select>
           <AppAddressInput v-else-if="field.address" v-model="(form as any)[field.key]" input-class="glass-input" @blur="save" />
-          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
+          <GlassInput v-else v-model="(form as any)[field.key]"  type="text" />
         </div>
 
         <!-- section: project -->
@@ -91,7 +91,7 @@
             <option value="">—</option>
             <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
           </select>
-          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
+          <GlassInput v-else v-model="(form as any)[field.key]"  type="text" />
         </div>
 
         <!-- section: lifestyle -->
@@ -100,7 +100,7 @@
         <div v-for="field in lifestyleFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
           <textarea v-if="field.multi" v-model="(form as any)[field.key]" class="glass-input u-ta" rows="2" />
-          <input v-else v-model="(form as any)[field.key]" class="glass-input" type="text">
+          <GlassInput v-else v-model="(form as any)[field.key]"  type="text" />
         </div>
 
         <!-- section: passport -->
@@ -111,7 +111,7 @@
 
         <div v-for="field in passportFields" :key="field.key" class="acp-row">
           <label class="acp-lbl">{{ field.label }}:</label>
-          <input v-model="(form as any)[field.key]" class="glass-input" type="text">
+          <GlassInput v-model="(form as any)[field.key]"  type="text" />
         </div>
 
         <!-- section: project params catalog -->
@@ -147,7 +147,7 @@
 
       <div class="acp-actions">
         <p v-if="error" style="color:var(--ds-error, #c00);font-size:.8rem;margin-right:auto">{{ error }}</p>
-        <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</button>
+        <GlassButton variant="primary"  :disabled="saving" @click="save">{{ saving ? '...' : 'сохранить' }}</GlassButton>
       </div>
     </template>
   </div>
@@ -510,7 +510,7 @@ async function save() {
     flex-direction: column;
     gap: 8px;
   }
-  .acp-actions .a-btn-save {
+  .acp-actions :deep(.glass-btn) {
     width: 100%;
   }
   .acp-section-title {

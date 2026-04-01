@@ -135,26 +135,26 @@ function removeTask(sprint: HybridControlSprint, taskId: string) {
           <h3 class="akanban-modal-title">Задача</h3>
           <div class="u-form-section">
             <label class="u-field__label">Название</label>
-            <input v-model="openTask.title" class="glass-input" />
+            <GlassInput v-model="openTask.title"  />
           </div>
           <div class="u-form-section">
             <label class="u-field__label">Исполнитель (ID/Имя)</label>
-            <input v-model="openTask.assignee" class="glass-input" />
+            <GlassInput v-model="openTask.assignee"  />
           </div>
           <div class="u-form-section">
             <label class="u-field__label">Оценка (points)</label>
-            <input v-model.number="openTask.points" type="number" class="glass-input" />
+            <GlassInput v-model.number="openTask.points" type="number"  />
           </div>
           <div class="u-form-section">
             <label class="u-field__label">Заметки</label>
             <textarea v-model="openTask.notes" class="glass-input" rows="3"></textarea>
           </div>
           <div class="akanban-modal-actions" style="justify-content: space-between">
-            <button class="a-btn-sm a-btn-danger" @click="() => {
+            <GlassButton variant="danger" density="compact"  @click="() => {
               const sprint = control?.sprints.find(s => s.tasks?.some(t => t.id === openTask?.id))
               if(sprint && openTask) removeTask(sprint, openTask.id)
-            }">Удалить</button>
-            <button class="a-btn-save" @click="saveTask">Сохранить</button>
+            }">Удалить</GlassButton>
+            <GlassButton variant="primary"  @click="saveTask">Сохранить</GlassButton>
           </div>
         </div>
       </div>

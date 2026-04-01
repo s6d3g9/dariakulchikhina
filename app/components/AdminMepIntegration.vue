@@ -35,7 +35,7 @@
               </select>
             </div>
             <div class="amep-disc-body">
-              <input v-model="form[`mep_${d.key}_contractor`]" class="glass-input" placeholder="подрядчик / инженер" @blur="save">
+              <GlassInput v-model="form[`mep_${d.key}_contractor`]"  placeholder="подрядчик / инженер" @blur="save" />
               <textarea v-model="form[`mep_${d.key}_notes`]" class="glass-input u-ta" rows="1" placeholder="заметки..." @blur="save" />
             </div>
           </div>

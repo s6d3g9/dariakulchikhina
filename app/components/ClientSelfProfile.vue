@@ -30,15 +30,15 @@
           <div class="csp-fields">
             <div class="csp-field csp-field--full">
               <label>ФИО</label>
-              <input class="glass-input" v-model="form.fio" type="text" placeholder="Иванова Мария Сергеевна">
+              <GlassInput  v-model="form.fio" type="text" placeholder="Иванова Мария Сергеевна" />
             </div>
             <div class="csp-field">
               <label>Телефон</label>
-              <input class="glass-input" v-model="form.phone" type="tel" placeholder="+7 900 000 00 00">
+              <GlassInput  v-model="form.phone" type="tel" placeholder="+7 900 000 00 00" />
             </div>
             <div class="csp-field">
               <label>Email</label>
-              <input class="glass-input" v-model="form.email" type="email" placeholder="email@example.com">
+              <GlassInput  v-model="form.email" type="email" placeholder="email@example.com" />
             </div>
             <div class="csp-field csp-field--full">
               <label>Мессенджер</label>
@@ -55,7 +55,7 @@
             </div>
             <div class="csp-field">
               <label>Ник / номер в мессенджере</label>
-              <input class="glass-input" v-model="form.messengerNick" type="text" placeholder="@username">
+              <GlassInput  v-model="form.messengerNick" type="text" placeholder="@username" />
             </div>
             <div class="csp-field csp-field--full">
               <label>Удобный способ связи</label>
@@ -98,19 +98,19 @@
             </div>
             <div class="csp-field">
               <label>Площадь (м²)</label>
-              <input class="glass-input" v-model="form.objectArea" type="text" placeholder="87">
+              <GlassInput  v-model="form.objectArea" type="text" placeholder="87" />
             </div>
             <div class="csp-field">
               <label>Количество комнат</label>
-              <input class="glass-input" v-model="form.roomCount" type="text" placeholder="3">
+              <GlassInput  v-model="form.roomCount" type="text" placeholder="3" />
             </div>
             <div class="csp-field">
               <label>Этаж</label>
-              <input class="glass-input" v-model="form.floor" type="text" placeholder="12 из 25">
+              <GlassInput  v-model="form.floor" type="text" placeholder="12 из 25" />
             </div>
             <div class="csp-field">
               <label>Высота потолков</label>
-              <input class="glass-input" v-model="form.ceilingHeight" type="text" placeholder="2.8 м">
+              <GlassInput  v-model="form.ceilingHeight" type="text" placeholder="2.8 м" />
             </div>
             <div class="csp-field csp-field--full">
               <label>Балкон / лоджия</label>
@@ -143,19 +143,19 @@
           <div class="csp-fields">
             <div class="csp-field">
               <label>Взрослых</label>
-              <input class="glass-input" v-model="form.brief_adults_count" type="text" placeholder="2">
+              <GlassInput  v-model="form.brief_adults_count" type="text" placeholder="2" />
             </div>
             <div class="csp-field">
               <label>Дети (возраст)</label>
-              <input class="glass-input" v-model="form.brief_kids_ages" type="text" placeholder="4 и 8 лет">
+              <GlassInput  v-model="form.brief_kids_ages" type="text" placeholder="4 и 8 лет" />
             </div>
             <div class="csp-field">
               <label>Питомцы</label>
-              <input class="glass-input" v-model="form.brief_pets_desc" type="text" placeholder="кот, собака породы...">
+              <GlassInput  v-model="form.brief_pets_desc" type="text" placeholder="кот, собака породы..." />
             </div>
             <div class="csp-field">
               <label>Зона питомца</label>
-              <input class="glass-input" v-model="form.brief_pets_zone_detail" type="text" placeholder="лапомойка, миски, лоток...">
+              <GlassInput  v-model="form.brief_pets_zone_detail" type="text" placeholder="лапомойка, миски, лоток..." />
             </div>
             <div class="csp-field csp-field--full">
               <label>Частота гостей</label>
@@ -254,11 +254,11 @@
             </div>
             <div class="csp-field">
               <label>Бюджет на реализацию</label>
-              <input class="glass-input" v-model="form.brief_budget_limits" type="text" placeholder="₽ 3 000 000">
+              <GlassInput  v-model="form.brief_budget_limits" type="text" placeholder="₽ 3 000 000" />
             </div>
             <div class="csp-field">
               <label>Желаемый срок сдачи</label>
-              <input class="glass-input" v-model="form.brief_deadlines_hard" type="text" placeholder="до декабря 2025">
+              <GlassInput  v-model="form.brief_deadlines_hard" type="text" placeholder="до декабря 2025" />
             </div>
             <div class="csp-field csp-field--full">
               <label>Особые пожелания, аллергии, ограничения</label>
@@ -278,39 +278,39 @@
           <div class="csp-fields">
             <div class="csp-field">
               <label>Серия паспорта</label>
-              <input class="glass-input" v-model="form.passport_series" type="text" placeholder="45 09" maxlength="5">
+              <GlassInput  v-model="form.passport_series" type="text" placeholder="45 09" maxlength="5" />
             </div>
             <div class="csp-field">
               <label>Номер паспорта</label>
-              <input class="glass-input" v-model="form.passport_number" type="text" placeholder="123456" maxlength="6">
+              <GlassInput  v-model="form.passport_number" type="text" placeholder="123456" maxlength="6" />
             </div>
             <div class="csp-field csp-field--full">
               <label>Кем выдан</label>
-              <input class="glass-input" v-model="form.passport_issued_by" type="text" placeholder="ГУ МВД России по г. Москве">
+              <GlassInput  v-model="form.passport_issued_by" type="text" placeholder="ГУ МВД России по г. Москве" />
             </div>
             <div class="csp-field">
               <label>Дата выдачи</label>
-              <input class="glass-input" v-model="form.passport_issue_date" type="text" placeholder="01.03.2020">
+              <GlassInput  v-model="form.passport_issue_date" type="text" placeholder="01.03.2020" />
             </div>
             <div class="csp-field">
               <label>Код подразделения</label>
-              <input class="glass-input" v-model="form.passport_department_code" type="text" placeholder="770-001" maxlength="7">
+              <GlassInput  v-model="form.passport_department_code" type="text" placeholder="770-001" maxlength="7" />
             </div>
             <div class="csp-field csp-field--full">
               <label>Место рождения</label>
-              <input class="glass-input" v-model="form.passport_birth_place" type="text" placeholder="г. Москва">
+              <GlassInput  v-model="form.passport_birth_place" type="text" placeholder="г. Москва" />
             </div>
             <div class="csp-field csp-field--full">
               <label>Адрес регистрации (прописка)</label>
-              <input class="glass-input" v-model="form.passport_registration_address" type="text" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5">
+              <GlassInput  v-model="form.passport_registration_address" type="text" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5" />
             </div>
             <div class="csp-field">
               <label>ИНН</label>
-              <input class="glass-input" v-model="form.passport_inn" type="text" placeholder="770000000000" maxlength="12">
+              <GlassInput  v-model="form.passport_inn" type="text" placeholder="770000000000" maxlength="12" />
             </div>
             <div class="csp-field">
               <label>СНИЛС</label>
-              <input class="glass-input" v-model="form.passport_snils" type="text" placeholder="000-000-000 00" maxlength="14">
+              <GlassInput  v-model="form.passport_snils" type="text" placeholder="000-000-000 00" maxlength="14" />
             </div>
           </div>
         </div>

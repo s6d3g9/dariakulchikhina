@@ -39,15 +39,15 @@
           </div>
           <div class="afc-row">
             <label class="afc-lbl">ФИО клиента</label>
-            <input v-model="form.fio" class="glass-input" placeholder="Как к вам обращаться?" @blur="save">
+            <GlassInput v-model="form.fio"  placeholder="Как к вам обращаться?" @blur="save" />
           </div>
           <div class="afc-row">
             <label class="afc-lbl">телефон</label>
-            <input v-model="form.phone" class="glass-input" placeholder="+7 (___) ___-__-__" @blur="save">
+            <GlassInput v-model="form.phone"  placeholder="+7 (___) ___-__-__" @blur="save" />
           </div>
           <div class="afc-row">
             <label class="afc-lbl">email</label>
-            <input v-model="form.email" class="glass-input" type="email" placeholder="name@example.com" @blur="save">
+            <GlassInput v-model="form.email"  type="email" placeholder="name@example.com" @blur="save" />
           </div>
         </div>
       </div>
@@ -62,7 +62,7 @@
           </div>
           <div class="afc-row">
             <label class="afc-lbl">время встречи</label>
-            <input v-model="form.lead_meeting_time" class="glass-input" type="time" @blur="save">
+            <GlassInput v-model="form.lead_meeting_time"  type="time" @blur="save" />
           </div>
           <div class="afc-row">
             <label class="afc-lbl">место встречи</label>
@@ -102,22 +102,22 @@
             />
             <div class="afc-map-fields">
               <div class="afc-map-coords">
-                <input
+                <GlassInput
                   v-model.number="form.meeting_map_lat"
-                  class="glass-input"
+                  
                   type="number"
                   step="0.000001"
                   placeholder="Широта (lat)"
                   @blur="save"
-                >
-                <input
+                 />
+                <GlassInput
                   v-model.number="form.meeting_map_lng"
-                  class="glass-input"
+                  
                   type="number"
                   step="0.000001"
                   placeholder="Долгота (lng)"
                   @blur="save"
-                >
+                 />
               </div>
             </div>
           </div>

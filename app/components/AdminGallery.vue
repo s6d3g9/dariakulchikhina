@@ -240,8 +240,8 @@
         <span>экран {{ pageIndex }} / {{ pageCount }}</span>
       </div>
       <div class="cv-pager-rail__actions">
-        <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
-        <button type="button" class="a-btn-sm" @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / раздел' : pagerNextLabel }}</button>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="move('prev')">← экран</GlassButton>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / раздел' : pagerNextLabel }}</GlassButton>
       </div>
     </div>
 
@@ -270,14 +270,14 @@
               <!-- Title -->
               <div class="agal-field">
                 <label>Название *</label>
-                <input v-model="form.title" class="glass-input agal-finput" required autofocus placeholder="введите название">
+                <GlassInput v-model="form.title" class=" agal-finput" required autofocus placeholder="введите название" />
               </div>
 
               <!-- Main image -->
               <div class="agal-field">
                 <label>Основное изображение</label>
                 <div class="agal-upload-row">
-                  <input v-model="form.image" class="glass-input agal-finput" placeholder="имя файла или загрузите →">
+                  <GlassInput v-model="form.image" class=" agal-finput" placeholder="имя файла или загрузите →" />
                   <label class="agal-upload-btn">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     загрузить
@@ -308,7 +308,7 @@
               <!-- Tags -->
               <div class="agal-field">
                 <label>Теги <span style="opacity:.5;font-weight:400">через запятую</span></label>
-                <input v-model="tagsStr" class="glass-input agal-finput" placeholder="минимализм, дерево, нейтральный...">
+                <GlassInput v-model="tagsStr" class=" agal-finput" placeholder="минимализм, дерево, нейтральный..." />
               </div>
 
               <!-- Description -->

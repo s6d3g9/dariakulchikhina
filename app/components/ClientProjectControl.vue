@@ -120,25 +120,25 @@
         </div>
         <div class="cpc-section__tools">
           <div class="cpc-scale-switch" role="tablist" aria-label="Масштаб таймлайна">
-            <button
+            <GlassButton variant="secondary" density="compact"
               v-for="option in timelineScaleOptions"
               :key="option"
               type="button"
-              class="a-btn-sm cpc-scale-switch__btn"
+              class=" cpc-scale-switch__btn"
               :class="{ 'cpc-scale-switch__btn--active': timelineScale === option }"
               @click="timelineScale = option"
             >
               {{ getTimelineScaleLabel(option) }}
-            </button>
+            </GlassButton>
           </div>
-          <button
+          <GlassButton variant="secondary" density="compact"
             v-if="hasCollapsibleTimelinePhases"
             type="button"
-            class="a-btn-sm cpc-scale-switch__btn"
+            class=" cpc-scale-switch__btn"
             @click="toggleAllTimelinePhases"
           >
             {{ allTimelinePhasesCollapsed ? 'раскрыть все фазы' : 'свернуть все фазы' }}
-          </button>
+          </GlassButton>
         </div>
       </div>
       <div class="cpc-board-wrap">

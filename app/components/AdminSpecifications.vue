@@ -23,7 +23,7 @@
         <div class="u-grid-2">
           <div class="u-field">
             <label class="u-field__label">версия</label>
-            <input v-model="form.spec_version" class="glass-input" placeholder="v1..." @blur="save">
+            <GlassInput v-model="form.spec_version"  placeholder="v1..." @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">дата выдачи</label>
@@ -71,12 +71,12 @@
                     <option value="other">прочее</option>
                   </select>
                 </td>
-                <td><input v-model="item.name" class="glass-input glass-input--inline" @blur="save"></td>
-                <td><input v-model="item.article" class="glass-input glass-input--inline glass-input--sm" @blur="save"></td>
-                <td><input v-model="item.qty" type="number" min="0" class="glass-input glass-input--inline glass-input--xs" @blur="save"></td>
-                <td><input v-model="item.unit" class="glass-input glass-input--inline glass-input--xs" placeholder="шт" @blur="save"></td>
-                <td><input v-model="item.supplier" class="glass-input glass-input--inline" @blur="save"></td>
-                <td><input v-model="item.price" class="glass-input glass-input--inline glass-input--sm" @blur="save"></td>
+                <td><GlassInput v-model="item.name" class="glass-input --inline" @blur="save" /></td>
+                <td><GlassInput v-model="item.article" class="glass-input glass-input--inline --sm" @blur="save" /></td>
+                <td><GlassInput v-model="item.qty" type="number" min="0" class="glass-input glass-input--inline --xs" @blur="save" /></td>
+                <td><GlassInput v-model="item.unit" class="glass-input glass-input--inline --xs" placeholder="шт" @blur="save" /></td>
+                <td><GlassInput v-model="item.supplier" class="glass-input --inline" @blur="save" /></td>
+                <td><GlassInput v-model="item.price" class="glass-input glass-input--inline --sm" @blur="save" /></td>
                 <td><button class="aspec-del" @click="removeItem(Number(idx))" title="удалить">×</button></td>
               </tr>
             </tbody>

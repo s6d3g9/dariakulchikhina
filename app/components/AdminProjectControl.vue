@@ -63,11 +63,11 @@
         <div class="hpc-grid hpc-grid--top">
           <div class="u-field">
             <label class="u-field__label">Ответственный за контроль</label>
-            <input v-model="control.manager" class="glass-input" placeholder="Имя или роль" @blur="save" />
+            <GlassInput v-model="control.manager"  placeholder="Менеджер" @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">Интервал обзора, дней</label>
-            <input v-model.number="control.cadenceDays" type="number" min="1" max="90" class="glass-input" @blur="save" />
+            <GlassInput v-model.number="control.cadenceDays" type="number" min="1" max="90"  @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">Следующий контрольный обзор</label>
@@ -113,7 +113,7 @@
               </div>
               <div class="u-field">
                 <label class="u-field__label">Ритм, дней</label>
-                <input v-model.number="agent.cadenceDays" type="number" min="1" max="90" class="glass-input" @blur="save" />
+                <GlassInput v-model.number="agent.cadenceDays" type="number" min="1" max="90"  @blur="save" />
               </div>
               <div class="u-field u-field--full">
                 <label class="u-field__label">Миссия</label>
@@ -137,7 +137,7 @@
               <p class="hpc-section__label">Communication Playbook</p>
               <h4 class="hpc-phase-card__title">Протоколы handoff, approval и эскалации</h4>
             </div>
-            <button type="button" class="a-btn-sm" @click="addCommunicationRule">добавить правило</button>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="addCommunicationRule">добавить правило</GlassButton>
           </div>
 
           <div class="hpc-playbook-list">
@@ -148,14 +148,14 @@
                   <h4 class="hpc-phase-card__title">{{ rule.title }}</h4>
                 </div>
                 <div class="hpc-phase-card__head-right">
-                  <button type="button" class="a-btn-sm a-btn-danger" @click="removeCommunicationRule(index)">удалить</button>
+                  <GlassButton variant="danger" density="compact" type="button"  @click="removeCommunicationRule(index)">удалить</GlassButton>
                 </div>
               </div>
 
               <div class="hpc-grid">
                 <div class="u-field">
                   <label class="u-field__label">Название протокола</label>
-                  <input v-model="rule.title" class="glass-input" @blur="save" />
+                  <GlassInput v-model="rule.title"  @blur="save" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Владелец сценария</label>
@@ -171,7 +171,7 @@
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Ритм, дней</label>
-                  <input v-model.number="rule.cadenceDays" type="number" min="1" max="90" class="glass-input" @blur="save" />
+                  <GlassInput v-model.number="rule.cadenceDays" type="number" min="1" max="90"  @blur="save" />
                 </div>
                 <div class="u-field u-field--full">
                   <label class="u-field__label">Когда запускать сценарий</label>
@@ -230,7 +230,7 @@
         <div class="hpc-grid">
           <div class="u-field">
             <label class="u-field__label">Название звонка</label>
-            <input v-model="callInsightDraft.title" class="glass-input" placeholder="Например, созвон по согласованию кухни" />
+            <GlassInput v-model="callInsightDraft.title"  placeholder="Название звонка" />
           </div>
           <div class="u-field">
             <label class="u-field__label">Связанная фаза</label>
@@ -241,18 +241,18 @@
           </div>
           <div class="u-field u-field--full">
             <label class="u-field__label">Краткий конспект</label>
-            <textarea v-model="callInsightDraft.summary" class="glass-input u-ta" rows="3" placeholder="Что решили, что зависло, что нужно сделать дальше" />
+            <textarea v-model="callInsightDraft.summary" class="glass-input u-ta" rows="3" placeholder="Конспект" />
           </div>
           <div class="u-field u-field--full">
             <label class="u-field__label">Транскрипт или выдержка звонка</label>
-            <textarea v-model="callInsightDraft.transcript" class="glass-input u-ta" rows="5" placeholder="Сюда можно вставить расшифровку звонка из мессенджера, а система сама выделит решения, блокеры и следующие шаги" />
+            <textarea v-model="callInsightDraft.transcript" class="glass-input u-ta" rows="5" placeholder="Транскрипт" />
           </div>
         </div>
 
         <div class="hpc-section__tools">
-          <button type="button" class="a-btn-save" :disabled="callInsightSaving || !callInsightDraft.summary.trim()" @click="submitCallInsight">
+          <GlassButton variant="primary" type="button"  :disabled="callInsightSaving || !callInsightDraft.summary.trim()" @click="submitCallInsight">
             {{ callInsightSaving ? 'сохраняем...' : 'добавить звонок в проект' }}
-          </button>
+          </GlassButton>
           <p v-if="callInsightStatus" class="hpc-recommendation-text">{{ callInsightStatus }}</p>
         </div>
 
@@ -268,15 +268,15 @@
                 <span v-if="getCallInsightActorLabel(insight)" class="hpc-chip">{{ getCallInsightActorLabel(insight) }}</span>
                 <span v-if="insight.relatedPhaseKey" class="hpc-chip">{{ getPhaseTitleByKey(insight.relatedPhaseKey) }}</span>
                 <span v-if="insight.appliedTaskIds?.length" class="hpc-chip">в задачах: {{ insight.appliedTaskIds.length }}</span>
-                <button
+                <GlassButton variant="secondary" density="compact"
                   v-if="insight.nextSteps.length"
                   type="button"
-                  class="a-btn-sm"
+                  
                   :disabled="callInsightApplyPendingId === insight.id"
                   @click="applyCallInsightToSprint(insight.id)"
                 >
                   {{ callInsightApplyPendingId === insight.id ? 'применяем...' : (insight.appliedTaskIds?.length ? 'досинхронизировать задачи' : 'в активный спринт') }}
-                </button>
+                </GlassButton>
               </div>
             </div>
             <p class="hpc-recommendation-text hpc-recommendation-text--message">{{ insight.summary }}</p>
@@ -300,7 +300,7 @@
             </div>
           </article>
         </div>
-        <p v-else class="hpc-recommendation-text">Пока нет импортированных звонков. Сюда можно вставлять конспекты и транскрипты после созвонов.</p>
+        <p v-else class="hpc-empty">Нет импортированных звонков</p>
       </section>
 
       <section class="hpc-section" v-show="activeModule === 'communications'">
@@ -325,8 +325,8 @@
             <div class="hpc-phase-card__kicker" style="margin-top: 12px; opacity: 0.6;">{{ new Date(log.dispatchedAt).toLocaleString('ru-RU') }}</div>
           </article>
         </div>
-        <p v-else class="hpc-recommendation-text">
-          Журнал коммуникаций пуст. Здесь будут отображаться все поручения и сообщения, отправленные участникам гибридного контура через интерфейс.
+        <p v-else class="hpc-empty">
+          Журнал пуст
         </p>
       </section>
 
@@ -483,7 +483,7 @@
 
         <!-- Подробная информация о строке таймлайна (Фазы/Спринты/Процессы) -->
         <div v-if="selectedTimelineRowDetails" class="hpc-timeline-details-modal glass-surface glass-card" style="margin-top: 24px; padding: 24px; position: relative;">
-          <button class="a-btn-sm" style="position: absolute; top: 16px; right: 16px;" @click="selectedTimelineRowDetails = null">Закрыть ✕</button>
+          <GlassButton variant="secondary" density="compact"  style="position: absolute; top: 16px; right: 16px;" @click="selectedTimelineRowDetails = null">Закрыть ✕</GlassButton>
           
           <h4 class="hpc-section__title" style="margin-bottom: 8px;">{{ selectedTimelineRowDetails.title }}</h4>
           <p class="hpc-recommendation-text" style="margin-bottom: 16px;">Тип: {{ selectedTimelineRowDetails.typeLabel }}</p>
@@ -538,6 +538,14 @@
               </div>
               <div v-else style="margin-top: 8px;">Нет связанных задач/процессов</div>
             </div>
+            
+            <div style="margin-top: 16px; display: flex; gap: 8px;">
+              <GlassButton variant="primary" density="compact"  type="button" @click="activeModule = 'kanban'; selectedTimelineRowDetails = null">В Канбан</GlassButton>
+            </div>
+          </div>
+
+          <div v-if="selectedTimelineRowDetails.type === 'phase'" style="margin-top: 16px; display: flex; gap: 8px;">
+            <GlassButton variant="primary" density="compact"  type="button" @click="activeModule = 'phases'; selectedTimelineRowDetails = null">Настройки фазы</GlassButton>
           </div>
 
         </div>
@@ -571,11 +579,11 @@
             <div class="hpc-grid">
               <div class="u-field">
                 <label class="u-field__label">Ответственный</label>
-                <input v-model="phase.owner" class="glass-input" placeholder="Ответственный" @blur="save" />
+                <GlassInput v-model="phase.owner"  placeholder="Ответственный" @blur="save" />
               </div>
               <div class="u-field">
                 <label class="u-field__label">Прогресс, %</label>
-                <input v-model.number="phase.percent" type="number" min="0" max="100" class="glass-input" @blur="save" />
+                <GlassInput v-model.number="phase.percent" type="number" min="0" max="100"  @blur="save" />
               </div>
               <div class="u-field">
                 <label class="u-field__label">Плановый старт</label>
@@ -615,7 +623,7 @@
             <p class="hpc-section__label">Формы метаданных</p>
             <h3 class="hpc-section__title">Редактирование спринтов</h3>
           </div>
-          <button class="a-btn-sm" type="button" @click="addSprint">+ спринт</button>
+          <GlassButton variant="secondary" density="compact"  type="button" @click="addSprint">+ спринт</GlassButton>
         </div>
 
         <div v-if="control.sprints.length" class="hpc-sprint-list">
@@ -624,7 +632,7 @@
               <div class="hpc-grid hpc-grid--top">
                 <div class="u-field">
                   <label class="u-field__label">Название спринта</label>
-                  <input v-model="sprint.name" class="glass-input" @blur="save" />
+                  <GlassInput v-model="sprint.name"  @blur="save" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Привязка к фазе</label>
@@ -640,7 +648,7 @@
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Удалить спринт</label>
-                  <button class="a-btn-sm a-btn-danger" type="button" @click="removeSprint(sprintIndex)">удалить</button>
+                  <GlassButton variant="danger" density="compact"  type="button" @click="removeSprint(sprintIndex)">удалить</GlassButton>
                 </div>
               </div>
             </div>
@@ -672,7 +680,7 @@
             </div>
           </article>
         </div>
-        <div v-else class="hpc-empty">спринты ещё не добавлены</div>
+        <div v-else class="hpc-empty">Нет спринтов</div>
       </section>
 
       <section class="hpc-section" v-show="activeModule === 'health'">
@@ -681,29 +689,29 @@
             <p class="hpc-section__label">Здоровье проекта</p>
             <h3 class="hpc-section__title">Контрольные точки и блокеры</h3>
           </div>
-          <button class="a-btn-sm" type="button" @click="addCheckpoint">+ точка</button>
+          <GlassButton variant="secondary" density="compact"  type="button" @click="addCheckpoint">+ точка</GlassButton>
         </div>
 
         <div class="hpc-checkpoint-list">
           <div v-for="(checkpoint, checkpointIndex) in control.checkpoints" :key="checkpoint.id" class="hpc-checkpoint-row">
-            <input v-model="checkpoint.title" class="glass-input" placeholder="Контрольная точка" @blur="save" />
-            <input v-model="checkpoint.category" class="glass-input" placeholder="Категория" @blur="save" />
+            <GlassInput v-model="checkpoint.title"  placeholder="Контрольная точка" @blur="save" />
+            <GlassInput v-model="checkpoint.category"  placeholder="Категория" @blur="save" />
             <select v-model="checkpoint.status" class="u-status-sel" @change="save">
               <option v-for="option in checkpointStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>
-            <input v-model="checkpoint.note" class="glass-input hpc-checkpoint-row__note" placeholder="Что происходит" @blur="save" />
-            <button class="a-btn-sm a-btn-danger" type="button" @click="removeCheckpoint(checkpointIndex)">×</button>
+            <GlassInput v-model="checkpoint.note" class=" hpc-checkpoint-row__note" placeholder="Комментарий" @blur="save" />
+            <GlassButton variant="danger" density="compact"  type="button" @click="removeCheckpoint(checkpointIndex)">×</GlassButton>
           </div>
         </div>
 
         <div class="hpc-task-head hpc-task-head--blockers">
           <span class="hpc-task-head__title">Текущие блокеры</span>
-          <button class="a-btn-sm" type="button" @click="addBlocker">+ блокер</button>
+          <GlassButton variant="secondary" density="compact"  type="button" @click="addBlocker">+ блокер</GlassButton>
         </div>
         <div class="hpc-blocker-list">
           <div v-for="(blocker, blockerIndex) in control.blockers" :key="`blocker-${blockerIndex}`" class="hpc-blocker-row">
-            <input v-model="control.blockers[blockerIndex]" class="glass-input hpc-blocker-row__input" placeholder="Что тормозит проект" @blur="save" />
-            <button class="a-btn-sm a-btn-danger" type="button" @click="removeBlocker(blockerIndex)">×</button>
+            <GlassInput v-model="control.blockers[blockerIndex]" class=" hpc-blocker-row__input" placeholder="Описание блокера" @blur="save" />
+            <GlassButton variant="danger" density="compact"  type="button" @click="removeBlocker(blockerIndex)">×</GlassButton>
           </div>
         </div>
       </section>
@@ -716,10 +724,10 @@
           <p style="font-size: 0.9rem; opacity: 0.8; margin: 0;">
             Получатель: {{ msgModalTarget?.name || 'Без имени' }} (Канал: {{ msgModalTarget?.notifyBy }})
           </p>
-          <textarea v-model="msgModalText" class="glass-input" style="min-height: 120px; padding: 12px; resize: vertical;" placeholder="Напишите суть задачи, правки или вопроса..."></textarea>
+          <textarea v-model="msgModalText" class="glass-input" style="min-height: 120px; padding: 12px; resize: vertical;" placeholder="Сообщение..."></textarea>
           <div style="display: flex; gap: 8px; justify-content: flex-end;">
-            <button type="button" class="a-btn-sm a-btn-danger" @click="msgModalOpen = false">Отмена</button>
-            <button type="button" class="a-btn-sm a-btn-save" :disabled="msgModalSending" @click="executeMessageDispatch">{{ msgModalSending ? 'Отправка...' : 'Отправить' }}</button>
+            <GlassButton variant="danger" density="compact" type="button"  @click="msgModalOpen = false">Отмена</GlassButton>
+            <GlassButton variant="primary" type="button"  :disabled="msgModalSending" @click="executeMessageDispatch">{{ msgModalSending ? 'Отправка...' : 'Отправить' }}</GlassButton>
           </div>
         </div>
       </div>

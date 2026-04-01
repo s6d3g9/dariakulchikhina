@@ -6,21 +6,21 @@
         <div class="atz-card-label">раздел: {{ sec.title || '(без названия)' }}</div>
         <div class="atz-row">
           <label class="atz-lbl">id:</label>
-          <input v-model="sec.id" class="atz-inp glass-input" type="text" @input="markDirty">
+          <GlassInput v-model="sec.id" class="atz-inp " type="text" @input="markDirty" />
         </div>
         <div class="atz-row">
           <label class="atz-lbl">название:</label>
-          <input v-model="sec.title" class="atz-inp glass-input" type="text" @input="markDirty">
+          <GlassInput v-model="sec.title" class="atz-inp " type="text" @input="markDirty" />
         </div>
         <div class="atz-row">
           <label class="atz-lbl">заголовок:</label>
-          <input v-model="sec.heading" class="atz-inp glass-input" type="text" @input="markDirty">
+          <GlassInput v-model="sec.heading" class="atz-inp " type="text" @input="markDirty" />
         </div>
 
         <!-- section image -->
         <div class="atz-upload-row">
           <label class="atz-lbl">изображение:</label>
-          <input v-model="sec.image" class="atz-inp glass-input" type="text" placeholder="имя файла" @input="markDirty">
+          <GlassInput v-model="sec.image" class="atz-inp " type="text" placeholder="имя файла" @input="markDirty" />
           <label class="atz-btn-upload glass-chip">
             загрузить
             <input type="file" accept="image/*" style="display:none" @change="(e: Event) => uploadSecImg(e, si)">
@@ -49,7 +49,7 @@
           <!-- question image -->
           <div class="atz-upload-row" style="margin-top:4px">
             <label class="atz-lbl" style="width:60px;font-size:.72rem">фото:</label>
-            <input v-model="q.image" class="atz-inp glass-input" type="text" placeholder="имя файла" @input="markDirty">
+            <GlassInput v-model="q.image" class="atz-inp " type="text" placeholder="имя файла" @input="markDirty" />
             <label class="atz-btn-upload glass-chip">
               загрузить
               <input type="file" accept="image/*" style="display:none" @change="(e: Event) => uploadQImg(e, si, qi)">
@@ -71,7 +71,7 @@
           <span class="u-inline-loading__label">[ СОХРАНЯЕМ ТЗ ]</span>
           <span class="u-inline-loading__line" />
         </div>
-        <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? 'сохраняем...' : 'сохранить' }}</button>
+        <GlassButton variant="primary"  :disabled="saving" @click="save">{{ saving ? 'сохраняем...' : 'сохранить' }}</GlassButton>
       </div>
     </template>
   </div>

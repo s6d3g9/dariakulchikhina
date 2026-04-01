@@ -15,17 +15,17 @@
         </select>
         <span v-if="savedAt" class="asp-saved">✓ {{ savedAt }}</span>
         <div class="asp-status-row__spacer" />
-        <button
-          class="a-btn-sm"
+        <GlassButton variant="secondary" density="compact"
+          
           :class="{ 'asp-align-on': alignMode }"
           :title="alignMode ? 'Выключить режим выравнивания' : 'Включить драг-выравнивание по сетке'"
           @click="alignMode = !alignMode"
-        >⊞ {{ alignMode ? 'выравнивание' : 'выровнять' }}</button>
-        <button
+        >⊞ {{ alignMode ? 'выравнивание' : 'выровнять' }}</GlassButton>
+        <GlassButton variant="danger" density="compact"
           v-if="alignMode && layoutBlocks.length"
-          class="a-btn-sm a-btn-danger"
+          
           @click="clearLayout"
-        >↺</button>
+        >↺</GlassButton>
       </div>
 
       <!-- Section: General info -->
@@ -34,7 +34,7 @@
         <div class="u-grid-2">
           <div class="u-field">
             <label class="u-field__label">версия комплекта</label>
-            <input v-model="form.sp_version" class="glass-input" placeholder="v1, v2, финальная..." @blur="save">
+            <GlassInput v-model="form.sp_version"  placeholder="v1, v2, финальная..." @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">дата отправки клиенту</label>
@@ -72,7 +72,7 @@
                   <option value="approved">согласован ✓</option>
                   <option value="revision">доработка ↩</option>
                 </select>
-                <input v-model="file.comment" class="glass-input glass-input--inline" placeholder="комментарий..." @blur="save">
+                <GlassInput v-model="file.comment" class="glass-input --inline" placeholder="комментарий..." @blur="save" />
               </div>
             </div>
             <button class="asp-file-del" @click="removeFile(Number(idx))" title="удалить">×</button>
@@ -146,34 +146,34 @@
               <div v-for="group in groupedTemplates" :key="group.category" class="asp-template-group">
                 <span class="asp-template-group__title">{{ group.title }}</span>
                 <div class="asp-template-list">
-                  <button
+                  <GlassButton variant="secondary" density="compact"
                     v-for="template in group.items"
                     :key="template.id"
-                    class="a-btn-sm"
+                    
                     :class="{ 'asp-template--on': selectedTemplateId === template.id }"
                     :title="template.description"
                     @click="selectedTemplateId = template.id"
-                  >{{ template.title }}</button>
+                  >{{ template.title }}</GlassButton>
                 </div>
               </div>
             </div>
-            <input
+            <GlassInput
               v-model="newBlockLabel"
-              class="glass-input"
+              
               :placeholder="`${getLayoutTemplateById(selectedTemplateId).defaultLabel} или своё название`"
               @keydown.enter="addBlock"
-            >
+             />
             <div class="asp-presets">
-              <button
+              <GlassButton variant="secondary" density="compact"
                 v-for="ps in layoutPresetOptions"
                 :key="ps.key"
-                class="a-btn-sm"
+                
                 :class="{ 'asp-preset--on': selectedPreset === ps.key }"
                 :title="`${ps.cellsX}×${ps.cellsY} ячеек`"
                 @click="selectedPreset = ps.key"
-              >{{ ps.key }}</button>
+              >{{ ps.key }}</GlassButton>
             </div>
-            <button class="a-btn-sm" @click="addBlock">+ добавить</button>
+            <GlassButton variant="secondary" density="compact"  @click="addBlock">+ добавить</GlassButton>
           </div>
         </Transition>
       </div>

@@ -6,21 +6,21 @@
         <div class="am-card-label">вкладка: {{ tab.title || '(без названия)' }}</div>
         <div class="am-row">
           <label class="am-lbl">id:</label>
-          <input v-model="tab.id" class="am-inp glass-input" type="text" @input="markDirty">
+          <GlassInput v-model="tab.id" class="am-inp " type="text" @input="markDirty" />
         </div>
         <div class="am-row">
           <label class="am-lbl">название:</label>
-          <input v-model="tab.title" class="am-inp glass-input" type="text" @input="markDirty">
+          <GlassInput v-model="tab.title" class="am-inp " type="text" @input="markDirty" />
         </div>
         <div class="am-row">
           <label class="am-lbl">заголовок:</label>
-          <input v-model="tab.heading" class="am-inp glass-input" type="text" @input="markDirty">
+          <GlassInput v-model="tab.heading" class="am-inp " type="text" @input="markDirty" />
         </div>
 
         <!-- image upload -->
         <div class="am-upload-row">
           <label class="am-lbl">изображение:</label>
-          <input v-model="tab.image" class="am-inp glass-input" type="text" placeholder="имя файла" @input="markDirty">
+          <GlassInput v-model="tab.image" class="am-inp " type="text" placeholder="имя файла" @input="markDirty" />
           <label class="am-btn-upload glass-chip">
             загрузить
             <input type="file" accept="image/*" style="display:none" @change="(e: Event) => uploadTabImg(e, ti)">
@@ -70,7 +70,7 @@
           <span class="u-inline-loading__label">[ СОХРАНЯЕМ МАТЕРИАЛЫ ]</span>
           <span class="u-inline-loading__line" />
         </div>
-        <button class="a-btn-save" :disabled="saving" @click="save">{{ saving ? 'сохраняем...' : 'сохранить' }}</button>
+        <GlassButton variant="primary"  :disabled="saving" @click="save">{{ saving ? 'сохраняем...' : 'сохранить' }}</GlassButton>
       </div>
     </template>
   </div>
@@ -302,7 +302,7 @@ async function save() {
     min-width: 0;
     margin-right: 0;
   }
-  .am-actions .a-btn-save,
+  
   .am-btn-add { width: 100%; }
 }
 </style>

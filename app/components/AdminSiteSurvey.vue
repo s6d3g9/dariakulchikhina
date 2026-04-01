@@ -13,7 +13,7 @@
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">инженер / замерщик</label>
-            <input v-model="form.survey_engineer" type="text" class="glass-input" placeholder="ФИО" @blur="save">
+            <GlassInput v-model="form.survey_engineer" type="text"  placeholder="ФИО" @blur="save" />
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">адрес объекта</label>
@@ -21,11 +21,11 @@
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">площадь (м²)</label>
-            <input v-model="form.survey_area" type="text" class="glass-input" placeholder="например: 87.4" @blur="save">
+            <GlassInput v-model="form.survey_area" type="text"  placeholder="например: 87.4" @blur="save" />
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">высота потолков</label>
-            <input v-model="form.survey_ceiling" type="text" class="glass-input" placeholder="например: 3.1 м / на разных участках" @blur="save">
+            <GlassInput v-model="form.survey_ceiling" type="text"  placeholder="например: 3.1 м / на разных участках" @blur="save" />
           </div>
         </div>
       </div>
@@ -79,7 +79,7 @@
               <option value="floor_plan">поэтажный план</option>
               <option value="other">другое</option>
             </select>
-            <input v-model="newFileLabel" class="glass-input" style="flex:1" placeholder="название / описание файла" type="text">
+            <GlassInput v-model="newFileLabel"  style="flex:1" placeholder="название / описание файла" type="text" />
           </div>
           <label class="ass-upload-btn">
             <span>📎 прикрепить файл</span>

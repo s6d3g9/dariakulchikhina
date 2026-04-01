@@ -125,7 +125,7 @@
             <span v-if="fieldAutoFilled[field.key]" class="de-field-auto" title="заполнено из данных">⚡</span>
           </label>
           <textarea v-if="field.multiline" v-model="fieldValues[field.key]" rows="3" class="glass-input u-ta" :placeholder="field.placeholder || ''"></textarea>
-          <input v-else v-model="fieldValues[field.key]" class="glass-input" :placeholder="field.placeholder || ''" />
+          <GlassInput v-else v-model="fieldValues[field.key]"  :placeholder="field.placeholder || ''" />
         </div>
       </div>
 
@@ -151,9 +151,9 @@
       </div>
 
       <div class="de-actions">
-        <button class="a-btn-sm" @click="step = 0">← шаблоны</button>
+        <GlassButton variant="secondary" density="compact"  @click="step = 0">← шаблоны</GlassButton>
         <button class="a-btn-ai" @click="goGenerateAndEdit" title="Перейти в редактор и сразу запустить AI-генерацию">🤖 сгенерировать →</button>
-        <button class="a-btn-save" @click="goToStep(2)">редактор →</button>
+        <GlassButton variant="primary"  @click="goToStep(2)">редактор →</GlassButton>
       </div>
     </div>
 
@@ -427,12 +427,12 @@
       </Transition>
 
       <div class="de-actions">
-        <button class="a-btn-sm" @click="step = 1">← поля</button>
-        <button class="a-btn-sm" @click="printDocument">🖨 PDF</button>
-        <button class="a-btn-sm" @click="downloadTxt">⬇ .txt</button>
-        <button class="a-btn-save" :disabled="saving" @click="saveDocument">
+        <GlassButton variant="secondary" density="compact"  @click="step = 1">← поля</GlassButton>
+        <GlassButton variant="secondary" density="compact"  @click="printDocument">🖨 PDF</GlassButton>
+        <GlassButton variant="secondary" density="compact"  @click="downloadTxt">⬇ .txt</GlassButton>
+        <GlassButton variant="primary"  :disabled="saving" @click="saveDocument">
           {{ saving ? 'сохраняется...' : '✓ сохранить документ' }}
-        </button>
+        </GlassButton>
       </div>
       <Transition name="de-toast">
         <div v-if="saveMsg" class="de-toast" :class="saveMsgType === 'ok' ? 'de-toast--ok' : 'de-toast--err'">

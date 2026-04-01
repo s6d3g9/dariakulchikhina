@@ -51,7 +51,7 @@
 
             <!-- Info -->
             <div class="aca-render-info">
-              <input v-model="r.room" class="glass-input glass-input--inline" placeholder="помещение (кухня, спальня...)" @blur="save">
+              <GlassInput v-model="r.room" class="glass-input --inline" placeholder="помещение (кухня, спальня...)" @blur="save" />
               <div class="aca-render-actions">
                 <select v-model="r.approval" class="u-status-sel" @change="save">
                   <option value="">рассматривается</option>
@@ -62,7 +62,7 @@
                 <span v-if="r.approval === 'approved'" class="aca-approval-badge aca-approval-badge--ok">✓</span>
                 <span v-else-if="r.approval === 'revision'" class="aca-approval-badge aca-approval-badge--rev">↩</span>
               </div>
-              <input v-model="r.comment" class="glass-input glass-input--inline" placeholder="комментарий..." @blur="save">
+              <GlassInput v-model="r.comment" class="glass-input --inline" placeholder="комментарий..." @blur="save" />
             </div>
           </div>
         </div>
@@ -84,7 +84,7 @@
         <div class="u-grid-2">
           <div class="u-field">
             <label class="u-field__label">номер акта</label>
-            <input v-model="form.ca_approval_act" class="glass-input" placeholder="АКТ-2025-01" @blur="save">
+            <GlassInput v-model="form.ca_approval_act"  placeholder="АКТ-2025-01" @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">дата подписания</label>
@@ -96,7 +96,7 @@
           </div>
           <div class="u-field">
             <label class="u-field__label">версия пакета</label>
-            <input v-model="form.ca_version" class="glass-input" placeholder="v1, v2..." @blur="save">
+            <GlassInput v-model="form.ca_version"  placeholder="v1, v2..." @blur="save" />
           </div>
           <div class="u-field u-field--full">
             <label class="u-field__label">файл акта / приложения</label>

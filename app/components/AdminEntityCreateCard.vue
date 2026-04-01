@@ -2,18 +2,18 @@
   <div class="ent-detail-card glass-card admin-entity-create-card" :class="{ 'admin-entity-create-card--brutalist': brutalist }">
     <div class="ent-detail-head">
       <div class="ent-detail-name">{{ title }}</div>
-      <button class="a-btn-sm" @click="$emit('close')">✕</button>
+      <GlassButton variant="secondary" density="compact"  @click="$emit('close')">✕</GlassButton>
     </div>
-    <input
+    <GlassInput
       :value="modelValue"
-      class="glass-input admin-entity-create-card__input"
+      class=" admin-entity-create-card__input"
       :placeholder="placeholder"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
       @keydown.enter="$emit('submit')"
     />
     <div class="ent-detail-foot">
-      <button class="a-btn-save" :disabled="disabled" @click="$emit('submit')">{{ submitLabel }}</button>
-      <button class="a-btn-sm" @click="$emit('close')">отмена</button>
+      <GlassButton variant="primary"  :disabled="disabled" @click="$emit('submit')">{{ submitLabel }}</GlassButton>
+      <GlassButton variant="secondary" density="compact"  @click="$emit('close')">отмена</GlassButton>
     </div>
   </div>
 </template>

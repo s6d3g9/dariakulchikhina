@@ -184,31 +184,31 @@
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Имя *</label>
-                  <input v-model="form.name" class="glass-input" required />
+                  <GlassInput v-model="form.name"  required />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Роль</label>
-                  <input v-model="form.role" class="glass-input" placeholder="менеджер, ассистент, ревьюер…" />
+                  <GlassInput v-model="form.role"  placeholder="менеджер, ассистент, ревьюер…" />
                 </div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Телефон</label>
-                  <input v-model="form.phone" class="glass-input" />
+                  <GlassInput v-model="form.phone"  />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Email</label>
-                  <input v-model="form.email" class="glass-input" />
+                  <GlassInput v-model="form.email"  />
                 </div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field">
                   <label class="u-field__label">Telegram</label>
-                  <input v-model="form.telegram" class="glass-input" />
+                  <GlassInput v-model="form.telegram"  />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Город</label>
-                  <input v-model="form.city" class="glass-input" />
+                  <GlassInput v-model="form.city"  />
                 </div>
               </div>
               <div class="u-field">
@@ -230,8 +230,8 @@
             <span>экран {{ pageIndex }} / {{ pageCount }}</span>
           </div>
           <div class="cv-pager-rail__actions">
-            <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
-            <button type="button" class="a-btn-sm" @click="move('next')">{{ pagerNextLabel }}</button>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="move('prev')">← экран</GlassButton>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="move('next')">{{ pagerNextLabel }}</GlassButton>
           </div>
         </div>
       </main>

@@ -24,7 +24,7 @@
         <div class="auth-form-grid">
           <div class="auth-field">
             <label>Логин</label>
-            <input v-model="form.login" name="login" type="text" class="glass-input auth-input" placeholder="login" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" />
+            <GlassInput v-model="form.login" name="login" type="text" class=" auth-input" placeholder="login" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" />
           </div>
 
           <div class="auth-field">
@@ -34,7 +34,7 @@
 
           <div class="auth-field">
             <label>Новый пароль</label>
-            <input v-model="form.newPassword" name="newPassword" type="password" class="glass-input auth-input" placeholder="минимум 8 символов" required autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" />
+            <GlassInput v-model="form.newPassword" name="newPassword" type="password" class=" auth-input" placeholder="минимум 8 символов" required autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" />
           </div>
         </div>
 
@@ -44,7 +44,7 @@
           <span class="auth-progress__label">[ ОБНОВЛЯЕМ ДОСТУП ]</span>
           <span class="auth-progress__line"></span>
         </div>
-        <button type="submit" class="a-btn-save auth-submit" :disabled="loading">{{ loading ? 'Сброс…' : submitLabel }}</button>
+        <GlassButton variant="primary" type="submit" class=" auth-submit" :disabled="loading">{{ loading ? 'Сброс…' : submitLabel }}</GlassButton>
       </form>
 
       <div class="auth-links auth-links--single">

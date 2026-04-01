@@ -40,7 +40,7 @@
         <div class="u-form-section">
           <div class="u-field">
             <label class="u-field__label">Название проекта</label>
-            <input v-model="form.title" class="glass-input" type="text" placeholder="Название" @blur="save" />
+            <GlassInput v-model="form.title"  type="text" placeholder="Название" @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">Статус</label>
@@ -77,9 +77,9 @@
       <!-- ── Footer ──────────────────────────────────── -->
       <div class="aps-footer">
         <span v-if="savedAt" class="aps-saved">✓ сохранено {{ savedAt }}</span>
-        <button class="a-btn-save" :disabled="saving" @click="save">
+        <GlassButton variant="primary"  :disabled="saving" @click="save">
           {{ saving ? 'сохранение...' : 'сохранить настройки' }}
-        </button>
+        </GlassButton>
       </div>
 
     </template>

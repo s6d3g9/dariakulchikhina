@@ -9,7 +9,7 @@
       <!-- otherwise: raw JSON fallback -->
       <template v-else>
         <div class="flex justify-end mb-4">
-          <button class="a-btn-save" @click="save" :disabled="saving">{{ saving ? "..." : "сохранить" }}</button>
+          <GlassButton variant="primary"  @click="save" :disabled="saving">{{ saving ? "..." : "сохранить" }}</GlassButton>
         </div>
         <textarea
           v-model="rawJson"

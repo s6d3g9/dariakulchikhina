@@ -6,7 +6,7 @@
         <h3 class="ui-modules-matrix-title">модули ui</h3>
         <p class="ui-modules-matrix-copy">{{ syncNotice }}</p>
       </div>
-      <button type="button" class="a-btn-sm" @click="resetModules">сбросить</button>
+      <GlassButton variant="secondary" density="compact" type="button"  @click="resetModules">сбросить</GlassButton>
     </div>
 
     <div class="ui-modules-grid">

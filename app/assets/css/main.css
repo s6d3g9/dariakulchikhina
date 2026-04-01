@@ -7922,3 +7922,43 @@ html[data-concept="m3"] .modal-actions {
   gap: 8px !important;
 }
 
+
+/* =========================================================
+   3. MATERIAL 3: NAVIGATION & SIDEBAR (STRICT OVERRIDES)
+   ========================================================= */
+
+/* The sidebar container */
+html[data-concept="m3"] .ent-sidebar,
+html[data-concept="m3"] .cab-sidebar {
+  background: var(--sys-color-surface-container) !important;
+  border-right: 1px solid var(--sys-color-outline-variant) !important;
+  backdrop-filter: none !important; /* No glass */
+}
+
+/* Nav items are full pill shape, height 56px, margin horizontal to fit pill form */
+html[data-concept="m3"] .ent-nav-item,
+html[data-concept="m3"] .cab-nav-item {
+  height: 56px !important;
+  border-radius: 100px !important; /* Pill shape */
+  margin: 4px 12px !important;     /* Leaves horizontal space for the pill */
+  padding: 0 16px !important;
+  color: var(--sys-color-on-surface-variant) !important;
+  background: transparent !important;
+  border: none !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
+}
+
+html[data-concept="m3"] .ent-nav-item:hover,
+html[data-concept="m3"] .cab-nav-item:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent) !important;
+  color: var(--sys-color-on-surface) !important;
+}
+
+/* Active Nav Item */
+html[data-concept="m3"] .ent-nav-item.active,
+html[data-concept="m3"] .ent-nav-item.router-link-active,
+html[data-concept="m3"] .cab-nav-item.active,
+html[data-concept="m3"] .cab-nav-item.router-link-active {
+  background: var(--sys-color-secondary-container) !important;
+  color: var(--sys-color-on-secondary-container) !important;
+}

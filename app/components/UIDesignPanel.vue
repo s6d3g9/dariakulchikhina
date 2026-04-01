@@ -63,7 +63,7 @@
                     <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.2"/>
                     <path d="M8.5 8.5L12 12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                   </svg>
-                  <input v-model="searchQuery" class="glass-input glass-input--sm" placeholder="поиск…" type="text">
+                  <GlassInput v-model="searchQuery" class="glass-input --sm" placeholder="поиск…" type="text" />
                   <button v-if="searchQuery" type="button" class="dp-search-clear" @click="searchQuery = ''">✕</button>
                 </div>
                 <button v-if="designPanelModules.exportImport" type="button" class="dp-icon-btn" @click="showExport = !showExport" title="Экспорт / Импорт">
@@ -1201,8 +1201,8 @@
                 <div class="dp-col">
                   <div class="dp-col-label">Превью</div>
                   <div class="dp-live-preview" style="margin-top:0; flex-direction:column; gap:8px">
-                    <input
-                      class="glass-input"
+                    <GlassInput
+                      
                       placeholder="Текстовое поле"
                       :style="{
                         borderRadius: tokens.inputRadius + 'px',

@@ -23,7 +23,7 @@
         <div class="asup-cards" v-if="form.sup_items?.length">
           <div v-for="(s, idx) in form.sup_items" :key="idx" class="asup-card">
             <div class="asup-card-header">
-              <input v-model="s.name" class="glass-input" placeholder="название компании" @blur="save">
+              <GlassInput v-model="s.name"  placeholder="название компании" @blur="save" />
               <button class="asup-del" @click="removeSupplier(Number(idx))">×</button>
             </div>
             <div class="asup-card-rows">
@@ -43,15 +43,15 @@
               </div>
               <div class="asup-card-row">
                 <label class="asup-lbl">контакт</label>
-                <input v-model="s.contact" class="glass-input" placeholder="имя, телефон..." @blur="save">
+                <GlassInput v-model="s.contact"  placeholder="имя, телефон..." @blur="save" />
               </div>
               <div class="asup-card-row">
                 <label class="asup-lbl">email</label>
-                <input v-model="s.email" type="email" class="glass-input" @blur="save">
+                <GlassInput v-model="s.email" type="email"  @blur="save" />
               </div>
               <div class="asup-card-row">
                 <label class="asup-lbl">сайт</label>
-                <input v-model="s.website" class="glass-input" placeholder="https://..." @blur="save">
+                <GlassInput v-model="s.website"  placeholder="https://..." @blur="save" />
               </div>
               <div class="asup-card-row">
                 <label class="asup-lbl">статус</label>

@@ -24,12 +24,12 @@
         <div class="auth-form-grid">
           <div class="auth-field">
             <label>Логин</label>
-            <input v-model="form.login" name="login" type="text" class="glass-input auth-input" placeholder="login" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" />
+            <GlassInput v-model="form.login" name="login" type="text" class=" auth-input" placeholder="login" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" />
           </div>
 
           <div class="auth-field">
             <label>Пароль</label>
-            <input v-model="form.password" name="password" type="password" class="glass-input auth-input" placeholder="минимум 8 символов" required autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" />
+            <GlassInput v-model="form.password" name="password" type="password" class=" auth-input" placeholder="минимум 8 символов" required autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" />
           </div>
         </div>
 
@@ -38,7 +38,7 @@
           <span class="auth-progress__label">[ СОЗДАЕМ АККАУНТ ]</span>
           <span class="auth-progress__line"></span>
         </div>
-        <button type="submit" class="a-btn-save auth-submit" :disabled="loading">{{ loading ? 'Создание…' : submitLabel }}</button>
+        <GlassButton variant="primary" type="submit" class=" auth-submit" :disabled="loading">{{ loading ? 'Создание…' : submitLabel }}</GlassButton>
       </form>
 
       <div v-else class="seed-box">
@@ -46,7 +46,7 @@
         <p class="seed-copy">{{ successMeta }}</p>
         <textarea readonly class="glass-input seed-value" :value="recoveryPhrase" rows="4" />
         <div class="auth-actions">
-          <button type="button" class="a-btn-sm" @click="copyPhrase">Скопировать</button>
+          <GlassButton variant="secondary" density="compact" type="button"  @click="copyPhrase">Скопировать</GlassButton>
           <NuxtLink :to="successLoginPath" class="a-btn-save auth-link-btn">Перейти ко входу</NuxtLink>
         </div>
       </div>

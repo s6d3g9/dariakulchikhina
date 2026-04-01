@@ -23,7 +23,7 @@
         <div class="u-grid-2">
           <div class="u-field">
             <label class="u-field__label">версия комплекта</label>
-            <input v-model="form.wd_version" class="glass-input" placeholder="v1, v2..." @blur="save">
+            <GlassInput v-model="form.wd_version"  placeholder="v1, v2..." @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">дата выдачи</label>
@@ -35,7 +35,7 @@
           </div>
           <div class="u-field">
             <label class="u-field__label">масштаб чертежей</label>
-            <input v-model="form.wd_scale" class="glass-input" placeholder="1:50, 1:100..." @blur="save">
+            <GlassInput v-model="form.wd_scale"  placeholder="1:50, 1:100..." @blur="save" />
           </div>
           <div class="u-field u-field--full">
             <label class="u-field__label">комментарий архитектора</label>
@@ -52,7 +52,7 @@
           <div v-for="(sheet, idx) in form.wd_sheets" :key="idx" class="awd-sheet-item">
             <div class="awd-sheet-num">{{ Number(idx) + 1 }}</div>
             <div class="awd-sheet-body">
-              <input v-model="sheet.name" class="glass-input" placeholder="название листа" @blur="save">
+              <GlassInput v-model="sheet.name"  placeholder="название листа" @blur="save" />
               <div class="awd-sheet-row2">
                 <select v-model="sheet.type" class="u-status-sel" @change="save">
                   <option value="floor_plan">план этажа</option>

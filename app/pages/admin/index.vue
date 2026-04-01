@@ -5,7 +5,7 @@
       <span v-if="projects?.length">Выберите проект из списка</span>
       <span v-else-if="pending || isBootstrapping">[ LOADING... ]</span>
       <span v-else>Нет проектов — создайте первый</span>
-      <button v-if="!projects?.length && !pending && !isBootstrapping" class="a-btn-sm" style="margin-top:6px" @click="openCreate">+ создать проект</button>
+      <GlassButton variant="secondary" density="compact" v-if="!projects?.length && !pending && !isBootstrapping"  style="margin-top:6px" @click="openCreate">+ создать проект</GlassButton>
     </div>
     <Teleport to="body">
       <div v-if="showCreate" class="pj-backdrop" @click.self="closeCreate">
@@ -69,9 +69,9 @@
                 </div>
                 <div class="pj-form-field">
                   <label class="pj-form-label">Название проекта</label>
-                  <input
+                  <GlassInput
                     v-model="newProject.title"
-                    class="glass-input"
+                    
                     required
                     placeholder="Квартира Иванова — ул. Ленина, 10"
                     autofocus
@@ -80,9 +80,9 @@
                 </div>
                 <div class="pj-form-field">
                   <label class="pj-form-label">Slug (часть URL)</label>
-                  <input
+                  <GlassInput
                     v-model="newProject.slug"
-                    class="glass-input"
+                    
                     required
                     placeholder="ivanova-lenina-10"
                   />
@@ -117,15 +117,15 @@
 
               <p v-if="createError" class="pj-form-error">{{ createError }}</p>
               <div class="pj-modal-foot">
-                <button type="button" class="a-btn-sm" @click="closeCreate">отмена</button>
-                <button v-if="wizardStep > 1" type="button" class="a-btn-sm" @click="wizardStep--">← назад</button>
-                <button
+                <GlassButton variant="secondary" density="compact" type="button"  @click="closeCreate">отмена</GlassButton>
+                <GlassButton variant="secondary" density="compact" v-if="wizardStep > 1" type="button"  @click="wizardStep--">← назад</GlassButton>
+                <GlassButton variant="primary"
                   type="submit"
-                  class="a-btn-save"
+                  
                   :disabled="creating || (wizardStep === 1 && !newProject.projectType)"
                 >
                   {{ wizardStep < 3 ? 'далее →' : (creating ? '...' : 'создать проект') }}
-                </button>
+                </GlassButton>
               </div>
             </form>
           </div>

@@ -23,7 +23,7 @@
           class="asp2-tag" :class="{ 'asp2-tag--active': activeTag === tag }"
           @click="activeTag = activeTag === tag ? '' : tag"
         >{{ tag }}</button>
-        <input v-model="newTag" class="glass-input" placeholder="+ тег..." @keydown.enter.prevent="addTagFilter">
+        <GlassInput v-model="newTag"  placeholder="+ тег..." @keydown.enter.prevent="addTagFilter" />
       </div>
 
       <div v-if="filteredPhotos.length" class="asp2-grid">
@@ -36,10 +36,10 @@
             </div>
           </div>
           <div class="asp2-meta">
-            <input v-model="ph.caption" class="glass-input glass-input--inline" placeholder="подпись..." @blur="save">
+            <GlassInput v-model="ph.caption" class="glass-input --inline" placeholder="подпись..." @blur="save" />
             <div class="asp2-tags-row">
               <span v-for="t in ph.tags" :key="t" class="asp2-ph-tag">{{ t }}<button @click="removePhotoTag(ph, t)">×</button></span>
-              <input v-model="ph._newTag" class="glass-input glass-input--inline" placeholder="тег..." @keydown.enter.prevent="addPhotoTag(ph)">
+              <GlassInput v-model="ph._newTag" class="glass-input --inline" placeholder="тег..." @keydown.enter.prevent="addPhotoTag(ph)" />
             </div>
           </div>
         </div>

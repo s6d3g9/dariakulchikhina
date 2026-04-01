@@ -52,10 +52,10 @@
                 rows="2"
                 @blur="save"
               />
-              <input
+              <GlassInput
                 v-else
                 v-model="form[f.key]"
-                class="glass-input"
+                
                 type="text"
                 :placeholder="f.placeholder || ''"
                 @blur="save"
@@ -65,7 +65,7 @@
             <div v-for="cf in getCustomFields(section.key)" :key="cf.id" class="ass-upload-row">
               <label class="ass-field-label">{{ cf.label }}</label>
               <textarea v-if="cf.type === 'textarea'" v-model="form[cf.id]" class="glass-input" :placeholder="cf.placeholder || ''" rows="2" @blur="save"/>
-              <input v-else v-model="form[cf.id]" class="glass-input" type="text" :placeholder="cf.placeholder || ''" @blur="save"/>
+              <GlassInput v-else v-model="form[cf.id]"  type="text" :placeholder="cf.placeholder || ''" @blur="save"/>
             </div>
           </template>
 
@@ -100,10 +100,10 @@
                 rows="2"
                 @blur="save"
               />
-              <input
+              <GlassInput
                 v-else
                 v-model="form[f.key]"
-                class="glass-input"
+                
                 type="text"
                 :placeholder="f.placeholder || ''"
                 @blur="save"
@@ -116,21 +116,21 @@
               </div>
               <label class="ass-field-label">{{ cf.label }} <span class="asb-custom-badge">свой</span></label>
               <textarea v-if="cf.type === 'textarea'" v-model="form[cf.id]" class="glass-input" :placeholder="cf.placeholder || ''" rows="2" @blur="save"/>
-              <input v-else v-model="form[cf.id]" class="glass-input" type="text" :placeholder="cf.placeholder || ''" @blur="save"/>
+              <GlassInput v-else v-model="form[cf.id]"  type="text" :placeholder="cf.placeholder || ''" @blur="save"/>
             </div>
             <!-- Форма добавления вопроса -->
             <div v-if="addFieldOpen === section.key" class="asb-add-field-form">
-              <input
+              <GlassInput
                 v-model="addFieldLabel"
-                class="glass-input"
+                
                 type="text"
                 placeholder="Название вопроса"
                 @keydown.enter.prevent="confirmAddField(section.key)"
                 @keydown.escape="addFieldOpen = null"
               />
-              <input
+              <GlassInput
                 v-model="addFieldPlaceholder"
-                class="glass-input"
+                
                 type="text"
                 placeholder="Подсказка (необязательно)"
                 @keydown.escape="addFieldOpen = null"
@@ -140,8 +140,8 @@
                 <button type="button" class="asb-aftype-btn" :class="{'asb-aftype-btn--on': addFieldType === 'text'}" @click="addFieldType = 'text'">Однострочное</button>
               </div>
               <div class="asb-af-actions">
-                <button type="button" class="a-btn-sm" @click="confirmAddField(section.key)" :disabled="!addFieldLabel.trim()">Добавить</button>
-                <button type="button" class="a-btn-sm" style="opacity:.6" @click="addFieldOpen = null">Отмена</button>
+                <GlassButton variant="secondary" density="compact" type="button"  @click="confirmAddField(section.key)" :disabled="!addFieldLabel.trim()">Добавить</GlassButton>
+                <GlassButton variant="secondary" density="compact" type="button"  style="opacity:.6" @click="addFieldOpen = null">Отмена</GlassButton>
               </div>
             </div>
             <button v-else type="button" class="asb-add-field-btn" @click="openAddField(section.key)">+ добавить вопрос</button>

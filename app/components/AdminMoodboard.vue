@@ -30,7 +30,7 @@
         </div>
         <div class="u-field" style="margin-top:12px">
           <label class="u-field__label">ключевые слова (дополнительно)</label>
-          <input v-model="form.mb_keywords" class="glass-input" placeholder="минимализм, japandi, wabi-sabi..." @blur="save">
+          <GlassInput v-model="form.mb_keywords"  placeholder="минимализм, japandi, wabi-sabi..." @blur="save" />
         </div>
       </div>
 
@@ -62,7 +62,7 @@
                 <button class="amb-img-del" @click="removeImage(img)" title="удалить">×</button>
               </div>
             </div>
-            <input v-model="img.comment" class="glass-input glass-input--inline" placeholder="комментарий к фото..." @blur="save">
+            <GlassInput v-model="img.comment" class="glass-input --inline" placeholder="комментарий к фото..." @blur="save" />
           </div>
         </div>
         <div v-else class="amb-gallery-empty">
@@ -92,8 +92,8 @@
         <div class="amb-links-list" v-if="form.mb_links.length">
           <div v-for="(link, idx) in form.mb_links" :key="idx" class="amb-link-item">
             <span class="amb-link-icon">🔗</span>
-            <input v-model="link.url" class="glass-input" placeholder="https://..." @blur="save">
-            <input v-model="link.label" class="glass-input" placeholder="описание..." @blur="save">
+            <GlassInput v-model="link.url"  placeholder="https://..." @blur="save" />
+            <GlassInput v-model="link.label"  placeholder="описание..." @blur="save" />
             <button class="amb-link-del" @click="removeLink(Number(idx))">×</button>
           </div>
         </div>

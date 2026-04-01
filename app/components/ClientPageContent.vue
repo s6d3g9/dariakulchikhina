@@ -72,14 +72,14 @@
                 >
                   −
                 </button>
-                <input
-                  class="qty-input glass-input"
+                <GlassInput
+                  class="qty-input "
                   type="number"
                   min="0"
                   step="1"
                   :value="getQuestionCount(section.id, qi)"
                   @input="setQuestionCount(section.id, qi, ($event.target as HTMLInputElement).value)"
-                >
+                 />
                 <button
                   type="button"
                   class="qty-btn glass-chip"

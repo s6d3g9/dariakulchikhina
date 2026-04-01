@@ -156,11 +156,11 @@
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Услуги и прайс-лист</h2>
               <div class="cab-section-actions">
-                <button v-if="!services.length" class="a-btn-save" @click="initFromTemplates">
+                <GlassButton variant="primary" v-if="!services.length"  @click="initFromTemplates">
                   Загрузить шаблон (Москва)
-                </button>
-                <button class="a-btn-sm" :disabled="serviceCardSaving" @click="openServiceCatalog('create')">＋ Из каталога</button>
-                <button class="a-btn-sm" :disabled="serviceCardSaving" @click="createServiceCard">＋ Своя услуга</button>
+                </GlassButton>
+                <GlassButton variant="secondary" density="compact"  :disabled="serviceCardSaving" @click="openServiceCatalog('create')">＋ Из каталога</GlassButton>
+                <GlassButton variant="secondary" density="compact"  :disabled="serviceCardSaving" @click="createServiceCard">＋ Своя услуга</GlassButton>
                 <span class="cab-section-note">Изменения сохраняются автоматически</span>
               </div>
             </div>
@@ -176,7 +176,7 @@
                 </div>
                 <div class="svc-catalog__head-actions">
                   <span class="svc-catalog__count">{{ filteredServiceCatalogEntries.length }} из {{ DESIGNER_SERVICE_TEMPLATES.length }}</span>
-                  <button type="button" class="a-btn-sm" @click="closeServiceCatalog">закрыть</button>
+                  <GlassButton variant="secondary" density="compact" type="button"  @click="closeServiceCatalog">закрыть</GlassButton>
                 </div>
               </div>
               <p class="svc-catalog__note">{{ serviceCatalogMode === 'create' ? 'Сначала добавьте услугу из каталога, потом настройте свою цену и срок. Пакеты будут использовать уже отредактированные значения.' : 'Выберите другую типовую услугу. После замены можно сразу скорректировать цену, описание, срок и категорию под конкретного дизайнера.' }}</p>
@@ -187,7 +187,7 @@
               <div class="svc-catalog-toolbar">
                 <div class="u-field svc-catalog-toolbar__search">
                   <label class="u-field__label">Поиск по услугам</label>
-                  <input v-model="serviceCatalogSearch" class="glass-input" placeholder="Название, описание, категория" />
+                  <GlassInput v-model="serviceCatalogSearch"  placeholder="Название, описание, категория" />
                 </div>
                 <div class="svc-catalog-toolbar__filters">
                   <button
@@ -287,9 +287,9 @@
                         <span class="svc-price-caption">текущий тариф</span>
                         <div class="svc-price svc-price-inline" @click.stop="startInlinePrice(svc)">
                           <template v-if="inlinePriceKey === getServiceActionKey(svc)">
-                            <input
+                            <GlassInput
                               v-model.number="inlinePriceVal"
-                              class="glass-input glass-input--inline svc-price-inline-input"
+                              class="glass-input --inline svc-price-inline-input"
                               type="number"
                               min="0"
                               @blur="commitInlinePrice(svc)"
@@ -314,11 +314,11 @@
                       </div>
                       <div class="svc-card-editor__actions">
                         <span class="cab-autosave-status" :class="autosaveStatusClass(serviceCardSaveState)">{{ autosaveStatusLabel(serviceCardSaveState) }}</span>
-                        <button type="button" class="a-btn-sm" :disabled="serviceCardSaving" @click="duplicateServiceCard(svc)">дублировать</button>
-                        <button type="button" class="a-btn-sm" :disabled="serviceCardSaving" @click="moveServiceCard(svc, -1)">выше</button>
-                        <button type="button" class="a-btn-sm" :disabled="serviceCardSaving" @click="moveServiceCard(svc, 1)">ниже</button>
-                        <button type="button" class="a-btn-sm a-btn-danger" :disabled="serviceCardSaving" @click="removeServiceCard(svc)">удалить</button>
-                        <button type="button" class="a-btn-sm" @click="closeServiceCardEditor">свернуть</button>
+                        <GlassButton variant="secondary" density="compact" type="button"  :disabled="serviceCardSaving" @click="duplicateServiceCard(svc)">дублировать</GlassButton>
+                        <GlassButton variant="secondary" density="compact" type="button"  :disabled="serviceCardSaving" @click="moveServiceCard(svc, -1)">выше</GlassButton>
+                        <GlassButton variant="secondary" density="compact" type="button"  :disabled="serviceCardSaving" @click="moveServiceCard(svc, 1)">ниже</GlassButton>
+                        <GlassButton variant="danger" density="compact" type="button"  :disabled="serviceCardSaving" @click="removeServiceCard(svc)">удалить</GlassButton>
+                        <GlassButton variant="secondary" density="compact" type="button"  @click="closeServiceCardEditor">свернуть</GlassButton>
                       </div>
                     </div>
                     <p v-if="serviceCardError" class="cab-inline-error">{{ serviceCardError }}</p>
@@ -330,13 +330,13 @@
                             <strong>{{ getServiceTemplateLabel(serviceCardDraft) }}</strong>
                             <span>{{ getServiceTemplateHint(serviceCardDraft) }}</span>
                           </div>
-                          <button type="button" class="a-btn-sm" :disabled="serviceCardSaving" @click="openServiceCatalog('replace', svc)">выбрать из каталога</button>
+                          <GlassButton variant="secondary" density="compact" type="button"  :disabled="serviceCardSaving" @click="openServiceCatalog('replace', svc)">выбрать из каталога</GlassButton>
                         </div>
                         <p v-if="serviceEditorUsage.total" class="svc-template-switch__warning">{{ formatServiceUsageHint(serviceEditorUsage) }}</p>
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Название</label>
-                        <input v-model="serviceCardDraft.title" class="glass-input" placeholder="Название услуги" @blur="queueServiceCardSave" />
+                        <GlassInput v-model="serviceCardDraft.title"  placeholder="Название услуги" @blur="queueServiceCardSave" />
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Категория</label>
@@ -346,7 +346,7 @@
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Цена</label>
-                        <input v-model.number="serviceCardDraft.price" type="number" min="0" class="glass-input" @blur="queueServiceCardSave" />
+                        <GlassInput v-model.number="serviceCardDraft.price" type="number" min="0"  @blur="queueServiceCardSave" />
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Единица</label>
@@ -356,7 +356,7 @@
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Срок, дней</label>
-                        <input v-model.number="serviceCardDraft.leadTimeDays" type="number" min="0" class="glass-input" @blur="queueServiceCardSave" />
+                        <GlassInput v-model.number="serviceCardDraft.leadTimeDays" type="number" min="0"  @blur="queueServiceCardSave" />
                       </div>
                       <div class="u-field u-field--full">
                         <label class="u-field__label">Описание</label>
@@ -381,10 +381,10 @@
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Пакеты услуг</h2>
               <div class="cab-section-actions">
-                <button v-if="!packages.length" class="a-btn-save" @click="initPackages">
+                <GlassButton variant="primary" v-if="!packages.length"  @click="initPackages">
                   Загрузить стандартные пакеты
-                </button>
-                <button class="a-btn-sm" :disabled="packageCardSaving" @click="createPackageCard">＋ Пакет</button>
+                </GlassButton>
+                <GlassButton variant="secondary" density="compact"  :disabled="packageCardSaving" @click="createPackageCard">＋ Пакет</GlassButton>
                 <span class="cab-section-note">Изменения сохраняются автоматически</span>
               </div>
             </div>
@@ -454,11 +454,11 @@
                     </div>
                     <div class="svc-card-editor__actions">
                       <span class="cab-autosave-status" :class="autosaveStatusClass(packageCardSaveState)">{{ autosaveStatusLabel(packageCardSaveState) }}</span>
-                      <button type="button" class="a-btn-sm" :disabled="packageCardSaving" @click="duplicatePackageCard(pkg)">дублировать</button>
-                      <button type="button" class="a-btn-sm" :disabled="packageCardSaving" @click="movePackageCard(pkg, -1)">выше</button>
-                      <button type="button" class="a-btn-sm" :disabled="packageCardSaving" @click="movePackageCard(pkg, 1)">ниже</button>
-                      <button type="button" class="a-btn-sm a-btn-danger" :disabled="packageCardSaving" @click="removePackageCard(pkg)">удалить</button>
-                      <button type="button" class="a-btn-sm" @click="closePackageCardEditor">свернуть</button>
+                      <GlassButton variant="secondary" density="compact" type="button"  :disabled="packageCardSaving" @click="duplicatePackageCard(pkg)">дублировать</GlassButton>
+                      <GlassButton variant="secondary" density="compact" type="button"  :disabled="packageCardSaving" @click="movePackageCard(pkg, -1)">выше</GlassButton>
+                      <GlassButton variant="secondary" density="compact" type="button"  :disabled="packageCardSaving" @click="movePackageCard(pkg, 1)">ниже</GlassButton>
+                      <GlassButton variant="danger" density="compact" type="button"  :disabled="packageCardSaving" @click="removePackageCard(pkg)">удалить</GlassButton>
+                      <GlassButton variant="secondary" density="compact" type="button"  @click="closePackageCardEditor">свернуть</GlassButton>
                     </div>
                   </div>
                   <p v-if="packageCardError" class="cab-inline-error">{{ packageCardError }}</p>
@@ -466,11 +466,11 @@
                   <div class="svc-card-editor__grid">
                     <div class="u-field">
                       <label class="u-field__label">Название пакета</label>
-                        <input v-model="packageCardDraft.title" class="glass-input" placeholder="Название пакета" @blur="queuePackageCardSave" />
+                        <GlassInput v-model="packageCardDraft.title"  placeholder="Название пакета" @blur="queuePackageCardSave" />
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Цена за м²</label>
-                        <input v-model.number="packageCardDraft.pricePerSqm" type="number" min="0" class="glass-input" @blur="queuePackageCardSave" />
+                        <GlassInput v-model.number="packageCardDraft.pricePerSqm" type="number" min="0"  @blur="queuePackageCardSave" />
                     </div>
                     <div class="u-field u-field--full">
                       <label class="u-field__label">Описание</label>
@@ -529,10 +529,10 @@
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Подписки и абонементы</h2>
               <div class="cab-section-actions">
-                <button v-if="!subscriptions.length" class="a-btn-save" @click="initSubs">
+                <GlassButton variant="primary" v-if="!subscriptions.length"  @click="initSubs">
                   Загрузить шаблоны подписок
-                </button>
-                <button class="a-btn-sm" :disabled="subscriptionCardSaving" @click="createSubscriptionCard">＋ Подписка</button>
+                </GlassButton>
+                <GlassButton variant="secondary" density="compact"  :disabled="subscriptionCardSaving" @click="createSubscriptionCard">＋ Подписка</GlassButton>
                 <span class="cab-section-note">Изменения сохраняются автоматически</span>
               </div>
             </div>
@@ -593,18 +593,18 @@
                       </div>
                       <div class="sub-card-editor__actions">
                         <span class="cab-autosave-status" :class="autosaveStatusClass(subscriptionCardSaveState)">{{ autosaveStatusLabel(subscriptionCardSaveState) }}</span>
-                        <button type="button" class="a-btn-sm" :disabled="subscriptionCardSaving" @click="duplicateSubscriptionCard(sub)">дублировать</button>
-                        <button type="button" class="a-btn-sm" :disabled="subscriptionCardSaving" @click="moveSubscriptionCard(sub, -1)">выше</button>
-                        <button type="button" class="a-btn-sm" :disabled="subscriptionCardSaving" @click="moveSubscriptionCard(sub, 1)">ниже</button>
-                        <button type="button" class="a-btn-sm a-btn-danger" :disabled="subscriptionCardSaving" @click="removeSubscriptionCard(sub)">удалить</button>
-                        <button type="button" class="a-btn-sm" @click="closeSubscriptionCardEditor">свернуть</button>
+                        <GlassButton variant="secondary" density="compact" type="button"  :disabled="subscriptionCardSaving" @click="duplicateSubscriptionCard(sub)">дублировать</GlassButton>
+                        <GlassButton variant="secondary" density="compact" type="button"  :disabled="subscriptionCardSaving" @click="moveSubscriptionCard(sub, -1)">выше</GlassButton>
+                        <GlassButton variant="secondary" density="compact" type="button"  :disabled="subscriptionCardSaving" @click="moveSubscriptionCard(sub, 1)">ниже</GlassButton>
+                        <GlassButton variant="danger" density="compact" type="button"  :disabled="subscriptionCardSaving" @click="removeSubscriptionCard(sub)">удалить</GlassButton>
+                        <GlassButton variant="secondary" density="compact" type="button"  @click="closeSubscriptionCardEditor">свернуть</GlassButton>
                       </div>
                     </div>
                     <p v-if="subscriptionCardError" class="cab-inline-error">{{ subscriptionCardError }}</p>
                     <div class="svc-card-editor__grid">
                       <div class="u-field">
                         <label class="u-field__label">Название</label>
-                        <input v-model="subscriptionCardDraft.title" class="glass-input" placeholder="Название подписки" @blur="queueSubscriptionCardSave" />
+                        <GlassInput v-model="subscriptionCardDraft.title"  placeholder="Название подписки" @blur="queueSubscriptionCardSave" />
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Период</label>
@@ -614,11 +614,11 @@
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Цена</label>
-                        <input v-model.number="subscriptionCardDraft.price" type="number" min="0" class="glass-input" @blur="queueSubscriptionCardSave" />
+                        <GlassInput v-model.number="subscriptionCardDraft.price" type="number" min="0"  @blur="queueSubscriptionCardSave" />
                       </div>
                       <div class="u-field">
                         <label class="u-field__label">Скидка</label>
-                        <input v-model.number="subscriptionCardDraft.discount" type="number" min="0" max="100" class="glass-input" @blur="queueSubscriptionCardSave" />
+                        <GlassInput v-model.number="subscriptionCardDraft.discount" type="number" min="0" max="100"  @blur="queueSubscriptionCardSave" />
                       </div>
                       <div class="u-field u-field--full">
                         <label class="u-field__label">Описание</label>
@@ -628,12 +628,12 @@
                     <div class="sub-card-editor__limits">
                       <div class="sub-card-editor__limits-head">
                         <strong>Лимиты</strong>
-                        <button type="button" class="a-btn-sm" @click="addSubscriptionCardDraftLimit(); queueSubscriptionCardSave()">＋ лимит</button>
+                        <GlassButton variant="secondary" density="compact" type="button"  @click="addSubscriptionCardDraftLimit(); queueSubscriptionCardSave()">＋ лимит</GlassButton>
                       </div>
                       <div v-if="Object.keys(subscriptionCardDraft.limits || {}).length" class="sub-limits-grid">
                         <div v-for="(val, lk) in subscriptionCardDraft.limits" :key="`sub-inline-limit-${lk}`" class="sub-limit-row">
-                          <input :value="lk" class="glass-input svc-inp" @change="renameSubscriptionDraftLimit(String(lk), ($event.target as HTMLInputElement).value); queueSubscriptionCardSave()" />
-                          <input :value="val" class="glass-input svc-inp svc-inp--num" type="number" min="0" @blur="queueSubscriptionCardSave" @input="updateSubscriptionDraftLimit(String(lk), Number(($event.target as HTMLInputElement).value))" />
+                          <GlassInput :value="lk" class=" svc-inp" @change="renameSubscriptionDraftLimit(String(lk), ($event.target as HTMLInputElement).value); queueSubscriptionCardSave()" />
+                          <GlassInput :value="val" class=" svc-inp svc-inp--num" type="number" min="0" @blur="queueSubscriptionCardSave" @input="updateSubscriptionDraftLimit(String(lk), Number(($event.target as HTMLInputElement).value))" />
                           <button type="button" class="svc-del" @click="removeSubscriptionDraftLimit(String(lk)); queueSubscriptionCardSave()">✕</button>
                         </div>
                       </div>
@@ -693,7 +693,7 @@
             <div class="u-modal__row2" style="margin-bottom:12px">
               <div class="u-field">
                 <label class="u-field__label">Поиск</label>
-                <input v-model="designerDocSearch" class="glass-input" placeholder="Название, заметка" />
+                <GlassInput v-model="designerDocSearch"  placeholder="Название, заметка" />
               </div>
               <div class="u-field">
                 <label class="u-field__label">Фильтр категории</label>
@@ -716,7 +716,7 @@
               <div class="u-modal__row2">
                 <div class="u-field">
                   <label class="u-field__label">Название</label>
-                  <input v-model="newDesignerDocTitle" class="glass-input" placeholder="Название документа" />
+                  <GlassInput v-model="newDesignerDocTitle"  placeholder="Название документа" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Категория</label>
@@ -726,7 +726,7 @@
                 </div>
                 <div class="u-field u-field--full">
                   <label class="u-field__label">Примечание</label>
-                  <input v-model="newDesignerDocNotes" class="glass-input" placeholder="Необязательно" />
+                  <GlassInput v-model="newDesignerDocNotes"  placeholder="Необязательно" />
                 </div>
               </div>
               <div style="margin-top: 12px;">
@@ -770,7 +770,7 @@
             <div class="cab-section" data-section="projects">
             <div class="u-section-title" :class="{ 'ds-section-head--brutalist': isBrutalistDesignerCabinetMode }">
               <h2>Мои проекты</h2>
-              <button class="a-btn-save" @click="showNewProjectModal = true">＋ Новый проект</button>
+              <GlassButton variant="primary"  @click="showNewProjectModal = true">＋ Новый проект</GlassButton>
             </div>
             <p v-if="projectEditError" class="cab-inline-error">{{ projectEditError }}</p>
             <p v-if="projectEditSuccess" class="cab-inline-success">{{ projectEditSuccess }}</p>
@@ -784,11 +784,11 @@
               <div class="u-modal__body">
                 <div class="u-field">
                   <label class="u-field__label">Название проекта *</label>
-                  <input v-model="newProject.title" class="glass-input" placeholder="Квартира на Арбате" @input="newProject.slug = autoSlug(newProject.title)" />
+                  <GlassInput v-model="newProject.title"  placeholder="Квартира на Арбате" @input="newProject.slug = autoSlug(newProject.title)" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Slug (URL)</label>
-                  <input v-model="newProject.slug" class="glass-input" placeholder="kvartira-na-arbate" />
+                  <GlassInput v-model="newProject.slug"  placeholder="kvartira-na-arbate" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Пакет услуг</label>
@@ -802,11 +802,11 @@
                 <div class="u-modal__row2">
                   <div class="u-field">
                     <label class="u-field__label">Цена за м²</label>
-                    <input v-model.number="newProject.pricePerSqm" class="glass-input" type="number" min="0" />
+                    <GlassInput v-model.number="newProject.pricePerSqm"  type="number" min="0" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Площадь (м²)</label>
-                    <input v-model.number="newProject.area" class="glass-input" type="number" min="0" />
+                    <GlassInput v-model.number="newProject.area"  type="number" min="0" />
                   </div>
                 </div>
                 <div v-if="newProject.pricePerSqm && newProject.area" class="proj-total glass-surface" :class="{ 'proj-total--brutalist': isBrutalistDesignerCabinetMode }">
@@ -819,12 +819,12 @@
                 </div>
               </div>
               <div class="u-modal__foot">
-                <button
-                  class="a-btn-save"
+                <GlassButton variant="primary"
+                  
                   :disabled="creatingProject || !newProject.title.trim() || !newProject.slug.trim()"
                   @click="doCreateProject"
-                >{{ creatingProject ? 'Создание…' : 'Создать проект' }}</button>
-                <button class="a-btn-sm" @click="showNewProjectModal = false">Отмена</button>
+                >{{ creatingProject ? 'Создание…' : 'Создать проект' }}</GlassButton>
+                <GlassButton variant="secondary" density="compact"  @click="showNewProjectModal = false">Отмена</GlassButton>
               </div>
             </div>
 
@@ -841,8 +841,8 @@
                   <span class="u-status" :class="`u-status--${dp.status}`">
                     {{ DESIGNER_PROJECT_STATUS_LABELS[dp.status as keyof typeof DESIGNER_PROJECT_STATUS_LABELS] || dp.status }}
                   </span>
-                  <button type="button" class="a-btn-sm" @click="startEditDesignerProject(dp)">редактировать</button>
-                  <NuxtLink v-if="dp.projectSlug" :to="`/admin/projects/${dp.projectSlug}`" class="a-btn-sm proj-card-admin-link">→ управление проектом</NuxtLink>
+                  <GlassButton variant="secondary" density="compact" type="button"  @click="startEditDesignerProject(dp)">редактировать</GlassButton>
+                  <GlassButton as="NuxtLink" v-if="dp.projectSlug" :to="`/admin/projects/${dp.projectSlug}`" variant="secondary" density="compact" class="proj-card-admin-link">→ управление проектом</GlassButton>
                 </div>
                 <div class="proj-card-meta">
                   <span v-if="dp.packageKey" class="proj-card-pkg">{{ getPackageTitle(dp.packageKey) }}</span>
@@ -857,7 +857,7 @@
                   <div class="u-modal__row2">
                     <div class="u-field">
                       <label class="u-field__label">Название проекта</label>
-                      <input v-model="projectEdit.title" class="glass-input" @blur="queueProjectEditSave" />
+                      <GlassInput v-model="projectEdit.title"  @blur="queueProjectEditSave" />
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Статус</label>
@@ -878,15 +878,15 @@
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Цена за м²</label>
-                      <input v-model.number="projectEdit.pricePerSqm" type="number" min="0" class="glass-input" @blur="queueProjectEditSave" />
+                      <GlassInput v-model.number="projectEdit.pricePerSqm" type="number" min="0"  @blur="queueProjectEditSave" />
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Площадь (м²)</label>
-                      <input v-model.number="projectEdit.area" type="number" min="0" class="glass-input" @blur="queueProjectEditSave" />
+                      <GlassInput v-model.number="projectEdit.area" type="number" min="0"  @blur="queueProjectEditSave" />
                     </div>
                     <div class="u-field">
                       <label class="u-field__label">Итого</label>
-                      <input :value="((projectEdit.pricePerSqm || 0) * (projectEdit.area || 0)).toLocaleString('ru-RU') + ' ₽'" class="glass-input" readonly />
+                      <GlassInput :value="((projectEdit.pricePerSqm || 0) * (projectEdit.area || 0)).toLocaleString('ru-RU') + ' ₽'"  readonly />
                     </div>
                   </div>
                   <div class="u-field" style="margin-top:8px">
@@ -896,7 +896,7 @@
                 </div>
                 <div class="u-modal__foot">
                   <span class="cab-autosave-status" :class="autosaveStatusClass(projectEditState)">{{ autosaveStatusLabel(projectEditState) }}</span>
-                  <button type="button" class="a-btn-sm" @click="cancelEditDesignerProject">свернуть</button>
+                  <GlassButton variant="secondary" density="compact" type="button"  @click="cancelEditDesignerProject">свернуть</GlassButton>
                 </div>
               </div>
 
@@ -1044,35 +1044,35 @@
                 <div class="u-modal__row2">
                   <div class="u-field">
                     <label class="u-field__label">Имя / Студия *</label>
-                    <input v-model="form.name" class="glass-input" required @blur="queueProfileAutosave" />
+                    <GlassInput v-model="form.name"  required @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Компания</label>
-                    <input v-model="form.companyName" class="glass-input" placeholder="ООО / ИП…" @blur="queueProfileAutosave" />
+                    <GlassInput v-model="form.companyName"  placeholder="ООО / ИП…" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Телефон</label>
-                    <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" @blur="queueProfileAutosave" />
+                    <GlassInput v-model="form.phone"  type="tel" placeholder="+7 (___) ___-__-__" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Email</label>
-                    <input v-model="form.email" class="glass-input" type="email" placeholder="mail@example.com" @blur="queueProfileAutosave" />
+                    <GlassInput v-model="form.email"  type="email" placeholder="mail@example.com" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Telegram</label>
-                    <input v-model="form.telegram" class="glass-input" placeholder="@username" @blur="queueProfileAutosave" />
+                    <GlassInput v-model="form.telegram"  placeholder="@username" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Сайт / портфолио</label>
-                    <input v-model="form.website" class="glass-input" placeholder="https://…" @blur="queueProfileAutosave" />
+                    <GlassInput v-model="form.website"  placeholder="https://…" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Город</label>
-                    <input v-model="form.city" class="glass-input" placeholder="Москва" @blur="queueProfileAutosave" />
+                    <GlassInput v-model="form.city"  placeholder="Москва" @blur="queueProfileAutosave" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Опыт работы</label>
-                    <input v-model="form.experience" class="glass-input" placeholder="10 лет" @blur="queueProfileAutosave" />
+                    <GlassInput v-model="form.experience"  placeholder="10 лет" @blur="queueProfileAutosave" />
                   </div>
                 </div>
               </div>
@@ -1113,8 +1113,8 @@
             <span>экран {{ pageIndex }} / {{ pageCount }}</span>
           </div>
           <div class="cv-pager-rail__actions">
-            <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
-            <button type="button" class="a-btn-sm" @click="move('next')">{{ pagerNextLabel }}</button>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="move('prev')">← экран</GlassButton>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="move('next')">{{ pagerNextLabel }}</GlassButton>
           </div>
         </div>
     </main>

@@ -63,7 +63,7 @@
         <div class="ass-upload-zone">
           <div class="ass-upload-row">
             <label class="ass-field-label">номер договора</label>
-            <input v-model="form.contract_number" class="glass-input" placeholder="ДОГ-2025-001" @blur="save">
+            <GlassInput v-model="form.contract_number"  placeholder="ДОГ-2025-001" @blur="save" />
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">дата договора</label>
@@ -86,7 +86,7 @@
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">стороны договора</label>
-            <input v-model="form.contract_parties" class="glass-input" placeholder="ИП Иванова — ООО Заказчик" @blur="save">
+            <GlassInput v-model="form.contract_parties"  placeholder="ИП Иванова — ООО Заказчик" @blur="save" />
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">файл договора</label>
@@ -103,7 +103,7 @@
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">примечания</label>
-            <input v-model="form.contract_notes" class="glass-input" @blur="save" />
+            <GlassInput v-model="form.contract_notes"  @blur="save" />
           </div>
         </div>
       </div>
@@ -115,11 +115,11 @@
         <div class="ass-upload-zone">
           <div class="ass-upload-row">
             <label class="ass-field-label">сумма инвойса</label>
-            <input v-model="form.invoice_amount" class="glass-input" type="text" placeholder="₽ 250 000" @blur="save">
+            <GlassInput v-model="form.invoice_amount"  type="text" placeholder="₽ 250 000" @blur="save" />
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">% аванса</label>
-            <input v-model="form.invoice_advance_pct" class="glass-input" type="text" placeholder="50%" @blur="save">
+            <GlassInput v-model="form.invoice_advance_pct"  type="text" placeholder="50%" @blur="save" />
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">дата выставления</label>
@@ -153,7 +153,7 @@
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">реквизиты оплаты</label>
-            <input v-model="form.invoice_payment_details" class="glass-input"
+            <GlassInput v-model="form.invoice_payment_details" 
               placeholder="счёт, банк, назначение платежа..." @blur="save" />
           </div>
         </div>
@@ -165,21 +165,21 @@
         <div class="ass-upload-zone">
           <div class="ass-upload-row">
             <label class="ass-field-label">объём работ</label>
-            <input v-model="form.tor_scope" class="glass-input"
+            <GlassInput v-model="form.tor_scope" 
               placeholder="что входит в проект: концепция, 3D, РД, авторский надзор..." @blur="save" />
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">исключения</label>
-            <input v-model="form.tor_exclusions" class="glass-input"
+            <GlassInput v-model="form.tor_exclusions" 
               placeholder="что не входит..." @blur="save" />
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">сроки проектирования</label>
-            <input v-model="form.tor_timeline" class="glass-input" placeholder="например: 8 недель от старта" @blur="save">
+            <GlassInput v-model="form.tor_timeline"  placeholder="например: 8 недель от старта" @blur="save" />
           </div>
           <div class="ass-upload-row">
             <label class="ass-field-label">формат результата</label>
-            <input v-model="form.tor_deliverables" class="glass-input"
+            <GlassInput v-model="form.tor_deliverables" 
               placeholder="PDF, DWG, 3D-файлы, BIM..." @blur="save" />
           </div>
         </div>

@@ -30,11 +30,11 @@
           </div>
           <div class="u-field">
             <label class="u-field__label">клиент (ФИО)</label>
-            <input v-model="form.cso_client_name" class="glass-input" placeholder="Иванов Иван Иванович" @blur="save">
+            <GlassInput v-model="form.cso_client_name"  placeholder="Иванов Иван Иванович" @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">версия акта</label>
-            <input v-model="form.cso_version" class="glass-input" placeholder="v1" @blur="save">
+            <GlassInput v-model="form.cso_version"  placeholder="v1" @blur="save" />
           </div>
           <div class="u-field u-field--full">
             <label class="u-field__label">комментарий клиента</label>

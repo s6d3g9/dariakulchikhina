@@ -6,15 +6,15 @@
       <div class="ccd-rows">
         <div class="ccd-row">
           <label class="ccd-lbl">ФИО</label>
-          <input v-model="form.fio" class="glass-input" type="text" placeholder="Фамилия Имя Отчество" @blur="save" />
+          <GlassInput v-model="form.fio"  type="text" placeholder="Фамилия Имя Отчество" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Телефон</label>
-          <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" @blur="save" />
+          <GlassInput v-model="form.phone"  type="tel" placeholder="+7 (___) ___-__-__" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Email</label>
-          <input v-model="form.email" class="glass-input" type="email" placeholder="name@example.com" @blur="save" />
+          <GlassInput v-model="form.email"  type="email" placeholder="name@example.com" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Мессенджер</label>
@@ -33,7 +33,7 @@
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Ник в мессенджере</label>
-          <input v-model="form.messengerNick" class="glass-input" type="text" placeholder="@username" @blur="save" />
+          <GlassInput v-model="form.messengerNick"  type="text" placeholder="@username" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Предпочтительный способ связи</label>
@@ -89,19 +89,19 @@
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Площадь (м²)</label>
-          <input v-model="form.objectArea" class="glass-input" type="text" placeholder="85" @blur="save" />
+          <GlassInput v-model="form.objectArea"  type="text" placeholder="85" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Количество комнат</label>
-          <input v-model="form.roomCount" class="glass-input" type="text" placeholder="3" @blur="save" />
+          <GlassInput v-model="form.roomCount"  type="text" placeholder="3" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Этаж</label>
-          <input v-model="form.floor" class="glass-input" type="text" placeholder="7" @blur="save" />
+          <GlassInput v-model="form.floor"  type="text" placeholder="7" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Высота потолков (м)</label>
-          <input v-model="form.ceilingHeight" class="glass-input" type="text" placeholder="2.7" @blur="save" />
+          <GlassInput v-model="form.ceilingHeight"  type="text" placeholder="2.7" @blur="save" />
         </div>
         <div class="ccd-row">
           <label class="ccd-lbl">Балкон / лоджия</label>

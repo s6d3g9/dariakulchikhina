@@ -58,19 +58,19 @@
           </div>
           <div class="u-field">
             <label class="u-field__label">генеральный подрядчик</label>
-            <input v-model="form.cp_contractor" class="glass-input" placeholder="компания / ФИО" @blur="save">
+            <GlassInput v-model="form.cp_contractor"  placeholder="компания / ФИО" @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">авторский надзор</label>
-            <input v-model="form.cp_supervisor" class="glass-input" placeholder="ФИО / компания" @blur="save">
+            <GlassInput v-model="form.cp_supervisor"  placeholder="ФИО / компания" @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">общий бюджет ₽</label>
-            <input v-model.number="form.cp_budget_total" type="number" min="0" class="glass-input" placeholder="0" @blur="save">
+            <GlassInput v-model.number="form.cp_budget_total" type="number" min="0"  placeholder="0" @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">освоено (факт) ₽</label>
-            <input v-model.number="form.cp_budget_spent" type="number" min="0" class="glass-input" placeholder="0" @blur="save">
+            <GlassInput v-model.number="form.cp_budget_spent" type="number" min="0"  placeholder="0" @blur="save" />
           </div>
           <div class="u-field u-field--full">
             <label class="u-field__label">примечания</label>
@@ -192,11 +192,11 @@
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">подрядчик</label>
-                  <input v-model="stage.contractor" class="glass-input" placeholder="компания / ФИО" @blur="save">
+                  <GlassInput v-model="stage.contractor"  placeholder="компания / ФИО" @blur="save" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">бюджет этапа ₽</label>
-                  <input v-model.number="stage.budget" type="number" min="0" class="glass-input" placeholder="0" @blur="save">
+                  <GlassInput v-model.number="stage.budget" type="number" min="0"  placeholder="0" @blur="save" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">дата начала</label>
@@ -226,11 +226,11 @@
                         @click="cycleTaskStatus(task)"
                         :title="taskStatusLabel(task.status)"
                       >{{ taskStatusIcon(task.status) }}</button>
-                      <input v-model="task.title" class="glass-input acp2-task-title" placeholder="задача..." @blur="save">
+                      <GlassInput v-model="task.title" class=" acp2-task-title" placeholder="задача..." @blur="save" />
                       <AppDatePicker v-model="task.dueDate" model-type="iso" input-class="acp2-task-date" @update:model-value="save" />
                       <button class="acp2-task-del" @click="removeTask(stage, ti)">×</button>
                     </div>
-                    <input v-model="task.notes" class="glass-input acp2-task-notes" placeholder="заметка..." @blur="save">
+                    <GlassInput v-model="task.notes" class=" acp2-task-notes" placeholder="заметка..." @blur="save" />
                   </div>
                 </div>
                 <div v-else class="acp2-tasks-empty">Задачи не добавлены</div>

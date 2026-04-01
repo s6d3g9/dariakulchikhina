@@ -32,17 +32,17 @@
           <div v-for="(o, idx) in form.ps_orders" :key="idx" class="aps-order" :class="{ 'aps-order--done': o.status === 'received' }">
             <div class="aps-order-head">
               <span class="aps-order-num">#{{ Number(idx) + 1 }}</span>
-              <input v-model="o.name" class="glass-input" placeholder="наименование заказа" @blur="save">
+              <GlassInput v-model="o.name"  placeholder="наименование заказа" @blur="save" />
               <button class="aps-del" @click="removeOrder(Number(idx))">×</button>
             </div>
             <div class="aps-order-details">
               <div class="aps-order-field">
                 <label class="aps-lbl">поставщик</label>
-                <input v-model="o.supplier" class="glass-input" @blur="save">
+                <GlassInput v-model="o.supplier"  @blur="save" />
               </div>
               <div class="aps-order-field">
                 <label class="aps-lbl">номер заказа</label>
-                <input v-model="o.orderNumber" class="glass-input" @blur="save">
+                <GlassInput v-model="o.orderNumber"  @blur="save" />
               </div>
               <div class="aps-order-field">
                 <label class="aps-lbl">статус</label>
@@ -64,11 +64,11 @@
               </div>
               <div class="aps-order-field">
                 <label class="aps-lbl">сумма</label>
-                <input v-model="o.amount" class="glass-input" @blur="save">
+                <GlassInput v-model="o.amount"  @blur="save" />
               </div>
               <div class="aps-order-field">
                 <label class="aps-lbl">трек-номер</label>
-                <input v-model="o.tracking" class="glass-input" placeholder="трекинг..." @blur="save">
+                <GlassInput v-model="o.tracking"  placeholder="трекинг..." @blur="save" />
               </div>
             </div>
             <div class="aps-order-notes">

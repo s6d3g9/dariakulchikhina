@@ -56,7 +56,7 @@
                 <template v-else>
                   <div class="ent-detail-row" style="opacity:.48">проект не привязан</div>
                   <div class="ent-detail-foot" style="margin-top:16px">
-                    <button class="a-btn-sm" @click="openLink(selectedClient)">привязать к проекту</button>
+                    <GlassButton variant="secondary" density="compact"  @click="openLink(selectedClient)">привязать к проекту</GlassButton>
                   </div>
                 </template>
               </div>
@@ -102,15 +102,15 @@
 
             <div v-else-if="currentClientPage === 'documents'" class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
               <div class="ent-detail-section">документы клиента</div>
-              <div class="cl-row"><div class="cl-field"><label>Поиск</label><input v-model="docsSearch" class="glass-input" placeholder="Название" /></div><div class="cl-field"><label>Категория</label><select v-model="docsFilter" class="glass-input"><option value="">Все</option><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
-              <div class="cl-row"><div class="cl-field"><label>Название</label><input v-model="docsTitle" class="glass-input" placeholder="Название документа" /></div><div class="cl-field"><label>Категория</label><select v-model="docsCategory" class="glass-input"><option v-for="dc in DOC_CATEGORIES" :key="`inline-${dc.value}`" :value="dc.value">{{ dc.label }}</option></select></div></div>
-              <div class="cl-field"><label>Примечание</label><input v-model="docsNotes" class="glass-input" placeholder="Необязательно" /></div>
+              <div class="cl-row"><div class="cl-field"><label>Поиск</label><GlassInput v-model="docsSearch"  placeholder="Название" /></div><div class="cl-field"><label>Категория</label><select v-model="docsFilter" class="glass-input"><option value="">Все</option><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
+              <div class="cl-row"><div class="cl-field"><label>Название</label><GlassInput v-model="docsTitle"  placeholder="Название документа" /></div><div class="cl-field"><label>Категория</label><select v-model="docsCategory" class="glass-input"><option v-for="dc in DOC_CATEGORIES" :key="`inline-${dc.value}`" :value="dc.value">{{ dc.label }}</option></select></div></div>
+              <div class="cl-field"><label>Примечание</label><GlassInput v-model="docsNotes"  placeholder="Необязательно" /></div>
               <div style="margin-bottom:14px"><label class="a-btn-save" style="display:inline-flex;align-items:center;cursor:pointer"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" multiple style="display:none" @change="uploadClientDoc" />{{ docsUploading ? 'загрузка…' : '＋ выбрать файл' }}</label></div>
               <div v-if="docsPending" class="ent-detail-row" style="opacity:.48">загрузка документов…</div>
               <div v-else-if="filteredClientDocs.length" class="cl-docs-list">
                 <div v-for="doc in filteredClientDocs" :key="doc.id" class="cl-doc-item glass-surface">
                   <div><div class="cl-doc-title">{{ doc.title }}</div><div class="cl-doc-meta">{{ DOC_CATEGORIES.find((c: any) => c.value === doc.category)?.label || doc.category }}<span v-if="doc.notes"> · {{ doc.notes }}</span><span v-if="doc.createdAt"> · {{ formatDocDate(doc.createdAt) }}</span></div></div>
-                  <div class="cl-doc-actions"><a v-if="doc.url" :href="doc.url" target="_blank" class="ent-detail-chip">скачать</a><button class="a-btn-sm a-btn-danger" @click="deleteClientDoc(doc.id)">✕</button></div>
+                  <div class="cl-doc-actions"><a v-if="doc.url" :href="doc.url" target="_blank" class="ent-detail-chip">скачать</a><GlassButton variant="danger" density="compact"  @click="deleteClientDoc(doc.id)">✕</GlassButton></div>
                 </div>
               </div>
               <div v-else class="ent-detail-row" style="opacity:.48">документов пока нет</div>
@@ -137,13 +137,13 @@
       <div class="cl-modal glass-surface glass-card" :class="{ 'cl-modal--brutalist': isBrutalistClientsMode }">
         <div class="cl-modal-head"><span>{{ editingId ? 'редактировать клиента' : 'новый клиент' }}</span><button class="cl-close" @click="closeModal">✕</button></div>
         <form class="cl-form" @submit.prevent="save">
-          <div class="cl-field"><label>Имя / Название *</label><input v-model="form.name" class="glass-input" required placeholder="Иванова Анна Сергеевна" autofocus></div>
-          <div class="cl-row"><div class="cl-field"><label>Телефон</label><input v-model="form.phone" class="glass-input" placeholder="+7 999 000 00 00"></div><div class="cl-field"><label>Email</label><input v-model="form.email" class="glass-input" type="email" placeholder="client@mail.ru"></div></div>
-          <div class="cl-row"><div class="cl-field"><label>Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">— не указан</option><option value="Telegram">Telegram</option><option value="WhatsApp">WhatsApp</option><option value="Viber">Viber</option></select></div><div class="cl-field"><label>Ник / номер</label><input v-model="form.messengerNick" class="glass-input" placeholder="@username"></div></div>
+          <div class="cl-field"><label>Имя / Название *</label><GlassInput v-model="form.name"  required placeholder="Иванова Анна Сергеевна" autofocus /></div>
+          <div class="cl-row"><div class="cl-field"><label>Телефон</label><GlassInput v-model="form.phone"  placeholder="+7 999 000 00 00" /></div><div class="cl-field"><label>Email</label><GlassInput v-model="form.email"  type="email" placeholder="client@mail.ru" /></div></div>
+          <div class="cl-row"><div class="cl-field"><label>Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">— не указан</option><option value="Telegram">Telegram</option><option value="WhatsApp">WhatsApp</option><option value="Viber">Viber</option></select></div><div class="cl-field"><label>Ник / номер</label><GlassInput v-model="form.messengerNick"  placeholder="@username" /></div></div>
           <div class="cl-field"><label>Адрес</label><AppAddressInput v-model="form.address" input-class="glass-input" placeholder="г. Москва, ул. ..." /></div>
           <div class="cl-field"><label>Заметки</label><textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="Любые пометки"></textarea></div>
           <p v-if="saveError" class="cl-error">{{ saveError }}</p>
-          <div class="cl-modal-foot"><button type="button" class="a-btn-sm" @click="closeModal">отмена</button><button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : (editingId ? 'сохранить' : 'добавить') }}</button></div>
+          <div class="cl-modal-foot"><GlassButton variant="secondary" density="compact" type="button"  @click="closeModal">отмена</GlassButton><GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? '...' : (editingId ? 'сохранить' : 'добавить') }}</GlassButton></div>
         </form>
       </div>
     </div>
@@ -164,7 +164,7 @@
           </div>
           <div v-if="linkProjectSlug" class="cl-link-preview glass-surface"><p class="cl-link-preview-title">Будет заполнено в профиле проекта:</p><ul class="cl-link-list"><li><b>Имя клиента</b> → {{ linkClient?.name }}</li><li v-if="linkClient?.phone"><b>Телефон</b> → {{ linkClient?.phone }}</li><li v-if="linkClient?.email"><b>Email</b> → {{ linkClient?.email }}</li></ul></div>
           <p v-if="linkError" class="cl-error">{{ linkError }}</p>
-          <div class="cl-modal-foot"><button type="button" class="a-btn-sm" @click="showLink = false">отмена</button><button class="a-btn-save" :disabled="!linkProjectSlug || linking" @click="doLink">{{ linking ? '...' : 'привязать' }}</button></div>
+          <div class="cl-modal-foot"><GlassButton variant="secondary" density="compact" type="button"  @click="showLink = false">отмена</GlassButton><GlassButton variant="primary"  :disabled="!linkProjectSlug || linking" @click="doLink">{{ linking ? '...' : 'привязать' }}</GlassButton></div>
         </div>
       </div>
     </div>

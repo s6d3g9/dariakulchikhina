@@ -148,7 +148,7 @@
 
             <div class="aes-form-row">
               <label class="aes-form-label">услуга *</label>
-              <input v-model="addForm.title" class="glass-input" placeholder="Название услуги" />
+              <GlassInput v-model="addForm.title"  placeholder="Название услуги" />
             </div>
             <div class="aes-form-row">
               <label class="aes-form-label">описание</label>
@@ -157,15 +157,15 @@
             <div class="aes-form-row-duo">
               <div>
                 <label class="aes-form-label">кол-во</label>
-                <input v-model="addForm.quantity" class="glass-input" style="width:80px" placeholder="1" />
+                <GlassInput v-model="addForm.quantity"  style="width:80px" placeholder="1" />
               </div>
               <div>
                 <label class="aes-form-label">ед. изм.</label>
-                <input v-model="addForm.unit" class="glass-input" style="width:120px" placeholder="услуга" />
+                <GlassInput v-model="addForm.unit"  style="width:120px" placeholder="услуга" />
               </div>
               <div>
                 <label class="aes-form-label">цена за ед. ₽</label>
-                <input v-model.number="addForm.unitPrice" type="number" min="0" class="glass-input" style="width:140px" placeholder="0" />
+                <GlassInput v-model.number="addForm.unitPrice" type="number" min="0"  style="width:140px" placeholder="0" />
               </div>
             </div>
             <div class="aes-form-row">
@@ -192,20 +192,20 @@
             <div class="aes-form-row-duo">
               <div>
                 <label class="aes-form-label">кол-во</label>
-                <input v-model="priceForm.quantity" class="glass-input" style="width:80px" />
+                <GlassInput v-model="priceForm.quantity"  style="width:80px" />
               </div>
               <div>
                 <label class="aes-form-label">ед. изм.</label>
-                <input v-model="priceForm.unit" class="glass-input" style="width:120px" />
+                <GlassInput v-model="priceForm.unit"  style="width:120px" />
               </div>
               <div>
                 <label class="aes-form-label">цена за ед. ₽</label>
-                <input v-model.number="priceForm.unitPrice" type="number" min="0" class="glass-input" style="width:140px" />
+                <GlassInput v-model.number="priceForm.unitPrice" type="number" min="0"  style="width:140px" />
               </div>
             </div>
             <div class="aes-form-row">
               <label class="aes-form-label">итоговая сумма ₽ (авто)</label>
-              <input :value="computedTotal" class="glass-input" disabled style="background:var(--glass-bg)"/>
+              <GlassInput :value="computedTotal"  disabled style="background:var(--glass-bg)"/>
             </div>
             <div class="aes-form-row">
               <label class="aes-form-label">заметка дизайнера</label>

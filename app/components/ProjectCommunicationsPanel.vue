@@ -53,8 +53,8 @@
           </div>
           <p v-if="incomingCall.e2ee?.supported" class="comm-status">{{ callSecurity.available ? 'После принятия активируется дополнительное E2EE звонка.' : 'Собеседник поддерживает дополнительное E2EE, но этот браузер умеет только штатное шифрование WebRTC.' }}</p>
           <div class="comm-incoming-actions">
-            <button type="button" class="a-btn-sm" @click="acceptIncomingCall">Принять</button>
-            <button type="button" class="a-btn-sm a-btn-danger" @click="rejectIncomingCall">Отклонить</button>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="acceptIncomingCall">Принять</GlassButton>
+            <GlassButton variant="danger" density="compact" type="button"  @click="rejectIncomingCall">Отклонить</GlassButton>
           </div>
         </div>
 
@@ -188,7 +188,7 @@
           <div class="comm-section-metrics"><span class="comm-section-pill">{{ filteredOpenChats.length }}</span></div>
         </div>
         <label class="u-field__label" for="comm-chat-search">Поиск по чатам</label>
-        <input id="comm-chat-search" v-model="chatSearch" type="text" class="glass-input glass-input--inline comm-search" placeholder="Имя, роль или @никнейм">
+        <GlassInput id="comm-chat-search" v-model="chatSearch" type="text" class="glass-input --inline comm-search" placeholder="Имя, роль или @никнейм" />
         <div v-if="filteredOpenChats.length" class="comm-list-grid">
           <button
             v-for="chat in filteredOpenChats"
@@ -219,7 +219,7 @@
           <div class="comm-section-metrics"><span class="comm-section-pill">{{ filteredContacts.length }}</span></div>
         </div>
         <label class="u-field__label" for="comm-contact-search">Поиск по контактам</label>
-        <input id="comm-contact-search" v-model="contactSearch" type="text" class="glass-input glass-input--inline comm-search" placeholder="Имя, роль или @никнейм">
+        <GlassInput id="comm-contact-search" v-model="contactSearch" type="text" class="glass-input --inline comm-search" placeholder="Имя, роль или @никнейм" />
 
         <div v-if="filteredContacts.length" class="comm-list-grid">
           <button
@@ -295,14 +295,14 @@
                   <span class="comm-person-badge">задач: {{ insight.appliedTaskIds.length }}</span>
                 </div>
                 <div v-if="canManageCallInsights && insight.nextSteps.length" class="comm-setting-actions">
-                  <button
+                  <GlassButton variant="secondary" density="compact"
                     type="button"
-                    class="a-btn-sm"
+                    
                     :disabled="callInsightApplyPendingId === insight.id"
                     @click="applyCallInsightToSprint(insight.id)"
                   >
                     {{ callInsightApplyPendingId === insight.id ? 'применяем...' : (insight.appliedTaskIds?.length ? 'досинхронизировать задачи' : 'в активный спринт') }}
-                  </button>
+                  </GlassButton>
                 </div>
               </div>
             </div>
@@ -312,16 +312,16 @@
           <section class="comm-setting-card">
             <div class="comm-block-title">Никнейм</div>
             <label class="u-field__label" for="comm-my-nickname">Публичный никнейм</label>
-            <input
+            <GlassInput
               id="comm-my-nickname"
               v-model="nicknameDraft"
               type="text"
-              class="glass-input glass-input--inline comm-search"
+              class="glass-input --inline comm-search"
               placeholder="Например, @daria_design"
               maxlength="33"
               @blur="saveMyNickname"
               @keydown.enter.prevent="saveMyNickname"
-            >
+             />
             <p class="comm-setting-note">Никнейм используется в поиске контактов и в списке открытых чатов.</p>
             <p v-if="nicknameStatus" class="comm-status">{{ nicknameStatus }}</p>
           </section>
@@ -337,8 +337,8 @@
               <span class="comm-setting-value">{{ cameraPermissionLabel }}</span>
             </p>
             <div class="comm-setting-actions">
-              <button type="button" class="a-btn-sm" @click="checkAudioAccess">Проверить микрофон</button>
-              <button type="button" class="a-btn-sm" @click="checkVideoAccess">Проверить камеру</button>
+              <GlassButton variant="secondary" density="compact" type="button"  @click="checkAudioAccess">Проверить микрофон</GlassButton>
+              <GlassButton variant="secondary" density="compact" type="button"  @click="checkVideoAccess">Проверить камеру</GlassButton>
             </div>
             <p class="comm-setting-note">{{ videoReadiness }}</p>
             <p v-if="callPermissionHelp" class="comm-setting-note">{{ callPermissionHelp }}</p>

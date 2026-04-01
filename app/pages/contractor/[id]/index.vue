@@ -162,7 +162,7 @@
                 </div>
                 <div class="u-field">
                   <label>Название задачи *</label>
-                  <input v-model="newTask.title" class="glass-input" placeholder="Что нужно сделать…" />
+                  <GlassInput v-model="newTask.title"  placeholder="Что нужно сделать…" />
                 </div>
                 <div class="u-field">
                   <label>Вид работ</label>
@@ -174,16 +174,16 @@
                 <div class="cab-modal-row2">
                   <div class="u-field">
                     <label>Дата начала</label>
-                    <input v-model="newTask.dateStart" class="glass-input" placeholder="дд.мм.гггг" />
+                    <GlassInput v-model="newTask.dateStart"  placeholder="дд.мм.гггг" />
                   </div>
                   <div class="u-field">
                     <label>Дата окончания</label>
-                    <input v-model="newTask.dateEnd" class="glass-input" placeholder="дд.мм.гггг" />
+                    <GlassInput v-model="newTask.dateEnd"  placeholder="дд.мм.гггг" />
                   </div>
                 </div>
                 <div class="u-field">
                   <label>Бюджет</label>
-                  <input v-model="newTask.budget" class="glass-input" placeholder="например: 50 000 ₽" />
+                  <GlassInput v-model="newTask.budget"  placeholder="например: 50 000 ₽" />
                 </div>
                 <div class="u-field">
                   <label>Примечание</label>
@@ -284,11 +284,11 @@
                             <div class="cab-task-edit-row">
                               <div class="cab-task-edit-field">
                                 <label>Дата начала</label>
-                                <input v-model="editMap[item.id].dateStart" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
+                                <GlassInput v-model="editMap[item.id].dateStart" class=" cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
                               </div>
                               <div class="cab-task-edit-field">
                                 <label>Дата окончания</label>
-                                <input v-model="editMap[item.id].dateEnd" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
+                                <GlassInput v-model="editMap[item.id].dateEnd" class=" cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" />
                               </div>
                               <div v-if="item.budget" class="cab-task-edit-field">
                                 <label>Бюджет</label>
@@ -424,19 +424,19 @@
                 <div class="u-grid-2">
                   <div class="u-field">
                     <label>Имя / название</label>
-                    <input v-model="form.name" class="glass-input" required />
+                    <GlassInput v-model="form.name"  required />
                   </div>
                   <div class="u-field">
                     <label>Компания</label>
-                    <input v-model="form.companyName" class="glass-input" placeholder="ООО / ИП…" />
+                    <GlassInput v-model="form.companyName"  placeholder="ООО / ИП…" />
                   </div>
                   <div class="u-field">
                     <label>Телефон</label>
-                    <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" />
+                    <GlassInput v-model="form.phone"  type="tel" placeholder="+7 (___) ___-__-__" />
                   </div>
                   <div class="u-field">
                     <label>Email</label>
-                    <input v-model="form.email" class="glass-input" type="email" placeholder="mail@example.com" />
+                    <GlassInput v-model="form.email"  type="email" placeholder="mail@example.com" />
                   </div>
                 </div>
               </div>
@@ -446,11 +446,11 @@
                 <div class="u-grid-2">
                   <div class="u-field">
                     <label>Telegram</label>
-                    <input v-model="form.telegram" class="glass-input" placeholder="@username или номер" />
+                    <GlassInput v-model="form.telegram"  placeholder="@username или номер" />
                   </div>
                   <div class="u-field">
                     <label>WhatsApp</label>
-                    <input v-model="form.whatsapp" class="glass-input" placeholder="+7 (___) ___-__-__" />
+                    <GlassInput v-model="form.whatsapp"  placeholder="+7 (___) ___-__-__" />
                   </div>
                   <div class="u-field">
                     <label>Мессенджер (другой)</label>
@@ -463,7 +463,7 @@
                   </div>
                   <div class="u-field">
                     <label>Ник / номер</label>
-                    <input v-model="form.messengerNick" class="glass-input" />
+                    <GlassInput v-model="form.messengerNick"  />
                   </div>
                 </div>
               </div>
@@ -473,25 +473,25 @@
                 <div class="u-grid-2">
                   <div class="u-field">
                     <label>Город</label>
-                    <input v-model="form.city" class="glass-input" placeholder="Москва" />
+                    <GlassInput v-model="form.city"  placeholder="Москва" />
                   </div>
                   <div class="u-field">
                     <label>Радиус выезда</label>
-                    <input v-model="form.workRadius" class="glass-input" placeholder="50 км / Москва и МО" />
+                    <GlassInput v-model="form.workRadius"  placeholder="50 км / Москва и МО" />
                   </div>
                   <div class="u-field u-field--full">
                     <label>Фактический адрес</label>
-                    <input v-model="form.factAddress" class="glass-input" placeholder="Адрес для корреспонденции" />
+                    <GlassInput v-model="form.factAddress"  placeholder="Адрес для корреспонденции" />
                   </div>
                   <div class="u-field u-field--full">
                     <label>Сайт / портфолио</label>
-                    <input v-model="form.website" class="glass-input" placeholder="https://example.com" />
+                    <GlassInput v-model="form.website"  placeholder="https://example.com" />
                   </div>
                 </div>
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -505,23 +505,23 @@
                 <div class="u-grid-2">
                   <div class="u-field">
                     <label>Серия</label>
-                    <input v-model="form.passportSeries" class="glass-input" placeholder="00 00" maxlength="5" />
+                    <GlassInput v-model="form.passportSeries"  placeholder="00 00" maxlength="5" />
                   </div>
                   <div class="u-field">
                     <label>Номер</label>
-                    <input v-model="form.passportNumber" class="glass-input" placeholder="000000" maxlength="7" />
+                    <GlassInput v-model="form.passportNumber"  placeholder="000000" maxlength="7" />
                   </div>
                   <div class="u-field u-field--full">
                     <label>Кем выдан</label>
-                    <input v-model="form.passportIssuedBy" class="glass-input" placeholder="ОВД района…" />
+                    <GlassInput v-model="form.passportIssuedBy"  placeholder="ОВД района…" />
                   </div>
                   <div class="u-field">
                     <label>Дата выдачи</label>
-                    <input v-model="form.passportIssueDate" class="glass-input" placeholder="дд.мм.гггг" />
+                    <GlassInput v-model="form.passportIssueDate"  placeholder="дд.мм.гггг" />
                   </div>
                   <div class="u-field">
                     <label>Код подразделения</label>
-                    <input v-model="form.passportDepartmentCode" class="glass-input" placeholder="000-000" maxlength="7" />
+                    <GlassInput v-model="form.passportDepartmentCode"  placeholder="000-000" maxlength="7" />
                   </div>
                 </div>
               </div>
@@ -531,29 +531,29 @@
                 <div class="u-grid-2">
                   <div class="u-field">
                     <label>Дата рождения</label>
-                    <input v-model="form.birthDate" class="glass-input" placeholder="дд.мм.гггг" />
+                    <GlassInput v-model="form.birthDate"  placeholder="дд.мм.гггг" />
                   </div>
                   <div class="u-field">
                     <label>Место рождения</label>
-                    <input v-model="form.birthPlace" class="glass-input" placeholder="г. Москва" />
+                    <GlassInput v-model="form.birthPlace"  placeholder="г. Москва" />
                   </div>
                   <div class="u-field u-field--full">
                     <label>Адрес регистрации</label>
-                    <input v-model="form.registrationAddress" class="glass-input" placeholder="Адрес по прописке" />
+                    <GlassInput v-model="form.registrationAddress"  placeholder="Адрес по прописке" />
                   </div>
                   <div class="u-field">
                     <label>СНИЛС</label>
-                    <input v-model="form.snils" class="glass-input" placeholder="000-000-000 00" maxlength="14" />
+                    <GlassInput v-model="form.snils"  placeholder="000-000-000 00" maxlength="14" />
                   </div>
                   <div class="u-field">
                     <label>ИНН</label>
-                    <input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" />
+                    <GlassInput v-model="form.inn"  placeholder="000000000000" maxlength="12" />
                   </div>
                 </div>
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -567,23 +567,23 @@
                 <div class="u-grid-2">
                   <div class="u-field">
                     <label>ИНН</label>
-                    <input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" />
+                    <GlassInput v-model="form.inn"  placeholder="000000000000" maxlength="12" />
                   </div>
                   <div class="u-field">
                     <label>КПП</label>
-                    <input v-model="form.kpp" class="glass-input" placeholder="000000000" maxlength="9" />
+                    <GlassInput v-model="form.kpp"  placeholder="000000000" maxlength="9" />
                   </div>
                   <div class="u-field">
                     <label>ОГРН / ОГРНИП</label>
-                    <input v-model="form.ogrn" class="glass-input" placeholder="0000000000000" maxlength="15" />
+                    <GlassInput v-model="form.ogrn"  placeholder="0000000000000" maxlength="15" />
                   </div>
                   <div class="u-field u-field--full">
                     <label>Юридический адрес</label>
-                    <input v-model="form.legalAddress" class="glass-input" placeholder="Адрес регистрации ИП / ООО" />
+                    <GlassInput v-model="form.legalAddress"  placeholder="Адрес регистрации ИП / ООО" />
                   </div>
                   <div class="u-field u-field--full">
                     <label>Фактический адрес</label>
-                    <input v-model="form.factAddress" class="glass-input" placeholder="Адрес ведения деятельности" />
+                    <GlassInput v-model="form.factAddress"  placeholder="Адрес ведения деятельности" />
                   </div>
                 </div>
               </div>
@@ -593,25 +593,25 @@
                 <div class="u-grid-2">
                   <div class="u-field u-field--full">
                     <label>Наименование банка</label>
-                    <input v-model="form.bankName" class="glass-input" placeholder="ПАО Сбербанк" />
+                    <GlassInput v-model="form.bankName"  placeholder="ПАО Сбербанк" />
                   </div>
                   <div class="u-field">
                     <label>БИК</label>
-                    <input v-model="form.bik" class="glass-input" placeholder="000000000" maxlength="9" />
+                    <GlassInput v-model="form.bik"  placeholder="000000000" maxlength="9" />
                   </div>
                   <div class="u-field">
                     <label>Расчётный счёт</label>
-                    <input v-model="form.settlementAccount" class="glass-input" placeholder="00000000000000000000" maxlength="20" />
+                    <GlassInput v-model="form.settlementAccount"  placeholder="00000000000000000000" maxlength="20" />
                   </div>
                   <div class="u-field">
                     <label>Корреспондентский счёт</label>
-                    <input v-model="form.correspondentAccount" class="glass-input" placeholder="00000000000000000000" maxlength="20" />
+                    <GlassInput v-model="form.correspondentAccount"  placeholder="00000000000000000000" maxlength="20" />
                   </div>
                 </div>
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -622,7 +622,7 @@
             <div class="u-grid-2" style="margin-bottom:12px">
               <div class="u-field">
                 <label>Поиск</label>
-                <input v-model="docsSearch" class="glass-input" placeholder="Название, заметка" />
+                <GlassInput v-model="docsSearch"  placeholder="Название, заметка" />
               </div>
               <div class="u-field">
                 <label>Категория</label>
@@ -645,7 +645,7 @@
               <div class="u-grid-2">
                 <div class="u-field">
                   <label>Название</label>
-                  <input v-model="newDocTitle" class="glass-input" placeholder="Название документа" />
+                  <GlassInput v-model="newDocTitle"  placeholder="Название документа" />
                 </div>
                 <div class="u-field">
                   <label>Категория</label>
@@ -655,7 +655,7 @@
                 </div>
                 <div class="u-field u-field--full">
                   <label>Примечание</label>
-                  <input v-model="newDocNotes" class="glass-input" placeholder="Необязательно" />
+                  <GlassInput v-model="newDocNotes"  placeholder="Необязательно" />
                 </div>
               </div>
               <div style="margin-top: 12px;">
@@ -742,11 +742,11 @@
                 <div class="u-grid-2">
                   <div class="u-field">
                     <label>Стаж (лет)</label>
-                    <input v-model.number="form.experienceYears" class="glass-input" type="number" min="0" max="100" placeholder="10" />
+                    <GlassInput v-model.number="form.experienceYears"  type="number" min="0" max="100" placeholder="10" />
                   </div>
                   <div class="u-field">
                     <label>Образование</label>
-                    <input v-model="form.education" class="glass-input" placeholder="Высшее строительное…" />
+                    <GlassInput v-model="form.education"  placeholder="Высшее строительное…" />
                   </div>
                 </div>
               </div>
@@ -760,7 +760,7 @@
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -786,7 +786,7 @@
                   </div>
                   <div class="u-field">
                     <label>Ставка / стоимость часа</label>
-                    <input v-model="form.hourlyRate" class="glass-input" placeholder="2 500 ₽/час" />
+                    <GlassInput v-model="form.hourlyRate"  placeholder="2 500 ₽/час" />
                   </div>
                 </div>
               </div>
@@ -830,13 +830,13 @@
                   </div>
                 </div>
                 <div class="cab-cert-add">
-                  <input v-model="newCert" class="glass-input" placeholder="Новый сертификат / допуск" @keydown.enter.prevent="addCert" />
+                  <GlassInput v-model="newCert"  placeholder="Новый сертификат / допуск" @keydown.enter.prevent="addCert" />
                   <button type="button" class="cab-task-save" @click="addCert">+</button>
                 </div>
               </div>
 
               <div class="u-form-foot">
-                <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </form>
@@ -903,11 +903,11 @@
               <div class="u-grid-2">
                 <div class="u-field u-field--full">
                   <label>Сайт / Behance / Instagram</label>
-                  <input v-model="form.website" class="glass-input" placeholder="https://…" />
+                  <GlassInput v-model="form.website"  placeholder="https://…" />
                 </div>
               </div>
               <div class="u-form-foot" style="margin-top:12px;">
-                <button type="button" class="a-btn-save" :disabled="saving" @click="saveProfile">{{ saving ? 'Сохранение…' : 'Сохранить' }}</button>
+                <GlassButton variant="primary" type="button"  :disabled="saving" @click="saveProfile">{{ saving ? 'Сохранение…' : 'Сохранить' }}</GlassButton>
                 <span v-if="saveMsg" class="u-save-msg">{{ saveMsg }}</span>
               </div>
             </div>
@@ -961,7 +961,7 @@
                   <span class="cab-toggle-hint">Изменение статуса задач дизайнером</span>
                 </label>
               </div>
-              <button class="a-btn-sm" style="margin-top:12px" @click="saveNotifSettings">Сохранить настройки</button>
+              <GlassButton variant="secondary" density="compact"  style="margin-top:12px" @click="saveNotifSettings">Сохранить настройки</GlassButton>
             </div>
 
             <div class="u-form-section">

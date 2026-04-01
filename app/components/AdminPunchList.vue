@@ -87,11 +87,11 @@
               </div>
               <div class="u-field">
                 <label class="u-field__label">помещение / зона</label>
-                <input v-model="item.room" class="glass-input" placeholder="кухня, ванна, коридор…" @blur="save">
+                <GlassInput v-model="item.room"  placeholder="кухня, ванна, коридор…" @blur="save" />
               </div>
               <div class="u-field">
                 <label class="u-field__label">ответственный подрядчик</label>
-                <input v-model="item.contractor" class="glass-input" placeholder="компания / ФИО" @blur="save">
+                <GlassInput v-model="item.contractor"  placeholder="компания / ФИО" @blur="save" />
               </div>
               <div class="u-field">
                 <label class="u-field__label">срок устранения</label>

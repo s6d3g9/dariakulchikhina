@@ -7,31 +7,31 @@
       <div class="cpp-rows">
         <div class="cpp-row">
           <label class="cpp-lbl">Серия паспорта</label>
-          <input v-model="form.passport_series" class="glass-input" type="text" placeholder="45 09" maxlength="5" @blur="save" />
+          <GlassInput v-model="form.passport_series"  type="text" placeholder="45 09" maxlength="5" @blur="save" />
         </div>
         <div class="cpp-row">
           <label class="cpp-lbl">Номер паспорта</label>
-          <input v-model="form.passport_number" class="glass-input" type="text" placeholder="123456" maxlength="6" @blur="save" />
+          <GlassInput v-model="form.passport_number"  type="text" placeholder="123456" maxlength="6" @blur="save" />
         </div>
         <div class="cpp-row cpp-row--full">
           <label class="cpp-lbl">Кем выдан</label>
-          <input v-model="form.passport_issued_by" class="glass-input" type="text" placeholder="ГУ МВД России по г. Москве" @blur="save" />
+          <GlassInput v-model="form.passport_issued_by"  type="text" placeholder="ГУ МВД России по г. Москве" @blur="save" />
         </div>
         <div class="cpp-row">
           <label class="cpp-lbl">Дата выдачи</label>
-          <input v-model="form.passport_issue_date" class="glass-input" type="text" placeholder="01.03.2020" @blur="save" />
+          <GlassInput v-model="form.passport_issue_date"  type="text" placeholder="01.03.2020" @blur="save" />
         </div>
         <div class="cpp-row">
           <label class="cpp-lbl">Код подразделения</label>
-          <input v-model="form.passport_department_code" class="glass-input" type="text" placeholder="770-001" maxlength="7" @blur="save" />
+          <GlassInput v-model="form.passport_department_code"  type="text" placeholder="770-001" maxlength="7" @blur="save" />
         </div>
         <div class="cpp-row cpp-row--full">
           <label class="cpp-lbl">Место рождения</label>
-          <input v-model="form.passport_birth_place" class="glass-input" type="text" placeholder="г. Москва" @blur="save" />
+          <GlassInput v-model="form.passport_birth_place"  type="text" placeholder="г. Москва" @blur="save" />
         </div>
         <div class="cpp-row cpp-row--full">
           <label class="cpp-lbl">Адрес регистрации (прописка)</label>
-          <input v-model="form.passport_registration_address" class="glass-input" type="text" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5" @blur="save" />
+          <GlassInput v-model="form.passport_registration_address"  type="text" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5" @blur="save" />
         </div>
       </div>
     </div>
@@ -41,11 +41,11 @@
       <div class="cpp-rows">
         <div class="cpp-row">
           <label class="cpp-lbl">ИНН</label>
-          <input v-model="form.passport_inn" class="glass-input" type="text" placeholder="770000000000" maxlength="12" @blur="save" />
+          <GlassInput v-model="form.passport_inn"  type="text" placeholder="770000000000" maxlength="12" @blur="save" />
         </div>
         <div class="cpp-row">
           <label class="cpp-lbl">СНИЛС</label>
-          <input v-model="form.passport_snils" class="glass-input" type="text" placeholder="000-000-000 00" maxlength="14" @blur="save" />
+          <GlassInput v-model="form.passport_snils"  type="text" placeholder="000-000-000 00" maxlength="14" @blur="save" />
         </div>
       </div>
     </div>

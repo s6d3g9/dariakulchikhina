@@ -85,28 +85,28 @@
               </template>
               <div class="ct-form-section">основное</div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Название *</label><input v-model="form.name" class="glass-input" required /></div>
-                <div class="u-field"><label class="u-field__label">Slug *</label><input v-model="form.slug" class="glass-input" required :disabled="!!editingId" /></div>
+                <div class="u-field"><label class="u-field__label">Название *</label><GlassInput v-model="form.name"  required /></div>
+                <div class="u-field"><label class="u-field__label">Slug *</label><GlassInput v-model="form.slug"  required :disabled="!!editingId" /></div>
               </div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Компания</label><input v-model="form.companyName" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Контактное лицо</label><input v-model="form.contactPerson" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">Компания</label><GlassInput v-model="form.companyName"  /></div>
+                <div class="u-field"><label class="u-field__label">Контактное лицо</label><GlassInput v-model="form.contactPerson"  /></div>
               </div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Виды работ</label><input v-model="workTypesStr" class="glass-input" placeholder="через запятую" /></div>
+                <div class="u-field"><label class="u-field__label">Виды работ</label><GlassInput v-model="workTypesStr"  placeholder="через запятую" /></div>
                 <div class="u-field"></div>
               </div>
               <div class="ct-form-section">контакты</div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Телефон</label><input v-model="form.phone" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Email</label><input v-model="form.email" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">Телефон</label><GlassInput v-model="form.phone"  /></div>
+                <div class="u-field"><label class="u-field__label">Email</label><GlassInput v-model="form.email"  /></div>
               </div>
               <div class="u-grid-2">
                 <div class="u-field"><label class="u-field__label">Мессенджер</label><select v-model="form.messenger" class="glass-input"><option value="">—</option><option value="telegram">telegram</option><option value="whatsapp">whatsapp</option><option value="viber">viber</option></select></div>
-                <div class="u-field"><label class="u-field__label">Ник / номер мессенджера</label><input v-model="form.messengerNick" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">Ник / номер мессенджера</label><GlassInput v-model="form.messengerNick"  /></div>
               </div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Сайт / портфолио</label><input v-model="form.website" class="glass-input" placeholder="https://" /></div>
+                <div class="u-field"><label class="u-field__label">Сайт / портфолио</label><GlassInput v-model="form.website"  placeholder="https://" /></div>
                 <div class="u-field"></div>
               </div>
               <div class="ct-form-section">адреса</div>
@@ -116,22 +116,22 @@
               </div>
               <div class="ct-form-section">реквизиты</div>
               <div class="u-grid-3">
-                <div class="u-field"><label class="u-field__label">ИНН</label><input v-model="form.inn" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">КПП</label><input v-model="form.kpp" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">ОГРН / ОГРНИП</label><input v-model="form.ogrn" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">ИНН</label><GlassInput v-model="form.inn"  /></div>
+                <div class="u-field"><label class="u-field__label">КПП</label><GlassInput v-model="form.kpp"  /></div>
+                <div class="u-field"><label class="u-field__label">ОГРН / ОГРНИП</label><GlassInput v-model="form.ogrn"  /></div>
               </div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Банк</label><input v-model="form.bankName" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">БИК</label><input v-model="form.bik" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">Банк</label><GlassInput v-model="form.bankName"  /></div>
+                <div class="u-field"><label class="u-field__label">БИК</label><GlassInput v-model="form.bik"  /></div>
               </div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Расчётный счёт</label><input v-model="form.settlementAccount" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Корр. счёт</label><input v-model="form.correspondentAccount" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">Расчётный счёт</label><GlassInput v-model="form.settlementAccount"  /></div>
+                <div class="u-field"><label class="u-field__label">Корр. счёт</label><GlassInput v-model="form.correspondentAccount"  /></div>
               </div>
               <div class="ct-form-section">примечания</div>
               <div class="u-field"><textarea v-model="form.notes" class="glass-input u-ta" rows="3" placeholder="заметки о подрядчике"></textarea></div>
               <p v-if="formError" class="ct-form-error ct-form-error--bottom">{{ formError }}</p>
-              <div class="ct-modal-foot"><button type="button" class="a-btn-sm" @click="closeModal">отмена</button><button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button></div>
+              <div class="ct-modal-foot"><GlassButton variant="secondary" density="compact" type="button"  @click="closeModal">отмена</GlassButton><GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? '...' : 'сохранить' }}</GlassButton></div>
             </form>
 
             <!-- ═══ TAB: Паспорт ═══ -->

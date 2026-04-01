@@ -21,7 +21,7 @@
           <span v-if="activeBlueprintId === blueprint.id" class="ab-card-badge ab-card-badge--runtime">активна</span>
         </button>
       </div>
-      <button type="button" class="a-btn-sm" @click="startCustomBlueprint">новая сборка</button>
+      <GlassButton variant="secondary" density="compact" type="button"  @click="startCustomBlueprint">новая сборка</GlassButton>
     </div>
 
     <div class="ab-col">
@@ -29,12 +29,12 @@
 
       <div class="u-field">
         <label class="u-field__label">идентификатор</label>
-        <input v-model="draft.id" class="glass-input" placeholder="portal-client-pro" />
+        <GlassInput v-model="draft.id"  placeholder="portal-client-pro" />
       </div>
 
       <div class="u-field">
         <label class="u-field__label">название</label>
-        <input v-model="draft.title" class="glass-input" placeholder="Портал клиента Pro" />
+        <GlassInput v-model="draft.title"  placeholder="Портал клиента Pro" />
       </div>
 
       <div class="u-field">
@@ -198,14 +198,14 @@
       <div v-if="importError" class="ab-import-error">{{ importError }}</div>
 
       <div class="ab-actions">
-        <button type="button" class="a-btn-sm" @click="saveBlueprint">{{ saveLabel || 'сохранить' }}</button>
-        <button type="button" class="a-btn-sm" @click="activateSelectedBlueprint">{{ activateLabel }}</button>
-        <button type="button" class="a-btn-sm" @click="previewDraftBlueprint">{{ previewLabel }}</button>
-        <button type="button" class="a-btn-sm" @click="copyBlueprintPayload">{{ copyLabel }}</button>
-        <button type="button" class="a-btn-sm" @click="applyImportBuffer">{{ importLabel }}</button>
-        <button v-if="isPreviewingBlueprint" type="button" class="a-btn-sm" @click="resetRuntimeBlueprint">снять preview</button>
-        <button v-if="selectedBlueprint" type="button" class="a-btn-sm" @click="selectBlueprint(selectedBlueprint.id)">сбросить из шаблона</button>
-        <button v-if="selectedBlueprint && isCustomBlueprint(selectedBlueprint.id)" type="button" class="a-btn-sm a-btn-danger" @click="deleteBlueprint(selectedBlueprint.id)">удалить</button>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="saveBlueprint">{{ saveLabel || 'сохранить' }}</GlassButton>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="activateSelectedBlueprint">{{ activateLabel }}</GlassButton>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="previewDraftBlueprint">{{ previewLabel }}</GlassButton>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="copyBlueprintPayload">{{ copyLabel }}</GlassButton>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="applyImportBuffer">{{ importLabel }}</GlassButton>
+        <GlassButton variant="secondary" density="compact" v-if="isPreviewingBlueprint" type="button"  @click="resetRuntimeBlueprint">снять preview</GlassButton>
+        <GlassButton variant="secondary" density="compact" v-if="selectedBlueprint" type="button"  @click="selectBlueprint(selectedBlueprint.id)">сбросить из шаблона</GlassButton>
+        <GlassButton variant="danger" density="compact" v-if="selectedBlueprint && isCustomBlueprint(selectedBlueprint.id)" type="button"  @click="deleteBlueprint(selectedBlueprint.id)">удалить</GlassButton>
       </div>
     </div>
   </section>

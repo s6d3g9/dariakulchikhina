@@ -200,7 +200,7 @@
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Название задачи *</label>
-                  <input v-model="newTask.title" class="glass-input" placeholder="Что нужно сделать…" />
+                  <GlassInput v-model="newTask.title"  placeholder="Что нужно сделать…" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Вид работ</label>
@@ -212,16 +212,16 @@
                 <div class="u-modal__row2">
                   <div class="u-field">
                     <label class="u-field__label">Дата начала</label>
-                    <input v-model="newTask.dateStart" class="glass-input" placeholder="дд.мм.гггг" />
+                    <GlassInput v-model="newTask.dateStart"  placeholder="дд.мм.гггг" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Дата окончания</label>
-                    <input v-model="newTask.dateEnd" class="glass-input" placeholder="дд.мм.гггг" />
+                    <GlassInput v-model="newTask.dateEnd"  placeholder="дд.мм.гггг" />
                   </div>
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Бюджет</label>
-                  <input v-model="newTask.budget" class="glass-input" placeholder="например: 50 000 ₽" />
+                  <GlassInput v-model="newTask.budget"  placeholder="например: 50 000 ₽" />
                 </div>
                 <div class="u-field">
                   <label class="u-field__label">Примечание</label>
@@ -320,11 +320,11 @@
                             <div class="cab-task-edit-row">
                               <div class="cab-task-edit-field">
                                 <label>Дата начала</label>
-                                <input v-model="editMap[item.id].dateStart" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" @blur="queueTaskDetailsSave(item)" @change="queueTaskDetailsSave(item)" />
+                                <GlassInput v-model="editMap[item.id].dateStart" class=" cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" @blur="queueTaskDetailsSave(item)" @change="queueTaskDetailsSave(item)" />
                               </div>
                               <div class="cab-task-edit-field">
                                 <label>Дата окончания</label>
-                                <input v-model="editMap[item.id].dateEnd" class="glass-input cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" @blur="queueTaskDetailsSave(item)" @change="queueTaskDetailsSave(item)" />
+                                <GlassInput v-model="editMap[item.id].dateEnd" class=" cab-task-edit-inp" type="text" placeholder="дд.мм.гггг" @blur="queueTaskDetailsSave(item)" @change="queueTaskDetailsSave(item)" />
                               </div>
                               <div v-if="item.budget" class="cab-task-edit-field">
                                 <label>Бюджет</label>
@@ -388,19 +388,19 @@
                 <div class="u-modal__row2">
                   <div class="u-field">
                     <label class="u-field__label">Имя / название</label>
-                    <input v-model="form.name" class="glass-input" required />
+                    <GlassInput v-model="form.name"  required />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Компания</label>
-                    <input v-model="form.companyName" class="glass-input" placeholder="ООО / ИП…" />
+                    <GlassInput v-model="form.companyName"  placeholder="ООО / ИП…" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Телефон</label>
-                    <input v-model="form.phone" class="glass-input" type="tel" placeholder="+7 (___) ___-__-__" />
+                    <GlassInput v-model="form.phone"  type="tel" placeholder="+7 (___) ___-__-__" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Email</label>
-                    <input v-model="form.email" class="glass-input" type="email" placeholder="mail@example.com" />
+                    <GlassInput v-model="form.email"  type="email" placeholder="mail@example.com" />
                   </div>
                 </div>
               </div>
@@ -427,23 +427,23 @@
                 <div class="u-modal__row2">
                   <div class="u-field">
                     <label class="u-field__label">Серия</label>
-                    <input v-model="form.passportSeries" class="glass-input" placeholder="00 00" maxlength="5" />
+                    <GlassInput v-model="form.passportSeries"  placeholder="00 00" maxlength="5" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Номер</label>
-                    <input v-model="form.passportNumber" class="glass-input" placeholder="000000" maxlength="7" />
+                    <GlassInput v-model="form.passportNumber"  placeholder="000000" maxlength="7" />
                   </div>
                   <div class="u-field u-field--full">
                     <label class="u-field__label">Кем выдан</label>
-                    <input v-model="form.passportIssuedBy" class="glass-input" placeholder="ОВД района…" />
+                    <GlassInput v-model="form.passportIssuedBy"  placeholder="ОВД района…" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Дата выдачи</label>
-                    <input v-model="form.passportIssueDate" class="glass-input" placeholder="дд.мм.гггг" />
+                    <GlassInput v-model="form.passportIssueDate"  placeholder="дд.мм.гггг" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Код подразделения</label>
-                    <input v-model="form.passportDepartmentCode" class="glass-input" placeholder="000-000" maxlength="7" />
+                    <GlassInput v-model="form.passportDepartmentCode"  placeholder="000-000" maxlength="7" />
                   </div>
                 </div>
               </div>
@@ -453,23 +453,23 @@
                 <div class="u-modal__row2">
                   <div class="u-field">
                     <label class="u-field__label">Дата рождения</label>
-                    <input v-model="form.birthDate" class="glass-input" placeholder="дд.мм.гггг" />
+                    <GlassInput v-model="form.birthDate"  placeholder="дд.мм.гггг" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">Место рождения</label>
-                    <input v-model="form.birthPlace" class="glass-input" placeholder="г. Москва" />
+                    <GlassInput v-model="form.birthPlace"  placeholder="г. Москва" />
                   </div>
                   <div class="u-field u-field--full">
                     <label class="u-field__label">Адрес регистрации</label>
-                    <input v-model="form.registrationAddress" class="glass-input" placeholder="Адрес по прописке" />
+                    <GlassInput v-model="form.registrationAddress"  placeholder="Адрес по прописке" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">СНИЛС</label>
-                    <input v-model="form.snils" class="glass-input" placeholder="000-000-000 00" maxlength="14" />
+                    <GlassInput v-model="form.snils"  placeholder="000-000-000 00" maxlength="14" />
                   </div>
                   <div class="u-field">
                     <label class="u-field__label">ИНН</label>
-                    <input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" />
+                    <GlassInput v-model="form.inn"  placeholder="000000000000" maxlength="12" />
                   </div>
                 </div>
               </div>
@@ -496,23 +496,23 @@
                 <div class="u-grid-2">
                   <div class="u-field">
                     <label>ИНН</label>
-                    <input v-model="form.inn" class="glass-input" placeholder="000000000000" maxlength="12" />
+                    <GlassInput v-model="form.inn"  placeholder="000000000000" maxlength="12" />
                   </div>
                   <div class="u-field">
                     <label>КПП</label>
-                    <input v-model="form.kpp" class="glass-input" placeholder="000000000" maxlength="9" />
+                    <GlassInput v-model="form.kpp"  placeholder="000000000" maxlength="9" />
                   </div>
                   <div class="u-field">
                     <label>ОГРН / ОГРНИП</label>
-                    <input v-model="form.ogrn" class="glass-input" placeholder="0000000000000" maxlength="15" />
+                    <GlassInput v-model="form.ogrn"  placeholder="0000000000000" maxlength="15" />
                   </div>
                   <div class="u-field u-field--full">
                     <label>Юридический адрес</label>
-                    <input v-model="form.legalAddress" class="glass-input" placeholder="Адрес регистрации ИП / ООО" />
+                    <GlassInput v-model="form.legalAddress"  placeholder="Адрес регистрации ИП / ООО" />
                   </div>
                   <div class="u-field u-field--full">
                     <label>Фактический адрес</label>
-                    <input v-model="form.factAddress" class="glass-input" placeholder="Адрес ведения деятельности" />
+                    <GlassInput v-model="form.factAddress"  placeholder="Адрес ведения деятельности" />
                   </div>
                 </div>
               </div>
@@ -522,19 +522,19 @@
                 <div class="u-grid-2">
                   <div class="u-field u-field--full">
                     <label>Наименование банка</label>
-                    <input v-model="form.bankName" class="glass-input" placeholder="ПАО Сбербанк" />
+                    <GlassInput v-model="form.bankName"  placeholder="ПАО Сбербанк" />
                   </div>
                   <div class="u-field">
                     <label>БИК</label>
-                    <input v-model="form.bik" class="glass-input" placeholder="000000000" maxlength="9" />
+                    <GlassInput v-model="form.bik"  placeholder="000000000" maxlength="9" />
                   </div>
                   <div class="u-field">
                     <label>Расчётный счёт</label>
-                    <input v-model="form.settlementAccount" class="glass-input" placeholder="00000000000000000000" maxlength="20" />
+                    <GlassInput v-model="form.settlementAccount"  placeholder="00000000000000000000" maxlength="20" />
                   </div>
                   <div class="u-field">
                     <label>Корреспондентский счёт</label>
-                    <input v-model="form.correspondentAccount" class="glass-input" placeholder="00000000000000000000" maxlength="20" />
+                    <GlassInput v-model="form.correspondentAccount"  placeholder="00000000000000000000" maxlength="20" />
                   </div>
                 </div>
               </div>
@@ -553,7 +553,7 @@
             <div class="u-grid-2" style="margin-bottom:12px">
               <div class="u-field">
                 <label>Поиск</label>
-                <input v-model="docsSearch" class="glass-input" placeholder="Название, заметка" />
+                <GlassInput v-model="docsSearch"  placeholder="Название, заметка" />
               </div>
               <div class="u-field">
                 <label>Категория</label>
@@ -576,7 +576,7 @@
               <div class="u-grid-2">
                 <div class="u-field">
                   <label>Название</label>
-                  <input v-model="newDocTitle" class="glass-input" placeholder="Название документа" />
+                  <GlassInput v-model="newDocTitle"  placeholder="Название документа" />
                 </div>
                 <div class="u-field">
                   <label>Категория</label>
@@ -586,7 +586,7 @@
                 </div>
                 <div class="u-field u-field--full">
                   <label>Примечание</label>
-                  <input v-model="newDocNotes" class="glass-input" placeholder="Необязательно" />
+                  <GlassInput v-model="newDocNotes"  placeholder="Необязательно" />
                 </div>
               </div>
               <div style="margin-top: 12px;">
@@ -712,7 +712,7 @@
                   </div>
                   <div class="u-field">
                     <label>Ставка / стоимость часа</label>
-                    <input v-model="form.hourlyRate" class="glass-input" placeholder="2 500 ₽/час" />
+                    <GlassInput v-model="form.hourlyRate"  placeholder="2 500 ₽/час" />
                   </div>
                 </div>
               </div>
@@ -740,7 +740,7 @@
                   </div>
                 </div>
                 <div class="cab-cert-add">
-                  <input v-model="newCert" class="glass-input" placeholder="Новый сертификат / допуск" @keydown.enter.prevent="addCertification" />
+                  <GlassInput v-model="newCert"  placeholder="Новый сертификат / допуск" @keydown.enter.prevent="addCertification" />
                   <button type="button" class="cab-task-save" @click="addCertification">+</button>
                 </div>
               </div>
@@ -888,8 +888,8 @@
             <span>экран {{ pageIndex }} / {{ pageCount }}</span>
           </div>
           <div class="cv-pager-rail__actions">
-            <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
-            <button type="button" class="a-btn-sm" @click="move('next')">{{ pagerNextLabel }}</button>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="move('prev')">← экран</GlassButton>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="move('next')">{{ pagerNextLabel }}</GlassButton>
           </div>
         </div>
       </main>

@@ -7,13 +7,13 @@
 
       <form class="chat-auth-form" @submit.prevent="submit">
         <label class="chat-auth-label" for="chat-register-name">Имя</label>
-        <input id="chat-register-name" v-model="form.displayName" name="displayName" type="text" class="glass-input chat-auth-input" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false" inputmode="text" required>
+        <GlassInput id="chat-register-name" v-model="form.displayName" name="displayName" type="text" class=" chat-auth-input" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false" inputmode="text" required />
 
         <label class="chat-auth-label" for="chat-register-login">Логин</label>
-        <input id="chat-register-login" v-model="form.login" name="login" type="text" class="glass-input chat-auth-input" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" required>
+        <GlassInput id="chat-register-login" v-model="form.login" name="login" type="text" class=" chat-auth-input" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" required />
 
         <label class="chat-auth-label" for="chat-register-password">Пароль</label>
-        <input id="chat-register-password" v-model="form.password" name="password" type="password" class="glass-input chat-auth-input" autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+        <GlassInput id="chat-register-password" v-model="form.password" name="password" type="password" class=" chat-auth-input" autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" required />
 
         <p v-if="errorMessage" class="chat-auth-error">{{ errorMessage }}</p>
 

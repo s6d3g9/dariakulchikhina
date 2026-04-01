@@ -13,7 +13,7 @@
       </template>
       <template v-else>
         <p>Не удалось загрузить данные проекта.</p>
-        <button @click="refresh()" class="a-btn-sm">Повторить</button>
+        <GlassButton variant="secondary" density="compact" @click="refresh()" >Повторить</GlassButton>
         <NuxtLink to="/login?role=client" class="a-btn-sm">Выйти</NuxtLink>
       </template>
     </div>

@@ -19,7 +19,7 @@
         <div class="u-grid-2">
           <div class="u-field">
             <label class="u-field__label">номер акта</label>
-            <input v-model="form.cma_act_number" class="glass-input" placeholder="АКТ-2026-01" @blur="save">
+            <GlassInput v-model="form.cma_act_number"  placeholder="АКТ-2026-01" @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">дата подписания</label>
@@ -27,11 +27,11 @@
           </div>
           <div class="u-field">
             <label class="u-field__label">место подписания</label>
-            <input v-model="form.cma_location" class="glass-input" placeholder="город, адрес" @blur="save">
+            <GlassInput v-model="form.cma_location"  placeholder="город, адрес" @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">сумма договора</label>
-            <input v-model="form.cma_contract_sum" class="glass-input" placeholder="₽" @blur="save">
+            <GlassInput v-model="form.cma_contract_sum"  placeholder="₽" @blur="save" />
           </div>
           <div class="u-field u-field--full">
             <label class="u-field__label">описание выполненных работ</label>

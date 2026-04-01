@@ -70,7 +70,7 @@
           <div class="docs-registry-controls">
             <label class="u-field docs-search-field">
               <span class="u-field__label">Поиск по реестру</span>
-              <input v-model="search" class="glass-input docs-search-input" placeholder="название, проект, заметка" />
+              <GlassInput v-model="search" class=" docs-search-input" placeholder="название, проект, заметка" />
             </label>
 
             <div class="docs-registry-stats">
@@ -152,7 +152,7 @@
               <div class="docs-field-grid">
                 <label class="u-field">
                   <span class="u-field__label">Название *</span>
-                  <input v-model="uploadForm.title" class="glass-input docs-input" placeholder="Договор подряда №12" />
+                  <GlassInput v-model="uploadForm.title" class=" docs-input" placeholder="Договор подряда №12" />
                 </label>
 
                 <label class="u-field">
@@ -174,12 +174,12 @@
 
                 <label v-if="!editingDoc" class="u-field">
                   <span class="u-field__label">Файл</span>
-                  <input :key="uploadInputKey" type="file" class="glass-input docs-input docs-file-input" @change="onFileSelect" />
+                  <GlassInput :key="uploadInputKey" type="file" class=" docs-input docs-file-input" @change="onFileSelect" />
                 </label>
 
                 <label class="u-field" :class="{ 'docs-field--full': editingDoc }">
                   <span class="u-field__label">URL файла</span>
-                  <input v-model="uploadForm.url" class="glass-input docs-input" placeholder="https://..." />
+                  <GlassInput v-model="uploadForm.url" class=" docs-input" placeholder="https://..." />
                 </label>
 
                 <label class="u-field docs-field--full">
@@ -307,8 +307,8 @@
         <span>экран {{ pageIndex }} / {{ pageCount }}</span>
       </div>
       <div class="cv-pager-rail__actions">
-        <button type="button" class="a-btn-sm" @click="move('prev')">← экран</button>
-        <button type="button" class="a-btn-sm" @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / кат.' : pagerNextLabel }}</button>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="move('prev')">← экран</GlassButton>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="move('next')">{{ contentViewMode === 'flow' ? 'экран / кат.' : pagerNextLabel }}</GlassButton>
       </div>
     </div>
   </div>

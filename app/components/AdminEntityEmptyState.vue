@@ -3,7 +3,7 @@
     <span class="ent-empty-icon">{{ icon }}</span>
     <span v-if="hasItems">{{ messageWithItems }}</span>
     <span v-else>{{ messageEmpty }}</span>
-    <button v-if="actionLabel" class="a-btn-sm" style="margin-top:6px" @click="$emit('action')">{{ actionLabel }}</button>
+    <GlassButton variant="secondary" density="compact" v-if="actionLabel"  style="margin-top:6px" @click="$emit('action')">{{ actionLabel }}</GlassButton>
   </div>
 </template>
 

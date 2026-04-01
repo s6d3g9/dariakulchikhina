@@ -8,7 +8,7 @@
       <p class="proj-project-state__title">{{ projectLoadError ? 'Не удалось загрузить проект' : 'Проект не найден' }}</p>
       <p class="proj-project-state__text">{{ projectLoadError ? 'Проверьте соединение или попробуйте повторить загрузку.' : 'Проверьте адрес проекта или вернитесь к списку.' }}</p>
       <div class="proj-project-state__actions">
-        <button type="button" class="a-btn-sm" @click="refresh">Повторить</button>
+        <GlassButton variant="secondary" density="compact" type="button"  @click="refresh">Повторить</GlassButton>
         <NuxtLink to="/admin" class="a-btn-sm proj-project-state__link">К проектам</NuxtLink>
       </div>
     </div>
@@ -520,8 +520,8 @@
               <span>экран {{ viewportPageIndex }} / {{ viewportPageCount }}</span>
             </div>
             <div class="proj-pager-rail__actions">
-              <button type="button" class="a-btn-sm" @click="moveProjectViewport('prev')">← экран</button>
-              <button type="button" class="a-btn-sm" @click="moveProjectViewport('next')">{{ projectPagerNextLabel }}</button>
+              <GlassButton variant="secondary" density="compact" type="button"  @click="moveProjectViewport('prev')">← экран</GlassButton>
+              <GlassButton variant="secondary" density="compact" type="button"  @click="moveProjectViewport('next')">{{ projectPagerNextLabel }}</GlassButton>
             </div>
           </div>
         </div>
@@ -534,7 +534,7 @@
         <form @submit.prevent="saveProject">
           <div class="a-field">
             <label>Название</label>
-            <input v-model="editForm.title" class="glass-input" required>
+            <GlassInput v-model="editForm.title"  required />
           </div>
           <div class="a-field">
             <label style="margin-bottom:10px;display:block">Видимые страницы</label>
@@ -556,8 +556,8 @@
           </div>
           <p v-if="editError" style="color:var(--ds-error, #c00);font-size:.8rem;margin-bottom:10px">{{ editError }}</p>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-            <button type="button" class="a-btn-sm" @click="showEdit = false">отмена</button>
-            <button type="submit" class="a-btn-save" :disabled="saving">{{ saving ? '...' : 'сохранить' }}</button>
+            <GlassButton variant="secondary" density="compact" type="button"  @click="showEdit = false">отмена</GlassButton>
+            <GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? '...' : 'сохранить' }}</GlassButton>
           </div>
         </form>
       </div>

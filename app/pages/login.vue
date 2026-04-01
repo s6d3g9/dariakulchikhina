@@ -24,7 +24,7 @@
         <div class="auth-form-grid">
           <div class="auth-field">
             <label>Логин</label>
-            <input
+            <GlassInput
               v-model="credentials.login"
               name="login"
               type="text"
@@ -35,13 +35,13 @@
               spellcheck="false"
               inputmode="text"
               required
-              class="glass-input auth-input"
+              class=" auth-input"
             />
           </div>
 
           <div class="auth-field">
             <label>Пароль</label>
-            <input
+            <GlassInput
               v-model="credentials.password"
               name="password"
               type="password"
@@ -51,7 +51,7 @@
               autocorrect="off"
               spellcheck="false"
               required
-              class="glass-input auth-input"
+              class=" auth-input"
             />
           </div>
         </div>
@@ -63,9 +63,9 @@
           <span class="auth-progress__line"></span>
         </div>
 
-        <button type="submit" :disabled="credentialsLoading" class="a-btn-save auth-submit">
+        <GlassButton variant="primary" type="submit" :disabled="credentialsLoading" class=" auth-submit">
           {{ credentialsLoading ? 'Вход…' : submitLabel }}
-        </button>
+        </GlassButton>
       </form>
 
       <div v-if="selectedRole === 'client'" class="auth-secondary glass-surface">
@@ -73,14 +73,14 @@
         <form @submit.prevent="submitClientLegacy" class="auth-form-grid">
           <div class="auth-field auth-field--compact">
             <label>Код проекта</label>
-            <input
+            <GlassInput
               v-model="clientLegacySlug"
               type="text"
               placeholder="например: ivanov-project-2024"
               autocomplete="off"
               spellcheck="false"
               required
-              class="glass-input auth-input"
+              class=" auth-input"
             />
           </div>
 
@@ -89,9 +89,9 @@
             <span class="auth-progress__label">[ ИЩЕМ ПРОЕКТ ]</span>
             <span class="auth-progress__line"></span>
           </div>
-          <button type="submit" :disabled="clientLegacyLoading" class="a-btn-sm auth-submit auth-submit--secondary">
+          <GlassButton variant="secondary" density="compact" type="submit" :disabled="clientLegacyLoading" class=" auth-submit auth-submit--secondary">
             {{ clientLegacyLoading ? 'Вход…' : 'Войти по коду проекта' }}
-          </button>
+          </GlassButton>
         </form>
       </div>
 
@@ -100,24 +100,24 @@
         <form @submit.prevent="submitContractorLegacy" class="auth-form-grid">
           <div class="auth-field auth-field--compact">
             <label>ID подрядчика</label>
-            <input
+            <GlassInput
               v-model.number="contractorLegacy.id"
               type="number"
               min="1"
               placeholder="Ваш ID"
               required
-              class="glass-input auth-input"
+              class=" auth-input"
             />
           </div>
 
           <div class="auth-field auth-field--compact">
             <label>Код доступа</label>
-            <input
+            <GlassInput
               v-model="contractorLegacy.slug"
               type="text"
               placeholder="slug, выданный дизайнером"
               required
-              class="glass-input auth-input"
+              class=" auth-input"
             />
           </div>
 
@@ -126,9 +126,9 @@
             <span class="auth-progress__label">[ ПРОВЕРЯЕМ ПОДРЯДЧИКА ]</span>
             <span class="auth-progress__line"></span>
           </div>
-          <button type="submit" :disabled="contractorLegacyLoading" class="a-btn-sm auth-submit auth-submit--secondary">
+          <GlassButton variant="secondary" density="compact" type="submit" :disabled="contractorLegacyLoading" class=" auth-submit auth-submit--secondary">
             {{ contractorLegacyLoading ? 'Вход…' : 'Войти по ID' }}
-          </button>
+          </GlassButton>
         </form>
       </div>
 

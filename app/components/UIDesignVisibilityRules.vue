@@ -15,7 +15,7 @@
           <span class="ui-visibility-rules__label">{{ rule.label || rule.selector }}</span>
           <code class="ui-visibility-rules__selector">{{ rule.selector }}</code>
         </div>
-        <button type="button" class="a-btn-sm a-btn-danger" @click="removeRule(rule.id)">вернуть</button>
+        <GlassButton variant="danger" density="compact" type="button"  @click="removeRule(rule.id)">вернуть</GlassButton>
       </article>
     </div>
 

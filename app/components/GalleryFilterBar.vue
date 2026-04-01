@@ -19,13 +19,13 @@
     <!-- Search -->
     <div class="gfb-search-wrap">
       <svg class="gfb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input
+      <GlassInput
         :value="modelValue.search"
-        class="gfb-search glass-input"
+        class="gfb-search "
         placeholder="поиск..."
         aria-label="Поиск в галерее"
         @input="emit('update:modelValue', { ...modelValue, search: ($event.target as HTMLInputElement).value })"
-      >
+       />
       <button
         v-if="modelValue.search"
         class="gfb-search-clear"

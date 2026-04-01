@@ -68,24 +68,24 @@
             <form @submit.prevent="saveEdit">
               <div class="ct-form-section">основное</div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Имя *</label><input v-model="editForm.name" class="glass-input" required /></div>
-                <div class="u-field"><label class="u-field__label">Роль</label><input v-model="editForm.role" class="glass-input" placeholder="менеджер, ассистент…" /></div>
+                <div class="u-field"><label class="u-field__label">Имя *</label><GlassInput v-model="editForm.name"  required /></div>
+                <div class="u-field"><label class="u-field__label">Роль</label><GlassInput v-model="editForm.role"  placeholder="менеджер, ассистент…" /></div>
               </div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Город</label><input v-model="editForm.city" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">Город</label><GlassInput v-model="editForm.city"  /></div>
               </div>
               <div class="ct-form-section">контакты</div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Телефон</label><input v-model="editForm.phone" class="glass-input" /></div>
-                <div class="u-field"><label class="u-field__label">Email</label><input v-model="editForm.email" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">Телефон</label><GlassInput v-model="editForm.phone"  /></div>
+                <div class="u-field"><label class="u-field__label">Email</label><GlassInput v-model="editForm.email"  /></div>
               </div>
               <div class="u-grid-2">
-                <div class="u-field"><label class="u-field__label">Telegram</label><input v-model="editForm.telegram" class="glass-input" /></div>
+                <div class="u-field"><label class="u-field__label">Telegram</label><GlassInput v-model="editForm.telegram"  /></div>
               </div>
               <div class="ct-form-section">примечания</div>
               <div class="u-field"><textarea v-model="editForm.notes" class="glass-input u-ta" rows="3" placeholder="заметки о менеджере"></textarea></div>
               <p v-if="editError" class="ct-form-error ct-form-error--bottom">{{ editError }}</p>
-              <div class="ct-modal-foot"><button type="button" class="a-btn-sm" @click="closeEdit">отмена</button><button type="submit" class="a-btn-save" :disabled="editSaving">{{ editSaving ? '...' : 'сохранить' }}</button></div>
+              <div class="ct-modal-foot"><GlassButton variant="secondary" density="compact" type="button"  @click="closeEdit">отмена</GlassButton><GlassButton variant="primary" type="submit"  :disabled="editSaving">{{ editSaving ? '...' : 'сохранить' }}</GlassButton></div>
             </form>
           </div>
         </div>

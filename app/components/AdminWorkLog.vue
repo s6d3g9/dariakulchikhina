@@ -12,7 +12,7 @@
             <option value="">все типы</option>
             <option v-for="t in entryTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
           </select>
-          <input v-model="filterSearch" class="glass-input awl-search" placeholder="поиск по тексту…">
+          <GlassInput v-model="filterSearch" class=" awl-search" placeholder="поиск по тексту…" />
           <select v-model="filterMonth" class="u-status-sel awl-filter-sel">
             <option value="">все месяцы</option>
             <option v-for="m in availableMonths" :key="m.value" :value="m.value">{{ m.label }}</option>
@@ -39,11 +39,11 @@
           </div>
           <div class="u-field">
             <label class="u-field__label">подрядчик / участник</label>
-            <input v-model="newEntry.contractor" class="glass-input" placeholder="ФИО / компания">
+            <GlassInput v-model="newEntry.contractor"  placeholder="ФИО / компания" />
           </div>
           <div class="u-field" v-if="newEntry.type === 'delivery'">
             <label class="u-field__label">наименование материала</label>
-            <input v-model="newEntry.material" class="glass-input" placeholder="кирпич, плитка, …">
+            <GlassInput v-model="newEntry.material"  placeholder="кирпич, плитка, …" />
           </div>
           <div class="u-field u-field--full">
             <label class="u-field__label">описание / текст записи</label>
@@ -99,7 +99,7 @@
               <!-- Редактирование -->
               <div v-if="editingId === entry.id" class="awl-edit-form">
                 <textarea v-model="editText" class="glass-input u-ta" rows="3" @blur="saveEdit(entry)"/>
-                <input v-model="editContractor" class="glass-input" placeholder="подрядчик" @blur="saveEdit(entry)">
+                <GlassInput v-model="editContractor"  placeholder="подрядчик" @blur="saveEdit(entry)" />
                 <button class="awl-save-edit-btn" @click="saveEdit(entry)">сохранить</button>
               </div>
               <div class="awl-entry-footer">

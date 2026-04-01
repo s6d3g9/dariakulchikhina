@@ -25,7 +25,7 @@
         <div class="ws-row">
           <div class="ws-field ws-field--wide">
             <label class="ws-lbl">задача</label>
-            <input v-model="item.title" class="glass-input" placeholder="название задачи" />
+            <GlassInput v-model="item.title"  placeholder="название задачи" />
           </div>
           <div class="ws-field ws-field--sm">
             <label class="ws-lbl">статус</label>
@@ -76,7 +76,7 @@
           </div>
           <div class="ws-field">
             <label class="ws-lbl">бюджет</label>
-            <input v-model="item.budget" class="glass-input" placeholder="0 руб." />
+            <GlassInput v-model="item.budget"  placeholder="0 руб." />
           </div>
           <div class="ws-field">
             <label class="ws-lbl">подрядчик</label>

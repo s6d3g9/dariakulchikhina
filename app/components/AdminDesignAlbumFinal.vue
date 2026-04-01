@@ -24,7 +24,7 @@
         <div class="u-grid-2">
           <div class="u-field">
             <label class="u-field__label">версия</label>
-            <input v-model="form.daf_version" class="glass-input" placeholder="v1, финальная..." @blur="save">
+            <GlassInput v-model="form.daf_version"  placeholder="v1, финальная..." @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">дата выдачи</label>
@@ -32,7 +32,7 @@
           </div>
           <div class="u-field">
             <label class="u-field__label">кол-во страниц</label>
-            <input v-model="form.daf_page_count" type="number" min="0" class="glass-input" @blur="save">
+            <GlassInput v-model="form.daf_page_count" type="number" min="0"  @blur="save" />
           </div>
           <div class="u-field">
             <label class="u-field__label">формат</label>
@@ -58,7 +58,7 @@
           <div v-for="(ch, idx) in form.daf_chapters" :key="idx" class="adaf-chapter">
             <div class="adaf-ch-num">{{ Number(idx) + 1 }}</div>
             <div class="adaf-ch-body">
-              <input v-model="ch.title" class="glass-input" placeholder="название раздела" @blur="save">
+              <GlassInput v-model="ch.title"  placeholder="название раздела" @blur="save" />
               <div class="adaf-ch-meta">
                 <select v-model="ch.status" class="u-status-sel" @change="save">
                   <option value="">—</option>
