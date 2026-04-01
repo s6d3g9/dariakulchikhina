@@ -7045,10 +7045,10 @@ html.dark[data-concept="glass"] .admin-notif-dropdown::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  min-height: 40px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
   padding: 0;
   cursor: pointer;
   background: transparent;
@@ -7153,7 +7153,7 @@ html[data-concept="m3"] .glass-input__fill {
 }
 
 html[data-concept="m3"] .glass-btn {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 24px;
   border: none !important;
   border-radius: 999px !important;
