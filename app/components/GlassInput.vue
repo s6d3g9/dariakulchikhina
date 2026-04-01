@@ -26,10 +26,10 @@ const emit = defineEmits<{
 
 const inputClasses = computed(() => {
   return [
-    'glass-input w-full outline-none transition-all duration-300 backdrop-blur-md relative',
-    'placeholder:text-current placeholder:opacity-40',
+    'glass-input w-full outline-none transition-all duration-300 relative',
+    'placeholder:text-current',
     {
-      'border-red-500/50 shadow-[inset_0_1px_4px_rgba(220,38,38,0.2)] focus:ring-red-500/30 bg-red-500/5': props.error,
+      'error': props.error,
       'opacity-50 cursor-not-allowed': props.disabled,
       'px-10': props.icon, // Место под иконку
       'px-4': !props.icon

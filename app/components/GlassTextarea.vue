@@ -29,10 +29,10 @@ const emit = defineEmits<{
 
 const textareaClasses = computed(() => {
   return [
-    'glass-input w-full outline-none transition-all duration-300 backdrop-blur-md relative py-3 resize-y',
-    'placeholder:text-current placeholder:opacity-40 px-4',
+    'glass-input w-full outline-none transition-all duration-300 relative py-3 resize-y',
+    'placeholder:text-current px-4',
     {
-      'border-red-500/50 focus:ring-red-500/30 bg-red-500/5': props.error,
+      'error': props.error,
       'opacity-50 cursor-not-allowed': props.disabled
     }
   ]

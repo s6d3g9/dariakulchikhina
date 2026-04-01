@@ -36,11 +36,11 @@ const emit = defineEmits<{
 
 const selectClasses = computed(() => {
   return [
-    'glass-input appearance-none outline-none transition-all duration-300 backdrop-blur-md relative h-12',
+    'glass-input appearance-none outline-none transition-all duration-300 relative h-12',
     props.autoWidth ? 'w-auto' : 'w-full',
     'placeholder:text-current px-4 pr-10', // pr-10 для иконки стрелочки
     {
-      'border-red-500/50 focus:ring-red-500/30 bg-red-500/5': props.error,
+      'error': props.error,
       'opacity-50 cursor-not-allowed': props.disabled,
       'text-current/40': !props.modelValue && props.modelValue !== 0 // placeholder style
     }
