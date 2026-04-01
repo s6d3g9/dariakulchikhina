@@ -2312,6 +2312,13 @@ const { designPanel: designPanelModules, isPanelTabEnabled } = useDesignModules(
 const { currentPath, findRule: findVisibilityRule, addRule: addVisibilityRule, removeMatchingRule } = useElementVisibility()
 const { currentPath: alignmentPath, findRule: findAlignmentRule, setRulePosition, removeMatchingRule: removeAlignmentRule } = useElementAlignment()
 const { themeId, applyThemeWithTokens, UI_THEMES } = useUITheme()
+
+watch(() => UI_THEMES.value, (themes) => {
+  if (themes && themes.length && !themes.find(t => t.id === themeId.value)) {
+    themeId.value = themes[0].id
+    applyThemeWithTokens(themeId.value)
+  }
+}, { immediate: true })
 const { isDark } = useThemeToggle()
 const route = useRoute()
 const panelEnabled = computed(() => designPanelModules.value.enabled || route.query.designPanelTab === 'modules')

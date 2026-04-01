@@ -20,7 +20,7 @@ export interface UITheme {
   tokens: Partial<DesignTokens>
 }
 
-export const UI_THEMES: UITheme[] = [
+export const GLASS_THEMES: UITheme[] = [
   /* ── 1. Cloud — clean cool grey ── */
   {
     id: 'cloud', label: 'Облако', swatch: '#f4f4f2', swatchDark: '#1a1c22', btnPreview: 'серый',
@@ -202,10 +202,56 @@ export const UI_THEMES: UITheme[] = [
   },
 ]
 
+export const M3_THEMES: UITheme[] = [
+  {
+    id: 'm3-ocean', label: 'Океан', swatch: '#d3e3fd', swatchDark: '#384b6b', btnPreview: 'M3 Ocean',
+    vars: {
+      '--sys-color-primary': '#0B57D0',
+      '--sys-color-surface': '#F8F9FA'
+    }, 
+    darkVars: {
+      '--sys-color-primary': '#A8C7FA',
+      '--sys-color-surface': '#1F1F1F'
+    }, 
+    tokens: {}
+  }
+];
+
+export const BRUTAL_THEMES: UITheme[] = [
+  {
+    id: 'brutal-mono', label: 'Моно', swatch: '#ffffff', swatchDark: '#000000', btnPreview: 'Brutal',
+    vars: {
+      '--brutal-bg': '#FFFFFF',
+      '--brutal-text': '#000000',
+    }, 
+    darkVars: {
+      '--brutal-bg': '#000000',
+      '--brutal-text': '#FFFFFF',
+    }, 
+    tokens: {}
+  }
+];
+
+export const UI_THEMES = [...GLASS_THEMES, ...M3_THEMES, ...BRUTAL_THEMES];
+
+export const UI_THEMES_MAP: Record<string, UITheme[]> = {
+  'concept-m3': M3_THEMES,
+  'concept-brutal': BRUTAL_THEMES,
+  'concept-glass': GLASS_THEMES,
+  'concept-silence': GLASS_THEMES
+};
+
 const LS_KEY = 'ui-theme'
 
+import { computed } from '#imports'
+
 export function useUITheme() {
+  const { activeConceptSlug } = useDesignSystem()
   const themeId = useState<string>('uiTheme', () => 'cloud')
+
+  const availableThemes = computed(() => {
+    return UI_THEMES_MAP[activeConceptSlug?.value || 'concept-glass'] || GLASS_THEMES
+  })
 
   /**
    * Apply the theme's CSS custom-property set as inline styles on <html>.
@@ -213,7 +259,7 @@ export function useUITheme() {
    */
   function applyThemeVars(id?: string) {
     if (!import.meta.client) return
-    const theme = UI_THEMES.find(t => t.id === (id ?? themeId.value))
+    const theme = availableThemes.value.find(t => t.id === (id ?? themeId.value)) || availableThemes.value[0]
     if (!theme) return
     const isDark = document.documentElement.classList.contains('dark')
     const vars = isDark ? theme.darkVars : theme.vars
@@ -242,7 +288,7 @@ export function useUITheme() {
    * actively picks a theme in the palette UI.
    */
   function applyThemeWithTokens(id: string) {
-    const theme = UI_THEMES.find(t => t.id === id)
+    const theme = availableThemes.value.find(t => t.id === id) || availableThemes.value[0]
     // Apply CSS vars first (so --btn-bg-base etc. are available for applyToDOM)
     applyTheme(id)
     // Then push structural tokens into the design system
@@ -265,5 +311,5 @@ export function useUITheme() {
     applyTheme(saved)
   }
 
-  return { themeId, applyTheme, applyThemeWithTokens, refreshThemeVars, initTheme, UI_THEMES }
+  return { themeId, applyTheme, applyThemeWithTokens, refreshThemeVars, initTheme, UI_THEMES: availableThemes, availableThemes }
 }
