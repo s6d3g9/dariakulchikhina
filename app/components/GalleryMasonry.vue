@@ -12,7 +12,7 @@
       >
         <slot :item="item" :index="index">
           <!-- Дефолтная карточка -->
-          <GlassSurface class="msn-card ">
+          <GlassSurface class="msn-card">
             <div class="msn-img-wrap" :style="{ aspectRatio: getAspectRatio(item) }">
               <!-- Blur-up placeholder -->
               <div v-if="!loadedImages.has(item.id)" class="msn-blur-placeholder" />
@@ -48,9 +48,9 @@
                 <span v-for="t in item.tags" :key="t" class="msn-tag">{{ t }}</span>
               </div>
             </div>
-          </div>
+          </GlassSurface>
         </slot>
-      </GlassSurface>
+      </div>
     </TransitionGroup>
   </div>
 </template>

@@ -26,7 +26,7 @@
         <!-- photo upload -->
         <div class="acp-upload-row" style="margin-bottom:20px">
           <label class="acp-lbl" style="width:140px">фото клиента:</label>
-          <GlassInput :model-value="Array.isArray(form.photo) ? form.photo[0] : form.photo" @update:model-value="v => form.photo = v"  type="text" placeholder="имя файла" />
+          <GlassInput :model-value="Array.isArray(form.photo) ? form.photo[0] : form.photo" @update:model-value="v => form.photo = v as string"  type="text" placeholder="имя файла" />
           <label class="acp-btn-upload">
             загрузить
             <input type="file" accept="image/*" style="display:none" @change="uploadPhoto">
