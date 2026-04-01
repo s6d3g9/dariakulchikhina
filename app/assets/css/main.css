@@ -7027,3 +7027,26 @@ html.dark[data-concept="glass"] .admin-bg label:has(input[type="checkbox"]:check
   background: color-mix(in srgb, var(--glass-text) 85%, transparent) !important;
   color: var(--glass-page-bg) !important;
 }
+html[data-concept="glass"] input:not([type="checkbox"]):not([type="radio"]), html[data-concept="glass"] select, html[data-concept="glass"] textarea, html[data-concept="glass"] .glass-input, html[data-concept="glass"] .glass-textarea {
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
+  border-radius: var(--chip-radius, 999px) !important;
+  backdrop-filter: blur(12px) !important;
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
+  color: var(--glass-text) !important;
+  box-shadow: inset 0 2px 4px color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
+}
+html[data-concept="glass"] select {
+  border-radius: var(--chip-radius, 999px) !important;
+  appearance: none;
+}
+html[data-concept="glass"] textarea, html[data-concept="glass"] .glass-textarea {
+  border-radius: var(--card-radius, 24px) !important;
+}
+html[data-concept="glass"] .acp2-wrap, html[data-concept="glass"] .acp2-stage, html[data-concept="glass"] .acp2-task-row {
+  background: color-mix(in srgb, var(--glass-page-bg) 60%, transparent) !important;
+  backdrop-filter: blur(var(--glass-blur, 32px)) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
+  border-radius: var(--card-radius, 24px) !important;
+}
