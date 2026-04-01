@@ -426,7 +426,7 @@
                       {{ isTimelinePhaseCollapsed(row.phaseKey) ? `показать ${getTimelinePhaseSprintCount(row.phaseKey)}` : `свернуть ${getTimelinePhaseSprintCount(row.phaseKey)}` }}
                     </button>
                   </div>
-                  <strong class="hpc-board__title">{{ row.title }}</strong>
+                  <strong class="hpc-board__title" style="cursor: pointer; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(var(--sys-color-on-surface-rgb), 0.3);" @click="openTimelineRowDetails(row)">{{ row.title }}</strong>
                   <div class="hpc-board__meta-line">{{ row.meta }}</div>
                 </div>
               </div>
@@ -454,6 +454,7 @@
                   :draggable="timelineEditingEnabled"
                   @dragstart="onScheduleDragStart($event, row)"
                   @dragend="onDragEnd"
+                  @click="openTimelineRowDetails(row)"
                 >
                   <button
                     class="hpc-board__bar-handle hpc-board__bar-handle--start"
@@ -478,6 +479,67 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Подробная информация о строке таймлайна (Фазы/Спринты/Процессы) -->
+        <div v-if="selectedTimelineRowDetails" class="hpc-timeline-details-modal glass-surface glass-card" style="margin-top: 24px; padding: 24px; position: relative;">
+          <button class="a-btn-sm" style="position: absolute; top: 16px; right: 16px;" @click="selectedTimelineRowDetails = null">Закрыть ✕</button>
+          
+          <h4 class="hpc-section__title" style="margin-bottom: 8px;">{{ selectedTimelineRowDetails.title }}</h4>
+          <p class="hpc-recommendation-text" style="margin-bottom: 16px;">Тип: {{ selectedTimelineRowDetails.typeLabel }}</p>
+          
+          <div class="hpc-grid hpc-grid--top">
+            <div class="u-field">
+              <label class="u-field__label">Период</label>
+              <div class="glass-input" style="pointer-events: none; opacity: 0.8;">
+                {{ formatDateRange(selectedTimelineRowDetails.startDate, selectedTimelineRowDetails.endDate) }}
+              </div>
+            </div>
+            <div class="u-field">
+              <label class="u-field__label">Прогресс</label>
+              <div class="glass-input" style="pointer-events: none; opacity: 0.8;">
+                {{ selectedTimelineRowDetails.progressLabel }}
+              </div>
+            </div>
+            <div class="u-field">
+              <label class="u-field__label">Статус</label>
+              <div class="glass-input" style="pointer-events: none; opacity: 0.8;">
+                {{ selectedTimelineRowDetails.statusLabel }}
+              </div>
+            </div>
+          </div>
+
+          <div v-if="selectedTimelineRowDetails.type === 'phase'" class="hpc-timeline-meta" style="margin-top: 16px;">
+            <p class="hpc-summary__label" style="margin-bottom: 8px;">Информация о фазе</p>
+            <div class="glass-input u-ta" style="pointer-events: none; white-space: pre-wrap; opacity: 0.9;">
+              <strong>Ответственный (Куратор/Менеджер):</strong> {{ getPhaseById(selectedTimelineRowDetails.id)?.owner || 'Не назначен' }}
+              <br><br>
+              <strong>Ключевой результат:</strong> {{ getPhaseById(selectedTimelineRowDetails.id)?.deliverable || 'Нет данных' }}
+              <br><br>
+              <strong>Заметки:</strong> {{ getPhaseById(selectedTimelineRowDetails.id)?.notes || 'Нет заметок' }}
+            </div>
+          </div>
+
+          <div v-if="selectedTimelineRowDetails.type === 'sprint'" class="hpc-timeline-meta" style="margin-top: 16px;">
+            <p class="hpc-summary__label" style="margin-bottom: 8px;">Информация о спринте</p>
+            <div class="glass-input u-ta" style="pointer-events: none; white-space: pre-wrap; opacity: 0.9;">
+              <strong>Фокус команды:</strong> {{ getSprintById(selectedTimelineRowDetails.id)?.focus || 'Нет фокуса' }}
+              <br><br>
+              <strong>Цель:</strong> {{ getSprintById(selectedTimelineRowDetails.id)?.goal || 'Нет цели' }}
+              <br><br>
+              <strong>Задачи / Процессы в спринте:</strong>
+              <div v-if="getSprintById(selectedTimelineRowDetails.id)?.tasks?.length" style="margin-top: 8px;">
+                <ul style="padding-left: 20px;">
+                  <li v-for="task in getSprintById(selectedTimelineRowDetails.id)?.tasks || []" :key="task.id" style="margin-bottom: 4px;">
+                    {{ task.title }} — <em>{{ task.assignee || 'Исполнитель (подрядчик) не назначен' }}</em>
+                    ({{ task.status }})
+                  </li>
+                </ul>
+              </div>
+              <div v-else style="margin-top: 8px;">Нет связанных задач/процессов</div>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -1355,6 +1417,12 @@ async function executeMessageDispatch() {
   } finally {
     msgModalSending.value = false
   }
+}
+
+const selectedTimelineRowDetails = ref<HybridTimelineRow | null>(null)
+
+function openTimelineRowDetails(row: HybridTimelineRow) {
+  selectedTimelineRowDetails.value = Object.freeze(Object.assign({}, row)) as HybridTimelineRow
 }
 </script>
 
