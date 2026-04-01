@@ -167,8 +167,8 @@ async function applyCallReviewToProjectSprint() {
 
         <div class="call-transcript-panel__content call-transcript-panel__content--scroll" ref="transcriptScrollRef">
           <p v-if="calls.callReview.value?.cleanedTranscript" class="call-transcript-panel__text">{{ calls.callReview.value.cleanedTranscript }}</p>
-          <template v-else>
-            <p v-if="!calls.transcriptionEntries.value.length && !calls.transcriptionDraft.value" class="call-transcript-popup__empty">
+          <TransitionGroup name="transcript-list" tag="div" class="transcript-list-wrapper" v-else>
+            <p v-if="!calls.transcriptionEntries.value.length && !calls.transcriptionDraft.value" class="call-transcript-popup__empty" key="empty">
               Ждём распознавание речи...
             </p>
             <article
@@ -183,13 +183,13 @@ async function applyCallReviewToProjectSprint() {
               </header>
               <p>{{ entry.text }}</p>
             </article>
-            <article v-if="calls.transcriptionDraft.value" class="call-transcript-line call-transcript-line--draft">
+            <article v-if="calls.transcriptionDraft.value" key="draft" class="call-transcript-line call-transcript-line--draft call-transcript-line--pulsing">
               <header class="call-transcript-line__meta">
-                <span>Распознаём...</span>
+                <span>Распознаём... <span class="typing-dots"></span></span>
               </header>
               <p>{{ calls.transcriptionDraft.value }}</p>
             </article>
-          </template>
+          </TransitionGroup>
         </div>
       </section>
 

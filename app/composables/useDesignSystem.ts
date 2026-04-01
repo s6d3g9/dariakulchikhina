@@ -2558,7 +2558,17 @@ export function useDesignSystem() {
     // Start from DEFAULT_TOKENS — complete reset, no residue from prev presets
     tokens.value = { ...DEFAULT_TOKENS, ...preset.tokens }
     // Track active concept slug for CSS selectors like html[data-concept="brutal"]
-    activeConceptSlug.value = preset.id.startsWith('concept-') ? preset.id.replace('concept-', '') : ''
+    let sysSlug = '';
+    if (preset.id.startsWith('concept-')) {
+      sysSlug = preset.id.replace('concept-', '');
+    } else if (preset.id.includes('glass')) {
+      sysSlug = 'glass';
+    } else if (preset.id.includes('brutal')) {
+      sysSlug = 'brutal';
+    } else if (preset.id === 'minale' || preset.id === 'neomorphism') {
+      sysSlug = 'minale';
+    }
+    activeConceptSlug.value = sysSlug;
     _syncConceptAttr()
     applyToDOM()
     save()
@@ -2755,7 +2765,17 @@ export function useDesignSystem() {
       }
     }
     // Track active concept slug for CSS selectors
-    activeConceptSlug.value = preset.id.startsWith('concept-') ? preset.id.replace('concept-', '') : ''
+    let sysSlug = '';
+    if (preset.id.startsWith('concept-')) {
+      sysSlug = preset.id.replace('concept-', '');
+    } else if (preset.id.includes('glass')) {
+      sysSlug = 'glass';
+    } else if (preset.id.includes('brutal')) {
+      sysSlug = 'brutal';
+    } else if (preset.id === 'minale' || preset.id === 'neomorphism') {
+      sysSlug = 'minale';
+    }
+    activeConceptSlug.value = sysSlug;
     _syncConceptAttr()
     // Always start from DEFAULT_TOKENS so no residue leaks between presets
     tokens.value = { ...DEFAULT_TOKENS, ...preset.tokens }

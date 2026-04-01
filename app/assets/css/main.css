@@ -2761,7 +2761,7 @@ html.dark .admin-bg {
 
 /* from: components/AdminClientProfile.vue */
 html.dark .acp-card {
-  --acp-bg: #151517;
+  --acp-bg: color-mix(in srgb, var(--color-surface, var(--glass-bg)) 40%, transparent);
   --acp-border: #2d2d2d;
   --acp-row-border: #222;
   --acp-lbl: #a8a8a8;
@@ -2841,7 +2841,7 @@ html.dark .am-card {
 
 /* from: pages/admin/contractors/index.vue, pages/admin/index.vue */
 html.dark .a-card {
-  --card-bg: #151517;
+  --card-bg: color-mix(in srgb, var(--color-surface, var(--glass-bg)) 40%, transparent);
   --card-border: #2d2d2d;
   --card-text: #f2f2f2;
   --card-muted: #777;
@@ -2858,7 +2858,7 @@ html.dark .a-card {
   --input-focus: #888;
   --input-color: #f2f2f2;
   --label-color: #a8a8a8;
-  --modal-bg: #151517;
+  --modal-bg: color-mix(in srgb, var(--color-surface, var(--glass-bg)) 40%, transparent);
   --modal-border: #2d2d2d;
   --backdrop-bg: rgba(0,0,0,0.6);
   --input-disabled: #555;
@@ -2871,7 +2871,7 @@ html.dark .contractor-name {
 
 /* from: pages/admin/pages/index.vue */
 html.dark .pg-root {
-  --pg-bg: #151517;
+  --pg-bg: color-mix(in srgb, var(--color-surface, var(--glass-bg)) 40%, transparent);
   --pg-border: #2d2d2d;
   --pg-lbl: #a8a8a8;
   --pg-inp-border: #3a3a3a;
@@ -2887,7 +2887,7 @@ html.dark .pg-root {
 
 /* from: pages/admin/pages/index.vue */
 html.dark .pg-card {
-  --pg-bg: #151517;
+  --pg-bg: color-mix(in srgb, var(--color-surface, var(--glass-bg)) 40%, transparent);
   --pg-border: #2d2d2d;
   --pg-lbl: #a8a8a8;
   --pg-inp-border: #3a3a3a;
@@ -2919,7 +2919,7 @@ html.dark .proj-tabs {
   --input-focus: #888;
   --input-color: #f2f2f2;
   --label-color: #a8a8a8;
-  --modal-bg: #151517;
+  --modal-bg: color-mix(in srgb, var(--color-surface, var(--glass-bg)) 40%, transparent);
   --modal-border: #2d2d2d;
   --backdrop-bg: rgba(0,0,0,0.6);
 }
@@ -3784,7 +3784,7 @@ html.dark .a-modal label {
   --am-muted: var(--ds-muted, #a8a8a8);
 }
 [data-dark-surface] .a-card {
-  --card-bg: var(--ds-card-bg, #151517);
+  --card-bg: var(--ds-card-bg, color-mix(in srgb, var(--color-surface, var(--glass-bg)) 40%, transparent));
   --card-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --card-text: var(--ds-text-color, #f2f2f2);
   --card-muted: var(--ds-muted, #777);
@@ -3792,13 +3792,13 @@ html.dark .a-modal label {
   --btn-border: color-mix(in srgb, var(--glass-text) 10%, transparent);
   --btn-color: var(--ds-text-color, #bbb);
   --label-color: var(--ds-muted, #a8a8a8);
-  --modal-bg: var(--ds-card-bg, #151517);
+  --modal-bg: var(--ds-card-bg, color-mix(in srgb, var(--color-surface, var(--glass-bg)) 40%, transparent));
   --modal-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --input-border: color-mix(in srgb, var(--glass-text) 10%, transparent);
   --input-color: var(--ds-text-color, #f2f2f2);
 }
 [data-dark-surface] .acp-card {
-  --acp-bg: var(--ds-card-bg, #151517);
+  --acp-bg: var(--ds-card-bg, color-mix(in srgb, var(--color-surface, var(--glass-bg)) 40%, transparent));
   --acp-border: color-mix(in srgb, var(--glass-text) 8%, transparent);
   --acp-lbl: var(--ds-muted, #a8a8a8);
   --acp-btn-border: var(--ds-text-color, #f2f2f2);
@@ -5001,7 +5001,7 @@ html[data-concept="grand"] { --phase-violet: #b89060 !important; --phase-blue: #
 html[data-concept="minale"] {
   scrollbar-width: none !important;
   --glass-page-bg:  #000000;
-  --glass-bg:       #0a0a0a;
+  --glass-bg:       color-mix(in srgb, var(--color-surface, var(--glass-bg)) 50%, transparent);
   --glass-text:     #ffffff;
   --glass-border:   rgba(255,255,255,0.20);
   --glass-shadow:   none;
@@ -6196,6 +6196,18 @@ html[data-concept="glass"] {
   --btn-bg:          rgba(255,255,255,0.22);
   --btn-color:       #1a1a2e;
   --btn-border:      rgba(255,255,255,0.50);
+  --card-radius:     28px;
+}
+
+html.dark[data-concept="glass"] {
+  --glass-page-bg:   linear-gradient(135deg, #05050a 0%, #0d0d1a 50%, #050a14 100%);
+  --glass-bg:        color-mix(in srgb, var(--glass-text) 12%, transparent);
+  --glass-text:      #ffffff;
+  --glass-border:    color-mix(in srgb, var(--glass-text) 15%, transparent);
+  --glass-shadow:    0 8px 32px rgba(0,0,0, 0.4);
+  --btn-bg:          color-mix(in srgb, var(--glass-text) 10%, transparent);
+  --btn-color:       #ffffff;
+  --btn-border:      color-mix(in srgb, var(--glass-text) 15%, transparent);
   --card-radius:     28px;
 }
 
