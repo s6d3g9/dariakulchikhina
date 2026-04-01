@@ -165,5 +165,5 @@ html.dark[data-concept="concept-m3"] .hpc-board__entity {
 }
 `;
 
-fs.appendFileSync('app/assets/css/main.css', m3Styles);
+fs.appendFileSync('/Users/oxo/work/dariakulchikhina/app/assets/css/main.css', m3Styles);
 console.log('Appended M3 styles successfully');
