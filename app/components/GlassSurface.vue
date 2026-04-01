@@ -22,13 +22,14 @@ const props = withDefaults(defineProps<{
   refraction: true,
   layer: 'surface',
   interactive: false,
-  padding: 'p-6',
+  padding: '',
   as: 'div'
 })
 
 const surfaceClasses = computed(() => {
   return [
     'glass-surface',
+    'glass-card',
     props.padding,
     {
       '!backdrop-blur-none': !props.blur,

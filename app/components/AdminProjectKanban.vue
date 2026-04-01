@@ -109,20 +109,13 @@ function removeTask(sprint: HybridControlSprint, taskId: string) {
           @dragover.prevent
           @drop="onDrop($event, sprint.id, st.value)"
         >
-          <div 
-            v-for="task in getTasks(sprint, st.value)" 
-            :key="task.id"
-            class="akanban-card glass-card"
-            draggable="true"
-            @dragstart="onDragStart($event, task, sprint.id)"
-            @click="openTask = task"
-          >
+          <GlassSurface v-for="task in getTasks(sprint, st.value)" :key="task.id" class="akanban-card " draggable="true" @dragstart="onDragStart($event, task, sprint.id)" @click="openTask = task" >
             <div class="akanban-card-title">{{ task.title }}</div>
             <div class="akanban-card-meta">
               <span v-if="task.assignee">@{{ task.assignee }}</span>
               <span v-if="task.points">{{ task.points }}pt</span>
             </div>
-          </div>
+          </GlassSurface>
           <button class="akanban-add-btn" @click="addTask(sprint, st.value)">+ Добавить</button>
         </div>
       </div>

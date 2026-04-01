@@ -1,10 +1,10 @@
 <template>
   <div class="cl-page" :class="{ 'cl-page--brutalist': isBrutalistClientsMode }">
-    <div v-if="projectSlugFilter" class="cl-filter-info glass-surface glass-card" :class="{ 'cl-filter-info--brutalist': isBrutalistClientsMode }">
+    <GlassSurface v-if="projectSlugFilter" class="cl-filter-info glass-surface " :class="{ 'cl-filter-info--brutalist': isBrutalistClientsMode }">
       <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="cl-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/clients" class="cl-filter-link">показать всех</NuxtLink>
-    </div>
+    </GlassSurface>
 
     <!-- Content: selected client or empty state -->
     <template v-if="selectedClient">
@@ -36,15 +36,15 @@
 
           <section v-show="!isWipe2Mode" class="cl-main-shell" :class="{ 'cl-main-shell--brutalist': isBrutalistClientsMode }">
             <div v-if="currentClientPage === 'dashboard'" class="cl-section-grid">
-              <div class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+              <GlassSurface class="ent-detail-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
                 <div class="ent-detail-section">клиент</div>
                 <div class="ent-detail-row">{{ selectedClient.name }}</div>
                 <div v-if="selectedClient.phone" class="ent-detail-row">{{ selectedClient.phone }}</div>
                 <div v-if="selectedClient.email" class="ent-detail-row">{{ selectedClient.email }}</div>
                 <div v-if="selectedClient.address" class="ent-detail-row">{{ selectedClient.address }}</div>
                 <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
-              </div>
-              <div class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+              </GlassSurface>
+              <GlassSurface class="ent-detail-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
                 <div class="ent-detail-section">проект</div>
                 <template v-if="selectedClientSlug && clientProject">
                   <div class="ent-detail-row">{{ clientProject.title }}</div>
@@ -59,10 +59,10 @@
                     <GlassButton variant="secondary" density="compact"  @click="openLink(selectedClient)">привязать к проекту</GlassButton>
                   </div>
                 </template>
-              </div>
+              </GlassSurface>
             </div>
 
-            <div v-else-if="currentClientPage === 'profile'" class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+            <GlassSurface v-else-if="currentClientPage === 'profile'" class="ent-detail-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
               <div class="ent-detail-section">профиль клиента</div>
               <div class="ent-detail-row">имя: {{ selectedClient.name }}</div>
               <div v-if="selectedClient.phone" class="ent-detail-row">телефон: {{ selectedClient.phone }}</div>
@@ -70,9 +70,9 @@
               <div v-if="selectedClient.messengerNick" class="ent-detail-row">мессенджер: {{ selectedClient.messenger ? selectedClient.messenger + ' ' : '' }}{{ selectedClient.messengerNick }}</div>
               <div v-if="selectedClient.address" class="ent-detail-row">адрес: {{ selectedClient.address }}</div>
               <p v-if="selectedClient.notes" class="ent-detail-notes">{{ selectedClient.notes }}</p>
-            </div>
+            </GlassSurface>
 
-            <div v-else-if="currentClientPage === 'signoff'" class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+            <GlassSurface v-else-if="currentClientPage === 'signoff'" class="ent-detail-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
               <div class="ent-detail-section">подписание и согласование</div>
               <template v-if="selectedClientSlug && clientProject">
                 <div class="ent-detail-row">проект: {{ clientProject.title }}</div>
@@ -82,9 +82,9 @@
                 </div>
               </template>
               <div v-else class="ent-detail-row" style="opacity:.48">для этого раздела сначала нужен привязанный проект</div>
-            </div>
+            </GlassSurface>
 
-            <div v-else-if="currentClientPage === 'projects'" class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+            <GlassSurface v-else-if="currentClientPage === 'projects'" class="ent-detail-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
               <div class="ent-detail-section">проекты клиента</div>
               <div v-if="selectedClient.linkedProjects?.length" class="cl-linked-projects">
                 <NuxtLink
@@ -98,9 +98,9 @@
                 </NuxtLink>
               </div>
               <div v-else class="ent-detail-row" style="opacity:.48">у клиента пока нет привязанных проектов</div>
-            </div>
+            </GlassSurface>
 
-            <div v-else-if="currentClientPage === 'documents'" class="ent-detail-card glass-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
+            <GlassSurface v-else-if="currentClientPage === 'documents'" class="ent-detail-card cl-detail-card" :class="{ 'cl-detail-card--brutalist': isBrutalistClientsMode }">
               <div class="ent-detail-section">документы клиента</div>
               <div class="cl-row"><div class="cl-field"><label>Поиск</label><GlassInput v-model="docsSearch"  placeholder="Название" /></div><div class="cl-field"><label>Категория</label><select v-model="docsFilter" class="glass-input"><option value="">Все</option><option v-for="dc in DOC_CATEGORIES" :key="dc.value" :value="dc.value">{{ dc.label }}</option></select></div></div>
               <div class="cl-row"><div class="cl-field"><label>Название</label><GlassInput v-model="docsTitle"  placeholder="Название документа" /></div><div class="cl-field"><label>Категория</label><select v-model="docsCategory" class="glass-input"><option v-for="dc in DOC_CATEGORIES" :key="`inline-${dc.value}`" :value="dc.value">{{ dc.label }}</option></select></div></div>
@@ -114,7 +114,7 @@
                 </div>
               </div>
               <div v-else class="ent-detail-row" style="opacity:.48">документов пока нет</div>
-            </div>
+            </GlassSurface>
           </section>
           <Wipe2Renderer v-if="contentViewMode === 'wipe2'" :entity="wipe2ClientEntityData" layout="inline" @edit="designSystem.set('contentViewMode', 'scroll')" />
       </div>
@@ -134,7 +134,7 @@
 
     <Teleport to="body">
     <div v-if="showModal" class="cl-backdrop" :class="{ 'cl-backdrop--brutalist': isBrutalistClientsMode }" @click.self="closeModal">
-      <div class="cl-modal glass-surface glass-card" :class="{ 'cl-modal--brutalist': isBrutalistClientsMode }">
+      <GlassSurface class="cl-modal glass-surface " :class="{ 'cl-modal--brutalist': isBrutalistClientsMode }">
         <div class="cl-modal-head"><span>{{ editingId ? 'редактировать клиента' : 'новый клиент' }}</span><button class="cl-close" @click="closeModal">✕</button></div>
         <form class="cl-form" @submit.prevent="save">
           <div class="cl-field"><label>Имя / Название *</label><GlassInput v-model="form.name"  required placeholder="Иванова Анна Сергеевна" autofocus /></div>
@@ -145,14 +145,14 @@
           <p v-if="saveError" class="cl-error">{{ saveError }}</p>
           <div class="cl-modal-foot"><GlassButton variant="secondary" density="compact" type="button"  @click="closeModal">отмена</GlassButton><GlassButton variant="primary" type="submit"  :disabled="saving">{{ saving ? '...' : (editingId ? 'сохранить' : 'добавить') }}</GlassButton></div>
         </form>
-      </div>
+      </GlassSurface>
     </div>
     </Teleport>
 
     <!-- ══ Link-to-project modal ══ -->
     <Teleport to="body">
     <div v-if="showLink" class="cl-backdrop" :class="{ 'cl-backdrop--brutalist': isBrutalistClientsMode }" @click.self="showLink = false">
-      <div class="cl-modal glass-surface glass-card" :class="{ 'cl-modal--brutalist': isBrutalistClientsMode }">
+      <GlassSurface class="cl-modal glass-surface " :class="{ 'cl-modal--brutalist': isBrutalistClientsMode }">
         <div class="cl-modal-head"><span>привязать «{{ linkClient?.name }}» к проекту</span><button class="cl-close" @click="showLink = false">✕</button></div>
         <div class="cl-form">
           <div class="cl-field">
@@ -166,7 +166,7 @@
           <p v-if="linkError" class="cl-error">{{ linkError }}</p>
           <div class="cl-modal-foot"><GlassButton variant="secondary" density="compact" type="button"  @click="showLink = false">отмена</GlassButton><GlassButton variant="primary"  :disabled="!linkProjectSlug || linking" @click="doLink">{{ linking ? '...' : 'привязать' }}</GlassButton></div>
         </div>
-      </div>
+      </GlassSurface>
     </div>
     </Teleport>
 

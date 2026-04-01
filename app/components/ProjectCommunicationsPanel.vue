@@ -43,7 +43,7 @@
           <p v-if="callPermissionHelp" class="comm-call-security__fallback">{{ callPermissionHelp }}</p>
         </div>
 
-        <div v-if="incomingCall" class="comm-incoming glass-card" :class="{ 'comm-incoming--audio': incomingCall.mode === 'audio' }">
+        <GlassSurface v-if="incomingCall" class="comm-incoming " :class="{ 'comm-incoming--audio': incomingCall.mode === 'audio' }">
           <div class="comm-incoming-head">
             <div>
               <p class="comm-incoming-title">Входящий {{ incomingCall.mode === 'video' ? 'видеозвонок' : 'аудиозвонок' }}</p>
@@ -56,7 +56,7 @@
             <GlassButton variant="secondary" density="compact" type="button"  @click="acceptIncomingCall">Принять</GlassButton>
             <GlassButton variant="danger" density="compact" type="button"  @click="rejectIncomingCall">Отклонить</GlassButton>
           </div>
-        </div>
+        </GlassSurface>
 
         <div v-if="currentChatPeer" class="comm-block comm-block--presence">
           <div class="comm-chat-subject">

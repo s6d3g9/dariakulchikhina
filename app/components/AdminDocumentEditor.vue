@@ -21,8 +21,8 @@
     <div v-if="step === 0" class="de-panel">
       <div class="de-section-title">Выберите шаблон документа</div>
       <div class="de-tpl-grid">
-        <button v-for="tpl in templates" :key="tpl.key"
-          class="de-tpl-card glass-card"
+        <GlassSurface v-for="tpl in templates" :key="tpl.key" as="button"
+          class="de-tpl-card"
           :class="{ 'de-tpl-card--active': selectedTpl?.key === tpl.key }"
           @click="selectTemplate(tpl); goToStep(1)"
         >
@@ -32,7 +32,7 @@
             <div class="de-tpl-desc">{{ tpl.description }}</div>
           </div>
           <span class="de-tpl-arrow">→</span>
-        </button>
+        </GlassSurface>
       </div>
     </div>
 
@@ -248,7 +248,7 @@
 
       <!-- ══ Панель переменных ══ -->
       <Transition name="de-vars-slide">
-        <div v-if="varsOpen" class="de-vars-panel glass-card">
+        <GlassSurface v-if="varsOpen" class="de-vars-panel ">
           <div class="de-vars-panel-head">
             <span class="de-vars-panel-title">&#123;&#123;&thinsp;&#125;&#125; Переменные шаблона</span>
             <span class="de-vars-panel-hint">Кликните — вставить в позицию курсора · или скопировать</span>
@@ -265,7 +265,7 @@
               <span class="de-var-val">{{ v.value || '—' }}</span>
             </div>
           </div>
-        </div>
+        </GlassSurface>
       </Transition>
 
       <!-- ══ Двухколоночный layout: редактор + чат ══ -->
@@ -276,29 +276,29 @@
           <div v-if="diffMode === 'streaming'" class="de-diff-split">
             <div class="de-diff-pane de-diff-pane--orig">
               <div class="de-diff-pane-label">Оригинал</div>
-              <div class="de-editor-wrap glass-card">
+              <GlassSurface class="de-editor-wrap ">
                 <div class="de-editor de-editor--readonly">{{ diffOriginal }}</div>
-              </div>
+              </GlassSurface>
             </div>
             <div class="de-diff-pane de-diff-pane--new">
               <div class="de-diff-pane-label">Генерируется<span class="de-diff-cursor">█</span></div>
-              <div class="de-editor-wrap glass-card">
+              <GlassSurface class="de-editor-wrap ">
                 <div ref="diffNewEl" class="de-editor de-editor--readonly">{{ diffNew }}</div>
-              </div>
+              </GlassSurface>
             </div>
           </div>
 
           <!-- ─ Режим diff-review: inline diff ─ -->
           <div v-else-if="diffMode === 'review'" class="de-diff-review">
-            <div class="de-diff-controls glass-card">
+            <GlassSurface class="de-diff-controls ">
               <span class="de-diff-stat">
                 <span class="de-diff-stat-add">+{{ diffStats.added }} слов</span>
                 <span class="de-diff-stat-del">−{{ diffStats.removed }} слов</span>
               </span>
               <button class="de-btn-accept" @click="acceptDiff">✓ Принять изменения</button>
               <button class="de-btn-reject" @click="rejectDiff">× Отменить</button>
-            </div>
-            <div class="de-editor-wrap glass-card">
+            </GlassSurface>
+            <GlassSurface class="de-editor-wrap ">
               <div class="de-editor de-editor--readonly de-editor--diff">
                 <template v-for="(seg, i) in diffResult" :key="i">
                   <del v-if="seg.type === 'del'" class="de-diff-del">{{ seg.text }}</del>
@@ -306,11 +306,11 @@
                   <span v-else>{{ seg.text }}</span>
                 </template>
               </div>
-            </div>
+            </GlassSurface>
           </div>
 
           <!-- ─ Обычный режим ─ -->
-          <div v-else class="de-editor-wrap glass-card">
+          <GlassSurface v-else class="de-editor-wrap ">
             <div
               ref="editorEl"
               class="de-editor"
@@ -318,7 +318,7 @@
               spellcheck="true"
               @input="onEditorInput"
             ></div>
-          </div>
+          </GlassSurface>
 
         </div><!-- /de-editor-col -->
 
@@ -389,7 +389,7 @@
 
       <!-- AI: панель замечаний (review) -->
       <Transition name="de-slide">
-        <div v-if="aiReviewNotes.length" class="de-ai-review glass-card">
+        <GlassSurface v-if="aiReviewNotes.length" class="de-ai-review ">
           <div class="de-ai-review-head">
             <span class="de-ai-review-title">📋 Gemma 27B — анализ документа</span>
             <button class="de-tbtn" @click="clearReview">✕</button>
@@ -398,12 +398,12 @@
             <span class="de-ai-note-icon">{{ note.type === 'error' ? '⚠️' : '💡' }}</span>
             <span class="de-ai-note-text">{{ note.text }}</span>
           </div>
-        </div>
+        </GlassSurface>
       </Transition>
 
       <!-- AI: правовые источники (RAG citations) -->
       <Transition name="de-slide">
-        <div v-if="aiCitations.length" class="de-citations glass-card">
+        <GlassSurface v-if="aiCitations.length" class="de-citations ">
           <div class="de-citations-head">
             <span class="de-citations-title">⚖️ Правовая база — использованные нормы</span>
             <span class="de-citations-count">{{ aiCitations.length }}</span>
@@ -418,7 +418,7 @@
             </div>
             <p class="de-citation-text">{{ c.text }}</p>
           </div>
-        </div>
+        </GlassSurface>
       </Transition>
 
       <!-- AI: ошибка -->

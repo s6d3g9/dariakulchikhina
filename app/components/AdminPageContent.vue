@@ -1,5 +1,5 @@
 <template>
-  <div class="glass-card p-3 apc-wrap">
+  <GlassSurface  class=" p-3 apc-wrap">
     <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
       <!-- материалы/референсы (tabs) -->
@@ -19,7 +19,7 @@
         <p v-if="error" class="text-red-500 text-xs mt-2">{{ error }}</p>
       </template>
     </template>
-  </div>
+  </GlassSurface>
 </template>
 
 <script setup lang="ts">

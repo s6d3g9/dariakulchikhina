@@ -482,7 +482,7 @@
         </div>
 
         <!-- Подробная информация о строке таймлайна (Фазы/Спринты/Процессы) -->
-        <div v-if="selectedTimelineRowDetails" class="hpc-timeline-details-modal glass-surface glass-card" style="margin-top: 24px; padding: 24px; position: relative;">
+        <GlassSurface v-if="selectedTimelineRowDetails" class="hpc-timeline-details-modal glass-surface " style="margin-top: 24px; padding: 24px; position: relative;">
           <GlassButton variant="secondary" density="compact"  style="position: absolute; top: 16px; right: 16px;" @click="selectedTimelineRowDetails = null">Закрыть ✕</GlassButton>
           
           <h4 class="hpc-section__title" style="margin-bottom: 8px;">{{ selectedTimelineRowDetails.title }}</h4>
@@ -548,7 +548,7 @@
             <GlassButton variant="primary" density="compact"  type="button" @click="activeModule = 'phases'; selectedTimelineRowDetails = null">Настройки фазы</GlassButton>
           </div>
 
-        </div>
+        </GlassSurface>
       </section>
 
       <section class="hpc-section" v-show="activeModule === 'phases'">

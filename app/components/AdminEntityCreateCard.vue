@@ -1,5 +1,5 @@
 <template>
-  <div class="ent-detail-card glass-card admin-entity-create-card" :class="{ 'admin-entity-create-card--brutalist': brutalist }">
+  <GlassSurface class="ent-detail-card admin-entity-create-card" :class="{ 'admin-entity-create-card--brutalist': brutalist }">
     <div class="ent-detail-head">
       <div class="ent-detail-name">{{ title }}</div>
       <GlassButton variant="secondary" density="compact"  @click="$emit('close')">✕</GlassButton>
@@ -15,7 +15,7 @@
       <GlassButton variant="primary"  :disabled="disabled" @click="$emit('submit')">{{ submitLabel }}</GlassButton>
       <GlassButton variant="secondary" density="compact"  @click="$emit('close')">отмена</GlassButton>
     </div>
-  </div>
+  </GlassSurface>
 </template>
 
 <script setup lang="ts">

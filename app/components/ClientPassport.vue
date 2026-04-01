@@ -1,5 +1,5 @@
 <template>
-  <div class="cpp-wrap glass-card">
+  <GlassSurface class="cpp-wrap ">
     <div class="cpp-section">
       <div class="cpp-title">🔒 паспортные данные</div>
       <p class="cpp-hint">Для оформления договоров и юридических документов. Данные хранятся конфиденциально и не передаются третьим лицам.</p>
@@ -54,7 +54,7 @@
       <span v-if="savedAt" class="cpp-saved">✓ сохранено {{ savedAt }}</span>
       <button class="cpp-btn" :disabled="saving" @click="save">{{ saving ? 'сохранение...' : 'сохранить' }}</button>
     </div>
-  </div>
+  </GlassSurface>
 </template>
 
 <script setup lang="ts">

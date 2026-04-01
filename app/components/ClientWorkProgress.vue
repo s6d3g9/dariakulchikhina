@@ -2,7 +2,7 @@
   <div class="cwp-root">
 
     <!-- ── Card: Construction work ──────────────────────── -->
-    <div class="cwp-card glass-card">
+    <GlassSurface  class="cwp-card ">
       <div class="cwp-card-head">
         <span class="cwp-card-icon">⚒</span>
         <div>
@@ -30,7 +30,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </GlassSurface>
 
   </div>
 </template>

@@ -132,10 +132,10 @@
 
     <!-- ─── Grid view ──────────────────────────────────── -->
     <div v-else-if="gallery.viewMode.value === 'grid'" class="agal-grid">
-      <div
+      <GlassSurface
         v-for="(item, index) in gallery.filtered.value"
         :key="item.id"
-        class="agal-card glass-card"
+        class="agal-card"
         :class="{ 'agal-card--selected': gallery.selectedIds.value.has(item.id) }"
         draggable="true"
         @click="onCardClick(index)"
@@ -182,15 +182,15 @@
             <span v-for="t in item.tags" :key="t" class="agal-tag">{{ t }}</span>
           </div>
         </div>
-      </div>
+      </GlassSurface>
     </div>
 
     <!-- ─── List view ──────────────────────────────────── -->
     <div v-else class="agal-list">
-      <div
+      <GlassSurface
         v-for="(item, index) in gallery.filtered.value"
         :key="item.id"
-        class="agal-list-row glass-card"
+        class="agal-list-row"
         :class="{ 'agal-list-row--selected': gallery.selectedIds.value.has(item.id) }"
         draggable="true"
         @click="onCardClick(index)"
@@ -231,7 +231,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
         </div>
-      </div>
+      </GlassSurface>
     </div>
     </div><!-- /cv-wipe-inner -->
 

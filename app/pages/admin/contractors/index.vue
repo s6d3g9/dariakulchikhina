@@ -4,11 +4,11 @@
       <span class="u-inline-loading__label">[ ЗАГРУЖАЕМ ПОДРЯДЧИКОВ ]</span>
       <span class="u-inline-loading__line"></span>
     </div>
-    <div v-if="projectSlugFilter" class="ct-filter-info glass-surface glass-card" :class="{ 'ct-filter-info--brutalist': isBrutalistContractorsMode }">
+    <GlassSurface v-if="projectSlugFilter" class="ct-filter-info glass-surface " :class="{ 'ct-filter-info--brutalist': isBrutalistContractorsMode }">
       <span>Фильтр по проекту: <b>{{ projectSlugFilter }}</b></span>
       <NuxtLink :to="`/admin/projects/${projectSlugFilter}`" class="ct-filter-link">← к проекту</NuxtLink>
       <NuxtLink to="/admin/contractors" class="ct-filter-link">показать всех</NuxtLink>
-    </div>
+    </GlassSurface>
     <!-- Content: selected contractor or empty state -->
     <template v-if="selectedId">
       <div class="ct-wipe-host">

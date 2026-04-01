@@ -1,5 +1,5 @@
 <template>
-  <div class="ctz-wrap glass-card">
+  <GlassSurface  class="ctz-wrap ">
     <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else-if="hasTZ">
 
@@ -58,7 +58,7 @@
 
     </template>
     <div v-else class="ctz-empty">Техническое задание ещё не заполнено</div>
-  </div>
+  </GlassSurface>
 </template>
 
 <script setup lang="ts">

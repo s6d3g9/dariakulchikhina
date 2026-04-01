@@ -1,5 +1,5 @@
 <template>
-  <div class="ccd-wrap glass-card">
+  <GlassSurface class="ccd-wrap ">
     <!-- Личные данные -->
     <div class="ccd-section">
       <div class="ccd-title">личные данные</div>
@@ -140,7 +140,7 @@
       <span v-if="savedAt" class="ccd-saved">✓ сохранено {{ savedAt }}</span>
       <button class="ccd-btn" @click="save" :disabled="saving">{{ saving ? 'сохранение...' : 'сохранить' }}</button>
     </div>
-  </div>
+  </GlassSurface>
 </template>
 
 <script setup lang="ts">

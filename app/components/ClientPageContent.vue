@@ -1,5 +1,5 @@
 <template>
-  <div class="content-wrap glass-card">
+  <GlassSurface  class="content-wrap ">
     <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else-if="normalizedContent">
       <p class="content-hint">Выбранные пункты сохраняются на сервере и доступны с разных устройств</p>
@@ -103,7 +103,7 @@
       <!-- fallback: raw JSON -->
       <div v-else class="content-empty">Контент раздела пока не настроен</div>
     </template>
-  </div>
+  </GlassSurface>
 </template>
 
 <script setup lang="ts">

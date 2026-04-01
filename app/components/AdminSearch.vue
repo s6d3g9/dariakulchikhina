@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="open" class="as-backdrop" @click.self="close">
-      <div class="as-panel glass-surface glass-card" role="dialog" aria-modal="true" aria-label="Поиск">
+      <GlassSurface class="as-panel glass-surface " role="dialog" aria-modal="true" aria-label="Поиск">
         <!-- ── Input row ── -->
         <div class="as-input-row">
           <svg class="as-icon-search" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -66,7 +66,7 @@
             <p class="as-hint-tip">начните вводить&thinsp;—&thinsp;поиск по названию, телефону, email</p>
           </div>
         </div>
-      </div>
+      </GlassSurface>
     </div>
   </Teleport>
 </template>

@@ -2,7 +2,7 @@
   <div class="atz-wrap">
     <div v-if="pending" class="ent-content-loading atz-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
-      <div v-for="(sec, si) in sections" :key="si" class="atz-card glass-card">
+      <GlassSurface v-for="(sec, si) in sections" :key="si" class="atz-card ">
         <div class="atz-card-label">раздел: {{ sec.title || '(без названия)' }}</div>
         <div class="atz-row">
           <label class="atz-lbl">id:</label>
@@ -62,7 +62,7 @@
         <div style="text-align:right;margin-top:8px">
           <button class="atz-btn-sm glass-chip danger" @click="delSec(si)">удалить раздел</button>
         </div>
-      </div>
+      </GlassSurface>
 
       <button class="atz-btn-add glass-chip" style="margin-bottom:12px" @click="addSec">+ новый раздел</button>
       <div class="atz-actions">

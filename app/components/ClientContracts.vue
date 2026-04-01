@@ -1,5 +1,5 @@
 <template>
-  <div class="cct-root glass-card">
+  <GlassSurface  class="cct-root ">
     <div v-if="pending" class="ent-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
 
     <template v-else-if="project">
@@ -141,7 +141,7 @@
       </div>
 
     </template>
-  </div>
+  </GlassSurface>
 </template>
 
 <script setup lang="ts">

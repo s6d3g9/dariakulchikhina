@@ -2,7 +2,7 @@
   <div class="am-wrap">
     <div v-if="pending" class="ent-content-loading am-content-loading"><div class="ent-skeleton-line" v-for="i in 5" :key="i"/></div>
     <template v-else>
-      <div v-for="(tab, ti) in tabs" :key="ti" class="am-card glass-card">
+      <GlassSurface v-for="(tab, ti) in tabs" :key="ti" class="am-card ">
         <div class="am-card-label">вкладка: {{ tab.title || '(без названия)' }}</div>
         <div class="am-row">
           <label class="am-lbl">id:</label>
@@ -61,7 +61,7 @@
         <div style="text-align:right;margin-top:8px">
           <button class="am-btn-sm glass-chip danger" @click="delTab(ti)">удалить вкладку</button>
         </div>
-      </div>
+      </GlassSurface>
 
       <button class="am-btn-add glass-chip" style="margin-bottom:12px" @click="addTab">+ новая вкладка</button>
       <div class="am-actions">
