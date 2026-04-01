@@ -5,7 +5,23 @@
     </div>
 
     <template v-else>
-      <section class="hpc-summary">
+
+      <!-- Module Navigation (Bottom Scrollbar) -->
+      <div class="hpc-module-nav">
+        <div class="hpc-module-nav__scroll">
+          <button
+            v-for="mod in modules"
+            :key="mod.id"
+            class="hpc-module-nav__btn"
+            :class="{ 'hpc-module-nav__btn--active': activeModule === mod.id }"
+            @click="activeModule = mod.id"
+          >
+            {{ mod.label }}
+          </button>
+        </div>
+      </div>
+
+      <section class="hpc-summary" v-show="activeModule === 'overview'">
         <div class="hpc-summary__head">
           <div>
             <p class="hpc-eyebrow">Контур контроля</p>
@@ -37,7 +53,7 @@
         </div>
       </section>
 
-      <section class="hpc-section">
+      <section class="hpc-section" v-show="activeModule === 'overview'">
         <div class="hpc-section__head">
           <div>
             <p class="hpc-section__label">Контур</p>
@@ -64,7 +80,7 @@
         </div>
       </section>
 
-      <section class="hpc-section">
+      <section class="hpc-section" v-show="activeModule === 'communications'">
         <div class="hpc-section__head">
           <div>
             <p class="hpc-section__label">Manager Agents</p>
@@ -203,7 +219,7 @@
         </div>
       </section>
 
-      <section class="hpc-section">
+      <section class="hpc-section" v-show="activeModule === 'communications'">
         <div class="hpc-section__head">
           <div>
             <p class="hpc-section__label">Call Intelligence</p>
@@ -287,7 +303,7 @@
         <p v-else class="hpc-recommendation-text">Пока нет импортированных звонков. Сюда можно вставлять конспекты и транскрипты после созвонов.</p>
       </section>
 
-      <section class="hpc-section">
+      <section class="hpc-section" v-show="activeModule === 'timeline'">
         <div class="hpc-section__head">
           <div>
             <p class="hpc-section__label">Матрица исполнения</p>
@@ -445,7 +461,7 @@
         </div>
       </section>
 
-      <section class="hpc-section">
+      <section class="hpc-section" v-show="activeModule === 'phases'">
         <div class="hpc-section__head">
           <div>
             <p class="hpc-section__label">Фазовый слой</p>
@@ -507,11 +523,11 @@
         </div>
       </section>
 
-      <section class="hpc-section">
+      <section class="hpc-section" v-show="activeModule === 'kanban'">
         <AdminProjectKanban :control="control" @save="save" />
       </section>
 
-      <section class="hpc-section">
+      <section class="hpc-section" v-show="activeModule === 'phases'">
         <div class="hpc-section__head">
           <div>
             <p class="hpc-section__label">Формы метаданных</p>
@@ -577,7 +593,7 @@
         <div v-else class="hpc-empty">спринты ещё не добавлены</div>
       </section>
 
-      <section class="hpc-section">
+      <section class="hpc-section" v-show="activeModule === 'health'">
         <div class="hpc-section__head">
           <div>
             <p class="hpc-section__label">Здоровье проекта</p>
@@ -614,6 +630,19 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+
+const activeModule = ref('overview')
+
+const modules = [
+  { id: 'overview', label: 'Обзор' },
+  { id: 'timeline', label: 'Таймлайн / Таблица' },
+  { id: 'phases', label: 'Этапы и Спринты' },
+  { id: 'kanban', label: 'Канбан' },
+  { id: 'health', label: 'Контрольные точки' },
+  { id: 'communications', label: 'Звонки и Агенты' }
+]
+
 import {
   buildHybridControlSummary,
   buildHybridCoordinationBrief,
@@ -1246,6 +1275,86 @@ function onDragEnd() {
   timelineDrag.overColumnKey = ''
 }
 </script>
+
+
+
+.hpc-module-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--glass-surface, #ffffff);
+  border-bottom: 1px solid var(--glass-border, #e5e5e5);
+  padding: 12px 24px;
+  margin: 0 -24px 24px -24px;
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 768px) {
+  .hpc-module-nav {
+    position: fixed;
+    bottom: 0px;
+    top: auto;
+    left: 0;
+    right: 0;
+    margin: 0;
+    border-top: 1px solid var(--glass-border, #e5e5e5);
+    border-bottom: none;
+    background: rgba(255,255,255, 0.95);
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 1000;
+  }
+}
+
+html.dark .hpc-module-nav {
+  background: var(--glass-surface, #1e1e1e);
+}
+@media (max-width: 768px) {
+  html.dark .hpc-module-nav {
+    background: rgba(30,30,30, 0.95);
+  }
+}
+
+.hpc-module-nav__scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hpc-module-nav__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.hpc-module-nav__btn {
+  white-space: nowrap;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary, #666);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.hpc-module-nav__btn:hover {
+  background: var(--glass-surf-hover, #f5f5f5);
+}
+
+.hpc-module-nav__btn--active {
+  color: var(--text-primary, #000);
+  background: var(--glass-surface, #fff);
+  border-color: var(--glass-border, #e5e5e5);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+html.dark .hpc-module-nav__btn--active {
+  color: #fff;
+  background: var(--glass-surface, #2d2d2d);
+  border-color: var(--glass-border, #3d3d3d);
+}
+</style>
 
 <style scoped>
 .hpc-root {
