@@ -59,6 +59,9 @@ const mergedRuntimeEnv = {
   ...runtimeEnv,
 }
 const messengerServerTranscriptionEnabled = resolveServerTranscriptionPublicFlag(mergedRuntimeEnv)
+const liveKitApiUrl = mergedRuntimeEnv.LIVEKIT_API_URL || `${messengerPublicOrigin}/livekit/`
+const liveKitApiKey = mergedRuntimeEnv.LIVEKIT_API_KEY || ''
+const liveKitApiSecret = mergedRuntimeEnv.LIVEKIT_API_SECRET || ''
 
 module.exports = {
   apps: [
@@ -93,6 +96,9 @@ module.exports = {
         MESSENGER_TRANSCRIPTION_MODEL: mergedRuntimeEnv.MESSENGER_TRANSCRIPTION_MODEL || 'whisper-large-v3-turbo',
         MESSENGER_TRANSCRIPTION_LANGUAGE: mergedRuntimeEnv.MESSENGER_TRANSCRIPTION_LANGUAGE || 'ru',
         MESSENGER_TRANSCRIPTION_TIMEOUT_MS: mergedRuntimeEnv.MESSENGER_TRANSCRIPTION_TIMEOUT_MS || '20000',
+        LIVEKIT_API_URL: liveKitApiUrl,
+        LIVEKIT_API_KEY: liveKitApiKey,
+        LIVEKIT_API_SECRET: liveKitApiSecret,
         GEMMA_URL: mergedRuntimeEnv.GEMMA_URL || '',
         OLLAMA_BASE_URL: mergedRuntimeEnv.OLLAMA_BASE_URL || '',
         KLIPY_APP_KEY: mergedRuntimeEnv.KLIPY_APP_KEY || '',

@@ -64,6 +64,9 @@ const messengerPublicOrigin = (runtimeEnv.MESSENGER_PUBLIC_ORIGIN || 'https://me
 const messengerCoreBaseUrl = runtimeEnv.NUXT_PUBLIC_MESSENGER_CORE_BASE_URL || `${messengerPublicOrigin}/api`
 const messengerAppBaseUrl = runtimeEnv.NUXT_APP_BASE_URL || '/'
 const messengerServerTranscriptionEnabled = resolveServerTranscriptionPublicFlag(runtimeEnv)
+const liveKitApiUrl = runtimeEnv.LIVEKIT_API_URL || `${messengerPublicOrigin}/livekit/`
+const liveKitApiKey = runtimeEnv.LIVEKIT_API_KEY || ''
+const liveKitApiSecret = runtimeEnv.LIVEKIT_API_SECRET || ''
 
 module.exports = {
   apps: [
@@ -98,6 +101,9 @@ module.exports = {
         MESSENGER_TRANSCRIPTION_MODEL: runtimeEnv.MESSENGER_TRANSCRIPTION_MODEL || 'whisper-large-v3-turbo',
         MESSENGER_TRANSCRIPTION_LANGUAGE: runtimeEnv.MESSENGER_TRANSCRIPTION_LANGUAGE || 'ru',
         MESSENGER_TRANSCRIPTION_TIMEOUT_MS: runtimeEnv.MESSENGER_TRANSCRIPTION_TIMEOUT_MS || '20000',
+        LIVEKIT_API_URL: liveKitApiUrl,
+        LIVEKIT_API_KEY: liveKitApiKey,
+        LIVEKIT_API_SECRET: liveKitApiSecret,
         GEMMA_URL: runtimeEnv.GEMMA_URL || '',
         OLLAMA_BASE_URL: runtimeEnv.OLLAMA_BASE_URL || '',
         KLIPY_APP_KEY: runtimeEnv.KLIPY_APP_KEY || '',

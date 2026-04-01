@@ -52,21 +52,21 @@ export default defineEventHandler(async (event) => {
   // ── Собираем контекст (не нужен для простого чата) ──────────────
   const needsCtx = action !== 'chat'
   const ctx = needsCtx
-    ? await buildStreamContext(projectSlug || '', clientId ? Number(clientId) : 0, contractorId ? Number(contractorId) : 0)
+    ? await buildStreamContext(projectSlug!, clientId, contractorId)
     : {}
 
   // ── Формируем промпты ─────────────────────────────────────────
   let userPrompt = ''
   if (action === 'generate') {
-    userPrompt = buildStreamGeneratePrompt({ templateName: templateName || "", templateText, fields: fields as Record<string, string>, ctx })
+    userPrompt = buildStreamGeneratePrompt({ templateName: templateName!, templateText, fields: fields as Record<string, string>, ctx })
   } else if (action === 'improve') {
-    userPrompt = buildStreamImprovePrompt({ templateName: templateName || "", currentText, ctx })
+    userPrompt = buildStreamImprovePrompt({ templateName: templateName!, currentText, ctx })
   } else if (action === 'chat') {
-    userPrompt = buildStreamChatPrompt({ templateName: templateName || "", currentText, customInstruction, ctx })
+    userPrompt = buildStreamChatPrompt({ templateName: templateName!, currentText, customInstruction, ctx })
   } else if (action === 'continue') {
-    userPrompt = buildStreamContinuePrompt({ templateName: templateName || "", currentText, ctx })
+    userPrompt = buildStreamContinuePrompt({ templateName: templateName!, currentText, ctx })
   } else {
-    userPrompt = buildStreamReviewPrompt({ templateName: templateName || "", currentText })
+    userPrompt = buildStreamReviewPrompt({ templateName: templateName!, currentText })
   }
 
   // ── RAG: правовая база (пропускаем для chat — не нужно) ───────
