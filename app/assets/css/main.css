@@ -6607,6 +6607,11 @@ html[data-concept="glass"] .adm-sidebar .admin-theme-btn,
 html[data-concept="glass"] .adm-sidebar .admin-notif-btn,
 html[data-concept="glass"] .adm-sidebar .admin-notif-item,
 html[data-concept="glass"] .adm-sidebar .admin-notif-dropdown {
+  border-radius: var(--card-radius, 28px) !important;
+}
+
+html[data-concept="glass"] .adm-sidebar .admin-notif-btn,
+html[data-concept="glass"] .adm-sidebar .admin-notif-item {
   border-radius: var(--chip-radius, 999px) !important;
 }
 
@@ -6847,4 +6852,90 @@ html[data-concept="m3"] .btn-fab {
 html[data-concept="m3"] .fab-btn:hover,
 html[data-concept="m3"] .btn-fab:hover {
   box-shadow: var(--sys-elevation-level4, 0px 6px 10px 4px rgba(0,0,0,0.15)) !important;
+}
+/* --- M3 APP SHELL & SURFACES --- */
+
+/* Root app background */
+html[data-concept="m3"] body,
+html[data-concept="m3"] .glass-page {
+  background: var(--sys-color-surface) !important;
+  color: var(--sys-color-on-surface) !important;
+}
+
+html[data-concept="m3"] .glass-page::before {
+  display: none !important; /* Remove ambient glows or gradients */
+}
+
+/* Global solid surface (removes glassmorphism) */
+html[data-concept="m3"] .glass-surface {
+  background: var(--sys-color-surface) !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: var(--sys-color-on-surface) !important;
+}
+
+/* Top App Bar */
+html[data-concept="m3"] .admin-header {
+  background: var(--sys-color-surface) !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid var(--sys-color-surface-variant) !important; /* Fallback bottom line */
+}
+
+/* Dropups & Menus */
+html[data-concept="m3"] .adm-util-panel,
+html[data-concept="m3"] .admin-notif-dropdown,
+html[data-concept="m3"] .glass-dropdown,
+html[data-concept="m3"] .context-menu {
+  background: var(--sys-color-surface-container) !important;
+  border-radius: var(--sys-radius-xs, 4px) !important; /* M3 Menu radius is usually 4px */
+  border: none !important;
+  box-shadow: var(--sys-elevation-level2) !important;
+  backdrop-filter: none !important;
+}
+
+/* Form Layers */
+html[data-concept="m3"] .u-field__label {
+  color: var(--sys-color-on-surface-variant) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1px;
+}
+
+html[data-concept="m3"] .u-form-section {
+  border: none !important;
+  background: var(--sys-color-surface-container-low) !important;
+  border-radius: var(--sys-radius-lg, 16px) !important;
+}
+
+/* Text overriding opacity from brutalism */
+html[data-concept="m3"] .text-dim,
+html[data-concept="m3"] .text-muted {
+  opacity: 1 !important; 
+  color: var(--sys-color-on-surface-variant) !important;
+}
+
+html[data-concept="m3"] p {
+  opacity: 1 !important;
+}
+
+/* Tables */
+html[data-concept="m3"] .std-table {
+  border: none !important;
+  border-radius: var(--sys-radius-md) !important;
+  background: var(--sys-color-surface-container-lowest) !important;
+}
+html[data-concept="m3"] .std-table th {
+  background: var(--sys-color-surface-container-low) !important;
+  color: var(--sys-color-on-surface) !important;
+  border: none !important;
+  border-bottom: 2px solid var(--sys-color-surface-variant) !important;
+  font-weight: 600;
+}
+html[data-concept="m3"] .std-table td {
+  border: none !important;
+  border-bottom: 1px solid var(--sys-color-surface-container-highest) !important;
 }
