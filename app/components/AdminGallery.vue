@@ -10,7 +10,7 @@
   >
     <div class="cv-wipe-inner">
     <!-- ─── Header ─────────────────────────────────────── -->
-    <div class="agal-header glass-surface glass-card">
+    <GlassSurface  class="agal-header glass-surface ">
       <div class="agal-header-left">
         <CabSectionHeader
           :title="title"
@@ -36,18 +36,18 @@
         </button>
         <button class="agal-add-btn" aria-label="добавить" title="добавить" @click="openAdd">+</button>
       </div>
-    </div>
+    </GlassSurface>
 
     <!-- ─── Batch toolbar ──────────────────────────────── -->
     <Transition name="agal-slide">
-      <div v-if="gallery.batchMode.value" class="agal-batch-bar glass-surface glass-card">
+      <GlassSurface  v-if="gallery.batchMode.value" class="agal-batch-bar glass-surface ">
         <span class="agal-batch-count">{{ gallery.selectedCount.value }} выбрано</span>
         <button class="agal-batch-action" @click="gallery.selectAll()">выбрать все</button>
         <button class="agal-batch-action" @click="gallery.deselectAll()">снять</button>
         <button class="agal-batch-action" @click="batchFeature(true)">★ избранные</button>
         <button class="agal-batch-action" @click="batchFeature(false)">снять ★</button>
         <button class="agal-batch-action agal-batch-action--del" @click="batchDel">удалить</button>
-      </div>
+      </GlassSurface>
     </Transition>
 
     <!-- ─── Filter bar ─────────────────────────────────── -->
@@ -58,11 +58,11 @@
     />
 
     <!-- ─── Empty state ────────────────────────────────── -->
-    <div v-if="!gallery.loading.value && !gallery.filtered.value.length" class="agal-empty glass-card glass-surface">
+    <GlassSurface  v-if="!gallery.loading.value && !gallery.filtered.value.length" class="agal-empty glass-surface">
       <span class="agal-empty__title">[ NO DATA ATTACHED ]</span>
       <span class="agal-empty__text" v-if="gallery.items.value.length">По текущим фильтрам ничего не найдено.</span>
       <span class="agal-empty__text" v-else>Реестр пока пуст. Добавьте первый объект в галерею.</span>
-    </div>
+    </GlassSurface>
 
     <!-- ─── Loading ────────────────────────────────────── -->
     <div v-else-if="gallery.loading.value" class="agal-loading">
@@ -77,7 +77,7 @@
       @click="onCardClick"
     >
       <template #default="{ item, index }">
-        <div class="msn-card glass-card" :class="{ 'msn-card--selected': gallery.selectedIds.value.has(item.id) }" @click="onCardClick(index)">
+        <GlassSurface  class="msn-card " :class="{ 'msn-card--selected': gallery.selectedIds.value.has(item.id) }" @click="onCardClick(index)">
           <div class="msn-img-wrap" :style="{ aspectRatio: getAspectRatio(item) }">
             <img v-if="item.image" :src="`/uploads/${item.image}`" :alt="item.title" class="msn-img" loading="lazy" decoding="async" @load="($event.target as HTMLImageElement)?.classList.add('msn-img--loaded')">
             <div v-else class="msn-placeholder">
@@ -126,7 +126,7 @@
               <span v-for="t in item.tags" :key="t" class="msn-tag">{{ t }}</span>
             </div>
           </div>
-        </div>
+        </GlassSurface>
       </template>
     </GalleryMasonry>
 
@@ -260,7 +260,7 @@
     <Teleport to="body">
       <Transition name="modal-fade">
         <div v-if="showModal" class="agal-backdrop" @click.self="closeModal">
-          <div class="agal-modal glass-surface glass-card">
+          <GlassSurface  class="agal-modal glass-surface ">
             <div class="agal-modal-head">
               <span>{{ editingId ? 'редактировать' : 'добавить' }}</span>
               <button class="agal-close" @click="closeModal">×</button>
@@ -339,7 +339,7 @@
                 </button>
               </div>
             </form>
-          </div>
+          </GlassSurface>
         </div>
       </Transition>
     </Teleport>
