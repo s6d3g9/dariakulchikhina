@@ -1,0 +1,21 @@
+
+/* Fix inner areas to transparent to show the drawer background */
+html[data-concept="m3"] .proj-nav-header,
+html[data-concept="m3"] .proj-nav-body {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Nav Items: full pill shape, correct padding, state layers */
+html[data-concept="m3"] .nav-item,
+html[data-concept="m3"] .cab-nav-item,
+html[data-concept="m3"] .ent-nav-item,
+html[data-concept="m3"] .std-nav-item {
+  margin: 2px 12px !important; /* Space for the pill wrapper */
+  border: none !important;
+  border-radius: var(--sys-radius-full) !important;
+  padding: 12px 16px !important;
+  position: relative;
+  overflow: hidden;
+  transition: color 0.2s, background-color 0.2s;
+  width: auto !important; /* Avoid sticking to the edges */
