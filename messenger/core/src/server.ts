@@ -2425,8 +2425,12 @@ export async function createMessengerServer() {
       }
 
       const LIVEKIT_URL = process.env.LIVEKIT_API_URL || 'wss://dariakulchikhina.com/livekit'
-      const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || 'devkey'
-      const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || '957f06d4c3f45a4b23805252fa8259c7efca2595ef1b40653048b653e3eb3547'
+      const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY
+      const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET
+
+      if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
+        return reply.status(500).send({ error: 'LIVEKIT_API_KEY and LIVEKIT_API_SECRET env vars are required' })
+      }
 
       const { AccessToken } = await import('livekit-server-sdk')
       const roomName = `call-${conversationId}`
