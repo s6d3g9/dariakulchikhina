@@ -10,6 +10,7 @@ import { projects, clients, contractors, pageContent } from '~/server/db/schema'
 import { eq, inArray } from 'drizzle-orm'
 import { retrieveLegalContextWithChunks, type LegalChunkWithScore } from '~/server/utils/rag'
 import { GEMMA_SYSTEM_PROMPT, CHAT_SYSTEM_PROMPT } from '~/server/utils/gemma-prompts'
+import { z } from 'zod'
 
 // Локальные модели по умолчанию
 const MODEL_HEAVY  = process.env.OLLAMA_MODEL_HEAVY  || 'gemma3:27b'
@@ -21,7 +22,18 @@ const TIMEOUT_MS = 900_000 // 15 минут
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
 
-  const body: any = await readNodeBody(event)
+  const body = await readValidatedNodeBody(event, z.object({
+    action: z.enum(['generate', 'improve', 'review', 'chat', 'continue']),
+    templateName: z.string().max(500).optional(),
+    templateText: z.string().max(200_000).optional(),
+    fields: z.record(z.unknown()).optional(),
+    currentText: z.string().max(500_000).optional(),
+    customInstruction: z.string().max(10_000).optional(),
+    projectSlug: z.string().max(200).optional(),
+    clientId: z.union([z.string(), z.number()]).optional(),
+    contractorId: z.union([z.string(), z.number()]).optional(),
+    aiModel: z.string().max(100).optional(),
+  }))
   const {
     action,
     templateName,
@@ -32,12 +44,10 @@ export default defineEventHandler(async (event) => {
     projectSlug,
     clientId,
     contractorId,
-    aiModel,         // выбранная пользователем модель (или undefined → авто)
-  } = body || {}
+    aiModel,
+  } = body
 
-  if (!action || !['generate', 'improve', 'review', 'chat', 'continue'].includes(action)) {
-    throw createError({ statusCode: 400, statusMessage: 'action должен быть generate, improve, review, chat или continue' })
-  }
+  // action already validated by Zod enum
 
   // ── Собираем контекст (не нужен для простого чата) ──────────────
   const needsCtx = action !== 'chat'

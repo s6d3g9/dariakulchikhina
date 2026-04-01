@@ -1,6 +1,7 @@
 import { useDb } from '~/server/db/index'
 import { projectExtraServices, projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 
 /**
  * POST /api/projects/[slug]/extra-services
@@ -12,21 +13,17 @@ export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
   const auth = requireAdminOrClient(event, slug)
 
-  const body = await readBody<{
-    serviceKey?: string
-    title: string
-    description?: string
-    quantity?: string
-    unit?: string
-    unitPrice?: number
-    totalPrice?: number
-    clientNotes?: string
-    adminNotes?: string
-  }>(event)
-
-  if (!body?.title?.trim()) {
-    throw createError({ statusCode: 400, message: 'title is required' })
-  }
+  const body = await readValidatedNodeBody(event, z.object({
+    serviceKey: z.string().max(200).optional(),
+    title: z.string().min(1).max(500),
+    description: z.string().max(5000).optional(),
+    quantity: z.string().max(100).optional(),
+    unit: z.string().max(100).optional(),
+    unitPrice: z.number().optional(),
+    totalPrice: z.number().optional(),
+    clientNotes: z.string().max(5000).optional(),
+    adminNotes: z.string().max(5000).optional(),
+  }))
 
   const db = useDb()
   const [project] = await db

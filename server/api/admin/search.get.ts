@@ -37,7 +37,7 @@ export interface SearchResults {
 
 export default defineEventHandler(async (event): Promise<SearchResults> => {
   requireAdmin(event)
-  const q = (getQuery(event).q as string | undefined)?.trim()
+  const q = safeGetQuery(event).q?.trim()
 
   if (!q || q.length < 2) {
     return { projects: [], clients: [], contractors: [], total: 0 }

@@ -3,6 +3,19 @@ const calls = useMessengerCalls()
 const conversations = useMessengerConversations()
 const navigation = useMessengerConversationState()
 
+function buildPeerAvatarLabel(name: string) {
+  const normalizedName = name.trim()
+  if (!normalizedName || normalizedName === 'Звонок') {
+    return 'З'
+  }
+
+  return normalizedName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase() || '')
+    .join('')
+}
+
 function isDesktopCallAnalysisViewport() {
   if (!import.meta.client) {
     return true
@@ -23,15 +36,77 @@ const headerActiveCall = computed(() => Boolean(
   && calls.activeCall.value
   && calls.activeCall.value.conversationId === conversations.activeConversationId.value,
 ))
-const showIncomingFallbackControls = computed(() => Boolean(
+const detachedIncomingCall = computed(() => Boolean(
   calls.incomingCall.value
   && !headerIncomingCall.value,
 ))
-const showActiveAudioFallbackControls = computed(() => Boolean(
+const detachedActiveAudioCall = computed(() => Boolean(
   calls.activeCall.value
   && calls.activeCall.value.mode === 'audio'
   && !headerActiveCall.value,
 ))
+const showDetachedCallHeader = computed(() => Boolean(detachedIncomingCall.value || detachedActiveAudioCall.value))
+const detachedCallConversationId = computed(() => calls.incomingCall.value?.conversationId || calls.activeCall.value?.conversationId || null)
+const detachedCallConversation = computed(() => conversations.conversations.value.find(item => item.id === detachedCallConversationId.value) ?? null)
+const detachedCallMode = computed<'audio' | 'video' | null>(() => {
+  if (detachedIncomingCall.value) {
+    return calls.incomingCall.value?.mode || null
+  }
+
+  if (detachedActiveAudioCall.value) {
+    return calls.activeCall.value?.mode || null
+  }
+
+  return null
+})
+const detachedPeerName = computed(() => (
+  calls.activeCall.value?.peerDisplayName
+  || calls.incomingCall.value?.fromDisplayName
+  || detachedCallConversation.value?.peerDisplayName
+  || 'Звонок'
+))
+const detachedPeerAvatar = computed(() => buildPeerAvatarLabel(detachedPeerName.value))
+const detachedConversationSecret = computed(() => Boolean(detachedCallConversation.value?.secret))
+const detachedCallBadge = computed(() => {
+  if (!showDetachedCallHeader.value) {
+    return ''
+  }
+
+  if (detachedIncomingCall.value) {
+    return 'Входящий'
+  }
+
+  return detachedCallMode.value === 'video' ? 'Видео' : 'Звонок'
+})
+const detachedCallSecurityEmojis = computed(() => {
+  if (!calls.security.value.active || !calls.security.value.verificationEmojis.length) {
+    return ''
+  }
+
+  return calls.security.value.verificationEmojis.join(' ')
+})
+const detachedCallSecurityLabel = computed(() => {
+  if (!showDetachedCallHeader.value) {
+    return ''
+  }
+
+  if (detachedCallSecurityEmojis.value) {
+    return detachedCallSecurityEmojis.value
+  }
+
+  return 'WebRTC'
+})
+const detachedCallSecurityTitle = computed(() => {
+  if (!showDetachedCallHeader.value) {
+    return ''
+  }
+
+  if (calls.security.value.active && detachedCallSecurityEmojis.value) {
+    return calls.security.value.status
+  }
+
+  return 'Звонок защищён штатным шифрованием WebRTC. Emoji-верификация появляется только для дополнительного E2EE.'
+})
 const activeVideoCall = computed(() => Boolean(
   calls.activeCall.value
   && (calls.activeCall.value.mode === 'video' || calls.controls.value.videoEnabled),
@@ -72,6 +147,7 @@ const miniOverlaySubtitle = computed(() => {
 
   return calls.callStatusText.value || (calls.controls.value.videoEnabled ? 'Видео активно' : 'Аудиозвонок')
 })
+const speakerToggleLabel = computed(() => calls.controls.value.speakerEnabled ? 'Громкая' : 'Обычный')
 const miniStageStyle = computed(() => {
   if (calls.viewMode.value !== 'mini') {
     return undefined
@@ -229,6 +305,20 @@ function handleMiniTap() {
   calls.setCallViewMode('split')
 }
 
+async function openDetachedCallConversation() {
+  const conversationId = detachedCallConversationId.value
+  if (!conversationId) {
+    return
+  }
+
+  if (conversations.conversations.value.some(item => item.id === conversationId)) {
+    await conversations.selectConversation(conversationId)
+    return
+  }
+
+  navigation.openConversation(conversationId)
+}
+
 watch(() => calls.viewMode.value, (nextMode) => {
   if (nextMode === 'mini') {
     syncMiniWindowMetrics()
@@ -257,16 +347,39 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-if="showCallLayer" class="call-layer" :class="[`call-layer--${calls.viewMode.value}`]">
-    <div v-if="showIncomingFallbackControls" class="call-floating-controls" aria-label="Входящий звонок">
-      <VBtn class="call-floating-controls__btn" variant="tonal" color="error" @click="calls.rejectIncomingCall()">Отклонить</VBtn>
-      <VBtn class="call-floating-controls__btn" variant="flat" color="success" @click="calls.acceptIncomingCall()">Принять</VBtn>
-    </div>
-
-    <div v-else-if="showActiveAudioFallbackControls" class="call-floating-controls call-floating-controls--active" aria-label="Управление звонком">
-      <VBtn class="call-floating-controls__btn" variant="tonal" :color="calls.controls.value.microphoneEnabled ? 'primary' : undefined" @click="calls.toggleMicrophone()">{{ calls.controls.value.microphoneEnabled ? 'Микрофон' : 'Микрофон выкл' }}</VBtn>
-      <VBtn class="call-floating-controls__btn" variant="tonal" :color="calls.controls.value.speakerEnabled ? 'primary' : undefined" @click="calls.toggleSpeaker()">{{ calls.controls.value.speakerEnabled ? 'Звук' : 'Звук выкл' }}</VBtn>
-      <VBtn class="call-floating-controls__btn" variant="tonal" :color="calls.controls.value.videoEnabled ? 'primary' : undefined" @click="calls.toggleVideo()">{{ calls.controls.value.videoEnabled ? 'Видео' : 'Включить видео' }}</VBtn>
-      <VBtn class="call-floating-controls__btn" variant="flat" color="error" @click="calls.hangupCall()">Завершить</VBtn>
+    <div v-if="showDetachedCallHeader" class="call-detached-header">
+      <MessengerChatHeader
+        floating
+        :show-back-button="false"
+        :peer-avatar="detachedPeerAvatar"
+        :peer-name="detachedPeerName"
+        :conversation-secret="detachedConversationSecret"
+        :call-visible="showDetachedCallHeader"
+        :incoming-call="detachedIncomingCall"
+        :audio-call="Boolean(detachedActiveAudioCall)"
+        :call-mode="detachedCallMode"
+        :call-badge="detachedCallBadge"
+        :call-security-emojis="detachedCallSecurityEmojis"
+        :call-security-label="detachedCallSecurityLabel"
+        :call-security-title="detachedCallSecurityTitle"
+        :can-toggle-audio-call="Boolean(calls.activeCall.value)"
+        :can-toggle-video="Boolean(calls.activeCall.value) && !calls.requestingPermissions.value"
+        :microphone-enabled="calls.controls.value.microphoneEnabled"
+        :speaker-enabled="calls.controls.value.speakerEnabled"
+        :video-enabled="calls.controls.value.videoEnabled"
+        :call-view-mode="calls.viewMode.value"
+        :show-call-view-modes="false"
+        :show-call-actions="false"
+        :can-switch-camera="calls.canSwitchCamera.value"
+        @toggle-details="openDetachedCallConversation()"
+        @reject-call="calls.rejectIncomingCall()"
+        @accept-call="calls.acceptIncomingCall()"
+        @toggle-microphone="calls.toggleMicrophone()"
+        @toggle-speaker="calls.toggleSpeaker()"
+        @toggle-video="calls.toggleVideo()"
+        @switch-camera="calls.switchCamera()"
+        @hangup-call="calls.hangupCall()"
+      />
     </div>
 
     <section
@@ -313,7 +426,7 @@ onBeforeUnmount(() => {
 
         <div v-if="showDetachedStageActions" class="call-stage__actions">
           <VBtn class="call-stage__action-btn" variant="tonal" :color="calls.controls.value.microphoneEnabled ? 'primary' : undefined" @click="calls.toggleMicrophone()">Микрофон</VBtn>
-          <VBtn class="call-stage__action-btn" variant="tonal" :color="calls.controls.value.speakerEnabled ? 'primary' : undefined" @click="calls.toggleSpeaker()">Звук</VBtn>
+          <VBtn class="call-stage__action-btn" variant="tonal" :color="calls.controls.value.speakerEnabled ? 'primary' : undefined" @click="calls.toggleSpeaker()">{{ speakerToggleLabel }}</VBtn>
           <VBtn class="call-stage__action-btn" variant="tonal" :color="calls.controls.value.videoEnabled ? 'primary' : undefined" @click="calls.toggleVideo()">{{ calls.controls.value.videoEnabled ? 'Видео' : 'Включить видео' }}</VBtn>
           <VBtn v-if="activeVideoCall" class="call-stage__action-btn" variant="tonal" :disabled="!calls.canSwitchCamera.value" @click="calls.switchCamera()">Камера</VBtn>
           <VBtn v-if="activeVideoCall" class="call-stage__action-btn" variant="tonal" @click="calls.cycleCallViewMode()">Размер</VBtn>

@@ -9,6 +9,7 @@ import {
   Document, Packer, Paragraph, TextRun, AlignmentType,
   convertMillimetersToTwip, LineRuleType,
 } from 'docx'
+import { z } from 'zod'
 
 // Распознавание типа строки
 type LineType = 'title' | 'heading1' | 'heading2' | 'blank' | 'body'
@@ -130,9 +131,12 @@ function textToParagraphs(text: string): Paragraph[] {
 export default defineEventHandler(async (event) => {
   requireAdmin(event)
 
-  const body = await readBody<{ text: string; title?: string }>(event)
-  const text = body?.text || ''
-  const docTitle = body?.title || 'Документ'
+  const body = await readValidatedNodeBody(event, z.object({
+    text: z.string().max(500_000),
+    title: z.string().max(500).optional(),
+  }))
+  const text = body.text || ''
+  const docTitle = body.title || 'Документ'
 
   // Поля страницы: левое 2.5см, остальные 2см (стандарт РФ для юр. документов)
   const marginLeft  = convertMillimetersToTwip(25)

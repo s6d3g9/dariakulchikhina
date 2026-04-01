@@ -163,6 +163,11 @@ type SpeechRecognitionErrorEventLike = {
   error?: string
 }
 
+type MessengerAudioOutputElement = HTMLMediaElement & {
+  sinkId?: string
+  setSinkId?: (sinkId: string) => Promise<void>
+}
+
 type SpeechRecognitionCtorLike = new () => {
   continuous: boolean
   interimResults: boolean
@@ -622,7 +627,7 @@ function assignMediaTargets() {
 
   if (remoteVideoEl) {
     remoteVideoEl.srcObject = remoteStream
-    remoteVideoEl.muted = false
+    remoteVideoEl.muted = true
     void remoteVideoEl.play().catch(() => {})
   }
 
@@ -1708,19 +1713,44 @@ export function useMessengerCalls() {
     }
   }
 
-  function syncSpeakerState() {
-    if (remoteAudioEl) {
-      remoteAudioEl.muted = !controls.value.speakerEnabled
-      if (controls.value.speakerEnabled) {
-        void remoteAudioEl.play().catch(() => {})
-      }
+  async function applyAudioOutputPreference(element: HTMLMediaElement | null, speakerEnabled: boolean) {
+    if (!element) {
+      return
     }
 
-    if (remoteVideoEl) {
-      remoteVideoEl.muted = !controls.value.speakerEnabled
-      if (controls.value.speakerEnabled) {
-        void remoteVideoEl.play().catch(() => {})
+    const mediaElement = element as MessengerAudioOutputElement
+    if (typeof mediaElement.setSinkId !== 'function') {
+      return
+    }
+
+    const preferredSinkIds = speakerEnabled ? ['default'] : ['communications', 'default']
+
+    for (const sinkId of preferredSinkIds) {
+      try {
+        if (mediaElement.sinkId === sinkId) {
+          return
+        }
+
+        await mediaElement.setSinkId(sinkId)
+        return
+      } catch {
+        // Ignore unsupported sink targets and keep the current output route.
       }
+    }
+  }
+
+  function syncSpeakerState() {
+    const activeOutputElement = remoteAudioEl || remoteVideoEl
+
+    if (activeOutputElement) {
+      activeOutputElement.muted = false
+      void applyAudioOutputPreference(activeOutputElement, controls.value.speakerEnabled)
+      void activeOutputElement.play().catch(() => {})
+    }
+
+    if (remoteVideoEl && activeOutputElement !== remoteVideoEl) {
+      remoteVideoEl.muted = true
+      void remoteVideoEl.play().catch(() => {})
     }
   }
 

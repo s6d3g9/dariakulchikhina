@@ -2451,6 +2451,10 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   z-index: 1;
 }
 
+.chat-header__toolbar--no-back {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .chat-header__main-rail {
   display: flex;
   align-items: center;
@@ -2555,6 +2559,25 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   background: rgb(var(--v-theme-surface-container-high));
 }
 
+.chat-header--floating {
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(var(--v-theme-surface-container-high), 0.94);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(var(--v-theme-outline-variant), 0.72);
+}
+
+.chat-header--floating.chat-header--call-visible .chat-header__peer {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  padding-inline: 8px;
+}
+
+.chat-header--floating.chat-header--call-visible .chat-header__peer-meta {
+  display: flex;
+}
+
 .chat-header__call-inline {
   display: flex;
   align-items: center;
@@ -2596,6 +2619,11 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 }
 
 .chat-header__call-secondary > .chat-header__icon-btn {
+  width: 100%;
+  min-width: 0 !important;
+}
+
+.chat-header__call-secondary > .chat-header__action-btn {
   width: 100%;
   min-width: 0 !important;
 }
@@ -2671,6 +2699,22 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   padding-inline: 12px !important;
 }
 
+.chat-header__speaker-btn {
+  min-width: 86px !important;
+  padding-inline: 10px !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.chat-header__speaker-btn .v-btn__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  white-space: nowrap;
+}
+
 .chat-header__incoming-btn {
   min-width: 0 !important;
   min-height: 44px !important;
@@ -2728,6 +2772,12 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
     gap: 4px;
   }
 
+  .chat-header__speaker-btn {
+    min-width: 70px !important;
+    padding-inline: 8px !important;
+    font-size: 0.72rem;
+  }
+
   .chat-header__call-primary {
     grid-template-columns: repeat(3, 34px);
   }
@@ -2768,6 +2818,14 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 @media (max-width: 360px) {
   .chat-header__call-secondary {
     gap: 1px;
+  }
+
+  .chat-header--floating.chat-header--call-visible .chat-header__peer-meta {
+    display: none;
+  }
+
+  .chat-header__speaker-btn {
+    min-width: 60px !important;
   }
 
   .chat-header__call-secondary .chat-header__icon-btn:nth-child(n + 2) {
@@ -3804,6 +3862,14 @@ html[data-messenger-keyboard='open'] .section-block--chat {
 .call-layer--split,
 .call-layer--mini {
   pointer-events: none;
+}
+
+.call-detached-header {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: max(12px, calc(env(safe-area-inset-top) + 4px));
+  pointer-events: auto;
 }
 
 .call-floating-controls {

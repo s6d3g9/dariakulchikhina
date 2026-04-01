@@ -6250,14 +6250,15 @@ html[data-concept="glass"] .glass-input,
 html[data-concept="glass"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]),
 html[data-concept="glass"] textarea,
 html[data-concept="glass"] select {
-  background: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255,255,255,0.55) !important;
-  border-radius: 18px !important;
-  color: #1a1a2e !important;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.04) !important;
+  background: color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent) !important;
+  border-radius: var(--input-radius, 12px) !important;
+  color: var(--glass-text) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02) !important;
   padding: 8px 16px !important;
+  transition: all 0.2s ease !important;
 }
 html[data-concept="glass"] .glass-input:focus,
 html[data-concept="glass"] input:focus,
@@ -6954,4 +6955,75 @@ html[data-concept="m3"] .dash-quick-btn:hover {
 html[data-concept="m3"] .ent-main,
 html[data-concept="m3"] .cab-main {
   /* In M3, cards/surfaces within space have good breathing room. Ensure container flows properly. */
+}
+
+
+/* ── LIQUID GLASS DEEP OVERRIDES (Inputs, DatePicker, Toggles, Tables) ── */
+html[data-concept="glass"] .dp-popup,
+html[data-concept="glass"] .dp__menu {
+  background: color-mix(in srgb, var(--glass-bg) 60%, transparent) !important;
+  backdrop-filter: blur(var(--glass-blur, 32px)) saturate(var(--glass-saturation, 180%)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur, 32px)) saturate(var(--glass-saturation, 180%)) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
+  border-radius: var(--card-radius, 24px) !important;
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--glass-text) 12%, transparent), 0 0 0 1px color-mix(in srgb, var(--glass-text) 5%, transparent) !important;
+}
+
+html[data-concept="glass"] .admin-container label:has(> input[type="checkbox"]),
+html[data-concept="glass"] .admin-bg label:has(> input[type="checkbox"]),
+html[data-concept="glass"] .admin-container label:has(input[type="checkbox"]),
+html[data-concept="glass"] .admin-bg label:has(input[type="checkbox"]) {
+  border-radius: var(--chip-radius, 999px) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+html[data-concept="glass"] .admin-container label:has(input[type="checkbox"]:checked),
+html[data-concept="glass"] .admin-bg label:has(input[type="checkbox"]:checked) {
+  background: color-mix(in srgb, var(--glass-text) 75%, transparent) !important;
+}
+
+html[data-concept="glass"] .hpc-module-nav {
+  background: color-mix(in srgb, var(--glass-page-bg) 60%, transparent) !important;
+  backdrop-filter: blur(var(--glass-blur, 24px)) saturate(var(--glass-saturation, 180%)) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 12%, transparent) !important;
+}
+
+html[data-concept="glass"] .hpc-board,
+html[data-concept="glass"] .hpc-board__cell,
+html[data-concept="glass"] .hpc-board__head,
+html[data-concept="glass"] .hpc-board__row {
+  border-color: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
+}
+
+html[data-concept="glass"] .hpc-board__cell {
+  background: color-mix(in srgb, var(--glass-page-bg) 30%, transparent) !important;
+}
+
+html[data-concept="glass"] .hpc-metric,
+html[data-concept="glass"] .hpc-call-insight-card,
+html[data-concept="glass"] .hpc-recommendation-card,
+html[data-concept="glass"] .hpc-playbook-card,
+html[data-concept="glass"] .hpc-agent-card {
+  background: color-mix(in srgb, var(--glass-text) 3%, transparent) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
+  border-radius: var(--card-radius, 24px) !important;
+}
+
+html[data-concept="glass"] .hpc-board__entity {
+  background: color-mix(in srgb, var(--glass-text) 2%, transparent) !important;
+  border-radius: var(--card-radius, 16px) !important;
+}
+
+/* Glass toggles support */
+html.dark[data-concept="glass"] .admin-container label:has(input[type="checkbox"]),
+html.dark[data-concept="glass"] .admin-bg label:has(input[type="checkbox"]) {
+  background: color-mix(in srgb, var(--glass-text) 8%, transparent) !important;
+  border-color: color-mix(in srgb, var(--glass-text) 15%, transparent) !important;
+  color: var(--glass-text) !important;
+}
+html.dark[data-concept="glass"] .admin-container label:has(input[type="checkbox"]:checked),
+html.dark[data-concept="glass"] .admin-bg label:has(input[type="checkbox"]:checked) {
+  background: color-mix(in srgb, var(--glass-text) 85%, transparent) !important;
+  color: var(--glass-page-bg) !important;
 }
