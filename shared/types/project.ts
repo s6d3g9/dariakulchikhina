@@ -102,11 +102,28 @@ export const HybridControlCallInsightSchema = z.object({
   decisions: z.array(z.string()).default([]),
   nextSteps: z.array(z.string()).default([]),
   blockers: z.array(z.string()).default([]),
+  team: z.array(HybridControlTeamMemberSchema).default([]),
   approvals: z.array(z.string()).default([]),
   appliedCheckpointId: z.string().optional(),
   appliedSprintId: z.string().optional(),
   appliedTaskIds: z.array(z.string()).default([]),
   appliedAt: z.string().optional(),
+})
+
+
+export const HybridControlTeamMemberRoleSchema = z.enum([
+  'architect', 'designer', 'contractor', 'client', 'manager', 'other'
+])
+export const HybridControlTeamMemberChannelSchema = z.enum([
+  'email', 'telegram', 'whatsapp', 'manual', 'ai-agent'
+])
+export const HybridControlTeamMemberSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  role: HybridControlTeamMemberRoleSchema.default('contractor'),
+  contact: z.string().optional(),
+  notifyBy: HybridControlTeamMemberChannelSchema.default('manual'),
+  notifyOptions: z.record(z.any()).optional()
 })
 
 export const HybridControlSchema = z.object({
@@ -346,6 +363,7 @@ export type HybridControlManagerAgent = z.infer<typeof HybridControlManagerAgent
 export type HybridControlCommunicationRule = z.infer<typeof HybridControlCommunicationRuleSchema>
 export type HybridControlCallInsight = z.infer<typeof HybridControlCallInsightSchema>
 export type HybridControl = z.infer<typeof HybridControlSchema>
+export type HybridControlTeamMember = z.infer<typeof HybridControlTeamMemberSchema>
 
 export const ProjectCallInsightIngestSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),

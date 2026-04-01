@@ -626,6 +626,23 @@
         </div>
       </section>
     </template>
+  
+    <Teleport to="body">
+      <div v-if="msgModalOpen" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(8px);">
+        <div class="glass-surface" style="width: 400px; padding: 24px; border-radius: 16px; display: flex; flex-direction: column; gap: 16px; color: var(--ds-surface-fg);">
+          <h3 style="font-size: 1.25rem; font-weight: 500; margin: 0;">Отправить сообщение</h3>
+          <p style="font-size: 0.9rem; opacity: 0.8; margin: 0;">
+            Получатель: {{ msgModalTarget?.name || 'Без имени' }} (Канал: {{ msgModalTarget?.notifyBy }})
+          </p>
+          <textarea v-model="msgModalText" class="glass-input" style="min-height: 120px; padding: 12px; resize: vertical;" placeholder="Напишите суть задачи, правки или вопроса..."></textarea>
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button type="button" class="a-btn-sm a-btn-danger" @click="msgModalOpen = false">Отмена</button>
+            <button type="button" class="a-btn-sm a-btn-save" :disabled="msgModalSending" @click="executeMessageDispatch">{{ msgModalSending ? 'Отправка...' : 'Отправить' }}</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
