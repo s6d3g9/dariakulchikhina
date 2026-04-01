@@ -6363,13 +6363,6 @@ html[data-concept="glass"] .std-nav-item.active {
   box-shadow: inset 0 1px 1px color-mix(in srgb, var(--glass-text) 15%, transparent);
 }
 
-/* ── Admin tabs: glass ──────────────────────────────────── */
-html[data-concept="glass"] .admin-tab.active {
-  color: #4060e0 !important;
-  background: rgba(100,120,255,0.12) !important;
-  border-bottom: none !important;
-}
-
 /* ── Header: glass surface ──────────────────────────────── */
 html[data-concept="glass"] .admin-header {
   background: color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
