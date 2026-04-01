@@ -997,6 +997,7 @@ async function logout() {
   text-transform: uppercase;
   cursor: pointer;
   transition: border-color 160ms ease, background 160ms ease;
+  border-radius: var(--btn-radius, 0);
 }
 
 .adm-sidebar-toggle:hover {
@@ -1095,6 +1096,7 @@ async function logout() {
   font: inherit;
   text-transform: uppercase;
   letter-spacing: .1em;
+  border-radius: var(--btn-radius, 0);
 }
 
 .admin-sidebar-menu-btn--collapsed {
@@ -1183,7 +1185,7 @@ async function logout() {
   gap: 6px;
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
-  border-radius: 0;
+  border-radius: var(--btn-radius, 0);
   padding: 4px 12px;
   cursor: pointer;
   color: color-mix(in srgb, var(--glass-text) 45%, transparent);
@@ -1211,7 +1213,7 @@ async function logout() {
 .admin-search-kbd {
   font-size: .58rem;
   border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
-  border-radius: 0;
+  border-radius: var(--btn-radius, 0);
   padding: 1px 5px;
   font-family: inherit;
   color: color-mix(in srgb, var(--glass-text) 35%, transparent);
@@ -1222,7 +1224,7 @@ async function logout() {
 .admin-theme-btn {
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--glass-text) 18%, transparent);
-  border-radius: 0;
+  border-radius: var(--btn-radius, 0);
   padding: 4px 12px;
   cursor: pointer;
   color: var(--glass-text);
@@ -1244,13 +1246,13 @@ async function logout() {
 /* ── Notifications ── */
 .admin-notif-wrap        { position: relative; }
 .admin-notif-wrap--sidebar { width: 100%; }
-.admin-notif-btn         { background: none; border: 1px solid transparent; border-radius: 0; color: var(--glass-text); opacity: .45; padding: 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; position: relative; transition: opacity .15s, border-color .15s; }
+.admin-notif-btn         { background: none; border: 1px solid transparent; border-radius: var(--btn-radius, 0); color: var(--glass-text); opacity: .45; padding: 5px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; position: relative; transition: opacity .15s, border-color .15s; }
 .admin-notif-btn--sidebar { width: 100%; min-height: 44px; justify-content: space-between; padding: 8px 12px; }
 .admin-notif-btn:hover   { opacity: 1; border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); }
 .admin-notif-btn--open   { opacity: 1; border-color: color-mix(in srgb, var(--glass-text) 30%, transparent); background: color-mix(in srgb, var(--glass-text) 6%, transparent); }
 .admin-notif-badge       { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; background: var(--ds-error); color: var(--glass-page-bg); border-radius: 8px; font-size: .6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
 .admin-notif-inline-count { opacity: .7; }
-.admin-notif-dropdown    { position: absolute; top: calc(100% + 8px); right: 0; width: 260px; border-radius: 0; padding: 12px; z-index: 500; box-shadow: 0 8px 32px color-mix(in srgb, var(--glass-text) 15%, transparent); border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent); }
+.admin-notif-dropdown    { position: absolute; top: calc(100% + 8px); right: 0; width: 260px; border-radius: var(--btn-radius, 0); padding: 12px; z-index: 500; box-shadow: 0 8px 32px color-mix(in srgb, var(--glass-text) 15%, transparent); border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent); }
 .admin-notif-dropdown--sidebar { left: 0; right: auto; width: 100%; }
 .admin-notif-head        { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--glass-text); opacity: .35; margin-bottom: 8px; }
 .admin-notif-empty       { font-size: .8rem; color: var(--ds-success); padding: 8px 0; text-align: center; }
@@ -1367,7 +1369,7 @@ async function logout() {
 
   .admin-header {
     padding: 10px 12px;
-    border-radius: 0;
+    border-radius: var(--btn-radius, 0);
   }
   .admin-brand {
     font-size: .58rem;

@@ -70,8 +70,6 @@ export async function joinLiveKitRoomAsBot(
 
   room.on(RoomEvent.TrackSubscribed, (track: any, publication: any, participant: any) => {
     if (track.kind === 0 || track.kind === 'audio') {
-       console.log('Subscribed to audio track from', participant.identity)
-       
        const stream = new AudioStream(track)
        const reader = stream.getReader()
        
@@ -102,7 +100,6 @@ export async function joinLiveKitRoomAsBot(
                 const text = await onTranscribe(participant.identity, base64Wav, 'audio/wav', roomName, seq)
                 
                 if (text && text.trim()) {
-                  console.log(`STT Bot Transcribed [${participant.identity}]: ${text.trim()}`)
                   const msg = JSON.stringify({
                     type: 'transcription-sync',
                     draft: '',
@@ -170,7 +167,6 @@ export async function joinLiveKitRoomAsBot(
   })
 
   await room.connect(serverUrl, token)
-  console.log(`Bot ${botId} joined room ${roomName}`)
   
   return room
 }
