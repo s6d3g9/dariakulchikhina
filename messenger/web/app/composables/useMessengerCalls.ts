@@ -661,6 +661,7 @@ export function useMessengerCalls() {
   const runtimeConfig = useRuntimeConfig()
   const auth = useMessengerAuth()
   const settingsModel = useMessengerSettings()
+  const { clientId } = useMessengerRealtimeIdentity()
   const conversations = useMessengerConversations()
   const navigation = useMessengerConversationState()
   const incomingCall = useState<MessengerIncomingCall | null>('messenger-incoming-call', () => null)
@@ -1909,7 +1910,10 @@ export function useMessengerCalls() {
   async function sendSignal(conversationId: string, signal: { kind: MessengerCallSignalKind; callId: string; payload?: Record<string, unknown> }) {
     await auth.request(`/conversations/${conversationId}/call-signal`, {
       method: 'POST',
-      body: signal,
+      body: {
+        ...signal,
+        clientId: clientId.value,
+      },
     })
   }
 
@@ -2329,9 +2333,6 @@ export function useMessengerCalls() {
       }
       viewMode.value = mode === 'video' ? 'split' : 'full'
       callStatusText.value = mode === 'video' ? 'Отправляем видеовызов…' : 'Отправляем аудиовызов…'
-      if (mode === 'audio') {
-        void startTranscription()
-      }
 
       await sendSignal(conversation.id, {
         kind: 'invite',
@@ -2374,9 +2375,6 @@ export function useMessengerCalls() {
         videoEnabled: incomingCall.value.mode === 'video',
       }
       viewMode.value = incomingCall.value.mode === 'video' ? 'split' : 'full'
-      if (incomingCall.value.mode === 'audio') {
-        void startTranscription()
-      }
 
       let ringingE2EE: MessengerCallE2EEPayload = { supported: false }
 
@@ -2541,6 +2539,11 @@ export function useMessengerCalls() {
       }
 
       callStatusText.value = mode === 'video' ? 'Видеосвязь установлена (LiveKit)' : 'Аудиосвязь установлена (LiveKit)'
+      if (mode === 'audio') {
+        void startTranscription()
+      } else {
+        stopTranscription()
+      }
     } catch (err) {
       console.error(err)
       callError.value = 'Ошибка серверного соединения (LiveKit).'
@@ -2610,9 +2613,6 @@ export function useMessengerCalls() {
         if (!conversations.activeConversation.value?.secret) {
           callStatusText.value = 'Подключение к медиа-серверу (LiveKit)…'
           await connectLiveKitRoom(event.conversationId, mode)
-          if (mode === 'audio') {
-            void startTranscription()
-          }
           return
         }
 

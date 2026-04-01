@@ -58,7 +58,34 @@ export async function createMessengerServer() {
     }
   })
 
-  const clients = new Map<string, { userId: string; socket: { send: (payload: string) => void; close: () => void; readyState: number; on: (event: string, cb: () => void) => void } }>()
+  type MessengerRealtimeSocket = {
+    send: (payload: string) => void
+    close: () => void
+    readyState: number
+    on: (event: string, cb: (...args: any[]) => void) => void
+  }
+
+  type MessengerRealtimeClient = {
+    connectionId: string
+    userId: string
+    clientId: string
+    socket: MessengerRealtimeSocket
+    focused: boolean
+    visible: boolean
+    visibilityState: string
+    isMobile: boolean
+    lastSeenAt: number
+  }
+
+  type MessengerCallRoute = {
+    callId: string
+    conversationId: string
+    participants: Record<string, string>
+    updatedAt: number
+  }
+
+  const clients = new Map<string, MessengerRealtimeClient>()
+  const callRoutes = new Map<string, MessengerCallRoute>()
 
   function emitToUsers(userIds: string[], event: Record<string, unknown>) {
     const uniqueUserIds = new Set(userIds)
@@ -75,6 +102,89 @@ export async function createMessengerServer() {
 
       client.socket.send(payload)
     }
+  }
+
+  function emitToClient(client: MessengerRealtimeClient | null | undefined, event: Record<string, unknown>) {
+    if (!client || client.socket.readyState !== 1) {
+      return false
+    }
+
+    client.socket.send(JSON.stringify(event))
+    return true
+  }
+
+  function rememberCallRoute(callId: string, conversationId: string, userId: string, clientId: string) {
+    if (!callId || !userId || !clientId) {
+      return
+    }
+
+    const existingRoute = callRoutes.get(callId)
+    callRoutes.set(callId, {
+      callId,
+      conversationId: conversationId || existingRoute?.conversationId || '',
+      participants: {
+        ...(existingRoute?.participants || {}),
+        [userId]: clientId,
+      },
+      updatedAt: Date.now(),
+    })
+  }
+
+  function forgetCallRoute(callId: string) {
+    if (!callId) {
+      return
+    }
+
+    callRoutes.delete(callId)
+  }
+
+  function scoreRealtimeClient(client: MessengerRealtimeClient, preferredClientId = '') {
+    let score = 0
+
+    if (preferredClientId && client.clientId === preferredClientId) {
+      score += 1000
+    }
+
+    if (client.visible && client.focused) {
+      score += 400
+    } else if (client.visible) {
+      score += 250
+    } else if (client.focused) {
+      score += 150
+    }
+
+    if (client.isMobile) {
+      score += 25
+    }
+
+    return score
+  }
+
+  function selectPreferredClientForUser(userId: string, preferredClientId = '') {
+    const connectedClients = Array.from(clients.values())
+      .filter(client => client.userId === userId && client.socket.readyState === 1)
+      .sort((left, right) => {
+        const scoreDelta = scoreRealtimeClient(right, preferredClientId) - scoreRealtimeClient(left, preferredClientId)
+        if (scoreDelta !== 0) {
+          return scoreDelta
+        }
+
+        return right.lastSeenAt - left.lastSeenAt
+      })
+
+    return connectedClients[0] || null
+  }
+
+  function resolveTargetClientForCall(callId: string, conversationId: string, targetUserId: string) {
+    const existingRoute = callRoutes.get(callId)
+    const routedClientId = existingRoute?.participants[targetUserId] || ''
+    const nextClient = selectPreferredClientForUser(targetUserId, routedClientId)
+
+    if (nextClient) {
+      rememberCallRoute(callId, conversationId, targetUserId, nextClient.clientId)
+    }
+
+    return nextClient
   }
 
   const authSchema = z.object({
@@ -459,7 +569,17 @@ export async function createMessengerServer() {
   const callSignalSchema = z.object({
     kind: z.enum(['invite', 'ringing', 'offer', 'answer', 'ice-candidate', 'reject', 'hangup', 'busy']),
     callId: z.string().min(1).max(120),
+    clientId: z.string().trim().min(1).max(120).optional(),
     payload: z.record(z.string(), z.unknown()).optional(),
+  })
+  const realtimePresenceSchema = z.object({
+    type: z.literal('presence.update'),
+    clientId: z.string().trim().min(1).max(120).optional(),
+    focused: z.boolean().optional().default(false),
+    visible: z.boolean().optional().default(false),
+    visibilityState: z.string().trim().max(40).optional().default('hidden'),
+    isMobile: z.boolean().optional().default(false),
+    timestamp: z.union([z.string(), z.number()]).optional(),
   })
   const messageReactionSchema = z.object({
     emoji: z.string().trim().min(1).max(16),
@@ -2511,8 +2631,13 @@ export async function createMessengerServer() {
     }
 
     const targetUserId = conversation.userAId === session.user.id ? conversation.userBId : conversation.userAId
+    const senderClientId = parsedBody.data.clientId?.trim() || ''
 
-    emitToUsers([targetUserId], {
+    if (senderClientId) {
+      rememberCallRoute(parsedBody.data.callId, conversation.id, session.user.id, senderClientId)
+    }
+
+    const signalEvent = {
       type: 'call.signal',
       timestamp: new Date().toISOString(),
       conversationId: conversation.id,
@@ -2526,7 +2651,13 @@ export async function createMessengerServer() {
         displayName: session.user.displayName,
         login: session.user.login,
       },
-    })
+    }
+
+    emitToClient(resolveTargetClientForCall(parsedBody.data.callId, conversation.id, targetUserId), signalEvent)
+
+    if (parsedBody.data.kind === 'busy' || parsedBody.data.kind === 'reject' || parsedBody.data.kind === 'hangup') {
+      forgetCallRoute(parsedBody.data.callId)
+    }
 
     return { ok: true }
   })
@@ -2654,16 +2785,37 @@ export async function createMessengerServer() {
       return
     }
 
-    const clientId = randomUUID()
-    clients.set(clientId, {
+    const realtimeClientId = requestUrl.searchParams.get('clientId')?.trim() || randomUUID()
+    const connectionId = randomUUID()
+
+    for (const [existingConnectionId, existingClient] of clients.entries()) {
+      if (existingClient.userId !== user.id || existingClient.clientId !== realtimeClientId) {
+        continue
+      }
+
+      clients.delete(existingConnectionId)
+      existingClient.socket.close()
+    }
+
+    const realtimeClient: MessengerRealtimeClient = {
+      connectionId,
       userId: user.id,
+      clientId: realtimeClientId,
       socket,
-    })
+      focused: false,
+      visible: false,
+      visibilityState: 'hidden',
+      isMobile: false,
+      lastSeenAt: Date.now(),
+    }
+
+    clients.set(connectionId, realtimeClient)
 
     socket.send(JSON.stringify({
       type: 'hello',
       message: 'messenger-core realtime channel is ready',
       userId: user.id,
+      clientId: realtimeClientId,
       timestamp: new Date().toISOString(),
     }))
 
@@ -2672,6 +2824,26 @@ export async function createMessengerServer() {
         const payloadStr = value.toString()
         if (payloadStr.startsWith('{')) {
           const data = JSON.parse(payloadStr)
+
+          const parsedPresence = realtimePresenceSchema.safeParse(data)
+          if (parsedPresence.success) {
+            if (parsedPresence.data.clientId && parsedPresence.data.clientId !== realtimeClient.clientId) {
+              return
+            }
+
+            const presenceTimestamp = typeof parsedPresence.data.timestamp === 'number'
+              ? parsedPresence.data.timestamp
+              : Date.parse(String(parsedPresence.data.timestamp || ''))
+
+            realtimeClient.focused = Boolean(parsedPresence.data.focused)
+            realtimeClient.visible = Boolean(parsedPresence.data.visible)
+            realtimeClient.visibilityState = parsedPresence.data.visibilityState || 'hidden'
+            realtimeClient.isMobile = Boolean(parsedPresence.data.isMobile)
+            realtimeClient.lastSeenAt = Number.isFinite(presenceTimestamp) && presenceTimestamp > 0
+              ? presenceTimestamp
+              : Date.now()
+            return
+          }
           
           if (data.type === 'call.audio-chunk') {
             const conversation = await findConversationById(data.conversationId)
@@ -2688,8 +2860,7 @@ export async function createMessengerServer() {
                 timestamp: new Date().toISOString()
               }
 
-              // Send to peer via WebSockets
-              emitToUsers([targetUserId], outPayload)
+              emitToClient(resolveTargetClientForCall(String(data.callId || ''), conversation.id, targetUserId), outPayload)
             }
             return
           }
@@ -2703,7 +2874,7 @@ export async function createMessengerServer() {
     })
 
     socket.on('close', () => {
-      clients.delete(clientId)
+      clients.delete(connectionId)
     })
   })
 

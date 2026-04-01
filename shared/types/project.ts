@@ -9,6 +9,21 @@ const HybridControlStakeholderRoleSchema = z.enum(['admin', 'manager', 'designer
 const HybridControlCommunicationChannelSchema = z.enum(['project-room', 'direct-thread', 'handoff', 'approval', 'daily-digest'])
 const HybridControlCallInsightSourceSchema = z.enum(['call'])
 
+export const HybridControlTeamMemberRoleSchema = z.enum([
+  'architect', 'designer', 'contractor', 'client', 'manager', 'other'
+])
+export const HybridControlTeamMemberChannelSchema = z.enum([
+  'email', 'telegram', 'whatsapp', 'manual', 'ai-agent'
+])
+export const HybridControlTeamMemberSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  role: HybridControlTeamMemberRoleSchema.default('contractor'),
+  contact: z.string().optional(),
+  notifyBy: HybridControlTeamMemberChannelSchema.default('manual'),
+  notifyOptions: z.record(z.any()).optional()
+})
+
 export const HybridControlGateSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
@@ -102,7 +117,7 @@ export const HybridControlCallInsightSchema = z.object({
   decisions: z.array(z.string()).default([]),
   nextSteps: z.array(z.string()).default([]),
   blockers: z.array(z.string()).default([]),
-  team: z.array(HybridControlTeamMemberSchema).default([]),
+  
   approvals: z.array(z.string()).default([]),
   appliedCheckpointId: z.string().optional(),
   appliedSprintId: z.string().optional(),
@@ -111,23 +126,22 @@ export const HybridControlCallInsightSchema = z.object({
 })
 
 
-export const HybridControlTeamMemberRoleSchema = z.enum([
-  'architect', 'designer', 'contractor', 'client', 'manager', 'other'
-])
-export const HybridControlTeamMemberChannelSchema = z.enum([
-  'email', 'telegram', 'whatsapp', 'manual', 'ai-agent'
-])
-export const HybridControlTeamMemberSchema = z.object({
+
+export const HybridControlCommunicationLogSchema = z.object({
   id: z.string(),
-  name: z.string().min(1),
-  role: HybridControlTeamMemberRoleSchema.default('contractor'),
-  contact: z.string().optional(),
-  notifyBy: HybridControlTeamMemberChannelSchema.default('manual'),
-  notifyOptions: z.record(z.any()).optional()
+  memberId: z.string(),
+  channel: HybridControlTeamMemberChannelSchema,
+  message: z.string(),
+  status: z.enum(['sent', 'delivered', 'failed', 'pending']),
+  dispatchedAt: z.string(),
+  error: z.string().optional()
 })
 
 export const HybridControlSchema = z.object({
   manager: z.string().optional(),
+  team: z.array(HybridControlTeamMemberSchema).default([]),
+  tasks: z.array(HybridControlTaskSchema).default([]),
+  communicationLog: z.array(HybridControlCommunicationLogSchema).default([]),
   cadenceDays: z.number().min(1).max(90).default(7),
   nextReviewDate: z.string().optional(),
   lastSyncAt: z.string().optional(),

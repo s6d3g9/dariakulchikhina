@@ -1,7 +1,7 @@
+import { useDb } from '~/server/db'
 import { defineEventHandler, readBody, createError } from 'h3'
 import { z } from 'zod'
-import { useDb } from '../../../utils/db'
-import { projects } from '../../../db/schema'
+import { projects } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 
 const dispatchSchema = z.object({

@@ -1291,7 +1291,14 @@ function onDragEnd() {
   timelineDrag.overRowId = ''
   timelineDrag.overColumnKey = ''
 }
+
+const msgModalOpen = ref(false)
+const msgModalTarget = ref<any>(null)
+const msgModalText = ref('')
+const msgModalSending = ref(false)
+async function executeMessageDispatch() {}
 </script>
+
 <style scoped>
 
 

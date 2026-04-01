@@ -20,6 +20,7 @@ import { buildMessengerWsUrl } from '../utils/messenger-url'
 
 let messengerSocket: WebSocket | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let presenceCleanup: (() => void) | null = null
 
 export function useMessengerRealtime() {
   const config = useRuntimeConfig()
@@ -28,8 +29,74 @@ export function useMessengerRealtime() {
   const conversations = useMessengerConversations()
   const calls = useMessengerCalls()
   const runtime = useMessengerAgentRuntime()
+  const { clientId, buildPresencePayload } = useMessengerRealtimeIdentity()
   const connected = useState<boolean>('messenger-realtime-connected', () => false)
   const connecting = useState<boolean>('messenger-realtime-connecting', () => false)
+
+  function sendPresence() {
+    if (!import.meta.client || messengerSocket?.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    try {
+      messengerSocket.send(JSON.stringify(buildPresencePayload()))
+    } catch {
+      // ignore transport-side failures in alpha stage
+    }
+  }
+
+  function ensurePresenceBridge() {
+    if (!import.meta.client || presenceCleanup) {
+      return
+    }
+
+    const syncPresence = () => {
+      if (!auth.token.value) {
+        return
+      }
+
+      if (!messengerSocket && !connecting.value) {
+        void connect()
+        return
+      }
+
+      sendPresence()
+    }
+
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        syncPresence()
+        return
+      }
+
+      sendPresence()
+    }
+
+    const onFocus = () => {
+      syncPresence()
+    }
+
+    const onBlur = () => {
+      sendPresence()
+    }
+
+    const onPageShow = () => {
+      syncPresence()
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('blur', onBlur)
+    window.addEventListener('pageshow', onPageShow)
+
+    presenceCleanup = () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('blur', onBlur)
+      window.removeEventListener('pageshow', onPageShow)
+      presenceCleanup = null
+    }
+  }
 
   function clearReconnect() {
     if (reconnectTimer) {
@@ -86,11 +153,13 @@ export function useMessengerRealtime() {
       return
     }
 
+    ensurePresenceBridge()
     clearReconnect()
     connecting.value = true
 
     const wsUrl = buildMessengerWsUrl(config.public.messengerCoreBaseUrl, '/ws')
     wsUrl.searchParams.set('token', auth.token.value)
+    wsUrl.searchParams.set('clientId', clientId.value)
 
     const socket = new WebSocket(wsUrl.toString())
     messengerSocket = socket
@@ -98,6 +167,7 @@ export function useMessengerRealtime() {
     socket.addEventListener('open', () => {
       connecting.value = false
       connected.value = true
+      sendPresence()
     })
 
     socket.addEventListener('message', (message) => {
@@ -131,6 +201,10 @@ export function useMessengerRealtime() {
     connected.value = false
     connecting.value = false
     runtime.reset()
+
+    if (presenceCleanup) {
+      presenceCleanup()
+    }
 
     if (messengerSocket) {
       messengerSocket.close()

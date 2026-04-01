@@ -536,10 +536,13 @@ export function createDefaultHybridControl(project: ProjectSnapshot = {}): Hybri
     lastSyncAt: '',
     phases: createDefaultPhases(project),
     sprints: [],
+    team: [],
     checkpoints: createDefaultCheckpoints(),
     managerAgents: createDefaultManagerAgents(),
     communicationPlaybook: createDefaultCommunicationPlaybook(),
     callInsights: [],
+    tasks: [],
+    communicationLog: [],
     blockers: [],
   }
 }
@@ -557,6 +560,9 @@ export function ensureHybridControl(raw: unknown, project: ProjectSnapshot = {})
     lastSyncAt: value.lastSyncAt || base.lastSyncAt,
     phases: normalizePhases(project, value.phases),
     sprints: normalizeSprints(value.sprints),
+    team: value.team || base.team,
+    tasks: value.tasks || base.tasks,
+    communicationLog: value.communicationLog || base.communicationLog,
     checkpoints: normalizeCheckpoints(value.checkpoints),
     managerAgents: normalizeManagerAgents(value.managerAgents),
     communicationPlaybook: normalizeCommunicationPlaybook(value.communicationPlaybook),

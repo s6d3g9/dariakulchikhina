@@ -2314,7 +2314,7 @@ const { currentPath: alignmentPath, findRule: findAlignmentRule, setRulePosition
 const { themeId, applyThemeWithTokens, UI_THEMES } = useUITheme()
 
 watch(() => UI_THEMES.value, (themes) => {
-  if (themes && themes.length && !themes.find(t => t.id === themeId.value)) {
+  if (themes && themes.length && !themes.find((t: any) => t.id === themeId.value)) {
     themeId.value = themes[0].id
     applyThemeWithTokens(themeId.value)
   }

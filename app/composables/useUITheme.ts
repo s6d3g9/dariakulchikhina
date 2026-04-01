@@ -243,7 +243,7 @@ export const UI_THEMES_MAP: Record<string, UITheme[]> = {
 
 const LS_KEY = 'ui-theme'
 
-import { computed } from '#imports'
+
 
 export function useUITheme() {
   const { activeConceptSlug } = useDesignSystem()
@@ -259,13 +259,13 @@ export function useUITheme() {
    */
   function applyThemeVars(id?: string) {
     if (!import.meta.client) return
-    const theme = availableThemes.value.find(t => t.id === (id ?? themeId.value)) || availableThemes.value[0]
+    const theme = availableThemes.value.find((t: any) => t.id === (id ?? themeId.value)) || availableThemes.value[0]
     if (!theme) return
     const isDark = document.documentElement.classList.contains('dark')
     const vars = isDark ? theme.darkVars : theme.vars
     const el = document.documentElement
     for (const [k, v] of Object.entries(vars)) {
-      el.style.setProperty(k, v)
+      el.style.setProperty(k, v as string)
     }
   }
 
@@ -288,7 +288,7 @@ export function useUITheme() {
    * actively picks a theme in the palette UI.
    */
   function applyThemeWithTokens(id: string) {
-    const theme = availableThemes.value.find(t => t.id === id) || availableThemes.value[0]
+    const theme = availableThemes.value.find((t: any) => t.id === id) || availableThemes.value[0]
     // Apply CSS vars first (so --btn-bg-base etc. are available for applyToDOM)
     applyTheme(id)
     // Then push structural tokens into the design system

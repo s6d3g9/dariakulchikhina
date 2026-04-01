@@ -2479,7 +2479,7 @@ export function useDesignSystem() {
       // token values. Theme vars hardcode rgba(…,0.52) etc.; we parse out the RGB
       // and re-apply the alpha from the token so the Glass controls in the panel
       // actually work.
-      const theme = UI_THEMES.find(th => th.id === themeId.value)
+      const theme = UI_THEMES.value.find((th: any) => th.id === themeId.value)
       if (theme) {
         const isDark = el.classList.contains('dark')
         const tVars = isDark ? theme.darkVars : theme.vars
