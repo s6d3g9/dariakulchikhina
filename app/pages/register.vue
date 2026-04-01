@@ -1,6 +1,21 @@
 <template>
   <div class="auth-root glass-page">
-    <div class="auth-card glass-surface">
+    <div class="auth-stage" :data-auth-role="selectedRole">
+      <section class="auth-panel glass-surface" aria-label="Контекст регистрации">
+        <p class="auth-panel__eyebrow">Новый доступ</p>
+        <p class="auth-panel__tag">{{ activeRoleInsight.tag }}</p>
+        <h2 class="auth-panel__title">{{ activeRoleInsight.title }}</h2>
+        <p class="auth-panel__copy">{{ activeRoleInsight.copy }}</p>
+
+        <div class="auth-panel__facts">
+          <article v-for="fact in activeRoleInsight.facts" :key="fact.label" class="auth-panel__fact">
+            <span class="auth-panel__fact-label">{{ fact.label }}</span>
+            <span class="auth-panel__fact-value">{{ fact.value }}</span>
+          </article>
+        </div>
+      </section>
+
+      <div class="auth-card glass-surface">
       <div class="auth-head">
         <h1 class="auth-title">Единая регистрация</h1>
         <p class="auth-subtitle">Простая регистрация: логин, пароль, роль. Остальные данные заполните уже внутри кабинета.</p>
@@ -24,7 +39,7 @@
         <div class="auth-form-grid">
           <div class="auth-field">
             <label>Логин</label>
-            <GlassInput v-model="form.login" name="login" type="text" class=" auth-input" placeholder="login" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" />
+            <GlassInput v-model="form.login" name="login" type="text" class=" auth-input" placeholder="логин" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" />
           </div>
 
           <div class="auth-field">
@@ -42,7 +57,7 @@
       </form>
 
       <div v-else class="seed-box">
-        <p class="seed-title">Сохраните recovery phrase</p>
+        <p class="seed-title">Сохраните фразу восстановления</p>
         <p class="seed-copy">{{ successMeta }}</p>
         <textarea readonly class="glass-input seed-value" :value="recoveryPhrase" rows="4" />
         <div class="auth-actions">
@@ -55,6 +70,7 @@
         <NuxtLink :to="successLoginPath">← ко входу</NuxtLink>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -64,8 +80,15 @@ import { useCsrfHeaders } from '~/composables/useCsrfHeaders'
 definePageMeta({ layout: 'default', pageTransition: false, keepalive: false })
 
 type RegisterRole = 'designer' | 'client' | 'contractor'
+type RegisterRoleInsight = {
+  tag: string
+  title: string
+  copy: string
+  facts: Array<{ label: string; value: string }>
+}
 
 const route = useRoute()
+const router = useRouter()
 const { csrfHeaders, ensureCsrfCookie } = useCsrfHeaders()
 
 const roleOptions = [
@@ -74,16 +97,59 @@ const roleOptions = [
   { value: 'contractor', label: 'Подрядчик', note: 'Создание доступа подрядчика.' },
 ] as const satisfies ReadonlyArray<{ value: RegisterRole; label: string; note: string }>
 
+const roleInsights: Record<RegisterRole, RegisterRoleInsight> = {
+  designer: {
+    tag: 'Регистрация администратора',
+    title: 'Создайте рабочий доступ студии и сохраните секретную фразу один раз.',
+    copy: 'После создания система покажет фразу восстановления только один раз. Сохраните ее сразу, затем переходите к обычному входу в админ-кабинет.',
+    facts: [
+      { label: 'Что создается', value: 'Админ-аккаунт с обычным логином и паролем' },
+      { label: 'Что получите', value: 'Одноразовый показ фразы восстановления' },
+      { label: 'Дальше', value: 'Вход через /login?role=admin' },
+    ],
+  },
+  client: {
+    tag: 'Регистрация клиента',
+    title: 'Откройте кабинет проекта и сразу получите проектный код.',
+    copy: 'После регистрации клиент получает фразу восстановления, а система создает проектный доступ. Остальные данные можно заполнить уже внутри кабинета.',
+    facts: [
+      { label: 'Что создается', value: 'Клиентский доступ и привязанный кабинет проекта' },
+      { label: 'Что получите', value: 'Фразу восстановления и код проекта' },
+      { label: 'Дальше', value: 'Вход через /login?role=client' },
+    ],
+  },
+  contractor: {
+    tag: 'Регистрация подрядчика',
+    title: 'Создайте доступ подрядчика и сразу зафиксируйте персональный ID.',
+    copy: 'Система создаст кабинет подрядчика, покажет фразу восстановления и вернет уникальный ID. После этого можно войти обычным способом и перейти к задачам.',
+    facts: [
+      { label: 'Что создается', value: 'Кабинет подрядчика с персональным входом' },
+      { label: 'Что получите', value: 'Фразу восстановления и уникальный ID' },
+      { label: 'Дальше', value: 'Вход через /login?role=contractor' },
+    ],
+  },
+}
+
 function normalizeRole(value: unknown): RegisterRole {
-  if (value === 'admin') {
+  const rawValue = Array.isArray(value) ? value[0] : value
+
+  if (rawValue === 'admin') {
     return 'designer'
   }
 
-  if (value === 'designer' || value === 'client' || value === 'contractor') {
-    return value
+  if (rawValue === 'designer' || rawValue === 'client' || rawValue === 'contractor') {
+    return rawValue
   }
 
   return 'client'
+}
+
+function toRoleQueryValue(role: RegisterRole) {
+  return role === 'designer' ? 'admin' : role
+}
+
+function getCurrentRoleQueryValue() {
+  return Array.isArray(route.query.role) ? route.query.role[0] : route.query.role
 }
 
 const selectedRole = ref<RegisterRole>(normalizeRole(route.query.role))
@@ -94,6 +160,7 @@ const loading = ref(false)
 const created = ref(false)
 const recoveryPhrase = ref('')
 const successMeta = ref('')
+const activeRoleInsight = computed(() => roleInsights[selectedRole.value])
 
 const roleToLoginPath: Record<RegisterRole, string> = {
   designer: '/login?role=admin',
@@ -116,6 +183,33 @@ function resetSuccessState() {
   successMeta.value = ''
 }
 
+function syncRoleQuery(role: RegisterRole) {
+  const nextRole = toRoleQueryValue(role)
+  if (getCurrentRoleQueryValue() === nextRole) {
+    return
+  }
+
+  return router.replace({
+    query: {
+      ...route.query,
+      role: nextRole,
+    },
+  })
+}
+
+watch(
+  () => route.query.role,
+  (value) => {
+    const nextRole = normalizeRole(value)
+    if (nextRole === selectedRole.value) {
+      return
+    }
+
+    selectedRole.value = nextRole
+    resetSuccessState()
+  },
+)
+
 function selectRole(role: RegisterRole) {
   if (role === selectedRole.value) {
     return
@@ -123,6 +217,7 @@ function selectRole(role: RegisterRole) {
 
   selectedRole.value = role
   resetSuccessState()
+  void syncRoleQuery(role)
 }
 
 async function submit() {
@@ -170,190 +265,3 @@ async function copyPhrase() {
   await navigator.clipboard.writeText(recoveryPhrase.value)
 }
 </script>
-
-<style scoped>
-.auth-root {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 620px;
-  padding: 32px;
-  display: grid;
-  gap: 16px;
-}
-
-.auth-head {
-  display: grid;
-  gap: 6px;
-}
-
-.auth-title,
-.seed-title {
-  margin: 0;
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-
-.auth-subtitle,
-.seed-copy {
-  margin: 0;
-  font-size: .82rem;
-  opacity: .74;
-}
-
-.auth-role-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.auth-role-btn {
-  display: grid;
-  gap: 6px;
-  min-height: 68px;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  font-family: inherit;
-}
-
-.auth-role-btn--active {
-  border-color: color-mix(in srgb, var(--glass-text) 42%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
-}
-
-.auth-role-btn__title {
-  font-size: .8rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-
-.auth-role-btn__note {
-  font-size: .72rem;
-  opacity: .68;
-  line-height: 1.35;
-}
-
-.auth-form-grid {
-  display: grid;
-  gap: 0;
-}
-
-.auth-field {
-  display: grid;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.auth-field label {
-  font-size: .72rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  opacity: .7;
-}
-
-.auth-input,
-.auth-submit,
-.seed-value {
-  width: 100%;
-  min-height: 48px;
-  font-size: 16px;
-}
-
-.auth-error {
-  color: var(--ds-error, #d96b6b);
-  font-size: .8rem;
-  margin: 0 0 10px;
-}
-
-.auth-progress {
-  display: grid;
-  gap: 8px;
-  margin: 0 0 12px;
-}
-
-.auth-progress__label {
-  font-size: .68rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  opacity: .58;
-}
-
-.auth-progress__line {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 2px;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
-}
-
-.auth-progress__line::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 28%;
-  background: color-mix(in srgb, var(--glass-text) 58%, transparent);
-  animation: auth-progress-slide 1.2s linear infinite;
-}
-
-@keyframes auth-progress-slide {
-  from {
-    transform: translateX(-140%);
-  }
-  to {
-    transform: translateX(420%);
-  }
-}
-
-.seed-box {
-  display: grid;
-  gap: 12px;
-}
-
-.auth-actions,
-.auth-links {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.auth-links--single a,
-.auth-links a,
-.auth-link-btn {
-  color: inherit;
-  text-decoration: none;
-}
-
-@media (max-width: 760px) {
-  .auth-card {
-    max-width: 460px;
-  }
-
-  .auth-role-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@supports (padding: env(safe-area-inset-top)) {
-  .auth-root {
-    padding-top: max(20px, env(safe-area-inset-top));
-    padding-right: max(20px, env(safe-area-inset-right));
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-    padding-left: max(20px, env(safe-area-inset-left));
-  }
-}
-</style>

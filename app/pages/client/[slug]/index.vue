@@ -182,13 +182,108 @@ const navPages = computed(() => {
 const rmMap = computed<Record<string, string>>(() => ({}))
 
 // ── Active page state ────────────────────────────────────────────────────
-const activePage = ref('overview')
+const CLIENT_SECTION_QUERY_KEY = 'section'
+const CLIENT_PROJECT_CONTROL_ROUTE_QUERY_KEYS = ['controlSprint', 'controlTask'] as const
+let syncingFromRoute = false
+
+function parseClientSectionQuery(value: unknown): string {
+  const raw = Array.isArray(value) ? value[0] : value
+  const normalized = raw === 'brief' ? 'self_profile' : raw
+
+  if (normalized === 'overview') {
+    return 'overview'
+  }
+
+  return typeof normalized === 'string' && allClientPages.some(page => page.slug === normalized)
+    ? normalized
+    : 'overview'
+}
+
+function hasNonEmptyRouteQueryValue(value: unknown): boolean {
+  if (Array.isArray(value)) {
+    return value.some(item => hasNonEmptyRouteQueryValue(item))
+  }
+
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+const hasProjectControlRouteState = computed(() =>
+  CLIENT_PROJECT_CONTROL_ROUTE_QUERY_KEYS.some(key => hasNonEmptyRouteQueryValue(route.query[key])),
+)
+
+const activePage = ref(
+  hasProjectControlRouteState.value
+    ? 'project_control'
+    : parseClientSectionQuery(route.query[CLIENT_SECTION_QUERY_KEY]),
+)
+
+function readClientStateFromRoute() {
+  syncingFromRoute = true
+  activePage.value = hasProjectControlRouteState.value
+    ? 'project_control'
+    : parseClientSectionQuery(route.query[CLIENT_SECTION_QUERY_KEY])
+  syncingFromRoute = false
+}
+
+async function syncClientStateToRoute() {
+  if (syncingFromRoute) return
+
+  const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>
+  const normalizedActivePage = activePage.value === 'brief' ? 'self_profile' : activePage.value
+
+  if (normalizedActivePage !== 'overview') nextQuery[CLIENT_SECTION_QUERY_KEY] = normalizedActivePage
+  else delete nextQuery[CLIENT_SECTION_QUERY_KEY]
+
+  if (normalizedActivePage !== 'project_control') {
+    CLIENT_PROJECT_CONTROL_ROUTE_QUERY_KEYS.forEach((key) => {
+      delete nextQuery[key]
+    })
+  }
+
+  const currentSection = Array.isArray(route.query[CLIENT_SECTION_QUERY_KEY]) ? route.query[CLIENT_SECTION_QUERY_KEY][0] : route.query[CLIENT_SECTION_QUERY_KEY]
+  const nextSection = typeof nextQuery[CLIENT_SECTION_QUERY_KEY] === 'string' ? nextQuery[CLIENT_SECTION_QUERY_KEY] : undefined
+  const currentControlState = CLIENT_PROJECT_CONTROL_ROUTE_QUERY_KEYS.map((key) => {
+    const value = route.query[key]
+    return Array.isArray(value) ? value[0] : value
+  })
+  const nextControlState = CLIENT_PROJECT_CONTROL_ROUTE_QUERY_KEYS.map((key) => {
+    const value = nextQuery[key]
+    return typeof value === 'string' ? value : undefined
+  })
+
+  if (currentSection === nextSection && currentControlState.every((value, index) => value === nextControlState[index])) {
+    return
+  }
+
+  await router.replace({ query: nextQuery })
+}
+
+watch(() => [route.query[CLIENT_SECTION_QUERY_KEY], route.query.controlSprint, route.query.controlTask], () => {
+  readClientStateFromRoute()
+}, { immediate: true })
+
+watch(activePage, async () => {
+  await syncClientStateToRoute()
+}, { immediate: true })
 
 watch(navPages, (pages) => {
+  if (hasProjectControlRouteState.value && pages.some(page => page.slug === 'project_control')) {
+    activePage.value = 'project_control'
+    return
+  }
+
   if (!activePage.value || activePage.value === 'overview') return
   if (!pages.some(p => p.slug === activePage.value) && pages.length) {
     activePage.value = pages[0].slug
   }
+}, { immediate: true })
+
+watch([hasProjectControlRouteState, navPages], ([hasControlRouteState, pages]) => {
+  if (!hasControlRouteState) return
+  if (!pages.some(page => page.slug === 'project_control')) return
+  if (activePage.value === 'project_control') return
+
+  activePage.value = 'project_control'
 }, { immediate: true })
 
 function setPage(slug: string) {

@@ -1,6 +1,21 @@
 <template>
   <div class="auth-root glass-page">
-    <div class="auth-card glass-surface">
+    <div class="auth-stage" :data-auth-role="selectedRole">
+      <section class="auth-panel glass-surface" aria-label="Контекст входа">
+        <p class="auth-panel__eyebrow">Единая точка доступа</p>
+        <p class="auth-panel__tag">{{ activeRoleInsight.tag }}</p>
+        <h2 class="auth-panel__title">{{ activeRoleInsight.title }}</h2>
+        <p class="auth-panel__copy">{{ activeRoleInsight.copy }}</p>
+
+        <div class="auth-panel__facts">
+          <article v-for="fact in activeRoleInsight.facts" :key="fact.label" class="auth-panel__fact">
+            <span class="auth-panel__fact-label">{{ fact.label }}</span>
+            <span class="auth-panel__fact-value">{{ fact.value }}</span>
+          </article>
+        </div>
+      </section>
+
+      <div class="auth-card glass-surface">
       <div class="auth-head">
         <h1 class="auth-title">Единый вход</h1>
         <p class="auth-subtitle">Выберите роль и войдите по логину и паролю. Для клиента и подрядчика старые способы входа сохранены ниже.</p>
@@ -137,6 +152,7 @@
         <NuxtLink :to="recoverPath">Восстановить доступ</NuxtLink>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -146,6 +162,12 @@ import { useCsrfHeaders } from '~/composables/useCsrfHeaders'
 definePageMeta({ layout: 'default', pageTransition: false, keepalive: false })
 
 type LoginRole = 'designer' | 'client' | 'contractor'
+type LoginRoleInsight = {
+  tag: string
+  title: string
+  copy: string
+  facts: Array<{ label: string; value: string }>
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -157,16 +179,59 @@ const roleOptions = [
   { value: 'contractor', label: 'Подрядчик', note: 'Вход в задачи и документы.' },
 ] as const satisfies ReadonlyArray<{ value: LoginRole; label: string; note: string }>
 
+const roleInsights: Record<LoginRole, LoginRoleInsight> = {
+  designer: {
+    tag: 'Роль: администратор',
+    title: 'Контроль проектов, документов и всей рабочей зоны студии.',
+    copy: 'Основной сценарий ведет прямо в админ-кабинет. Доступ восстанавливается через ту же единую связку логина, пароля и recovery-фразы.',
+    facts: [
+      { label: 'Маршрут', value: 'Переход сразу в /admin' },
+      { label: 'Проверка', value: 'CSRF-защищенный логин по обычным учетным данным' },
+      { label: 'Резерв', value: 'Сброс доступа через страницу восстановления' },
+    ],
+  },
+  client: {
+    tag: 'Роль: клиент',
+    title: 'Быстрый вход в кабинет проекта без лишних переходов.',
+    copy: 'Основной вход работает по логину и паролю. Ниже остается резервный сценарий по коду проекта, если клиент пользуется старым способом доступа.',
+    facts: [
+      { label: 'Маршрут', value: 'Открывается кабинет конкретного проекта' },
+      { label: 'Резерв', value: 'Можно войти по коду проекта без смены страницы' },
+      { label: 'После входа', value: 'Документы, этапы и согласования доступны сразу' },
+    ],
+  },
+  contractor: {
+    tag: 'Роль: подрядчик',
+    title: 'Вход в задачи, статусы и рабочие документы подрядчика.',
+    copy: 'Подрядчик может войти по логину и паролю либо использовать резервный сценарий по ID и коду доступа, если кабинет уже был выдан дизайнером.',
+    facts: [
+      { label: 'Маршрут', value: 'Открывается персональный кабинет подрядчика' },
+      { label: 'Резерв', value: 'Старый вход по ID и коду доступа сохранен' },
+      { label: 'После входа', value: 'Сразу доступны задачи, сроки и файлы' },
+    ],
+  },
+}
+
 function normalizeRole(value: unknown): LoginRole {
-  if (value === 'admin') {
+  const rawValue = Array.isArray(value) ? value[0] : value
+
+  if (rawValue === 'admin') {
     return 'designer'
   }
 
-  if (value === 'designer' || value === 'client' || value === 'contractor') {
-    return value
+  if (rawValue === 'designer' || rawValue === 'client' || rawValue === 'contractor') {
+    return rawValue
   }
 
   return 'client'
+}
+
+function toRoleQueryValue(role: LoginRole) {
+  return role === 'designer' ? 'admin' : role
+}
+
+function getCurrentRoleQueryValue() {
+  return Array.isArray(route.query.role) ? route.query.role[0] : route.query.role
 }
 
 const selectedRole = ref<LoginRole>(normalizeRole(route.query.role))
@@ -181,8 +246,9 @@ const credentialsLoading = ref(false)
 const clientLegacyLoading = ref(false)
 const contractorLegacyLoading = ref(false)
 
-const registerPath = computed(() => `/register?role=${selectedRole.value === 'designer' ? 'admin' : selectedRole.value}`)
-const recoverPath = computed(() => `/recover?role=${selectedRole.value === 'designer' ? 'admin' : selectedRole.value}`)
+const activeRoleInsight = computed(() => roleInsights[selectedRole.value])
+const registerPath = computed(() => `/register?role=${toRoleQueryValue(selectedRole.value)}`)
+const recoverPath = computed(() => `/recover?role=${toRoleQueryValue(selectedRole.value)}`)
 
 const submitLabel = computed(() => {
   if (selectedRole.value === 'designer') return 'Войти как администратор'
@@ -196,6 +262,33 @@ function resetErrors() {
   contractorLegacyError.value = ''
 }
 
+function syncRoleQuery(role: LoginRole) {
+  const nextRole = toRoleQueryValue(role)
+  if (getCurrentRoleQueryValue() === nextRole) {
+    return
+  }
+
+  return router.replace({
+    query: {
+      ...route.query,
+      role: nextRole,
+    },
+  })
+}
+
+watch(
+  () => route.query.role,
+  (value) => {
+    const nextRole = normalizeRole(value)
+    if (nextRole === selectedRole.value) {
+      return
+    }
+
+    selectedRole.value = nextRole
+    resetErrors()
+  },
+)
+
 function selectRole(role: LoginRole) {
   if (role === selectedRole.value) {
     return
@@ -203,6 +296,7 @@ function selectRole(role: LoginRole) {
 
   selectedRole.value = role
   resetErrors()
+  void syncRoleQuery(role)
 }
 
 async function submitCredentials() {
@@ -222,23 +316,27 @@ async function submitCredentials() {
     }
 
     if (selectedRole.value === 'client') {
+      await ensureCsrfCookie()
       const result = await $fetch<{ ok: boolean; slug: string }>('/api/auth/client-login', {
         method: 'POST',
         body: {
           login: credentials.login.trim().toLowerCase(),
           password: credentials.password,
         },
+        headers: csrfHeaders(),
       })
       await router.push(`/client/${result.slug}`)
       return
     }
 
+    await ensureCsrfCookie()
     const result = await $fetch<{ ok: boolean; id: number }>('/api/auth/contractor-login', {
       method: 'POST',
       body: {
         login: credentials.login.trim().toLowerCase(),
         password: credentials.password,
       },
+      headers: csrfHeaders(),
     })
     await router.push(`/contractor/${result.id}`)
   } catch (e: any) {
@@ -258,9 +356,11 @@ async function submitClientLegacy() {
 
   clientLegacyLoading.value = true
   try {
+    await ensureCsrfCookie()
     const result = await $fetch<{ ok: boolean; slug: string }>('/api/auth/client-login', {
       method: 'POST',
       body: { slug },
+      headers: csrfHeaders(),
     })
     await router.push(`/client/${result.slug}`)
   } catch (e: any) {
@@ -279,12 +379,14 @@ async function submitContractorLegacy() {
 
   contractorLegacyLoading.value = true
   try {
+    await ensureCsrfCookie()
     const result = await $fetch<{ ok: boolean; id: number }>('/api/auth/contractor-login', {
       method: 'POST',
       body: {
         id: contractorLegacy.id,
         slug: contractorLegacy.slug.trim(),
       },
+      headers: csrfHeaders(),
     })
     await router.push(`/contractor/${result.id}`)
   } catch (e: any) {
@@ -294,202 +396,3 @@ async function submitContractorLegacy() {
   }
 }
 </script>
-
-<style scoped>
-.auth-root {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 560px;
-  padding: 32px;
-  display: grid;
-  gap: 16px;
-}
-
-.auth-head {
-  display: grid;
-  gap: 6px;
-}
-
-.auth-title {
-  margin: 0;
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-
-.auth-subtitle {
-  margin: 0;
-  font-size: .82rem;
-  opacity: .74;
-}
-
-.auth-role-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.auth-role-btn {
-  display: grid;
-  gap: 6px;
-  min-height: 68px;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  font-family: inherit;
-}
-
-.auth-role-btn--active {
-  border-color: color-mix(in srgb, var(--glass-text) 42%, transparent);
-  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
-}
-
-.auth-role-btn__title {
-  font-size: .8rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-
-.auth-role-btn__note {
-  font-size: .72rem;
-  opacity: .68;
-  line-height: 1.35;
-}
-
-.auth-form-grid {
-  display: grid;
-  gap: 0;
-}
-
-.auth-field {
-  display: grid;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.auth-field--compact {
-  margin-bottom: 12px;
-}
-
-.auth-field label {
-  font-size: .72rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  opacity: .7;
-}
-
-.auth-input,
-.auth-submit {
-  width: 100%;
-  min-height: 48px;
-  font-size: 16px;
-}
-
-.auth-submit--secondary {
-  justify-self: start;
-}
-
-.auth-secondary {
-  padding: 18px;
-  display: grid;
-  gap: 10px;
-}
-
-.auth-secondary__title {
-  margin: 0;
-  font-size: .76rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  opacity: .7;
-}
-
-.auth-error {
-  color: var(--ds-error, #d96b6b);
-  font-size: .8rem;
-  margin: 0 0 10px;
-}
-
-.auth-progress {
-  display: grid;
-  gap: 8px;
-  margin: 0 0 12px;
-}
-
-.auth-progress__label {
-  font-size: .68rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  opacity: .58;
-}
-
-.auth-progress__line {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 2px;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
-}
-
-.auth-progress__line::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 28%;
-  background: color-mix(in srgb, var(--glass-text) 58%, transparent);
-  animation: auth-progress-slide 1.2s linear infinite;
-}
-
-@keyframes auth-progress-slide {
-  from {
-    transform: translateX(-140%);
-  }
-  to {
-    transform: translateX(420%);
-  }
-}
-
-.auth-links {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.auth-links a {
-  color: inherit;
-  text-decoration: none;
-}
-
-@media (max-width: 760px) {
-  .auth-card {
-    max-width: 460px;
-    padding: 24px;
-  }
-
-  .auth-role-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@supports (padding: env(safe-area-inset-top)) {
-  .auth-root {
-    padding-top: max(20px, env(safe-area-inset-top));
-    padding-right: max(20px, env(safe-area-inset-right));
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-    padding-left: max(20px, env(safe-area-inset-left));
-  }
-}
-</style>

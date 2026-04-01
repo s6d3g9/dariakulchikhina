@@ -123,3 +123,4 @@ export default defineEventHandler(async (event) => {
 ## Always-on правила интерфейса
 - Для любого нового чата в этом репозитории учитывать `.github/AGENTS.md` как always-on набор правил по построению интерфейса.
 - При любых UI-изменениях сначала опираться на `.github/AGENTS.md`; при конфликте этот файл важнее `docs/UI_RULES.md` и `.github/instructions/ui.instructions.md`.
+- Если пользователь ведет другой UI family в параллельном чате, считать это частью общего change-stream: не переписывать чужой visual contract напрямую, а общие правила менять только через mode-aware shared layer и инструкции репозитория.

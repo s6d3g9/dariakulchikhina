@@ -1,18 +1,23 @@
 <template>
-  <UApp>
-    <NuxtLayout>
-      <NuxtPage
-        :keepalive="pageKeepalive"
-        :transition="resolvedPageTransition"
-      />
-    </NuxtLayout>
-  </UApp>
+  <NuxtLayout>
+    <NuxtPage
+      :keepalive="pageKeepalive"
+      :transition="resolvedPageTransition"
+    />
+  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
 const route = useRoute()
 const { initTheme } = useThemeToggle()
-const { tokens } = useDesignSystem()
+const designSystem = useDesignSystem()
+const { tokens, isHydrated } = designSystem
+const {
+  initTheme: initUiTheme,
+  availableThemes,
+  syncThemeForCurrentMode,
+} = useUITheme()
+const uiThemeReady = ref(false)
 
 const authRoutePattern = /^\/(login|register|recover)$/
 
@@ -47,7 +52,22 @@ watchEffect(() => {
   document.documentElement.style.setProperty('--pt-ease', transitionEasing.value)
 })
 
+watch([availableThemes, isHydrated], ([themes, hydrated]) => {
+  if (!import.meta.client || !hydrated || !themes.length) return
+
+  syncThemeForCurrentMode()
+}, { immediate: true })
+
+watch(isHydrated, (hydrated) => {
+  if (!import.meta.client || !hydrated || uiThemeReady.value) return
+  initUiTheme()
+  uiThemeReady.value = true
+}, { immediate: true })
+
 onMounted(() => {
   initTheme()
+  if (!isHydrated.value) {
+    designSystem.initDesignSystem()
+  }
 })
 </script>

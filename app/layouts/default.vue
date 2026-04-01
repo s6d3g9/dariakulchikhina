@@ -6,8 +6,9 @@
         <button
           type="button"
           class="default-theme-btn"
+          :aria-label="themeToggleAriaLabel"
           @click="toggleTheme"
-        >{{ isDark ? 'светло' : 'темно' }}</button>
+        >{{ themeToggleLabel }}</button>
       </div>
     </header>
     <slot />
@@ -15,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-const { isDark, toggleTheme } = useThemeToggle()
+const { themeToggleAriaLabel, themeToggleLabel, toggleTheme } = useThemeToggle()
 </script>
 
 <style scoped>

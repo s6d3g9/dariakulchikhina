@@ -1,5 +1,13 @@
 <template>
-  <div v-if="pending" class="chat-page-loading">[ LOADING... ]</div>
+  <div v-if="pending" class="auth-root glass-page">
+    <div class="auth-card glass-surface">
+      <p class="auth-secondary__title">Standalone Chat</p>
+      <div class="auth-progress" aria-hidden="true">
+        <span class="auth-progress__label">[ ОТКРЫВАЕМ ЧАТ ]</span>
+        <span class="auth-progress__line"></span>
+      </div>
+    </div>
+  </div>
   <StandaloneChatPanel v-else-if="authState?.authenticated && authState.user" :user="authState.user" />
 </template>
 
@@ -31,24 +39,3 @@ watchEffect(async () => {
   }
 })
 </script>
-
-<style scoped>
-.chat-page-loading {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  font-size: 0.82rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-@supports (padding: env(safe-area-inset-top)) {
-  .chat-page-loading {
-    padding-top: env(safe-area-inset-top);
-    padding-right: env(safe-area-inset-right);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-  }
-}
-</style>

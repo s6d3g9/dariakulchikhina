@@ -8,49 +8,7 @@
  * This eliminates the need for 'unsafe-inline' in script-src.
  */
 import { randomBytes } from 'crypto'
-
-function deriveRealtimeOrigins(serviceUrl: string | null | undefined) {
-  if (!serviceUrl) {
-    return [] as string[]
-  }
-
-  try {
-    const parsed = new URL(serviceUrl)
-    const origins = [parsed.origin]
-
-    if (parsed.protocol === 'http:') {
-      origins.push(`ws://${parsed.host}`)
-    } else if (parsed.protocol === 'https:') {
-      origins.push(`wss://${parsed.host}`)
-    } else if (parsed.protocol === 'ws:') {
-      origins.push(`http://${parsed.host}`)
-    } else if (parsed.protocol === 'wss:') {
-      origins.push(`https://${parsed.host}`)
-    }
-
-    return Array.from(new Set(origins))
-  } catch {
-    return []
-  }
-}
-
-function buildContentSecurityPolicy(event: Parameters<Parameters<typeof defineNitroPlugin>[0]>[0] extends infer T ? any : never, nonce: string) {
-  const config = useRuntimeConfig(event)
-  const connectSources = ["'self'", 'https:', 'wss:', ...deriveRealtimeOrigins(config.public.communicationsServiceUrl?.trim())]
-
-  return [
-    "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' https://api-maps.yandex.ru https://yandex.st https://*.yastatic.net https://*.yandex.net https://*.yandex.ru`,
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' data: https:",
-    `connect-src ${Array.from(new Set(connectSources)).join(' ')}`,
-    "frame-src https://yandex.ru https://*.yandex.ru https://yandex.com https://*.yandex.com",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join('; ')
-}
+import { buildContentSecurityPolicy } from '~/server/utils/security-headers'
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook('render:html', (html, { event }) => {

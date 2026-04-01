@@ -2,11 +2,14 @@ import {
   CONCEPT_TO_DESIGN_MODE,
   DEFAULT_DESIGN_MODE,
   DEFAULT_DESIGN_CONCEPT,
+  DESIGN_MODE_DATA_ATTRIBUTE,
   DESIGN_CONCEPT_STORAGE_KEY,
   DESIGN_MODE_STORAGE_KEY,
   DESIGN_MODE_TO_CONCEPT,
   DESIGN_TOKENS_STORAGE_KEY,
   LEGACY_DESIGN_TOKENS_STORAGE_KEYS,
+  normalizeDesignConceptSlug,
+  resolveDesignModeFromConceptSlug,
 } from '~~/shared/constants/design-modes'
 import type { DesignConceptSlug, DesignMode } from '~~/shared/types/design-mode'
 
@@ -216,6 +219,19 @@ export interface DesignTokens {
   wipeTransition:     'slide' | 'fade' | 'curtain' | 'blur'  // transition effect between cards
 }
 
+const SYSTEM_UI_FONT_STACK = '"SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'
+const M3_FONT_STACK = '"SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif'
+const NEO_GROTESK_FONT_STACK = '"Avenir Next", "Helvetica Neue", "Segoe UI Variable", "Segoe UI", Arial, sans-serif'
+const SHARP_SANS_FONT_STACK = '"SF Pro Display", "Helvetica Neue", "Segoe UI Variable", "Segoe UI", Arial, sans-serif'
+const HUMANIST_SANS_FONT_STACK = '"Avenir Next", "Trebuchet MS", "Segoe UI", Arial, sans-serif'
+const DISPLAY_SANS_FONT_STACK = '"Avenir Next", "Helvetica Neue", "Segoe UI", Arial, sans-serif'
+const WIDE_SANS_FONT_STACK = '"Arial Narrow", "Avenir Next Condensed", "Helvetica Neue", "Segoe UI", Arial, sans-serif'
+const UI_SANS_FONT_STACK = '"Segoe UI Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+const MONO_FONT_STACK = '"JetBrains Mono", "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'
+const EDITORIAL_SERIF_FONT_STACK = 'Iowan Old Style, Georgia, "Times New Roman", serif'
+const JAPANESE_UI_FONT_STACK = '"Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "MS PGothic", system-ui, sans-serif'
+const BRUTAL_DISPLAY_FONT_STACK = '"Arial Black", "Arial Narrow", "Helvetica Neue", Arial, sans-serif'
+
 /* ═══════════════════════════════════════════════════════════
    DEFAULTS
    ═══════════════════════════════════════════════════════════ */
@@ -226,7 +242,7 @@ export const DEFAULT_TOKENS: DesignTokens = {
   btnTransform: 'none',
   btnWeight: 400,
 
-  fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  fontFamily: SYSTEM_UI_FONT_STACK,
   fontSize: 1,
   fontWeight: 400,
   headingWeight: 400,
@@ -1038,7 +1054,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
     tokens: {
       btnRadius: 0, btnStyle: 'filled', btnTransform: 'uppercase', btnWeight: 700,
       btnPaddingH: 20, btnPaddingV: 10,
-      fontFamily: '"DM Sans", "Futura", "Century Gothic", sans-serif',
+      fontFamily: WIDE_SANS_FONT_STACK,
       fontWeight: 400, headingWeight: 800, letterSpacing: 0.06, lineHeight: 1.4, typeScale: 1.414,
       paragraphSpacing: 0.5,
       headingLetterSpacing: 0.02, headingLineHeight: 1.1,
@@ -1071,7 +1087,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
     tokens: {
       btnRadius: 0, btnStyle: 'outline', btnTransform: 'uppercase', btnWeight: 500,
       btnPaddingH: 28, btnPaddingV: 12,
-      fontFamily: '"Playfair Display", Georgia, serif',
+      fontFamily: EDITORIAL_SERIF_FONT_STACK,
       fontWeight: 400, headingWeight: 700, letterSpacing: 0.12, lineHeight: 1.6, typeScale: 1.333,
       paragraphSpacing: 1.0,
       headingLetterSpacing: 0.10, headingLineHeight: 1.15,
@@ -1136,7 +1152,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
     tokens: {
       btnRadius: 100, btnStyle: 'ghost', btnTransform: 'none', btnWeight: 400,
       btnPaddingH: 16, btnPaddingV: 8,
-      fontFamily: '"Manrope", "Noto Sans", sans-serif',
+      fontFamily: HUMANIST_SANS_FONT_STACK,
       fontWeight: 300, headingWeight: 400, letterSpacing: 0.03, lineHeight: 1.75, typeScale: 1.15,
       paragraphSpacing: 1.2, wordSpacing: 0.02,
       headingLetterSpacing: 0.04, headingLineHeight: 1.3,
@@ -1169,7 +1185,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
     tokens: {
       btnRadius: 999, btnStyle: 'filled', btnTransform: 'none', btnWeight: 700,
       btnPaddingH: 22, btnPaddingV: 11,
-      fontFamily: '"Outfit", "Trebuchet MS", sans-serif',
+      fontFamily: SHARP_SANS_FONT_STACK,
       fontWeight: 400, headingWeight: 800, letterSpacing: 0.00, lineHeight: 1.45, typeScale: 1.25,
       headingLetterSpacing: -0.02, headingLineHeight: 1.1,
       accentHue: 290, accentSaturation: 75, accentLightness: 58,
@@ -1235,7 +1251,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
     tokens: {
       btnRadius: 16, btnStyle: 'soft', btnTransform: 'none', btnWeight: 500,
       btnPaddingH: 0, btnPaddingV: 0,
-      fontFamily: '"DM Sans", "Nunito", sans-serif',
+      fontFamily: HUMANIST_SANS_FONT_STACK,
       fontWeight: 400, headingWeight: 600, letterSpacing: 0.01, lineHeight: 1.6, typeScale: 1.2,
       headingLetterSpacing: 0.00, headingLineHeight: 1.25,
       accentHue: 260, accentSaturation: 45, accentLightness: 72,
@@ -1267,7 +1283,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
     tokens: {
       btnRadius: 100, btnStyle: 'filled', btnTransform: 'none', btnWeight: 500,
       btnPaddingH: 16, btnPaddingV: 8,
-      fontFamily: '"Inter", "Noto Sans JP", sans-serif',
+      fontFamily: JAPANESE_UI_FONT_STACK,
       fontWeight: 400, headingWeight: 700, letterSpacing: 0.02, lineHeight: 1.5, typeScale: 1.2,
       headingLetterSpacing: 0.00, headingLineHeight: 1.2,
       accentHue: 340, accentSaturation: 70, accentLightness: 55,
@@ -1299,7 +1315,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
     tokens: {
       btnRadius: 8, btnStyle: 'filled', btnTransform: 'none', btnWeight: 500,
       btnPaddingH: 18, btnPaddingV: 9,
-      fontFamily: '"Manrope", Georgia, sans-serif',
+      fontFamily: DISPLAY_SANS_FONT_STACK,
       fontWeight: 400, headingWeight: 600, letterSpacing: 0.02, lineHeight: 1.6, typeScale: 1.2,
       paragraphSpacing: 0.8, wordSpacing: 0.01,
       headingLetterSpacing: 0.01, headingLineHeight: 1.2,
@@ -1332,7 +1348,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
     tokens: {
       btnRadius: 10, btnStyle: 'soft', btnTransform: 'none', btnWeight: 500,
       btnPaddingH: 0, btnPaddingV: 0,
-      fontFamily: '"Inter", -apple-system, sans-serif',
+      fontFamily: NEO_GROTESK_FONT_STACK,
       fontWeight: 400, headingWeight: 500, letterSpacing: 0.02, lineHeight: 1.55, typeScale: 1.2,
       headingLetterSpacing: 0.00, headingLineHeight: 1.2,
       accentHue: 200, accentSaturation: 65, accentLightness: 55,
@@ -1368,7 +1384,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       btnRadius: 0, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 300,
       btnPaddingH: 28, btnPaddingV: 12,
       btnHoverAnim: 'lift',
-      fontFamily: '"Manrope", -apple-system, sans-serif',
+      fontFamily: SHARP_SANS_FONT_STACK,
       fontWeight: 300, headingWeight: 300, letterSpacing: 0.05, lineHeight: 1.80, typeScale: 1.414,
       paragraphSpacing: 1.5, wordSpacing: 0.02,
       headingLetterSpacing: 0.07, headingLineHeight: 1.05,
@@ -1403,7 +1419,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       btnRadius: 0, btnStyle: 'outline', btnTransform: 'uppercase', btnWeight: 500,
       btnPaddingH: 22, btnPaddingV: 10,
       btnHoverAnim: 'lift',
-      fontFamily: '"Outfit", "Helvetica Neue", sans-serif',
+      fontFamily: DISPLAY_SANS_FONT_STACK,
       fontWeight: 400, headingWeight: 700, letterSpacing: 0.04, lineHeight: 1.5, typeScale: 1.333,
       headingLetterSpacing: -0.01, headingLineHeight: 1.1,
       accentHue: 22, accentSaturation: 52, accentLightness: 44,
@@ -1437,7 +1453,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       btnRadius: 0, btnStyle: 'filled', btnTransform: 'none', btnWeight: 600,
       btnPaddingH: 14, btnPaddingV: 8,
       btnHoverAnim: 'scale',
-      fontFamily: '"DM Sans", "Arial", sans-serif',
+      fontFamily: UI_SANS_FONT_STACK,
       fontWeight: 400, headingWeight: 900, letterSpacing: 0.00, lineHeight: 1.35, typeScale: 1.333,
       headingLetterSpacing: -0.03, headingLineHeight: 1.0,
       accentHue: 52, accentSaturation: 100, accentLightness: 48,
@@ -1504,7 +1520,7 @@ export const DESIGN_PRESETS: DesignPreset[] = [
       btnRadius: 999, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 300,
       btnPaddingH: 32, btnPaddingV: 13,
       btnHoverAnim: 'glow',
-      fontFamily: '"Manrope", "Inter", sans-serif',
+      fontFamily: SHARP_SANS_FONT_STACK,
       fontWeight: 300, headingWeight: 200, letterSpacing: 0.20, lineHeight: 1.85, typeScale: 1.25,
       paragraphSpacing: 1.3, wordSpacing: 0.07,
       headingLetterSpacing: 0.14, headingLineHeight: 1.12,
@@ -1541,13 +1557,13 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
   {
     id: 'concept-m3',
     name: 'Material 3',
-    description: 'Material You: тональная элевация, плавная анимация (M3 Motion), четкая типографика (Roboto)',
+    description: 'Material You: тональная элевация, плавная анимация (M3 Motion), чёткая локальная sans-типографика',
     icon: '⨁',
     tokens: {
       navLayoutPreset: 'rail',
       btnRadius: 999, btnStyle: 'filled', btnTransform: 'none', btnWeight: 500,
       btnPaddingH: 24, btnPaddingV: 10,
-      fontFamily: 'Roboto, "Roboto Flex", system-ui, sans-serif',
+      fontFamily: M3_FONT_STACK,
       fontWeight: 400, headingWeight: 400, letterSpacing: 0, lineHeight: 1.5, typeScale: 1.25,
       glassBlur: 0, glassOpacity: 1, glassBorderOpacity: 0, glassSaturation: 100,
       shadowOffsetY: 1, shadowBlurRadius: 3, shadowSpread: 0, shadowOpacity: 0.1,
@@ -1589,7 +1605,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       btnRadius: 0, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 200,
       btnPaddingH: 32, btnPaddingV: 14, btnSize: 'lg',
       btnHoverAnim: 'lift', cardHoverAnim: 'dim',
-      fontFamily: '"Manrope", -apple-system, sans-serif',
+      fontFamily: NEO_GROTESK_FONT_STACK,
       fontSize: 1, fontWeight: 200, headingWeight: 200, letterSpacing: 0.12, lineHeight: 2.0, typeScale: 1.414,
       paragraphSpacing: 2.0, wordSpacing: 0.05, textIndent: 0,
       headingLetterSpacing: 0.20, headingLineHeight: 1.05, paragraphMaxWidth: 55, textAlign: 'left',
@@ -1674,7 +1690,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       btnRadius: 16, btnStyle: 'soft', btnTransform: 'none', btnWeight: 400,
       btnPaddingH: 22, btnPaddingV: 11, btnSize: 'md',
       btnHoverAnim: 'lift', cardHoverAnim: 'lift',
-      fontFamily: '"Manrope", Georgia, sans-serif',
+      fontFamily: HUMANIST_SANS_FONT_STACK,
       fontSize: 1.02, fontWeight: 350, headingWeight: 500, letterSpacing: 0.02, lineHeight: 1.8, typeScale: 1.25,
       paragraphSpacing: 1.4, wordSpacing: 0.02, textIndent: 0,
       headingLetterSpacing: 0.01, headingLineHeight: 1.2, paragraphMaxWidth: 60, textAlign: 'left',
@@ -1720,7 +1736,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       btnRadius: 100, btnStyle: 'filled', btnTransform: 'uppercase', btnWeight: 600,
       btnPaddingH: 24, btnPaddingV: 11, btnSize: 'md',
       btnHoverAnim: 'glow', cardHoverAnim: 'scale',
-      fontFamily: '"Inter", -apple-system, sans-serif',
+      fontFamily: SHARP_SANS_FONT_STACK,
       fontSize: 0.95, fontWeight: 400, headingWeight: 700, letterSpacing: 0.04, lineHeight: 1.45, typeScale: 1.333,
       paragraphSpacing: 0.8, wordSpacing: 0, textIndent: 0,
       headingLetterSpacing: 0.08, headingLineHeight: 1.05, paragraphMaxWidth: 0, textAlign: 'left',
@@ -1763,7 +1779,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       btnRadius: 0, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 400,
       btnPaddingH: 28, btnPaddingV: 12, btnSize: 'md',
       btnHoverAnim: 'fill', cardHoverAnim: 'dim',
-      fontFamily: 'Georgia, "Times New Roman", serif',
+      fontFamily: EDITORIAL_SERIF_FONT_STACK,
       fontSize: 1.05, fontWeight: 400, headingWeight: 700, letterSpacing: 0.06, lineHeight: 1.95, typeScale: 1.414,
       paragraphSpacing: 1.8, wordSpacing: 0.01, textIndent: 2.5,
       headingLetterSpacing: 0.15, headingLineHeight: 1.05, paragraphMaxWidth: 50, textAlign: 'left',
@@ -1809,7 +1825,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       btnRadius: 0, btnStyle: 'outline', btnTransform: 'uppercase', btnWeight: 900,
       btnPaddingH: 24, btnPaddingV: 12, btnSize: 'md',
       btnHoverAnim: 'fill', cardHoverAnim: 'border',
-      fontFamily: '"DM Sans", "Arial Black", sans-serif',
+      fontFamily: BRUTAL_DISPLAY_FONT_STACK,
       fontSize: 1.05, fontWeight: 500, headingWeight: 900, letterSpacing: 0.10, lineHeight: 1.2, typeScale: 1.5,
       paragraphSpacing: 0.3, wordSpacing: 0, textIndent: 0,
       headingLetterSpacing: -0.03, headingLineHeight: 0.92, paragraphMaxWidth: 0, textAlign: 'left',
@@ -1855,7 +1871,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       btnRadius: 999, btnStyle: 'soft', btnTransform: 'none', btnWeight: 500,
       btnPaddingH: 22, btnPaddingV: 10, btnSize: 'md',
       btnHoverAnim: 'sheen', cardHoverAnim: 'scale',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif',
+      fontFamily: SHARP_SANS_FONT_STACK,
       fontSize: 0.98, fontWeight: 400, headingWeight: 600, letterSpacing: 0.01, lineHeight: 1.55, typeScale: 1.2,
       paragraphSpacing: 0.9, wordSpacing: 0, textIndent: 0,
       headingLetterSpacing: 0.02, headingLineHeight: 1.15, paragraphMaxWidth: 0, textAlign: 'left',
@@ -1894,7 +1910,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       btnRadius: 0, btnStyle: 'filled', btnTransform: 'uppercase', btnWeight: 400,
       btnPaddingH: 36, btnPaddingV: 14, btnSize: 'lg',
       btnHoverAnim: 'lift', cardHoverAnim: 'lift',
-      fontFamily: '"Playfair Display", Georgia, serif',
+      fontFamily: EDITORIAL_SERIF_FONT_STACK,
       fontSize: 1.1, fontWeight: 300, headingWeight: 700, letterSpacing: 0.08, lineHeight: 1.85, typeScale: 1.414,
       paragraphSpacing: 1.8, wordSpacing: 0.03, textIndent: 0,
       headingLetterSpacing: 0.12, headingLineHeight: 1.02, paragraphMaxWidth: 50, textAlign: 'left',
@@ -1940,7 +1956,7 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
       btnRadius: 0, btnStyle: 'ghost', btnTransform: 'uppercase', btnWeight: 400,
       btnPaddingH: 24, btnPaddingV: 10, btnSize: 'lg',
       btnHoverAnim: 'lift', cardHoverAnim: 'dim',
-      fontFamily: '"Helvetica Neue", "Arial", "Segoe UI", sans-serif',
+      fontFamily: NEO_GROTESK_FONT_STACK,
       fontSize: 1, fontWeight: 400, headingWeight: 400, letterSpacing: 0.12, lineHeight: 1.8, typeScale: 1.414,
       paragraphSpacing: 2.0, wordSpacing: 0.06, textIndent: 0,
       headingLetterSpacing: 0.22, headingLineHeight: 1.05, paragraphMaxWidth: 50, textAlign: 'left',
@@ -1982,17 +1998,17 @@ export const DESIGN_CONCEPTS: DesignPreset[] = [
    FONT CATALOGUE
    ═══════════════════════════════════════════════════════════ */
 export const FONT_OPTIONS = [
-  { id: 'system',    label: 'System UI',      value: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' },
-  { id: 'roboto',    label: 'Roboto (M3)',    value: 'Roboto, "Roboto Flex", system-ui, sans-serif' },
-  { id: 'inter',     label: 'Inter',          value: '"Inter", sans-serif' },
-  { id: 'geist',     label: 'Geist',          value: '"Geist", sans-serif' },
-  { id: 'dmSans',    label: 'DM Sans',        value: '"DM Sans", sans-serif' },
-  { id: 'manrope',   label: 'Manrope',        value: '"Manrope", sans-serif' },
-  { id: 'outfit',    label: 'Outfit',         value: '"Outfit", sans-serif' },
-  { id: 'satoshi',   label: 'Satoshi',        value: '"Satoshi", sans-serif' },
-  { id: 'jetbrains', label: 'JetBrains Mono', value: '"JetBrains Mono", monospace' },
+  { id: 'system',    label: 'System UI',      value: SYSTEM_UI_FONT_STACK },
+  { id: 'roboto',    label: 'M3 Sans',        value: M3_FONT_STACK },
+  { id: 'inter',     label: 'Neo Grotesk',    value: NEO_GROTESK_FONT_STACK },
+  { id: 'geist',     label: 'Sharp Sans',     value: SHARP_SANS_FONT_STACK },
+  { id: 'dmSans',    label: 'Humanist Sans',  value: HUMANIST_SANS_FONT_STACK },
+  { id: 'manrope',   label: 'Display Sans',   value: DISPLAY_SANS_FONT_STACK },
+  { id: 'outfit',    label: 'Wide Sans',      value: WIDE_SANS_FONT_STACK },
+  { id: 'satoshi',   label: 'UI Sans',        value: UI_SANS_FONT_STACK },
+  { id: 'jetbrains', label: 'JetBrains Mono', value: MONO_FONT_STACK },
   { id: 'georgia',   label: 'Georgia',        value: 'Georgia, "Times New Roman", serif' },
-  { id: 'playfair',  label: 'Playfair',       value: '"Playfair Display", serif' },
+  { id: 'playfair',  label: 'Editorial Serif', value: EDITORIAL_SERIF_FONT_STACK },
 ] as const
 
 /* ═══════════════════════════════════════════════════════════
@@ -2042,44 +2058,41 @@ export function useDesignSystem() {
   const future  = useState<DesignTokens[]>('dsFuture', () => [])
   const activeConceptSlug = useState<string>('dsConceptSlug', () => DEFAULT_DESIGN_CONCEPT)
   const isHydrated = useState<boolean>('dsHydrated', () => false)
-  const conceptAliasMap: Record<string, DesignConceptSlug> = {
-    'concept-minale': 'minale',
-    'concept-glass': 'glass',
-    'concept-brutal': 'brutal',
-    'concept-m3': 'm3',
+  const presetConceptMap: Partial<Record<string, DesignConceptSlug>> = {
+    material3: 'm3',
+    glassmorphism: 'glass',
+    apple: 'glass',
+    brutalist: 'brutal',
   }
 
-  function normalizeConceptSlug(conceptSlug: string) {
-    const normalized = conceptSlug.trim()
-    if (!normalized) {
-      return ''
-    }
-
-    return conceptAliasMap[normalized] || normalized
-  }
-
-  function resolvePresetConceptSlug(presetId: string) {
+  function resolvePresetConceptSlug(presetId: string, fallbackConceptSlug: string = activeConceptSlug.value) {
     if (!presetId) {
-      return ''
+      return normalizeDesignConceptSlug(fallbackConceptSlug) || DEFAULT_DESIGN_CONCEPT
     }
 
-    if (presetId.startsWith('concept-')) {
-      return normalizeConceptSlug(presetId)
+    const explicitConceptSlug = normalizeDesignConceptSlug(presetId)
+    if (explicitConceptSlug) {
+      return explicitConceptSlug
+    }
+
+    const mappedPresetConceptSlug = presetConceptMap[presetId]
+    if (mappedPresetConceptSlug) {
+      return mappedPresetConceptSlug
     }
 
     if (presetId.includes('glass')) {
       return 'glass'
     }
 
+    if (presetId.includes('material') || presetId === 'm3') {
+      return 'm3'
+    }
+
     if (presetId.includes('brutal')) {
       return 'brutal'
     }
 
-    if (presetId === 'minale' || presetId === 'neomorphism') {
-      return 'minale'
-    }
-
-    return normalizeConceptSlug(presetId)
+    return normalizeDesignConceptSlug(fallbackConceptSlug) || DEFAULT_DESIGN_CONCEPT
   }
 
   const currentDesignMode = computed<DesignMode>(() => {
@@ -2087,7 +2100,11 @@ export function useDesignSystem() {
       return DEFAULT_DESIGN_MODE
     }
 
-    const conceptSlug = normalizeConceptSlug(activeConceptSlug.value) as DesignConceptSlug
+    const conceptSlug = normalizeDesignConceptSlug(activeConceptSlug.value)
+    if (!conceptSlug) {
+      return DEFAULT_DESIGN_MODE
+    }
+
     return CONCEPT_TO_DESIGN_MODE[conceptSlug] || DEFAULT_DESIGN_MODE
   })
 
@@ -2097,7 +2114,7 @@ export function useDesignSystem() {
     try {
       localStorage.setItem(DESIGN_TOKENS_STORAGE_KEY, JSON.stringify(tokens.value))
 
-      const conceptSlug = normalizeConceptSlug(activeConceptSlug.value)
+      const conceptSlug = normalizeDesignConceptSlug(activeConceptSlug.value)
       if (conceptSlug) {
         localStorage.setItem(DESIGN_CONCEPT_STORAGE_KEY, conceptSlug)
       } else {
@@ -2118,7 +2135,7 @@ export function useDesignSystem() {
   function load() {
     if (!import.meta.client) return
     try {
-      const savedConcept = normalizeConceptSlug(localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || '')
+      const savedConcept = normalizeDesignConceptSlug(localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || '')
       const savedMode = (localStorage.getItem(DESIGN_MODE_STORAGE_KEY)?.trim() || '') as DesignMode | ''
       const inferredMode = savedMode || CONCEPT_TO_DESIGN_MODE[savedConcept as DesignConceptSlug] || 'brutalist'
       const raw = localStorage.getItem(DESIGN_TOKENS_STORAGE_KEY)
@@ -2598,7 +2615,7 @@ export function useDesignSystem() {
     // Start from DEFAULT_TOKENS — complete reset, no residue from prev presets
     tokens.value = { ...DEFAULT_TOKENS, ...preset.tokens }
     // Track active concept slug for CSS selectors like html[data-concept="brutal"]
-    activeConceptSlug.value = resolvePresetConceptSlug(preset.id)
+    activeConceptSlug.value = resolvePresetConceptSlug(preset.id, activeConceptSlug.value)
     _syncConceptAttr()
     applyToDOM()
     save()
@@ -2767,11 +2784,18 @@ export function useDesignSystem() {
   function _syncConceptAttr() {
     if (import.meta.server) return
     const el = document.documentElement
-    const slug = normalizeConceptSlug(activeConceptSlug.value)
+    const slug = normalizeDesignConceptSlug(activeConceptSlug.value)
+    const designMode = resolveDesignModeFromConceptSlug(slug)
     if (slug) {
       el.setAttribute('data-concept', slug)
     } else {
       el.removeAttribute('data-concept')
+    }
+
+    if (designMode) {
+      el.setAttribute(DESIGN_MODE_DATA_ATTRIBUTE, designMode)
+    } else {
+      el.removeAttribute(DESIGN_MODE_DATA_ATTRIBUTE)
     }
   }
 
@@ -2795,7 +2819,7 @@ export function useDesignSystem() {
       }
     }
     // Track active concept slug for CSS selectors
-    activeConceptSlug.value = resolvePresetConceptSlug(preset.id)
+    activeConceptSlug.value = resolvePresetConceptSlug(preset.id, snapshotBeforePreview.value?.conceptSlug || activeConceptSlug.value)
     _syncConceptAttr()
     // Always start from DEFAULT_TOKENS so no residue leaks between presets
     tokens.value = { ...DEFAULT_TOKENS, ...preset.tokens }

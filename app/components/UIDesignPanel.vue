@@ -2307,16 +2307,21 @@ const {
   undo, redo, canUndo, canRedo,
   exportJSON, importJSON, exportCSS,
   previewPreset, confirmPreview, cancelPreview, isPreviewActive,
+  activeConceptSlug, isHydrated,
 } = useDesignSystem()
 const { designPanel: designPanelModules, isPanelTabEnabled } = useDesignModules()
 const { currentPath, findRule: findVisibilityRule, addRule: addVisibilityRule, removeMatchingRule } = useElementVisibility()
 const { currentPath: alignmentPath, findRule: findAlignmentRule, setRulePosition, removeMatchingRule: removeAlignmentRule } = useElementAlignment()
-const { themeId, applyThemeWithTokens, UI_THEMES } = useUITheme()
+const { themeId, applyThemeWithTokens, getStoredThemeId, UI_THEMES } = useUITheme()
 
-watch(() => UI_THEMES.value, (themes) => {
-  if (themes && themes.length && !themes.find((t: any) => t.id === themeId.value)) {
-    themeId.value = themes[0].id
-    applyThemeWithTokens(themeId.value)
+watch([() => UI_THEMES.value, isHydrated], ([themes, hydrated]) => {
+  if (!hydrated || !themes || !themes.length) {
+    return
+  }
+
+  if (!themes.find((t: any) => t.id === themeId.value)) {
+    const nextTheme = themes.find((t: any) => t.id === getStoredThemeId()) || themes[0]
+    applyThemeWithTokens(nextTheme.id)
   }
 }, { immediate: true })
 const { isDark } = useThemeToggle()
@@ -2920,12 +2925,9 @@ const accentColor = computed(() =>
 
 const activePresetId = ref('')
 
-/* ── Mode switcher: Liquid Glass ↔ Minale+Mann ─── */
+/* ── Mode switcher: active design concept family ─── */
 const activeModeSlug = computed(() => {
-  if (!import.meta.client) return ''
-  return document.documentElement.getAttribute('data-concept')
-    ? 'concept-' + document.documentElement.getAttribute('data-concept')
-    : (activePresetId.value.startsWith('concept-') ? activePresetId.value : '')
+  return activeConceptSlug.value ? `concept-${activeConceptSlug.value}` : ''
 })
 
 function switchMode(conceptId: string) {

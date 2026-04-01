@@ -1,25 +1,53 @@
 import {
   DEFAULT_DESIGN_CONCEPT,
+  DEFAULT_DESIGN_MODE,
+  DESIGN_MODE_DATA_ATTRIBUTE,
   DESIGN_CONCEPT_STORAGE_KEY,
   DESIGN_MODE_STORAGE_KEY,
   DESIGN_MODE_TO_CONCEPT,
   DESIGN_TOKENS_STORAGE_KEY,
+  getUiThemeStorageKey,
   LEGACY_DESIGN_TOKENS_STORAGE_KEYS,
+  normalizeDesignConceptSlug,
+  resolveDesignModeFromConceptSlug,
+  UI_THEME_STORAGE_KEY,
 } from '~~/shared/constants/design-modes'
 import type { DesignMode } from '~~/shared/types/design-mode'
+import { BRUTAL_THEMES, GLASS_THEMES, M3_THEMES } from '~/composables/useUITheme'
 
 // Applies saved UI theme + design tokens from localStorage before first paint to avoid flash
 export default defineNuxtPlugin(() => {
   if (!import.meta.client) return
 
-  // Theme palette
-  const saved = localStorage.getItem('ui-theme') || 'cloud'
-  document.documentElement.setAttribute('data-theme', saved)
-
-  const savedConcept = localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || ''
+  const savedConcept = normalizeDesignConceptSlug(localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || '')
   const savedMode = (localStorage.getItem(DESIGN_MODE_STORAGE_KEY)?.trim() || '') as DesignMode | ''
   const resolvedConcept = savedConcept || (savedMode ? DESIGN_MODE_TO_CONCEPT[savedMode] : '') || DEFAULT_DESIGN_CONCEPT
+  const resolvedMode = resolveDesignModeFromConceptSlug(resolvedConcept) || savedMode || DEFAULT_DESIGN_MODE
   document.documentElement.setAttribute('data-concept', resolvedConcept)
+  document.documentElement.setAttribute(DESIGN_MODE_DATA_ATTRIBUTE, resolvedMode)
+
+  const themePool = resolvedMode === 'material3'
+    ? M3_THEMES
+    : resolvedMode === 'brutalist'
+      ? BRUTAL_THEMES
+      : GLASS_THEMES
+
+  const savedTheme = (
+    localStorage.getItem(getUiThemeStorageKey(resolvedMode))
+    || localStorage.getItem(UI_THEME_STORAGE_KEY)
+    || ''
+  ).trim()
+  const resolvedTheme = themePool.find((theme) => theme.id === savedTheme) || themePool[0]
+
+  if (resolvedTheme) {
+    document.documentElement.setAttribute('data-theme', resolvedTheme.id)
+
+    const isDark = document.documentElement.classList.contains('dark')
+    const themeVars = isDark ? resolvedTheme.darkVars : resolvedTheme.vars
+    for (const [key, value] of Object.entries(themeVars)) {
+      document.documentElement.style.setProperty(key, value)
+    }
+  }
 
   // Design system tokens (v3 — full token surface)
   try {

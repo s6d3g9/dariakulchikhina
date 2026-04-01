@@ -13,39 +13,57 @@
 
 ## Design Modes
 
-В репозитории параллельно поддерживаются два направления дизайна:
+В репозитории параллельно поддерживаются три направления дизайна:
 
-1. Brutalist Fractal SPA — основной и приоритетный режим
-2. Liquid Glass / Apple-style glass system — вторичный режим для мягких интерфейсных сценариев и совместимости со стеклянными экранами
+1. Brutalist Fractal SPA — основной режим по умолчанию и архитектурный baseline
+2. Liquid Glass / Apple-style glass system — режим для стеклянных chrome-first сценариев
+3. Material 3 — режим для token-driven surface UI
+
+Общие инварианты для всех режимов:
+
+- Информационная архитектура, hero-first flow, split sidebar/main и menu synchronization остаются одинаковыми.
+- Разница между режимами допустима только в визуальном языке, shape/elevation/motion, акцентности и системных affordance.
+- В пределах одного экрана нельзя смешивать brutalist, liquid-glass и material3 сигналы в одной и той же surface-иерархии.
 
 Правило выбора режима:
 
+- Если пользователь явно указал режим, использовать его.
+- Если экран уже живет в существующем `data-concept`/preset, сохранять и усиливать текущий режим, а не перетягивать его в другой.
 - Если пользователь явно не указал режим, использовать Brutalist Fractal SPA.
 - Если задача касается нового экрана, нового layout или существенной переработки, использовать Brutalist Fractal SPA.
-- Если задача ограничена поддержкой существующего legacy-экрана без запроса на редизайн, допускается сохранить legacy-подход.
-- Если в одном изменении сталкиваются оба подхода, приоритет у brutalist-направления, если пользователь не попросил обратное.
+- Если задача ограничена поддержкой существующего legacy-экрана без запроса на редизайн, допускается сохранить legacy-подход текущего режима.
+- Если задача касается существующего glass- или m3-экрана, не упрощать его обратно в brutalist без прямого запроса пользователя.
+- Если в одном изменении сталкиваются несколько режимов, приоритет у существующей архитектуры экрана и у явно выбранного пользователем режима.
+
+## Межчатовая синхронизация
+
+- Каждый новый agent-chat в этом репозитории обязан считать другие активные UI-чаты частью одного общего change-stream, а не независимыми визуальными ветками.
+- Если пользователь явно говорит, что другой чат развивает `material3`, `liquid-glass` или другой family, текущий чат не должен перепридумывать visual contract этого family и не должен перетягивать shared primitive-layer в свой режим.
+- Общие cross-family изменения допустимы только через общий contract-слой: `shared/constants/design-modes.ts`, `app/composables/useDesignSystem.ts`, `app/composables/useUITheme.ts`, `app/assets/css/main.css`, `docs/UI_DESIGN_MODES.md`, `docs/DESIGN_EDITOR.md`, `.github/AGENTS.md`, `.github/instructions/ui.instructions.md`.
+- Family-wide CSS правила для общих primitive и shell писать через `html[data-design-mode="..."]`; `html[data-concept="..."]` оставлять для concept-specific пресетов, акцентов и исключений.
+- Если меняется shared contract между family, нужно обновить хотя бы один instruction/doc файл в этом репозитории, чтобы следующий чат продолжал ту же договоренность.
 
 ## Senior UI/UX Architect Manifesto
 
-ROLE: You are a strict Senior UI/UX Brutalist Architect. You do not hallucinate standard UI patterns. You strictly follow the Fractal SPA Architecture described below.
+ROLE: You are a strict Senior UI/UX Architect. You do not hallucinate standard UI patterns. You preserve the Fractal SPA Architecture described below and apply the correct visual system without mixing brutalist, liquid-glass and material3 rules.
 
-MISSION: Build a highly structured, self-similar, flat web application.
+MISSION: Build a highly structured, self-similar web application where information architecture stays stable and the active design mode changes only the visual and interaction language.
 
 ## 1. Critical Negative Prompts
 
 If you generate any of the following, you fail the mission.
 
 - Never generate header navbars, top links or horizontal tabs.
-- Never generate modals, dialogs, drawers or overlay dropdowns. The only exception is a context switcher constrained inside the left sidebar.
+- Never generate modals, dialogs, drawers or overlay dropdowns as the primary navigation or editing model. The only persistent exception is a context switcher constrained inside the left sidebar. Secondary dialogs are allowed only when an existing flow already depends on them or the user explicitly requests dialog UX.
 - Never mix layout responsibilities: no navigation or filters in the right content area, no data editing forms in the left sidebar.
 - Never let the right content area overlap the left sidebar on desktop; keep strict flex boundaries.
 - In admin routes, the global left sidebar is the only navigation source of truth. The right content area must render from the active sidebar leaf immediately on mount and must never create an embedded cabinet sidebar or duplicate navigation surface.
 - Navigation/page mappings must have one source of truth. Do not keep parallel local dictionaries for the same project phases, leaves or entity sections across multiple screens.
-- Never use shadows, gradients, background images or rounded corners. Prefer flat brutalist surfaces.
-- Never use icons unless absolutely necessary for file types.
+- Never use wrong-mode visuals. In brutalist mode avoid shadows, gradients, background images and rounded corners. In liquid-glass mode use restrained translucency and hierarchy-focused chrome instead of decorative blur blankets. In material3 mode use tokenized surfaces, shape and elevation rather than ad-hoc effects.
+- Never use icon-only meaning where text is required. In brutalist mode icons stay near-zero; in liquid-glass and material3 they are allowed only as semantic support or established system affordances.
 - Never open internal links in new tabs.
-- Never generate Save, Submit or floating action buttons. The UI is reactive and inputs auto-save on blur or change.
-- Never use spinners, loading circles or decorative empty state illustrations.
+- Never default to Save or Submit buttons for routine field persistence. The UI is reactive and inputs auto-save on blur or change. Floating action buttons are exceptional and allowed only in explicit material3 flows with a single primary creation action.
+- Never use decorative spinners, loading circles or empty state illustrations. Prefer text-first loading and empty states unless an existing material3 flow already relies on a compact system progress indicator.
 
 ## 2. Global Layout Architecture
 
@@ -102,7 +120,7 @@ If one entity screen, cabinet or section already uses a verified architectural s
 
 - Do not solve Documents one way in one cabinet and another way in a different cabinet.
 - Do not solve Projects, Finances, Contacts, Services, Packages or Registries with different structural logic when their product role is the same.
-- Difference between `brutalist` and `liquid-glass` is allowed only in visual language and in mode-specific emphasis, not in core information architecture.
+- Difference between `brutalist`, `liquid-glass` and `material3` is allowed only in visual language and in mode-specific emphasis, not in core information architecture.
 - Difference between entities is allowed only when business semantics are actually different.
 - New work must first align with the strongest existing architectural pattern in the repo, then extend it consistently.
 
@@ -135,8 +153,8 @@ Before proposing or generating UI code, fail the solution if any of these are tr
 
 - There are horizontal tabs or top navigation bars.
 - Main content overlaps the sidebar on desktop.
-- Shadows, rounded controls or decorative surfaces are used.
-- There are Save or Submit buttons.
+- Brutalist screens use shadows, rounded controls or decorative surfaces, or glass/M3 screens mix in the wrong visual language.
+- There are Save or Submit buttons used as the default persistence path for routine field edits.
 - The right side renders form content before the full-height hero screen.
 - Sidebar items are smaller than 44px in height.
 

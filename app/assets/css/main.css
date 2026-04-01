@@ -87,7 +87,7 @@ textarea, select {
   --btn-font-size:  .8rem;
 
   /* ── Design-system tokens (overridden via JS) ──────────── */
-  --ds-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ds-font-family: 'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   --ds-font-size:   1rem;
   --ds-font-weight: 400;
   --ds-heading-weight: 600;
@@ -479,26 +479,110 @@ html.dark select:-webkit-autofill:focus {
 }
 
 .auth-root,
+.auth-stage,
+.auth-panel,
+.auth-panel__facts,
+.auth-panel__fact,
 .auth-card,
 .auth-secondary,
 .auth-form-grid,
 .auth-field,
 .auth-links,
-.auth-role-grid {
+.auth-role-grid,
+.seed-box,
+.auth-actions {
   position: relative;
   z-index: 1;
   pointer-events: auto;
 }
 
 .auth-root {
-  align-items: flex-start;
-  padding-top: max(24px, calc(env(safe-area-inset-top, 0px) + 24px));
-  padding-bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 24px));
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
   touch-action: manipulation;
+}
+
+.auth-root::before,
+.auth-root::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-root::before {
+  top: clamp(12px, 5vw, 48px);
+  left: clamp(-40px, 4vw, 24px);
+  width: clamp(220px, 30vw, 420px);
+  height: clamp(220px, 30vw, 420px);
+  border-radius: 999px;
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--auth-role-accent, var(--ds-accent, var(--glass-text))) 28%, transparent), transparent 72%);
+  filter: blur(8px);
+  opacity: .9;
+}
+
+.auth-root::after {
+  right: clamp(-28px, 2vw, 24px);
+  bottom: clamp(6px, 4vw, 42px);
+  width: clamp(180px, 24vw, 340px);
+  height: clamp(180px, 24vw, 340px);
+  border-radius: 999px;
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--glass-text) 10%, transparent), transparent 72%);
+  filter: blur(10px);
+  opacity: .72;
+}
+
+.auth-stage {
+  --auth-role-accent: color-mix(in srgb, var(--ds-accent, var(--glass-text)) 72%, var(--glass-text) 28%);
+  width: min(1080px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, .92fr) minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 32px);
+  align-items: stretch;
+}
+
+.auth-stage[data-auth-role='designer'] {
+  --auth-role-accent: color-mix(in srgb, var(--ds-accent, #c28754) 82%, var(--glass-text) 18%);
+}
+
+.auth-stage[data-auth-role='client'] {
+  --auth-role-accent: color-mix(in srgb, var(--ds-accent, #6aa89b) 38%, #6aa89b 62%);
+}
+
+.auth-stage[data-auth-role='contractor'] {
+  --auth-role-accent: color-mix(in srgb, var(--ds-accent, #7380d1) 38%, #7380d1 62%);
+}
+
+.auth-panel,
+.auth-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.auth-panel {
+  padding: clamp(24px, 4vw, 34px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-card {
+  padding: var(--auth-card-padding, 32px);
+  display: grid;
+  gap: 16px;
 }
 
 .auth-card::before,
 .auth-card::after,
+.auth-panel::before,
+.auth-panel::after,
 .auth-secondary::before,
 .auth-secondary::after {
   pointer-events: none;
@@ -508,7 +592,8 @@ html.dark select:-webkit-autofill:focus {
 .auth-role-btn,
 .auth-submit,
 .auth-links a,
-.auth-link-btn {
+.auth-link-btn,
+.auth-panel__tag {
   position: relative;
   z-index: 2;
   pointer-events: auto;
@@ -521,6 +606,248 @@ html.dark select:-webkit-autofill:focus {
   appearance: none;
   -webkit-user-select: text;
   user-select: text;
+}
+
+.auth-head {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-panel__eyebrow,
+.auth-panel__fact-label {
+  margin: 0;
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  opacity: .62;
+}
+
+.auth-panel__tag {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--auth-role-accent) 36%, transparent);
+  background: color-mix(in srgb, var(--auth-role-accent) 10%, transparent);
+  color: var(--auth-role-accent);
+  font-size: .74rem;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.auth-panel__title {
+  margin: 0;
+  max-width: 12ch;
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  line-height: .95;
+  letter-spacing: -.04em;
+  text-wrap: balance;
+}
+
+.auth-panel__copy {
+  margin: 0;
+  max-width: 40ch;
+  font-size: .95rem;
+  line-height: 1.55;
+  opacity: .78;
+}
+
+.auth-panel__facts {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.auth-panel__fact {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 102px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-bg) 76%, transparent);
+}
+
+.auth-panel__fact-value {
+  font-size: .88rem;
+  line-height: 1.45;
+}
+
+.auth-title,
+.seed-title {
+  margin: 0;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.auth-subtitle,
+.seed-copy {
+  margin: 0;
+  font-size: .82rem;
+  opacity: .74;
+}
+
+.auth-role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.auth-role-btn {
+  display: grid;
+  gap: 6px;
+  min-height: 68px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-family: inherit;
+  transition:
+    border-color var(--ds-transition, 180ms ease),
+    background var(--ds-transition, 180ms ease),
+    transform var(--ds-transition, 180ms ease),
+    box-shadow var(--ds-transition, 180ms ease);
+}
+
+.auth-role-btn--active {
+  border-color: color-mix(in srgb, var(--auth-role-accent) 48%, transparent);
+  background: color-mix(in srgb, var(--auth-role-accent) 12%, transparent);
+}
+
+.auth-role-btn__title {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.auth-role-btn__note {
+  font-size: .72rem;
+  opacity: .68;
+  line-height: 1.35;
+}
+
+.auth-form-grid {
+  display: grid;
+  gap: 0;
+}
+
+.auth-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.auth-field--compact {
+  margin-bottom: 12px;
+}
+
+.auth-input,
+.auth-submit,
+.seed-value {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+}
+
+.auth-input--textarea {
+  resize: vertical;
+}
+
+.auth-submit--secondary {
+  justify-self: start;
+}
+
+.auth-secondary {
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.auth-secondary__title {
+  margin: 0;
+  font-size: .76rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .7;
+}
+
+.auth-error {
+  color: var(--ds-error, #d96b6b);
+  font-size: .8rem;
+  margin: 0 0 10px;
+}
+
+.auth-success {
+  color: var(--ds-success, #5caa7f);
+  font-size: .8rem;
+  margin: 0 0 10px;
+}
+
+.auth-progress {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.auth-progress__label {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .58;
+}
+
+.auth-progress__line {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--glass-text) 10%, transparent);
+}
+
+.auth-progress__line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 28%;
+  background: color-mix(in srgb, var(--auth-role-accent) 72%, transparent);
+  animation: auth-progress-slide 1.2s linear infinite;
+}
+
+@keyframes auth-progress-slide {
+  from {
+    transform: translateX(-140%);
+  }
+  to {
+    transform: translateX(420%);
+  }
+}
+
+.seed-box {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-actions,
+.auth-links {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.auth-links--single a,
+.auth-links a,
+.auth-link-btn {
+  color: inherit;
+  text-decoration: none;
 }
 
 .auth-root .auth-input,
@@ -547,15 +874,25 @@ html.dark select:-webkit-autofill:focus {
 .auth-root .auth-input:-webkit-autofill:focus,
 .auth-root .chat-auth-input:-webkit-autofill,
 .auth-root .chat-auth-input:-webkit-autofill:hover,
-.auth-root .chat-auth-input:-webkit-autofill:focus {
+.auth-root .chat-auth-input:-webkit-autofill:focus,
+.auth-root input.auth-input:-webkit-autofill,
+.auth-root input.auth-input:-webkit-autofill:hover,
+.auth-root input.auth-input:-webkit-autofill:focus,
+.auth-root input.chat-auth-input:-webkit-autofill,
+.auth-root input.chat-auth-input:-webkit-autofill:hover,
+.auth-root input.chat-auth-input:-webkit-autofill:focus {
   -webkit-text-fill-color: currentColor !important;
   caret-color: currentColor;
 }
 
+.auth-panel,
 .auth-card,
 .auth-secondary,
 .chat-auth-box,
 .auth-title,
+.auth-panel__title,
+.auth-panel__tag,
+.auth-panel__fact-value,
 .seed-title,
 .auth-subtitle,
 .seed-copy,
@@ -571,8 +908,158 @@ html.dark select:-webkit-autofill:focus {
 }
 
 .auth-field label,
+.auth-panel__eyebrow,
+.auth-panel__fact-label,
 .chat-auth-label {
   color: color-mix(in srgb, var(--glass-text) 72%, transparent);
+}
+
+html[data-design-mode='liquid-glass'] .auth-panel,
+html[data-design-mode='liquid-glass'] .auth-card,
+html[data-design-mode='liquid-glass'] .auth-secondary {
+  background: color-mix(in srgb, var(--glass-bg) 82%, transparent);
+}
+
+html[data-design-mode='liquid-glass'] .auth-panel__fact,
+html[data-design-mode='liquid-glass'] .auth-role-btn {
+  background: color-mix(in srgb, var(--glass-bg) 70%, transparent);
+}
+
+html[data-design-mode='material3'] .auth-root::before {
+  filter: blur(22px);
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--sys-color-primary, var(--auth-role-accent)) 26%, transparent), transparent 72%);
+}
+
+html[data-design-mode='material3'] .auth-root::after {
+  filter: blur(20px);
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--sys-color-secondary-container, var(--glass-bg)) 38%, transparent), transparent 72%);
+}
+
+html[data-design-mode='material3'] .auth-panel,
+html[data-design-mode='material3'] .auth-card,
+html[data-design-mode='material3'] .auth-secondary {
+  border-radius: 30px;
+  border: 1px solid color-mix(in srgb, var(--sys-color-outline, var(--glass-text)) 24%, transparent);
+  background: color-mix(in srgb, var(--sys-color-surface-container-high, var(--glass-bg)) 92%, white 8%);
+  box-shadow:
+    0 22px 44px color-mix(in srgb, var(--glass-text) 14%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 48%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-design-mode='material3'] .auth-panel__tag,
+html[data-design-mode='material3'] .auth-panel__fact,
+html[data-design-mode='material3'] .auth-role-btn {
+  border-radius: 22px;
+}
+
+html[data-design-mode='material3'] .auth-panel__fact,
+html[data-design-mode='material3'] .auth-role-btn {
+  background: color-mix(in srgb, var(--sys-color-surface-container, var(--glass-bg)) 96%, transparent);
+  border-color: color-mix(in srgb, var(--sys-color-outline, var(--glass-text)) 18%, transparent);
+}
+
+html[data-design-mode='material3'] .auth-role-btn--active {
+  background: color-mix(in srgb, var(--sys-color-primary-container, var(--auth-role-accent)) 84%, transparent);
+  border-color: color-mix(in srgb, var(--sys-color-primary, var(--auth-role-accent)) 32%, transparent);
+}
+
+html[data-design-mode='brutalist'] .auth-root::before,
+html[data-design-mode='brutalist'] .auth-root::after {
+  border-radius: 0;
+  filter: none;
+}
+
+html[data-design-mode='brutalist'] .auth-root::before {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--auth-role-accent) 18%, transparent), transparent 68%);
+  opacity: .54;
+}
+
+html[data-design-mode='brutalist'] .auth-root::after {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--glass-text) 10%, transparent), transparent 74%);
+  opacity: .42;
+}
+
+html[data-design-mode='brutalist'] .auth-panel,
+html[data-design-mode='brutalist'] .auth-card,
+html[data-design-mode='brutalist'] .auth-secondary {
+  border-radius: 0;
+  border: 2px solid color-mix(in srgb, var(--glass-text) 82%, transparent);
+  background: color-mix(in srgb, var(--glass-page-bg) 94%, var(--glass-bg) 6%);
+  box-shadow: 10px 10px 0 color-mix(in srgb, var(--glass-text) 16%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-design-mode='brutalist'] .auth-panel__tag,
+html[data-design-mode='brutalist'] .auth-panel__fact,
+html[data-design-mode='brutalist'] .auth-role-btn {
+  border-radius: 0;
+  border-width: 2px;
+  background: transparent;
+}
+
+html[data-design-mode='brutalist'] .auth-panel__tag,
+html[data-design-mode='brutalist'] .auth-role-btn--active {
+  color: var(--glass-page-bg);
+  background: var(--auth-role-accent);
+  border-color: var(--auth-role-accent);
+}
+
+html[data-design-mode='brutalist'] .auth-panel__eyebrow,
+html[data-design-mode='brutalist'] .auth-panel__fact-label,
+html[data-design-mode='brutalist'] .auth-field label {
+  letter-spacing: .16em;
+}
+
+html[data-design-mode='brutalist'] .auth-progress__line {
+  height: 3px;
+}
+
+html[data-design-mode='brutalist'] .auth-progress__line::after {
+  width: 24%;
+}
+
+@media (max-width: 980px) {
+  .auth-stage {
+    max-width: 720px;
+    grid-template-columns: 1fr;
+  }
+
+  .auth-panel__facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .auth-panel,
+  .auth-card {
+    padding: 24px;
+  }
+
+  .auth-panel__title {
+    max-width: none;
+    font-size: clamp(1.75rem, 12vw, 2.4rem);
+  }
+
+  .auth-panel__copy {
+    max-width: none;
+  }
+
+  .auth-panel__facts,
+  .auth-role-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  .auth-root {
+    padding-top: max(20px, env(safe-area-inset-top));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-left: max(20px, env(safe-area-inset-left));
+  }
 }
 
 select option,
@@ -5736,6 +6223,29 @@ html[data-concept="silence"] hr { border-color: rgba(0,0,0,0.04) !important; }
    Warm parchment (#f8f4ee), artisanal textures, rounded, earthy
    ═══════════════════════════════════════════════════════════ */
 
+/* page */
+html[data-concept="craft"] {
+  --liquid-family-page-bg: linear-gradient(154deg, #f7efe3 0%, #fbf6ef 46%, #efe4d2 100%);
+  --liquid-family-page-before:
+    radial-gradient(46% 40% at 12% 14%, rgba(255, 247, 233, 0.88) 0%, rgba(255, 247, 233, 0) 62%),
+    radial-gradient(34% 28% at 82% 16%, rgba(214, 177, 136, 0.24) 0%, rgba(214, 177, 136, 0) 68%),
+    radial-gradient(32% 28% at 74% 80%, rgba(182, 132, 92, 0.18) 0%, rgba(182, 132, 92, 0) 72%),
+    radial-gradient(42% 34% at 16% 82%, rgba(176, 194, 169, 0.18) 0%, rgba(176, 194, 169, 0) 74%);
+  --liquid-family-page-after: linear-gradient(126deg, rgba(255, 255, 255, 0.24) 0%, rgba(246, 231, 210, 0.08) 36%, rgba(255, 255, 255, 0.16) 100%);
+  --liquid-family-page-before-filter: blur(68px) saturate(108%);
+  --liquid-family-page-before-dark:
+    radial-gradient(48% 42% at 14% 14%, rgba(198, 150, 102, 0.16) 0%, rgba(198, 150, 102, 0) 66%),
+    radial-gradient(34% 30% at 82% 18%, rgba(145, 112, 82, 0.16) 0%, rgba(145, 112, 82, 0) 70%),
+    radial-gradient(38% 32% at 72% 82%, rgba(116, 88, 61, 0.14) 0%, rgba(116, 88, 61, 0) 74%),
+    radial-gradient(40% 32% at 18% 84%, rgba(92, 110, 82, 0.12) 0%, rgba(92, 110, 82, 0) 76%);
+  --liquid-family-page-after-dark: linear-gradient(128deg, rgba(255, 255, 255, 0.05) 0%, rgba(196, 153, 116, 0.03) 34%, rgba(255, 255, 255, 0.02) 100%);
+  --liquid-family-page-before-filter-dark: blur(78px) saturate(114%);
+}
+
+html.dark[data-concept="craft"] {
+  --liquid-family-page-bg: linear-gradient(160deg, #1f1712 0%, #221a14 42%, #15110d 100%);
+}
+
 /* cards */
 html[data-concept="craft"] .glass-card,
 html[data-concept="craft"] .glass-surface,
@@ -6032,7 +6542,25 @@ html[data-concept="editorial"] { --phase-violet: #7a5c8e !important; --phase-blu
    ═══════════════════════════════════════════════════════════ */
 
 /* page */
-html[data-concept="future"] .glass-page::before { background: none !important; }
+html[data-concept="future"] {
+  --liquid-family-page-bg: linear-gradient(160deg, #edf4ff 0%, #edf1ff 42%, #dbeaf6 100%);
+  --liquid-family-page-before:
+    radial-gradient(62% 48% at 12% 10%, rgba(95, 145, 255, 0.18) 0%, rgba(95, 145, 255, 0) 62%),
+    radial-gradient(44% 32% at 86% 18%, rgba(86, 214, 255, 0.12) 0%, rgba(86, 214, 255, 0) 68%),
+    radial-gradient(40% 28% at 72% 82%, rgba(88, 114, 255, 0.14) 0%, rgba(88, 114, 255, 0) 72%);
+  --liquid-family-page-after: linear-gradient(132deg, rgba(255, 255, 255, 0.18) 0%, rgba(106, 148, 255, 0.08) 34%, rgba(255, 255, 255, 0.08) 100%);
+  --liquid-family-page-before-filter: blur(74px) saturate(116%);
+  --liquid-family-page-before-dark:
+    radial-gradient(66% 52% at 10% 10%, rgba(84, 132, 255, 0.22) 0%, rgba(84, 132, 255, 0) 64%),
+    radial-gradient(40% 28% at 86% 16%, rgba(60, 212, 255, 0.14) 0%, rgba(60, 212, 255, 0) 70%),
+    radial-gradient(38% 26% at 74% 84%, rgba(70, 92, 255, 0.18) 0%, rgba(70, 92, 255, 0) 74%);
+  --liquid-family-page-after-dark: linear-gradient(132deg, rgba(94, 132, 255, 0.09) 0%, rgba(48, 80, 176, 0.03) 34%, rgba(255, 255, 255, 0.03) 100%);
+  --liquid-family-page-before-filter-dark: blur(86px) saturate(126%);
+}
+
+html.dark[data-concept="future"] {
+  --liquid-family-page-bg: linear-gradient(160deg, #060b14 0%, #09101f 44%, #050814 100%);
+}
 
 /* cards */
 html[data-concept="future"] .glass-card,
@@ -6578,62 +7106,9 @@ html[data-concept="m3"] .glass-input.error {
 
 
 /* ========================================================
-   LIQUID GLASS MESH BACKGROUNDS
-   Adds an ambient, moving gradient mesh to make blurs visible
+  LIQUID GLASS CANONICAL TOKENS
+  Canonical glass tokens and surface realism for the base glass concept.
 ======================================================== */
-html[data-concept="glass"] .glass-page,
-html[data-concept="glass"] .admin-bg,
-html[data-concept="glass"] body {
-  background-color: var(--glass-page-bg, #f6f6f6);
-  position: relative;
-  z-index: 0;
-}
-
-html.dark[data-concept="glass"] .glass-page,
-html.dark[data-concept="glass"] .admin-bg,
-html.dark[data-concept="glass"] body {
-  background-color: var(--glass-page-bg, #0a0a0c);
-}
-
-html[data-concept="glass"] .glass-page::before,
-html[data-concept="glass"] .admin-bg::before {
-  content: "";
-  position: fixed;
-  inset: -50%;
-  z-index: -2;
-  background-image: 
-    radial-gradient(ellipse at 15% 20%, rgba(85, 120, 255, 0.12) 0%, transparent 40%),
-    radial-gradient(ellipse at 85% 15%, rgba(60, 200, 180, 0.1) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 80%, rgba(180, 80, 255, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 20% 90%, rgba(255, 150, 100, 0.08) 0%, transparent 40%);
-  background-attachment: fixed;
-  filter: blur(80px);
-  animation: liquidMeshBreathing 30s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-
-html.dark[data-concept="glass"] .glass-page::before,
-html.dark[data-concept="glass"] .admin-bg::before {
-  background-image: 
-    radial-gradient(ellipse at 10% 20%, rgba(50, 80, 220, 0.15) 0%, transparent 40%),
-    radial-gradient(ellipse at 90% 15%, rgba(40, 160, 140, 0.12) 0%, transparent 40%),
-    radial-gradient(ellipse at 40% 70%, rgba(140, 60, 220, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 90%, rgba(220, 100, 80, 0.1) 0%, transparent 40%);
-  filter: blur(100px);
-}
-
-@keyframes liquidMeshBreathing {
-  0% {
-    transform: rotate(0deg) scale(1) translate(0, 0);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.1) translate(-2%, 5%);
-  }
-  100% {
-    transform: rotate(360deg) scale(1) translate(5%, -2%);
-  }
-}
-
 html[data-concept="glass"] {
   --liquid-thickness: 1.5px;
   --liquid-opacity: 0.15;
@@ -7425,4 +7900,832 @@ html[data-concept="minale"] .glass-modal__close {
   border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
   border-radius: 4px 4px 0 0;
   color: rgba(255, 255, 255, 0.5);
+}
+
+/* ========================================================
+   LIQUID GLASS FINAL SHELL PASS
+   Unifies the admin chrome so glass reads as one material.
+======================================================== */
+
+html[data-concept="glass"] {
+  --glass-page-bg: linear-gradient(155deg, #eef6ff 0%, #f6efe6 44%, #dceef3 100%);
+  --glass-bg: rgba(255, 255, 255, 0.48);
+  --glass-border: rgba(255, 255, 255, 0.58);
+  --glass-shadow: 0 18px 44px rgba(86, 104, 129, 0.16);
+  --glass-text: #16263d;
+  --glass-text-rgb: 22, 38, 61;
+  --glass-blur: 28px;
+  --glass-saturation: 180%;
+  --card-radius: 26px;
+  --btn-radius: 18px;
+  --modal-radius: 30px;
+  --nav-item-radius: 18px;
+  --liquid-thickness: 1px;
+  --liquid-card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.64) 0%, rgba(255, 255, 255, 0.34) 100%);
+  --liquid-card-strong-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(255, 255, 255, 0.40) 100%);
+  --liquid-btn-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(255, 255, 255, 0.38) 100%);
+  --liquid-btn-hover: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.48) 100%);
+  --liquid-shadow-color: rgba(88, 108, 132, 0.18);
+  --liquid-btn-shadow: rgba(88, 108, 132, 0.16);
+  --liquid-card-shadow: 0 24px 60px rgba(88, 108, 132, 0.16), 0 8px 22px rgba(88, 108, 132, 0.08);
+  --liquid-family-page-bg: linear-gradient(155deg, #eef6ff 0%, #f6efe6 44%, #dceef3 100%);
+  --liquid-family-page-before:
+    radial-gradient(44% 38% at 12% 16%, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0) 64%),
+    radial-gradient(34% 28% at 84% 14%, rgba(131, 195, 206, 0.28) 0%, rgba(131, 195, 206, 0) 70%),
+    radial-gradient(32% 26% at 72% 78%, rgba(255, 210, 168, 0.24) 0%, rgba(255, 210, 168, 0) 72%),
+    radial-gradient(40% 32% at 18% 86%, rgba(180, 209, 246, 0.22) 0%, rgba(180, 209, 246, 0) 74%);
+  --liquid-family-page-after: linear-gradient(120deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 34%, rgba(255, 255, 255, 0.18) 100%);
+  --liquid-family-page-before-filter: blur(72px) saturate(112%);
+}
+
+html.dark[data-concept="glass"] {
+  --glass-page-bg: linear-gradient(160deg, #0a1320 0%, #111f31 46%, #0d1925 100%);
+  --glass-bg: rgba(17, 23, 35, 0.54);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --glass-text: #edf4ff;
+  --glass-text-rgb: 237, 244, 255;
+  --glass-blur: 34px;
+  --glass-saturation: 160%;
+  --liquid-card-bg: linear-gradient(180deg, rgba(28, 37, 53, 0.82) 0%, rgba(13, 19, 31, 0.58) 100%);
+  --liquid-card-strong-bg: linear-gradient(180deg, rgba(34, 45, 63, 0.88) 0%, rgba(16, 22, 35, 0.66) 100%);
+  --liquid-btn-bg: linear-gradient(180deg, rgba(43, 55, 76, 0.78) 0%, rgba(19, 26, 40, 0.58) 100%);
+  --liquid-btn-hover: linear-gradient(180deg, rgba(59, 73, 99, 0.90) 0%, rgba(27, 35, 51, 0.70) 100%);
+  --liquid-shadow-color: rgba(0, 0, 0, 0.40);
+  --liquid-btn-shadow: rgba(0, 0, 0, 0.36);
+  --liquid-card-shadow: 0 26px 60px rgba(0, 0, 0, 0.46), 0 10px 28px rgba(0, 0, 0, 0.24);
+  --liquid-family-page-bg: linear-gradient(160deg, #0a1320 0%, #111f31 46%, #0d1925 100%);
+  --liquid-family-page-before-dark:
+    radial-gradient(48% 40% at 14% 14%, rgba(116, 153, 255, 0.18) 0%, rgba(116, 153, 255, 0) 68%),
+    radial-gradient(32% 28% at 84% 16%, rgba(91, 186, 188, 0.15) 0%, rgba(91, 186, 188, 0) 72%),
+    radial-gradient(34% 30% at 74% 80%, rgba(255, 178, 128, 0.12) 0%, rgba(255, 178, 128, 0) 74%),
+    radial-gradient(44% 34% at 18% 84%, rgba(73, 112, 194, 0.16) 0%, rgba(73, 112, 194, 0) 76%);
+  --liquid-family-page-after-dark: linear-gradient(120deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 34%, rgba(255, 255, 255, 0.04) 100%);
+  --liquid-family-page-before-filter-dark: blur(82px) saturate(120%);
+}
+
+html.dark[data-concept="glass"] .glass-page::after,
+html.dark[data-concept="glass"] .admin-bg::after {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 34%, rgba(255, 255, 255, 0.04) 100%);
+}
+
+html[data-concept="glass"] .glass-card,
+html[data-concept="glass"] .glass-surface,
+html[data-concept="glass"] .ent-detail-card,
+html[data-concept="glass"] .cab-task,
+html[data-concept="glass"] .cab-doc-card,
+html[data-concept="glass"] .ws-card,
+html[data-concept="glass"] .dash-stat,
+html[data-concept="glass"] .dash-project-card {
+  background: var(--liquid-card-bg) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 96%, transparent) !important;
+  box-shadow: var(--liquid-card-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -1px 0 rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+}
+
+html.dark[data-concept="glass"] .glass-card,
+html.dark[data-concept="glass"] .glass-surface,
+html.dark[data-concept="glass"] .ent-detail-card,
+html.dark[data-concept="glass"] .cab-task,
+html.dark[data-concept="glass"] .cab-doc-card,
+html.dark[data-concept="glass"] .ws-card,
+html.dark[data-concept="glass"] .dash-stat,
+html.dark[data-concept="glass"] .dash-project-card {
+  box-shadow: var(--liquid-card-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+html[data-concept="glass"] .glass-card:hover,
+html[data-concept="glass"] .glass-surface:hover,
+html[data-concept="glass"] .cab-task:hover,
+html[data-concept="glass"] .cab-doc-card:hover,
+html[data-concept="glass"] .dash-stat:hover,
+html[data-concept="glass"] .dash-project-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 30px 64px rgba(88, 108, 132, 0.18), 0 10px 24px rgba(88, 108, 132, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.80) !important;
+}
+
+html.dark[data-concept="glass"] .glass-card:hover,
+html.dark[data-concept="glass"] .glass-surface:hover,
+html.dark[data-concept="glass"] .cab-task:hover,
+html.dark[data-concept="glass"] .cab-doc-card:hover,
+html.dark[data-concept="glass"] .dash-stat:hover,
+html.dark[data-concept="glass"] .dash-project-card:hover {
+  box-shadow: 0 30px 64px rgba(0, 0, 0, 0.52), 0 10px 24px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+html[data-concept="glass"] .admin-header {
+  background: var(--liquid-card-bg) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-border) 94%, transparent) !important;
+  box-shadow: 0 18px 40px rgba(88, 108, 132, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(32px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(170%) !important;
+}
+
+html[data-concept="glass"] .adm-sidebar,
+html[data-concept="glass"] .proj-nav-col,
+html[data-concept="glass"] .ent-sidebar,
+html[data-concept="glass"] .cab-sidebar,
+html[data-concept="glass"] .cab-nav {
+  background: var(--liquid-card-strong-bg) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 94%, transparent) !important;
+  border-left: none !important;
+  border-top-right-radius: 28px !important;
+  border-bottom-right-radius: 28px !important;
+  box-shadow: 0 26px 56px rgba(88, 108, 132, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.68) !important;
+  backdrop-filter: blur(34px) saturate(175%) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(175%) !important;
+}
+
+html.dark[data-concept="glass"] .adm-sidebar,
+html.dark[data-concept="glass"] .proj-nav-col,
+html.dark[data-concept="glass"] .ent-sidebar,
+html.dark[data-concept="glass"] .cab-sidebar,
+html.dark[data-concept="glass"] .cab-nav {
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-concept="glass"] .adm-sidebar-inner,
+html[data-concept="glass"] .proj-sidenav {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-concept="glass"] .adm-hamburger,
+html[data-concept="glass"] .adm-sidebar-toggle,
+html[data-concept="glass"] .admin-sidebar-menu-btn,
+html[data-concept="glass"] .adm-edit-btn,
+html[data-concept="glass"] .admin-search-btn,
+html[data-concept="glass"] .admin-theme-btn,
+html[data-concept="glass"] .admin-notif-btn,
+html[data-concept="glass"] .admin-link--sidebar {
+  background: var(--liquid-btn-bg) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 94%, transparent) !important;
+  border-radius: var(--btn-radius) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 10px 24px rgba(88, 108, 132, 0.10) !important;
+  color: var(--glass-text) !important;
+  opacity: 1 !important;
+}
+
+html.dark[data-concept="glass"] .adm-hamburger,
+html.dark[data-concept="glass"] .adm-sidebar-toggle,
+html.dark[data-concept="glass"] .admin-sidebar-menu-btn,
+html.dark[data-concept="glass"] .adm-edit-btn,
+html.dark[data-concept="glass"] .admin-search-btn,
+html.dark[data-concept="glass"] .admin-theme-btn,
+html.dark[data-concept="glass"] .admin-notif-btn,
+html.dark[data-concept="glass"] .admin-link--sidebar {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 14px 30px rgba(0, 0, 0, 0.22) !important;
+}
+
+html[data-concept="glass"] .adm-hamburger {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+html[data-concept="glass"] .adm-hamburger:hover,
+html[data-concept="glass"] .adm-sidebar-toggle:hover,
+html[data-concept="glass"] .admin-sidebar-menu-btn:hover,
+html[data-concept="glass"] .adm-edit-btn:hover,
+html[data-concept="glass"] .admin-search-btn:hover,
+html[data-concept="glass"] .admin-theme-btn:hover,
+html[data-concept="glass"] .admin-notif-btn:hover,
+html[data-concept="glass"] .admin-link--sidebar:hover {
+  background: var(--liquid-btn-hover) !important;
+  border-color: color-mix(in srgb, var(--glass-border) 100%, transparent) !important;
+  transform: translateY(-1px);
+}
+
+html[data-concept="glass"] .admin-link--sidebar {
+  padding: 0 14px !important;
+}
+
+html[data-concept="glass"] .adm-util-panel,
+html[data-concept="glass"] .admin-sidebar-menu-panel,
+html[data-concept="glass"] .admin-notif-dropdown,
+html[data-concept="glass"] .a-modal {
+  background: var(--liquid-card-strong-bg) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 96%, transparent) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 28px 64px rgba(88, 108, 132, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(34px) saturate(175%) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(175%) !important;
+}
+
+html.dark[data-concept="glass"] .adm-util-panel,
+html.dark[data-concept="glass"] .admin-sidebar-menu-panel,
+html.dark[data-concept="glass"] .admin-notif-dropdown,
+html.dark[data-concept="glass"] .a-modal {
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-concept="glass"] .adm-util-panel {
+  padding: 10px !important;
+  gap: 6px !important;
+}
+
+html[data-concept="glass"] .admin-sidebar-menu-panel {
+  padding: 10px !important;
+  gap: 8px !important;
+}
+
+html[data-concept="glass"] .admin-search-kbd,
+html[data-concept="glass"] .admin-notif-refresh {
+  background: color-mix(in srgb, var(--liquid-btn-bg) 90%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 96%, transparent) !important;
+  border-radius: 999px !important;
+  color: color-mix(in srgb, var(--glass-text) 70%, transparent) !important;
+}
+
+html[data-concept="glass"] .admin-notif-refresh {
+  padding: 6px 12px !important;
+}
+
+html[data-concept="glass"] .admin-brand,
+html[data-concept="glass"] .admin-sidebar-brand,
+html[data-concept="glass"] .admin-notif-head {
+  opacity: 0.72 !important;
+  color: color-mix(in srgb, var(--glass-text) 72%, transparent) !important;
+}
+
+html[data-concept="glass"] .admin-sidebar-menu-wrap,
+html[data-concept="glass"] .admin-sidebar-util {
+  border-bottom-color: color-mix(in srgb, var(--glass-text) 10%, transparent) !important;
+}
+
+html[data-concept="glass"] .admin-notif-item {
+  border-radius: 18px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+}
+
+html[data-concept="glass"] .ent-nav-item,
+html[data-concept="glass"] .cab-nav-item,
+html[data-concept="glass"] .std-nav-item {
+  border-radius: var(--nav-item-radius) !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: color-mix(in srgb, var(--glass-text) 76%, transparent) !important;
+}
+
+html[data-concept="glass"] .ent-nav-item:hover,
+html[data-concept="glass"] .cab-nav-item:hover,
+html[data-concept="glass"] .std-nav-item:hover {
+  background: color-mix(in srgb, var(--liquid-btn-bg) 86%, transparent) !important;
+  border-color: color-mix(in srgb, var(--glass-border) 92%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48) !important;
+  transform: none !important;
+}
+
+html[data-concept="glass"] .ent-nav-item.active,
+html[data-concept="glass"] .cab-nav-item.active,
+html[data-concept="glass"] .std-nav-item.active {
+  background: var(--liquid-btn-bg) !important;
+  border-color: color-mix(in srgb, var(--glass-border) 98%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 10px 22px rgba(88, 108, 132, 0.10) !important;
+  color: var(--glass-text) !important;
+}
+
+html.dark[data-concept="glass"] .ent-nav-item.active,
+html.dark[data-concept="glass"] .cab-nav-item.active,
+html.dark[data-concept="glass"] .std-nav-item.active {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 12px 24px rgba(0, 0, 0, 0.22) !important;
+}
+
+@media (max-width: 768px) {
+  html[data-concept="glass"] .adm-sidebar,
+  html[data-concept="glass"] .proj-nav-col {
+    border-left: 1px solid color-mix(in srgb, var(--glass-border) 94%, transparent) !important;
+    border-radius: 28px !important;
+  }
+}
+
+/* ========================================================
+   DESIGN MODE FAMILY BRIDGE
+   Shared family contract for parallel Liquid Glass / M3 chats.
+   Family-wide primitive rules live on data-design-mode; concept-specific
+   accents stay on data-concept.
+======================================================== */
+
+html[data-design-mode="liquid-glass"] .glass-card,
+html[data-design-mode="liquid-glass"] .glass-surface,
+html[data-design-mode="liquid-glass"] .ent-detail-card,
+html[data-design-mode="liquid-glass"] .cab-task,
+html[data-design-mode="liquid-glass"] .cab-doc-card,
+html[data-design-mode="liquid-glass"] .ws-card,
+html[data-design-mode="liquid-glass"] .dash-stat,
+html[data-design-mode="liquid-glass"] .dash-project-card {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 92%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 96%, transparent) !important;
+  box-shadow: var(--glass-shadow, 0 18px 44px rgba(86, 104, 129, 0.16)), inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 -1px 0 rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturation, 180%)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur, 28px)) saturate(var(--glass-saturation, 180%)) !important;
+}
+
+html.dark[data-design-mode="liquid-glass"] .glass-card,
+html.dark[data-design-mode="liquid-glass"] .glass-surface,
+html.dark[data-design-mode="liquid-glass"] .ent-detail-card,
+html.dark[data-design-mode="liquid-glass"] .cab-task,
+html.dark[data-design-mode="liquid-glass"] .cab-doc-card,
+html.dark[data-design-mode="liquid-glass"] .ws-card,
+html.dark[data-design-mode="liquid-glass"] .dash-stat,
+html.dark[data-design-mode="liquid-glass"] .dash-project-card {
+  box-shadow: var(--glass-shadow, 0 24px 60px rgba(0, 0, 0, 0.5)), inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+html[data-design-mode="liquid-glass"] .glass-btn,
+html[data-design-mode="liquid-glass"] .a-btn-save,
+html[data-design-mode="liquid-glass"] .a-btn-danger,
+html[data-design-mode="liquid-glass"] .a-btn-ai,
+html[data-design-mode="liquid-glass"] .a-btn-sm,
+html[data-design-mode="liquid-glass"] .adm-hamburger,
+html[data-design-mode="liquid-glass"] .adm-sidebar-toggle,
+html[data-design-mode="liquid-glass"] .admin-sidebar-menu-btn,
+html[data-design-mode="liquid-glass"] .adm-edit-btn,
+html[data-design-mode="liquid-glass"] .admin-search-btn,
+html[data-design-mode="liquid-glass"] .admin-theme-btn,
+html[data-design-mode="liquid-glass"] .admin-notif-btn,
+html[data-design-mode="liquid-glass"] .admin-link--sidebar {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 90%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 94%, transparent) !important;
+  border-radius: var(--btn-radius, 18px) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 10px 24px color-mix(in srgb, var(--glass-text, #16263d) 8%, transparent) !important;
+  color: var(--glass-text, #16263d) !important;
+  backdrop-filter: blur(calc(var(--glass-blur, 28px) * 0.65)) saturate(var(--glass-saturation, 180%)) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 28px) * 0.65)) saturate(var(--glass-saturation, 180%)) !important;
+}
+
+html[data-design-mode="liquid-glass"] .glass-input,
+html[data-design-mode="liquid-glass"] .glass-input--inline,
+html[data-design-mode="liquid-glass"] textarea.glass-input,
+html[data-design-mode="liquid-glass"] input.std-input,
+html[data-design-mode="liquid-glass"] .form-input {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 74%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 92%, transparent) !important;
+  border-radius: var(--input-radius, 16px) !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.22) !important;
+  color: var(--glass-text, #16263d) !important;
+  backdrop-filter: blur(calc(var(--glass-blur, 28px) * 0.35)) saturate(var(--glass-saturation, 180%)) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 28px) * 0.35)) saturate(var(--glass-saturation, 180%)) !important;
+}
+
+html[data-design-mode="liquid-glass"] .admin-header,
+html[data-design-mode="liquid-glass"] .adm-sidebar,
+html[data-design-mode="liquid-glass"] .proj-nav-col,
+html[data-design-mode="liquid-glass"] .ent-sidebar,
+html[data-design-mode="liquid-glass"] .cab-sidebar,
+html[data-design-mode="liquid-glass"] .cab-nav,
+html[data-design-mode="liquid-glass"] .adm-util-panel,
+html[data-design-mode="liquid-glass"] .admin-sidebar-menu-panel,
+html[data-design-mode="liquid-glass"] .admin-notif-dropdown,
+html[data-design-mode="liquid-glass"] .a-modal,
+html[data-design-mode="liquid-glass"] .glass-modal {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 88%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 95%, transparent) !important;
+  box-shadow: var(--glass-shadow, 0 18px 44px rgba(86, 104, 129, 0.16)), inset 0 1px 0 rgba(255, 255, 255, 0.68) !important;
+  backdrop-filter: blur(calc(var(--glass-blur, 28px) * 1.1)) saturate(var(--glass-saturation, 180%)) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur, 28px) * 1.1)) saturate(var(--glass-saturation, 180%)) !important;
+}
+
+html[data-design-mode="liquid-glass"] .glass-nav :is(a, button, [role="button"]),
+html[data-design-mode="liquid-glass"] .ent-nav-item,
+html[data-design-mode="liquid-glass"] .cab-nav-item,
+html[data-design-mode="liquid-glass"] .std-nav-item {
+  border-radius: var(--nav-item-radius, 18px) !important;
+  color: color-mix(in srgb, var(--glass-text, #16263d) 76%, transparent) !important;
+}
+
+html[data-design-mode="liquid-glass"] .glass-nav :is(a:hover, button:hover, [role="button"]:hover),
+html[data-design-mode="liquid-glass"] .ent-nav-item:hover,
+html[data-design-mode="liquid-glass"] .cab-nav-item:hover,
+html[data-design-mode="liquid-glass"] .std-nav-item:hover {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 82%, transparent) !important;
+  border-color: color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 92%, transparent) !important;
+}
+
+html[data-design-mode="liquid-glass"] .glass-nav :is(a.router-link-active, a.router-link-exact-active, button.active, [role="button"].active, [aria-current="page"]),
+html[data-design-mode="liquid-glass"] .ent-nav-item.active,
+html[data-design-mode="liquid-glass"] .cab-nav-item.active,
+html[data-design-mode="liquid-glass"] .std-nav-item.active {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 90%, transparent) !important;
+  color: var(--glass-text, #16263d) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62), 0 10px 22px color-mix(in srgb, var(--glass-text, #16263d) 8%, transparent) !important;
+}
+
+html[data-design-mode="material3"] .glass-field__icon,
+html[data-design-mode="material3"] .glass-select__chevron {
+  color: var(--sys-color-on-surface-variant) !important;
+  opacity: 1 !important;
+}
+
+html[data-design-mode="material3"] .glass-input,
+html[data-design-mode="material3"] .glass-input--inline,
+html[data-design-mode="material3"] textarea.glass-input,
+html[data-design-mode="material3"] .form-input,
+html[data-design-mode="material3"] input.std-input {
+  background: var(--sys-color-surface-variant, var(--sys-color-surface-container-low)) !important;
+  color: var(--sys-color-on-surface) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--sys-color-outline) !important;
+  border-radius: var(--sys-radius-xs, 4px) var(--sys-radius-xs, 4px) 0 0 !important;
+  padding: 16px 16px 8px 16px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-design-mode="material3"] .glass-input:hover,
+html[data-design-mode="material3"] .glass-input--inline:hover,
+html[data-design-mode="material3"] input.std-input:hover {
+  background: var(--sys-color-surface-container-highest) !important;
+  border-bottom-color: var(--sys-color-on-surface) !important;
+}
+
+html[data-design-mode="material3"] .glass-input:focus,
+html[data-design-mode="material3"] .glass-input--inline:focus,
+html[data-design-mode="material3"] input.std-input:focus,
+html[data-design-mode="material3"] .glass-input:focus-within {
+  background: var(--sys-color-surface-variant, var(--sys-color-surface-container-low)) !important;
+  border-bottom: 2px solid var(--sys-color-primary) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+html[data-design-mode="material3"] .glass-card,
+html[data-design-mode="material3"] .project-card,
+html[data-design-mode="material3"] .dash-project-card {
+  background: var(--sys-color-surface-container-low) !important;
+  border: 1px solid var(--sys-color-outline-variant) !important;
+  border-radius: var(--sys-radius-md, 12px) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: var(--sys-color-on-surface) !important;
+}
+
+html[data-design-mode="material3"] .glass-surface,
+html[data-design-mode="material3"] .cab-module-grid > div,
+html[data-design-mode="material3"] .ent-sidebar,
+html[data-design-mode="material3"] .cab-sidebar,
+html[data-design-mode="material3"] .glass-modal {
+  background: var(--sys-color-surface-container-high) !important;
+  border: 1px solid var(--sys-color-outline-variant) !important;
+  border-radius: var(--sys-radius-xl, 28px) !important;
+  box-shadow: var(--sys-elevation-level1, 0 1px 3px rgba(0, 0, 0, 0.12)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-design-mode="material3"] .glass-btn {
+  min-height: 44px;
+  padding: 0 24px;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  font-family: 'Roboto', 'Inter', sans-serif !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+}
+
+html[data-design-mode="material3"] .glass-btn.a-btn-save,
+html[data-design-mode="material3"] .glass-btn.a-btn-ai {
+  background: var(--sys-color-primary) !important;
+  color: var(--sys-color-on-primary) !important;
+}
+
+html[data-design-mode="material3"] .glass-btn.a-btn-sm {
+  background: var(--sys-color-secondary-container) !important;
+  color: var(--sys-color-on-secondary-container, var(--sys-color-on-surface)) !important;
+}
+
+html[data-design-mode="material3"] .glass-btn.a-btn-danger {
+  background: var(--sys-color-error-container, color-mix(in srgb, var(--sys-color-error) 16%, transparent)) !important;
+  color: var(--sys-color-on-error-container, var(--sys-color-error)) !important;
+}
+
+html[data-design-mode="material3"] .glass-btn--ghost {
+  background: transparent !important;
+  color: var(--sys-color-primary) !important;
+}
+
+html[data-design-mode="material3"] .glass-nav :is(a, button, [role="button"]),
+html[data-design-mode="material3"] .ent-nav-item,
+html[data-design-mode="material3"] .cab-nav-item {
+  height: 56px;
+  padding: 0 16px;
+  border: none !important;
+  border-radius: 100px !important;
+  color: var(--sys-color-on-surface-variant) !important;
+  background: transparent !important;
+}
+
+html[data-design-mode="material3"] .glass-nav :is(a:hover, button:hover, [role="button"]:hover),
+html[data-design-mode="material3"] .ent-nav-item:hover,
+html[data-design-mode="material3"] .cab-nav-item:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent) !important;
+  color: var(--sys-color-on-surface) !important;
+}
+
+html[data-design-mode="material3"] .glass-nav :is(a.router-link-active, a.router-link-exact-active, button.active, [role="button"].active, [aria-current="page"]),
+html[data-design-mode="material3"] .ent-nav-item.active,
+html[data-design-mode="material3"] .ent-nav-item.router-link-active,
+html[data-design-mode="material3"] .cab-nav-item.active,
+html[data-design-mode="material3"] .cab-nav-item.router-link-active {
+  background: var(--sys-color-secondary-container) !important;
+  color: var(--sys-color-on-secondary-container, var(--sys-color-on-surface)) !important;
+}
+
+html[data-design-mode="material3"] .glass-modal__head,
+html[data-design-mode="material3"] .glass-modal__foot {
+  border-color: var(--sys-color-outline-variant) !important;
+  padding: 24px !important;
+}
+
+html[data-design-mode="material3"] .glass-modal__head {
+  border-bottom: 1px solid var(--sys-color-outline-variant) !important;
+}
+
+html[data-design-mode="material3"] .glass-modal__foot {
+  border-top: 1px solid var(--sys-color-outline-variant) !important;
+}
+
+html[data-design-mode="material3"] .glass-modal__title {
+  font-size: 1.375rem;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+}
+
+html[data-design-mode="material3"] .glass-modal__close {
+  border: none;
+  border-radius: 999px;
+  color: var(--sys-color-on-surface-variant);
+}
+
+/* ========================================================
+   LIQUID GLASS FAMILY ATMOSPHERE
+   Family-wide page ambiance for glass aliases like future/craft.
+======================================================== */
+
+html[data-design-mode="liquid-glass"] .glass-page,
+html[data-design-mode="liquid-glass"] .admin-bg,
+html[data-design-mode="liquid-glass"] body {
+  background: var(--liquid-family-page-bg, var(--glass-page-bg, linear-gradient(155deg, #eef6ff 0%, #f6efe6 44%, #dceef3 100%))) !important;
+  position: relative;
+  z-index: 0;
+}
+
+html[data-design-mode="liquid-glass"] .glass-page::before,
+html[data-design-mode="liquid-glass"] .admin-bg::before {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: -2;
+  pointer-events: none;
+  background: var(--liquid-family-page-before,
+    radial-gradient(44% 38% at 12% 16%, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0) 64%),
+    radial-gradient(34% 28% at 84% 14%, rgba(131, 195, 206, 0.28) 0%, rgba(131, 195, 206, 0) 70%),
+    radial-gradient(32% 26% at 72% 78%, rgba(255, 210, 168, 0.24) 0%, rgba(255, 210, 168, 0) 72%),
+    radial-gradient(40% 32% at 18% 86%, rgba(180, 209, 246, 0.22) 0%, rgba(180, 209, 246, 0) 74%)) !important;
+  filter: var(--liquid-family-page-before-filter, blur(72px) saturate(112%)) !important;
+}
+
+html[data-design-mode="liquid-glass"] .glass-page::after,
+html[data-design-mode="liquid-glass"] .admin-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--liquid-family-page-after, linear-gradient(120deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 34%, rgba(255, 255, 255, 0.18) 100%)) !important;
+}
+
+html.dark[data-design-mode="liquid-glass"] .glass-page::before,
+html.dark[data-design-mode="liquid-glass"] .admin-bg::before {
+  background: var(--liquid-family-page-before-dark, var(--liquid-family-page-before,
+    radial-gradient(48% 40% at 14% 14%, rgba(116, 153, 255, 0.18) 0%, rgba(116, 153, 255, 0) 68%),
+    radial-gradient(32% 28% at 84% 16%, rgba(91, 186, 188, 0.15) 0%, rgba(91, 186, 188, 0) 72%),
+    radial-gradient(34% 30% at 74% 80%, rgba(255, 178, 128, 0.12) 0%, rgba(255, 178, 128, 0) 74%),
+    radial-gradient(44% 34% at 18% 84%, rgba(73, 112, 194, 0.16) 0%, rgba(73, 112, 194, 0) 76%))) !important;
+  filter: var(--liquid-family-page-before-filter-dark, var(--liquid-family-page-before-filter, blur(82px) saturate(120%))) !important;
+}
+
+html.dark[data-design-mode="liquid-glass"] .glass-page::after,
+html.dark[data-design-mode="liquid-glass"] .admin-bg::after {
+  background: var(--liquid-family-page-after-dark, var(--liquid-family-page-after, linear-gradient(120deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 34%, rgba(255, 255, 255, 0.04) 100%))) !important;
+}
+
+/* ========================================================
+   AUTH FAMILY LAYER
+   Login/register/recover must follow family contract, not legacy concept
+   overrides from future/craft/grand and similar presets.
+======================================================== */
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-card,
+html[data-design-mode="liquid-glass"] .auth-root .auth-secondary {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 90%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 95%, transparent) !important;
+  border-radius: max(var(--card-radius, 26px), 24px) !important;
+  box-shadow: var(--glass-shadow, 0 18px 44px rgba(86, 104, 129, 0.16)), inset 0 1px 0 rgba(255, 255, 255, 0.68) !important;
+  backdrop-filter: blur(30px) saturate(max(var(--glass-saturation, 180%), 140%)) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(max(var(--glass-saturation, 180%), 140%)) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-title,
+html[data-design-mode="liquid-glass"] .auth-root .seed-title,
+html[data-design-mode="liquid-glass"] .auth-root .auth-subtitle,
+html[data-design-mode="liquid-glass"] .auth-root .seed-copy,
+html[data-design-mode="liquid-glass"] .auth-root .auth-secondary__title,
+html[data-design-mode="liquid-glass"] .auth-root .auth-links a,
+html[data-design-mode="liquid-glass"] .auth-root .auth-link-btn,
+html[data-design-mode="liquid-glass"] .auth-root .auth-field label {
+  color: var(--glass-text, #16263d) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .seed-box,
+html[data-design-mode="liquid-glass"] .auth-root .auth-actions {
+  position: relative;
+  z-index: 2;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-role-btn {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 70%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 92%, transparent) !important;
+  border-radius: max(var(--nav-item-radius, 18px), 18px) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44) !important;
+  color: var(--glass-text, #16263d) !important;
+  backdrop-filter: blur(18px) saturate(max(var(--glass-saturation, 180%), 135%)) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(max(var(--glass-saturation, 180%), 135%)) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-role-btn--active {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 88%, transparent) !important;
+  border-color: color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 100%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 10px 22px color-mix(in srgb, var(--glass-text, #16263d) 8%, transparent) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-input,
+html[data-design-mode="liquid-glass"] .auth-root input.auth-input,
+html[data-design-mode="liquid-glass"] .auth-root .auth-submit {
+  border-radius: max(var(--btn-radius, 18px), 18px) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-input,
+html[data-design-mode="liquid-glass"] .auth-root input.auth-input {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 74%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 92%, transparent) !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.22) !important;
+  color: var(--glass-text, #16263d) !important;
+  letter-spacing: normal !important;
+  border-radius: max(var(--input-radius, 16px), 16px) !important;
+  backdrop-filter: blur(12px) saturate(max(var(--glass-saturation, 180%), 130%)) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(max(var(--glass-saturation, 180%), 130%)) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .seed-value {
+  border-radius: max(var(--input-radius, 16px), 16px) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-input:focus,
+html[data-design-mode="liquid-glass"] .auth-root input.auth-input:focus {
+  border-color: color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 100%, transparent) !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.24), 0 0 0 2px color-mix(in srgb, var(--glass-text, #16263d) 10%, transparent) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-submit {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 90%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 94%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 10px 24px color-mix(in srgb, var(--glass-text, #16263d) 8%, transparent) !important;
+  color: var(--glass-text, #16263d) !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+  backdrop-filter: blur(18px) saturate(max(var(--glass-saturation, 180%), 135%)) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(max(var(--glass-saturation, 180%), 135%)) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-submit--secondary {
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 76%, transparent) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-success {
+  color: color-mix(in srgb, var(--ds-success, #5caa7f) 92%, white 8%) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: max(var(--btn-radius, 18px), 18px) !important;
+  background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.48)) 90%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-border, rgba(255, 255, 255, 0.58)) 94%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 10px 24px color-mix(in srgb, var(--glass-text, #16263d) 8%, transparent) !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-progress__line {
+  background: color-mix(in srgb, var(--glass-text, #16263d) 10%, transparent) !important;
+}
+
+html[data-design-mode="liquid-glass"] .auth-root .auth-progress__line::after {
+  background: color-mix(in srgb, var(--glass-text, #16263d) 58%, transparent) !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-card,
+html[data-design-mode="material3"] .auth-root .auth-secondary {
+  background: var(--sys-color-surface-container-high) !important;
+  border: 1px solid var(--sys-color-outline-variant) !important;
+  border-radius: var(--sys-radius-xl, 28px) !important;
+  box-shadow: var(--sys-elevation-level1, 0 1px 3px rgba(0, 0, 0, 0.12)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-title {
+  color: var(--sys-color-on-surface) !important;
+  font-size: 1.375rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+html[data-design-mode="material3"] .auth-root .seed-title {
+  color: var(--sys-color-on-surface) !important;
+  font-size: 1.125rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-subtitle,
+html[data-design-mode="material3"] .auth-root .seed-copy,
+html[data-design-mode="material3"] .auth-root .auth-secondary__title,
+html[data-design-mode="material3"] .auth-root .auth-field label {
+  color: var(--sys-color-on-surface-variant) !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-role-btn {
+  background: var(--sys-color-surface-container-low) !important;
+  border: 1px solid var(--sys-color-outline-variant) !important;
+  border-radius: 20px !important;
+  color: var(--sys-color-on-surface) !important;
+  box-shadow: none !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-role-btn--active {
+  background: var(--sys-color-secondary-container) !important;
+  border-color: transparent !important;
+  color: var(--sys-color-on-secondary-container, var(--sys-color-on-surface)) !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-input,
+html[data-design-mode="material3"] .auth-root input.auth-input {
+  border-radius: var(--sys-radius-xs, 4px) var(--sys-radius-xs, 4px) 0 0 !important;
+}
+
+html[data-design-mode="material3"] .auth-root .seed-value {
+  border-radius: var(--sys-radius-md, 16px) !important;
+  border: 1px solid var(--sys-color-outline-variant) !important;
+  background: var(--sys-color-surface-container-low) !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-submit {
+  min-height: 48px !important;
+  border-radius: 999px !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 20px;
+  border: none !important;
+  border-radius: 999px !important;
+  background: var(--sys-color-primary) !important;
+  color: var(--sys-color-on-primary) !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+  box-shadow: none !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-links a {
+  color: var(--sys-color-primary) !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-success {
+  color: var(--sys-color-tertiary, var(--ds-success, #5caa7f)) !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-progress__line {
+  background: var(--sys-color-outline-variant) !important;
+}
+
+html[data-design-mode="material3"] .auth-root .auth-progress__line::after {
+  background: var(--sys-color-primary) !important;
 }

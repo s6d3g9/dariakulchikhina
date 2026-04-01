@@ -1,27 +1,47 @@
 # UI_DESIGN_MODES — режимы дизайна и карта миграции
 
-Документ фиксирует, как в репозитории параллельно развиваются два направления интерфейса.
+Документ фиксирует, как в репозитории параллельно развиваются три направления интерфейса.
 
 ## Активные режимы
 
 1. brutalist — основной режим
 2. liquid-glass — вторичный Apple-style режим
+3. material3 — вторичный token-driven системный режим
 
 ## Правило выбора
 
 - Для новых экранов, новых layout и новых сущностей по умолчанию использовать brutalist.
 - Для локальных правок существующих glass-экранов без задачи на редизайн допустим liquid-glass.
+- Для экранов и компонентов, которые уже живут в M3 family, сохранять material3 и развивать их внутри M3-паттернов.
 - В спорных случаях и при смешанной задаче приоритет всегда у brutalist.
-- Один экран должен иметь один главный режим. Смешивать brutalist и liquid-glass в одном и том же UI без специальной цели нельзя.
+- Один экран должен иметь один главный режим. Смешивать brutalist, liquid-glass и material3 в одном и том же UI без специальной цели нельзя.
 
 ## Техническая опора в коде
 
-В проекте уже есть базовая поддержка нескольких визуальных концептов через глобальный атрибут `html[data-concept="..."]` в [app/assets/css/main.css](app/assets/css/main.css).
+В проекте уже есть базовая поддержка нескольких визуальных концептов через глобальные атрибуты `html[data-concept="..."]` и `html[data-design-mode="..."]` в [app/assets/css/main.css](app/assets/css/main.css).
 
 Практическая привязка режимов:
 
 - brutalist → `data-concept="minale"` как основной production mapping и `data-concept="brutal"` как совместимый override-слой
 - liquid-glass → `data-concept="glass"` и существующие `.glass-*` примитивы
+- material3 → `data-concept="m3"` и M3 tone/state-layer overrides
+
+Каноническое разделение слоев:
+
+- `data-design-mode` — family boundary для shared primitive-layer, bootstrap, theme recovery и общих shell overrides.
+- `data-concept` — concept-specific override, preset accent и точечные исключения внутри одного family.
+
+### Shared auth-shell
+
+- [app/pages/login.vue](app/pages/login.vue), [app/pages/recover.vue](app/pages/recover.vue) и [app/pages/register.vue](app/pages/register.vue) используют один shell-контракт: `.auth-root`, `.auth-stage`, `.auth-panel`, `.auth-card`, `.auth-role-grid`.
+- Family-дифференциация этих экранов живет только в [app/assets/css/main.css](app/assets/css/main.css) через `html[data-design-mode="..."]`; не возвращать scoped-стили в сами auth-страницы.
+- Переключение роли на auth-экранах должно синхронизировать `?role=` в URL, иначе deep-link между login / recover / register расходится с реальным выбранным состоянием.
+
+Дополнительные editor-концепты нормализуются в family-слои:
+
+- brutalist family → `minale`, `brutal`, `silence`, `function`, `editorial`, `grand`
+- liquid-glass family → `glass`, `craft`, `future`
+- material3 family → `m3`
 
 Это означает, что переход на brutalist можно делать поэтапно: сначала через режим и токены, затем через перестройку архитектуры конкретных экранов.
 
@@ -108,6 +128,12 @@
 
 Если состояние не указано, считать задачу `brutalist-new`.
 
+## Межчатовый контракт
+
+- Если пользователь ведет `material3` в другом чате, текущий чат не должен самовольно переписывать M3 visual contract, кроме случаев, когда меняется общий mode-aware infrastructure layer.
+- Если текущий чат меняет shared primitive-layer, design-mode mapping, bootstrap или theme recovery, он обязан обновить соответствующий contract в instruction/doc файлах этого репозитория.
+- Цель параллельных чатов: разные family могут развиваться отдельно, но shared layer должен оставаться единым и явно описанным.
+
 ## Практический минимум для новых экранов
 
 Новый экран считается соответствующим default-режиму только если:
@@ -126,4 +152,4 @@
 - legacy-формы с save-кнопками в экранах, которые еще не вошли в миграцию
 - старые theme presets в `useDesignSystem`, если они не мешают default brutalist flow
 
-Главная цель ближайших изменений — не удалить liquid-glass, а перевести по умолчанию все новое развитие интерфейса в brutalist.
+Главная цель ближайших изменений — не удалить liquid-glass и material3, а перевести по умолчанию все новое развитие интерфейса в brutalist, сохранив другие family изолированными и синхронизированными через design editor.

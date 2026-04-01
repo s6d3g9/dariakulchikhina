@@ -6,6 +6,17 @@
 export function useThemeToggle() {
   const colorMode = useColorMode()
   const isDark = computed(() => colorMode.value === 'dark')
+  const isThemeReady = useState<boolean>('theme-toggle-ready', () => false)
+
+  const themeToggleLabel = computed(() => {
+    if (!isThemeReady.value) return 'тема'
+    return isDark.value ? 'светло' : 'темно'
+  })
+
+  const themeToggleAriaLabel = computed(() => {
+    if (!isThemeReady.value) return 'Переключить тему'
+    return isDark.value ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'
+  })
 
   function applyBodyClass(dark: boolean) {
     if (!import.meta.client) return
@@ -24,6 +35,7 @@ export function useThemeToggle() {
 
   function initTheme() {
     if (!import.meta.client) return
+    isThemeReady.value = true
     applyBodyClass(colorMode.value === 'dark')
   }
 
@@ -35,8 +47,11 @@ export function useThemeToggle() {
 
   return {
     isDark,
+    isThemeReady,
     initTheme,
     setTheme,
+    themeToggleAriaLabel,
+    themeToggleLabel,
     toggleTheme,
   }
 }

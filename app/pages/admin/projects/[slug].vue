@@ -1609,7 +1609,34 @@ watch(
   },
 )
 
-const activePage = ref('overview')
+const PROJECT_CONTROL_ROUTE_QUERY_KEYS = ['controlTab', 'controlSprint', 'controlTask'] as const
+
+function hasNonEmptyRouteQueryValue(value: unknown): boolean {
+  if (Array.isArray(value)) {
+    return value.some(item => hasNonEmptyRouteQueryValue(item))
+  }
+
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+const hasProjectControlRouteState = computed(() =>
+  PROJECT_CONTROL_ROUTE_QUERY_KEYS.some(key => hasNonEmptyRouteQueryValue(route.query[key])),
+)
+
+async function clearProjectControlRouteState() {
+  if (!hasProjectControlRouteState.value) {
+    return
+  }
+
+  const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>
+  PROJECT_CONTROL_ROUTE_QUERY_KEYS.forEach((key) => {
+    delete nextQuery[key]
+  })
+
+  await router.replace({ query: nextQuery })
+}
+
+const activePage = ref(hasProjectControlRouteState.value ? 'project_control' : 'overview')
 const showEdit = ref(false)
 const saving = ref(false)
 const editError = ref('')
@@ -1699,6 +1726,9 @@ watch([
 async function selectAdminPage(pageSlug: string) {
   if (!blueprintRuntime.isProjectPageAllowed(pageSlug)) {
     activePage.value = defaultPhasePage.value
+    if (defaultPhasePage.value !== 'project_control') {
+      await clearProjectControlRouteState()
+    }
     scrollMobileBarToActive()
     return
   }
@@ -1712,6 +1742,9 @@ async function selectAdminPage(pageSlug: string) {
   } else {
     adminNav.ensureProject(slug.value, title)
   }
+  if (pageSlug !== 'project_control') {
+    await clearProjectControlRouteState()
+  }
   scrollMobileBarToActive()
 }
 
@@ -1722,6 +1755,10 @@ function selectClientPage(slug: string) {
 
 /** Auto-scroll the mobile horizontal nav so the active button is visible */
 function scrollMobileBarToActive() {
+  if (import.meta.server || typeof document === 'undefined') {
+    return
+  }
+
   nextTick(() => {
     const active = document.querySelector('.proj-mobile-bar-btn--active') as HTMLElement | null
     if (active) {
@@ -1842,6 +1879,10 @@ const resolvedProjectPageFromNav = computed(() => {
   }
 
   if (node.nodeType === 'project_root') {
+    if (hasProjectControlRouteState.value) {
+      return null
+    }
+
     return 'overview'
   }
 
@@ -1862,6 +1903,46 @@ const projectViewportMode = computed(() => {
 })
 
 const currentProjectPage = computed(() => resolvedProjectPageFromNav.value || activePage.value)
+
+watch(
+  [hasProjectControlRouteState, clientPreviewMode, contractorPreviewMode],
+  async ([hasControlRouteState, isClientPreview, isContractorPreview]) => {
+    if (import.meta.server) {
+      return
+    }
+
+    if (!hasControlRouteState || isClientPreview || isContractorPreview) {
+      return
+    }
+
+    if (currentProjectPage.value === 'project_control' && adminNav.contentSpec.value.projectSection === 'project_control') {
+      return
+    }
+
+    await selectAdminPage('project_control')
+  },
+  { immediate: true },
+)
+
+watch(currentProjectPage, async (pageSlug, previousPageSlug) => {
+  if (import.meta.server) {
+    return
+  }
+
+  if (!hasProjectControlRouteState.value) {
+    return
+  }
+
+  if (pageSlug === 'project_control') {
+    return
+  }
+
+  if (!previousPageSlug || previousPageSlug === pageSlug) {
+    return
+  }
+
+  await clearProjectControlRouteState()
+})
 
 // ── Wipe 2: ленивые fetch для разделов с отдельным API ─────────────────────
 const { data: _w2ExtraSvcs } = useAsyncData<any[]>(

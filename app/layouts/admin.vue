@@ -83,9 +83,9 @@
               v-if="adminLayoutModules.themeSwitch"
               type="button"
               class="admin-theme-btn admin-theme-btn--sidebar"
-              :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
+              :aria-label="themeToggleAriaLabel"
               @click="toggleTheme"
-            >{{ isDark ? 'светло' : 'темно' }}</button>
+            >{{ themeToggleLabel }}</button>
             <!-- Site / Logout -->
             <div class="admin-sidebar-links">
               <NuxtLink v-if="adminLayoutModules.siteLink" to="/" class="admin-link admin-link--sidebar" @click="utilBarOpen = false">сайт</NuxtLink>
@@ -201,9 +201,9 @@
               v-if="adminLayoutModules.themeSwitch"
               type="button"
               class="admin-theme-btn admin-theme-btn--sidebar"
-              :aria-label="isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'"
+              :aria-label="themeToggleAriaLabel"
               @click="toggleTheme"
-            >{{ isDark ? 'светло' : 'темно' }}</button>
+            >{{ themeToggleLabel }}</button>
 
             <div class="admin-sidebar-links">
               <NuxtLink v-if="adminLayoutModules.siteLink" to="/" class="admin-link admin-link--sidebar" @click="adminShellMenuOpen = false">сайт</NuxtLink>
@@ -247,7 +247,7 @@ import { ADMIN_SECTION_ROUTES } from '~~/shared/constants/admin-navigation'
 
 const router = useRouter()
 const route  = useRoute()
-const { isDark, toggleTheme } = useThemeToggle()
+const { themeToggleAriaLabel, themeToggleLabel, toggleTheme } = useThemeToggle()
 const designSystem = useDesignSystem()
 const { adminLayout, restoreModules } = useDesignModules()
 const blueprintRuntime = useAppBlueprintRuntime()
@@ -351,7 +351,7 @@ if (activeProjectSlug.value) {
 }
 
 // Current project info for linking/unlinking
-const { data: projectData, refresh: refreshProjectData } = (await (useAsyncData as any)(
+const { data: projectData, refresh: refreshProjectData } = ((useAsyncData as any)(
   'admin-layout-project-data',
   () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}`) : null,
   { watch: [activeProjectSlug], default: () => null, server: false },
@@ -395,7 +395,7 @@ const galleryCurrentChip = computed(() => {
 })
 
 // ── Projects data ───────────────────────────────────────────────
-const { data: quickProjectsData } = await useFetch<any[]>('/api/projects', { server: false, default: () => [] })
+const { data: quickProjectsData } = useFetch<any[]>('/api/projects', { server: false, default: () => [] })
 const quickProjects = computed(() =>
   (quickProjectsData.value || []).map((p: any) => ({ slug: String(p.slug), title: String(p.title || p.slug) }))
 )
@@ -417,18 +417,18 @@ const quickDesigners = computed(() => (designersData.value || []).slice(0, 12))
 // ── Sellers data ────────────────────────────────────────────────
 const { data: sellersData } = useFetch<any[]>('/api/sellers', { server: false, default: () => [] })
 const quickSellers = computed(() => (sellersData.value || []).slice(0, 12))
-const { data: linkedSellersData, refresh: refreshLinkedSellers } = await useAsyncData<any[]>(
+const { data: linkedSellersData, refresh: refreshLinkedSellers } = useAsyncData<any[]>(
   'admin-layout-linked-sellers',
   () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/sellers`) : Promise.resolve<any[]>([]),
   { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
 )
 
-const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = await useAsyncData<any[]>(
+const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = useAsyncData<any[]>(
   'admin-layout-linked-designers',
   () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/designers`) : Promise.resolve<any[]>([]),
   { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
 )
-const { data: linkedContractorsData, refresh: refreshLinkedContractors } = await useAsyncData<any[]>(
+const { data: linkedContractorsData, refresh: refreshLinkedContractors } = useAsyncData<any[]>(
   'admin-layout-linked-contractors',
   () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/contractors`) : Promise.resolve<any[]>([]),
   { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
@@ -702,8 +702,6 @@ onMounted(() => {
   if (adminLayoutModules.value.notifications) {
     _notifInterval = setInterval(refreshNotif, 2 * 60 * 1000)
   }
-  useUITheme().initTheme()
-  designSystem.initDesignSystem()
   syncDesktopSidebarState()
   window.addEventListener('resize', syncDesktopSidebarState)
   // Синхронизируем CSS vars на :root, чтобы Teleport-ed элементы (Wipe2Renderer) могли их читать
@@ -844,6 +842,7 @@ async function logout() {
 /* ── Page ── */
 .admin-bg {
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--ds-font-family);
   font-size: var(--ds-font-size);
   font-weight: var(--ds-font-weight);
@@ -886,6 +885,7 @@ async function logout() {
   display: flex;
   align-items: flex-start;
   min-height: calc(100vh - var(--admin-header-h, 48px));
+  min-height: calc(100dvh - var(--admin-header-h, 48px));
 }
 
 /* ── Utility bar hamburger ── */
@@ -895,13 +895,13 @@ async function logout() {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--glass-text) 16%, transparent);
   background: color-mix(in srgb, var(--glass-text) 5%, transparent);
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--btn-radius, 0);
   flex-shrink: 0;
   transition: background 160ms, border-color 160ms;
 }

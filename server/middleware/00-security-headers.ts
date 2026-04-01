@@ -2,49 +2,7 @@
  * Security headers middleware (Helmet-like).
  * Sets CSP, X-Frame-Options, X-Content-Type-Options, etc.
  */
-
-function deriveRealtimeOrigins(serviceUrl: string | null | undefined) {
-  if (!serviceUrl) {
-    return [] as string[]
-  }
-
-  try {
-    const parsed = new URL(serviceUrl)
-    const origins = [parsed.origin]
-
-    if (parsed.protocol === 'http:') {
-      origins.push(`ws://${parsed.host}`)
-    } else if (parsed.protocol === 'https:') {
-      origins.push(`wss://${parsed.host}`)
-    } else if (parsed.protocol === 'ws:') {
-      origins.push(`http://${parsed.host}`)
-    } else if (parsed.protocol === 'wss:') {
-      origins.push(`https://${parsed.host}`)
-    }
-
-    return Array.from(new Set(origins))
-  } catch {
-    return []
-  }
-}
-
-function buildContentSecurityPolicy(event: Parameters<typeof defineEventHandler>[0] extends (event: infer T) => any ? T : never) {
-  const config = useRuntimeConfig(event)
-  const connectSources = ["'self'", 'https:', 'wss:', ...deriveRealtimeOrigins(config.public.communicationsServiceUrl?.trim())]
-
-  return [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api-maps.yandex.ru https://yandex.st https://*.yastatic.net https://*.yandex.net https://*.yandex.ru",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' data: https:",
-    `connect-src ${Array.from(new Set(connectSources)).join(' ')}`,
-    "frame-src https://yandex.ru https://*.yandex.ru https://yandex.com https://*.yandex.com",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join('; ')
-}
+import { buildContentSecurityPolicy, buildPermissionsPolicy } from '~/server/utils/security-headers'
 
 export default defineEventHandler((event) => {
   const res = (event as any).node?.res ?? (event as any).res
@@ -66,7 +24,7 @@ export default defineEventHandler((event) => {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
 
   // Permissions policy (disable sensitive APIs)
-  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=()')
+  res.setHeader('Permissions-Policy', buildPermissionsPolicy())
 
   // HSTS (if behind HTTPS proxy)
   const proto = (event as any).node?.req?.headers?.['x-forwarded-proto']

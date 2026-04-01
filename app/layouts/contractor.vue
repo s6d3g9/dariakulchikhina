@@ -15,8 +15,9 @@
         <button
           type="button"
           class="contractor-theme-btn"
+          :aria-label="themeToggleAriaLabel"
           @click="toggleTheme"
-        >{{ isDark ? 'светло' : 'темно' }}</button>
+        >{{ themeToggleLabel }}</button>
         <button class="contractor-logout-btn" @click="logout">Выйти</button>
       </div>
     </header>
@@ -31,7 +32,7 @@ import type { Contractor } from '~~/shared/types/contractor'
 
 const router = useRouter()
 const route = useRoute()
-const { isDark, toggleTheme } = useThemeToggle()
+const { themeToggleAriaLabel, themeToggleLabel, toggleTheme } = useThemeToggle()
 
 interface AuthMePayload {
   contractorId?: number | null

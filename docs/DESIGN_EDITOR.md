@@ -26,7 +26,12 @@ UIDesignPanel.vue
 Контрол → tokens.{key} → useDesignSystem.applyToDOM() → CSS custom property → весь UI
 ```
 
-**Персистентность:** `localStorage['design-tokens-minale']` — JSON всех ~100 токенов.
+**Персистентность:**
+- `localStorage['design-tokens']` — JSON всех токенов
+- `localStorage['design-concept']` — канонический short slug активного концепта
+- `localStorage['design-mode']` — активное mode-family (`brutalist` / `liquid-glass` / `material3`)
+- `localStorage['ui-theme:<mode>']` — последняя palette-тема внутри конкретного family
+- `localStorage['ui-theme']` — legacy fallback и указатель на текущую активную palette-тему
 
 **Undo / Redo:** история до 50 состояний, кнопки `⟲` / `⟳` в хедере панели.
 
@@ -36,11 +41,14 @@ UIDesignPanel.vue
 
 | Режим           | Slug              | Суть                                        |
 |-----------------|-------------------|---------------------------------------------|
-| Liquid Glass    | `concept-glass`   | Glassmorphism: blur, pill-радиусы, полупрозрачность |
-| Minale+Mann     | `concept-minale`  | Editorial чёрный: tracked capitals, тонкие линии    |
-| Системный       | *(clear)*         | Сброс к дефолтным токенам                          |
+| Liquid Glass    | `glass`           | Chrome-first glass, blur, depth, мягкие формы |
+| Minale+Mann     | `minale`          | Основной brutalist baseline: editorial black, tracked capitals, hairlines |
+| Material 3      | `m3`              | Tonal surfaces, state layers, pill navigation, системные M3 affordance |
+| По умолчанию    | `minale`          | Сброс к default family без потери общей архитектуры |
 
-Переключение → `switchMode('concept-glass')` / `switchMode('concept-minale')` / `clearMode()`.
+В UI переключение по-прежнему вызывается через `switchMode('concept-glass')`, `switchMode('concept-minale')`, `switchMode('concept-m3')`, но в DOM и storage пишутся канонические short slug: `glass`, `minale`, `m3`.
+
+Обычные recipe-presets не должны самовольно писать произвольный `data-concept`: если preset не является явно concept-bound, он сохраняет текущий concept family и меняет только токены.
 
 ---
 
@@ -91,7 +99,7 @@ UIDesignPanel.vue
 
 ---
 
-## 4. Концепции — DESIGN_CONCEPTS (9 шт.)
+## 4. Концепции — DESIGN_CONCEPTS (10 шт.)
 
 Вкладка **«концепция»** — целостная смена *всех* параметров. «Меняет всё».
 
@@ -106,6 +114,11 @@ UIDesignPanel.vue
 | `concept-glass`      | Стекло (Liquid Glass)          |
 | `concept-grand`      | Гранд                          |
 | `concept-minale`     | Minale+Mann                    |
+| `concept-m3`         | Material 3                     |
+
+Примечание:
+- `concept-*` — это editor/API id, а не конечный DOM slug.
+- После применения концепт нормализуется в short slug для `html[data-concept="..."]`.
 
 ---
 
@@ -113,7 +126,9 @@ UIDesignPanel.vue
 
 ### 5.1 `palette` — Палитра
 
-**Темы (5 свотчей):**
+Палитра теперь **family-aware**: набор свотчей зависит от активной концепции.
+
+**Liquid Glass family** — для `glass`, `craft`, `future` (5 свотчей):
 
 | ID         | Цвет основы |
 |------------|-------------|
@@ -122,6 +137,28 @@ UIDesignPanel.vue
 | `stone`    | #e8e5e0     |
 | `fog`      | #eeeef0     |
 | `parchment`| #f2ece1     |
+
+**Material 3 family** — для `m3` (4 свотча):
+
+| ID              | Цвет основы |
+|-----------------|-------------|
+| `m3-ocean`      | #d3e3fd     |
+| `m3-sage`       | #c1f0ae     |
+| `m3-terracotta` | #ffdbca     |
+| `m3-slate`      | #d6e3ff     |
+
+**Brutalist family** — для `minale`, `brutal`, `silence`, `function`, `editorial`, `grand` (4 свотча):
+
+| ID               | Цвет основы |
+|------------------|-------------|
+| `brutal-mono`    | #f5f3ee     |
+| `brutal-signal`  | #f5ed48     |
+| `brutal-poster`  | #f7efe7     |
+| `brutal-cobalt`  | #e8eeff     |
+
+Примечание:
+- При смене концепт-family редактор автоматически нормализует сохранённую тему к первой валидной теме нового семейства.
+- Theme-vars очищаются перед применением новой темы, чтобы `material3`, `brutalist` и `liquid-glass` не оставляли друг другу хвосты в DOM.
 
 **Акцент (HSL):**
 
@@ -237,20 +274,25 @@ UIDesignPanel.vue
 
 **Контекст «Поля»:** `inputFontSize` (0 = авто — 1.2 rem), `inputPaddingH` (4–32), `inputPaddingV` (2–24).
 
-**Шрифты — FONT_OPTIONS (10):**
+**Шрифты — FONT_OPTIONS (10, все локальные):**
 
 | ID          | Семейство                          |
 |-------------|-------------------------------------|
-| `system`    | -apple-system, BlinkMacSystemFont…  |
-| `inter`     | "Inter", sans-serif                 |
-| `geist`     | "Geist", sans-serif                 |
-| `dmSans`    | "DM Sans", sans-serif               |
-| `manrope`   | "Manrope", sans-serif               |
-| `outfit`    | "Outfit", sans-serif                |
-| `satoshi`   | "Satoshi", sans-serif               |
+| `system`    | SF Pro / Segoe UI / system-ui       |
+| `roboto`    | M3 Sans локальный UI stack          |
+| `inter`     | Neo Grotesk                         |
+| `geist`     | Sharp Sans                          |
+| `dmSans`    | Humanist Sans                       |
+| `manrope`   | Display Sans                        |
+| `outfit`    | Wide Sans                           |
+| `satoshi`   | UI Sans                             |
 | `jetbrains` | "JetBrains Mono", monospace         |
 | `georgia`   | Georgia, "Times New Roman", serif   |
-| `playfair`  | "Playfair Display", serif           |
+| `playfair`  | Editorial Serif                     |
+
+Примечание:
+- Названия `inter`, `geist`, `dmSans`, `manrope`, `outfit`, `satoshi`, `playfair` сохранены как editor id для обратной совместимости.
+- Фактические значения теперь указывают на локальные fallback-стеки и не требуют загрузки внешних Google Fonts.
 
 ---
 

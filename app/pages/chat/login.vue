@@ -1,25 +1,61 @@
 <template>
-  <section class="chat-auth-page">
-    <div class="chat-auth-box">
-      <p class="chat-auth-eyebrow">Standalone Chat</p>
-      <h1 class="chat-auth-title">Вход</h1>
-      <p class="chat-auth-copy">Отдельная ссылка без проектных меню. Войдите и откройте direct-чат с любым зарегистрированным участником.</p>
+  <section class="auth-root glass-page">
+    <div class="auth-card glass-surface">
+      <div class="auth-head">
+        <p class="auth-secondary__title">Standalone Chat</p>
+        <h1 class="auth-title">Вход</h1>
+        <p class="auth-subtitle">Отдельная ссылка без проектных меню. Войдите и откройте direct-чат с любым зарегистрированным участником.</p>
+      </div>
 
-      <form class="chat-auth-form" @submit.prevent="submit">
-        <label class="chat-auth-label" for="chat-login">Логин</label>
-        <GlassInput id="chat-login" v-model="form.login" name="login" type="text" class=" chat-auth-input" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" required />
+      <form @submit.prevent="submit">
+        <div class="auth-form-grid">
+          <div class="auth-field">
+            <label>Логин</label>
+            <GlassInput
+              v-model="form.login"
+              name="login"
+              type="text"
+              class=" auth-input"
+              autocomplete="username"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              inputmode="text"
+              required
+            />
+          </div>
 
-        <label class="chat-auth-label" for="chat-password">Пароль</label>
-        <GlassInput id="chat-password" v-model="form.password" name="password" type="password" class=" chat-auth-input" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required />
+          <div class="auth-field">
+            <label>Пароль</label>
+            <GlassInput
+              v-model="form.password"
+              name="password"
+              type="password"
+              class=" auth-input"
+              autocomplete="current-password"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              required
+            />
+          </div>
+        </div>
 
-        <p v-if="errorMessage" class="chat-auth-error">{{ errorMessage }}</p>
+        <p v-if="errorMessage" class="auth-error">{{ errorMessage }}</p>
 
-        <button type="submit" class="chat-auth-submit" :disabled="loading">
+        <div v-if="loading" class="auth-progress" aria-hidden="true">
+          <span class="auth-progress__label">[ ВХОД В ЧАТ ]</span>
+          <span class="auth-progress__line"></span>
+        </div>
+
+        <GlassButton variant="primary" type="submit" class=" auth-submit" :disabled="loading">
           {{ loading ? 'Вход...' : 'Войти в чат' }}
-        </button>
+        </GlassButton>
       </form>
 
-      <NuxtLink to="/chat/register" class="chat-auth-link">Регистрация</NuxtLink>
+      <div class="auth-links">
+        <NuxtLink to="/chat/register">Регистрация</NuxtLink>
+      </div>
     </div>
   </section>
 </template>
@@ -71,82 +107,3 @@ async function submit() {
   }
 }
 </script>
-
-<style scoped>
-.chat-auth-page {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-}
-
-.chat-auth-box {
-  width: min(100%, 520px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  padding: 24px;
-  display: grid;
-  gap: 14px;
-}
-
-.chat-auth-eyebrow,
-.chat-auth-label,
-.chat-auth-link {
-  margin: 0;
-  font-size: 0.74rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.chat-auth-title {
-  margin: 0;
-  font-size: clamp(1.4rem, 3vw, 2.4rem);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.chat-auth-copy,
-.chat-auth-error {
-  margin: 0;
-  font-size: 0.84rem;
-  line-height: 1.5;
-}
-
-.chat-auth-form {
-  display: grid;
-  gap: 10px;
-}
-
-.chat-auth-input,
-.chat-auth-submit {
-  width: 100%;
-  min-height: 48px;
-  font-size: 16px;
-}
-
-.chat-auth-submit {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: transparent;
-  color: inherit;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.chat-auth-error {
-  color: var(--ds-error, #d96b6b);
-}
-
-.chat-auth-link {
-  color: inherit;
-  text-decoration: none;
-}
-
-@supports (padding: env(safe-area-inset-top)) {
-  .chat-auth-page {
-    padding-top: max(24px, env(safe-area-inset-top));
-    padding-right: max(24px, env(safe-area-inset-right));
-    padding-bottom: max(24px, env(safe-area-inset-bottom));
-    padding-left: max(24px, env(safe-area-inset-left));
-  }
-}
-</style>
