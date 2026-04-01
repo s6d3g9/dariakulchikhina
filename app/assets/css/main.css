@@ -6540,15 +6540,24 @@ html[data-concept="glass"] .dp-panel {
 
 /* Material 3 Root Overrides (Added via refactor) */
 html[data-concept="m3"] {
-  --sys-color-surface: var(--glass-bg, #ffffff);
-  --sys-color-surface-dim: color-mix(in srgb, var(--sys-color-surface) 95%, black);
-  --sys-color-surface-container-lowest: #ffffff;
-  --sys-color-surface-container-low: #f7f7f9;
-  --sys-color-surface-container: #f3f3f6;
-  --sys-color-surface-container-high: #ececeF;
-  --sys-color-surface-container-highest: #e6e6e9;
-  --sys-color-on-surface: var(--glass-text, #111111);
-  --sys-color-on-surface-variant: color-mix(in srgb, var(--sys-color-on-surface) 60%, transparent);
+  --sys-color-surface: #FEF7FF;
+  --sys-color-surface-dim: #DED8E1;
+  --sys-color-surface-container-lowest: #FFFFFF;
+  --sys-color-surface-container-low: #F7F2FA;
+  --sys-color-surface-container: #F3EDF7;
+  --sys-color-surface-container-high: #ECE6F0;
+  --sys-color-surface-container-highest: #E6E0E9;
+  
+  --sys-color-on-surface: #1C1B1F;
+  --sys-color-on-surface-variant: #49454F;
+  
+  --sys-color-primary: #6750A4;
+  --sys-color-on-primary: #FFFFFF;
+  --sys-color-secondary-container: #E8DEF8;
+  --sys-color-on-secondary-container: #1D192B;
+  
+  --sys-color-error: #B3261E;
+  --sys-color-on-error: #FFFFFF;
   
   --sys-elevation-level1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
   --sys-elevation-level2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
@@ -6563,11 +6572,24 @@ html[data-concept="m3"] {
 }
 
 html[data-concept="m3"].dark {
-  --sys-color-surface-container-lowest: #0f0f11;
-  --sys-color-surface-container-low: #161619;
-  --sys-color-surface-container: #1d1d22;
-  --sys-color-surface-container-high: #242429;
-  --sys-color-surface-container-highest: #2b2b31;
+  --sys-color-surface: #141218;
+  --sys-color-surface-dim: #141218;
+  --sys-color-surface-container-lowest: #0F0D13;
+  --sys-color-surface-container-low: #1D1B20;
+  --sys-color-surface-container: #211F26;
+  --sys-color-surface-container-high: #2B2930;
+  --sys-color-surface-container-highest: #36343B;
+  
+  --sys-color-on-surface: #E6E1E5;
+  --sys-color-on-surface-variant: #CAC4D0;
+  
+  --sys-color-primary: #D0BCFF;
+  --sys-color-on-primary: #381E72;
+  --sys-color-secondary-container: #4A4458;
+  --sys-color-on-secondary-container: #E8DEF8;
+  
+  --sys-color-error: #F2B8B5;
+  --sys-color-on-error: #601410;
 }
 
 html[data-concept="m3"] .glass-surface {
@@ -6822,8 +6844,8 @@ html[data-concept="m3"] .glass-btn:active {
 /* M3 Elevated Button (Primary) */
 html[data-concept="m3"] .a-btn-save,
 html[data-concept="m3"] .glass-btn--primary {
-  background-color: var(--color-btn-bg, #6750A4) !important;
-  color: var(--color-btn-text, #ffffff) !important;
+  background-color: var(--sys-color-primary) !important;
+  color: var(--sys-color-on-primary) !important;
   box-shadow: var(--sys-elevation-level1) !important;
 }
 html[data-concept="m3"] .a-btn-save:hover,
@@ -6836,7 +6858,7 @@ html[data-concept="m3"] .glass-btn--primary:hover {
 /* M3 Tonal/Secondary button (using btn-sm) */
 html[data-concept="m3"] .a-btn-sm:not(.a-btn-danger),
 html[data-concept="m3"] .glass-btn--secondary {
-  background-color: var(--sys-color-surface-container-high) !important;
+  background-color: var(--sys-color-surface-container-highest) !important;
   color: var(--sys-color-on-surface) !important;
   font-weight: 500 !important;
 }
@@ -6955,6 +6977,81 @@ html[data-concept="m3"] .dash-quick-btn:hover {
 html[data-concept="m3"] .ent-main,
 html[data-concept="m3"] .cab-main {
   /* In M3, cards/surfaces within space have good breathing room. Ensure container flows properly. */
+}
+
+/* M3 BASE BODY PAGE FIXES */
+html[data-concept="m3"] body,
+html[data-concept="m3"] #__nuxt,
+html[data-concept="m3"] .admin-layout,
+html[data-concept="m3"] .project-layout,
+html[data-concept="m3"] .contractor-layout,
+html[data-concept="m3"] .ent-main,
+html[data-concept="m3"] .cab-main,
+html[data-concept="m3"] .glass-page {
+  background: var(--sys-color-surface) !important;
+  color: var(--sys-color-on-surface) !important;
+}
+
+html[data-concept="m3"] .adm-sidebar,
+html[data-concept="m3"] .proj-nav-col {
+  background: var(--sys-color-surface-container-low) !important;
+  border-right: none !important;
+}
+
+html[data-concept="m3"] .ent-detail-header,
+html[data-concept="m3"] .admin-header {
+  background: var(--sys-color-surface) !important;
+  border-bottom: 1px solid var(--sys-color-surface-container-highest) !important;
+  box-shadow: none !important;
+}
+
+html[data-concept="m3"] .glass-card,
+html[data-concept="m3"] .cab-card,
+html[data-concept="m3"] .ent-detail-card,
+html[data-concept="m3"] .std-table-wrapper,
+html[data-concept="m3"] .u-form-section {
+  background: var(--sys-color-surface-container) !important;
+  border-radius: var(--sys-radius-lg) !important;
+  border: 1px solid var(--sys-color-surface-container-highest) !important;
+  box-shadow: none !important;
+  color: var(--sys-color-on-surface) !important;
+  padding: 24px !important;
+  margin-bottom: 16px !important;
+}
+
+/* Ensure brutalist inputs look like Material 3 text fields */
+html[data-concept="m3"] .glass-input,
+html[data-concept="m3"] .cab-input,
+html[data-concept="m3"] .u-input,
+html[data-concept="m3"] .u-select {
+  border-radius: var(--sys-radius-xs) var(--sys-radius-xs) 0 0 !important;
+  background: var(--sys-color-surface-container-highest) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--sys-color-on-surface-variant) !important;
+  padding: 12px 16px !important;
+  color: var(--sys-color-on-surface) !important;
+  transition: all 0.2s ease !important;
+}
+html[data-concept="m3"] .glass-input:focus,
+html[data-concept="m3"] .cab-input:focus,
+html[data-concept="m3"] .u-input:focus,
+html[data-concept="m3"] .u-select:focus {
+  border-bottom: 2px solid var(--sys-color-primary) !important;
+  background: var(--sys-color-surface-container-high) !important;
+  outline: none !important;
+}
+
+/* Modal overlays in M3 */
+html[data-concept="m3"] .modal-overlay,
+html[data-concept="m3"] .a-modal-bg {
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: none !important;
+}
+
+html[data-concept="m3"] .u-empty {
+  background: transparent !important;
+  border: 1px dashed var(--sys-color-surface-container-highest) !important;
+  border-radius: var(--sys-radius-lg) !important;
 }
 
 
