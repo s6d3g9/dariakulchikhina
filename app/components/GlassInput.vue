@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useAttrs } from 'vue'
 
 const props = withDefaults(defineProps<{
   type?: string
@@ -36,10 +36,15 @@ const inputClasses = computed(() => {
     }
   ]
 })
+
+defineOptions({ inheritAttrs: false });
+const attrs = useAttrs();
+const wrapperAttrs = computed(() => ({ class: attrs.class as string | undefined, style: attrs.style as any }));
+const inputAttrs = computed(() => { const { class: _, style: __, ...rest } = attrs; return rest; });
 </script>
 
 <template>
-  <div class="relative w-full group">
+  <div class="relative group" v-bind="wrapperAttrs" :class="!(attrs.class as string || '').includes('w-') ? 'w-full' : ''">
     <!-- Левая иконка если есть -->
     <UIcon
       v-if="icon"
@@ -47,7 +52,10 @@ const inputClasses = computed(() => {
       class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-current opacity-40 transition-colors group-focus-within:text-sky-500 group-focus-within:opacity-100 z-10"
     />
 
-    <input
+    
+    <!-- Fix for type=file preventing value assignment and $event.target usage -->
+    <input v-if="type === 'file'" type="file" :disabled="disabled" :class="inputClasses" v-bind="inputAttrs" @change="emit('update:modelValue', ($event.target as HTMLInputElement).files ? ($event.target as HTMLInputElement).files![0] as any : null)" @focus="emit('focus', $event as FocusEvent)" @blur="emit('blur', $event as FocusEvent)" />
+    <input v-else v-bind="inputAttrs"
       :type="type"
       :value="modelValue"
       :placeholder="placeholder"

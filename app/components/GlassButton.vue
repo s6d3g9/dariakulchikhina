@@ -8,13 +8,15 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   icon?: string | null
   iconPosition?: 'left' | 'right'
+  density?: 'default' | 'compact' | 'comfortable'
 }>(), {
   variant: 'primary',
   glow: null,
   loading: false,
   disabled: false,
   icon: null,
-  iconPosition: 'left'
+  iconPosition: 'left',
+  density: 'default'
 })
 
 const emit = defineEmits<{
