@@ -333,8 +333,7 @@
       <section class="hpc-section" v-show="activeModule === 'timeline'">
         <div class="hpc-section__head">
           <div>
-            <p class="hpc-section__label">Матрица исполнения</p>
-            <h3 class="hpc-section__title">Табличный вид с таймлайном и перетаскиванием</h3>
+            <h3 class="hpc-section__title">Таймлайн проекта</h3>
           </div>
           <div class="hpc-section__tools">
             <div class="hpc-scale-switch" role="group" aria-label="Масштаб таймлайна">
@@ -357,12 +356,6 @@
             >
               {{ allTimelinePhasesCollapsed ? 'раскрыть все фазы' : 'свернуть все фазы' }}
             </button>
-          </div>
-          <div class="hpc-summary__meta">
-            <span class="hpc-saved">перетащите строку для порядка</span>
-            <span class="hpc-saved">перетащите полосу по неделям для сдвига сроков</span>
-            <span class="hpc-saved">тяните край полосы для длительности</span>
-            <span v-if="timelineScale === 'hours'" class="hpc-saved">часы сейчас только для zoom-просмотра</span>
           </div>
         </div>
 

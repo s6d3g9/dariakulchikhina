@@ -227,6 +227,14 @@ function isMobileChromeLikeBrowser() {
   return isMobile && isChromeLike
 }
 
+function shouldAutoOpenCallAnalysisPanel(mode: MessengerCallMode) {
+  if (mode !== 'audio' || !import.meta.client) {
+    return false
+  }
+
+  return window.matchMedia('(min-width: 980px)').matches
+}
+
 function mobileChromeTranscriptionFallbackMessage() {
   return 'Во время звонка мобильный Chrome не даёт одновременно использовать микрофон для WebRTC и Web Speech API. Нужен серверный транскриб или другой браузер.'
 }
@@ -2262,7 +2270,7 @@ export function useMessengerCalls() {
   async function startOutgoingCall(mode: MessengerCallMode) {
     callError.value = ''
     clearCallReview()
-    analysisPanelOpen.value = mode === 'audio'
+    analysisPanelOpen.value = shouldAutoOpenCallAnalysisPanel(mode)
     const conversation = conversations.activeConversation.value
 
     if (!conversation) {
@@ -2348,7 +2356,7 @@ export function useMessengerCalls() {
   async function acceptIncomingCall() {
     callError.value = ''
     clearCallReview()
-    analysisPanelOpen.value = incomingCall.value?.mode === 'audio'
+    analysisPanelOpen.value = shouldAutoOpenCallAnalysisPanel(incomingCall.value?.mode || 'audio')
 
     if (!incomingCall.value) {
       return

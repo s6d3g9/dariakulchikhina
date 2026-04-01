@@ -70,6 +70,7 @@ onBeforeUnmount(() => {
 
 watch(() => navigation.activeSection.value, async (nextSection, previousSection) => {
   if (!import.meta.client || nextSection === previousSection) return
+  if (calls.activeCall.value || calls.incomingCall.value) return
   await nextTick()
   window.scrollTo({ top: 0, behavior: 'auto' })
 })
