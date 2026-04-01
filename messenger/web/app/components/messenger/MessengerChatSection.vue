@@ -1719,6 +1719,19 @@ async function sendKlipyItem(item: MessengerKlipyItem) {
   }
 }
 
+function handleRoleQuickAction(actionLabel: string) {
+  if (actionLabel === 'Прикрепить фотоотчет' || actionLabel === 'Загрузить смету' || actionLabel === 'Поделиться файлом') {
+    openFilePicker()
+    return
+  }
+
+  draft.value = actionLabel
+  nextTick(() => {
+    composerInputEl.value?.focus()
+    syncComposerInputHeight()
+  })
+}
+
 async function handleFileSelect(event: Event) {
   actionError.value = ''
   const input = event.target as HTMLInputElement
@@ -2555,6 +2568,13 @@ onBeforeUnmount(() => {
         :conversation-id="conversations.activeConversation.value.id"
         :collapsed="agentWorkspaceCollapsed"
         @update:collapsed="agentWorkspaceCollapsed = $event"
+      />
+
+      <MessengerRoleQuickActions
+        v-if="conversations.activeConversation.value && !detailsOpen && !composerMediaMenuVisible && !activeConversationAgent"
+        :peer-login="conversations.activeConversation.value.peerLogin"
+        :message-pending="conversations.messagePending.value"
+        @action="handleRoleQuickAction"
       />
 
       <MessengerChatComposerDock
