@@ -12,10 +12,10 @@ export default defineNuxtPlugin(() => {
     })
   }
 
-  if (document.readyState === 'complete') {
+  if (document.readyState !== 'loading') {
     registerServiceWorker()
     return
   }
 
-  window.addEventListener('load', registerServiceWorker, { once: true })
+  document.addEventListener('DOMContentLoaded', registerServiceWorker, { once: true })
 })
