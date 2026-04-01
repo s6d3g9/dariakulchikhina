@@ -6736,7 +6736,7 @@ html[data-concept="m3"] .a-btn-save:hover,
 html[data-concept="m3"] .a-btn-sm:hover,
 html[data-concept="m3"] .a-btn-ai:hover {
   opacity: 1 !important;
-  filter: brightness(1.1); /* Простой способ симулировать light overlay state layer */
+  /* filter: brightness(1.1); */ /* Простой способ симулировать light overlay state layer */
 }
 
 /* Material 3 Fix Gallery Overlap */
@@ -6938,4 +6938,20 @@ html[data-concept="m3"] .std-table th {
 html[data-concept="m3"] .std-table td {
   border: none !important;
   border-bottom: 1px solid var(--sys-color-surface-container-highest) !important;
+}
+html[data-concept="m3"] .dash-quick-btn {
+  border-radius: var(--sys-radius-md) !important;
+  background: var(--sys-color-surface-container-low) !important;
+  border: none !important;
+  color: var(--sys-color-on-surface) !important;
+  box-shadow: none !important;
+}
+html[data-concept="m3"] .dash-quick-btn:hover {
+  background: var(--sys-color-surface-container) !important;
+}
+
+/* Material 3 App Shell Layout Padding Rules */
+html[data-concept="m3"] .ent-main,
+html[data-concept="m3"] .cab-main {
+  /* In M3, cards/surfaces within space have good breathing room. Ensure container flows properly. */
 }

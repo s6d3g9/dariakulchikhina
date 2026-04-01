@@ -1275,6 +1275,7 @@ function onDragEnd() {
   timelineDrag.overColumnKey = ''
 }
 </script>
+<style scoped>
 
 
 

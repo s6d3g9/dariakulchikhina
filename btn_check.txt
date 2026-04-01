@@ -1,21 +1,41 @@
-
-/* Fix inner areas to transparent to show the drawer background */
-html[data-concept="m3"] .proj-nav-header,
-html[data-concept="m3"] .proj-nav-body {
-  background: transparent !important;
-  border: none !important;
-}
-
-/* Nav Items: full pill shape, correct padding, state layers */
-html[data-concept="m3"] .nav-item,
-html[data-concept="m3"] .cab-nav-item,
-html[data-concept="m3"] .ent-nav-item,
-html[data-concept="m3"] .std-nav-item {
-  margin: 2px 12px !important; /* Space for the pill wrapper */
-  border: none !important;
-  border-radius: var(--sys-radius-full) !important;
-  padding: 12px 16px !important;
-  position: relative;
-  overflow: hidden;
-  transition: color 0.2s, background-color 0.2s;
-  width: auto !important; /* Avoid sticking to the edges */
+1308:.dash-quick-btn {
+1309-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+1310-  padding: 24px 16px; border-radius: var(--card-radius, 0px);
+1311-  border: 1px solid var(--glass-border);
+1312-  background: var(--glass-bg);
+1313-  color: var(--glass-text); cursor: pointer; gap: 12px;
+--
+3257:[data-density] .dash-quick-btn { padding: calc(16px * var(--arch-space, 1)); }
+3258-
+3259-/* Grand: heroic spacing everywhere */
+3260-[data-density="grand"] .ent-layout { gap: calc(36px * var(--arch-vertical-rhythm, 1)); }
+3261-[data-density="grand"] .ent-detail-card { padding: calc(28px * var(--arch-vertical-rhythm, 1)); }
+3262-[data-density="grand"] .cab-inner { padding: calc(32px * var(--arch-vertical-rhythm, 1)); }
+--
+3266:[data-density="grand"] .dash-quick-btn { padding: calc(28px * var(--arch-vertical-rhythm, 1)); }
+3267-[data-density="grand"] h3, [data-density="grand"] h4 { font-size: calc(var(--ds-text-lg, 1.2rem) * 1.15); }
+3268-
+3269-/* Dense: tight, aggressive */
+3270-[data-density="dense"] .ent-layout { gap: 8px; }
+3271-[data-density="dense"] .ent-detail-card { padding: 10px; }
+--
+3276:[data-density="dense"] .dash-quick-btn { padding: 8px; }
+3277-[data-density="dense"] h3, [data-density="dense"] h4 { font-size: var(--ds-text-sm, .833rem); }
+3278-
+3279-/* ── Vertical rhythm: universal margins/gaps ── */
+3280-[data-density] .ent-detail-head { margin-bottom: calc(12px * var(--arch-vertical-rhythm, 1)); }
+3281-[data-density] .ent-detail-foot { margin-top: calc(12px * var(--arch-vertical-rhythm, 1)); }
+--
+3747:[data-content-reveal]:not([data-content-reveal="none"]) .dash-quick-btn {
+3748-  transition: all var(--ds-anim-duration, 250ms) var(--ds-anim-easing, ease);
+3749-}
+3750-
+3751-/* ═══════════════════════════════════════════════════════════
+3752-   DARK SURFACE OVERRIDE SYSTEM
+--
+3927:[data-dark-surface] .dash-quick-btn {
+3928-  background: transparent !important;
+3929-  border: 1px solid color-mix(in srgb, var(--glass-text) 6%, transparent) !important;
+3930-  color: color-mix(in srgb, var(--glass-text) 70%, transparent) !important;
+3931-}
+3932-[data-dark-surface] .dash-quick-btn:hover {
