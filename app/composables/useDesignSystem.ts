@@ -2042,12 +2042,52 @@ export function useDesignSystem() {
   const future  = useState<DesignTokens[]>('dsFuture', () => [])
   const activeConceptSlug = useState<string>('dsConceptSlug', () => DEFAULT_DESIGN_CONCEPT)
   const isHydrated = useState<boolean>('dsHydrated', () => false)
+  const conceptAliasMap: Record<string, DesignConceptSlug> = {
+    'concept-minale': 'minale',
+    'concept-glass': 'glass',
+    'concept-brutal': 'brutal',
+    'concept-m3': 'm3',
+  }
+
+  function normalizeConceptSlug(conceptSlug: string) {
+    const normalized = conceptSlug.trim()
+    if (!normalized) {
+      return ''
+    }
+
+    return conceptAliasMap[normalized] || normalized
+  }
+
+  function resolvePresetConceptSlug(presetId: string) {
+    if (!presetId) {
+      return ''
+    }
+
+    if (presetId.startsWith('concept-')) {
+      return normalizeConceptSlug(presetId)
+    }
+
+    if (presetId.includes('glass')) {
+      return 'glass'
+    }
+
+    if (presetId.includes('brutal')) {
+      return 'brutal'
+    }
+
+    if (presetId === 'minale' || presetId === 'neomorphism') {
+      return 'minale'
+    }
+
+    return normalizeConceptSlug(presetId)
+  }
+
   const currentDesignMode = computed<DesignMode>(() => {
     if (!isHydrated.value) {
       return DEFAULT_DESIGN_MODE
     }
 
-    const conceptSlug = activeConceptSlug.value as DesignConceptSlug
+    const conceptSlug = normalizeConceptSlug(activeConceptSlug.value) as DesignConceptSlug
     return CONCEPT_TO_DESIGN_MODE[conceptSlug] || DEFAULT_DESIGN_MODE
   })
 
@@ -2057,7 +2097,7 @@ export function useDesignSystem() {
     try {
       localStorage.setItem(DESIGN_TOKENS_STORAGE_KEY, JSON.stringify(tokens.value))
 
-      const conceptSlug = activeConceptSlug.value.trim()
+      const conceptSlug = normalizeConceptSlug(activeConceptSlug.value)
       if (conceptSlug) {
         localStorage.setItem(DESIGN_CONCEPT_STORAGE_KEY, conceptSlug)
       } else {
@@ -2078,7 +2118,7 @@ export function useDesignSystem() {
   function load() {
     if (!import.meta.client) return
     try {
-      const savedConcept = localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || ''
+      const savedConcept = normalizeConceptSlug(localStorage.getItem(DESIGN_CONCEPT_STORAGE_KEY)?.trim() || '')
       const savedMode = (localStorage.getItem(DESIGN_MODE_STORAGE_KEY)?.trim() || '') as DesignMode | ''
       const inferredMode = savedMode || CONCEPT_TO_DESIGN_MODE[savedConcept as DesignConceptSlug] || 'brutalist'
       const raw = localStorage.getItem(DESIGN_TOKENS_STORAGE_KEY)
@@ -2558,17 +2598,7 @@ export function useDesignSystem() {
     // Start from DEFAULT_TOKENS — complete reset, no residue from prev presets
     tokens.value = { ...DEFAULT_TOKENS, ...preset.tokens }
     // Track active concept slug for CSS selectors like html[data-concept="brutal"]
-    let sysSlug = '';
-    if (preset.id.startsWith('concept-')) {
-      sysSlug = preset.id.replace('concept-', '');
-    } else if (preset.id.includes('glass')) {
-      sysSlug = 'glass';
-    } else if (preset.id.includes('brutal')) {
-      sysSlug = 'brutal';
-    } else if (preset.id === 'minale' || preset.id === 'neomorphism') {
-      sysSlug = 'minale';
-    }
-    activeConceptSlug.value = sysSlug;
+    activeConceptSlug.value = resolvePresetConceptSlug(preset.id)
     _syncConceptAttr()
     applyToDOM()
     save()
@@ -2737,7 +2767,7 @@ export function useDesignSystem() {
   function _syncConceptAttr() {
     if (import.meta.server) return
     const el = document.documentElement
-    const slug = activeConceptSlug.value
+    const slug = normalizeConceptSlug(activeConceptSlug.value)
     if (slug) {
       el.setAttribute('data-concept', slug)
     } else {
@@ -2765,17 +2795,7 @@ export function useDesignSystem() {
       }
     }
     // Track active concept slug for CSS selectors
-    let sysSlug = '';
-    if (preset.id.startsWith('concept-')) {
-      sysSlug = preset.id.replace('concept-', '');
-    } else if (preset.id.includes('glass')) {
-      sysSlug = 'glass';
-    } else if (preset.id.includes('brutal')) {
-      sysSlug = 'brutal';
-    } else if (preset.id === 'minale' || preset.id === 'neomorphism') {
-      sysSlug = 'minale';
-    }
-    activeConceptSlug.value = sysSlug;
+    activeConceptSlug.value = resolvePresetConceptSlug(preset.id)
     _syncConceptAttr()
     // Always start from DEFAULT_TOKENS so no residue leaks between presets
     tokens.value = { ...DEFAULT_TOKENS, ...preset.tokens }

@@ -235,10 +235,16 @@ export const BRUTAL_THEMES: UITheme[] = [
 export const UI_THEMES = [...GLASS_THEMES, ...M3_THEMES, ...BRUTAL_THEMES];
 
 export const UI_THEMES_MAP: Record<string, UITheme[]> = {
+  glass: GLASS_THEMES,
   'concept-m3': M3_THEMES,
+  m3: M3_THEMES,
   'concept-brutal': BRUTAL_THEMES,
+  brutal: BRUTAL_THEMES,
+  'concept-minale': BRUTAL_THEMES,
+  minale: BRUTAL_THEMES,
   'concept-glass': GLASS_THEMES,
-  'concept-silence': GLASS_THEMES
+  'concept-silence': GLASS_THEMES,
+  silence: GLASS_THEMES,
 };
 
 const LS_KEY = 'ui-theme'
@@ -246,11 +252,24 @@ const LS_KEY = 'ui-theme'
 
 
 export function useUITheme() {
-  const { activeConceptSlug } = useDesignSystem()
+  const { activeConceptSlug, currentDesignMode } = useDesignSystem()
   const themeId = useState<string>('uiTheme', () => 'cloud')
 
   const availableThemes = computed(() => {
-    return UI_THEMES_MAP[activeConceptSlug?.value || 'concept-glass'] || GLASS_THEMES
+    const conceptThemes = UI_THEMES_MAP[activeConceptSlug?.value || 'glass']
+    if (conceptThemes) {
+      return conceptThemes
+    }
+
+    if (currentDesignMode.value === 'material3') {
+      return M3_THEMES
+    }
+
+    if (currentDesignMode.value === 'brutalist') {
+      return BRUTAL_THEMES
+    }
+
+    return GLASS_THEMES
   })
 
   /**

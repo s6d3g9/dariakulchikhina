@@ -6838,3 +6838,591 @@ html.dark[data-concept="glass"] .glass-chip::before,
 html.dark[data-concept="glass"] .admin-notif-dropdown::before {
   background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.05) 100%);
 }
+
+/* ========================================================
+   CANONICAL GLASS* PRIMITIVE LAYER
+   Strictly differentiates minale / brutal / glass / m3
+   for shared wrapper components without local Tailwind visuals.
+======================================================== */
+
+.glass-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  vertical-align: middle;
+  text-decoration: none;
+}
+
+.glass-btn--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.glass-btn__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--glass-page-bg) 30%, transparent);
+}
+
+.glass-btn__loading-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.glass-btn__icon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.glass-field {
+  position: relative;
+  width: 100%;
+}
+
+.glass-field--inline {
+  display: inline-block;
+  width: auto;
+}
+
+.glass-input {
+  min-height: 48px;
+  line-height: 1.4;
+}
+
+.glass-input--with-icon {
+  padding-left: 44px !important;
+}
+
+.glass-input--with-chevron,
+.glass-input--select {
+  appearance: none;
+  padding-right: 44px !important;
+}
+
+.glass-input--multiline {
+  min-height: 112px;
+  resize: vertical;
+  line-height: 1.5;
+  padding-top: 14px;
+}
+
+.glass-field--inline .glass-input {
+  width: auto;
+  min-width: 11rem;
+}
+
+.glass-field__icon,
+.glass-select__chevron {
+  position: absolute;
+  top: 50%;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.glass-field__icon {
+  left: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  opacity: 0.55;
+}
+
+.glass-select__chevron {
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+}
+
+.glass-select__chevron-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.glass-input__fill {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--ds-transition, 180ms ease);
+  pointer-events: none;
+}
+
+.glass-input__fill--active {
+  transform: scaleX(1);
+}
+
+.glass-nav {
+  display: flex;
+  width: 100%;
+}
+
+.glass-nav--sidebar {
+  flex-direction: column;
+  gap: var(--ds-nav-list-gap, 2px);
+}
+
+.glass-nav--header {
+  align-items: center;
+  gap: 8px;
+}
+
+.glass-nav--pills {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.glass-nav :is(a, button, [role="button"]) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  text-decoration: none;
+  transition: background-color var(--ds-transition, 180ms ease), color var(--ds-transition, 180ms ease), border-color var(--ds-transition, 180ms ease), box-shadow var(--ds-transition, 180ms ease), transform var(--ds-transition, 180ms ease);
+}
+
+.glass-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.glass-modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 720px);
+  max-height: min(86vh, 960px);
+  overflow: hidden;
+}
+
+.glass-modal__head,
+.glass-modal__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px;
+}
+
+.glass-modal__body {
+  padding: 24px;
+  overflow: auto;
+}
+
+.glass-modal__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.glass-modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+}
+
+.glass-modal__close-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.glass-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+html[data-concept="glass"] .glass-field__icon,
+html[data-concept="glass"] .glass-select__chevron {
+  color: color-mix(in srgb, var(--glass-text) 68%, transparent);
+}
+
+html[data-concept="glass"] .glass-input__fill {
+  background: linear-gradient(90deg, color-mix(in srgb, #ffffff 72%, transparent), color-mix(in srgb, var(--glass-text) 28%, transparent));
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.28);
+}
+
+html[data-concept="glass"] .glass-btn {
+  border-radius: var(--btn-radius, 16px);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+
+html[data-concept="glass"] .glass-btn--ghost {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-concept="glass"] .glass-btn__overlay {
+  background: color-mix(in srgb, var(--glass-page-bg) 22%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+html[data-concept="glass"] .glass-nav :is(a, button, [role="button"]) {
+  padding: var(--nav-item-padding-v, 10px) var(--nav-item-padding-h, 16px);
+  border-radius: var(--nav-item-radius, 18px);
+  color: var(--glass-text);
+}
+
+html[data-concept="glass"] .glass-nav :is(a:hover, button:hover, [role="button"]:hover) {
+  background: color-mix(in srgb, var(--glass-bg) 82%, transparent);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+html[data-concept="glass"] .glass-nav :is(a.router-link-active, a.router-link-exact-active, button.active, [role="button"].active, [aria-current="page"]) {
+  background: color-mix(in srgb, var(--glass-bg) 90%, transparent);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.24), 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+html[data-concept="glass"] .glass-modal {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.4));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.35));
+  border-radius: var(--modal-radius, 32px);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 16px 36px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+}
+
+html[data-concept="glass"] .glass-modal__head,
+html[data-concept="glass"] .glass-modal__foot {
+  border-color: color-mix(in srgb, var(--glass-border) 85%, transparent);
+}
+
+html[data-concept="glass"] .glass-modal__head {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-border) 85%, transparent);
+}
+
+html[data-concept="glass"] .glass-modal__foot {
+  border-top: 1px solid color-mix(in srgb, var(--glass-border) 85%, transparent);
+}
+
+html[data-concept="glass"] .glass-modal__close {
+  border: 1px solid color-mix(in srgb, var(--glass-border) 88%, transparent);
+  border-radius: 999px;
+  color: var(--glass-text);
+}
+
+html[data-concept="m3"] .glass-field__icon,
+html[data-concept="m3"] .glass-select__chevron {
+  color: var(--sys-color-on-surface-variant);
+  opacity: 1;
+}
+
+html[data-concept="m3"] .glass-input--with-icon {
+  padding-left: 48px !important;
+}
+
+html[data-concept="m3"] .glass-input__fill {
+  display: none;
+}
+
+html[data-concept="m3"] .glass-btn {
+  min-height: 40px;
+  padding: 0 24px;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  font-family: 'Roboto', 'Inter', sans-serif !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+}
+
+html[data-concept="m3"] .glass-btn.a-btn-save,
+html[data-concept="m3"] .glass-btn.a-btn-ai {
+  background: var(--sys-color-primary) !important;
+  color: var(--sys-color-on-primary) !important;
+}
+
+html[data-concept="m3"] .glass-btn.a-btn-sm {
+  background: var(--sys-color-secondary-container) !important;
+  color: var(--sys-color-on-secondary-container) !important;
+}
+
+html[data-concept="m3"] .glass-btn.a-btn-danger {
+  background: var(--sys-color-error-container, color-mix(in srgb, var(--sys-color-error) 16%, transparent)) !important;
+  color: var(--sys-color-on-error-container, var(--sys-color-error)) !important;
+}
+
+html[data-concept="m3"] .glass-btn--ghost {
+  background: transparent !important;
+  color: var(--sys-color-primary) !important;
+}
+
+html[data-concept="m3"] .glass-btn__overlay {
+  background: color-mix(in srgb, var(--sys-color-surface-container-high) 88%, transparent);
+}
+
+html[data-concept="m3"] .glass-nav :is(a, button, [role="button"]) {
+  height: 56px;
+  padding: 0 16px;
+  border: none !important;
+  border-radius: 100px !important;
+  color: var(--sys-color-on-surface-variant);
+}
+
+html[data-concept="m3"] .glass-nav :is(a:hover, button:hover, [role="button"]:hover) {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: var(--sys-color-on-surface);
+}
+
+html[data-concept="m3"] .glass-nav :is(a.router-link-active, a.router-link-exact-active, button.active, [role="button"].active, [aria-current="page"]) {
+  background: var(--sys-color-secondary-container);
+  color: var(--sys-color-on-secondary-container);
+}
+
+html[data-concept="m3"] .glass-modal-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+html[data-concept="m3"] .glass-modal {
+  background: var(--sys-color-surface-container-high) !important;
+  border: none !important;
+  border-radius: var(--sys-radius-xl, 28px) !important;
+  box-shadow: var(--sys-elevation-level3) !important;
+  color: var(--sys-color-on-surface) !important;
+}
+
+html[data-concept="m3"] .glass-modal__head,
+html[data-concept="m3"] .glass-modal__foot {
+  padding: 24px;
+}
+
+html[data-concept="m3"] .glass-modal__head {
+  border-bottom: 1px solid var(--sys-color-outline-variant);
+}
+
+html[data-concept="m3"] .glass-modal__foot {
+  border-top: 1px solid var(--sys-color-outline-variant);
+}
+
+html[data-concept="m3"] .glass-modal__title {
+  font-size: 1.375rem;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+}
+
+html[data-concept="m3"] .glass-modal__actions {
+  gap: 8px;
+}
+
+html[data-concept="m3"] .glass-modal__close {
+  border: none;
+  border-radius: 999px;
+  color: var(--sys-color-on-surface-variant);
+}
+
+html[data-concept="brutal"] .glass-field__icon,
+html[data-concept="brutal"] .glass-select__chevron {
+  color: #000000;
+  opacity: 1;
+}
+
+html[data-concept="brutal"] .glass-input__fill {
+  height: 3px;
+  background: #000000;
+}
+
+html[data-concept="brutal"] .glass-btn {
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 4px 4px 0 0 !important;
+  box-shadow: none;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+html[data-concept="brutal"] .glass-btn.a-btn-save,
+html[data-concept="brutal"] .glass-btn.a-btn-ai {
+  border: 2px solid #000000 !important;
+  box-shadow: 4px 4px 0 #000000 !important;
+}
+
+html[data-concept="brutal"] .glass-btn.a-btn-sm,
+html[data-concept="brutal"] .glass-btn.a-btn-danger,
+html[data-concept="brutal"] .glass-btn--ghost {
+  border: 2px solid #000000 !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+html[data-concept="brutal"] .glass-btn:hover {
+  transform: translate(-2px, -2px);
+}
+
+html[data-concept="brutal"] .glass-nav :is(a, button, [role="button"]) {
+  padding: 10px 14px;
+  border: 2px solid #000000;
+  border-radius: 4px 4px 0 0;
+  color: #000000;
+  background: #ffffff;
+}
+
+html[data-concept="brutal"] .glass-nav :is(a.router-link-active, a.router-link-exact-active, button.active, [role="button"].active, [aria-current="page"]) {
+  background: #000000;
+  color: #ffffff;
+}
+
+html[data-concept="brutal"] .glass-modal-overlay {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+html[data-concept="brutal"] .glass-modal {
+  background: #ffffff;
+  border: 3px solid #000000;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 8px 8px 0 #000000;
+  color: #000000;
+}
+
+html[data-concept="brutal"] .glass-modal__head,
+html[data-concept="brutal"] .glass-modal__foot {
+  border-color: #000000;
+}
+
+html[data-concept="brutal"] .glass-modal__head {
+  border-bottom: 3px solid #000000;
+}
+
+html[data-concept="brutal"] .glass-modal__foot {
+  border-top: 3px solid #000000;
+}
+
+html[data-concept="brutal"] .glass-modal__close {
+  border: 2px solid #000000;
+  border-radius: 4px 4px 0 0;
+  color: #000000;
+}
+
+html[data-concept="minale"] .glass-field__icon,
+html[data-concept="minale"] .glass-select__chevron {
+  color: rgba(255, 255, 255, 0.48);
+  opacity: 1;
+}
+
+html[data-concept="minale"] .glass-input__fill {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+html[data-concept="minale"] .glass-btn {
+  min-height: 44px;
+  border-radius: 4px 4px 0 0 !important;
+  box-shadow: none !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+}
+
+html[data-concept="minale"] .glass-btn.a-btn-save,
+html[data-concept="minale"] .glass-btn.a-btn-ai {
+  background: transparent !important;
+  color: var(--glass-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+html[data-concept="minale"] .glass-btn.a-btn-sm,
+html[data-concept="minale"] .glass-btn.a-btn-danger {
+  background: transparent !important;
+  color: var(--glass-text) !important;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 25%, transparent) !important;
+}
+
+html[data-concept="minale"] .glass-btn--ghost {
+  border-color: transparent !important;
+  padding-inline: 0 !important;
+}
+
+html[data-concept="minale"] .glass-nav :is(a, button, [role="button"]) {
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid transparent;
+  border-radius: 4px 4px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  background: transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+html[data-concept="minale"] .glass-nav :is(a:hover, button:hover, [role="button"]:hover) {
+  color: rgba(255, 255, 255, 0.88);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
+
+html[data-concept="minale"] .glass-nav :is(a.router-link-active, a.router-link-exact-active, button.active, [role="button"].active, [aria-current="page"]) {
+  color: rgba(255, 255, 255, 0.96);
+  border-left: 2px solid rgba(255, 255, 255, 0.7);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+}
+
+html[data-concept="minale"] .glass-modal-overlay {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+}
+
+html[data-concept="minale"] .glass-modal {
+  background: #050505;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
+  border-radius: 4px 4px 0 0;
+  box-shadow: none;
+  color: var(--glass-text);
+}
+
+html[data-concept="minale"] .glass-modal__head {
+  border-bottom: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
+html[data-concept="minale"] .glass-modal__foot {
+  border-top: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
+}
+
+html[data-concept="minale"] .glass-modal__title {
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+html[data-concept="minale"] .glass-modal__close {
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  border-radius: 4px 4px 0 0;
+  color: rgba(255, 255, 255, 0.5);
+}

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useAttrs, type HTMLAttributes, type StyleValue } from 'vue'
+
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<{
   placeholder?: string
@@ -27,45 +29,51 @@ const emit = defineEmits<{
   (e: 'blur', event: FocusEvent): void
 }>()
 
+const attrs = useAttrs()
+
+const attrsClass = computed(() => attrs.class as HTMLAttributes['class'])
+const attrsStyle = computed<StyleValue>(() => attrs.style as StyleValue)
+
+const textareaAttrs = computed(() => {
+  const { class: _class, style: _style, ...rest } = attrs
+  return rest
+})
+
+const hasValue = computed(() => {
+  return !!props.modelValue && props.modelValue.length > 0
+})
+
 const textareaClasses = computed(() => {
   return [
-    'glass-input w-full outline-none transition-all duration-300 relative py-3 resize-y',
-    'placeholder:text-current px-4',
+    'glass-input glass-input--multiline',
     {
       'error': props.error,
-      'opacity-50 cursor-not-allowed': props.disabled
     }
   ]
 })
 </script>
 
 <template>
-  <div class="relative w-full group">
+  <div class="glass-field glass-field--textarea">
     <textarea
+      v-bind="textareaAttrs"
       :id="id"
       :name="name"
       :value="modelValue"
       :placeholder="placeholder"
       :disabled="disabled"
       :rows="rows"
-      :class="textareaClasses"
+      :class="[textareaClasses, attrsClass]"
+      :style="attrsStyle"
       @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
       @focus="emit('focus', $event)"
       @blur="emit('blur', $event)"
-    ></textarea>
+    />
 
     <div
       v-if="animateFill"
-      class="absolute bottom-0 left-4 right-4 h-[2px] bg-sky-500/50 transition-transform origin-left rounded-full z-10"
-      :class="[modelValue ? 'scale-x-100' : 'scale-x-0']"
-    ></div>
+      class="glass-input__fill"
+      :class="{ 'glass-input__fill--active': hasValue }"
+    />
   </div>
 </template>
-
-<style scoped>
-.glass-input {
-  min-height: 48px;
-  line-height: 1.5;
-  border-radius: var(--input-radius, 16px);
-}
-</style>

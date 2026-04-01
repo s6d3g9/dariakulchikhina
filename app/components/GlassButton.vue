@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useAttrs, type HTMLAttributes, type StyleValue } from 'vue'
+
+defineOptions({ inheritAttrs: false })
+
+type ButtonType = 'button' | 'submit' | 'reset'
 
 const props = withDefaults(defineProps<{
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'ai'
@@ -23,51 +27,67 @@ const emit = defineEmits<{
   (e: 'click', event: MouseEvent): void
 }>()
 
+const attrs = useAttrs()
+
+const attrsClass = computed(() => attrs.class as HTMLAttributes['class'])
+const attrsStyle = computed<StyleValue>(() => attrs.style as StyleValue)
+
 const buttonClasses = computed(() => {
   return [
-    'transition-all duration-300 relative overflow-hidden active:scale-95 flex items-center justify-center',
+    'glass-btn',
     {
-      'opacity-50 cursor-not-allowed pointer-events-none': props.disabled || props.loading,
       'a-btn-save': props.variant === 'primary',
       'a-btn-sm': props.variant === 'secondary',
-      'a-btn-danger': props.variant === 'danger',
+      'a-btn-sm a-btn-danger': props.variant === 'danger',
       'a-btn-ai': props.variant === 'ai',
-      // ghost = без фона/теней
-      'bg-transparent hover:bg-neutral-500/10 text-current rounded-full px-4 py-2 text-sm font-medium border border-transparent': props.variant === 'ghost'
+      'glass-btn--ghost': props.variant === 'ghost',
+      'glass-btn--loading': props.loading,
+      'glass-btn--disabled': props.disabled || props.loading,
     }
   ]
+})
+
+const buttonAttrs = computed(() => {
+  const { class: _class, style: _style, type: _type, ...rest } = attrs
+  return rest
+})
+
+const resolvedType = computed<ButtonType>(() => {
+  return attrs.type === 'submit' || attrs.type === 'reset' ? attrs.type : 'button'
 })
 
 const buttonStyle = computed(() => {
   if (props.glow && ['primary', 'ai', 'danger'].includes(props.variant)) {
     return {
-      '--liquid-glow': `0 0 20px ${props.glow}`
+      '--glass-btn-glow': `0 0 20px ${props.glow}`
     }
   }
   return {}
 })
+
+const mergedButtonStyle = computed<StyleValue>(() => [buttonStyle.value, attrsStyle.value])
 </script>
 
 <template>
   <button
-    :class="buttonClasses"
-    :style="buttonStyle"
+    v-bind="buttonAttrs"
+    :type="resolvedType"
+    :class="[buttonClasses, attrsClass]"
+    :style="mergedButtonStyle"
     :disabled="disabled || loading"
     @click="(e) => !loading && !disabled && emit('click', e)"
   >
     <div
       v-if="loading"
-      class="absolute inset-0 flex items-center justify-center bg-white/20 backdrop-blur-sm z-10"
+      class="glass-btn__overlay"
     >
-      <UIcon name="heroicons:arrow-path" class="w-4 h-4 animate-spin text-current" />
+      <span class="glass-btn__loading-label">[ LOADING... ]</span>
     </div>
 
-    <!-- Иконка слева -->
-    <UIcon v-if="icon && iconPosition === 'left'" :name="icon" class="w-4 h-4 shrink-0 transition-transform mr-1.5" />
+    <UIcon v-if="icon && iconPosition === 'left'" :name="icon" class="glass-btn__icon glass-btn__icon--left" />
 
     <slot />
 
-    <!-- Иконка справа -->
-    <UIcon v-if="icon && iconPosition === 'right'" :name="icon" class="w-4 h-4 shrink-0 transition-transform ml-1.5" />
+    <UIcon v-if="icon && iconPosition === 'right'" :name="icon" class="glass-btn__icon glass-btn__icon--right" />
   </button>
 </template>

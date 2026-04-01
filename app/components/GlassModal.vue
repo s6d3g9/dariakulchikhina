@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useAttrs } from 'vue'
+
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<{
   modelValue: boolean
@@ -19,6 +21,8 @@ const emit = defineEmits<{
   (e: 'confirm'): void
 }>()
 
+const attrs = useAttrs()
+
 function handleOverlayClick() {
   if (!props.preventClose) {
     emit('update:modelValue', false)
@@ -35,30 +39,32 @@ function close() {
 <template>
   <Teleport to="body">
     <Transition name="fade" appear>
-      <div v-show="modelValue" class="u-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" @mousedown.self="handleOverlayClick">
+      <div v-show="modelValue" class="u-modal-overlay glass-modal-overlay" @mousedown.self="handleOverlayClick">
         <Transition :name="transition" appear>
-          <div v-show="modelValue" class="u-modal w-full max-w-lg transform-gpu transition-all duration-300 relative flex flex-col shadow-2xl overflow-hidden" @mousedown.stop>
-
-            <!-- Ликвид градиент для бэкпэйна (свет / блики) -->
-            <div class="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/10 to-transparent pointer-events-none rounded-t-3xl"></div>
-            <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/5 to-transparent pointer-events-none rounded-b-3xl"></div>
-
-            <header class="flex items-center justify-between p-6 pb-4 border-b border-white/10 z-10 relative">
-              <h2 class="text-xl font-semibold tracking-wide brightness-110 drop-shadow-md">
+          <div
+            v-show="modelValue"
+            v-bind="attrs"
+            class="u-modal glass-modal"
+            role="dialog"
+            aria-modal="true"
+            @mousedown.stop
+          >
+            <header class="u-modal__head glass-modal__head">
+              <h2 class="u-modal__title glass-modal__title">
                 {{ title }}
               </h2>
-              <button class="p-2 -mr-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors backdrop-blur-md relative overflow-hidden" @click="close">
-                <UIcon name="heroicons:x-mark-20-solid" class="w-5 h-5 opacity-75" />
+              <button type="button" class="u-modal__close glass-modal__close" @click="close">
+                <UIcon name="heroicons:x-mark-20-solid" class="glass-modal__close-icon" />
               </button>
             </header>
 
-            <main class="p-6 overflow-y-auto max-h-[70vh] z-10 custom-scrollbar relative">
+            <main class="u-modal__body glass-modal__body">
               <slot />
             </main>
 
-            <footer class="p-6 pt-4 border-t border-white/10 z-10 bg-black/5 dark:bg-white/5 backdrop-blur-3xl rounded-b-[var(--modal-radius,32px)]">
+            <footer class="u-modal__foot glass-modal__foot">
               <slot name="footer">
-                <div class="flex justify-end gap-3">
+                <div class="glass-modal__actions">
                   <GlassButton variant="secondary" @click="close">Отмена</GlassButton>
                   <GlassButton variant="primary" @click="$emit('confirm')">Сохранить</GlassButton>
                 </div>
