@@ -37,7 +37,7 @@
     min(
       44dvh,
       calc(
-        100dvh
+        var(--messenger-viewport-effective-height, 100dvh)
         - 60px
         - var(--messenger-composer-height, 76px)
         - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height))
