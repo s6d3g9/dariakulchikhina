@@ -2,6 +2,7 @@
 
 > Источники: pinia.vuejs.org (core-concepts, composing-stores)
 > Версия: Pinia 3.0.x + @pinia/nuxt 0.11.x
+> Этот файл — reference по Pinia, а не описание текущего state-layer основной платформы. В main app состояние сейчас живёт в `app/composables/**` и `useState()`; Pinia вводить только по явной задаче или в отдельном продукте.
 
 ---
 

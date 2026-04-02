@@ -14,7 +14,7 @@
 */
 .messenger-shell[data-messenger-media-sheet="open"] .composer-bar,
 .messenger-shell[data-messenger-media-sheet="open"] .composer-bar--audio {
-  padding-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 4px));
+  padding-bottom: max(12px, calc(var(--messenger-safe-bottom, env(safe-area-inset-bottom, 0px)) + 4px));
 }
 
 /* ── Call stage: пересчитываем с учётом home indicator ── */
@@ -27,7 +27,7 @@
   bottom: calc(
     var(--messenger-composer-height, 76px) +
     var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) +
-    env(safe-area-inset-bottom, 0px)
+    var(--messenger-safe-bottom, env(safe-area-inset-bottom, 0px))
   );
 }
 
@@ -41,7 +41,7 @@
         - 60px
         - var(--messenger-composer-height, 76px)
         - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height))
-        - env(safe-area-inset-bottom, 0px)
+        - var(--messenger-safe-bottom, env(safe-area-inset-bottom, 0px))
         - 8px
       )
     )
@@ -55,7 +55,7 @@ html[data-messenger-viewport-platform='ios'][data-messenger-keyboard='open'] .se
 /* ── Call error toast: над home indicator ── */
 
 .call-error {
-  bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 4px));
+  bottom: max(12px, calc(var(--messenger-safe-bottom, env(safe-area-inset-bottom, 0px)) + 4px));
 }
 
 /* ── Touch: убираем синюю подсветку при тапе на кастомных элементах ── */

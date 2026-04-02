@@ -1,12 +1,19 @@
 # Daria Design Studio — CRM/ERP для дизайн-студии интерьеров
 
-Приватный кабинет для трёх ролей:
+Репозиторий содержит несколько продуктовых контуров: основную Nuxt-платформу, встроенный project/chat контур, standalone messenger и отдельный communications relay service.
 
-| Роль | Вход | Маршрут | Возможности |
-|------|------|---------|-------------|
-| **Дизайнер / Админ** | email + пароль | `/admin` | Полное управление проектами, клиентами, подрядчиками, галереей, документами |
-| **Клиент** | slug проекта | `/client/:slug` | Просмотр страниц проекта, заполнение брифа, контактных данных, паспортных данных |
-| **Подрядчик** | id + slug | `/contractor/:id` | Просмотр задач, загрузка фото, комментарии, редактирование профиля |
+Основная платформа обслуживает три роли:
+
+| Роль | Канонический вход | Защищённый маршрут | Возможности |
+|------|-------------------|--------------------|-------------|
+| **Дизайнер / Админ** | `/login?role=admin` (`/admin/login` как alias) | `/admin` | Полное управление проектами, клиентами, подрядчиками, галереей, документами |
+| **Клиент** | `/login?role=client` (`/client/login`, `/project/login` как alias) | `/client/:slug`, `/project/:slug` | Просмотр страниц проекта, заполнение брифа, контактных данных, паспортных данных |
+| **Подрядчик** | `/login?role=contractor` (`/contractor/login` как alias) | `/contractor/:id` | Просмотр задач, загрузка фото, комментарии, редактирование профиля |
+
+Отдельные контуры репозитория:
+
+- `messenger/web` + `messenger/core` — самостоятельный messenger-продукт.
+- `services/communications-service` — relay/signaling сервис для communications.
 
 ---
 
@@ -17,7 +24,7 @@
 | Фреймворк | Nuxt | 4.3.x |
 | UI | Vue 3 Composition API + @nuxt/ui 3 | — |
 | Стили | Tailwind CSS 4 + Glassmorphism custom CSS | — |
-| Стейт | Pinia (подключён, не активен) | — |
+| Стейт | Main app: composables + `useState()`; Pinia подключён как reference/опция | — |
 | Валидация | Zod | 3.24.x |
 | БД | PostgreSQL 16 (Docker) | — |
 | ORM | Drizzle ORM | 0.41.x |
@@ -56,36 +63,32 @@ pnpm db:studio     # Drizzle Studio (GUI)
 ## Структура проекта
 
 ```
-├── app/                          # Nuxt 4 app directory
-│   ├── components/               # 60 Vue-компонентов
-│   │   ├── Admin*.vue            # Компоненты админки (30+)
-│   │   ├── Client*.vue           # Клиентские компоненты (15+)
-│   │   ├── Gallery*.vue          # Компоненты галереи
-│   │   ├── Material*.vue         # Компоненты свойств материалов
-│   │   ├── UI*.vue               # Дизайн-система / тема
-│   │   ├── App*.vue              # Переиспользуемые UI-примитивы
-│   │   └── admin/                # Подкомпоненты навигации
-│   ├── composables/              # 10 composables
-│   ├── layouts/                  # 3 layout'a (default, admin, contractor)
-│   ├── middleware/               # 3 middleware (admin, client, contractor)
-│   ├── pages/                    # 19 страниц
-│   ├── plugins/                  # 4 клиентских плагина
-│   ├── assets/css/main.css       # Глобальные стили (2055 строк)
+├── app/                          # Основная Nuxt 4 платформа
+│   ├── components/               # Компоненты admin / client / UI / chat
+│   ├── composables/              # Main app state через composables + useState()
+│   ├── layouts/                  # admin, contractor, default
+│   ├── middleware/               # admin, client, contractor, admin-project-canonical
+│   ├── pages/                    # admin / client / contractor / project / chat + auth
+│   ├── plugins/                  # Клиентские плагины
+│   ├── assets/css/main.css       # Глобальные стили основной платформы
 │   └── utils/                    # Клиентские утилиты
-├── server/                       # Nitro backend
-│   ├── api/                      # 95 API-маршрутов
-│   ├── db/                       # Drizzle ORM (schema + connection)
-│   ├── middleware/               # 4 серверных middleware (security, rate-limit, body-limit, CSRF)
-│   ├── plugins/                  # 2 серверных плагина (CSP nonce, error sanitizer)
-│   ├── utils/                    # 6 серверных утилит
-│   └── data/                     # Справочные данные (suggestions.json)
-├── shared/                       # Общий код (фронт + бэк)
-│   ├── types/                    # 12 файлов типов и Zod-схем
-│   ├── constants/                # 2 файла констант (pages, profile-fields)
-│   └── utils/                    # 2 файла утилит (roadmap, work-status)
+├── server/                       # Nitro backend основной платформы
+│   ├── api/                      # H3 endpoint-ы
+│   ├── db/                       # Drizzle schema, index, migrations
+│   ├── middleware/               # security / body / csrf / rate-limit
+│   ├── plugins/                  # Nitro plugins
+│   ├── utils/                    # auth, body, query, relay, storage, AI helpers
+│   └── data/                     # Справочные данные
+├── shared/                       # Общие типы, константы и утилиты
+├── messenger/                    # Standalone messenger
+│   ├── web/                      # Nuxt 4 client-only shell (M3/Vuetify)
+│   ├── core/                     # Fastify/WebSocket backend
+│   └── ecosystem*.config.cjs     # Runtime / export configs
+├── services/
+│   └── communications-service/   # Relay / signaling service
 ├── docs/                         # Документация
-├── scripts/                      # Скрипты миграций и деплоя
-└── public/                       # Статика (uploads, furniture-generator)
+├── scripts/                      # Скрипты миграций, deploy, export, seed
+└── public/                       # Статика (uploads, generators)
 ```
 
 ---
@@ -304,7 +307,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 
 | Layout | Файл | Используется | Описание |
 |--------|------|-------------|---------|
-| `default` | `layouts/default.vue` | `/`, login-страницы, клиентские страницы | Минимальный: header + slot |
+| `default` | `layouts/default.vue` | `/`, `/login`, `/register`, `/recover`, alias login-страницы, client/project flow | Базовый public/auth layout |
 | `admin` | `layouts/admin.vue` | `/admin/**` | Полная навигация + UIDesignPanel + sidebar |
 | `contractor` | `layouts/contractor.vue` | `/contractor/**` | Header подрядчика |
 
@@ -312,9 +315,11 @@ pnpm db:studio     # Drizzle Studio (GUI)
 
 | Middleware | Файл | Проверяет | Редирект при ошибке |
 |-----------|------|----------|-------------------|
-| `admin` | `middleware/admin.ts` | role = `designer` | `/admin/login` |
-| `client` | `middleware/client.ts` | role ∈ {`client`, `designer`, `admin`} + slug | `/client/login` |
-| `contractor` | `middleware/contractor.ts` | role ∈ {`contractor`, `designer`, `admin`} | `/contractor/login` |
+| `admin` | `middleware/admin.ts` | role ∈ {`admin`, `designer`} | `/admin/login` |
+| `client` | `middleware/client.ts` | role ∈ {`client`, `designer`, `admin`} + проверка `projectSlug` для client-session | `/client/login` |
+| `contractor` | `middleware/contractor.ts` | role ∈ {`contractor`, `designer`, `admin`} + self-guard по `contractorId` | `/contractor/login` |
+
+Role-specific login pages остаются alias-маршрутами и редиректят в единый auth-flow `/login?role=...`.
 
 ---
 

@@ -423,8 +423,9 @@ CRUD шаблонов (built-in защищены от редактировани
 
 | Маршрут | Компоненты | Назначение |
 |---------|-----------|-----------|
+| `/login?role=admin` | inline | Каноническая единая точка входа администратора / дизайнера |
+| `/admin/login` | redirect | Alias: мгновенный редирект в `/login?role=admin` |
 | `/admin` | inline | Дашборд проектов (создание, список карточек) |
-| `/admin/login` | inline | Форма входа |
 | `/admin/projects/:slug` | 30+ Admin/Client-компонентов (через `pageComponentMap`) | Детали проекта (система табов) |
 | `/admin/clients` | `AppAddressInput` | Список клиентов + CRUD |
 | `/admin/contractors` | `AdminContractorCabinet`, `AppAddressInput` | Список подрядчиков + CRUD |
@@ -438,21 +439,27 @@ CRUD шаблонов (built-in защищены от редактировани
 
 | Маршрут | Назначение |
 |---------|-----------|
-| `/client/login` | Вход клиента (slug проекта) |
+| `/login?role=client` | Канонический вход клиента по логину/паролю; внутри страницы сохранён legacy-вход по коду проекта |
+| `/client/login` | Alias: редирект в `/login?role=client` |
+| `/project/login` | Alias: редирект в `/login?role=client` |
 | `/client/:slug` | Кабинет клиента (sidebar + динамические компоненты по `getClientPages()`) |
+| `/project/:slug` | Alias клиентского кабинета / project-view |
 
 ### 8.3. Contractor-страницы
 
 | Маршрут | Назначение |
 |---------|-----------|
-| `/contractor/login` | Вход подрядчика |
+| `/login?role=contractor` | Канонический вход подрядчика по логину/паролю; внутри страницы сохранён legacy-вход по ID и коду доступа |
+| `/contractor/login` | Alias: редирект в `/login?role=contractor` |
 | `/contractor/:id` | Кабинет подрядчика (профиль, задачи, фото, документы, сотрудники) |
 
 ### 8.4. Публичная
 
 | Маршрут | Назначение |
 |---------|-----------|
-| `/` | Лендинг (ссылки на входы) |
+| `/` | Лендинг (ссылки на unified auth и alias-входы) |
+| `/chat/login` | Вход во встроенный standalone chat shell |
+| `/chat` | Встроенный communications/chat контур |
 
 ### 8.5. Маппинг `pageComponentMap` (admin/projects/[slug].vue)
 
@@ -499,9 +506,9 @@ client_sign_off   → AdminClientSignOff
 
 | Middleware | Роли | Редирект | Примечание |
 |-----------|------|---------|-----------|
-| `admin.ts` | `designer` | `/admin/login` | Проверяет admin-сессию через `GET /api/auth/me` |
-| `client.ts` | `client`, `designer`, `admin` | `/client/login` | + проверка slug проекта |
-| `contractor.ts` | `contractor`, `designer`, `admin` | `/contractor/login` | Проверяет contractor-сессию |
+| `admin.ts` | `admin`, `designer` | `/admin/login` | Проверяет admin-сессию через `GET /api/auth/me`; alias ведёт в `/login?role=admin` |
+| `client.ts` | `client`, `designer`, `admin` | `/client/login` | + проверка `projectSlug` для client-session |
+| `contractor.ts` | `contractor`, `designer`, `admin` | `/contractor/login` | Проверяет contractor-сессию и канонизирует `contractorId` для contractor-role |
 
 ### 9.3. Plugins (client-side)
 

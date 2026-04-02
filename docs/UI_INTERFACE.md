@@ -632,20 +632,24 @@ app/
 │   │   ├── art.vue                   ← арт-объекты
 │   │   └── moodboards.vue            ← мудборды
 │   ├── admin/
-│   │   ├── login.vue                 ← вход администратора
+│   │   ├── login.vue                 ← alias → /login?role=admin
 │   │   └── index.vue                 ← панель администратора
-│   ├── designer/
-│   │   ├── login.vue                 ← вход дизайнера
-│   │   └── [id]/index.vue            ← кабинет дизайнера
+│   ├── chat/                         ← встроенный standalone chat shell
+│   ├── client/                       ← клиентский кабинет
+│   ├── contractor/                   ← кабинет подрядчика
+│   ├── project/                      ← alias client/project-view
+│   ├── login.vue                     ← unified auth по role query
+│   ├── register.vue                  ← unified register
+│   └── recover.vue                   ← unified recovery
 ├── layouts/
 │   ├── admin.vue       ← sidebar + util-bar + search
 │   ├── contractor.vue  ← упрощённый лейаут подрядчика
 │   └── default.vue     ← клиентский / login-страницы
 ├── middleware/
-│   ├── admin.ts        ← role === 'designer'
+│   ├── admin-project-canonical.ts ← canonical project view
+│   ├── admin.ts        ← role === 'admin' | 'designer'
 │   ├── client.ts       ← role === 'client' | 'designer' | 'admin'
 │   ├── contractor.ts   ← role === 'contractor' | 'designer' | 'admin'
-│   └── project.ts
 └── components/
     ├── Admin*.vue      ← компоненты для роли дизайнера
     ├── Client*.vue     ← компоненты для роли клиента

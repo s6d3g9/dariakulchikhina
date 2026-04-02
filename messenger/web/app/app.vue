@@ -1,5 +1,14 @@
 <script setup lang="ts">
 const settingsModel = useMessengerSettings()
+const install = useMessengerInstall()
+
+function syncDisplayModeDataAttribute(isStandalone: boolean) {
+  if (!import.meta.client) {
+    return
+  }
+
+  document.documentElement.dataset.messengerDisplayMode = isStandalone ? 'standalone' : 'browser'
+}
 
 function isEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
@@ -83,12 +92,21 @@ useHead(() => ({
 onMounted(() => {
   settingsModel.hydrate()
   detachTouchZoomLock = installTouchZoomLock()
+  syncDisplayModeDataAttribute(install.isStandalone.value)
 })
 
 watch(
   () => settingsModel.resolvedTheme.value.themeColor,
   (themeColor) => {
     syncRootBackground(themeColor)
+  },
+  { immediate: true },
+)
+
+watch(
+  () => install.isStandalone.value,
+  (isStandalone) => {
+    syncDisplayModeDataAttribute(isStandalone)
   },
   { immediate: true },
 )

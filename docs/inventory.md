@@ -2,6 +2,7 @@
 
 > Nuxt 4 + Drizzle ORM + PostgreSQL 16. Дизайн-студия: кабинет admin / client / contractor.  
 > **Обновлено: 2026-03-04** — добавлены AdminSearch, AdminProjectStatusBar. Отмечены исправленные проблемы (✅ fixed). Полный справочник → [ARCHITECTURE.md](ARCHITECTURE.md)
+> Важно: это историческая инвентаризация компонентного слоя. Для актуальной схемы auth, state и маршрутов ориентируйся на [ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md) и [UI_INTERFACE.md](UI_INTERFACE.md).
 
 ---
 
@@ -82,9 +83,9 @@
 ### `client/`
 | Файл | Описание | Layout/MW | Заметки |
 |------|---------|-----------|---------|
-| `login.vue` | Выбор проекта (список из `/api/public/projects`) | default | Tailwind + glass |
-| `brief-login.vue` | Вход по ID + PIN | default | Glass design |
-| `brief/[clientId].vue` | Legacy-редирект → `self_profile` или `brief-login` | default/client-brief | ~40 строк |
+| `login.vue` | Alias-редирект в unified auth `/login?role=client` | default | Legacy entry page; основной client auth живёт в `app/pages/login.vue` |
+| `brief-login.vue` | Исторический маршрут | — | В текущем worktree отсутствует; legacy brief-flow больше не является активной частью client routing |
+| `brief/[clientId].vue` | Исторический маршрут | — | В текущем worktree отсутствует; упоминание сохранено только как след legacy brief-flow |
 | `[slug]/index.vue` | Дашборд клиентского кабинета: фазы, инфо-блоки, менеджер | cabinet/client | Импортирует shared roadmap utils |
 | `[slug]/[page].vue` | Мета-роутер: по page slug рендерит соответствующий Client-компонент | cabinet/client | ~35 строк; для `self_profile` и `brief` рендерит `AdminSmartBrief` с `clientMode` |
 
@@ -111,18 +112,19 @@
 
 | Файл | Описание | Заметки |
 |------|---------|---------|
-| `admin.ts` | Проверяет `/api/auth/me` → `role === 'designer'`, иначе → `/admin/login` | Рабочий |
-| `client.ts` | **Пустой** — `defineNuxtRouteMiddleware(() => {})` | ⚠ Auth выключена |
-| `client-brief.ts` | **Пустой** | ⚠ Auth выключена |
-| `contractor.ts` | **Пустой** (с комментарием «temporarily disabled») | ⚠ Auth выключена |
+| `admin-project-canonical.ts` | Канонизирует admin project-view и связанные query/slug переходы | Используется вместе с admin shell |
+| `admin.ts` | Проверяет `/api/auth/me` → `role ∈ {'admin','designer'}` | При ошибке ведёт на `/admin/login` → alias unified auth `/login?role=admin` |
+| `client.ts` | Проверяет `client` / `admin` / `designer` сессию и `projectSlug` для client-role | Клиентский guard активен |
+| `contractor.ts` | Проверяет `contractor` / `admin` / `designer` сессию и канонизирует `contractorId` | Contractor guard активен |
 
 ---
 
-## 5. `app/stores/`
+## 5. State layer
 
-| Файл | Описание | Заметки |
+| Слой | Описание | Заметки |
 |------|---------|---------|
-| `auth.ts` | Pinia-стор: `admin`, `clientSlug`, `contractorId`. Action `fetchMe()` из `/api/auth/me` | ⚠ **Не используется** ни одним компонентом; все auth-проверки идут через middleware или прямой `$fetch` |
+| `app/composables/**` | Основной state-layer main app: role-aware composables и `useState()` | Актуальный контракт |
+| `app/stores/` | В текущем worktree каталог отсутствует | Pinia подключён в проекте, но не является основным state-layer |
 
 ---
 
@@ -263,8 +265,8 @@
 | 1 | **CSS-префикс `acp-` используется дважды** | `AdminClientProfile` и `AdminContractorsProfile` |
 | 2 | **CSS-префикс `ws-` используется дважды** | `AdminWorkStatus` и `ClientWorkStatus` |
 | 3 | **`workTypeLabel()` определена 4 раза** | `AdminContractorsProfile`, `ClientContractorsProfile`, `ClientTimeline`, `contractor/[id]/index.vue` — все с разным набором ключей |
-| 4 | **Middleware client/contractor отключены** | `client.ts`, `client-brief.ts`, `contractor.ts` — пустые заглушки; любой пользователь может видеть все данные |
-| 5 | **Auth store не используется** | `stores/auth.ts` создан но ни разу не импортируется |
+| 4 | **Исторический вывод про отключённые middleware устарел** | В текущем worktree `client.ts` и `contractor.ts` активны, а `client-brief.ts` удалён вместе с legacy brief-flow |
+| 5 | **Исторический вывод про auth store устарел** | В текущем worktree основной state-layer живёт в composables/useState, а `app/stores/` отсутствует |
 
 ### 🟡 Дублирование логики
 

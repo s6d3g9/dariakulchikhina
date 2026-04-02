@@ -3,6 +3,7 @@
 > Дата: авто-генерация  
 > Область: `app/` — компоненты, страницы, лейауты, middleware, store, app.vue  
 > **Обновлено: 2026-03-03** — отмечены исправленные проблемы (✅ fixed)
+> Важно: документ полезен как исторический аудит компонентного слоя, но auth/routes/state в нём частично устарели. Для текущего контракта см. [ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md) и [UI_INTERFACE.md](UI_INTERFACE.md).
 
 ---
 
@@ -373,10 +374,10 @@
 - **API**: `GET /api/roadmap-templates`, `POST /api/roadmap-templates`, `PUT /api/roadmap-templates/${key}`, `DELETE /api/roadmap-templates/${key}`
 - **Импорты**: `CLIENT_TYPE_OPTIONS`, `OBJECT_TYPE_OPTIONS`, `ROADMAP_COMPLEXITY_OPTIONS`, `ROADMAP_STAGE_TYPE_OPTIONS`
 
-#### pages/admin/login.vue (51 строка)
+#### pages/admin/login.vue
 - **Layout**: default
-- **Назначение**: Форма входа для дизайнера
-- **API**: `POST /api/auth/login`
+- **Назначение**: Alias-страница, которая сразу редиректит в `/login?role=admin`
+- **API**: Нет; основная логика входа живёт в `pages/login.vue`
 
 #### pages/admin/gallery/*.vue (5 файлов, каждый ~6 строк)
 - Тонкие обёртки над `AdminGallery`:
@@ -390,18 +391,16 @@
 
 #### pages/client/login.vue
 - **Layout**: default
-- **Назначение**: Выбор проекта для входа (список всех доступных)
-- **API**: `GET /api/public/projects`
+- **Назначение**: Alias-страница, которая сразу редиректит в `/login?role=client`
+- **API**: Нет; legacy client login встроен как secondary flow в `pages/login.vue`
 
 #### pages/client/brief-login.vue
-- **Layout**: default
-- **Назначение**: Вход по ID + PIN-код
-- **API**: `POST /api/auth/client-id-login`
+- Исторический маршрут; в текущем worktree отсутствует.
+- Legacy brief-flow больше не является активной частью client routing.
 
 #### pages/client/brief/[clientId].vue
-- **Layout**: default, **Middleware**: client-brief
-- **Назначение**: Legacy-редирект: загружает проект клиента → редирект в `/client/${slug}/self_profile`
-- **API**: `GET /api/clients/${clientId}/brief`
+- Исторический маршрут; в текущем worktree отсутствует.
+- Прежний `client-brief` middleware удалён вместе с legacy brief-flow.
 
 #### pages/client/[slug]/index.vue (155 строк)
 - **Layout**: cabinet, **Middleware**: client
@@ -419,8 +418,8 @@
 
 #### pages/contractor/login.vue
 - **Layout**: default
-- **Назначение**: Вход по ID подрядчика
-- **API**: `POST /api/auth/contractor-login`
+- **Назначение**: Alias-страница, которая сразу редиректит в `/login?role=contractor`
+- **API**: Нет; legacy contractor login встроен как secondary flow в `pages/login.vue`
 
 #### pages/contractor/[id]/index.vue (1834 строки) ⚠️ САМЫЙ БОЛЬШОЙ ФАЙЛ
 - **Layout**: default (собственный layout внутри)
@@ -448,19 +447,18 @@
 
 | Файл | Строк | Логика |
 |------|-------|--------|
-| **admin.ts** | 8 | Проверяет `role === 'designer'` через `GET /api/auth/me`, редирект на `/admin/login` |
-| **client.ts** | 1 | ⚠️ Пустой (noop) — auth отключён |
-| **contractor.ts** | 1 | ⚠️ Пустой (noop) — комментарий «auth temporarily disabled» |
-| **client-brief.ts** | 1 | ⚠️ Пустой (noop) |
+| **admin-project-canonical.ts** | — | Канонизирует admin project-view и связанные переходы |
+| **admin.ts** | — | Проверяет `role ∈ {'admin','designer'}` через `GET /api/auth/me`, редирект на `/admin/login` |
+| **client.ts** | — | Проверяет `role ∈ {'client','designer','admin'}` и сверяет `projectSlug` для client-session |
+| **contractor.ts** | — | Проверяет `role ∈ {'contractor','designer','admin'}` и канонизирует `contractorId` |
 
 ---
 
-## 5. Store (`app/stores/auth.ts`)
+## 5. State layer
 
-- **Pinia store** `useAuthStore`
-- **State**: `admin`, `adminName`, `clientSlug`, `contractorId`, `loaded`
-- **Actions**: `fetchMe()` → `GET /api/auth/me`, `clear()`
-- ⚠️ **Не используется** ни одним компонентом/страницей! Все компоненты делают `useFetch('/api/auth/me')` напрямую.
+- Main app опирается на `app/composables/**` и `useState()`, а не на Pinia-first схему.
+- Исторический вывод про `app/stores/auth.ts` устарел: в текущем worktree каталог `app/stores/` отсутствует.
+- Если в задаче появляется Pinia, воспринимай это как адресное расширение, а не как базовый контракт основной платформы.
 
 ---
 
@@ -530,14 +528,14 @@ await $fetch(`/api/projects/${slug}`, { method: 'PUT', body: { profile: { ...pro
 | Файл | Проблема |
 |------|----------|
 | `app/layouts/contractor.vue` | Не используется — `contractor/[id]/index.vue` определяет layout: 'default' и рендерит свой header/sidebar |
-| `app/stores/auth.ts` | Ни один компонент не импортирует `useAuthStore` |
+| `app/stores/auth.ts` | Историческое наблюдение устарело: текущий worktree использует composables-first state layer |
 | `app/components/admin/` | Пустая директория |
 | `app/components/client/` | Пустая директория |
 | `app/components/ui/` | Пустая директория |
 
-### 7.6 ⚠️ Отключённая авторизация
+### 7.6 Актуализация auth-схемы
 
-3 из 4 middleware — noop (пустые). Клиентский и подрядческий кабинеты открыты без авторизации. Только admin-middleware проверяет `role === 'designer'`.
+Исторический вывод о noop middleware устарел. В текущем worktree `admin.ts`, `client.ts` и `contractor.ts` активны, используют `GET /api/auth/me` и выполняют role-aware redirect / canonicalization.
 
 ### 7.7 Захардкоженные значения — сводка
 

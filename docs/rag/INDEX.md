@@ -1,7 +1,7 @@
 # RAG Index — навигатор по документации проекта
 
 > Этот файл читай ПЕРВЫМ. Он говорит какой файл открывать для каждой задачи.
-> Проект: Nuxt 4 + Vue 3 + Tailwind 4 + Nuxt UI 3 + Pinia + Drizzle + ioredis + H3 + Zod
+> Проект: Nuxt 4 + Vue 3 + Tailwind 4 + Nuxt UI 3 + composables/useState + Drizzle + ioredis + H3 + Zod
 
 ---
 
@@ -18,7 +18,7 @@
 | Nuxt UI CSS-переменные (`--ui-*`) | [TAILWIND_TOKENS.md](TAILWIND_TOKENS.md#7-nuxt-ui--css-variables) |
 | Vue SFC CSS, `:deep()`, `v-bind` в CSS | [VUE_NUXT_GUIDE.md](VUE_NUXT_GUIDE.md) |
 | Composables, `useXxx` паттерны | [VUE_NUXT_GUIDE.md](VUE_NUXT_GUIDE.md) |
-| Pinia store (defineStore, storeToRefs) | [PINIA_STORES.md](PINIA_STORES.md) |
+| Pinia reference (если задача явно требует store) | [PINIA_STORES.md](PINIA_STORES.md) |
 | API endpoint (H3 + Zod валидация) | [BACKEND_GUIDE.md](BACKEND_GUIDE.md) |
 | Drizzle ORM (schema, select, insert) | [DRIZZLE_PATTERNS.md](DRIZZLE_PATTERNS.md) |
 | Redis / кэш / сессии | [REDIS_PATTERNS.md](REDIS_PATTERNS.md) |
