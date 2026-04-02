@@ -2430,6 +2430,7 @@ html[data-messenger-display-mode='standalone'] .messenger-shell[data-messenger-k
   --messenger-composer-height: 76px;
   --messenger-call-analysis-width: 0px;
   --messenger-chat-keyboard-offset: var(--messenger-keyboard-offset, 0px);
+  --messenger-call-header-keyboard-reserve: 0px;
 }
 
 @media (min-width: 980px) {
@@ -2460,6 +2461,18 @@ html[data-messenger-display-mode='standalone'] .messenger-shell[data-messenger-k
   flex-direction: column;
   overflow: hidden;
   position: relative;
+}
+
+.messenger-shell[data-messenger-keyboard='open'] .section-block--chat.section-block--chat-call-header-visible {
+  padding-top: var(--messenger-chat-header-height);
+}
+
+.messenger-shell[data-messenger-keyboard='open'] .section-block--chat.section-block--chat-call-header-visible > .chat-header--call-visible {
+  position: fixed;
+  top: calc(var(--messenger-viewport-offset-top, 0px) + var(--messenger-safe-top));
+  left: var(--messenger-safe-left);
+  right: var(--messenger-safe-right);
+  z-index: 42;
 }
 
 /* ── Chat Header ─────────────────────────────────────────── */

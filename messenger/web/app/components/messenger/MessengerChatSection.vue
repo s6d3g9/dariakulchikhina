@@ -2409,6 +2409,7 @@ onBeforeUnmount(() => {
       :class="{
         'section-block--chat-empty': !conversations.activeConversation.value,
         'section-block--chat-details-open': detailsOpen && conversations.activeConversation.value,
+        'section-block--chat-call-header-visible': headerCallVisible,
         'section-block--chat-call-analysis-open': calls.analysisPanelOpen.value,
         'section-block--chat-photo-open': photoFeedOpen,
         'section-block--chat-drop-active': desktopDropActive,
