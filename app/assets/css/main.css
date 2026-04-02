@@ -507,6 +507,27 @@ html.dark select:-webkit-autofill:focus {
   justify-content: center;
   padding: 20px;
   touch-action: manipulation;
+  --auth-form-text: color-mix(in srgb, #171717 82%, var(--glass-text) 18%);
+  --auth-form-muted: color-mix(in srgb, #171717 62%, transparent);
+  --auth-form-border: color-mix(in srgb, #171717 18%, transparent);
+  --auth-form-surface: color-mix(in srgb, rgba(255, 255, 255, 0.92) 88%, var(--glass-bg) 12%);
+  --auth-submit-bg: color-mix(in srgb, #171717 86%, var(--auth-role-accent, var(--glass-text)) 14%);
+  --auth-submit-text: #f4f1ea;
+  --auth-submit-border: color-mix(in srgb, #171717 20%, transparent);
+  --auth-submit-secondary-bg: color-mix(in srgb, rgba(255, 255, 255, 0.92) 82%, var(--glass-bg) 18%);
+  --auth-submit-secondary-text: color-mix(in srgb, #171717 84%, var(--glass-text) 16%);
+}
+
+html.dark .auth-root {
+  --auth-form-text: var(--glass-text);
+  --auth-form-muted: color-mix(in srgb, var(--glass-text) 72%, transparent);
+  --auth-form-border: color-mix(in srgb, var(--glass-text) 24%, transparent);
+  --auth-form-surface: color-mix(in srgb, var(--color-surface, var(--glass-bg)) calc(var(--glass-opacity, 0.36) * 100%), transparent);
+  --auth-submit-bg: color-mix(in srgb, var(--glass-text) 88%, var(--auth-role-accent, var(--glass-text)) 12%);
+  --auth-submit-text: color-mix(in srgb, var(--glass-page-bg) 92%, #ffffff 8%);
+  --auth-submit-border: color-mix(in srgb, var(--glass-text) 26%, transparent);
+  --auth-submit-secondary-bg: color-mix(in srgb, var(--glass-text) 8%, transparent);
+  --auth-submit-secondary-text: var(--glass-text);
 }
 
 .auth-root::before,
@@ -854,19 +875,31 @@ html.dark select:-webkit-autofill:focus {
 .auth-root .chat-auth-input,
 .auth-root input.auth-input,
 .auth-root input.chat-auth-input {
-  color: var(--glass-text) !important;
+  color: var(--auth-form-text) !important;
   -webkit-text-fill-color: currentColor !important;
   caret-color: currentColor;
+  background: var(--auth-form-surface);
+  border-bottom-color: var(--auth-form-border);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--auth-form-border) 72%, transparent);
+  border-radius: 12px 12px 0 0;
 }
 
 .auth-root .auth-input:focus,
 .auth-root .chat-auth-input:focus,
 .auth-root input.auth-input:focus,
 .auth-root input.chat-auth-input:focus {
-  color: var(--glass-text);
+  color: var(--auth-form-text);
   -webkit-text-fill-color: currentColor !important;
   caret-color: currentColor;
-  border-bottom-color: var(--ds-accent, var(--glass-text));
+  background: color-mix(in srgb, var(--auth-form-surface) 88%, #ffffff 12%);
+  border-bottom-color: var(--auth-role-accent, var(--ds-accent, var(--glass-text)));
+}
+
+.auth-root .auth-input::placeholder,
+.auth-root .chat-auth-input::placeholder,
+.auth-root input.auth-input::placeholder,
+.auth-root input.chat-auth-input::placeholder {
+  color: color-mix(in srgb, var(--auth-form-text) 38%, transparent);
 }
 
 .auth-root .auth-input:-webkit-autofill,
@@ -883,6 +916,20 @@ html.dark select:-webkit-autofill:focus {
 .auth-root input.chat-auth-input:-webkit-autofill:focus {
   -webkit-text-fill-color: currentColor !important;
   caret-color: currentColor;
+  -webkit-box-shadow: 0 0 0 1000px var(--auth-form-surface) inset;
+  box-shadow: 0 0 0 1000px var(--auth-form-surface) inset;
+}
+
+.auth-root .auth-card,
+.auth-root .auth-secondary,
+.auth-root .auth-title,
+.auth-root .auth-subtitle,
+.auth-root .seed-title,
+.auth-root .seed-copy,
+.auth-root .auth-secondary__title,
+.auth-root .auth-links a,
+.auth-root .auth-link-btn {
+  color: var(--auth-form-text);
 }
 
 .auth-panel,
@@ -911,7 +958,55 @@ html.dark select:-webkit-autofill:focus {
 .auth-panel__eyebrow,
 .auth-panel__fact-label,
 .chat-auth-label {
-  color: color-mix(in srgb, var(--glass-text) 72%, transparent);
+  color: var(--auth-form-muted);
+}
+
+.auth-root .auth-submit.a-btn-save,
+.auth-root .auth-submit.a-btn-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 1px solid var(--auth-submit-border);
+  transition:
+    border-color var(--ds-transition, 180ms ease),
+    background var(--ds-transition, 180ms ease),
+    color var(--ds-transition, 180ms ease),
+    transform var(--ds-transition, 180ms ease),
+    box-shadow var(--ds-transition, 180ms ease);
+}
+
+.auth-root .auth-submit.a-btn-save {
+  background: var(--auth-submit-bg);
+  color: var(--auth-submit-text);
+  box-shadow: 0 18px 32px color-mix(in srgb, var(--auth-role-accent, var(--glass-text)) 18%, transparent);
+}
+
+.auth-root .auth-submit.a-btn-sm,
+.auth-root .auth-submit.auth-submit--secondary.a-btn-sm {
+  background: var(--auth-submit-secondary-bg);
+  color: var(--auth-submit-secondary-text);
+  border-color: var(--auth-form-border);
+  box-shadow: none;
+}
+
+.auth-root .auth-submit.a-btn-save:hover,
+.auth-root .auth-submit.a-btn-save:focus-visible {
+  background: color-mix(in srgb, var(--auth-submit-bg) 88%, var(--auth-role-accent, var(--glass-text)) 12%);
+  color: var(--auth-submit-text);
+  border-color: color-mix(in srgb, var(--auth-submit-border) 72%, var(--auth-role-accent, var(--glass-text)) 28%);
+}
+
+.auth-root .auth-submit.a-btn-sm:hover,
+.auth-root .auth-submit.a-btn-sm:focus-visible {
+  background: color-mix(in srgb, var(--auth-submit-secondary-bg) 86%, var(--auth-role-accent, var(--glass-text)) 14%);
+  color: var(--auth-submit-secondary-text);
+  border-color: color-mix(in srgb, var(--auth-form-border) 62%, var(--auth-role-accent, var(--glass-text)) 38%);
+}
+
+.auth-root .auth-submit.a-btn-save:active,
+.auth-root .auth-submit.a-btn-sm:active {
+  transform: translateY(0);
 }
 
 html[data-design-mode='liquid-glass'] .auth-panel,
@@ -5785,6 +5880,132 @@ html[data-concept="minale"] .u-label {
   font-size: 0.65rem !important;
   letter-spacing: 0.18em !important;
   line-height: 2 !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-card,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-secondary,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-title,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-subtitle,
+html[data-concept="minale"]:not(.dark) .auth-root .seed-title,
+html[data-concept="minale"]:not(.dark) .auth-root .seed-copy,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-secondary__title,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-links a,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-link-btn {
+  color: #171717 !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-role-btn {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #171717 !important;
+  border-color: rgba(23, 23, 23, 0.14) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-role-btn--active {
+  background: #171717 !important;
+  color: #f4f1ea !important;
+  border-color: #171717 !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-role-btn__note {
+  color: rgba(23, 23, 23, 0.72) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-role-btn--active .auth-role-btn__note {
+  color: rgba(244, 241, 234, 0.72) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-field label {
+  color: rgba(23, 23, 23, 0.56) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-field .glass-field {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(23, 23, 23, 0.12) !important;
+  border-bottom: 1px solid rgba(23, 23, 23, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 0 14px !important;
+  box-shadow: inset 0 -1px 0 rgba(23, 23, 23, 0.08) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-field .glass-field:focus-within {
+  border-color: rgba(23, 23, 23, 0.18) !important;
+  border-bottom-color: color-mix(in srgb, var(--auth-role-accent, #171717) 64%, #171717 36%) !important;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--auth-role-accent, #171717) 64%, #171717 36%) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-input,
+html[data-concept="minale"]:not(.dark) .auth-root input.auth-input,
+html[data-concept="minale"]:not(.dark) .auth-root textarea.auth-input {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #171717 !important;
+  border: 1px solid rgba(23, 23, 23, 0.12) !important;
+  border-bottom: 1px solid rgba(23, 23, 23, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 12px 14px !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: inset 0 -1px 0 rgba(23, 23, 23, 0.08) !important;
+  -webkit-text-fill-color: #171717 !important;
+  caret-color: #171717 !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-field .glass-field > .auth-input,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-field .glass-field > input.auth-input {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-radius: 0 !important;
+  padding: 12px 0 !important;
+  box-shadow: none !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-input::placeholder,
+html[data-concept="minale"]:not(.dark) .auth-root input.auth-input::placeholder,
+html[data-concept="minale"]:not(.dark) .auth-root textarea.auth-input::placeholder {
+  color: rgba(23, 23, 23, 0.34) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-input:focus,
+html[data-concept="minale"]:not(.dark) .auth-root input.auth-input:focus,
+html[data-concept="minale"]:not(.dark) .auth-root textarea.auth-input:focus {
+  border-color: rgba(23, 23, 23, 0.18) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--auth-role-accent, #171717) 64%, #171717 36%) !important;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--auth-role-accent, #171717) 64%, #171717 36%) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-submit.a-btn-save,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-submit.a-btn-sm {
+  border-radius: 16px !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-submit.a-btn-save {
+  background: #171717 !important;
+  color: #f4f1ea !important;
+  border: 1px solid rgba(23, 23, 23, 0.18) !important;
+  box-shadow: 0 18px 32px rgba(23, 23, 23, 0.12) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-submit.a-btn-save:hover,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-submit.a-btn-save:focus-visible {
+  background: color-mix(in srgb, #171717 88%, var(--auth-role-accent, #171717) 12%) !important;
+  color: #f4f1ea !important;
+  border-color: rgba(23, 23, 23, 0.28) !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-submit.a-btn-sm,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-submit.auth-submit--secondary.a-btn-sm {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #171717 !important;
+  border: 1px solid rgba(23, 23, 23, 0.14) !important;
+  box-shadow: none !important;
+}
+
+html[data-concept="minale"]:not(.dark) .auth-root .auth-submit.a-btn-sm:hover,
+html[data-concept="minale"]:not(.dark) .auth-root .auth-submit.a-btn-sm:focus-visible {
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: #171717 !important;
+  border-color: rgba(23, 23, 23, 0.22) !important;
 }
 
 /* ── Navigation tabs: legible not microscopic ─────────────── */

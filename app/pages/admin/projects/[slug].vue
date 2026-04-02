@@ -201,7 +201,7 @@
             </template>
           </AdminEntityHero>
 
-          <Transition :name="projectContentTransitionName" :css="projectContentTransitionCss" mode="out-in" :duration="projectContentTransitionDuration">
+          <Transition :name="projectContentTransitionName" :css="projectContentTransitionCss" :mode="projectContentTransitionMode" :duration="projectContentTransitionDuration">
             <div :key="contentKey" class="proj-main-inner" :class="{ 'proj-main-inner--after-hero': showBrutalistHero }">
               <!-- contractor preview -->
               <template v-if="contractorPreviewMode">
@@ -209,6 +209,13 @@
                 <template v-else-if="contractorData">
                   <AdminContractorCabinet :contractor-id="contractorPreviewId" />
                 </template>
+                <div v-else class="proj-project-state proj-project-state--inline">
+                  <p class="proj-project-state__title">{{ contractorPreviewStateTitle }}</p>
+                  <p class="proj-project-state__text">{{ contractorPreviewStateText }}</p>
+                  <div class="proj-project-state__actions">
+                    <NuxtLink :to="`/admin/projects/${slug}`" class="a-btn-sm proj-project-state__link">К проекту</NuxtLink>
+                  </div>
+                </div>
               </template>
               <!-- client preview -->
               <component
@@ -1464,7 +1471,12 @@ const projectPagerNextLabel = computed(() => {
   }
   return 'экран →'
 })
-const projectContentTransitionCss = computed(() => projectContentTransitionEffect.value !== 'none')
+const projectContentTransitionCss = computed(() =>
+  !clientPreviewMode.value && !contractorPreviewMode.value && projectContentTransitionEffect.value !== 'none'
+)
+const projectContentTransitionMode = computed<'out-in' | undefined>(() =>
+  clientPreviewMode.value || contractorPreviewMode.value ? undefined : 'out-in'
+)
 const projectContentTransitionName = computed(() =>
   projectContentTransitionEffect.value === 'none' ? 'tab-fade' : `pt-${projectContentTransitionEffect.value}`
 )
@@ -1498,7 +1510,7 @@ onMounted(() => {
 })
 onActivated(() => {
   syncNavToProject()
-  void loadProject()
+  void refresh()
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleWindowProjectViewportKeydown)
@@ -1531,58 +1543,38 @@ const MODERN_PROJECT_PAGES = [
 
 const LEGACY_PROJECT_PAGES = new Set(['materials', 'tz', 'profile_customer'])
 
-const project = ref<any | null>(null)
-const projectPending = ref(false)
-const projectLoadError = ref<unknown>(null)
-let projectLoadToken = 0
+const projectAsyncKey = computed(() => `admin-project-page:${slug.value || 'empty'}`)
 
-async function loadProject() {
-  const currentSlug = slug.value.trim()
-  const token = ++projectLoadToken
+const {
+  data: project,
+  pending: projectPending,
+  error: projectLoadError,
+  refresh: refreshProject,
+} = await useAsyncData<any | null>(
+  projectAsyncKey,
+  async () => {
+    const currentSlug = slug.value.trim()
 
-  if (!currentSlug) {
-    project.value = null
-    projectPending.value = false
-    projectLoadError.value = null
-    return null
-  }
-
-  projectPending.value = true
-
-  try {
-    const result = await $fetch(`/api/projects/${currentSlug}`, {
-      headers: import.meta.server ? useRequestHeaders(['cookie']) : undefined,
-    })
-
-    if (token !== projectLoadToken) {
-      return result
-    }
-
-    project.value = result
-    projectLoadError.value = null
-    return result
-  } catch (error) {
-    if (token !== projectLoadToken) {
+    if (!currentSlug) {
       return null
     }
 
-    project.value = null
-    projectLoadError.value = error
-    return null
-  } finally {
-    if (token === projectLoadToken) {
-      projectPending.value = false
-    }
-  }
-}
+    return await ($fetch as any)(`/api/projects/${currentSlug}`, {
+      headers: import.meta.server ? useRequestHeaders(['cookie']) : undefined,
+    })
+  },
+  {
+    default: () => null,
+    watch: [slug],
+  },
+)
 
 async function refresh() {
-  return await loadProject()
+  return await refreshProject()
 }
 
-watch(slug, async () => {
+watch(slug, () => {
   syncNavToProject()
-  await loadProject()
 }, { immediate: true })
 
 watch(
@@ -1677,12 +1669,70 @@ const pageComponentMap: Record<string, Component> = {
 }
 // ── Contractor preview mode ─────────────────────────────────────────
 const contractorPreviewMode = computed(() => route.query.view === 'contractor')
-const contractorPreviewId   = computed(() => route.query.cid ? Number(route.query.cid) : null)
+const contractorPreviewId = computed<number | null>(() => {
+  const rawId = Array.isArray(route.query.cid) ? route.query.cid[0] : route.query.cid
+  const parsedId = Number(rawId)
 
-const { data: contractorData, pending: contractorPending } = (useFetch as any)(
-  () => contractorPreviewId.value ? `/api/contractors/${contractorPreviewId.value}` : null,
-  { watch: [contractorPreviewId] },
-) as { data: Ref<any>, pending: Ref<boolean> }
+  return Number.isInteger(parsedId) && parsedId > 0 ? parsedId : null
+})
+const hasContractorPreviewTarget = computed(() => contractorPreviewMode.value && contractorPreviewId.value !== null)
+const contractorPreviewAsyncKey = computed(() =>
+  `admin-project-contractor-preview:${slug.value || 'empty'}:${contractorPreviewId.value ?? 'none'}`,
+)
+
+const {
+  data: contractorPreviewResponse,
+  pending: contractorPending,
+  error: contractorPreviewError,
+} = useAsyncData<any | null>(
+  contractorPreviewAsyncKey,
+  async () => {
+    if (!hasContractorPreviewTarget.value || contractorPreviewId.value === null) {
+      return null
+    }
+
+    const contractor = await $fetch(`/api/admin/contractors/${contractorPreviewId.value}/preview`, {
+      headers: import.meta.server ? useRequestHeaders(['cookie']) : undefined,
+    })
+
+    return contractor ?? null
+  },
+  {
+    default: () => null,
+    watch: [hasContractorPreviewTarget, contractorPreviewId],
+  },
+)
+const contractorData = computed(() => contractorPreviewResponse.value ?? null)
+const contractorPreviewStateTitle = computed(() => {
+  if (!hasContractorPreviewTarget.value) {
+    return 'Подрядчик не выбран'
+  }
+
+  if (contractorPreviewError.value) {
+    return 'Не удалось загрузить подрядчика'
+  }
+
+  if (!contractorPending.value && !contractorData.value) {
+    return 'Подрядчик не найден'
+  }
+
+  return 'Подрядчик недоступен'
+})
+const contractorPreviewStateText = computed(() => {
+  if (!hasContractorPreviewTarget.value) {
+    return 'Укажите корректный идентификатор подрядчика или вернитесь к проекту.'
+  }
+
+  if (contractorPreviewError.value) {
+    return 'Проверьте соединение или попробуйте открыть карточку подрядчика позже.'
+  }
+
+  if (!contractorPending.value && !contractorData.value) {
+    return 'Запрошенный подрядчик отсутствует в системе или был удалён.'
+  }
+
+  return 'Карточка подрядчика сейчас недоступна.'
+})
 
 // ── Client preview mode ────────────────────────────────────────
 const clientPreviewMode = computed(() => route.query.view === 'client')
@@ -1690,7 +1740,7 @@ const clientActivePage  = ref('')
 
 // ── Content key: drives fade transition + scroll-reset on page switch ───────
 const contentKey = computed(() => {
-  if (contractorPreviewMode.value) return 'ctr-cabinet'
+  if (contractorPreviewMode.value) return `ctr-${contractorPreviewId.value ?? 'none'}`
   if (clientPreviewMode.value)     return `cli-${clientActivePage.value}`
   return `adm-${currentProjectPage.value}`
 })
@@ -1945,8 +1995,9 @@ watch(currentProjectPage, async (pageSlug, previousPageSlug) => {
 })
 
 // ── Wipe 2: ленивые fetch для разделов с отдельным API ─────────────────────
+const wipe2ExtraServicesAsyncKey = computed(() => `project-wipe2-extra-services:${slug.value || 'empty'}`)
 const { data: _w2ExtraSvcs } = useAsyncData<any[]>(
-  'project-wipe2-extra-services',
+  wipe2ExtraServicesAsyncKey,
   () => contentViewMode.value === 'wipe2' && currentProjectPage.value === 'extra_services'
     ? $fetch<any[]>(`/api/projects/${slug.value}/extra-services`)
     : Promise.resolve([]),
@@ -1958,8 +2009,9 @@ const { data: _w2ExtraSvcs } = useAsyncData<any[]>(
 )
 watch(_w2ExtraSvcs, (v) => { _wipe2ExtraServicesData.value = v || [] }, { immediate: true })
 
+const wipe2WorkStatusAsyncKey = computed(() => `project-wipe2-work-status:${slug.value || 'empty'}`)
 const { data: _w2WorkStatus } = useAsyncData<any[]>(
-  'project-wipe2-work-status',
+  wipe2WorkStatusAsyncKey,
   () => contentViewMode.value === 'wipe2' && currentProjectPage.value === 'work_status'
     ? $fetch<any[]>(`/api/projects/${slug.value}/work-status`)
     : Promise.resolve([]),
@@ -3406,6 +3458,10 @@ html.dark .proj-sheet-frame__card {
   padding: 24px 20px;
   border: 1px solid color-mix(in srgb, var(--glass-text) 10%, transparent);
   background: color-mix(in srgb, var(--glass-text) 3%, transparent);
+}
+
+.proj-project-state--inline {
+  margin: 0 0 24px;
 }
 
 .proj-project-state__title {

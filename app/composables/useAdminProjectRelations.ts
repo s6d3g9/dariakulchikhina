@@ -57,10 +57,20 @@ export function useAdminProjectRelations(options: {
   refreshProject?: () => Promise<unknown>
 }) {
   const adminCatalogs = useAdminCatalogs()
-  const { data: projectRelationsData, refresh: refreshProjectRelations } = (useFetch as any)(
-    () => options.projectSlug.value ? `/api/projects/${options.projectSlug.value}/relations` : null,
-    { default: emptyProjectRelations },
-  ) as { data: Ref<ProjectRelationsData>, refresh: () => Promise<void> }
+  const requestFetch: (url: string) => Promise<ProjectRelationsData> = import.meta.server
+    ? (useRequestFetch() as (url: string) => Promise<ProjectRelationsData>)
+    : ((url: string) => $fetch<ProjectRelationsData>(url))
+  const projectRelationsAsyncKey = computed(() => `admin-project-relations:${options.projectSlug.value || 'none'}`)
+  const { data: projectRelationsData, refresh: refreshProjectRelations } = useAsyncData<ProjectRelationsData>(
+    projectRelationsAsyncKey,
+    () => options.projectSlug.value
+      ? requestFetch(`/api/projects/${options.projectSlug.value}/relations`)
+      : Promise.resolve(emptyProjectRelations()),
+    {
+      default: emptyProjectRelations,
+      watch: [options.projectSlug],
+    },
+  )
 
   const selectedClientId = ref('')
   const linkingClient = ref(false)

@@ -1,5 +1,5 @@
 import { useDb } from '~/server/db/index'
-import { users } from '~/server/db/schema'
+import { contractors, users } from '~/server/db/schema'
 import { eq } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
@@ -25,6 +25,20 @@ export default defineEventHandler(async (event) => {
   const clientSlug = getClientSession(event)
   if (clientSlug) return { role: 'client', projectSlug: clientSlug }
   const contractorId = getContractorSession(event)
-  if (contractorId) return { role: 'contractor', contractorId }
+  if (contractorId) {
+    const db = useDb()
+    const [contractor] = await db
+      .select({ id: contractors.id })
+      .from(contractors)
+      .where(eq(contractors.id, contractorId))
+      .limit(1)
+
+    if (!contractor) {
+      clearContractorSession(event)
+      return { role: null }
+    }
+
+    return { role: 'contractor', contractorId }
+  }
   return { role: null }
 })

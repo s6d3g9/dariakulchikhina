@@ -1,31 +1,42 @@
 <template>
-  <div class="hpc-root">
+  <div ref="controlShell" class="hpc-root">
     <div v-if="pending" class="ent-content-loading">
       <div v-for="i in 6" :key="i" class="ent-skeleton-line" />
     </div>
 
     <template v-else>
 
-      <section class="hpc-control-index" aria-label="Разделы контроля проекта">
+      <nav
+        ref="moduleNavRef"
+        class="hpc-module-nav"
+        :class="{ 'hpc-module-nav--mobile-visible': isMobileModuleDockVisible }"
+        aria-label="Разделы контроля проекта"
+      >
         <button
           v-for="moduleCard in moduleCards"
           :key="moduleCard.id"
           type="button"
-          class="hpc-module-card"
-          :class="{ 'hpc-module-card--active': activeModule === moduleCard.id }"
+          class="hpc-module-nav__btn"
+          :class="{ 'hpc-module-nav__btn--active': activeModule === moduleCard.id }"
+          :aria-current="activeModule === moduleCard.id ? 'page' : undefined"
+          :aria-label="`${moduleCard.label}: ${moduleCard.metric}`"
+          :title="moduleCard.label"
           @click="selectModule(moduleCard.id)"
         >
-          <span class="hpc-module-card__kicker">Модуль</span>
-          <strong class="hpc-module-card__title">{{ moduleCard.label }}</strong>
-          <span class="hpc-module-card__metric">{{ moduleCard.metric }}</span>
-          <span class="hpc-module-card__meta">{{ moduleCard.meta }}</span>
+          <span class="hpc-module-nav__icon-wrap" aria-hidden="true">
+            <span class="hpc-module-nav__glyph">{{ moduleCard.glyph }}</span>
+          </span>
+          <span class="hpc-module-nav__label">{{ moduleCard.navLabel }}</span>
         </button>
-      </section>
+      </nav>
+
+      <div ref="moduleViewportStart" class="hpc-module-anchor" aria-hidden="true" />
 
       <section v-if="activeModule !== 'overview'" class="hpc-module-hero">
         <div>
           <p class="hpc-eyebrow">Контур контроля</p>
           <h2 class="hpc-title">{{ activeModuleCard.label }}</h2>
+          <p class="hpc-module-hero__meta">{{ activeModuleCard.meta }}</p>
         </div>
         <div class="hpc-summary__meta">
           <span class="hpc-chip">{{ activeModuleCard.metric }}</span>
@@ -1150,6 +1161,11 @@ const control = reactive<HybridControl>(ensureHybridControl(undefined))
 const saveState = ref<'idle' | 'saving' | 'error'>('idle')
 const activeSprintId = ref('')
 const activeTaskId = ref('')
+const controlShell = ref<HTMLElement | null>(null)
+const moduleNavRef = ref<HTMLElement | null>(null)
+const moduleViewportStart = ref<HTMLElement | null>(null)
+const isMobileModuleDockVisible = ref(true)
+let moduleDockSyncFrame = 0
 
 const phaseStatusOptions = [
   { value: 'planned', label: 'запланирована' },
@@ -1530,36 +1546,48 @@ const moduleCards = computed(() => ([
   {
     id: 'overview' as const,
     label: 'Обзор',
+    glyph: 'О',
+    navLabel: 'Обзор',
     metric: `${summary.value.phasePercent}% каркаса`,
     meta: control.manager || 'ответственный не назначен',
   },
   {
     id: 'timeline' as const,
     label: 'Таймлайн / Таблица',
+    glyph: 'П',
+    navLabel: 'План',
     metric: timelineWindowLabel.value,
     meta: `${visibleTimelineRows.value.length} строк плана`,
   },
   {
     id: 'phases' as const,
     label: 'Этапы и Спринты',
+    glyph: 'Э',
+    navLabel: 'Этапы',
     metric: `${control.phases.length} фаз / ${control.sprints.length} спринтов`,
     meta: phaseGateStats.value.total ? `${phaseGateStats.value.done}/${phaseGateStats.value.total} гейтов закрыто` : 'гейты не заданы',
   },
   {
     id: 'kanban' as const,
     label: 'Канбан',
+    glyph: 'К',
+    navLabel: 'Канбан',
     metric: `${sprintTaskStats.value.total} задач`,
     meta: sprintTaskStats.value.total ? `${sprintTaskStats.value.done} готово` : 'задачи не заведены',
   },
   {
     id: 'health' as const,
     label: 'Контрольные точки',
+    glyph: 'Т',
+    navLabel: 'Точки',
     metric: `${summary.value.blockerCount} блокеров`,
     meta: control.nextReviewDate || 'обзор не назначен',
   },
   {
     id: 'communications' as const,
     label: 'Звонки и Агенты',
+    glyph: 'А',
+    navLabel: 'Агенты',
     metric: `${coordinationBrief.value.agents.filter(item => item.enabled).length} агентов`,
     meta: control.callInsights.length ? `${control.callInsights.length} звонков в базе` : 'звонки не добавлены',
   },
@@ -1784,7 +1812,7 @@ async function save(value?: unknown) {
 
     markSaved()
     saveState.value = 'idle'
-    if (options.refreshAfter !== false) {
+    if (options.refreshAfter === true) {
       await refresh()
     }
   } catch {
@@ -1810,7 +1838,7 @@ function addSprint() {
   control.sprints.push(sprint)
   activeSprintId.value = sprint.id
   activeTaskId.value = ''
-  save()
+  void save({ refreshAfter: false })
 }
 
 function removeSprint(index: number) {
@@ -1825,7 +1853,7 @@ function removeSprint(index: number) {
     activeTaskId.value = ''
   }
 
-  save()
+  void save({ refreshAfter: false })
 }
 
 function addTask(sprint: HybridControlSprint) {
@@ -1842,7 +1870,7 @@ function addTask(sprint: HybridControlSprint) {
   sprint.tasks.push(task)
   activeSprintId.value = sprint.id
   activeTaskId.value = task.id
-  save()
+  void save({ refreshAfter: false })
 }
 
 function removeTask(sprint: HybridControlSprint, index: number) {
@@ -1853,7 +1881,7 @@ function removeTask(sprint: HybridControlSprint, index: number) {
     activeTaskId.value = sprint.tasks[index]?.id || sprint.tasks[index - 1]?.id || ''
   }
 
-  save()
+  void save({ refreshAfter: false })
 }
 
 function getTaskContext(taskId?: string) {
@@ -1869,9 +1897,88 @@ function getTaskContext(taskId?: string) {
   return null
 }
 
-function selectModule(moduleId: ControlModuleId) {
+async function selectModule(moduleId: ControlModuleId) {
+  const moduleChanged = activeModule.value !== moduleId
   activeModule.value = moduleId
+
+  if (!moduleChanged || !import.meta.client || typeof window === 'undefined' || window.innerWidth > 900) {
+    return
+  }
+
+  await nextTick()
+  moduleViewportStart.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  queueMobileModuleDockSync()
 }
+
+function syncMobileModuleDockVisibility() {
+  if (!import.meta.client || typeof window === 'undefined') {
+    return
+  }
+
+  if (window.innerWidth > 768) {
+    isMobileModuleDockVisible.value = true
+    return
+  }
+
+  const shell = controlShell.value
+  if (!shell) {
+    isMobileModuleDockVisible.value = false
+    return
+  }
+
+  const shellRect = shell.getBoundingClientRect()
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+  const dockHeight = moduleNavRef.value?.getBoundingClientRect().height || 72
+
+  isMobileModuleDockVisible.value = shellRect.top <= viewportHeight * 0.45 && shellRect.bottom >= dockHeight + 32
+}
+
+function queueMobileModuleDockSync() {
+  if (!import.meta.client || typeof window === 'undefined') {
+    return
+  }
+
+  if (moduleDockSyncFrame) {
+    window.cancelAnimationFrame(moduleDockSyncFrame)
+  }
+
+  moduleDockSyncFrame = window.requestAnimationFrame(() => {
+    moduleDockSyncFrame = 0
+    syncMobileModuleDockVisibility()
+  })
+}
+
+onMounted(() => {
+  if (!import.meta.client || typeof window === 'undefined') {
+    return
+  }
+
+  queueMobileModuleDockSync()
+  window.addEventListener('scroll', queueMobileModuleDockSync, { passive: true })
+  window.addEventListener('resize', queueMobileModuleDockSync)
+})
+
+onBeforeUnmount(() => {
+  if (!import.meta.client || typeof window === 'undefined') {
+    return
+  }
+
+  if (moduleDockSyncFrame) {
+    window.cancelAnimationFrame(moduleDockSyncFrame)
+  }
+
+  window.removeEventListener('scroll', queueMobileModuleDockSync)
+  window.removeEventListener('resize', queueMobileModuleDockSync)
+})
+
+watch([activeModule, pending], async () => {
+  if (!import.meta.client) {
+    return
+  }
+
+  await nextTick()
+  queueMobileModuleDockSync()
+}, { flush: 'post' })
 
 function setActiveTaskId(taskId: string) {
   activeTaskId.value = taskId || ''
@@ -2001,7 +2108,7 @@ function cycleTask(task: HybridControlTask) {
     done: 'todo',
   }
   task.status = next[task.status]
-  save()
+  void save({ refreshAfter: false })
 }
 
 function addCheckpoint() {
@@ -2081,7 +2188,6 @@ async function submitCallInsight() {
       ? `Звонок добавлен: блокеров поднято ${response.meta.blockerCountAdded}, контрольная точка создана.`
       : `Звонок добавлен: блокеров поднято ${response.meta.blockerCountAdded}.`
     markSaved()
-    await refresh()
   } catch {
     callInsightStatus.value = 'Не удалось сохранить инсайты звонка.'
   } finally {
@@ -2112,7 +2218,6 @@ async function applyCallInsightToSprint(insightId: string) {
       ? `Задач создано: ${response.meta.createdTaskCount}${response.meta.createdSprint ? '. Для них автоматически создан follow-up спринт.' : '.'}`
       : 'Новых задач не создано: все следующие шаги уже есть в спринте.'
     markSaved()
-    await refresh()
   } catch {
     callInsightStatus.value = 'Не удалось превратить инсайт звонка в задачи спринта.'
   } finally {
@@ -2472,7 +2577,6 @@ async function executeMessageDispatch() {
 
       markSaved()
       closeMessageModal()
-      await refresh()
     }
   } catch (e: any) {
     msgModalError.value = e?.message || 'Не удалось отправить сообщение'
@@ -2505,72 +2609,156 @@ function closeTimelineRowDetails() {
 
 <style scoped>
 
-
-
-.hpc-control-index {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+.hpc-module-nav {
+  position: fixed;
+  left: calc(var(--adm-sidebar-offset, 248px) + 20px);
+  right: 24px;
+  bottom: max(16px, var(--hpc-module-nav-safe-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hpc-shell-nav-gap);
+  padding: var(--hpc-shell-nav-padding-top) var(--hpc-shell-nav-padding-inline) calc(var(--hpc-shell-nav-padding-bottom) + var(--hpc-module-nav-safe-bottom));
+  border: 1px solid var(--hpc-shell-nav-border);
+  border-radius: var(--hpc-shell-nav-radius);
+  background: var(--hpc-shell-nav-bg);
+  box-shadow: var(--hpc-shell-nav-shadow);
+  backdrop-filter: var(--hpc-shell-nav-backdrop);
+  -webkit-backdrop-filter: var(--hpc-shell-nav-backdrop);
+  overflow: hidden;
+  z-index: 45;
 }
 
-.hpc-module-card {
+.hpc-module-nav__btn {
+  flex: 1 1 0;
+  position: relative;
+  isolation: isolate;
   display: grid;
-  gap: 10px;
-  min-height: 120px;
-  padding: 16px 18px;
-  border: 1px solid var(--hpc-shell-border);
-  border-radius: var(--hpc-shell-radius);
-  background: var(--hpc-shell-card-bg);
-  box-shadow: var(--hpc-shell-shadow);
-  color: var(--hpc-shell-strong);
-  text-align: left;
+  gap: var(--hpc-shell-nav-button-gap);
+  align-content: center;
+  justify-items: center;
+  min-width: 0;
+  min-height: var(--hpc-shell-nav-button-min-height);
+  padding: var(--hpc-shell-nav-button-padding-top) var(--hpc-shell-nav-button-padding-inline) var(--hpc-shell-nav-button-padding-bottom);
+  border: none;
+  border-radius: calc(var(--hpc-shell-nav-radius) - 6px);
+  background: transparent;
+  color: var(--hpc-shell-muted);
   cursor: pointer;
-  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+  opacity: .92;
+  overflow: hidden;
+  transition: background-color .18s ease, color .18s ease, opacity .18s ease, transform .18s ease;
 }
 
-.hpc-module-card:hover {
-  border-color: var(--hpc-shell-accent-border);
+.hpc-module-nav__btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--hpc-shell-nav-state-ink);
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+
+.hpc-module-nav__btn::after {
+  content: '';
+  width: 14px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.hpc-module-nav__icon-wrap,
+.hpc-module-nav__label,
+.hpc-module-nav__btn::after {
+  position: relative;
+  z-index: 1;
+}
+
+.hpc-module-nav__btn:hover {
   background: var(--hpc-shell-card-hover);
+  color: var(--hpc-shell-strong);
+  opacity: 1;
 }
 
-.hpc-module-card:focus-visible {
+.hpc-module-nav__btn:hover::before {
+  opacity: var(--hpc-shell-nav-hover-opacity);
+}
+
+.hpc-module-nav__btn:active::before {
+  opacity: var(--hpc-shell-nav-press-opacity);
+}
+
+.hpc-module-nav__btn:focus-visible {
   outline: 2px solid var(--hpc-shell-accent-border);
   outline-offset: 2px;
 }
 
-.hpc-module-card--active {
-  border-color: var(--hpc-shell-accent-border);
-  background: var(--hpc-shell-card-active);
-  color: var(--hpc-shell-active-ink);
+.hpc-module-nav__btn--active {
+  background: color-mix(in srgb, var(--hpc-shell-card-active) 58%, transparent);
+  color: var(--hpc-shell-nav-active-label);
+  opacity: 1;
 }
 
-.hpc-module-card__kicker {
-  font-size: .68rem;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--hpc-shell-muted);
+.hpc-module-nav__btn--active::after {
+  opacity: .92;
+  transform: translateY(0);
 }
 
-.hpc-module-card__title {
-  font-size: .96rem;
-  font-weight: 600;
-  letter-spacing: .04em;
+.hpc-module-nav__icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hpc-shell-nav-icon-wrap-size);
+  height: var(--hpc-shell-nav-icon-wrap-size);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: inherit;
+  transition: background-color .18s ease, color .18s ease, transform .18s ease, width .18s ease, height .18s ease;
 }
 
-.hpc-module-card__metric {
-  font-size: 1rem;
-  letter-spacing: .04em;
+.hpc-module-nav__icon {
+  width: var(--hpc-shell-nav-icon-size);
+  height: var(--hpc-shell-nav-icon-size);
 }
 
-.hpc-module-card__meta {
-  font-size: .76rem;
-  line-height: 1.45;
-  color: var(--hpc-shell-muted);
+.hpc-module-nav__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: calc(var(--hpc-shell-nav-icon-size) - 2px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .02em;
 }
 
-.hpc-module-card--active .hpc-module-card__kicker,
-.hpc-module-card--active .hpc-module-card__meta {
-  color: var(--hpc-shell-active-muted);
+.hpc-module-nav__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--hpc-shell-nav-label-size);
+  font-weight: var(--hpc-shell-nav-label-weight);
+  line-height: 1.1;
+  letter-spacing: var(--hpc-shell-nav-label-tracking);
+  text-align: center;
+}
+
+.hpc-module-nav__btn--active .hpc-module-nav__icon-wrap {
+  width: var(--hpc-shell-nav-indicator-width);
+  height: var(--hpc-shell-nav-indicator-height);
+  background: var(--hpc-shell-nav-indicator-bg);
+  color: var(--hpc-shell-nav-indicator-ink);
+  box-shadow: var(--hpc-shell-nav-indicator-shadow);
+}
+
+.hpc-module-nav__btn--active .hpc-module-nav__label {
+  font-weight: var(--hpc-shell-nav-label-active-weight);
 }
 
 .hpc-module-hero {
@@ -2582,13 +2770,71 @@ function closeTimelineRowDetails() {
   border-top: 1px solid var(--hpc-shell-border-soft);
 }
 
+.hpc-module-hero__meta {
+  margin: 6px 0 0;
+  font-size: .82rem;
+  line-height: 1.5;
+  color: var(--hpc-shell-muted);
+}
+
+.hpc-module-anchor {
+  height: 0;
+  scroll-margin-top: calc(var(--admin-nav-top, 96px) + 12px);
+}
+
 @media (max-width: 900px) {
-  .hpc-control-index {
-    grid-template-columns: 1fr;
+  .hpc-module-nav {
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
   }
 
   .hpc-module-hero {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .hpc-root {
+    padding-bottom: calc(var(--hpc-module-nav-height) + var(--hpc-module-nav-safe-bottom) + 42px);
+  }
+
+  .hpc-module-nav {
+    left: max(14px, env(safe-area-inset-left, 0px));
+    right: max(14px, env(safe-area-inset-right, 0px));
+    bottom: max(10px, var(--hpc-module-nav-safe-bottom));
+    margin-bottom: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(calc(var(--hpc-module-nav-height) + var(--hpc-module-nav-safe-bottom) + 14px));
+    transition: transform .22s ease, opacity .18s ease;
+    z-index: 18;
+  }
+
+  .hpc-module-nav__btn {
+    min-height: max(48px, var(--hpc-shell-nav-button-min-height));
+    padding-inline: 2px;
+  }
+
+  .hpc-module-nav--mobile-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 520px) {
+  .hpc-module-nav {
+    gap: 1px;
+    padding-inline: 3px;
+  }
+
+  .hpc-module-nav__btn {
+    min-height: max(46px, calc(var(--hpc-shell-nav-button-min-height) - 2px));
+    padding-inline: 1px;
+  }
+
+  .hpc-module-nav__label {
+    font-size: max(.53rem, calc(var(--hpc-shell-nav-label-size) - .04rem));
   }
 }
 </style>
@@ -2618,10 +2864,41 @@ function closeTimelineRowDetails() {
   --hpc-shell-panel-card-radius: 0px;
   --hpc-shell-radius: 0px;
   --hpc-shell-shadow: none;
+  --hpc-shell-nav-bg: var(--glass-page-bg);
+  --hpc-shell-nav-border: color-mix(in srgb, var(--glass-text) 14%, transparent);
+  --hpc-shell-nav-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  --hpc-shell-nav-backdrop: none;
+  --hpc-shell-nav-radius: 18px;
+  --hpc-shell-nav-gap: 3px;
+  --hpc-shell-nav-padding-top: 4px;
+  --hpc-shell-nav-padding-inline: 5px;
+  --hpc-shell-nav-padding-bottom: 4px;
+  --hpc-shell-nav-state-ink: var(--hpc-shell-strong);
+  --hpc-shell-nav-hover-opacity: .04;
+  --hpc-shell-nav-press-opacity: .08;
+  --hpc-shell-nav-active-label: var(--hpc-shell-active-ink);
+  --hpc-shell-nav-indicator-bg: color-mix(in srgb, var(--hpc-shell-active-ink) 12%, transparent);
+  --hpc-shell-nav-indicator-ink: var(--hpc-shell-active-ink);
+  --hpc-shell-nav-indicator-shadow: none;
+  --hpc-shell-nav-indicator-width: 44px;
+  --hpc-shell-nav-indicator-height: 28px;
+  --hpc-shell-nav-icon-wrap-size: 28px;
+  --hpc-shell-nav-icon-size: 14px;
+  --hpc-shell-nav-button-gap: 4px;
+  --hpc-shell-nav-button-min-height: 50px;
+  --hpc-shell-nav-button-padding-top: 5px;
+  --hpc-shell-nav-button-padding-inline: 4px;
+  --hpc-shell-nav-button-padding-bottom: 7px;
+  --hpc-shell-nav-label-size: .58rem;
+  --hpc-shell-nav-label-tracking: .02em;
+  --hpc-shell-nav-label-weight: 600;
+  --hpc-shell-nav-label-active-weight: 700;
+  --hpc-module-nav-height: 62px;
+  --hpc-module-nav-safe-bottom: env(safe-area-inset-bottom, 0px);
   display: flex;
   flex-direction: column;
   gap: 28px;
-  padding: 4px 0 40px;
+  padding: 4px 0 calc(var(--hpc-module-nav-height) + var(--hpc-module-nav-safe-bottom) + 36px);
 }
 
 :global(html[data-design-mode="liquid-glass"] .hpc-root) {
@@ -2641,6 +2918,11 @@ function closeTimelineRowDetails() {
   --hpc-shell-panel-card-radius: 22px;
   --hpc-shell-radius: 22px;
   --hpc-shell-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+  --hpc-shell-nav-bg: color-mix(in srgb, var(--glass-bg) 78%, transparent);
+  --hpc-shell-nav-border: color-mix(in srgb, var(--glass-border) 88%, transparent);
+  --hpc-shell-nav-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
+  --hpc-shell-nav-backdrop: blur(18px) saturate(145%);
+  --hpc-shell-nav-radius: 22px;
 }
 
 :global(html[data-design-mode="material3"] .hpc-root) {
@@ -2656,6 +2938,58 @@ function closeTimelineRowDetails() {
   --hpc-shell-active-muted: color-mix(in srgb, var(--sys-color-on-secondary-container) 72%, transparent);
   --hpc-shell-radius: var(--sys-radius-lg, 20px);
   --hpc-shell-shadow: var(--sys-elevation-level1);
+  --hpc-shell-nav-bg: var(--sys-color-surface-container);
+  --hpc-shell-nav-border: transparent;
+  --hpc-shell-nav-shadow: var(--sys-elevation-level1);
+  --hpc-shell-nav-radius: 30px;
+  --hpc-shell-nav-gap: 0px;
+  --hpc-shell-nav-padding-top: 8px;
+  --hpc-shell-nav-padding-inline: 8px;
+  --hpc-shell-nav-padding-bottom: 8px;
+  --hpc-shell-nav-state-ink: var(--sys-color-on-surface);
+  --hpc-shell-nav-hover-opacity: .08;
+  --hpc-shell-nav-press-opacity: .12;
+  --hpc-shell-nav-active-label: var(--sys-color-on-surface);
+  --hpc-shell-nav-indicator-bg: var(--sys-color-secondary-container);
+  --hpc-shell-nav-indicator-ink: var(--sys-color-on-secondary-container);
+  --hpc-shell-nav-indicator-shadow: none;
+  --hpc-shell-nav-indicator-width: 56px;
+  --hpc-shell-nav-indicator-height: 32px;
+  --hpc-shell-nav-icon-wrap-size: 32px;
+  --hpc-shell-nav-icon-size: 18px;
+  --hpc-shell-nav-button-gap: 3px;
+  --hpc-shell-nav-button-min-height: 56px;
+  --hpc-shell-nav-button-padding-top: 4px;
+  --hpc-shell-nav-button-padding-inline: 4px;
+  --hpc-shell-nav-button-padding-bottom: 6px;
+  --hpc-shell-nav-label-size: .69rem;
+  --hpc-shell-nav-label-tracking: .01em;
+  --hpc-shell-nav-label-weight: 500;
+  --hpc-shell-nav-label-active-weight: 600;
+  --hpc-module-nav-height: 72px;
+}
+
+:global(html[data-design-mode="material3"] .hpc-module-nav__btn) {
+  background: transparent;
+  color: var(--sys-color-on-surface-variant);
+}
+
+:global(html[data-design-mode="material3"] .hpc-module-nav__btn::after) {
+  display: none;
+}
+
+:global(html[data-design-mode="material3"] .hpc-module-nav__btn:hover) {
+  background: transparent;
+  color: var(--sys-color-on-surface);
+}
+
+:global(html[data-design-mode="material3"] .hpc-module-nav__btn--active) {
+  background: transparent;
+  color: var(--sys-color-on-surface);
+}
+
+:global(html[data-design-mode="material3"] .hpc-module-nav__icon-wrap) {
+  background: transparent;
 }
 
 :global(html[data-concept="minale"] .hpc-root) {
@@ -2665,6 +2999,10 @@ function closeTimelineRowDetails() {
   --hpc-shell-border: rgba(255, 255, 255, 0.12);
   --hpc-shell-border-soft: rgba(255, 255, 255, 0.08);
   --hpc-shell-accent-border: rgba(255, 255, 255, 0.18);
+  --hpc-shell-nav-bg: rgba(10, 10, 10, 0.94);
+  --hpc-shell-nav-border: rgba(255, 255, 255, 0.12);
+  --hpc-shell-nav-shadow: none;
+  --hpc-shell-nav-radius: 4px 4px 0 0;
 }
 
 :global(html[data-concept="brutal"] .hpc-root) {
@@ -2678,6 +3016,10 @@ function closeTimelineRowDetails() {
   --hpc-shell-card-active: #000000;
   --hpc-shell-active-ink: #ffffff;
   --hpc-shell-active-muted: rgba(255, 255, 255, 0.74);
+  --hpc-shell-nav-bg: #ffffff;
+  --hpc-shell-nav-border: #000000;
+  --hpc-shell-nav-shadow: 6px 6px 0 #000000;
+  --hpc-shell-nav-radius: 4px 4px 0 0;
 }
 
 .hpc-summary,
@@ -2707,14 +3049,14 @@ function closeTimelineRowDetails() {
 .hpc-sprint-card__head,
 .hpc-task-head {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.hpc-summary__meta,
 .hpc-phase-card__head-right {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -3016,31 +3358,22 @@ function closeTimelineRowDetails() {
 
 .hpc-board__cell--entity {
   left: 0;
-}
-
-.hpc-board__cell--period {
-  left: var(--hpc-entity-column-width, 260px);
-}
-
-.hpc-board__head .hpc-board__cell,
-.hpc-board__head .hpc-board__timeline-head-stack,
-.hpc-board__head .hpc-board__timeline-groups,
-.hpc-board__head .hpc-board__timeline-head,
-.hpc-board__head .hpc-board__timeline-group-label,
-.hpc-board__head .hpc-board__week-label {
-  background: color-mix(in srgb, var(--glass-bg) 94%, white 6%);
-}
-
-.hpc-board__cell--entity,
-.hpc-board__cell--period {
-  padding-right: 14px;
+  width: 14px;
   background: var(--glass-page-bg);
 }
 
 .hpc-board__cell--period {
+  left: var(--hpc-entity-column-width, 260px);
   border-left: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
   border-right: 1px solid color-mix(in srgb, var(--glass-text) 8%, transparent);
   padding-left: 14px;
+}
+
+.hpc-board__head .hpc-board__cell,
+.hpc-board__head .hpc-board__timeline-groups,
+.hpc-board__head .hpc-board__timeline-head,
+.hpc-board__head .hpc-board__week-label {
+  background: color-mix(in srgb, var(--glass-bg) 94%, white 6%);
 }
 
 .hpc-board__row--phase .hpc-board__cell--entity,

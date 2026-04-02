@@ -651,7 +651,7 @@ async function submitAddContact() {
             v-model="searchDraft"
             type="text"
             class="composer-input composer-input--dock"
-            placeholder=""
+            placeholder="Найти пользователя"
             autocomplete="off"
             @focus="openSearch"
             @blur="closeSearch"

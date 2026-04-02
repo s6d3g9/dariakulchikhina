@@ -254,6 +254,7 @@ const showSidebar = computed(() => props.showSidebar !== false)
 const designSystem = useDesignSystem()
 
 const mid = computed(() => props.managerId)
+const hasManagerId = computed(() => Number.isInteger(mid.value) && mid.value > 0)
 const section = ref(model.value || 'dashboard')
 const sectionOrder = computed(() => nav.value.map((item) => item.key))
 const {
@@ -281,14 +282,20 @@ const {
 watch(model, (v) => { if (v) section.value = v })
 watch(section, (v) => { model.value = v })
 
-const { data: manager, pending, refresh } = useFetch<any>(
-  () => `/api/managers/${mid.value}`,
-  { watch: [mid] },
+const managerAsyncKey = computed(() => `admin-manager:${mid.value || 'none'}`)
+const linkedProjectsAsyncKey = computed(() => `admin-manager-projects:${mid.value || 'none'}`)
+const requestHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
+
+const { data: manager, pending, refresh } = useAsyncData<any | null>(
+  managerAsyncKey,
+  () => hasManagerId.value ? $fetch<any>(`/api/managers/${mid.value}` as string, { headers: requestHeaders }) : Promise.resolve(null),
+  { watch: [mid], default: () => null },
 )
 
-const { data: linkedProjects, refresh: refreshProjects } = useFetch<any[]>(
-  () => `/api/managers/${mid.value}/projects`,
-  { watch: [mid], default: () => [] },
+const { data: linkedProjects, refresh: refreshProjects } = useAsyncData<any[]>(
+  linkedProjectsAsyncKey,
+  () => hasManagerId.value ? $fetch<any[]>(`/api/managers/${mid.value}/projects` as string, { headers: requestHeaders }) : Promise.resolve<any[]>([]),
+  { watch: [mid], default: () => [] as any[] },
 )
 
 const nav = computed(() => [

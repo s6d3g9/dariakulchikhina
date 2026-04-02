@@ -9,6 +9,7 @@
 
 <script setup lang="ts">
 const route = useRoute()
+const router = useRouter()
 const { initTheme } = useThemeToggle()
 const designSystem = useDesignSystem()
 const { tokens, isHydrated } = designSystem
@@ -22,6 +23,8 @@ const uiThemeReady = ref(false)
 const authRoutePattern = /^\/(login|register|recover)$/
 
 const disablePageChromeCaching = computed(() => authRoutePattern.test(route.path))
+const previousRoutePath = ref(route.path)
+const previousRouteFullPath = ref(route.fullPath)
 
 const transitionEffect = computed(() => {
   const effect = tokens.value.archPageEnter ?? 'fade'
@@ -44,7 +47,13 @@ const pageTransition = computed(() => {
 })
 
 const pageKeepalive = computed(() => (disablePageChromeCaching.value ? false : { max: 10 }))
-const resolvedPageTransition = computed(() => (disablePageChromeCaching.value ? false : pageTransition.value))
+const disableSamePathTransition = computed(() =>
+  route.path === previousRoutePath.value && route.fullPath !== previousRouteFullPath.value
+)
+const resolvedPageTransition = computed(() =>
+  disablePageChromeCaching.value || disableSamePathTransition.value ? false : pageTransition.value
+)
+let removeRouteAfterEach: (() => void) | null = null
 
 watchEffect(() => {
   if (!import.meta.client) return
@@ -65,9 +74,21 @@ watch(isHydrated, (hydrated) => {
 }, { immediate: true })
 
 onMounted(() => {
+  if (!removeRouteAfterEach) {
+    removeRouteAfterEach = router.afterEach((_, from) => {
+      previousRoutePath.value = from.path
+      previousRouteFullPath.value = from.fullPath
+    })
+  }
+
   initTheme()
   if (!isHydrated.value) {
     designSystem.initDesignSystem()
   }
+})
+
+onBeforeUnmount(() => {
+  removeRouteAfterEach?.()
+  removeRouteAfterEach = null
 })
 </script>

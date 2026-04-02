@@ -26,7 +26,7 @@
 .call-stage--chat-bound.call-stage--full {
   bottom: calc(
     var(--messenger-composer-height, 76px) +
-    var(--messenger-bottom-bar-height) +
+    var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) +
     env(safe-area-inset-bottom, 0px)
   );
 }
@@ -40,12 +40,16 @@
         100dvh
         - 60px
         - var(--messenger-composer-height, 76px)
-        - var(--messenger-bottom-bar-height)
+        - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height))
         - env(safe-area-inset-bottom, 0px)
         - 8px
       )
     )
   );
+}
+
+html[data-messenger-viewport-platform='ios'][data-messenger-keyboard='open'] .section-block--chat {
+  --messenger-chat-keyboard-offset: 0px;
 }
 
 /* ── Call error toast: над home indicator ── */

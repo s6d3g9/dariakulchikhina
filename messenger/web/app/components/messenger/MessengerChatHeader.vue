@@ -45,7 +45,14 @@ const emit = defineEmits<{
   'set-call-view-mode': [mode: 'full' | 'split' | 'mini']
   'hangup-call': []
   'back': []
+  'update:overflow-menu-open': [open: boolean]
 }>()
+
+const overflowMenuOpen = ref(false)
+
+watch(overflowMenuOpen, (open) => {
+  emit('update:overflow-menu-open', open)
+})
 
 const hasVideoCallControls = computed(() => Boolean(
   props.callVisible
@@ -237,7 +244,7 @@ const speakerToggleAriaLabel = computed(() => props.speakerEnabled
                   >
                     <VIcon>{{ videoEnabled ? 'mdi-video' : 'mdi-video-off' }}</VIcon>
                   </VBtn>
-                  <VMenu location="bottom end">
+                  <VMenu v-model="overflowMenuOpen" location="bottom end">
                     <template #activator="{ props: menuProps }">
                       <VBtn type="button" class="chat-header__icon-btn" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
                         <VIcon>mdi-dots-vertical</VIcon>
@@ -295,7 +302,7 @@ const speakerToggleAriaLabel = computed(() => props.speakerEnabled
                 >
                   <VIcon>mdi-video</VIcon>
                 </VBtn>
-                <VMenu location="bottom end">
+                <VMenu v-model="overflowMenuOpen" location="bottom end">
                   <template #activator="{ props: menuProps }">
                     <VBtn type="button" class="chat-header__icon-btn" icon variant="text" aria-label="Дополнительно" v-bind="menuProps">
                       <VIcon>mdi-dots-vertical</VIcon>

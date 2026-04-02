@@ -97,7 +97,7 @@ const sections = computed(() => {
     ]
   }
 
-  return [
+  const gallerySections = [
     {
       key: 'photos' as const,
       title: 'Фото',
@@ -122,16 +122,22 @@ const sections = computed(() => {
       emptyLabel: 'Пока нет ссылок.',
       items: props.links,
     },
-    {
+  ]
+
+  if (props.security) {
+    gallerySections.push({
       key: 'keys' as const,
       title: 'Ключи',
       emptyLabel: 'Пока нет данных о ключах.',
-      items: props.security?.items || [],
-    },
-  ]
+      items: props.security.items,
+    })
+  }
+
+  return gallerySections
 })
 
 const activeSectionData = computed(() => sections.value.find(section => section.key === activeSection.value) ?? sections.value[0] ?? null)
+const showGallerySearchDock = computed(() => Boolean(activeSectionData.value?.items.length))
 
 function gallerySectionIcon(key: GallerySectionKey) {
   switch (key) {
@@ -363,14 +369,14 @@ const gallerySearch = ref('')
     </VTabs>
 
     <!-- Search dock (bottom) -->
-    <div class="search-dock">
+    <div v-if="showGallerySearchDock" class="search-dock">
       <div class="search-dock__field">
         <MessengerDockField>
           <input
             v-model="gallerySearch"
             type="text"
             class="composer-input composer-input--dock"
-            placeholder=""
+            placeholder="Поиск по галерее"
             autocomplete="off"
           />
         </MessengerDockField>

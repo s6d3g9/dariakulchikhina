@@ -43,11 +43,15 @@ interface UpdateDesignerProjectPayload {
 
 export function useDesignerCabinet(designerId: Ref<number | null>) {
   const did = computed(() => designerId.value)
+  const hasDesignerId = computed(() => Number.isInteger(did.value) && Number(did.value) > 0)
+  const designerAsyncKey = computed(() => `designer-cabinet:${did.value || 'none'}`)
+  const requestHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
 
   // ── Data fetching ──
-  const { data: designer, pending, refresh } = useFetch<any>(
-    () => did.value ? `/api/designers/${did.value}` : null as any,
-    { watch: [did] },
+  const { data: designer, pending, refresh } = useAsyncData<any | null>(
+    designerAsyncKey,
+    () => hasDesignerId.value ? $fetch<any>(`/api/designers/${did.value}` as string, { headers: requestHeaders }) : Promise.resolve(null),
+    { watch: [did], default: () => null },
   )
 
   const { data: allDesigners, refresh: refreshList } = useFetch<any[]>(

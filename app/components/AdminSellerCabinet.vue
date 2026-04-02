@@ -391,15 +391,25 @@ type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
 const profileSaveState = ref<InlineAutosaveState>('')
 let profileSaveTimer: ReturnType<typeof setTimeout> | null = null
 
-const { data: seller, pending, refresh } = useFetch<any>(() => `/api/sellers/${props.sellerId}`, {
-  server: false,
-  watch: [() => props.sellerId],
-})
+const sellerId = computed(() => Number.isInteger(props.sellerId) && props.sellerId > 0 ? props.sellerId : null)
+const sellerAsyncKey = computed(() => `admin-seller:${sellerId.value || 'none'}`)
+const sellerProjectsAsyncKey = computed(() => `admin-seller-projects:${sellerId.value || 'none'}`)
+
+const { data: seller, pending, refresh } = useAsyncData<any | null>(
+  sellerAsyncKey,
+  () => sellerId.value ? $fetch<any>(`/api/sellers/${sellerId.value}` as string) : Promise.resolve(null),
+  {
+    server: false,
+    watch: [sellerId],
+    default: () => null,
+  },
+)
 
 // Linked projects
-const { data: linkedProjectsRaw } = useFetch<any[]>(
-  () => `/api/sellers/${props.sellerId}/projects`,
-  { server: false, default: () => [], watch: [() => props.sellerId] },
+const { data: linkedProjectsRaw } = useAsyncData<any[]>(
+  sellerProjectsAsyncKey,
+  () => sellerId.value ? $fetch<any[]>(`/api/sellers/${sellerId.value}/projects` as string) : Promise.resolve<any[]>([]),
+  { server: false, default: () => [] as any[], watch: [sellerId] },
 )
 const linkedProjects = computed(() => linkedProjectsRaw.value || [])
 

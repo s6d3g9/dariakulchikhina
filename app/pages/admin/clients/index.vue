@@ -511,12 +511,17 @@ function applyClientIdQuery() {
 }
 watch(clients, () => applyClientIdQuery(), { immediate: true })
 watch(clientIdFromQuery, () => applyClientIdQuery())
+const requestHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
 
 // ── Embedded client cabinet ────────────────────────────
-const { data: clientProject } = (useFetch as any)(
-  () => selectedClientSlug.value ? `/api/projects/${selectedClientSlug.value}` : null,
-  { watch: [selectedClientSlug], default: () => null }
-) as { data: Ref<any> }
+const clientProjectAsyncKey = computed(() => `admin-client-project:${selectedClientSlug.value || 'none'}`)
+const { data: clientProject } = useAsyncData<any | null>(
+  clientProjectAsyncKey,
+  () => selectedClientSlug.value
+    ? $fetch<any>(`/api/projects/${selectedClientSlug.value}` as string, { headers: requestHeaders })
+    : Promise.resolve(null),
+  { watch: [selectedClientSlug], default: () => null },
+)
 const PAGE_COMPONENT_MAP: Record<string, Component> = {
   phase_init:      ClientInitiation,
   self_profile:    ClientSelfProfile,
@@ -593,10 +598,19 @@ const docsClientId = ref<number | null>(null)
 const docsTitle = ref(''); const docsCategory = ref('other'); const docsNotes = ref(''); const docsUploading = ref(false)
 const docsSearch = ref(''); const docsFilter = ref(''); const docsSort = ref<'new'|'old'>('new')
 const shouldLoadClientDocs = computed(() => currentClientPage.value === 'documents' && !!docsClientId.value)
-const { data: clientDocs, pending: docsPending, refresh: refreshClientDocs } = (await (useFetch as any)(
-  () => shouldLoadClientDocs.value ? `/api/clients/${docsClientId.value}/documents` : null,
-  { default: () => [] as any[] },
-)) as { data: Ref<any[]>, pending: Ref<boolean>, refresh: () => Promise<void> }
+const clientDocsAsyncKey = computed(() =>
+  `admin-client-docs:${docsClientId.value || 'none'}:${shouldLoadClientDocs.value ? 'active' : 'idle'}`,
+)
+const { data: clientDocs, pending: docsPending, refresh: refreshClientDocs } = useAsyncData<any[]>(
+  clientDocsAsyncKey,
+  () => shouldLoadClientDocs.value && docsClientId.value
+    ? $fetch<any[]>(`/api/clients/${docsClientId.value}/documents` as string, { headers: requestHeaders })
+    : Promise.resolve<any[]>([]),
+  {
+    default: () => [] as any[],
+    watch: [shouldLoadClientDocs, docsClientId],
+  },
+)
 watch(selectedClientId, (id) => { docsClientId.value = id }, { immediate: true })
 watch(() => adminNav.contentSpec.value.documentCategory, (category) => {
   if (!category) return

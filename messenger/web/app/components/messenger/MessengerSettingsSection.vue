@@ -695,7 +695,7 @@ function themeCardStyle(theme: { preview: [string, string, string] }) {
             v-model="settingsSearch"
             type="text"
             class="composer-input composer-input--dock"
-            placeholder=""
+            placeholder="Поиск по настройкам"
             autocomplete="off"
             @focus="openSettingsSearch"
             @blur="closeSettingsSearch"

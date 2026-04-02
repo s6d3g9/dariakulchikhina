@@ -13,7 +13,7 @@ const emit = defineEmits<{
   (e: 'update:active-task', taskId: string): void
 }>()
 
-const selectedTaskId = ref<string | null>(null)
+const selectedTaskId = ref<string | null>(props.activeTaskId || null)
 
 const taskDateFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: '2-digit',
@@ -57,13 +57,12 @@ const selectedTaskSprint = computed(() => {
 const highlightedSprintId = computed(() => selectedTaskSprint.value?.id || props.activeSprintId || '')
 
 watch(() => props.activeTaskId, async (taskId) => {
-  if (!import.meta.client || typeof document === 'undefined') return
-
   const normalizedTaskId = taskId || null
   if (selectedTaskId.value !== normalizedTaskId) {
     selectedTaskId.value = normalizedTaskId
   }
 
+  if (!import.meta.client || typeof document === 'undefined') return
   if (!normalizedTaskId) return
 
   await nextTick()

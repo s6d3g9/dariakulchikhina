@@ -9,7 +9,21 @@
     <div v-else-if="contractor" class="cab-body">
 
       <!-- Sidebar -->
-      <aside class="cab-sidebar cab-sidebar--persistent-nav glass-surface std-sidenav">
+      <aside
+        ref="sidebarRef"
+        class="cab-sidebar cab-sidebar--persistent-nav glass-surface std-sidenav"
+        :class="{ 'cab-sidebar--mobile-hidden': isMobileShell && mobileShellView === 'content' }"
+        aria-label="Разделы кабинета подрядчика"
+        :aria-hidden="isMobileShell && mobileShellView === 'content' ? 'true' : 'false'"
+        tabindex="-1"
+      >
+        <div v-if="isMobileShell" class="cab-mobile-shell cab-mobile-shell--sidebar">
+          <div class="cab-mobile-shell__copy">
+            <p class="cab-mobile-shell__eyebrow">Навигация</p>
+            <strong class="cab-mobile-shell__label">Разделы кабинета</strong>
+          </div>
+          <button type="button" class="cab-mobile-shell__btn" @click="openContractorContent">к экрану</button>
+        </div>
         <nav class="cab-nav std-nav">
           <button
             v-for="item in nav" :key="item.key"
@@ -27,8 +41,22 @@
       </aside>
 
       <!-- Main -->
-      <main class="cab-main">
+      <main
+        ref="mainRef"
+        class="cab-main"
+        :class="{ 'cab-main--mobile-hidden': isMobileShell && mobileShellView === 'sidebar' }"
+        aria-label="Рабочая область подрядчика"
+        :aria-hidden="isMobileShell && mobileShellView === 'sidebar' ? 'true' : 'false'"
+        tabindex="-1"
+      >
         <div class="cab-inner">
+          <div v-if="isMobileShell" ref="mobileContentShellRef" class="cab-mobile-shell cab-mobile-shell--content">
+            <button type="button" class="cab-mobile-shell__btn" @click="openContractorSidebar">разделы</button>
+            <div class="cab-mobile-shell__copy cab-mobile-shell__copy--content">
+              <p class="cab-mobile-shell__eyebrow">Активный экран</p>
+              <strong class="cab-mobile-shell__label">{{ activeSectionLabel }}</strong>
+            </div>
+          </div>
 
           <!-- ── Обзор (Dashboard) ──────────────────────────────── -->
           <template v-if="section === 'dashboard'">
@@ -1009,6 +1037,16 @@
 
         </div>
       </main>
+
+      <button
+        v-if="showMobileQuickSwitch"
+        type="button"
+        class="cab-mobile-shell-fab"
+        aria-label="Открыть разделы кабинета"
+        @click="openContractorSidebar"
+      >
+        разделы
+      </button>
     </div>
 
     <!-- Lightbox -->
@@ -1036,12 +1074,162 @@ const PAYMENT_METHOD_OPTIONS = [
 
 definePageMeta({ layout: 'contractor', middleware: ['contractor'] })
 const route = useRoute()
+const sidebarRef = ref<HTMLElement | null>(null)
+const mainRef = ref<HTMLElement | null>(null)
+const mobileContentShellRef = ref<HTMLElement | null>(null)
+const isDesktopContractorShell = ref(false)
+const mobileShellView = ref<'sidebar' | 'content'>('content')
+const mobileContentScrollState = reactive({
+  route: '',
+  y: 0,
+})
+const showMobileQuickSwitch = ref(false)
+let contractorShellScrollFrame = 0
+let contractorShellQuickSwitchFrame = 0
+
+const isMobileShell = computed(() => !isDesktopContractorShell.value)
+
+function syncDesktopContractorShellState() {
+  if (!import.meta.client || typeof window === 'undefined') {
+    return
+  }
+
+  isDesktopContractorShell.value = window.innerWidth > 768
+}
+
+function cancelContractorShellScrollFrame() {
+  if (!import.meta.client || typeof window === 'undefined' || !contractorShellScrollFrame) {
+    return
+  }
+
+  window.cancelAnimationFrame(contractorShellScrollFrame)
+  contractorShellScrollFrame = 0
+}
+
+function cancelContractorShellQuickSwitchFrame() {
+  if (!import.meta.client || typeof window === 'undefined' || !contractorShellQuickSwitchFrame) {
+    return
+  }
+
+  window.cancelAnimationFrame(contractorShellQuickSwitchFrame)
+  contractorShellQuickSwitchFrame = 0
+}
+
+function rememberContractorContentScroll() {
+  if (!import.meta.client || typeof window === 'undefined' || isDesktopContractorShell.value) {
+    return
+  }
+
+  if (mobileShellView.value !== 'content') {
+    return
+  }
+
+  mobileContentScrollState.route = route.fullPath
+  mobileContentScrollState.y = window.scrollY
+}
+
+function syncContractorContentQuickSwitch() {
+  if (!import.meta.client || typeof window === 'undefined') {
+    return
+  }
+
+  if (isDesktopContractorShell.value || mobileShellView.value !== 'content') {
+    showMobileQuickSwitch.value = false
+    return
+  }
+
+  const shell = mobileContentShellRef.value
+  if (!shell) {
+    showMobileQuickSwitch.value = window.scrollY > 120
+    return
+  }
+
+  showMobileQuickSwitch.value = shell.getBoundingClientRect().bottom < 0
+}
+
+function queueContractorContentQuickSwitchSync() {
+  if (!import.meta.client || typeof window === 'undefined') {
+    return
+  }
+
+  cancelContractorShellQuickSwitchFrame()
+  contractorShellQuickSwitchFrame = window.requestAnimationFrame(() => {
+    contractorShellQuickSwitchFrame = 0
+    syncContractorContentQuickSwitch()
+  })
+}
+
+async function syncContractorShellViewport(nextView: 'sidebar' | 'content', behavior: ScrollBehavior) {
+  if (!import.meta.client || typeof window === 'undefined' || isDesktopContractorShell.value) {
+    return
+  }
+
+  await nextTick()
+  cancelContractorShellScrollFrame()
+
+  contractorShellScrollFrame = window.requestAnimationFrame(() => {
+    contractorShellScrollFrame = 0
+
+    const target = nextView === 'sidebar' ? sidebarRef.value : mainRef.value
+    const shouldRestoreContentScroll = nextView === 'content'
+      && mobileContentScrollState.route === route.fullPath
+      && mobileContentScrollState.y > 0
+
+    if (shouldRestoreContentScroll) {
+      window.scrollTo({ top: mobileContentScrollState.y, behavior })
+    } else {
+      target?.scrollIntoView({ behavior, block: 'start' })
+    }
+
+    target?.focus({ preventScroll: true })
+  })
+}
+
+async function setContractorShellView(
+  nextView: 'sidebar' | 'content',
+  options: { behavior?: ScrollBehavior, forceScroll?: boolean } = {},
+) {
+  if (isDesktopContractorShell.value) {
+    mobileShellView.value = 'content'
+    return
+  }
+
+  if (mobileShellView.value === 'content' && nextView !== 'content') {
+    rememberContractorContentScroll()
+  }
+
+  const changed = mobileShellView.value !== nextView
+  mobileShellView.value = nextView
+
+  if (!changed && !options.forceScroll) {
+    return
+  }
+
+  await syncContractorShellViewport(nextView, options.behavior || 'smooth')
+}
+
+function openContractorSidebar() {
+  void setContractorShellView('sidebar', { behavior: 'smooth', forceScroll: true })
+}
+
+function openContractorContent() {
+  void setContractorShellView('content', { behavior: 'smooth', forceScroll: true })
+}
+
 const contractorId = Number(route.params.id)
 if (isNaN(contractorId) || contractorId <= 0) {
   throw createError({ statusCode: 400, statusMessage: 'Неверный ID подрядчика' })
 }
 
-const { data: contractor, pending, refresh } = await useFetch<any>(`/api/contractors/${contractorId}`)
+const { data: contractor, error: contractorError, pending, refresh } = await useFetch<any>(`/api/contractors/${contractorId}`)
+if (contractorError.value) {
+  const statusCode = contractorError.value.statusCode || contractorError.value.status || 500
+  throw createError({
+    statusCode,
+    statusMessage: contractorError.value.statusMessage || contractorError.value.message || 'Не удалось загрузить кабинет подрядчика',
+  })
+}
+
 const { data: workItems, refresh: refreshItems } = await useFetch<any[]>(
   `/api/contractors/${contractorId}/work-items`, { default: () => [] }
 )
@@ -1259,6 +1447,51 @@ const nav = computed(() => {
     items.splice(2, 0, { key: 'staff', icon: '◔', label: 'Бригада' })
   }
   return items
+})
+const activeSectionLabel = computed(() => nav.value.find(item => item.key === section.value)?.label || 'Обзор')
+
+watch(section, async (nextSection, prevSection) => {
+  if (nextSection === prevSection) {
+    return
+  }
+
+  if (!import.meta.client || typeof window === 'undefined' || !isMobileShell.value) {
+    return
+  }
+
+  mobileContentScrollState.route = ''
+  mobileContentScrollState.y = 0
+  await setContractorShellView('content', { behavior: 'auto', forceScroll: true })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+})
+
+watch([isDesktopContractorShell, () => route.fullPath], async ([desktop]) => {
+  if (desktop) {
+    mobileShellView.value = 'content'
+    showMobileQuickSwitch.value = false
+    return
+  }
+
+  await setContractorShellView('content')
+}, { immediate: true })
+
+watch([isDesktopContractorShell, mobileShellView, () => route.fullPath, section], async () => {
+  await nextTick()
+  queueContractorContentQuickSwitchSync()
+}, { immediate: true })
+
+onMounted(() => {
+  syncDesktopContractorShellState()
+  window.addEventListener('resize', syncDesktopContractorShellState)
+  window.addEventListener('scroll', queueContractorContentQuickSwitchSync, { passive: true })
+  queueContractorContentQuickSwitchSync()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncDesktopContractorShellState)
+  window.removeEventListener('scroll', queueContractorContentQuickSwitchSync)
+  cancelContractorShellScrollFrame()
+  cancelContractorShellQuickSwitchFrame()
 })
 
 // ── Wt group open state ──────────────────────────────────────────
@@ -1888,6 +2121,126 @@ async function saveProfile() {
 .cab-main { flex: 1; min-width: 0; }
 .cab-inner { max-width: 900px; }
 
+.cab-mobile-shell {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text, #1a1a2e) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-bg, rgba(255,255,255,0.2)) 90%, transparent);
+  border-radius: 20px;
+}
+
+.cab-mobile-shell__copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.cab-mobile-shell__copy--content {
+  justify-items: end;
+  text-align: right;
+}
+
+.cab-mobile-shell__eyebrow {
+  margin: 0;
+  font-size: .62rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text, #1a1a2e) 50%, transparent);
+}
+
+.cab-mobile-shell__label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .92rem;
+  line-height: 1.2;
+  color: var(--glass-text, #1a1a2e);
+}
+
+.cab-mobile-shell__btn {
+  position: relative;
+  isolation: isolate;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--glass-text, #1a1a2e) 14%, transparent);
+  background: color-mix(in srgb, var(--glass-text, #1a1a2e) 4%, transparent);
+  color: var(--glass-text, #1a1a2e);
+  border-radius: 999px;
+  font: inherit;
+  font-size: .72rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.cab-mobile-shell__btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+
+.cab-mobile-shell__btn:hover::before {
+  opacity: .06;
+}
+
+.cab-mobile-shell__btn:active::before {
+  opacity: .1;
+}
+
+.cab-mobile-shell__btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--glass-text, #1a1a2e) 36%, transparent);
+  outline-offset: 2px;
+}
+
+:global(html[data-design-mode="material3"] .cab-mobile-shell) {
+  border-color: var(--sys-color-outline-variant);
+  background: var(--sys-color-surface-container-low);
+  border-radius: var(--sys-radius-xl, 24px);
+  box-shadow: var(--sys-elevation-level1);
+}
+
+:global(html[data-design-mode="material3"] .cab-mobile-shell__eyebrow) {
+  letter-spacing: .06em;
+  text-transform: none;
+  color: var(--sys-color-on-surface-variant);
+}
+
+:global(html[data-design-mode="material3"] .cab-mobile-shell__label) {
+  color: var(--sys-color-on-surface);
+}
+
+:global(html[data-design-mode="material3"] .cab-mobile-shell__btn) {
+  border-color: transparent;
+  background: var(--sys-color-secondary-container);
+  color: var(--sys-color-on-secondary-container);
+  letter-spacing: .01em;
+  text-transform: none;
+}
+
+:global(html[data-design-mode="material3"] .cab-mobile-shell__btn:hover::before) {
+  opacity: .08;
+}
+
+:global(html[data-design-mode="material3"] .cab-mobile-shell__btn:active::before) {
+  opacity: .12;
+}
+
+:global(html[data-design-mode="material3"] .cab-mobile-shell__btn:focus-visible) {
+  outline-color: var(--sys-color-primary);
+}
+
 /* Empty state */
 .cab-empty {
   display: flex;
@@ -1942,6 +2295,17 @@ async function saveProfile() {
     padding-top: max(14px, env(safe-area-inset-top));
     padding-right: max(32px, env(safe-area-inset-right));
     padding-left: max(32px, env(safe-area-inset-left));
+  }
+
+  .cab-mobile-shell {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+
+  .cab-mobile-shell-fab {
+    top: calc(var(--dp-panel-h, 0px) + env(safe-area-inset-top) + 12px);
+    right: max(12px, env(safe-area-inset-right));
   }
 
   .cab-body {
@@ -2122,9 +2486,60 @@ async function saveProfile() {
 @media (max-width: 768px) {
   .cab-header { padding: 12px 16px; }
   .cab-body { flex-direction: column; padding: 16px 12px; gap: 16px; }
-  .cab-sidebar { width: 100%; position: static; padding: 6px 0; }
-  .cab-nav { flex-direction: row; overflow-x: auto; gap: 4px; padding: 0 4px 4px; }
-  .cab-nav-item { flex-shrink: 0; border-radius: 20px; padding: 7px 14px; white-space: nowrap; }
+  .cab-sidebar { width: 100%; position: static; top: auto; padding: 6px 0; }
+  .cab-main { width: 100%; }
+  .cab-mobile-shell { display: flex; }
+  .cab-sidebar--mobile-hidden,
+  .cab-main--mobile-hidden { display: none; }
+  .cab-nav { flex-direction: column; gap: 2px; padding: 0 4px 4px; }
+  .cab-nav-item { width: 100%; border-radius: 20px; padding: 8px 14px; white-space: nowrap; }
+  .cab-mobile-shell-fab {
+    position: fixed;
+    top: calc(var(--dp-panel-h, 0px) + 12px);
+    right: 12px;
+    z-index: 80;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--glass-text, #1a1a2e) 14%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--glass-bg, rgba(255,255,255,0.2)) 92%, transparent);
+    color: var(--glass-text, #1a1a2e);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    font: inherit;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    transition: transform .18s ease, background-color .18s ease, border-color .18s ease;
+  }
+  .cab-mobile-shell-fab:hover {
+    background: color-mix(in srgb, var(--glass-text, #1a1a2e) 8%, var(--glass-bg, rgba(255,255,255,0.2)) 92%);
+    border-color: color-mix(in srgb, var(--glass-text, #1a1a2e) 24%, transparent);
+  }
+  .cab-mobile-shell-fab:active { transform: translateY(1px); }
+  .cab-mobile-shell-fab:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--glass-text, #1a1a2e) 36%, transparent);
+    outline-offset: 2px;
+  }
+  :global(html[data-design-mode="material3"] .cab-mobile-shell-fab) {
+    border-color: transparent;
+    border-radius: 16px;
+    background: var(--sys-color-primary-container);
+    color: var(--sys-color-on-primary-container);
+    box-shadow: var(--sys-elevation-level2);
+    letter-spacing: .01em;
+    text-transform: none;
+  }
+  :global(html[data-design-mode="material3"] .cab-mobile-shell-fab:hover) {
+    background: color-mix(in srgb, var(--sys-color-primary-container) 92%, var(--sys-color-on-primary-container) 8%);
+  }
+  :global(html[data-design-mode="material3"] .cab-mobile-shell-fab:focus-visible) {
+    outline-color: var(--sys-color-primary);
+  }
 }
 
 /* Work type group */

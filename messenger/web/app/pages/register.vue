@@ -210,7 +210,7 @@ function focusPasswordField() {
         <div class="auth-card__copy">
           <p class="auth-card__eyebrow">Material 3 Messenger</p>
           <h1>Регистрация</h1>
-          <p class="hero-text">Создайте аккаунт для messenger в обновлённом Material 3 интерфейсе без старого glass-shell.</p>
+          <p class="hero-text">Создайте аккаунт messenger и перейдите к чатам и агентам.</p>
         </div>
 
         <form class="auth-form auth-form--native" @submit.prevent="submit">

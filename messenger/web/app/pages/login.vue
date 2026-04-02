@@ -89,7 +89,7 @@ function markTouched(field: keyof typeof touched) {
         <div class="auth-card__copy">
           <p class="auth-card__eyebrow">Material 3 Messenger</p>
           <h1>Вход</h1>
-          <p class="hero-text">Войдите в отдельный messenger с плотными tonal-surfaces, спокойной иерархией и единым Material 3 ритмом.</p>
+          <p class="hero-text">Войдите в messenger и откройте чаты, контакты и агентов.</p>
         </div>
 
         <form class="auth-form auth-form--native" @submit.prevent="submit">

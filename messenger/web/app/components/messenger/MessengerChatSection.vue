@@ -68,6 +68,7 @@ const composerMediaMenuTab = ref<'emoji' | 'stickers' | 'gif' | 'photo' | 'file'
 const klipyQuery = ref('')
 const mediaUploadPending = ref(false)
 const agentWorkspaceCollapsed = ref(false)
+const headerOverflowMenuOpen = ref(false)
 const selectedCatalogCategory = ref('')
 const selectedKlipyItem = ref<MessengerKlipyItem | null>(null)
 const klipyAudienceMode = reactive<{ stickers: 'mine' | 'shared'; gif: 'mine' | 'shared' }>({
@@ -618,6 +619,7 @@ const activePeerAvatar = computed(() => {
 const activeConversationPolicy = computed(() => conversations.activeConversation.value?.policy ?? null)
 const activeConversationSecret = computed(() => Boolean(conversations.activeConversation.value?.secret))
 const activeConversationAgent = computed(() => conversations.activeConversation.value?.peerType === 'agent')
+const activeConversationSupportsSecuritySummary = computed(() => conversations.activeConversation.value?.peerType === 'user')
 const canForwardFromActiveConversation = computed(() => activeConversationPolicy.value?.allowForwardOut !== false)
 const allowMutualDelete = computed(() => Boolean(activeConversationPolicy.value?.allowMutualDelete))
 const secretIntroStorageKey = computed(() => {
@@ -743,6 +745,18 @@ const securitySummaryText = computed(() => {
   }
 
   return 'Показаны только статусы и метаданные. Фактические ключи не выводятся и остаются только на устройствах пользователей.'
+})
+const sharedGallerySecurity = computed(() => {
+  if (!activeConversationSupportsSecuritySummary.value) {
+    return undefined
+  }
+
+  return {
+    summary: securitySummaryText.value,
+    items: securityItems.value,
+    pending: securitySummaryPending.value,
+    updatedAt: securitySummaryUpdatedAt.value,
+  }
 })
 
 const chatLayoutStyle = computed(() => ({
@@ -1004,6 +1018,18 @@ const composerMediaMenuVisible = computed(() => Boolean(
   composerMediaMenuOpen.value
   && conversations.activeConversation.value
   && !detailsOpen.value
+  && !photoFeedOpen.value,
+))
+const chatOverlayOpen = computed(() => Boolean(
+  conversations.activeConversation.value
+  && (composerMediaMenuVisible.value || detailsOpen.value || photoFeedOpen.value),
+))
+const compactMobileHeaderMenuOpen = computed(() => Boolean(
+  headerOverflowMenuOpen.value
+  && conversations.activeConversation.value
+  && isMobileChatViewport()
+  && !detailsOpen.value
+  && !composerMediaMenuVisible.value
   && !photoFeedOpen.value,
 ))
 const activeKlipyKind = computed<'gif' | 'sticker' | null>(() => {
@@ -1296,12 +1322,22 @@ watch(() => detailsOpen.value, (opened) => {
 })
 
 watch([detailsOpen, () => conversations.activeConversation.value?.id], async ([opened]) => {
-  if (!opened) {
+  if (!opened || !activeConversationSupportsSecuritySummary.value) {
     return
   }
 
   await refreshSecuritySummary()
 })
+
+watch(activeConversationSupportsSecuritySummary, (supported) => {
+  if (supported) {
+    return
+  }
+
+  securitySummary.value = null
+  securitySummaryUpdatedAt.value = null
+  securitySummaryPending.value = false
+}, { immediate: true })
 
 watch(() => conversations.activeConversationId.value, () => {
   editingMessageId.value = null
@@ -1332,9 +1368,9 @@ watch(draft, () => {
   syncComposerInputHeight()
 })
 
-watch(composerMediaMenuOpen, (open) => {
+watch(chatOverlayOpen, (open) => {
   navigation.mediaSheetOpen.value = open
-})
+}, { immediate: true })
 
 watch([detailsOpen, photoFeedOpen, () => conversations.activeConversationId.value], () => {
   composerMediaMenuOpen.value = false
@@ -1954,8 +1990,10 @@ function closePhotoFeed() {
 
 async function refreshSecuritySummary() {
   const activeConversation = conversations.activeConversation.value
-  if (!activeConversation || !auth.user.value) {
+  if (!activeConversation || !auth.user.value || !activeConversationSupportsSecuritySummary.value) {
     securitySummary.value = null
+    securitySummaryUpdatedAt.value = null
+    securitySummaryPending.value = false
     return
   }
 
@@ -2296,12 +2334,17 @@ function handleChatAreaPointerDown() {
 }
 
 watch(() => conversations.activeConversationId.value, () => {
-  agentWorkspaceCollapsed.value = false
+  agentWorkspaceCollapsed.value = activeConversationAgent.value ? isMobileChatViewport() : false
 }, { immediate: true })
 
 watch(() => activeConversationAgent.value, (value) => {
   if (!value) {
     agentWorkspaceCollapsed.value = false
+    return
+  }
+
+  if (conversations.activeConversation.value) {
+    agentWorkspaceCollapsed.value = isMobileChatViewport()
   }
 })
 
@@ -2409,6 +2452,7 @@ onBeforeUnmount(() => {
         @set-call-view-mode="calls.setCallViewMode($event)"
         @hangup-call="calls.hangupCall()"
         @back="navigation.openSection('chats')"
+        @update:overflow-menu-open="headerOverflowMenuOpen = $event"
         @pointerdown="handleChatAreaPointerDown"
       />
 
@@ -2516,7 +2560,7 @@ onBeforeUnmount(() => {
             :stickers="sharedContent.stickers"
             :documents="sharedContent.documents"
             :links="sharedContent.links"
-            :security="{ summary: securitySummaryText, items: securityItems, pending: securitySummaryPending, updatedAt: securitySummaryUpdatedAt }"
+            :security="sharedGallerySecurity"
             :initial-section="galleryPhotoId ? 'photos' : undefined"
             :initial-photo-id="galleryPhotoId"
             @close="closeDetails"
@@ -2561,7 +2605,7 @@ onBeforeUnmount(() => {
       <input ref="mediaPickerInputEl" type="file" hidden aria-hidden="true" tabindex="-1" @change="handleFileSelect">
 
       <MessengerAgentChatWorkspace
-        v-if="activeConversationAgent && conversations.activeConversation.value && !detailsOpen && !composerMediaMenuVisible"
+        v-if="activeConversationAgent && conversations.activeConversation.value && !detailsOpen && !composerMediaMenuVisible && !compactMobileHeaderMenuOpen"
         :agent-id="conversations.activeConversation.value.peerUserId"
         :agent-name="conversations.activeConversation.value.peerDisplayName"
         :agent-login="conversations.activeConversation.value.peerLogin"
@@ -2571,7 +2615,7 @@ onBeforeUnmount(() => {
       />
 
       <MessengerRoleQuickActions
-        v-if="conversations.activeConversation.value && !detailsOpen && !composerMediaMenuVisible && !activeConversationAgent"
+        v-if="conversations.activeConversation.value && !detailsOpen && !composerMediaMenuVisible && !activeConversationAgent && !compactMobileHeaderMenuOpen"
         :peer-login="conversations.activeConversation.value.peerLogin"
         :message-pending="conversations.messagePending.value"
         @action="handleRoleQuickAction"

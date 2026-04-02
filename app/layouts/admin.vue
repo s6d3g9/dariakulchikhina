@@ -102,139 +102,175 @@
       <aside
         ref="sidebarRef"
         class="proj-nav-col adm-sidebar"
-        :class="{ 'adm-sidebar--collapsed': isSidebarCollapsed }"
+        :class="{
+          'adm-sidebar--collapsed': isSidebarCollapsed,
+          'adm-sidebar--mobile-hidden': isMobileShell && mobileShellView === 'content',
+        }"
+        aria-label="Навигация админки"
+        :aria-hidden="isMobileShell && mobileShellView === 'content' ? 'true' : 'false'"
+        tabindex="-1"
       >
         <div class="adm-sidebar-inner" :class="{ 'adm-sidebar-inner--collapsed': isSidebarCollapsed }">
-        <div class="adm-sidebar-toolbar">
-          <button
-            v-if="canAutoCollapseSidebar"
-            type="button"
-            class="adm-sidebar-toggle"
-            :aria-expanded="!isSidebarCollapsed"
-            :aria-label="isSidebarCollapsed ? 'Раскрыть меню' : 'Свернуть меню'"
-            @click="toggleSidebarCollapsed"
-          >
-            <span class="adm-sidebar-toggle-glyph" aria-hidden="true">{{ isSidebarCollapsed ? '›' : '‹' }}</span>
-            <span v-if="!isSidebarCollapsed" class="adm-sidebar-toggle-label">
-              {{ isSidebarCollapsed ? 'раскрыть' : 'свернуть' }}
-            </span>
-          </button>
-        </div>
-        <div
-          v-if="adminLayoutModules.sidebarMenu && isBrutalistShell"
-          ref="adminMenuRef"
-          class="admin-sidebar-menu-wrap"
-          :class="{ 'admin-sidebar-menu-wrap--collapsed': isSidebarCollapsed }"
-        >
-          <button
-            type="button"
-            class="admin-sidebar-menu-btn"
-            :class="{
-              'admin-sidebar-menu-btn--open': adminShellMenuOpen,
-              'admin-sidebar-menu-btn--collapsed': isSidebarCollapsed,
-            }"
-            aria-label="Открыть меню админ-панели"
-            :aria-expanded="adminShellMenuOpen ? 'true' : 'false'"
-            @click.stop="adminShellMenuOpen = !adminShellMenuOpen"
-          >
-            <span class="admin-shell-menu-icon" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </span>
-            <span v-if="!isSidebarCollapsed" class="admin-sidebar-menu-label">меню админки</span>
-          </button>
-
-          <div v-if="adminShellMenuOpen && !isSidebarCollapsed" class="admin-sidebar-menu-panel" @click.stop>
-            <div class="admin-sidebar-brand">админ-панель</div>
+          <div v-if="isMobileShell" class="adm-mobile-shell adm-mobile-shell--sidebar">
+            <div class="adm-mobile-shell__copy">
+              <p class="adm-mobile-shell__eyebrow">Навигация</p>
+              <strong class="adm-mobile-shell__label">Меню админки</strong>
+            </div>
+            <button type="button" class="adm-mobile-shell__btn" @click="openMobileContent">к экрану</button>
+          </div>
+          <div class="adm-sidebar-toolbar">
             <button
-              v-if="adminLayoutModules.search"
+              v-if="canAutoCollapseSidebar"
               type="button"
-              class="admin-search-btn admin-search-btn--sidebar"
-              title="Поиск  Ctrl+K / ⌘K"
-              aria-label="Поиск"
-              @click="searchOpen = true; adminShellMenuOpen = false"
+              class="adm-sidebar-toggle"
+              :aria-expanded="!isSidebarCollapsed"
+              :aria-label="isSidebarCollapsed ? 'Раскрыть меню' : 'Свернуть меню'"
+              @click="toggleSidebarCollapsed"
             >
-              <span class="admin-search-label">поиск</span>
-              <kbd class="admin-search-kbd">Ctrl+K</kbd>
+              <span class="adm-sidebar-toggle-glyph" aria-hidden="true">{{ isSidebarCollapsed ? '›' : '‹' }}</span>
+              <span v-if="!isSidebarCollapsed" class="adm-sidebar-toggle-label">
+                {{ isSidebarCollapsed ? 'раскрыть' : 'свернуть' }}
+              </span>
+            </button>
+          </div>
+          <div
+            v-if="adminLayoutModules.sidebarMenu && isBrutalistShell"
+            ref="adminMenuRef"
+            class="admin-sidebar-menu-wrap"
+            :class="{ 'admin-sidebar-menu-wrap--collapsed': isSidebarCollapsed }"
+          >
+            <button
+              type="button"
+              class="admin-sidebar-menu-btn"
+              :class="{
+                'admin-sidebar-menu-btn--open': adminShellMenuOpen,
+                'admin-sidebar-menu-btn--collapsed': isSidebarCollapsed,
+              }"
+              aria-label="Открыть меню админ-панели"
+              :aria-expanded="adminShellMenuOpen ? 'true' : 'false'"
+              @click.stop="adminShellMenuOpen = !adminShellMenuOpen"
+            >
+              <span class="admin-shell-menu-icon" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+              <span v-if="!isSidebarCollapsed" class="admin-sidebar-menu-label">меню админки</span>
             </button>
 
-            <div v-if="adminLayoutModules.notifications" ref="notifWrapRef" class="admin-notif-wrap admin-notif-wrap--sidebar">
+            <div v-if="adminShellMenuOpen && !isSidebarCollapsed" class="admin-sidebar-menu-panel" @click.stop>
+              <div class="admin-sidebar-brand">админ-панель</div>
               <button
+                v-if="adminLayoutModules.search"
                 type="button"
-                class="admin-notif-btn admin-notif-btn--sidebar"
-                :class="notifOpen ? 'admin-notif-btn--open' : ''"
-                :title="notifTotal ? `${notifTotal} уведомлений` : 'Уведомления'"
-                @click.stop="notifOpen = !notifOpen"
+                class="admin-search-btn admin-search-btn--sidebar"
+                title="Поиск  Ctrl+K / ⌘K"
+                aria-label="Поиск"
+                @click="searchOpen = true; adminShellMenuOpen = false"
               >
-                <span>уведомления</span>
-                <span v-if="notifTotal" class="admin-notif-inline-count">{{ notifTotal > 99 ? '99+' : notifTotal }}</span>
+                <span class="admin-search-label">поиск</span>
+                <kbd class="admin-search-kbd">Ctrl+K</kbd>
               </button>
-              <div v-if="notifOpen" class="admin-notif-dropdown admin-notif-dropdown--sidebar glass-surface" @click.stop>
-                <div class="admin-notif-head">уведомления</div>
-                <div v-if="!notifTotal" class="admin-notif-empty">[ всё в порядке ]</div>
-                <template v-else>
-                  <NuxtLink
-                    v-if="notifData?.extra?.count"
-                    to="/admin"
-                    class="admin-notif-item admin-notif-item--warn"
-                    @click="notifOpen = false; adminShellMenuOpen = false"
-                  >
-                    <span class="admin-notif-item-count">{{ notifData.extra.count }}</span>
-                    <span class="admin-notif-item-label">{{ notifData.extra.label }}</span>
-                  </NuxtLink>
-                  <div
-                    v-if="notifData?.overdue?.count"
-                    class="admin-notif-item admin-notif-item--danger"
-                  >
-                    <span class="admin-notif-item-count">{{ notifData.overdue.count }}</span>
-                    <span class="admin-notif-item-label">{{ notifData.overdue.label }}</span>
+
+              <div v-if="adminLayoutModules.notifications" ref="notifWrapRef" class="admin-notif-wrap admin-notif-wrap--sidebar">
+                <button
+                  type="button"
+                  class="admin-notif-btn admin-notif-btn--sidebar"
+                  :class="notifOpen ? 'admin-notif-btn--open' : ''"
+                  :title="notifTotal ? `${notifTotal} уведомлений` : 'Уведомления'"
+                  @click.stop="notifOpen = !notifOpen"
+                >
+                  <span>уведомления</span>
+                  <span v-if="notifTotal" class="admin-notif-inline-count">{{ notifTotal > 99 ? '99+' : notifTotal }}</span>
+                </button>
+                <div v-if="notifOpen" class="admin-notif-dropdown admin-notif-dropdown--sidebar glass-surface" @click.stop>
+                  <div class="admin-notif-head">уведомления</div>
+                  <div v-if="!notifTotal" class="admin-notif-empty">[ всё в порядке ]</div>
+                  <template v-else>
+                    <NuxtLink
+                      v-if="notifData?.extra?.count"
+                      to="/admin"
+                      class="admin-notif-item admin-notif-item--warn"
+                      @click="notifOpen = false; adminShellMenuOpen = false"
+                    >
+                      <span class="admin-notif-item-count">{{ notifData.extra.count }}</span>
+                      <span class="admin-notif-item-label">{{ notifData.extra.label }}</span>
+                    </NuxtLink>
+                    <div
+                      v-if="notifData?.overdue?.count"
+                      class="admin-notif-item admin-notif-item--danger"
+                    >
+                      <span class="admin-notif-item-count">{{ notifData.overdue.count }}</span>
+                      <span class="admin-notif-item-label">{{ notifData.overdue.label }}</span>
+                    </div>
+                  </template>
+                  <div class="admin-notif-foot">
+                    <button class="admin-notif-refresh" @click="refreshNotif()">обновить</button>
                   </div>
-                </template>
-                <div class="admin-notif-foot">
-                  <button class="admin-notif-refresh" @click="refreshNotif()">обновить</button>
                 </div>
               </div>
-            </div>
 
-            <button
-              v-if="adminLayoutModules.themeSwitch"
-              type="button"
-              class="admin-theme-btn admin-theme-btn--sidebar"
-              :aria-label="themeToggleAriaLabel"
-              @click="toggleTheme"
-            >{{ themeToggleLabel }}</button>
+              <button
+                v-if="adminLayoutModules.themeSwitch"
+                type="button"
+                class="admin-theme-btn admin-theme-btn--sidebar"
+                :aria-label="themeToggleAriaLabel"
+                @click="toggleTheme"
+              >{{ themeToggleLabel }}</button>
 
-            <div class="admin-sidebar-links">
-              <NuxtLink v-if="adminLayoutModules.siteLink" to="/" class="admin-link admin-link--sidebar" @click="adminShellMenuOpen = false">сайт</NuxtLink>
-              <a v-if="adminLayoutModules.logoutLink" href="#" class="admin-link admin-link--sidebar" @click.prevent="adminShellMenuOpen = false; logout()">выйти</a>
+              <div class="admin-sidebar-links">
+                <NuxtLink v-if="adminLayoutModules.siteLink" to="/" class="admin-link admin-link--sidebar" @click="adminShellMenuOpen = false">сайт</NuxtLink>
+                <a v-if="adminLayoutModules.logoutLink" href="#" class="admin-link admin-link--sidebar" @click.prevent="adminShellMenuOpen = false; logout()">выйти</a>
+              </div>
             </div>
           </div>
-        </div>
 
-        <ClientOnly>
-          <AdminNestedNav
-            v-if="adminLayoutModules.nestedNav"
-            :node="adminNav.currentNode.value"
-            :direction="adminNav.slideDir.value"
-            :can-go-back="adminNav.canGoBack.value"
-            :active-id="adminNav.activeLeafId.value"
-            :collapsed="isSidebarCollapsed"
-            @drill="adminNav.drill"
-            @back="adminNav.back"
-            @select="adminNav.select"
-          />
-          <template #fallback>
-            <div v-if="adminLayoutModules.nestedNav" class="nav-shell" aria-hidden="true" />
-          </template>
-        </ClientOnly>
+          <ClientOnly>
+            <AdminNestedNav
+              v-if="adminLayoutModules.nestedNav"
+              :node="adminNav.currentNode.value"
+              :direction="adminNav.slideDir.value"
+              :can-go-back="adminNav.canGoBack.value"
+              :active-id="adminNav.activeLeafId.value"
+              :collapsed="isSidebarCollapsed"
+              @drill="adminNav.drill"
+              @back="adminNav.back"
+              @select="adminNav.select"
+            />
+            <template #fallback>
+              <div v-if="adminLayoutModules.nestedNav" class="nav-shell" aria-hidden="true" />
+            </template>
+          </ClientOnly>
         </div>
       </aside>
-      <main class="adm-main admin-with-nav">
+      <main
+        ref="mainRef"
+        class="adm-main admin-with-nav"
+        :class="{ 'adm-main--mobile-hidden': isMobileShell && mobileShellView === 'sidebar' }"
+        aria-label="Рабочая область админки"
+        :aria-hidden="isMobileShell && mobileShellView === 'sidebar' ? 'true' : 'false'"
+        tabindex="-1"
+      >
         <div class="admin-container">
+          <div v-if="isMobileShell" ref="mobileContentShellRef" class="adm-mobile-shell adm-mobile-shell--content">
+            <button type="button" class="adm-mobile-shell__btn" @click="openMobileSidebar">разделы</button>
+            <div class="adm-mobile-shell__copy adm-mobile-shell__copy--content">
+              <p class="adm-mobile-shell__eyebrow">Активный экран</p>
+              <strong class="adm-mobile-shell__label">{{ mobileContentLabel }}</strong>
+            </div>
+          </div>
           <slot />
         </div>
       </main>
+      <button
+        v-if="showMobileContentQuickSwitch"
+        type="button"
+        class="adm-mobile-shell-fab"
+        aria-label="Открыть разделы"
+        @click="openMobileSidebar"
+      >
+        разделы
+      </button>
     </div>
 
     <!-- ── Global search palette ── -->
@@ -258,8 +294,18 @@ const isBrutalistShell = computed(() => designSystem.currentDesignMode.value ===
 
 const isLiquidGlassShell = computed(() => designSystem.currentDesignMode.value === 'liquid-glass')
 const sidebarRef = ref<HTMLElement | null>(null)
+const mainRef = ref<HTMLElement | null>(null)
+const mobileContentShellRef = ref<HTMLElement | null>(null)
 const isSidebarCollapsed = ref(false)
 const isDesktopSidebar = ref(false)
+const mobileShellView = ref<'sidebar' | 'content'>('sidebar')
+const mobileContentScrollState = reactive({
+  route: '',
+  y: 0,
+})
+let mobileShellScrollFrame = 0
+let mobileShellQuickSwitchFrame = 0
+const showMobileContentQuickSwitch = ref(false)
 const utilBarOpen = ref(false)
 const utilBarRef = ref<HTMLElement | null>(null)
 const { editMode, toggleEditMode } = useEditMode()
@@ -321,6 +367,28 @@ onMounted(() => {
 
 // ── Global nav ──────────────────────────────────────────
 const adminNav = useAdminNav()
+const isMobileShell = computed(() => !isDesktopSidebar.value)
+const hasMobileContentPriority = computed(() => {
+  const spec = adminNav.contentSpec.value
+
+  return Boolean(
+    route.path.startsWith('/admin/projects/')
+    || adminNav.activeLeafId.value
+    || spec.projectSection
+    || spec.clientId
+    || spec.clientSection
+    || spec.contractorId
+    || spec.contractorSection
+    || spec.designerId
+    || spec.designerSection
+    || spec.sellerId
+    || spec.sellerSection
+    || spec.managerId
+    || spec.managerSection
+    || spec.documentCategory
+    || spec.galleryCategory
+  )
+})
 
 // ── Notifications ─────────────────────────────────────────────
 const { data: notifData, refresh: refreshNotif } = useFetch<any>('/api/admin/notifications', {
@@ -351,9 +419,10 @@ if (activeProjectSlug.value) {
 }
 
 // Current project info for linking/unlinking
+const projectDataAsyncKey = computed(() => `admin-layout-project-data:${activeProjectSlug.value || 'none'}`)
 const { data: projectData, refresh: refreshProjectData } = ((useAsyncData as any)(
-  'admin-layout-project-data',
-  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}`) : null,
+  projectDataAsyncKey,
+  () => activeProjectSlug.value ? $fetch(`/api/projects/${activeProjectSlug.value}`) : Promise.resolve(null),
   { watch: [activeProjectSlug], default: () => null, server: false },
 )) as { data: Ref<any>, refresh: () => Promise<void> }
 
@@ -402,6 +471,56 @@ const quickProjects = computed(() =>
 const currentProjectTitle    = computed(() => quickProjects.value.find(p => p.slug === activeProjectSlug.value)?.title || activeProjectSlug.value)
 const currentProjectInitials = computed(() => projectInitials(currentProjectTitle.value))
 
+const mobileContentLabel = computed(() => {
+  const activeLeafId = adminNav.activeLeafId.value
+
+  if (activeLeafId) {
+    const activeLeaf = adminNav.currentNode.value.payload.find(item => item.id === activeLeafId)
+    if (activeLeaf?.name) {
+      return activeLeaf.name
+    }
+  }
+
+  if (route.path.startsWith('/admin/projects/')) {
+    return currentProjectTitle.value || 'Проект'
+  }
+
+  if (route.path === ADMIN_SECTION_ROUTES.projects) {
+    return 'Проекты'
+  }
+
+  if (route.path.startsWith(ADMIN_SECTION_ROUTES.clients)) {
+    return 'Клиенты'
+  }
+
+  if (route.path.startsWith(ADMIN_SECTION_ROUTES.contractors)) {
+    return 'Подрядчики'
+  }
+
+  if (route.path.startsWith(ADMIN_SECTION_ROUTES.designers)) {
+    return 'Дизайнеры'
+  }
+
+  if (route.path.startsWith(ADMIN_SECTION_ROUTES.sellers)) {
+    return 'Поставщики'
+  }
+
+  if (route.path.startsWith(ADMIN_SECTION_ROUTES.managers)) {
+    return 'Менеджеры'
+  }
+
+  if (route.path.startsWith(ADMIN_SECTION_ROUTES.docs)) {
+    return 'Документы'
+  }
+
+  if (route.path.startsWith(ADMIN_SECTION_ROUTES.gallery)) {
+    return 'Галерея'
+  }
+
+  const breadcrumbs = adminNav.currentNode.value.context?.breadcrumbs || []
+  return breadcrumbs[breadcrumbs.length - 1] || adminNav.currentNode.value.context?.title || 'Рабочий экран'
+})
+
 // ── Contractors data ────────────────────────────────────────────
 const { data: contractorsData } = useFetch<any[]>('/api/contractors', { server: false, default: () => [] })
 const quickContractors = computed(() => (contractorsData.value || []).slice(0, 12))
@@ -417,19 +536,22 @@ const quickDesigners = computed(() => (designersData.value || []).slice(0, 12))
 // ── Sellers data ────────────────────────────────────────────────
 const { data: sellersData } = useFetch<any[]>('/api/sellers', { server: false, default: () => [] })
 const quickSellers = computed(() => (sellersData.value || []).slice(0, 12))
+const linkedSellersAsyncKey = computed(() => `admin-layout-linked-sellers:${activeProjectSlug.value || 'none'}`)
 const { data: linkedSellersData, refresh: refreshLinkedSellers } = useAsyncData<any[]>(
-  'admin-layout-linked-sellers',
+  linkedSellersAsyncKey,
   () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/sellers`) : Promise.resolve<any[]>([]),
   { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
 )
 
+const linkedDesignersAsyncKey = computed(() => `admin-layout-linked-designers:${activeProjectSlug.value || 'none'}`)
 const { data: linkedDesignersData, refresh: refreshLinkedDesigners } = useAsyncData<any[]>(
-  'admin-layout-linked-designers',
+  linkedDesignersAsyncKey,
   () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/designers`) : Promise.resolve<any[]>([]),
   { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
 )
+const linkedContractorsAsyncKey = computed(() => `admin-layout-linked-contractors:${activeProjectSlug.value || 'none'}`)
 const { data: linkedContractorsData, refresh: refreshLinkedContractors } = useAsyncData<any[]>(
-  'admin-layout-linked-contractors',
+  linkedContractorsAsyncKey,
   () => activeProjectSlug.value ? $fetch<any[]>(`/api/projects/${activeProjectSlug.value}/contractors`) : Promise.resolve<any[]>([]),
   { watch: [activeProjectSlug], server: false, default: () => [] as any[] },
 )
@@ -677,6 +799,130 @@ function closeAll() {
     notifOpen.value = adminShellMenuOpen.value = utilBarOpen.value = false
 }
 
+function cancelMobileShellScrollFrame() {
+  if (!import.meta.client || typeof window === 'undefined' || !mobileShellScrollFrame) {
+    return
+  }
+
+  window.cancelAnimationFrame(mobileShellScrollFrame)
+  mobileShellScrollFrame = 0
+}
+
+function cancelMobileShellQuickSwitchFrame() {
+  if (!import.meta.client || typeof window === 'undefined' || !mobileShellQuickSwitchFrame) {
+    return
+  }
+
+  window.cancelAnimationFrame(mobileShellQuickSwitchFrame)
+  mobileShellQuickSwitchFrame = 0
+}
+
+function syncMobileContentQuickSwitch() {
+  if (!import.meta.client || typeof window === 'undefined') {
+    return
+  }
+
+  if (isDesktopSidebar.value || mobileShellView.value !== 'content') {
+    showMobileContentQuickSwitch.value = false
+    return
+  }
+
+  const shell = mobileContentShellRef.value
+  if (!shell) {
+    showMobileContentQuickSwitch.value = window.scrollY > 120
+    return
+  }
+
+  showMobileContentQuickSwitch.value = shell.getBoundingClientRect().bottom < 0
+}
+
+function queueMobileContentQuickSwitchSync() {
+  if (!import.meta.client || typeof window === 'undefined') {
+    return
+  }
+
+  cancelMobileShellQuickSwitchFrame()
+  mobileShellQuickSwitchFrame = window.requestAnimationFrame(() => {
+    mobileShellQuickSwitchFrame = 0
+    syncMobileContentQuickSwitch()
+  })
+}
+
+function rememberMobileContentScroll() {
+  if (!import.meta.client || typeof window === 'undefined' || isDesktopSidebar.value) {
+    return
+  }
+
+  if (mobileShellView.value !== 'content') {
+    return
+  }
+
+  mobileContentScrollState.route = route.fullPath
+  mobileContentScrollState.y = window.scrollY
+}
+
+async function syncMobileShellViewport(nextView: 'sidebar' | 'content', behavior: ScrollBehavior) {
+  if (!import.meta.client || typeof window === 'undefined' || isDesktopSidebar.value) {
+    return
+  }
+
+  await nextTick()
+  cancelMobileShellScrollFrame()
+
+  mobileShellScrollFrame = window.requestAnimationFrame(() => {
+    mobileShellScrollFrame = 0
+
+    const target = nextView === 'sidebar' ? sidebarRef.value : mainRef.value
+    const shouldRestoreContentScroll = nextView === 'content'
+      && mobileContentScrollState.route === route.fullPath
+      && mobileContentScrollState.y > 0
+
+    if (shouldRestoreContentScroll) {
+      window.scrollTo({ top: mobileContentScrollState.y, behavior })
+    } else {
+      target?.scrollIntoView({ behavior, block: 'start' })
+    }
+
+    target?.focus({ preventScroll: true })
+  })
+}
+
+async function setMobileShellView(
+  nextView: 'sidebar' | 'content',
+  options: { behavior?: ScrollBehavior, forceScroll?: boolean } = {},
+) {
+  if (isDesktopSidebar.value) {
+    mobileShellView.value = 'content'
+    return
+  }
+
+  if (mobileShellView.value === 'content' && nextView !== 'content') {
+    rememberMobileContentScroll()
+  }
+
+  const changed = mobileShellView.value !== nextView
+  mobileShellView.value = nextView
+  closeAll()
+
+  if (!changed && !options.forceScroll) {
+    return
+  }
+
+  await syncMobileShellViewport(nextView, options.behavior || 'smooth')
+}
+
+async function switchMobileShellView(nextView: 'sidebar' | 'content') {
+  await setMobileShellView(nextView, { behavior: 'smooth', forceScroll: true })
+}
+
+function openMobileSidebar() {
+  void switchMobileShellView('sidebar')
+}
+
+function openMobileContent() {
+  void switchMobileShellView('content')
+}
+
 function onDocClick(e: MouseEvent) {
   const refs = [projectsTabRef.value, contractorsTabRef.value, clientsTabRef.value, galleryTabRef.value, designersTabRef.value, sellersTabRef.value, notifWrapRef.value, adminMenuRef.value, utilBarRef.value]
   if (refs.every(r => !r || !r.contains(e.target as Node))) closeAll()
@@ -704,6 +950,8 @@ onMounted(() => {
   }
   syncDesktopSidebarState()
   window.addEventListener('resize', syncDesktopSidebarState)
+  window.addEventListener('scroll', queueMobileContentQuickSwitchSync, { passive: true })
+  queueMobileContentQuickSwitchSync()
   // Синхронизируем CSS vars на :root, чтобы Teleport-ed элементы (Wipe2Renderer) могли их читать
   watch(sidebarLayoutStyle, (style) => {
     for (const [key, val] of Object.entries(style)) {
@@ -715,6 +963,9 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   document.removeEventListener('keydown', onSearchKeydown)
   window.removeEventListener('resize', syncDesktopSidebarState)
+  window.removeEventListener('scroll', queueMobileContentQuickSwitchSync)
+  cancelMobileShellScrollFrame()
+  cancelMobileShellQuickSwitchFrame()
   if (_notifInterval) clearInterval(_notifInterval)
 })
 
@@ -744,6 +995,20 @@ watch(() => adminLayoutModules.value.sidebarMenu, (enabled) => {
     adminShellMenuOpen.value = false
   }
 })
+watch([isDesktopSidebar, hasMobileContentPriority, () => route.fullPath], async ([desktop, shouldOpenContent]) => {
+  const nextView = desktop ? 'content' : (shouldOpenContent ? 'content' : 'sidebar')
+
+  if (desktop) {
+    mobileShellView.value = 'content'
+    return
+  }
+
+  await setMobileShellView(nextView)
+}, { immediate: true })
+watch([isDesktopSidebar, mobileShellView, () => route.fullPath], async () => {
+  await nextTick()
+  queueMobileContentQuickSwitchSync()
+}, { immediate: true })
 watch(isSidebarCollapsed, (collapsed) => {
   if (collapsed) {
     adminShellMenuOpen.value = false
@@ -886,6 +1151,130 @@ async function logout() {
   align-items: flex-start;
   min-height: calc(100vh - var(--admin-header-h, 48px));
   min-height: calc(100dvh - var(--admin-header-h, 48px));
+}
+
+.adm-mobile-shell {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 12%, transparent);
+  background: color-mix(in srgb, var(--glass-bg) 88%, transparent);
+  border-radius: 20px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.adm-mobile-shell__copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.adm-mobile-shell__copy--content {
+  justify-items: end;
+  text-align: right;
+}
+
+.adm-mobile-shell__eyebrow {
+  margin: 0;
+  font-size: .62rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--glass-text) 50%, transparent);
+}
+
+.adm-mobile-shell__label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .92rem;
+  line-height: 1.2;
+  color: var(--glass-text);
+}
+
+.adm-mobile-shell__btn {
+  position: relative;
+  isolation: isolate;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+  background: color-mix(in srgb, var(--glass-text) 4%, transparent);
+  color: var(--glass-text);
+  border-radius: 999px;
+  font: inherit;
+  font-size: .72rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.adm-mobile-shell__btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+
+.adm-mobile-shell__btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+.adm-mobile-shell__btn:hover::before {
+  opacity: .06;
+}
+
+.adm-mobile-shell__btn:active::before {
+  opacity: .1;
+}
+
+.adm-mobile-shell__btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--glass-text) 36%, transparent);
+  outline-offset: 2px;
+}
+
+:global(html[data-design-mode="material3"] .adm-mobile-shell) {
+  border-color: var(--sys-color-outline-variant);
+  background: var(--sys-color-surface-container-low);
+  border-radius: var(--sys-radius-xl, 24px);
+  box-shadow: var(--sys-elevation-level1);
+}
+
+:global(html[data-design-mode="material3"] .adm-mobile-shell__eyebrow) {
+  letter-spacing: .06em;
+  text-transform: none;
+  color: var(--sys-color-on-surface-variant);
+}
+
+:global(html[data-design-mode="material3"] .adm-mobile-shell__label) {
+  color: var(--sys-color-on-surface);
+}
+
+:global(html[data-design-mode="material3"] .adm-mobile-shell__btn) {
+  border-color: transparent;
+  background: var(--sys-color-secondary-container);
+  color: var(--sys-color-on-secondary-container);
+  letter-spacing: .01em;
+  text-transform: none;
+}
+
+:global(html[data-design-mode="material3"] .adm-mobile-shell__btn:hover::before) {
+  opacity: .08;
+}
+
+:global(html[data-design-mode="material3"] .adm-mobile-shell__btn:active::before) {
+  opacity: .12;
+}
+
+:global(html[data-design-mode="material3"] .adm-mobile-shell__btn:focus-visible) {
+  outline-color: var(--sys-color-primary);
 }
 
 /* ── Utility bar hamburger ── */
@@ -1362,6 +1751,76 @@ async function logout() {
     justify-content: space-between;
   }
 
+  .adm-mobile-shell {
+    display: flex;
+  }
+
+  .adm-mobile-shell--sidebar,
+  .adm-mobile-shell--content {
+    margin-bottom: 12px;
+  }
+
+  .adm-sidebar--mobile-hidden,
+  .adm-main--mobile-hidden {
+    display: none;
+  }
+
+  .adm-mobile-shell-fab {
+    position: fixed;
+    top: calc(var(--dp-panel-h, 0px) + var(--admin-header-h, 48px) + 12px);
+    right: 12px;
+    z-index: 80;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid color-mix(in srgb, var(--glass-text) 14%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--glass-bg) 92%, transparent);
+    color: var(--glass-text);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    font: inherit;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    transition: transform .18s ease, background-color .18s ease, border-color .18s ease;
+  }
+
+  .adm-mobile-shell-fab:hover {
+    background: color-mix(in srgb, var(--glass-text) 8%, var(--glass-bg) 92%);
+    border-color: color-mix(in srgb, var(--glass-text) 24%, transparent);
+  }
+
+  .adm-mobile-shell-fab:active {
+    transform: translateY(1px);
+  }
+
+  .adm-mobile-shell-fab:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--glass-text) 36%, transparent);
+    outline-offset: 2px;
+  }
+
+  :global(html[data-design-mode="material3"] .adm-mobile-shell-fab) {
+    border-color: transparent;
+    border-radius: 16px;
+    background: var(--sys-color-primary-container);
+    color: var(--sys-color-on-primary-container);
+    box-shadow: var(--sys-elevation-level2);
+    letter-spacing: .01em;
+    text-transform: none;
+  }
+
+  :global(html[data-design-mode="material3"] .adm-mobile-shell-fab:hover) {
+    background: color-mix(in srgb, var(--sys-color-primary-container) 92%, var(--sys-color-on-primary-container) 8%);
+  }
+
+  :global(html[data-design-mode="material3"] .adm-mobile-shell-fab:focus-visible) {
+    outline-color: var(--sys-color-primary);
+  }
+
   .admin-sidebar-menu-wrap {
     padding-bottom: 10px;
     margin-bottom: 8px;
@@ -1392,6 +1851,7 @@ async function logout() {
 
   .adm-body {
     flex-direction: column;
+    gap: 10px;
   }
 
   .admin-with-nav {

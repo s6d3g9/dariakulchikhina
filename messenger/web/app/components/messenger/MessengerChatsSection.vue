@@ -1244,7 +1244,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
 
       <!-- FAB -->
       <button
-        v-if="agentsEnabled"
+        v-if="agentsEnabled && !showNewChatDialog"
         type="button"
         class="chats-fab"
         aria-label="Создать чат"
@@ -1303,7 +1303,7 @@ function formatChatPreview(chat: MessengerConversationItem) {
             v-model="searchDraft"
             type="text"
             class="composer-input composer-input--dock"
-            placeholder=""
+            placeholder="Поиск по чатам"
             autocomplete="off"
             @focus="openSearch"
             @blur="closeSearch"
@@ -1368,18 +1368,16 @@ function formatChatPreview(chat: MessengerConversationItem) {
     </VDialog>
 
     <!-- Диалог: новый чат (FAB) -->
-    <VDialog v-if="agentsEnabled" v-model="showNewChatDialog" max-width="520">
+    <VDialog v-if="agentsEnabled" v-model="showNewChatDialog" max-width="520" content-class="new-chat-dialog__content">
       <VCard>
         <VCardTitle>Новый чат</VCardTitle>
         <VCardText>
           <div v-if="newChatMode === 'menu'" class="new-chat-mode-grid">
             <button type="button" class="new-chat-mode-card" @click="newChatMode = 'agent'">
               <span class="new-chat-mode-card__title">Чат с агентом</span>
-              <span class="new-chat-mode-card__text">Открыть AI-ассистента из галереи агентов.</span>
             </button>
             <button type="button" class="new-chat-mode-card" @click="newChatMode = 'system'">
               <span class="new-chat-mode-card__title">Система агентов</span>
-              <span class="new-chat-mode-card__text">Создать группу агентов в отдельной папке чатов.</span>
             </button>
           </div>
 
@@ -1400,7 +1398,6 @@ function formatChatPreview(chat: MessengerConversationItem) {
               >
                 <span class="new-chat-agent-gallery__item-title">{{ agent.displayName }}</span>
                 <span class="new-chat-agent-gallery__item-subtitle">@{{ agent.login }} · {{ agent.settings.model }}</span>
-                <span class="new-chat-agent-gallery__item-text">{{ agent.description }}</span>
               </button>
               <p v-if="!filteredAgentGallery.length" class="on-surface-variant body-medium">Агенты не найдены.</p>
             </div>

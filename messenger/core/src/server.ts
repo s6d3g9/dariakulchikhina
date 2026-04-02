@@ -29,8 +29,46 @@ import { MESSENGER_UPLOADS_ROOT, storeUploadedMedia } from './media-store.ts'
 import { hasMessengerTranscriptionHttpBackend, isMessengerTranscriptionConfigured, transcribeMessengerAudioChunk } from './transcription-service.ts'
 import { getMessengerUserAiSettings, updateMessengerUserAiSettings } from './user-ai-settings-store.ts'
 
+function isMessengerCorsOriginAllowed(origin: string, allowedOrigins: string[]) {
+  if (allowedOrigins.includes(origin)) {
+    return true
+  }
+
+  let requestUrl: URL
+
+  try {
+    requestUrl = new URL(origin)
+  } catch {
+    return false
+  }
+
+  return allowedOrigins.some((allowedOrigin) => {
+    let allowedUrl: URL
+
+    try {
+      allowedUrl = new URL(allowedOrigin)
+    } catch {
+      return false
+    }
+
+    if (allowedUrl.protocol !== requestUrl.protocol || allowedUrl.hostname !== requestUrl.hostname) {
+      return false
+    }
+
+    if (allowedUrl.port) {
+      return allowedUrl.port === requestUrl.port
+    }
+
+    return true
+  })
+}
+
 export async function createMessengerServer() {
   const config = readMessengerConfig()
+  const allowedCorsOrigins = config.MESSENGER_CORE_CORS_ORIGIN
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean)
   const app = Fastify({
     logger: {
       level: config.MESSENGER_CORE_LOG_LEVEL,
@@ -38,7 +76,16 @@ export async function createMessengerServer() {
   })
 
   await app.register(cors, {
-    origin: config.MESSENGER_CORE_CORS_ORIGIN,
+    origin(origin, callback) {
+      if (!origin) {
+        callback(null, true)
+        return
+      }
+
+      callback(null, isMessengerCorsOriginAllowed(origin, allowedCorsOrigins))
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type'],
   })
   await app.register(multipart, {
     limits: {

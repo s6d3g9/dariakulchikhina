@@ -108,27 +108,39 @@ type InlineAutosaveState = '' | 'saving' | 'saved' | 'error'
 
 export function useContractorCabinet(contractorId: Ref<number | null>) {
   const cid = computed(() => contractorId.value)
+  const hasContractorId = computed(() => Number.isInteger(cid.value) && Number(cid.value) > 0)
+  const contractorAsyncKey = computed(() => `contractor-cabinet:${cid.value || 'none'}`)
+  const contractorWorkItemsAsyncKey = computed(() => `contractor-cabinet-work-items:${cid.value || 'none'}`)
+  const contractorStaffAsyncKey = computed(() => `contractor-cabinet-staff:${cid.value || 'none'}`)
+  const contractorProjectsAsyncKey = computed(() => `contractor-cabinet-projects:${cid.value || 'none'}`)
+  const contractorDocsAsyncKey = computed(() => `contractor-cabinet-docs:${cid.value || 'none'}`)
+  const requestHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
 
   // ── Data fetching ──
-  const { data: contractor, pending, refresh } = useFetch<any>(
-    () => cid.value ? `/api/contractors/${cid.value}` : null as any,
-    { watch: [cid] },
+  const { data: contractor, pending, refresh } = useAsyncData<any | null>(
+    contractorAsyncKey,
+    () => hasContractorId.value ? $fetch<any>(`/api/contractors/${cid.value}` as string, { headers: requestHeaders }) : Promise.resolve(null),
+    { watch: [cid], default: () => null },
   )
-  const { data: workItems, refresh: refreshItems } = useFetch<any[]>(
-    () => cid.value ? `/api/contractors/${cid.value}/work-items` : null as any,
-    { default: () => [], watch: [cid] },
+  const { data: workItems, refresh: refreshItems } = useAsyncData<any[]>(
+    contractorWorkItemsAsyncKey,
+    () => hasContractorId.value ? $fetch<any[]>(`/api/contractors/${cid.value}/work-items` as string, { headers: requestHeaders }) : Promise.resolve<any[]>([]),
+    { default: () => [] as any[], watch: [cid] },
   )
-  const { data: staff } = useFetch<any[]>(
-    () => cid.value ? `/api/contractors/${cid.value}/staff` : null as any,
-    { default: () => [], watch: [cid] },
+  const { data: staff } = useAsyncData<any[]>(
+    contractorStaffAsyncKey,
+    () => hasContractorId.value ? $fetch<any[]>(`/api/contractors/${cid.value}/staff` as string, { headers: requestHeaders }) : Promise.resolve<any[]>([]),
+    { default: () => [] as any[], watch: [cid] },
   )
-  const { data: linkedProjects } = useFetch<any[]>(
-    () => cid.value ? `/api/contractors/${cid.value}/projects` : null as any,
-    { default: () => [], watch: [cid] },
+  const { data: linkedProjects } = useAsyncData<any[]>(
+    contractorProjectsAsyncKey,
+    () => hasContractorId.value ? $fetch<any[]>(`/api/contractors/${cid.value}/projects` as string, { headers: requestHeaders }) : Promise.resolve<any[]>([]),
+    { default: () => [] as any[], watch: [cid] },
   )
-  const { data: contractorDocs, refresh: refreshDocs } = useFetch<any[]>(
-    () => cid.value ? `/api/contractors/${cid.value}/documents` : null as any,
-    { default: () => [], watch: [cid] },
+  const { data: contractorDocs, refresh: refreshDocs } = useAsyncData<any[]>(
+    contractorDocsAsyncKey,
+    () => hasContractorId.value ? $fetch<any[]>(`/api/contractors/${cid.value}/documents` as string, { headers: requestHeaders }) : Promise.resolve<any[]>([]),
+    { default: () => [] as any[], watch: [cid] },
   )
 
   // ── Form ──

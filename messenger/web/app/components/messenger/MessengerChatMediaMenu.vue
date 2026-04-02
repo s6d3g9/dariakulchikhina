@@ -86,6 +86,8 @@ defineExpose({
   categoryRailEl,
   feedEl,
 })
+
+const showSearchDock = computed(() => props.tab === 'stickers' || props.tab === 'gif')
 </script>
 
 <template>
@@ -250,14 +252,14 @@ defineExpose({
         </div>
 
         <!-- Layer 3: Search field (all tabs per spec §4.1) -->
-        <div class="search-dock">
+        <div v-if="showSearchDock" class="search-dock">
           <div class="search-dock__field">
             <MessengerDockField>
               <input
                 :value="klipyQuery"
                 type="text"
                 class="composer-input composer-input--dock"
-                placeholder=""
+                placeholder="Поиск по медиа"
                 autocomplete="off"
                 autocapitalize="off"
                 spellcheck="false"

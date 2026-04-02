@@ -251,6 +251,17 @@ async function saveSettings() {
       </VWindowItem>
     </VWindow>
 
+    <div class="section-tabs-row agents-section__tabs-row">
+      <VTabs v-model="agentsTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
+        <VTab value="directory" aria-label="Список агентов" title="Список агентов">
+          <VIcon>mdi-format-list-bulleted</VIcon>
+        </VTab>
+        <VTab value="graph" aria-label="Граф агентов" title="Граф агентов">
+          <VIcon>mdi-graph-outline</VIcon>
+        </VTab>
+      </VTabs>
+    </div>
+
     <div class="search-dock search-dock--bottom-dock agents-section__search-dock">
       <div class="search-dock__field">
         <MessengerDockField>
@@ -279,17 +290,6 @@ async function saveSettings() {
           </div>
         </Transition>
       </div>
-    </div>
-
-    <div class="section-tabs-row agents-section__tabs-row">
-      <VTabs v-model="agentsTab" class="section-tabs" bg-color="surface-container" color="primary" density="compact" grow>
-        <VTab value="directory" aria-label="Список агентов" title="Список агентов">
-          <VIcon>mdi-format-list-bulleted</VIcon>
-        </VTab>
-        <VTab value="graph" aria-label="Граф агентов" title="Граф агентов">
-          <VIcon>mdi-graph-outline</VIcon>
-        </VTab>
-      </VTabs>
     </div>
 
     <VDialog v-model="settingsDialogOpen" max-width="620">

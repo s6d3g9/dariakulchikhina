@@ -41,11 +41,13 @@ interface AuthMePayload {
 // Получаем данные текущего авторизованного подрядчика
 const { data: meData } = await useFetch<AuthMePayload>('/api/auth/me')
 const contractorId = computed(() => meData.value?.contractorId)
+const requestHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
+const contractorProfileAsyncKey = computed(() => `contractor-layout-profile:${contractorId.value || 'none'}`)
 
 const { data: contractor } = await useAsyncData<Contractor | null>(
-  'contractor-layout-profile',
+  contractorProfileAsyncKey,
   () => contractorId.value
-    ? $fetch<Contractor>(`/api/contractors/${contractorId.value}`)
+    ? $fetch<Contractor>(`/api/contractors/${contractorId.value}`, { headers: requestHeaders })
     : Promise.resolve(null),
   { watch: [contractorId], default: () => null }
 )

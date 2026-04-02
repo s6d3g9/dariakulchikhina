@@ -18,6 +18,8 @@
 - `MESSENGER_CORE_AUTH_SECRET`
 - `MESSENGER_CORE_CORS_ORIGIN`
 
+Для dev и preview можно передавать несколько origin через запятую. Если указать origin без порта, например `http://localhost`, backend разрешит любой localhost preview-порт с тем же протоколом и хостом.
+
 Опционально для GIF/стикеров через KLIPY:
 
 - `KLIPY_APP_KEY`
