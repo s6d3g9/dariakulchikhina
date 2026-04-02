@@ -12,7 +12,7 @@ const { sections } = useMessengerSections()
 
 // Nav bar скрываем при открытой медиа-плашке или клавиатуре
 const showBottomNav = computed(() =>
-  !navigation.mediaSheetOpen.value && !viewport.keyboardOpen.value,
+  !navigation.mediaSheetOpen.value && !viewport.keyboardOpen.value && !calls.analysisPanelOpen.value,
 )
 
 // Активный раздел для VBottomNavigation
@@ -107,6 +107,7 @@ async function logout() {
       class="messenger-shell"
       :data-messenger-keyboard="viewport.keyboardOpen.value ? 'open' : 'closed'"
       :data-messenger-media-sheet="navigation.mediaSheetOpen.value ? 'open' : 'closed'"
+      :data-messenger-analysis-panel="calls.analysisPanelOpen.value ? 'open' : 'closed'"
       :data-messenger-detached-call="detachedCallHeaderVisible ? 'open' : 'closed'"
     >
       <div class="messenger-workspace">

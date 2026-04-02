@@ -1,14 +1,20 @@
 # Структура интерфейса
 
+## Scope
+
+- Этот документ описывает прежде всего интерфейсы основной платформы в `app/**`.
+- `messenger/web/**` — отдельный standalone продукт с собственным shell и M3/Vuetify контрактом.
+
 ## Роли и точки входа
 
-| Роль        | URL входа            | Лейаут      | Middleware         |
-|-------------|----------------------|-------------|--------------------|
-| Дизайнер    | `/admin/login`       | `default`   | `admin.ts` → проверка `role === 'designer'` |
-| Клиент      | `/client/login`      | `default`   | `client.ts` → проверка `role === 'client'` |
-| Подрядчик   | `/contractor/login`  | `default`   | `contractor.ts` → проверка `role === 'contractor'` |
+| Контур | Canonical вход | Alias / legacy | Защищённые маршруты | Лейаут / middleware |
+|-------------|----------------------|-------------|--------------------|--------------------|
+| Дизайнер / admin | `/login?role=admin` | `/admin/login` | `/admin/**`, `/admin/projects/[slug]` | `admin.vue`, `admin.ts`, `admin-project-canonical.ts` |
+| Клиент | `/login?role=client` | `/client/login`, `/project/login` | `/client/[slug]`, `/project/[slug]` | `default`, `client.ts` |
+| Подрядчик | `/login?role=contractor` | `/contractor/login` | `/contractor/[id]` | `contractor.vue`, `contractor.ts` |
+| Standalone chat | `/chat/login` | — | `/chat`, `/chat/register` | отдельный chat shell |
 
-Главная страница `/` — лендинг с тремя кнопками входа (клиент / подрядчик / дизайнер).
+Главная страница `/` — landing с переходами в регистрацию и role-specific входы.
 
 ---
 
@@ -16,13 +22,16 @@
 
 ```
 / (index.vue)
-├── /admin/login       → пароль → /admin (проекты)
-├── /client/login      → пароль → /client/[slug]
-└── /contractor/login  → пароль → /contractor/[id]
+├── /login?role=admin        → /admin/**
+├── /login?role=client       → /client/[slug]
+├── /login?role=contractor   → /contractor/[id]
+├── /project/login           → redirect to /login?role=client
+├── /admin/login             → redirect to /login?role=admin
+└── /chat/login              → standalone chat shell
 ```
 
 При каждом переходе на защищённый маршрут middleware делает `GET /api/auth/me`
-и при ошибке или несовпадении роли редиректит обратно на `login`.
+и при ошибке или несовпадении роли редиректит обратно на role-specific login alias.
 
 ---
 

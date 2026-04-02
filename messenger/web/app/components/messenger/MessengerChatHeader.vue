@@ -15,6 +15,8 @@ const props = withDefaults(defineProps<{
   canToggleAudioCall?: boolean
   showCallAnalysis?: boolean
   callAnalysisActive?: boolean
+  transcriptionActive?: boolean
+  canToggleTranscription?: boolean
   canToggleVideo?: boolean
   videoCallDisabled?: boolean
   microphoneEnabled?: boolean
@@ -35,6 +37,7 @@ const emit = defineEmits<{
   'toggle-details': []
   'toggle-audio-call': []
   'toggle-call-analysis': []
+  'toggle-transcription': []
   'start-video-call': []
   'reject-call': []
   'accept-call': []
@@ -100,6 +103,10 @@ const speakerToggleLabel = computed(() => props.speakerEnabled ? 'Громкая
 const speakerToggleAriaLabel = computed(() => props.speakerEnabled
   ? 'Переключить звонок на обычный режим'
   : 'Переключить звонок на громкую связь')
+const transcriptionToggleAriaLabel = computed(() => props.transcriptionActive
+  ? 'Остановить транскрибацию звонка'
+  : 'Включить транскрибацию звонка')
+const transcriptionToggleDisabled = computed(() => !props.transcriptionActive && !props.canToggleTranscription)
 </script>
 
 <template>
@@ -139,7 +146,7 @@ const speakerToggleAriaLabel = computed(() => props.speakerEnabled
 
         <div class="chat-header__toolbar-actions" :class="{ 'chat-header__toolbar-actions--call': callVisible }">
           <template v-if="callVisible">
-            <div class="chat-header__call-inline" :class="{ 'chat-header__call-inline--incoming': incomingCall }">
+            <div class="chat-header__call-inline" :class="{ 'chat-header__call-inline--incoming': incomingCall, 'chat-header__call-inline--audio': audioCall && !incomingCall }">
               <div class="chat-header__call-secondary">
                 <template v-if="!incomingCall">
                   <VBtn
@@ -153,15 +160,27 @@ const speakerToggleAriaLabel = computed(() => props.speakerEnabled
                     <VIcon>{{ microphoneEnabled ? 'mdi-microphone' : 'mdi-microphone-off' }}</VIcon>
                   </VBtn>
                   <VBtn
+                    v-if="audioCall && showCallAnalysis"
+                    class="chat-header__icon-btn"
+                    icon
+                    :variant="transcriptionActive ? 'tonal' : 'text'"
+                    :color="transcriptionActive ? 'primary' : undefined"
+                    :aria-label="transcriptionToggleAriaLabel"
+                    :disabled="transcriptionToggleDisabled"
+                    @click="emit('toggle-transcription')"
+                  >
+                    <VIcon>{{ transcriptionActive ? 'mdi-text-box-check-outline' : 'mdi-text-box-outline' }}</VIcon>
+                  </VBtn>
+                  <VBtn
                     v-if="audioCall"
-                    class="chat-header__action-btn chat-header__speaker-btn"
-                    variant="tonal"
+                    class="chat-header__icon-btn"
+                    icon
+                    :variant="speakerEnabled ? 'tonal' : 'text'"
                     :color="speakerEnabled ? 'primary' : undefined"
                     :aria-label="speakerToggleAriaLabel"
                     @click="emit('toggle-speaker')"
                   >
                     <VIcon>{{ speakerEnabled ? 'mdi-volume-high' : 'mdi-volume-medium' }}</VIcon>
-                    <span>{{ speakerToggleLabel }}</span>
                   </VBtn>
                   <VBtn
                     v-else
@@ -251,6 +270,19 @@ const speakerToggleAriaLabel = computed(() => props.speakerEnabled
                       </VBtn>
                     </template>
                     <VList bg-color="surface-container-highest" density="comfortable" nav>
+                      <VListItem
+                        v-if="audioCall && showCallAnalysis"
+                        :prepend-icon="transcriptionActive ? 'mdi-text-box-check-outline' : 'mdi-text-box-outline'"
+                        :title="transcriptionActive ? 'Остановить транскрибацию' : 'Включить транскрибацию'"
+                        :disabled="transcriptionToggleDisabled"
+                        @click="emit('toggle-transcription')"
+                      />
+                      <VListItem
+                        v-if="showCallAnalysis"
+                        :prepend-icon="callAnalysisActive ? 'mdi-text-box-search' : 'mdi-text-box-search-outline'"
+                        :title="callAnalysisActive ? 'Скрыть панель анализа' : 'Открыть панель анализа'"
+                        @click="emit('toggle-call-analysis')"
+                      />
                       <VListItem prepend-icon="mdi-magnify" title="Поиск в переписке" @click="emit('toggle-details')" />
                       <VListItem prepend-icon="mdi-image-multiple-outline" title="Медиа и файлы" @click="emit('toggle-details')" />
                       <VDivider class="my-1" />

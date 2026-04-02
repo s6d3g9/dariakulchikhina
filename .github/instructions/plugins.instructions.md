@@ -2,63 +2,69 @@
 applyTo: "app/plugins/**,server/plugins/**"
 ---
 
-# Plugins — клиентские и серверные плагины
+# Plugins — main app client и Nitro plugins
 
-## Два типа
+## Scope
 
-| Тип | Папка | Когда запускается |
+- Этот файл покрывает `app/plugins/**` и `server/plugins/**` основной платформы.
+- `messenger/web/app/plugins/**` — отдельный контур, он живет по messenger-specific правилам.
+
+## Типы плагинов
+
+| Тип | Папка | Когда реально выполняется |
 |---|---|---|
-| Клиентский | `app/plugins/*.client.ts` | Только в браузере |
-| Серверный (Nitro) | `server/plugins/*.ts` | При каждом запросе на сервере |
+| Клиентский Nuxt plugin | `app/plugins/*.client.ts` | Только в браузере |
+| Универсальный Nuxt plugin | `app/plugins/*.ts` | На клиенте и/или SSR по контракту Nuxt |
+| Nitro plugin | `server/plugins/*.ts` | Body плагина выполняется при инициализации Nitro; hooks внутри могут срабатывать на каждом запросе |
+
+## Текущие Nitro plugins
+
+- `cache-policy.ts`
+- `csp-nonce.ts`
+- `error-sanitizer.ts`
+- `ollama-warmup.ts`
+
+Безопасность request pipeline при этом частично живет в `server/middleware/**`, а не только в plugins.
 
 ## Клиентский плагин — паттерн
 
 ```ts
-// app/plugins/ui-theme.client.ts
 export default defineNuxtPlugin(() => {
-  // Запускается только в браузере после монтирования
-  const tokens = localStorage.getItem('design-tokens')
-  if (tokens) {
-    // применить токены...
+  const raw = localStorage.getItem('design-tokens')
+  if (!raw) {
+    return
   }
+
+  // hydrate runtime-only state
 })
 ```
 
-Суффикс `.client.ts` — обязателен для кода с `window`, `document`, `localStorage`.
+- Суффикс `.client.ts` обязателен для `window`, `document`, `localStorage`, `matchMedia`.
 
-## Серверный Nitro плагин — паттерн
+## Nitro plugin — паттерн
 
 ```ts
-// server/plugins/ollama-warmup.ts
-export default defineNitroPlugin(async (nitroApp) => {
-  nitroApp.hooks.hook('request', async (event) => {
-    // выполняется на каждый запрос
+export default defineNitroPlugin((nitroApp) => {
+  nitroApp.hooks.hook('render:html', (html, { event }) => {
+    // per-request HTML transform
   })
 
-  nitroApp.hooks.hook('render:html', (html, { event }) => {
-    // модификация HTML перед отдачей клиенту
+  nitroApp.hooks.hook('render:response', (response, { event }) => {
+    // per-request response headers / sanitizing
   })
 })
 ```
-
-## Доступные хуки Nitro
-
-| Хук | Когда |
-|---|---|
-| `request` | Начало каждого запроса |
-| `render:html` | После рендера HTML (SSR) |
-| `render:response` | Перед отправкой ответа |
-| `error` | При ошибке |
 
 ## Правила
 
-- `.client.ts` суффикс — для всего что использует browser API
-- Не делать тяжёлые операции в плагинах — они блокируют старт
-- Серверные плагины — только инициализация и hooks, не бизнес-логика
-- Безопасность: нonce, CSP, headers — только в `server/plugins/`
+- В plugin body регистрируй hooks и lightweight bootstrap-логику.
+- Тяжелые синхронные операции в plugin body нежелательны: они тормозят старт сервера/клиента.
+- Nitro plugins не должны заменять endpoint/business logic.
+- Security/CSP/cache hooks держать централизованно в `server/plugins/**` и `server/middleware/**`, а не раскидывать по компонентам.
 
-## ЗАПРЕЩЕНО
+## Запрещено
 
-- ❌ `window.*` / `document.*` / `localStorage.*` без суффикса `.client.ts`
-- ❌ Тяжёлые синхронные операции в plugin body
-- ❌ Прямые запросы к БД в клиентских плагинах
+- ❌ утверждать, что Nitro plugin body запускается на каждом запросе; per-request работают hooks, а не весь файл
+- ❌ `window.*` / `document.*` / `localStorage.*` без `.client.ts`
+- ❌ тяжелые блокирующие операции в plugin body
+- ❌ прямые DB/API вызовы из клиентских plugins

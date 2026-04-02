@@ -243,18 +243,20 @@ async function applyCallReviewToProjectSprint() {
           <p v-if="calls.callReview.value?.summary" class="call-transcript-panel__summary">{{ calls.callReview.value.summary }}</p>
           <p v-else class="call-transcript-popup__empty">Конспект появится после завершения звонка.</p>
 
-          <div class="call-transcript-popup__tool-rail" role="tablist" aria-label="Интерпретации разговора">
-            <VBtn
-              v-for="tool in calls.analysisTools.value"
-              :key="tool.id"
-              class="call-transcript-popup__tool-btn"
-              size="small"
-              :variant="calls.selectedAnalysisToolId.value === tool.id ? 'flat' : 'tonal'"
-              :color="calls.selectedAnalysisToolId.value === tool.id ? 'primary' : undefined"
-              @click="calls.runAnalysisTool(tool.id)"
-            >
-              {{ tool.title }}
-            </VBtn>
+          <div class="call-transcript-popup__tool-rail">
+            <div class="call-transcript-popup__tool-grid" role="tablist" aria-label="Интерпретации разговора">
+              <VBtn
+                v-for="tool in calls.analysisTools.value"
+                :key="tool.id"
+                class="call-transcript-popup__tool-btn"
+                size="small"
+                :variant="calls.selectedAnalysisToolId.value === tool.id ? 'flat' : 'tonal'"
+                :color="calls.selectedAnalysisToolId.value === tool.id ? 'primary' : undefined"
+                @click="calls.runAnalysisTool(tool.id)"
+              >
+                {{ tool.title }}
+              </VBtn>
+            </div>
           </div>
 
           <p v-if="calls.analysisError.value" class="call-transcript-popup__empty">{{ calls.analysisError.value }}</p>

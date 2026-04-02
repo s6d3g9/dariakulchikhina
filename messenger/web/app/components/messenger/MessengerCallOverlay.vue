@@ -307,6 +307,15 @@ function handleMiniTap() {
   calls.setCallViewMode('split')
 }
 
+function toggleHeaderTranscription() {
+  if (calls.transcriptionActive.value) {
+    calls.stopTranscription()
+    return
+  }
+
+  calls.toggleAnalysisPanel(true)
+}
+
 async function openDetachedCallConversation() {
   const conversationId = detachedCallConversationId.value
   if (!conversationId) {
@@ -365,6 +374,10 @@ onBeforeUnmount(() => {
         :call-security-label="detachedCallSecurityLabel"
         :call-security-title="detachedCallSecurityTitle"
         :can-toggle-audio-call="Boolean(calls.activeCall.value)"
+        :show-call-analysis="Boolean(calls.activeCall.value?.mode === 'audio' || calls.callReview.value)"
+        :call-analysis-active="calls.analysisPanelOpen.value"
+        :transcription-active="calls.transcriptionActive.value"
+        :can-toggle-transcription="calls.transcriptionSupported.value"
         :can-toggle-video="Boolean(calls.activeCall.value) && !calls.requestingPermissions.value"
         :microphone-enabled="calls.controls.value.microphoneEnabled"
         :speaker-enabled="calls.controls.value.speakerEnabled"
@@ -374,6 +387,8 @@ onBeforeUnmount(() => {
         :show-call-actions="false"
         :can-switch-camera="calls.canSwitchCamera.value"
         @toggle-details="openDetachedCallConversation()"
+        @toggle-call-analysis="calls.toggleAnalysisPanel()"
+        @toggle-transcription="toggleHeaderTranscription()"
         @reject-call="calls.rejectIncomingCall()"
         @accept-call="calls.acceptIncomingCall()"
         @toggle-microphone="calls.toggleMicrophone()"

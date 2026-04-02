@@ -44,7 +44,7 @@ export default defineEventHandler({
 ```ts
 // GET /api/items?page=2&limit=10
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event)     // { page: '2', limit: '10' }
+  const query = safeGetQuery(event)     // { page: '2', limit: '10' }
   return query
 })
 ```
@@ -54,11 +54,11 @@ export default defineEventHandler(async (event) => {
 import { z } from 'zod'
 
 export default defineEventHandler(async (event) => {
-  const query = await getValidatedQuery(event, z.object({
+  const query = z.object({
     page: z.coerce.number().default(1),
     limit: z.coerce.number().default(20),
     search: z.string().optional()
-  }).parse)
+  }).parse(safeGetQuery(event))
   // query.page — number, query.limit — number
 })
 ```
@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
 ```ts
 // POST /api/items
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)   // any — без валидации!
+  const body = await readNodeBody(event)   // unknown — без валидации!
   return body
 })
 ```
@@ -75,11 +75,11 @@ export default defineEventHandler(async (event) => {
 ### Валидированный body (+ Zod)
 ```ts
 export default defineEventHandler(async (event) => {
-  const body = await readValidatedBody(event, z.object({
+  const body = await readValidatedNodeBody(event, z.object({
     name: z.string().min(1),
     email: z.string().email(),
     role: z.enum(['admin', 'user', 'manager'])
-  }).parse)
+  }))
   // body.name — string, body.email — string, body.role — 'admin'|'user'|'manager'
 })
 ```
@@ -340,8 +340,10 @@ type Item = z.infer<typeof ItemSchema>
 ```ts
 // server/api/projects.post.ts
 import { z } from 'zod'
-import { db } from '~/server/db'
+import { useDb } from '~/server/db'
 import { projects } from '~/server/db/schema'
+import { readValidatedNodeBody } from '~/server/utils/body'
+import { requireAdmin } from '~/server/utils/auth'
 
 const CreateProjectSchema = z.object({
   name: z.string().min(1).max(255),
@@ -351,17 +353,16 @@ const CreateProjectSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  // Авторизация (из middleware)
-  const user = event.context.user
-  if (!user) throw createError({ statusCode: 401, message: 'Unauthorized' })
+  const user = requireAdmin(event)
+  const db = useDb()
 
   // Валидация body
-  const body = await readValidatedBody(event, CreateProjectSchema.parse)
+  const body = await readValidatedNodeBody(event, CreateProjectSchema)
 
   // Запись в БД
   const [project] = await db.insert(projects).values({
     ...body,
-    createdBy: user.id
+    createdBy: user.userId
   }).returning()
 
   return project
@@ -371,9 +372,10 @@ export default defineEventHandler(async (event) => {
 ```ts
 // server/api/projects.get.ts
 import { z } from 'zod'
-import { db } from '~/server/db'
+import { useDb } from '~/server/db'
 import { projects } from '~/server/db/schema'
 import { like, desc } from 'drizzle-orm'
+import { safeGetQuery } from '~/server/utils/query'
 
 const QuerySchema = z.object({
   page: z.coerce.number().default(1),
@@ -382,7 +384,8 @@ const QuerySchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  const { page, limit, search } = await getValidatedQuery(event, QuerySchema.parse)
+  const db = useDb()
+  const { page, limit, search } = QuerySchema.parse(safeGetQuery(event))
 
   const where = search ? like(projects.name, `%${search}%`) : undefined
 
@@ -403,14 +406,14 @@ export default defineEventHandler(async (event) => {
 
 | Задача | Код |
 |--------|-----|
-| GET query | `getQuery(event)` |
-| GET query + Zod | `getValidatedQuery(event, schema.parse)` |
-| POST body | `readBody(event)` |
-| POST body + Zod | `readValidatedBody(event, schema.parse)` |
+| GET query | `safeGetQuery(event)` |
+| GET query + Zod | `Schema.parse(safeGetQuery(event))` |
+| POST body | `readNodeBody(event)` |
+| POST body + Zod | `readValidatedNodeBody(event, Schema)` |
 | Route params | `getRouterParam(event, 'id')` |
 | Header | `getHeader(event, 'authorization')` |
-| Ошибка 404 | `throw createError({ statusCode: 404, message: '...' })` |
-| Контекст | `event.context.user` |
+| Ошибка 404 | `throw createError({ statusCode: 404, statusMessage: '...' })` |
+| Auth helper | `requireAdmin(event)` / `requireAdminOrClient(...)` |
 | Тип из схемы | `type T = z.infer<typeof Schema>` |
 | Coerce string→number | `z.coerce.number()` |
 | Optional field | `z.string().optional()` |

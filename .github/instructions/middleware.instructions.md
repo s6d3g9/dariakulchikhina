@@ -2,27 +2,28 @@
 applyTo: "app/middleware/**"
 ---
 
-# Middleware — клиентские guard-ы маршрутов
+# Middleware — Nuxt route guards основной платформы
 
-> Nuxt route middleware выполняется до рендера страницы.
+> Route middleware выполняется до рендера страницы. Здесь держим только auth/canonicalization для `app/**`.
 
-## Три роли → три middleware
+## Текущие middleware-файлы
 
-| Файл | Маршруты | Проверяет |
-|---|---|---|
-| `admin.ts` | `/admin/**` | `role === 'designer'` |
-| `client.ts` | `/project/**` | `role === 'client'` |
-| `contractor.ts` | `/contractor/**` | `role === 'contractor'` |
+| Файл | Назначение |
+|---|---|
+| `admin.ts` | Guard для `/admin/**`; допускает роли `admin` и `designer` |
+| `client.ts` | Guard для `/client/**`; допускает admin/designer preview и проверяет slug клиентской сессии |
+| `contractor.ts` | Guard для `/contractor/**`; допускает admin/designer preview и канонизирует contractor id |
+| `admin-project-canonical.ts` | Переводит `/admin/projects/:numericId` в `/admin/projects/:slug` |
 
-## Паттерн — проверка auth
+## Канонический паттерн
 
 ```ts
-// app/middleware/admin.ts
-export default defineNuxtRouteMiddleware(async () => {
+export default defineNuxtRouteMiddleware(async (to) => {
   try {
-    const headers = process.server ? useRequestHeaders(['cookie']) : undefined
+    const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
     const data = await $fetch<{ role?: string }>('/api/auth/me', { headers })
-    if (data?.role !== 'designer') {
+
+    if (data?.role !== 'admin' && data?.role !== 'designer') {
       return navigateTo('/admin/login')
     }
   } catch {
@@ -31,25 +32,29 @@ export default defineNuxtRouteMiddleware(async () => {
 })
 ```
 
-## Подключение к странице
+## Правила по ролям
 
-```vue
-<!-- app/pages/admin/index.vue -->
-<script setup>
-definePageMeta({ middleware: 'admin' })
-</script>
-```
+- `admin.ts`: не ограничивать только `designer`; текущий код принимает `admin` **или** `designer`.
+- `client.ts`: admin/designer могут открывать client routes как preview; client session должна совпадать с route slug.
+- `contractor.ts`: admin/designer могут preview contractor cabinet; contractor session при mismatch уводится на собственный `/contractor/:id`.
+- `admin-project-canonical.ts`: это middleware канонизации маршрута, а не auth guard.
+
+## Redirect contract
+
+- Role-specific login pages (`/admin/login`, `/client/login`, `/contractor/login`, `/project/login`) сейчас в основном редиректят в единый auth-flow `/login?role=...`.
+- В middleware можно редиректить на alias route, если именно он является текущей точкой входа для пользователя.
+- Не использовать `external: true` для внутренних route redirects.
 
 ## Правила
 
-- Middleware только проверяет роль — не загружает данные
-- При ошибке fetch → всегда редирект на login (не показывать ошибку)
-- `process.server` проверка для SSR — передавать cookie заголовки
-- Не использовать `navigateTo` с `external: true` для внутренних маршрутов
-- Не добавлять бизнес-логику в middleware — только auth проверка
+- Middleware не должен загружать бизнес-данные сверх auth/canonical checks.
+- Для SSR-запросов передавать cookie через `import.meta.server ? useRequestHeaders(['cookie']) : undefined`.
+- Любой DOM/browser API только под client guard; обычно route middleware в этом репо в них не нуждается.
+- Если задача требует preload данных, выноси это в page/composable, а не в middleware.
 
-## ЗАПРЕЩЕНО
+## Запрещено
 
-- ❌ Загружать данные в middleware (только auth check)
-- ❌ `window.*` без проверки `process.client`
-- ❌ Хранить токены в middleware — только через `/api/auth/me`
+- ❌ превращать middleware в data loader
+- ❌ использовать устаревший пример `role === 'designer'` для admin guard
+- ❌ хранить токены/секреты в middleware
+- ❌ писать business branching, которое должно жить в composable/page shell

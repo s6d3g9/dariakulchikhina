@@ -95,8 +95,10 @@ type NewUser = typeof users.$inferInsert
 
 ### Базовый select
 ```ts
-import { db } from '~/server/db'
+import { useDb } from '~/server/db'
 import { users } from '~/server/db/schema'
+
+const db = useDb()
 
 // Все колонки
 const allUsers = await db.select().from(users)

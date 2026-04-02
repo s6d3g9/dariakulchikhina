@@ -11,6 +11,13 @@
 
 При конфликте между этим файлом и более старыми UI-правилами приоритет у этого файла.
 
+## Границы продукта
+
+- Этот файл является основным always-on UI манифестом для **основной платформы** в `app/**`.
+- `messenger/web/**` — отдельный standalone продукт. Для него первичны `.github/instructions/messenger.instructions.md`, `.github/instructions/m3-ui.instructions.md` и `.github/instructions/menu-navigation.instructions.md`.
+- Не переносить brutalist/main-app ограничения в `messenger/web` по умолчанию. Messenger сохраняет M3/Vuetify shell, собственную mobile-first навигацию и call/agent UX.
+- `app/pages/chat/**` — встроенный чат внутри основной платформы, не путать с отдельным `messenger/web`.
+
 ## Design Modes
 
 В репозитории параллельно поддерживаются три направления дизайна:

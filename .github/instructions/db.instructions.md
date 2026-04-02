@@ -6,102 +6,84 @@ applyTo: "server/db/**"
 
 > Источник истины: `docs/rag/DRIZZLE_PATTERNS.md`
 
+## Реальные пути
+
+- Схема: `server/db/schema.ts`
+- Подключение: `server/db/index.ts`
+- Миграции: `server/db/migrations/`
+- Конфиг drizzle-kit: `drizzle.config.ts`
+
 ## Стек
-Drizzle ORM 0.41.x · PostgreSQL · drizzle-kit
 
-## Схема — server/db/schema.ts
+Drizzle ORM 0.41.x · PostgreSQL · drizzle-kit · `postgres` driver
 
-```ts
-import { pgTable, serial, varchar, text, integer, boolean, timestamp, jsonb, pgEnum } from 'drizzle-orm/pg-core'
-
-export const statusEnum = pgEnum('status', ['active', 'inactive', 'archived'])
-
-export const projects = pgTable('projects', {
-  id: serial('id').primaryKey(),
-  slug: varchar('slug', { length: 100 }).notNull().unique(),
-  name: varchar('name', { length: 255 }).notNull(),
-  status: statusEnum('status').default('active').notNull(),
-  metadata: jsonb('metadata').$type<Record<string, unknown>>(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-})
-```
-
-## Подключение — useDb()
+## Подключение
 
 ```ts
 import { useDb } from '~/server/db'
+
 const db = useDb()
 ```
 
-**Никогда** не импортировать `db` напрямую — только через `useDb()`.
+- Использовать только `useDb()`.
+- Не импортировать внутренний `_db` и не создавать новые ad-hoc clients в runtime endpoint code.
 
-## SELECT
+## Паттерны запросов
 
 ```ts
-// Все записи
-const items = await db.select().from(table)
+import { and, desc, eq, ilike } from 'drizzle-orm'
 
-// С условием
-const item = await db.select().from(table).where(eq(table.id, id)).limit(1)
-
-// Только нужные поля
-const names = await db.select({ id: table.id, name: table.name }).from(table)
-
-// С пагинацией
-const page = await db.select().from(table).limit(limit).offset(offset)
-
-// С поиском
-const results = await db.select().from(table)
-  .where(ilike(table.name, `%${search}%`))
+const rows = await db
+  .select({ id: table.id, title: table.title })
+  .from(table)
+  .where(and(
+    eq(table.projectId, projectId),
+    search ? ilike(table.title, `%${search}%`) : undefined,
+  ))
   .orderBy(desc(table.createdAt))
-```
+  .limit(limit)
+  .offset(offset)
 
-## INSERT
+const [created] = await db.insert(table).values(payload).returning()
 
-```ts
-const [created] = await db.insert(table).values({
-  name: body.name,
-  slug: body.slug,
-}).returning()
-```
-
-## UPDATE
-
-```ts
-const [updated] = await db.update(table)
-  .set({ name: body.name, updatedAt: new Date() })
+const [updated] = await db
+  .update(table)
+  .set({ ...payload, updatedAt: new Date() })
   .where(eq(table.id, id))
   .returning()
-
-if (!updated) throw createError({ statusCode: 404, message: 'Не найдено' })
 ```
 
-## DELETE
+## JSONB и типы
 
-```ts
-await db.delete(table).where(eq(table.id, id))
-```
+- Для `jsonb` всегда задавать `.$type<T>()`.
+- Предпочитать `zod`/shared types для shape-контрактов, если поле разделяется между клиентом и сервером.
+- Не использовать `any` для JSON payload колонок.
 
-## Импорты операторов
+## Миграции и команды
 
-```ts
-import { eq, ne, gt, lt, gte, lte, and, or, not, ilike, inArray, isNull, desc, asc } from 'drizzle-orm'
-```
-
-## Миграции
+Использовать команды из root `package.json`:
 
 ```bash
-pnpm drizzle-kit generate   # создать файл миграции
-pnpm drizzle-kit migrate    # применить миграции
+pnpm db:generate
+pnpm db:migrate
+pnpm db:push
+pnpm db:studio
 ```
 
-Файлы миграций — в папке `drizzle/` (в .gitignore не включать).
+- `db:generate` пишет файлы в `server/db/migrations/`.
+- Если меняешь `server/db/schema.ts`, почти всегда нужен новый migration file.
+- Разовые data migration держать в `scripts/migrate-*.mjs`, а не в runtime-коде или schema-файле.
 
-## ЗАПРЕЩЕНО
+## Runtime boundaries
 
-- ❌ Raw SQL строки — только Drizzle API
-- ❌ Импорт `db` напрямую — только `useDb()`
-- ❌ `any` тип для jsonb — используй `.$type<T>()`
-- ❌ Изменять схему без создания миграции
-- ❌ Удалять столбцы без проверки зависимостей
+- Runtime API-код — через Drizzle.
+- One-off maintenance scripts могут использовать `postgres` напрямую, если это отдельный `scripts/*.mjs` сценарий.
+- Не смешивать schema evolution и production business logic в одном файле.
+
+## Запрещено
+
+- ❌ raw SQL строки в основном runtime API, если задачу можно выразить через Drizzle
+- ❌ импорт `db` напрямую вместо `useDb()`
+- ❌ изменение схемы без новой миграции или осознанного `db:push`
+- ❌ хранение неописанного `jsonb` с `any`
+- ❌ удаление колонок/таблиц без проверки зависимостей и data migration плана

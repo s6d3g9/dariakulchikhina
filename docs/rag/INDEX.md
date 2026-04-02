@@ -9,6 +9,7 @@
 
 | Задача | Читай |
 |--------|-------|
+| Общая карта репозитория, контуры main app / chat / messenger / services | [../ARCHITECTURE.md](../ARCHITECTURE.md) |
 | Рефакторинг хардкода (цвет, шрифт, radius) | [TOKEN_MAP.md](TOKEN_MAP.md) → [REFACTOR_PATTERNS.md](REFACTOR_PATTERNS.md) |
 | Что менять первым (приоритет файлов) | [COMPONENT_AUDIT.md](COMPONENT_AUDIT.md) |
 | Написать `html.dark` правильно | [DARK_MODE.md](DARK_MODE.md) |
@@ -21,6 +22,9 @@
 | API endpoint (H3 + Zod валидация) | [BACKEND_GUIDE.md](BACKEND_GUIDE.md) |
 | Drizzle ORM (schema, select, insert) | [DRIZZLE_PATTERNS.md](DRIZZLE_PATTERNS.md) |
 | Redis / кэш / сессии | [REDIS_PATTERNS.md](REDIS_PATTERNS.md) |
+| Messenger product (`messenger/web`, `messenger/core`) | [../messenger/README.md](../messenger/README.md) |
+| Messenger project-engine API | [../messenger/PROJECT_ENGINE_API.md](../messenger/PROJECT_ENGINE_API.md) |
+| Standalone communications relay service | [../../services/communications-service/README.md](../../services/communications-service/README.md) |
 | UI компоненты — полная спецификация | [../UI_INTERFACE.md](../UI_INTERFACE.md) ⚡ большой |
 | UI правила — компактный чит-шит | [../UI_RULES.md](../UI_RULES.md) ✅ рекомендуется |
 | UIDesignPanel — как работает редактор | [../DESIGN_EDITOR.md](../DESIGN_EDITOR.md) |
@@ -68,23 +72,40 @@
 
 ```
 app/
-  components/     ← Vue компоненты (89 файлов)
-  pages/          ← Nuxt pages (file-based routing)
+  components/     ← Vue компоненты основной платформы
+  pages/          ← Nuxt pages (admin, client, contractor, project, chat, auth)
     admin/        ← Панель администратора
     client/       ← Кабинет клиента
+    contractor/   ← Кабинет подрядчика
     project/      ← Проектный портал
-  stores/         ← Pinia stores
-  composables/    ← Shared composables
+    chat/         ← Встроенный standalone chat
+  composables/    ← Основной state/control layer main app
   assets/css/
-    main.css      ← 6407 строк, все design tokens (@theme, var(--ds-*))
+    main.css      ← глобальный primitive-layer, design tokens, transitions
 server/
-  api/            ← H3 endpoints (defineEventHandler)
+  api/            ← H3 endpoints + chat/communications relay
   db/
     schema.ts     ← Drizzle ORM schema
     migrations/   ← SQL миграции
-  middleware/     ← Server middleware (авторизация)
-  plugins/        ← Redis, DB инициализация
+  middleware/     ← canonical host, security headers, rate-limit, body-size, csrf
+  plugins/        ← cache-policy, csp-nonce, error-sanitizer, ollama-warmup
+shared/
+  types/          ← contracts: project, navigation, communications, design-mode, etc.
+  constants/      ← admin-navigation, pages, design-modes, presets
+  utils/          ← project-control/status/communications helpers
+messenger/
+  web/            ← отдельный Nuxt/Vuetify messenger client
+  core/           ← отдельный Fastify realtime backend
+services/
+  communications-service/ ← zero-knowledge relay/signaling service
+docs/messenger/
+  *.md            ← messenger/product + project-engine docs
 ```
+
+## Важное уточнение по state-слою
+
+- В основной платформе state сейчас живет в `app/composables/**` и `useState()`, а не в `app/stores/`.
+- `messenger/web` — отдельный client-only продукт со своим state в `messenger/web/app/composables/**`.
 
 ## Критические переменные проекта
 

@@ -1,144 +1,96 @@
-# Messenger Instructions
+---
+applyTo: "messenger/**,docs/messenger/**"
+---
 
-> **M3 UI Implementation:** Полные правила построения интерфейса на Material Design 3 + Vuetify 3 описаны в [m3-ui.instructions.md](./m3-ui.instructions.md). Читать перед любой правкой UI.
+# Messenger — standalone product rules
+
+> UI-правила для `messenger/web`: [m3-ui.instructions.md](./m3-ui.instructions.md)
 >
-> **Структура меню и навигации:** Строение нав-бара, всех секций, bottom sheet и context menu описано в [menu-navigation.instructions.md](./menu-navigation.instructions.md).
+> Навигация и shell: [menu-navigation.instructions.md](./menu-navigation.instructions.md)
+>
+> Backend-детали `messenger/core`: [messenger-core.instructions.md](./messenger-core.instructions.md)
 
-## Scope
+## Product boundary
 
-Этот файл описывает правила для нового отдельного продукта messenger внутри репозитория.
-Он не должен зависеть от текущего Nuxt-приложения, кроме возможной будущей интеграции по auth и deep links.
+- `messenger/web` и `messenger/core` — отдельный продукт внутри репозитория.
+- Это **не** встроенный `/chat` из основного Nuxt-приложения.
+- Не переносить сюда `app/**`, `server/**`, `.glass-*`, `ent-*`, `cab-*` и main-app brutalist shell без прямой integration задачи.
+- Интеграция с основной платформой допускается через токены, deep links, export/deploy scripts и отдельные API contracts, а не через смешивание runtime-кода.
 
-## Product Goal
+## Текущий стек
 
-Создать отдельный consumer-style мессенджер с четырьмя основными экранами:
+### Messenger Web
 
-1. Chat
-2. Chats
-3. Contacts
-4. Settings
-
-Внутри Chat обязательны:
-
-- текстовые сообщения;
-- аудиосообщения;
-- вложения;
-- аудиозвонок;
-- видеозвонок.
-
-## Approved Stack
-
-### Web Client
-
-- Nuxt 4
-- Vue 3
+- Nuxt 4, `ssr: false`
 - TypeScript
-- Pinia
-- mobile-first responsive UI
-- PWA-ready architecture
+- Vuetify 4 + MDI icons
+- mobile-first shell
+- state в основном живет в `messenger/web/app/composables/**` и `useState()`
 
-### Messaging Core
+### Messenger Core
 
 - Node.js 22+
-- TypeScript
-- Fastify
-- WebSocket
-- PostgreSQL
-- Redis
-- Drizzle ORM
+- Fastify 5 + WebSocket + multipart + static uploads
+- Zod для payload/schema parsing
+- file-backed store modules в `messenger/core/src/*-store.ts`
+- LiveKit integration для call flows
+- optional agent/transcription backends через env
 
-### Calls
+## Текущее продуктовое ядро
 
-- LiveKit as target call engine
-- signaling orchestration lives in messenger core
+Base sections messenger shell:
 
-### Media
+1. `chat`
+2. `chats`
+3. `contacts`
+4. `settings`
 
-- S3-compatible storage
-- ffmpeg for previews and audio processing
+Дополнительно:
 
-## Repository Layout
+- `agents` — условная секция, включается feature flag-ом
+- audio/video calls
+- incoming call overlay
+- attachments и voice flows
+- agent chats, graph editor, workspace и project-engine surface
 
-Новый мессенджер развивается отдельно от основного проекта в папке `messenger/`.
+## Repository layout
 
-- `messenger/web` — отдельный web client
-- `messenger/core` — отдельный messaging backend
-- `docs/messenger` — архитектура, roadmap, protocol docs
+- `messenger/web` — standalone Nuxt/Vuetify client
+- `messenger/core` — standalone Fastify realtime backend
+- `docs/messenger` — product/backend docs
+- `messenger/ecosystem.config.cjs` и `messenger/ecosystem.standalone.config.cjs` — runtime/deploy contours
 
-Не добавлять бизнес-логику нового мессенджера в текущие `app/`, `server/` и `shared/`, если для этого нет прямой интеграционной задачи.
+## UX rules
 
-## UX Rules
-
-- Интерфейс mobile-first.
-- На мобильном обязательна нижняя навигация из четырех пунктов: Chat, Chats, Contacts, Settings.
+- Интерфейс mobile-first, но shell должен корректно расширяться в desktop aside + main split.
 - Минимальная высота интерактивных элементов — 44px.
-- Любые кнопки-меню разделов и переключатели наборов контента, например Фото / Файлы / Ссылки / Ключи и Смайлы / Стикеры / GIF, должны отображаться в одну горизонтальную линию с единым размером кнопок и горизонтальным скроллом при нехватке ширины.
-- Поле ввода в Chat должно работать как у современных мессенджеров: attach, text, send, audio record.
-- В Chats обязателен preview последнего сообщения.
-- В Contacts обязателен поиск пользователей и сценарий invite/accept.
-- В Settings обязателен профиль, privacy, notifications, devices.
+- В chat composer обязательны attach/text/send-or-audio сценарии.
+- В chats list обязателен preview последнего сообщения.
+- В contacts обязателен глобальный поиск + invite/accept flow.
+- В settings обязательны профиль, privacy/devices/notifications/AI settings.
+- Если включена agents-функциональность, секция `agents` должна выглядеть как органичная часть одного shell, а не как отдельное приложение.
 
-## Delivery Phases
+## Bottom dock contract
 
-### MVP-1
+Нижняя dock-zone над навигацией остается обязательной частью shell:
 
-- auth shell
-- user discovery
-- contact invites
-- direct chats
-- message composer
-- chats list with previews
-- mobile layout
-
-### MVP-2
-
-- attachments
-- voice messages
-- upload pipeline
-- unread counters
-- delivery/read states
-
-### MVP-3
-
-- audio calls
-- video calls
-- incoming call UX
-- call history
-
-## Bottom Dock Rule
-
-В каждом экране мессенджера снизу (выше нижней навигации) ВСЕГДА должна присутствовать «зона дока»:
-
-| Экран | Содержимое дока |
+| Секция | Dock |
 |---|---|
-| **Chat** | Строка ввода сообщений (`MessengerChatComposerDock`) |
-| **Chats** | Строка поиска по чатам |
-| **Contacts** | Строка поиска пользователей |
-| **Settings** | Строка поиска по настройкам |
+| `chat` | `MessengerChatComposerDock` |
+| `chats` | search dock |
+| `contacts` | search dock |
+| `settings` | search/filter dock, если экран использует поиск |
 
-**Правила:**
-- Строка поиска в не-chat экранах занимает **ту же самую позицию**, что и строка ввода в Chat — фиксированная высота, одинаковый визуальный вес, над нижним нав-баром.
-- Строка поиска визуально **идентична** строке ввода сообщения Composer: pill shape 28px, border, surface-container-high bg, 48px height. Меняется только placeholder.
-- Использовать `VTextField` с классом `composer-search-field` (variant="solo-filled", flat, rounded="xl", bg-color="surface-container-high"). НЕ использовать density="compact".
-- Поиск НИКОГДА не появляется вверху экрана. Только в зоне дока снизу.
-- CSS-класс для поисковых доков: `search-dock--bottom-dock`.
-- Dropdown результатов из bottom-dock открывается **вверх** (`bottom: 100%; top: auto`).
-- Компонент `MessengerChatComposerDock` рендерится только в Chat-секции.
+Правила:
 
-## Engineering Rules
+- non-chat dock должен жить в той же нижней зоне, что и composer;
+- keyboard/media-sheet/call states могут временно скрывать bottom nav, но не ломать dock hierarchy;
+- bottom dock не переносится наверх экрана как отдельный header search.
 
-- Предпочитать небольшие модули вместо монолитных Vue-компонентов.
-- WebSocket является основным realtime transport.
-- SSE не использовать как основной транспорт нового продукта.
-- Сразу закладывать отдельные bounded contexts: auth, contacts, conversations, messages, calls, media.
-- Вся новая публичная документация по мессенджеру хранится в `docs/messenger/`.
+## Engineering rules
 
-## Initial Milestone
-
-Первый шаг реализации:
-
-1. зафиксировать architecture doc;
-2. создать отдельный shell `messenger/web`;
-3. создать отдельный shell `messenger/core`;
-4. поднять health endpoints и базовый navigation shell;
-5. затем переходить к auth, contacts и direct chats.
+- Предпочитать небольшие модули и composables вместо монолитов.
+- Web client держать в границах `messenger/web`; backend/runtime state — в `messenger/core`.
+- Не предполагать автоматически Postgres/Redis/Drizzle внутри `messenger/core`: текущий контур опирается на file-backed stores и Fastify runtime.
+- Новую публичную документацию по messenger хранить в `docs/messenger/`.
+- При работе с calls/agents/project-engine сначала проверять существующие composables/store modules, а не строить параллельный контур.

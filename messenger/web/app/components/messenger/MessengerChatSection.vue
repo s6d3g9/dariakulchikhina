@@ -2219,6 +2219,15 @@ function toggleCallAnalysis() {
   calls.toggleAnalysisPanel()
 }
 
+function toggleCallTranscription() {
+  if (calls.transcriptionActive.value) {
+    calls.stopTranscription()
+    return
+  }
+
+  calls.toggleAnalysisPanel(true)
+}
+
 function startEditingMessage(messageId: string, body: string) {
   activeMessageActionsId.value = null
   activeReactionOverlayId.value = null
@@ -2430,6 +2439,8 @@ onBeforeUnmount(() => {
         :can-toggle-audio-call="canToggleAudioCall"
         :show-call-analysis="Boolean(calls.activeCall.value?.mode === 'audio' || calls.callReview.value)"
         :call-analysis-active="calls.analysisPanelOpen.value"
+        :transcription-active="calls.transcriptionActive.value"
+        :can-toggle-transcription="calls.transcriptionSupported.value"
         :can-toggle-video="canToggleVideo"
         :video-call-disabled="activeConversationAgent || !conversations.activeConversation.value || conversations.messagePending.value || !calls.supported.value || !!calls.activeCall.value || calls.requestingPermissions.value"
         :microphone-enabled="calls.controls.value.microphoneEnabled"
@@ -2442,6 +2453,7 @@ onBeforeUnmount(() => {
         @toggle-details="toggleDetails"
         @toggle-audio-call="toggleAudioCall"
         @toggle-call-analysis="toggleCallAnalysis"
+        @toggle-transcription="toggleCallTranscription"
         @start-video-call="startCall('video')"
         @reject-call="calls.rejectIncomingCall()"
         @accept-call="calls.acceptIncomingCall()"

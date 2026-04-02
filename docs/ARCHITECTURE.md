@@ -1,7 +1,7 @@
 # Daria Design Studio — Архитектура системы
 
-> Единый справочник по всем модулям, объектам, типам, API, компонентам и соглашениям проекта.
-> Версия: 4.0 · Дата: 2026-03-03
+> Единый справочник по контурам репозитория, объектам, типам, API, компонентам и соглашениям проекта.
+> Версия: 4.1 · Дата: 2026-04-02
 
 ---
 
@@ -27,47 +27,41 @@
 
 ### 1.1. Назначение
 
-CRM/ERP для дизайн-студии интерьеров. Три роли:
-- **Admin / Дизайнер** — полный доступ к панели управления
-- **Client** — личный кабинет проекта
-- **Contractor** — кабинет подрядчика с задачами
+Репозиторий содержит несколько связанных продуктовых контуров:
+
+1. **Основная Nuxt-платформа** — CRM/ERP для дизайн-студии интерьеров.
+  Роли: admin/designer, client, contractor.
+2. **Встроенный standalone chat / project communications** внутри основной платформы.
+3. **Отдельный Messenger-продукт** в `messenger/web` + `messenger/core`.
+4. **Communications Service** в `services/communications-service/` — отдельный relay/signaling runtime.
+
+Основное правило архитектуры: эти контуры могут интегрироваться друг с другом, но не должны неявно смешивать runtime, UI contracts и state-layer.
 
 ### 1.2. Технологический стек
 
-| Слой | Технология |
+| Контур | Технология |
 |------|-----------|
-| Фреймворк | Nuxt 4 (Vue 3 Composition API) |
-| Стейт | Pinia (подключён, не активен; composables через `useState`) |
-| Стили | Tailwind CSS 4 + Glassmorphism-система + Scoped CSS |
-| UI-библиотека | @nuxt/ui 3 |
-| Валидация | Zod |
-| БД | PostgreSQL 16 (Docker, порт 5433) |
-| ORM | Drizzle ORM |
-| Кэш | Redis 7 (Docker, порт 6380) |
-| Аутентификация | HMAC-подписанные cookie-сессии (SHA-256, 30 дней) |
-| Серверная безопасность | CSP, CSRF, rate-limit, body-size-limit, error-sanitizer |
-| Деплой | PM2 + rsync + deploy-safe.sh (fallback-стратегия) |
+| Основная платформа | Nuxt 4, Vue 3, TypeScript, Tailwind 4, Nuxt UI 3 |
+| State main app | composables + `useState()`; Pinia подключен, но `app/stores/` сейчас отсутствует |
+| Main app backend | Nitro/H3, Zod, Drizzle ORM, PostgreSQL, Redis |
+| Main app security | CSP, CSRF, rate-limit, body-size-limit, error-sanitizer |
+| Messenger Web | Nuxt 4 client-only, Vuetify 4, MDI, mobile-first M3 UI |
+| Messenger Core | Node 22, Fastify 5, WebSocket, multipart, static uploads, Zod, LiveKit integration |
+| Communications Service | Node 22, zero-knowledge relay, optional PostgreSQL persistence, SSE/signaling |
+| Deploy | PM2 + deploy-safe + messenger standalone export/runtime configs |
 
-### 1.3. Статистика кодовой базы
+### 1.3. Контуры репозитория
 
-| Метрика | Значение |
-|---------|---------|
-| Компоненты (`.vue`) | 60 |
-| Страницы (`.vue`) | 19 |
-| API-маршруты (`.ts`) | 95 |
-| Composables | 10 |
-| Layouts | 3 |
-| Middleware (клиент) | 3 |
-| Middleware (сервер) | 4 |
-| Плагины (клиент) | 4 |
-| Плагины (сервер) | 2 |
-| DB-таблицы | 19 |
-| Shared types | 12 файлов |
-| Shared constants | 2 файла |
-| Shared utils | 2 файла |
-| Строк в компонентах | ~23 400 |
-| Строк в страницах | ~8 200 |
-| Строк CSS (global) | 2 055 |
+| Контур | Основные пути | Назначение |
+|---------|---------|---------|
+| Main app UI | `app/**` | admin/client/contractor/project portal, documents, gallery, project control |
+| Main app server | `server/**` | API, DB, middleware, plugins, security, RAG/AI helpers |
+| Shared contracts | `shared/**` | navigation, pages, communications, design modes, pure utils |
+| Embedded chat | `app/pages/chat/**`, `server/api/chat/**` | встроенный standalone chat contour внутри main app |
+| Messenger product | `messenger/web`, `messenger/core` | отдельный consumer messenger |
+| Relay service | `services/communications-service/**` | externalized encrypted room/signaling service |
+
+Точные file counts в этом документе не фиксируются как source of truth; ориентируйся на реальное дерево репозитория и `.github` инструкции.
 
 ---
 

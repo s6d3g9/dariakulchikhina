@@ -2,94 +2,132 @@
 applyTo: "server/api/**,server/utils/**,server/middleware/**"
 ---
 
-# API — правила написания серверного кода
+# API — правила серверного кода
 
-> Источник истины: `docs/rag/BACKEND_GUIDE.md`
+> Источники истины: `docs/rag/BACKEND_GUIDE.md`, `server/utils/body.ts`, `server/utils/query.ts`, `server/utils/auth.ts`
 
-## Стек
-H3 (Nitro) · Zod · Drizzle ORM · ioredis
+## Scope
 
-## Паттерн endpoint
+- `server/api/**` — основной Nitro API основной платформы.
+- `server/api/chat/**` — встроенный standalone chat внутри main app.
+- `server/api/projects/[slug]/communications/**` — relay к `services/communications-service`.
+- `server/utils/**` — query/body/auth/relay/security helpers.
+- `server/middleware/**` — request pipeline: canonical host, security headers, rate-limit, body-size, csrf.
 
-```ts
-// server/api/resource/index.get.ts
-export default defineEventHandler(async (event) => {
-  const { limit, offset, search } = await safeGetQuery(event, z.object({
-    limit: z.coerce.number().default(20),
-    offset: z.coerce.number().default(0),
-    search: z.string().optional()
-  }))
-  const db = useDb()
-  return await db.select().from(table).limit(limit).offset(offset)
-})
-```
-
-## Именование файлов
-
-| Метод | Файл |
-|---|---|
-| GET список | `server/api/resource/index.get.ts` |
-| GET один | `server/api/resource/[id].get.ts` |
-| POST создать | `server/api/resource/index.post.ts` |
-| PUT обновить | `server/api/resource/[id].put.ts` |
-| DELETE удалить | `server/api/resource/[id].delete.ts` |
-
-## Query параметры — ТОЛЬКО safeGetQuery
+## Реальный паттерн endpoint
 
 ```ts
-// ✅ правильно
+import { z } from 'zod'
+
+import { useDb } from '~/server/db'
+import { readValidatedNodeBody } from '~/server/utils/body'
 import { safeGetQuery } from '~/server/utils/query'
-const { page } = await safeGetQuery(event, schema)
+import { requireAdmin } from '~/server/utils/auth'
 
-// ❌ запрещено
-const query = getQuery(event)
-```
+const QuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+  search: z.string().trim().optional(),
+})
 
-## Body — валидация через Zod
-
-```ts
-const body = await readValidatedBody(event, z.object({
-  name: z.string().min(1).max(255),
-  email: z.string().email(),
-  status: z.enum(['active', 'inactive']).default('active')
-}).parse)
-```
-
-## Auth — проверка сессии
-
-```ts
-import { requireAuth } from '~/server/utils/auth'
+const BodySchema = z.object({
+  title: z.string().trim().min(1).max(255),
+})
 
 export default defineEventHandler(async (event) => {
-  const session = await requireAuth(event) // бросает 401 если нет сессии
-  // session.userId, session.role
+  requireAdmin(event)
+
+  const query = QuerySchema.parse(safeGetQuery(event))
+  const body = await readValidatedNodeBody(event, BodySchema)
+  const db = useDb()
+
+  return { query, body, dbReady: Boolean(db) }
 })
 ```
+
+## Query параметры
+
+- Использовать только `safeGetQuery(event)`.
+- `safeGetQuery()` возвращает сырой map строк; coercion и defaults делать через `Schema.parse(...)`.
+- Не выдумывать `safeGetQuery(event, schema)` — в этом репо helper так не работает.
+
+## Body
+
+- Использовать только `readValidatedNodeBody(event, Schema)` из `server/utils/body.ts`.
+- Не использовать `readBody()` и не полагаться на `readValidatedBody()` как на канонический helper этого репо.
+
+## Auth helpers
+
+Реальные helper-ы в `server/utils/auth.ts`:
+
+- `requireAdmin(event)`
+- `requireAdminOrClient(event, projectSlug)`
+- `requireAdminOrContractor(event, contractorId)`
+- `requireClient(event, projectSlug?)`
+- `requireContractor(event)`
+- `requireChatSession(event)`
+- `getAdminSession(event)`, `getClientSession(event)`, `getContractorSession(event)`, `getChatSession(event)` для optional auth/preview logic
+
+Не использовать несуществующий `requireAuth()`.
+
+## Домены API
+
+Текущие top-level домены `server/api/`:
+
+- `admin/`
+- `ai/`
+- `auth/`
+- `chat/`
+- `clients/`
+- `contractors/`
+- `designers/`
+- `documents/`
+- `gallery/`
+- `geocode/`
+- `managers/`
+- `projects/`
+- `sellers/`
+- `suggest/`
+- `suggestions.get.ts`
+- `upload.post.ts`
+
+## Communications и чатовые контуры
+
+- `server/api/chat/**` — встроенный standalone chat для основной платформы.
+- `server/utils/communications.ts` строит signed bootstrap для project room access.
+- `server/utils/project-communications-relay.ts` делает authenticated JSON/SSE relay в `services/communications-service`.
+- Если для общения уже есть relay helper, не обходить его ad-hoc `fetch()` прямо из UI.
 
 ## Ошибки
 
 ```ts
-throw createError({ statusCode: 404, message: 'Не найдено' })
-throw createError({ statusCode: 400, message: 'Неверные данные' })
-throw createError({ statusCode: 403, message: 'Нет доступа' })
+throw createError({ statusCode: 400, statusMessage: 'Неверные данные' })
+throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+throw createError({ statusCode: 403, statusMessage: 'Нет доступа' })
+throw createError({ statusCode: 404, statusMessage: 'Не найдено' })
 ```
 
-## Redis кэш
+- Для user-facing ошибок использовать `statusMessage`.
+- Не возвращать сырые stack traces и секреты.
 
-```ts
-import { useRedis } from '~/server/utils/redis'
-const redis = useRedis()
-const cached = await redis.get(`key:${id}`)
-if (cached) return JSON.parse(cached)
-// ... запрос к БД ...
-await redis.setex(`key:${id}`, 300, JSON.stringify(data)) // 5 минут
-```
+## Middleware pipeline
 
-## ЗАПРЕЩЕНО
+Текущий порядок `server/middleware/`:
 
-- ❌ `getQuery(event)` напрямую — только `safeGetQuery`
-- ❌ `readBody(event)` без Zod валидации
+1. `00-canonical-dev-host.ts`
+2. `00-security-headers.ts`
+3. `01-rate-limit.ts`
+4. `02-body-size-limit.ts`
+5. `03-csrf.ts`
+
+Новые глобальные request checks держать здесь, а не размазывать по endpoint-файлам.
+
+## Запрещено
+
+- ❌ `getQuery(event)` напрямую — только `safeGetQuery(event)`
+- ❌ `readBody(event)` без `readValidatedNodeBody()` + Zod
+- ❌ несуществующие helper-ы вроде `requireAuth()` или `useRedis()`
 - ❌ `console.log` в production коде
-- ❌ SQL через строки — только Drizzle ORM
-- ❌ Хранить секреты в коде — только через `process.env`
-- ❌ Возвращать полные объекты с паролями/токенами — выбирай только нужные поля
+- ❌ raw SQL в runtime endpoint code — для основной БД использовать Drizzle через `useDb()`
+- ❌ прямой клиентский доступ к relay/service secret логике
+- ❌ возврат полных объектов с хэшами паролей, токенами или приватными ключами

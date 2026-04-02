@@ -494,22 +494,21 @@
                         ::
                       </button>
                       <div class="hpc-board__entity-body">
-                        <div class="hpc-board__entity-top">
-                          <span class="hpc-board__type">{{ row.typeLabel }}</span>
-                          <span class="hpc-pill" :class="`hpc-pill--${row.tone}`">{{ row.statusLabel }}</span>
+                        <div class="hpc-board__entity-main">
+                          <button class="hpc-board__title-btn" type="button" :title="getTimelineRowTooltip(row)" @click="openTimelineRowDetails(row)">
+                            <span class="hpc-board__title">{{ row.title }}</span>
+                          </button>
                           <button
                             v-if="row.type === 'phase' && getTimelinePhaseSprintCount(row.phaseKey)"
                             type="button"
                             class="hpc-board__toggle"
+                            :title="isTimelinePhaseCollapsed(row.phaseKey) ? `Показать вложенные спринты: ${getTimelinePhaseSprintCount(row.phaseKey)}` : `Свернуть вложенные спринты: ${getTimelinePhaseSprintCount(row.phaseKey)}`"
+                            :aria-label="isTimelinePhaseCollapsed(row.phaseKey) ? `Показать вложенные спринты: ${getTimelinePhaseSprintCount(row.phaseKey)}` : `Свернуть вложенные спринты: ${getTimelinePhaseSprintCount(row.phaseKey)}`"
                             @click="toggleTimelinePhase(row.phaseKey)"
                           >
-                            {{ isTimelinePhaseCollapsed(row.phaseKey) ? `показать ${getTimelinePhaseSprintCount(row.phaseKey)}` : `свернуть ${getTimelinePhaseSprintCount(row.phaseKey)}` }}
+                            {{ isTimelinePhaseCollapsed(row.phaseKey) ? `+${getTimelinePhaseSprintCount(row.phaseKey)}` : `-${getTimelinePhaseSprintCount(row.phaseKey)}` }}
                           </button>
                         </div>
-                        <button class="hpc-board__title-btn" type="button" @click="openTimelineRowDetails(row)">
-                          <span class="hpc-board__title">{{ row.title }}</span>
-                        </button>
-                        <div class="hpc-board__meta-line">{{ row.meta }}</div>
                       </div>
                     </div>
 
@@ -563,10 +562,10 @@
                           class="hpc-board__bar-body"
                           type="button"
                           :aria-label="`Открыть детали ${row.title}`"
+                          :title="getTimelineRowTooltip(row)"
                           @click.stop="openTimelineRowDetails(row)"
                         >
                           <span class="hpc-board__bar-label">{{ row.title }}</span>
-                          <span class="hpc-board__bar-meta">{{ row.progressLabel }}</span>
                         </button>
                         <button
                           class="hpc-board__bar-handle hpc-board__bar-handle--end"
@@ -1448,16 +1447,16 @@ const timelineGridStyle = computed(() => ({
 
 const timelineEditingEnabled = computed(() => timelineScale.value !== 'hours')
 const timelineBoardStyle = computed(() => ({
-  '--hpc-entity-column-width': '260px',
-  '--hpc-period-column-width': '170px',
-  minWidth: `${430 + Math.max(timelineColumns.value.length, 1) * getHybridTimelineColumnWidth(timelineScale.value)}px`,
+  '--hpc-entity-column-width': '220px',
+  '--hpc-period-column-width': '148px',
+  minWidth: `${368 + Math.max(timelineColumns.value.length, 1) * getHybridTimelineColumnWidth(timelineScale.value)}px`,
 }))
 
 const timelineWindowLabel = computed(() => `${toIsoLocalDate(timelineBounds.value.start)} - ${toIsoLocalDate(timelineBounds.value.end)}`)
 
 const timelineStats = computed(() => ([
   { label: 'Период', value: timelineWindowLabel.value },
-  { label: 'Строк в таблице', value: `${visibleTimelineRows.value.length}` },
+  { label: 'Строк', value: `${visibleTimelineRows.value.length}` },
   { label: 'Фаз', value: `${control.phases.length}` },
   { label: 'Спринтов', value: `${control.sprints.length}` },
 ]))
@@ -2589,6 +2588,17 @@ function isTimelineRowSelected(row: HybridTimelineRow) {
   return selectedTimelineRowDetails.value?.id === row.id && selectedTimelineRowDetails.value?.type === row.type
 }
 
+function getTimelineRowTooltip(row: HybridTimelineRow) {
+  return [
+    row.title,
+    row.typeLabel,
+    `Статус: ${row.statusLabel}`,
+    `Период: ${formatDateRange(row.startDate, row.endDate)}`,
+    `Прогресс: ${row.progressLabel}`,
+    row.meta,
+  ].filter(Boolean).join('\n')
+}
+
 async function openTimelineRowDetails(row: HybridTimelineRow) {
   selectedTimelineRowState.value = { id: row.id, type: row.type }
 
@@ -3681,17 +3691,27 @@ function closeTimelineRowDetails() {
 .hpc-section--timeline .hpc-section__tools {
   flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 8px;
+}
+
+.hpc-section--timeline > .hpc-section__head {
+  align-items: center;
+  gap: 10px 18px;
+}
+
+.hpc-section--timeline > .hpc-section__head .hpc-section__title {
+  font-size: 1.06rem;
 }
 
 .hpc-timeline-shell {
   display: grid;
-  gap: 18px;
+  gap: 10px;
 }
 
 .hpc-timeline-content {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  gap: 14px;
   align-items: start;
 }
 
@@ -3700,9 +3720,10 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-timeline-overview {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .hpc-timeline-stat,
@@ -3718,10 +3739,14 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-timeline-stat {
-  display: grid;
-  gap: 10px;
-  min-height: 88px;
-  padding: 16px 18px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 0;
+  padding: 8px 12px;
+  border-radius: var(--hpc-tl-chip-radius);
+  background: var(--hpc-tl-surface-strong);
+  box-shadow: none;
 }
 
 .hpc-timeline-stat__label,
@@ -3738,13 +3763,15 @@ function closeTimelineRowDetails() {
 
 .hpc-timeline-stat__label,
 .hpc-timeline-details-modal__eyebrow {
-  font-size: .7rem;
+  font-size: .66rem;
   color: var(--hpc-tl-muted);
+  white-space: nowrap;
 }
 
 .hpc-timeline-stat__value {
-  font-size: clamp(1rem, 2vw, 1.24rem);
-  line-height: 1.3;
+  font-size: .8rem;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .hpc-timeline-board-card {
@@ -3790,7 +3817,11 @@ function closeTimelineRowDetails() {
 .hpc-section--timeline .hpc-board__cell,
 .hpc-section--timeline .hpc-board__timeline-head-stack,
 .hpc-section--timeline .hpc-board__timeline {
-  min-height: 66px;
+  min-height: 56px;
+}
+
+.hpc-section--timeline .hpc-board__cell {
+  padding-block: 8px;
 }
 
 .hpc-section--timeline .hpc-board__cell--entity,
@@ -3809,12 +3840,21 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-section--timeline .hpc-board__entity {
-  gap: 14px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
 }
 
 .hpc-section--timeline .hpc-board__entity-body,
 .hpc-section--timeline .hpc-board__period {
+  gap: 4px;
+}
+
+.hpc-section--timeline .hpc-board__entity-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
 .hpc-section--timeline .hpc-board__drag,
@@ -3829,7 +3869,20 @@ function closeTimelineRowDetails() {
 
 .hpc-section--timeline .hpc-scale-switch__btn,
 .hpc-section--timeline .hpc-board__toggle {
-  padding-inline: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding-inline: 10px;
+  font-size: .64rem;
+}
+
+.hpc-section--timeline .hpc-scale-switch {
+  gap: 6px;
+}
+
+.hpc-section--timeline .hpc-board__drag {
+  min-height: 34px;
 }
 
 .hpc-section--timeline .hpc-scale-switch__btn--active,
@@ -3859,15 +3912,17 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-section--timeline .hpc-board__title-btn {
-  width: fit-content;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
+  flex: 1;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--hpc-tl-text);
   text-align: left;
   cursor: pointer;
-  box-shadow: inset 0 -1px 0 var(--hpc-tl-underline);
+  box-shadow: none;
 }
 
 .hpc-section--timeline .hpc-board__title-btn:hover {
@@ -3877,9 +3932,16 @@ function closeTimelineRowDetails() {
 .hpc-section--timeline .hpc-board__title,
 .hpc-section--timeline .hpc-timeline-details-modal__title {
   margin: 0;
-  font-size: .96rem;
+  font-size: .88rem;
   font-weight: 600;
   line-height: 1.35;
+}
+
+.hpc-section--timeline .hpc-board__title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hpc-section--timeline .hpc-board__meta-line,
@@ -3887,6 +3949,10 @@ function closeTimelineRowDetails() {
 .hpc-section--timeline .hpc-board__week-label,
 .hpc-section--timeline .hpc-recommendation-text {
   color: var(--hpc-tl-muted);
+}
+
+.hpc-section--timeline .hpc-board__meta-line {
+  display: none;
 }
 
 .hpc-section--timeline .hpc-board__period strong,
@@ -3911,14 +3977,14 @@ function closeTimelineRowDetails() {
 .hpc-section--timeline .hpc-board__bar {
   top: 50%;
   bottom: auto;
-  height: 42px;
-  min-height: 42px;
+  height: 34px;
+  min-height: 34px;
   border-radius: var(--hpc-tl-chip-radius);
   border: var(--hpc-tl-border-width) solid currentColor;
   background: color-mix(in srgb, currentColor 13%, var(--hpc-tl-surface));
   transform: translateY(-50%);
-  padding: 0 8px 0 0;
-  gap: 6px;
+  padding: 0 6px 0 0;
+  gap: 4px;
   box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 18%, transparent);
 }
 
@@ -3929,8 +3995,8 @@ function closeTimelineRowDetails() {
 .hpc-section--timeline .hpc-board__bar-handle,
 .hpc-section--timeline .hpc-board__bar-move {
   min-height: 100%;
-  width: 12px;
-  min-width: 12px;
+  width: 10px;
+  min-width: 10px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -3946,7 +4012,7 @@ function closeTimelineRowDetails() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: .72rem;
+  font-size: .66rem;
   letter-spacing: .1em;
   cursor: grab;
   opacity: .64;
@@ -3961,7 +4027,7 @@ function closeTimelineRowDetails() {
   min-width: 0;
   flex: 1;
   display: grid;
-  gap: 1px;
+  gap: 0;
   align-items: center;
   padding: 0;
   border: 0;
@@ -3984,19 +4050,14 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-section--timeline .hpc-board__bar-label {
-  font-size: .72rem;
+  font-size: .68rem;
   font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: none;
 }
 
 .hpc-section--timeline .hpc-board__bar-meta {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: .62rem;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, currentColor 72%, transparent);
+  display: none;
 }
 
 .hpc-section--timeline .hpc-timeline-details-modal {
@@ -4158,7 +4219,7 @@ function closeTimelineRowDetails() {
 
 @media (max-width: 1100px) {
   .hpc-timeline-overview {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .hpc-timeline-content--details,
@@ -4173,20 +4234,28 @@ function closeTimelineRowDetails() {
     align-items: flex-start;
   }
 
-  .hpc-timeline-overview,
   .hpc-section--timeline .hpc-grid--top {
     grid-template-columns: 1fr;
+  }
+
+  .hpc-timeline-overview {
+    align-items: stretch;
+  }
+
+  .hpc-timeline-stat {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .hpc-section--timeline .hpc-board__cell,
   .hpc-section--timeline .hpc-board__timeline-head-stack,
   .hpc-section--timeline .hpc-board__timeline {
-    min-height: 62px;
+    min-height: 54px;
   }
 
   .hpc-section--timeline .hpc-board__bar {
-    height: 38px;
-    min-height: 38px;
+    height: 32px;
+    min-height: 32px;
   }
 
   .hpc-timeline-board-card,

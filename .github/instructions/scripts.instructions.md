@@ -2,77 +2,83 @@
 applyTo: "scripts/**"
 ---
 
-# Scripts — скрипты миграций и деплоя
+# Scripts — deploy, snapshots, export, migrations
 
 ## Типы скриптов
 
-| Файл | Назначение |
+| Паттерн | Назначение |
 |---|---|
-| `deploy-safe.sh` | Деплой на сервер (git sync + build + pm2) |
-| `migrate-*.mjs` | Разовые миграции данных |
-| `seed-*.mjs` | Наполнение тестовыми данными |
+| `deploy-safe.sh` | Root deploy на прод-сервер с git/preflight checks |
+| `restore-last-snapshot.sh` | Откат к последнему pre-deploy snapshot |
+| `export-messenger-standalone.sh` | Выгрузка standalone messenger contour |
+| `migrate-*.mjs` | Разовые data/schema migrations |
+| `seed-*.mjs` | Локальные demo/dev данные |
 
-## Деплой — обязательный порядок (правило без исключений)
+## Deploy — обязательный порядок
 
-> **ВСЕГДА перед деплоем — сначала сохранить в git локально и на GitHub.**
+Перед любым deploy этого репозитория порядок один и тот же:
 
 ```bash
-# Шаг 1 — сохранить все изменения локально
 git add -A
 git commit -m "feat: описание"
-
-# Шаг 2 — отправить на GitHub
 git push origin main
-
-# Шаг 3 — только теперь деплоить
 bash scripts/deploy-safe.sh
 ```
 
-`deploy-safe.sh` завершится с ошибкой если есть незакоммиченные изменения или непушенные коммиты.
-Этот порядок нельзя пропускать даже если изменения кажутся незначительными.
+- `deploy-safe.sh` специально падает, если изменения не закоммичены или не запушены.
+- Для preflight/fast/dry-run использовать root npm scripts, а не копировать shell вручную.
 
-## Скрипт миграции — паттерн
+## Скрипты миграций
+
+Базовый паттерн:
 
 ```js
-// scripts/migrate-add-something.mjs
-import postgres from 'postgres'
 import * as dotenv from 'dotenv'
+import postgres from 'postgres'
+
 dotenv.config()
 
 const sql = postgres(process.env.DATABASE_URL)
 
 async function migrate() {
-  console.log('[migration] start')
-  
   await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS new_field text`
-  
-  console.log('[migration] done')
-  await sql.end()
 }
 
-migrate().catch(e => { console.error(e); process.exit(1) })
+migrate()
+  .catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await sql.end()
+  })
 ```
 
 ## Правила
 
-- Каждый скрипт миграции — идемпотентный (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`)
-- `dotenv.config()` в начале — для доступа к `DATABASE_URL`
-- Всегда `sql.end()` в конце — закрывать соединение
-- `process.exit(1)` при ошибке — чтобы CI/CD видел сбой
-- Не запускать seed скрипты на production
+- Скрипты миграций делать идемпотентными, где это возможно.
+- `dotenv.config()` поднимать в начале, если нужен доступ к env.
+- Соединения и дескрипторы всегда закрывать (`sql.end()`, cleanup временных файлов и т.д.).
+- Для long-running/export/deploy shell scripts явно проверять cwd, env и fallback paths.
+- Messenger standalone задачи решать через `scripts/export-messenger-standalone.sh` и `messenger/ecosystem*.config.cjs`, а не ad-hoc копированием папок.
+- Seed-скрипты считать dev-only.
 
-## Переменные окружения
+## Важные env / runtime контракты
 
+```text
+DATABASE_URL
+DEPLOY_HOST
+DEPLOY_PATH
+APP_NAME
+HEALTHCHECK_URL
+MESSENGER_DEPLOY_ROOT
+MESSENGER_PROJECT_ROOT
+MESSENGER_CORE_DATA_DIR
 ```
-DATABASE_URL    — PostgreSQL connection string
-DEPLOY_HOST     — SSH алиас (daria-deploy)
-DEPLOY_PATH     — /opt/daria-nuxt
-APP_NAME        — daria-nuxt (PM2)
-```
 
-## ЗАПРЕЩЕНО
+## Запрещено
 
-- ❌ Хардкодить credentials в скриптах
-- ❌ Деплоить без предварительного `git push`
-- ❌ Запускать seed на production
-- ❌ Необратимые `DROP TABLE` / `DELETE FROM` без бэкапа
+- ❌ хардкодить credentials и secrets в скриптах
+- ❌ деплоить без `git push`
+- ❌ запускать seed-данные на production
+- ❌ делать необратимые `DROP` / массовые `DELETE` без явного rollback/snapshot плана

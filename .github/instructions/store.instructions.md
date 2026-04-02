@@ -2,83 +2,65 @@
 applyTo: "app/stores/**,app/composables/**"
 ---
 
-# Pinia Stores и Composables — паттерны
+# Main App State — composables-first, не Pinia-first
 
-> Источник истины: `docs/rag/PINIA_STORES.md`
+> Источник истины: `docs/rag/PINIA_STORES.md` полезен как reference, но в **основной платформе** состояние сейчас живет в `app/composables/**` и `useState()`. `app/stores/` в репозитории отсутствует.
 
-## Стек
-Pinia 3.x · @pinia/nuxt · Vue 3 Composition API
+## Текущий контракт
 
-## Store — Setup Store (всегда этот паттерн)
+- Для main app по умолчанию создавать composable, а не Pinia store.
+- `useState()` использовать для cross-page / shell-level state с устойчивым ключом.
+- Local component state оставлять локальным (`ref`, `computed`), если он не нужен между страницами/слоями.
+- `messenger/web` — отдельный контур со своими state правилами; этот файл описывает `app/composables/**` основной платформы.
+
+## Канонический паттерн composable
 
 ```ts
-// app/stores/project.ts
-export const useProjectStore = defineStore('project', () => {
-  // state → ref()
-  const items = ref<Project[]>([])
-  const loading = ref(false)
-  const currentId = ref<number | null>(null)
+export function useFeatureState() {
+  const items = useState<string[]>('feature-items', () => [])
+  const pending = useState<boolean>('feature-pending', () => false)
 
-  // getters → computed()
-  const current = computed(() => items.value.find(p => p.id === currentId.value))
-  const active = computed(() => items.value.filter(p => p.status === 'active'))
-
-  // actions → async function
-  async function fetchAll() {
-    loading.value = true
+  async function refresh() {
+    pending.value = true
     try {
-      items.value = await $fetch('/api/projects')
+      items.value = await $fetch('/api/feature')
     } finally {
-      loading.value = false
+      pending.value = false
     }
   }
 
-  async function create(data: CreateProjectDto) {
-    const created = await $fetch('/api/projects', { method: 'POST', body: data })
-    items.value.unshift(created)
-    return created
+  return {
+    items,
+    pending,
+    refresh,
   }
-
-  return { items, loading, currentId, current, active, fetchAll, create }
-})
-```
-
-## Использование в компоненте
-
-```vue
-<script setup lang="ts">
-const store = useProjectStore()
-const { items, loading } = storeToRefs(store) // реактивно!
-// store.fetchAll() — методы напрямую
-</script>
-```
-
-**Никогда** `store.items` без `storeToRefs` — потеряешь реактивность.
-
-## Composable — паттерн
-
-```ts
-// app/composables/useGallery.ts
-export function useGallery() {
-  const items = ref<GalleryItem[]>([])
-  const { data, pending, error, refresh } = useFetch('/api/gallery')
-
-  return { items, pending, error, refresh }
 }
 ```
 
-## $fetch vs useFetch
+## Реальные ориентиры в репо
 
-| | `$fetch` | `useFetch` |
-|---|---|---|
-| Где | В actions/handlers | В `<script setup>` |
-| SSR | Дублирует запрос | Автоматически дедуп |
-| Реактивность | Нет | `data`, `pending`, `error` |
+- `useAdminNav.ts` — глобальная навигация и shell state
+- `useDesignSystem.ts` / `useUITheme.ts` — theme/design runtime
+- `useProjectCommunicationsBootstrap.ts` — bootstrap для project communications
+- `useStandaloneCommunicationsBootstrap.ts` — bootstrap встроенного standalone chat
+- `useWipe2.ts` — пример composable с `useState()`-контрактом
 
-## ЗАПРЕЩЕНО
+## Правила
 
-- ❌ Options Store (`defineStore('id', { state, getters, actions })`) — только Setup Store
-- ❌ `store.items` без `storeToRefs` в шаблоне
-- ❌ `$fetch` в `<script setup>` напрямую — используй `useFetch`
-- ❌ Мутировать state напрямую снаружи store — только через actions
-- ❌ `localStorage` напрямую — используй `useDesignSystem` для токенов
+- Именовать composable через `useXxx`.
+- Ключи `useState()` делать стабильными и уникальными по продуктовой сущности.
+- Fetch/auth logic для SSR-защищенных внутренних API делать осторожно: при server-side выполнении, где нужно, использовать request-bound fetch подходы.
+- Не размазывать одну и ту же shared state модель по нескольким несогласованным composables.
+- Если нужен единый source of truth, сначала проверь `shared/constants/**` и существующие composables.
+
+## Когда Pinia допустима
+
+- Только если задача явно требует внедрить store-layer в основной платформе.
+- Если Pinia все-таки вводится, использовать Setup Store и не смешивать его с Options Store legacy-подходом.
+
+## Запрещено
+
+- ❌ создавать `app/stores/*` по инерции, игнорируя текущий composables-first контракт
+- ❌ использовать `localStorage` напрямую вне специальных theme/design helpers
+- ❌ плодить параллельные state-модели для одного и того же shell/flow
+- ❌ делать composable просто прокладкой без state/behavior, если достаточно pure helper в `shared/utils/**`
