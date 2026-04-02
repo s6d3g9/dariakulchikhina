@@ -31,6 +31,24 @@ const navValue = computed<MessengerSectionKey>({
 })
 
 const chatDisabled = computed(() => !navigation.activeConversationId.value)
+const detachedCallHeaderVisible = computed(() => {
+  const activeConversationId = navigation.activeConversationId.value
+  const incomingBoundToActiveChat = Boolean(
+    navigation.activeSection.value === 'chat'
+    && calls.incomingCall.value?.conversationId
+    && calls.incomingCall.value.conversationId === activeConversationId,
+  )
+  const activeAudioCallBoundToActiveChat = Boolean(
+    navigation.activeSection.value === 'chat'
+    && calls.activeCall.value?.mode === 'audio'
+    && calls.activeCall.value.conversationId === activeConversationId,
+  )
+
+  return Boolean(
+    (calls.incomingCall.value && !incomingBoundToActiveChat)
+    || (calls.activeCall.value?.mode === 'audio' && !activeAudioCallBoundToActiveChat),
+  )
+})
 
 function sectionIcon(section: MessengerSectionKey) {
   switch (section) {
@@ -89,6 +107,7 @@ async function logout() {
       class="messenger-shell"
       :data-messenger-keyboard="viewport.keyboardOpen.value ? 'open' : 'closed'"
       :data-messenger-media-sheet="navigation.mediaSheetOpen.value ? 'open' : 'closed'"
+      :data-messenger-detached-call="detachedCallHeaderVisible ? 'open' : 'closed'"
     >
       <div class="messenger-workspace">
         <aside class="messenger-desktop-nav" aria-label="Боковая навигация Messenger">

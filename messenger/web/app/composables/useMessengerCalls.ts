@@ -109,6 +109,7 @@ let localStream: MediaStream | null = null
 let remoteStream: MediaStream | null = null
 let localVideoEl: HTMLVideoElement | null = null
 let remoteVideoEl: HTMLVideoElement | null = null
+let remoteSpeakerVideoEl: HTMLVideoElement | null = null
 let remoteAudioEl: HTMLAudioElement | null = null
 let peerConnectionCallId = ''
 const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
@@ -627,6 +628,35 @@ function resolveCallMode(value: unknown): MessengerCallMode {
   return value === 'video' ? 'video' : 'audio'
 }
 
+function isAppleTouchAudioRouteViewport() {
+  if (!import.meta.client) {
+    return false
+  }
+
+  const userAgent = navigator.userAgent || ''
+  const platform = navigator.platform || ''
+
+  return /iPad|iPhone|iPod/u.test(userAgent)
+    || (platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
+function canSetAudioOutputSink(element: HTMLMediaElement | null) {
+  if (!element) {
+    return false
+  }
+
+  return typeof (element as MessengerAudioOutputElement).setSinkId === 'function'
+}
+
+function syncMediaElementPlayback(element: HTMLMediaElement | null, muted: boolean) {
+  if (!element) {
+    return
+  }
+
+  element.muted = muted
+  void element.play().catch(() => {})
+}
+
 function assignMediaTargets() {
   if (localVideoEl) {
     localVideoEl.srcObject = localStream
@@ -637,6 +667,12 @@ function assignMediaTargets() {
     remoteVideoEl.srcObject = remoteStream
     remoteVideoEl.muted = true
     void remoteVideoEl.play().catch(() => {})
+  }
+
+  if (remoteSpeakerVideoEl) {
+    remoteSpeakerVideoEl.srcObject = remoteStream
+    remoteSpeakerVideoEl.muted = true
+    void remoteSpeakerVideoEl.play().catch(() => {})
   }
 
   if (remoteAudioEl) {
@@ -1749,17 +1785,28 @@ export function useMessengerCalls() {
   }
 
   function syncSpeakerState() {
-    const activeOutputElement = remoteAudioEl || remoteVideoEl
+    const speakerFallbackElement = remoteVideoEl || remoteSpeakerVideoEl
+    const canSelectOutputRoute = canSetAudioOutputSink(remoteAudioEl) || canSetAudioOutputSink(speakerFallbackElement)
 
-    if (activeOutputElement) {
-      activeOutputElement.muted = false
-      void applyAudioOutputPreference(activeOutputElement, controls.value.speakerEnabled)
-      void activeOutputElement.play().catch(() => {})
+    if (!canSelectOutputRoute && isAppleTouchAudioRouteViewport() && remoteAudioEl && speakerFallbackElement) {
+      syncMediaElementPlayback(remoteAudioEl, controls.value.speakerEnabled)
+      syncMediaElementPlayback(speakerFallbackElement, !controls.value.speakerEnabled)
+      return
     }
 
-    if (remoteVideoEl && activeOutputElement !== remoteVideoEl) {
-      remoteVideoEl.muted = true
-      void remoteVideoEl.play().catch(() => {})
+    const activeOutputElement = remoteAudioEl || speakerFallbackElement
+
+    if (activeOutputElement) {
+      syncMediaElementPlayback(activeOutputElement, false)
+      void applyAudioOutputPreference(activeOutputElement, controls.value.speakerEnabled)
+    }
+
+    if (remoteAudioEl && activeOutputElement !== remoteAudioEl) {
+      syncMediaElementPlayback(remoteAudioEl, true)
+    }
+
+    if (speakerFallbackElement && activeOutputElement !== speakerFallbackElement) {
+      syncMediaElementPlayback(speakerFallbackElement, true)
     }
   }
 
@@ -1812,10 +1859,28 @@ export function useMessengerCalls() {
     networkHint.value = nextHint
   }
 
-  function attachElements(elements: { localVideo?: HTMLVideoElement | null; remoteVideo?: HTMLVideoElement | null; remoteAudio?: HTMLAudioElement | null }) {
-    localVideoEl = elements.localVideo ?? localVideoEl
-    remoteVideoEl = elements.remoteVideo ?? remoteVideoEl
-    remoteAudioEl = elements.remoteAudio ?? remoteAudioEl
+  function attachElements(elements: {
+    localVideo?: HTMLVideoElement | null
+    remoteVideo?: HTMLVideoElement | null
+    remoteSpeakerVideo?: HTMLVideoElement | null
+    remoteAudio?: HTMLAudioElement | null
+  }) {
+    if ('localVideo' in elements) {
+      localVideoEl = elements.localVideo ?? null
+    }
+
+    if ('remoteVideo' in elements) {
+      remoteVideoEl = elements.remoteVideo ?? null
+    }
+
+    if ('remoteSpeakerVideo' in elements) {
+      remoteSpeakerVideoEl = elements.remoteSpeakerVideo ?? null
+    }
+
+    if ('remoteAudio' in elements) {
+      remoteAudioEl = elements.remoteAudio ?? null
+    }
+
     assignMediaTargets()
     syncSpeakerState()
     syncVideoState()
@@ -1824,6 +1889,7 @@ export function useMessengerCalls() {
   function clearElements() {
     localVideoEl = null
     remoteVideoEl = null
+    remoteSpeakerVideoEl = null
     remoteAudioEl = null
   }
 

@@ -150,6 +150,7 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-bottom-bar-height: 44px;
   --messenger-bottom-bar-active-height: var(--messenger-bottom-bar-height);
   --messenger-bottom-bar-effective-height: calc(var(--messenger-bottom-bar-height) + var(--messenger-safe-bottom));
+  --messenger-detached-call-offset: 0px;
   --messenger-bottom-bar-button-height: 38px;
   --messenger-bottom-bar-gap: 2px;
   --messenger-bottom-bar-radius: 10px;
@@ -177,11 +178,21 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-bottom-bar-active-height: 0px;
 }
 
+.messenger-shell[data-messenger-detached-call='open'] {
+  --messenger-detached-call-offset: calc(var(--messenger-chat-header-height) + 8px);
+}
+
 .messenger-workspace {
   flex: 1;
   min-height: 0;
   display: flex;
   overflow: hidden;
+}
+
+@media (max-width: 979px) {
+  .messenger-shell[data-messenger-detached-call='open'] .messenger-workspace {
+    padding-top: var(--messenger-detached-call-offset);
+  }
 }
 
 .messenger-desktop-nav {
@@ -3920,10 +3931,27 @@ html[data-messenger-keyboard='open'] .section-block--chat {
 
 .call-detached-header {
   position: fixed;
-  left: 12px;
-  right: 12px;
-  top: max(12px, calc(env(safe-area-inset-top) + 4px));
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 41;
+  padding-top: env(safe-area-inset-top, 0px);
   pointer-events: auto;
+}
+
+.call-detached-header .chat-header {
+  position: relative;
+  top: auto;
+}
+
+.call-detached-header .chat-header--floating {
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  border-bottom: 1px solid rgba(var(--v-theme-outline-variant), 0.72);
+  border-radius: 0 0 18px 18px;
+  background: rgba(var(--v-theme-surface-container-high), 0.97);
+  box-shadow: 0 12px 28px rgba(var(--v-theme-scrim), 0.12);
 }
 
 .call-floating-controls {
@@ -4038,6 +4066,16 @@ html[data-messenger-keyboard='open'] .section-block--chat {
 .call-video--remote {
   width: 100%;
   height: 100%;
+}
+
+.call-video--routing {
+  position: fixed;
+  left: -9999px;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .call-video--local {

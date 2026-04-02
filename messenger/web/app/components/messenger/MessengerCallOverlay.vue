@@ -163,12 +163,14 @@ const miniStageStyle = computed(() => {
 
 const localVideoEl = useTemplateRef<HTMLVideoElement>('localVideoEl')
 const remoteVideoEl = useTemplateRef<HTMLVideoElement>('remoteVideoEl')
+const remoteSpeakerVideoEl = useTemplateRef<HTMLVideoElement>('remoteSpeakerVideoEl')
 const remoteAudioEl = useTemplateRef<HTMLAudioElement>('remoteAudioEl')
 
-watch([localVideoEl, remoteVideoEl, remoteAudioEl], () => {
+watch([localVideoEl, remoteVideoEl, remoteSpeakerVideoEl, remoteAudioEl], () => {
   calls.attachElements({
     localVideo: localVideoEl.value,
     remoteVideo: remoteVideoEl.value,
+    remoteSpeakerVideo: remoteSpeakerVideoEl.value,
     remoteAudio: remoteAudioEl.value,
   })
 }, { immediate: true })
@@ -440,6 +442,7 @@ onBeforeUnmount(() => {
     <MessengerCallAnalysisPanel v-if="showMobileCallAnalysisPanel" mobile />
 
     <audio ref="remoteAudioEl" autoplay />
+    <video ref="remoteSpeakerVideoEl" class="call-video call-video--routing" autoplay playsinline />
     <div v-if="calls.callError.value && !calls.activeCall.value" class="call-stage__actions">
       <VBtn class="call-stage__action-btn" variant="tonal" @click="calls.refreshMediaPermissions()">Обновить статусы доступа</VBtn>
       <VBtn class="call-stage__action-btn" variant="flat" color="primary" @click="calls.ensureMediaAccess(calls.incomingCall.value?.mode || 'audio')">Запросить доступ</VBtn>
