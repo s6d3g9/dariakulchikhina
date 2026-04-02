@@ -158,6 +158,7 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-bottom-bar-radius: 10px;
   --messenger-agent-workspace-dock-height: 102px;
   --messenger-keyboard-offset: max(0px, var(--messenger-keyboard-inset, 0px));
+  --messenger-window-inner-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
   --messenger-viewport-effective-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
   display: flex;
   flex-direction: column;
@@ -173,6 +174,10 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 
 html[data-messenger-display-mode='standalone'] .messenger-shell {
   --messenger-safe-bottom: var(--messenger-safe-bottom-standalone);
+}
+
+html[data-messenger-display-mode='standalone'] .messenger-shell[data-messenger-keyboard='closed'] {
+  --messenger-viewport-effective-height: max(var(--messenger-window-inner-height, 100dvh), var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh)));
 }
 
 .messenger-shell[data-messenger-keyboard='open'] {
@@ -5572,6 +5577,7 @@ html[data-messenger-keyboard='open'] .section-block--chat {
 }
 
 html[data-messenger-display-mode='standalone'] .auth-shell {
+  min-height: max(var(--messenger-window-inner-height, 100dvh), var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh)));
   padding-bottom: calc(24px + min(env(safe-area-inset-bottom, 0px), 18px));
 }
 

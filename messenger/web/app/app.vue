@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const settingsModel = useMessengerSettings()
 const install = useMessengerInstall()
+const viewport = useMessengerViewport()
 
 function syncDisplayModeDataAttribute(isStandalone: boolean) {
   if (!import.meta.client) {
@@ -69,6 +70,7 @@ function installTouchZoomLock() {
 }
 
 let detachTouchZoomLock: (() => void) | null = null
+let detachViewport: (() => void) | null = null
 
 function syncRootBackground(themeColor: string) {
   if (!import.meta.client) {
@@ -91,6 +93,7 @@ useHead(() => ({
 
 onMounted(() => {
   settingsModel.hydrate()
+  detachViewport = viewport.attach()
   detachTouchZoomLock = installTouchZoomLock()
   syncDisplayModeDataAttribute(install.isStandalone.value)
 })
@@ -112,6 +115,8 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  detachViewport?.()
+  detachViewport = null
   detachTouchZoomLock?.()
   detachTouchZoomLock = null
 })

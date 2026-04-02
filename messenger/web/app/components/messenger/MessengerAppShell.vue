@@ -73,17 +73,9 @@ function openNavSection(section: MessengerSectionKey) {
   navValue.value = section
 }
 
-let detachViewport: (() => void) | null = null
-
 onMounted(() => {
   settingsModel.hydrate()
-  detachViewport = viewport.attach()
   void realtime.connect()
-})
-
-onBeforeUnmount(() => {
-  detachViewport?.()
-  detachViewport = null
 })
 
 watch(() => navigation.activeSection.value, async (nextSection, previousSection) => {
