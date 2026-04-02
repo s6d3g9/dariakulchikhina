@@ -2982,11 +2982,13 @@ html[data-messenger-display-mode='standalone'] .messenger-shell[data-messenger-k
   min-height: 0;
   overflow-y: auto;
   padding: 8px 16px;
-  padding-bottom: calc(var(--messenger-composer-height, 76px) + var(--messenger-chat-keyboard-offset, 0px) + 8px);
+  padding-bottom: 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   scroll-behavior: smooth;
+  scroll-padding-bottom: 12px;
+  overscroll-behavior-y: contain;
 }
 
 /* ── Message Bubble ──────────────────────────────────────── */
@@ -3435,6 +3437,8 @@ html[data-messenger-display-mode='standalone'] .messenger-shell[data-messenger-k
   padding: 4px 8px max(12px, calc(var(--messenger-safe-bottom) + 4px));
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container-low));
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .composer-bar__body {
@@ -4807,6 +4811,8 @@ html[data-messenger-keyboard='open'] .section-block--chat {
   overflow: hidden;
   position: relative;
   z-index: 25;
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .composer-media-menu__body {
