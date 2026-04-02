@@ -546,10 +546,7 @@ function lockPageScroll() {
 
   lockedPageScrollY = window.scrollY
   body.dataset.messengerScrollLocked = 'true'
-  root.style.height = '100%'
   root.style.overflow = 'hidden'
-  body.style.height = '100%'
-  body.style.width = '100%'
   body.style.overflow = 'hidden'
 }
 

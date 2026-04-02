@@ -21,7 +21,11 @@ html, body {
 html {
   --messenger-window-inner-height: 100dvh;
   --messenger-screen-height: 100dvh;
-  --messenger-root-effective-height: 100dvh;
+  --messenger-root-effective-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
+}
+
+html[data-messenger-keyboard='open'] {
+  --messenger-root-effective-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
 }
 
 html[data-messenger-display-mode='standalone'][data-messenger-keyboard='closed'] {
