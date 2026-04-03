@@ -3,8 +3,6 @@ const settingsModel = useMessengerSettings()
 const install = useMessengerInstall()
 const viewport = useMessengerViewport()
 
-let detachViewport: (() => void) | null = null
-
 function syncDisplayModeDataAttribute(isStandalone: boolean) {
   if (!import.meta.client) {
     return
