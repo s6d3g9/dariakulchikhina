@@ -103,6 +103,12 @@ interface MessengerActiveCall {
   initiator: boolean
 }
 
+interface MessengerLiveKitTrack {
+  kind?: string
+  attach: (element: HTMLMediaElement) => HTMLMediaElement
+  detach: (element?: HTMLMediaElement) => HTMLMediaElement[] | HTMLMediaElement
+}
+
 let peerConnection: RTCPeerConnection | null = null
 let liveKitRoom: any = null
 let localStream: MediaStream | null = null
@@ -112,6 +118,7 @@ let remoteVideoEl: HTMLVideoElement | null = null
 let remoteSpeakerVideoEl: HTMLVideoElement | null = null
 let remoteAudioEl: HTMLAudioElement | null = null
 let peerConnectionCallId = ''
+const liveKitRemoteTracks = new Set<MessengerLiveKitTrack>()
 const pendingIceCandidates = new Map<string, RTCIceCandidateInit[]>()
 const transformedSenders = new WeakSet<object>()
 const transformedReceivers = new WeakSet<object>()
@@ -657,10 +664,105 @@ function syncMediaElementPlayback(element: HTMLMediaElement | null, muted: boole
   void element.play().catch(() => {})
 }
 
+function clearRemoteMediaElements() {
+  if (remoteVideoEl) {
+    remoteVideoEl.srcObject = null
+  }
+
+  if (remoteSpeakerVideoEl) {
+    remoteSpeakerVideoEl.srcObject = null
+  }
+
+  if (remoteAudioEl) {
+    remoteAudioEl.srcObject = null
+  }
+}
+
+function clearLiveKitRemoteTracks() {
+  for (const track of liveKitRemoteTracks) {
+    try {
+      track.detach()
+    } catch {
+      // noop
+    }
+  }
+
+  liveKitRemoteTracks.clear()
+  clearRemoteMediaElements()
+}
+
+function syncLiveKitMediaTargets() {
+  if (!liveKitRoom) {
+    return false
+  }
+
+  for (const track of liveKitRemoteTracks) {
+    try {
+      track.detach()
+    } catch {
+      // noop
+    }
+  }
+
+  clearRemoteMediaElements()
+
+  if (remoteVideoEl) {
+    remoteVideoEl.muted = true
+    remoteVideoEl.autoplay = true
+  }
+
+  if (remoteSpeakerVideoEl) {
+    remoteSpeakerVideoEl.muted = true
+    remoteSpeakerVideoEl.autoplay = true
+  }
+
+  if (remoteAudioEl) {
+    remoteAudioEl.autoplay = true
+  }
+
+  for (const track of liveKitRemoteTracks) {
+    try {
+      if (track.kind === 'video') {
+        if (remoteVideoEl) {
+          track.attach(remoteVideoEl)
+        }
+        continue
+      }
+
+      if (track.kind === 'audio') {
+        const targets = new Set<HTMLMediaElement>()
+
+        if (remoteAudioEl) {
+          targets.add(remoteAudioEl)
+        }
+
+        if (remoteVideoEl) {
+          targets.add(remoteVideoEl)
+        } else if (remoteSpeakerVideoEl) {
+          targets.add(remoteSpeakerVideoEl)
+        }
+
+        for (const element of targets) {
+          track.attach(element)
+        }
+      }
+    } catch {
+      // noop
+    }
+  }
+
+  syncSpeakerState()
+  return true
+}
+
 function assignMediaTargets() {
   if (localVideoEl) {
     localVideoEl.srcObject = localStream
     void localVideoEl.play().catch(() => {})
+  }
+
+  if (syncLiveKitMediaTargets()) {
+    return
   }
 
   if (remoteVideoEl) {
@@ -1177,9 +1279,7 @@ export function useMessengerCalls() {
 
   function openAnalysisPanel() {
     analysisPanelOpen.value = true
-    if (activeCall.value?.mode === 'audio' && !transcriptionActive.value) {
-      void startTranscription()
-    }
+    // Транскрипция запускается только явно через toggleCallTranscription
   }
 
   function closeAnalysisPanel() {
@@ -1189,10 +1289,7 @@ export function useMessengerCalls() {
   function toggleAnalysisPanel(force?: boolean) {
     const nextState = typeof force === 'boolean' ? force : !analysisPanelOpen.value
     analysisPanelOpen.value = nextState
-
-    if (nextState && activeCall.value?.mode === 'audio' && !transcriptionActive.value) {
-      void startTranscription()
-    }
+    // Транскрипция не запускается автоматически при открытии панели
   }
 
   async function runAnalysisTool(toolId: MessengerCallAnalysisToolId = selectedAnalysisToolId.value) {
@@ -2291,6 +2388,7 @@ export function useMessengerCalls() {
       try { void liveKitRoom.disconnect() } catch {}
       liveKitRoom = null
     }
+    clearLiveKitRemoteTracks()
     activeCall.value = null
     incomingCall.value = null
     busy.value = false
@@ -2336,7 +2434,8 @@ export function useMessengerCalls() {
   async function startOutgoingCall(mode: MessengerCallMode) {
     callError.value = ''
     clearCallReview()
-    analysisPanelOpen.value = shouldAutoOpenCallAnalysisPanel(mode)
+    // Панель транскрипции открывается только по явному действию пользователя
+    analysisPanelOpen.value = false
     const conversation = conversations.activeConversation.value
 
     if (!conversation) {
@@ -2422,7 +2521,8 @@ export function useMessengerCalls() {
   async function acceptIncomingCall() {
     callError.value = ''
     clearCallReview()
-    analysisPanelOpen.value = shouldAutoOpenCallAnalysisPanel(incomingCall.value?.mode || 'audio')
+    // Панель транскрипции не открывается автоматически
+    analysisPanelOpen.value = false
 
     if (!incomingCall.value) {
       return
@@ -2564,26 +2664,27 @@ export function useMessengerCalls() {
       })
 
       const { Room, RoomEvent } = await import('livekit-client')
+      clearLiveKitRemoteTracks()
+      remoteStream = null
       liveKitRoom = new Room({
         adaptiveStream: true,
         dynacast: true,
       })
 
-      liveKitRoom.on(RoomEvent.TrackSubscribed, (track: any) => {
-        if (!remoteStream) {
-          remoteStream = new MediaStream()
-        }
-        if (track.mediaStreamTrack) {
-          remoteStream.addTrack(track.mediaStreamTrack)
-          assignMediaTargets()
-        }
+      liveKitRoom.on(RoomEvent.TrackSubscribed, (track: MessengerLiveKitTrack) => {
+        liveKitRemoteTracks.add(track)
+        assignMediaTargets()
       })
 
-      liveKitRoom.on(RoomEvent.TrackUnsubscribed, (track: any) => {
-        if (remoteStream && track.mediaStreamTrack) {
-          remoteStream.removeTrack(track.mediaStreamTrack)
-          assignMediaTargets()
+      liveKitRoom.on(RoomEvent.TrackUnsubscribed, (track: MessengerLiveKitTrack) => {
+        try {
+          track.detach()
+        } catch {
+          // noop
         }
+
+        liveKitRemoteTracks.delete(track)
+        assignMediaTargets()
       })
 
             liveKitRoom.on(RoomEvent.DataReceived, (payload: Uint8Array, participant: any, kind: any, topic?: string) => {

@@ -437,6 +437,14 @@
             </article>
           </div>
 
+          <div
+            v-if="timelineTooltip.visible"
+            class="hpc-timeline-hover-tooltip"
+            :style="timelineTooltipStyle"
+          >
+            {{ timelineTooltip.content }}
+          </div>
+
           <div class="hpc-timeline-content" :class="{ 'hpc-timeline-content--details': !!selectedTimelineRowDetails }">
             <div class="hpc-timeline-board-card">
               <div class="hpc-board-wrap">
@@ -495,7 +503,16 @@
                       </button>
                       <div class="hpc-board__entity-body">
                         <div class="hpc-board__entity-main">
-                          <button class="hpc-board__title-btn" type="button" :title="getTimelineRowTooltip(row)" @click="openTimelineRowDetails(row)">
+                          <button
+                            class="hpc-board__title-btn"
+                            type="button"
+                            :aria-label="`Открыть детали ${row.title}`"
+                            @pointerenter="scheduleTimelineTooltip($event, row)"
+                            @pointerleave="hideTimelineTooltip"
+                            @focus="scheduleTimelineTooltip($event, row)"
+                            @blur="hideTimelineTooltip"
+                            @click="openTimelineRowDetails(row)"
+                          >
                             <span class="hpc-board__title">{{ row.title }}</span>
                           </button>
                           <button
@@ -562,7 +579,10 @@
                           class="hpc-board__bar-body"
                           type="button"
                           :aria-label="`Открыть детали ${row.title}`"
-                          :title="getTimelineRowTooltip(row)"
+                          @pointerenter="scheduleTimelineTooltip($event, row)"
+                          @pointerleave="hideTimelineTooltip"
+                          @focus="scheduleTimelineTooltip($event, row)"
+                          @blur="hideTimelineTooltip"
                           @click.stop="openTimelineRowDetails(row)"
                         >
                           <span class="hpc-board__bar-label">{{ row.title }}</span>
@@ -1958,6 +1978,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearTimelineTooltipTimer()
+
   if (!import.meta.client || typeof window === 'undefined') {
     return
   }
@@ -2588,6 +2610,16 @@ function isTimelineRowSelected(row: HybridTimelineRow) {
   return selectedTimelineRowDetails.value?.id === row.id && selectedTimelineRowDetails.value?.type === row.type
 }
 
+const timelineTooltip = ref({
+  visible: false,
+  content: '',
+  left: 0,
+  top: 0,
+  maxWidth: 280,
+})
+
+let timelineTooltipTimer: number | null = null
+
 function getTimelineRowTooltip(row: HybridTimelineRow) {
   return [
     row.title,
@@ -2599,7 +2631,56 @@ function getTimelineRowTooltip(row: HybridTimelineRow) {
   ].filter(Boolean).join('\n')
 }
 
+const timelineTooltipStyle = computed(() => ({
+  left: `${timelineTooltip.value.left}px`,
+  top: `${timelineTooltip.value.top}px`,
+  maxWidth: `${timelineTooltip.value.maxWidth}px`,
+}))
+
+function clearTimelineTooltipTimer() {
+  if (!timelineTooltipTimer) return
+  window.clearTimeout(timelineTooltipTimer)
+  timelineTooltipTimer = null
+}
+
+function scheduleTimelineTooltip(event: Event, row: HybridTimelineRow) {
+  if (!import.meta.client || typeof window === 'undefined') return
+
+  if ('pointerType' in event && event.pointerType === 'touch') {
+    return
+  }
+
+  const target = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  if (!target) return
+
+  clearTimelineTooltipTimer()
+  timelineTooltip.value.visible = false
+
+  timelineTooltipTimer = window.setTimeout(() => {
+    const rect = target.getBoundingClientRect()
+    const maxWidth = Math.min(320, Math.max(220, window.innerWidth - 24))
+    const left = Math.min(
+      Math.max(12, rect.left),
+      Math.max(12, window.innerWidth - maxWidth - 12),
+    )
+
+    timelineTooltip.value = {
+      visible: true,
+      content: getTimelineRowTooltip(row),
+      left,
+      top: Math.max(20, rect.top - 12),
+      maxWidth,
+    }
+  }, 1000)
+}
+
+function hideTimelineTooltip() {
+  clearTimelineTooltipTimer()
+  timelineTooltip.value.visible = false
+}
+
 async function openTimelineRowDetails(row: HybridTimelineRow) {
+  hideTimelineTooltip()
   selectedTimelineRowState.value = { id: row.id, type: row.type }
 
   if (!import.meta.client || typeof document === 'undefined') return
@@ -2613,6 +2694,7 @@ async function openTimelineRowDetails(row: HybridTimelineRow) {
 }
 
 function closeTimelineRowDetails() {
+  hideTimelineTooltip()
   selectedTimelineRowState.value = null
 }
 </script>
@@ -3689,9 +3771,23 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-section--timeline .hpc-section__tools {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.hpc-section--timeline .hpc-section__tools::-webkit-scrollbar,
+.hpc-timeline-overview::-webkit-scrollbar {
+  display: none;
+}
+
+.hpc-section--timeline .hpc-section__tools > * {
+  flex: 0 0 auto;
 }
 
 .hpc-section--timeline > .hpc-section__head {
@@ -3721,9 +3817,32 @@ function closeTimelineRowDetails() {
 
 .hpc-timeline-overview {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 6px;
   align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.hpc-timeline-hover-tooltip {
+  position: fixed;
+  z-index: 65;
+  padding: 10px 12px;
+  border: 1px solid var(--hpc-tl-soft);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--hpc-tl-surface-strong) 96%, white 4%);
+  color: var(--hpc-tl-text);
+  box-shadow: var(--hpc-tl-shadow);
+  backdrop-filter: var(--hpc-tl-backdrop);
+  -webkit-backdrop-filter: var(--hpc-tl-backdrop);
+  pointer-events: none;
+  transform: translateY(-100%);
+  white-space: pre-line;
+  font-size: .72rem;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 .hpc-timeline-stat,
@@ -3741,12 +3860,13 @@ function closeTimelineRowDetails() {
 .hpc-timeline-stat {
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 5px;
   min-height: 0;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: var(--hpc-tl-chip-radius);
   background: var(--hpc-tl-surface-strong);
   box-shadow: none;
+  flex: 0 0 auto;
 }
 
 .hpc-timeline-stat__label,
@@ -3763,13 +3883,13 @@ function closeTimelineRowDetails() {
 
 .hpc-timeline-stat__label,
 .hpc-timeline-details-modal__eyebrow {
-  font-size: .66rem;
+  font-size: .62rem;
   color: var(--hpc-tl-muted);
   white-space: nowrap;
 }
 
 .hpc-timeline-stat__value {
-  font-size: .8rem;
+  font-size: .76rem;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -3829,6 +3949,16 @@ function closeTimelineRowDetails() {
   background: var(--hpc-tl-base);
 }
 
+.hpc-section--timeline .hpc-board__cell--entity {
+  width: var(--hpc-entity-column-width, 220px);
+  min-width: var(--hpc-entity-column-width, 220px);
+}
+
+.hpc-section--timeline .hpc-board__cell--period {
+  width: var(--hpc-period-column-width, 148px);
+  min-width: var(--hpc-period-column-width, 148px);
+}
+
 .hpc-section--timeline .hpc-board__row--phase .hpc-board__cell--entity,
 .hpc-section--timeline .hpc-board__row--phase .hpc-board__cell--period {
   background: color-mix(in srgb, var(--hpc-tl-surface-muted) 92%, var(--hpc-tl-base));
@@ -3849,12 +3979,17 @@ function closeTimelineRowDetails() {
   gap: 4px;
 }
 
+.hpc-section--timeline .hpc-board__entity-body {
+  min-width: 0;
+}
+
 .hpc-section--timeline .hpc-board__entity-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
+  width: 100%;
 }
 
 .hpc-section--timeline .hpc-board__drag,
@@ -3873,11 +4008,14 @@ function closeTimelineRowDetails() {
   align-items: center;
   justify-content: center;
   min-height: 32px;
-  padding-inline: 10px;
+  padding-inline: 8px;
   font-size: .64rem;
+  white-space: nowrap;
 }
 
 .hpc-section--timeline .hpc-scale-switch {
+  display: inline-flex;
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
@@ -3899,6 +4037,20 @@ function closeTimelineRowDetails() {
   background: var(--hpc-tl-surface-muted);
 }
 
+.hpc-section--timeline .hpc-chip,
+.hpc-section--timeline .hpc-summary__label {
+  color: var(--hpc-tl-text);
+}
+
+.hpc-section--timeline .hpc-chip {
+  border-color: var(--hpc-tl-soft);
+  background: color-mix(in srgb, var(--hpc-tl-surface-strong) 88%, transparent);
+}
+
+.hpc-section--timeline .hpc-summary__label {
+  opacity: .7;
+}
+
 .hpc-section--timeline .hpc-pill--stable {
   color: var(--hpc-tl-stable);
 }
@@ -3912,6 +4064,7 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-section--timeline .hpc-board__title-btn {
+  display: block;
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -4061,37 +4214,52 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-section--timeline .hpc-timeline-details-modal {
+  --glass-text: var(--hpc-tl-text);
+  --glass-bg: var(--hpc-tl-surface-strong);
+  --glass-page-bg: var(--hpc-tl-surface);
   display: grid;
-  gap: 18px;
+  gap: 12px;
   position: sticky;
   top: 16px;
-  padding: 20px 22px !important;
+  padding: 14px 16px !important;
+  align-content: start;
 }
 
 .hpc-timeline-details-modal__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .hpc-timeline-details-modal__title-wrap {
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .hpc-timeline-details-modal__close {
   flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.hpc-section--timeline .hpc-timeline-details-modal .hpc-grid--top {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .hpc-timeline-detail-field {
   display: grid;
-  gap: 8px;
-  min-height: 72px;
-  padding: 14px 16px;
+  gap: 4px;
+  min-height: 0;
+  padding: 10px 12px;
   border: 1px solid var(--hpc-tl-soft);
   border-radius: var(--hpc-tl-inner-radius);
   background: var(--hpc-tl-surface-muted);
+  align-content: start;
+  color: var(--hpc-tl-text);
 }
 
 .hpc-timeline-detail-field__label {
@@ -4102,24 +4270,27 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-timeline-detail-field__value {
-  font-size: .9rem;
+  font-size: .86rem;
   line-height: 1.4;
+  color: var(--hpc-tl-text);
 }
 
 .hpc-timeline-clusters {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .hpc-timeline-cluster {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   align-content: start;
-  padding: 16px;
+  min-height: 0;
+  padding: 12px;
   border: 1px solid var(--hpc-tl-soft);
   border-radius: var(--hpc-tl-inner-radius);
   background: var(--hpc-tl-surface-muted);
+  color: var(--hpc-tl-text);
 }
 
 .hpc-timeline-cluster__head,
@@ -4133,19 +4304,32 @@ function closeTimelineRowDetails() {
 .hpc-timeline-cluster__list,
 .hpc-timeline-rule-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .hpc-timeline-cluster__item {
   display: grid;
-  gap: 6px;
+  grid-template-columns: minmax(92px, 110px) minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: start;
+  padding-block: 8px;
+  border-top: 1px solid var(--hpc-tl-soft);
+}
+
+.hpc-timeline-cluster__list > .hpc-timeline-cluster__item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.hpc-timeline-cluster__list > .hpc-timeline-cluster__item:last-child {
+  padding-bottom: 0;
 }
 
 .hpc-timeline-cluster__label,
 .hpc-timeline-rule-card__meta,
 .hpc-timeline-action-item__meta,
 .hpc-timeline-empty {
-  font-size: .72rem;
+  font-size: .68rem;
   line-height: 1.45;
   color: var(--hpc-tl-muted);
 }
@@ -4153,14 +4337,15 @@ function closeTimelineRowDetails() {
 .hpc-timeline-cluster__value,
 .hpc-timeline-rule-card__title,
 .hpc-timeline-action-item__title {
-  font-size: .86rem;
+  font-size: .82rem;
   line-height: 1.4;
+  color: var(--hpc-tl-text);
 }
 
 .hpc-timeline-action-list,
 .hpc-timeline-task-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -4170,22 +4355,41 @@ function closeTimelineRowDetails() {
 .hpc-timeline-task-item,
 .hpc-timeline-rule-card {
   display: grid;
-  gap: 6px;
-  padding: 14px 16px;
+  gap: 6px 12px;
+  min-height: 0;
+  padding: 10px 12px;
   border: 1px solid var(--hpc-tl-soft);
   border-radius: calc(var(--hpc-tl-inner-radius) - 6px);
   background: color-mix(in srgb, var(--hpc-tl-surface-strong) 76%, transparent);
+  color: var(--hpc-tl-text);
+}
+
+.hpc-timeline-action-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.hpc-timeline-task-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.hpc-timeline-task-item > .glass-btn,
+.hpc-timeline-task-item > .a-btn-sm,
+.hpc-timeline-task-item > .a-btn-save {
+  justify-self: flex-start;
 }
 
 .hpc-timeline-rule-card__copy {
   margin: 0;
-  font-size: .8rem;
+  font-size: .76rem;
   line-height: 1.5;
+  color: color-mix(in srgb, var(--hpc-tl-text) 84%, transparent);
 }
 
 .hpc-timeline-meta {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .hpc-timeline-copy {
@@ -4203,18 +4407,63 @@ function closeTimelineRowDetails() {
 }
 
 .hpc-timeline-task-item__title {
-  font-size: .86rem;
+  font-size: .82rem;
 }
 
 .hpc-timeline-task-item__meta {
-  font-size: .74rem;
+  font-size: .68rem;
   color: var(--hpc-tl-muted);
+  white-space: nowrap;
+  text-align: right;
 }
 
 .hpc-timeline-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--hpc-tl-soft);
+}
+
+.hpc-timeline-actions > * {
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+
+.hpc-section--timeline .hpc-timeline-details-modal .glass-btn,
+.hpc-section--timeline .hpc-timeline-details-modal .a-btn-sm,
+.hpc-section--timeline .hpc-timeline-details-modal .a-btn-save {
+  min-height: 40px;
+  border: 1px solid var(--hpc-tl-soft) !important;
+  border-radius: var(--hpc-tl-chip-radius);
+  background: var(--hpc-tl-surface-strong) !important;
+  color: var(--hpc-tl-text) !important;
+  box-shadow: none;
+}
+
+.hpc-section--timeline .hpc-timeline-details-modal .a-btn-save {
+  border-color: color-mix(in srgb, var(--ds-accent) 32%, var(--hpc-tl-soft));
+  background: color-mix(in srgb, var(--ds-accent) 14%, var(--hpc-tl-surface-strong));
+}
+
+.hpc-section--timeline .hpc-timeline-details-modal .glass-btn:hover,
+.hpc-section--timeline .hpc-timeline-details-modal .a-btn-sm:hover,
+.hpc-section--timeline .hpc-timeline-details-modal .a-btn-save:hover {
+  border-color: var(--hpc-tl-strong-border) !important;
+  background: color-mix(in srgb, var(--hpc-tl-surface-strong) 92%, white 8%) !important;
+  color: var(--hpc-tl-text) !important;
+}
+
+.hpc-section--timeline .hpc-timeline-details-modal .hpc-chip,
+.hpc-section--timeline .hpc-timeline-cluster__label,
+.hpc-section--timeline .hpc-timeline-cluster__value,
+.hpc-section--timeline .hpc-timeline-action-item__title,
+.hpc-section--timeline .hpc-timeline-action-item__meta,
+.hpc-section--timeline .hpc-timeline-rule-card__title,
+.hpc-section--timeline .hpc-timeline-rule-card__meta,
+.hpc-section--timeline .hpc-timeline-task-item__title,
+.hpc-section--timeline .hpc-timeline-task-item__meta {
+  color: inherit !important;
 }
 
 @media (max-width: 1100px) {
@@ -4229,22 +4478,42 @@ function closeTimelineRowDetails() {
 }
 
 @media (max-width: 900px) {
+  .hpc-timeline-content {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
   .hpc-section--timeline .hpc-section__head,
   .hpc-timeline-details-modal__head {
     align-items: flex-start;
+  }
+
+  .hpc-section--timeline > .hpc-section__head {
+    flex-wrap: wrap;
+  }
+
+  .hpc-section--timeline .hpc-section__tools {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .hpc-section--timeline .hpc-grid--top {
     grid-template-columns: 1fr;
   }
 
-  .hpc-timeline-overview {
-    align-items: stretch;
+  .hpc-timeline-cluster__item,
+  .hpc-timeline-action-item,
+  .hpc-timeline-task-item {
+    grid-template-columns: 1fr;
   }
 
-  .hpc-timeline-stat {
-    width: 100%;
-    justify-content: space-between;
+  .hpc-timeline-task-item__meta,
+  .hpc-timeline-action-item__meta {
+    white-space: normal;
+    text-align: left;
+  }
+
+  .hpc-timeline-overview {
+    align-items: center;
   }
 
   .hpc-section--timeline .hpc-board__cell,
@@ -4258,10 +4527,20 @@ function closeTimelineRowDetails() {
     min-height: 32px;
   }
 
-  .hpc-timeline-board-card,
-  .hpc-section--timeline .hpc-timeline-details-modal {
+  .hpc-timeline-board-card {
     position: static;
     padding: 14px !important;
+  }
+
+  .hpc-section--timeline .hpc-timeline-details-modal {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 124px - env(safe-area-inset-bottom, 0px));
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 14px !important;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 4;
   }
 }
 

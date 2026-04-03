@@ -2,17 +2,80 @@
 import type { MessengerSectionKey } from '../../composables/useMessengerSections'
 
 const auth = useMessengerAuth()
+const route = useRoute()
 const navigation = useMessengerConversationState()
+const conversations = useMessengerConversations()
 const realtime = useMessengerRealtime()
 const calls = useMessengerCalls()
 const viewport = useMessengerViewport()
 const settingsModel = useMessengerSettings()
 const { agentsEnabled } = useMessengerFeatures()
 const { sections } = useMessengerSections()
+const localTestScenarioPending = ref(false)
 
-// Nav bar скрываем при открытой медиа-плашке или клавиатуре
+function getQueryValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '')
+}
+
+function isLocalTestHost() {
+  if (!import.meta.client) {
+    return false
+  }
+
+  return window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+}
+
+async function maybeRunLocalTestScenario() {
+  if (!isLocalTestHost() || localTestScenarioPending.value) {
+    return
+  }
+
+  const testPeerUserId = getQueryValue(route.query.testPeerUserId)
+  const testCall = getQueryValue(route.query.testCall)
+  const testFocusComposer = getQueryValue(route.query.testFocusComposer) === '1'
+
+  if (!testPeerUserId && !testCall && !testFocusComposer) {
+    return
+  }
+
+  localTestScenarioPending.value = true
+
+  try {
+    if (testPeerUserId) {
+      await conversations.openDirectConversation(testPeerUserId)
+    }
+
+    if (testCall === 'audio' || testCall === 'video') {
+      await nextTick()
+      await calls.startOutgoingCall(testCall)
+    }
+
+    if (testFocusComposer) {
+      await nextTick()
+      requestAnimationFrame(() => {
+        const composer = document.querySelector<HTMLElement>('[aria-label="Сообщение"]')
+        composer?.focus()
+        composer?.click()
+      })
+    }
+  } finally {
+    const nextQuery = { ...route.query }
+    delete nextQuery.testLogin
+    delete nextQuery.testPassword
+    delete nextQuery.next
+    delete nextQuery.testPeerUserId
+    delete nextQuery.testCall
+    delete nextQuery.testFocusComposer
+    await navigateTo({ path: route.path, query: nextQuery }, { replace: true })
+    localTestScenarioPending.value = false
+  }
+}
+
+// Nav bar скрываем при открытой медиа-плашке или панели анализа через v-show.
+// Скрытие при открытой клавиатуре — через CSS [data-messenger-keyboard='open']
+// (синхронно с padding-bottom, без Vue-тикового race condition).
 const showBottomNav = computed(() =>
-  !navigation.mediaSheetOpen.value && !viewport.keyboardOpen.value && !calls.analysisPanelOpen.value,
+  !navigation.mediaSheetOpen.value && !calls.analysisPanelOpen.value,
 )
 
 // Активный раздел для VBottomNavigation
@@ -73,17 +136,10 @@ function openNavSection(section: MessengerSectionKey) {
   navValue.value = section
 }
 
-let detachViewport: (() => void) | null = null
-
 onMounted(() => {
   settingsModel.hydrate()
-  detachViewport = viewport.attach()
   void realtime.connect()
-})
-
-onBeforeUnmount(() => {
-  detachViewport?.()
-  detachViewport = null
+  void maybeRunLocalTestScenario()
 })
 
 watch(() => navigation.activeSection.value, async (nextSection, previousSection) => {

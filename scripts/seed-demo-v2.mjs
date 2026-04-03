@@ -3,14 +3,18 @@
  * Создаёт: клиент, проект, подрядчик (компания), мастер (физлицо), дизайнер
  * Привязывает всё к проекту, заполняет все страницы и статусы работ.
  *
- * Запуск: node scripts/seed-demo-v2.mjs
+ * Запуск: BASE_URL=http://localhost:3000 node scripts/seed-demo-v2.mjs
  */
 
+import * as dotenv from 'dotenv'
 import postgres from 'postgres'
 
-const BASE = 'http://localhost:3000'
-const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || 'admin@example.com'
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'changeme'
+dotenv.config()
+
+const BASE = process.env.BASE_URL || process.env.BASE || 'http://localhost:3000'
+const defaultAdminEmail = process.env.ADMIN_EMAIL || process.env.DESIGNER_INITIAL_EMAIL || 'admin@example.com'
+const ADMIN_LOGIN = process.env.ADMIN_LOGIN || process.env.DESIGNER_INITIAL_LOGIN || defaultAdminEmail.split('@')[0] || defaultAdminEmail
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.DESIGNER_INITIAL_PASSWORD || 'changeme'
 const DB_URL = process.env.DATABASE_URL || 'postgresql://daria:daria_secret_2026@localhost:5433/daria_admin'
 
 // ─── Простой API-клиент с куки ────────────────────────────────────────────────
@@ -76,7 +80,7 @@ console.log('  ✅ Готово')
 
 // ─── 1. Авторизация ──────────────────────────────────────────────────────────
 console.log('\n🔐 Авторизуемся...')
-await api('POST', '/api/auth/login', { email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+await api('POST', '/api/auth/login', { login: ADMIN_LOGIN, password: ADMIN_PASSWORD })
 console.log('  ✅ Сессия получена')
 
 // ─── 2. Клиент ───────────────────────────────────────────────────────────────

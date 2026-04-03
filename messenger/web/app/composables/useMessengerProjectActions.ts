@@ -1,0 +1,941 @@
+/**
+ * useMessengerProjectActions — модуль бизнес-логики проектных действий в мессенджере.
+ *
+ * Определяет роль собеседника, предоставляет доступные действия по категориям,
+ * выполняет actions через relay-API мессенджера → основную платформу.
+ */
+
+import { buildMessengerUrl } from '../utils/messenger-url'
+
+export type ProjectActionRole = 'designer' | 'client' | 'contractor' | 'general'
+
+export type ProjectActionCategory = 'tasks' | 'stages' | 'documents' | 'finance' | 'communication'
+
+export type ProjectActionId =
+  // Designer / Admin
+  | 'assign_task'
+  | 'accept_stage'
+  | 'request_report'
+  | 'send_corrections'
+  | 'change_phase'
+  | 'create_invoice'
+  // Client
+  | 'approve_selection'
+  | 'request_variants'
+  | 'order_extra_service'
+  | 'approve_act'
+  | 'ask_designer'
+  // Contractor
+  | 'report_completion'
+  | 'upload_photo_report'
+  | 'request_clarification'
+  | 'update_work_status'
+  // General
+  | 'share_file'
+  | 'create_task'
+  | 'request_response'
+
+export interface ProjectActionDefinition {
+  id: ProjectActionId
+  label: string
+  icon: string
+  category: ProjectActionCategory
+  description: string
+  requiresInput?: 'text' | 'file' | 'select'
+  confirmRequired?: boolean
+}
+
+export type ProjectActionResult = {
+  success: boolean
+  message: string
+  data?: Record<string, unknown>
+}
+
+export interface ProjectActionExecutePayload {
+  text?: string
+  note?: string
+  projectSlug?: string
+  projectTitle?: string
+  taskMode?: 'existing' | 'new'
+  taskId?: string
+  taskTitle?: string
+  taskStatus?: string
+  taskStatusLabel?: string
+  phaseKey?: string
+  phaseTitle?: string
+  sprintId?: string
+  sprintName?: string
+  subjectId?: string
+  subjectLabel?: string
+  objectId?: string
+  objectLabel?: string
+  rangeStart?: string
+  rangeEnd?: string
+  documentId?: string
+  documentTitle?: string
+  serviceId?: string
+  serviceTitle?: string
+  useFilePicker?: boolean
+}
+
+export interface MessengerPlatformProjectSummary {
+  slug: string
+  title: string
+  status: string
+  projectType: string
+  activePhaseTitle: string
+  activeSprintName: string
+  taskTotal: number
+}
+
+export interface MessengerPlatformCoordinationRecommendation {
+  id: string
+  title: string
+  reason: string
+  channelLabel: string
+  suggestedMessage: string
+}
+
+export interface MessengerPlatformPhaseOption {
+  id: string
+  phaseKey: string
+  title: string
+  status: string
+  percent: number
+  startDate: string
+  endDate: string
+  secondary: string
+}
+
+export interface MessengerPlatformSprintOption {
+  id: string
+  name: string
+  linkedPhaseKey: string
+  linkedPhaseTitle: string
+  status: string
+  startDate: string
+  endDate: string
+  goal: string
+  taskCount: number
+  secondary: string
+}
+
+export interface MessengerPlatformTaskOption {
+  id: string
+  source: 'work-status' | 'hybrid'
+  sourceLabel: string
+  title: string
+  status: string
+  assignee: string
+  phaseKey: string
+  phaseTitle: string
+  sprintId: string
+  sprintName: string
+  rangeStart: string
+  rangeEnd: string
+  notes: string
+  workType?: string
+  secondary: string
+}
+
+export interface MessengerPlatformSubjectOption {
+  id: string
+  kind: 'client' | 'contractor' | 'designer' | 'seller' | 'manager'
+  label: string
+  secondary: string
+}
+
+export interface MessengerPlatformObjectOption {
+  id: string
+  kind: 'phase' | 'sprint' | 'task' | 'document' | 'service'
+  label: string
+  secondary: string
+}
+
+export interface MessengerPlatformDocumentOption {
+  id: string
+  kind: 'document'
+  scope: 'project' | 'library'
+  title: string
+  category: string
+  url: string
+  filename: string
+  templateKey: string
+  secondary: string
+}
+
+export interface MessengerPlatformExtraServiceOption {
+  id: string
+  title: string
+  status: string
+  requestedBy: string
+  totalPrice: number
+  description: string
+}
+
+export interface MessengerPlatformActionCatalog {
+  project: {
+    slug: string
+    title: string
+    status: string
+    projectType: string
+    pages: string[]
+    activePhaseKey: string
+    activePhaseTitle: string
+    activeSprintId: string
+    activeSprintName: string
+    taskTotal: number
+    documentCount: number
+    subjectCount: number
+  }
+  coordination: {
+    recommendations: MessengerPlatformCoordinationRecommendation[]
+  }
+  phases: MessengerPlatformPhaseOption[]
+  sprints: MessengerPlatformSprintOption[]
+  tasks: MessengerPlatformTaskOption[]
+  subjects: MessengerPlatformSubjectOption[]
+  objects: MessengerPlatformObjectOption[]
+  documents: MessengerPlatformDocumentOption[]
+  extraServices: MessengerPlatformExtraServiceOption[]
+}
+
+interface ProjectActionMutationResponse {
+  ok: boolean
+  message: string
+  mutation?: {
+    kind: string
+    id: string
+    label: string
+  }
+}
+
+type ProjectMutationActionId = Extract<
+  ProjectActionId,
+  'assign_task' | 'accept_stage' | 'change_phase' | 'create_invoice' | 'create_task' | 'order_extra_service' | 'update_work_status'
+>
+
+const PROJECT_MUTATION_ACTIONS = new Set<ProjectMutationActionId>([
+  'assign_task',
+  'accept_stage',
+  'change_phase',
+  'create_invoice',
+  'create_task',
+  'order_extra_service',
+  'update_work_status',
+])
+
+function normalizeProjectRoot(configuredRoot: string) {
+  const trimmed = configuredRoot.trim()
+  if (trimmed) {
+    return trimmed
+  }
+
+  if (!import.meta.client) {
+    return '/'
+  }
+
+  const { hostname, port, protocol, origin } = window.location
+  const localHost = hostname === '127.0.0.1' || hostname === 'localhost'
+  if (localHost && port && !['3000', '3003'].includes(port)) {
+    return `${protocol}//${hostname}:3003`
+  }
+
+  return origin
+}
+
+function readCookieValue(name: string) {
+  if (!import.meta.client) {
+    return ''
+  }
+
+  const cookiePrefix = `${name}=`
+  const entry = document.cookie
+    .split(';')
+    .map(value => value.trim())
+    .find(value => value.startsWith(cookiePrefix))
+
+  if (!entry) {
+    return ''
+  }
+
+  try {
+    return decodeURIComponent(entry.slice(cookiePrefix.length))
+  } catch {
+    return ''
+  }
+}
+
+function extractPlatformErrorMeta(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return { statusCode: 0, statusMessage: '' }
+  }
+
+  const record = error as {
+    statusCode?: number
+    status?: number
+    statusMessage?: string
+    message?: string
+    data?: { statusMessage?: string; message?: string }
+  }
+
+  return {
+    statusCode: Number(record.statusCode || record.status || 0),
+    statusMessage: String(
+      record.data?.statusMessage
+      || record.statusMessage
+      || record.data?.message
+      || record.message
+      || ''
+    ).trim(),
+  }
+}
+
+function isProjectMutationAction(actionId: ProjectActionId): actionId is ProjectMutationActionId {
+  return PROJECT_MUTATION_ACTIONS.has(actionId as ProjectMutationActionId)
+}
+
+function normalizePlatformApiError(error: unknown, fallback: string) {
+  const { statusCode, statusMessage } = extractPlatformErrorMeta(error)
+
+  if (statusCode === 401) {
+    return 'Нужна активная сессия платформы на основном домене.'
+  }
+
+  if (statusCode === 403 && /csrf/i.test(statusMessage)) {
+    return 'Сессия платформы устарела. Обновите вкладку основного домена и повторите действие.'
+  }
+
+  if (statusCode === 403 && !statusMessage) {
+    return 'Нужна активная сессия платформы на основном домене.'
+  }
+
+  if (statusMessage && !/^\[?fetch/i.test(statusMessage)) {
+    return statusMessage
+  }
+
+  if (String(error).includes('Failed to fetch')) {
+    return 'Не удалось подключиться к основной платформе. Проверьте messengerProjectRoot и CORS.'
+  }
+
+  return fallback
+}
+
+function appendStructuredLine(lines: string[], label: string, value?: string) {
+  const normalized = value?.trim()
+  if (!normalized) {
+    return
+  }
+
+  lines.push(`${label}: ${normalized}`)
+}
+
+const DESIGNER_ACTIONS: ProjectActionDefinition[] = [
+  {
+    id: 'assign_task',
+    label: 'Назначить задачу',
+    icon: 'mdi-clipboard-plus-outline',
+    category: 'tasks',
+    description: 'Создать рабочую задачу для подрядчика',
+    requiresInput: 'text',
+  },
+  {
+    id: 'accept_stage',
+    label: 'Принять этап',
+    icon: 'mdi-check-decagram-outline',
+    category: 'stages',
+    description: 'Закрыть текущий этап работ',
+    confirmRequired: true,
+  },
+  {
+    id: 'request_report',
+    label: 'Запросить отчёт',
+    icon: 'mdi-file-chart-outline',
+    category: 'communication',
+    description: 'Отправить запрос на фотоотчёт или акт',
+  },
+  {
+    id: 'send_corrections',
+    label: 'Отправить правки',
+    icon: 'mdi-pencil-ruler',
+    category: 'tasks',
+    description: 'Приложить документ с правками',
+    requiresInput: 'file',
+  },
+  {
+    id: 'change_phase',
+    label: 'Сменить фазу',
+    icon: 'mdi-arrow-right-bold-circle-outline',
+    category: 'stages',
+    description: 'Перевести проект на следующую фазу',
+    requiresInput: 'select',
+    confirmRequired: true,
+  },
+  {
+    id: 'create_invoice',
+    label: 'Выставить счёт',
+    icon: 'mdi-receipt-text-outline',
+    category: 'finance',
+    description: 'Сформировать счёт для клиента',
+    requiresInput: 'text',
+  },
+]
+
+const CLIENT_ACTIONS: ProjectActionDefinition[] = [
+  {
+    id: 'approve_selection',
+    label: 'Согласовать выбор',
+    icon: 'mdi-thumb-up-outline',
+    category: 'stages',
+    description: 'Подтвердить выбор материалов или решений',
+    confirmRequired: true,
+  },
+  {
+    id: 'request_variants',
+    label: 'Запросить варианты',
+    icon: 'mdi-palette-swatch-variant',
+    category: 'communication',
+    description: 'Попросить дизайнера показать альтернативы',
+  },
+  {
+    id: 'order_extra_service',
+    label: 'Заказать доп. услугу',
+    icon: 'mdi-cart-plus',
+    category: 'finance',
+    description: 'Запросить дополнительную услугу',
+    requiresInput: 'text',
+  },
+  {
+    id: 'approve_act',
+    label: 'Одобрить акт',
+    icon: 'mdi-file-sign',
+    category: 'documents',
+    description: 'Подписать акт приёмки работ',
+    confirmRequired: true,
+  },
+  {
+    id: 'ask_designer',
+    label: 'Вопрос дизайнеру',
+    icon: 'mdi-chat-question-outline',
+    category: 'communication',
+    description: 'Задать вопрос по проекту',
+    requiresInput: 'text',
+  },
+]
+
+const CONTRACTOR_ACTIONS: ProjectActionDefinition[] = [
+  {
+    id: 'report_completion',
+    label: 'Завершение этапа',
+    icon: 'mdi-flag-checkered',
+    category: 'stages',
+    description: 'Отчитаться о завершении текущего этапа',
+    confirmRequired: true,
+  },
+  {
+    id: 'upload_photo_report',
+    label: 'Фотоотчёт',
+    icon: 'mdi-camera-burst',
+    category: 'documents',
+    description: 'Загрузить фотографии выполненных работ',
+    requiresInput: 'file',
+  },
+  {
+    id: 'request_clarification',
+    label: 'Уточнить задачу',
+    icon: 'mdi-help-circle-outline',
+    category: 'communication',
+    description: 'Запросить разъяснение по чертежам или ТЗ',
+    requiresInput: 'text',
+  },
+  {
+    id: 'update_work_status',
+    label: 'Обновить статус',
+    icon: 'mdi-progress-wrench',
+    category: 'tasks',
+    description: 'Изменить статус текущей работы',
+    requiresInput: 'select',
+  },
+]
+
+const GENERAL_ACTIONS: ProjectActionDefinition[] = [
+  {
+    id: 'share_file',
+    label: 'Поделиться файлом',
+    icon: 'mdi-paperclip',
+    category: 'documents',
+    description: 'Прикрепить и отправить файл',
+    requiresInput: 'file',
+  },
+  {
+    id: 'create_task',
+    label: 'Создать задачу',
+    icon: 'mdi-clipboard-list-outline',
+    category: 'tasks',
+    description: 'Создать новую задачу в проекте',
+    requiresInput: 'text',
+  },
+  {
+    id: 'request_response',
+    label: 'Запросить ответ',
+    icon: 'mdi-comment-question-outline',
+    category: 'communication',
+    description: 'Отправить запрос на обратную связь',
+  },
+]
+
+const CATEGORY_META: Record<ProjectActionCategory, { label: string; icon: string; order: number }> = {
+  tasks:         { label: 'Задачи',    icon: 'mdi-clipboard-list-outline', order: 0 },
+  stages:        { label: 'Этапы',     icon: 'mdi-flag-outline',           order: 1 },
+  documents:     { label: 'Документы', icon: 'mdi-file-document-outline',  order: 2 },
+  finance:       { label: 'Финансы',   icon: 'mdi-currency-rub',           order: 3 },
+  communication: { label: 'Связь',     icon: 'mdi-message-text-outline',   order: 4 },
+}
+
+function inferRoleFromLogin(login: string): ProjectActionRole {
+  const l = login.toLowerCase()
+  if (l.includes('contractor') || l.includes('builder') || l.includes('podryadchik') || l.includes('master')) return 'contractor'
+  if (l.includes('admin') || l.includes('designer') || l.includes('manager')) return 'designer'
+  if (l.includes('client') || l.includes('owner') || l.includes('customer') || l.includes('ivanov') || l.includes('zakazchik')) return 'client'
+  return 'general'
+}
+
+function getActionsForRole(role: ProjectActionRole): ProjectActionDefinition[] {
+  switch (role) {
+    case 'designer': return DESIGNER_ACTIONS
+    case 'client': return CLIENT_ACTIONS
+    case 'contractor': return CONTRACTOR_ACTIONS
+    default: return GENERAL_ACTIONS
+  }
+}
+
+export interface ProjectActionCategoryGroup {
+  category: ProjectActionCategory
+  label: string
+  icon: string
+  actions: ProjectActionDefinition[]
+}
+
+export function useMessengerProjectActions() {
+  const runtimeConfig = useRuntimeConfig()
+  const panelOpen = useState<boolean>('messenger-project-actions-panel', () => false)
+  const pendingAction = useState<ProjectActionId | null>('messenger-project-actions-pending', () => null)
+  const lastResult = useState<ProjectActionResult | null>('messenger-project-actions-last-result', () => null)
+  const selectedActionId = useState<ProjectActionId | null>('messenger-project-actions-selected-action', () => null)
+
+  const currentPeerLogin = useState<string>('messenger-project-actions-peer-login', () => '')
+  const platformProjects = useState<MessengerPlatformProjectSummary[]>('messenger-project-actions-platform-projects', () => [])
+  const platformProjectsPending = useState<boolean>('messenger-project-actions-platform-projects-pending', () => false)
+  const platformProjectsError = useState<string>('messenger-project-actions-platform-projects-error', () => '')
+  const selectedProjectSlug = useState<string>('messenger-project-actions-selected-project-slug', () => '')
+  const platformCatalog = useState<MessengerPlatformActionCatalog | null>('messenger-project-actions-platform-catalog', () => null)
+  const platformCatalogPending = useState<boolean>('messenger-project-actions-platform-catalog-pending', () => false)
+  const platformCatalogError = useState<string>('messenger-project-actions-platform-catalog-error', () => '')
+  const loadedCatalogProjectSlug = useState<string>('messenger-project-actions-loaded-catalog-slug', () => '')
+
+  const peerRole = computed<ProjectActionRole>(() => {
+    if (!currentPeerLogin.value) return 'general'
+    return inferRoleFromLogin(currentPeerLogin.value)
+  })
+
+  const actions = computed<ProjectActionDefinition[]>(() => getActionsForRole(peerRole.value))
+
+  const groupedActions = computed<ProjectActionCategoryGroup[]>(() => {
+    const groups = new Map<ProjectActionCategory, ProjectActionDefinition[]>()
+
+    for (const action of actions.value) {
+      const existing = groups.get(action.category) || []
+      existing.push(action)
+      groups.set(action.category, existing)
+    }
+
+    return Array.from(groups.entries())
+      .map(([category, categoryActions]) => ({
+        category,
+        label: CATEGORY_META[category].label,
+        icon: CATEGORY_META[category].icon,
+        actions: categoryActions,
+      }))
+      .sort((a, b) => CATEGORY_META[a.category].order - CATEGORY_META[b.category].order)
+  })
+
+  const selectedProject = computed(() => {
+    const fromList = platformProjects.value.find(project => project.slug === selectedProjectSlug.value)
+    if (fromList) {
+      return fromList
+    }
+
+    if (platformCatalog.value?.project.slug === selectedProjectSlug.value) {
+      return {
+        slug: platformCatalog.value.project.slug,
+        title: platformCatalog.value.project.title,
+        status: platformCatalog.value.project.status,
+        projectType: platformCatalog.value.project.projectType,
+        activePhaseTitle: platformCatalog.value.project.activePhaseTitle,
+        activeSprintName: platformCatalog.value.project.activeSprintName,
+        taskTotal: platformCatalog.value.project.taskTotal,
+      }
+    }
+
+    return null
+  })
+
+  const projectRoot = computed(() => normalizeProjectRoot(runtimeConfig.public.messengerProjectRoot || ''))
+
+  async function requestPlatform<T>(
+    path: string,
+    options: { method?: 'GET' | 'POST'; body?: BodyInit | Record<string, any> | null } = {},
+  ) {
+    const method = options.method || 'GET'
+    const headers: Record<string, string> = {}
+
+    if (method !== 'GET') {
+      const csrfToken = readCookieValue('csrf_token')
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken
+      }
+    }
+
+    return await $fetch<T>(buildMessengerUrl(projectRoot.value, path), {
+      method,
+      body: options.body,
+      credentials: 'include',
+      headers,
+    })
+  }
+
+  async function fetchPlatformProjects(force = false) {
+    if (platformProjectsPending.value || (!force && platformProjects.value.length)) {
+      return
+    }
+
+    platformProjectsPending.value = true
+    platformProjectsError.value = ''
+
+    try {
+      const response = await requestPlatform<Array<Partial<MessengerPlatformProjectSummary> & { slug: string; title: string }>>('/api/projects')
+      platformProjects.value = response.map((project) => ({
+        slug: project.slug,
+        title: project.title,
+        status: project.status || '',
+        projectType: project.projectType || '',
+        activePhaseTitle: project.activePhaseTitle || '',
+        activeSprintName: project.activeSprintName || '',
+        taskTotal: Number(project.taskTotal || 0),
+      }))
+
+      if (!selectedProjectSlug.value && platformProjects.value.length === 1) {
+        selectedProjectSlug.value = platformProjects.value[0]?.slug || ''
+      }
+
+      if (selectedProjectSlug.value && !platformProjects.value.some(project => project.slug === selectedProjectSlug.value) && platformProjects.value.length) {
+        selectedProjectSlug.value = platformProjects.value[0]?.slug || ''
+      }
+    } catch (error) {
+      platformProjectsError.value = normalizePlatformApiError(error, 'Не удалось загрузить список проектов платформы.')
+    } finally {
+      platformProjectsPending.value = false
+    }
+  }
+
+  async function fetchPlatformCatalog(projectSlug = selectedProjectSlug.value, force = false) {
+    const slug = projectSlug.trim()
+    if (!slug) {
+      platformCatalog.value = null
+      loadedCatalogProjectSlug.value = ''
+      platformCatalogError.value = ''
+      return
+    }
+
+    if (platformCatalogPending.value || (!force && platformCatalog.value && loadedCatalogProjectSlug.value === slug)) {
+      return
+    }
+
+    platformCatalogPending.value = true
+    platformCatalogError.value = ''
+
+    try {
+      platformCatalog.value = await requestPlatform<MessengerPlatformActionCatalog>(`/api/projects/${encodeURIComponent(slug)}/communications/action-catalog`)
+      loadedCatalogProjectSlug.value = slug
+    } catch (error) {
+      platformCatalog.value = null
+      loadedCatalogProjectSlug.value = ''
+      platformCatalogError.value = normalizePlatformApiError(error, 'Не удалось загрузить каталог действий проекта.')
+    } finally {
+      platformCatalogPending.value = false
+    }
+  }
+
+  async function dispatchPlatformMutation(actionId: ProjectMutationActionId, payload: ProjectActionExecutePayload) {
+    const projectSlug = payload.projectSlug?.trim() || selectedProjectSlug.value
+    if (!projectSlug) {
+      throw new Error('PROJECT_SLUG_REQUIRED')
+    }
+
+    return await requestPlatform<ProjectActionMutationResponse>(
+      `/api/projects/${encodeURIComponent(projectSlug)}/communications/action-execute`,
+      {
+        method: 'POST',
+        body: {
+          actionId,
+          payload: {
+            ...payload,
+            projectSlug,
+          },
+        },
+      },
+    )
+  }
+
+  function setPeerLogin(login: string) {
+    currentPeerLogin.value = login.trim()
+  }
+
+  function setSelectedProjectSlug(slug: string) {
+    selectedProjectSlug.value = slug.trim()
+    if (!selectedProjectSlug.value) {
+      platformCatalog.value = null
+      loadedCatalogProjectSlug.value = ''
+      platformCatalogError.value = ''
+    }
+  }
+
+  function setSelectedAction(actionId: ProjectActionId | null) {
+    selectedActionId.value = actionId
+  }
+
+  function togglePanel() {
+    panelOpen.value = !panelOpen.value
+  }
+
+  function closePanel() {
+    panelOpen.value = false
+  }
+
+  function openPanel() {
+    panelOpen.value = true
+  }
+
+  watch(panelOpen, async (open) => {
+    if (!open) {
+      return
+    }
+
+    await fetchPlatformProjects()
+
+    if (selectedProjectSlug.value) {
+      await fetchPlatformCatalog(selectedProjectSlug.value)
+    }
+  })
+
+  watch(selectedProjectSlug, async (nextSlug, previousSlug) => {
+    if (nextSlug === previousSlug) {
+      return
+    }
+
+    if (!panelOpen.value) {
+      return
+    }
+
+    await fetchPlatformCatalog(nextSlug, true)
+  })
+
+  watch(peerRole, () => {
+    if (selectedActionId.value && !actions.value.some(action => action.id === selectedActionId.value)) {
+      selectedActionId.value = null
+    }
+  })
+
+  async function executeAction(
+    actionId: ProjectActionId,
+    payload?: ProjectActionExecutePayload,
+  ): Promise<ProjectActionResult> {
+    const action = actions.value.find(a => a.id === actionId)
+    if (!action) {
+      return { success: false, message: 'Действие не найдено' }
+    }
+
+    pendingAction.value = actionId
+
+    try {
+      const result = await dispatchAction(action, payload)
+      lastResult.value = result
+      return result
+    } finally {
+      pendingAction.value = null
+    }
+  }
+
+  function buildActionMessageBody(action: ProjectActionDefinition, payload: ProjectActionExecutePayload = {}): string {
+    const lines = [`[${action.label}]`]
+
+    appendStructuredLine(lines, 'Проект', payload.projectTitle || selectedProject.value?.title || payload.projectSlug || selectedProjectSlug.value)
+    appendStructuredLine(lines, 'Задача', payload.taskTitle)
+    appendStructuredLine(lines, 'Статус', payload.taskStatusLabel || payload.taskStatus)
+    appendStructuredLine(lines, 'Этап', payload.phaseTitle)
+    appendStructuredLine(lines, 'Спринт', payload.sprintName)
+    appendStructuredLine(lines, 'Субъект', payload.subjectLabel)
+    appendStructuredLine(lines, 'Объект', payload.objectLabel)
+    appendStructuredLine(lines, 'Документ', payload.documentTitle)
+    appendStructuredLine(lines, 'Услуга', payload.serviceTitle)
+    appendStructuredLine(lines, 'Диапазон', [payload.rangeStart, payload.rangeEnd].filter(Boolean).join(' → '))
+    appendStructuredLine(lines, 'Комментарий', payload.note || payload.text)
+
+    if (lines.length === 1) {
+      lines.push(action.description)
+    }
+
+    return lines.join('\n')
+  }
+
+  async function dispatchAction(
+    action: ProjectActionDefinition,
+    payload: ProjectActionExecutePayload = {},
+  ): Promise<ProjectActionResult> {
+    const effectivePayload: ProjectActionExecutePayload = {
+      ...payload,
+      projectSlug: payload.projectSlug || selectedProjectSlug.value,
+      projectTitle: payload.projectTitle || selectedProject.value?.title || payload.projectSlug || selectedProjectSlug.value,
+    }
+    const messageBody = buildActionMessageBody(action, effectivePayload)
+    const triggerFilePicker = Boolean(effectivePayload.useFilePicker && ['send_corrections', 'upload_photo_report', 'share_file'].includes(action.id))
+
+    if (isProjectMutationAction(action.id)) {
+      try {
+        const response = await dispatchPlatformMutation(action.id, effectivePayload)
+
+        if (effectivePayload.projectSlug) {
+          await Promise.allSettled([
+            fetchPlatformProjects(true),
+            fetchPlatformCatalog(effectivePayload.projectSlug, true),
+          ])
+        }
+
+        return {
+          success: true,
+          message: response.message,
+          data: {
+            messageBody,
+            mutation: response.mutation,
+          },
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: error instanceof Error && error.message === 'PROJECT_SLUG_REQUIRED'
+            ? 'Сначала выберите проект.'
+            : normalizePlatformApiError(error, `Не удалось выполнить действие «${action.label.toLowerCase()}».`),
+        }
+      }
+    }
+
+    switch (action.id) {
+      case 'request_report':
+        return {
+          success: true,
+          message: 'Запрос на отчёт отправлен',
+          data: { messageBody },
+        }
+
+      case 'send_corrections':
+        return {
+          success: true,
+          message: effectivePayload.documentTitle ? 'Правки добавлены в чат' : 'Выберите файл с правками',
+          data: { messageBody, triggerFilePicker },
+        }
+
+      case 'approve_selection':
+        return {
+          success: true,
+          message: 'Выбор согласован',
+          data: { messageBody },
+        }
+
+      case 'request_variants':
+        return {
+          success: true,
+          message: 'Запрос на варианты отправлен',
+          data: { messageBody },
+        }
+
+      case 'approve_act':
+        return {
+          success: true,
+          message: 'Акт одобрен',
+          data: { messageBody },
+        }
+
+      case 'ask_designer':
+        return {
+          success: true,
+          message: 'Вопрос отправлен',
+          data: { messageBody },
+        }
+
+      case 'report_completion':
+        return {
+          success: true,
+          message: 'Отчёт о завершении отправлен',
+          data: { messageBody },
+        }
+
+      case 'upload_photo_report':
+        return {
+          success: true,
+          message: effectivePayload.documentTitle ? 'Фотоотчёт добавлен в чат' : 'Выберите файл для фотоотчёта',
+          data: { messageBody, triggerFilePicker },
+        }
+
+      case 'request_clarification':
+        return {
+          success: true,
+          message: 'Запрос на уточнение отправлен',
+          data: { messageBody },
+        }
+
+      case 'share_file':
+        return {
+          success: true,
+          message: effectivePayload.documentTitle ? 'Документ добавлен в чат' : 'Выберите файл для отправки',
+          data: { messageBody, triggerFilePicker },
+        }
+
+      case 'request_response':
+        return {
+          success: true,
+          message: 'Запрос отправлен',
+          data: { messageBody },
+        }
+
+      default:
+        return { success: false, message: 'Неизвестное действие' }
+    }
+  }
+
+  return {
+    panelOpen: readonly(panelOpen),
+    pendingAction: readonly(pendingAction),
+    lastResult: readonly(lastResult),
+    peerRole,
+    actions,
+    groupedActions,
+    selectedActionId: readonly(selectedActionId),
+    platformProjects: readonly(platformProjects),
+    platformProjectsPending: readonly(platformProjectsPending),
+    platformProjectsError: readonly(platformProjectsError),
+    selectedProjectSlug: readonly(selectedProjectSlug),
+    selectedProject,
+    platformCatalog: readonly(platformCatalog),
+    platformCatalogPending: readonly(platformCatalogPending),
+    platformCatalogError: readonly(platformCatalogError),
+    setPeerLogin,
+    setSelectedProjectSlug,
+    setSelectedAction,
+    fetchPlatformProjects,
+    fetchPlatformCatalog,
+    togglePanel,
+    closePanel,
+    openPanel,
+    executeAction,
+  }
+}

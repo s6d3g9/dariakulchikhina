@@ -93,35 +93,26 @@ pnpm db:studio     # Drizzle Studio (GUI)
 
 ---
 
-## База данных — 19 таблиц
+## База данных — текущая схема main app
 
 Схема: `server/db/schema.ts`. Подключение: `server/db/index.ts` → `useDb()`.
 
-| # | Таблица | Назначение |
-|---|---------|-----------|
-| 1 | `users` | Администраторы / дизайнеры |
-| 2 | `projects` | Проекты (slug, title, status, pages[], profile{}) |
-| 3 | `page_configs` | Глобальные настройки страниц |
-| 4 | `page_content` | Содержимое страниц проекта (projectId + pageSlug → content{}) |
-| 5 | `contractors` | Подрядчики (master / company + parentId для иерархии) |
-| 6 | `project_contractors` | Связь проект ↔ подрядчик (M:N) |
-| 7 | `work_status_items` | Задачи / работы (projectId, contractorId, status, workType) |
-| 8 | `work_status_item_photos` | Фото к задачам |
-| 9 | `work_status_item_comments` | Комментарии к задачам |
-| 10 | `roadmap_stages` | Этапы дорожной карты (projectId, stageKey, status, sortOrder) |
-| 11 | `uploads` | Загруженные файлы |
-| 12 | `gallery_items` | Галерея (category, title, image, tags[], properties{}) |
-| 13 | `clients` | Клиенты (name, phone, email, brief{}) |
-| 14 | `documents` | Документы (проект ↔ тип → файл) |
-| 15 | `contractor_documents` | Документы подрядчиков |
-| 16 | `designers` | Дизайнеры (профиль, услуги, портфолио) |
-| 17 | `designer_projects` | Проекты дизайнера (M:N дизайнер ↔ проект) |
-| 18 | `designer_project_clients` | Клиенты проекта дизайнера |
-| 19 | `designer_project_contractors` | Подрядчики проекта дизайнера |
+| Домен | Таблицы |
+|---|---|
+| System / Access | `users`, `admin_settings` |
+| Project Core | `projects`, `page_configs`, `page_content`, `clients` |
+| Execution | `work_status_items`, `work_status_item_photos`, `work_status_item_comments` |
+| Files / Docs | `uploads`, `documents`, `gallery_items`, `project_extra_services` |
+| Contractors | `contractors`, `project_contractors`, `contractor_documents` |
+| Designers | `designers`, `designer_projects`, `designer_project_clients`, `designer_project_contractors` |
+| Sellers | `sellers`, `seller_projects` |
+| Managers | `managers`, `manager_projects` |
+
+Отдельной таблицы `roadmap_stages` в текущей схеме нет: фазовый каркас и project-control логика собираются из shared contracts, project данных и orchestration-слоя.
 
 ---
 
-## API — 95 маршрутов
+## API — основные контуры
 
 ### Аутентификация (`/api/auth/`)
 
@@ -140,15 +131,13 @@ pnpm db:studio     # Drizzle Studio (GUI)
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/api/projects` | Список с roadmap summary + task counts |
-| POST | `/api/projects` | Создание (+ roadmap из шаблона) |
+| GET | `/api/projects` | Список проектов + task counts |
+| POST | `/api/projects` | Создание проекта + bootstrap страниц и preset profile |
 | GET/PUT/DELETE | `/api/projects/:slug` | CRUD проекта |
 | PUT | `/api/projects/:slug/status` | Обновление статуса |
 | PUT | `/api/projects/:slug/client-profile` | Обновление профиля клиента |
 | GET/PUT | `/api/projects/:slug/page-content` | Контент страницы |
 | GET/PUT | `/api/projects/:slug/page-answers` | Ответы на brief |
-| GET/PUT | `/api/projects/:slug/roadmap` | Roadmap-этапы (full array upsert) |
-| PATCH | `/api/projects/:slug/roadmap-stage` | Обновление одного этапа по stageKey |
 | GET/PUT | `/api/projects/:slug/work-status` | Задачи проекта |
 | GET/POST | `/api/projects/:slug/work-status/:itemId/comments` | Комментарии |
 | GET | `/api/projects/:slug/work-status/:itemId/photos` | Фото задачи |
@@ -207,8 +196,6 @@ pnpm db:studio     # Drizzle Studio (GUI)
 | PUT/DELETE | `/api/gallery/:id` | CRUD элементов |
 | PATCH | `/api/gallery/reorder` | Перетасовка порядка |
 | GET/PUT | `/api/page-configs` | Настройки страниц |
-| GET/POST | `/api/roadmap-templates` | Шаблоны roadmap |
-| PUT/DELETE | `/api/roadmap-templates/:key` | CRUD custom шаблонов |
 | GET | `/api/public/projects` | Публичный список |
 | POST | `/api/upload` | Загрузка файлов (admin only) |
 | GET | `/api/suggestions` | Автодополнение из справочника |
@@ -245,7 +232,7 @@ pnpm db:studio     # Drizzle Studio (GUI)
 | 5 · Сдача | `commissioning` | 5.1 Дефектная ведомость → 5.2 Акт приёмки → 5.3 Подпись клиента |
 | ✓ · Завершён | `completed` | — |
 
-Статусы этапов roadmap: `pending` → `in_progress` → `done` | `skipped`
+Фазовая и step-логика задаётся через `shared/types/catalogs.ts`, `shared/types/phase-steps.ts` и `shared/constants/pages.ts`, а не через отдельную roadmap-таблицу.
 
 ---
 
@@ -255,25 +242,26 @@ pnpm db:studio     # Drizzle Studio (GUI)
 
 | Файл | Экспорты |
 |------|---------|
-| `auth.ts` | `LoginSchema` (Zod) |
-| `project.ts` | `ClientProfileSchema` (153+ поля), `ProjectSchema`, `CreateProjectSchema` |
+| `auth.ts` | auth-related shared schemas |
+| `project.ts` | `HybridControlSchema`, `ProjectSchema`, `CreateProjectSchema`, `UpdateProjectSchema`, project-control типы |
 | `contractor.ts` | `ContractorSchema`, `CreateContractorSchema`, `UpdateContractorSchema` |
-| `roadmap.ts` | `StageStatus`, `RoadmapStageSchema` |
-| `work_status.ts` | `WorkItemStatus`, `WorkStatusItemSchema` |
+| `communications.ts` | room/message/signal/E2EE schemas и bootstrap contracts |
 | `catalogs.ts` | 25+ справочников: `PROJECT_STATUSES`, `PROJECT_PHASES`, `CONTRACTOR_WORK_TYPES`, `WORK_TYPE_STAGES`... |
 | `phase-steps.ts` | `PHASE_STEPS` — 7 фаз × 1–5 шагов с описаниями бизнес/IT/артефакты |
+| `navigation.ts` | `NavigationNode` и recursive navigation schema |
 | `gallery.ts` | `GalleryItem`, `GalleryFilterState`, `GalleryViewMode` |
 | `material.ts` | 8 интерфейсов свойств, `MATERIAL_PROPERTY_GROUPS`, `MATERIAL_PRESETS` |
 | `designer.ts` | `DESIGNER_SERVICE_TEMPLATES` (25), `DESIGNER_PACKAGE_TEMPLATES` (5), Zod-схемы |
-| `roadmap-template.ts` | `RoadmapTemplateSchema` |
-| `roadmap-templates.ts` | `ROADMAP_TEMPLATES` — 24 встроенных шаблона |
+| `design-mode.ts`, `design-modules.ts` | design mode / modules contracts |
 
 ### Утилиты (`shared/utils/`)
 
 | Файл | Экспорты |
 |------|---------|
-| `roadmap.ts` | `normalizeRoadmapStatus()` (40+ алиасов → 4 канонических), `roadmapStatusLabel/Icon/CssClass()`, `deriveProjectPhaseFromRoadmap()` |
 | `work-status.ts` | `normalizeWorkStatus()` (7 канонических), `workStatusLabel/Icon/CssClass()`, `workTypeLabel()` |
+| `status-maps.ts` | shared карты статусов договоров и оплат |
+| `project-control.ts` | bootstrap и orchestration helper-ы project control |
+| `project-control-timeline.ts` | timeline/date/scale helper-ы hybrid control |
 
 ### Константы (`shared/constants/`)
 
@@ -291,13 +279,15 @@ pnpm db:studio     # Drizzle Studio (GUI)
 | `useDesignSystem()` | Управление дизайн-токенами (шрифты, кнопки, цвета, анимации) | UIDesignPanel, admin layout |
 | `useUITheme()` | Переключение тем (с пресетами) | UIDesignPanel, UIThemePicker, плагины |
 | `useThemeToggle()` | Переключение тёмной/светлой темы | app.vue, все layouts |
-| `useRoadmapBus()` | Event bus для синхронизации roadmap-компонентов | AdminRoadmap, AdminVerticalRoadmap, admin pages |
+| `useAdminNav()` | Структура и группы навигации admin shell | admin layout |
 | `useGallery()` | CRUD галереи + reorder + фильтрация | AdminGallery |
+| `useAdminProjectRelations()` | Связи проекта с клиентами/подрядчиками/дизайнерами | admin project shell |
 | `useContractorCabinet()` | Полный стейт кабинета подрядчика | AdminContractorCabinet |
 | `useDesignerCabinet()` | Полный стейт кабинета дизайнера | AdminDesignerCabinet |
 | `useTimestamp()` | Метка времени сохранения (savedAt / markSaved) | Все Admin*-фазные компоненты |
 | `useStatusColor()` | Цвет статуса по полю формы | AdminFirstContact |
-| `useUpload()` | Загрузка файлов через `/api/upload` | Различные компоненты |
+| `useProjectCommunicationsBootstrap()` | Bootstrap project communications room и actor context | project control / communications |
+| `useStandaloneCommunicationsBootstrap()` | Bootstrap встроенного standalone chat контура | chat shell |
 
 ---
 
@@ -348,13 +338,13 @@ Glassmorphism + Tailwind CSS 4 + Scoped CSS.
 | `.glass-chip` | Чип / тег |
 | `.glass-input` | Поле ввода |
 | `.std-sidenav` | Боковая навигация |
-| `.rm-status--pending/progress/done/skipped` | Цветовые классы roadmap |
+| `.ws-status--pending/planned/progress/done/paused/cancelled/skipped` | Цветовые классы статусов работ |
 
 ### CSS-переменные
 
 ```
 --glass-bg, --glass-border, --glass-shadow, --glass-text
---rm-color-pending, --rm-color-progress, --rm-color-done, --rm-color-skipped
+--ws-color-*, --ws-bg-*
 --ds-* (дизайн-токены: --ds-font-body, --ds-btn-radius, --ds-accent...)
 ```
 
@@ -451,7 +441,7 @@ pnpm run snapshot:restore:last
 2. [Архитектура взаимодействия компонентов](docs/architecture/02-components-interaction.md)
 3. [Структура сайта и маршрутов](docs/architecture/03-site-structure.md)
 4. [Архитектура хранения данных](docs/architecture/04-data-architecture.md)
-5. [Правила синхронизации Roadmap](docs/roadmap-sync-rules.md)
+5. [Правила синхронизации фаз и project control](docs/roadmap-sync-rules.md)
 6. [BPMN: Workflow премиальной квартиры](docs/bpmn/apartment-premium-workflow.md)
 
 ---

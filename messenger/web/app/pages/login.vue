@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const auth = useMessengerAuth()
 const install = useMessengerInstall()
+const route = useRoute()
 const loginField = ref<{ focus: () => void } | null>(null)
 const passwordField = ref<{ focus: () => void } | null>(null)
 const form = reactive({
@@ -18,6 +19,19 @@ const normalizedLogin = computed(() => form.login.trim().toLowerCase())
 const loginError = computed(() => touched.login && !normalizedLogin.value.length ? 'Укажите логин.' : '')
 const passwordError = computed(() => touched.password && !form.password.length ? 'Укажите пароль.' : '')
 const canSubmit = computed(() => !pending.value && normalizedLogin.value.length > 0 && form.password.length > 0)
+const localTestLoginPending = ref(false)
+
+function getQueryValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '')
+}
+
+function isLocalTestHost() {
+  if (!import.meta.client) {
+    return false
+  }
+
+  return window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost'
+}
 
 watch(() => form.login, (value) => {
   const normalized = value.toLowerCase().replace(/\s+/g, '')
@@ -30,6 +44,41 @@ onMounted(async () => {
   await auth.hydrate()
   if (auth.user.value) {
     await navigateTo('/')
+    return
+  }
+
+  if (!isLocalTestHost()) {
+    return
+  }
+
+  const testLogin = getQueryValue(route.query.testLogin).trim().toLowerCase()
+  const testPassword = getQueryValue(route.query.testPassword)
+
+  if (!testLogin || !testPassword || localTestLoginPending.value) {
+    return
+  }
+
+  localTestLoginPending.value = true
+  errorMessage.value = ''
+  touched.login = true
+  touched.password = true
+  form.login = testLogin
+  form.password = testPassword
+  pending.value = true
+
+  try {
+    await auth.login({
+      login: testLogin,
+      password: testPassword,
+    })
+
+    const nextTarget = getQueryValue(route.query.next) || '/'
+    await navigateTo(nextTarget)
+  } catch {
+    errorMessage.value = 'Не удалось войти. Проверьте логин и пароль.'
+  } finally {
+    pending.value = false
+    localTestLoginPending.value = false
   }
 })
 

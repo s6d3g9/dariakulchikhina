@@ -1,31 +1,41 @@
 # Архитектура хранения данных
 
-> Актуализировано: 2026-03-03. Полный список таблиц и ER-диаграмма → [ARCHITECTURE.md](../ARCHITECTURE.md#2-слой-данных---база-данных)
+> Актуализировано: 2026-04-03. Полный список таблиц и ER-диаграмма → [ARCHITECTURE.md](../ARCHITECTURE.md#2-слой-данных---база-данных)
 
 ## 1) Обзор модели данных
 
 Основное хранилище — PostgreSQL 16 (Docker, порт 5433). Схема описана в `server/db/schema.ts` через Drizzle ORM.
 
-**19 таблиц** распределены по пяти группам:
+Эта схема покрывает **основную платформу**. Standalone messenger (`messenger/core`) и `services/communications-service` используют отдельные storage-контракты и не описываются этим файлом.
 
-1. **Identity/Access** — `users` (админы/дизайнеры).
+**24 таблицы** распределены по нескольким группам:
+
+1. **System / Access** — `users`, `admin_settings`.
 2. **Project Core** — `projects`, `page_configs`, `page_content`, `clients`.
-3. **Execution Data** — `work_status_items`, `work_status_item_photos`, `work_status_item_comments`, `roadmap_stages`.
-4. **Contractors** — `contractors` (с self-ref `parentId`: компания → мастера), `project_contractors` (M:N), `contractor_documents`.
-5. **Designers** — `designers`, `designer_projects`, `designer_project_clients`, `designer_project_contractors`.
-6. **Files & Docs** — `uploads`, `documents`, `gallery_items`.
+3. **Execution / Delivery** — `work_status_items`, `work_status_item_photos`, `work_status_item_comments`.
+4. **Project economics / docs** — `documents`, `project_extra_services`, `uploads`, `gallery_items`.
+5. **Contractors** — `contractors`, `project_contractors`, `contractor_documents`.
+6. **Designers** — `designers`, `designer_projects`, `designer_project_clients`, `designer_project_contractors`.
+7. **Sellers** — `sellers`, `seller_projects`.
+8. **Managers** — `managers`, `manager_projects`.
 
 ## 2) Таблицы и назначение
 
 ### `users`
 
-- администраторы/дизайнеры,
+- администраторы,
 - `login`, `email`, `password_hash`, `name`.
+
+### `admin_settings`
+
+- key-value storage для admin-level JSON-настроек,
+- используется в том числе для token/config данных админского контура.
 
 ### `projects`
 
 - корневая сущность проекта,
-- `slug`, `title`, `user_id`, `client_pin`,
+- `slug`, `title`, `status`, `project_type`, `user_id`,
+- `client_login`, `client_password_hash`, `client_recovery_phrase_hash`,
 - `pages: text[]` — набор активных разделов,
 - `profile: jsonb` — произвольные поля проекта.
 
@@ -43,7 +53,24 @@
 ### `contractors`
 
 - карточки подрядчиков,
-- реквизиты, контакты, `work_types`, `pin`.
+- реквизиты, контакты, `work_types`, `role_types`, auth-поля и расширенные паспортные/финансовые данные.
+
+### `project_extra_services`
+
+- дополнительные услуги по проекту,
+- статусы, суммы, quantity/unit и связи с договором/инвойсом.
+
+### `designers`, `designer_projects`, `designer_project_clients`, `designer_project_contractors`
+
+- отдельный контур дизайнерских кабинетов, услуг, пакетов и связок с проектами/клиентами/подрядчиками.
+
+### `sellers`, `seller_projects`
+
+- поставщики и их привязки к проектам.
+
+### `managers`, `manager_projects`
+
+- менеджеры и их участие в проектах.
 
 ### `project_contractors`
 
@@ -55,26 +82,31 @@
 - возможная привязка к подрядчику (`contractor_id` nullable),
 - план/факт даты, бюджет, заметки, статус, сортировка.
 
-### `roadmap_stages`
-
-- этапы дорожной карты проекта,
-- статус, сроки, описание, сортировка.
-
 ### `uploads`
 
 - метаданные загруженных файлов,
 - физические файлы лежат в `public/uploads`.
+
+### Roadmap и stage model
+
+- отдельной таблицы `roadmap_stages` в текущей схеме нет,
+- фазовая и project-control структура проекта формируется через page/shared contracts и bootstrap-логику создания проекта,
+- статусы и фазовая навигация живут в shared contracts и UI/server orchestration, а не в dedicated DB table.
 
 ## 3) ER-схема (концептуально)
 
 ```mermaid
 erDiagram
   users ||--o{ projects : owns
+  users ||--o{ admin_settings : config
   projects ||--o{ page_content : has
   projects ||--o{ work_status_items : has
-  projects ||--o{ roadmap_stages : has
   projects ||--o{ uploads : has
   projects ||--o{ project_contractors : links
+  projects ||--o{ project_extra_services : bills
+  projects ||--o{ designer_projects : links
+  projects ||--o{ seller_projects : links
+  projects ||--o{ manager_projects : links
   contractors ||--o{ project_contractors : links
   contractors ||--o{ work_status_items : assigned
 ```
@@ -85,7 +117,7 @@ erDiagram
 - `page_content (project_id, page_slug)` — уникальный контент на страницу.
 - `project_contractors (project_id, contractor_id)` — уникальная связка.
 - Каскадные удаления:
-  - удаление проекта удаляет связанный `page_content`, `work_status_items`, `roadmap_stages`, `project_contractors`, `uploads`.
+  - удаление проекта удаляет связанный `page_content`, `work_status_items`, `project_contractors`, `uploads`, `project_extra_services` и linking tables по каскадным связям.
 - Для `work_status_items.contractor_id` используется `ON DELETE SET NULL`.
 
 ## 5) Сессии и безопасность данных
@@ -102,10 +134,10 @@ erDiagram
 
 ### Инициализация нового проекта (создание)
 
-1. Админ запускает мастер создания проекта и выбирает `roadmapTemplateKey`.
+1. Админ запускает мастер создания проекта и задаёт базовые параметры проекта.
 2. `POST /api/projects` создаёт запись проекта с полным базовым набором страниц.
 3. Сервер автоматически создаёт стартовый контент для ключевых page-slug.
-4. Сервер заполняет `roadmap_stages` этапами из выбранного шаблона (или fallback-шаблона).
+4. Сервер инициализирует project pages и связанную bootstrap-структуру phase/project-control из shared contracts и project defaults.
 
 ### Контент страницы
 
@@ -113,7 +145,7 @@ erDiagram
 2. API ищет проект по `slug`.
 3. Upsert в `page_content` по `(project_id, page_slug)`.
 
-### Дорожная карта / статусы работ
+### Статусы работ
 
 1. Админ отправляет массив элементов.
 2. API удаляет старые записи по `project_id`.
@@ -137,7 +169,7 @@ erDiagram
 
 ### Базовые типы
 
-- `roadmapStageType` — тип этапа дорожной карты.
+- `projectStatus` / `PROJECT_PHASES` — канонические фазы жизненного цикла проекта.
 - `clientType` — тип клиента.
 - `materialType` — тип материалов.
 - `contractorType` — тип подрядчика.
@@ -146,12 +178,13 @@ erDiagram
 - `designerServiceTypes[]` — типы услуг дизайнера.
 - `paymentType` — тип оплаты.
 - `contractType` — тип договора.
-- `roadmapComplexity` — сложность дорожной карты.
+- `projectPriority` — приоритет проекта.
+- `objectType` — тип объекта.
 
 ### Дополнительно (расширенный список)
 
-- `projectPriority` — приоритет проекта.
-- `objectType` — тип объекта.
+- `workTypeStages` — шаги и стадии подрядных работ.
+- `*_OPTIONS` — нормализованные option arrays для UI-форм.
 
 ### Пример заполненного объекта профиля проекта
 
@@ -160,8 +193,6 @@ erDiagram
   "clientType": "family",
   "objectType": "apartment",
   "projectPriority": "high",
-  "roadmapType": "implementation",
-  "roadmapComplexity": "advanced",
   "materialType": "finishing_materials",
   "contractorType": "ooo",
   "contractorRoleTypes": ["electrician", "plumber", "foreman"],
@@ -178,49 +209,22 @@ erDiagram
 {
   "name": "ООО Пример Строй",
   "slug": "primer-stroy",
+  "login": "primer-stroy",
   "workTypes": ["puttying", "electrical_installation", "plumbing_installation"],
-  "pin": "4321"
+  "telegram": "@primerstroy"
 }
 ```
 
-## 9) Готовые шаблоны дорожных карт
+## 9) Phase / Project Control bootstrap
 
-В админке доступны преднастроенные сценарии в `shared/types/roadmap-templates.ts`.
+Отдельного runtime-контура шаблонов фаз в текущей кодовой базе нет.
 
-Пользовательские шаблоны хранятся отдельно в файле:
+Стартовая фазовая структура проекта собирается из нескольких источников:
 
-- `server/data/roadmap-templates.custom.json`
+- `shared/types/catalogs.ts` — канонические project statuses, object/client/payment/contract catalogs,
+- `shared/types/phase-steps.ts` — бизнес- и IT-описания шагов по фазам,
+- `shared/constants/pages.ts` — состав страниц и phase labels,
+- `shared/utils/project-control.ts` — bootstrap и orchestration helper-ы hybrid control,
+- `shared/utils/project-control-timeline.ts` — timeline/date helpers для phase/project-control UI.
 
-Сервер объединяет встроенные и пользовательские шаблоны в единый каталог через `server/utils/roadmap-templates.ts`.
-
-### Категории и покрытие сценариев
-
-Каталог включает расширенное покрытие по профильной практике:
-
-- жилые объекты: квартиры, дома,
-- коммерция: офис, ритейл, HoReCa,
-- общественные пространства,
-- типы клиентов: физлицо, юрлицо, семья, инвестор, девелопер,
-- уровни сложности: базовый, стандарт, advanced, premium.
-
-### Примеры шаблонов
-
-- `Квартира · Физлицо · Базовый`
-- `Квартира · Семья · Стандарт`
-- `Дом · Физлицо · Повышенная сложность`
-- `Офис · Юрлицо · Стандарт`
-- `Ритейл · Юрлицо · Базовый/быстрый`
-- `HoReCa · Инвестор · Премиум`
-- `Квартира (show-unit) · Девелопер · Премиум`
-- `Офис (штаб-квартира) · Девелопер · Повышенная сложность`
-- `Общественное пространство · Девелопер · Повышенная сложность`
-
-Шаблон включает:
-
-- мета-атрибуты (`objectType`, `clientType`, `complexity`),
-- набор этапов с `stageKey`, названием и описанием,
-- готовую последовательность для быстрого старта проекта.
-
-Применение шаблона выполняется в UI `AdminRoadmap` с возможностью дальнейшего редактирования этапов.
-
-Создание и поддержка пользовательских сценариев выполняется в разделе `/admin/roadmap-templates` через API CRUD.
+То есть фазовый каркас проекта формируется не через отдельный CRUD шаблонов, а через shared contracts и серверную инициализацию проекта.

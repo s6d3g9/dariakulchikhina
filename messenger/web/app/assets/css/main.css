@@ -7,6 +7,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body {
+  min-height: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
@@ -14,13 +15,35 @@ html, body {
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  overflow: hidden;
   background: rgb(9 17 31);
+}
+
+html {
+  --messenger-window-inner-height: 100dvh;
+  --messenger-screen-height: 100dvh;
+  --messenger-root-effective-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
+}
+
+html[data-messenger-keyboard='open'] {
+  --messenger-root-effective-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
+}
+
+html[data-messenger-display-mode='standalone'][data-messenger-keyboard='closed'] {
+  --messenger-root-effective-height: max(var(--messenger-screen-height, 100dvh), var(--messenger-window-inner-height, 100dvh), var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh)));
+}
+
+@supports (height: 100lvh) {
+  html[data-messenger-display-mode='standalone'][data-messenger-keyboard='closed'] {
+    --messenger-root-effective-height: max(100lvh, var(--messenger-screen-height, 100dvh), var(--messenger-window-inner-height, 100dvh), var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh)));
+  }
 }
 
 body,
 #__nuxt,
 .messenger-v-app {
-  min-height: 100%;
+  min-height: var(--messenger-root-effective-height, 100%);
+  height: var(--messenger-root-effective-height, 100%);
   background: rgb(9 17 31);
 }
 
@@ -83,6 +106,7 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 
 .messenger-v-app input,
 .messenger-v-app textarea,
+.messenger-v-app [contenteditable],
 .messenger-v-app .v-field__input,
 .messenger-v-app .v-field__input input,
 .messenger-v-app .v-field__input textarea {
@@ -104,6 +128,9 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 .messenger-v-app .composer-input::placeholder {
   color: var(--messenger-input-placeholder) !important;
   opacity: 1;
+}
+.messenger-v-app .composer-input:empty::before {
+  color: var(--messenger-input-placeholder) !important;
 }
 
 .messenger-v-app input::selection,
@@ -133,7 +160,8 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
 /* VMain Vuetify может добавлять padding-bottom из layout системы — убираем */
 .messenger-v-app .v-main {
   padding: 0 !important;
-  min-height: 0 !important;
+  min-height: var(--messenger-root-effective-height, 0px) !important;
+  height: var(--messenger-root-effective-height, auto) !important;
 }
 
 .messenger-shell {
@@ -158,7 +186,7 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-bottom-bar-radius: 10px;
   --messenger-agent-workspace-dock-height: 102px;
   --messenger-keyboard-offset: max(0px, var(--messenger-keyboard-inset, 0px));
-  --messenger-viewport-effective-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
+  --messenger-viewport-effective-height: var(--messenger-root-effective-height, var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh)));
   display: flex;
   flex-direction: column;
   min-height: var(--messenger-viewport-effective-height);
@@ -175,8 +203,22 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   --messenger-safe-bottom: var(--messenger-safe-bottom-standalone);
 }
 
+html[data-messenger-display-mode='standalone'] .messenger-shell[data-messenger-keyboard='closed'] {
+  --messenger-viewport-effective-height: var(--messenger-root-effective-height, max(var(--messenger-screen-height, 100dvh), var(--messenger-window-inner-height, 100dvh), var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh))));
+}
+
 .messenger-shell[data-messenger-keyboard='open'] {
   --messenger-safe-bottom: 0px;
+  /* interactive-widget=overlays-content: клавиатура перекрывает контент,
+     shell остаётся window.innerHeight. padding-bottom сжимает flex-контент,
+     прижимая composer вплотную к верхнему краю клавиатуры. */
+  padding-bottom: var(--messenger-keyboard-offset, 0px);
+}
+
+/* bottom-nav скрывается синхронно с padding-bottom через data-атрибут,
+   чтобы не было 1-фреймового layout-прыжка от Vue v-show */
+.messenger-shell[data-messenger-keyboard='open'] .messenger-bottom-nav {
+  display: none;
 }
 
 .messenger-shell[data-messenger-keyboard='open'],
@@ -399,7 +441,7 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
 /* ── Search Dock ─────────────────────────────────────────── */
 .search-dock {
   flex-shrink: 0;
-  padding: 4px 8px 12px;
+  padding: 4px 8px 4px;
   background: rgb(var(--v-theme-surface-container-low));
 }
 
@@ -598,8 +640,8 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   bottom: calc(100% - 1px);
   z-index: 1;
   min-height: 0;
-  height: max(260px, calc(var(--messenger-viewport-height, 100dvh) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px)));
-  max-height: calc(var(--messenger-viewport-height, 100dvh) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px));
+  height: max(260px, calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px)));
+  max-height: calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px));
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
@@ -742,8 +784,8 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
 
 @media (max-width: 767px) {
   .agent-chat-workspace__sheet {
-    height: max(220px, calc(var(--messenger-viewport-height, 100dvh) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px)));
-    max-height: calc(var(--messenger-viewport-height, 100dvh) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px));
+    height: max(220px, calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px)));
+    max-height: calc(var(--messenger-viewport-effective-height, var(--messenger-viewport-height, 100dvh)) - var(--messenger-chat-header-height) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - var(--messenger-composer-height, 76px) - var(--messenger-agent-workspace-dock-height) - var(--messenger-chat-keyboard-offset, 0px));
   }
 }
 
@@ -1393,7 +1435,7 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   .new-chat-dialog__content .v-card {
     display: flex;
     flex-direction: column;
-    max-height: min(82dvh, calc(100dvh - env(safe-area-inset-top, 0px) - 8px));
+    max-height: min(82dvh, calc(var(--messenger-root-effective-height, 100dvh) - env(safe-area-inset-top, 0px) - 8px));
     border-radius: 24px 24px 0 0 !important;
   }
 
@@ -2402,7 +2444,8 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   isolation: isolate;
   --messenger-composer-height: 76px;
   --messenger-call-analysis-width: 0px;
-  --messenger-chat-keyboard-offset: var(--messenger-keyboard-offset, 0px);
+  --messenger-chat-keyboard-offset: 0px;
+  --messenger-call-header-keyboard-reserve: 0px;
 }
 
 @media (min-width: 980px) {
@@ -2435,6 +2478,18 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   position: relative;
 }
 
+.messenger-shell[data-messenger-keyboard='open'] .section-block--chat.section-block--chat-call-header-visible {
+  padding-top: var(--messenger-chat-header-height);
+}
+
+.messenger-shell[data-messenger-keyboard='open'] .section-block--chat.section-block--chat-call-header-visible > .chat-header--call-visible {
+  position: fixed;
+  top: calc(var(--messenger-viewport-offset-top, 0px) + var(--messenger-safe-top));
+  left: var(--messenger-safe-left);
+  right: var(--messenger-safe-right);
+  z-index: 42;
+}
+
 /* ── Chat Header ─────────────────────────────────────────── */
 .chat-header {
   display: flex;
@@ -2444,7 +2499,7 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container-high));
   position: sticky;
-  top: 0;
+  top: var(--messenger-viewport-offset-top, 0px);
   z-index: 30;
   gap: 4px;
   overflow: hidden;
@@ -2955,11 +3010,13 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   min-height: 0;
   overflow-y: auto;
   padding: 8px 16px;
-  padding-bottom: calc(var(--messenger-composer-height, 76px) + var(--messenger-chat-keyboard-offset, 0px) + 8px);
+  padding-bottom: 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   scroll-behavior: smooth;
+  scroll-padding-bottom: 12px;
+  overscroll-behavior-y: contain;
 }
 
 /* ── Message Bubble ──────────────────────────────────────── */
@@ -3405,9 +3462,11 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   z-index: 3;
   display: flex;
   align-items: center;
-  padding: 4px 8px max(12px, calc(var(--messenger-safe-bottom) + 4px));
+  padding: 4px 8px 4px;
   flex-shrink: 0;
   background: rgb(var(--v-theme-surface-container-low));
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .composer-bar__body {
@@ -3439,10 +3498,15 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   overflow-y: hidden;
   transition: background-color 200ms ease;
   display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .composer-input--framed {
   min-height: var(--messenger-dock-height);
+  height: var(--messenger-dock-height);
   padding-top: var(--messenger-dock-padding-y);
   padding-bottom: var(--messenger-dock-padding-y);
   padding-left: 42px;
@@ -3469,6 +3533,18 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   color: var(--messenger-input-placeholder);
 }
 
+/* contenteditable placeholder (iOS) */
+.composer-input:empty::before {
+  content: attr(data-placeholder);
+  color: var(--messenger-input-placeholder);
+  pointer-events: none;
+}
+
+.composer-input[contenteditable='false'] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .composer-segment {
   flex-shrink: 0;
 }
@@ -3486,8 +3562,6 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
-.messenger-shell[data-messenger-keyboard='open'] .composer-bar,
-.messenger-shell[data-messenger-keyboard='open'] .search-dock--bottom-dock,
 .messenger-shell[data-messenger-media-sheet='open'] .composer-media-menu__tabs,
 .messenger-shell .content-gallery__nav {
   padding-bottom: calc(var(--messenger-safe-bottom) + 4px);
@@ -3509,11 +3583,64 @@ html[data-messenger-display-mode='standalone'] .messenger-shell {
 }
 
 .composer-bar--audio {
-  padding: 4px 8px max(12px, calc(var(--messenger-safe-bottom) + 4px));
+  padding: 4px 8px 4px;
 }
 
 html[data-messenger-keyboard='open'] .section-block--chat {
-  --messenger-chat-keyboard-offset: var(--messenger-keyboard-offset, 0px);
+  --messenger-chat-keyboard-offset: 0px;
+}
+
+/* ── Project Actions trigger button (circle above emoji) ── */
+.composer-dock-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pa-trigger {
+  position: absolute;
+  left: 14px;
+  top: -30px;
+  z-index: 4;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: all 0.2s ease;
+  opacity: 0.85;
+}
+
+.pa-trigger:hover:not(:disabled) {
+  opacity: 1;
+  transform: scale(1.1);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+}
+
+.pa-trigger:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.pa-trigger:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pa-trigger--active {
+  opacity: 1;
+  background: rgb(var(--v-theme-tertiary, var(--v-theme-primary)));
+  transform: rotate(180deg);
+}
+
+.messenger-shell[data-messenger-keyboard='open'] .pa-trigger {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.5);
 }
 
 @media (min-width: 768px) {
@@ -3982,7 +4109,7 @@ html[data-messenger-keyboard='open'] .section-block--chat {
 
 .call-detached-header {
   position: fixed;
-  top: 0;
+  top: var(--messenger-viewport-offset-top, 0px);
   left: 0;
   right: 0;
   z-index: 41;
@@ -4009,7 +4136,7 @@ html[data-messenger-keyboard='open'] .section-block--chat {
   position: fixed;
   left: 12px;
   right: 12px;
-  top: max(16px, env(safe-area-inset-top));
+  top: calc(var(--messenger-viewport-offset-top, 0px) + max(16px, env(safe-area-inset-top)));
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
@@ -4058,7 +4185,7 @@ html[data-messenger-keyboard='open'] .section-block--chat {
 
 .call-stage--chat-bound.call-stage--split {
   top: 60px;
-  height: max(220px, min(44dvh, calc(100dvh - 60px - var(--messenger-composer-height, 76px) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - 8px)));
+  height: max(220px, min(44dvh, calc(var(--messenger-viewport-effective-height, 100dvh) - 60px - var(--messenger-composer-height, 76px) - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height)) - 8px)));
 }
 
 .call-stage--mini {
@@ -4571,7 +4698,7 @@ html[data-messenger-keyboard='open'] .section-block--chat {
     top: 0;
     right: 0;
     width: min(32vw, 420px);
-    height: 100dvh;
+    height: var(--messenger-root-effective-height, 100dvh);
     display: flex;
     flex-direction: column;
     border-radius: 0;
@@ -4780,6 +4907,8 @@ html[data-messenger-keyboard='open'] .section-block--chat {
   overflow: hidden;
   position: relative;
   z-index: 25;
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .composer-media-menu__body {
@@ -5565,7 +5694,7 @@ html[data-messenger-keyboard='open'] .section-block--chat {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh));
+  min-height: var(--messenger-root-effective-height, var(--messenger-viewport-visible-height, var(--messenger-viewport-height, 100dvh)));
   padding: calc(24px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
   background: rgb(var(--v-theme-background));
   overflow-y: auto;
@@ -6097,7 +6226,8 @@ html[data-messenger-display-mode='standalone'] .auth-shell {
   justify-items: center;
   align-content: center;
   gap: 16px;
-  height: 100dvh;
+  min-height: var(--messenger-root-effective-height, 100dvh);
+  height: var(--messenger-root-effective-height, 100dvh);
   padding: 24px;
   background: rgb(var(--v-theme-background));
   color: rgb(var(--v-theme-on-surface-variant));

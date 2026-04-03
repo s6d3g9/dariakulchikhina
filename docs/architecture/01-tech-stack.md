@@ -4,54 +4,58 @@
 
 ## 1) Общая картина
 
-Проект построен как **full-stack Nuxt 4** приложение:
+Репозиторий построен как **multi-contour monorepo** с несколькими runtime-контурами:
 
-- `app/*` — клиентский UI (Vue 3 Composition API + Nuxt Pages/Layouts + composables через `useState`),
-- `server/api/*` — 95 backend-эндпоинтов на Nitro/H3,
-- `server/db/*` — доступ к PostgreSQL 16 через Drizzle ORM (19 таблиц),
-- `server/middleware/*` — 4 серверных middleware (CSP, rate-limit, body-size-limit, CSRF),
-- `server/utils/*` — HMAC-авторизация, загрузка файлов, управление шаблонами roadmap,
-- `shared/types/*` — 12 файлов общих типов/Zod-схем для серверной и клиентской частей,
-- `shared/utils/*` — 2 файла утилит (roadmap, work-status) — единый источник истины для статусов.
+- `app/*` + `server/*` + `shared/*` — основная full-stack Nuxt 4 платформа,
+- `app/pages/chat/*` + `server/api/chat/*` — встроенный communications/chat контур внутри main app,
+- `messenger/web` + `messenger/core` — отдельный standalone messenger,
+- `services/communications-service` — отдельный relay/signaling сервис.
 
-Фронтенд и backend живут в одном репозитории и разворачиваются как единое приложение.
+Главное правило: это один репозиторий, но не одно runtime-приложение. Основная платформа, standalone messenger и relay service развиваются и деплоятся как разные контуры.
 
 ## 2) Технологии и их роли
 
 ### UI / Frontend
 
-- **Nuxt 4.3.x** — SSR/SPA-платформа, маршрутизация через файловую структуру.
-- **Vue 3** (Composition API) — 60 компонентов + 19 страниц.
-- **@nuxt/ui 3** — UI-библиотека компонентов.
-- **Tailwind CSS 4** — утилитарные стили + glassmorphism-система (2 055 строк `main.css`).
-- **Pinia** — подключён через `@pinia/nuxt`, но состояние управляется преимущественно через `useState()` в composables.
+- **Main app: Nuxt 4.3.x + Vue 3 + @nuxt/ui 3** — SSR/SPA-платформа основной CRM/ERP части.
+- **Messenger web: Nuxt 4 + Vuetify 4 + MDI** — client-only shell standalone messenger.
+- **Tailwind CSS 4** — utility/design infrastructure основной платформы.
+- **Main app state** — composables + `useState()`.
+- **Pinia** — подключён, но в основной платформе не является state layer по умолчанию; в messenger/web может использоваться адресно.
 
 ### Backend / API
 
-- **Nitro + H3** — 95 обработчиков в `server/api/**/*.ts`.
-- **Zod** — валидация входящих payload (`readValidatedNodeBody`).
-- **bcryptjs** — хеширование паролей.
-- **HMAC SHA-256** — подписанные cookie-сессии (admin, client, contractor), 30 дней.
-- **Серверные middleware** — CSP, rate-limit, body-size-limit, CSRF (double-submit cookie).
-- **Серверные плагины** — CSP nonce, error-sanitizer.
+- **Nitro + H3** — backend основной платформы в `server/api/**/*.ts`.
+- **Fastify 5 + WebSocket** — realtime backend standalone messenger в `messenger/core`.
+- **Node.js relay service** — encrypted room/signaling сервис в `services/communications-service`.
+- **Zod** — валидация payload/schema на server-side runtime-ах.
+- **bcryptjs / HMAC SHA-256** — auth/session слой основной платформы.
+- **Серверные middleware и Nitro plugins** — security headers, CSP, CSRF, rate limit и request lifecycle только для main app Nitro-контура.
 
 ### Данные и инфраструктура
 
-- **PostgreSQL 16** (Docker, порт 5433) — 19 таблиц бизнес-данных.
-- **drizzle-orm 0.41.x + drizzle-kit** — схема, запросы, миграции.
-- **Redis 7** (Docker, порт 6380) — инфраструктурный сервис.
-- **Локальное файловое хранилище** (`public/uploads`) — загружаемые файлы (валидация MIME + magic bytes, лимит 20 МБ).
-- **JSON-хранилище кастомных шаблонов** (`server/data/roadmap-templates.custom.json`) — пользовательские сценарии roadmap.
+- **PostgreSQL 16** — основная БД main app; communications service может использовать отдельный Postgres URL для durable storage.
+- **drizzle-orm 0.41.x + drizzle-kit** — schema/query/migration слой основной платформы.
+- **Redis 7** — инфраструктурный сервис основной платформы.
+- **Локальное файловое хранилище** (`public/uploads`) — файлы основной платформы.
+- **File-backed store modules** — persistence baseline в `messenger/core`.
+- **Shared contracts + project data bootstrap** — phase/project-control сценарии основной платформы собираются из shared contracts и серверной инициализации проекта, без отдельного JSON-хранилища шаблонов фаз.
 
 ## 3) Конфигурация приложения
 
-### Nuxt (`nuxt.config.ts`)
+### Main app Nuxt (`nuxt.config.ts`)
 
 - Включены модули: `@nuxt/ui`, `@pinia/nuxt`.
 - `runtimeConfig`:
   - приватные переменные: `databaseUrl`, `redisUrl`, `sessionSecret`,
   - публичные: `public.appName`.
 - В `nitro.alias` настроены алиасы для доступа к `server` и `shared` из server-кода.
+
+### Standalone messenger
+
+- `messenger/web/package.json` — отдельные `dev/build/preview` scripts.
+- `messenger/core/package.json` — отдельный runtime на Node.js 22+.
+- `messenger/ecosystem*.config.cjs` — runtime/export contours messenger-продукта.
 
 ### Drizzle (`drizzle.config.ts`)
 
@@ -63,13 +67,22 @@
 
 ```mermaid
 flowchart TD
-  U[Пользователь] --> V[Nuxt Pages / Vue Components]
-  V --> M[Nuxt Middleware]
-  M --> A[Nitro API server/api/*]
-  A --> Z[Zod Validation]
-  A --> D[Drizzle ORM]
-  D --> P[(PostgreSQL)]
-  A --> F[(public/uploads)]
+  U[Пользователь] --> MP[Main app Nuxt pages/components]
+  U --> MW[Messenger web]
+
+  MP --> MM[Nuxt route middleware]
+  MM --> MA[Nitro API server/api/*]
+  MA --> MZ[Zod validation]
+  MA --> MD[Drizzle ORM]
+  MD --> P[(PostgreSQL)]
+  MA --> F[(public/uploads)]
+  MA --> CR[communications relay]
+
+  MW --> MC[Messenger core Fastify/WebSocket]
+  MC --> MCF[file-backed stores]
+  MC --> LK[LiveKit integrations]
+
+  CR --> CP[(optional Postgres)]
 ```
 
 ## 5) Скрипты жизненного цикла
@@ -83,8 +96,8 @@ flowchart TD
 
 ## 6) Принципы архитектуры стека
 
-1. **Monorepo-подход в рамках Nuxt**: UI + API + data access в едином коде.
-2. **Role-based доступ**: маршруты и API разграничиваются по ролям (admin/client/contractor).
-3. **Schema-first для данных**: таблицы и связи описаны в Drizzle-схеме.
-4. **Минимизация внешней сложности**: загрузки файлов хранятся локально в `public/uploads`.
-5. **Сценарный bootstrap проекта**: структура нового проекта и стартовый roadmap формируются сервером из выбранного шаблона.
+1. **Multi-runtime monorepo**: main app, embedded chat, standalone messenger и relay service живут рядом, но не должны смешивать runtime-контракты.
+2. **Role-based доступ**: маршруты и API основной платформы разграничиваются по ролям (admin/client/contractor).
+3. **Schema-first для main app**: таблицы и связи описаны в Drizzle-схеме.
+4. **Runtime-specific persistence**: main app использует Postgres/Drizzle, messenger/core — file-backed store baseline, relay service — собственный storage contract.
+5. **Сценарный bootstrap проекта**: структура нового проекта и стартовый phase/project-control каркас формируются сервером из project defaults и shared contracts.

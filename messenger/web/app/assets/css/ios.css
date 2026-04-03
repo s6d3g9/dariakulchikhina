@@ -37,7 +37,7 @@
     min(
       44dvh,
       calc(
-        100dvh
+        var(--messenger-viewport-effective-height, 100dvh)
         - 60px
         - var(--messenger-composer-height, 76px)
         - var(--messenger-bottom-bar-active-height, var(--messenger-bottom-bar-height))
@@ -48,8 +48,13 @@
   );
 }
 
-html[data-messenger-viewport-platform='ios'][data-messenger-keyboard='open'] .section-block--chat {
-  --messenger-chat-keyboard-offset: 0px;
+/*
+  С interactive-widget=overlays-content клавиатура накрывает контент сверху,
+  не сжимая layout viewport. Shell остаётся полноэкранным (window.innerHeight).
+  padding-bottom сдвигает flex-контент выше клавиатуры на высоту её инсета.
+*/
+html[data-messenger-viewport-platform='ios'][data-messenger-keyboard='open'] .messenger-shell {
+  padding-bottom: var(--messenger-keyboard-inset, 0px);
 }
 
 /* ── Call error toast: над home indicator ── */
@@ -286,3 +291,6 @@ html[data-messenger-viewport-platform='ios'][data-messenger-keyboard='open'] .se
     height: 100vh;
   }
 }
+
+/* ── Bottom nav: убираем transition-анимацию на iOS — она конфликтует с keyboard layout ── */
+/* Instant hide/show через v-show, без анимации */

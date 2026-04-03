@@ -1,11 +1,18 @@
 ---
 agent: 'agent'
-description: 'Добавить поле в Drizzle схему и создать миграцию'
+description: 'Изменить Drizzle schema и создать migration file'
 ---
 
 # Миграция БД (Drizzle)
 
-## Паттерн добавления поля
+## Канонический workflow
+
+1. Изменить `server/db/schema.ts`
+2. Сгенерировать migration file через `pnpm db:generate`
+3. При необходимости применить миграции через `pnpm db:migrate`
+4. Если нужен разовый backfill/repair данных, создать отдельный `scripts/migrate-*.mjs`
+
+## Паттерн добавления поля в schema
 
 В `server/db/schema.ts`:
 ```ts
@@ -19,28 +26,23 @@ export const projects = pgTable('projects', {
 })
 ```
 
-## Создать миграцию скриптом
+## Сгенерировать migration file
 
-```js
-// scripts/migrate-add-{field}.mjs
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
-import * as dotenv from 'dotenv'
-dotenv.config()
-
-const sql = postgres(process.env.DATABASE_URL)
-const db = drizzle(sql)
-
-await sql`ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {field} {type}`
-console.log('Done')
-await sql.end()
+```bash
+pnpm db:generate
+# migration будет создана в server/db/migrations/
 ```
+
+## Когда нужен отдельный скрипт
+
+Использовать `scripts/migrate-*.mjs` только если кроме schema evolution нужен разовый data backfill, cleanup или repair. Такой скрипт не заменяет migration file, если была изменена `server/db/schema.ts`.
 
 ## Правила
 
-- Всегда `IF NOT EXISTS` для безопасности
-- Не удалять существующие поля в миграции
-- Запуск: `node scripts/migrate-add-{field}.mjs`
+- Schema changes вести через `server/db/schema.ts` + `pnpm db:generate`
+- Не удалять существующие поля/таблицы без проверки зависимостей и плана data migration
+- Для `jsonb` задавать `.$type<T>()`
+- Runtime API-код должен работать через `useDb()`, а не через ad-hoc DB client
 
 ## Запрос
 

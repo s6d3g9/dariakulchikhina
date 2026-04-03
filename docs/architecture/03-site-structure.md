@@ -24,10 +24,12 @@
 │  ├─ /admin/clients
 │  ├─ /admin/contractors
 │  ├─ /admin/designers
+│  ├─ /admin/sellers
+│  ├─ /admin/managers
 │  ├─ /admin/documents
 │  ├─ /admin/pages
 │  ├─ /admin/gallery/*
-│  └─ /admin/roadmap-templates
+│  └─ ...
 ├─ /client/[slug]
 │  └─ /client/[slug]/[page]
 ├─ /project/[slug]                 ← alias клиентского project-view
@@ -50,8 +52,8 @@
 ### Админская зона
 
 - `/admin` — список проектов и dashboard администратора / дизайнера.
-- `/admin/projects/[slug]` — основной workspace проекта: управление контентом, фазами, коммуникациями, документами и статусацией.
-- `/admin/clients`, `/admin/contractors`, `/admin/designers`, `/admin/documents`, `/admin/pages`, `/admin/gallery/*`, `/admin/roadmap-templates` — реестры, редакторы и справочные контуры админки.
+- `/admin/projects/[slug]` — основной workspace проекта: управление контентом, фазами, project-control, коммуникациями, документами и статусацией.
+- `/admin/clients`, `/admin/contractors`, `/admin/designers`, `/admin/sellers`, `/admin/managers`, `/admin/documents`, `/admin/pages`, `/admin/gallery/*` — реестры, редакторы и служебные контуры админки.
 
 ### Клиентская зона
 

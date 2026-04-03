@@ -4,6 +4,7 @@
 > Область: `app/` — компоненты, страницы, лейауты, middleware, store, app.vue  
 > **Обновлено: 2026-03-03** — отмечены исправленные проблемы (✅ fixed)
 > Важно: документ полезен как исторический аудит компонентного слоя, но auth/routes/state в нём частично устарели. Для текущего контракта см. [ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md) и [UI_INTERFACE.md](UI_INTERFACE.md).
+> Внутри файла могут встречаться удалённые roadmap/template сущности и старые route/API ссылки; использовать его только как historical snapshot, не как source of truth.
 
 ---
 

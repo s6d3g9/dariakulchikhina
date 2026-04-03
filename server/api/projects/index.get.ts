@@ -1,8 +1,10 @@
 import { useDb } from '~/server/db/index'
 import { projects, workStatusItems } from '~/server/db/schema'
 import { sql, eq } from 'drizzle-orm'
+import { applyMessengerCors } from '~/server/utils/messenger-cors'
 
 export default defineEventHandler(async (event) => {
+  applyMessengerCors(event)
   requireAdmin(event)
   const db = useDb()
 

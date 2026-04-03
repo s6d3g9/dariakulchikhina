@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
   // Nullify project reference in documents (they use onDelete: 'set null')
   await db.update(documents).set({ projectId: null } as any).where(eq(documents.projectId, proj.id))
 
-  // Delete project row (cascades to page_content, work_status_items, roadmap_stages, project_contractors, uploads)
+  // Delete project row (cascades to page_content, work_status_items, project_contractors and related project-owned rows)
   await db.delete(projects).where(eq(projects.id, proj.id))
 
   // Best-effort cleanup of physical files

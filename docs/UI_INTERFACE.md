@@ -51,7 +51,7 @@
 | Ctrl+K          | То же — `AdminSearch` открывается / закрывается                                   |
 | ●/○ (тема)      | `toggleTheme()` → переключает dark/light, сохраняется через `useThemeToggle`      |
 | `42` (бейдж)    | Число из `GET /api/admin/notifications` — только индикатор, не кнопка             |
-| выйти           | `POST /api/auth/logout` → `router.push('/admin/login')`                           |
+| выйти           | `POST /api/auth/logout` → `router.push('/login?role=admin')`                      |
 
 ---
 
@@ -390,9 +390,9 @@ AdminProjectOverview
 | Кнопка вкладки в sidebar         | `setPage(slug)` → `activePage = slug` → смена компонента без URL  |
 | Кнопка обзора (◈)                | `setPage('overview')` → `ClientOverview`                          |
 | Мобильные иконки-кнопки (верх)   | Те же `setPage()` — дублируют sidebar                             |
-| Кнопка «Выйти» в sidebar         | `POST /api/auth/logout` → `router.push('/project/login')`          |
-| Ошибка 401 (сессия истекла)       | Показывается кнопка «Войти» → `NuxtLink to="/project/login"`       |
-| Ошибка загрузки (другая)          | Кнопка «Повторить» (`refresh()`) + «Выйти» → `/project/login`     |
+| Кнопка «Выйти» в sidebar         | `POST /api/auth/client-id-logout` → `router.push('/login?role=client')` |
+| Ошибка 401 (сессия истекла)      | Показывается кнопка «Войти» → `NuxtLink to="/login?role=client"` |
+| Ошибка загрузки (другая)         | Кнопка «Повторить» (`refresh()`) + `NuxtLink to="/login?role=client"` |
 
 ### Вкладки клиентского кабинета
 
@@ -417,7 +417,7 @@ AdminProjectOverview
 | Элемент                   | Действие                                                              |
 |---------------------------|-----------------------------------------------------------------------|
 | [темно / светло]          | `toggleTheme()` — переключение темы                                  |
-| [Выйти]                   | `POST /api/auth/contractor-logout` → `router.push('/contractor/login')` |
+| [Выйти]                   | `POST /api/auth/contractor-logout` → `router.push('/login?role=contractor')` |
 | Прогресс-бар              | Отображение % заполненности профиля — не кнопка                      |
 
 ### Sidebar кабинета подрядчика (`/contractor/[id]/index.vue`)

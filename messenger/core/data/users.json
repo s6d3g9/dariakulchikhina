@@ -13,6 +13,69 @@
       "displayName": "Beta 1773917619",
       "passwordHash": "42166a2768c7987b2f5bc638e260eaf8:826c5bfac360000907c4b50558627c3c5295dd4f276eb36b30a15507b6487901f9aff1edcba04ed645f31f1fe5c724953607aa9a18fab8c07fde555afc9d8842",
       "createdAt": "2026-03-19T10:53:39.296Z"
+    },
+    {
+      "id": "9cde4bb3-f89f-4b6a-9a59-e3e67257b526",
+      "login": "sim_iphone_a",
+      "displayName": "Sim iPhone A",
+      "passwordHash": "4d4a24474446167ad7c40d79735aed8f:2bbaf21e8964612f6a1207ef5856c4b3dbab9161c361d5dfe1b6290c745a8fb6a6bad9d1efdcadd0633a89e3c8c374e3ca5759af1c7055cffdf45d4ee7aa7fe2",
+      "createdAt": "2026-04-03T02:01:43.651Z"
+    },
+    {
+      "id": "03dbd098-c076-4e6f-b788-e8f32a5fc329",
+      "login": "sim_iphone_b",
+      "displayName": "Sim iPhone B",
+      "passwordHash": "44180b6c0f8e4bac3cc96c4bcbf7ca46:61e4d31db87bd78d9f7ba53302e73242b784220841a28a66835a5ea07ea5ba556ddcdc90aabb505c049115636eb993f1a92537eedb88278a925180dacfdfd42e",
+      "createdAt": "2026-04-03T02:01:43.807Z"
+    },
+    {
+      "id": "7c3d934c-1ba1-4447-88bd-26a9a0b3e91d",
+      "login": "sima612",
+      "displayName": "Sim A 612",
+      "passwordHash": "92aa0a161cba6d2b996dca062974daf7:052bd4900354f014703fafedf7c6abef384e42adf1905a7e59a65c204cbb31e9bba73facae00aae6bb6b53bdd8d884a6e430df1ac25dc079d440d99a7c69984b",
+      "createdAt": "2026-04-03T02:13:10.356Z"
+    },
+    {
+      "id": "442ba06c-a75f-4e93-bfa7-5f8a032fd4e1",
+      "login": "simb612",
+      "displayName": "Sim B 612",
+      "passwordHash": "46fa3c1760368a6f85bfc42ac8f2efaf:abe33799dc49284c5cea9b1e237ec43bdf87e1a7cbabd2bf3bf3e211021683a52ceaf3d4c4bd8365feb2081ea90fc42d2b2b1989524316882b19e61dd5c7137d",
+      "createdAt": "2026-04-03T02:13:10.392Z"
+    },
+    {
+      "id": "ae2379a0-166d-4ea9-8f8f-6ea0e00cb590",
+      "login": "sim",
+      "displayName": "Sim m",
+      "passwordHash": "e24460320f34b02749d4202b543d8f28:4bff8641dcc1ceaf98ebad172e36f7bcf578a001341b67fc663e46d5c1ab9d331e9b5f55d8c1a03283286c3b75377d13fae94b09a28774d593be6e44b8c547f3",
+      "createdAt": "2026-04-03T02:15:32.223Z"
+    },
+    {
+      "id": "cb9ab7a5-ad57-41cf-9664-f68e590aa242",
+      "login": "sib",
+      "displayName": "Sim b",
+      "passwordHash": "5d1a53a44dafceae779edfe47df4dc36:fc4fe8865605aae110d353eb598f655402349e763d155badefbf404813f146fcb42e6e7babe8116960acbb717a55aa504a6b0f5b54e933567c7be2e899cb04f2",
+      "createdAt": "2026-04-03T02:15:32.257Z"
+    },
+    {
+      "id": "00a912ea-e0f0-4519-b2ef-8c705d938533",
+      "login": "sim2",
+      "displayName": "Sim 2",
+      "passwordHash": "88d8a83f62ad06003489c43704c8ba46:09f1213c5639652dbdd8c83adf83acd0bdbc3dea102d96f0de9a4e053fed39aa4a3c47035ce2a988570b82f8de324b1c518fcc47487486d55bedac655c2a42bc",
+      "createdAt": "2026-04-03T02:19:25.409Z"
+    },
+    {
+      "id": "7060ff12-1809-4174-a999-820966a68de0",
+      "login": "sib2",
+      "displayName": "Sib 2",
+      "passwordHash": "49e5078ca923ab7628f7c25d6e6dd021:f13bffd035496c03bec26aeb3f47cfff75a6a3c90141ce96e69f3d5f7ee8f97f4b82fc849d5d764dadeadaedfcb5b503e7a55bc3de91b3d32d496a2a345496ec",
+      "createdAt": "2026-04-03T02:19:25.444Z"
+    },
+    {
+      "id": "656a72d3-b834-47b0-b46b-94facab79fa9",
+      "login": "admin",
+      "displayName": "Admin",
+      "passwordHash": "9ca67b0c77078d6fcaff8b8dccf75048:31a9716e9fc1efc2a99ba78814f90e0a9b2f0f122f6d583f5b893f69a1359ce0013dfc84dbb9ada9df198a93e32e2d14e9706f7884674a8f91d36e9abf31fb09",
+      "createdAt": "2026-04-03T02:35:01.240Z"
     }
   ]
 }

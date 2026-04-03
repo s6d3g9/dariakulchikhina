@@ -2,6 +2,7 @@
 import type { MessengerAttachmentKlipyPayload, MessengerConversationMessage } from '../../composables/useMessengerConversations'
 import type { MessengerKlipyItem } from '../../composables/useMessengerKlipy'
 import type { MessengerConversationSecuritySummary } from '../../composables/useMessengerCrypto'
+import type { ProjectActionExecutePayload, ProjectActionId } from '../../composables/useMessengerProjectActions'
 
 interface MessengerThreadMessage extends MessengerConversationMessage {
   comments: MessengerThreadMessage[]
@@ -33,7 +34,7 @@ const composerMediaMenuRef = ref<{
 const composerDockRef = ref<{
   fileInputEl: HTMLInputElement | null
   composerBarEl: HTMLDivElement | null
-  composerInputEl: HTMLTextAreaElement | null
+  composerInputEl: HTMLTextAreaElement | HTMLDivElement | null
 } | null>(null)
 const messageListEl = ref<HTMLElement | null>(null)
 const mediaPickerInputEl = ref<HTMLInputElement | null>(null)
@@ -49,6 +50,7 @@ const recordingIntensity = ref(0.12)
 const audioDraft = ref<MessengerAudioDraftState | null>(null)
 const canRecordAudio = ref(false)
 const calls = useMessengerCalls()
+const projectActions = useMessengerProjectActions()
 const editingMessageId = ref<string | null>(null)
 const editingDraft = ref('')
 const activeMessageActionsId = ref<string | null>(null)
@@ -546,10 +548,7 @@ function lockPageScroll() {
 
   lockedPageScrollY = window.scrollY
   body.dataset.messengerScrollLocked = 'true'
-  root.style.height = '100%'
   root.style.overflow = 'hidden'
-  body.style.height = '100%'
-  body.style.width = '100%'
   body.style.overflow = 'hidden'
 }
 
@@ -1246,6 +1245,7 @@ onMounted(async () => {
     await conversations.loadMessages()
     await scrollMessagesToBottom('auto')
   }
+  projectActions.setPeerLogin(conversations.activeConversation.value?.peerLogin || '')
 })
 
 onBeforeUnmount(() => {
@@ -1283,6 +1283,8 @@ watch(() => conversations.activeConversationId.value, async () => {
   stopRecordingTimer()
   stopRecordingVisualizer()
   stopStreamTracks()
+  projectActions.closePanel()
+  projectActions.setPeerLogin(conversations.activeConversation.value?.peerLogin || '')
   await scrollMessagesToBottom('auto')
 })
 
@@ -1444,7 +1446,11 @@ watch(() => viewport.keyboardOpen.value, async (opened) => {
   lockPageScroll()
 
   if (opened) {
-    await scrollMessagesToBottom('auto')
+    // Ждём завершения анимации клавиатуры (~350ms) прежде чем прокручивать к последнему
+    // сообщению. Без задержки scroll срабатывает до финального размера контейнера.
+    setTimeout(() => {
+      void scrollMessagesToBottom('auto')
+    }, 350)
   }
 })
 
@@ -1456,24 +1462,30 @@ async function submit() {
 
   composerMediaMenuOpen.value = false
 
+  // Сохраняем данные ДО очистки UI
+  const text = draft.value
+  const replyToMessageId = composerRelationMode.value === 'reply' ? composerRelationMessageId.value || undefined : undefined
+  const commentOnMessageId = composerRelationMode.value === 'comment' ? composerRelationMessageId.value || undefined : undefined
   const commentTargetId = composerRelationMode.value === 'comment' ? composerRelationMessageId.value : null
 
+  // Очищаем UI синхронно ДО async-вызова — клавиатура не успевает закрыться
+  draft.value = ''
+  activeMessageActionsId.value = null
+  activeReactionOverlayId.value = null
+  composerRelationMode.value = null
+  composerRelationMessageId.value = null
+  resetComposerInputHeight()
+  composerInputEl.value?.focus({ preventScroll: true })
+
   try {
-    await conversations.sendMessage(draft.value, {
-      replyToMessageId: composerRelationMode.value === 'reply' ? composerRelationMessageId.value || undefined : undefined,
-      commentOnMessageId: composerRelationMode.value === 'comment' ? composerRelationMessageId.value || undefined : undefined,
+    await conversations.sendMessage(text, {
+      replyToMessageId,
+      commentOnMessageId,
     })
     pendingScrollMessageId.value = commentTargetId
-    draft.value = ''
-    activeMessageActionsId.value = null
-    activeReactionOverlayId.value = null
-    composerRelationMode.value = null
-    composerRelationMessageId.value = null
-    resetComposerInputHeight()
-    await nextTick()
-    composerInputEl.value?.focus({ preventScroll: true })
     viewport.scheduleViewportSync()
   } catch {
+    draft.value = text
     actionError.value = 'Не удалось отправить сообщение.'
   }
 }
@@ -1766,6 +1778,36 @@ function handleRoleQuickAction(actionLabel: string) {
     composerInputEl.value?.focus()
     syncComposerInputHeight()
   })
+}
+
+async function handleProjectAction(actionId: ProjectActionId, payload?: ProjectActionExecutePayload) {
+  actionError.value = ''
+  const result = await projectActions.executeAction(actionId, payload)
+  if (!result.success) {
+    actionError.value = result.message
+    return
+  }
+
+  projectActions.closePanel()
+
+  copiedLabel.value = result.message
+  setTimeout(() => {
+    if (copiedLabel.value === result.message) {
+      copiedLabel.value = ''
+    }
+  }, 2200)
+
+  if (result.data?.triggerFilePicker) {
+    openFilePicker()
+  }
+
+  if (result.data?.messageBody && typeof result.data.messageBody === 'string') {
+    draft.value = result.data.messageBody
+    nextTick(() => {
+      composerInputEl.value?.focus()
+      syncComposerInputHeight()
+    })
+  }
 }
 
 async function handleFileSelect(event: Event) {
@@ -2225,7 +2267,9 @@ function toggleCallTranscription() {
     return
   }
 
+  // Открываем панель и запускаем транскрипцию явно
   calls.toggleAnalysisPanel(true)
+  calls.startTranscription()
 }
 
 function startEditingMessage(messageId: string, body: string) {
@@ -2412,6 +2456,7 @@ onBeforeUnmount(() => {
       :class="{
         'section-block--chat-empty': !conversations.activeConversation.value,
         'section-block--chat-details-open': detailsOpen && conversations.activeConversation.value,
+        'section-block--chat-call-header-visible': headerCallVisible,
         'section-block--chat-call-analysis-open': calls.analysisPanelOpen.value,
         'section-block--chat-photo-open': photoFeedOpen,
         'section-block--chat-drop-active': desktopDropActive,
@@ -2626,11 +2671,22 @@ onBeforeUnmount(() => {
         @update:collapsed="agentWorkspaceCollapsed = $event"
       />
 
-      <MessengerRoleQuickActions
-        v-if="conversations.activeConversation.value && !detailsOpen && !composerMediaMenuVisible && !activeConversationAgent && !compactMobileHeaderMenuOpen"
-        :peer-login="conversations.activeConversation.value.peerLogin"
-        :message-pending="conversations.messagePending.value"
-        @action="handleRoleQuickAction"
+      <MessengerProjectActionsPanel
+        :open="projectActions.panelOpen.value"
+        :groups="projectActions.groupedActions.value"
+        :pending-action="projectActions.pendingAction.value"
+        :projects="projectActions.platformProjects.value"
+        :projects-pending="projectActions.platformProjectsPending.value"
+        :projects-error="projectActions.platformProjectsError.value"
+        :selected-project-slug="projectActions.selectedProjectSlug.value"
+        :selected-action-id="projectActions.selectedActionId.value"
+        :catalog="projectActions.platformCatalog.value"
+        :catalog-pending="projectActions.platformCatalogPending.value"
+        :catalog-error="projectActions.platformCatalogError.value"
+        @close="projectActions.closePanel()"
+        @execute="handleProjectAction"
+        @select-project="projectActions.setSelectedProjectSlug($event)"
+        @select-action="projectActions.setSelectedAction($event)"
       />
 
       <MessengerChatComposerDock
@@ -2650,6 +2706,8 @@ onBeforeUnmount(() => {
         :composer-primary-mode="composerPrimaryMode"
         :composer-primary-disabled="composerPrimaryDisabled"
         :has-selected-klipy-item="Boolean(selectedKlipyItem)"
+        :show-project-actions-button="Boolean(conversations.activeConversation.value) && !activeConversationAgent"
+        :project-actions-open="projectActions.panelOpen.value"
         @update:draft="draft = $event"
         @focus="expandComposer"
         @blur="collapseComposer"
@@ -2658,6 +2716,7 @@ onBeforeUnmount(() => {
         @toggle-media-menu="toggleComposerMediaMenu"
         @open-file-picker="openFilePicker()"
         @toggle-agent-workspace="agentWorkspaceCollapsed = !agentWorkspaceCollapsed"
+        @toggle-project-actions="projectActions.togglePanel()"
         @primary-pointerdown="handleComposerPrimaryPointerDown"
         @primary-action="handleComposerPrimaryAction"
         @cancel-audio-draft="cancelAudioComposerState"

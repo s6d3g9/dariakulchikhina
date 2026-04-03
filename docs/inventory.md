@@ -3,6 +3,7 @@
 > Nuxt 4 + Drizzle ORM + PostgreSQL 16. Дизайн-студия: кабинет admin / client / contractor.  
 > **Обновлено: 2026-03-04** — добавлены AdminSearch, AdminProjectStatusBar. Отмечены исправленные проблемы (✅ fixed). Полный справочник → [ARCHITECTURE.md](ARCHITECTURE.md)
 > Важно: это историческая инвентаризация компонентного слоя. Для актуальной схемы auth, state и маршрутов ориентируйся на [ARCHITECTURE.md](ARCHITECTURE.md), [README.md](../README.md) и [UI_INTERFACE.md](UI_INTERFACE.md).
+> Внутри файла могут встречаться удалённые roadmap/template артефакты как часть старого снимка проекта; не использовать этот файл как source of truth для фаз, project-control и API.
 
 ---
 

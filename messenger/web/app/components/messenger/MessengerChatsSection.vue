@@ -1301,10 +1301,14 @@ function formatChatPreview(chat: MessengerConversationItem) {
         <MessengerDockField>
           <input
             v-model="searchDraft"
-            type="text"
+            type="search"
             class="composer-input composer-input--dock"
             placeholder="Поиск по чатам"
             autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            enterkeyhint="search"
             @focus="openSearch"
             @blur="closeSearch"
             @keydown.enter.prevent="runSearch"
