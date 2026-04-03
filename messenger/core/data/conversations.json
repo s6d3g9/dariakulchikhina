@@ -122,7 +122,7 @@
       "userAId": "656a72d3-b834-47b0-b46b-94facab79fa9",
       "userBId": "9cde4bb3-f89f-4b6a-9a59-e3e67257b526",
       "createdAt": "2026-04-03T02:59:13.091Z",
-      "updatedAt": "2026-04-03T16:28:35.828Z",
+      "updatedAt": "2026-04-03T19:10:45.518Z",
       "policy": {
         "secret": false,
         "allowMutualDelete": false,
@@ -584,6 +584,24 @@
       "kind": "text",
       "createdAt": "2026-04-03T16:28:35.828Z",
       "readAt": "2026-04-03T16:28:35.876Z"
+    },
+    {
+      "id": "5cd25782-fe81-4afe-9fe0-4824b1762a83",
+      "conversationId": "20180545-e550-42aa-a357-854b744145df",
+      "senderUserId": "656a72d3-b834-47b0-b46b-94facab79fa9",
+      "body": "😉",
+      "kind": "text",
+      "createdAt": "2026-04-03T19:10:33.013Z",
+      "readAt": "2026-04-03T19:10:33.252Z"
+    },
+    {
+      "id": "d7f9953e-46b8-4a7d-b6ce-0f015e88185d",
+      "conversationId": "20180545-e550-42aa-a357-854b744145df",
+      "senderUserId": "656a72d3-b834-47b0-b46b-94facab79fa9",
+      "body": "Выаываывавыа",
+      "kind": "text",
+      "createdAt": "2026-04-03T19:10:45.518Z",
+      "readAt": "2026-04-03T19:10:45.572Z"
     }
   ]
 }
