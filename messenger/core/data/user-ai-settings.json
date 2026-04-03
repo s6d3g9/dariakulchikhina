@@ -1,6 +1,16 @@
 {
   "settings": [
     {
+      "userId": "656a72d3-b834-47b0-b46b-94facab79fa9",
+      "analysisEnabled": false,
+      "interpretationProvider": "algorithm",
+      "transcriptionProvider": "server-default",
+      "interpretationModel": "",
+      "summaryModel": "",
+      "transcriptionModel": "",
+      "updatedAt": "2026-04-03T16:34:20.850Z"
+    },
+    {
       "userId": "9cde4bb3-f89f-4b6a-9a59-e3e67257b526",
       "analysisEnabled": false,
       "interpretationProvider": "algorithm",
@@ -8,7 +18,7 @@
       "interpretationModel": "",
       "summaryModel": "",
       "transcriptionModel": "",
-      "updatedAt": "2026-04-03T16:32:21.018Z"
+      "updatedAt": "2026-04-03T16:34:20.651Z"
     }
   ]
 }

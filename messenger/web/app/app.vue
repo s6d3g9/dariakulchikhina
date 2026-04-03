@@ -72,6 +72,7 @@ function installTouchZoomLock() {
 }
 
 let detachTouchZoomLock: (() => void) | null = null
+let detachViewport: (() => void) | null = null
 
 function syncRootBackground(themeColor: string) {
   if (!import.meta.client) {
