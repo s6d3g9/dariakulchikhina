@@ -168,7 +168,7 @@ html[data-messenger-resolved-theme-mode='dark'] .messenger-v-app {
   --messenger-safe-top: env(safe-area-inset-top, 0px);
   --messenger-safe-right: env(safe-area-inset-right, 0px);
   --messenger-safe-bottom-raw: env(safe-area-inset-bottom, 0px);
-  --messenger-safe-bottom-standalone: min(var(--messenger-safe-bottom-raw), 18px);
+  --messenger-safe-bottom-standalone: var(--messenger-safe-bottom-raw);
   --messenger-safe-bottom: var(--messenger-safe-bottom-raw);
   --messenger-safe-left: env(safe-area-inset-left, 0px);
   --messenger-dock-font-size: 16px;

@@ -119,7 +119,10 @@ export function useMessengerViewport() {
     const viewportCompressed = visualViewportHeight < nextViewportWindowInnerHeight - 24
     const nextKeyboardOpen = mobileViewport && focusedEditable && (rawKeyboardInset > 24 || viewportCompressed)
 
-    const useStandaloneViewportHeight = isAppleTouchViewport() && isStandaloneDisplayMode() && !nextKeyboardOpen
+    // В standalone (PWA) на всех платформах без клавиатуры используем
+    // максимальную высоту — visualViewportHeight может быть меньше экрана
+    // из-за системных баров (Android nav bar, iOS home indicator).
+    const useStandaloneViewportHeight = isStandaloneDisplayMode() && !nextKeyboardOpen
     // iOS с interactive-widget=overlays-content: window.innerHeight стабилен,
     // visualViewport.height уменьшается. Shell = innerHeight, клавиатура
     // компенсируется padding-bottom.
