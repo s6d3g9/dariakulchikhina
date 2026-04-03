@@ -93,6 +93,21 @@ useHead(() => ({
 
 onMounted(() => {
   settingsModel.hydrate()
+  // На Android interactive-widget=overlays-content не даёт visualViewport.height
+  // уменьшаться при клавиатуре — keyboard offset = 0.
+  // Убираем его на не-iOS, чтобы viewport ресайзился нативно.
+  if (import.meta.client) {
+    const ua = navigator.userAgent || ''
+    const isApple = /iPad|iPhone|iPod/u.test(ua)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    if (!isApple) {
+      const meta = document.querySelector('meta[name="viewport"]')
+      if (meta) {
+        meta.setAttribute('content',
+          meta.getAttribute('content')!.replace(/,\s*interactive-widget=[^,]*/u, ''))
+      }
+    }
+  }
   detachViewport = viewport.attach()
   detachTouchZoomLock = installTouchZoomLock()
   syncDisplayModeDataAttribute(install.isStandalone.value)

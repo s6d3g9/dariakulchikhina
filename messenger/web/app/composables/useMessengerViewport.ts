@@ -120,15 +120,16 @@ export function useMessengerViewport() {
     const nextKeyboardOpen = mobileViewport && focusedEditable && (rawKeyboardInset > 24 || viewportCompressed)
 
     const useStandaloneViewportHeight = isAppleTouchViewport() && isStandaloneDisplayMode() && !nextKeyboardOpen
-    // С interactive-widget=overlays-content клавиатура перекрывает контент на ВСЕХ
-    // платформах — window.innerHeight стабилен. Shell остаётся на полную высоту,
-    // клавиатура компенсируется padding-bottom: var(--messenger-keyboard-offset).
-    // Единый подход для iOS и Android.
-    const useMobileStableWindowHeight = mobileViewport
+    // iOS с interactive-widget=overlays-content: window.innerHeight стабилен,
+    // visualViewport.height уменьшается. Shell = innerHeight, клавиатура
+    // компенсируется padding-bottom.
+    // Android без overlays-content: viewport ресайзится нативно,
+    // visualViewportHeight уже уменьшен. padding-bottom не нужен.
+    const useIosStableWindowHeight = isAppleTouchViewport()
 
-    const mobileKeyboardInset = Math.max(0, Math.round(nextViewportWindowInnerHeight - visualViewportHeight))
+    const iosKeyboardInset = Math.max(0, Math.round(nextViewportWindowInnerHeight - visualViewportHeight))
     const nextKeyboardInset = nextKeyboardOpen
-      ? (useMobileStableWindowHeight ? mobileKeyboardInset : rawKeyboardInset)
+      ? (useIosStableWindowHeight ? iosKeyboardInset : rawKeyboardInset)
       : 0
     const standaloneViewportHeight = Math.max(
       nextViewportScreenHeight,
@@ -138,12 +139,12 @@ export function useMessengerViewport() {
     )
     const nextViewportHeight = useStandaloneViewportHeight
       ? standaloneViewportHeight
-      : useMobileStableWindowHeight
+      : useIosStableWindowHeight
         ? nextViewportWindowInnerHeight
         : visualViewportHeight
     const nextViewportVisibleHeight = useStandaloneViewportHeight
       ? standaloneViewportHeight
-      : useMobileStableWindowHeight
+      : useIosStableWindowHeight
         ? nextViewportWindowInnerHeight
         : visualViewportVisibleHeight
     // На мобильных скролл заблокирован, временные offsetTop вызывают прыжок шапки.
@@ -195,11 +196,11 @@ export function useMessengerViewport() {
 
     const visualViewport = window.visualViewport
 
-    // При interactive-widget=overlays-content клавиатура может сдвигать
-    // visual viewport (offsetTop > 0). Сбрасываем scroll на всех мобильных,
-    // чтобы shell с padding-bottom корректно прижимал composer.
+    // При открытии клавиатуры visual viewport может сдвинуться.
+    // Сбрасываем scroll на iOS (overlays-content),
+    // на Android viewport ресайзится нативно — не мешаем.
     function handleVisualViewportScroll() {
-      if (isMobileViewport() && window.scrollY !== 0) {
+      if (isAppleTouchViewport() && window.scrollY !== 0) {
         window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
       }
 

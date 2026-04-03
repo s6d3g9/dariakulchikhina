@@ -209,9 +209,12 @@ html[data-messenger-display-mode='standalone'] .messenger-shell[data-messenger-k
 
 .messenger-shell[data-messenger-keyboard='open'] {
   --messenger-safe-bottom: 0px;
-  /* interactive-widget=overlays-content: клавиатура перекрывает контент.
-     window.innerHeight стабилен на всех платформах. padding-bottom сжимает
-     flex-контент, прижимая composer к верхнему краю клавиатуры. */
+}
+
+/* iOS с interactive-widget=overlays-content: padding-bottom сжимает
+   flex-контент, прижимая composer к клавиатуре.
+   На Android overlays-content убран — viewport ресайзится нативно. */
+html[data-messenger-viewport-platform='ios'] .messenger-shell[data-messenger-keyboard='open'] {
   padding-bottom: var(--messenger-keyboard-offset, 0px);
 }
 
